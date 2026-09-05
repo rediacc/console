@@ -255,13 +255,29 @@ export function emitStep(b: Bound): string[] {
  * explains itself to whoever opens the file, and a generator that ate its own
  * explanation every run would train people to stop reading it.
  */
+/**
+ * Rewrite each lane's region from the declared gates.
+ *
+ * `dropped` NAMES EVERY STEP THE REWRITE REMOVED, and that return value is not
+ * bookkeeping. On 2026-09-05 a `--write` here deleted four hand-added steps that a peer
+ * had put INSIDE the quality-code region -- worklist-event-builders,
+ * worklist-path-resolution, fixture-event-timestamps, gate-cwd-independence -- and
+ * reported only "rewrote 3 region(s)". Their gates stopped running in CI and the only
+ * symptom was check:ci-parity, one gate later, saying the manifest pointed at steps that
+ * no longer existed. A destructive rewrite that does not say what it destroyed is how a
+ * shared workflow loses a step silently.
+ *
+ * The region's own comment does warn that a hand edit inside it is overwritten. That
+ * makes the deletion correct and the SILENCE the defect.
+ */
 export function rewriteRegions(
   workflow: string,
   byLane: Map<string, Bound[]>
-): { text: string; lanes: string[] } {
+): { text: string; lanes: string[]; dropped: string[] } {
   const lines = workflow.split('\n');
   const out: string[] = [];
   const touched: string[] = [];
+  const dropped: string[] = [];
   let job = '';
   let i = 0;
   while (i < lines.length) {
@@ -283,14 +299,18 @@ export function rewriteRegions(
     for (const b of (byLane.get(job) ?? []).slice().sort((a, z) => a.step.localeCompare(z.step))) {
       out.push(...emitStep(b));
     }
-    while (i < lines.length && !CLOSE_RE.test(lines[i])) i += 1;
+    while (i < lines.length && !CLOSE_RE.test(lines[i])) {
+      const step = /^\s*-\s*name:\s*(.+?)\s*$/.exec(lines[i]);
+      if (step) dropped.push(`${job}: ${step[1]}`);
+      i += 1;
+    }
     if (i < lines.length) {
       out.push(lines[i]);
       i += 1;
     }
     touched.push(job);
   }
-  return { text: out.join('\n'), lanes: touched };
+  return { text: out.join('\n'), lanes: touched, dropped };
 }
 
 /** What the manifest already says about a hand-registered gate. */
@@ -925,7 +945,32 @@ function main(argv: string[]): void {
       }
       byLane.set(job, [...(byLane.get(job) ?? []), b]);
     }
-    const { text, lanes } = rewriteRegions(workflow, byLane);
+    const { text, lanes, dropped } = rewriteRegions(workflow, byLane);
+    // REFUSE TO SILENTLY DELETE A STEP THE MANIFEST STILL POINTS AT. A step inside the
+    // region that no declared gate emits is either stale (fine to drop) or a gate
+    // someone hand-added in the wrong place (NOT fine -- dropping it stops that gate
+    // running in CI). The manifest is the arbiter: if it names the step, the removal is
+    // a regression and this refuses rather than reporting a tidy "rewrote N region(s)".
+    // Keyed by the JOB the gate was PLACED in, which is byLane's key -- not b.lane,
+    // which is the optional header override and is undefined for most gates. Keying on
+    // it made every emitted step look like an unexplained removal.
+    const emitted = new Set(
+      [...byLane.entries()].flatMap(([lane, gates]) => gates.map((b) => `${lane}: ${b.step}`))
+    );
+    const claimed = dropped.filter((d) => {
+      const step = d.slice(d.indexOf(': ') + 2);
+      return !emitted.has(d) && manifest.includes(`step: '${step}'`);
+    });
+    if (claimed.length > 0) {
+      console.error(`✗ refusing to write: ${claimed.length} step(s) inside a region are`);
+      console.error('  registered in the manifest but emitted by no declared gate.');
+      for (const c of claimed) console.error(`    ${c}`);
+      console.error('');
+      console.error('  Dropping them would stop those gates running in CI, and the only');
+      console.error('  symptom would be check:ci-parity one gate later. Move them BELOW');
+      console.error('  the `# <<< gate-bind` marker, where a hand-registered step belongs.');
+      process.exit(1);
+    }
     // EVERY LANE WITH GATES MUST HAVE A REGION. Emitting into a file that has none
     // would silently drop the step and report success -- the vacuity shape again.
     const missing = [...byLane.keys()].filter((j) => !lanes.includes(j));

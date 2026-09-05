@@ -273,6 +273,9 @@ jobs:
           python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
           .ci/scripts/quality/check_git_history_depth.py
+      - name: Schema call sites
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_schema_call_sites.py
       - name: Shell format
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/security/shfmt.sh
@@ -836,18 +839,6 @@ jobs:
       # `steps.setup.outcome == 'success'`; a region above that step references a
       # step that has not run, the expression is empty, and every gate in the region
       # SKIPS while the job stays green.
-      - name: Worklist event builders
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-worklist-event-builders
-      - name: Worklist path resolution
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-worklist-path-resolution
-      - name: Fixture event timestamps
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-fixture-event-timestamps
-      - name: Gate cwd independence
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-gate-cwd-independence
       - name: Fetch retry
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_fetch_retry.py
@@ -873,6 +864,19 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-www-build-token.sh
       # <<< gate-bind
+
+      - name: Worklist event builders
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-worklist-event-builders
+      - name: Worklist path resolution
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-worklist-path-resolution
+      - name: Fixture event timestamps
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-fixture-event-timestamps
+      - name: Gate cwd independence
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-gate-cwd-independence
 
       - name: Naturalization model policy
         run: npm run check:ci-naturalization-model-policy

@@ -5336,6 +5336,23 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // A sweep added retry_schema_exhaustion to the judge call sites one at a time and
+    // MISSED THE FIFTH, in wl_shapedup.py -- the commit that found it says so in its
+    // own subject. Five examples checked individually is not the claim that the set is
+    // uniform, and the fifth is what an example-based sweep drops. Enumerated from
+    // source, so a sixth site is covered the day it is written.
+    id: 'check:ci-schema-call-sites',
+    run: 'npm run check:ci-schema-call-sites',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_schema_call_sites.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Schema call sites',
+    },
+  },
+  {
     // docker-npm-pin-exclusions.json was matched with `k in line`, so the bare
     // `npm install` key claimed the `npm install --omit=dev` line and the correct entry
     // was reported as dead scaffolding. The invariant is the MATCHER, not the key shape:
