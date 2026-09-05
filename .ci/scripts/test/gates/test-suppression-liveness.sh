@@ -39,7 +39,15 @@ make_fixture() {
 run_gate() {
     local root="$1"
     shift
-    (cd "$REPO_ROOT" && SUPPRESSION_LIVENESS_ROOT="$root" npx tsx "$GATE" "$@" 2>&1) || return $?
+    # ACTION_REFS_MIN_FILES=2, NOT 0. make_fixture plants exactly two .github
+    # files (ci.yml and the app-token action), and collectActionRefs carries a
+    # vacuity floor of 10 sized for the real tree -- which threw VACUOUS here on
+    # 2026-09-05 and took the whole gate-test battery red. Telling the probe the
+    # fixture's TRUE corpus size keeps the floor meaningful (an empty or
+    # half-built fixture still refuses) instead of switching the guard off, which
+    # is what a 0 would do.
+    (cd "$REPO_ROOT" && SUPPRESSION_LIVENESS_ROOT="$root" ACTION_REFS_MIN_FILES=2 \
+        npx tsx "$GATE" "$@" 2>&1) || return $?
 }
 
 test_passes_on_real_repo() {

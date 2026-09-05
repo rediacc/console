@@ -210,7 +210,21 @@ function dockerfileFetchTokens(root: string): Universe | null {
 
 /** Every third-party action referenced by a workflow or composite action. */
 function referencedActions(root: string): Universe | null {
-  const refs = collectActionRefs(root);
+  let refs: ReturnType<typeof collectActionRefs>;
+  try {
+    refs = collectActionRefs(root);
+  } catch (err) {
+    // A CORPUS BELOW ITS FLOOR IS AN UNAVAILABLE ORACLE, NOT A CRASH. collectActionRefs
+    // grew a vacuity floor on 2026-09-04, which is right -- a wrong root must not read
+    // as "no actions referenced, everything is dead". But it THROWS, and this probe's
+    // contract is that `null` means "cannot tell", which the caller already handles: a
+    // run whose oracles are all unavailable while entries exist is declared vacuous and
+    // FAILS. So the floor's information is kept and its verdict is stronger, not weaker.
+    // Left unhandled it replaced the gate's own "vacuous" verdict with a stack trace and
+    // took the whole gate-test battery red (test-suppression-liveness.sh, 2026-09-05).
+    if (!(err instanceof Error) || !err.message.startsWith('VACUOUS:')) throw err;
+    return null;
+  }
   if (refs.size === 0) return null;
   return { names: new Set(refs.keys()), source: `${refs.size} actions referenced under .github` };
 }

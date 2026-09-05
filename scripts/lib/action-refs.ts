@@ -52,7 +52,15 @@ function collectFiles(root: string): string[] {
   // the liveness probe -- then reports a clean bill of health over nothing. Measured
   // 2026-09-04: 27 workflows plus the composite actions. The floor catches a bad root,
   // not today's file count.
-  const MIN_ACTION_FILES = 10;
+  // OVERRIDABLE, like every other floor in this family. SHFMT_MIN_FILES,
+  // RETIRE_MIN_WORKFLOWS and SECRET_RENAME_MIN_FILES all read an env var; this
+  // one was the sole hard-coded constant, and it is the one a FIXTURE has to
+  // lower. test-suppression-liveness.sh builds a deliberately tiny .github tree
+  // (2 files) and runs the liveness probe against it; on 2026-09-05 that threw
+  // VACUOUS from here and took the whole gate-test battery red -- a floor
+  // failing on the one corpus that is small on purpose. The default is
+  // unchanged, so the real tree is guarded exactly as before.
+  const MIN_ACTION_FILES = Number(process.env.ACTION_REFS_MIN_FILES ?? 10);
   if (files.length < MIN_ACTION_FILES) {
     throw new Error(
       `VACUOUS: ${githubDir} yielded ${files.length} workflow/action file(s), floor ` +
