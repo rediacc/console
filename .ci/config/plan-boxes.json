@@ -590,7 +590,7 @@
       ]
     },
     "agent/PLAN-secret-namespace-migration.md": {
-      "status": "done",
+      "status": "partially",
       "owner": "unowned",
       "open": 7,
       "done": 21,

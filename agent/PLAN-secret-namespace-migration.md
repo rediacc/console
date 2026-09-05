@@ -1,4 +1,13 @@
-Status: done — every line of this plan that a session can execute has been executed.
+Status: partially implemented 2026-09-05 — every line a session can execute has been
+executed; the 7 open boxes are operator-only or land in other repos (a GitLab commit
+for private/growth, renames in private/generative, the GPG revocation certificate, and
+the mc_migrate_claude machine-account token only the operator can mint).
+
+The header said `done` until 2026-09-05, and that is why this file reds
+check:ci-plan-boxes rather than being exempted by it: a finished status switches the
+Stop hook's advisory off, so a plan claiming done while carrying open boxes hides them
+from the one mechanism that surfaces them. The boxes were always there; the header was
+the inaccurate half.
 What remains is not a step in it: three secrets whose two copies hold different
 VALUES, which only the operator can reconcile. That is recorded where it will be
 found without reading 2,600 lines — `.ci/config/shadow-expected-mismatches.json`,
