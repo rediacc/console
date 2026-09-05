@@ -2112,6 +2112,14 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-secret-scope
 
+      # An AWS access key id sat in the clear in a tracked design document for two
+      # days on a PUBLIC remote before anyone asked. Nothing scanned tracked TEXT.
+      # This does, over `git ls-files` -- exactly what a runner checks out and what
+      # a clone serves.
+      - name: Tracked credentials
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-tracked-credentials
+
       # Offline by construction: compares the committed record against the
       # secrets each workflow references. The network lives only in --refresh.
       - name: Secret reachability

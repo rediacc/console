@@ -1,64 +1,58 @@
-## SESSION d1589e0b 2026-09-05T11:05:28Z
+## SESSION d1589e0b 2026-09-05T19:47:47Z
 
-# MERGED and on main. Chasing the edge release; 3 secrets need the OPERATOR
+# Wave DONE + org secrets deleted + AWS key leak redacted and ROTATED
 
 ## Next action
-Read worker **blumwhdqo** (`ci-trace.py --wait --until-final --ref main`) on
-Console CI **33962302989**, head `d7b313a73`.
+**Nothing tracked, nothing in flight.** `main` = **56e640324**, tree clean,
+`ci:quick` **310/310**. Two things want the operator:
 
-Green ⇒ it dispatches **Release to Edge**. Watch that BY RUN ID
-(`ci-trace.py --run <id> --wait`), never by branch: a `workflow_dispatch` run's
-check-runs are absent from the branch rollup, so `--ref main` reports GREEN while
-the release is still mid-flight. Edge green ⇒ re-sync main (CD pushes two
-`[skip ci]` commits back), then order #624e1863:
-`gh workflow run "Release to Production" -f force=true`.
+1. **`BWS_ACCESS_TOKEN` EXPIRES 2026-09-08** (3 days). Only the operator can mint
+   a replacement — no `bws` verb rotates a machine-account token. Everything
+   Bitwarden-backed dies when it lapses. Update `.ci/config/bws-token-expiry.json`.
+2. **The `gh`-removal plan is still owed.** See "owed work" below.
 
-**Operator cap in force: at most 3 background workers.** Currently 2.
+## Done this session
+PR #585 MERGED · Edge GREEN · **Production GREEN** (soak skipped) — the chain that
+had failed 5 consecutive times. Then, on operator rulings:
+- **All 45 org secrets DELETED**; `orgs/rediacc/actions/secrets` is EMPTY. Survivors
+  are repo-level: `BWS_ACCESS_TOKEN` (bootstrap) + `BREAKPOINT_TUNNEL_TOKEN`.
+- **ASIA SES synced from EU** (AWS issues no ASIA identity), hash-verified.
+- **AWS key ids were published** in tracked `agent/PLAN-secret-namespace-migration.md`
+  in a PUBLIC repo → redacted, and **ses-eu + ses-us ROTATED** (private/account
+  `65820fd`). Secret halves were never exposed; ids alone cannot authenticate.
 
-## Done and irreversible
-PR #585 **MERGED 07:32:41Z**; all four stacked PRs landed. `main` went
-`079edc5d4` → `35933a303` → **`d7b313a73`** (4 commits pushed directly to main,
-which order #dfe46a93 authorises).
+## Traps paid for — do not re-learn
+- **`rotate.ts` pushes `github_secret_names` UNCONDITIONALLY**, not from the
+  `consumers` list. Checking `consumers` says nothing. Rotation RESURRECTED 4 org
+  secrets; they were deleted again.
+- **`git show HEAD:f > f` to undo an edit destroyed the manifest a rotation had
+  just written.** AWS state was real, the record wasn't. **Recovery: Bitwarden** —
+  it holds pushed key ids, so live truth is readable.
+- **A plan box's TEXT is its identity.** Ticking while rewriting the text reads as
+  DELETED. `- [?]` is NOT honoured by `check_plan_boxes.py` despite its own advice.
+- **R2 EU buckets need the `cf-r2-jurisdiction: eu` HEADER**; `?jurisdiction=eu`
+  as a query param is silently ignored. All 12 buckets exist.
+- **4 secret sources**, assuming one is complete caused 3 false "unrecoverable"
+  reports: `bws-secret-map.json` (58) · `github-secret-preimage.json` (17 aliases) ·
+  personal vault `github.com`/`mfbayraktar@live.com` via `~/.bw-session` (36 fields,
+  **35 already mirrored** into SM) · `private/account/.env` (49 keys).
+- `bws` is NOT in the running devbox image; install per `.devcontainer/Dockerfile:492`.
+  No `aws`/`boto3`. Use Cloudflare REST with `CF_EMAIL`+`CF_GLOBAL_API_KEY`.
 
-  c55d906f7  stale-comment class, 3 sites
-  bdde69f1f  shadow drift record — THE RELEASE BLOCKER
-  51b2f1064  killed-reset regression test (first test file for either ops module)
-  d7b313a73  5 blank lines in ci-quality.yml
+## Owed work
+- **The missing gate**: nothing scans tracked files for credential patterns. Six
+  secret gates exist; only `check-env-credential-drift.ts` knows `AKIA` and only as
+  test fixtures. Write it shrink-only.
+- **`gh`-removal plan**: stripping `githubSecretNames` from the manifest +
+  `lib/config.ts` breaks 4 tests in `rotation-bitwarden-names.test.ts` that encode
+  the old GitHub↔Bitwarden mapping. I made the change and REVERTED it. `cf-breakpoint`
+  must KEEP its `gh` path (`BREAKPOINT_TUNNEL_TOKEN` still exists).
+- **147 org-scope reads** resolve to the empty string; `check:ci-secret-scope` (310th
+  gate) freezes the set, so migration can only shrink it. Already drained 2.
+- **#587** npm 11 · **#588** effort-cap steps 4-6 · `breakpoint.yml` reshape (it must
+  never fetch: `bws-secrets` exports to GITHUB_ENV and its later step is a debug
+  shell) · wire `run.sh setup` to `bws_env_load` (`.ci/lib/bws-env.sh` exists; 19 of
+  49 `.env` keys are already in Bitwarden).
 
-## THREE SECRETS NEED THE OPERATOR — nothing else can resolve them
-Release to Edge `33955200168` failed in FOUR jobs (all 3 account regions +
-marketing worker) on "Compare shadow secrets against GitHub". GitHub and
-Bitwarden disagree, verdict `[content differs]`, on:
-`ACCOUNT_BACKUP_S3_ACCESS_KEY_ID`, `ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY`,
-`CLOUDFLARE_TURNSTILE_SECRET_KEY`.
-
-The drift PRE-DATES the shadow: the last good edge deploy ran ZERO comparisons
-(no `shadow <NAME> match|MISMATCH` line in its log at all) because those names
-were first shadowed in `35933a303`. Nothing regressed.
-
-GitHub secrets are write-only, so no session can read the other side to pick a
-winner — `door: operator-only`. Recorded in
-`.ci/config/shadow-expected-mismatches.json`; CD is unblocked but the values are
-still wrong on one side.
-
-**Trap that nearly cost a fake fix:** that JSON is DOCUMENTATION. The compare
-reads `SHADOW_EXPECTED_MISMATCH`, a literal env var per workflow, and
-`cd-deploy-account.yml` set it not at all. Editing the ledger alone changes
-nothing. Both halves are wired now; `check_bws_map.py` assertion 12 binds them
-bidirectionally.
-
-## Local state
-On `main`, clean of mine. Dirty and NOT mine, never stage: `package-lock.json`
-(npm11 cosmetic flip), `agent/74de73ca/*`.
-
-## Queue
-**#dfe46a93** follow main (active) · **#624e1863** production release ·
-**#10719055** cap steps 2-6 of `agent/PLAN-reggate-effort-cap.md` ·
-**#76761e31** `wl_wait` wakes on every branch sub-agent report, no filter flag.
-
-Ticked this phase: #0638d947, #a5d9f490, #5d223f33.
-
-## Peers
-`74de73ca` stopped and verified. `8f55d4f0` live on a large read-only audit
-(~100 sub-agent reports); never ran `--brief` so it cannot be addressed
-directly. Tree verified untouched at every check.
+## Operator caps
+Max **3 background workers**. "Commit ALL files, not just your changes."

@@ -1379,6 +1379,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-tracked-credentials',
+    run: 'npm run check:ci-tracked-credentials',
+    gate: true,
+    leaves: ['scripts/check-tracked-credentials.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Tracked credentials',
+    },
+  },
+  {
     id: 'check:ci-scope-completeness',
     run: 'npm run check:ci-scope-completeness',
     gate: true,
