@@ -32,6 +32,7 @@ import re
 import subprocess
 
 import wl_core as C
+import wl_store as S
 import worklist_messages as M
 
 FIX_SUBJECT = re.compile(r"^(fix|revert)[(!:]")
@@ -190,8 +191,6 @@ def append_ledger(branch, record, root=None):
     item-reproducing set, so a novel event kind there is SILENTLY DESTROYED.
     `.requests`, `.intents` and `.epics` are the precedents this follows.
     """
-    import wl_store as S
-
     path = debt_path(branch, root)
     path.parent.mkdir(parents=True, exist_ok=True)
     rec = dict(record)
@@ -218,8 +217,8 @@ def read_ledger(branch, root=None):
         return [], False
     records, forgot = [], False
     try:
-        for line in path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
+        for raw in path.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
             if not line:
                 continue
             try:
@@ -264,11 +263,7 @@ def budget_state(branch, root=None):
     records, forgot = read_ledger(branch, root)
     discharged = {r.get("sig") for r in records if r.get("kind") == "discharge"}
     charged = sum(1 for r in records if r.get("kind") == "charge")
-    debts = [
-        r
-        for r in records
-        if r.get("kind") == "debt" and r.get("sig") not in discharged
-    ]
+    debts = [r for r in records if r.get("kind") == "debt" and r.get("sig") not in discharged]
     if branch_merged(branch, root):
         charged = 0
     return charged, max(0, REGGATE_CAP - charged), debts, forgot
