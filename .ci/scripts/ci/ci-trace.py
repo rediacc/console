@@ -303,8 +303,16 @@ def _snapshot(root, ref, cache, allow_branch=False):
     elif cancelled:
         verdict = "red"
         detail = (
-            "%d context(s) CANCELLED with nothing failing -- a newer push"
-            " superseded this run. Trace the newer head." % len(cancelled)
+            # DO NOT assert a newer push here. This said "a newer push superseded"
+            # this run. Trace the newer head." unconditionally, and on 2026-09-05 it
+            # said that for a032863c7, which WAS the branch head -- there was no newer
+            # head to trace. Console CI had succeeded on attempt 2; the cancelled
+            # context was Review Status, a gate that genuinely did not report. The
+            # cause is a guess, so the message names the observation and leaves the
+            # guess to the reader.
+            "%d context(s) CANCELLED with nothing failing -- each is a gate that did"
+            " NOT report. A newer push is the usual cause; confirm one exists before"
+            " assuming it." % len(cancelled)
         )
     else:
         verdict, detail = "green", "every context succeeded or was skipped"
