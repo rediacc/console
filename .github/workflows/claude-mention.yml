@@ -41,7 +41,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Fetch shadow secrets from Bitwarden
+      - name: Fetch secrets from Bitwarden
         # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
         # live secrets.* reads below are untouched until the cutover flips them.
         uses: ./.github/actions/bws-secrets
@@ -50,18 +50,11 @@ jobs:
           secrets: |
             ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
-          GH_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-        run: .ci/scripts/ci/shadow-compare.sh
-
       # No `prompt:` input -> interactive/tag mode; default trigger_phrase is
       # @claude. Same token strategy as claude-review.yml.
       - name: Run Claude
         uses: anthropics/claude-code-action@fa7e2f0a29a126f0b81cdcf360561b36e44cf608 # v1.0.180
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_code_oauth_token: ${{ env.BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
           claude_args: --model claude-sonnet-5

@@ -238,36 +238,6 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           token: ${{ steps.app-token.outputs.token }}
-
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: ACCOUNT_BACKUP_S3_ACCESS_KEY_ID ACCOUNT_BACKUP_S3_ENDPOINT ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY ACCOUNT_ED25519_PRIVATE_KEY ACCOUNT_ED25519_PUBLIC_KEY ACCOUNT_JWT_SECRET ACCOUNT_SERVER_API_KEY ACCOUNT_X25519_PRIVATE_KEY ACCOUNT_X25519_PUBLIC_KEY AWS_SES_ACCESS_KEY_ID_EU AWS_SES_ACCESS_KEY_ID_US AWS_SES_SECRET_ACCESS_KEY_EU AWS_SES_SECRET_ACCESS_KEY_US CLOUDFLARE_TURNSTILE_SECRET_KEY STRIPE_SANDBOX_SECRET_KEY STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET_ASIA STRIPE_WEBHOOK_SECRET_EU STRIPE_WEBHOOK_SECRET_US
-          # Reasons, evidence and the operator door live in
-          # .ci/config/shadow-expected-mismatches.json. Found by this step's OWN
-          # first run (33955200168): it took all three edge regions down before
-          # any deploy work, on drift that pre-dates the shadow.
-          SHADOW_EXPECTED_MISMATCH: ACCOUNT_BACKUP_S3_ACCESS_KEY_ID ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY CLOUDFLARE_TURNSTILE_SECRET_KEY
-          GH_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID: ${{ secrets.ACCOUNT_BACKUP_S3_ACCESS_KEY_ID }}
-          GH_ACCOUNT_BACKUP_S3_ENDPOINT: ${{ secrets.ACCOUNT_BACKUP_S3_ENDPOINT }}
-          GH_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY: ${{ secrets.ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY }}
-          GH_ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
-          GH_ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-          GH_ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-          GH_ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
-          GH_ACCOUNT_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
-          GH_ACCOUNT_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
-          GH_AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
-          GH_AWS_SES_ACCESS_KEY_ID_US: ${{ secrets.AWS_SES_ACCESS_KEY_ID_US }}
-          GH_AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
-          GH_AWS_SES_SECRET_ACCESS_KEY_US: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_US }}
-          GH_CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
-          GH_STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-          GH_STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          GH_STRIPE_WEBHOOK_SECRET_ASIA: ${{ secrets.STRIPE_WEBHOOK_SECRET_ASIA }}
-          GH_STRIPE_WEBHOOK_SECRET_EU: ${{ secrets.STRIPE_WEBHOOK_SECRET_EU }}
-          GH_STRIPE_WEBHOOK_SECRET_US: ${{ secrets.STRIPE_WEBHOOK_SECRET_US }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - name: Init account submodule
         run: git submodule update --init --depth 1 private/account
 
@@ -323,8 +293,8 @@ jobs:
           # the indirection had no remaining purpose, and it was one of the runtime
           # -constructed names that no static scan can see.
           STRIPE_SECRET_KEY: ${{ inputs.target == 'stable'
-            && secrets.STRIPE_SECRET_KEY
-            || secrets.STRIPE_SANDBOX_SECRET_KEY }}
+            && env.BWS_STRIPE_SECRET_KEY
+            || env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
         run: npx tsx scripts/check-live-prices.ts
 
       - name: Deploy account Worker (${{ matrix.id }})
@@ -346,32 +316,32 @@ jobs:
           TARGET: ${{ inputs.target }}
           # Chunk-store backup plane. Not region-suffixed on purpose: one
           # bucket-scoped R2 credential serves every region.
-          ACCOUNT_BACKUP_S3_ENDPOINT: ${{ secrets.ACCOUNT_BACKUP_S3_ENDPOINT }}
-          ACCOUNT_BACKUP_S3_ACCESS_KEY_ID: ${{ secrets.ACCOUNT_BACKUP_S3_ACCESS_KEY_ID }}
-          ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY: ${{ secrets.ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY }}
+          ACCOUNT_BACKUP_S3_ENDPOINT: ${{ env.BWS_ACCOUNT_BACKUP_S3_ENDPOINT }}
+          ACCOUNT_BACKUP_S3_ACCESS_KEY_ID: ${{ env.BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID }}
+          ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY: ${{ env.BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY }}
           WORKER_NAME: ${{ steps.config.outputs.worker }}
           # Restored 2026-09-02 from the Bitwarden map, which is the naming
           # authority: every name below that the store holds is exported under
           # EXACTLY the stored spelling. HEAD carried an older contract
           # (SECRET_ED25519_*, STRIPE_KEY_EU) that the deploy script no longer reads.
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
+          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-          ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-          ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
-          ACCOUNT_X25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_X25519_PRIVATE_KEY }}
-          ACCOUNT_X25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_X25519_PUBLIC_KEY }}
+          ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
+          ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
+          ACCOUNT_X25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_X25519_PRIVATE_KEY }}
+          ACCOUNT_X25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_X25519_PUBLIC_KEY }}
           AWS_SES_ACCESS_KEY_ID_ASIA: ${{ env.BWS_AWS_SES_ACCESS_KEY_ID_ASIA }}
-          AWS_SES_ACCESS_KEY_ID_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
-          AWS_SES_ACCESS_KEY_ID_US: ${{ secrets.AWS_SES_ACCESS_KEY_ID_US }}
+          AWS_SES_ACCESS_KEY_ID_EU: ${{ env.BWS_AWS_SES_ACCESS_KEY_ID_EU }}
+          AWS_SES_ACCESS_KEY_ID_US: ${{ env.BWS_AWS_SES_ACCESS_KEY_ID_US }}
           AWS_SES_CONFIGURATION_SET: ${{ vars.AWS_SES_CONFIGURATION_SET }}
           AWS_SES_FROM: ${{ vars.AWS_SES_FROM }}
           AWS_SES_REGION: ${{ matrix.sesRegion }}
           AWS_SES_SECRET_ACCESS_KEY_ASIA: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_ASIA }}
-          AWS_SES_SECRET_ACCESS_KEY_EU: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
-          AWS_SES_SECRET_ACCESS_KEY_US: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_US }}
+          AWS_SES_SECRET_ACCESS_KEY_EU: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_EU }}
+          AWS_SES_SECRET_ACCESS_KEY_US: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_US }}
           BACKUP_BUCKET_EDGE: ${{ matrix.edgeBackupBucket }}
           BACKUP_BUCKET_STABLE: ${{ matrix.backupBucket }}
-          CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+          CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ env.BWS_CLOUDFLARE_TURNSTILE_SECRET_KEY }}
           OBS_OTLP_CREDENTIALS_ASIA: ${{ secrets.OBS_OTLP_CREDENTIALS_ASIA }}
           OBS_OTLP_CREDENTIALS_EU: ${{ secrets.OBS_OTLP_CREDENTIALS_EU }}
           OBS_OTLP_CREDENTIALS_US: ${{ secrets.OBS_OTLP_CREDENTIALS_US }}
@@ -386,8 +356,8 @@ jobs:
           SELLER_POSTAL_CODE: ${{ vars.SELLER_POSTAL_CODE }}
           SELLER_REGISTRATION_NUMBER: ${{ vars.SELLER_REGISTRATION_NUMBER }}
           SELLER_VAT_NUMBER: ${{ vars.SELLER_VAT_NUMBER }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET_ASIA: ${{ secrets.STRIPE_WEBHOOK_SECRET_ASIA }}
-          STRIPE_WEBHOOK_SECRET_EU: ${{ secrets.STRIPE_WEBHOOK_SECRET_EU }}
-          STRIPE_WEBHOOK_SECRET_US: ${{ secrets.STRIPE_WEBHOOK_SECRET_US }}
+          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET_ASIA: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_ASIA }}
+          STRIPE_WEBHOOK_SECRET_EU: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_EU }}
+          STRIPE_WEBHOOK_SECRET_US: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_US }}
         run: .ci/scripts/deploy/set-account-worker-secrets.sh

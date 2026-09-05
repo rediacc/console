@@ -44,15 +44,6 @@ jobs:
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
-
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY
-          GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - name: Check edge manifest
         id: edge
         run: .ci/scripts/release/check-edge-manifest.sh
@@ -71,9 +62,9 @@ jobs:
         if: steps.edge.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
         run: .ci/scripts/release/assert-edge-tag-exists.sh "${{ steps.edge.outputs.version }}"
 
       - name: Check stable manifest
@@ -114,10 +105,10 @@ jobs:
       - name: Promote R2 artifacts (CLI, Repos)
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: auto
-          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
           EDGE_VERSION: ${{ steps.edge.outputs.version }}

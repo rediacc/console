@@ -68,13 +68,6 @@ jobs:
           secrets: |
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
-
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: ACCOUNT_ED25519_PUBLIC_KEY
-          GH_ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:

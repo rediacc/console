@@ -112,18 +112,6 @@ jobs:
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
-
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: RELEASE_GPG_PASSPHRASE RELEASE_GPG_PRIVATE_KEY CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY
-          SHADOW_EXPECTED_MISMATCH: RELEASE_GPG_PRIVATE_KEY
-          GH_RELEASE_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
-          GH_RELEASE_GPG_PRIVATE_KEY: ${{ secrets.RELEASE_GPG_PRIVATE_KEY }}
-          GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
-          GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
-          GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - name: Download CLI executables
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
@@ -166,8 +154,8 @@ jobs:
         run: .ci/scripts/build/build-linux-packages.sh
         env:
           NEXT_VERSION: ${{ inputs.next_version }}
-          RELEASE_GPG_PRIVATE_KEY: ${{ secrets.RELEASE_GPG_PRIVATE_KEY }}
-          RELEASE_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+          RELEASE_GPG_PRIVATE_KEY: ${{ env.BWS_RELEASE_GPG_PRIVATE_KEY }}
+          RELEASE_GPG_PASSPHRASE: ${{ env.BWS_RELEASE_GPG_PASSPHRASE }}
 
       # -----------------------------------------------------------------------
       # Step 3: Generate CLI manifest - ONCE
@@ -214,8 +202,8 @@ jobs:
             --channel "${{ inputs.channel }}"
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_GPG_PRIVATE_KEY: ${{ secrets.RELEASE_GPG_PRIVATE_KEY }}
-          RELEASE_GPG_PASSPHRASE: ${{ secrets.RELEASE_GPG_PASSPHRASE }}
+          RELEASE_GPG_PRIVATE_KEY: ${{ env.BWS_RELEASE_GPG_PRIVATE_KEY }}
+          RELEASE_GPG_PASSPHRASE: ${{ env.BWS_RELEASE_GPG_PASSPHRASE }}
 
       # -----------------------------------------------------------------------
       # Step 5: Stage Docker images (validates existence + retag to channel)
@@ -327,17 +315,17 @@ jobs:
             --channel "${{ inputs.channel }}"
         env:
           SKIP_RELEASE: ${{ inputs.skip_release }}
-          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
-          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
 
       - name: Upload repos to R2 channel
         if: inputs.channel != ''
         env:
           SKIP_RELEASE: ${{ inputs.skip_release }}
-          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
-          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
           CHANNEL: ${{ inputs.channel }}
@@ -356,9 +344,9 @@ jobs:
         # that are behaving correctly.
         if: (inputs.channel == 'stable' || inputs.channel == 'edge') && inputs.skip_release != 'true'
         env:
-          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
-          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
         run: .ci/scripts/test/assert-r2-sentinel.sh "${{ inputs.channel }}" "${{ inputs.next_version }}"
 
       # -----------------------------------------------------------------------

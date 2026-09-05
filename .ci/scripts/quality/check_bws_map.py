@@ -130,14 +130,31 @@ MAX_MAP_AGE_DAYS = 45
 # small fixture tree. Lowering them against the REAL tree would be suppressing a
 # finding, which is why the defaults live here and the test sets them explicitly.
 MIN_MAP_ENTRIES = int(os.environ.get("BWS_MIN_MAP_ENTRIES", "30"))
+# 19 since 2026-09-05, down from 20: watchdog-monitor.yml's fetch was REMOVED on purpose.
+# It existed solely to feed the shadow comparator, and that comparator is gone -- the org
+# secrets it compared against were deleted, so every comparison read "EMPTY (github=unset)
+# -- nothing was compared" and took all of CI down with it. That job's own read stays on
+# GitHub deliberately (CLAUDE_CODE_OAUTH_TOKEN is repo-scoped and survives), so nothing
+# consumed the fetch any more.
+#
 # 20 since 2026-09-04, down from 22: the breakpoint session job's fetch was REMOVED on
 # purpose (it exported four credentials into a job that hands a human a shell), and the
 # frozen template counts as a second file. A floor that is lowered to match a deliberate
 # removal is honest; one lowered to match a finding is not, which is why the reason is
 # written here rather than in a commit nobody re-reads.
-MIN_CALLERS = int(os.environ.get("BWS_MIN_CALLERS", "20"))  # files, not jobs; see the docstring
+MIN_CALLERS = int(os.environ.get("BWS_MIN_CALLERS", "19"))  # files, not jobs; see the docstring
 
-BWS_READ_RE = re.compile(r"\$\{\{\s*env\.(BWS_[A-Z0-9_]+)\s*\}\}")
+# A BARE REFERENCE, not a whole expression. This used to demand the reference BE the
+# entire `${{ ... }}`, so `env.BWS_X` inside a compound expression was INVISIBLE --
+# and a multi-line ternary is exactly how the deploy workflows pick between the live
+# and sandbox Stripe keys:
+#     STRIPE_SECRET_KEY: ${{ inputs.target == 'stable'
+#       && env.BWS_STRIPE_SECRET_KEY
+#       || env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
+# Four live reads read as DEAD FETCHES under the old pattern, and assertion 13
+# inherited the same blind spot: it could not check the ordering of a read it could
+# not see. Matching the reference itself is both simpler and correct.
+BWS_READ_RE = re.compile(r"\benv\.(BWS_[A-Z0-9_]+)")
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -1240,6 +1257,22 @@ jobs:
             "read order: a fetch in ANOTHER job does not supply this one",
             [*good[:7], "  k:", "    steps:", *good[7:]],
             "fetches it",
+        ),
+        # The compound-expression case. Under the old whole-expression pattern this
+        # read was invisible, so the fetch below it raised nothing at all -- the
+        # check passed by not looking.
+        (
+            "read order: a read inside a MULTI-LINE ternary is seen",
+            [
+                *good[:3],
+                "      - uses: ./.github/actions/x",
+                "        env:",
+                "          K: ${{ inputs.t == 'stable'",
+                "            && env.BWS_APP_PRIVATE_KEY",
+                "            || '' }}",
+                *good[3:7],
+            ],
+            "AFTER the read",
         ),
     ]
     for label, doc, needle in r13:

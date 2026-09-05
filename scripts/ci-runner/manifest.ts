@@ -5627,19 +5627,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    id: 'gate-test:shadow-compare',
-    run: '.ci/scripts/test/gates/test-shadow-compare.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-shadow-compare.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
     id: 'gate-test:bws-map',
     run: '.ci/scripts/test/gates/test-bws-map.sh',
     gate: true,

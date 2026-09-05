@@ -53,13 +53,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
-
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: DOCKERHUB_USERNAME
-          GH_DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -83,7 +76,7 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
 
       - name: Enable KVM
@@ -267,7 +260,7 @@ jobs:
           SSH_KEY: ${{ runner.temp }}/renet/staging/.ssh/id_rsa
           WORKER_IP: ${{ steps.status.outputs.worker_ip }}
           WORKER2_IP: ${{ steps.status.outputs.worker2_ip }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_USERNAME: ${{ env.BWS_DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ env.BWS_DOCKERHUB_TOKEN }}
         run: |
           AUTH=$(printf '%s:%s' "$DOCKERHUB_USERNAME" "$DOCKERHUB_TOKEN" | base64 -w0)

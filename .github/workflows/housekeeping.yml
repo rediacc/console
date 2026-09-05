@@ -57,16 +57,6 @@ jobs:
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
-
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY
-          GH_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
-          GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -89,9 +79,9 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           # IN_FLIGHT_VERSION intentionally unset: nightly never overlaps a
           # release, so Phase 8d's sentinel+tag bijection is the correct guard.
           # The ${IN_FLIGHT_VERSION:-} default in the script no-ops when absent.
@@ -139,13 +129,6 @@ jobs:
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
             STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
-
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: STRIPE_SANDBOX_SECRET_KEY
-          GH_STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
@@ -175,7 +158,7 @@ jobs:
         run: npx tsx scripts/cleanup-orphans.ts
         working-directory: private/account
         env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           GH_TOKEN: ${{ github.token }}
@@ -187,4 +170,4 @@ jobs:
             npx tsx private/account/scripts/verify-webhook.ts --sandbox --expected-url "https://${domain}/account/api/v1/webhooks/stripe"
           done
         env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}

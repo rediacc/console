@@ -45,13 +45,6 @@ jobs:
             STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
 
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: STRIPE_SANDBOX_SECRET_KEY
-          GH_STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
-
       # Mint a GitHub App token scoped to console + account. The composite's
       # last step is `git config --global
       # url."https://x-access-token:$TOKEN@github.com/".insteadOf
@@ -111,7 +104,7 @@ jobs:
         run: npx tsx scripts/cleanup-sandbox.ts --pr-number ${{ github.event.pull_request.number }}
         working-directory: private/account
         env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
 
       # Delete the per-PR Turnstile widget minted during deploy. The script
       # itself treats a missing widget (already deleted by the housekeeping

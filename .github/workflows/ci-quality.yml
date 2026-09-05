@@ -1692,15 +1692,6 @@ jobs:
             CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID
             CLOUDFLARE_R2_MEDIA_ENDPOINT > BWS_CLOUDFLARE_R2_MEDIA_ENDPOINT
             CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY
-
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID CLOUDFLARE_R2_MEDIA_ENDPOINT CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY
-          GH_CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID }}
-          GH_CLOUDFLARE_R2_MEDIA_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_MEDIA_ENDPOINT }}
-          GH_CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -1746,9 +1737,9 @@ jobs:
       - name: Restore tutorial-narration audio cache from R2
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:
-          CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID }}
-          CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY }}
-          CLOUDFLARE_R2_MEDIA_ENDPOINT: ${{ secrets.CLOUDFLARE_R2_MEDIA_ENDPOINT }}
+          CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_MEDIA_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_MEDIA_ENDPOINT }}
         run: .ci/scripts/deploy/sync-media-from-r2.sh --audio-only
 
       - name: i18n

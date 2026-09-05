@@ -240,16 +240,6 @@ jobs:
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             STRIPE_SECRET_KEY > BWS_STRIPE_SECRET_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
-
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY STRIPE_SECRET_KEY
-          GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          GH_STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_EU }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         if: needs.init.outputs.workers_only != 'true'
         id: app-token
@@ -317,7 +307,7 @@ jobs:
         run: npx tsx scripts/stripe-sync.ts
         working-directory: private/account
         env:
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_EU }}
+          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}
 
       - name: Verify Stripe webhook endpoints (per-region)
         if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
@@ -327,7 +317,7 @@ jobs:
             npx tsx private/account/scripts/verify-webhook.ts --expected-url "https://${domain}/account/api/v1/webhooks/stripe"
           done
         env:
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_EU }}
+          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}
 
 
       # -----------------------------------------------------------------------
@@ -366,9 +356,9 @@ jobs:
       - name: Promote R2 artifacts to stable (hotfix)
         if: needs.init.outputs.workers_only != 'true' && inputs.publish_stable == true
         env:
-          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
         run: .ci/scripts/deploy/promote-r2-to-stable-hotfix.sh
@@ -654,15 +644,6 @@ jobs:
             CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
-
-      - name: Compare shadow secrets against GitHub
-        shell: bash
-        env:
-          SHADOW_NAMES: CLOUDFLARE_R2_ACCESS_KEY_ID CLOUDFLARE_R2_ENDPOINT CLOUDFLARE_R2_SECRET_ACCESS_KEY
-          GH_CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          GH_CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          GH_CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        run: .ci/scripts/ci/shadow-compare.sh
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -720,9 +701,9 @@ jobs:
       # value already in the file. Idempotent on retry/no-op runs.
       - name: Advance release-contract-floor ratchet
         env:
-          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
           GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
         run: .ci/scripts/release/advance-contract-floor.sh
