@@ -217,13 +217,17 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:i18n',
     run: 'npm run check:i18n',
     slow: true, // 76.3s measured
-    gate: true,
-    // check-translation-key-usage.control.ts writes __control_probe__.tsx INTO
-    // packages/www/src for the length of its run. knip (lint:unused) scanning at
-    // the same moment reported it as an unused file (seen 2026-09-02 in a full
-    // run). knip refuses an ignore entry for a file that is not on disk, so the
-    // two are kept apart here instead.
-    mutex: ['www-src-probe'],
+    // gate:false since 2026-09-06. Its 18 constituents are scheduled individually below;
+    // NINE of them were already separate gates and therefore ran TWICE per full local run.
+    // The body and `leaves` stay byte-identical so the workflow's 'i18n' step still
+    // resolves to every child's leaf (R3, check-ci-parity.ts), CI keeps one step, and
+    // package.json's check:i18n key needs no edit at all.
+    // ACCEPTANCE IS A SET, not a timing: the union of the children's leaves equals this
+    // entry's 28 declared leaves exactly. Shrink the children and that equality breaks.
+    // `mutex: ['www-src-probe']` MOVED to check:i18n:key-usage. A mutex on an entry the
+    // scheduler never runs protects nothing, and it is that child, not this aggregate,
+    // that writes packages/www/src/__control_probe__.tsx while knip scans.
+    gate: false,
     leaves: [
       'scripts/check-translation-hashes.ts',
       'scripts/check-translation-completeness.ts',
@@ -260,6 +264,141 @@ export const GATES: readonly GateSpec[] = [
       job: 'quality-i18n',
       step: 'i18n',
     },
+  },
+  {
+    id: 'check:i18n:key-usage',
+    run: 'npm run check:i18n:key-usage',
+    gate: true,
+    // check-translation-key-usage.control.ts writes __control_probe__.tsx INTO
+    // packages/www/src for the length of its run. knip (lint:unused) scanning at
+    // the same moment reported it as an unused file (seen 2026-09-02 in a full
+    // run). knip refuses an ignore entry for a file that is not on disk, so the
+    // two are kept apart here instead. The mutex moved down from check:i18n when
+    // that entry became a gate:false aggregate: it is this child, not the
+    // aggregate, that plants the probe.
+    mutex: ['www-src-probe'],
+    leaves: [
+      'scripts/__tests__/check-translation-key-usage.control.ts',
+      'scripts/check-translation-key-usage.ts',
+    ],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
+  },
+  {
+    id: 'check:ci-i18n-hashes',
+    run: 'npm run check:ci-i18n-hashes',
+    gate: true,
+    leaves: ['scripts/check-translation-hashes.ts'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-completeness',
+    run: 'npm run check:ci-i18n-completeness',
+    gate: true,
+    leaves: ['scripts/check-translation-completeness.ts'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-docs-render-parity',
+    run: 'npm run check:ci-i18n-docs-render-parity',
+    gate: true,
+    leaves: ['scripts/__tests__/check-docs-render-parity.control.ts'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-page-locale-imports',
+    run: 'npm run check:ci-i18n-page-locale-imports',
+    gate: true,
+    leaves: ['scripts/__tests__/check-page-locale-imports.control.ts'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-docs-inline',
+    run: 'npm run check:ci-i18n-docs-inline',
+    gate: true,
+    leaves: ['scripts/check-docs-inline-translations.ts'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-docs-untranslated',
+    run: 'npm run check:ci-i18n-docs-untranslated',
+    gate: true,
+    leaves: ['scripts/check-docs-untranslated-text.ts'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-account-email-templates',
+    run: 'npm run check:ci-i18n-account-email-templates',
+    gate: true,
+    leaves: ['scripts/check-account-email-templates.ts'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-hardcoded-strings',
+    run: 'npm run check:ci-i18n-hardcoded-strings',
+    gate: true,
+    leaves: ['scripts/check-component-hardcoded-strings.ts'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-naturalization',
+    run: 'npm run check:ci-i18n-naturalization',
+    gate: true,
+    leaves: ['scripts/check-i18n-naturalization.ts'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-www-cli-docs',
+    run: 'npm run check:ci-i18n-www-cli-docs',
+    gate: true,
+    leaves: ['packages/www/scripts/validate-cli-docs.js'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-www-docs-cli-usage',
+    run: 'npm run check:ci-i18n-www-docs-cli-usage',
+    gate: true,
+    leaves: ['packages/www/scripts/validate-docs-cli-usage.js'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-www-landing-cli-usage',
+    run: 'npm run check:ci-i18n-www-landing-cli-usage',
+    gate: true,
+    leaves: ['packages/www/scripts/validate-landing-cli-usage.js'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-www-translation-freshness',
+    run: 'npm run check:ci-i18n-www-translation-freshness',
+    gate: true,
+    leaves: ['packages/www/scripts/validate-translation-freshness.js'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-www-content',
+    run: 'npm run check:ci-i18n-www-content',
+    gate: true,
+    leaves: ['packages/www/scripts/validate-content.js'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-www-content-accuracy',
+    run: 'npm run check:ci-i18n-www-content-accuracy',
+    gate: true,
+    leaves: ['packages/www/scripts/validate-content-accuracy.js'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+  },
+  {
+    id: 'check:ci-i18n-www-comparison-refs',
+    run: 'npm run check:ci-i18n-www-comparison-refs',
+    gate: true,
+    leaves: ['packages/www/scripts/validate-comparison-refs.js'],
+    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
   },
   {
     id: 'check:ci-i18n-cli-key-usage',
@@ -1520,6 +1659,43 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // THE TWO EMITTERS, registered so they are not hand-written keys.
+    //
+    // check:ci-package-key-budget was RED at HEAD because `gen:docs` and
+    // `gen:gates-lock` were added to package.json (W11 P0 and W2.1) without
+    // becoming manifest ids, so both counted against the hand-written budget of
+    // 49. The gate refuses a baseline that GROWS, and it is right to: a reseed
+    // that drains 30 and adds 1 still looks like progress in the totals, which is
+    // how a fresh violation gets enshrined as permanent debt. The fix it asks for
+    // is to change the VALUE, and the honest value is that these two belong to
+    // the registry rather than beside it.
+    //
+    // gate:false because they WRITE. Nothing `needs` them, so the scheduler never
+    // runs them, which is the point: a sweep must never regenerate the artifact it
+    // is about to judge. Their verifying twins (check:ci-gates-lock above, and the
+    // docs parity gate) are the entries that carry `gate: true`.
+    id: 'gen:gates-lock',
+    run: 'npm run gen:gates-lock',
+    gate: false,
+    leaves: ['scripts/gen-gates-lock.ts'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: an emitter, not a validation. CI verifies the committed lock through check:ci-gates-lock, which runs the same file in its default checking mode; a step pointer here would claim CI regenerates the artifact it is meant to be holding still.',
+    },
+  },
+  {
+    id: 'gen:docs',
+    run: 'npm run gen:docs',
+    gate: false,
+    leaves: ['scripts/gen-docs.ts'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: an emitter, not a validation. Same shape as gen:gates-lock above: CI checks the generated doc regions rather than rewriting them, so no CI step invokes this script.',
+    },
+  },
+  {
     id: 'check:ci-syncpack-sources',
     run: 'npm run check:ci-syncpack-sources',
     gate: true,
@@ -2403,12 +2579,28 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-i18n-cross-locale',
     run: 'npm run check:ci-i18n-cross-locale',
-    gate: true,
+    // gate:false since 2026-09-06. Its constituents (check:ci-i18n-cross-locale-core,
+    // check:ci-locale-de-contamination and check:ci-locale-config-divergence) are scheduled
+    // individually below; scheduling this as well ran the latter two TWICE per full local
+    // run. Body and `leaves` unchanged so the step still resolves to every child's leaves.
+    gate: false,
     leaves: [
       'scripts/check-i18n-cross-locale.ts',
       'scripts/check-locale-de-contamination.ts',
       'scripts/check-locale-config-divergence.ts',
     ],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n cross-locale',
+    },
+  },
+  {
+    id: 'check:ci-i18n-cross-locale-core',
+    run: 'npm run check:ci-i18n-cross-locale-core',
+    gate: true,
+    leaves: ['scripts/check-i18n-cross-locale.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2993,9 +3185,28 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-seo',
     run: 'npm run check:ci-seo',
     slow: true, // needs build:www (131.9s); the runner demoted it anyway
-    gate: true,
+    // gate:false since 2026-09-06. Its two constituents (check:ci-seo-core and
+    // check:ci-client-bundle-budget) are scheduled individually below; scheduling this
+    // as well ran check-client-bundle-budget TWICE per full local run. The body and
+    // `leaves` stay byte-identical so the 'SEO' step still resolves to both children's
+    // leaves (R3, check-ci-parity.ts) and CI keeps one step.
+    gate: false,
     needs: ['build:www'],
     leaves: ['scripts/check-seo.ts', 'scripts/check-client-bundle-budget.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-www-build',
+      step: 'SEO',
+    },
+  },
+  {
+    id: 'check:ci-seo-core',
+    run: 'npm run check:ci-seo-core',
+    slow: true, // needs build:www; the closure rule (check-gate-manifest.ts) forces it
+    gate: true,
+    needs: ['build:www'],
+    leaves: ['scripts/check-seo.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3125,9 +3336,27 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-redirects',
     run: 'npm run check:ci-redirects',
     slow: true, // needs build:www (131.9s); the runner demoted it anyway
-    gate: true,
+    // gate:false since 2026-09-06. Its two constituents (check:ci-redirect-integrity and
+    // check:ci-anchor-integrity) are scheduled individually below; scheduling this as well
+    // ran check-anchor-integrity TWICE per full local run. Body and `leaves` unchanged so
+    // the 'Redirects' step still resolves to both children's leaves and CI keeps one step.
+    gate: false,
     needs: ['build:www'],
     leaves: ['scripts/check-redirect-integrity.ts', 'scripts/check-anchor-integrity.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-www-build',
+      step: 'Redirects',
+    },
+  },
+  {
+    id: 'check:ci-redirect-integrity',
+    run: 'npm run check:ci-redirect-integrity',
+    slow: true, // needs build:www; the closure rule forces it
+    gate: true,
+    needs: ['build:www'],
+    leaves: ['scripts/check-redirect-integrity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

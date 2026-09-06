@@ -168,10 +168,7 @@
     "id": "check:i18n",
     "run": "npm run check:i18n",
     "slow": true,
-    "gate": true,
-    "mutex": [
-      "www-src-probe"
-    ],
+    "gate": false,
     "leaves": [
       "scripts/check-translation-hashes.ts",
       "scripts/check-translation-completeness.ts",
@@ -201,6 +198,248 @@
       "packages/www/scripts/check-client-i18n-freshness.ts",
       "scripts/check-locale-currency-integrity.ts",
       "scripts/__tests__/check-locale-currency-integrity.control.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:i18n:key-usage",
+    "run": "npm run check:i18n:key-usage",
+    "gate": true,
+    "mutex": [
+      "www-src-probe"
+    ],
+    "leaves": [
+      "scripts/__tests__/check-translation-key-usage.control.ts",
+      "scripts/check-translation-key-usage.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-hashes",
+    "run": "npm run check:ci-i18n-hashes",
+    "gate": true,
+    "leaves": [
+      "scripts/check-translation-hashes.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-completeness",
+    "run": "npm run check:ci-i18n-completeness",
+    "gate": true,
+    "leaves": [
+      "scripts/check-translation-completeness.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-docs-render-parity",
+    "run": "npm run check:ci-i18n-docs-render-parity",
+    "gate": true,
+    "leaves": [
+      "scripts/__tests__/check-docs-render-parity.control.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-page-locale-imports",
+    "run": "npm run check:ci-i18n-page-locale-imports",
+    "gate": true,
+    "leaves": [
+      "scripts/__tests__/check-page-locale-imports.control.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-docs-inline",
+    "run": "npm run check:ci-i18n-docs-inline",
+    "gate": true,
+    "leaves": [
+      "scripts/check-docs-inline-translations.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-docs-untranslated",
+    "run": "npm run check:ci-i18n-docs-untranslated",
+    "gate": true,
+    "leaves": [
+      "scripts/check-docs-untranslated-text.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-account-email-templates",
+    "run": "npm run check:ci-i18n-account-email-templates",
+    "gate": true,
+    "leaves": [
+      "scripts/check-account-email-templates.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-hardcoded-strings",
+    "run": "npm run check:ci-i18n-hardcoded-strings",
+    "gate": true,
+    "leaves": [
+      "scripts/check-component-hardcoded-strings.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-naturalization",
+    "run": "npm run check:ci-i18n-naturalization",
+    "gate": true,
+    "leaves": [
+      "scripts/check-i18n-naturalization.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-cli-docs",
+    "run": "npm run check:ci-i18n-www-cli-docs",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-cli-docs.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-docs-cli-usage",
+    "run": "npm run check:ci-i18n-www-docs-cli-usage",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-docs-cli-usage.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-landing-cli-usage",
+    "run": "npm run check:ci-i18n-www-landing-cli-usage",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-landing-cli-usage.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-translation-freshness",
+    "run": "npm run check:ci-i18n-www-translation-freshness",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-translation-freshness.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-content",
+    "run": "npm run check:ci-i18n-www-content",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-content.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-content-accuracy",
+    "run": "npm run check:ci-i18n-www-content-accuracy",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-content-accuracy.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-comparison-refs",
+    "run": "npm run check:ci-i18n-www-comparison-refs",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-comparison-refs.js"
     ],
     "ci": {
       "kind": "step",
@@ -1459,6 +1698,30 @@
     }
   },
   {
+    "id": "gen:gates-lock",
+    "run": "npm run gen:gates-lock",
+    "gate": false,
+    "leaves": [
+      "scripts/gen-gates-lock.ts"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: an emitter, not a validation. CI verifies the committed lock through check:ci-gates-lock, which runs the same file in its default checking mode; a step pointer here would claim CI regenerates the artifact it is meant to be holding still."
+    }
+  },
+  {
+    "id": "gen:docs",
+    "run": "npm run gen:docs",
+    "gate": false,
+    "leaves": [
+      "scripts/gen-docs.ts"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: an emitter, not a validation. Same shape as gen:gates-lock above: CI checks the generated doc regions rather than rewriting them, so no CI step invokes this script."
+    }
+  },
+  {
     "id": "check:ci-syncpack-sources",
     "run": "npm run check:ci-syncpack-sources",
     "gate": true,
@@ -2429,11 +2692,25 @@
   {
     "id": "check:ci-i18n-cross-locale",
     "run": "npm run check:ci-i18n-cross-locale",
-    "gate": true,
+    "gate": false,
     "leaves": [
       "scripts/check-i18n-cross-locale.ts",
       "scripts/check-locale-de-contamination.ts",
       "scripts/check-locale-config-divergence.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n cross-locale"
+    }
+  },
+  {
+    "id": "check:ci-i18n-cross-locale-core",
+    "run": "npm run check:ci-i18n-cross-locale-core",
+    "gate": true,
+    "leaves": [
+      "scripts/check-i18n-cross-locale.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3066,13 +3343,31 @@
     "id": "check:ci-seo",
     "run": "npm run check:ci-seo",
     "slow": true,
-    "gate": true,
+    "gate": false,
     "needs": [
       "build:www"
     ],
     "leaves": [
       "scripts/check-seo.ts",
       "scripts/check-client-bundle-budget.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "SEO"
+    }
+  },
+  {
+    "id": "check:ci-seo-core",
+    "run": "npm run check:ci-seo-core",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/check-seo.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3216,13 +3511,31 @@
     "id": "check:ci-redirects",
     "run": "npm run check:ci-redirects",
     "slow": true,
-    "gate": true,
+    "gate": false,
     "needs": [
       "build:www"
     ],
     "leaves": [
       "scripts/check-redirect-integrity.ts",
       "scripts/check-anchor-integrity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Redirects"
+    }
+  },
+  {
+    "id": "check:ci-redirect-integrity",
+    "run": "npm run check:ci-redirect-integrity",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/check-redirect-integrity.ts"
     ],
     "ci": {
       "kind": "step",

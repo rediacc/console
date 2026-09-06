@@ -10,7 +10,6 @@
   "check:i18n:components",
   "check:i18n:docs",
   "check:i18n:hashes",
-  "check:i18n:key-usage",
   "check:i18n:untranslated",
   "ci",
   "ci:list",
