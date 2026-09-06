@@ -702,6 +702,15 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:test:tutorial-player',
     slow: true, // spins up a real astro dev server; measured ~90s+ cold
     gate: true,
+    // It boots the real www dev server and asserts on rendered DOM, so the whole astro graph
+    // is in scope: the remark plugins, the i18n catalogs, and the two workspaces www depends
+    // on. Narrowing to the content and the player component is the mistake to avoid.
+    paths: [
+      'packages/www/**',
+      'packages/shared/**',
+      'packages/locales/**',
+      'package.json',
+    ],
     leaves: ['packages/www/scripts/test-tutorial-player-release-gate.js'],
     ci: {
       kind: 'step',
@@ -1360,6 +1369,16 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-lockfile',
     slow: true, // 52.3s measured
     gate: true,
+    // `**/package.json` is not optional: the root manifest carries the `workspaces` array and
+    // every workspace manifest feeds the root lockfile's resolution, so a dependency bump
+    // with no lockfile edit is exactly what `npm ci --dry-run` exists to catch.
+    paths: [
+      '**/package-lock.json',
+      '**/package.json',
+      'private/account',
+      '.ci/scripts/quality/check-lockfile.sh',
+      '.ci/scripts/lib/common.sh',
+    ],
     leaves: ['.ci/scripts/quality/check-lockfile.sh'],
     ci: {
       kind: 'step',
@@ -1429,6 +1448,12 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-hook-worklist-suite',
     slow: true, // 460.3s measured
     gate: true,
+    // One glob covers the leaf, every wl_*.py it imports, worklist-cases/** and _harness.sh.
+    // The harness pins every ambient path, so nothing outside this directory moves the
+    // verdict. Do NOT narrow to *.sh: the Python modules ARE the subject.
+    paths: [
+      '.claude/hooks/stop/**',
+    ],
     weight: 2,
     heavy: true,
     leaves: ['.claude/hooks/stop/test-worklist-v5.sh'],
@@ -1444,6 +1469,13 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-shell-lint',
     slow: true, // 124.0s measured
     gate: true,
+    // shellcheck.sh enumerates with git ls-files '*.sh' plus untracked. toolchain.env is the
+    // only non-.sh input: it pins SHELLCHECK_VERSION, and a different shellcheck emits
+    // different findings.
+    paths: [
+      '**/*.sh',
+      '.devcontainer/toolchain.env',
+    ],
     leaves: ['.ci/scripts/security/shellcheck.sh'],
     ci: {
       kind: 'step',
@@ -2117,6 +2149,21 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-lint-scope-coverage',
     slow: true, // 163.0s measured
     gate: true,
+    // Its corpus is every tracked js/ts file, so the five extension globs are load-bearing
+    // rather than decorative: a NEW source file under a directory no lint root reaches is
+    // exactly the failure this gate exists to catch. package.json carries the root lists it
+    // follows; eslint.config.js and biome.json carry the ignore and allowlist halves.
+    paths: [
+      '**/*.js',
+      '**/*.cjs',
+      '**/*.mjs',
+      '**/*.ts',
+      '**/*.tsx',
+      'package.json',
+      'eslint.config.js',
+      'biome.json',
+      '.ci/scripts/quality/check_lint_scope_coverage.py',
+    ],
     leaves: ['.ci/scripts/quality/check_lint_scope_coverage.py'],
     ci: {
       kind: 'step',
@@ -2874,6 +2921,22 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-account-portal',
     slow: true, // 53.7s measured
     gate: true,
+    // The non-obvious half is the packages/www/src/data/** block. Phase 5 runs
+    // build:account-onboarding, which reads account-onboarding.json, the storyboards and the
+    // transcripts, and a missing transcript is a hard failure. A TRANSCRIPT EDIT IN WWW CAN
+    // RED THIS GATE with no change anywhere near .ci/ or private/. Phase 4's biome pass only
+    // log_warns, so biome.json is deliberately NOT here.
+    paths: [
+      'private/account',
+      '.ci/scripts/quality/check-account-portal.sh',
+      '.ci/scripts/lib/common.sh',
+      'packages/www/scripts/build-account-onboarding.ts',
+      'packages/www/src/data/account-onboarding.json',
+      'packages/www/src/data/tutorial-storyboard/**',
+      'packages/www/src/data/tutorial-transcripts/**',
+      'packages/locales/**',
+      'package.json',
+    ],
     heavy: true,
     leaves: ['.ci/scripts/quality/check-account-portal.sh'],
     ci: {
@@ -2990,6 +3053,15 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-renet',
     run: 'npm run check:ci-renet',
     gate: true,
+    // The BARE gitlink, not `private/renet/**`. `git ls-files private/` returns four bare
+    // gitlinks with no files underneath, so a /** form translates to a regex matching
+    // nothing, and a glob that matches nothing can only exclude. A submodule content change
+    // reaches this repository's diff only as a pointer bump on that path.
+    paths: [
+      'private/renet',
+      '.ci/scripts/private/run-renet.sh',
+      '.ci/scripts/lib/common.sh',
+    ],
     // 40.4s measured 2026-08-27, and only now: it used to die at exit 127 in
     // format.sh (goimports installed to $(go env GOPATH)/bin, which was on no
     // PATH) about a second in, so its old "fast" tier was the cost of crashing
@@ -5163,6 +5235,15 @@ export const GATES: readonly GateSpec[] = [
     run: '.ci/scripts/test/gates/test-gate-anti-vacuity.sh',
     slow: true, // 72.0s measured
     gate: true,
+    // Its fixture is built by copying exactly these four trees, and its registry names
+    // validators inside them. Broad, but it excludes packages/**, docs/**, .claude/** and
+    // .github/**, which is where most changes land.
+    paths: [
+      'scripts/**',
+      '.ci/scripts/**',
+      '.ci/config/**',
+      '.ci/rediacc_ci/**',
+    ],
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-gate-anti-vacuity.sh'],
     ci: {

@@ -766,6 +766,12 @@
     "run": "npm run check:test:tutorial-player",
     "slow": true,
     "gate": true,
+    "paths": [
+      "packages/www/**",
+      "packages/shared/**",
+      "packages/locales/**",
+      "package.json"
+    ],
     "leaves": [
       "packages/www/scripts/test-tutorial-player-release-gate.js"
     ],
@@ -1404,6 +1410,13 @@
     "run": "npm run check:ci-lockfile",
     "slow": true,
     "gate": true,
+    "paths": [
+      "**/package-lock.json",
+      "**/package.json",
+      "private/account",
+      ".ci/scripts/quality/check-lockfile.sh",
+      ".ci/scripts/lib/common.sh"
+    ],
     "leaves": [
       ".ci/scripts/quality/check-lockfile.sh"
     ],
@@ -1477,6 +1490,9 @@
     "run": "npm run check:ci-hook-worklist-suite",
     "slow": true,
     "gate": true,
+    "paths": [
+      ".claude/hooks/stop/**"
+    ],
     "weight": 2,
     "heavy": true,
     "leaves": [
@@ -1494,6 +1510,10 @@
     "run": "npm run check:ci-shell-lint",
     "slow": true,
     "gate": true,
+    "paths": [
+      "**/*.sh",
+      ".devcontainer/toolchain.env"
+    ],
     "leaves": [
       ".ci/scripts/security/shellcheck.sh"
     ],
@@ -2171,6 +2191,17 @@
     "run": "npm run check:ci-lint-scope-coverage",
     "slow": true,
     "gate": true,
+    "paths": [
+      "**/*.js",
+      "**/*.cjs",
+      "**/*.mjs",
+      "**/*.ts",
+      "**/*.tsx",
+      "package.json",
+      "eslint.config.js",
+      "biome.json",
+      ".ci/scripts/quality/check_lint_scope_coverage.py"
+    ],
     "leaves": [
       ".ci/scripts/quality/check_lint_scope_coverage.py"
     ],
@@ -3005,6 +3036,17 @@
     "run": "npm run check:ci-account-portal",
     "slow": true,
     "gate": true,
+    "paths": [
+      "private/account",
+      ".ci/scripts/quality/check-account-portal.sh",
+      ".ci/scripts/lib/common.sh",
+      "packages/www/scripts/build-account-onboarding.ts",
+      "packages/www/src/data/account-onboarding.json",
+      "packages/www/src/data/tutorial-storyboard/**",
+      "packages/www/src/data/tutorial-transcripts/**",
+      "packages/locales/**",
+      "package.json"
+    ],
     "heavy": true,
     "leaves": [
       ".ci/scripts/quality/check-account-portal.sh"
@@ -3139,6 +3181,11 @@
     "id": "check:ci-renet",
     "run": "npm run check:ci-renet",
     "gate": true,
+    "paths": [
+      "private/renet",
+      ".ci/scripts/private/run-renet.sh",
+      ".ci/scripts/lib/common.sh"
+    ],
     "slow": true,
     "mutex": [
       "renet-bin"
@@ -5382,6 +5429,12 @@
     "run": ".ci/scripts/test/gates/test-gate-anti-vacuity.sh",
     "slow": true,
     "gate": true,
+    "paths": [
+      "scripts/**",
+      ".ci/scripts/**",
+      ".ci/config/**",
+      ".ci/rediacc_ci/**"
+    ],
     "qualityGateTest": true,
     "leaves": [
       ".ci/scripts/test/gates/test-gate-anti-vacuity.sh"
