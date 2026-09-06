@@ -58,18 +58,27 @@ const WORKFLOW = '.github/workflows/ci-quality.yml';
 const SUBJECT = /\.(py|sh|ts)$/;
 
 /**
- * ...but NOT the gate-test tree. Two reasons, and the second is the load-bearing one:
+ * ...and the gate-test tree is NO LONGER EXCLUDED. It was, for two reasons, and W2.3
+ * retired both of them on 2026-09-06. The history is kept because a future reader who
+ * finds a fixture parsing as a declaration will want to know this was tried once.
  *
- *   1. .ci/scripts/test/gates/test-gate-header.sh carries a sample header as FIXTURE
- *      data -- quoted array elements it feeds to the parser. Widening SUBJECT read it
+ *   1. WAS: .ci/scripts/test/gates/test-gate-header.sh carries sample headers as FIXTURE
+ *      data, quoted array elements it feeds to the parser, and widening SUBJECT read one
  *      as a real declaration for `step: Dockerfile npm pins',` (trailing quote included).
- *      Same class as the heredoc false positive already recorded in
- *      scripts/check-enumeration-vacuity.ts: a quoted body is data, not code.
- *   2. All 132 gate-tests share the single step 'Quality-gate unit tests'. None of them
- *      owns a step, so none of them can legitimately declare one -- see the shared-step
- *      guard in --extract. Excluding the tree states that once instead of per file.
+ *      NOW: that file carries a REAL header of its own at the top, and the parser takes
+ *      the first block, so the quoted elements below it are never reached. Re-measured:
+ *      it parses as kind battery riding "Quality-gate unit tests", which is true of it.
+ *   2. WAS: all gate-tests share the single step 'Quality-gate unit tests' and none owns
+ *      it, so none could legitimately declare one, and excluding the tree said that once
+ *      instead of per file.
+ *      NOW: `kind: battery` says exactly that, per file, in the file. All 148 declare it.
+ *
+ * WHY THIS MATTERED ENOUGH TO CHANGE. While the exclusion stood, every header in that
+ * tree was invisible to the only instrument that checks headers. Proved by planting a
+ * malformed block in one of them and watching `--dry-run` exit 0 without naming the
+ * file. 148 headers that nothing reads are 148 claims nobody verifies.
  */
-const NOT_SUBJECT = /\/test\/gates\//;
+const NOT_SUBJECT = /^$/;
 
 const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
@@ -875,13 +884,21 @@ function selftest(): number {
       return typeof next === 'string' && next.includes('# ---- gate ----');
     })()
   );
+  // THIS CONTROL WAS INVERTED ON 2026-09-06 AND THE INVERSION IS THE POINT. It used to
+  // assert that a gate-test is OUT of scope, which was true and was also the reason all
+  // 148 of their headers were unread. W2.3 gave every one of them a `kind: battery`
+  // declaration, so they are subjects now and this asserts the new truth.
   ck(
-    'a gate-test is out of scope: its header is fixture data and it owns no step',
-    NOT_SUBJECT.test('.ci/scripts/test/gates/test-gate-header.sh')
+    'a gate-test IS in scope: it declares kind battery, so its header is read like any other',
+    !NOT_SUBJECT.test('.ci/scripts/test/gates/test-gate-header.sh')
   );
   ck(
     'CONTROL: a real gate under .ci/scripts is still in scope',
     !NOT_SUBJECT.test('.ci/scripts/quality/check_environment_names.py')
+  );
+  ck(
+    'CONTROL: and a path outside the scanned roots is still not a subject',
+    !SUBJECT.test('packages/cli/src/index.tsx.snap')
   );
   ck(
     'CONTROL: a header in a file the naming convention does not cover is still bound',
@@ -1421,6 +1438,16 @@ function main(argv: string[]): void {
 
   const pkg = JSON.parse(read('package.json')) as { scripts: Record<string, string> };
   const manifest = read('scripts/ci-runner/manifest.ts');
+  // THE LOCK, not the manifest text, decides whether an id is a gate-test. `manifest.ts`
+  // is TypeScript and this file would have to re-implement a fragment of a TS parser to
+  // read `qualityGateTest` out of it, which is the exact archaeology gates.lock.json was
+  // committed to end.
+  const lock = JSON.parse(read('scripts/ci-runner/gates.lock.json')) as {
+    id: string;
+    run: string;
+    qualityGateTest?: boolean;
+  }[];
+  const lockById = new Map(lock.map((g) => [g.id, g]));
   const workflow = read(WORKFLOW);
   const caps = laneCapabilities(workflow);
 
@@ -1445,6 +1472,28 @@ function main(argv: string[]): void {
     console.error(
       '✗ VACUOUS: not one tracked gate carries a `---- gate ----` header. Either the ' +
         'parser stopped matching or the declarations were removed; refusing a verdict.'
+    );
+    process.exit(1);
+  }
+
+  // A MALFORMED HEADER REFUSES EVERY MODE, NOT JUST THE VERIFY ONE. This list was
+  // collected here and then only ever folded into `problems`, which is reached AFTER the
+  // `write` branch returns -- so `--write` and `--dry-run` both ran to completion with a
+  // voided declaration in the tree and said nothing. Found 2026-09-06 by two agents who
+  // planted `---- /gate ----` in a gate-test, watched `--dry-run` exit 0 without naming
+  // the file, and correctly concluded their headers were unread. They were half right:
+  // the tree really was out of scope, and this is the OTHER half.
+  //
+  // Refusing a `--write` matters more than refusing a report. A voided declaration is a
+  // gate this binder cannot see, so the region it would have emitted is written WITHOUT
+  // it, and `--write` owns whole regions: the gate does not become unregistered, it
+  // disappears.
+  if (malformed.length > 0) {
+    console.error(`✗ ${malformed.length} malformed \`---- gate ----\` block(s):`);
+    for (const m of malformed) console.error(`    ${m}`);
+    console.error(
+      '\n  A block that does not close is not a declaration and not an absent one either.\n' +
+        '  Fix the header before binding: a region written now would omit these gates.'
     );
     process.exit(1);
   }
@@ -1586,7 +1635,27 @@ function main(argv: string[]): void {
 
   const problems: string[] = [];
   for (const b of declared) {
-    if (pkg.scripts[b.id] === undefined) {
+    // A GATE-TEST IS REGISTERED DIFFERENTLY, AND ITS ABSENCE FROM package.json IS THE
+    // RULE RATHER THAN THE DEFECT. check-gate-id-convention.sh requires a gate-test to be
+    // registered as `gate-test:<name>` whose `run` points at the script directly, with no
+    // package.json entry at all: 148 keys that only ever restate a path would be 148 keys
+    // against the package key budget for nothing. Checking these against package.json
+    // would therefore red all 148 the moment they became subjects, for a reason that has
+    // nothing to do with their headers. The lock's `run` is what they must agree with.
+    const lockEntry = lockById.get(b.id);
+    if (lockEntry?.qualityGateTest === true) {
+      if (lockEntry.run !== b.run) {
+        problems.push(
+          `${b.file}: gates.lock.json runs "${lockEntry.run}" but its header derives "${b.run}"`
+        );
+      }
+      if (pkg.scripts[b.id] !== undefined) {
+        problems.push(
+          `${b.file}: is a gate-test, so it must have NO package.json script, but ` +
+            `'${b.id}' is registered there as "${pkg.scripts[b.id]}"`
+        );
+      }
+    } else if (pkg.scripts[b.id] === undefined) {
       problems.push(`${b.file}: declares id '${b.id}', which package.json has no script for`);
     } else if (pkg.scripts[b.id] !== b.run) {
       problems.push(
