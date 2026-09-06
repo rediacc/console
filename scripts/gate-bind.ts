@@ -1731,6 +1731,11 @@ function main(argv: string[]): void {
     }
   }
 
+  // BELT AND BRACES, AND IT CAN NO LONGER FIRE. A malformed block now refuses
+  // above, before the write branch, so `malformed` is always empty by here. The
+  // line stays because the refusal above is the load-bearing one and this is the
+  // safety net if the two are ever reordered; it is annotated rather than deleted
+  // so nobody reads it as the check that catches malformed headers. It is not.
   problems.push(...malformed);
 
   if (problems.length > 0) {
