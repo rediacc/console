@@ -54,7 +54,6 @@ exit code and stdout to match, and requires stderr to keep differing -- so the
 declaration cannot rot into an excuse for a match.
 """
 
-
 from rediacc_hooks import hookio
 
 CHAIN = "pre-bash"

@@ -206,6 +206,18 @@ WRITER_TESTS_FALLBACK=(
     # reddened gate-test:claude-hooks with a bash syntax error in a file that
     # parses clean, because a concurrent gate read a script mid-restore.
     test-generate-tag-inputs.sh
+    # Backs up the REAL CLAUDE.md and scripts/data/doc-registry.md, drives
+    # `gen-docs --write` over them, and restores with `cp "$BACKUP" "$TARGET"`
+    # (test-docs-gen.sh:55 and :98). Both files are read by other gates while it
+    # runs, so left in the pool it corrupts a concurrent reader.
+    #
+    # It was UNREGISTERED until 2026-09-06 and nothing said so, because
+    # check-pool-writer-safety.sh could not report it: its parse had gone empty
+    # against this file's post-W2.4b shape, and the anti-vacuity refusal that
+    # exists for exactly that case called a log_fail() that does not exist, so
+    # the gate exited 127 rather than refusing. Two failures had to be repaired
+    # before this one line became visible.
+    test-docs-gen.sh
 )
 
 # S: reads or copies the real .ci/scripts / scripts tree, directly or through

@@ -66,6 +66,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # BLOCKER: shared log_* helpers and get_repo_root used by every quality gate
 source "$SCRIPT_DIR/../lib/common.sh"
 
+# log_fail: log_error plus exit 1, in one call. common.sh defines log_info, log_warn,
+# log_error, log_step and log_debug, and NOT this one, so every `log_fail` below was
+# `command not found` and this gate exited 127 instead of refusing. That mattered more
+# than a missing helper usually does, because ALL THREE call sites are the anti-vacuity
+# refusals: the runner being absent, WRITER_TESTS parsing empty, and the gates directory
+# being empty. A guard that crashes is a guard that never fired, and 127 is not a verdict.
+# Found 2026-09-06 when the shape change below finally drove one of them.
+log_fail() {
+    log_error "$@"
+    exit 1
+}
+
 REPO_ROOT="$(get_repo_root)"
 cd "$REPO_ROOT"
 
@@ -259,9 +271,21 @@ fi
 # Comment lines inside the array name test files while describing them (the
 # test-generate-tag-inputs.sh entry cites two line numbers), so they are dropped
 # before the names are read.
-REGISTERED="$(sed -n '/^WRITER_TESTS=(/,/^)/p' "$RUNNER" |
+# RE-KEYED 2026-09-06, invariant 2. This read `WRITER_TESTS=(` ... `)`, and W2.4b changed
+# run-all.sh so that array is no longer a literal: it is DERIVED from the `tree:` isolation
+# declarations in scripts/ci-runner/gates.lock.json, with the hand-maintained literal list
+# surviving only as WRITER_TESTS_FALLBACK. The old pattern therefore matched the computed
+# assignment `WRITER_TESTS=($RUN_ALL_WRITERS)`, whose body holds no test names, and parsed
+# EMPTY -- which is exactly the state the refusal below exists to catch, and it could not
+# report it because log_fail did not exist.
+#
+# Both arrays are read and unioned rather than picking one, because which of them run-all.sh
+# actually uses is decided at RUN time by whether the lock declares any isolation. A gate
+# that reads only one of the two would go quiet the moment that branch flipped, which is the
+# same silent narrowing this re-key is repairing.
+REGISTERED="$(sed -n '/^WRITER_TESTS\(_FALLBACK\)\?=(/,/^)/p' "$RUNNER" |
     grep -vE '^[[:space:]]*#' |
-    grep -oE 'test-[A-Za-z0-9._-]+\.sh' || true)"
+    grep -oE 'test-[A-Za-z0-9._-]+\.sh' | LC_ALL=C sort -u || true)"
 
 if [[ -z "$REGISTERED" ]]; then
     log_fail "check-pool-writer-safety: parsed an EMPTY WRITER_TESTS out of $RUNNER; the array shape changed and this gate would pass everything"

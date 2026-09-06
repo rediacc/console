@@ -73,7 +73,7 @@ holds one. Nothing predicts expiry, nothing records a date.
 ### Part C: deleting the expiry file
 - [ ] C1. `git rm .ci/config/bws-token-expiry.json`. No CI gate reads it. Control: the grep returns zero after, and returns two hits today, so the check is not vacuous.
 - [ ] C2. Delete `warn_if_token_expiring()` and its call site. MOVE, do not delete, `_live_client_fingerprint()`: B2 needs that computation, and it is the one piece of that file binding a claim to the live token rather than to a hand-written date.
-- [ ] C3. Fix two stale citations. `08-driver-contract.md:92` is a LIVE coordination contract and is edited. `09-env-residue.md` is a dated measurement record and is APPENDED to, not rewritten: editing a historical measurement to match a later decision is how a corpus stops being evidence.
+- [ ] C3. Fix two stale citations. `docs/ci-overhaul/08-driver-contract.md:92` is a LIVE coordination contract and is edited. `09-env-residue.md` is a dated measurement record and is APPENDED to, not rewritten: editing a historical measurement to match a later decision is how a corpus stops being evidence.
 - [ ] C4. State the loss in the commit message. This box exists because honest accounting is the thing most likely to be skipped.
 
 WHAT IS LOST, HONESTLY. The file bought up to five days' notice before the sole

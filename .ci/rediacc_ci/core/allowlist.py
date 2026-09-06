@@ -471,8 +471,7 @@ def unreasoned(entries: list[Entry]) -> list[Entry]:
 def main(argv: list[str]) -> int:
     if not argv:
         print(
-            "usage: python3 -m rediacc_ci.core.allowlist "
-            "<records|pairs|verify|reason> [args]",
+            "usage: python3 -m rediacc_ci.core.allowlist <records|pairs|verify|reason> [args]",
             file=sys.stderr,
         )
         return 2

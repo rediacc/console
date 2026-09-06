@@ -71,9 +71,19 @@ four is in a file this plan touched. `check:ci-shell-lint` and `check:ci-shell-f
 both exit 0.
 
 The four remaining shapes are a separate finding and are NOT this plan's business. One of
-them (`98b21fa52e5d`) was deliberately left alone by the media workstream on the reasoning
+them was deliberately left alone by the media workstream on the reasoning
 this plan opens with: converting its single copy would take that shape from 3 to 2 and
 silence the gate with the other two unfixed.
+
+That shape's fingerprint is deliberately NOT reproduced here. check-shape-duplication
+emits a 12-hex id, and check:ci-plan-citations judges any 9-to-40 hex token in a plan as
+a blob or commit citation and refuses it when it resolves to neither, which is the right
+rule: 37 of 71 commit-shaped tokens already in agent/ are dead pointers. An id that is
+not a git object has no business looking like one. Print the current set instead, which
+also cannot go stale the way a copied id does:
+
+    npm run check:ci-shape-duplication
+
 
 ## Record
 

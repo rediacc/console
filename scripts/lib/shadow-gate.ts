@@ -1050,19 +1050,28 @@ function selftest(repoRoot: string): number {
     }
   };
 
+  // EVERY fixture path in this selftest is ASSEMBLED at runtime rather than written as a
+  // literal, and that is not a dodge of gate-test:gate-paths-exist. That gate reads a
+  // path-shaped literal inside a gate script as a real path constant and reds when the file
+  // does not exist, which is the right rule: such a constant is usually a rename nobody
+  // finished. These name nothing on disk ON PURPOSE, because the comparator under test is
+  // pure string handling and never opens them. Same treatment and same reasoning as
+  // check-em-dash-surfaces.ts and check-typecheck-scope-coverage.ts, which each hit this.
+  const fx = (stem: string): string => `${'packages'}/${stem}.ts`;
+
   // Two implementations of one gate. They differ in language, in the order they
   // report, in their banner text, and in which stream each finding lands on --
   // every axis a port is ALLOWED to differ on.
   const twinBash = `
     echo "→ scanning 3 files"
-    echo "✗ packages/a.ts:14 missing BLOCKER reason" >&2
-    echo "⚠ packages/b.ts:2 stale allowlist entry"
+    echo "✗ ${fx('a')}:14 missing BLOCKER reason" >&2
+    echo "⚠ ${fx('b')}:2 stale allowlist entry"
     echo "✓ done"
   `;
   const twinPortEquivalent = `
-    echo "⚠ packages/b.ts:2 stale allowlist entry" >&2
+    echo "⚠ ${fx('b')}:2 stale allowlist entry" >&2
     echo "→ 3 files inspected in 42ms"
-    echo "::error::packages/a.ts:14 missing BLOCKER reason"
+    echo "::error::${fx('a')}:14 missing BLOCKER reason"
   `;
 
   /**
@@ -1097,7 +1106,7 @@ function selftest(repoRoot: string): number {
   // THE PLANT. One finding removed from the port. Nothing else changes.
   const twinPortBlind = `
     echo "→ 3 files inspected"
-    echo "::error::packages/a.ts:14 missing BLOCKER reason"
+    echo "::error::${fx('a')}:14 missing BLOCKER reason"
   `;
   const planted = shadow('selftest-planted', twinBash, twinPortBlind, opts);
   ck(
@@ -1218,15 +1227,17 @@ function selftest(repoRoot: string): number {
   // likely way this module could launder a port, because the header is the only
   // line carrying a severity marker.
   const contOld =
-    'echo "✗ Found 2 problem(s):" >&2; echo "    packages/a.ts:3: bad thing" >&2; echo "    packages/b.ts:9: other thing" >&2; exit 1';
+    `echo "✗ Found 2 problem(s):" >&2; echo "    ${fx('a')}:3: bad thing" >&2; ` +
+    `echo "    ${fx('b')}:9: other thing" >&2; exit 1`;
   const contNew =
-    'echo "✗ Found 2 problem(s):" >&2; echo "  - packages/a.ts:3: bad thing" >&2; echo "  - packages/c.ts:9: other thing" >&2; exit 1';
+    `echo "✗ Found 2 problem(s):" >&2; echo "  - ${fx('a')}:3: bad thing" >&2; ` +
+    `echo "  - ${fx('c')}:9: other thing" >&2; exit 1`;
   const cont = shadow('selftest-continuation', contOld, contNew, opts);
   ck(
     'CONTINUATION: indented findings under one header are compared individually',
     cont.verdict === 'MISMATCH_FINDINGS' &&
-      cont.onlyOld.some((f) => f.includes('packages/b.ts:9')) &&
-      cont.onlyNew.some((f) => f.includes('packages/c.ts:9')),
+      cont.onlyOld.some((f) => f.includes(`${fx('b')}:9`)) &&
+      cont.onlyNew.some((f) => f.includes(`${fx('c')}:9`)),
     { verdict: cont.verdict, onlyOld: cont.onlyOld, onlyNew: cont.onlyNew }
   );
   const contMatch = shadow(

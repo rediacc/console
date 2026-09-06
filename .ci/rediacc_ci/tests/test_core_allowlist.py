@@ -470,8 +470,7 @@ def test_the_goldens_taken_together_are_not_empty():
         "very little" % (len(with_rows), len(SLUGS))
     )
     payload_rows = sum(
-        len(_read_golden(BASH_PAIRS_DIR / ("%s.golden" % slug))[1].splitlines())
-        for slug in SLUGS
+        len(_read_golden(BASH_PAIRS_DIR / ("%s.golden" % slug))[1].splitlines()) for slug in SLUGS
     )
     assert payload_rows == sum(
         len(allowlist.pairs(allowlist.parse_text(_corpus_text(slug)))) for slug in SLUGS
@@ -580,9 +579,7 @@ def test_perturbing_one_reason_breaks_the_ts_records_golden(tmp_path):
         # nothing and the control passed while proving nothing -- caught by the
         # control itself on its first run. Scan UP from the first reasoned entry.
         first = next(e for e in allowlist.parse_text(corpus) if e.blocker)
-        index = next(
-            i for i in range(first.line - 1, -1, -1) if "BLOCKER:" in lines[i]
-        )
+        index = next(i for i in range(first.line - 1, -1, -1) if "BLOCKER:" in lines[i])
         lines[index] = lines[index].replace("BLOCKER:", "BLOCKER: PERTURBED", 1)
         target = tmp_path / ("%s.list" % slug)
         target.write_text("\n".join(lines), encoding="utf-8")
@@ -751,11 +748,14 @@ def test_bash_echo_builtin_eats_a_dash_n_reason(tmp_path):
         "bash now agrees with the other two readers on a bare '-n' reason; the "
         "echo-builtin defect has been fixed and this control should be retired"
     )
-    assert "(0 chars, minimum 30)" in _run_bash(
-        'source .ci/scripts/lib/blocker-validator.sh\n'
-        'validate_blocker_quality dashn "-n" "%s" || true\n' % REASON_FILE,
-        [],
-    )[1]
+    assert (
+        "(0 chars, minimum 30)"
+        in _run_bash(
+            "source .ci/scripts/lib/blocker-validator.sh\n"
+            'validate_blocker_quality dashn "-n" "%s" || true\n' % REASON_FILE,
+            [],
+        )[1]
+    )
 
 
 def test_entries_with_no_reason_are_reported_not_silently_accepted():
