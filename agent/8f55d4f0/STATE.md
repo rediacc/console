@@ -80,50 +80,52 @@ unstable. Wave 3 is T6 HOOKS, T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN.
 - `git log --diff-filter=A` names the RENAME. Search content history: `git log -S`.
 - Never `git checkout`, `restore`, `stash`, `clean` or `reset`. Repair forward.
 
-## SESSION 8f55d4f0 2026-09-06T21:27:06Z
+## SESSION 8f55d4f0 2026-09-06T21:34:58Z
 
-Branch `0906-1`, head `72c444a6b`. My tree is clean; two writer agents are live and
-their files will appear uncommitted under `.claude/**` and `.ci/rediacc_ci/core`.
+Branch `0906-1`, head `cb013fb51`. SETUP is writing: `.ci/scripts/lib/*.sh` are
+modified and `.ci/rediacc_ci/setup/` is new and untracked. Those are ITS files,
+not mine. HOOKS has no footprint under `.claude/` yet.
 
 ## Next action
 
-1. **#4a9b14ce, one command, and it has been one command away for hours.**
-   `npm run ci:quick` on a still tree, then `git push origin 880b1b3ee:main`.
-   One commit, fast-forward from `9295fb63c`, one file, +25 lines,
-   operator-authorised. Until it lands, rediacc/account PR #86 and every renet
-   and elite review run stay red at `discover-epics.sh: No such file or
-   directory, exit 127`. The guard `block-unverified-push` needs the tree a run
-   judged to equal the current tree, so this cannot happen until HOOKS and SETUP
-   report. `check:ci-secret-reachability` is already carried in
-   `.ci/config/carried-reds.json` with its operator-only door; do NOT carry
-   anything else, everything else was fixed.
-2. Land HOOKS (#609983e6) and SETUP (#95f675d1) when they report: re-run their
-   acceptance yourself rather than trusting the report, commit with an explicit
-   pathspec, apply any registration fragment.
-3. Then wave 3's remainder from `docs/ci-overhaul/12-remaining-work.md`: T7
-   SWEEP-CI, T8 RECORDS, T9 ENVMAN. All three were held because they collide
-   with HOOKS or SETUP: T7 with SETUP in `.ci/rediacc_ci`, T8 with HOOKS in
-   `.claude/hooks/stop/wl_planrec.py`, T9 with SETUP in `.ci/scripts/lib`.
-4. W7 P3 is the largest remaining body and is ONE box: 148 gate tests to pytest.
+1. **Land HOOKS (#609983e6) and SETUP (#95f675d1) when they report.** Re-run
+   their acceptance yourself, do not trust the report. SETUP has already
+   DEVIATED from its brief in a way to check rather than assume: it was told to
+   own `.ci/rediacc_ci/core/{platform,toolchain}.py` and has created a new
+   `.ci/rediacc_ci/setup/` package instead. Ask what moved and why before
+   committing it.
+2. **#4a9b14ce, one command once the tree is still.** `npm run ci:quick`, then
+   `git push origin 880b1b3ee:main`. One commit, fast-forward from `9295fb63c`,
+   one file, +25 lines, operator-authorised. Until it lands, rediacc/account
+   PR #86 and every renet and elite review run stay red at `discover-epics.sh:
+   No such file or directory, exit 127`. `block-unverified-push` requires the
+   tree a run judged to equal the current tree, which is why this has waited.
+   `check:ci-secret-reachability` is already carried in
+   `.ci/config/carried-reds.json` with its operator-only door. Carry NOTHING
+   else: every other red today was fixed.
+3. Then the rest of wave 3 from `docs/ci-overhaul/12-remaining-work.md`: T7
+   SWEEP-CI, T8 RECORDS, T9 ENVMAN, each held because it collides with a live
+   agent (T7 with SETUP in `.ci/rediacc_ci`, T8 with HOOKS in
+   `.claude/hooks/stop/wl_planrec.py`, T9 with SETUP in `.ci/scripts/lib`).
+4. W7 P3, the largest remaining body and ONE box: 148 gate tests to pytest.
 
-## What is true right now
+## What is true right now, measured this cycle
 
-W7 P2 COMPLETE: 77 of 77 quality gates have a Python twin, 76 of 77 shadow
-ledgers assert `equivalence holds`. The one red, `w7p2-stagingtag`, is permanent:
-three tree ids disqualified by rows recorded through a hole since closed, 12
-qualifying trees over 9 finding sets, so the claim IS evidenced and only the
-assert cannot express it. DO NOT delete rows to make it green.
+77 of 77 quality gates ported. 77 shadow pairs, 76 green. 374 files declare a
+gate header, 0 malformed, of 847 subjects; 455 lock entries. 32 of 83 plans are
+records (31 compacted, 1 parked). Plan boxes 71 of 130, which FLATTERS: the 148
+gate tests are one box.
 
-Also complete: W2.3 headers (148 of 148 gate tests, and gate-bind now READS them),
-W3 P2 (10 heavy-job proxies returning 77 rather than 0), W4 P2 (15 policy lists
-into `.ci/policy`), W12 P1.8 (32 of 32 aged plans). No bash twin deleted:
-invariant 5, deletion is W7 P5. Plan boxes 71 of 130, which FLATTERS, since the
-148 gate tests are one box.
+Every plan and registry gate green THIS cycle, measured on a contended tree
+(SETUP writing): check:ci-plan-record, -plan-boxes, -plan-citations,
+check-plan-housekeeping.sh, check:ci-gate-bind, -parity, -gate-manifest,
+-python-lint.
 
-Green as of this write: every plan gate, every registry gate,
-check:ci-python-lint, check:ci-test-gate-wiring, check:ci-doc-region-parity,
-check:ci-enumeration-vacuity, check:ci-pathspec-scope, check:ci-shell-commands,
-check:cli-docs, check:actions, and all 8467 pytest cases.
+`w7p2-stagingtag` is the one permanent red: three tree ids disqualified by rows
+recorded through a hole since closed, 12 qualifying trees over 9 finding sets, so
+the claim IS evidenced and only the assert cannot express it. DO NOT delete rows.
+
+No bash twin has been deleted anywhere. That is invariant 5; deletion is W7 P5.
 
 ## Volatile facts a fresh session would get wrong
 
@@ -131,13 +133,12 @@ A SECOND Claude session is live in this checkout: pid 2222763, session
 `a20630a0-dac7-4561-94ce-4ff5f09fc6be`. It never writes the worklist store;
 `private/homebrew-tap` is its trace.
 
-A task `.output` file reads 133 bytes for a LIVE agent while the stop hook
-reports the real size. 133 is the placeholder. Do not read it as a dead worker.
+A task `.output` file reads 133 bytes for a LIVE agent; that is the placeholder,
+not a dead worker. The stop hook reports the real size.
 
 `check-gate-manifest` judges the FLOOR of the last five samples in
 `.ci/cache/gate-durations.json`, not the average, so a contention excuse for its
 findings is wrong. `ORDER` in `.claude/rediacc_hooks/guards/*.py` counts COMMANDS
 in a chain, so inserting any hook re-keys every ORDER after it. In an interactive
 shell `grep` is a FUNCTION wrapping ugrep 7.8.4 while a script gets GNU grep
-3.12, and they disagree on `\x27`: use `/usr/bin/grep` or the number is about the
-wrapper.
+3.12: use `/usr/bin/grep` or the number describes the wrapper.
