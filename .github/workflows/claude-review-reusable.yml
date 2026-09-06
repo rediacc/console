@@ -100,11 +100,35 @@ jobs:
         with:
           runner-label: ubuntu-latest
 
+      # THE SECOND CALLER-TREE ASSUMPTION IN THIS JOB, and it broke the same three
+      # repositories the profiler step above did. `run:` executes in the CALLER's
+      # checked-out tree, exactly as `./` in a `uses:` resolves against it. This
+      # script lives in console only, so account, renet and elite all died here with
+      #   .ci/scripts/review/discover-epics.sh: No such file or directory
+      #   Process completed with exit code 127
+      # -- rediacc/account run 34040150764, which is the run that reached this step
+      # only because the profiler guard above had already been fixed. One caller-tree
+      # assumption was hiding the next.
+      #
+      # Guarding the step OFF is not available: `epics` feeds the review matrix, and
+      # an unset output makes fromJson('') fail and kills every review pass. The
+      # fallback is instead the empty case this job already defines above: `[""]`
+      # emits exactly one pass with REVIEW_EPIC empty, which is byte for byte the
+      # flat review that existed before epics. External callers therefore keep a
+      # real review; what they lose is per-epic splitting, which needs console's
+      # PR-TASK snapshot anyway.
       - name: Read the published snapshot
         id: find
         env:
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.event.workflow_run.head_branch }}
-        run: .ci/scripts/review/discover-epics.sh
+        run: |
+          set -euo pipefail
+          if [ -x .ci/scripts/review/discover-epics.sh ]; then
+            .ci/scripts/review/discover-epics.sh
+          else
+            echo "::notice::${GITHUB_REPOSITORY} does not vendor .ci/scripts/review/discover-epics.sh (it lives in rediacc/console). Falling back to one flat review pass."
+            echo 'epics=[""]' >>"$GITHUB_OUTPUT"
+          fi
 
   review:
     needs: discover-epics
