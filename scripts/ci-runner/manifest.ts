@@ -6667,6 +6667,139 @@ export const GATES: readonly GateSpec[] = [
       step: 'Quality-gate unit tests',
     },
   },
+  // W3 P2 heavy-job proxies. Each runs the SAME script a heavy CI job runs, on a
+  // reduced input, and returns 77 (pool.ts CANNOT_RUN -> `blocked`) when its
+  // toolchain is absent. Every one is `local-only`: their subjects run in ci.yml's
+  // package-tests job, ct-tests.yml, ct-update-flow.yml and ci-ops-test.yml, none
+  // of which is in paritySurface(), so a `step` pointer would fail R3 correctly.
+  //
+  // NO `paths` ON ANY OF THEM, and that is a decision rather than an omission.
+  // Each depends on the CLI bundle, the renet submodule, constants.sh,
+  // toolchain.env, the packaging scripts and the workflow it mirrors; enumerating
+  // that is the half-populated table this file's own header warns makes
+  // `--changed` drop gates silently. Always-selected is the safe direction.
+  //
+  // The `slow:` values are PROVISIONAL. They were measured on a contended tree
+  // with five writer agents live, which driver-contract section 5 makes
+  // inadmissible; only the three above 5 s carry it and the retier box owns the
+  // final values.
+  {
+    id: 'check:ci-proxy-linux-packages',
+    run: 'npm run check:ci-proxy-linux-packages',
+    gate: true,
+    leaves: ['.ci/scripts/test/proxies/proxy-linux-packages.sh'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: CI runs the un-reduced subject at .github/workflows/ci.yml job package-tests, step "Run Linux package tests", which installs each package inside eight distro containers. That job is outside paritySurface(), so this proxy is the local half and CI is the full half; a step pointer would claim CI runs the --dry-run form, which it does not.',
+    },
+  },
+  {
+    id: 'check:ci-proxy-rdc-update',
+    run: 'npm run check:ci-proxy-rdc-update',
+    gate: true,
+    leaves: ['.ci/scripts/test/proxies/proxy-rdc-update.sh'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: CI runs .ci/scripts/test/test-rdc-update.sh all in .github/workflows/ct-update-flow.yml:70 against a real SEA binary from build-cli-linux-x64. A developer checkout has only the node bundle, so the happy and rollback scenarios cannot run here; the proxy names both every run and runs all seven once RDC_BINARY is set.',
+    },
+  },
+  {
+    id: 'check:ci-proxy-license-e2e',
+    run: 'npm run check:ci-proxy-license-e2e',
+    slow: true,
+    gate: true,
+    heavy: true,
+    leaves: ['.ci/scripts/test/proxies/proxy-license-e2e.sh'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: CI runs the identical script at .github/workflows/ct-tests.yml:1848, a workflow outside paritySurface(). The subject needs passwordless sudo to install fixtures under the hardcoded /var/lib/rediacc/license, so it is cannot-run rather than failing on a host without it.',
+    },
+  },
+  {
+    id: 'check:ci-proxy-go-unit',
+    run: 'npm run check:ci-proxy-go-unit',
+    slow: true,
+    gate: true,
+    heavy: true,
+    leaves: ['.ci/scripts/test/proxies/proxy-go-unit.sh'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: CI runs the full suite under root with -race via ct-tests.yml -> .ci/scripts/private/run-renet.sh -> private/renet/.ci/scripts/test/run-tests.sh. This proxy drops root, the race detector and the account-server phase, and excludes the 8 packages whose tests need privilege, so it covers 60 of 68 and must not claim the CI step.',
+    },
+  },
+  {
+    id: 'check:ci-proxy-ops-host-check',
+    run: 'npm run check:ci-proxy-ops-host-check',
+    gate: true,
+    leaves: ['.ci/scripts/test/proxies/proxy-ops-host-check.sh'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: the CI step .github/workflows/ci-ops-test.yml:573-575 is "renet ops host check || true" and therefore cannot fail on any platform; the only real assertion on its output is Windows-only at :584-589. A step pointer would claim coverage that the trailing || true removes.',
+    },
+  },
+  {
+    id: 'check:ci-proxy-cli-manifest',
+    run: 'npm run check:ci-proxy-cli-manifest',
+    gate: true,
+    leaves: ['.ci/scripts/test/proxies/proxy-cli-manifest.sh'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: .ci/scripts/build/generate-cli-manifest.sh runs only on the release path in cd-stage.yml, which is outside paritySurface(), and had no test of any kind. The proxy drives it against a synthetic dist directory in a tmpdir, so it asserts the generator rather than a release.',
+    },
+  },
+  {
+    id: 'check:ci-proxy-docker-prepull',
+    run: 'npm run check:ci-proxy-docker-prepull',
+    slow: true,
+    gate: true,
+    leaves: ['.ci/scripts/test/proxies/proxy-docker-prepull.sh'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: .ci/scripts/infra/docker-prepull.sh runs inside docker build jobs outside paritySurface() and had no test. The proxy needs a live daemon and a reachable registry, both of which are cannot-run rather than findings on a developer machine.',
+    },
+  },
+  {
+    id: 'check:ci-proxy-ensure-nfpm',
+    run: 'npm run check:ci-proxy-ensure-nfpm',
+    gate: true,
+    leaves: ['.ci/scripts/test/proxies/proxy-ensure-nfpm.sh'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: ensure-nfpm.sh is invoked by ci.yml and cd-stage.yml as a setup step, never as a validation, and is the single site enforcing NFPM_VERSION and its sha256. The proxy runs it in a throwaway repo root so the cold-cache fetch-and-verify branch is actually reached; a step pointer would name a step that installs rather than asserts.',
+    },
+  },
+  {
+    id: 'check:test-provisioning',
+    run: 'npm run check:test-provisioning',
+    gate: true,
+    weight: 2,
+    leaves: ['.ci/scripts/test/proxies/proxy-unit-tests.sh'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: .ci/scripts/test/run-unit.sh drives this suite, but that runner is reached only from workflows outside paritySurface(); the four existing check:test-* entries cover cli, shared, www and workers and this one was simply never added. 11 tests across 2 files.',
+    },
+  },
+  {
+    id: 'check:test-e2e-unit',
+    run: 'npm run check:test-e2e-unit',
+    gate: true,
+    weight: 2,
+    leaves: ['.ci/scripts/test/proxies/proxy-unit-tests.sh'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: same hole as check:test-provisioning. .ci/scripts/test/run-unit.sh runs @rediacc/e2e-tests test:unit and nothing in the manifest did; 63 tests across 4 files. The playwright suites in that workspace are deliberately not included.',
+    },
+  },
 ];
 
 /** The root workflow every CI run enters through. */

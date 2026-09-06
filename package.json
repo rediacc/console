@@ -355,7 +355,17 @@
     "check:ci-format-scope": ".ci/scripts/quality/check_format_scope.py",
     "check:ci-workflow-env-provision": ".ci/scripts/quality/check_workflow_env_provision.py",
     "check:ci-battery-clean-tree": ".ci/scripts/quality/check-battery-clean-tree.sh",
-    "check:ci-checkout-cone": ".ci/scripts/quality/check_checkout_cone.py"
+    "check:ci-checkout-cone": ".ci/scripts/quality/check_checkout_cone.py",
+    "check:ci-proxy-linux-packages": ".ci/scripts/test/proxies/proxy-linux-packages.sh --selftest && .ci/scripts/test/proxies/proxy-linux-packages.sh",
+    "check:ci-proxy-rdc-update": ".ci/scripts/test/proxies/proxy-rdc-update.sh --selftest && .ci/scripts/test/proxies/proxy-rdc-update.sh",
+    "check:ci-proxy-license-e2e": ".ci/scripts/test/proxies/proxy-license-e2e.sh --selftest && .ci/scripts/test/proxies/proxy-license-e2e.sh",
+    "check:ci-proxy-go-unit": ".ci/scripts/test/proxies/proxy-go-unit.sh --selftest && .ci/scripts/test/proxies/proxy-go-unit.sh",
+    "check:ci-proxy-ops-host-check": ".ci/scripts/test/proxies/proxy-ops-host-check.sh --selftest && .ci/scripts/test/proxies/proxy-ops-host-check.sh",
+    "check:ci-proxy-cli-manifest": ".ci/scripts/test/proxies/proxy-cli-manifest.sh --selftest && .ci/scripts/test/proxies/proxy-cli-manifest.sh",
+    "check:ci-proxy-docker-prepull": ".ci/scripts/test/proxies/proxy-docker-prepull.sh --selftest && .ci/scripts/test/proxies/proxy-docker-prepull.sh",
+    "check:ci-proxy-ensure-nfpm": ".ci/scripts/test/proxies/proxy-ensure-nfpm.sh --selftest && .ci/scripts/test/proxies/proxy-ensure-nfpm.sh",
+    "check:test-provisioning": ".ci/scripts/test/proxies/proxy-unit-tests.sh --selftest && .ci/scripts/test/proxies/proxy-unit-tests.sh @rediacc/provisioning test",
+    "check:test-e2e-unit": ".ci/scripts/test/proxies/proxy-unit-tests.sh --selftest && .ci/scripts/test/proxies/proxy-unit-tests.sh @rediacc/e2e-tests test:unit"
   },
   "dependencies": {
     "proper-lockfile": "^4.1.2"
