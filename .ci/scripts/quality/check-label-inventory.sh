@@ -104,7 +104,13 @@ CREATE_ON_DEMAND=(
     exit 1
 }
 
-DECLARED="$(grep -E '^- name:' "$LABELS_FILE" | sed -E 's/^- name:[[:space:]]*//' | sed -E 's/^"(.*)"$/\1/' | sed -E "s/^'(.*)'$/\1/" | sed -E 's/[[:space:]]+$//')"
+# `|| true` IS LOAD-BEARING, and its absence disarmed the floor below. grep
+# exits 1 when the file declares no labels, `set -e` killed the script HERE, and
+# the MIN_DECLARED control -- whose own message reads "this reader is broken, not
+# the file" -- could never fire in the one case it was written for. Reproduced
+# 2026-09-06 with LABEL_INVENTORY_LABELS_FILE pointed at an empty file: exit 1,
+# zero bytes on both streams.
+DECLARED="$(grep -E '^- name:' "$LABELS_FILE" | sed -E 's/^- name:[[:space:]]*//' | sed -E 's/^"(.*)"$/\1/' | sed -E "s/^'(.*)'$/\1/" | sed -E 's/[[:space:]]+$//' || true)"
 DECLARED_COUNT=$(printf '%s\n' "$DECLARED" | sed '/^$/d' | wc -l)
 
 if [ "$DECLARED_COUNT" -lt "$MIN_DECLARED" ]; then

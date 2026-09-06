@@ -185,7 +185,10 @@ if [ "$DISTINCT" -lt "$MIN_DISTINCT" ]; then
     exit 1
 fi
 
-DECLARED="$(grep -E '^- name:' "$LABELS_FILE" | sed -E 's/^- name:[[:space:]]*//' | sed -E 's/[[:space:]]+$//')"
+# `|| true` IS LOAD-BEARING: grep exits 1 on a file that declares no labels and
+# `set -e` then killed this script silently, before anything could say so.
+# Reproduced 2026-09-06 with LABEL_REFS_LABELS_FILE pointed at an empty file.
+DECLARED="$(grep -E '^- name:' "$LABELS_FILE" | sed -E 's/^- name:[[:space:]]*//' | sed -E 's/[[:space:]]+$//' || true)"
 
 MISSING=0
 while IFS= read -r label; do

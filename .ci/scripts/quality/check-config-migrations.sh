@@ -42,7 +42,12 @@ if [[ ! -f "$RUNNER" ]]; then
 fi
 
 # Extract CURRENT_SCHEMA_VERSION from the runner
-CURRENT=$(grep -oE 'CURRENT_SCHEMA_VERSION = [0-9]+' "$RUNNER" | grep -oE '[0-9]+$')
+# `|| true` IS LOAD-BEARING. grep exits 1 on no match, and under `set -e` that
+# aborted the script AT THIS LINE -- so the `if [[ -z "$CURRENT" ]]` handler
+# written for exactly that case was unreachable, and the gate exited 1 having
+# printed nothing at all. Reproduced 2026-09-06 against a runner with the token
+# removed: exit 1, empty stdout, empty stderr past the log_step.
+CURRENT=$(grep -oE 'CURRENT_SCHEMA_VERSION = [0-9]+' "$RUNNER" | grep -oE '[0-9]+$' || true)
 if [[ -z "$CURRENT" ]]; then
     log_error "Could not parse CURRENT_SCHEMA_VERSION from $RUNNER"
     exit 1

@@ -56,8 +56,13 @@ require_input -f '{} not found — this gate has nothing to check, which is a fa
     "$CONSUMER" "$PROBE"
 
 # Consumer: execFileSync('keyctl', ['<verb>', ...])
+# `|| true` IS LOAD-BEARING on BOTH extractions. grep exits 1 on no match and
+# pipefail promotes that to the pipeline, so `set -e` killed the script at the
+# assignment -- taking out the two "CONTROL FAILED: ... empty set" branches
+# below, which exist for precisely the extraction-broke case. Reproduced
+# 2026-09-06 against an empty consumer file: exit 1 with no control message.
 consumer_verbs=$(grep -oE "execFileSync\('keyctl', \['[a-z]+" "$CONSUMER" |
-    grep -oE "'[a-z]+$" | tr -d "'" | sort -u)
+    grep -oE "'[a-z]+$" | tr -d "'" | sort -u || true)
 
 # Probe: bare `keyctl <verb>` invocations in the shell preflight.
 #
@@ -70,7 +75,7 @@ consumer_verbs=$(grep -oE "execFileSync\('keyctl', \['[a-z]+" "$CONSUMER" |
 # there.
 probe_verbs=$(sed 's/[[:space:]]*#.*$//' "$PROBE" |
     grep -oE '(^|[^-[:alnum:]_])keyctl [a-z]+' |
-    awk '{print $NF}' | sort -u)
+    awk '{print $NF}' | sort -u || true)
 
 # CONTROL: an empty side makes the comparison vacuous.
 if [[ -z "$consumer_verbs" ]]; then
