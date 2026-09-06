@@ -80,66 +80,63 @@ unstable. Wave 3 is T6 HOOKS, T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN.
 - `git log --diff-filter=A` names the RENAME. Search content history: `git log -S`.
 - Never `git checkout`, `restore`, `stash`, `clean` or `reset`. Repair forward.
 
-## SESSION 8f55d4f0 2026-09-06T19:38:18Z
+## SESSION 8f55d4f0 2026-09-06T20:24:46Z
 
-Branch `0906-1`, head `01f7b312e` plus one worklist commit. Nothing of mine is
-uncommitted. No writer agents are live.
+Branch `0906-1`, head `445b11e9d`. Working tree CLEAN except `private/homebrew-tap`,
+which belongs to the other session. No writer agents live.
 
 ## Next action
 
-1. **#c5870a54** Widen `enumerates()` in `scripts/check-enumeration-vacuity.ts`
-   to see the argv-array form of `git ls-files`, plus six corpus-derived floors
-   in check-dead-service-methods, check-jq-boolean-default,
-   check-merge-method-prose, check-retired-commands-in-docs,
-   check-shape-duplication and check-shell-declared-commands. Measured
-   2026-09-06: 19 tracked scripts are invisible to that predicate INCLUDING THE
-   GATE ITSELF, whose comment claims it is inside its own scope, and 6 carry no
-   guard. That adds 6 entries to a shrink-only baseline, so the regex and the
-   six floors land as ONE change. Floors corpus-derived, never typed.
-2. Correct the attribution in `.claude/hooks/pre-bash/block-pathspecless-git-commit.sh`
-   and its TRAPS entry `git-commit-takes-the-whole-index`. The staged renames
-   were MY OWN sub-agent's, not a peer session's, and the mechanism is that
-   `git mv` stages by definition: `git mv a.txt b.txt` alone leaves
-   `R100 a.txt b.txt` in the index, no `git add` anywhere. Both texts name a
-   plausible cause rather than the measured one.
-3. **#f79eb721** Re-measure `check:ci-gate-manifest`'s three `[tier]` findings
-   (gate-test:doc-region-parity, gate-test:docs-gen, check:ci-editorconfig) on a
-   still tree and set `slow:` from THAT run. The current numbers were taken with
-   up to seven writer agents live: inadmissible under invariant 13.
-4. **#4a9b14ce** `git push origin 880b1b3ee:main`. One commit, fast-forward from
-   `9295fb63c`, one file, +25 lines, operator-authorised. Until it lands,
-   rediacc/account PR #86 and every renet and elite review run stay red at
-   `discover-epics.sh: No such file or directory, exit 127`.
-
-CONDITION on 4 only: `block-unverified-push` refuses a push whose tree no gate
-run has judged. `bng44gxl5` (`npm run ci:quick`) is in flight for that, and any
-edit from 1 to 3 invalidates it, so one more run follows. A cost, not a blocker.
+1. **#4a9b14ce, and it is one command away.** When run `becekxill`
+   (`npm run ci:quick`) finishes, `git push origin 880b1b3ee:main`. One commit,
+   fast-forward from `9295fb63c`, one file, +25 lines, operator-authorised.
+   `block-unverified-push` compares the tree a gate run judged against the
+   current tree and has refused four times today because a writer or a commit
+   moved the tree mid-run; the tree is committed and still now, so this run is
+   the one that matches. TWO REDS WILL REMAIN IN IT AND NEITHER BLOCKS:
+   `check:actions` is the anonymous GitHub API rate limit (its own message says
+   so, CI sets a token) and `check:ci-secret-reachability` is red ON PURPOSE
+   under a peer session's `door:operator-only` item, needing an admin:org token.
+   If the guard still refuses after a matching run, read its message rather than
+   re-running: it prints both tree hashes.
+2. Launch wave 3 from `docs/ci-overhaul/12-remaining-work.md`, which carries a
+   ready prompt and a parallel width for each: T5 SETUP (W6 P2, held all wave
+   because port agents copy `.ci/scripts/lib` into fixtures and a concurrent
+   edit there makes a record unstable), then T6 HOOKS, T7 SWEEP-CI, T8 RECORDS,
+   T9 ENVMAN. Do NOT launch before the push: any writer moves the tree and
+   invalidates the run the push needs.
+3. W7 P3 is the largest remaining body and is ONE box: 148 gate tests to pytest.
+   Nothing has started on it.
 
 ## What is true right now
 
 W7 P2 COMPLETE: 77 of 77 quality gates have a Python twin, 76 of 77 shadow
-ledgers assert `equivalence holds`. The one red is `w7p2-stagingtag`, and it is
-permanent: three tree ids disqualified by rows recorded through a hole since
-closed, 12 qualifying trees over 9 finding sets, so the claim IS evidenced and
-only the assert cannot express it. DO NOT delete rows to make it green.
+ledgers assert `equivalence holds`. The one red is `w7p2-stagingtag`, permanent:
+three tree ids disqualified by rows recorded through a hole since closed, 12
+qualifying trees over 9 finding sets, so the claim IS evidenced and only the
+assert cannot express it. DO NOT delete rows to make it green.
 
-Also complete this wave: W2.3's headers (148 of 148 gate tests, and the binder
-now READS them, which it did not when they landed), W3 P2 (10 heavy-job proxies
-returning 77 rather than 0), W4 P2 (15 policy lists into `.ci/policy`, fifteen
-not fourteen), W12 P1.8 (32 of 32 aged plans). No bash twin was deleted: that is
-invariant 5, and deletion is W7 P5.
+Also complete: W2.3's headers (148 of 148 gate tests, and gate-bind now READS
+them, which it did not when they landed), W3 P2 (10 heavy-job proxies returning
+77 rather than 0), W4 P2 (15 policy lists into `.ci/policy`), W12 P1.8 (32 of 32
+aged plans). No bash twin deleted anywhere: that is invariant 5, and deletion is
+W7 P5. Plan boxes 71 of 130, and that count FLATTERS: 148 gate tests are one box.
 
-`docs/ci-overhaul/12-remaining-work.md` carries every remaining task with its
-ready-to-run prompt and the command that re-derives each status number. Wave 2
-still holds T5 (SETUP, W6 P2). Wave 3 is T6 HOOKS, T7 SWEEP-CI, T8 RECORDS,
-T9 ENVMAN. Wave 4 is driver-serial, no writer agents.
+All plan and registry gates green as of this write: check:ci-plan-record,
+check:ci-plan-boxes, check:ci-plan-citations, check-plan-housekeeping.sh,
+check:ci-gate-bind, check:ci-parity, check:ci-gate-manifest, check:ci-python-lint,
+check:ci-test-gate-wiring, check:ci-gates-lock.
 
 ## Volatile facts a fresh session would get wrong
 
 A SECOND Claude session is live in this checkout: pid 2222763, session
 `a20630a0-dac7-4561-94ce-4ff5f09fc6be`, started 17:43:15 today. It has never
-written to the worklist store, so nothing tracked points at it.
-`private/homebrew-tap` shows modified and is not mine.
+written to the worklist store. `private/homebrew-tap` is its trace, not mine.
+
+`check-gate-manifest` reads `.ci/cache/gate-durations.json` and judges the FLOOR
+of the last five samples, not the average. I wrongly dismissed three of its
+findings as contention; the floor is exactly the defence against that. Read the
+cache before deferring one of its findings again.
 
 In an interactive shell `grep` is a FUNCTION wrapping ugrep 7.8.4; a script gets
 GNU grep 3.12. They disagree on `\x27` and on which files are searched: 231
