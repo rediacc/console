@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Controls for ./run.sh -- the entry point every other command goes through
+# ---- end gate ----
+
 # Controls for ./run.sh -- the entry point every other command goes through.
 #
 # It had no test of its own, and two defects lived in it because of that:

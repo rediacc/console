@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Controls for .ci/scripts/lib/toolchain.sh
+# ---- end gate ----
+
 # Controls for .ci/scripts/lib/toolchain.sh.
 #
 # The hazard this file exists for: every tool prints its version differently, so

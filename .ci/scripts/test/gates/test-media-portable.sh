@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Tests for .ci/media/portable.sh -- the seams where this pipeline names a system tool that is spelled differently, or does not exist, off Linux
+# ---- end gate ----
+
 # Tests for .ci/media/portable.sh -- the seams where this pipeline names a system tool
 # that is spelled differently, or does not exist, off Linux.
 #

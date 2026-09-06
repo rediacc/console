@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node
+# slow: true
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Integration test for the FORWARD half of the e2e-coverage gate
 # (scripts/check-e2e-coverage.ts), driven through its E2E_COV_* overrides
 # against a controlled fixture tree.

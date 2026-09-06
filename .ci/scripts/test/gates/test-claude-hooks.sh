@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# slow: true
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # CI wrapper for the Claude hook harness (.claude/hooks/test-hooks.sh).
 #
 # The pre-bash hooks carry live PR policy — draft-only creation, green-gated

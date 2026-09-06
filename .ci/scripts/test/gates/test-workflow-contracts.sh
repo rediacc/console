@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: Both-ways test for the reusable-workflow contract checks in .ci/scripts/security/check-workflow-gates.sh
+# ---- end gate ----
+
 # Both-ways test for the reusable-workflow contract checks in
 # .ci/scripts/security/check-workflow-gates.sh: CHECK 2 (callers in this repo)
 # and CHECK 4 (callers in other repositories, declared in

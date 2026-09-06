@@ -2365,6 +2365,15 @@ Recorded by a session that did NOT make the fix: the failing case belongs to `8a
 and its evidence is there, not here.
 
 ## `git log --diff-filter=A` names the RENAME, not the landing, and it does it confidently
+Trap-Id: diff-filter-a-names-the-rename
+Enforced-By: JUDGMENT-ONLY
+Residue: no gate can tell a rename artifact from a landing, because both are real
+  commits touching the real path. check:ci-plan-citations resolves a hex token against
+  the object store and the misleading commit IS a real object, so it passes every check
+  the repo has; only reading the commit SUBJECT reveals it. The only defence is the
+  order of operations: search content history first with git log -S, treat --follow as
+  a cross-check, and discard any result whose subject is unrelated to the work under
+  investigation.
 
 A plan file, a gate, or any tracked file that was ever MOVED has two adds in its history:
 the real one, and the one git infers at the new path. `--diff-filter=A` returns the

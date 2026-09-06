@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: block-untagged-commit.sh must know WHICH BRANCH it is judging, including when HEAD is detached
+# ---- end gate ----
+
 # block-untagged-commit.sh must know WHICH BRANCH it is judging, including when
 # HEAD is detached.
 #

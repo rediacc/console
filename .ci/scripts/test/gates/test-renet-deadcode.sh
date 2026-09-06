@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: submodules
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Integration test for private/renet/.ci/scripts/quality/deadcode.sh
+# ---- end gate ----
+
 # Integration test for private/renet/.ci/scripts/quality/deadcode.sh.
 #
 # Sources the script (main is guarded) and exercises evaluate_deadcode with

@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Tests for .ci/media/bridge.sh -- VM provisioning and the host->bridge SSH helpers.
 #
 # THE PART THAT CAN BE TESTED WITHOUT A CLUSTER is bigger than it looks. Four of these

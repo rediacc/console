@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Drive `wl_git.py rebase-resolve` against REAL halted rebases, one per kind
+# ---- end gate ----
+
 # Drive `wl_git.py rebase-resolve` against REAL halted rebases, one per kind.
 #
 # WHY A REAL HALT AND NOT A STAGE TABLE. wl_git.py's selftest already checks the

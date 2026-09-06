@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Both-ways test for the tag-fetch block in .ci/scripts/ci/initialize.sh
+# ---- end gate ----
+
 # Both-ways test for the tag-fetch block in .ci/scripts/ci/initialize.sh.
 #
 # WHAT IT IS FOR. Tag-based versioning means the version IS the tag list. CI

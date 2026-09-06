@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Behavioural test for .ci/scripts/ci/report-nightly-status.cjs
+# ---- end gate ----
+
 # Behavioural test for .ci/scripts/ci/report-nightly-status.cjs.
 #
 # WHAT BROKE. Nothing reported the nightly's verdict anywhere. A scheduled run

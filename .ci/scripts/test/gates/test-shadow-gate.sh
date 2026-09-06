@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: The shadow comparator (scripts/lib/shadow-gate.ts) proves ports equivalent, so the question this file exists to answer is who proves the comparator
+# ---- end gate ----
+
 # The shadow comparator (scripts/lib/shadow-gate.ts) proves ports equivalent, so
 # the question this file exists to answer is who proves the comparator.
 #

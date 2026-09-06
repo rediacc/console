@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Tests for .ci/media/r2.sh -- the tutorial-narration cache in R2
+# ---- end gate ----
+
 # Tests for .ci/media/r2.sh -- the tutorial-narration cache in R2.
 #
 # THE BEHAVIOUR THAT MATTERS IS THE ABSENT-CREDENTIALS ONE. Regenerating narration costs

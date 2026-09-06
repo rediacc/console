@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Behavioural test for .ci/scripts/quality/check-label-inventory.sh.
 #
 # WHAT IT GUARDS. The gate reconciles .github/labels.yml against the labels that

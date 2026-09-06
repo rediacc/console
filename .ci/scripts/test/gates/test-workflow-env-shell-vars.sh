@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: Both-ways test for the env-shell-var rule in .ci/scripts/quality/check-workflows.sh
+# ---- end gate ----
+
 # Both-ways test for the env-shell-var rule in .ci/scripts/quality/check-workflows.sh.
 #
 # THE BUG IT GUARDS. GitHub does not expand shell syntax in an `env:` VALUE --

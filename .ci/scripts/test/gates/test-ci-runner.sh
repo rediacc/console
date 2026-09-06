@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node
+# slow: true
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Unit test for the parallel gate runner: scripts/ci-runner/{run,pool,exec,report}.ts.
 #
 # WHAT THIS GUARDS. `npm run ci` used to be a 93-step `&&` string. Replacing it

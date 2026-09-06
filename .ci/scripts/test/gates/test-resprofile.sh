@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: Drives .ci/scripts/quality/check_resprofile.py through its three states and a mutant
+# ---- end gate ----
+
 # Drives .ci/scripts/quality/check_resprofile.py through its three states and a mutant.
 #
 # WHY. The gate judges process-tree captures nobody has looked at by hand, so its

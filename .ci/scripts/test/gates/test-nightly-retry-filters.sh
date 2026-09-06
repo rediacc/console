@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: The nightly retry's FILTERS are the whole feature, so they are what this tests
+# ---- end gate ----
+
 # The nightly retry's FILTERS are the whole feature, so they are what this tests.
 #
 # Measured baseline, three days of rediacc/console runs: 589 success, 230

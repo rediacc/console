@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Controls for devbox_exec and the three usability probes.
 #
 # WHY THESE MATTER MORE THAN MOST. All three failure modes present IDENTICALLY:

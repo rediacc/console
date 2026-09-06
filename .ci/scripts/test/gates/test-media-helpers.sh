@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Tests for the phase-0 scaffolding the media gate tests are built on
+# ---- end gate ----
+
 # Tests for the phase-0 scaffolding the media gate tests are built on:
 # with_fake_bin / fake_bin_record in .ci/scripts/test/lib/test-helpers.sh, and the
 # .ci/media scan root added to .ci/scripts/quality/check-dead-case-arms.sh.

@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Integration test for scripts/check-overrides-reasons.ts
+# ---- end gate ----
+
 # Integration test for scripts/check-overrides-reasons.ts.
 #
 # Creates a temp package.json with known overrides + _overridesReasons combinations

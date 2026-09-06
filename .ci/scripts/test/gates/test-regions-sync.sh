@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: check-regions-sync.sh must actually refuse a divergence
+# ---- end gate ----
+
 # check-regions-sync.sh must actually refuse a divergence.
 #
 # WHY THE GATE EXISTS, restated so this file stands alone: `data.json` is the

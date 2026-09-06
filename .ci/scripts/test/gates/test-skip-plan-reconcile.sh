@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Unit test for the attested skip-plan reconciler, .ci/scripts/ci/skip-plan-reconcile.cjs (Wave B edge cases 25-32, section E)
+# ---- end gate ----
+
 # Unit test for the attested skip-plan reconciler,
 # .ci/scripts/ci/skip-plan-reconcile.cjs (Wave B edge cases 25-32, section E).
 #

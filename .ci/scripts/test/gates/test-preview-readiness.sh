@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Unit test for .ci/scripts/deploy/wait-for-preview-worker.sh
+# ---- end gate ----
+
 # Unit test for .ci/scripts/deploy/wait-for-preview-worker.sh.
 #
 # WHAT THIS GUARDS. The preview readiness probe gates smoke-test-preview.ts. If

@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: The scope gate's OUTPUT CONTRACT, driven end to end through the real .ci/scripts/ci/scope-shadow.sh
+# ---- end gate ----
+
 # The scope gate's OUTPUT CONTRACT, driven end to end through the real
 # .ci/scripts/ci/scope-shadow.sh.
 #

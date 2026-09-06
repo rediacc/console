@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Tests for .ci/media/pool.sh -- the render side of tutorial media
+# ---- end gate ----
+
 # Tests for .ci/media/pool.sh -- the render side of tutorial media.
 #
 # WHAT IS ACTUALLY WORTH ASSERTING HERE. Three of these four functions carry a property

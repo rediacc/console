@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: CI wrapper for the Stop-hook harnesses under .claude/hooks/stop/
+# ---- end gate ----
+
 # CI wrapper for the Stop-hook harnesses under .claude/hooks/stop/.
 #
 # WHY THIS EXISTS. Its sibling test-claude-hooks.sh wraps the PRE-BASH/PRE-EDIT

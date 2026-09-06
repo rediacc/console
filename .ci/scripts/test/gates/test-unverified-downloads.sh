@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Integration test for scripts/check-unverified-downloads.ts
+# ---- end gate ----
+
 # Integration test for scripts/check-unverified-downloads.ts.
 #
 # Both-ways, offline, fixture-driven: proves the gate passes the real tree, FIRES

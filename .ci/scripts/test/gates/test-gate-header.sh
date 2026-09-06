@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node, submodules
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # The per-gate DECLARATION parser, proved in both directions.
 #
 # WHY IT NEEDS ITS OWN GATE. scripts/lib/gate-header.ts is the single source the gate

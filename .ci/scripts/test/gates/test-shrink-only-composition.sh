@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Every shrink-only baseline in this repo must enforce shrink-only on the WRITE path
+# ---- end gate ----
+
 # Every shrink-only baseline in this repo must enforce shrink-only on the WRITE path.
 #
 # WHY THIS EXISTS. Seven gates here freeze a backlog and describe it as shrink-only. All
