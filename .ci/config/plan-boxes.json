@@ -80,6 +80,14 @@
         "da244391"
       ]
     },
+    "agent/PLAN-breakpoint-secret-shape.md": {
+      "status": "design",
+      "owner": "unowned",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
+      "done_sigs": []
+    },
     "agent/PLAN-bump-k3s-upstream-1-36-4.md": {
       "status": "draft",
       "owner": "9d92d9b6",
