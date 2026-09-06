@@ -1,24 +1,75 @@
-## SESSION d1589e0b 2026-09-06T06:25:18Z
+## SESSION d1589e0b 2026-09-06T08:05Z
 
-# NOT ON MAIN. Branch tooling-transformation-w0, 10 commits, push blocked by a peer.
+# Branch tooling-transformation-w0 is PUSHED and rebased on main. Four nightly reds fixed ON MAIN.
 
 ## Next action
-**Rebase onto origin/main and push, once the tree is clean.** `git rev-list
---left-right --count origin/main...HEAD` reads **behind 2 / ahead 10**, so HEAD is
-NOT a fast-forward; do not force. Rebase needs a clean tree and four paths belong
-to session 8f55d4f0 (lint-scope widening). Do NOT commit, stash or revert them.
-Broadcast `#f2134ed1` is with them; a waiter is running.
+**Nothing is blocked on me.** One `[?]` is open: `#ed6f6ea8` -- merge account
+PR #86 and bump console's `private/account` gitlink, which greens main's LAST
+nightly red. Its DEFAULT executes in 120 min. A trace of main CI is running in
+the background; read its verdict before claiming main is green.
 
-## READ FIRST: the branch is not main and nobody here made it
-`git branch --show-current` = **tooling-transformation-w0**, local only
-(`git ls-remote origin tooling-transformation-w0` is empty). It appeared mid-session;
-74de73ca confirms it is not theirs. **My `c6d3af163` is already ON origin/main even
-though every push I attempted was refused** — verify what is on main rather than
-inferring it from a push result. I got that wrong once.
+## What this round did
 
-Also uncommitted here: `scripts/gate-bind.ts`, 74de73ca's fix for the
-`check:ci-gate-bind` ENOENT crash I reported (it enumerated via `git ls-files` then
-read the WORKTREE). I asked them to land it on this branch (`#18064e7b`); carry it.
+**Four reds on main, from nightly run `34014201256`, three of them mine.**
+The nightly failed FOUR Quality shards and each was a separate cause:
+
+| shard | cause | fixed |
+|---|---|---|
+| Code | `check:lint`: `writeBaselineVerdict` import I orphaned in `scripts/check-secret-scope.ts` | `3defca1c0` on main |
+| Security | my `(a2)` arm's exemption liveness sweep ran on FIXTURE trees, so `check-workflow-gates.sh` exited 1 on every fixture -- reddening `test-slim-timeout.sh` and all of `test-workflow-contracts.sh` | `935724166` on main |
+| Content | `check:deps`: `eslint-plugin-regexp` 3.2.0->3.3.0, `hono` 4.13.5->4.13.7 | `97be44b94` on main |
+| Go | `private/account` `rotation-bitwarden-names.test.ts` pins AWS_SES_*_ASIA as missing; they resolve now | **PR #86, unmerged** -- `[?] #ed6f6ea8` |
+
+Plus one found on the way: `claude-review-reusable.yml` used `uses:
+./.github/actions/profiler`, and `./` resolves against the CALLER's tree, so
+every rediacc/account and rediacc/renet review run died on it. Guarded with the
+same `if: github.repository == 'rediacc/console'` the bws-secrets step twelve
+lines below already carried. `5aa8d197a` on main.
+
+## THE LESSON OF THIS ROUND: I shipped an arm with no test, and other gates paid
+Arm `(a2)` and its `DECLARED_UNUSED_OK` list shipped with **zero** controls. The
+cost did not land on the arm -- it landed on two unrelated gate tests, for a file
+their fixtures were never meant to contain. Six paired cases now cover it
+(`test-workflow-contracts.sh`, 29/29), and `REAL_WORKFLOW_TREE` is overridable
+precisely so the liveness sweep is drivable from a fixture at all.
+
+## Two things I got wrong, recorded so they are not repeated
+1. **"Blocked by a peer's uncommitted tree" was true of the REBASE and I carried
+   it to the PUSH.** A push needs no clean tree. The branch had no upstream at
+   all; `git push -u` worked immediately. Ten commits sat unpushed for hours on a
+   diagnosis that was never tested.
+2. **`check:deps --upgrade` is wider than `check:deps`.** It swept
+   `private/account` and took nodemailer 9->10 and typescript 6->7, majors CI
+   never demanded. Reverted; the submodule is byte-identical to its committed
+   state. Bump only what the gate NAMES.
+
+## Local-only red, not a repo red
+`check:actions` and `check:deps` both call the GitHub API and rate-limit
+anonymously on this machine. Run the lane as
+`GITHUB_TOKEN="$(gh auth token)" npm run ci:quick` or you will chase a red that
+does not exist in CI.
+
+## READ FIRST: the branch, and what was wrong about this section
+`git branch --show-current` = **tooling-transformation-w0**. It appeared
+mid-session; 74de73ca confirms it is not theirs. It is now **pushed and rebased
+onto main** (`git merge-base --is-ancestor origin/main HEAD` = yes), and local
+tracks `origin/tooling-transformation-w0` exactly.
+
+This section used to say the branch was "local only" and that pushes were being
+refused. **Both were wrong**, and 74de73ca said so before I proved it: my
+`c6d3af163` was on origin/main the whole time. Verify what is on the remote
+rather than inferring it from a push you think failed.
+
+Republishing after the rebase went through the mediated verb, not a raw force
+push: `.claude/hooks/stop/worklist.py --git force-push <branch> --execute`.
+`warn-remote-drift.sh` cannot tell a self-rebase from a peer push, so it blocks
+either way; before using the verb I proved by `git patch-id` that every
+remote-only commit had a local twin except `7a770d098`, which was deliberately
+skipped because its one-line change is on main as `3defca1c0`.
+
+74de73ca's `scripts/gate-bind.ts` fix (`check:ci-gate-bind` ENOENT: it
+enumerated via `git ls-files` then read the WORKTREE) is committed and carried
+as `b66befbe9`. Their peer answer `#18064e7b` is acked.
 
 ## What shipped
 **v1.3.8 and v1.3.9 released, signed.** Org-scope reads **147 -> 1**.
