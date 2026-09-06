@@ -34,7 +34,7 @@ Every step of the plan's section 8 is present:
   interpolation harvest, defect C as `VENDOR_CLASS_PREFIXES = ['plyr__']` (`scripts/check-dead-css.ts:70`)
   with its BLOCKER reason (`scripts/check-dead-css.ts:63`), each with the paired negative control the plan
   specified (`scripts/check-dead-css.ts:208`).
-- Step 7's stale prose was corrected too: `agent/PLAN-localize-cheat-sheet-rendering.md:345`
+- Step 7's stale prose was corrected too: `agent/PLAN-localize-cheat-sheet-rendering.md` (line 345 of blob f109c90887d63c381f47f648b684bcf281a24c53)
   now reads "CORRECTED 2026-08-18: `lint:css` and `lint:css-files` no longer exist".
 
 ONE NUMBER DID NOT LAND AS PREDICTED, recorded rather than smoothed over. The plan

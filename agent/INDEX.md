@@ -25,9 +25,18 @@ To read one in full:
 | agent/PLAN-backup-quota-delta-gc.md | compacted | 0 / 0 / 0 | `d7d85100f0fb4a3a11edddfa56da1c3574dc3fe4` |
 | agent/PLAN-backup-restore-target-license.md | compacted | 0 / 0 / 0 | `65118820f452478aba55580152843d0a14188c75` |
 | agent/PLAN-chunk-store-browse-engine.md | compacted | 0 / 0 / 0 | `cf248906f1dd29b1206e9331c84bfcc95eee8314` |
+| agent/PLAN-chunk-store-browse-server.md | compacted | 0 / 0 / 0 | `d35bf9ec010014690d6e890ee6aa1e16f3c5c1fd` |
+| agent/PLAN-chunkstore-restore.md | compacted | 0 / 0 / 0 | `2b5bd24cd38dbb04b69cb118dfb5164fd26b3697` |
+| agent/PLAN-cli-em-dash-lint-gate.md | compacted | 0 / 0 / 0 | `629e12f4662163b2e5b78fecaa292abf7354ae6f` |
+| agent/PLAN-cold-path.md | compacted | 0 / 0 / 0 | `94817d485e814eefcb2a0fc24d339c9a8a974c48` |
+| agent/PLAN-durable-reports-and-push-inbox.md | compacted | 0 / 0 / 0 | `a91ac53ed56cfecca406211ee76856603b192686` |
+| agent/PLAN-fix-german-translation-artifacts.md | compacted | 0 / 0 / 0 | `0ce3e39893deecb4e3e91cbfed5abdae0db3edd1` |
+| agent/PLAN-fix-in-session-rule.md | compacted | 0 / 0 / 0 | `de11703cc3f80d419da467c90f6da7494ade49e3` |
+| agent/PLAN-github-actions-workflow-run-trigger-fix.md | compacted | 0 / 0 / 0 | `5a72b31733f38380ee001b6361fbfba1b40657e5` |
 | agent/PLAN-greenlight-verify-at-read.md | compacted | 0 / 0 / 0 | `797d986ae411011b63c51b254fb17ebc0518d143` |
 | agent/PLAN-lint-css-ci-wiring.md | compacted | 0 / 0 / 0 | `e97837565b685d82e72fd542652a452a05df1e97` |
 | agent/PLAN-lint-rule-matrix-probe.md | compacted | 0 / 0 / 0 | `4470daee93042f1278a0e5a0589ff1c612a2e896` |
+| agent/PLAN-localize-cheat-sheet-rendering.md | compacted | 0 / 0 / 0 | `f109c90887d63c381f47f648b684bcf281a24c53` |
 | agent/PLAN-npm-ci-parallel-parity.md | compacted | 0 / 0 / 0 | `579a43b2793afd84e1ec525e2c236f98ed11e94e` |
 | agent/PLAN-rclone-decommission.md | compacted | 0 / 0 / 0 | `09c51ce36a58383f4f12ac17ed21fe99cdbcab29` |
 | agent/PLAN-renet-fetch-hardening.md | compacted | 0 / 0 / 0 | `0f714f0ac7271327eb51438deb66d7250cb4b174` |
@@ -37,10 +46,11 @@ To read one in full:
 | agent/PLAN-ssr-nav-locale.md | compacted | 0 / 0 / 0 | `607afdb545574a449e1959a5adfa926879358bc0` |
 | agent/PLAN-state-md-session-isolation.md | compacted | 0 / 0 / 0 | `bb261677a201d15fcc277f98ee32d489d091d269` |
 | agent/PLAN-stop-hook-cadence.md | compacted | 0 / 0 / 0 | `af70feee31f7c4646bb5fe3783be6bbfc4814871` |
+| agent/PLAN-sync-docker-latest-tag-with-releases.md | compacted | 0 / 0 / 0 | `785e89eea1f5954063ba22f0fe60adc16ce7eed1` |
 | agent/PLAN-unify-trap-corpus.md | compacted | 0 / 0 / 0 | `477232b48be389ccf464567572800f6dde8b0d5a` |
 | agent/PLAN-wire-account-vitest-ci.md | compacted | 0 / 0 / 0 | `5b450ce4f57e84c5814a44de44b81dc8d1d4c2a1` |
 
-22 record(s): 22 compacted, 0 parked. A parked record stays on the housekeeping clock on purpose -- its work is not finished, only its text is compacted.
+32 record(s): 32 compacted, 0 parked. A parked record stays on the housekeeping clock on purpose -- its work is not finished, only its text is compacted.
 
 ## Files these records touch
 
@@ -50,6 +60,7 @@ reasoning without knowing the record exists.
 
 | File | Records |
 |---|---|
+| `.ci/config/constants.sh` | agent/PLAN-sync-docker-latest-tag-with-releases.md |
 | `.ci/scripts/build/prepare-cli-assets.sh` | agent/PLAN-scope-gates-split.md |
 | `.ci/scripts/ci/scope-engine.cjs` | agent/PLAN-greenlight-verify-at-read.md |
 | `.ci/scripts/ci/scope-map.cjs` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-npm-ci-parallel-parity.md, agent/PLAN-wire-account-vitest-ci.md |
@@ -61,6 +72,8 @@ reasoning without knowing the record exists.
 | `.ci/scripts/quality/check-renet-types.sh` | agent/PLAN-add-chunkstore-backup-verb.md |
 | `.ci/scripts/quality/check_gate_reachability_coverage.py` | agent/PLAN-agent-hints-implementation.md |
 | `.ci/scripts/quality/lint-rule-liveness.mjs` | agent/PLAN-agent-hints-in-stop-hook.md |
+| `.ci/scripts/review/claude-review-gate.sh` | agent/PLAN-github-actions-workflow-run-trigger-fix.md |
+| `.ci/scripts/review/review-status.sh` | agent/PLAN-github-actions-workflow-run-trigger-fix.md |
 | `.ci/scripts/test/gates/test-embed-asset-freshness.sh` | agent/PLAN-rclone-decommission.md |
 | `.ci/scripts/test/gates/test-embed-credits.sh` | agent/PLAN-rclone-decommission.md |
 | `.ci/scripts/test/gates/test-gate-anti-vacuity.sh` | agent/PLAN-lint-rule-matrix-probe.md |
@@ -70,22 +83,24 @@ reasoning without knowing the record exists.
 | `.ci/scripts/test/run-unit.sh` | agent/PLAN-wire-account-vitest-ci.md |
 | `.ci/tutorials/tutorial-backup-restore.sh` | agent/PLAN-chunk-store-browse-engine.md |
 | `.claude/agents/account-dev.md` | agent/PLAN-agent-hints-implementation.md |
+| `.claude/agents/pr-babysitter.md` | agent/PLAN-durable-reports-and-push-inbox.md |
 | `.claude/hooks/pre-bash/block-cli-bundle.sh` | agent/PLAN-add-js-extensions-shared.md |
 | `.claude/hooks/pre-edit/block-agent-state-shape.sh` | agent/PLAN-unify-trap-corpus.md |
 | `.claude/settings.json` | agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-unify-trap-corpus.md |
 | `.e2e-coverage-allowlist` | agent/PLAN-chunk-store-browse-engine.md |
 | `.github/workflows/ci-ops-test.yml` | agent/PLAN-chunk-store-browse-engine.md |
-| `.github/workflows/ci-quality.yml` | agent/PLAN-agent-hints-implementation.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-wire-account-vitest-ci.md |
+| `.github/workflows/ci-quality.yml` | agent/PLAN-agent-hints-implementation.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-localize-cheat-sheet-rendering.md, agent/PLAN-wire-account-vitest-ci.md |
 | `.gitignore` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-unify-trap-corpus.md |
 | `.gitmodules` | agent/PLAN-rclone-decommission.md |
-| `CLAUDE.md` | agent/PLAN-unify-trap-corpus.md |
+| `CLAUDE.md` | agent/PLAN-fix-in-session-rule.md, agent/PLAN-unify-trap-corpus.md |
 | `agent/PLAN-localize-cheat-sheet-rendering.md` | agent/PLAN-lint-css-ci-wiring.md |
 | `agent/programs/www-simplification/research/RESEARCH-docs.md` | agent/PLAN-lint-css-ci-wiring.md |
 | `docs/agent-reference/TRAPS.md` | agent/PLAN-unify-trap-corpus.md |
 | `docs/agent-reference/ci-gates.md` | agent/PLAN-npm-ci-parallel-parity.md |
 | `docs/agent-reference/suppressions.md` | agent/PLAN-npm-ci-parallel-parity.md |
 | `docs/backup-storage/02-design.md` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-quota-delta-gc.md |
-| `docs/backup-storage/05-docs-and-decommission.md` | agent/PLAN-rclone-decommission.md |
+| `docs/backup-storage/05-docs-and-decommission.md` | agent/PLAN-chunk-store-browse-server.md, agent/PLAN-rclone-decommission.md |
+| `docs/backup-storage/README.md` | agent/PLAN-chunk-store-browse-server.md |
 | `docs/design/06-cli-reshape.md` | agent/PLAN-add-chunkstore-backup-verb.md |
 | `eslint-rules/e2e-test-naming-convention.js` | agent/PLAN-lint-rule-matrix-probe.md |
 | `eslint-rules/i18n/index.js` | agent/PLAN-lint-rule-matrix-probe.md |
@@ -93,33 +108,57 @@ reasoning without knowing the record exists.
 | `eslint-rules/i18n/shared/require-path-option.js` | agent/PLAN-lint-rule-matrix-probe.md |
 | `eslint-rules/require-testid.js` | agent/PLAN-lint-rule-matrix-probe.md |
 | `eslint.config.js` | agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-require-testid-sweep.md |
-| `package.json` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-npm-ci-parallel-parity.md, agent/PLAN-wire-account-vitest-ci.md |
+| `package.json` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-cli-em-dash-lint-gate.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-localize-cheat-sheet-rendering.md, agent/PLAN-npm-ci-parallel-parity.md, agent/PLAN-wire-account-vitest-ci.md |
 | `packages/cli/scripts/check-command-planes.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
+| `packages/cli/src/adapters/config-file-storage.ts` | agent/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/adapters/remote-config-adapter.ts` | agent/PLAN-chunk-store-browse-server.md |
 | `packages/cli/src/commands/__tests__/backup-restore-datastore.test.ts` | agent/PLAN-backup-list-executor-fix.md, agent/PLAN-backup-restore-target-license.md |
 | `packages/cli/src/commands/backup-storage.ts` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-quota-delta-gc.md |
-| `packages/cli/src/commands/backup.ts` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-list-executor-fix.md, agent/PLAN-backup-restore-target-license.md |
+| `packages/cli/src/commands/backup.ts` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-list-executor-fix.md, agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunkstore-restore.md |
+| `packages/cli/src/commands/config.ts` | agent/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/commands/config/field.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/commands/doctor.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
 | `packages/cli/src/commands/machine/register.ts` | agent/PLAN-backup-list-executor-fix.md, agent/PLAN-backup-restore-target-license.md |
 | `packages/cli/src/commands/mcp/__tests__/mcp-coverage.test.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
+| `packages/cli/src/commands/mcp/tools.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
 | `packages/cli/src/commands/repo-backup-list.ts` | agent/PLAN-backup-list-executor-fix.md, agent/PLAN-chunk-store-browse-engine.md |
 | `packages/cli/src/commands/repo-backup.ts` | agent/PLAN-backup-list-executor-fix.md |
-| `packages/cli/src/commands/storage.ts` | agent/PLAN-backup-list-executor-fix.md, agent/PLAN-chunk-store-browse-engine.md |
+| `packages/cli/src/commands/storage.ts` | agent/PLAN-backup-list-executor-fix.md, agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/commands/update.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
 | `packages/cli/src/config/__tests__/plane-leaf-rule.test.ts` | agent/PLAN-scope-gates-split.md |
 | `packages/cli/src/config/command-docs.ts` | agent/PLAN-backup-list-executor-fix.md |
 | `packages/cli/src/config/command-metadata.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
 | `packages/cli/src/data/third-party-credits.json` | agent/PLAN-rclone-decommission.md |
-| `packages/cli/src/services/account/license.ts` | agent/PLAN-backup-restore-target-license.md |
+| `packages/cli/src/remote/repository/bashFunctions.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/account/account-client.ts` | agent/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/services/account/license.ts` | agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunkstore-restore.md |
 | `packages/cli/src/services/backup/backup-schedule-unit-generator.ts` | agent/PLAN-backup-list-executor-fix.md |
+| `packages/cli/src/services/cluster/cluster-fork.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/cluster/cluster-kube.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/cluster/cluster-membership.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/cluster/repo-replicate-ops.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/config/config-base.ts` | agent/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/services/config/config-resources-resolve.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
 | `packages/cli/src/services/config/config-resources.ts` | agent/PLAN-backup-restore-target-license.md |
-| `packages/cli/src/services/executor/local-executor.ts` | agent/PLAN-backup-list-executor-fix.md, agent/PLAN-backup-restore-target-license.md |
+| `packages/cli/src/services/config/remote-cache.ts` | agent/PLAN-chunk-store-browse-server.md |
+| `packages/cli/src/services/core/embedded-assets.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/services/executor/local-executor.ts` | agent/PLAN-backup-list-executor-fix.md, agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunkstore-restore.md |
 | `packages/cli/src/services/provision/region-discovery.ts` | agent/PLAN-add-js-extensions-shared.md |
 | `packages/cli/src/services/renet/renet-license-contract.ts` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-backup-restore-target-license.md |
+| `packages/cli/src/services/repo/prune.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
 | `packages/cli/src/services/repo/repo-key-deployment.ts` | agent/PLAN-backup-list-executor-fix.md |
+| `packages/cli/src/services/repo/storage-browser.ts` | agent/PLAN-chunk-store-browse-server.md |
 | `packages/cli/src/services/tofu/provision.ts` | agent/PLAN-backup-list-executor-fix.md |
+| `packages/cli/src/services/update/background-updater.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
 | `packages/cli/src/types/index.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
 | `packages/cli/src/utils/local-execution-failures.ts` | agent/PLAN-backup-list-executor-fix.md |
+| `packages/cli/src/utils/process-ancestry.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/utils/repo-context-guard.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
+| `packages/cli/src/utils/timeline.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
 | `packages/cli/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
 | `packages/e2e-tests/package.json` | agent/PLAN-add-js-extensions-shared.md |
 | `packages/e2e-tests/playwright.config.ts` | agent/PLAN-chunk-store-browse-engine.md |
+| `packages/e2e-tests/tests/26-backup-storage-cli.test.ts` | agent/PLAN-chunkstore-restore.md |
 | `packages/e2e-tests/tests/migrate/18-dual-group-migrate.test.ts` | agent/PLAN-backup-list-executor-fix.md |
 | `packages/json/package.json` | agent/PLAN-wire-account-vitest-ci.md |
 | `packages/shared/package.json` | agent/PLAN-add-js-extensions-shared.md |
@@ -133,23 +172,31 @@ reasoning without knowing the record exists.
 | `packages/shared/src/services/machine/index.ts` | agent/PLAN-add-js-extensions-shared.md |
 | `packages/shared/src/subscription/__tests__/crypto.test.ts` | agent/PLAN-add-js-extensions-shared.md |
 | `packages/shared/src/subscription/constants.ts` | agent/PLAN-backup-restore-target-license.md |
-| `packages/shared/src/subscription/types.ts` | agent/PLAN-backup-quota-delta-gc.md |
+| `packages/shared/src/subscription/types.ts` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-chunkstore-restore.md |
 | `packages/shared/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
 | `packages/shared/vitest.config.ts` | agent/PLAN-backup-quota-delta-gc.md |
 | `packages/www/package.json` | agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-wire-account-vitest-ci.md |
+| `packages/www/scripts/generate-search-index.js` | agent/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/scripts/lib/cli-reference-catalog.js` | agent/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/scripts/validate-content-accuracy.js` | agent/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/scripts/validate-docs-cli-usage.js` | agent/PLAN-localize-cheat-sheet-rendering.md |
 | `packages/www/src/components/solution-pages/SPHowItWorks.astro` | agent/PLAN-lint-css-ci-wiring.md |
+| `packages/www/src/content/docs/de/rdc-cheat-sheet.md` | agent/PLAN-localize-cheat-sheet-rendering.md |
+| `packages/www/src/content/docs/en/rdc-cheat-sheet.md` | agent/PLAN-localize-cheat-sheet-rendering.md |
 | `packages/www/src/hooks/useLanguage.ts` | agent/PLAN-ssr-nav-locale.md |
 | `packages/www/src/layouts/BaseLayout.astro` | agent/PLAN-ssr-nav-locale.md |
+| `packages/www/src/layouts/DocsLayout.astro` | agent/PLAN-localize-cheat-sheet-rendering.md |
 | `packages/www/src/utils/solution-video.ts` | agent/PLAN-scope-gates-split.md |
 | `private/account/e2e/tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
 | `private/account/package.json` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-wire-account-vitest-ci.md |
-| `private/account/src/db/schema.ts` | agent/PLAN-backup-quota-delta-gc.md |
+| `private/account/src/db/schema.ts` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-chunk-store-browse-server.md, agent/PLAN-chunkstore-restore.md |
 | `private/account/src/errors.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
-| `private/account/src/routes/backups.ts` | agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunk-store-browse-engine.md |
+| `private/account/src/middleware/api-token.ts` | agent/PLAN-chunk-store-browse-server.md |
+| `private/account/src/routes/backups.ts` | agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-chunk-store-browse-server.md |
 | `private/account/src/routes/license.ts` | agent/PLAN-backup-restore-target-license.md |
-| `private/account/src/services/backup-chunk-store.ts` | agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-wire-account-vitest-ci.md |
-| `private/account/src/services/backup-gc.service.ts` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-chunk-store-browse-engine.md |
-| `private/account/src/services/backup-storage.service.ts` | agent/PLAN-backup-restore-target-license.md |
+| `private/account/src/services/backup-chunk-store.ts` | agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-chunk-store-browse-server.md, agent/PLAN-wire-account-vitest-ci.md |
+| `private/account/src/services/backup-gc.service.ts` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-chunk-store-browse-server.md |
+| `private/account/src/services/backup-storage.service.ts` | agent/PLAN-backup-restore-target-license.md, agent/PLAN-chunk-store-browse-server.md |
 | `private/account/src/services/device-code.service.ts` | agent/PLAN-backup-quota-delta-gc.md |
 | `private/account/src/services/subscription.service.ts` | agent/PLAN-backup-restore-target-license.md |
 | `private/account/src/types/api-token.ts` | agent/PLAN-backup-quota-delta-gc.md |
@@ -160,14 +207,17 @@ reasoning without knowing the record exists.
 | `private/renet/.ci/scripts/quality/i18n.sh` | agent/PLAN-add-chunkstore-backup-verb.md |
 | `private/renet/.ci/scripts/test/run-tests.sh` | agent/PLAN-backup-quota-delta-gc.md |
 | `private/renet/cmd/renet/backup_list.go` | agent/PLAN-backup-list-executor-fix.md |
+| `private/renet/cmd/renet/backup_pull.go` | agent/PLAN-chunkstore-restore.md |
 | `private/renet/cmd/renet/backup_push.go` | agent/PLAN-backup-list-executor-fix.md |
 | `private/renet/cmd/renet/backup_restore.go` | agent/PLAN-backup-restore-target-license.md |
 | `private/renet/cmd/renet/functions_commands.go` | agent/PLAN-add-chunkstore-backup-verb.md |
 | `private/renet/pkg/chunkstore/grid.go` | agent/PLAN-chunk-store-browse-engine.md |
-| `private/renet/pkg/chunkstore/manifest.go` | agent/PLAN-chunk-store-browse-engine.md |
-| `private/renet/pkg/chunkstore/pipeline_linux.go` | agent/PLAN-backup-quota-delta-gc.md |
+| `private/renet/pkg/chunkstore/hash.go` | agent/PLAN-chunk-store-browse-server.md |
+| `private/renet/pkg/chunkstore/manifest.go` | agent/PLAN-chunk-store-browse-engine.md, agent/PLAN-chunk-store-browse-server.md |
+| `private/renet/pkg/chunkstore/pipeline_linux.go` | agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-chunk-store-browse-server.md |
 | `private/renet/pkg/chunkstore/restore.go` | agent/PLAN-chunk-store-browse-engine.md |
 | `private/renet/pkg/chunkstore/session.go` | agent/PLAN-backup-restore-target-license.md |
+| `private/renet/pkg/chunkstore/uploader.go` | agent/PLAN-chunk-store-browse-server.md |
 | `private/renet/pkg/credentials/keyfile.go` | agent/PLAN-chunk-store-browse-engine.md |
 | `private/renet/pkg/embed/embed.go` | agent/PLAN-chunk-store-browse-engine.md |
 | `private/renet/pkg/filesystem/ext4.go` | agent/PLAN-chunk-store-browse-engine.md |
@@ -188,11 +238,13 @@ reasoning without knowing the record exists.
 | `scripts/check-ci-parity.ts` | agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md |
 | `scripts/check-design-tree.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
 | `scripts/check-e2e-coverage.ts` | agent/PLAN-add-chunkstore-backup-verb.md |
+| `scripts/check-em-dash-surfaces.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
 | `scripts/check-suppression-liveness.ts` | agent/PLAN-npm-ci-parallel-parity.md |
-| `scripts/ci-runner/manifest.ts` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-wire-account-vitest-ci.md |
+| `scripts/ci-runner/manifest.ts` | agent/PLAN-add-js-extensions-shared.md, agent/PLAN-agent-hints-implementation.md, agent/PLAN-agent-hints-in-stop-hook.md, agent/PLAN-backup-quota-delta-gc.md, agent/PLAN-cli-em-dash-lint-gate.md, agent/PLAN-lint-css-ci-wiring.md, agent/PLAN-lint-rule-matrix-probe.md, agent/PLAN-wire-account-vitest-ci.md |
 | `scripts/dev/lib/cf-auth.sh` | agent/PLAN-rclone-decommission.md |
-| `scripts/drills/backup.sh` | agent/PLAN-add-chunkstore-backup-verb.md |
+| `scripts/drills/backup.sh` | agent/PLAN-add-chunkstore-backup-verb.md, agent/PLAN-chunkstore-restore.md |
 | `scripts/lib/embed-asset-sources.ts` | agent/PLAN-rclone-decommission.md |
+| `scripts/sync-translations.ts` | agent/PLAN-cli-em-dash-lint-gate.md |
 | `tsconfig.json` | agent/PLAN-add-js-extensions-shared.md |
 
 ## Plan census
@@ -218,35 +270,35 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-bws-rotation-on-failure.md` | draft | 130 | 18 | 0 | 11144 |
 | `agent/PLAN-chunk-store-browse-DECISION.md` | done | 183 | 0 | 0 | 9641 |
 | `agent/PLAN-chunk-store-browse-engine.md` | compacted | 80 | 0 | 0 | 5238 |
-| `agent/PLAN-chunk-store-browse-server.md` | design | 845 | 0 | 0 | 45072 |
-| `agent/PLAN-chunkstore-restore.md` | draft | 634 | 0 | 0 | 36431 |
+| `agent/PLAN-chunk-store-browse-server.md` | compacted | 69 | 0 | 0 | 4896 |
+| `agent/PLAN-chunkstore-restore.md` | compacted | 72 | 0 | 0 | 4239 |
 | `agent/PLAN-ci-trace-no-pr-branch.md` | done | 171 | 0 | 0 | 9783 |
 | `agent/PLAN-ci-watch-enforcement.md` | draft | 283 | 0 | 0 | 15625 |
-| `agent/PLAN-cli-em-dash-lint-gate.md` | done | 490 | 0 | 0 | 30094 |
-| `agent/PLAN-cold-path.md` | done | 241 | 0 | 0 | 13073 |
+| `agent/PLAN-cli-em-dash-lint-gate.md` | compacted | 70 | 0 | 0 | 4337 |
+| `agent/PLAN-cold-path.md` | compacted | 74 | 0 | 0 | 4055 |
 | `agent/PLAN-commit-author-identity.md` | draft | 235 | 13 | 0 | 13995 |
 | `agent/PLAN-consolidate-test-scaffolding.md` | done | 90 | 0 | 4 | 4452 |
 | `agent/PLAN-docker-image-freshness-soak-filter.md` | done | 117 | 0 | 0 | 5584 |
 | `agent/PLAN-duplication-angle.md` | implemented | 241 | 0 | 0 | 12492 |
-| `agent/PLAN-durable-reports-and-push-inbox.md` | done | 813 | 0 | 0 | 46584 |
+| `agent/PLAN-durable-reports-and-push-inbox.md` | compacted | 69 | 0 | 0 | 3705 |
 | `agent/PLAN-env-to-bitwarden-v2.md` | draft | 687 | 5 | 4 | 44971 |
 | `agent/PLAN-env-to-bitwarden.md` | draft | 734 | 20 | 1 | 55240 |
 | `agent/PLAN-fix-ci-contention-aware-timeouts.md` | done | 354 | 0 | 0 | 20483 |
-| `agent/PLAN-fix-german-translation-artifacts.md` | done | 189 | 0 | 0 | 11264 |
-| `agent/PLAN-fix-in-session-rule.md` | done | 620 | 0 | 0 | 28648 |
+| `agent/PLAN-fix-german-translation-artifacts.md` | compacted | 61 | 0 | 0 | 3126 |
+| `agent/PLAN-fix-in-session-rule.md` | compacted | 69 | 0 | 0 | 3594 |
 | `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | done | 305 | 0 | 0 | 19395 |
 | `agent/PLAN-git-history-media-rewrite.md` | ready | 321 | 0 | 0 | 15185 |
-| `agent/PLAN-github-actions-workflow-run-trigger-fix.md` | done | 630 | 0 | 0 | 31610 |
+| `agent/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 71 | 0 | 0 | 3940 |
 | `agent/PLAN-github-secrets-removal.md` | draft | 580 | 13 | 1 | 46356 |
 | `agent/PLAN-greenlight-verify-at-read.md` | compacted | 62 | 0 | 0 | 3299 |
 | `agent/PLAN-handoff-sequence.md` | draft | 126 | 7 | 0 | 8365 |
 | `agent/PLAN-hook-inventory-warn-guards.md` | landed | 89 | 0 | 0 | 4112 |
 | `agent/PLAN-judge-gate-worthiness-and-surface-scope.md` | draft | 548 | 0 | 0 | 30552 |
-| `agent/PLAN-lint-css-ci-wiring.md` | compacted | 74 | 0 | 0 | 4288 |
+| `agent/PLAN-lint-css-ci-wiring.md` | compacted | 74 | 0 | 0 | 4344 |
 | `agent/PLAN-lint-rule-matrix-probe.md` | compacted | 65 | 0 | 0 | 3574 |
 | `agent/PLAN-local-ci-gate-prerequisites.md` | landed | 102 | 0 | 0 | 4685 |
 | `agent/PLAN-locale-techdiff-resync.md` | ready | 89 | 0 | 0 | 4531 |
-| `agent/PLAN-localize-cheat-sheet-rendering.md` | accepted | 522 | 0 | 0 | 30042 |
+| `agent/PLAN-localize-cheat-sheet-rendering.md` | compacted | 72 | 0 | 0 | 4449 |
 | `agent/PLAN-migrate-command.md` | draft | 226 | 11 | 0 | 41130 |
 | `agent/PLAN-nightly-retry-and-watchdog-noise.md` | done | 172 | 0 | 0 | 8909 |
 | `agent/PLAN-npm-ci-parallel-parity.md` | compacted | 52 | 0 | 0 | 3207 |
@@ -278,7 +330,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-stop-report-queue.md` | done | 586 | 0 | 0 | 29536 |
 | `agent/PLAN-subagent-idle-detection.md` | ready | 399 | 0 | 0 | 21501 |
 | `agent/PLAN-subscription-status-error-swallowing.md` | done | 106 | 0 | 5 | 4621 |
-| `agent/PLAN-sync-docker-latest-tag-with-releases.md` | done | 233 | 0 | 0 | 12208 |
+| `agent/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 79 | 0 | 0 | 4194 |
 | `agent/PLAN-test-advisor.md` | done | 132 | 0 | 0 | 6884 |
 | `agent/PLAN-testing-surface-audit.md` | draft | 652 | 0 | 0 | 40304 |
 | `agent/PLAN-trap-enforcement.md` | w | 820 | 0 | 0 | 49268 |

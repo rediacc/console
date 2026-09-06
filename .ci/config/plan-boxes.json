@@ -140,7 +140,7 @@
       "done_sigs": []
     },
     "agent/PLAN-chunk-store-browse-server.md": {
-      "status": "design",
+      "status": "compacted",
       "owner": "unowned",
       "open": 0,
       "done": 0,
@@ -148,7 +148,7 @@
       "done_sigs": []
     },
     "agent/PLAN-chunkstore-restore.md": {
-      "status": "draft",
+      "status": "compacted",
       "owner": "97604f47",
       "open": 0,
       "done": 0,
@@ -172,7 +172,7 @@
       "done_sigs": []
     },
     "agent/PLAN-cli-em-dash-lint-gate.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "e6500e92",
       "open": 0,
       "done": 0,
@@ -180,7 +180,7 @@
       "done_sigs": []
     },
     "agent/PLAN-cold-path.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "unowned",
       "open": 0,
       "done": 0,
@@ -239,7 +239,7 @@
       "done_sigs": []
     },
     "agent/PLAN-durable-reports-and-push-inbox.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "e6500e92",
       "open": 0,
       "done": 0,
@@ -305,7 +305,7 @@
       "done_sigs": []
     },
     "agent/PLAN-fix-german-translation-artifacts.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "unowned",
       "open": 0,
       "done": 0,
@@ -313,7 +313,7 @@
       "done_sigs": []
     },
     "agent/PLAN-fix-in-session-rule.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "unowned",
       "open": 0,
       "done": 0,
@@ -337,7 +337,7 @@
       "done_sigs": []
     },
     "agent/PLAN-github-actions-workflow-run-trigger-fix.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "unowned",
       "open": 0,
       "done": 0,
@@ -441,7 +441,7 @@
       "done_sigs": []
     },
     "agent/PLAN-localize-cheat-sheet-rendering.md": {
-      "status": "accepted",
+      "status": "compacted",
       "owner": "97604f47",
       "open": 0,
       "done": 0,
@@ -805,7 +805,7 @@
       ]
     },
     "agent/PLAN-sync-docker-latest-tag-with-releases.md": {
-      "status": "done",
+      "status": "compacted",
       "owner": "e6500e92",
       "open": 0,
       "done": 0,
