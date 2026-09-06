@@ -247,6 +247,48 @@ for fname, doc in docs.items():
             f"on.workflow_call.secrets -- it will silently evaluate to \"\""
         )
 
+# (a2) a reusable workflow may not DECLARE a secret nothing in it reads.
+#
+# THE ARM THAT WAS MISSING, and its absence is measurable: 57 such declarations had
+# accumulated by 2026-09-06, left behind when consumers moved to Bitwarden, and were
+# removed in one sweep. (a) catches a read with no declaration; nothing caught a
+# declaration with no read, so dead scaffolding grew quietly on the one surface
+# where a stale secret name is most misleading -- a caller reads the declaration
+# and passes a value that goes nowhere.
+DECLARED_UNUSED_OK = {
+    # Its consumer fetches this from Bitwarden now, so the passed value IS unused --
+    # but private/account and private/renet still PASS it, and dropping the
+    # declaration does not break this repo, it breaks their next run. Remove it in
+    # the same change that updates both callers and .github/external-callers.yml.
+    ('claude-review-reusable.yml', 'ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN'),
+}
+for fname, doc in docs.items():
+    wc = workflow_call(doc)
+    if not wc:
+        continue
+    declared = set((wc.get('secrets') or {}).keys())
+    used = set(USE_RE.findall(texts[fname])) - IMPLICIT
+    for name in sorted(declared - used):
+        if (fname, name) in DECLARED_UNUSED_OK:
+            continue
+        offenders.append(
+            f"{fname}: declares secret {name} under workflow_call but never reads it -- "
+            f"a caller passing it sends a value nowhere; delete the declaration"
+        )
+# An exemption naming a declaration that is gone, or one that IS read, excuses
+# nothing and would sit forever looking like coverage.
+for fname, name in sorted(DECLARED_UNUSED_OK):
+    doc = docs.get(fname)
+    if doc is None:
+        offenders.append(f"DECLARED_UNUSED_OK names {fname}, which does not exist")
+        continue
+    declared = set((workflow_call(doc).get('secrets') or {}).keys())
+    used = set(USE_RE.findall(texts[fname])) - IMPLICIT
+    if name not in declared:
+        offenders.append(f"DECLARED_UNUSED_OK: {fname} no longer declares {name}; drop the exemption")
+    elif name in used:
+        offenders.append(f"DECLARED_UNUSED_OK: {fname} now READS {name}; drop the exemption")
+
 # (b)/(c) caller <-> callee contract
 for fname, doc in docs.items():
     jobs = (doc or {}).get('jobs') or {}
