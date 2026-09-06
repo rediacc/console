@@ -267,6 +267,10 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:i18n:key-usage',
+    // 30.6s FLOOR over 5 runs (median 31.6s): it walks every translation key against every source reference, so its cost is the key count times the corpus and grows with both.
+    // The oracle judges the floor rather than the average, so contention
+    // cannot manufacture this.
+    slow: true,
     run: 'npm run check:i18n:key-usage',
     gate: true,
     // check-translation-key-usage.control.ts writes __control_probe__.tsx INTO
@@ -326,6 +330,10 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-i18n-page-locale-imports',
+    // 21.9s FLOOR over 5 runs (median 22.9s): it parses every page in every locale, so its cost is pages times locales.
+    // The oracle judges the floor rather than the average, so contention
+    // cannot manufacture this.
+    slow: true,
     run: 'npm run check:ci-i18n-page-locale-imports',
     gate: true,
     leaves: ['scripts/__tests__/check-page-locale-imports.control.ts'],
@@ -5808,6 +5816,10 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'gate-test:media-args',
+    // 23.8s FLOOR over 5 runs (median 24.8s): it drives the media entry point once per argument shape against a fake-binary scaffold.
+    // The oracle judges the floor rather than the average, so contention
+    // cannot manufacture this.
+    slow: true,
     run: '.ci/scripts/test/gates/test-media-args.sh',
     gate: true,
     qualityGateTest: true,
