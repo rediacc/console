@@ -52,13 +52,9 @@ log_step "Checking for permission-administration in workflows/actions..."
 # And the grep exit is read as three outcomes, not two: 0 found, 1 clean,
 # anything else an ERROR.
 SCAN_DIRS=(.github/workflows .github/actions)
-for d in "${SCAN_DIRS[@]}"; do
-    if [[ ! -d "$d" ]]; then
-        log_error "cannot scan $d: it does not exist, so this gate would rule on part of its subject."
-        log_error "A partial scan that reports OK is worse than no scan. Refusing."
-        exit 1
-    fi
-done
+require_input -d 'cannot scan {}: it does not exist, so this gate would rule on part of its subject.' \
+    'A partial scan that reports OK is worse than no scan. Refusing.' \
+    "${SCAN_DIRS[@]}"
 
 # `set -e` KILLS AN ASSIGNMENT whose command substitution exits non-zero, and
 # grep exits 1 on the CLEAN case, so the guard below was never reached: the

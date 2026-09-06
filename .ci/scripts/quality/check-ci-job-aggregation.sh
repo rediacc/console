@@ -65,13 +65,9 @@ AGGREGATOR="ci-complete"
 # prevent.
 MIN_JOBS=10
 
-for f in "$CI_WORKFLOW" "$ASSERT_SCRIPT"; do
-    if [[ ! -f "$f" ]]; then
-        log_error "input not found: $f"
-        log_error "This gate cannot assert anything without it. Fix the path, do not skip the check."
-        exit 1
-    fi
-done
+require_input -f 'input not found: {}' \
+    'This gate cannot assert anything without it. Fix the path, do not skip the check.' \
+    "$CI_WORKFLOW" "$ASSERT_SCRIPT"
 
 # ---------------------------------------------------------------------------
 # The exempt set. Entry = job name; reason = why ci-complete cannot or must not

@@ -119,3 +119,34 @@ export function refuse(...lines: string[]): never {
   console.error(lines.join('\n'));
   process.exit(1);
 }
+
+/**
+ * Refused: print the same diagnostic to stderr and hand back the exit CODE.
+ *
+ * WHY A SIBLING RATHER THAN A SECOND CALLER OF `refuse`. `refuse` is typed `never` and
+ * calls `process.exit(1)`, which is right for a gate whose entry point is bare. It is
+ * wrong for the larger half of this estate, where the work happens in a `main(): number`
+ * and the caller does `process.exit(main())`: exiting from inside `main` skips whatever
+ * the caller does with the code, and in a `--selftest` run it takes the process down
+ * before the remaining controls have run. So those gates hand-rolled the act instead,
+ * and `check:ci-shape-duplication` found the result on 2026-09-06 as three separate
+ * fingerprints over nineteen sites:
+ *
+ *   fa4c5266d492  4 copies   `<report>(` ... `);` `return 1;` `}`
+ *   688d3ea329cc  3 copies   the same span shifted one line
+ *   9528ce83ba0f  3 copies   the `console.error(` spelling of it
+ *
+ * That is the identical ACT the `refuse` docstring above records the operator ruling on:
+ * state why the gate cannot answer, then stop. The only difference is HOW it stops, so
+ * the answer is a second verb rather than a second argument, and a return type of `1`
+ * rather than `number` so a `main` that returns a union still narrows.
+ *
+ * ADOPTION IS LOSSLESS, and that is worth stating because it is what made the conversion
+ * safe. `process.stderr.write('x\n')`, `console.error('x')` and `refused('x')` emit the
+ * same bytes: the joined lines plus exactly one trailing newline. A site whose message
+ * ended in `\n` therefore drops that `\n` and nothing else changes on the wire.
+ */
+export function refused(...lines: string[]): 1 {
+  console.error(lines.join('\n'));
+  return 1;
+}

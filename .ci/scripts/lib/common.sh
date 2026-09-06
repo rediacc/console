@@ -166,6 +166,36 @@ require_dir() {
     fi
 }
 
+# Refuse unless every required input exists, in the GATE'S OWN WORDS.
+#
+# require_file / require_dir above are the terse form: they name the path and stop.
+# A gate that cannot see its whole subject also has to say WHY refusing beats
+# skipping, because "just skip it" is the reflex that turns a blind gate green. Three
+# quality gates each hand-rolled that sentence with its own loop, existence test, two
+# log_error lines and an exit, and check:ci-shape-duplication found the tail of it on
+# 2026-09-06 as fingerprint 978cee6053c0 across check-ci-job-aggregation.sh,
+# check-no-app-admin-perm.sh and check-probe-parity.sh.
+#
+# The lead line stays the caller's because it is CONTRACT, not decoration:
+# test-ci-job-aggregation.sh:333 asserts the literal "input not found" against
+# check-ci-job-aggregation.sh, so a helper that imposed one house wording would have
+# turned a real gate test red. {} is substituted with the offending path; no printf
+# format is involved, so a path containing % is harmless.
+#
+# Usage: require_input <-f|-d> <lead with {}> <why> <path>...
+require_input() {
+    local test_flag="$1" lead="$2" why="$3"
+    shift 3
+    local p
+    for p in "$@"; do
+        if ! test "$test_flag" "$p"; then
+            log_error "${lead//\{\}/$p}"
+            log_error "$why"
+            exit 1
+        fi
+    done
+}
+
 # =============================================================================
 # PATH HELPERS
 # =============================================================================

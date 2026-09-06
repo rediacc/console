@@ -51,13 +51,9 @@ EXEMPT_VERBS=("unlink" "purge" "revoke")
 
 log_step "Checking capability-probe parity ($PROBE vs $CONSUMER)..."
 
-for f in "$CONSUMER" "$PROBE"; do
-    if [[ ! -f "$f" ]]; then
-        log_error "$f not found — this gate has nothing to check, which is a failure,"
-        log_error "not a pass: parity cannot be asserted against a file that is gone."
-        exit 1
-    fi
-done
+require_input -f '{} not found — this gate has nothing to check, which is a failure,' \
+    'not a pass: parity cannot be asserted against a file that is gone.' \
+    "$CONSUMER" "$PROBE"
 
 # Consumer: execFileSync('keyctl', ['<verb>', ...])
 consumer_verbs=$(grep -oE "execFileSync\('keyctl', \['[a-z]+" "$CONSUMER" |
