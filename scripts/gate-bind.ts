@@ -1642,8 +1642,16 @@ function main(argv: string[]): void {
     // against the package key budget for nothing. Checking these against package.json
     // would therefore red all 148 the moment they became subjects, for a reason that has
     // nothing to do with their headers. The lock's `run` is what they must agree with.
+    // THE PREDICATE IS "DOES THE LOCK RUN THIS SCRIPT DIRECTLY", not "is it flagged a
+    // gate-test". Those are the same set for the 148 under .ci/scripts/test/gates, and
+    // they diverge for `test:install-script` and `test:write-once-guard`, which are
+    // registered exactly the same way (run: the .sh path, no package.json key) and carry
+    // no `qualityGateTest`. Keying on the flag refused both the moment they declared a
+    // header on 2026-09-06, for a convention they follow correctly.
     const lockEntry = lockById.get(b.id);
-    if (lockEntry?.qualityGateTest === true) {
+    const runsScriptDirectly =
+      lockEntry !== undefined && !lockEntry.run.startsWith('npm run ') && lockEntry.run.endsWith('.sh');
+    if (lockEntry?.qualityGateTest === true || runsScriptDirectly) {
       if (lockEntry.run !== b.run) {
         problems.push(
           `${b.file}: gates.lock.json runs "${lockEntry.run}" but its header derives "${b.run}"`

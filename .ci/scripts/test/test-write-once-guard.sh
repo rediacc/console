@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# id: test:write-once-guard
+# step: Write-once guard tests
+# lane: quality-static
+# why: this file IS the gate's run target, so it declares rather than being
+#      declared for. Added 2026-09-06 with test-install-script.sh, the only
+#      other run target under .ci/scripts/test that carried no header.
+# ---- end gate ----
 
 # Unit tests for the sentinel-aware write_once_guard() in
 # .ci/scripts/deploy/upload-to-r2.sh. Mocks aws so the test runs offline.

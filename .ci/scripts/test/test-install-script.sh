@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# id: test:install-script
+# step: Install-script tests
+# lane: quality-static
+# why: this file IS the gate's run target, so it declares rather than being
+#      declared for. Added 2026-09-06 with test-write-once-guard.sh.
+# ---- end gate ----
 
 # Unit tests for packages/www/public/install.sh internals. Sources the
 # script with REDIACC_INSTALL_SH_SOURCE_ONLY=1 to skip main() and exercises
