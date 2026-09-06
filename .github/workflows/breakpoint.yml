@@ -230,18 +230,22 @@ jobs:
       # the one input that genuinely cannot work without it.
       # private/elite is a PRIVATE repo, so the default GITHUB_TOKEN cannot
       # clone it; the on-prem compose file lives inside that submodule.
-      - uses: ./.github/actions/app-token
-        id: app-token
+      # THE APP TOKEN IS GONE, AND WITH IT `services`. It minted from the
+      # APP_PRIVATE_KEY org secret, deleted 2026-09-05, so it had been
+      # minting from the EMPTY STRING and the private/elite checkout below could
+      # not have succeeded -- `services != 'none'` was already broken and only
+      # looked supported. Failing in preflight with a reason beats failing here on
+      # a clone nobody connects to the missing credential.
+      #
+      # Restoring it is not a matter of fetching the key from Bitwarden: a later
+      # step in this job hands a human a shell, and GITHUB_ENV/GITHUB_OUTPUT are
+      # files any step can read, so the key would be readable by that human. The
+      # shape that would work is in agent/PLAN-breakpoint-secret-shape.md.
+      - name: Refuse services, which needs a credential this job must not hold
         if: inputs.services != 'none'
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,elite
-
-      - name: Check out the on-prem stack
-        if: inputs.services != 'none'
-        run: git submodule update --init --depth 1 private/elite
+        run: |
+          echo "::error::services='${{ inputs.services }}' is unavailable: it needs an app token minted from APP_PRIVATE_KEY to clone the private elite repo, and that org secret was deleted on 2026-09-05. This job deliberately holds no long-lived credential, because a later step hands a human a shell. Re-run with services=none, or see agent/PLAN-breakpoint-secret-shape.md."
+          exit 1
 
       - name: Install desktop packages
         if: inputs.desktop != 'none'
@@ -314,8 +318,15 @@ jobs:
       # operator with nothing readable at all.
       - name: Publish access details
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+          # SES CREDENTIALS DELIBERATELY ABSENT since 2026-09-06. They read the
+          # AWS_SES_*_EU org secrets, deleted 2026-09-05, so they had
+          # been resolving to the EMPTY STRING and this step emailed nothing while
+          # appearing to. publish-endpoints.sh already decides email-vs-logs and
+          # falls back to the run log, so the URL stays readable -- which is all
+          # this step was actually doing. Fetching them from Bitwarden instead is
+          # NOT the fix: a later step in this job hands a human a shell, and
+          # GITHUB_ENV/GITHUB_OUTPUT are files any step can read. See
+          # agent/PLAN-breakpoint-secret-shape.md.
           AWS_DEFAULT_REGION: ${{ vars.AWS_SES_REGION_EU }}
           AWS_SES_FROM: ${{ vars.AWS_SES_FROM }}
           GITHUB_ACTOR: ${{ github.actor }}
