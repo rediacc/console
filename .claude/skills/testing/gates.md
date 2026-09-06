@@ -50,10 +50,10 @@ Nothing asks on its own. Measured 2026-09-01, already past a third copy:
 | the assertion closure | **35** of 101 `check-*.ts` | none — `shrink-only-baseline.ts:181` factors the control *data*, not the loop |
 | the `test-helpers` preamble | **85** of 118 `test-*.sh` | `.ci/scripts/test/lib/test-helpers.sh` |
 | `mktemp -d` + hand-written `trap` | **28** | `with_temp_dir` (`test-helpers.sh:73`), used by 26 |
-| colour constants | **28** inline, **7** redeclared | `scripts/utils/console.ts`, TTY-gated, imported by 10 |
+| colour constants | **28** inline, **7** redeclared | `scripts/lib/console.ts`, TTY-gated, imported by 10 |
 
 Not hypothetical: five copies inline unconditional `\x1b[…` and pipe raw escape bytes into
-non-TTY CI logs, while `scripts/utils/console.ts:8-15` TTY-gates them for its ten importers.
+non-TTY CI logs, while `scripts/lib/console.ts:8-15` TTY-gates them for its ten importers.
 Copying is sometimes right, and the answer is a **named divergence**, not a shrug:
 `run_gate()` is duplicated 23× with three incompatible return contracts. Say which.
 Never the findings report — 10 gates, 10 distinct hashes. Count duplication in the

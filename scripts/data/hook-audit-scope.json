@@ -27,17 +27,36 @@
     "silent. stop/worklist.py and the context/*.py hooks are deliberately excluded.",
     "",
     "The gate REFUSES an empty list on either key. A scope file that scanned to nothing would",
-    "turn the whole inventory into a vacuous green, which is the failure this gate is about."
+    "turn the whole inventory into a vacuous green, which is the failure this gate is about.",
+    "",
+    "EVERY LIST HERE IS REPO-RELATIVE, WHICH IS THE 2026-09-06 SEAM WIDENING. The gate used",
+    "to anchor itself on a single hardcoded .claude/hooks root: chains were bare directory",
+    "names inside it, inventory keys were fragments waiting for it to be prepended, and cases",
+    "came from exactly one file inside it. A guard that moves OUT of that root does not fail",
+    "the gate, it LEAVES the gate -- the corpus shrinks and every assertion still passes over",
+    "what is left. That is live today: 47 ported guards are tracked at .claude/rediacc_hooks/",
+    "guards/ and the gate cannot see one of them. Repo-relative lists mean a move re-keys one",
+    "list in one place, and the gate's logic is never opened to do it.",
+    "",
+    "case_sources is the same seam on the coverage side. While it was one file, moving a",
+    "guard's cases into a second suite made that guard read as newly UNCOVERED, and the",
+    "cheapest way to clear that red is to baseline the guard, which retires the assertion for",
+    "good. Reading every declared source means a case that MOVED still counts and only a case",
+    "that was DELETED goes red. The gate also derives its section-C harness from this list",
+    "rather than naming a file, so a suite that moves takes its floor rule with it."
   ],
-  "chains": [
-    "pre-bash",
-    "pre-edit",
-    "pre-ask",
-    "post-bash"
+  "guard_dirs": [
+    ".claude/hooks/pre-bash",
+    ".claude/hooks/pre-edit",
+    ".claude/hooks/pre-ask",
+    ".claude/hooks/post-bash"
   ],
   "guards_outside_chains": [
-    "trapguard/dispatch.py",
-    "require-jq.sh",
-    "require-python.sh"
+    ".claude/hooks/trapguard/dispatch.py",
+    ".claude/hooks/require-jq.sh",
+    ".claude/hooks/require-python.sh"
+  ],
+  "case_sources": [
+    ".claude/hooks/test-hooks.sh"
   ]
 }

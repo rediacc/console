@@ -53,7 +53,7 @@ import {
   type EmbedAssetSource as Source,
 } from './lib/embed-asset-sources.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
-import { GREEN, NC, RED, YELLOW } from './utils/console.js';
+import { GREEN, NC, RED, YELLOW } from './lib/console.js';
 import { githubToken } from './lib/github-token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

@@ -27,6 +27,13 @@ check:ci-shell-lint and check:ci-python-lint enumerate from git rather than from
 list.
 
 Exit 1 on a narrowing command, 2 on a failed control.
+
+---- gate ----
+step: Format command covers its config's scope
+needs: none
+lane: quality-code
+slow: true
+---- end gate ----
 """
 
 from __future__ import annotations

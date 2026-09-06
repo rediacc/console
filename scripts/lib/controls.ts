@@ -18,7 +18,7 @@
  *   - REAL. Five gates inline unconditional `\x1b[…` escapes and pipe them into non-TTY CI
  *     logs -- `check-dead-css.ts:187`, `check-docker-image-freshness.ts:312`,
  *     `check-landmarks.ts:52`, `check-ssr-locale.ts:62`, `check-svg-theme-reach.ts:60`.
- *     Demonstrated with `cat -v` on a piped run. `scripts/utils/console.ts:8-15` already
+ *     Demonstrated with `cat -v` on a piped run. `scripts/lib/console.ts:8-15` already
  *     gates the identical codes on `process.stdout.isTTY`, and ten files import it.
  *   - NOT A DEFECT. `check-i18n-cross-locale.ts:555` was reported as discarding
  *     `selftest()`'s return value. It cannot: `selftest(): void` and it calls
@@ -43,7 +43,7 @@
  * what failed and why is the gate's whole value. This module counts the scaffolding and
  * never the reasons.
  */
-import { GREEN, NC, RED } from '../utils/console.js';
+import { GREEN, NC, RED } from './console.js';
 
 /** One control. Identical to the shape `sharedSelftestCases()` already returns. */
 export interface ControlCase {

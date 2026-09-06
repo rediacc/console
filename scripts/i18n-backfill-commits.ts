@@ -19,7 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SUPPORTED_LANGUAGES as ALL_LANGUAGES } from '@rediacc/shared/i18n/types';
-import { getFileAtCommit, getLatestCommitForFile } from './utils/translation-diff.js';
+import { getFileAtCommit, getLatestCommitForFile } from './lib/translation-diff.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');

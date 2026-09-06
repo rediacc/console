@@ -43,7 +43,7 @@ import {
   runProbes,
   type Universe,
 } from './lib/suppression-liveness.js';
-import { NC, RED } from './utils/console.js';
+import { NC, RED } from './lib/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = process.env.SUPPRESSION_LIVENESS_ROOT || path.join(__dirname, '..');

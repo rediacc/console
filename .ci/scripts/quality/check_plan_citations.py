@@ -72,6 +72,12 @@ police. In CI on a pull request the working tree is the head commit, so the same
 code path answers the same question.
 
 Exit 0 green, 1 findings or vacuous input, 2 instrument control failed.
+
+---- gate ----
+step: Plan citations
+needs: none
+lane: quality-branch
+---- end gate ----
 """
 
 from __future__ import annotations

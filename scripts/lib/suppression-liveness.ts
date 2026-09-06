@@ -27,7 +27,7 @@
  */
 
 import { existsSync as fsExistsSync, readFileSync } from 'node:fs';
-import { DIM, GREEN, NC, RED, YELLOW } from '../utils/console.js';
+import { DIM, GREEN, NC, RED, YELLOW } from './console.js';
 
 const readFileUtf8 = (p: string): string => readFileSync(p, 'utf-8');
 

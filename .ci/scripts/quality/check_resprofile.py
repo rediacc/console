@@ -27,6 +27,12 @@ on is write-only data, and this hook directory already holds one (wl_admit.py:59
 
 ANTI-VACUITY. A captures dir with zero judgeable captures is UNJUDGEABLE, never clean:
 warn while pristine, fail once seeded. Exit 1 on an enforced finding, 2 on a failed control.
+
+---- gate ----
+step: Resource profile (previous run's captures)
+needs: none
+lane: quality-branch
+---- end gate ----
 """
 
 from __future__ import annotations

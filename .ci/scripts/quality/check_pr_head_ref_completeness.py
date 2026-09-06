@@ -27,6 +27,13 @@ specific scenario, they are not a real CI caller needing a workflow setter.
 `.claude/hooks/**` is out of scope entirely: those run as local git hooks, not
 CI workflow steps, and have no `run:` line to resolve.
 
+---- gate ----
+step: PR_HEAD_REF completeness
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+lane: quality-code
+---- end gate ----
 """
 
 from __future__ import annotations

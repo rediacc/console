@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# kind: test
+# id: check:ci-label-refs
+# test: .ci/scripts/test/gates/test-label-references.sh
+# blocker: BLOCKER: test-label-references.sh:116 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions
+# needs: none
+# ---- end gate ----
+
 # Every GitHub label a workflow or .ci script references by name must be
 # declared in .github/labels.yml.
 #

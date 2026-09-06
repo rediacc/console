@@ -135,7 +135,6 @@ export default [
         projectService: {
           allowDefaultProject: [
             'scripts/*.ts',
-            'scripts/utils/*.ts',
             // @rediacc/locales is deliberately buildless plain ESM with a hand-written
             // .d.ts, so it has no tsconfig of its own to be included by. It exists in
             // that shape because eslint itself — this file — is one of its consumers and

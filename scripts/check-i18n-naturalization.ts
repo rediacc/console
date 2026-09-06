@@ -28,7 +28,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { flattenAndHash } from './utils/crc32.js';
+import { flattenAndHash } from './lib/crc32.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TRANSLATIONS_DIR = path.join(__dirname, '../packages/www/src/i18n/translations');

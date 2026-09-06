@@ -21,13 +21,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { flattenAndHash } from './utils/crc32.js';
+import { flattenAndHash } from './lib/crc32.js';
 import {
   diffJsonTranslations,
   flattenJson,
   getFileAtCommit,
   type TranslationChange,
-} from './utils/translation-diff.js';
+} from './lib/translation-diff.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');

@@ -41,7 +41,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
-import { DIM, GREEN, NC, RED, YELLOW } from './utils/console.js';
+import { DIM, GREEN, NC, RED, YELLOW } from './lib/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.DEAD_BASH_ROOT || path.join(__dirname, '..');

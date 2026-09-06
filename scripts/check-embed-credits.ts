@@ -45,7 +45,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generatedArtifacts, LOCKFILE, type Lockfile } from './generate-embed-credits.js';
 import { parseDockerfileVersions } from './lib/dockerfile-versions.js';
-import { GREEN, NC, RED, YELLOW } from './utils/console.js';
+import { GREEN, NC, RED, YELLOW } from './lib/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');

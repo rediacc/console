@@ -73,20 +73,7 @@
       "paths": ["scripts/lib/**"],
       "home": "scripts/lib",
       "stays": true,
-      "why": "Shared modules imported by relative path from roughly 30 gates. scripts/lib/gate-header.ts and scripts/lib/policy-paths.ts are single-writer files (driver contract section 3), and scripts/utils/ merges INTO this directory (see mergeIn below), so this is a destination, not a source."
-    },
-    {
-      "id": "utils-merge-source",
-      "paths": ["scripts/utils/**"],
-      "home": "scripts/lib",
-      "stays": false,
-      "mergeInto": "lib",
-      "why": "Three modules (console.ts, crc32.ts, translation-diff.ts) that are `lib` by every criterion and sit in a second directory for no stated reason. 25 import sites plus one eslint.config.js glob.",
-      "blockedOn": "Mechanically safe and NOT safe to execute concurrently. Proven safe: scripts/tsconfig.json includes ./**/*.ts so typecheck coverage is unchanged by a move within scripts/, and scripts/lib/*.ts already lints clean today without an allowDefaultProject entry. Blocked because 22 of the 25 importing files were modified in the working tree by other sessions at the time of measurement, and driver contract section 4 makes the checkout itself a machine mutex. This is a single-writer edit for the P2 agent.",
-      "consumers": [
-        "eslint.config.js:328 allowDefaultProject entry 'scripts/utils/*.ts' becomes dead and must be dropped in the same change",
-        ".ci/scripts/quality/lint-rule-liveness.mjs:431 names the path in a comment only"
-      ]
+      "why": "Shared modules imported by relative path from roughly 30 gates. scripts/lib/gate-header.ts and scripts/lib/policy-paths.ts are single-writer files (driver contract section 3). This was the destination of the scripts/utils/ merge, which COMPLETED on 2026-09-06: console.ts, crc32.ts and translation-diff.ts landed here, scripts/utils/ is gone, its 24 importers were re-pointed and the dead allowDefaultProject glob eslint.config/typescript.js:138 was dropped in the same change. There is no rule for scripts/utils/** any more because no such path can exist."
     },
     {
       "id": "drills",

@@ -32,7 +32,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { GREEN, NC, RED } from './utils/console.js';
+import { GREEN, NC, RED } from './lib/console.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WWW = path.join(ROOT, 'packages/www');

@@ -31,7 +31,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { globSync } from 'glob';
-import { GREEN, NC, RED, YELLOW } from './utils/console.js';
+import { GREEN, NC, RED, YELLOW } from './lib/console.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const DIST = path.join(ROOT, 'packages/www/dist');

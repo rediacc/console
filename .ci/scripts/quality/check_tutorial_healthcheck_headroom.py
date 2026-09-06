@@ -48,6 +48,13 @@ CONTROL-FIRST
 detector to flag exactly the tight one. Finding no compose files at all is a hard
 FAILURE, not a pass: a headroom check with nothing to check asserts nothing.
 
+---- gate ----
+step: Tutorial healthcheck headroom
+run: .ci/scripts/quality/check_tutorial_healthcheck_headroom.py --selftest && .ci/scripts/quality/check_tutorial_healthcheck_headroom.py
+selftest: true
+needs: none
+lane: quality-packages
+---- end gate ----
 """
 
 from __future__ import annotations

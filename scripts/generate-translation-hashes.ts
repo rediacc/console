@@ -15,8 +15,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { flattenAndHash } from './utils/crc32.js';
-import { getLatestCommitForFile } from './utils/translation-diff.js';
+import { flattenAndHash } from './lib/crc32.js';
+import { getLatestCommitForFile } from './lib/translation-diff.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

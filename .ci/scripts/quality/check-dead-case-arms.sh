@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# kind: test
+# test: .ci/scripts/test/gates/test-dead-case-arms.sh
+# blocker: BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test-dead-case-arms.sh:14 runs it seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests")
+# needs: none
+# ---- end gate ----
+
 # A test assertion must be able to FAIL. This gate catches one mechanically
 # detectable way it cannot: a `case` arm that globs for a `field=` token which
 # exists nowhere in the code the test exercises.

@@ -67,7 +67,7 @@ import {
 } from './lib/devcontainer-pin-sources.js';
 import { parseDockerfileVersions } from './lib/dockerfile-versions.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
-import { GREEN, NC, RED, YELLOW } from './utils/console.js';
+import { GREEN, NC, RED, YELLOW } from './lib/console.js';
 import { githubToken } from './lib/github-token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

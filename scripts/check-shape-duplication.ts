@@ -42,7 +42,7 @@
  *     construction, and a fix there would be churn across 79 files for no drift risk.
  *   - IMPORT BLOCKS. Three files importing the same helper is ADOPTION, not duplication:
  *     an import statement IS the consolidation. This gate caught itself on this within an
- *     hour of landing -- moving five gates onto `utils/console.js` created a shared
+ *     hour of landing -- moving five gates onto `lib/console.js` created a shared
  *     import preamble in three of them and the gate reported it, which would have
  *     discouraged exactly the consolidation it exists to encourage.
  *   - WRITTEN DECISIONS. `block-ci-polling.sh:19` says "NOT ROUTED THROUGH
@@ -74,7 +74,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { validateBlockerQuality } from './lib/blocker-validator.js';
 import { runControls } from './lib/controls.js';
-import { GREEN, NC, RED } from './utils/console.js';
+import { GREEN, NC, RED } from './lib/console.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const SEED_FILE = path.join(ROOT, 'scripts/data/shape-duplication-seed.json');

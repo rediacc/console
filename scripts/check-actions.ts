@@ -31,7 +31,7 @@ import { fileURLToPath } from 'node:url';
 import { collectActionRefs } from './lib/action-refs.js';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
-import { BLUE, DIM, GREEN, NC, RED, YELLOW } from './utils/console.js';
+import { BLUE, DIM, GREEN, NC, RED, YELLOW } from './lib/console.js';
 import { githubToken } from './lib/github-token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

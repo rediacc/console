@@ -29,7 +29,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { globSync } from 'glob';
-import { GREEN, NC, RED } from './utils/console.js';
+import { GREEN, NC, RED } from './lib/console.js';
 
 import {
   baselineAdditions,

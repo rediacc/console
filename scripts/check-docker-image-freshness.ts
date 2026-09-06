@@ -148,7 +148,7 @@ function readGitmodulePaths(): string[] {
 }
 
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
-import { GREEN, NC, RED, YELLOW } from './utils/console.js';
+import { GREEN, NC, RED, YELLOW } from './lib/console.js';
 import {
   baselineAdditions,
   renderRefusal,
