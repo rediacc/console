@@ -40,6 +40,10 @@ Copy these into any agent brief. They are not ceremony; each was paid for.
 - Namespace scratchpad helpers per agent. A sibling overwrote another agent's
   helper mid-wave.
 - No em dashes. Read stdout and stderr separately. Run the real thing.
+- To find where something LANDED, search content history first:
+  `git log -S '<distinctive string>' -- <file>`. `git log --diff-filter=A` names the
+  RENAME for any file ever moved, and `--follow` only sometimes repairs it: both were
+  measured returning an unrelated commit as a landing. See TRAPS.md.
 
 ## The recording recipe, for any port task
 

@@ -2385,8 +2385,14 @@ repo has. Only reading the commit's SUBJECT reveals that it has nothing to do wi
 claim it is supporting. That makes it worse than the stale-`Status:`-header problem this
 same wave was built to fix, because a header at least announces itself as a claim.
 
-The fix is `--follow`, and the discipline is to treat any result whose subject is
-unrelated to the subject under investigation as a rename artifact rather than a landing.
+`--follow` HELPS AND IS NOT ENOUGH, which was found by an agent sent to apply it. On a
+`--diff-filter=D` lookup for a deleted marp directory, `--follow` returned the SAME
+misleading commit as without it, an account-pointer bump whose subject had nothing to do
+with the work. Only `git log -S '<distinctive string>'` found the real landing. Rename
+detection is a heuristic over a similarity threshold; content search is not a heuristic at
+all. So the order is: search content history FIRST, use `--follow` as a cross-check, and
+treat any result whose subject is unrelated to the subject under investigation as an
+artifact rather than a landing.
 Two cheaper alternatives that do not depend on rename detection at all: `git log -S
 '<distinctive string>' -- <file>` searches content history, and for a subject that lives
 in a submodule the landing is in THAT repository, where it must be named by subject line
