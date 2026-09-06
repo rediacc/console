@@ -48,6 +48,33 @@ GIT_COMMIT='(^|[;&|(]|\$\(|`)[[:space:]]*git([[:space:]]+-[A-Za-z-]+([[:space:]]
 
 printf '%s' "$SCAN" | grep -qE "$GIT_COMMIT" || exit 0
 
+# THROWAWAY FIXTURE REPOS ARE EXEMPT, and this was a defect in the guard's first
+# hour rather than a concession. The shadow-differential recipe every port agent
+# follows REQUIRES `git init` plus a sealing commit inside a disposable repo under
+# the session scratchpad, because a ledger row records `HEAD^{tree}` and a dirty
+# tree is refused. Blocking that would have stopped the wave this guard was
+# written during. Measured: the guard refused `git init ... && git commit -qm seed`
+# in a scratch directory five minutes after it landed.
+#
+# THE MARKERS ARE STRUCTURAL, not a name allowlist: a command that creates a
+# repository, or that reaches into one under /tmp, is not committing to this
+# checkout. The real checkout is never under /tmp.
+#
+# THE LIMIT, stated rather than hidden: a `cd` into /tmp followed by a `cd` back
+# would slip through. This guard defends against the accident it was written for,
+# which is a correctly-scoped `git add` followed by an unscoped commit in the
+# working checkout; it is not an adversarial control, and pretending otherwise
+# would be the "check that cannot fail" this repo keeps a trap file about.
+if printf '%s' "$SCAN" | grep -qE '(^|[;&|(]|\$\(|`)[[:space:]]*git[[:space:]]+init([[:space:]]|$)'; then
+    exit 0
+fi
+if printf '%s' "$SCAN" | grep -qE '(^|[;&|(]|\$\(|`)[[:space:]]*cd[[:space:]]+["'"'"']?/tmp/'; then
+    exit 0
+fi
+if printf '%s' "$SCAN" | grep -qE 'git[[:space:]]+-C[[:space:]]+["'"'"']?/tmp/'; then
+    exit 0
+fi
+
 # An amend is choosing nothing new, so it is not this guard's business.
 printf '%s' "$SCAN" | grep -qE '(^|[[:space:]])--amend([[:space:]]|$)' && exit 0
 

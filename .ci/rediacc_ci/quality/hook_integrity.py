@@ -286,6 +286,41 @@ matches before and after, identical set."
 cannot match the helper-wrapper rule and do not need excluding by name. Carried
 verbatim from the twin, because it is the sort of exclusion a port adds "for
 safety" and thereby changes the answer.
+
+THE TWIN READS ITS SCOPE WITH `while read` AND A TRAILING `|| true`, and both
+halves of that are archaeology this port would otherwise lose. It said `mapfile`
+until 2026-09-06; the twin's own words for the change:
+
+    `while read` RATHER THAN `mapfile`, and it is not a style choice. `mapfile`
+    is bash 4+ and `check:ci-shell-commands` rejects it as unavailable in the
+    minimal CI image; these three lines were the last three findings that gate
+    had. Behaviour is identical for this input: scope_list emits one entry per
+    line and an entry can never contain a newline, since it is a JSON string this
+    file's own reader has already rejected unless every element is a non-empty
+    string.
+
+    The trailing `|| true` on each is REQUIRED and is not defensive noise. `read`
+    returns non-zero at end of input, which under `set -e` would kill the script
+    at the last line of the loop and take the emptiness refusal below with it.
+    That refusal is the only thing standing between an unreadable scope file and
+    a gate that exits 0 having audited nothing.
+
+THE PORT NEEDED NO CHANGE FOR IT, and that is worth writing down rather than
+leaving as an absence. `scope_list` here raises `ScopeError` and the caller turns
+that into an empty list, which is the same value both `mapfile` and the
+`while read` loop produce from an empty process substitution. There is no
+`set -e` to survive, so there is nothing for `|| true` to correspond to -- but
+the HAZARD it guards is real in this file too, and it is the reason the three
+`except ScopeError` arms below assign `[]` and fall through to the emptiness
+refusal instead of returning early. A port that let the exception escape would
+exit non-zero with a traceback rather than the gate's own four-line refusal,
+which reads as a broken runner rather than an unreadable data file.
+
+THE DIFFERENTIAL COVERS ALL THREE WAYS THE SCOPE CAN COLLAPSE, because under the
+`while read` form they are the same event and the `|| true` fires on the FIRST
+`read` rather than the last: a declared key holding an empty list, a scope file
+with no such key at all, and a scope file that is not JSON. The ledger carries a
+tree for each.
 """
 
 import json

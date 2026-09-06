@@ -718,6 +718,10 @@ check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -F ms
 check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -q -F - -- .ci/x.sh agent/y.md')" "pathspecless-commit: ALLOW several named paths"
 check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit --amend --no-edit')" "pathspecless-commit: ALLOW an amend, which chooses no new content"
 check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git add -- a.ts')" "pathspecless-commit: ALLOW a git add, which is a different guard's business"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git init -q && git add -A && git commit -qm seed')" "pathspecless-commit: ALLOW a throwaway fixture repo, which every port agent must seal"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'cd /tmp/claude-1000/fx/r1; git add -A; git commit -qm seed')" "pathspecless-commit: ALLOW a commit inside /tmp, which is never this checkout"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git -C /tmp/claude-1000/fx/r1 commit -qm seed')" "pathspecless-commit: ALLOW git -C into a scratch repo"
+check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -F /tmp/claude-1000/msg.txt')" "pathspecless-commit: a /tmp MESSAGE FILE is not a /tmp repo, so this is still blocked"
 
 # block-destructive-git-restore.sh -- the four commands that DISCARD uncommitted
 # work. Added 2026-08-14 after `git checkout -- <one file>`, run to tidy up a
