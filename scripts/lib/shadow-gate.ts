@@ -198,7 +198,7 @@ export interface TreeIdentity {
 export interface CommentAudit {
   oldBytes: number;
   newBytes: number;
-  /** newBytes / oldBytes. The contract refuses below 0.90. */
+  /** newBytes / oldBytes. Refused below COMMENT_RATIO_FLOOR by assertEquivalent. */
   ratio: number;
   /** Every original line naming a date, run id, sha or issue number. */
   provenance: string[];
@@ -891,8 +891,26 @@ export function auditComments(oldFile: string, newFile: string): CommentAudit {
 /** Default ledger home. Tracked, because the artifact is evidence, not cache. */
 export const LEDGER_DIR = '.ci/shadow';
 
+/**
+ * Driver contract section 5c: a port whose comment bytes fall below this
+ * fraction of the original's is refused. One constant, so the number the
+ * --record path PRINTS and the number assertEquivalent RULES on cannot drift.
+ */
+export const COMMENT_RATIO_FLOOR = 0.9;
+
 export function ledgerPath(repoRoot: string, pair: string, override?: string): string {
-  return override ?? path.join(repoRoot, LEDGER_DIR, `${pair}.jsonl`);
+  if (override) return override;
+  // `<pair>.observations.jsonl` FIRST, because that is what every ledger in this
+  // repo is actually called. This defaulted to `<pair>.jsonl`, which exists for
+  // no pair, so the invocation printed in this tool's own USAGE string reported
+  // `0 row(s), 0 distinct clean tree(s)` for ALL FOURTEEN pairs. That reads as
+  // "not enough evidence recorded yet" rather than "you are pointing at a file
+  // that is not there", so a reviewer following the help text would conclude the
+  // whole W7 P2 evidence base was missing. Nothing gated on it and nobody noticed
+  // because every real caller passes --ledger.
+  const observations = path.join(repoRoot, LEDGER_DIR, `${pair}.observations.jsonl`);
+  if (fs.existsSync(observations)) return observations;
+  return path.join(repoRoot, LEDGER_DIR, `${pair}.jsonl`);
 }
 
 export function toRow(
@@ -1113,6 +1131,42 @@ export function assertEquivalent(rows: LedgerRow[], k: number): AssertResult {
       `all ${distinctTrees.length} counted tree(s) produced the same finding fingerprint ` +
         `${fingerprints[0] ?? '(none)'}. That is one observation re-shaded, not ${k} of them. ` +
         'At least two distinct finding sets are required.'
+    );
+  }
+
+  // THE COMMENT FLOOR WAS PRINTED AND NEVER ENFORCED, and the box that claimed
+  // otherwise said "closed". Driver contract section 5c states "A port whose
+  // comment bytes fall below 90 percent of the original's is refused", every
+  // ledger row carries the ratio, and the --record path prints
+  // `✗ below the 0.90 floor` when it is short. But assertEquivalent -- the ONLY
+  // ruling function -- never read row.comments, so --assert returned 0 with
+  // every row below the floor. The word "refused" in 5c described a human.
+  //
+  // Not masking a live violation today: the worst ratio across all 100 recorded
+  // rows is 2.95, comfortably clear. That is exactly why it stayed invisible,
+  // and exactly why it is worth closing now rather than after a port pads prose
+  // to get past a reviewer who is reading a number nothing checks.
+  //
+  // Only rows that COUNT are judged. A row against a disqualified tree is
+  // already refused above, and failing it twice for a second reason would make
+  // the first message harder to act on.
+  const countedTrees = new Set(distinctTrees);
+  const thin = rows.filter(
+    (r) =>
+      r.comments !== undefined &&
+      r.comments.ratio < COMMENT_RATIO_FLOOR &&
+      countedTrees.has(r.tree.id)
+  );
+  if (thin.length > 0) {
+    const worst = thin.reduce((a, b) =>
+      (a.comments?.ratio ?? 1) <= (b.comments?.ratio ?? 1) ? a : b
+    );
+    reasons.push(
+      `${thin.length} counted row(s) fall below the ${COMMENT_RATIO_FLOOR} comment-byte floor ` +
+        `(driver contract 5c); worst is ratio ${worst.comments?.ratio} on tree ` +
+        `${worst.tree.id.slice(0, 12)}. Comment archaeology is the half of a port that ` +
+        'cannot be recovered from the code, so a thin port passes its differential and ' +
+        'still loses the reason the original existed.'
     );
   }
 
@@ -1647,7 +1701,7 @@ export function main(argv: string[]): number {
     for (const f of cmp.onlyNew) console.log(`  only-new  ${f}`);
     if (comments) {
       console.log(
-        `  comments  old=${comments.oldBytes}B new=${comments.newBytes}B ratio=${comments.ratio}${comments.ratio < 0.9 ? '  ✗ below the 0.90 floor (driver contract 5c)' : ''}`
+        `  comments  old=${comments.oldBytes}B new=${comments.newBytes}B ratio=${comments.ratio}${comments.ratio < COMMENT_RATIO_FLOOR ? '  ✗ below the 0.90 floor (driver contract 5c)' : ''}`
       );
       for (const p of comments.provenance) console.log(`  provenance  ${p}`);
     }
