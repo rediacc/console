@@ -32,7 +32,7 @@ BUILDER="${SIGNING_COVERAGE_BUILDER:-$ROOT/.ci/scripts/build/build-linux-pkg.sh}
 #     it needs a key decision that belongs to the operator, and is tracked as a
 #     finding rather than silently allowlisted.
 declare -A UNSIGNED_ON_PURPOSE=(
-    [archlinux]="nfpm archlinux packager has no signature block in .ci/config/nfpm.yaml; signing it is an operator key decision"
+    [archlinux]="nfpm CANNOT sign archlinux at all -- adding a signature block fails at config load with 'field signature not found in type nfpm.ArchLinux' (measured against the pinned nfpm, 2026-09-06). Signing it needs a detached .sig produced outside nfpm and published beside the package"
     [apk]="APK_RSA_PRIVATE_KEY is set by nothing in this repo and is absent from .ci/config/bws-secret-map.json, so apk has never been signed; nfpm.yaml's apk signature block reads an env var that is never populated. Minting an RSA key is the operator's call"
 )
 
