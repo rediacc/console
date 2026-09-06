@@ -33,6 +33,39 @@ their fixtures were never meant to contain. Six paired cases now cover it
 (`test-workflow-contracts.sh`, 29/29), and `REAL_WORKFLOW_TREE` is overridable
 precisely so the liveness sweep is drivable from a fixture at all.
 
+## THE RELEASE IS HALF-COMPLETING, and it is not mine alone
+`Release to Edge` **34019022671** (v1.3.11) shows `failure`, but read the jobs:
+Initialize, publish, all three regional account deploys, marketing, smoke test
+and all six install validations **succeeded**. Only `Tag & GitHub Release`
+failed, on `git push origin v1.3.11`:
+
+    ! [remote rejected] v1.3.11 -> v1.3.11 (refusing to allow a GitHub App to
+      create or update workflow `.github/workflows/claude-review-reusable.yml`
+      without `workflows` permission)
+
+So edge is DEPLOYED as 1.3.11 with **no git tag and no GitHub Release**; the
+newest tag is `v1.3.10`. Not mine alone and not new: run **34003183456** died
+identically on v1.3.8, naming `ci-quality.yml`. The trigger is a workflow commit
+landing on main while a release is in flight -- mine (`5aa8d197a`) landed during
+this one.
+
+It is at least not silent: `promote-stable.yml:68` calls
+`.ci/scripts/release/assert-edge-tag-exists.sh`, which refuses to promote a
+channel pointer whose version has no tag/Release/sentinel. I first read that
+guard as unwired and was wrong -- grep `.github/` directly before saying so.
+
+Tracked as `[?] #567dcb4c`, `door:operator-only`: `.github/actions/app-token`
+never requests `workflows` (only contents/pull-requests/actions/packages/
+deployments), and the release bot has **never** landed a `.github/workflows`
+commit, so there is no evidence the App installation holds that permission --
+requesting one it lacks makes the token mint fail and would break every CD run.
+
+## A cancelled run with ZERO jobs is "superseded", not "killed"
+`34018240626` on `935724166` reads `cancelled`. `total_count` for its jobs is
+**0**: nothing ever started, so no job failed, and a newer commit exists. That
+is the superseded shape. The watchdog-kill shape has cancelled siblings AND a
+failed job. Both print the same word.
+
 ## Two things I got wrong, recorded so they are not repeated
 1. **"Blocked by a peer's uncommitted tree" was true of the REBASE and I carried
    it to the PUSH.** A push needs no clean tree. The branch had no upstream at
