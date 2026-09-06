@@ -2364,6 +2364,39 @@ works.
 Recorded by a session that did NOT make the fix: the failing case belongs to `8a720b7eb`
 and its evidence is there, not here.
 
+## `git commit` commits the INDEX, so a peer's staged work rides your commit
+Trap-Id: git-commit-takes-the-whole-index
+Enforced-By: file:.claude/hooks/pre-bash/block-blanket-git-add.sh
+Residue: the hook refuses a blanket `git add`, which is the other half of this and
+  the half that was already known. Nothing refuses a scoped `git add` followed by a
+  bare `git commit`, because at that point the unwanted paths were staged by someone
+  else and git has no way to know you did not mean them.
+
+This checkout is shared and other sessions stage work in it. `git add -- <exact paths>`
+is correct and is NOT enough: `git commit` with no pathspec writes whatever the index
+holds, including everything a peer staged before you got there.
+
+Measured 2026-09-06. A driver ran `git add -- <six named paths>` and then `git commit`.
+The commit landed those six AND fifteen `git mv` renames a concurrent agent had staged,
+moving every policy allow/block list into `.ci/policy/` with **none of its readers**.
+HEAD then had the files at their new paths while `scripts/lib/policy-paths.ts` still
+read `const POLICY_DIR = '';`. That seam exists specifically to make a half-landed move
+impossible, and it was reached anyway, from the outside.
+
+The safe form takes the pathspec on the COMMIT, not only on the add:
+
+    git commit -F <message-file> -- <path> <path> ...
+
+That reads those paths from the working tree and ignores the rest of the index entirely.
+Note the argument order: `-F` and every other option must come BEFORE the `--`, or git
+reads `-F` as a pathspec and refuses with "pathspec '-F' did not match any file(s)".
+
+The same session had already been bitten by the sibling of this trap hours earlier, when
+`git add -- scripts/check-*.ts` matched a wildcard across an ownership boundary and swept
+an agent's in-flight files without the dependency they imported. Both are the same
+mistake in different clothes: a staging decision that was scoped by intent and unscoped
+in execution. Scope the execution.
+
 ## `git log --diff-filter=A` names the RENAME, not the landing, and it does it confidently
 Trap-Id: diff-filter-a-names-the-rename
 Enforced-By: JUDGMENT-ONLY
