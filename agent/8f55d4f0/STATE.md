@@ -1,38 +1,48 @@
-## SESSION 8f55d4f0 2026-09-06T17:03:47Z
+## SESSION 8f55d4f0 2026-09-06T17:48:15Z
 
-Branch **0906-1**, ~46 commits ahead of origin/main, 0 behind. No PR open. Plan file: 67 done / 63 open.
+Branch **0906-1**, ~55 commits ahead of origin/main, 0 behind. No PR open.
 
-## WAVE 1 IS IN FLIGHT: ten writer agents, all disjoint
+## WAVE 1 IS COMPLETE AND COMMITTED
 
-- **PORT-A..E** (5 agents, 25 gates): each owns only NEW files, three per gate: `.ci/rediacc_ci/quality/<mod>.py`, `.ci/rediacc_ci/tests/test_quality_<mod>.py`, `.ci/shadow/w7p2-<name>.observations.jsonl`.
-- **HDR-TS** (`scripts/check-*.ts` headers), **HDR-SH** (`.ci/scripts/quality` headers), **DUP** (the shape-duplication cluster), **COMPACT-1 / COMPACT-2** (11 aged-out plans each).
+- **39 of 77 quality gates ported**; 39 shadow ledgers; **38 of 39 assert green** at K=5.
+- **W12 P1.8 CLOSED: 32 of 32 aged plans compacted.** agent/ 4.2M to 3.5M, zero deletions.
+- W2.3 headers: 226 declared of 445 lock entries.
+- `check:ci-shape-duplication` green. All four `gate-bind` defects fixed.
 
-**A W7 P2 PORT NEEDS NO REGISTRY WRITE. Verified, not assumed:** grep for `rediacc_ci.quality` in package.json and manifest.ts returns ZERO hits; `__all__` is deliberately empty and the bash twin stays the registered gate until the ledger retires it. That is what makes ten-wide honest rather than nominal.
+The one red is **`w7p2-stagingtag`, and it can never pass.** Three tree ids are permanently disqualified by rows recorded through a hole since closed. It has 12 qualifying trees over 9 finding sets, so the claim is evidenced; only the assert cannot express it. **Do not delete rows to make it green.**
 
-**Collision rules that file-disjointness does NOT enforce, and that I put in the prompts:**
-- Header agents must NOT touch the 25 gates the PORT agents are recording against. A tree id is the content of BOTH implementations, so one stray edit destroys their evidence.
-- Neither compaction agent may write `agent/INDEX.md` or `.ci/config/plan-boxes.json`. They hand over ledger rows as fragments; **I render the index once at merge.**
-- **Only I run `gate:bind --write`**, once at wave end, asserting `dropped` is empty. A stray `--write` silently deleted four hand-added steps on 2026-09-05.
+## ACT ON THIS FIRST
 
-## RED RIGHT NOW, transient
+PORT-E reported that its fixture-refresh script globbed too widely and **amended other wave agents' fixture commits** under the scratchpad, changing their tree ids. Their ledgers were not written, but **PORT-D was mid-record**. Verify PORT-D's four un-asserted pairs (`no-otlp-creds`, `pipefail-grep-q`, `pool-writer-safety`, `release-key-canonical`) and re-record any that cannot reach K=5. Its five modules exist; only ledgers are in doubt.
 
-`check:ci-gate-bind` exits 1 from HDR-SH's working tree: `check-ci-scans-tracked-paths.sh` hit the known `inferredNeeds` false positive (its `npx` probe has no command-position check, so it matches `exe="${exe#npx }"`, a parameter expansion). I have sent that agent all FOUR gates that cannot take a header, with reasons. Do not "fix" `gate-header.ts` to make them parse.
+**Relaunch the waiter** (it fires once and exits):
+`python3 .claude/hooks/stop/wl_wait.py 8f55d4f0 --timeout 3600`, background, NO QUOTES anywhere.
+
+## Where everything is written down
+
+- **`docs/ci-overhaul/12-remaining-work.md`** carries every remaining task WITH ITS PROMPT, how wide each parallelises, the driver-only list, and the shadow recording recipe. Wave 2 is ready to launch from it.
+- **`docs/ci-overhaul/11-timing-baseline.md`**: 437 gates, wall 780.4s, 9.0x.
+- **TRAPS.md** now carries the rename trap (below).
+
+## Two crons and a waiter
+
+`:23` work loop (investigate, validate, mark, report percentage, go parallel). `:47` mail poll, which must stop SILENTLY on an empty result. Both session-only, 7-day expiry.
 
 ## Operator decisions, do not re-ask
 
-1. **Bitwarden:** default taken. The 2026-09-08 probe is the OPERATOR's, recorded in the plan's W0.0 box; `BWS_ACCESS_TOKEN` is not in an assistant session's env, so it cannot be run from one.
-2. **W2.6 CLOSED at lane 3.** W3 P3's shard matrix supersedes lanes 4-8.
-3. **Release credential:** `gh release create` now uses the App token and `contents: write` is REMOVED from tag-and-release (f215d24ac).
-4. **Peer items:** `#567dcb4c` ticked across sessions on operator instruction; `#ed6f6ea8` deliberately NOT, because PR #86 is still red and evidence must be true.
-5. **`private/homebrew-tap`:** permanently unstaged. The stop check now recognises that recorded decision (8ff25f5b1) and latches for a day instead of 15 minutes.
+1. **Bitwarden:** default taken; the 2026-09-08 probe is the OPERATOR's and needs their shell.
+2. **W2.6 CLOSED at lane 3**; W3 P3's shard matrix supersedes it.
+3. **Release credential:** `gh release create` uses the App token; `contents: write` REMOVED from tag-and-release.
+4. **`private/homebrew-tap`:** permanently unstaged. The check now honours that recorded decision.
+5. Percentages are BY BOX and flatter: 148 gate tests are ONE box and are untouched.
 
-## The wave plan, from a Plan agent
+## The trap that fooled my own brief
 
-Four waves. **W2.3 is the critical path** and is not the biggest box: it changes the COST of every future gate from a three-file driver paste to a comment in the gate's own file. Wave count is set by the spine crossing driver-only files four times, not by port volume. Honest concurrency: strip the port shards and genuinely disjoint sets number five, dropping to three by wave 3.
+`git log --diff-filter=A` names the RENAME, not the landing, for any moved file, and returns a real commit so **no gate catches it**. `--follow` is only a PARTIAL fix: on one lookup it returned the same wrong commit. **Search content history first: `git log -S '<string>' -- <file>`.**
 
 ## Next action
 
-1. As each agent returns, **spot-check the artifact, not the report**, then commit. Ports need no registration; headers need none either.
-2. When all ten are in: ONE `gate:bind --write` with `dropped` asserted empty, then render `agent/INDEX.md` and merge the compaction ledger fragments.
-3. Then push **`880b1b3ee`** to main (one file, operator-authorised). Until it lands, rediacc/account PR #86 and every renet/elite review run stay red on `discover-epics.sh: No such file or directory`.
-4. Then wave 2 per the plan: PORT-F/G/H, MOVE (W4 P2, one serial writer), two gate-test header sets, PROXY, SETUP, COMPACT-3.
+1. Verify and if needed re-record PORT-D's four ledgers (see ACT ON THIS FIRST).
+2. Relaunch the waiter.
+3. Launch wave 2 from `12-remaining-work.md`: PORT-F/G/H (39 gates, 3 agents), two gate-test header sets (148 files), MOVE (W4 P2, one serial writer), PROXY, SETUP.
+4. Then push **`880b1b3ee`** to main, one file, operator-authorised. Until it lands, rediacc/account PR #86 and every renet/elite review run stay red.

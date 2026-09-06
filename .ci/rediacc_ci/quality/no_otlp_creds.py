@@ -133,7 +133,7 @@ BASIC_LITERAL_RE = re.compile(r"[\"']Basic [A-Za-z0-9+/=]{20,}[\"']")
 # strings are compared against the twin's stdout by the shadow differential. It is
 # written as an escape so this source file carries none.
 NO_RENET_WARN = (
-    "no renet binaries found at private/renet/bin or private/bin — skipping renet checks"
+    "no renet binaries found at private/renet/bin or private/bin \u2014 skipping renet checks"
 )
 NO_RENET_HINT = (
     "build with ./build.sh dev or .ci/scripts/build/build-renet.sh before running this check"
@@ -309,7 +309,7 @@ def main(argv: list[str] | None = None) -> int:
 
     bundle = root.joinpath(*CLI_BUNDLE)
     if not bundle.is_file():
-        log.warn("CLI bundle not found at %s — skipping CLI check" % bundle)
+        log.warn("CLI bundle not found at %s \u2014 skipping CLI check" % bundle)
         log.warn("build with npm run build -w @rediacc/cli first")
     else:
         log.info("inspecting %s..." % bundle.name)
