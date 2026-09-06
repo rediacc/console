@@ -85,8 +85,21 @@ const KEY = 'credentialShapedFindings';
  */
 const AWS_RE = /\b(AKIA|ASIA|AIDA|AROA)[0-9A-Z]{16}\b/;
 const PEM_BEGIN = /-----BEGIN [A-Z ]*PRIVATE KEY-----/;
-/** GitHub personal-access / app / OAuth tokens, and Slack's bot and user tokens. */
-const TOKEN_RE = /\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b|\bxox[baprs]-[A-Za-z0-9-]{10,}/;
+/**
+ * Token shapes, kept in step with .claude/hooks/stop/wl_store.py::_SECRET_SHAPES.
+ *
+ * THAT LIST IS THE REPO'S OWN, and its comment says the shapes "must never reach a
+ * TRACKED file" -- which is this gate's entire job. On 2026-09-06 a sweep found the
+ * gate covered only 4 of its 7: `github_pat_` (fine-grained PATs), `whsec_` (Stripe
+ * webhook secrets, and this repo runs Stripe in three regions) and `sk-` were
+ * missing here while the worklist store had been redacting them at its own door for
+ * months. A detector narrower than the redactor guarding the same files is a gap
+ * with a paper trail.
+ *
+ * Keep the two in step. If a shape is added there, add it here.
+ */
+const TOKEN_RE =
+  /\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b|\bxox[baprs]-[A-Za-z0-9-]{10,}|\bgithub_pat_[A-Za-z0-9_]{20,}|\bwhsec_[A-Za-z0-9]{24,}|\bsk-[A-Za-z0-9]{32,}|\bsk_(live|test)_[A-Za-z0-9]{20,}/;
 /** Key material: a base64 run long enough that no prose or elision reaches it. */
 const B64_RUN = /^[A-Za-z0-9+/=]{40,}/;
 
@@ -235,6 +248,27 @@ function selftest(): number {
   // full shape is a credential.
   check('CONTROL: the bare prefix is not a finding', !TOKEN_RE.test('a ghp_ style token'));
   check('CONTROL: a short xox- string is not a finding', !TOKEN_RE.test('xox-abc'));
+  // The three the sweep found missing, each assembled from parts so this file is
+  // not itself a finding.
+  check(
+    'a fine-grained GitHub PAT is detected',
+    TOKEN_RE.test('github' + '_pat_' + 'A'.repeat(24))
+  );
+  check('a Stripe webhook secret is detected', TOKEN_RE.test('whsec' + '_' + 'B'.repeat(28)));
+  check('a Stripe live key is detected', TOKEN_RE.test('sk' + '_live_' + 'C'.repeat(24)));
+  check('an sk- style key is detected', TOKEN_RE.test('sk' + '-' + 'D'.repeat(36)));
+  // CONTROL: the elided spelling this repo uses in prose must stay clean, or the
+  // gate reds on the very documents that record a past leak safely.
+  check(
+    'CONTROL: an ELIDED key in prose is not a finding',
+    !TOKEN_RE.test('the active key `sk_live_...kVQA`, last used 2026-02-25')
+  );
+  // CONTROL: a region suffix is not a credential. `ASIA` is in the AWS alternation,
+  // and STRIPE_SECRET_KEY_ASIA appears all over this repo.
+  check(
+    'CONTROL: a region suffix named ASIA is not a finding',
+    !AWS_RE.test('STRIPE_SECRET_KEY_ASIA') && !AWS_RE.test('OTLP_CLIENT_CREDENTIALS_ASIA')
+  );
 
   const body = 'MIIEowIBAAKCAQEA7x9kQ2mNvBc3pLzR8dYfWqTgXhJsKmPbNvCxZaEiOuYtRwQl';
   check('a real PEM block is detected', hasPemBody(`-----BEGIN RSA PRIVATE KEY-----\n${body}\n`));
@@ -308,7 +342,7 @@ function selftest(): number {
   // CONTROL: the real corpus must clear it, or the floor reds every run and gets raised away.
   check('CONTROL: the real corpus clears the floor', trackedFiles(ROOT).length >= MIN_FILES);
 
-  if (n < 21) {
+  if (n < 27) {
     console.error(`FAIL  only ${n} control(s) ran; the battery is not being executed as written`);
     bad += 1;
   }
