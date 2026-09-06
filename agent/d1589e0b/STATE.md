@@ -1,56 +1,67 @@
-## SESSION d1589e0b 2026-09-06T00:26:58Z
+## SESSION d1589e0b 2026-09-06T00:49:58Z
 
-# Shadow retired; main's next red was the GPG key, root-caused and fixed
+# 4 commits on main; GPG armor weld fixed and CONFIRMED; org-scope reads 147 -> 4
 
 ## Next action
-**Push `f7094150b` (needs a fresh `ci:quick` on the committed tree), then watch
-main.** After that, three operator rulings from /ask are owed, in this order:
-1. **Add `ghp_`/`xox*` to `check:ci-tracked-credentials`**, baselining the one
-   synthetic fixture (`.claude/hooks/stop/worklist-cases/26-migrate.sh` plants
-   `ghp_` + the literal alphabet). The gate's header currently justifies leaving
-   them out with a reason that no longer holds — correct it.
-2. **Remove the 65 dead `secrets:` passthroughs** + matching `workflow_call`
-   declarations (25 cd-v2, 25 promote-stable, 15 ci.yml). Finishes "no GitHub
-   secrets at all" and is what lets `github-secret-preimage.json` be deleted.
-   `retire-shadowed-secrets.py --apply` does it BUT strips declarations whose
-   consumers still read them — actionlint catches that; check every run.
-3. **breakpoint.yml: build the step-scoped fetch shape.** Its 3 reads resolve
-   EMPTY today. Fetch into ONE step's own env, never GITHUB_ENV, because a later
-   step hands a human a shell.
+**Read the verdict for `872ac70b4`.** Worker `bl8c32yl3` runs
+`ci-trace.py --wait --until-final --ref main` and prints ONLY at the end, so a
+0-byte stream is health, not a stall. Then watch the **edge release** the merge
+dispatches — that is a SEPARATE run; watching CI is not watching the release.
+On a red, read the JOB's own conclusion, never the run rollup: a cancelled run
+and a green one look identical in `gh run list`.
+
+Three pushes landed in quick succession, so the runs on `10896546b` and
+`7343ae9dc` were SUPERSEDED. Only `872ac70b4` counts. Do not re-dispatch anything
+on the strength of an older run's absence.
 
 ## What is true right now
-`main` = **7343ae9dc** pushed; **`f7094150b` is committed locally and NOT pushed**.
-Operator confirms GitHub org secrets are now empty except one.
+`main` = **872ac70b4**, tree clean, `ci:quick` **310/310** on the pushed tree.
+Operator confirms GitHub org secrets are empty except one.
 
-**main's CI on 7343ae9dc is RED** at `Stage Artifacts / Build Linux packages`.
-Root cause found and fixed, not guessed:
-- A GPG private key does not fit one Bitwarden field, so it is stored as TWO
-  items (`gpg-private.asc - 1` / `- 2`). Part 1 has **no trailing newline** and
-  part 2 has no armor header, so concatenating them **welds** part 1's last
-  base64 line onto part 2's first.
-- gpg reads that fine (the fingerprint check passes); Go's decoder answers
-  `openpgp: invalid data: armor invalid`. Reproduced verbatim against
-  x/crypto v0.56.0 with a throwaway key. Joining with a newline is accepted.
-- Fix: `build-linux-pkg.sh` re-exports through gpg before nfpm sees it.
-  Passphrase protection VERIFIED to survive.
-- **The previous green was worse than the red:** that step read the deleted org
-  secret, got `""`, and an empty key made the build SKIP signing and exit 0 —
-  shipping unsigned packages. `RELEASE_SIGNING_REQUIRED=1` now makes that fatal.
-- 3 new controls in `test-linux-packages.sh`, all against real nfpm output. 21/21.
+Landed this round (oldest first): `5eaa6ae9b` credential gate ·
+`7343ae9dc` shadow retired · `10896546b` GPG armor fix · `ef31d98b3` token shapes
++ dead-wiring drain · `8f5f5d5df` breakpoint design note · `872ac70b4` plan-box
+ledger.
 
-## Local tooling notes (STATE.md previously said otherwise — it was wrong)
-`bw` AND `bws` are both on PATH. `~/.bw-session` unlocks the personal vault;
+**The GPG fix is CONFIRMED, not assumed:** `Build Linux packages` step =
+`success` on run 34001377608, the exact step that had failed.
+
+## The two findings that cost the most
+1. **The GPG key is stored as TWO Bitwarden items** (`gpg-private.asc - 1`/`- 2`).
+   Part 1 has NO trailing newline and part 2 has no armor header, so joining them
+   WELDS two base64 lines. gpg reads it (the fingerprint check ticks); Go answers
+   `openpgp: invalid data: armor invalid`. Reproduced verbatim against
+   x/crypto v0.56.0. `build-linux-pkg.sh` now re-exports through gpg;
+   passphrase protection verified to survive.
+2. **An empty key made the build SKIP signing and exit 0** — green while shipping
+   UNSIGNED packages. `RELEASE_SIGNING_REQUIRED=1` on cd-stage makes that fatal.
+   This is the shape to distrust everywhere: `""` reads as "not wanted".
+
+## Local tooling (earlier STATE.md was WRONG about this)
+`bw` and `bws` are BOTH on PATH. `~/.bw-session` unlocks the personal vault.
 `BWS_ACCESS_TOKEN` is NOT in env, so Secrets Manager is unreadable here.
-`nfpm` installs via `.ci/scripts/build/ensure-nfpm.sh` (prints its bin dir).
-`createrepo_c` and `rpm` are now installed, so `test-linux-packages.sh` runs 21/21.
+`nfpm` via `.ci/scripts/build/ensure-nfpm.sh` (prints its bin dir); `createrepo_c`
+and `rpm` now installed, so `test-linux-packages.sh` runs **21/21**.
+Passwordless sudo works for apt.
 
-## Owed, operator-only
+## Open
+- `[>] #a4a94ba8` CI verdict, leased to `bl8c32yl3` until 02:18Z.
+- `[?] #0ee5912b` **breakpoint secret shape — operator's call.** DEFAULT (fires
+  ~02:00Z): drop the 3 remaining reads. Design + the one-run experiment that
+  settles the alternative: `agent/PLAN-breakpoint-secret-shape.md`. Do NOT build
+  a "step-scoped fetch": GITHUB_ENV and GITHUB_OUTPUT are files any step reads,
+  so it isolates nothing from the debug shell.
+
+## Operator-only, still owed
 1. **`BWS_ACCESS_TOKEN` EXPIRES 2026-09-08.** No `bws` verb rotates a machine
    token. Update `.ci/config/bws-token-expiry.json`.
-2. **The stored SM value for `RELEASE_GPG_PRIVATE_KEY` is still welded.**
-   Re-join the two halves WITH a newline. Needs BWS_ACCESS_TOKEN. The build no
-   longer cares, so this is hygiene, not an outage.
-3. **The `gh`-removal plan** is still owed by me.
+2. **The SM value for `RELEASE_GPG_PRIVATE_KEY` is still welded.** Re-join the
+   halves WITH a newline. Hygiene only — the build canonicalises it now.
+
+## Owed by me
+The **`gh`-removal plan**, not started. Stripping `githubSecretNames` from
+`rotation-manifest.json` + `scripts/rotation/lib/config.ts` breaks 4 tests in
+`rotation-bitwarden-names.test.ts`; `cf-breakpoint` must KEEP its `gh` path.
 
 ## Operator caps
 Max **3 background workers**. "Commit ALL files, not just your changes."
