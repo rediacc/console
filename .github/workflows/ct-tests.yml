@@ -95,9 +95,12 @@ on:
       # (.github/actions/bws-secrets). Every caller must pass it.
       BWS_ACCESS_TOKEN:
         required: true
-permissions:
-  contents: read
-  packages: read    # GHCR pull for test images
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
 
 jobs:
   # ============================================================================
@@ -121,6 +124,10 @@ jobs:
     name: Migration Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Checkout, with the private submodules on the readonly-preset App token.
+    # No registry, no GitHub API.
+    permissions:
+      contents: read
     if: inputs.pointer_bump_only != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -184,6 +191,10 @@ jobs:
 
   test-unit:
     name: Unit
+    # Checkout, with the private submodules on the readonly-preset App token.
+    # No registry, no GitHub API.
+    permissions:
+      contents: read
     if: inputs.full_suite == 'true' && inputs.run_unit != 'false'
     runs-on: ubuntu-slim
     timeout-minutes: 14
@@ -218,6 +229,12 @@ jobs:
 
   test-e2e-workers:
     name: E2E Workers (${{ matrix.os-image }})
+    # Logs into ghcr with github.token and PULLS only (the credential is then
+    # copied to the root docker config so the test`s root-run rdc/renet pull
+    # through it). Never pushes, so read rather than write.
+    permissions:
+      contents: read
+      packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_workers != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -428,6 +445,12 @@ jobs:
 
   test-e2e-ceph:
     name: E2E Ceph
+    # Logs into ghcr with github.token and PULLS only (the credential is then
+    # copied to the root docker config so the test`s root-run rdc/renet pull
+    # through it). Never pushes, so read rather than write.
+    permissions:
+      contents: read
+      packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_ceph != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -574,6 +597,12 @@ jobs:
   # renet #78 removed the old 4 GB LUKS-unlock floor).
   test-e2e-ceph-workers:
     name: E2E Ceph Workers
+    # Logs into ghcr with github.token and PULLS only (the credential is then
+    # copied to the root docker config so the test`s root-run rdc/renet pull
+    # through it). Never pushes, so read rather than write.
+    permissions:
+      contents: read
+      packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_ceph_workers != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -729,6 +758,12 @@ jobs:
 
   test-e2e-k8s:
     name: E2E K8s
+    # Logs into ghcr with github.token and PULLS only (the credential is then
+    # copied to the root docker config so the test`s root-run rdc/renet pull
+    # through it). Never pushes, so read rather than write.
+    permissions:
+      contents: read
+      packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -877,6 +912,12 @@ jobs:
 
   test-e2e-k8s-ceph:
     name: E2E K8s Ceph
+    # Logs into ghcr with github.token and PULLS only (the credential is then
+    # copied to the root docker config so the test`s root-run rdc/renet pull
+    # through it). Never pushes, so read rather than write.
+    permissions:
+      contents: read
+      packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_ceph != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -1031,6 +1072,12 @@ jobs:
 
   test-e2e-k8s-multinode:
     name: E2E K8s Multinode
+    # Logs into ghcr with github.token and PULLS only (the credential is then
+    # copied to the root docker config so the test`s root-run rdc/renet pull
+    # through it). Never pushes, so read rather than write.
+    permissions:
+      contents: read
+      packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_multinode != 'false'
     runs-on: ubuntu-latest
     # 90 -> 100: the cluster-licensing suite's account server start plus its
@@ -1243,6 +1290,12 @@ jobs:
 
   test-e2e-migrate:
     name: E2E Migrate
+    # Logs into ghcr with github.token and PULLS only (the credential is then
+    # copied to the root docker config so the test`s root-run rdc/renet pull
+    # through it). Never pushes, so read rather than write.
+    permissions:
+      contents: read
+      packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_migrate != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -1419,6 +1472,12 @@ jobs:
 
   test-fork-isolation:
     name: Concurrent Fork Isolation
+    # Logs into ghcr with github.token and PULLS only (the credential is then
+    # copied to the root docker config so the test`s root-run rdc/renet pull
+    # through it). Never pushes, so read rather than write.
+    permissions:
+      contents: read
+      packages: read
     if: inputs.full_suite == 'true' && inputs.run_fork_isolation != 'false'
     runs-on: ubuntu-latest
     # 30 min covered the bind-isolation phases; the console#440 checkpoint
@@ -1590,6 +1649,10 @@ jobs:
 
   test-renet:
     name: Renet
+    # Docker Hub only (Bitwarden credentials), never ghcr, so no packages
+    # scope. Submodules ride the readonly-preset App token.
+    permissions:
+      contents: read
     if: inputs.full_suite == 'true' && inputs.run_renet != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -1734,6 +1797,10 @@ jobs:
   # ============================================================================
   test-license-enforcement:
     name: License Enforcement
+    # Checkout, with the private submodules on the readonly-preset App token.
+    # No registry, no GitHub API.
+    permissions:
+      contents: read
     if: inputs.full_suite == 'true' && inputs.run_license_enforcement != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -1786,6 +1853,10 @@ jobs:
   # ============================================================================
   test-account-e2e:
     name: Account E2E
+    # Checkout, with the private submodules on the readonly-preset App token.
+    # No registry, no GitHub API.
+    permissions:
+      contents: read
     if: inputs.full_suite == 'true' && inputs.run_account_e2e != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -1901,6 +1972,10 @@ jobs:
   # ============================================================================
   test-drills:
     name: Drills
+    # Docker Hub only (Bitwarden credentials), never ghcr, so no packages
+    # scope. Submodules ride the readonly-preset App token.
+    permissions:
+      contents: read
     if: inputs.full_suite == 'true' && inputs.run_drills != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 30

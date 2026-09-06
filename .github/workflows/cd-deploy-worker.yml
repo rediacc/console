@@ -25,10 +25,25 @@ on:
     secrets:
       BWS_ACCESS_TOKEN:
         required: true
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
+
 jobs:
   deploy:
     name: Deploy ${{ inputs.target }} Worker
     runs-on: ubuntu-latest
+    # contents: read is REQUIRED and was previously inherited from whichever
+    # caller happened to invoke this file, which declared no permissions of its
+    # own. The www build reads the GitHub Releases API (downloads.astro) with
+    # GITHUB_TOKEN and THROWS rather than degrading, so an unauthenticated
+    # 60/hr rate limit is a failed production deploy. Pinned here so this
+    # workflow is self-sufficient and no caller can narrow it away.
+    permissions:
+      contents: read
     environment:
       name: ${{ inputs.target }}
       url: ${{ inputs.target == 'stable' && 'https://www.rediacc.com' || 'https://edge.rediacc.com' }}

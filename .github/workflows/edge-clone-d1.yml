@@ -5,14 +5,19 @@ name: Edge D1 Clone
 on:
   workflow_dispatch: {}
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 jobs:
   # Read regions.json to build the clone matrix
   read-regions:
     name: Read regions
     runs-on: ubuntu-latest
+    # Sparse checkout of regions.json, then jq. No GitHub API.
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.regions.outputs.matrix }}
     steps:
@@ -27,6 +32,10 @@ jobs:
 
   clone:
     name: Clone ${{ matrix.id }} D1
+    # Checkout, then wrangler against Cloudflare with a Bitwarden-supplied
+    # API token. No GitHub API.
+    permissions:
+      contents: read
     needs: read-regions
     runs-on: ubuntu-latest
     strategy:

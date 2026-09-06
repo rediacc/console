@@ -10,13 +10,10 @@ on:
         type: boolean
         default: false
 
-permissions:
-  # contents: WRITE, not read -- verify-stable now moves the `production`
-  # tag and flips the GitHub Release's `latest` badge, which is the only
-  # record of what is actually in production. Nothing else here writes.
-  contents: write
-  packages: write
-  pull-requests: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 env:
   SOAK_DAYS: 7
@@ -25,6 +22,14 @@ jobs:
   promote:
     name: Release to Production
     runs-on: ubuntu-latest
+    # pull-requests: read for the `gh pr list --search label:rollback` guard,
+    # packages: write because the stable retag does `buildx imagetools create`
+    # (a push). This job only READS tags and releases, so contents stays read -
+    # the contents: write it used to inherit belongs to verify-stable alone.
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: read
     outputs:
       promoted: ${{ steps.result.outputs.promoted }}
       version: ${{ steps.edge.outputs.version }}
@@ -160,6 +165,9 @@ jobs:
   # Deploy stable Workers from the exact tagged version
   deploy-marketing-stable:
     name: Deploy stable Marketing
+    # The callee needs only checkout.
+    permissions:
+      contents: read
     needs: [promote]
     if: needs.promote.outputs.promoted == 'true'
     uses: ./.github/workflows/cd-deploy-worker.yml
@@ -172,6 +180,9 @@ jobs:
 
   deploy-account-stable:
     name: Deploy stable Account (all regions)
+    # The callee needs only checkout.
+    permissions:
+      contents: read
     needs: [promote]
     if: needs.promote.outputs.promoted == 'true'
     uses: ./.github/workflows/cd-deploy-account.yml
@@ -184,6 +195,14 @@ jobs:
   # Verify stable endpoints after deployment
   verify-stable:
     name: Verify stable
+    # contents: write is load-bearing and belongs to THIS job only:
+    # mark-production.sh moves the `production` tag ref (PATCH/POST on
+    # git/refs) and runs `gh release edit --latest`, both on github.token.
+    # It runs AFTER the endpoints verify, so losing this scope leaves stable
+    # deployed while the production tag and the latest badge still point at
+    # the previous version.
+    permissions:
+      contents: write
     needs: [promote, deploy-marketing-stable, deploy-account-stable]
     if: needs.promote.outputs.promoted == 'true'
     runs-on: ubuntu-slim

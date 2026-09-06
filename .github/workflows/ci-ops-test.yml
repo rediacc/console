@@ -5,12 +5,27 @@ on:
     secrets:
       BWS_ACCESS_TOKEN:
         required: true
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
+
 jobs:
   # ── Full VM provisioning test (KVM available) ──────────────────
   ops-vm-provision:
     name: OPS Provision (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
+    # packages: read is REQUIRED and had no local declaration at all before
+    # this: the ghcr login uses github.token and the credential is then copied
+    # into the VM root docker config so `rdc repo up` pulls through it. This
+    # file declared no permissions, so the scope came only from whatever the
+    # caller happened to pass.
+    permissions:
+      contents: read
+      packages: read
     strategy:
       # fail-fast: false, and the reason is diagnostic rather than stylistic.
       # GitHub's matrix fail-fast cancels every sibling the moment one leg fails,
@@ -336,6 +351,9 @@ jobs:
     name: OPS Provision (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
+    # Checkout and artifacts. No registry, no GitHub API.
+    permissions:
+      contents: read
     strategy:
       # fail-fast: false, and the reason is diagnostic rather than stylistic.
       # GitHub's matrix fail-fast cancels every sibling the moment one leg fails,
@@ -474,6 +492,9 @@ jobs:
     name: OPS Check (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 15
+    # Checkout and artifacts. No registry, no GitHub API.
+    permissions:
+      contents: read
     strategy:
       # fail-fast: false, and the reason is diagnostic rather than stylistic.
       # GitHub's matrix fail-fast cancels every sibling the moment one leg fails,

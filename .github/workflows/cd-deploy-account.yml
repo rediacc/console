@@ -29,11 +29,21 @@ on:
       # Worker whose backup endpoints answer 503 at runtime. That is the exact
       # shape of the OTLP bug above, and `required` is what turns it into a
       # loud workflow error instead of a silent production regression.
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
+
 jobs:
   # Read regions.json to build the deployment matrix
   read-regions:
     name: Read regions
     runs-on: ubuntu-latest
+    # Sparse checkout of regions.json. No GitHub API.
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.regions.outputs.matrix }}
     steps:
@@ -56,6 +66,11 @@ jobs:
   build:
     name: Build account portal
     runs-on: ubuntu-latest
+    # Checkout only against GITHUB_TOKEN; the private submodules come in on the
+    # cd-preset App token, and every deploy credential is Cloudflare/AWS/Stripe
+    # from Bitwarden. No GitHub API write anywhere in this file.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -122,6 +137,10 @@ jobs:
   # Deploy to each region in parallel
   deploy:
     name: Deploy ${{ inputs.target }} ${{ matrix.id }}
+    # As `build`. The environment: deployment record is created by the runner,
+    # not by the token, so deployments: write is not needed.
+    permissions:
+      contents: read
     needs: [read-regions, build]
     runs-on: ubuntu-latest
     strategy:

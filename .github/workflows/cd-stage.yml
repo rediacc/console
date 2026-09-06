@@ -52,11 +52,12 @@ on:
       # (.github/actions/bws-secrets). Every caller must pass it.
       BWS_ACCESS_TOKEN:
         required: true
-permissions:
-  contents: read
-  packages: write   # GHCR pull + retag push when push-to-main
-  id-token: write   # OIDC token for Sigstore signing
-  attestations: write  # Store attestations on GitHub
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
 
 jobs:
   stage:
@@ -69,6 +70,15 @@ jobs:
     # durations are around 11 minutes; 45 is generous headroom that still fails
     # fast instead of burning six hours of runner time on a wedged sync.
     timeout-minutes: 45
+    # All four are load-bearing and none is obtainable from any default:
+    # packages: write for the ghcr retag (buildx imagetools create pushes),
+    # and id-token + attestations: write for the two attest-build-provenance
+    # steps that sign via Sigstore and store the attestation on GitHub.
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
     outputs:
       passed: ${{ steps.validate.outputs.passed }}
     steps:

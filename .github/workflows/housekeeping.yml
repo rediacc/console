@@ -23,8 +23,10 @@ on:
         type: boolean
         default: true
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 concurrency:
   group: housekeeping
@@ -39,6 +41,11 @@ jobs:
     # .ci/scripts/security/check-workflow-gates.sh.
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # Checkout only. Every destructive call in this job (releases, tags, GHCR
+    # versions, deployments, environments, branches, runs, artifacts, caches)
+    # runs on the housekeeping-preset App token, not GITHUB_TOKEN.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -114,6 +121,14 @@ jobs:
     # .ci/scripts/security/check-workflow-gates.sh.
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # pull-requests: read is for cleanup-orphans.ts, which is handed
+    # GH_TOKEN: github.token and shells out to `gh pr view --json state`.
+    # It requireEnv()s the token, so an unscoped one fails the step rather
+    # than degrading. The App token minted here is preset: readonly and
+    # carries no pull_requests scope, so it cannot serve that call.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

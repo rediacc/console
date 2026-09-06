@@ -45,9 +45,10 @@ on:
         type: string
         default: 'false'
 
-permissions:
-  contents: read
-  actions: write   # cancel the target run, rerun failed jobs, dispatch next generation
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 # One chain per monitored run: a duplicate dispatch queues behind the live
 # generation, then sees the run already completed (or handled) and exits fast.
@@ -65,6 +66,15 @@ jobs:
     # ~25s AI + <=5min force-cancel wait = 13.4m, which still fits.
     # Enforced by CHECK 3 in .ci/scripts/security/check-workflow-gates.sh.
     timeout-minutes: 14
+    # actions: write is load-bearing: watchdog-monitor.cjs force-cancels and
+    # reruns failed jobs, and dispatch-watchdog.sh re-dispatches this workflow.
+    # pull-requests: read is ADDED - cjs listLabelsOnIssue reads the live
+    # no-auto-retry label and has been failing into its own try/catch, silently
+    # falling back to stale event-payload labels.
+    permissions:
+      contents: read
+      actions: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

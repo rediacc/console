@@ -29,9 +29,12 @@ on:
       # runtime via `REDIACC_OTLP_USER`/`REDIACC_OTLP_PASS` env vars
       # injected by the CLI after `rdc subscription login` (renet#51).
 
-permissions:
-  contents: read
-  packages: write   # GHCR push
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
 
 jobs:
   # Build full renet binaries with embedded assets. The Docker builder image
@@ -48,6 +51,9 @@ jobs:
   build-renet:
     name: Renet (Full)
     runs-on: ubuntu-latest
+    # Local buildx with no --push, plus artifacts. No registry credential.
+    permissions:
+      contents: read
     if: ${{ !inputs.skip_build }}
     timeout-minutes: 45
     outputs:
@@ -174,6 +180,13 @@ jobs:
   extract-renet:
     name: Renet (cached)
     runs-on: ubuntu-latest
+    # The ONLY job in this file that touches a registry, and it PULLS:
+    # extract-renet-from-image.sh does `docker create` against
+    # ghcr.io/rediacc. read, not write - the top-level packages: write this
+    # replaces was over-scoped for every job here.
+    permissions:
+      contents: read
+      packages: read
     if: ${{ inputs.skip_build && inputs.renet_tag != '' }}
     outputs:
       artifact_name: renet-binaries-${{ github.sha }}
@@ -242,6 +255,10 @@ jobs:
   platform-tests:
     name: Procwalk (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    # Submodules come in on the App token via the credential rewrite. No
+    # registry, no GitHub API.
+    permissions:
+      contents: read
     if: ${{ !inputs.skip_build }}
     timeout-minutes: 20
     strategy:
@@ -336,6 +353,9 @@ jobs:
     name: Renet (cross-compile smoke)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Checkout on the App token. No registry, no GitHub API.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

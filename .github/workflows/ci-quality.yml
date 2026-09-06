@@ -104,8 +104,12 @@ on:
       # anonymous rate limit, and its own logic REFUSES on a limited response rather than
       # reporting everything current. A fork without the secret gets an honest failure, not
       # a vacuous pass.
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
 
 jobs:
   # ============================================================================
@@ -117,6 +121,14 @@ jobs:
     name: Static
     runs-on: ubuntu-slim
     timeout-minutes: 12
+    # This job hits pulls endpoints with github.token, so it declares the scope
+    # those endpoints document. It passed without the grant only because console
+    # is a public repo, and public-ness is not a permission grant.
+    # The ci.yml caller carries pull-requests: read to match; a callee can never
+    # exceed its caller.
+    permissions:
+      contents: read
+      pull-requests: read
     if: inputs.is_bot != 'true'
     steps:
       - id: setup
@@ -512,6 +524,11 @@ jobs:
     name: Branch
     runs-on: ubuntu-slim
     timeout-minutes: 12
+    # Confirmed NOT a pusher: the old `push` app-token preset was deleted and
+    # this job now only REPORTS that a rebase is needed. Its one remote
+    # operation is a read-only `git fetch origin`.
+    permissions:
+      contents: read
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -611,6 +628,10 @@ jobs:
     name: Submodule Branches
     runs-on: ubuntu-slim
     timeout-minutes: 12
+    # Every PR read here (gh pr list / gh pr view across five repos) runs on
+    # the pr-read-preset App token, not github.token.
+    permissions:
+      contents: read
     # Runs on PRs (the coordinated-branch rules) AND on main (the stronger rule
     # that every gitlink is reachable from the submodule's own origin/main). The
     # script's header claimed push-to-main coverage for a long time while this
@@ -666,6 +687,14 @@ jobs:
     name: Code
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # This job hits pulls endpoints with github.token, so it declares the scope
+    # those endpoints document. It passed without the grant only because console
+    # is a public repo, and public-ness is not a permission grant.
+    # The ci.yml caller carries pull-requests: read to match; a callee can never
+    # exceed its caller.
+    permissions:
+      contents: read
+      pull-requests: read
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1234,6 +1263,12 @@ jobs:
     name: Content
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Checkout plus local gates; the private submodules come in on the
+    # readonly-preset App token. The github.token uses left in this job are
+    # public or global endpoints (release freshness, /advisories, external
+    # links) held only to avoid the anonymous rate limit.
+    permissions:
+      contents: read
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1539,6 +1574,12 @@ jobs:
     # slim lanes, so raising it here is meaningful rather than cosmetic; the
     # neighbouring www-build and security lanes already sit at 20.
     timeout-minutes: 20
+    # Checkout plus local gates; the private submodules come in on the
+    # readonly-preset App token. The github.token uses left in this job are
+    # public or global endpoints (release freshness, /advisories, external
+    # links) held only to avoid the anonymous rate limit.
+    permissions:
+      contents: read
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1730,6 +1771,12 @@ jobs:
     # green this change removes.
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Checkout plus local gates; the private submodules come in on the
+    # readonly-preset App token. The github.token uses left in this job are
+    # public or global endpoints (release freshness, /advisories, external
+    # links) held only to avoid the anonymous rate limit.
+    permissions:
+      contents: read
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1895,6 +1942,12 @@ jobs:
     # this job fits on this runner." It does not fit, so it moves.
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Checkout plus local gates; the private submodules come in on the
+    # readonly-preset App token. The github.token uses left in this job are
+    # public or global endpoints (release freshness, /advisories, external
+    # links) held only to avoid the anonymous rate limit.
+    permissions:
+      contents: read
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2012,6 +2065,12 @@ jobs:
     # follow-up; the capped runner just makes it a coin flip.
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Checkout plus local gates; the private submodules come in on the
+    # readonly-preset App token. The github.token uses left in this job are
+    # public or global endpoints (release freshness, /advisories, external
+    # links) held only to avoid the anonymous rate limit.
+    permissions:
+      contents: read
     # No label opt-out at JOB level any more: that guard skipped four fully
     # OFFLINE gates (overrides/syncpack reasons, suppression liveness, the
     # quality-gate battery) along with the one external step it aimed at.
@@ -2166,6 +2225,12 @@ jobs:
     name: Go
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Checkout plus local gates; the private submodules come in on the
+    # readonly-preset App token. The github.token uses left in this job are
+    # public or global endpoints (release freshness, /advisories, external
+    # links) held only to avoid the anonymous rate limit.
+    permissions:
+      contents: read
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

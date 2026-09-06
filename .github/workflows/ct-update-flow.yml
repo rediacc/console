@@ -24,8 +24,12 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
 
 jobs:
   # Linux x64 is the primary matrix cell because it covers the full install.sh
@@ -35,6 +39,9 @@ jobs:
     name: Update flow (Linux x64)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Checkout, artifact download, and a local fixture server. No GitHub API.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

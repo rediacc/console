@@ -6,14 +6,20 @@ on:
   pull_request:
     types: [closed]
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 jobs:
   cleanup:
     name: Delete PR Channel
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Checkout only. The delete is against R2 with Bitwarden credentials;
+    # no GitHub API call in this job.
+    permissions:
+      contents: read
     # Same fork guard as cleanup-preview.yml. This job holds R2 delete
     # credentials for the releases bucket; a fork PR has empty secrets, so the
     # step would fail into `|| true` and log a confusing no-op. Fork PRs are

@@ -48,8 +48,12 @@ on:
         # this PR cannot change. Remove this only in the same change that updates
         # both callers and .github/external-callers.yml.
         required: false
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
 
 jobs:
   # Which epics does this PR declare? One review pass runs per epic, so that a
@@ -66,6 +70,11 @@ jobs:
     name: Discover epics
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # Checkout plus a local discover-epics.sh. No gh, no API, no GH_TOKEN in
+    # this job. Pinned so the cross-repo caller contract is explicit: this job
+    # needs nothing beyond checkout.
+    permissions:
+      contents: read
     outputs:
       epics: ${{ steps.find.outputs.epics }}
     steps:
