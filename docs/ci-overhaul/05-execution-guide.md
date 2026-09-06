@@ -199,7 +199,7 @@ Run before claiming any wave complete:
   reusable input/secret contract both directions, CHECK 3 the `ubuntu-slim` 14-minute cap).
 - `.ci/scripts/quality/check-workflows.sh` (`INLINE_MAX_LOGIC=8`, so detector logic lives in
   `.ci/scripts/ci/`).
-- `scripts/check-ci-chain-parity.ts`: a gate wired into a workflow must also be in the
+- `scripts/check-ci-parity.ts`: a gate wired into a workflow must also be in the
   `npm run ci` chain.
 - `.claude/hooks/test-hooks.sh` if any hook changed, and it must show a nonzero case count.
 

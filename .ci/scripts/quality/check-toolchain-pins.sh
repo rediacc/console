@@ -105,8 +105,16 @@ fi
 
 # --- A2. nothing acquires a gate tool unpinned -------------------------------
 # Only the tools a GATE depends on. Editor tooling (gopls, dlv, staticcheck,
-# golangci-lint, goimports) is deliberately out: nothing gates on its output, so
-# pinning it would buy churn rather than consistency.
+# golangci-lint, goimports) stays out of THIS assertion, but the reason changed on
+# 2026-09-06 and the old one is worth not re-deriving: it used to be "nothing gates
+# on its output, so pinning would buy churn". Those five are now pinned as ARG
+# <NAME>_VERSION lines in .devcontainer/Dockerfile, and three of them are watched by
+# check-devcontainer-pin-freshness. They remain outside A2 because A2 asks a
+# different question: does a SHELL SCRIPT acquire a gate tool without a version. A
+# Dockerfile ARG is not that shape, and the freshness gate already owns it. The
+# control below therefore still earns its place: it proves this regex does not
+# reach past the gate tools, using a synthetic fixture rather than the real
+# Dockerfile, which no longer contains a version-less install to sample.
 GATED_TOOLS='shfmt|shellcheck|ruff|actionlint'
 unpinned=()
 while IFS= read -r rel; do

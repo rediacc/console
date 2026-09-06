@@ -45,7 +45,7 @@ The CI-side quality-gate battery (`.ci/scripts/test/run-all.sh`, the "Quality-ga
 | Command | What it does |
 |---|---|
 | `npm run ci` | Full run at `availableParallelism() - 2` workers, keep-going |
-| `npm run ci:quick` | **The pre-push lane.** 254 fast gates, ~48s wall. `git push` is REFUSED without a green receipt from it |
+| `npm run ci:quick` | **The pre-push lane.** The fast subset of the manifest; `npm run ci -- --quick --list` prints the live set and its count. `git push` is REFUSED without a green receipt from it |
 | `npm run ci -- --quick` | The same selection without minting a receipt |
 | `npm run ci:serial` | The same set at `--jobs 1`. Use this to decide whether a red is caused by parallelism |
 | `npm run ci:list` | Every gate id and the exact command it runs |

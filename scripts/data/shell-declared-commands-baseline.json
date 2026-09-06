@@ -24,7 +24,6 @@
   ".ci/scripts/deploy/clone-d1.sh\tjq",
   ".ci/scripts/deploy/upload-to-r2.sh\taws",
   ".ci/scripts/deploy/upload-to-r2.sh\tjq",
-  ".ci/scripts/docker/build-image.sh\tdocker",
   ".ci/scripts/docker/cleanup-staging.sh\tgh",
   ".ci/scripts/docker/cleanup-staging.sh\tjq",
   ".ci/scripts/docker/create-manifest.sh\tdocker",

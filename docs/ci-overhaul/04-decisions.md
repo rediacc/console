@@ -21,6 +21,20 @@ These are the operator's own words or direct rulings from the discovery session.
    separate asks.
 6. **"Do not stick on what I say. Better ideas are welcomed."** Standing licence to
    substitute a better design, provided the substitution is stated out loud.
+7. **One language per folder, and the staged port that gets there (2026-09-06).** Stated
+   out loud under ruling 6, because it overturns an earlier ruling of the operator's own.
+   The rule: Python in `.ci` and `.claude`, TypeScript in `scripts/`, JavaScript in
+   `eslint-rules/`, and bash only as an allowlisted shim carrying a BLOCKER reason. The
+   route is a FULL staged port, and the infra-only state (runner and harness ported, gate
+   bodies not yet) is an explicitly valid checkpoint to stop at and ship. What bash
+   survives, exhaustively: the media and tutorial pipeline, because it drives
+   `private/generative` and `private/growth`; `.ci/breakpoint/`, which is vendored and
+   drift-locked; the `.ci/tutorials/*.sh` recordings; and one-line shims. Everything else
+   is ported or deleted.
+   This SUPERSEDES the 2026-09-03 ruling recorded at `agent/PLAN-shell-resource-profiling.md`
+   line 7 ("Bash coverage cannot be dropped"). That ruling answered a narrower question,
+   whether the BASH_ENV profiling finding justified going Python-only; it does not survive
+   as a general bar on porting bash out of the gate tree.
 
 ---
 

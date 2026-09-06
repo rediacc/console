@@ -64,6 +64,23 @@ apk:
     key_name: "releases@rediacc.com"
 
 archlinux:
+  # NO `signature:` BLOCK, AND ONE CANNOT BE ADDED. Every other format here has one;
+  # this is the odd block out, so the reason lives where the edit would be tried.
+  #
+  # 1. nfpm cannot sign archlinux at all. Adding `signature: {key_file: ...}` fails at
+  #    CONFIG LOAD, before any build: `yaml: unmarshal errors: field signature not
+  #    found in type nfpm.ArchLinux`. Upstream goreleaser/nfpm#628 is open and PR
+  #    #1065 unmerged, so no pinned version supports it.
+  # 2. Signing it by hand would BREAK EXISTING USERS, which is the reason that
+  #    actually decides it. pacman.conf(5) defines SigLevel Optional -- what Arch
+  #    ships as LocalFileSigLevel -- as "An invalid signature is a fatal error, as is
+  #    a signature from a key not in the keyring." So publishing a detached .sig
+  #    signed by a key no user holds turns a working `pacman -U` into a hard failure.
+  #    A keyring rollout has to land FIRST (Arch Linux ARM and Chaotic-AUR both do it
+  #    that way).
+  #
+  # Tracked as a declared exemption in .ci/scripts/quality/check-release-signing-coverage.sh,
+  # which refuses an exemption for a format that IS guarded, so this cannot rot.
   pkgbase: "${PKG_NAME}"
   packager: "${PKG_MAINTAINER}"
 

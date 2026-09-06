@@ -54,6 +54,22 @@ workers/www/staging/
 # Environment variables
 .env
 .env.local
+# EVERY suffix, not just `.local`. The two lines above are literal names, so a
+# `.env.staging`, `.env.production` or `.env.dev` was committable anywhere the
+# tree does not already carry a narrower rule -- exactly the file that holds a
+# real credential. `git check-ignore -v .env.production` printed nothing before
+# this line existed.
+#
+# The negations are load-bearing and both shapes are needed, because three
+# example files are TRACKED and must stay that way:
+#   packages/www/.env.example        ->  !.env.example
+#   packages/e2e-tests/.env.example  ->  !.env.example
+#   packages/cli/.env.test.example   ->  !.env.*.example
+# A single `!.env.example` would have re-ignored the cli one on its next
+# rewrite, and the deletion would have looked like someone removed it on purpose.
+.env.*
+!.env.example
+!.env.*.example
 secrets.env
 .rdc-dev/
 .rdc-bench/

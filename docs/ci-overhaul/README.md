@@ -38,6 +38,11 @@ run, and only then hand the keys to an agent.
 4. **[04-decisions.md](04-decisions.md)** for what is locked, what is open, and the scored
    ledger. Ask the open decision points early, in one round.
 5. **[05-execution-guide.md](05-execution-guide.md)** last, when you are ready to move.
+6. **[08-driver-contract.md](08-driver-contract.md)** if you are working on the tooling
+   transformation (the twelve-workstream port of `.ci` and `.claude` to Python). It is the
+   authority for that program: the workstream key map, the arbitrations between workstreams
+   that planned incompatible things, the single-writer lock table, and the machine mutex.
+   Read it BEFORE launching any sub-driver.
 
 ---
 

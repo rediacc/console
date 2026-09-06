@@ -1849,7 +1849,14 @@ EOF
     # stopped at that check with a bare report. The check was the gap; these are
     # what fills it.
     setup_node_toolchain || return 1
-    check_node_version "${NODE_VERSION_MIN:-22.0.0}" || return 1
+    # NO `:-22.0.0` DEFAULT ANY MORE. The fallback did not make this line more
+    # robust, it made a real failure invisible: it fired precisely when
+    # .ci/config/constants.sh had NOT been sourced, and then let setup pass a
+    # machine on Node 22.4 that the repo's own engines.node (">=22.13.0")
+    # rejects. The operator would see a green setup and a failure later, inside
+    # npm, naming neither this file nor the floor. `:?` turns that same
+    # condition into one loud line naming the missing variable.
+    check_node_version "${NODE_VERSION_MIN:?constants.sh was not sourced, so the Node floor is unknown}" || return 1
     echo ""
 
     # Before npm install: install:natives hard-requires a compiler.

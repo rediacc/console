@@ -24,7 +24,7 @@
 // pointer bump and the later compare-API expansion land in the same bucket.
 // ---------------------------------------------------------------------------
 const KNOWN_MODULES = [
-  'docs', // repo docs, .claude/.gemini/.idx/.vscode, root README-likes
+  'docs', // repo docs, .claude/.vscode, root README-likes
   'www', // packages/www
   'cli', // packages/cli
   'shared', // packages/shared (consumed by cli, www, account)
@@ -89,16 +89,12 @@ const ROOT_MANIFESTS = new Set([
   '.syncpackrc-reasons.json',
   '.syncpackrc.json',
   'Dockerfile',
-  'Rediaccfile',
   'biome.json',
   'css-custom-data.json',
-  'docker-compose.yml',
   'eslint.config.js',
   'knip.jsonc',
   'package-lock.json',
   'package.json',
-  'pyroscope.yaml',
-  'pyroscope.yaml.template',
   'rdc.sh',
   'regions.json',
   'run.sh',
@@ -191,11 +187,9 @@ const RULES = [
   // unclassified = full, which is what keeps a new sibling tree from inheriting
   // this tree's zero-job answer by accident.
   { name: 'agent-notes', match: matchPrefix('agent/'), modules: ['agent'] },
-  // .claude/.gemini/.idx/.vscode cannot affect CI (the CI action restores
-  // .claude from origin/main regardless); editor metadata likewise.
+  // .claude/.vscode cannot affect CI (the CI action restores .claude from
+  // origin/main regardless); editor metadata likewise.
   { name: 'agent-docs', match: matchPrefix('.claude/'), modules: ['docs'] },
-  { name: 'gemini-docs', match: matchPrefix('.gemini/'), modules: ['docs'] },
-  { name: 'idx-docs', match: matchPrefix('.idx/'), modules: ['docs'] },
   { name: 'vscode-docs', match: matchPrefix('.vscode/'), modules: ['docs'] },
 
   { name: 'devcontainer', match: matchPrefix('.devcontainer/'), modules: ['devcontainer'] },

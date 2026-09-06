@@ -16,7 +16,7 @@
 # line, validated by the shared blocker-validator (30-char minimum, no
 # low-effort phrases).
 
-# BLOCKER: expanded as a glob by .ci/scripts/test/run-all.sh (PATTERN="test-*.sh" into TEST_FILES), so the 17 gate scripts are executed without ever being named individually
+# BLOCKER: expanded as a glob by .ci/scripts/test/run-all.sh (PATTERN="test-*.sh" into TEST_FILES), so every test-*.sh under that root is executed without ever being named individually
 glob:.ci/scripts/test/gates/
 
 # BLOCKER: iterated as a glob by run.sh (for script in "$tutorials_dir"/tutorial-*.sh) and by the readdirSync scans in scripts/check-tutorial-commands.ts and check-tutorial-noninteractive.ts

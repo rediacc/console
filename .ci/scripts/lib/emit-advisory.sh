@@ -20,16 +20,65 @@
 readonly __EMIT_ADVISORY_SH_SOURCED=1
 
 # Colours — disabled in CI so GitHub's log viewer doesn't show escape sequences.
+#
+# DEFERENCE RULE (added 2026-09-06 after a real defect): every assignment and
+# every function definition below is conditional. This library is sourced both
+# standalone AND, transitively, after common.sh has already installed its own
+# logger, and in the second case common.sh must win.
+#
+# The defect: four quality gates -- check-profiler-coverage.sh,
+# check-swallowed-failures.sh, check-ci-job-aggregation.sh and
+# check-go-deps.sh -- source common.sh, then blocker-validator.sh, which
+# sources this file at blocker-validator.sh:26. The old unconditional
+# assignments clobbered common.sh's TTY-gated logger, with two consequences:
+#   1. log_info / log_warn / log_success flipped from stderr (common.sh) to
+#      stdout (here), so colour escapes leaked into anything that piped a
+#      gate's stdout for data.
+#   2. log_error interpolated "$1", so `log_error a b` silently dropped "b"
+#      while common.sh's "$*" would have kept it. Every log_* below now uses
+#      "$*" for the same reason, standalone callers included.
+# check-pool-writer-safety.sh sources only common.sh, never reaches
+# blocker-validator.sh, and so was never affected by any of this.
+#
+# WHY set-vs-unset, and not `${RED-}`: common.sh DELIBERATELY sets RED='' (and
+# the rest) when stderr is not a tty. An emptiness test would read that
+# deliberate empty string as "nobody assigned this" and paint the escapes back
+# in, reintroducing the exact bug. `${RED+x}` is empty only when RED was never
+# assigned at all, which is the question actually being asked.
+#
+# WHY `if ... fi` rather than `[[ ... ]] && VAR=...`: the last statement in a
+# sourced branch supplies the source's exit status, and every caller here runs
+# under common.sh's `set -euo pipefail`. A short-circuited `&&` would return 1
+# and abort the sourcing script the moment a variable was already set.
 if [[ "${CI:-}" == "true" ]]; then
-    RED="" GREEN="" YELLOW="" NC=""
+    if [[ -z ${RED+x} ]]; then RED=""; fi
+    if [[ -z ${GREEN+x} ]]; then GREEN=""; fi
+    if [[ -z ${YELLOW+x} ]]; then YELLOW=""; fi
+    if [[ -z ${NC+x} ]]; then NC=""; fi
 else
-    RED='\033[0;31m' GREEN='\033[0;32m' YELLOW='\033[1;33m' NC='\033[0m'
+    if [[ -z ${RED+x} ]]; then RED='\033[0;31m'; fi
+    if [[ -z ${GREEN+x} ]]; then GREEN='\033[0;32m'; fi
+    if [[ -z ${YELLOW+x} ]]; then YELLOW='\033[1;33m'; fi
+    if [[ -z ${NC+x} ]]; then NC='\033[0m'; fi
 fi
 
-log_error() { echo -e "${RED}✗ $1${NC}" >&2; }
-log_success() { echo -e "${GREEN}✓ $1${NC}"; }
-log_warn() { echo -e "${YELLOW}⚠ $1${NC}"; }
-log_info() { echo -e "→ $1"; }
+# `declare -F <name>` succeeds only when a function of that name is already in
+# scope, so a real definition sourced earlier (common.sh's) is left untouched.
+# common.sh defines log_info / log_warn / log_error but NOT log_success, so in
+# the transitive case the definition below is the one that supplies it -- which
+# is why it still has to respect the colours common.sh emptied above.
+if ! declare -F log_error >/dev/null; then
+    log_error() { echo -e "${RED}✗ $*${NC}" >&2; }
+fi
+if ! declare -F log_success >/dev/null; then
+    log_success() { echo -e "${GREEN}✓ $*${NC}"; }
+fi
+if ! declare -F log_warn >/dev/null; then
+    log_warn() { echo -e "${YELLOW}⚠ $*${NC}"; }
+fi
+if ! declare -F log_info >/dev/null; then
+    log_info() { echo -e "→ $*"; }
+fi
 
 # GitHub Actions annotation emitters. Only the first line is a proper annotation;
 # continuation lines (echoed by emit_advisory) appear in the step log grouped
