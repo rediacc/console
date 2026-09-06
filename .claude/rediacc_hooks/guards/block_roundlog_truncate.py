@@ -66,7 +66,7 @@ ORDER = 32
 # The `--roundlog` carve-out. The verb IS the sanctioned path, and without this
 # line the guard refuses the one command it spends its message telling people to
 # use, which is the shape its own header calls "a guard that gets routed around".
-DEFECT = ('if hookio.case_glob(cmd, "*--roundlog*"):', "if False:")
+DEFECT = ('if hookio.case_glob(cmd, "*worklist.py*--roundlog*"):', "if False:")
 
 # A round-log path. Anchored into every verb pattern below rather than tested
 # separately, which is the 2026-08 finding this file records twice.
@@ -88,19 +88,19 @@ MESSAGE = (
 
 EDGE_CASES = [
     ("the sanctioned verb", ".claude/hooks/stop/worklist.py --roundlog 0831-1"),
-    # THE CARVE-OUT IS WHOLE-COMMAND, and this case is what shows it. `case "$CMD"
-    # in *--roundlog*` matches the STRING anywhere on the line, not the verb at a
-    # command position, so a truncating write that merely mentions the flag is
-    # allowed. Reproduced against the bash rather than reasoned about; reported as
-    # a finding and deliberately NOT narrowed here, because the port's job is to
-    # agree with its twin. It is also the only case in this corpus that can tell
-    # the carve-out apart from its absence, which is how it was found.
+    # THE CASE THAT FOUND THE BYPASS, kept with its verdict inverted. It used to
+    # be labelled "the carve-out is a substring match, so this truncation passes"
+    # and it DID pass, on both sides, because `*--roundlog*` matched the string
+    # anywhere on the line rather than the verb at a command position. The twin
+    # was narrowed on 2026-09-06 and this port followed it a day later; the case
+    # stays because it is the only one in this corpus that can tell the narrow
+    # carve-out from the wide one.
     (
         "a refresh and an archive on one line",
         ".claude/hooks/stop/worklist.py --roundlog 0831-1; mv agent/pr-babysit-0831-1.md /tmp/bak.md",
     ),
     (
-        "the carve-out is a substring match, so this truncation passes",
+        "merely NAMING the flag in a payload no longer buys the exemption",
         'echo "see --roundlog" > agent/pr-babysit-0831-1.md',
     ),
     ("a briefing has its own contract", "cat > agent/pr-babysit-0831-1-briefing.md"),
@@ -150,7 +150,25 @@ def run(ev):
     cmd = ev.field("tool_input", "command")
 
     # The verb is the sanctioned path; never block it.
-    if hookio.case_glob(cmd, "*--roundlog*"):
+    #
+    # NARROWED 2026-09-06 TO FOLLOW THE TWIN, which was itself narrowed that day
+    # from `*--roundlog*` because a whole-command substring match is a bypass
+    # rather than an exemption. The twin's own measurement:
+    #
+    #   echo "see --roundlog" > agent/pr-babysit-0831-1.md   -> ALLOWED
+    #   echo hi              > agent/pr-babysit-0831-1.md    -> BLOCKED
+    #
+    # Both truncate the same file; the first differs only by naming the flag
+    # inside a string it is writing, which is the easiest thing in the world to
+    # do by accident when the payload is prose ABOUT the round-log workflow.
+    # The exemption now requires the flag to be an ARGUMENT TO worklist.py, in
+    # that order, which is what actually makes a command the sanctioned path.
+    #
+    # THIS PORT LAGGED THE TWIN BY A DAY and the differential is what caught it,
+    # not review: the old wide carve-out was documented here as deliberate ("the
+    # port's job is to agree with its twin"), which was true when written and
+    # false the moment the twin moved.
+    if hookio.case_glob(cmd, "*worklist.py*--roundlog*"):
         return hookio.ALLOW
 
     # A round-log path must appear at all. Briefings have their own contract and are
