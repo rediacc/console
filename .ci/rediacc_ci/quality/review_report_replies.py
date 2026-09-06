@@ -341,7 +341,14 @@ def gh_json(what: str, argv: list[str], *, sleeper=time.sleep, binary: str = "gh
                 except ValueError:
                     pass
                 else:
-                    return proc.stdout
+                    # `out="$(gh "$@" ...)"` in `_gh_probe`: COMMAND SUBSTITUTION
+                    # STRIPS TRAILING NEWLINES, and the helper then re-emits the
+                    # stripped value with `printf '%s'`. That matters because
+                    # `check-review-comments.sh` compares the result against the
+                    # literal `"[]"`, and an unstripped `"[]\n"` takes the other
+                    # branch. Found by the differential, on a specimen with no
+                    # inline comments.
+                    return proc.stdout.rstrip("\n")
         if attempt < GH_ATTEMPTS:
             print(
                 "\033[1;33m⚠\033[0m %s: gh call failed or returned unusable output "

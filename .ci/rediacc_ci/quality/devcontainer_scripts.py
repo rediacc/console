@@ -99,7 +99,7 @@ from rediacc_ci.controls import Controls
 
 # The em dash the twin's three CONTROL IS VACUOUS lines carry. Named by code
 # point; see the port notes.
-DASH = "—"
+DASH = "\u2014"
 
 # The subject directory and the two named scripts inside it.
 DC_REL = ".devcontainer"

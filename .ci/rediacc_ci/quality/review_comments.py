@@ -248,7 +248,14 @@ def gh_json(what: str, argv: list[str], *, sleeper=time.sleep, binary: str = "gh
                 except ValueError:
                     pass
                 else:
-                    return proc.stdout
+                    # `out="$(gh "$@" ...)"` in `_gh_probe`: COMMAND SUBSTITUTION
+                    # STRIPS TRAILING NEWLINES, and the helper then re-emits the
+                    # stripped value with `printf '%s'`. That matters because
+                    # `check-review-comments.sh` compares the result against the
+                    # literal `"[]"`, and an unstripped `"[]\n"` takes the other
+                    # branch. Found by the differential, on a specimen with no
+                    # inline comments.
+                    return proc.stdout.rstrip("\n")
         if attempt < GH_ATTEMPTS:
             _warn(
                 "%s: gh call failed or returned unusable output (attempt %d/%d), retrying..."
@@ -452,7 +459,12 @@ def main(argv: list[str] | None = None) -> int:
         summary_id = str(summary.get("id"))
         summary_author = ((summary.get("user") or {}).get("login")) or ""
         summary_created = summary.get("created_at")
-        summary_head = clip((summary.get("body") or "").replace("\n", " "), 120)
+        # `jq -r '.body' | tr '\n' ' '` ADDS A TRAILING SPACE, because `jq -r`
+        # terminates its output with a newline and `tr` turns that newline into a
+        # space too. The excerpt therefore ends `... "` rather than `..."`, and a
+        # port that translated only the body's INTERNAL newlines produced a
+        # one-character difference on every summary. Found by the differential.
+        summary_head = clip(((summary.get("body") or "") + "\n").replace("\n", " "), 120)
         reply = summary_reply(issue_comments, summary)
         if reply is not None:
             print(
