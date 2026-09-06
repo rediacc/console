@@ -437,6 +437,16 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/test/test-install-script.sh
 
+      # THE ONE INSTALL TABLE. Six bash enumerations answered "what does a
+      # machine need before the gates can run" and none compared the set
+      # installed against the set used, which is how the drafted table came to
+      # carry no pytest row at all. Hand-written rather than emitted: this lane's
+      # gate-bind region would take over 111 hand-written steps at the same time,
+      # and that region cutover is W2.6's work with its own verification.
+      - name: Install table
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/rediacc_ci/setup/tools.py
+
       # Pure bash, so these two are called by path: this lane has no
       # node_modules and `npm run` would need one. check-ci-parity.ts resolves
       # the path against the manifest, so both directions still agree.

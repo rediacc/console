@@ -6813,6 +6813,21 @@ export const GATES: readonly GateSpec[] = [
       step: 'Run e2e-tests unit suite',
     },
   },
+  {
+    // six bash enumerations answered "what a machine needs" and none compared the set
+    // installed against the set used, so a pinned tool could be required by a gate and
+    // named nowhere -- which is how the drafted table came to carry no pytest row
+    id: 'check:ci-install-table',
+    run: 'npm run check:ci-install-table',
+    gate: true,
+    leaves: ['.ci/rediacc_ci/setup/tools.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Install table',
+    },
+  },
 ];
 
 /** The root workflow every CI run enters through. */

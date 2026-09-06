@@ -44,6 +44,39 @@
 [[ -n "${__RELEASE_AGE_SH_SOURCED:-}" ]] && return 0
 readonly __RELEASE_AGE_SH_SOURCED=1
 
+# BASH 4.2 IS A HARD PRECONDITION OF THIS FILE, AND macOS SHIPS 3.2.57.
+#
+# `declare -gA __RELEASE_AGE_ELIGIBLE_CACHE=()` below needs `-A` (bash 4.0) and
+# `-g` (bash 4.2). This file is reached from `.ci/scripts/security/audit.sh` and
+# `.ci/scripts/quality/check-go-deps.sh`, both of which a developer runs locally,
+# so 3.2 is not a hypothetical lane.
+#
+# WHAT BREAKS, DRIVEN ON A REAL bash 3.2.0 ON 2026-09-06. The declaration fails
+# with "declare: -g: invalid option" and RETURNS ZERO, so the memo cache is never
+# created. Its keys are `"<publish_epoch>:<window>"`, and an indexed array
+# evaluates its subscript as ARITHMETIC, in which `:` is not an operator. Every
+# read and every write then errors:
+#
+#   line 4: 1756000000:86400: syntax error in expression (error token is ":86400")
+#   line 6: 1756000000:86400: syntax error in expression (error token is ":86400")
+#
+# on stderr, once per lookup, while bash 5.3.9 stores and returns 1756123456.
+# The lookup MISSES every time, which silently defeats the memo the comment at
+# __RELEASE_AGE_ELIGIBLE_CACHE argues for at length: `is_release_deferred` then
+# spawns tsx (about 0.55 s) per call, behind a per-item network round trip, and
+# the only symptom is an expression error naming neither this file nor the cache.
+#
+# Sibling preconditions, each with its own measured consequence: emit-advisory.sh,
+# blocker-validator.sh, release-state-validator.sh.
+if [[ "${BASH_VERSINFO[0]:-0}" -lt 4 || ("${BASH_VERSINFO[0]:-0}" -eq 4 && "${BASH_VERSINFO[1]:-0}" -lt 2) ]]; then
+    echo "release-age.sh needs bash 4.2 or newer; this is bash ${BASH_VERSION:-unknown}." >&2
+    echo "  Its eligibility memo is a global associative array (declare -gA). Before 4.2 the" >&2
+    echo "  declaration fails silently, every cache key becomes an arithmetic expression, and each" >&2
+    echo "  lookup prints 'syntax error in expression' while re-spawning tsx." >&2
+    echo "  Fix: brew install bash, put it first on PATH, and re-run; or run the gate in the devbox." >&2
+    return 1
+fi
+
 # Repo root = three levels up from .ci/scripts/lib/.
 __RELEASE_AGE_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 

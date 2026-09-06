@@ -30,6 +30,45 @@
 [[ -n "${__RELEASE_STATE_VALIDATOR_SH_SOURCED:-}" ]] && return 0
 readonly __RELEASE_STATE_VALIDATOR_SH_SOURCED=1
 
+# BASH 4.0 IS A HARD PRECONDITION OF THIS FILE, AND macOS SHIPS 3.2.57.
+#
+# `rsv_assert_bijection` builds two membership SETS with `declare -A cli_set=()
+# tag_set=()`. Associative arrays arrived in bash 4.0; on 3.2 the declaration
+# fails with "declare: -A: invalid option" and RETURNS ZERO, so both names stay
+# indexed and every `cli_set["$v"]` subscript is evaluated as arithmetic against
+# a version string.
+#
+# THIS IS THE WORST OF THE FOUR, and it was driven on a real bash 3.2.0 on
+# 2026-09-06 in both directions rather than reasoned about:
+#
+#   REAL DRIFT (cli has v1.0.1, git tags do not)
+#     bash 5.3.9   stdout "DRIFT v1.0.1: cli sentinel present, git tag missing"
+#                  plus the remediation line, rc=1
+#     bash 3.2.0   stdout EMPTY, rc=1, stderr only
+#                  "line 353: v1.0.0: syntax error: invalid arithmetic operator"
+#
+#   NO DRIFT (cli and tags agree)
+#     bash 5.3.9   stdout "OK: release-state bijection holds (floor: v1.0.0...)", rc=0
+#     bash 3.2.0   stdout EMPTY, rc=1
+#
+# So on macOS this library turns a healthy release state into a FALSE red that
+# names nothing, and turns a real drift into a red that names nothing either. The
+# remediation a reader would reach for from a nameless drift -- scrub a sentinel,
+# delete a tag -- destroys a correct release. A gate that cannot say WHICH
+# version drifted is worse than a gate that did not run, because it still looks
+# like a verdict.
+#
+# Sibling preconditions, each with its own measured consequence: emit-advisory.sh,
+# blocker-validator.sh, release-age.sh.
+if [[ "${BASH_VERSINFO[0]:-0}" -lt 4 ]]; then
+    echo "release-state-validator.sh needs bash 4.0 or newer; this is bash ${BASH_VERSION:-unknown}." >&2
+    echo "  rsv_assert_bijection builds its membership sets from associative arrays. Before 4.0 the" >&2
+    echo "  declaration fails silently, every DRIFT and OK line disappears from stdout, and a HEALTHY" >&2
+    echo "  release state reports rc=1 with no finding text at all." >&2
+    echo "  Fix: brew install bash, put it first on PATH, and re-run; or run the gate in the devbox." >&2
+    return 1
+fi
+
 RSV_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"
 RSV_SENTINEL_KEY=".released"
 

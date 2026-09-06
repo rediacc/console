@@ -365,7 +365,8 @@
     "check:ci-proxy-docker-prepull": ".ci/scripts/test/proxies/proxy-docker-prepull.sh --selftest && .ci/scripts/test/proxies/proxy-docker-prepull.sh",
     "check:ci-proxy-ensure-nfpm": ".ci/scripts/test/proxies/proxy-ensure-nfpm.sh --selftest && .ci/scripts/test/proxies/proxy-ensure-nfpm.sh",
     "check:test-provisioning": ".ci/scripts/test/proxies/proxy-unit-tests.sh --selftest && .ci/scripts/test/proxies/proxy-unit-tests.sh @rediacc/provisioning test",
-    "check:test-e2e-unit": ".ci/scripts/test/proxies/proxy-unit-tests.sh --selftest && .ci/scripts/test/proxies/proxy-unit-tests.sh @rediacc/e2e-tests test:unit"
+    "check:test-e2e-unit": ".ci/scripts/test/proxies/proxy-unit-tests.sh --selftest && .ci/scripts/test/proxies/proxy-unit-tests.sh @rediacc/e2e-tests test:unit",
+    "check:ci-install-table": ".ci/rediacc_ci/setup/tools.py"
   },
   "dependencies": {
     "proper-lockfile": "^4.1.2"

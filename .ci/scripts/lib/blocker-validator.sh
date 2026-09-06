@@ -21,6 +21,44 @@
 [[ -n "${__BLOCKER_VALIDATOR_SH_SOURCED:-}" ]] && return 0
 readonly __BLOCKER_VALIDATOR_SH_SOURCED=1
 
+# BASH 4.3 IS A HARD PRECONDITION OF THIS FILE, AND macOS SHIPS 3.2.57.
+#
+# `local -n` (parse_blockered_list:83 and :86, verify_all_blockers:178) is a
+# NAMEREF, which arrived in bash 4.3. On bash 3.2 `local -n _allowed_ref="$2"`
+# prints "local: -n: invalid option", RETURNS ZERO, and the function then runs on
+# with the alias unset. Measured on a real bash 3.2.0 on 2026-09-06:
+#
+#   $ bash-3.2 -c 'f(){ local -n r="$1"; echo "${r}"; }; x=hi; f x'
+#   local: -n: invalid option        (stderr)
+#   (blank line on stdout)           exit 0
+#
+# THE MEASURED CONSEQUENCE IS AN ALLOWLIST OF ZERO ENTRIES. Driving the real file
+# on 3.2 with a one-entry allowlist carrying a valid BLOCKER, the whole library
+# failed to load and the caller printed `entries=0`, exit 0, while bash 5.3.9
+# printed `entries=1` and the reason text. A suppression gate whose allowlist
+# parses to nothing checks nothing, and its output is indistinguishable from a
+# tree with no suppressions in it.
+#
+# THE GUARD SITS ABOVE THE `source` LINE BELOW ON PURPOSE. Bash reads a sourced
+# file command by command, so a refusal here runs BEFORE anything further down is
+# parsed -- verified against this file, which is a SYNTAX error on 3.2 as well as
+# a semantic one (see the note at parse_blockered_list's inline-regex branch).
+# Without the guard first, 3.2 reports three parser errors naming a line number
+# and then "parse_blockered_list: command not found", which names neither bash
+# nor the version.
+#
+# Sibling preconditions, each with its own measured consequence:
+# emit-advisory.sh (which this file sources), release-age.sh,
+# release-state-validator.sh.
+if [[ "${BASH_VERSINFO[0]:-0}" -lt 4 || ("${BASH_VERSINFO[0]:-0}" -eq 4 && "${BASH_VERSINFO[1]:-0}" -lt 3) ]]; then
+    echo "blocker-validator.sh needs bash 4.3 or newer; this is bash ${BASH_VERSION:-unknown}." >&2
+    echo "  It passes allowlist tables by nameref (local -n), which arrived in 4.3. On 3.2 the" >&2
+    echo "  namerefs fail silently and every allowlist parses to ZERO entries, so a suppression" >&2
+    echo "  gate verifies nothing and still exits 0." >&2
+    echo "  Fix: brew install bash, put it first on PATH, and re-run; or run the gate in the devbox." >&2
+    return 1
+fi
+
 # shellcheck source=emit-advisory.sh
 # BLOCKER: required for ci_error / log_error helpers used by this library
 source "$(dirname "${BASH_SOURCE[0]}")/emit-advisory.sh"
@@ -94,6 +132,15 @@ parse_blockered_list() {
     # Examples: "#\s*BLOCKER:" or "//\s*BLOCKER:"
     local blocker_re="^${comment_char}[[:space:]]*BLOCKER:[[:space:]]*(.+)$"
     local comment_re="^${comment_char}"
+    # The SAME pattern unanchored, for the inline `package # BLOCKER: ...` form
+    # below. Held in a variable rather than written as a literal inside `[[ =~ ]]`
+    # for the reason the two lines above already are: bash 3.2 cannot PARSE an
+    # unquoted `(` inside a conditional regex at all. Measured on bash 3.2.0:
+    #   syntax error in conditional expression: unexpected token `('
+    # and the error kills the enclosing function definition, so the whole library
+    # loads with no functions in it. The version guard at the top of this file
+    # refuses before that happens, and this removes the second reason to.
+    local inline_blocker_re="${comment_char}[[:space:]]*BLOCKER:[[:space:]]*(.+)$"
 
     while IFS= read -r line || [[ -n "$line" ]]; do
         # Strip surrounding whitespace
@@ -116,7 +163,7 @@ parse_blockered_list() {
             _blocker_ref["$entry"]="$current_blocker"
             # For inline form like "package-name # reason", also capture
             # inline reason as blocker if no block-level one was seen.
-            if [[ -z "$current_blocker" && "$stripped" =~ ${comment_char}[[:space:]]*BLOCKER:[[:space:]]*(.+)$ ]]; then
+            if [[ -z "$current_blocker" && "$stripped" =~ $inline_blocker_re ]]; then
                 _blocker_ref["$entry"]="${BASH_REMATCH[1]}"
             fi
         fi

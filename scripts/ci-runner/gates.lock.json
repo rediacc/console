@@ -6984,5 +6984,19 @@
       "job": "quality-packages",
       "step": "Run e2e-tests unit suite"
     }
+  },
+  {
+    "id": "check:ci-install-table",
+    "run": "npm run check:ci-install-table",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/setup/tools.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Install table"
+    }
   }
 ]
