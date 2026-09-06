@@ -193,6 +193,26 @@ def placeholder(what: str) -> str:
 # sentence is prose, and reading it as a header is how a record starts lying.
 
 HEAD_FIELD_RE = re.compile(r"^([A-Za-z][A-Za-z-]*):[ \t]*(.*)$")
+
+#: The header keys this grammar actually defines. `HEAD_FIELD_RE` matches any
+#: `Word:` by shape, which is right when PARSING a header block (an unknown key
+#: there is still a header line) and wrong when deciding whether a `# heading` is
+#: a header field wearing a hash: `# PLAN: ...` is a title, not a field, and it
+#: is how 62 of the 83 plans in this tree name themselves.
+HEADER_FIELD_KEYS = frozenset(
+    {
+        "Status",
+        "Owner",
+        "Full-Text",
+        "Full-Text-Blob",
+        "Record-Sig",
+        "Compacted-At",
+        "Compacted-By",
+        "Supersedes",
+        "Extends",
+        "Related",
+    }
+)
 FULLTEXT_RE = re.compile(r"^Full-Text:[ \t]*([0-9a-f]{7,40})[ \t]+(\S+)[ \t]*$", re.MULTILINE)
 FULLTEXT_BLOB_RE = re.compile(r"^Full-Text-Blob:[ \t]*([0-9a-f]{40})[ \t]*$", re.MULTILINE)
 RECORD_SIG_RE = re.compile(r"^Record-Sig:[ \t]*([0-9a-f]{8})[ \t]*$", re.MULTILINE)
@@ -1524,15 +1544,46 @@ def title_of(text, rel):
 
     Falls back to the slug, which always exists and always identifies the plan.
     """
+    # FENCED BLOCKS ARE NOT HEADINGS. `# ` opens a comment in shell, python, ruby
+    # and every config language these plans quote, so scanning raw lines takes the
+    # first COMMENT in the first code block as the plan's title. Measured
+    # 2026-09-06: PLAN-lint-rule-matrix-probe.md was compacted to a record titled
+    # `# edit line 46: 'SFTPClient' -> 'SFTPClientZZZ'`, which is a line from a
+    # shell snippet. A record's title is the one part of it every index and every
+    # reader sees first, so this is not cosmetic.
+    fenced = False
     for raw in (text or "").splitlines():
+        stripped = raw.lstrip()
+        if stripped.startswith(("```", "~~~")):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
         if raw.startswith("# "):
             body = raw[2:].strip()
-            # A heading that is itself a `Key: value` field is the header block
-            # wearing a hash, not a title.
-            if body and not HEAD_FIELD_RE.match(body):
+            # A heading that is itself a header FIELD is the header block wearing
+            # a hash, not a title.
+            #
+            # THIS TESTS THE KEY AGAINST THE KNOWN FIELD NAMES, not the shape.
+            # It used to be `HEAD_FIELD_RE.match(body)`, which matches any
+            # `Word:` at all -- and 62 of the 83 plans in this tree are titled
+            # `# PLAN: <something>`. So `PLAN:` read as a header field, every one
+            # of those 62 fell through to the slug fallback below, and their
+            # records were titled with a slug instead of the name their author
+            # gave them. Measured 2026-09-06 during the compaction wave, which
+            # was halted because of it. The title is the one part of a record
+            # that every index and every reader sees first.
+            key = HEAD_FIELD_RE.match(body)
+            if body and not (key and key.group(1) in HEADER_FIELD_KEYS):
                 return body[:120]
+    # OFF BY ONE, fixed 2026-09-06: this read `slug[4:]`, and `len("PLAN-")` is
+    # FIVE. Every plan that fell through to the fallback was titled with a leading
+    # hyphen -- `# -lint-css-ci-wiring`, `# -greenlight-verify-at-read` -- which
+    # reads as a slug rather than a name and is what a reader sees in the index.
+    # Written as a len() so the constant and the string cannot drift apart again.
     slug = pathlib.Path(rel).stem
-    return slug[4:] if slug.startswith("PLAN-") else slug
+    prefix = "PLAN-"
+    return slug.removeprefix(prefix)
 
 
 def clip(text, limit):

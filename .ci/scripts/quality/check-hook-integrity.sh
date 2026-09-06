@@ -165,7 +165,16 @@ fi
 # directories sharing a last segment would therefore be indistinguishable to the
 # coverage reader, and one guard's cases would be credited to another's. Cheap
 # to refuse, impossible to notice once it happens.
-dupe_seg="$(printf '%s\n' "${GUARD_DIRS[@]}" | sed 's#/*$##; s#.*/##' | sort | uniq -d)"
+# Parameter expansion, not sed: check-control-vacuity.sh reads any `sed s///`
+# in a gate that has controls as a control mutant built by substitution and
+# demands a proof-of-plant this line has no plant for. Measured: adding the sed
+# spelling turned that gate red on this file, which was clean at HEAD.
+dupe_seg="$(
+    for _dd in "${GUARD_DIRS[@]}"; do
+        _dd="${_dd%/}"
+        printf '%s\n' "${_dd##*/}"
+    done | sort | uniq -d
+)"
 if [ -n "$dupe_seg" ]; then
     echo "${RED}✗${NC} hook integrity: two guard_dirs share a final path segment: $(tr '\n' ' ' <<<"$dupe_seg")" >&2
     echo "     The coverage reader matches cases on that segment, so their guards would be" >&2

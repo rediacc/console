@@ -1256,6 +1256,13 @@ export const GATES: readonly GateSpec[] = [
       'scripts/data/hook-inventory-baseline.json',
       'scripts/data/hook-coverage-baseline.json',
       '.ci/scripts/quality/check-hook-integrity.sh',
+      // Added 2026-09-06 with W11 P3. This gate's audited corpus AND its case corpus
+      // are now both decided by this file, and run.ts only selects a path-scoped gate
+      // when a changed file matches one of its globs. Without this entry a commit
+      // touching only the scope file runs a CI where this gate is not selected, so
+      // dropping a guard_dirs entry would be invisible: the corpus shrinks and nothing
+      // reds. That is the silent-narrowing shape this program keeps finding.
+      'scripts/data/hook-audit-scope.json',
     ],
     leaves: ['.ci/scripts/quality/check-hook-integrity.sh'],
     ci: {

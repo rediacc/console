@@ -134,6 +134,36 @@ def test_a_missing_subject_refuses_on_both_sides(tmp_path: pathlib.Path) -> None
     assert "nothing was verified" in new_err
 
 
+def test_a_colon_in_a_caller_path_yields_a_verdict_on_both_sides(
+    tmp_path: pathlib.Path,
+) -> None:
+    """A truncated path must fail its control, not raise out of main().
+
+    `${hit%%:*}` splits the grep hit at its FIRST colon, so a caller named
+    `a:b.sh` collapses to `.../release/a` on both sides. The twin hands that to
+    `grep -qE`, which prints `No such file or directory`, exits non-zero, leaves
+    `guarded` at 0 and still reaches a verdict. This port called `read_text` on
+    it and died with an uncaught FileNotFoundError -- the same exit status by
+    accident, no verdict, and a stack trace where the twin prints a control.
+    Measured 2026-09-06; the `try/except OSError` in `main` is what this pins.
+    """
+    root = build(tmp_path, {".ci/scripts/release/a:b.sh": UNGUARDED})
+    (old_exit, old_out, old_err), (new_exit, new_out, new_err) = run_both(root)
+    assert (old_exit, new_exit) == (1, 1)
+    assert new_out == old_out
+    assert "Traceback (most recent call last)" not in new_err
+    fail_line = ".ci/scripts/release/a guards its call against a non-staging tag (got '0' want '1')"
+    assert fail_line in old_err
+    assert fail_line in new_err
+    # The twin's own `grep:` error is the evidence that it did not read the file
+    # either. It is the only stderr line the two sides do not share, besides the
+    # port's `→` progress line.
+    noise = ("\u2192", "grep:")
+    assert [x for x in new_err.split("\n") if not x.startswith(noise)] == [
+        x for x in old_err.split("\n") if not x.startswith(noise)
+    ]
+
+
 def test_executing_calls_filters_prose_and_the_subject_itself() -> None:
     """The two filter greps, pinned in both directions."""
     target = pathlib.Path("/repo/.ci/scripts/docker/cleanup-staging.sh")

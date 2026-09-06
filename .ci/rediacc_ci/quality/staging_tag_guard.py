@@ -77,6 +77,34 @@ string "1". Two lines carrying `^staging-` therefore FAIL the rail control. That
 strictness is carried across: a second copy of the rail means the guard was
 edited, and this gate is exactly the reader that should look.
 
+TWO PLACES A PATHOLOGICAL PATH SPLITS THE TWO IMPLEMENTATIONS, both measured on
+2026-09-06 by running the pair over generated trees rather than by reading them.
+`${hit%%:*}` and `for f in $call_files` are the two lines involved, and neither
+implementation is right about either case; what differs is how wrong they get.
+
+  1. A COLON IN A SCANNED PATH. `.ci/scripts/release/a:b.sh` becomes the
+     truncated `.../release/a` on BOTH sides, because both split the grep hit at
+     its first colon. The twin then feeds that non-existent path to `grep -qE`,
+     which prints `No such file or directory` and exits non-zero, so `guarded`
+     stays 0 and the control FAILS by name. This port called `read_text` on it
+     and died with an uncaught `FileNotFoundError`: no verdict at all, and a
+     traceback that reads as flake. THAT IS FIXED, in `main` below: an unreadable
+     call file reads as empty and fails its control, which is what `grep -q`
+     failing means. The truncation itself is left alone deliberately -- it is the
+     twin's, and changing it here would move the control's NAME and make every
+     shadow row a false mismatch.
+
+  2. A SPACE IN A SCANNED PATH. `.ci/scripts/release/with space/promote.sh`
+     produces ONE control here and TWO in the twin, whose `for f in $call_files`
+     word-splits the accumulated string and then reports two controls named after
+     the fragments (`.../release/with` and `space/promote.sh`), both failing
+     because neither path exists. This is NOT reproduced. Porting it would mean
+     inventing findings that name paths which are not files, and the twin's own
+     `grep:` errors on stderr say plainly that it did not read what it claims to
+     have checked. The port names the real file once and rules on it. Neither
+     path occurs in this repository today; both are recorded so the next reader
+     of a shadow mismatch over such a tree knows which side to believe.
+
 WHAT NEITHER IMPLEMENTATION CAN SEE: whether the guard's regex is CORRECT, and
 whether a caller computes its tag at runtime from something that only sometimes
 starts with `staging-`. A literal or a pre-check is the evidence available in the
@@ -290,7 +318,23 @@ def main(argv: list[str] | None = None) -> int:
     # calling.
     for path in call_files:
         rel = path[len(str(root)) + 1 :] if path.startswith(str(root) + "/") else path
-        body = pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
+        # A CALL FILE THAT CANNOT BE READ IS UNGUARDED, NOT A CRASH. `${hit%%:*}`
+        # strips at the FIRST colon, so a scanned path containing one -- say
+        # `.ci/scripts/release/a:b.sh` -- yields the truncated `.../release/a`,
+        # which exists in neither implementation's tree. The twin hands that to
+        # `grep -qE ... "$f"`, grep prints `No such file or directory` and exits
+        # non-zero, `guarded` stays 0, and the gate still reaches a VERDICT. This
+        # port called `read_text` on it and died with an uncaught FileNotFoundError:
+        # same exit status by accident, no verdict, and a traceback that reads as
+        # environmental flake rather than as the control failure it replaced.
+        # Measured 2026-09-06 on a fixture whose only caller was `a:b.sh`; the
+        # twin reported `.ci/scripts/release/a guards its call ... (got '0' want
+        # '1')` and this port reported a stack trace. `grep -q`'s failure is the
+        # contract, so an unreadable file reads as empty and fails its control.
+        try:
+            body = pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            body = ""
         guarded = "1" if GUARDED_RE.search(body) else "0"
         tally.check("%s guards its call against a non-staging tag" % rel, guarded, "1")
 
@@ -327,10 +371,11 @@ RAIL_LINE = '[[ "$TAG" =~ ^staging- ]] || exit 1\n'
 
 def selftest() -> int:
     """Plant a defect in BOTH directions and require the gate to notice."""
-    # floor=14 rather than 0: the floor is the only thing that catches a selftest
+    # floor=16 rather than 0: the floor is the only thing that catches a selftest
     # whose cases stopped executing, and a default of zero is a floor that cannot
     # fail. See rediacc_ci.controls for the five drifted copies that taught it.
-    ctl = Controls("staging-tag-guard", floor=14, verbose=True)
+    # It tracks the case count below (16), so deleting a case reds the gate.
+    ctl = Controls("staging-tag-guard", floor=16, verbose=True)
     saved_env = dict(os.environ)
 
     guarded_caller = (
@@ -435,6 +480,15 @@ def selftest() -> int:
     ctl.check(
         "PLANT: a missing cleanup-staging.sh refuses rather than passing",
         run({".ci/scripts/release/ok.sh": guarded_caller}, target="nowhere/cleanup-staging.sh"),
+        1,
+    )
+    # A VERDICT, NOT A TRACEBACK. Both sides truncate this caller's path at its
+    # first colon and then look for a file that is not there. Before 2026-09-06
+    # this raised FileNotFoundError out of main(), which exits 1 for the wrong
+    # reason and prints a stack trace where the twin prints a failing control.
+    ctl.check(
+        "PLANT: a colon in a caller's path fails its control, never a traceback",
+        run({".ci/scripts/release/a:b.sh": unguarded_caller}),
         1,
     )
 
