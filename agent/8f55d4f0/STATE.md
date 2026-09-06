@@ -89,11 +89,13 @@ not mine. HOOKS has no footprint under `.claude/` yet.
 ## Next action
 
 1. **Land HOOKS (#609983e6) and SETUP (#95f675d1) when they report.** Re-run
-   their acceptance yourself, do not trust the report. SETUP has already
-   DEVIATED from its brief in a way to check rather than assume: it was told to
-   own `.ci/rediacc_ci/core/{platform,toolchain}.py` and has created a new
-   `.ci/rediacc_ci/setup/` package instead. Ask what moved and why before
-   committing it.
+   their acceptance yourself, do not trust the report. NOTE, because this
+   document carried the opposite for half an hour: SETUP has NOT deviated.
+   `core/platform.py` and `core/toolchain.py` already existed from W1 P3, and
+   the new `.ci/rediacc_ci/setup/` package is the fourth deliverable its brief
+   named, THE ONE INSTALL TABLE, at 1260 lines citing the six disagreeing
+   sources it replaces. I flagged drift from a directory listing without
+   checking whether the named files were already there.
 2. **#4a9b14ce, one command once the tree is still.** `npm run ci:quick`, then
    `git push origin 880b1b3ee:main`. One commit, fast-forward from `9295fb63c`,
    one file, +25 lines, operator-authorised. Until it lands, rediacc/account
