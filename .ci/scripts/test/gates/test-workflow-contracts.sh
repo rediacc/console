@@ -39,6 +39,10 @@ run_check() {
 
 # write_callee <dir> <extra-secret-read>
 # A reusable workflow declaring one required input and one required secret.
+# It READS both declared secrets: arm (a2) reports a declaration nothing reads,
+# so a fixture that declares OPTIONAL_ONE and ignores it is itself the defect
+# and made every test in this file fail. OPTIONAL_ONE stays optional, which is
+# what the caller-side assertions actually exercise.
 write_callee() {
     local d="$1" extra="${2:-}"
     cat >"$d/callee.yml" <<YAML
@@ -58,7 +62,7 @@ jobs:
   j:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "\${{ secrets.DECLARED }}${extra}"
+      - run: echo "\${{ secrets.DECLARED }} \${{ secrets.OPTIONAL_ONE }}${extra}"
 YAML
 }
 
@@ -412,6 +416,133 @@ test_ec_fixture_tree_skips_cleanly() {
     log_pass "CHECK 4 stands down on fixture trees, audibly"
 }
 
+# --- arm (a2): a declaration nothing reads -------------------------------
+#
+# This arm and its DECLARED_UNUSED_OK exemption list shipped with NO test. The
+# cost was immediate and was paid by other gates: the exemptions name files in
+# .github/workflows, the liveness sweep ran on fixture trees too, and so this
+# script exited 1 on EVERY fixture tree -- reddening test-slim-timeout.sh and
+# every case in this very file (nightly 34014201256). The cases below are the
+# test that was missing, in both directions.
+
+# run_check_live: drive the check with the liveness sweep forced ON against a
+# fixture tree. SLIM coverage is pinned off because it defaults from the same
+# flag and this fixture has no slim job to offer -- CHECK 3 has its own test.
+run_check_live() {
+    local dir="$1" rc=0
+    LAST_OUT="$(CI=true WORKFLOWS_DIR="$dir" REAL_WORKFLOW_TREE=true \
+        SLIM_TIMEOUT_REQUIRE_COVERAGE=false bash "$CHECK" 2>&1)" || rc=$?
+    return "$rc"
+}
+
+# write_exempt <dir> <reads-it: true|false>
+# The one file DECLARED_UNUSED_OK actually names, so the liveness sweep has
+# something real to judge.
+write_exempt() {
+    local d="$1" reads="$2" body='- run: echo hi'
+    [[ "$reads" == true ]] && body='- run: echo "${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}"'
+    cat >"$d/claude-review-reusable.yml" <<YAML
+name: claude-review-reusable
+on:
+  workflow_call:
+    secrets:
+      ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN:
+        required: false
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    steps:
+      $body
+YAML
+}
+
+test_declared_unused_secret_is_reported() {
+    # The 57-declaration class: a callee declares a secret nothing in it reads,
+    # so a caller passes a value that goes nowhere.
+    local d="$1"
+    write_callee "$d"
+    write_caller "$d" "$WITH_OK" "$SECRETS_OK"
+    cat >>"$d/callee.yml" <<'YAML'
+YAML
+    python3 - "$d/callee.yml" <<'PYX'
+import sys
+p = sys.argv[1]
+t = open(p).read().replace(
+    "      OPTIONAL_ONE:\n        required: false\n",
+    "      OPTIONAL_ONE:\n        required: false\n      UNREAD_ONE:\n        required: false\n",
+)
+open(p, "w").write(t)
+PYX
+    local rc=0
+    run_check "$d" || rc=$?
+    assert_exit_code 1 "$rc" "a declaration nothing reads must fail"
+    assert_contains "$LAST_OUT" "declares secret UNREAD_ONE" "names the dead declaration"
+    assert_contains "$LAST_OUT" "delete the declaration" "says what to do about it"
+    log_pass "a workflow_call secret nothing reads is reported"
+}
+
+test_declared_and_read_is_not_reported() {
+    # CONTROL for the case above. Without it, an arm that flagged every
+    # declaration would satisfy the assertion above and be indistinguishable.
+    local d="$1"
+    write_callee "$d"
+    write_caller "$d" "$WITH_OK" "$SECRETS_OK"
+    local rc=0
+    run_check "$d" || rc=$?
+    assert_exit_code 0 "$rc" "a declared secret that IS read must not be reported"
+    assert_not_contains "$LAST_OUT" "never reads it" "no dead-declaration finding"
+    log_pass "CONTROL: a declaration the callee reads is left alone"
+}
+
+test_liveness_reports_a_dangling_exemption() {
+    local d="$1"
+    write_callee "$d"
+    write_caller "$d" "$WITH_OK" "$SECRETS_OK"
+    local rc=0
+    run_check_live "$d" || rc=$?
+    assert_exit_code 1 "$rc" "an exemption naming a file that is gone must fail"
+    assert_contains "$LAST_OUT" "which does not exist" "names the dangling exemption"
+    log_pass "the exemption liveness sweep reports a dangling entry"
+}
+
+test_liveness_stands_down_on_fixture_trees() {
+    # THE REGRESSION, verbatim. Same tree as the case above, sweep not forced:
+    # it must be silent. When it was not, two other gates' tests went red for a
+    # file their fixtures were never meant to contain.
+    local d="$1"
+    write_callee "$d"
+    write_caller "$d" "$WITH_OK" "$SECRETS_OK"
+    local rc=0
+    run_check "$d" || rc=$?
+    assert_exit_code 0 "$rc" "a fixture tree must not be judged against the real tree's exemptions"
+    assert_not_contains "$LAST_OUT" "which does not exist" "the sweep stayed silent"
+    log_pass "CONTROL: the liveness sweep stands down on a fixture tree"
+}
+
+test_liveness_honours_a_live_exemption() {
+    # CONTROL: with the exempted file present and still not reading the secret,
+    # the exemption does its job and nothing is reported.
+    local d="$1"
+    write_exempt "$d" false
+    local rc=0
+    run_check_live "$d" || rc=$?
+    assert_exit_code 0 "$rc" "a live exemption must suppress the finding"
+    assert_not_contains "$LAST_OUT" "ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN" "nothing reported for the exempted pair"
+    log_pass "CONTROL: a live exemption suppresses its finding"
+}
+
+test_liveness_reports_an_exemption_now_read() {
+    # An exemption that has become unnecessary must be surfaced, not left to
+    # sit forever looking like coverage.
+    local d="$1"
+    write_exempt "$d" true
+    local rc=0
+    run_check_live "$d" || rc=$?
+    assert_exit_code 1 "$rc" "an exemption whose secret is now read must fail"
+    assert_contains "$LAST_OUT" "now READS" "says the exemption is obsolete"
+    log_pass "an exemption whose secret is now read is reported"
+}
+
 test_ec_real_registry_is_wired() {
     # The registry is only worth having if the real run reads the real file.
     # Without this, every case above could pass against fixtures while the gate
@@ -435,6 +566,12 @@ with_temp_dir test_github_token_is_implicit
 with_temp_dir test_script_filename_is_not_a_secret_reference
 with_temp_dir test_missing_callee_is_reported
 with_temp_dir test_empty_tree_is_not_a_pass
+with_temp_dir test_declared_unused_secret_is_reported
+with_temp_dir test_declared_and_read_is_not_reported
+with_temp_dir test_liveness_reports_a_dangling_exemption
+with_temp_dir test_liveness_stands_down_on_fixture_trees
+with_temp_dir test_liveness_honours_a_live_exemption
+with_temp_dir test_liveness_reports_an_exemption_now_read
 with_temp_dir test_ec_clean_passes
 with_temp_dir test_ec_registry_declares_undeclared_input
 with_temp_dir test_ec_registry_omits_required_secret

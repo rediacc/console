@@ -82,12 +82,22 @@ SLIM_TIMEOUT_MAX="${SLIM_TIMEOUT_MAX:-14}"
 # workflow tree, because the OTHER checks' fixture trees legitimately contain no
 # slim jobs and CHECK 3 must not fail their tests for them. The test drives this
 # explicitly to cover the blind case.
-if [[ -z "${SLIM_TIMEOUT_REQUIRE_COVERAGE:-}" ]]; then
+# Is this the repo's own workflow tree, or a gate test's fixture tree? Two
+# checks need to know, so it is decided once here rather than compared twice.
+# Overridable for the same reason SLIM_TIMEOUT_REQUIRE_COVERAGE is: the
+# DECLARED_UNUSED_OK liveness sweep only runs on the real tree, so without a way
+# to force it on a fixture it would have no both-ways test at all -- which is
+# exactly how it shipped, and exactly how it broke two other gates' tests.
+if [[ -z "${REAL_WORKFLOW_TREE:-}" ]]; then
     if [[ "$WORKFLOWS_DIR" == "$ROOT_DIR/.github/workflows" ]]; then
-        SLIM_TIMEOUT_REQUIRE_COVERAGE=true
+        REAL_WORKFLOW_TREE=true
     else
-        SLIM_TIMEOUT_REQUIRE_COVERAGE=false
+        REAL_WORKFLOW_TREE=false
     fi
+fi
+
+if [[ -z "${SLIM_TIMEOUT_REQUIRE_COVERAGE:-}" ]]; then
+    SLIM_TIMEOUT_REQUIRE_COVERAGE="$REAL_WORKFLOW_TREE"
 fi
 
 # Anti-vacuity: a missing directory used to `exit 0` here, which meant a moved
@@ -186,13 +196,14 @@ fi
 # --- Check 2 ---------------------------------------------------------------
 log_info "Checking reusable-workflow secret/input contracts"
 
-python3 - "$WORKFLOWS_DIR" <<'PYEOF'
+python3 - "$WORKFLOWS_DIR" "$REAL_WORKFLOW_TREE" <<'PYEOF'
 import os
 import re
 import sys
 import yaml
 
 workflows_dir = sys.argv[1]
+real_tree = sys.argv[2] == 'true'
 
 # `secrets.X`, but not when it is part of a path or filename -- otherwise
 # "set-account-worker-secrets.sh" reads as a reference to a secret named `sh`.
@@ -277,17 +288,27 @@ for fname, doc in docs.items():
         )
 # An exemption naming a declaration that is gone, or one that IS read, excuses
 # nothing and would sit forever looking like coverage.
-for fname, name in sorted(DECLARED_UNUSED_OK):
-    doc = docs.get(fname)
-    if doc is None:
-        offenders.append(f"DECLARED_UNUSED_OK names {fname}, which does not exist")
-        continue
-    declared = set((workflow_call(doc).get('secrets') or {}).keys())
-    used = set(USE_RE.findall(texts[fname])) - IMPLICIT
-    if name not in declared:
-        offenders.append(f"DECLARED_UNUSED_OK: {fname} no longer declares {name}; drop the exemption")
-    elif name in used:
-        offenders.append(f"DECLARED_UNUSED_OK: {fname} now READS {name}; drop the exemption")
+#
+# SCOPED TO THE REAL TREE, and that scoping is not a nicety. The exemptions name
+# files in .github/workflows; a CHECK 1/CHECK 3 fixture tree contains two or
+# three synthetic YAMLs and none of them. Sweeping there reported every
+# exemption as dangling, which made this script exit 1 on EVERY fixture tree and
+# turned two unrelated gate tests red for a file their fixtures were never meant
+# to have -- test-slim-timeout.sh and test-workflow-contracts.sh, nightly run
+# 34014201256. A liveness probe that cannot see the thing it probes for must
+# stay silent, not condemn it.
+if real_tree:
+    for fname, name in sorted(DECLARED_UNUSED_OK):
+        doc = docs.get(fname)
+        if doc is None:
+            offenders.append(f"DECLARED_UNUSED_OK names {fname}, which does not exist")
+            continue
+        declared = set((workflow_call(doc).get('secrets') or {}).keys())
+        used = set(USE_RE.findall(texts[fname])) - IMPLICIT
+        if name not in declared:
+            offenders.append(f"DECLARED_UNUSED_OK: {fname} no longer declares {name}; drop the exemption")
+        elif name in used:
+            offenders.append(f"DECLARED_UNUSED_OK: {fname} now READS {name}; drop the exemption")
 
 # (b)/(c) caller <-> callee contract
 for fname, doc in docs.items():
