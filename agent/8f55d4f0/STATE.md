@@ -1,47 +1,58 @@
 # Session 8f55d4f0 -- driver state
 
-Branch `0906-1`. Last commit `96355d3b5`. Updated 2026-09-06.
+Branch `0906-1`. Head `f9ade65db`. Updated 2026-09-06.
 
 ## ACT ON THIS FIRST
 
-Nothing is blocking. Six writer agents are live (see the wave below). When one
-reports, SPOT-CHECK ITS ARTIFACT, not its summary: re-run the assert or the
-count yourself. Two agent reports this session were confidently wrong about
-their own headline number.
+Nothing blocks. Five writer agents are live. When one reports, SPOT-CHECK ITS
+ARTIFACT, not its summary: re-run the assert or the count yourself. Several
+agent reports this session were confidently wrong about their own headline
+number, and two of my own instruments were wrong before the claim they were
+about to support (a grep for `PASS` when the vocabulary is `ok`, and `-m` on
+six modules whose entry point is a shim).
 
-## Position, measured today not remembered
+## Position, measured today
 
 | Body | Done | Total |
 |---|---|---|
-| Quality gates ported (W7 P2) | 39 | 77 |
-| Shadow pairs asserting green | 38 | 39 |
-| Gate tests with a header (W2.3) | 0 | 148 |
+| Quality gates with a Python module on disk | 73 | 77 |
+| Shadow ledgers | 71 | 77 |
+| Gate tests declaring a header (W2.3) | 148 | 148 |
 | Aged plans compacted (W12 P1.8) | 32 | 32 |
 | Plan boxes | 67 | 130 |
 
-The single red pair is `w7p2-stagingtag`, permanently so: three tree ids are
-disqualified by rows recorded through a hole since closed. It carries 12
-qualifying trees over 9 finding sets, so the claim IS evidenced and only the
-assert cannot express it. DO NOT delete rows to make it green.
+The 73 and 71 include five agents' IN-FLIGHT work. Only 39 were asserted green
+at the last full sweep; the rest assert when their agent reports.
 
-PORT-D's five ledgers were verified independently after PORT-E disclosed that
-its fixture-refresh script amended sibling agents' fixture commits: all five
-assert green over 5 distinct trees. That risk is closed.
+`w7p2-stagingtag` is the one permanently red pair: three tree ids disqualified
+by rows recorded through a hole since closed. It carries 12 qualifying trees
+over 9 finding sets, so the claim IS evidenced and only the assert cannot
+express it. DO NOT delete rows to make it green.
 
-## Wave 2, launched 2026-09-06, six writers with disjoint ownership
+## Wave 2, five writers still live
 
 | Agent | Owns | Doing |
 |---|---|---|
-| PORT-F | .ci/rediacc_ci/quality + tests + .ci/shadow, 12 named gates | W7 P2 |
-| PORT-G | same dirs, 11 named gates | W7 P2 |
-| PORT-H | same dirs, 11 named gates | W7 P2 |
-| HDR-A | .ci/scripts/test/gates/test-*.sh entries 1-74 | W2.3 |
-| HDR-B | .ci/scripts/test/gates/test-*.sh entries 75-148 | W2.3 |
-| MOVE | 14 root policy dotfiles into .ci/policy + readers | W4 P2 |
+| PORT-F | 12 named gates, .ci/rediacc_ci + .ci/shadow | W7 P2 |
+| PORT-G | 11 named gates, same dirs | W7 P2 |
+| PORT-H | 11 named gates, same dirs | W7 P2 |
+| PORT-I | the 4 released from behind T4 | W7 P2 |
+| PROXY | new files under .ci/scripts/test/proxies/ only | W3 P2 |
 
-Four gates are EXCLUDED from the port slices until MOVE lands, because they read
-root dotfiles whose paths MOVE changes: check-e2e-coverage, check-go-deps,
-check-profiler-coverage, check-plan-housekeeping.
+DONE this wave: HDR-A and HDR-B (148 headers), MOVE (fifteen policy lists).
+
+## Landed by the driver while they ran
+
+- Four quality gates died at the line that reads their input (`set -e` plus a
+  bare `grep` substitution), so the empty-input handler each had was unreachable
+- The 148 headers were UNREAD: `gate-bind.ts` excluded `/test/gates/`, and
+  separately a malformed header refused nothing in `--write` or `--dry-run`
+- `--park` was a silent no-op for a box-less plan, granting an unearned
+  housekeeping exemption; the live case was revived and re-recorded
+- Epics were still dying with /tmp; 18 commits already had an unresolvable
+  `PR-TASK`, and the epic was restored from an older branch's tracked snapshot
+- `check-enumeration-vacuity` was reading comments as code, and its claim to be
+  inside its own scope was false
 
 ## Driver-only, no agent may write these
 
@@ -49,23 +60,20 @@ package.json, scripts/ci-runner/manifest.ts, gates.lock.json, .github/workflows/
 CLAUDE.md, docs/agent-reference/TRAPS.md, scripts/data/doc-registry.md,
 scripts/lib/doc-providers.ts, .ci/breakpoint/**, agent/worklist/**.
 An agent authors its registration as literal patch lines; the driver pastes them.
-Only the driver runs `gate:bind --write`, once per wave, asserting `dropped` is empty.
 
-## What is next after this wave
+## What is next
 
 `docs/ci-overhaul/12-remaining-work.md` carries every remaining task WITH its
-ready-to-run prompt. Wave 2 still holds T3 (PROXY, holds the machine mutex) and
-T5 (SETUP, W6 P2). Wave 3 is T6 HOOKS, T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN.
-Wave 4 is driver-serial with no writer agents at all.
+prompt. T5 (SETUP, W6 P2) is HELD while the port agents run, because they copy
+`.ci/scripts/lib` into fixtures and a concurrent edit there makes a record
+unstable. Wave 3 is T6 HOOKS, T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN.
 
 ## Standing hazards paid for in this session
 
-- `git add` with a wildcard crossed an ownership boundary and swept another
-  agent's in-flight files without their dependency. HEAD imported a symbol that
-  did not exist; gates stayed green on success and threw on the refusal path.
-  Stage by explicit path.
-- `git log --diff-filter=A` names the RENAME, not the landing, and `--follow`
-  only sometimes repairs it. Search content history: `git log -S '<string>'`.
-- Exit codes from a pipeline were misread twice. `grep -c` exiting 1 is the
-  compound's exit.
+- `git commit` commits the INDEX, not the paths you just added. A peer's staged
+  renames rode one of my commits and half-landed the policy move. Use
+  `git commit -F <file> -- <pathspec>`, options BEFORE the `--`.
+- `git add` with a wildcard crossed an ownership boundary and swept an agent's
+  in-flight files without their dependency.
+- `git log --diff-filter=A` names the RENAME. Search content history: `git log -S`.
 - Never `git checkout`, `restore`, `stash`, `clean` or `reset`. Repair forward.
