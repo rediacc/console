@@ -27,6 +27,16 @@
 #   archlinux  nfpm CANNOT sign it -- `field signature not found in type nfpm.ArchLinux`
 #   apk        nfpm CAN sign it; only the key is absent (built both ways to check)
 # A reason that has not been run is a reason that can be wrong for months.
+#
+# AND THE OBVIOUS FIX FOR archlinux IS A BREAKING CHANGE, which no amount of local
+# testing would have shown. pacman.conf(5) defines SigLevel Optional -- what Arch
+# ships as LocalFileSigLevel -- as "Signatures are checked if present; absence of a
+# signature is not an error. An invalid signature is a fatal error, as is a
+# signature from a key not in the keyring." So publishing a detached .sig signed by
+# a key no user holds converts a working `pacman -U` into a hard failure. The
+# keyring rollout has to land BEFORE the first signed artifact, which is how Arch
+# Linux ARM and Chaotic-AUR both do it. apk has no such trap: an unsigned .apk
+# already needs --allow-untrusted, so signing it is strictly an improvement.
 set -uo pipefail
 ROOT="${SIGNING_COVERAGE_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}"
 BUILDER="${SIGNING_COVERAGE_BUILDER:-$ROOT/.ci/scripts/build/build-linux-pkg.sh}"
@@ -41,7 +51,7 @@ BUILDER="${SIGNING_COVERAGE_BUILDER:-$ROOT/.ci/scripts/build/build-linux-pkg.sh}
 #     it needs a key decision that belongs to the operator, and is tracked as a
 #     finding rather than silently allowlisted.
 declare -A UNSIGNED_ON_PURPOSE=(
-    [archlinux]="nfpm CANNOT sign archlinux at all -- adding a signature block fails at config load with 'field signature not found in type nfpm.ArchLinux' (measured against the pinned nfpm, 2026-09-06). Signing it needs a detached .sig produced outside nfpm and published beside the package"
+    [archlinux]="TWO reasons, and the second is the one that matters. (1) nfpm CANNOT sign archlinux: a signature block fails at config load with 'field signature not found in type nfpm.ArchLinux'; upstream goreleaser/nfpm#628 is open and PR #1065 unmerged. (2) Publishing a .sig would BREAK existing users: pacman.conf(5) says under SigLevel Optional -- what Arch ships as LocalFileSigLevel -- that 'a signature from a key not in the keyring' is a FATAL error, so a sidecar .sig signed by a key nobody has turns a working pacman -U into a hard failure. Signing archlinux needs a keyring rollout FIRST"
     [apk]="the KEY is missing, not the capability -- VERIFIED 2026-09-06 by building both ways: with an RSA key the apk carries a .SIGN.RSA.*.rsa.pub entry, without one it carries none. APK_RSA_PRIVATE_KEY is set by nothing here and is absent from .ci/config/bws-secret-map.json, so nfpm.yaml's apk signature block reads an env var never populated. Mint an RSA key and this exemption goes"
 )
 
