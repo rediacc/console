@@ -386,7 +386,12 @@ if [ "$SIDE" = old ]; then
     while IFS= read -r id; do [ -n "$id" ] && echo "✗ fixture.txt: $id is bad" >&2; done <"$FIX"
 else
     echo "→ $lines entries"
-    tac "$FIX" | while IFS= read -r id; do [ -n "$id" ] && echo "::error::fixture.txt: $id is bad"; done
+    # REVERSED ON PURPOSE: this side must emit the same findings in the opposite
+    # ORDER, which is what proves the comparator compares sets and not sequences.
+    # `tac` did this until 2026-09-06, when check:ci-shell-commands named it as
+    # unavailable in the minimal CI image. The sed is the POSIX reverse idiom and
+    # keeps the property the fixture exists for.
+    sed -n '1!G;h;$p' "$FIX" | while IFS= read -r id; do [ -n "$id" ] && echo "::error::fixture.txt: $id is bad"; done
 fi
 [ "$lines" -eq 0 ] || exit 1
 EOF
