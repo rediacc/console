@@ -1391,6 +1391,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-staging-tag-guard',
+    run: 'npm run check:ci-staging-tag-guard',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-staging-tag-guard.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Staging tag guard',
+    },
+  },
+  {
     id: 'check:ci-release-signing-coverage',
     run: 'npm run check:ci-release-signing-coverage',
     gate: true,

@@ -2120,6 +2120,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-release-signing-coverage
 
+      # cleanup-staging.sh guards itself to `staging-*` so a stray call cannot
+      # delete a real tag. A caller handing it a channel tag can NEVER succeed,
+      # and the failure reads as a missing token scope.
+      - name: Staging tag guard
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-staging-tag-guard
+
       # Offline by construction: compares the committed record against the
       # secrets each workflow references. The network lives only in --refresh.
       - name: Secret reachability
