@@ -1661,7 +1661,7 @@ def main():
         # project_start was written for.
         wl = C.worklist_for(C.project_start())
         fold = S.load(wl, sync=False)
-        body = E.render(wl, fold)
+        body = E.render(fold)
         # WORKLIST_PUBLISH_ROOT lets a test point the snapshot somewhere
         # harmless. Without it the L1 harness ran --publish with the real repo as
         # cwd and left agent/pr/l1probe.md in a TRACKED directory: a suite that
@@ -1679,7 +1679,7 @@ def main():
         out.write_text(header + body, encoding="utf-8")
         sys.stdout.write(
             M.CLI_PUBLISH_WROTE
-            % (out.relative_to(root), len(header) + len(body), len(E.load_epics(wl)))
+            % (out.relative_to(root), len(header) + len(body), len(E.load_epics()))
         )
         sys.exit(0)
     if sys.argv[1:2] == ["--epic"] and len(sys.argv) < 4:
@@ -1703,7 +1703,7 @@ def main():
                 sys.stderr.write(M.CLI_EPIC_REFUSED % "an epic needs a title")
                 sys.exit(2)
             title = " ".join(rest)
-            eid = E.new_epic(wl, me, title)
+            eid = E.new_epic(me, title)
             sys.stdout.write(M.CLI_EPIC_MADE % (eid, title))
             sys.exit(0)
         if sub == "add":
@@ -1712,17 +1712,17 @@ def main():
                     M.CLI_EPIC_REFUSED % "usage: --epic <me> add <epic-id> <item-id>..."
                 )
                 sys.exit(2)
-            got = E.add_to_epic(wl, me, rest[0], rest[1:])
+            got = E.add_to_epic(me, rest[0], rest[1:])
             if not got:
                 sys.stderr.write(
                     M.CLI_EPIC_REFUSED % ("no epic %r; run --epic <me> list" % rest[0])
                 )
                 sys.exit(2)
-            total = len(E.load_epics(wl)[got].get("covers") or [])
+            total = len(E.load_epics()[got].get("covers") or [])
             sys.stdout.write(M.CLI_EPIC_ATTACHED % (got, total))
             sys.exit(0)
         if sub == "list":
-            for eid, rec in E.load_epics(wl).items():
+            for eid, rec in E.load_epics().items():
                 sys.stdout.write(
                     "#%s  %s  (%d item(s))\n"
                     % (eid, rec.get("title") or "(untitled)", len(rec.get("covers") or []))
