@@ -477,6 +477,61 @@ phase4_validate_apt_metadata() {
     fi
     log_info "CONTROL: apk is declared-unsigned and still builds when signing is required"
 
+    # THE SIGNED PATH IS PROVEN HERE, not just the unsigned one. apk signing is
+    # already conditional -- nfpm skips it when key_file resolves empty -- so the
+    # day an RSA key lands in Bitwarden, this pipeline signs with no code change.
+    # That claim was only ever checked by hand, once. It is checked every run now.
+    #
+    # It also pins the thing that silently breaks users: APKv2 matches the public
+    # key by FILENAME (apk-keys(5): "APKv2 packages require the public key filename
+    # to match the signing key name within the package"), and nfpm defaults
+    # key_name to the MAINTAINER EMAIL. Without this assertion, editing
+    # PKG_MAINTAINER would rename the signature member and invalidate every
+    # /etc/apk/keys/<name>.rsa.pub already deployed -- surfacing as a trust error
+    # nobody would trace back to a maintainer edit.
+    local apk_key="$TEST_DIR/apk-signing-test.rsa"
+    if openssl genrsa -out "$apk_key" 2048 >/dev/null 2>&1; then
+        if ! APK_RSA_PRIVATE_KEY="$(cat "$apk_key")" \
+            "$SCRIPT_DIR/../build/build-linux-pkg.sh" \
+            --binary "$TEST_DIR/rdc-dummy" --version "$TEST_VERSION" --arch amd64 \
+            --format apk --output "$TEST_DIR/packages-apk-signed" >/dev/null 2>&1; then
+            log_error "an apk build WITH an RSA key failed; conditional signing is broken"
+            return 1
+        fi
+        # `|| true` on each pipeline, and an EXPLICIT emptiness check after. Under
+        # `set -eo pipefail` a find or grep that matches nothing aborts the whole
+        # script mid-test, which reads as a pass in the summary -- the same
+        # empty-is-invisible shape this file exists to catch in the build.
+        local signed_apk member
+        signed_apk="$(find "$TEST_DIR/packages-apk-signed" -name '*.apk' | head -1 || true)"
+        if [[ -z "$signed_apk" ]]; then
+            log_error "the signed apk build produced no .apk at all"
+            return 1
+        fi
+        member="$(tar tzf "$signed_apk" 2>/dev/null | grep '^\.SIGN\.' | head -1 || true)"
+        if [[ "$member" != ".SIGN.RSA.releases@rediacc.com.rsa.pub" ]]; then
+            log_error "apk signature member is '${member:-<none>}', expected '.SIGN.RSA.releases@rediacc.com.rsa.pub' -- key_name is not pinned, so a PKG_MAINTAINER change would invalidate every deployed /etc/apk/keys entry"
+            return 1
+        fi
+        log_info "CONTROL: with a key, apk signs under the PINNED key_name ($member)"
+        # CONTROL for that control: the same build with NO key must produce no
+        # .SIGN member at all, or the assertion above would pass against a build
+        # that embeds the member unconditionally.
+        local unsigned_apk
+        unsigned_apk="$(find "$TEST_DIR/packages-apk-unsigned" -name '*.apk' | head -1 || true)"
+        if [[ -z "$unsigned_apk" ]]; then
+            log_error "the unsigned apk build produced no .apk, so the control below compares nothing"
+            return 1
+        fi
+        if tar tzf "$unsigned_apk" 2>/dev/null | grep -q '^\.SIGN\.'; then
+            log_error "CONTROL FAILED: an apk built with NO key still carries a .SIGN member"
+            return 1
+        fi
+        log_info "CONTROL: with no key, the apk carries no .SIGN member"
+    else
+        log_warn "openssl unavailable; apk signing path NOT verified this run"
+    fi
+
     unset GNUPGHOME RELEASE_GPG_PRIVATE_KEY RELEASE_GPG_PUBLIC_KEY_FILE
     rm -rf "$gnupg_tmp"
 
