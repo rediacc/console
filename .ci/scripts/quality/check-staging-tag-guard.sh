@@ -22,15 +22,9 @@ set -uo pipefail
 ROOT="${STAGING_GUARD_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}"
 TARGET="${STAGING_GUARD_TARGET:-$ROOT/.ci/scripts/docker/cleanup-staging.sh}"
 
-fails=0
-n=0
-_c() {
-    n=$((n + 1))
-    if [[ "$2" == "$3" ]]; then echo "  ok    $1"; else
-        fails=$((fails + 1))
-        echo "  FAIL  $1 (got '$2' want '$3')" >&2
-    fi
-}
+# One copy of the tally, shared: check:ci-shape-duplication caught three.
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/gate-controls.sh"
+_c() { gate_check "$@"; }
 
 [[ -f "$TARGET" ]] || {
     echo "✗ $TARGET not found -- nothing was verified" >&2
@@ -70,14 +64,8 @@ for f in $call_files; do
     _c "$rel guards its call against a non-staging tag" "$guarded" "1"
 done
 
-if ((n < 3)); then
-    echo "FAIL  only $n control(s) ran; the battery is not being executed as written" >&2
-    fails=$((fails + 1))
-fi
-if ((fails)); then
-    echo "✗ staging tag guard: $fails of $n control(s) failed" >&2
+if ! gate_finish 3 "staging tag guard ($n_calls call site(s))"; then
     echo "  A caller that passes a non-staging tag can NEVER succeed, and the failure" >&2
     echo "  reads as a token-scope problem. Guard the call; do not widen the rail." >&2
     exit 1
 fi
-echo "✓ staging tag guard: $n control(s) passed across $n_calls call site(s)"
