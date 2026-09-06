@@ -8,20 +8,27 @@ re-derived. Status figures are measured, not remembered.
 
 | Body | Done | Total | % |
 |---|---|---|---|
-| Quality gates ported (W7 P2) | 39 | 77 | 51 |
-| Gate tests ported (W7 P3) | 0 | 148 | 0 |
-| Gate tests DECLARING a header (W2.3) | 148 | 148 | 100 |
-| Plans compacted (W12 P1.8) | 32 | 32 aged | 100 |
-| Shadow pairs proven | 38 | 39 | 97 |
-| Plan boxes | 67 | 130 | 51 |
+| Quality gates ported (W7 P2) | 77 | 77 | 100 |
+| Shadow pairs asserting green | 76 | 77 | 99 |
+| Gate tests declaring a header (W2.3) | 148 | 148 | 100 |
+| Heavy-job proxies (W3 P2) | 10 | 10 | 100 |
+| Policy lists moved (W4 P2) | 15 | 15 | 100 |
+| Plans compacted (W12 P1.8) | 32 | 32 | 100 |
+| Gate tests ported to pytest (W7 P3) | 0 | 148 | 0 |
+| Plan boxes | 71 | 130 | 55 |
 
-Re-measured 2026-09-06 after the PORT-D landing, not carried forward. The
-commands, so the next reader re-derives rather than trusts:
+Re-measured 2026-09-06 at the end of wave 2, not carried forward. The commands,
+so the next reader re-derives rather than trusts:
 
-    ls .ci/rediacc_ci/quality/*.py | grep -v __init__ | wc -l          # 39 ported
-    for l in .ci/shadow/*.observations.jsonl; do ... --assert --k 5; done  # 38 of 39
+    ls .ci/rediacc_ci/quality/*.py | grep -v __init__ | wc -l          # 77 ported
+    for l in .ci/shadow/*.observations.jsonl; do ... --assert --k 5; done  # 76 of 77
     grep -l '^Status: compacted' agent/PLAN-*.md | wc -l               # 32
-    grep -cE '^\s*- \[x\]' <the plan>                                 # 67 of 130
+    grep -cE '^\s*- \[x\]' <the plan>                                 # 71 of 130
+
+WHY 55 PERCENT AFTER A WAVE THIS LARGE. Box count is a poor unit and it always
+flattered us in one direction and cheats us in another. The single largest body
+left, 148 gate tests to pytest, is ONE box. The eleven boxes wave 2 closed
+represent 77 ports, 148 headers, 10 proxies and 15 list moves.
 
 The one red pair is `w7p2-stagingtag` and it is expected: see Known open defects.
 The header row was wrong two revisions ago, which counted 226 of 445 headers
