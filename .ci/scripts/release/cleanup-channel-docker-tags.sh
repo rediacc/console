@@ -6,9 +6,17 @@
 # its purpose. Removing it keeps GHCR from accumulating one dangling tag per
 # release.
 #
-# Non-critical by design: leftover channel tags are harmless, and the delete
-# needs the `delete:packages` scope which is not always granted. A failure is
-# recorded in the step summary and the script still exits 0.
+# Non-critical by design: leftover channel tags are harmless. A failure is recorded
+# in the step summary and the script still exits 0.
+#
+# AND IT ALWAYS FAILS TODAY, for a reason that is NOT the token. This header used to
+# say the delete "needs the `delete:packages` scope which is not always granted",
+# and that sent readers to check a token. The real cause is a design guard:
+# cleanup-staging.sh only accepts `staging-*` tags, deliberately, so a stray call
+# cannot delete a real one -- and CHANNEL is `edge` or `stable`. The two are
+# INDEPENDENT requirements and conflating them cost every release a wrong
+# diagnosis. The scope genuinely matters only once a `staging-` tag gets that far,
+# which is why that message still exists on the branch where it is true.
 #
 # Usage:
 #   .ci/scripts/release/cleanup-channel-docker-tags.sh
