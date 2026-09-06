@@ -87,7 +87,25 @@ _c "CONTROL: gpg still reads the welded key, which is why it slipped through" \
     "$(gpg --show-keys --with-colons "$TMP/welded.asc" 2>/dev/null | awk -F: '$1=="fpr"{print 1; exit}')" "1"
 
 cp "$TMP/welded.asc" "$TMP/repaired.asc"
-if "$CANON" "$TMP/repaired.asc" "$PASS" >/dev/null 2>&1; then
+# 0 = was already canonical, 10 = REPAIRED. Both are success here; only 1 is failure.
+# Treating any non-zero as failure is what this gate did before the repair signal
+# existed, and it turned a working repair into "canonicaliser-failed".
+canon_rc=0
+"$CANON" "$TMP/repaired.asc" "$PASS" >/dev/null 2>&1 || canon_rc=$?
+_c "a welded key reports REPAIRED, not 'already fine'" "$canon_rc" "10"
+# CONTROL: an already-canonical key must NOT claim a repair, or the signal is noise
+# and the next person mutes it.
+cp "$TMP/good.asc" "$TMP/good-probe.asc"
+good_rc=0
+"$CANON" "$TMP/good-probe.asc" "$PASS" >/dev/null 2>&1 || good_rc=$?
+_c "CONTROL: an already-canonical key reports 0, not 10" "$good_rc" "0"
+# The caller runs under `set -e`, so a BARE call to a script exiting 10 aborts the
+# whole build -- which is exactly the production case the signal exists for.
+# Count CODE, not prose: the same idiom appears in the comment that explains it, and
+# a naive grep -c reads 2 and fails on a correct file.
+_c "build-linux-pkg.sh guards that non-zero exit" \
+    "$(grep -v '^\s*#' "$ROOT/.ci/scripts/build/build-linux-pkg.sh" | grep -c '|| canon_rc=\$?')" "1"
+if [[ "$canon_rc" == "0" || "$canon_rc" == "10" ]]; then
     _c "the canonicaliser repairs a welded key" \
         "$(($(longest "$TMP/repaired.asc") <= 64 ? 1 : 0))" "1"
     _c "...and the repaired key is still the SAME key" \
