@@ -19,7 +19,7 @@
 # tutorial_tts/gpu_lock.py:33 defaults to /tmp/rediacc-gpu.lock and /tmp is per-container,
 # so a container and the host, or two containers, each take their OWN lease and both load
 # VoxCPM. Two VoxCPM jobs do not degrade, they OOM. The runner MUST bind-mount a shared
-# lock path and set RDC_GPU_LOCK_FILE to it. See .ci/docker/run-in-tts.sh.
+# lock path and set RDC_GPU_LOCK_FILE to it. See .ci/media/tools/run-in-tts.sh.
 ARG CUDA_TAG=13.0.1-runtime-ubuntu24.04
 FROM nvidia/cuda:${CUDA_TAG}
 

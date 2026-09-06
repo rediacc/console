@@ -46,6 +46,11 @@
  * synthetic input — a planted mismatch must be reported and a matching pair
  * must not — and refuses to pass if fewer than the expected number of
  * deployments were found. A gate that reads zero files cannot fail.
+ *
+ * ---- gate ----
+ * step: Backup bucket conformance
+ * needs: node
+ * ---- end gate ----
  */
 
 import { readFileSync, existsSync } from 'node:fs';

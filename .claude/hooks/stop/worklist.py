@@ -436,6 +436,261 @@ def _triage_cli(argv, worklist, me, die):
         print(M.CLI_TRIAGE_OPERATOR % {"id": item_id, "me": me, "reason": reason})
 
 
+def _planrec_cli(argv):
+    """--plan-compact / --plan-revive: the W12 record verbs.
+
+    WHY THESE ARE VERBS AND NOT AN EDIT. A record's `Full-Text-Blob` is
+    `git hash-object` of the plan's bytes, and the record then OVERWRITES those
+    bytes. Get the order wrong by hand -- edit first, hash after -- and the
+    pointer names content that exists nowhere, which loses the plan. So the
+    ordering lives in one function, the path is refused when it is dirty, and
+    the write is a tempfile plus `os.replace` (wl_planrec.write_atomic).
+
+    A DRY RUN IS THE DEFAULT. `--write` is opt-in because compaction is the one
+    operation here that replaces a document with a smaller one, and a session
+    should read the record before it stands in for the plan.
+
+    THE BLOB EXISTS BECAUSE THE PATH WAS COMMITTED, not because anything here
+    stored it. `git hash-object` without `-w` computes an id and writes NOTHING,
+    and `wl_planrec.derive` does not pass `-w`. What makes the pointer real is
+    the dirty-path refusal: a committed file's blob is already in the object
+    database and stays reachable through history. The two are one mechanism, so
+    do not relax the refusal without giving the pointer another guarantee.
+
+    NEVER COMMITS. Same rule as every other verb in this file, and it matters
+    more here: the record and `.ci/config/plan-boxes.json` must land in the SAME
+    commit or check:ci-plan-boxes reads the ledger's staleness as a vanished box.
+    The success message says so rather than doing it.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    mode = argv[0]
+    if len(argv) < 2:
+        die(M.CLI_PLANREC_USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+
+    import wl_planrec as R  # noqa: PLC0415 -- sibling, probed not assumed
+
+    root = C.project_root(C.project_start())
+    if len(argv) == 2:
+        # NO PATH IS A LISTING, not a usage error. The 33-plan wave this exists
+        # for is a READ before it is a write -- "what can I compact, and what
+        # would each one refuse" -- and answering that from the tool is cheaper
+        # and more honest than a session grepping statuses by hand. It is also
+        # the only mode of these verbs whose effect is a printed line rather than
+        # a file, which is what lets the identity suite drive them without
+        # planting a git repository per verb.
+        recs = CK.plan_records(root)
+        if mode == "--plan-revive":
+            rows = R.records(root, recs)
+            print(R.RECORDS_HEADER % (len(rows), len(recs)))
+            for rel, status, blob, ok in rows:
+                print(
+                    "  %-52s %-9s %s %s"
+                    % (rel, status, blob[:12], "" if ok else "<- BLOB DOES NOT RESOLVE")
+                )
+            return
+        rows = R.candidates(root, recs)
+        print(R.CANDIDATES_HEADER % (len(rows), len(recs) - len(rows)))
+        for rel, status, n_open, n_done, verdict in rows:
+            print("  %-52s %-12s %2d open %2d done  %s" % (rel, status, n_open, n_done, verdict))
+        return
+
+    rel = argv[2]
+    flags = argv[3:]
+    write = "--write" in flags
+    park = "--park" in flags
+    why = "author"
+    if "--why" in flags:
+        i = flags.index("--why")
+        if i + 1 >= len(flags):
+            die(M.CLI_PLANREC_USAGE)
+        why = flags[i + 1]
+    for f in flags:
+        if f.startswith("-") and f not in ("--write", "--park", "--why"):
+            die("unknown flag %r\n\n%s" % (f, M.CLI_PLANREC_USAGE))
+
+    # Accept an absolute or a ./-prefixed path and normalise to the repo-relative
+    # form every consumer uses. The ledger is keyed on that spelling, so a path
+    # that differs only in prefix would silently find no `done_sigs` and every
+    # box would record `abandoned` -- a wrong record produced by a right command.
+    try:
+        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
+    except ValueError:
+        rel = rel.lstrip("./")
+
+    if mode == "--plan-revive":
+        try:
+            body, note = R.revive(root, rel)
+        except R.RecordError as exc:
+            die(M.CLI_PLANREC_REFUSED % exc)
+            return
+        if not write:
+            sys.stdout.write(M.CLI_PLANREC_DRY % body)
+            return
+        R.write_atomic(pathlib.Path(root) / rel, body)
+        print(
+            M.CLI_PLANREC_REVIVED
+            % {"rel": rel, "blob": note.split()[-1], "bytes": len(body.encode("utf-8"))}
+        )
+        return
+
+    was = 0
+    with contextlib.suppress(OSError):
+        was = (pathlib.Path(root) / rel).stat().st_size
+    try:
+        text, notes = R.compact(root, rel, me, why=why, park=park)
+    except R.RecordError as exc:
+        die(M.CLI_PLANREC_REFUSED % exc)
+        return
+    for n in notes:
+        print("NOTE: %s" % n, file=sys.stderr)
+    if not write:
+        sys.stdout.write(M.CLI_PLANREC_DRY % text)
+        return
+    R.write_atomic(pathlib.Path(root) / rel, text)
+    rec = R.parse(text)
+    print(
+        M.CLI_PLANREC_WROTE
+        % {
+            "rel": rel,
+            "status": rec["status"],
+            "bytes": len(text.encode("utf-8")),
+            "was": was,
+            "blob": rec["blob"],
+            "me": me,
+        }
+    )
+
+
+def _planwhy_cli(argv):
+    """--plan-why [<me>] <path>: what the compacted history says about one file.
+
+    NO IDENTITY IS REQUIRED and that is deliberate: this verb writes nothing, and
+    the sibling verbs take `<me>` only because a WRITE has to be attributable. A
+    leading argument that looks like a session prefix is accepted and skipped
+    anyway, because a session that has just typed `--plan-compact <me> ...` will
+    type it here too, and refusing that would be a usage error over a habit.
+
+    THE EMPTY ANSWER IS AFFIRMATIVE. "No record names this file" is a RESULT: the
+    index was read, N records were searched, none of them cited this path. That is
+    different from "there is no index", and both are different from printing
+    nothing -- which is what a session reads as "the tool is broken" and then
+    stops using. wl_planrec.why_lines returns which of the three it is, and each
+    gets its own sentence.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    rest = argv[1:]
+    if rest and C.PREFIX_RE.match(rest[0]) and len(rest) > 1:
+        rest = rest[1:]
+    if not rest:
+        die(M.CLI_PLANWHY_USAGE)
+
+    import wl_planrec as R  # noqa: PLC0415 -- sibling, probed not assumed
+
+    root = C.project_root(C.project_start())
+    target = rest[0]
+    index = R.why_index(root)
+    lines, state = R.why_lines(root, target, index=index)
+    if state == R.WHY_EDGES:
+        print(M.CLI_PLANWHY_HIT % {"path": target, "body": "\n".join("  " + x for x in lines)})
+        return
+    if state == R.WHY_NO_INDEX:
+        print(M.CLI_PLANWHY_NO_INDEX % {"path": target, "index": R.INDEX_REL})
+        return
+    print(
+        M.CLI_PLANWHY_NO_EDGE
+        % {"path": target, "n": len({r for v in index.values() for r in v}), "index": R.INDEX_REL}
+    )
+
+
+def _plantick_cli(argv):
+    """--plan-tick <me> <path> <box> <evidence...> [--write].
+
+    ONE RUN, TWO FILES, and the pairing is the whole point. `.ci/config/plan-boxes.json`
+    is a committed second reading of the same boxes and check:ci-plan-boxes's A0
+    compares them for equality, so a box ticked with the Edit tool and a ledger
+    left alone is a red tree with a remedy nobody remembers. Both writes happen
+    here or neither does.
+
+    NEVER COMMITS, same as every verb in this file, and here it matters twice
+    over: the two files must land in the SAME commit or the gate reads the ledger's
+    staleness as a box that vanished. The success message says so.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    if len(argv) < 2:
+        die(M.CLI_PLANTICK_USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+
+    import wl_planrec as R  # noqa: PLC0415 -- sibling, probed not assumed
+
+    root = C.project_root(C.project_start())
+    if len(argv) == 2:
+        # NO PATH IS A LISTING, the same shape --plan-compact and --plan-revive
+        # take and for the same two reasons. A caller needs a box SIGNATURE to
+        # tick unambiguously and this is where signatures come from, so the read
+        # is a genuine prerequisite of the write rather than a convenience. And
+        # it is the only mode of this verb whose effect is a printed line rather
+        # than two written files, which is what lets the identity suite drive it
+        # without planting a git repository and a committed box ledger per verb.
+        n = 0
+        print(R.TICKABLE_HEADER)
+        for rel, boxes in R.tickable(root, CK.plan_records(root)):
+            print("  %s" % rel)
+            for _i, _line, body, sig in boxes:
+                n += 1
+                print("    %s  %s" % (sig, body[:88]))
+        print("  %d open box(es) can be ticked in place." % n)
+        return
+    if len(argv) < 5:
+        die(M.CLI_PLANTICK_USAGE)
+    rel, selector = argv[2], argv[3]
+    rest = [a for a in argv[4:] if a != "--write"]
+    write = "--write" in argv[4:]
+    for f in rest:
+        if f.startswith("--"):
+            die("unknown flag %r\n\n%s" % (f, M.CLI_PLANTICK_USAGE))
+    evidence = " ".join(rest)
+    try:
+        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
+    except ValueError:
+        rel = rel.lstrip("./")
+
+    try:
+        text, doc, note = R.plan_tick(root, rel, selector, evidence, me)
+    except R.RecordError as exc:
+        die(M.CLI_PLANREC_REFUSED % exc)
+        return
+    if not write:
+        sys.stdout.write(M.CLI_PLANTICK_DRY % {"rel": rel, "note": note})
+        return
+    # THE PLAN FIRST, THEN THE LEDGER. The ledger is a reading OF the plan, so
+    # this order leaves the recoverable state at every instant: a crash between
+    # them leaves a ticked plan and a stale ledger, which check:ci-plan-boxes
+    # reports with the exact regenerate command. The other order leaves a ledger
+    # attesting a tick no file carries, which reads as a box that vanished.
+    R.write_atomic(pathlib.Path(root) / rel, text)
+    R.write_atomic(pathlib.Path(root) / R.LEDGER_REL, json.dumps(doc, indent=2) + "\n")
+    print(M.CLI_PLANTICK_WROTE % {"rel": rel, "ledger": R.LEDGER_REL, "note": note, "me": me})
+
+
 def _item_cli(argv, worklist):
     """--add / --triage / --tick / --defer / --lease / --update / --list: the
     v10 item verbs. Exits non-zero on misuse, so a rejected write cannot be
@@ -1263,7 +1518,14 @@ def main():
             except OSError:
                 current, mtime = "", time.time()
             had_prev = bool(current.strip())
+            outgoing_stamp = ""
             if had_prev:
+                with contextlib.suppress(Exception):
+                    import wl_planrec as _R  # noqa: PLC0415 -- optional; a stamp never gates a write
+
+                    outgoing_stamp = _R.pointer_stamp(
+                        root, str(target.relative_to(pathlib.Path(root)))
+                    )[2]
                 try:
                     backup.write_text(current, encoding="utf-8")
                     backed_up = True
@@ -1353,6 +1615,18 @@ def main():
                 replaced += "; previous document saved to %s" % backup
             else:
                 replaced += "; WARNING: the backup copy FAILED, the replaced body is gone"
+            # W12 P2.6: the POINTER STAMP for the outgoing document. The .prev
+            # slot above lives under TMPDIR and does not survive a reboot; this
+            # file is tracked, so when its outgoing bytes were committed they are
+            # in the object database and stay reachable through history for as
+            # long as the repository exists. Computed BEFORE os.replace, above.
+            #
+            # It says which case holds rather than always printing a hash:
+            # `git hash-object` STORES NOTHING, so an id over uncommitted bytes
+            # is not a promise of recovery, and advertising `git show` for bytes
+            # git does not have is the same quiet lie the record gate refuses.
+            if outgoing_stamp:
+                replaced += ";\n  %s" % outgoing_stamp
         try:
             S.load(wl, sync=True)  # sync first, so the signature covers the synced world
             doc = S.load_state(wl, prefix)
@@ -1820,6 +2094,15 @@ def main():
         import wl_wait  # noqa: PLC0415 -- sibling, probed not assumed (see SIBLING IMPORTS above)
 
         sys.exit(wl_wait.main(sys.argv[2:]))
+    if sys.argv[1:2] and sys.argv[1] in ("--plan-compact", "--plan-revive"):
+        _planrec_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--plan-why"]:
+        _planwhy_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--plan-tick"]:
+        _plantick_cli(sys.argv[1:])
+        return
     if sys.argv[1:2] and sys.argv[1] in (
         "--add",
         "--triage",

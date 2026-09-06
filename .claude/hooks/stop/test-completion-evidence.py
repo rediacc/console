@@ -34,6 +34,15 @@ MUST_PASS = [
         f"cites bare-filename.md:12 first, then {REAL}",
     ),
     ("a single resolving citation is evidence", f"fixed it, see {REAL}"),
+    # Root dotfiles, 2026-09-06. 22 of 24 tracked root dotfiles were uncitable
+    # because CITE_RE demanded a `.<ext>` suffix; that set is every allowlist and
+    # blocklist this repo suppresses through, so the tick that most needs a
+    # record was the one that could not leave one.
+    ("an extensionless root dotfile resolves", "drained an entry, see .gitignore:9"),
+    (
+        "a hyphenated root allowlist resolves",
+        "removed the stale row at .dead-bash-allowlist:19",
+    ),
 ]
 
 MUST_FAIL = [
@@ -43,6 +52,9 @@ MUST_FAIL = [
         "several citations, none resolving, is not evidence",
         "cites nowhere/at/all.md:12 and also other/fake.ts:7",
     ),
+    # The dotfile branch must still RESOLVE, or it would turn any dotted prose
+    # token into evidence. This is the control that keeps that branch honest.
+    ("a fabricated root dotfile is not evidence", "see .no-such-allowlist:4"),
 ]
 
 

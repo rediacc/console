@@ -11,6 +11,12 @@
  * Exit codes:
  *   0 - every versionGroup has a valid reason in the sidecar
  *   1 - at least one group is missing a label, a reason, or has a low-effort reason
+ *
+ * ---- gate ----
+ * step: BLOCKER validator — syncpack versionGroups
+ * needs: node
+ * lane: quality-security
+ * ---- end gate ----
  */
 
 import * as fs from 'node:fs';

@@ -514,7 +514,24 @@ CITE_RE = re.compile(
     # files (every tutorial doc), 86 .svg, 18 .cast and 14 .txt could not be cited
     # AT ALL. Binary formats (png, pdf) stay OUT on purpose: a line number in a
     # binary cites nothing.
-    r"(?<![\w./-])(\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt))"
+    # EXTENSIONLESS ROOT DOTFILES, added 2026-09-06. Same class as the three
+    # gaps above and found the same way: a tick of mine citing .gitignore:9 was
+    # refused as evidence-free. The first branch requires a `.<ext>` suffix, and
+    # a name like `.gitignore` or `.dead-bash-allowlist` has its only dot at the
+    # FRONT, so 22 of this repo's 24 tracked root dotfiles could not be cited AT
+    # ALL. That set is not incidental: it is every one of the 16 allowlists and
+    # blocklists the whole suppressions discipline is built on, plus .gitignore,
+    # .npmrc, .gitattributes and .gitmodules. A session draining an allowlist
+    # entry, which is exactly the work that most needs a record, could not cite
+    # the file it had just edited. The branch carries no slash on purpose, so it
+    # reaches root dotfiles and cannot swallow the `.ci` prefix of a real path;
+    # the first branch is tried first and wins for anything with an extension.
+    # Over-matching is cheap here anyway: citation_state still has to RESOLVE the
+    # path on disk, so a stray `.foo:3` in prose fails there rather than passing.
+    r"(?<![\w./-])("
+    r"\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt)"
+    r"|\.[\w][\w-]*"
+    r")"
     r":(\d+)(?:-\d+)?\b"
 )
 
@@ -1071,7 +1088,11 @@ PLAN_HEADER_LINES = 10
 # `Owner: <session-prefix>` in the same header block. plan_drift_rows is scoped to the
 # plans THIS session owns, so it needs to read the field, not just the status.
 PLAN_OWNER_RE = re.compile(r"^\*{0,2}Owner\*{0,2}:\s*[`'\"]?([0-9A-Za-z_-]{4,})", re.MULTILINE)
-PLAN_DONE_STATES = ("done", "superseded")
+# `compacted` joins the two original words for the same reason they are here: a
+# compacted record is HISTORY, so plans_block counts it rather than listing it as
+# live work, and plan_status_excerpt never picks one as "the newest live plan".
+# `parked` is deliberately NOT here -- its work is unfinished, so it stays visible.
+PLAN_DONE_STATES = ("done", "superseded", "compacted")
 PLAN_EXCERPT_CHARS = 1500
 PLAN_DRIFT_MAX = int(os.environ.get("WORKLIST_PLAN_DRIFT_MAX", "5"))
 # How many of MY items must have moved past a plan before it counts as behind.
@@ -2189,6 +2210,19 @@ def handle_post_compact(event):
             hit, _errs = A.hint_for(text + "\n" + "\n".join(items))
             if hit:
                 msg += "\n\n" + M.N_AGENT_HINT % (hit[0], hit[0], ", ".join(hit[2][:6]))
+    # W12 P2.3. A compaction has just thrown away whatever this session knew about
+    # WHY the files it has in flight are the shape they are; those files have not
+    # changed. So the compacted plan records that name them go into the same
+    # briefing, from the working tree's own dirty list.
+    #
+    # ADDS NOTHING WHEN NOTHING MATCHES -- `why_for_paths` returns "" -- and never
+    # raises: this is one append to a briefing that must be emitted either way.
+    with contextlib.suppress(Exception):
+        import wl_planrec as _R  # noqa: PLC0415 -- optional; the briefing must not need it
+
+        _why = _R.why_for_paths(root, sorted(_R.dirty_paths(root, "."))[:60])
+        if _why:
+            msg += "\n\n" + _why
     C.emit(
         {
             "systemMessage": "PostCompact: STATE.md %s (agent/%s/STATE.md)"

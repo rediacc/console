@@ -8,6 +8,10 @@
 # filing decision.
 #
 # Sourced by run.sh, which already sources .ci/lib/local-common.sh for log_*,
+# and for _sha256sum: bare `sha256sum` does not exist on macOS, so the two checksum
+# verifications below would report a MISMATCH that never happened, which is a verifier
+# that CANNOT RUN reading as a verifier that FAILED. Same class as the two fixed in
+# .ci/scripts/lib/toolchain.sh on 2026-09-06; swept here in the same pass.
 # prompt_continue and ensure_deps.
 #
 # EVERY FUNCTION HERE IS IDEMPOTENT and returns 0 early when its condition is
@@ -152,7 +156,7 @@ setup_node_toolchain() {
     fi
     local want got
     want=$(grep " ${base}.tar.xz\$" "$tmp/SHASUMS256.txt" | awk '{print $1}')
-    got=$(sha256sum "$tmp/$base.tar.xz" | awk '{print $1}')
+    got=$(_sha256sum "$tmp/$base.tar.xz" | awk '{print $1}')
     if [[ -z "$want" || "$want" != "$got" ]]; then
         log_error "Checksum MISMATCH for ${base}.tar.xz"
         log_error "  expected: ${want:-<not listed in SHASUMS256.txt>}"
@@ -404,7 +408,7 @@ setup_go_toolchain() {
         return 1
     fi
     local got_sha
-    got_sha=$(sha256sum "$tmp/$file" | awk '{print $1}')
+    got_sha=$(_sha256sum "$tmp/$file" | awk '{print $1}')
     if [[ "$want_sha" != "$got_sha" ]]; then
         log_error "Checksum MISMATCH for $file"
         log_error "  expected: $want_sha"

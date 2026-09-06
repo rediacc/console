@@ -628,5 +628,10 @@ cd /path/to/console && git add -A && git commit -m "fix: ..." && git push
 ### Secrets in CI vs CD
 
 - **CI workflows** (`ci.yml`, `ci-quality.yml`, `ct-tests.yml`): Use **generated throwaway keys** via `ci-env.sh`. Never pass production secrets.
-- **Release workflow** (`cd-v2.yml`): Uses **real org secrets** from GitHub for production deployment.
+- **Release workflow** (`cd-v2.yml`): Uses **real production credentials**, pulled from
+  **Bitwarden** by `./.github/actions/bws-secrets`, not from GitHub's org secret store. That
+  store is unused: `gh api orgs/rediacc/actions/secrets` returns
+  `{"total_count":0,"secrets":[]}`. The only repository secrets are `BWS_ACCESS_TOKEN`, which
+  unlocks Bitwarden, and `BREAKPOINT_TUNNEL_TOKEN`. Corrected 2026-09-06; the previous wording
+  sent readers to an empty store and made a live pipeline look broken.
 - Generated secrets are masked via `::add-mask::` in `ci-env.sh`.

@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Shell lint
+# needs: none
+# id: check:ci-shell-lint
+# selftest: true
+# ---- end gate ----
+
 # Shell script compatibility check using ShellCheck
 # Used by both ./run.sh quality shell and CI
 #

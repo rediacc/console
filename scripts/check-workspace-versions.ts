@@ -11,6 +11,13 @@
  * Exit codes:
  *   0 - All versions match
  *   1 - Version mismatch detected
+ *
+ * ---- gate ----
+ * step: Versions
+ * needs: node
+ * id: check:version
+ * run: tsx scripts/check-workspace-versions.ts && syncpack lint
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

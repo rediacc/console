@@ -24,6 +24,17 @@
  *
  * Usage:
  *   npx tsx scripts/check-test-gate-wiring.ts [--selftest]
+ *
+ * ---- gate ----
+ * step: Test-gate wiring
+ * needs: node
+ * selftest: true
+ * lane: quality-content
+ * why: check:test:tutorial-player sat in package.json for three months with no
+ *      manifest.ts entry and no workflow step -- found by hand this session,
+ *      not by any gate. This is the gate: every check:test* key must resolve
+ *      to a real manifest.ts entry wired to ci-quality.yml.
+ * ---- end gate ----
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';

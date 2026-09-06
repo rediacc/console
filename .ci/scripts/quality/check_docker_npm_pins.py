@@ -30,6 +30,16 @@ substring>`, whose reason must start with BLOCKER:. An entry that matches nothin
 REFUSED as dead scaffold.
 
 Exit 1 on an unpinned install or a dead exclusion, 2 on a failed control.
+
+---- gate ----
+step: Dockerfile npm pins
+needs: submodules
+selftest: true
+lane: quality-code
+why: A build that broke with no commit behind it: private/account's image resolved
+     its whole dep tree live, and a package published that morning crashed npm's
+     arborist. This is the regression test for the CLASS, not for that package.
+---- end gate ----
 """
 
 from __future__ import annotations

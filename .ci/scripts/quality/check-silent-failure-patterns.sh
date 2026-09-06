@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Silent-failure patterns
+# needs: none
+# id: check:ci-silent-failures
+# selftest: true
+# ---- end gate ----
+
 # Catch shell scripts that pipe commands which can exit non-zero on empty
 # input through a pipeline under `set -eo pipefail` without a guard.
 #

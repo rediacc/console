@@ -147,9 +147,20 @@ function trackedFiles(root: string): string[] {
  * /^Dockerfile/ against the repo-relative path, so `.devcontainer/Dockerfile`
  * never matched and every script it COPYs (download-extensions.sh,
  * start-*.sh) was falsely reported orphaned.
+ *
+ * `py` was absent until 2026-09-06, and its absence is the exact failure this
+ * gate exists to prevent, inverted: a shell function or script whose ONLY
+ * caller is a `.py` file was reported dead, because the caller was not in the
+ * corpus at all. The tooling transformation moves callers from bash to Python
+ * one workstream at a time, so every one of those moves would have produced a
+ * false orphan -- and this gate is a whole-tree reachability scan that
+ * `ci:quick` defers, so the red arrives late and looks unrelated to the change
+ * that caused it. Reproduced against a two-file fixture (lib.sh defining a
+ * function, driver.py its only caller): two findings before this alternative,
+ * zero after.
  */
 const TEXTUAL =
-  /(\.(sh|bash|ya?ml|json|jsonc|ts|tsx|js|cjs|mjs|md|txt|nix|toml|cfg|conf|ini|service|timer)$)|(^Dockerfile)|(^\.env)|(^Makefile)/;
+  /(\.(sh|bash|ya?ml|json|jsonc|ts|tsx|js|cjs|mjs|py|md|txt|nix|toml|cfg|conf|ini|service|timer)$)|(^Dockerfile)|(^\.env)|(^Makefile)/;
 
 interface Allowlist {
   globRoots: string[];
@@ -215,6 +226,27 @@ function main(): void {
     }
   }
   const corpus = [...texts.values()].join('\n');
+
+  // CONTROL for the TEXTUAL table above, and the reason it is in-process rather
+  // than in a gate test: this gate's npm entry and its manifest row are both in
+  // the root driver's merge queue, so a control that needs a new registration is
+  // a control that does not run yet. This one runs on every invocation and costs
+  // nothing.
+  //
+  // It is SET-DERIVED, not a typed count (docs/ci-overhaul/08-driver-contract.md
+  // section 6): if the tree holds Python files at all, at least one of them must
+  // be in the corpus. Drop `py` from TEXTUAL and this fires immediately, instead
+  // of the tree quietly reporting every bash function whose only caller moved to
+  // Python as dead.
+  const pyTracked = tracked.filter((f) => f.endsWith('.py'));
+  if (pyTracked.length > 0 && !pyTracked.some((f) => texts.has(f))) {
+    console.error(
+      `${RED}✗${NC} ${pyTracked.length} tracked .py file(s) exist and NONE reached the corpus — ` +
+        'the TEXTUAL extension table no longer admits Python, so any shell symbol whose only ' +
+        'caller is Python will be reported dead.'
+    );
+    process.exit(1);
+  }
 
   const findings: Finding[] = [];
 

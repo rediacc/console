@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Check Go module sync against the renet worktree
+# needs: none
+# selftest: true
+# lane: quality-go
+# ---- end gate ----
+
 # Every standalone Go module that `replace`s the renet worktree must stay TIDY
 # against it.
 #

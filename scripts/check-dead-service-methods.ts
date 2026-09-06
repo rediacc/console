@@ -29,6 +29,12 @@
  *  - Interface conformance is not modelled. A method existing solely to satisfy
  *    an interface will be reported; if that happens, the honest fix is usually
  *    that the interface member is dead too.
+ *
+ * ---- gate ----
+ * step: Dead service methods
+ * needs: node
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import { execFileSync } from 'node:child_process';

@@ -86,6 +86,13 @@ each the converse of something already checked:
 
 Control-first: the parser is proven on synthetic input in both directions
 before any verdict, and the failure direction is proven by a planted name.
+
+---- gate ----
+step: Bitwarden secret map
+needs: submodules
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 from __future__ import annotations

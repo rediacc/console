@@ -5,8 +5,9 @@
  * ---- gate ----
  * step: Workflow orphan step keys
  * needs: none
+ * selftest: true
  * why: a refactor deleted a step's name/if/run and left its env block grafted onto the previous step
- * ---- /gate ----
+ * ---- end gate ----
  *
  * WHY THIS EXISTS, found by the Claude review on PR #585 and not by any gate.
  * Commit 1e8026bd extracted the "External dependency freshness" step and removed

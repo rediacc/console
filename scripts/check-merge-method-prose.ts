@@ -24,6 +24,15 @@
  * SCOPE: `.claude/**` and `docs/agent-reference/**`, the files a session is
  * told to follow. Not the whole repo: a changelog or a git history note
  * describing what used to happen is not an instruction.
+ *
+ * ---- gate ----
+ * step: Instruction files do not prescribe a rejected merge method
+ * needs: node
+ * selftest: true
+ * why: A guard's refusal message is the last thing a session reads before
+ *      changing course. It must not prescribe a merge method the platform
+ *      rejects: allow_squash_merge is false on all five repos.
+ * ---- end gate ----
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';

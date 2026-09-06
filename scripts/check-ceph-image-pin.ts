@@ -29,6 +29,11 @@
  *
  * Usage: npx tsx scripts/check-ceph-image-pin.ts [--selftest]
  * Exit 0 ok, 1 stale or disagreeing, 2 the check itself could not run.
+ *
+ * ---- gate ----
+ * step: Ceph image pin freshness
+ * needs: node, submodules
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import path from 'node:path';

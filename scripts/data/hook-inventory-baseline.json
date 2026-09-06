@@ -40,6 +40,7 @@
   "pre-bash/warn-stale-index.sh",
   "pre-bash/warn-submodule-deletions.sh",
   "pre-edit/block-agent-state-shape.sh",
+  "pre-edit/block-compacted-plan-edit.sh",
   "pre-edit/block-edit-of-running-script.sh",
   "pre-edit/block-inline-python.sh",
   "pre-edit/block-inline-workflow-run.sh",
@@ -47,5 +48,6 @@
   "pre-edit/block-roundlog-write.sh",
   "pre-edit/block-suppressions.sh",
   "require-jq.sh",
+  "require-python.sh",
   "trapguard/dispatch.py"
 ]

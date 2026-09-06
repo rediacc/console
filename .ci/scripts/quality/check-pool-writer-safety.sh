@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Pool-registered tests do not write the real tree
+# needs: none
+# selftest: true
+# ---- end gate ----
+
 # A gate test that WRITES INTO THE REAL TREE must be registered as a WRITER in
 # .ci/scripts/test/run-all.sh. This gate catches the one that is not.
 #

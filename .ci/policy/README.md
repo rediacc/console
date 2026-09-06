@@ -1,0 +1,377 @@
+# `.ci/policy/` -- where suppression policy lives
+
+**This directory is empty on purpose right now.** W4 phase 0 and 1 build the seam and
+the measurements that make the move safe; the move itself is a later phase. Nothing has
+been relocated yet, and every file named below is still at the repository root.
+
+Read this before moving any of them, and before adding a seventeenth.
+
+---
+
+## 1. The predicate
+
+A file belongs in `.ci/policy/` when **all four** hold:
+
+1. **It is a decision, not data.** Its content is a set of entries someone chose to
+   exempt, block, allow or hold, and each entry is a claim about the world that could
+   stop being true. That is what makes it policy rather than configuration.
+2. **It is BLOCKER-gated, or should be.** Every entry carries -- or is required by
+   `docs/agent-reference/suppressions.md` to carry -- a substantive `# BLOCKER:` reason.
+   The two path-list exceptions (`.e2e-coverage-allowlist`,
+   `.profiler-coverage-allowlist`) are in because their gates enforce liveness in-gate
+   instead, which is the same obligation discharged differently.
+3. **It has a parser.** Some code opens it and reads entries out of it. A file nothing
+   parses is not policy; see `.ci-trigger` in section 3.
+4. **Its location is an implementation detail.** No tool discovers it by name at the
+   repository root, and no external consumer depends on the path. This is the clause
+   that keeps `package.json`, `tsconfig.json` and `biome.json` at the root, and it is
+   the same predicate `docs/ci-overhaul/08-driver-contract.md` §5d gives for the `.json`
+   inventory.
+
+The predicate is checkable in **both directions**, and the move phase must assert both:
+nothing outside the discovered set may sit at the root, and every name in
+`POLICY_FILES` (`scripts/lib/policy-paths.ts`) must be present here. A move that forgets
+a reader must be red, not quiet.
+
+---
+
+## 2. The files that move -- fifteen
+
+Every one of these is at the repository root today. The reader column is what has to
+follow the file; the seam that makes that a one-line change is
+`scripts/lib/policy-paths.ts`.
+
+| File | Entries today | Reader, by symbol | How the path is built today |
+|---|---|---|---|
+| `.actions-upgrade-blocklist` | 0 | `scripts/check-actions.ts` `BLOCKLIST_FILE` | root join |
+| `.audit-allowlist` | 0 | `.ci/scripts/security/audit.sh` `parse_blockered_list ".audit-allowlist"` | **bare relative name**, correct only after the `cd "$ROOT_DIR"` in `main()` |
+| `.audit-prod-allowlist` | 10 | `.ci/scripts/security/audit.sh` `parse_blockered_list ".audit-prod-allowlist"` | **bare relative name**, same `cd` |
+| `.ci-parity-exempt` | 9 | `scripts/check-ci-parity.ts` `EXEMPT_FILE` | env seam (`CI_PARITY_ROOT`) over root join |
+| `.cli-i18n-orphan-allowlist` | 5 | `scripts/check-cli-i18n-key-usage.ts` `ORPHAN_ALLOWLIST` | root join |
+| `.dead-bash-allowlist` | 14 | `scripts/check-dead-bash.ts` `ALLOWLIST` | env seam (`DEAD_BASH_ROOT`) over root join |
+| `.deps-upgrade-blocklist` | 10 | `scripts/check-deps.ts` `BLOCKLIST_FILE`; the audit gate's `deps_blocklist_has()` | root join; **and a bare relative name** in `deps_blocklist_has` |
+| `.devcontainer-upgrade-blocklist` | 0 | `scripts/check-devcontainer-pin-freshness.ts` `DEVCONTAINER_BLOCKLIST_FILE` | env seam over root join |
+| `.e2e-coverage-allowlist` | 21 | `scripts/check-e2e-coverage.ts` `E2E_COV_ALLOWLIST` | env seam over root join |
+| `.embed-assets-upgrade-blocklist` | 0 | `scripts/check-embed-asset-freshness.ts` `EMBED_BLOCKLIST_FILE` | env seam over root join |
+| `.go-deps-upgrade-blocklist` | 2 | `.ci/scripts/quality/check-go-deps.sh` `BLOCKLIST_FILE` | root join |
+| `.plan-housekeeping-allowlist` | 0 | `.ci/scripts/quality/check-plan-housekeeping.sh` `ALLOWLIST` | env seam (`PLAN_HK_ALLOWLIST`) over root join |
+| `.profiler-coverage-allowlist` | 71 | `.ci/scripts/quality/check-profiler-coverage.sh` `ALLOWLIST` | **bare relative name**, correct only after the `cd "$REPO_ROOT"` above it |
+| `.runner-advice-allowlist` | 0 | `.ci/scripts/quality/check_runner_advice.py` `allowlist_path` | flag, then env (`RUNNER_ADVICE_ALLOWLIST`), then root join |
+| `.unverified-download-allowlist` | 4 | `scripts/check-unverified-downloads.ts` `UNVERIFIED_DOWNLOAD_ALLOWLIST` | env seam over root join |
+
+Readers are cited by SYMBOL rather than by line, deliberately. This checkout is shared
+with other sessions (`docs/ci-overhaul/08-driver-contract.md` section 4), and the first
+draft of this table went stale within the hour: half its line numbers had moved by the
+time the file was written, because unrelated edits landed above them. A symbol survives
+that; a line number is a claim about a tree nobody has any more.
+
+Eleven of the fifteen are additionally read by
+`scripts/check-suppression-liveness.ts`, which since 2026-09-06 routes every one of
+those reads through `policyPath()` and therefore needs no edit when the move lands.
+
+**The four bare-relative reads are the reason the seam exists.** `audit.sh` and
+`check-profiler-coverage.sh` open their allowlists by bare name and are correct only
+because they `cd` to the repository root first. A move that updated the root joins and
+missed these would leave four readers opening a file that is no longer there -- and in
+every one of these mechanisms, a file that is not there parses as zero entries, which is
+indistinguishable from "nothing is suppressed".
+
+### Three things the move must carry with it
+
+- **`.ci/scripts/ci/scope-map.cjs` `ROOT_MANIFESTS`** (`:71-102`) names ten of the
+  fifteen by exact repo-relative path. After the move those names match nothing.
+  Classification is preserved anyway -- `.ci/policy/<name>` is caught by the `ci-harness`
+  rule at `:144` (`matchPrefix('.ci/')` ⇒ `full: 'harness'`) -- so no delta stops forcing
+  full CI. What changes is the REASON string, from `root-manifest:<name>` to
+  `harness:.ci/policy/<name>`, and `.ci/scripts/test/gates/test-scope-engine.sh:697`
+  pins `'.audit-allowlist|root-manifest:.audit-allowlist'`. That test and the
+  `ROOT_MANIFESTS` entries move in the same change. The other five
+  (`.devcontainer-upgrade-blocklist`, `.plan-housekeeping-allowlist`,
+  `.profiler-coverage-allowlist`, `.runner-advice-allowlist`,
+  `.unverified-download-allowlist`) are not in `ROOT_MANIFESTS` at all and fall through
+  to `unclassified` ⇒ full today, so they are unaffected either way.
+- **`scripts/ci-runner/manifest.ts:1289`** lists `.plan-housekeeping-allowlist` in the
+  `paths:` array of `check:ci-plan-housekeeping`. Change detection for that gate breaks
+  silently if the path is not updated.
+- **`scripts/lib/doc-providers.ts:319-325`** builds the generated suppressions table in
+  `scripts/data/doc-registry.md` by scanning every tracked non-source file that contains
+  `BLOCKER:`. It names nothing, so it needs no edit -- but the generated table's paths
+  change, and the artifact has to be regenerated in the same commit.
+
+---
+
+## 3. The file that does NOT move: `.ci-trigger`
+
+**Decision: `.ci-trigger` stays at the repository root.** It is deliberately absent from
+`POLICY_FILES` in `scripts/lib/policy-paths.ts`, and
+`.ci/scripts/test/gates/test-policy-path.sh` asserts that absence so nobody adds it back
+by tidiness.
+
+The evidence, measured 2026-09-06:
+
+- **Nothing parses it.** A tree-wide search for `ci-trigger` (excluding `node_modules`,
+  `.git` and this session's own worklist) returns exactly ONE hit:
+  `.ci/scripts/ci/scope-map.cjs:76`, a membership test in the `ROOT_MANIFESTS` set. No
+  reader opens it, no workflow `paths:` filter names it, no gate test references it. Its
+  whole content is one line, a UTC timestamp, last changed in `23c524b9a` (#512).
+- **It therefore fails predicate clause 3, and clause 1.** It holds no entries, carries
+  no `BLOCKER:` reason and expresses no exemption. It is not a suppression at all.
+- **Its one semantic is a ROOT GESTURE.** `touch .ci-trigger && git commit` is how a
+  human forces a full CI round on a delta that would otherwise be scoped down. That
+  gesture only works if the person can find the file, and the place they look is the
+  root of the repository.
+- **Moving it would work and still be wrong.** `.ci/policy/.ci-trigger` would keep
+  forcing full CI, through the generic `ci-harness` rule (`scope-map.cjs:144`) rather
+  than the dedicated `root-manifest` rule. So the behaviour survives while the reason
+  string silently changes and the file becomes undiscoverable for its only purpose:
+  strictly worse on both counts, for no gain.
+
+Recorded either way, as asked: had the answer gone the other direction, the move would
+have needed the `ROOT_MANIFESTS` entry deleted and `test-scope-engine.sh` re-pinned, the
+same two edits section 2 already lists for the fifteen.
+
+---
+
+## 4. Age baseline, measured 2026-09-06
+
+This is the artifact the move phase re-derives to prove the move changed nothing. If a
+row's entry, date or age differs after the files are relocated, something other than the
+location changed.
+
+**How to re-derive it** (`git blame` per entry line, over the same fifteen files):
+
+```bash
+git blame --line-porcelain -- <file> \
+  | awk '/^author-time /{t=$2} /^\t/{s=substr($0,2); sub(/^[ \t]+/,"",s);
+         if (s!="" && substr(s,1,1)!="#") printf "%s %s\n", strftime("%Y-%m-%d",t), s}'
+```
+
+**What the number means, and what it does not.** `git blame` reports the last commit
+that TOUCHED the line, so an age here is a lower bound: an entry reformatted or
+re-indented since it was written reads as younger than it is. It is the right measure
+for this artifact anyway, because the artifact's job is to be re-derived identically, not
+to date the original decision. The 2026-08-23 history rewrite
+([#532](https://github.com/rediacc/console/issues/532)) changed every commit SHA but
+preserved author dates, so these dates span it unaffected.
+
+**Rows that could not be aged: none.** All fifteen files are tracked, all 146 entry lines
+blamed cleanly, and the run reproduced identically on a second pass. Six of the fifteen
+hold zero entries and are recorded as such rather than with a sentinel -- and each of the
+six says in its own header that empty is its correct state, which is why
+`scripts/check-suppression-liveness.ts` gives three of them a `minEntries` of 0 rather
+than demanding they be populated.
+
+### Summary
+
+| File | Entries | Oldest | Newest | Median |
+|---|---|---|---|---|
+| `.actions-upgrade-blocklist` | 0 | -- | -- | -- |
+| `.audit-allowlist` | 0 | -- | -- | -- |
+| `.audit-prod-allowlist` | 10 | 130 d | 21 d | 21 d |
+| `.ci-parity-exempt` | 9 | 36 d | 3 d | 36 d |
+| `.cli-i18n-orphan-allowlist` | 5 | 49 d | 49 d | 49 d |
+| `.dead-bash-allowlist` | 14 | 46 d | 9 d | 46 d |
+| `.deps-upgrade-blocklist` | 10 | 135 d | 41 d | 65 d |
+| `.devcontainer-upgrade-blocklist` | 0 | -- | -- | -- |
+| `.e2e-coverage-allowlist` | 21 | 49 d | 21 d | 49 d |
+| `.embed-assets-upgrade-blocklist` | 0 | -- | -- | -- |
+| `.go-deps-upgrade-blocklist` | 2 | 82 d | 49 d | 82 d |
+| `.plan-housekeeping-allowlist` | 0 | -- | -- | -- |
+| `.profiler-coverage-allowlist` | 71 | 31 d | 31 d | 31 d |
+| `.runner-advice-allowlist` | 0 | -- | -- | -- |
+| `.unverified-download-allowlist` | 4 | 4 d | 4 d | 4 d |
+| **total** | **146** | | | |
+
+### Per entry
+
+#### `.audit-prod-allowlist`
+
+| Line | Entry | Last touched | Age (days) |
+|---|---|---|---|
+| 16 | `1117141` | 2026-04-28 | 130 |
+| 24 | `1118920` | 2026-05-19 | 109 |
+| 32 | `1120680` | 2026-06-16 | 82 |
+| 54 | `1123700` | 2026-08-15 | 21 |
+| 55 | `1139373` | 2026-08-15 | 21 |
+| 56 | `1139375` | 2026-08-15 | 21 |
+| 57 | `1139376` | 2026-08-15 | 21 |
+| 58 | `1139377` | 2026-08-15 | 21 |
+| 59 | `1139378` | 2026-08-15 | 21 |
+| 70 | `1124066` | 2026-08-15 | 21 |
+
+#### `.ci-parity-exempt`
+
+| Line | Entry | Last touched | Age (days) |
+|---|---|---|---|
+| 28 | `ci-only` | 2026-07-31 | 36 |
+| 31 | `ci-only` | 2026-07-31 | 36 |
+| 34 | `ci-only` | 2026-09-03 | 3 |
+| 37 | `ci-only` | 2026-07-31 | 36 |
+| 40 | `ci-only` | 2026-07-31 | 36 |
+| 43 | `ci-only` | 2026-07-31 | 36 |
+| 46 | `ci-only` | 2026-07-31 | 36 |
+| 49 | `ci-only` | 2026-07-31 | 36 |
+| 52 | `ci-only` | 2026-07-31 | 36 |
+
+#### `.cli-i18n-orphan-allowlist`
+
+| Line | Entry | Last touched | Age (days) |
+|---|---|---|---|
+| 17 | `commands.sync.` | 2026-07-18 | 49 |
+| 18 | `errors.term.` | 2026-07-18 | 49 |
+| 19 | `commands.machine.health.` | 2026-07-18 | 49 |
+| 20 | `commands.config.infra.push.dns` | 2026-07-18 | 49 |
+| 22 | `docs.` | 2026-07-18 | 49 |
+
+#### `.dead-bash-allowlist`
+
+| Line | Entry | Last touched | Age (days) |
+|---|---|---|---|
+| 20 | `glob:.ci/scripts/test/gates/` | 2026-07-21 | 46 |
+| 23 | `glob:.ci/tutorials/` | 2026-07-21 | 46 |
+| 26 | `dispatch:phase_` | 2026-07-21 | 46 |
+| 36 | `manual:.ci/scripts/deploy/deploy-proxy.sh` | 2026-07-21 | 46 |
+| 39 | `manual:.ci/scripts/security/dependency-inventory.sh` | 2026-07-21 | 46 |
+| 42 | `manual:.claude/hooks/test-hooks.sh` | 2026-07-21 | 46 |
+| 45 | `manual:.devcontainer/start-vscode.sh` | 2026-07-21 | 46 |
+| 48 | `manual:scripts/dev/apply-cf-redirect-rules.sh` | 2026-07-21 | 46 |
+| 51 | `manual:scripts/dev/linode-cluster-validation.sh` | 2026-07-21 | 46 |
+| 54 | `manual:scripts/dev/r2-oneshot-scrub.sh` | 2026-07-21 | 46 |
+| 57 | `manual:scripts/pre-commit-check.sh` | 2026-07-21 | 46 |
+| 60 | `manual:.ci/breakpoint/scripts/sync-breakpoint.sh` | 2026-07-27 | 41 |
+| 63 | `manual:.ci/docker/run-in-web.sh` | 2026-08-28 | 9 |
+| 66 | `manual:.ci/scripts/test/manual/probe-receipt-stability.sh` | 2026-08-28 | 9 |
+
+#### `.deps-upgrade-blocklist`
+
+| Line | Entry | Last touched | Age (days) |
+|---|---|---|---|
+| 19 | `@eslint/js` | 2026-04-24 | 135 |
+| 22 | `@astrojs/react` | 2026-07-21 | 46 |
+| 23 | `@astrojs/mdx` | 2026-04-29 | 129 |
+| 24 | `astro` | 2026-07-04 | 63 |
+| 27 | `glob` | 2026-07-04 | 63 |
+| 30 | `@types/node` | 2026-04-24 | 135 |
+| 33 | `eslint-plugin-unicorn` | 2026-06-16 | 82 |
+| 36 | `playwright` | 2026-07-04 | 63 |
+| 37 | `@playwright/test` | 2026-07-26 | 41 |
+| 39 | `eslint` | 2026-07-02 | 65 |
+
+#### `.e2e-coverage-allowlist`
+
+| Line | Entry | Last touched | Age (days) |
+|---|---|---|---|
+| 19 | `backup_delete` | 2026-07-18 | 49 |
+| 20 | `backup_list` | 2026-07-18 | 49 |
+| 21 | `ceph_client_mount` | 2026-07-18 | 49 |
+| 22 | `ceph_client_unmount` | 2026-07-18 | 49 |
+| 23 | `ceph_clone_image` | 2026-07-18 | 49 |
+| 24 | `container_remove` | 2026-07-18 | 49 |
+| 25 | `repository_autostart_disable` | 2026-07-18 | 49 |
+| 26 | `repository_autostart_disable_all` | 2026-07-18 | 49 |
+| 27 | `repository_autostart_enable` | 2026-07-18 | 49 |
+| 28 | `repository_autostart_enable_all` | 2026-07-18 | 49 |
+| 29 | `repository_autostart_list` | 2026-07-18 | 49 |
+| 30 | `repository_cat` | 2026-07-18 | 49 |
+| 31 | `repository_commit_meta` | 2026-07-18 | 49 |
+| 32 | `repository_diff` | 2026-07-18 | 49 |
+| 33 | `repository_down_all` | 2026-07-18 | 49 |
+| 34 | `repository_ownership` | 2026-07-18 | 49 |
+| 35 | `repository_prune` | 2026-07-18 | 49 |
+| 36 | `repository_template_apply` | 2026-07-18 | 49 |
+| 37 | `repository_up_all` | 2026-07-18 | 49 |
+| 55 | `backup_restore` | 2026-08-15 | 21 |
+| 70 | `machine_uninstall` | 2026-08-16 | 21 |
+
+#### `.go-deps-upgrade-blocklist`
+
+| Line | Entry | Last touched | Age (days) |
+|---|---|---|---|
+| 13 | `github.com/landlock-lsm/go-landlock` | 2026-06-16 | 82 |
+| 25 | `k8s.io/kubelet` | 2026-07-18 | 49 |
+
+#### `.profiler-coverage-allowlist`
+
+| Line | Entry | Last touched | Age (days) |
+|---|---|---|---|
+| 20 | `breakpoint.yml:preflight` | 2026-08-05 | 31 |
+| 21 | `breakpoint.yml:session` | 2026-08-05 | 31 |
+| 24 | `profiler-probe.yml:facts-latest` | 2026-08-05 | 31 |
+| 25 | `profiler-probe.yml:facts-slim` | 2026-08-05 | 31 |
+| 26 | `profiler-probe.yml:post-nested-latest` | 2026-08-05 | 31 |
+| 27 | `profiler-probe.yml:post-nested-slim` | 2026-08-05 | 31 |
+| 32 | `autopilot.yml:finish` | 2026-08-05 | 31 |
+| 33 | `autopilot.yml:gate` | 2026-08-05 | 31 |
+| 34 | `autopilot.yml:model` | 2026-08-05 | 31 |
+| 35 | `autopilot.yml:sweeper` | 2026-08-05 | 31 |
+| 38 | `backfill-release-sentinel.yml:backfill` | 2026-08-05 | 31 |
+| 41 | `cd-deploy-account.yml:build` | 2026-08-05 | 31 |
+| 42 | `cd-deploy-account.yml:deploy` | 2026-08-05 | 31 |
+| 43 | `cd-deploy-account.yml:read-regions` | 2026-08-05 | 31 |
+| 46 | `cd-deploy-worker.yml:deploy` | 2026-08-05 | 31 |
+| 49 | `cd-v2.yml:init` | 2026-08-05 | 31 |
+| 50 | `cd-v2.yml:publish` | 2026-08-05 | 31 |
+| 51 | `cd-v2.yml:smoke-test` | 2026-08-05 | 31 |
+| 52 | `cd-v2.yml:tag-and-release` | 2026-08-05 | 31 |
+| 55 | `ci-build-docker.yml:build-cli-docker` | 2026-08-05 | 31 |
+| 56 | `ci-build-docker.yml:build-cli-docker-skip` | 2026-08-05 | 31 |
+| 57 | `ci-build-docker.yml:build-devcontainer-amd64` | 2026-08-05 | 31 |
+| 58 | `ci-build-docker.yml:build-devcontainer-arm64` | 2026-08-05 | 31 |
+| 59 | `ci-build-docker.yml:build-devcontainer-manifest` | 2026-08-05 | 31 |
+| 60 | `ci-build-docker.yml:build-renet-docker` | 2026-08-05 | 31 |
+| 61 | `ci-build-docker.yml:build-renet-skip` | 2026-08-05 | 31 |
+| 62 | `ci-build-docker.yml:build-server-docker-amd64` | 2026-08-05 | 31 |
+| 63 | `ci-build-docker.yml:build-server-docker-arm64` | 2026-08-05 | 31 |
+| 64 | `ci-build-docker.yml:build-server-docker-manifest` | 2026-08-05 | 31 |
+| 65 | `ci-build-docker.yml:build-server-docker-skip` | 2026-08-05 | 31 |
+| 68 | `ci-build-renet.yml:build-renet` | 2026-08-05 | 31 |
+| 69 | `ci-build-renet.yml:cross-compile-smoke` | 2026-08-05 | 31 |
+| 70 | `ci-build-renet.yml:extract-renet` | 2026-08-05 | 31 |
+| 73 | `ci-quality.yml:quality-branch` | 2026-08-05 | 31 |
+| 74 | `ci-quality.yml:quality-static` | 2026-08-05 | 31 |
+| 75 | `ci-quality.yml:quality-submodule-branches` | 2026-08-05 | 31 |
+| 78 | `ci.yml:breakpoint-lifecycle` | 2026-08-05 | 31 |
+| 79 | `ci.yml:cancel-watchdog` | 2026-08-05 | 31 |
+| 80 | `ci.yml:check-release-state` | 2026-08-05 | 31 |
+| 81 | `ci.yml:ci-complete` | 2026-08-05 | 31 |
+| 82 | `ci.yml:deploy-preview` | 2026-08-05 | 31 |
+| 83 | `ci.yml:elite-run-test` | 2026-08-05 | 31 |
+| 84 | `ci.yml:finalize-release-sentinel` | 2026-08-05 | 31 |
+| 85 | `ci.yml:initialize` | 2026-08-05 | 31 |
+| 86 | `ci.yml:label-guide` | 2026-08-05 | 31 |
+| 87 | `ci.yml:package-tests` | 2026-08-05 | 31 |
+| 88 | `ci.yml:pipeline-sentinel` | 2026-08-05 | 31 |
+| 89 | `ci.yml:review-gate` | 2026-08-05 | 31 |
+| 90 | `ci.yml:smoke-test-preview` | 2026-08-05 | 31 |
+| 91 | `ci.yml:stripe-sandbox` | 2026-08-05 | 31 |
+| 92 | `ci.yml:validate-promote` | 2026-08-05 | 31 |
+| 95 | `claude-mention.yml:claude` | 2026-08-05 | 31 |
+| 98 | `claude-review-reusable.yml:review` | 2026-08-05 | 31 |
+| 101 | `cleanup-preview.yml:cleanup` | 2026-08-05 | 31 |
+| 104 | `cleanup-r2-staging.yml:cleanup` | 2026-08-05 | 31 |
+| 107 | `ct-install-methods.yml:install-methods-complete` | 2026-08-05 | 31 |
+| 108 | `ct-install-methods.yml:test-linux-arm64` | 2026-08-05 | 31 |
+| 109 | `ct-install-methods.yml:test-linux-x64` | 2026-08-05 | 31 |
+| 112 | `ct-tests.yml:migration-test` | 2026-08-05 | 31 |
+| 113 | `ct-tests.yml:test-license-enforcement` | 2026-08-05 | 31 |
+| 114 | `ct-tests.yml:test-renet` | 2026-08-05 | 31 |
+| 117 | `ct-update-flow.yml:test-linux-x64` | 2026-08-05 | 31 |
+| 120 | `edge-clone-d1.yml:clone` | 2026-08-05 | 31 |
+| 121 | `edge-clone-d1.yml:read-regions` | 2026-08-05 | 31 |
+| 124 | `housekeeping.yml:cleanup` | 2026-08-05 | 31 |
+| 125 | `housekeeping.yml:stripe-cleanup` | 2026-08-05 | 31 |
+| 128 | `nightly-status.yml:report` | 2026-08-05 | 31 |
+| 131 | `promote-stable.yml:promote` | 2026-08-05 | 31 |
+| 132 | `promote-stable.yml:verify-stable` | 2026-08-05 | 31 |
+| 135 | `review-status.yml:review-status` | 2026-08-05 | 31 |
+| 138 | `watchdog-monitor.yml:monitor` | 2026-08-05 | 31 |
+
+#### `.unverified-download-allowlist`
+
+| Line | Entry | Last touched | Age (days) |
+|---|---|---|---|
+| 16 | `awscli.amazonaws.com` | 2026-09-01 | 4 |
+| 19 | `raw.githubusercontent.com/nvm-sh/nvm` | 2026-09-01 | 4 |
+| 22 | `claude.ai/install.sh` | 2026-09-01 | 4 |
+| 25 | `download.docker.com/linux/ubuntu/gpg` | 2026-09-01 | 4 |
+

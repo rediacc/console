@@ -195,6 +195,71 @@ JSON
     log_pass "case 4: mutex serialises, and the control proves the probe sees overlap"
 }
 
+# ---------------------------------------------------------------- case 4b
+#
+# The OTHER claim strength. `reads` is the shared half of the isolation contract
+# defined in pool.ts: any number of readers of a resource may overlap, none may
+# overlap a writer of it. Case 4 above proves the exclusive half and would stay
+# green if `reads` were ignored entirely, or if it were treated as a second
+# exclusive group -- and those two mistakes fail in opposite directions, one
+# losing the isolation and one serialising twenty-one read-only tests for
+# nothing. Both have to be observed, so both are asserted here.
+#
+# WHY IT MATTERS BEYOND THE SCHEDULER. Until 2026-09-06 the two schedulers over
+# the gate-test battery decided isolation separately: .ci/scripts/test/run-all.sh
+# carried hand-maintained W/S name lists while the manifest declared nothing, so
+# `npm run ci` ran the three real-tree writers concurrently with the scanners
+# that enumerate the same directories. run-all.sh now derives its sets from the
+# same `mutex`/`reads` declarations this case exercises.
+test_reads_shares_and_excludes() {
+    local mf conc
+    # Two SHARED holders of one resource must overlap. If this reads 1, `reads`
+    # has been collapsed into `mutex` and the battery's scanners serialise.
+    mf="$(
+        manifest case4c <<'JSON'
+[
+  {"id":"r1","run":"echo S $(date +%s%N) >> @WORK@/case4c.log; sleep 0.4; echo E $(date +%s%N) >> @WORK@/case4c.log","gate":true,"reads":["tree:x"],"leaves":[],"ci":{"kind":"local-only","blocker":"BLOCKER: synthetic fixture"}},
+  {"id":"r2","run":"echo S $(date +%s%N) >> @WORK@/case4c.log; sleep 0.4; echo E $(date +%s%N) >> @WORK@/case4c.log","gate":true,"reads":["tree:x"],"leaves":[],"ci":{"kind":"local-only","blocker":"BLOCKER: synthetic fixture"}}
+]
+JSON
+    )"
+    run_ci "$mf" --jobs 4
+    assert_exit_code 0 "$RC" "the reads fixture passes"
+    conc="$(max_concurrency "$WORK/case4c.log")"
+    assert_eq "$conc" "2" "two gates SHARING a resource must overlap; reads is not a second mutex"
+
+    # A writer and a reader of the SAME resource must not. If this reads 2,
+    # `reads` is being ignored and the writer runs while the tree is enumerated.
+    mf="$(
+        manifest case4d <<'JSON'
+[
+  {"id":"w1","run":"echo S $(date +%s%N) >> @WORK@/case4d.log; sleep 0.4; echo E $(date +%s%N) >> @WORK@/case4d.log","gate":true,"mutex":["tree:x"],"leaves":[],"ci":{"kind":"local-only","blocker":"BLOCKER: synthetic fixture"}},
+  {"id":"r1","run":"echo S $(date +%s%N) >> @WORK@/case4d.log; sleep 0.4; echo E $(date +%s%N) >> @WORK@/case4d.log","gate":true,"reads":["tree:x"],"leaves":[],"ci":{"kind":"local-only","blocker":"BLOCKER: synthetic fixture"}}
+]
+JSON
+    )"
+    run_ci "$mf" --jobs 4
+    assert_exit_code 0 "$RC" "the writer/reader fixture passes"
+    conc="$(max_concurrency "$WORK/case4d.log")"
+    assert_eq "$conc" "1" "an exclusive holder must never overlap a shared holder of the same resource"
+
+    # CONTROL: the same two gates naming DIFFERENT resources must overlap. The
+    # lock is keyed, not global, and without this the assertion above is
+    # satisfied by a scheduler that simply serialises everything.
+    mf="$(
+        manifest case4e <<'JSON'
+[
+  {"id":"w1","run":"echo S $(date +%s%N) >> @WORK@/case4e.log; sleep 0.4; echo E $(date +%s%N) >> @WORK@/case4e.log","gate":true,"mutex":["tree:x"],"leaves":[],"ci":{"kind":"local-only","blocker":"BLOCKER: synthetic fixture"}},
+  {"id":"r1","run":"echo S $(date +%s%N) >> @WORK@/case4e.log; sleep 0.4; echo E $(date +%s%N) >> @WORK@/case4e.log","gate":true,"reads":["tree:y"],"leaves":[],"ci":{"kind":"local-only","blocker":"BLOCKER: synthetic fixture"}}
+]
+JSON
+    )"
+    run_ci "$mf" --jobs 4
+    conc="$(max_concurrency "$WORK/case4e.log")"
+    assert_eq "$conc" "2" "CONTROL: a writer and a reader of DIFFERENT resources do overlap"
+    log_pass "case 4b: reads shares among readers, excludes against a writer, and is keyed per resource"
+}
+
 # ---------------------------------------------------------------- case 5
 test_needs_orders_and_skips() {
     local mf out prep_end user_start
@@ -394,6 +459,7 @@ test_all_pass_is_quiet
 test_failure_prints_both_streams
 test_fail_fast_stops_the_run
 test_mutex_serialises
+test_reads_shares_and_excludes
 test_needs_orders_and_skips
 test_jobs_bounds_concurrency
 test_empty_manifest_refuses

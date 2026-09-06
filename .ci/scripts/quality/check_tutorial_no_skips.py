@@ -18,6 +18,13 @@ command line, which cannot silently shrink a CI run.
 
 WHAT IT CANNOT SEE. A tutorial that runs but asserts nothing. Coverage of that
 belongs to the sequence runner's own exit codes, not here.
+
+---- gate ----
+step: Tutorials cannot skip themselves
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import pathlib

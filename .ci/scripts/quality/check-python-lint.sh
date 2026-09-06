@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
-# Lint every tracked Python file with ruff, under the repo's ruff.toml.
+# ---- gate ----
+# step: Python lint + format (ruff)
+# needs: none
+# selftest: true
+# ---- end gate ----
+
+# Lint every tracked Python file with ruff, under the repo's root pyproject.toml.
 #
 # WHY THIS EXISTS. This repo gated TypeScript, shell and Go and left Python
 # entirely ungated, while 13 of its 15 tracked .py files are the Stop-hook
@@ -38,6 +44,18 @@
 # rule that caught the real bug. If a future config change disables it, this
 # gate fails loudly rather than going quietly blind to the defect it was
 # built for.
+#
+# IT ALSO PLANTS ARG001 AND CHECKS THAT ANN001 IS ABSENT, and that pair is not
+# belt-and-braces. The config moved from `ruff.toml` into the root
+# pyproject.toml and the `--config` arguments came out, because both ruff and
+# pytest DISCOVER a root pyproject.toml by walking up from the file they judge
+# (docs/ci-overhaul/08-driver-contract.md section 2). Discovery is exactly the
+# thing an explicit `--config` used to prove, so something else has to prove it
+# now: F821 alone is reported under ruff's BUILT-IN defaults too, so a run with
+# no configuration at all would satisfy the old control unchanged. ARG001 needs
+# `select = ["ALL"]` and ANN001 is suppressed only by the `ignore` list, so
+# requiring one present and the other absent pins that THIS repo's config is the
+# one in force. See the control block itself for the measured three-way table.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -174,27 +192,61 @@ if ! RUFF="$(resolve_ruff)"; then
 fi
 
 # ---- CONTROL: the linter must report a planted defect ------------------------
-# Run from a scratch dir OUTSIDE the repo so ruff.toml is not discovered by
-# ancestry, then point --config at it explicitly. That way this also proves the
-# config path the real run uses actually resolves.
-control_dir="$(mktemp -d)"
+# THE CONTROL FILE IS NOW INSIDE THE REPO, and that is the whole change. It used
+# to live in `mktemp -d` with `--config "$REPO_ROOT/ruff.toml"` pointed at it, so
+# it proved "that path parses". The config moved into the root pyproject.toml
+# (docs/ci-overhaul/08-driver-contract.md section 2), both tools DISCOVER that by
+# walking up from the file they are judging, and the `--config` arguments came
+# out -- which means a control run outside the tree would now be linted with
+# ruff's DEFAULTS and would happily report F821 while proving nothing about this
+# repo's configuration at all.
+#
+# `.ci/cache/` is the right place for it: it is inside the repo, so ancestry
+# discovery reaches the same pyproject.toml the real run uses, and it is
+# gitignored, so a crashed run cannot leave a stray .py that `enumerate_py`
+# (which includes untracked files) would pick up on the next pass. Ruff lints an
+# explicitly-named path even when it is gitignored, which is what makes the two
+# properties compatible.
+#
+# THREE ASSERTIONS, NOT ONE, because "F821 was reported" is true under ruff's
+# built-in defaults too and therefore cannot tell a resolved config from no
+# config. Measured 2026-09-06 on this file:
+#
+#   ruff check --isolated            -> F821 only
+#   ruff check --isolated --select ALL -> F821 + ARG001 + ANN001 + E501 + D + INP + CPY
+#   ruff check (this repo's config)  -> F821 + ARG001
+#
+# so requiring F821 present, ARG001 present and ANN001 ABSENT pins all three
+# facts at once: the linter runs, `select = ["ALL"]` is in force, and the `ignore`
+# list is in force. Any one of them alone is satisfiable by the wrong config.
+control_dir="$REPO_ROOT/.ci/cache/ruff-control-$$-$(date +%s)"
 # Covers the probe too: bash EXIT traps REPLACE rather than stack, so this line
 # silently disarms cleanup_probe above. The probe is already removed by here, but
 # a future reordering would otherwise leak a stray .py into a SHARED worktree.
 trap 'rm -rf "$control_dir"; cleanup_probe' EXIT
+mkdir -p "$control_dir"
 cat >"$control_dir/control.py" <<'PYEOF'
-def planted():
+def planted(unused_arg):
+    # ARG001 on `unused_arg`: only reachable via `select = ["ALL"]`.
+    # ANN001 on `unused_arg` too, and it must NOT be reported: the ignore list
+    # switches the whole ANN set off, so seeing it means the list did not load.
     # F821: `undefined_on_purpose` is never bound anywhere.
     return undefined_on_purpose
 PYEOF
 
-control_out="$($RUFF check --config "$REPO_ROOT/ruff.toml" --no-cache \
-    --output-format concise "$control_dir/control.py" 2>&1 || true)"
-if ! grep -q 'F821' <<<"$control_out"; then
-    echo "${RED}✗ CONTROL FAILED${NC}: ruff did not report F821 on a planted undefined name." >&2
-    echo "  Either the linter is not running, the config did not resolve, or F821" >&2
-    echo "  has been disabled. Any of those makes a clean result meaningless, so" >&2
-    echo "  this gate refuses to judge the real files." >&2
+control_out="$($RUFF check --no-cache --output-format concise "$control_dir/control.py" 2>&1 || true)"
+control_bad=""
+grep -q 'F821' <<<"$control_out" || control_bad="F821 was not reported on a planted undefined name"
+grep -q 'ARG001' <<<"$control_out" ||
+    control_bad="${control_bad:+$control_bad; }ARG001 was not reported, so select = [\"ALL\"] did not reach ruff"
+! grep -q 'ANN001' <<<"$control_out" ||
+    control_bad="${control_bad:+$control_bad; }ANN001 WAS reported, so the ignore list did not reach ruff"
+if [[ -n "$control_bad" ]]; then
+    echo "${RED}✗ CONTROL FAILED${NC}: ${control_bad}." >&2
+    echo "  Either the linter is not running, the root pyproject.toml did not" >&2
+    echo "  resolve by ancestry, or a rule this control depends on has changed." >&2
+    echo "  Any of those makes a clean result meaningless, so this gate refuses" >&2
+    echo "  to judge the real files." >&2
     echo "  ruff said:" >&2
     sed 's/^/    /' <<<"$control_out" >&2
     exit 1
@@ -203,12 +255,12 @@ fi
 echo "info: linting ${count} Python file(s) with ruff ${RUFF_VERSION}"
 
 rc=0
-$RUFF check --config "$REPO_ROOT/ruff.toml" --no-cache -- "${PY_FILES[@]}" || rc=$?
+$RUFF check --no-cache -- "${PY_FILES[@]}" || rc=$?
 if ((rc != 0)); then
     echo "" >&2
     echo "${RED}✗${NC} ruff reported findings in tracked Python." >&2
     echo "  Fix them. Do NOT add a per-line noqa to get past this gate: if a rule" >&2
-    echo "  is genuinely wrong for this repo it is disabled in ruff.toml with a" >&2
+    echo "  is genuinely wrong for this repo it is disabled in pyproject.toml with a" >&2
     echo "  stated reason, where it is reviewable." >&2
     exit 1
 fi
@@ -217,7 +269,7 @@ fi
 # tracked .py after "Run: ruff format", which read as "reformat the tree", and
 # ruff 0.16 moved the path onto a `-->` line under "unformatted:", so the three
 # real offenders were easy to miss among 80 names (2026-09-02).
-format_out="$($RUFF format --config "$REPO_ROOT/ruff.toml" --check --no-cache -- "${PY_FILES[@]}" 2>&1)" || {
+format_out="$($RUFF format --check --no-cache -- "${PY_FILES[@]}" 2>&1)" || {
     echo "$format_out" >&2
     # STRIP ANSI FIRST. ruff colours its output even through a pipe, so the
     # `-->` lines arrive as `\e[1m\e[94m--> \e[0m<path>` and a plain anchored
@@ -226,7 +278,7 @@ format_out="$($RUFF format --config "$REPO_ROOT/ruff.toml" --check --no-cache --
     # defect found the same day: a tool that does not test for a tty.
     differing="$(printf '%s\n' "$format_out" | sed -e 's/\x1b\[[0-9;]*m//g' -e 's/^ *--> \([^:]*\):.*/\1/p' -n | sort -u | tr '\n' ' ')"
     echo "" >&2
-    echo "${RED}✗${NC} Python formatting differs. Run: ruff format --config ruff.toml --no-cache -- ${differing:-${PY_FILES[*]}}" >&2
+    echo "${RED}✗${NC} Python formatting differs. Run: ruff format --no-cache -- ${differing:-${PY_FILES[*]}}" >&2
     exit 1
 }
 echo "$format_out"
@@ -234,7 +286,7 @@ echo "$format_out"
 # EXE001 IS INVISIBLE FROM HERE, so it is checked directly rather than trusted.
 # Measured 2026-08-28: CI failed `Python lint + format (ruff)` with two EXE001
 # findings ("Shebang is present but file is not executable"), while THIS gate --
-# same ruff 0.16.1, same ruff.toml, same 66 files -- reported "All checks
+# same ruff 0.16.1, same config, same 66 files -- reported "All checks
 # passed". A fresh 644 file carrying a shebang, placed in the repo and linted
 # with an explicit `--select EXE`, still produced no finding on this machine.
 # So the divergence is environmental and NOT something this gate can fix by

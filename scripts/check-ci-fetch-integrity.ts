@@ -42,6 +42,12 @@
  * Control-first: the classifier is proven on synthetic input in both directions,
  * including the two REAL historical defects above, before any verdict is reported,
  * and the run refuses a verdict if the sweep finds fewer files than the floor.
+ *
+ * ---- gate ----
+ * step: CI fetch integrity
+ * needs: node
+ * id: check:ci-fetch-integrity
+ * ---- end gate ----
  */
 
 import { readFileSync } from 'node:fs';

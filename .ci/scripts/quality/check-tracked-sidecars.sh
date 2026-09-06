@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Tracked runtime sidecars
+# needs: none
+# selftest: true
+# ---- end gate ----
+
 # No stop-hook RUNTIME sidecar may be tracked by git.
 #
 # WHY THIS EXISTS. On 2026-08-05 a `git add -A` swept two runtime files into a

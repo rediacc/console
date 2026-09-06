@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Review cap is measured coherently
+# needs: none
+# selftest: true
+# ---- end gate ----
+
 # Assert the two review scripts measure the SAME thing against the SAME cap.
 #
 # WHY THIS EXISTS. On 2026-08-07 PR #553 became green, ready, thread-clean and

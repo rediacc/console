@@ -707,6 +707,29 @@ async function selftest(): Promise<number> {
     'CONTROL: a PASSING run must still be recorded, or the two assertions above prove nothing'
   );
 
+  // THE RECEIPT MUST NOT CLAIM A WHOLE LANE IT DID NOT RUN. `--changed` was
+  // missing from this condition until 2026-09-06: `select()` drops every gate
+  // whose declared `paths` the diff does not touch, and the run still wrote
+  // `whole: true` -- the field the pre-push guard reads to authorise a push.
+  // Measured on this tree the same day: a `--changed` receipt claimed `whole`
+  // while its own selection prose said "30 gate(s) path-scoped".
+  require_(
+    narrowingFlags({ ...EMPTY_OPTS, changed: true }).includes('--changed'),
+    '--changed must narrow the receipt: it drops every path-declaring gate'
+  );
+  require_(
+    narrowingFlags({ ...EMPTY_OPTS, only: ['x'] }).includes('--only'),
+    '--only must narrow the receipt'
+  );
+  require_(
+    narrowingFlags({ ...EMPTY_OPTS, skip: ['x'] }).includes('--skip'),
+    '--skip must narrow the receipt'
+  );
+  require_(
+    narrowingFlags(EMPTY_OPTS).length === 0,
+    'CONTROL: an unnarrowed quick run must still report the whole lane, or the three above prove nothing'
+  );
+
   if (failures.length > 0) {
     process.stderr.write('CONTROL FAILED: ci-runner --selftest did not fire\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
@@ -714,7 +737,7 @@ async function selftest(): Promise<number> {
     process.stderr.write(text);
     return 1;
   }
-  process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3 + 2 + 3} assertions)\n`);
+  process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3 + 2 + 3 + 4} assertions)\n`);
   return 0;
 }
 
@@ -753,13 +776,31 @@ interface Receipt {
   stable: boolean;
   selection: string | null;
   /**
-   * The lane ran WHOLE. `--only`/`--skip` narrow it, and a receipt from a
-   * one-gate run would otherwise read exactly like a receipt from all 254 --
-   * the guard would then honour a push proven by nothing. Recorded as a flag
-   * rather than left for the guard to infer from the selection prose, because
-   * a guard parsing English is a guard that fails open on a rewording.
+   * The lane ran WHOLE. `--only`, `--skip` and `--changed` all narrow it, and a
+   * receipt from a one-gate run would otherwise read exactly like a receipt
+   * from all 254 -- the guard would then honour a push proven by nothing.
+   * Recorded as a flag rather than left for the guard to infer from the
+   * selection prose, because a guard parsing English is a guard that fails open
+   * on a rewording.
+   *
+   * `--changed` was MISSING from this condition until 2026-09-06. It is the
+   * narrowing that matters most, because `select()` drops every gate declaring
+   * `paths` that the diff does not touch -- so a `--changed` run can execute a
+   * small fraction of the lane and still write `whole: true`, and
+   * `.claude/hooks/pre-bash/block-unverified-push.sh` reads exactly this field
+   * to authorise the push. Unlike `--only`, which a human types deliberately
+   * about one gate, `--changed` is the flag a session reaches for BECAUSE it
+   * believes it is running the relevant lane, which is what made the hole quiet.
    */
   whole: boolean;
+  /**
+   * Which flags narrowed the lane; empty exactly when `whole` is true.
+   *
+   * Diagnostic, not load-bearing: the guard reads `whole`. It exists because
+   * that guard's refusal text names `--only/--skip` only, so a run refused for
+   * `--changed` would otherwise leave the reader nothing to go on.
+   */
+  narrowedBy: string[];
   /**
    * Gates that COULD NOT RUN here. Recorded separately from `failed` because
    * the guard treats them differently -- it warns, it does not refuse. A
@@ -791,6 +832,25 @@ function dirtyDigest(): string {
 }
 
 const RECEIPT_PATH = path.join(REPO_ROOT, '.ci', 'cache', 'prepush-receipt.json');
+
+/**
+ * Every flag that makes this run LESS than the whole lane.
+ *
+ * `--quick` is deliberately not one of them: the receipt is only written for
+ * quick runs, the lane IS quick by definition, and the push guard's own message
+ * says so ("a PARTIAL run ... slower gates are deferred to CI").
+ *
+ * Extracted from the receipt literal so the selftest can assert it. The bug it
+ * exists to keep out was one missing term in an inline boolean, which nothing
+ * could reach.
+ */
+function narrowingFlags(opts: Options): string[] {
+  const flags: string[] = [];
+  if (opts.only !== undefined) flags.push('--only');
+  if (opts.skip !== undefined) flags.push('--skip');
+  if (opts.changed) flags.push('--changed');
+  return flags;
+}
 
 function writeReceipt(receipt: Receipt, warn: (text: string) => void): void {
   try {
@@ -911,6 +971,7 @@ async function main(): Promise<number> {
   }
 
   if (opts.quick && !opts.manifest) {
+    const narrowedBy = narrowingFlags(opts);
     writeReceipt(
       {
         headTree: (() => {
@@ -937,7 +998,8 @@ async function main(): Promise<number> {
         dirtyDigest: dirtyAtStart,
         stable: dirtyAtEnd === dirtyAtStart,
         selection: selection.description ?? null,
-        whole: opts.only === undefined && opts.skip === undefined,
+        whole: narrowedBy.length === 0,
+        narrowedBy,
         exitCode,
         failed: results.filter((r) => r.status === 'fail').map((r) => r.id),
         blocked: results.filter((r) => r.status === 'blocked').map((r) => r.id),

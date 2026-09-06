@@ -27,6 +27,12 @@
  * false positive is one people route around. So the enforced rule is the one
  * that is unambiguously a defect: naming cwd EXPLICITLY to build a path, which
  * silently means something different under each caller. That found exactly one.
+ *
+ * ---- gate ----
+ * step: Gate cwd independence
+ * needs: node
+ * selftest: true
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';
@@ -51,7 +57,7 @@ const DIRS = [
  *  subprocess is NOT this: that sets where a child runs, it does not resolve
  *  the gate's own inputs. */
 const FROM_CWD =
-  /(?:path\.(?:resolve|join)\(\s*process\.cwd\(\)|os\.path\.join\(\s*os\.getcwd\(\)|Path\(\s*os\.getcwd\(\)|cd\s+"?\$PWD)/;
+  /(?:path\.(?:resolve|join)\(\s*process\.cwd\(\)|os\.path\.join\(\s*os\.getcwd\(\)|Path\(\s*os\.getcwd\(\)|cd\s+"?\$PWD|\?\?\s*process\.cwd\(\)|\|\|\s*process\.cwd\(\)|\bor\s+os\.getcwd\(\))/;
 /** Floor for the corpus: see the VACUOUS refusal in main(). */
 const MIN_GATES = 100;
 
@@ -144,6 +150,39 @@ function selftest(): void {
     process.exit(1);
   }
   console.log('  PASS  CONTROL: prose about the rule is not policed');
+
+  // THE SHAPE THIS GATE WAS BLIND TO, and the reason the pattern was widened.
+  // It matched cwd only as the FIRST argument of path.resolve/join, so the
+  // commonest form in this repo -- an env override falling back to cwd -- passed
+  // silently. Four live gates were written that way while this printed a healthy
+  // "all anchored on their own location" over 240 scripts.
+  const fallback = w(
+    'check-fallback.ts',
+    `const ROOT = process.env.SOME_ROOT ?? ${CWD_CALL};\nreadFileSync(ROOT + '/x');\n`
+  );
+  if (scan([fallback]).length !== 1) {
+    console.error('  FAIL  an env-override fallback to cwd was not caught');
+    process.exit(1);
+  }
+  console.log('  PASS  an env override falling back to cwd IS caught');
+
+  const orFallback = w('check-or.ts', `const ROOT = process.env.X || ${CWD_CALL};\n`);
+  if (scan([orFallback]).length !== 1) {
+    console.error('  FAIL  a `||` fallback to cwd was not caught');
+    process.exit(1);
+  }
+  console.log('  PASS  the `||` spelling is caught too');
+
+  // CONTROL, the other direction: the widening must not police an anchored default.
+  const anchored = w(
+    'check-anchored.ts',
+    `const ROOT = envRoot('SOME_ROOT');\nreadFileSync(ROOT + '/x');\n`
+  );
+  if (scan([anchored]).length !== 0) {
+    console.error('  FAIL  CONTROL: a properly anchored gate was policed');
+    process.exit(1);
+  }
+  console.log('  PASS  CONTROL: an anchored default is not policed');
 
   // CONTROL: a gate that reads no repo path needs no anchor.
   const argvOnly = w('check-argv.ts', 'const target = process.argv[2];\nconsole.log(target);\n');

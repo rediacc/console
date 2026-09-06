@@ -16,6 +16,12 @@
  * Exit codes:
  *   0 - All actions are up-to-date (or blocked)
  *   1 - Outdated actions found
+ *
+ * ---- gate ----
+ * step: Action freshness
+ * needs: node
+ * id: check:actions
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

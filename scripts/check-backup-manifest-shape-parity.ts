@@ -29,6 +29,11 @@
  * field that MUST be reported, and refuses to pass on an empty scan. A gate that
  * cannot fire is worse than no gate, because it also removes the suspicion that
  * would have caught the defect by hand.
+ *
+ * ---- gate ----
+ * step: Backup manifest shape parity
+ * needs: node, submodules
+ * ---- end gate ----
  */
 
 import { readFileSync } from 'node:fs';

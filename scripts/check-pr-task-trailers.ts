@@ -24,6 +24,14 @@
  * FAILS CLOSED. An unreadable commit list is not evidence that the commits are
  * tagged. check-claude-attribution.sh takes the same stance for the same reason
  * and even treats an empty list as a failed read.
+ *
+ * ---- gate ----
+ * step: Every commit names its epic
+ * needs: node
+ * selftest: true
+ * why: Every commit must name the epic it belongs to, because the review selects
+ *      an epic's commits by trailer. An untagged commit is reviewed by nobody.
+ * ---- end gate ----
  */
 
 import { execFileSync } from 'node:child_process';

@@ -26,6 +26,7 @@ themselves test fixtures (`test-*.sh`, `*.control.ts`, anything under a
 specific scenario, they are not a real CI caller needing a workflow setter.
 `.claude/hooks/**` is out of scope entirely: those run as local git hooks, not
 CI workflow steps, and have no `run:` line to resolve.
+
 """
 
 from __future__ import annotations

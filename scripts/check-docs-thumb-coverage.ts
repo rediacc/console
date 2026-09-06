@@ -27,6 +27,13 @@
  * seeing the collection, and its green would mean nothing, so it FAILS rather than passing
  * quietly. The counts print on success for the same reason: a number that collapses should
  * be visible in the log, not inferred from an absent complaint.
+ *
+ * ---- gate ----
+ * step: Docs thumbnail coverage
+ * needs: node
+ * selftest: true
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

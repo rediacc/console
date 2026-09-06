@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# step: Run account integration tests
+# needs: none
+# id: check:ci-account-server
+# run: .ci/scripts/private/run-account.sh test
+# lane: quality-go
+# ---- end gate ----
+
 # Run account CI if available
 #
 # Usage: .ci/scripts/private/run-account.sh [stage]

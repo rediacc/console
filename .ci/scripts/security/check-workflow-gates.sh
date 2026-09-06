@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Structural invariants over GitHub Actions workflow YAML that only a real
 # parser can see. Four independent checks, one pyyaml bootstrap.
 #

@@ -35,6 +35,14 @@ WHAT IT DOES NOT COVER, stated plainly. It resolves subjects one hop: an inline
 getCombinedOutput() call, or a local const bound directly to one. A subject
 passed through a helper, or reassigned, is not tracked. It also cannot know that
 some OTHER helper lowercases; it is specifically about this one.
+
+---- gate ----
+step: E2E case-blind assertions
+needs: none
+id: check:ci-e2e-case-blind
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import pathlib

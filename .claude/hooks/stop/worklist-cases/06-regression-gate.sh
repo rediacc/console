@@ -187,6 +187,14 @@ reg_repo
 printf '{"name":"p","version":"0.0.0","scripts":{"ci":"tsx scripts/ci-runner/run.ts"}}\n' >"$BASE/proj/package.json"
 mkdir -p "$BASE/proj/scripts/ci-runner"
 printf "export const GATES = [\n  { id: 'gate-test:real-thing', run: '.ci/scripts/test/gates/test-real-thing.sh', gate: true },\n];\n" >"$BASE/proj/scripts/ci-runner/manifest.ts"
+# AND THE LOCK, which is what the probe actually reads now. wl_reggate.py used to
+# regex-parse manifest.ts; on 2026-09-06 it was drained onto the committed JSON
+# projection scripts/ci-runner/gates.lock.json. A fixture that writes only the
+# TypeScript leaves the probe with zero registrations, so every citation below
+# reads as hallucinated and four cases here went red. The manifest is kept as
+# well: it is what a reader of this fixture expects to see, and the two must
+# agree in a fixture exactly as they must in the tree.
+printf '[\n  { "id": "gate-test:real-thing", "run": ".ci/scripts/test/gates/test-real-thing.sh", "gate": true }\n]\n' >"$BASE/proj/scripts/ci-runner/gates.lock.json"
 run >/dev/null # marker init
 fixcommit src.ts "fix: a real defect"
 shim_judge '{"applicable":true,"blind_spot":"uncovered path","existing_gate":"gate-test:i-dreamed-this","recurring":true,"gate_needed":false,"gate_proven":false,"instruction":"write a gate"}'
@@ -207,6 +215,14 @@ reg_repo
 printf '{"name":"p","version":"0.0.0","scripts":{"ci":"tsx scripts/ci-runner/run.ts"}}\n' >"$BASE/proj/package.json"
 mkdir -p "$BASE/proj/scripts/ci-runner"
 printf "export const GATES = [\n  { id: 'gate-test:real-thing', run: '.ci/scripts/test/gates/test-real-thing.sh', gate: true },\n];\n" >"$BASE/proj/scripts/ci-runner/manifest.ts"
+# AND THE LOCK, which is what the probe actually reads now. wl_reggate.py used to
+# regex-parse manifest.ts; on 2026-09-06 it was drained onto the committed JSON
+# projection scripts/ci-runner/gates.lock.json. A fixture that writes only the
+# TypeScript leaves the probe with zero registrations, so every citation below
+# reads as hallucinated and four cases here went red. The manifest is kept as
+# well: it is what a reader of this fixture expects to see, and the two must
+# agree in a fixture exactly as they must in the tree.
+printf '[\n  { "id": "gate-test:real-thing", "run": ".ci/scripts/test/gates/test-real-thing.sh", "gate": true }\n]\n' >"$BASE/proj/scripts/ci-runner/gates.lock.json"
 run >/dev/null # marker init
 fixcommit src.ts "fix(cli): guard the empty ref"
 shim_judge '{"applicable":true,"blind_spot":"no check compared refs","existing_gate":"gate-test:real-thing","recurring":true,"gate_needed":false,"gate_proven":false,"instruction":"none"}'
@@ -227,6 +243,14 @@ reg_repo
 printf '{"name":"p","version":"0.0.0","scripts":{"ci":"tsx scripts/ci-runner/run.ts"}}\n' >"$BASE/proj/package.json"
 mkdir -p "$BASE/proj/scripts/ci-runner" "$BASE/proj/.ci/scripts/test/gates"
 printf "export const GATES = [\n  { id: 'gate-test:real-thing', run: '.ci/scripts/test/gates/test-real-thing.sh', gate: true },\n];\n" >"$BASE/proj/scripts/ci-runner/manifest.ts"
+# AND THE LOCK, which is what the probe actually reads now. wl_reggate.py used to
+# regex-parse manifest.ts; on 2026-09-06 it was drained onto the committed JSON
+# projection scripts/ci-runner/gates.lock.json. A fixture that writes only the
+# TypeScript leaves the probe with zero registrations, so every citation below
+# reads as hallucinated and four cases here went red. The manifest is kept as
+# well: it is what a reader of this fixture expects to see, and the two must
+# agree in a fixture exactly as they must in the tree.
+printf '[\n  { "id": "gate-test:real-thing", "run": ".ci/scripts/test/gates/test-real-thing.sh", "gate": true }\n]\n' >"$BASE/proj/scripts/ci-runner/gates.lock.json"
 run >/dev/null # marker init
 fixcommit src.ts "fix(cli): guard the empty ref"
 # Citation is a PATH with a ::test_name qualifier, not the manifest id -- the
@@ -250,6 +274,14 @@ reg_repo
 printf '{"name":"p","version":"0.0.0","scripts":{"ci":"tsx scripts/ci-runner/run.ts"}}\n' >"$BASE/proj/package.json"
 mkdir -p "$BASE/proj/scripts/ci-runner"
 printf "export const GATES = [\n  { id: 'gate-test:real-thing', run: '.ci/scripts/test/gates/test-real-thing.sh', gate: true },\n];\n" >"$BASE/proj/scripts/ci-runner/manifest.ts"
+# AND THE LOCK, which is what the probe actually reads now. wl_reggate.py used to
+# regex-parse manifest.ts; on 2026-09-06 it was drained onto the committed JSON
+# projection scripts/ci-runner/gates.lock.json. A fixture that writes only the
+# TypeScript leaves the probe with zero registrations, so every citation below
+# reads as hallucinated and four cases here went red. The manifest is kept as
+# well: it is what a reader of this fixture expects to see, and the two must
+# agree in a fixture exactly as they must in the tree.
+printf '[\n  { "id": "gate-test:real-thing", "run": ".ci/scripts/test/gates/test-real-thing.sh", "gate": true }\n]\n' >"$BASE/proj/scripts/ci-runner/gates.lock.json"
 run >/dev/null
 fixcommit src.ts "fix: a real defect"
 shim_judge '{"applicable":true,"blind_spot":"uncovered path","existing_gate":".ci/scripts/test-i-dreamed-this.sh::test_x","recurring":true,"gate_needed":false,"gate_proven":false,"instruction":"write a gate"}'

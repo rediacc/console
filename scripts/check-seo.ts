@@ -10,6 +10,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { globSync } from 'glob';
+// Shared with the ESLint rule; see eslint-rules/seo-no-trailing-slash-internal-link.js.
+import { EXEMPT_PREFIXES as SEO_EXEMPT_PREFIXES } from '../eslint-rules/seo-no-trailing-slash-internal-link.js';
 
 const WWW_SRC = 'packages/www/src';
 const WWW_ROOT = 'packages/www';
@@ -18,27 +20,16 @@ const PAGES_DIR = path.join(WWW_SRC, 'pages');
 
 // Internal-path prefixes that route to a different system or static asset tree
 // where trailing slashes are intentional or controlled elsewhere.
-// Keep in sync with eslint-rules/seo-no-trailing-slash-internal-link.js.
-const TRAILING_SLASH_EXEMPT_PREFIXES = [
-  '/account/',
-  '/api/',
-  '/releases/',
-  '/bin/',
-  '/var/',
-  '/run/',
-  '/assets/',
-  '/fonts/',
-  '/svg/',
-  '/admin/',
-  '/dev/',
-  '/usr/',
-  '/etc/',
-  '/tmp/',
-  // Marketing shortlink redirected by the Worker to the partner portal
-  // (/partner1st -> /account/partner/). Not an Astro page, so a trailing
-  // slash on the memorable URL is fine and must not be flagged.
-  '/partner1st',
-];
+//
+// IMPORTED, not copied. Until 2026-09-06 this gate and the ESLint rule below
+// each carried their own copy of the list with a "keep in sync" comment on both
+// sides, which is the arrangement that guarantees a silent divergence: the two
+// checks would then disagree about which paths are exempt, and the one a given
+// file happens to be scanned by decides the verdict. The definition lives in the
+// rule because an ESLint rule cannot import a `.ts` module; the same direction,
+// and the same import shape, as scripts/lib/positional-cli-detector.ts pulling
+// eslint-rules/lib/cli-exempt-lists.js.
+const TRAILING_SLASH_EXEMPT_PREFIXES: readonly string[] = SEO_EXEMPT_PREFIXES;
 
 function stripFragmentAndQuery(value: string): string {
   let result = value;

@@ -27,6 +27,12 @@
  *
  * Usage:
  *   npx tsx scripts/check-typecheck-scope-coverage.ts [--selftest]
+ *
+ * ---- gate ----
+ * step: Typecheck scope coverage
+ * needs: node
+ * selftest: true
+ * ---- end gate ----
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';

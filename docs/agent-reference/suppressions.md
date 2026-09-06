@@ -28,6 +28,21 @@ the same way you would verify a gate's finding.**
 
 ### Current sites
 
+**WHICH mechanisms exist is derived, not listed here.** The authority is the `suppressions`
+region of [`scripts/data/doc-registry.md`](../../scripts/data/doc-registry.md), rewritten from
+the tree by `npx tsx scripts/gen-docs.ts --write`: every tracked non-source, non-prose file
+carrying a `BLOCKER:` line, with its comment form. A new allowlist appears there the moment it
+exists, and `gate-test:docs-gen` fails if the region has drifted from the tree.
+
+The table below is the part that CANNOT be derived, and it is deliberately narrower: which
+script READS each mechanism, and the per-mechanism liveness arrangements. The generator refuses
+to compute the reader column, and the reason is measured rather than aesthetic -- a
+grep-for-the-basename version was built and observed flipping mid-run when an unrelated peer
+session staged a file, so the cell churned on edits that touched no suppression at all. Read
+this table for the notes; read the derived region for the inventory. **It is not exhaustive, and
+must not be read as a census** -- a mechanism absent from these rows is not thereby unknown to
+the repository.
+
 | Mechanism | File | Reader |
 |---|---|---|
 | Prod npm audit allowlist | `.audit-prod-allowlist` | `.ci/scripts/security/audit.sh` |
@@ -44,7 +59,6 @@ the same way you would verify a gate's finding.**
 | Plan-file housekeeping exemptions | `.plan-housekeeping-allowlist` | `.ci/scripts/quality/check-plan-housekeeping.sh` |
 | Runner sizing exemptions | `.runner-advice-allowlist` | `.ci/scripts/quality/check_runner_advice.py`. Liveness is enforced **in-gate** rather than by a `check-suppression-liveness.ts` probe, because the oracle (does this entry still suppress a MOVE_TO_SLIM finding?) *is* the comparison the gate already performs; same arrangement as `.profiler-coverage-allowlist`. Note the gate's own bootstrap rule, which is a suppression of a different kind: while `runner-sizing-baseline.json` is **pristine** (`refreshed_at` null and zero jobs) the gate warns and exits 0, because nothing has been measured yet; every other below-floor shape is a hard refusal, and `--refresh` will not write a baseline below the 5-job floor. Seeded therefore always means enforced, which is the only reason the pristine pass is not a permanent hole. The baseline carries `"format": 1`; an unknown, missing or corrupt version and any malformed job record are refused by name (naming the job and the field), never as a traceback, and `--refresh` refuses to merge into a version it cannot read |
 | syncpack source exclusions | `.ci/config/syncpack-source-exclusions.json` | `.ci/scripts/quality/check_syncpack_sources.py`. A manifest declaring dependencies must be matched by a `source` glob or excluded here with a `BLOCKER:` reason; eight are, deliberately (two tutorial sample apps whose versions are part of the lesson text, four independently deployed Workers, `private/account/e2e`, and `private/account/web`'s own React tree). Liveness is **in-gate** rather than a `check-suppression-liveness.ts` probe, on the `.runner-advice-allowlist` precedent: the oracle (is this path still a tracked manifest that declares dependencies?) *is* the comparison the gate already performs, and it refuses an entry that suppresses nothing. The gate also refuses outright — CANNOT VERIFY, not a pass — when a directory its config names is absent, because it is about a SUBMODULE and an unchecked-out submodule turns a correct exclusion into a "dead entry" finding |
-| Shadow expected-mismatch ledger | `.ci/config/shadow-expected-mismatches.json` | the `Compare shadow secrets against GitHub` step in every workflow, via `SHADOW_EXPECTED_MISMATCH`; the static half is `check:ci-bws-map` assertion 12. Records a secret whose GitHub and Bitwarden copies hold different VALUES, so the finding stops taking load-bearing jobs down while staying visible. Liveness is enforced **at run time and cannot be otherwise**: the oracle is a comparison of two live secret values, which nothing outside a CI job with the Bitwarden token can perform. The compare step fails the job if an excused name starts MATCHING (the drift is resolved, the entry must go), if an excused name is not in that job's `SHADOW_NAMES`, or if either side is EMPTY — an empty is a broken fetch, not a known drift. Assertion 12 adds the static both-directions check: an excused name must carry a ledger entry with a substantive `BLOCKER:` reason, its `found_in_run` and its `door`, and a ledger entry must be excused by some workflow. **Temporary**: deleted with the org secrets, along with the rest of the shadow |
 
 ### Format
 

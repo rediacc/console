@@ -11,6 +11,12 @@
  * Exit codes:
  *   0 - every override has a valid BLOCKER reason
  *   1 - at least one override is missing or has a low-effort reason
+ *
+ * ---- gate ----
+ * step: BLOCKER validator — package.json overrides
+ * needs: node
+ * lane: quality-security
+ * ---- end gate ----
  */
 
 import * as fs from 'node:fs';

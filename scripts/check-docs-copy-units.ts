@@ -19,6 +19,13 @@
  * ANTI-VACUITY. A run that discovers fewer than 400 fenced blocks is not seeing the
  * corpus and FAILS rather than passing quietly; the counts print on success so a
  * collapse is visible in the log instead of inferred from an absent complaint.
+ *
+ * ---- gate ----
+ * step: Docs code-block copy units
+ * needs: node
+ * selftest: true
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

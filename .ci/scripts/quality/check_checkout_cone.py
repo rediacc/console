@@ -24,6 +24,7 @@ suppressed. Under-reporting is the safe direction here: a missed path fails loud
 CI with the exact message above, while a false positive blocks a correct workflow.
 
 Exit 1 on any uncovered invocation, 2 on a failed control.
+
 """
 
 from __future__ import annotations

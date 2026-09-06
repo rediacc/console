@@ -1,4 +1,19 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Go tool PATH
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+# needs: none
+# selftest: true
+# lane: quality-code
+# why: Console's own scripts already use the right shape -- toolchain.sh installs
+#      with GOBIN and invokes by absolute path, which is why check:ci-shell-format
+#      passes on a host with no shfmt on PATH. This gate exists so that stays
+#      true: the defect it names cost four instances in the renet submodule on
+#      2026-08-27, each one a `go install` followed by a bare invocation, and CI
+#      could not see any of them because actions/setup-go masks it.
+# ---- end gate ----
+
 # A script that INSTALLS a Go tool must be able to FIND it.
 #
 # WHY THIS EXISTS. `go install` writes to $(go env GOPATH)/bin, and nothing puts
@@ -80,7 +95,14 @@ scan_file() {
     printf '         FIX: GOBIN="$dir" go install ... then run "$dir/tool", the shape .ci/scripts/lib/toolchain.sh uses.\n'
 }
 
-FILES="$(git ls-files '.ci/**/*.sh' 'scripts/**/*.sh' 2>/dev/null)"
+# PATHSPEC: `.ci/*.sh`, NOT `.ci/**/*.sh`. Git's default (non-`:(glob)`) wildmatch
+# lets `*` cross `/`, so `.ci/*.sh` already reaches every depth, while `.ci/**/*.sh`
+# demands a literal slash after `.ci/` and therefore MISSES every script sitting
+# directly under `.ci/`. Measured 2026-09-06 when .ci/bootstrap.sh became the first
+# file in that class: the two spellings return the same 453 tracked files, and only
+# the second one drops bootstrap.sh. A scanner that silently skips a file is the
+# vacuity failure this gate exists to prevent, so the narrower spelling is a bug.
+FILES="$(git ls-files '.ci/*.sh' 'scripts/*.sh' 2>/dev/null)"
 COUNT="$(printf '%s\n' "$FILES" | grep -c . || true)"
 
 # ANTI-VACUITY FLOOR. A glob that silently matches nothing would make this gate

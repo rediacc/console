@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: agent-browser exit status
+# needs: none
+# selftest: true
+# ---- end gate ----
+
 # `agent-browser open` has an EXIT CODE THAT DEPENDS ON WHETHER STDOUT IS A TTY.
 #
 # Measured 2026-08-28, same binary, same URL, page loads correctly both ways:

@@ -26,6 +26,11 @@
  * Control-first: every run first proves the detector on a synthetic runtime
  * import that resolves only to a devDependency, and refuses to pass an empty
  * scan.
+ *
+ * ---- gate ----
+ * step: Runtime imports are dependencies
+ * needs: node
+ * ---- end gate ----
  */
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

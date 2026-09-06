@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Page density
+# needs: node
+# selftest: true
+# lane: quality-www-build
+# ---- end gate ----
+
 # Run the page-density gate inside the official Playwright container.
 #
 # Same reasoning as browser-smoke.sh next door, and deliberately the same shape: the gate

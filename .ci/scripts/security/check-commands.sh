@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Shell commands exist on the runner image
+# needs: none
+# id: check:ci-shell-commands
+# selftest: true
+# ---- end gate ----
+
 # Check shell scripts for commands not available in minimal CI environments
 #
 # This complements shellcheck by verifying that external commands used

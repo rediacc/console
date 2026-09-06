@@ -19,6 +19,13 @@
  *
  * Usage:
  *   npx tsx scripts/check-landmarks.ts [--selftest]
+ *
+ * ---- gate ----
+ * step: Landmarks
+ * needs: node
+ * selftest: true
+ * lane: quality-www-build
+ * ---- end gate ----
  */
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';

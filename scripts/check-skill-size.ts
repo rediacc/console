@@ -21,6 +21,13 @@
  *
  * ANTI-VACUITY. Zero declared skills is a pass with a stated reason, not a silent one --
  * the count prints either way, so a declaration that stops being found is visible.
+ *
+ * ---- gate ----
+ * step: Self-improving skill size
+ * needs: node
+ * selftest: true
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

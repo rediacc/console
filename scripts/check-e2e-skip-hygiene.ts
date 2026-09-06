@@ -24,11 +24,24 @@
  * worker job, add it to BASE_ALLOWED below with a reason.
  *
  * TEST SEAM. E2E_HYGIENE_ROOT overrides the repo root.
+ *
+ * ---- gate ----
+ * step: Check E2E skip hygiene (no collected-then-skipped suites)
+ * needs: node
+ * lane: quality-content
+ * ---- end gate ----
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { envRoot } from './lib/repo-root.js';
 
-const ROOT = process.env.E2E_HYGIENE_ROOT ?? process.cwd();
+// ANCHORED ON THIS FILE, not on the caller's working directory. This read
+// `process.env.E2E_HYGIENE_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence
+// did not see: its pattern only matched cwd as the FIRST argument of
+// path.resolve/join, so the commonest shape of its own rule passed. The
+// seam is preserved -- E2E_HYGIENE_ROOT still overrides -- but the default is
+// derived from this file's location.
+const ROOT = envRoot('E2E_HYGIENE_ROOT');
 const E2E = join(ROOT, 'packages/e2e-tests');
 const TESTS_DIR = join(E2E, 'tests');
 const BASE_CONFIG = join(E2E, 'playwright.config.ts');

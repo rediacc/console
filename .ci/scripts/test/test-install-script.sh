@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Unit tests for packages/www/public/install.sh internals. Sources the
 # script with REDIACC_INSTALL_SH_SOURCE_ONLY=1 to skip main() and exercises
 # individual functions against a throwaway HOME.

@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Check E2E test coverage for all renet functions
+# needs: node, submodules
+# selftest: true
+# lane: quality-content
+# ---- end gate ----
+
 # Check that renet functions and e2e-tests agree in BOTH directions.
 #
 # This gate has two halves:

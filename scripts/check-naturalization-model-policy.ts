@@ -24,6 +24,11 @@
  * It deliberately does NOT adjudicate which model is best. Changing the policy is a real
  * engineering call; the gate only insists the change be made ON PURPOSE, in CLAUDE.md and
  * here together, instead of leaking in through a default nobody read.
+ *
+ * ---- gate ----
+ * step: Naturalization model policy
+ * needs: node
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import path from 'node:path';

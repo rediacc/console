@@ -31,6 +31,13 @@ WHAT IT CANNOT DO. It cannot see an org admin removing a repo from an allowlist
 after the last refresh. That is what MAX_BASELINE_AGE_DAYS is for: the record
 going stale is itself a failure, so the blind window is bounded and visible
 rather than open-ended.
+
+---- gate ----
+step: Secret reachability
+needs: python-yaml
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 import argparse
@@ -119,6 +126,23 @@ def repo_roots(root):
 
 def declared_secrets(text):
     """Names a reusable workflow DECLARES under on.workflow_call.secrets.
+
+    WHY PyYAML AND NOT A REGEX, carried here from the workflow step that used to
+    install it (ci-quality.yml, quality-security) before that step was generated
+    from this gate's own header. A generated step keeps the command and drops the
+    prose, so reasoning left there dies at the cutover.
+
+    This gate must know which secret reads are a reusable's own DECLARED INPUTS
+    rather than org secrets, and that lives in NESTED `on.workflow_call.secrets`.
+    Hand-rolling a parser for nested YAML is a correctness risk a gate cannot
+    afford, and a yaml-if-available-else-regex fallback would make the gate mean
+    different things in CI and locally.
+
+    A TRAP PAID FOR ALREADY: naming the read form literally in that workflow
+    comment made CHECK 2 of check-workflow-gates.sh match its own prose and report
+    the file as reading an undeclared secret. A detector matching a comment about
+    itself is a documented trap in TRAPS.md, and it is why the phrasing here
+    describes the shape rather than spelling it.
 
     Inside a reusable, `secrets.X` reads the DECLARED INPUT, not an org secret
     of that name -- the caller supplies it, under whatever name the caller has.
@@ -288,6 +312,53 @@ def verdicts(refs_by_repo, record):
     return out
 
 
+def staleness_problems(record, now):
+    """Why this record may not be believed, if anything. Pure, so it is controllable.
+
+    TWO WAYS A RECORD GOES WRONG, and the second is the one that shipped.
+
+    AGE is the obvious one: an org allowlist changes without any commit here, so a
+    record nobody refreshed eventually describes a world that moved on.
+
+    PREDATING A KNOWN CHANGE is the other, and it looks fine. On 2026-09-05, 45 org
+    secrets were deleted. This record was refreshed 2026-09-02 -- three days EARLIER
+    -- and the 45-day age window kept it admissible until 2026-10-17. So the gate went
+    on certifying six references as reachable, two of them wrong, straight past the
+    event that made them wrong, and reported it as a clean green. A record is
+    inadmissible the moment it predates a change it cannot have seen, however young.
+    """
+    out = []
+    try:
+        refreshed = dt.datetime.fromisoformat(record["refreshed_at"])
+    except (KeyError, ValueError):
+        return ["refreshed_at is missing or unparseable, so the record's age is unknown"]
+
+    age = now - refreshed
+    if age.days > MAX_BASELINE_AGE_DAYS:
+        out.append(
+            f"the record is {age.days} days old (limit {MAX_BASELINE_AGE_DAYS}). An org "
+            f"allowlist can change without any commit here, so a stale record is the one "
+            f"blind spot this gate has. Refresh it."
+        )
+
+    changed = record.get("topology_changed_at")
+    if changed:
+        try:
+            when = dt.datetime.fromisoformat(changed)
+        except ValueError:
+            out.append(f"topology_changed_at ({changed!r}) is not a timestamp")
+        else:
+            if refreshed < when:
+                out.append(
+                    f"the record was refreshed {record['refreshed_at']} but the secret "
+                    f"topology changed at {changed}, AFTER it. Its age is within the limit "
+                    f"and it is still describing the world before that change, which is the "
+                    f"shape a stale-but-young record takes. Refresh with `--refresh` (needs "
+                    f"an admin:org token) before trusting a green."
+                )
+    return out
+
+
 def controls(record):
     """Prove the detector fires in BOTH directions before any real read."""
     probe_repo = next(iter(record.get("repos", {})), None)
@@ -318,6 +389,28 @@ def controls(record):
         return "a workflow with no workflow_call reported declarations anyway"
     if declared_secrets("this: [is not: valid: yaml"):
         return "an unparseable workflow reported declarations instead of none"
+
+    # Staleness, both directions. The predates-a-change rule is the one that would
+    # have caught the 2026-09-05 deletion three days after this record was written,
+    # so it gets a control that plants exactly that arrangement.
+    now = dt.datetime(2026, 9, 6, tzinfo=dt.UTC)
+    fresh = {"refreshed_at": "2026-09-06T00:00:00Z"}
+    if staleness_problems(fresh, now):
+        return "a record refreshed today was reported stale"
+    old_rec = {"refreshed_at": "2026-01-01T00:00:00Z"}
+    if not any("days old" in p for p in staleness_problems(old_rec, now)):
+        return "a record far past the age limit was not reported stale"
+    predates = {
+        "refreshed_at": "2026-09-02T00:00:00Z",
+        "topology_changed_at": "2026-09-05T00:00:00Z",
+    }
+    if not any("AFTER it" in p for p in staleness_problems(predates, now)):
+        return "a record predating a known topology change was accepted anyway"
+    after = {"refreshed_at": "2026-09-06T00:00:00Z", "topology_changed_at": "2026-09-05T00:00:00Z"}
+    if staleness_problems(after, now):
+        return "a record refreshed AFTER the topology change was reported stale anyway"
+    if staleness_problems({"refreshed_at": "2026-09-06T00:00:00Z", "topology_changed_at": ""}, now):
+        return "an empty topology_changed_at was treated as a change"
     return None
 
 
@@ -395,16 +488,7 @@ def main(argv=None):
 
     problems = verdicts(refs_by_repo, record)
 
-    try:
-        age = dt.datetime.now(dt.UTC) - dt.datetime.fromisoformat(record["refreshed_at"])
-        if age.days > MAX_BASELINE_AGE_DAYS:
-            problems.append(
-                f"the record is {age.days} days old (limit {MAX_BASELINE_AGE_DAYS}). An org "
-                f"allowlist can change without any commit here, so a stale record is the one "
-                f"blind spot this gate has. Refresh it."
-            )
-    except (KeyError, ValueError):
-        problems.append("refreshed_at is missing or unparseable, so the record's age is unknown")
+    problems.extend(staleness_problems(record, dt.datetime.now(dt.UTC)))
 
     if problems:
         print("Workflows reference secrets their repository cannot read:", file=sys.stderr)

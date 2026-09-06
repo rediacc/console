@@ -1,4 +1,23 @@
 #!/bin/bash
+# ---- gate ----
+# step: Trap registry dispositions
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+# needs: none
+# selftest: true
+# lane: quality-code
+# why: TRAPS.md is a REGISTRY, not prose: every `## ` entry names the instrument
+#      that enforces it, and the gate proves that pointer RESOLVES and is LIVE.
+#      Presence alone would be worse than nothing -- the cheapest thing to name
+#      under a coverage gate is a check that cannot fire -- so a gate: pointer
+#      must be scheduled by `npm run ci`, a hook: rule must have both a firing
+#      and a silent case, and a file: pointer must be reachable from something
+#      that runs it. No `paths`, deliberately: pointers resolve against the
+#      manifest, package.json, the dispatcher, the hook suite and settings.json,
+#      so almost any change can dangle one, and a half-populated path table
+#      would drop the gate from --changed exactly when it was needed.
+# ---- end gate ----
+
 # Gate: docs/agent-reference/TRAPS.md is a REGISTRY, not a pile of prose. Every
 # `## ` entry declares which instrument enforces it, that pointer resolves, and
 # that instrument is LIVE.

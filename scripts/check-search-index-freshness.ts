@@ -11,6 +11,13 @@
  * against the committed version. Fails fast with a fix command on drift.
  *
  * Run via: `npm run check:ci-search-index`
+ *
+ * ---- gate ----
+ * step: Search index
+ * needs: node
+ * id: check:ci-search-index
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';

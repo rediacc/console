@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Check renet types freshness
+# needs: go, submodules
+# selftest: true
+# ---- end gate ----
+
 # Check that renet-generated TypeScript types are up-to-date
 #
 # Usage:

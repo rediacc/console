@@ -36,6 +36,11 @@
  *
  * Control-first: every run first proves the scanner on a synthetic file that
  * composes a key, and refuses to pass a scan that read nothing.
+ *
+ * ---- gate ----
+ * step: No client-side key composition
+ * needs: node, submodules
+ * ---- end gate ----
  */
 
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

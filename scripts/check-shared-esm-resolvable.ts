@@ -25,6 +25,12 @@
  * that has gone blind; the good arm catches one that has collapsed into
  * reporting everything, which would make a green run on the real package
  * indistinguishable from a broken instrument.
+ *
+ * ---- gate ----
+ * step: Shared ESM resolvable
+ * needs: node
+ * lane: quality-packages
+ * ---- end gate ----
  */
 
 import { execFileSync } from 'node:child_process';

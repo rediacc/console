@@ -19,17 +19,26 @@
  * passes every `ses-*` slug. Manifest-vs-AWS was healthy; only `.env` was
  * stale, left behind by a rotation.
  *
- * SO THE GATE OUTLIVES ITS FIRST SYMPTOM, deliberately. run.sh:1433-1437 sources
- * this file and run.sh:1526-1539 pushes the quartet into a Cloudflare Worker's
- * secrets, so a stale value here still ships. Losing the hook that happened to
- * notice first is a reason to keep the check, not to drop it.
- * (This block used to add "and .ci/scripts/deploy/set-account-worker-secrets.sh
- * reads the same file". It does not -- that script has zero .env references and
- * takes every secret from the process env CI supplies. Corrected 2026-09-02; the
- * argument survives through run.sh, the citation did not.)
+ * SO THE GATE OUTLIVES ITS FIRST SYMPTOM, deliberately. `setup()` runs this gate as a
+ * blocking preflight, and `pr_publish()` pushes the quartet into a Cloudflare Worker's
+ * secrets with `wrangler secret bulk`, so a stale value here still ships. Losing the
+ * hook that happened to notice first is a reason to keep the check, not to drop it.
+ *
+ * BOTH FUNCTIONS ARE IN `.ci/legacy/run-legacy.sh` NOW, not in run.sh, and this
+ * paragraph is on its second correction for the same reason each time: it named an
+ * address instead of a thing.
+ *   - It once added "and .ci/scripts/deploy/set-account-worker-secrets.sh reads the same
+ *     file". It does not, and never did: that script has zero .env references and takes
+ *     every secret from the process env CI supplies. Corrected 2026-09-02.
+ *   - It then cited `run.sh:1433-1437` and `run.sh:1526-1539`. The 2026-09-06 router
+ *     split moved every verb body out, leaving run.sh a 120-line dispatcher, so BOTH
+ *     citations pointed past the end of the file. Corrected 2026-09-06 by naming the two
+ *     functions, which are greppable and survive the next move.
+ * The argument survived both times. Only the addresses died, which is the whole case for
+ * never writing one.
  *
  * WHY NOTHING CAUGHT IT. There is exactly one rotation preflight in the repo:
- * `rotation check --for=bench` at scripts/dev/deploy-bench.sh:131, which covers
+ * the `rotation check --for=bench` call in scripts/dev/deploy-bench.sh, which covers
  * `.env.bench`. A stale BENCH key is blocked from shipping; a stale PRODUCTION
  * key just silently stops mail, and the failure surfaces somewhere unrelated
  * days later. This gate closes that asymmetry.

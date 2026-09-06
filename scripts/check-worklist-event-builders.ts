@@ -5,8 +5,9 @@
  * ---- gate ----
  * step: Worklist event builders
  * needs: none
+ * selftest: true
  * why: a second hand-rolled snapshot builder silently reopened finished work
- * ---- /gate ----
+ * ---- end gate ----
  *
  * WHY THIS EXISTS, and it is not hypothetical. `compact()` and the store
  * importer each built their own "minimal set of events that folds back to the

@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Greenlight closure paths
+# needs: node
+# selftest: true
+# ---- end gate ----
+
 # check:ci-greenlight-closures -- every path a greenlight closure names must exist
 # on disk AND be tracked by git.
 #

@@ -20,6 +20,14 @@
  * Usage:
  *   npx tsx scripts/check-cli-docs.ts            # report violations, exit 1 if any
  *   npx tsx scripts/check-cli-docs.ts --fix      # apply curated renames, then report
+ *
+ * ---- gate ----
+ * step: i18n command parity
+ * needs: node
+ * id: check:ci-i18n-command-parity
+ * run: tsx scripts/check-cli-docs.ts --locales-only
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';

@@ -22,6 +22,15 @@
  * FAILS CLOSED on an unreadable body, matching check-claude-attribution.sh
  * rather than check-pr-description.sh which fails open. An unreadable body is
  * not evidence that the block is fine.
+ *
+ * ---- gate ----
+ * step: PR epic block matches the published worklist
+ * needs: node
+ * selftest: true
+ * why: The PR body carries a generated epic block; this asserts it matches the
+ *      published snapshot, since a generated section nobody checks drifts while
+ *      still looking authoritative.
+ * ---- end gate ----
  */
 
 import { execFileSync } from 'node:child_process';

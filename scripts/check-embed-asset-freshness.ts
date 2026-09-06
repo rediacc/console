@@ -32,6 +32,13 @@
  *
  * Exit codes: 0 = fresh / deferred / held / could-not-check; 1 = a confirmed
  * stale pin (or a malformed blocklist entry).
+ *
+ * ---- gate ----
+ * step: Check embed-asset upstream freshness
+ * needs: node, submodules
+ * run: tsx scripts/check-embed-asset-freshness.ts && tsx scripts/__tests__/github-token.control.ts
+ * lane: quality-go
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

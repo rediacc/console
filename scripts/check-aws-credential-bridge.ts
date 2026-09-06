@@ -31,6 +31,11 @@
  * Control-first: the classifier is proven on synthetic input in BOTH directions
  * before it is trusted, and the run refuses a verdict if the sweep finds fewer
  * callers than the floor below — a scan that matches nothing cannot fail.
+ *
+ * ---- gate ----
+ * step: AWS credential bridge
+ * needs: node, submodules
+ * ---- end gate ----
  */
 
 import { readFileSync } from 'node:fs';

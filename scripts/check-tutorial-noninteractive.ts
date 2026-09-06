@@ -27,6 +27,12 @@
  *   - batch-only    ("Skip confirmation for batch ...") -> require only with --all
  * `repo up my-app` does not prompt; `repo up --all` does. Demanding -y on every
  * `repo up` would be noise, and a noisy gate gets suppressed.
+ *
+ * ---- gate ----
+ * step: Validate tutorial commands are non-interactive
+ * needs: node
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import { readdirSync, readFileSync } from 'node:fs';

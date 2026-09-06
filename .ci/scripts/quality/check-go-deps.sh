@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Check Go dependency freshness
+# needs: none
+# selftest: true
+# lane: quality-go
+# ---- end gate ----
+
 # Check Go direct dependencies are up-to-date across all Go submodules.
 #
 # Why this matters:

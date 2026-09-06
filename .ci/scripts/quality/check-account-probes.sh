@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Dev-stack liveness probes
+# needs: none
+# selftest: true
+# ---- end gate ----
+
 # Behavioural gate for the dev-stack liveness probes in .ci/lib/account.sh.
 #
 # WHY THIS EXISTS. On 2026-08-04 `account_rustfs_alive` reported ALIVE for a

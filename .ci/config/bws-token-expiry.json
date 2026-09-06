@@ -1,6 +1,6 @@
 {
   "_comment": [
-    "When the Bitwarden machine-account token in BWS_ACCESS_TOKEN stops working.",
+    "When the Bitwarden machine-account tokens in BWS_ACCESS_TOKEN stop working.",
     "",
     "NO SECRET IS IN THIS FILE. A BWS access token carries no expiry inside it --",
     "expiry is a property of the machine account, held server-side and visible only",
@@ -10,17 +10,44 @@
     "",
     "That is not hypothetical: mc_migrate_claude was minted 2026-09-01 with 7-day",
     "validity, and agent/PLAN-env-to-bitwarden.md would have every local script",
-    "depend on it. Silence here becomes a scheduled outage.",
+    "depend on it. Silence here becomes a scheduled outage. Since the org secrets",
+    "were deleted (7343ae9dc, 2026-09-05) it is worse than that: mc_migrate_claude",
+    "is the SOLE credential path for CI and CD, so its expiry is a total outage,",
+    "not a local inconvenience.",
     "",
     "Update this whenever a token is minted or replaced. `warn_days` is how long",
-    "before the date the tools start shouting.",
-    "client_id_sha256 fingerprints the IDENTIFIER half of the token, never the secret.",
-    "It exists so a token swapped without updating this file is reported, rather than",
-    "the date silently describing a machine account that no longer exists."
+    "before the date the tools start shouting; it is one file-level notice period,",
+    "not a per-token lifetime.",
+    "",
+    "`client_id_sha256` fingerprints the IDENTIFIER half of the token -- the",
+    "`<client-id>` of `0.<client-id>.<secret>:<key>` -- never the secret. It exists",
+    "so a token swapped without updating this file is reported, rather than the",
+    "date silently describing a machine account that no longer exists.",
+    "",
+    "WHY tokens[] AND NOT ONE token. The replacement posture is a SPLIT: a",
+    "read-only account for .env and CI, and a read-write account supplied per",
+    "rotation and never stored. A single-token schema cannot describe that state,",
+    "so the file would have to be restructured at exactly the moment the operator",
+    "is minting credentials under time pressure. The array holds one entry today.",
+    "",
+    "NO CI GATE READS THIS. Settled deliberately (08-driver-contract.md sec 2): an",
+    "expired token already fails loudly at every call site, and a clock-driven gate",
+    "reds the tree on a quiet day for a condition no commit caused. The one reader",
+    "is scripts/dev/bws-map-refresh.py, which warns and continues."
   ],
-  "token": "mc_migrate_claude",
-  "expires": "2026-09-08",
   "warn_days": 5,
-  "replacement_plan": "agent/PLAN-env-to-bitwarden.md -- split into mc-ci-read (read-only, lives in .env) and mc-rotate (read-write, supplied per rotation, never stored)",
-  "client_id_sha256": "00991b3077ee8f57"
+  "tokens": [
+    {
+      "name": "mc_migrate_claude",
+      "expires": "2026-09-08",
+      "client_id_sha256": "00991b3077ee8f57",
+      "access": "read-write",
+      "used_by": [
+        "local",
+        "ci",
+        "cd"
+      ],
+      "replacement_plan": "agent/PLAN-env-to-bitwarden.md -- split into mc-ci-read (read-only, lives in .env) and mc-rotate (read-write, supplied per rotation, never stored)"
+    }
+  ]
 }

@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Unused exports (knip)
+# needs: node
+# id: lint:unused
+# run: .ci/scripts/quality/typecheck-workers.sh --install && knip --treat-config-hints-as-errors
+# ---- end gate ----
+
 # Typecheck every Cloudflare Worker under workers/, installing its deps first.
 #
 # WHY THIS EXISTS RATHER THAN MORE `tsc -p` CLAUSES IN package.json. Each worker is a

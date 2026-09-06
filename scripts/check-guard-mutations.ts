@@ -32,6 +32,13 @@
  *     to report it as unprotected, proving the detection is real
  *
  * ADDING A GUARD: append to MUTANTS. `find` must occur exactly once in `file`.
+ *
+ * ---- gate ----
+ * step: Guard mutations
+ * needs: node
+ * run: tsx scripts/check-guard-mutations.ts --selftest
+ * lane: quality-packages
+ * ---- end gate ----
  */
 import { execFileSync } from 'node:child_process';
 import { refuse } from './lib/controls';

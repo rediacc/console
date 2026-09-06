@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# step: Run renet quality
+# needs: none
+# id: check:ci-renet
+# run: .ci/scripts/private/run-renet.sh quality
+# lane: quality-go
+# ---- end gate ----
+
 # Run renet CI if available
 #
 # Usage: .ci/scripts/private/run-renet.sh [stage]

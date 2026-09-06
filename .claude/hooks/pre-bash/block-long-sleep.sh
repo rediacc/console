@@ -39,6 +39,20 @@ BG=$(printf '%s' "$INPUT" | jq -r '.tool_input.run_in_background // false' 2>/de
 # The MAXIMUM sleep in the command, not the first one.
 SLEEP_VAL=$(printf '%s' "$CMD" | grep -oE 'sleep +[0-9]+' | grep -oE '[0-9]+' | sort -n | tail -1)
 
+# LEADING ZEROS ARE STRIPPED BEFORE THE COMPARISON, and this is a real bypass that
+# was live. `[[ ... -gt ... ]]` evaluates its operands as bash ARITHMETIC, where a
+# leading zero means OCTAL. Measured 2026-09-06:
+#
+#   sleep 024  -> read as octal 20, not greater than the limit of 20, ALLOWED.
+#                 The command then sleeps twenty-four seconds.
+#   sleep 08   -> `[[: 08: value too great for base` on stderr, and ALLOWED,
+#                 because a failed arithmetic comparison is false.
+#
+# So the two shapes that defeated this guard were the ones a person is most likely
+# to type by accident. `10#` forces base ten; `${VAR#"${VAR%%[!0]*}"}` would also
+# work but reads as line noise. The empty-string case still falls to the -n test.
+SLEEP_VAL=${SLEEP_VAL:+$((10#$SLEEP_VAL))}
+
 LIMIT=$FG_MAX
 [ "$BG" = "true" ] && LIMIT=$BG_MAX
 

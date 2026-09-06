@@ -871,6 +871,39 @@ check 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent
     "plan-tasks: a stub under 400 chars is exempt"
 check_out 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Edit "$PLAN_TMP/agent/PLAN-legacy.md" new_string "one more paragraph")" \
     "plan-tasks: amending a legacy prose plan is grandfathered, with a note" "predates the plan-task convention"
+
+# --- block-compacted-plan-edit.sh -----------------------------------------
+# A COMPACTED RECORD keeps the plan's path and moves its full text to a git
+# blob, so the header IS the only pointer back. The guard denies the spine and
+# leaves prose alone; both directions are asserted, because a guard that only
+# ever blocks gets deleted the first time it is inconvenient.
+REC_BLOB="0123456789abcdef0123456789abcdef01234567"
+REC="$PLAN_TMP/agent/PLAN-compacted.md"
+printf '%s\n' \
+    "# A compacted plan" \
+    "Status: compacted" \
+    "Full-Text: abc123def agent/PLAN-compacted.md" \
+    "Full-Text-Blob: $REC_BLOB" \
+    "Record-Sig: 1a2b3c4d" \
+    "" \
+    "## Why" \
+    "Because the wave needed it." \
+    "" \
+    "## Boxes" \
+    "- [x] Do the concrete thing at file.ts:10" \
+    "    (record) sig=1a2b3c4d done=abc123def" >"$REC"
+
+check_out 2 pre-edit/block-compacted-plan-edit.sh "$(tool_json Write "$REC" content '# x')" \
+    "compacted-record: a Write over a record is refused" "COMPACTED PLAN RECORD"
+# THE ACCIDENT THIS GUARD IS NAMED FOR: the Edit tool's own advice is to pass a
+# minimal unique substring, and for a header line that is the bare 40-hex blob.
+# A line-anchored pattern does not see it.
+check_out 2 pre-edit/block-compacted-plan-edit.sh "$(tool_json Edit "$REC" old_string "$REC_BLOB")" \
+    "compacted-record: a bare-blob old_string is refused" "Full-Text-Blob VALUE"
+check 0 pre-edit/block-compacted-plan-edit.sh "$(tool_json Edit "$REC" new_string 'a nicer sentence')" \
+    "compacted-record: a prose-only Edit is allowed"
+check 0 pre-edit/block-compacted-plan-edit.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-conforming.md" content '# x')" \
+    "compacted-record: a plain plan is out of scope"
 check 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Edit "$PLAN_TMP/agent/PLAN-conforming.md" new_string "one more paragraph")" \
     "plan-tasks: amending a plan that already has a task list passes"
 rm -rf "$PLAN_TMP"
@@ -2355,6 +2388,7 @@ for mod in context/test-context-bands.py \
     stop/test-completion-evidence.py \
     stop/test-always-tier.py \
     stop/test-planfile.py \
+    stop/test-planrec.py \
     stop/test-reggate-ledger.py; do
     if [[ ! -f "$DIR/$mod" ]]; then
         FAIL=$((FAIL + 1))

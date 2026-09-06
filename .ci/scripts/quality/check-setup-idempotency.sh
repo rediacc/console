@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Setup path idempotency
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+# needs: submodules
+# selftest: true
+# lane: quality-code
+# ---- end gate ----
+
 # Gate: the machine-setup path must stay idempotent, guarded, and honest.
 #
 # Four invariants, each paid for by a defect found while building this feature:
@@ -199,26 +208,36 @@ check_b() {
 # C. Port derivation.
 # ---------------------------------------------------------------------------
 # shellcheck disable=SC2120  # called with an argument by the control below
-check_c() { # check_c <find-port.sh path>
-    local fp="${1:-$LIB/find-port.sh}"
+check_c() { # check_c <repo root whose .ci/rediacc_ci supplies the implementation>
+    # The subject moved in W7 phase 1. `.ci/lib/find-port.sh` is now a
+    # delegating shim over rediacc_ci.core.ports, so mutating the shim proves
+    # nothing -- the digest it used to compute is not there any more. What this
+    # takes is a ROOT, handed to the shim through REDIACC_CI_ROOT, so the
+    # control below can point it at a COPY of the package with the digest line
+    # broken. That is a strictly stronger control than the old one: it fails
+    # unless the delegation actually reaches the Python.
+    local root="${1:-$ROOT}"
+    local fp="$LIB/find-port.sh"
     local a1 b1 i sample
     # shellcheck source=/dev/null
-    a1="$(bash -c "source '$fp'; derive_slot /home/x/console 100")"
-    b1="$(bash -c "source '$fp'; derive_slot /home/x/console/.worktrees/0824-1 100")"
+    a1="$(REDIACC_CI_ROOT="$root" bash -c "source '$fp'; derive_slot /home/x/console 100")"
+    b1="$(REDIACC_CI_ROOT="$root" bash -c "source '$fp'; derive_slot /home/x/console/.worktrees/0824-1 100")"
 
     if [ -z "$a1" ]; then
         fail "C: derive_slot produced nothing"
         return 1
     fi
 
-    # FIVE samples, not two. The control for this assertion plants $RANDOM, and
-    # $RANDOM % 100 repeats itself about 1% of the time -- so a two-sample
-    # comparison let the planted defect pass at that rate and the gate reported
-    # "CONTROL DID NOT FIRE" at random. Five agreeing samples drops that to ~1e-8
-    # while costing microseconds. A flaky control is worse than no control: it
-    # teaches the reader to re-run until green.
+    # FIVE samples, not two. The control for this assertion plants a random
+    # digest, and a random value mod 100 repeats itself about 1% of the time --
+    # so a two-sample comparison let the planted defect pass at that rate and
+    # the gate reported "CONTROL DID NOT FIRE" at random. Five agreeing samples
+    # drops that to ~1e-8 while costing microseconds. A flaky control is worse
+    # than no control: it teaches the reader to re-run until green. (The
+    # planted value was `$RANDOM` while the implementation was bash; it is
+    # `random.randbytes` now that it is Python. The arithmetic is unchanged.)
     for ((i = 0; i < 4; i++)); do
-        sample="$(bash -c "source '$fp'; derive_slot /home/x/console 100")"
+        sample="$(REDIACC_CI_ROOT="$root" bash -c "source '$fp'; derive_slot /home/x/console 100")"
         if [ "$sample" != "$a1" ]; then
             fail "C: derive_slot is not deterministic ($a1 then $sample)"
             return 1
@@ -351,9 +370,15 @@ check_f() { # check_f <devbox.sh path>
 # ORDER is the invariant, not mere presence: an init call placed after the phase
 # that reads a submodule path fixes nothing, and reads as correct in a diff.
 # ---------------------------------------------------------------------------
+# WHERE setup() LIVES. The 2026-09-06 router split left run.sh a 120-line dispatcher
+# and moved every verb body to .ci/legacy/run-legacy.sh. This gate read run.sh and said
+# "no setup() function", which is the refusal working: a scan whose subject moved must
+# go red rather than pass over an empty function. One name, three readers below.
+SETUP_BODY_FILE="$ROOT/.ci/legacy/run-legacy.sh"
+
 # shellcheck disable=SC2120  # called with an argument by the control below
-check_g() { # check_g <run.sh path>
-    local runsh="${1:-$ROOT/run.sh}" body init_line reader_line
+check_g() { # check_g <path holding setup()>
+    local runsh="${1:-$SETUP_BODY_FILE}" body init_line reader_line
 
     # COMMENTS STRIPPED, and that is load-bearing. The first version matched
     # "private/renet/go.mod" inside the comment that explains the ordering and
@@ -430,12 +455,21 @@ if [ "$(scoped_to "$b_persisted" "$b_paths")" = "$(scoped_to "$b_before" "$b_pat
 fi
 
 # C-control: a random slot must be rejected.
-sed 's/digest="$(printf .*$/digest=$RANDOM/' "$LIB/find-port.sh" >"$TMP/fp-broken.sh"
-if ! grep -q 'digest=$RANDOM' "$TMP/fp-broken.sh"; then
+#
+# The mutation now lands on rediacc_ci.core.ports, which is where the digest
+# actually lives since W7 phase 1; the shim at .ci/lib/find-port.sh is pointed
+# at the broken COPY through REDIACC_CI_ROOT. Copying the package rather than
+# editing it in place matters twice over: this gate must never write into the
+# tree it is checking, and other sessions share this checkout.
+mkdir -p "$TMP/broken-root/.ci"
+cp -r "$ROOT/.ci/rediacc_ci" "$TMP/broken-root/.ci/rediacc_ci"
+sed -i 's/^    digest = hashlib\.sha256.*$/    digest = __import__("random").randbytes(4).hex()  # PLANTED/' \
+    "$TMP/broken-root/.ci/rediacc_ci/core/ports.py"
+if ! grep -q 'PLANTED' "$TMP/broken-root/.ci/rediacc_ci/core/ports.py"; then
     echo "${RED}CONTROL IS VACUOUS${NC}: C -- mutation did not apply." >&2
     control_fails=1
 else
-    control "C (deterministic ports)" check_c "$TMP/fp-broken.sh"
+    control "C (deterministic ports)" check_c "$TMP/broken-root"
 fi
 
 # D-control: restore the unchecked invocation.
@@ -479,7 +513,7 @@ fi
 
 # G-control: two plants, because presence and ORDER are different defects and a
 # check that only notices absence would pass the one that actually shipped later.
-sed '/init-submodules\.sh/d' "$ROOT/run.sh" >"$TMP/run-noinit.sh"
+sed '/init-submodules\.sh/d' "$SETUP_BODY_FILE" >"$TMP/run-noinit.sh"
 if grep -q 'init-submodules' "$TMP/run-noinit.sh"; then
     echo "${RED}CONTROL IS VACUOUS${NC}: G(absent) -- the init call was not removed." >&2
     control_fails=1
@@ -492,7 +526,7 @@ awk '
     /init-submodules\.sh/ { next }
     { print }
     /if ! ensure_docker_installed; then/ { print "        bash \"$ROOT_DIR/.devcontainer/init-submodules.sh\" --quiet || true" }
-' "$ROOT/run.sh" >"$TMP/run-lateinit.sh"
+' "$SETUP_BODY_FILE" >"$TMP/run-lateinit.sh"
 if ! grep -q 'init-submodules' "$TMP/run-lateinit.sh"; then
     echo "${RED}CONTROL IS VACUOUS${NC}: G(order) -- the moved init did not land." >&2
     control_fails=1

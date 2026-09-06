@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Hook integrity
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+# needs: none
+# selftest: true
+# lane: quality-code
+# ---- end gate ----
+
 # Gate: the enforcement layer cannot quietly disarm itself.
 #
 # WHY. Everything this repo relies on to stop an agent doing the wrong thing is a
@@ -53,8 +62,16 @@ HOOKS="$ROOT/.claude/hooks"
 # because it was absent from this list, both were outside the inventory and
 # could be deleted with no gate noticing. Found by sweeping the class after the
 # warn-* gap: that was a filename prefix escaping the net, this was a whole
-# chain. B/C are unaffected: they glob block-*.sh, and post-bash has none.
-CHAINS=(pre-bash pre-edit pre-ask post-bash)
+# chain. B/C are unaffected: they glob block-*, and post-bash has none.
+#
+# THE LIST ITSELF NOW LIVES IN $SCOPE, not in this file, and the move is a
+# widened seam rather than a tidy-up. The .claude hook port renames and adds
+# chain directories; while this was a bash array inside the enforcement script,
+# every such move was an edit to the enforcement script, made by whoever was
+# moving files. Reading it from declared data means the port re-keys DATA and
+# this gate's logic is never opened. $SCOPE carries the admission rule and the
+# reason neither list can be derived.
+SCOPE="$ROOT/scripts/data/hook-audit-scope.json"
 SUITE="$HOOKS/test-hooks.sh"
 INV="$ROOT/scripts/data/hook-inventory-baseline.json"
 COV="$ROOT/scripts/data/hook-coverage-baseline.json"
@@ -73,6 +90,37 @@ fail() {
     fails=$((fails + 1))
 }
 pass() { echo "${GREEN}ok${NC}   $*"; }
+
+# ---- scope, read from data --------------------------------------------------
+#
+# REFUSING AN EMPTY LIST IS THE POINT. A missing or malformed scope file that
+# yielded two empty arrays would make every loop below iterate zero times: A
+# would find zero guards, B would check zero directions, and the gate would exit
+# 0 having audited nothing. That is precisely the vacuous green this file's own
+# section C exists to abolish, so the load refuses instead of degrading.
+scope_list() { # scope_list <key> -> one entry per line, or nothing on any error
+    python3 - "$SCOPE" "$1" <<'PY' 2>/dev/null
+import json, sys
+try:
+    data = json.load(open(sys.argv[1], encoding="utf-8"))
+except (OSError, ValueError):
+    sys.exit(1)
+v = data.get(sys.argv[2])
+if not isinstance(v, list) or not v or not all(isinstance(x, str) and x for x in v):
+    sys.exit(1)
+for x in v:
+    print(x)
+PY
+}
+mapfile -t CHAINS < <(scope_list chains)
+mapfile -t EXTRA_GUARDS < <(scope_list guards_outside_chains)
+if [ ${#CHAINS[@]} -eq 0 ] || [ ${#EXTRA_GUARDS[@]} -eq 0 ]; then
+    echo "${RED}✗${NC} hook integrity: scope file unreadable or empty: $SCOPE" >&2
+    echo "     chains=${#CHAINS[@]} guards_outside_chains=${#EXTRA_GUARDS[@]}" >&2
+    echo "     Refusing to run: with an empty scope every assertion below audits nothing" >&2
+    echo "     and this gate would exit 0 having checked no guard at all." >&2
+    exit 1
+fi
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -93,7 +141,13 @@ try:
 except OSError:
     src = ""
 chain_re = "|".join(re.escape(c) for c in chains)
-guard_re = r"(?:%s)/[A-Za-z0-9_.-]+\.sh" % chain_re
+# EXTENSION-AGNOSTIC for the same reason the disk globs are: after the hook
+# port a case in the suite names `pre-bash/block_x.py`, and a reader anchored to
+# `.sh` would count zero cases for it. B would then report a fully covered guard
+# as newly uncovered -- loud rather than silent, but wrong, and a gate that is
+# wrong is a gate that gets suppressed. Measured a no-op on the suite it was
+# widened against: 81 direct case matches before and after, identical set.
+guard_re = r"(?:%s)/[A-Za-z0-9_.-]+\.(?:sh|py)" % chain_re
 
 counts = {}
 def bump(guard, rc):
@@ -124,11 +178,15 @@ for chain in chains:
     if not os.path.isdir(d):
         continue
     for name in sorted(os.listdir(d)):
-        if not (name.startswith("block-") and name.endswith(".sh")):
+        # Same prefix and extension rule as the on-disk glob below, including the
+        # underscore spelling a Python port produces. splitext rather than
+        # name[:-3], which only happens to be right while every extension is
+        # three characters long.
+        if not (name.startswith(("block-", "block_")) and name.endswith((".sh", ".py"))):
             continue
         guard = "%s/%s" % (chain, name)
         b, a = counts.get(guard, (0, 0))
-        stem = name[:-3]
+        stem = os.path.splitext(name)[0]
         if any(os.path.exists(os.path.join(d, "test-%s%s" % (stem, ext))) for ext in (".py", ".sh")):
             b, a = b + 1, a + 1
         print(guard, b, a)
@@ -156,9 +214,9 @@ PY
 # warn-submodule-deletions.sh were outside the inventory entirely -- and A's own
 # failure text, "each of these can be deleted with no gate noticing", was true of
 # them with nothing saying so.
-# GUARDS OUTSIDE ANY CHAIN DIRECTORY, listed explicitly because a glob cannot
-# find them. The admission rule is WHETHER ABSENCE IS SILENT, not what the file
-# is named or where it sits:
+# GUARDS OUTSIDE ANY CHAIN DIRECTORY are declared in $SCOPE under
+# `guards_outside_chains`, because a glob cannot find them. The admission rule is
+# WHETHER ABSENCE IS SILENT, not what the file is named or where it sits:
 #
 #   * a missing pre-bash/post-bash guard just stops blocking -- nothing says so,
 #     which is the entire reason this inventory exists
@@ -170,19 +228,50 @@ PY
 # not guards, and their absence is LOUD -- a missing stop hook errors on every
 # single stop rather than quietly permitting something. A gate that cannot tell
 # those apart would be inventorying files that already announce their own death.
-EXTRA_GUARDS=(trapguard/dispatch.py require-jq.sh)
 
 on_disk=()
 all_guards=()
 for _c in "${CHAINS[@]}"; do
-    for _f in "$HOOKS/$_c"/block-*.sh; do
-        [ -e "$_f" ] && on_disk+=("$_c/$(basename "$_f")")
+    # EXTENSION-AGNOSTIC, and that is the second half of this seam widening. The
+    # patterns were `block-*.sh` and `*.sh`, so the moment a guard is ported to
+    # Python it leaves BOTH sets: A's baseline arm still names the vanished .sh
+    # loudly, but the new .py file enters no list at all, so A's unlisted arm
+    # never mentions it and B stops asking it for either direction. That is a
+    # silent hole opened by a correct port, which is the exact class this gate
+    # was built for. Matching on the NAME PREFIX instead means a ported guard
+    # stays audited under its new extension.
+    #
+    # THE SEPARATOR IS PART OF THE PREFIX, found by planting the file a port
+    # actually produces. A first pass matched `block-*`, and a fixture named
+    # `block_ported.py` -- hyphen to underscore, which is what a Python port does
+    # to a module name -- still missed section B entirely while landing in the
+    # all-guards list, so it would have been inventoried as un-deletable and
+    # never asked for a block or an allow case. `block[-_]*` covers both
+    # spellings.
+    #
+    # Proven a no-op on the tree it was widened against: 42 block-* and 50 total,
+    # identical sets before and after, because no chain holds a .py guard yet.
+    for _f in "$HOOKS/$_c"/block[-_]*; do
+        _b="$(basename "$_f")"
+        [ -f "$_f" ] || continue
+        case "$_b" in *.pyc) continue ;; esac
+        on_disk+=("$_c/$_b")
     done
-    # EVERY .sh in the chain, not a name pattern. Verified equal to the old
+    # EVERY file in the chain, not a name pattern. Verified equal to the old
     # block-*+warn-* set for the three original chains (42 files, 42 listed),
     # so this widens the net without reclassifying anything.
-    for _f in "$HOOKS/$_c"/*.sh; do
-        [ -e "$_f" ] && all_guards+=("$_c/$(basename "$_f")")
+    #
+    # Two exclusions, both of them non-guards that a bare `*` would otherwise
+    # inventory: `test-*` files are the per-guard case suites this gate READS
+    # (section B resolves them at line-level), so listing them as guards would
+    # demand coverage of the coverage; `*.pyc` and directories are build litter
+    # and package roots (`pre-bash/lib`, `__pycache__`) rather than files that
+    # can silently stop enforcing anything.
+    for _f in "$HOOKS/$_c"/*; do
+        _b="$(basename "$_f")"
+        [ -f "$_f" ] || continue
+        case "$_b" in test-* | *.pyc) continue ;; esac
+        all_guards+=("$_c/$_b")
     done
 done
 for _g in "${EXTRA_GUARDS[@]}"; do

@@ -128,8 +128,32 @@ export function laneCapabilities(workflowText: string): Map<string, LaneCapabili
 }
 
 /** Does this lane provide everything the gate asked for? */
+/**
+ * Needs a lane does not have to PROVIDE, because the binder installs them into the
+ * emitted step itself.
+ *
+ * THE CAPABILITY MODEL IS AUTHORITATIVE, and this is what that decision costs. A gate
+ * declaring `python-yaml` was refused every lane, because `laneCapabilities` derives
+ * what a lane offers from workflow STRUCTURE (a setup step, a submodule checkout, a
+ * tool install listed as its own step) and cannot see a `python3 -m pip install` inside
+ * another step's `run:` block. Two gates were therefore reported as impossible to
+ * place while the workflow already installs PyYAML for them at ci-quality.yml:273 and
+ * :295 -- lines the binder's own ACQUIRE table emits.
+ *
+ * So placement asks the wrong question for these needs. "Does this lane already have
+ * PyYAML" is unanswerable from structure; "can the emitted step install it" is answered
+ * by the ACQUIRE table, and the answer is yes. An acquirable need is therefore not a
+ * placement constraint. It is still a NEED: it is carried on the gate, and `emitStep`
+ * still writes the install ahead of the command, so nothing is acquired by accident.
+ *
+ * Kept as a NAMED SET rather than "anything not recognised": an unknown need must
+ * still refuse placement, or a typo in a header would silently place a gate anywhere.
+ */
+export const ACQUIRABLE: readonly string[] = ['python-yaml'];
+
 export function satisfies(lane: LaneCapabilities, needs: readonly string[]): boolean {
   return needs.every((need) => {
+    if (ACQUIRABLE.includes(need)) return true;
     if (need === 'submodules') return lane.submodules.length > 0;
     if (need.startsWith('private/')) {
       return lane.submodules.includes('*') || lane.submodules.includes(need);

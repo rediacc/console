@@ -22,6 +22,13 @@
  *
  * Usage:
  *   npx tsx scripts/check-captcha-recovery.ts [--selftest]
+ *
+ * ---- gate ----
+ * step: Captcha recovery
+ * needs: node
+ * run: tsx scripts/check-captcha-recovery.ts --selftest
+ * lane: quality-www-build
+ * ---- end gate ----
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';

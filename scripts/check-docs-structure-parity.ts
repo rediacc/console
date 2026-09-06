@@ -30,6 +30,12 @@
  *
  * Control-first: every run first proves the detector on a synthetic pair whose
  * shapes differ, and refuses to pass on an empty scan.
+ *
+ * ---- gate ----
+ * step: Docs structure parity
+ * needs: node
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 
 import { existsSync, readFileSync } from 'node:fs';

@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Release key canonical
+# needs: none
+# selftest: true
+# lane: quality-security
+# ---- end gate ----
+
 # THE RELEASE SIGNING KEY MUST REACH nfpm AS CANONICAL ARMOR.
 #
 # WHY THIS EXISTS. On 2026-09-05 a release build failed at
@@ -31,15 +38,12 @@ set -uo pipefail
 ROOT="${RELEASE_KEY_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}"
 CANON="$ROOT/.ci/scripts/build/canonicalise-gpg-key.sh"
 
-fails=0
-n=0
-_c() {
-    n=$((n + 1))
-    if [[ "$2" == "$3" ]]; then echo "  ok    $1"; else
-        fails=$((fails + 1))
-        echo "  FAIL  $1 (got '$2' want '$3')" >&2
-    fi
-}
+# One copy of the tally, shared. check:ci-shape-duplication caught this body at
+# three copies and the extraction converted only ONE of them, which took the count
+# to two and made the gate quiet at its own threshold of three. Doing a third of
+# the work is how a gate gets silenced instead of satisfied.
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/gate-controls.sh"
+_c() { gate_check "$@"; }
 
 [[ -x "$CANON" ]] || {
     echo "✗ $CANON is missing or not executable -- the build depends on it" >&2
@@ -142,12 +146,7 @@ fi
 _c "build-linux-pkg.sh calls the canonicaliser" \
     "$(grep -c 'canonicalise-gpg-key.sh' "$ROOT/.ci/scripts/build/build-linux-pkg.sh")" "1"
 
-if ((n < 8)); then
-    echo "FAIL  only $n control(s) ran; the battery is not being executed as written" >&2
-    fails=$((fails + 1))
-fi
-if ((fails)); then
-    echo "✗ release key canonicalisation: $fails of $n control(s) failed" >&2
-    exit 1
-fi
-echo "✓ release key canonicalisation: $n control(s) passed (throwaway key; the real one is a secret and is deliberately out of scope)"
+# The floor and the verdict were the SECOND duplicated shape, byte-identical down
+# to the "not being executed as written" wording. gate_finish already is it.
+gate_finish 8 "release key canonicalisation" || exit 1
+echo "  (throwaway key; the real one is a secret and is deliberately out of scope)"

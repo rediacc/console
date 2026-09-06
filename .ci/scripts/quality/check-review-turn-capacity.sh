@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Review turn budget cannot starve a routed review
+# needs: none
+# selftest: true
+# ---- end gate ----
+
 # Assert the Claude-review turn budget cannot starve a review it is willing to route.
 #
 # WHY THIS EXISTS. On 2026-08-07 the review of PR #553 died with `error_max_turns` and

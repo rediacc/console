@@ -37,6 +37,11 @@
  *
  * Control-first: every run proves the detector on a synthetic package that is
  * neither referenced nor documented, and refuses a scan that read nothing.
+ *
+ * ---- gate ----
+ * step: Test suites are CI-reachable
+ * needs: node
+ * ---- end gate ----
  */
 
 import { readFileSync } from 'node:fs';

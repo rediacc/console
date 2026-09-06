@@ -18,6 +18,12 @@
  * Fix a failure: update packages/shared/src/subscription/constants.ts (if the
  * canonical value should change) or the www content (if it drifted from the
  * canonical value) so both sides agree again.
+ *
+ * ---- gate ----
+ * step: Pricing consistency
+ * needs: node
+ * lane: quality-content
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import path from 'node:path';

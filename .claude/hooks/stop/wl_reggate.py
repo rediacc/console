@@ -538,6 +538,48 @@ def package_scripts(root):
         return {}
 
 
+LOCK_REL = ("scripts", "ci-runner", "gates.lock.json")
+
+
+def _manifest_entries(root):
+    """Every manifest entry, read from `scripts/ci-runner/gates.lock.json`.
+
+    THIS USED TO BE A TYPESCRIPT PARSER WRITTEN IN REGEX, and it shipped wrong.
+    Two functions each ran
+    a finditer over a brace-delimited pattern matching an optional run of
+    whitespace-or-line-comment, then an `id:` string, applied to a 5,700-line TS
+    literal. The whitespace-or-comment alternation in that pattern is a
+    scar: the first version allowed whitespace only, so any entry whose leading comment sat
+    INSIDE the brace was invisible, and the reachability gate checked a smaller
+    set while printing a healthy "agrees with all N registrations". Found
+    2026-08-20 with a planted entry it went green over; it was already hiding
+    check:ci-dockerfile-mirror-resilience and check:ci-tutorial-card-fonts, at
+    259 of 261 seen. The next TS shape nobody anticipated would have done it
+    again, silently and in the same direction.
+
+    The lock is that literal, projected to JSON by `scripts/gen-gates-lock.ts`
+    and kept faithful by `check:ci-gates-lock`, which fails when the two
+    disagree. One parse, no regex archaeology, and a shape error is a JSON
+    error rather than a quietly shorter list.
+
+    RETURNS AN EMPTY LIST WHEN THE LOCK IS ABSENT, deliberately and not by
+    oversight. That matches what the regex version did on an unreadable file,
+    and `check_gate_reachability_coverage.py` DEPENDS on it: its control stubs
+    this lookup to empty and requires the probe's verdict to change, which is
+    how that gate proves it can still detect manifest-blindness. Absence is a
+    broken checkout rather than a state to tolerate, and the gate that refuses
+    it is check:ci-gates-lock, not this reader.
+    """
+    if root is None:
+        return []
+    try:
+        with open(os.path.join(str(root), *LOCK_REL), encoding="utf-8") as fh:
+            parsed = json.load(fh)
+    except (OSError, ValueError):
+        return []
+    return [g for g in parsed if isinstance(g, dict) and isinstance(g.get("id"), str)]
+
+
 def _manifest_gate_ids(root):
     """Gate ids registered in the ci-runner manifest, as a set.
 
@@ -545,25 +587,7 @@ def _manifest_gate_ids(root):
     listed there with `gate: true` IS run by `npm run ci` even though nothing in
     package.json ever says `npm run <that key>`.
     """
-    ids = set()
-    if root is None:
-        return ids
-    mf = os.path.join(str(root), "scripts", "ci-runner", "manifest.ts")
-    try:
-        with open(mf, encoding="utf-8") as fh:
-            src = fh.read()
-    except OSError:
-        return ids
-    # `(?:\s|//[^\n]*\n)*`, not `\s*`: a manifest entry whose leading comment sits
-    # INSIDE the brace was invisible to this scan, so the reachability gate silently
-    # checked a smaller set and still printed a healthy "agrees with all N
-    # registrations". Found 2026-08-20 with a planted entry that the gate went green
-    # over; it was already hiding check:ci-dockerfile-mirror-resilience and
-    # check:ci-tutorial-card-fonts (259 of 261 seen).
-    for m in re.finditer(r"\{(?:\s|//[^\n]*\n)*id:\s*'([^']+)'(.*?)\}", src, re.DOTALL):
-        if "gate: true" in m.group(2):
-            ids.add(m.group(1))
-    return ids
+    return {g["id"] for g in _manifest_entries(root) if g.get("gate") is True}
 
 
 def _manifest_gate_run_paths(root):
@@ -578,22 +602,11 @@ def _manifest_gate_run_paths(root):
     and still reporting real coverage as hallucinated. Same regex/parsing
     approach as _manifest_gate_ids, deliberately: one manifest scan, two views.
     """
-    paths = set()
-    if root is None:
-        return paths
-    mf = os.path.join(str(root), "scripts", "ci-runner", "manifest.ts")
-    try:
-        with open(mf, encoding="utf-8") as fh:
-            src = fh.read()
-    except OSError:
-        return paths
-    for m in re.finditer(r"\{(?:\s|//[^\n]*\n)*id:\s*'([^']+)'(.*?)\}", src, re.DOTALL):
-        if "gate: true" not in m.group(2):
-            continue
-        rm = re.search(r"run:\s*'([^']+)'", m.group(2))
-        if rm:
-            paths.add(rm.group(1))
-    return paths
+    return {
+        g["run"]
+        for g in _manifest_entries(root)
+        if g.get("gate") is True and isinstance(g.get("run"), str)
+    }
 
 
 def _citation_matches_gate(eg, root):

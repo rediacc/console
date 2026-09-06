@@ -35,6 +35,12 @@
  *
  * Usage: npx tsx scripts/check-unverified-downloads.ts
  * Exit:  0 clean/allowlisted, 1 an unverified download or a malformed allowlist.
+ *
+ * ---- gate ----
+ * step: Check every Dockerfile download is cryptographically verified
+ * needs: node, submodules
+ * lane: quality-security
+ * ---- end gate ----
  */
 
 import { execSync } from 'node:child_process';

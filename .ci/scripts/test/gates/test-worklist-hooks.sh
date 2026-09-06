@@ -30,10 +30,129 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 
 # name:path. Every one must end with "  passed=<n> failed=<m>".
+#
+# THE STOP-HOOK SUITE IS NOT IN THIS LIST ANY MORE (2026-09-06), and it is
+# DELEGATED rather than dropped -- see DELEGATED and assert_delegated below.
+#
+# WHY. `check:ci-hook-worklist-suite` (package.json) runs the very same
+# .claude/hooks/stop/test-worklist-v5.sh, and it is a first-class manifest gate
+# with its own id, its own tier and its own CI step. Both it and this wrapper are
+# scheduled in the same full local run, so the 802-case suite executed TWICE per
+# `npm run ci` and neither end could see the other.
+#
+# MEASURED, not read. Sampling the process table once a second through
+#   npx tsx scripts/ci-runner/run.ts --only check:ci-hook-worklist-suite,\
+#     gate-test:worklist-hooks,check:ci-dead-bash,gate-test:dead-bash --jobs 4
+# showed TWO top-level test-worklist-v5.sh processes alive for 775 seconds each:
+# one under `sh -c .claude/hooks/stop/test-worklist-v5.sh` (the npm key) and one
+# under `bashcov-sup -- bash ... test-worklist-v5.sh` (this file). Those four
+# gates cost 2,106.9s serial for 798.4s of wall.
+#
+# THE CONCURRENCY MACHINERY BELOW STAYS even though the list is one entry long.
+# It is what makes "adding a third harness is one array entry" true, which is the
+# property this file's header is about; collapsing it back to a single inline
+# call would have to be undone by whoever adds the next harness.
 HARNESSES=(
-    "stop-hook:$REPO_ROOT/.claude/hooks/stop/test-worklist-v5.sh"
     "report-inbox:$REPO_ROOT/.claude/hooks/stop/test-report-inbox.sh"
 )
+
+# name|npm key|repo-relative harness path. A harness this gate deliberately does
+# NOT run because another REGISTERED gate already runs it.
+DELEGATED=(
+    "stop-hook|check:ci-hook-worklist-suite|.claude/hooks/stop/test-worklist-v5.sh"
+)
+
+# Seams so the delegation assertion can be driven against a doctored registry
+# without touching the real files. Defaults are what CI reads.
+DELEGATION_PACKAGE_JSON="${DELEGATION_PACKAGE_JSON:-$REPO_ROOT/package.json}"
+DELEGATION_MANIFEST="${DELEGATION_MANIFEST:-$REPO_ROOT/scripts/ci-runner/manifest.ts}"
+
+# assert_delegated <name> <npm key> <repo-relative harness path>
+#
+# A DELEGATION NOBODY CHECKS IS THE GAP THIS FILE WAS WRITTEN ABOUT. The header
+# above records why this gate exists at all: a 431-case suite that ran only when
+# somebody remembered to type it, because "a fix whose test cannot execute in CI
+# is a fix with no gate". Handing the suite to another key reopens exactly that
+# hole the moment the key is renamed, deleted, repointed, or flipped to
+# gate: false -- and every one of those is a silent, green-looking change. So the
+# delegate is verified on every run, in four separate ways, each with its own
+# diagnostic naming what broke.
+assert_delegated() { # $1 name, $2 npm key, $3 repo-relative harness path
+    local name="$1" key="$2" rel="$3" line entry
+
+    if [[ ! -f "$REPO_ROOT/$rel" ]]; then
+        echo "FAIL[$name]: $rel does not exist, so nothing runs it anywhere." >&2
+        return 1
+    fi
+
+    # `|| true` on both extractions is required, not decorative: under
+    # `set -euo pipefail` a grep/awk pipeline that matches nothing would abort
+    # this function before its own diagnostic could print, which is the silent
+    # death this gate's sibling comment already warns about one function down.
+    line="$(grep -F "\"$key\":" "$DELEGATION_PACKAGE_JSON" || true)"
+    if [[ -z "$line" ]]; then
+        echo "FAIL[$name]: package.json has no \"$key\" script, so the $name harness now" >&2
+        echo "runs NOWHERE -- this gate stopped running it on the strength of that key." >&2
+        return 1
+    fi
+    if [[ "$line" != *"$rel"* ]]; then
+        echo "FAIL[$name]: \"$key\" no longer runs $rel. It runs:$line" >&2
+        return 1
+    fi
+
+    # Bounded by the entry's own closing brace rather than a line count, because
+    # a fixed `grep -A <n>` window either misses a reordered field or bleeds into
+    # the NEXT entry and reads its `gate: true` as this one's. Two-space `  },`
+    # is the entry terminator the binder itself relies on (scripts/gate-bind.ts).
+    entry="$(awk -v k="id: '$key'," 'index($0, k) { f = 1 } f { print } f && /^  },$/ { exit }' \
+        "$DELEGATION_MANIFEST" || true)"
+    if [[ -z "$entry" ]]; then
+        echo "FAIL[$name]: scripts/ci-runner/manifest.ts has no entry with id '$key', so the" >&2
+        echo "npm key exists but nothing schedules it and the harness is unreachable." >&2
+        return 1
+    fi
+    if [[ "$entry" != *"gate: true"* ]]; then
+        echo "FAIL[$name]: manifest entry '$key' is not gate: true, so a full run never selects it." >&2
+        return 1
+    fi
+    if [[ "$entry" != *"$rel"* ]]; then
+        echo "FAIL[$name]: manifest entry '$key' no longer declares $rel among its leaves," >&2
+        echo "so the parity oracle can no longer see that this harness is covered." >&2
+        return 1
+    fi
+
+    echo "PASS[$name]: delegated to '$key' (gate: true), which runs $rel"
+    return 0
+}
+
+# CONTROL, and it runs on every invocation rather than behind a flag. An
+# assertion that cannot fail is worth exactly what no assertion is worth, and the
+# failure being guarded against here -- a harness that runs nowhere -- looks
+# identical to a harness that ran and passed. So the SAME function is driven
+# against a package.json with the delegate key stripped out, and a pass there is
+# itself a failure. The positive direction is the real assert_delegated call
+# below, so both directions are exercised in one run.
+control_delegation() {
+    local t out rc=0
+    t="$(mktemp -d)"
+    grep -v -F "\"check:ci-hook-worklist-suite\":" "$REPO_ROOT/package.json" >"$t/package.json"
+    out=$(DELEGATION_PACKAGE_JSON="$t/package.json" assert_delegated \
+        stop-hook check:ci-hook-worklist-suite .claude/hooks/stop/test-worklist-v5.sh 2>&1) || rc=$?
+    rm -rf "$t"
+    if ((rc == 0)); then
+        echo "CONTROL FAILED: the delegation assertion PASSED against a package.json with" >&2
+        echo "check:ci-hook-worklist-suite removed, so it cannot detect the disappearance" >&2
+        echo "it exists to detect. Nothing this gate reports about delegation is meaningful." >&2
+        return 1
+    fi
+    if [[ "$out" != *"runs NOWHERE"* ]]; then
+        echo "CONTROL FAILED: the assertion fired, but not for the reason planted -- it must" >&2
+        echo "name the missing key. Got: $out" >&2
+        return 1
+    fi
+    echo "PASS: the delegation assertion fires when the delegate npm key is removed"
+    return 0
+}
 
 # ONE HARNESS PER INVOCATION, PARSED FROM ITS OWN OUTPUT. The single-harness
 # version of this gate ended with `grep ... | tail -1`, which was correct while
@@ -146,6 +265,16 @@ for i in "${!HARNESSES[@]}"; do
 done
 
 rc=0
+
+# The delegation checks run in the foreground while the harnesses run behind
+# them: they are two greps and an awk, so they cost nothing, and putting them
+# first means a broken delegation is reported even if a harness hangs.
+control_delegation || rc=1
+for entry in "${DELEGATED[@]}"; do
+    IFS='|' read -r d_name d_key d_rel <<<"$entry"
+    assert_delegated "$d_name" "$d_key" "$d_rel" || rc=1
+done
+
 for i in "${!HARNESSES[@]}"; do
     # `|| true`: under `set -e`, a nonzero `wait` on a backgrounded subshell
     # would abort THIS script before the later entries print, which is exactly
@@ -158,7 +287,7 @@ for i in "${!HARNESSES[@]}"; do
 done
 
 if [[ "$rc" -ne 0 ]]; then
-    echo "FAIL: at least one stop-hook harness is red" >&2
+    echo "FAIL: at least one stop-hook harness is red, or a delegation broke" >&2
     exit 1
 fi
-echo "PASS: all ${#HARNESSES[@]} stop-hook harnesses green"
+echo "PASS: ${#HARNESSES[@]} stop-hook harness(es) green, ${#DELEGATED[@]} delegated and verified"

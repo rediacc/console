@@ -15,8 +15,9 @@
  * Env:
  *   SUPPRESSION_LIVENESS_ROOT  test seam — treat this dir as the repo root
  *
- * Exit 0 when nothing FAIL-tier is stale; 1 otherwise, or if the run was
- * vacuous (every probe skipped while entries existed).
+ * Exit 0 when nothing FAIL-tier is stale; 1 otherwise, if the run was vacuous
+ * (every probe skipped while entries existed), or if any PER-PROBE INPUT FLOOR
+ * is unmet (see PROBE_INPUT_FLOORS below).
  *
  * The .audit-* allowlists are NOT probed here: their oracle needs a live
  * `npm audit`, and .ci/scripts/security/audit.sh already owns that check
@@ -32,6 +33,7 @@ import { collectActionRefs } from './lib/action-refs.js';
 import { parseDockerfileVersions } from './lib/dockerfile-versions.js';
 import { DEVCONTAINER_PIN_SOURCES } from './lib/devcontainer-pin-sources.js';
 import { EMBED_ASSET_SOURCES } from './lib/embed-asset-sources.js';
+import { isPolicyFileName, policyPath } from './lib/policy-paths.js';
 import {
   blockeredEntries,
   findOrphanedBlockers,
@@ -46,6 +48,28 @@ import { NC, RED } from './utils/console.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = process.env.SUPPRESSION_LIVENESS_ROOT || path.join(__dirname, '..');
 
+/**
+ * Absolute path of one of this gate's inputs, THROUGH THE POLICY SEAM.
+ *
+ * Sixteen suppression policy files are moving from the repository root to
+ * `.ci/policy/`, and this gate reads eleven of them. Routing every one of those
+ * reads through policyPath() means the move is a one-line change in
+ * scripts/lib/policy-paths.ts rather than eleven joins to find and update -- and,
+ * more to the point, it means this gate cannot be one of the readers left behind,
+ * which is precisely the failure the per-probe floors below exist to catch.
+ *
+ * Today POLICY_DIR is '' and this is a provable no-op: the paths it returns are
+ * byte-identical to the joins it replaced, which is what keeps the seam
+ * verifiable before the move rather than only after it.
+ *
+ * Files that are NOT policy (package.json, packages/json/.templates-skiplist,
+ * .ci/config/content-quality-allowlist.txt) join normally; policyPath refuses an
+ * unknown name loudly, so the branch is required rather than defensive.
+ */
+function inputPath(root: string, file: string): string {
+  return isPolicyFileName(file) ? policyPath(file, root) : path.join(root, file);
+}
+
 // ---------------------------------------------------------------------------
 // Oracles
 // ---------------------------------------------------------------------------
@@ -56,7 +80,7 @@ const CONSOLE_ROOT = process.env.SUPPRESSION_LIVENESS_ROOT || path.join(__dirnam
  * parseBlockeredList takes the first whitespace-separated token.
  */
 function readSecondColumn(root: string, line: number): string {
-  const p = path.join(root, '.ci-parity-exempt');
+  const p = inputPath(root, '.ci-parity-exempt');
   if (!fs.existsSync(p)) return '';
   const raw = fs.readFileSync(p, 'utf-8').split('\n')[line - 1] ?? '';
   return raw.trim().split(/\s+/)[1] ?? '';
@@ -201,7 +225,7 @@ function dockerfileFetchTokens(root: string): Universe | null {
     .join('\n');
   if (!blob) return null;
   const names = new Set(
-    blockeredEntries(path.join(root, '.unverified-download-allowlist'))
+    blockeredEntries(inputPath(root, '.unverified-download-allowlist'))
       .map((e) => e.entry.trim())
       .filter((t) => blob.includes(t))
   );
@@ -264,7 +288,7 @@ const listProbe = (
   file,
   tier: 'fail',
   minUniverse,
-  entries: (root) => blockeredEntries(path.join(root, file)),
+  entries: (root) => blockeredEntries(inputPath(root, file)),
   universe,
   why,
   fix: (entry, e) => fix(entry, e.line),
@@ -366,7 +390,7 @@ const PROBES: Probe[] = [
     file: '.cli-i18n-orphan-allowlist',
     tier: 'fail',
     minUniverse: 50,
-    entries: (root) => blockeredEntries(path.join(root, '.cli-i18n-orphan-allowlist')),
+    entries: (root) => blockeredEntries(inputPath(root, '.cli-i18n-orphan-allowlist')),
     // Entries are key PREFIXES, so exact matching would condemn every one.
     isLive: (entry, u) => {
       for (const leaf of u.names) if (leaf.startsWith(entry)) return true;
@@ -409,7 +433,7 @@ const PROBES: Probe[] = [
     // shell tree is missing. A count floor would be the rejected ratio guard,
     // and every entry CAN legitimately go stale at once.
     minUniverse: 0,
-    entries: (root) => blockeredEntries(path.join(root, '.dead-bash-allowlist')),
+    entries: (root) => blockeredEntries(inputPath(root, '.dead-bash-allowlist')),
     universe: (root) => {
       if (!fs.existsSync(path.join(root, '.ci'))) return null;
       // A glob: root is live if the directory still exists; a dispatch: prefix
@@ -478,7 +502,7 @@ const PROBES: Probe[] = [
     // first-token rule would read "ci-only" as the entry. Split it off here;
     // the BLOCKER association and validation stay with the shared parser.
     entries: (root) =>
-      blockeredEntries(path.join(root, '.ci-parity-exempt')).map((e) => ({
+      blockeredEntries(inputPath(root, '.ci-parity-exempt')).map((e) => ({
         ...e,
         entry:
           e.entry === 'ci-only' || e.entry === 'local-only'
@@ -606,6 +630,170 @@ const PROBES: Probe[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Per-probe input floors
+// ---------------------------------------------------------------------------
+//
+// WHY TOTALS ARE NOT ENOUGH. isVacuous() in scripts/lib/suppression-liveness.ts
+// keys on entriesChecked === 0 across the WHOLE run. That catches a run which
+// asserted nothing at all, and misses the failure that actually happens: ONE
+// list going empty while the other eleven stay full. The total stays healthy,
+// the report still says "every suppression entry is still load-bearing", and the
+// probe over the emptied list has silently stopped being a check.
+//
+// The way that happens is not somebody deleting a file on purpose. It is a
+// reader looking in the wrong place -- the exact hazard the .ci/policy/ move
+// creates, since every mechanism here treats "file not found" as "zero entries",
+// which is indistinguishable from "nothing is suppressed".
+//
+// So there are two floors per probe, and they catch the two different shapes:
+//
+//   PRESENCE. The probe's declared file must EXIST. A file that has moved away
+//   from where its probe looks is caught here, whatever its contents were.
+//
+//   ENTRIES. If the file exists, it must yield at least minEntries entries. A
+//   list emptied IN PLACE -- truncated, or its entries commented out by a bad
+//   edit -- is caught here.
+//
+// minEntries is 1 for every probe whose list carries entries, and 0 for the
+// three that are DELIBERATELY empty. That zero is a policy statement ("this
+// list is allowed to hold nothing"), not a hand-typed population count, so it
+// does not fall foul of the corpus-derived-floors rule: no floor here goes red
+// when a list legitimately shrinks, only when it stops being readable at all.
+// Measured 2026-09-06: 12 probes, 87 entries.
+
+interface ProbeInputFloor {
+  /** Smallest entry count that makes this probe's verdict mean anything. */
+  minEntries: number;
+  /** Required when minEntries is 0: why holding nothing is the correct state. */
+  emptyIsCorrect?: string;
+}
+
+const PROBE_INPUT_FLOORS: Record<string, ProbeInputFloor> = {
+  deps: { minEntries: 1 },
+  'go-deps': { minEntries: 1 },
+  'embed-assets': {
+    minEntries: 0,
+    emptyIsCorrect:
+      'the file says "Empty by default -- nothing is held; every pin tracks upstream"; an entry here holds a renet-embedded binary back',
+  },
+  'devcontainer-pins': {
+    minEntries: 0,
+    emptyIsCorrect:
+      'same shape as embed-assets: every devcontainer pin tracks upstream unless something is genuinely broken',
+  },
+  'unverified-downloads': { minEntries: 1 },
+  actions: {
+    minEntries: 0,
+    emptyIsCorrect:
+      'no action is currently held back from auto-upgrade; the file carries its format comment and nothing else',
+  },
+  'templates-skiplist': { minEntries: 1 },
+  'cli-i18n-orphan': { minEntries: 1 },
+  'dead-bash-allowlist': { minEntries: 1 },
+  'parity-exempt': { minEntries: 1 },
+  'content-quality': { minEntries: 1 },
+  overrides: {
+    minEntries: 0,
+    emptyIsCorrect:
+      'the "file" here is package.json and its entries are the `overrides` keys, which a healthy repository is entitled to hold none of. An emptied overrides block is a package.json edit, visible in review and in the lockfile diff, not a suppression file quietly going missing -- and this probe is warn-tier, so it condemns nothing on its own',
+  },
+};
+
+/**
+ * Is `root` a full checkout of this repository, rather than a test fixture?
+ *
+ * The PRESENCE floor cannot run against a fixture: the gate's own test suite
+ * builds minimal roots that carry one or two suppression files on purpose, and
+ * failing them for the other fourteen would be asserting that a fixture must be
+ * a whole repository. So presence is enforced only where absence is genuinely a
+ * defect.
+ *
+ * Three markers, from three different subtrees, all of which the real root has
+ * and no fixture in this repo has: .ci/scripts/test/gates/test-suppression-liveness.sh
+ * builds roots with package.json and .github but no `.ci`, and
+ * test-gate-anti-vacuity.sh builds one with `.ci/scripts` and `scripts` but no
+ * package.json and no `.github`. Neither is full, both for a different reason,
+ * which is what keeps this predicate from being satisfiable by accident.
+ *
+ * A fixture that ever DOES look full gets the floor applied to it and fails
+ * loudly, which is the safe direction: the alternative is a floor that quietly
+ * stops applying to the real tree too.
+ */
+function isFullCheckout(root: string): boolean {
+  return (
+    fs.existsSync(path.join(root, 'package.json')) &&
+    fs.existsSync(path.join(root, '.ci', 'scripts', 'quality')) &&
+    fs.existsSync(path.join(root, '.github', 'workflows'))
+  );
+}
+
+interface ProbeInput {
+  probe: string;
+  file: string;
+  exists: boolean;
+  entries: number;
+  floor: number;
+  status: 'checked' | 'empty-by-design' | 'starved' | 'file-missing';
+}
+
+/** Measure every probe's input and judge it against its floor. */
+function measureProbeInputs(probes: Probe[], root: string): ProbeInput[] {
+  const full = isFullCheckout(root);
+  return probes.map((probe) => {
+    const floor = PROBE_INPUT_FLOORS[probe.id];
+    if (!floor) {
+      // A probe with no declared floor is a registration the author forgot, and
+      // it is exactly the probe that would then be free to check nothing. Treat
+      // an undeclared probe as requiring at least one entry rather than as
+      // exempt: silence is never the safe default here.
+      throw new Error(
+        `probe "${probe.id}" has no entry in PROBE_INPUT_FLOORS. Declare its minEntries ` +
+          `(and, if 0, why holding nothing is the correct state) in scripts/check-suppression-liveness.ts.`
+      );
+    }
+    const abs = inputPath(root, probe.file);
+    const exists = fs.existsSync(abs);
+    const entries = probe.entries(root).length;
+
+    let status: ProbeInput['status'];
+    if (!exists) {
+      status = full ? 'file-missing' : 'checked';
+    } else if (entries < floor.minEntries) {
+      status = 'starved';
+    } else if (entries === 0) {
+      status = 'empty-by-design';
+    } else {
+      status = 'checked';
+    }
+    return { probe: probe.id, file: probe.file, exists, entries, floor: floor.minEntries, status };
+  });
+}
+
+/** The per-probe inventory block. Deliberately free of the string "FAIL": the
+ *  verdict belongs in the findings, this is the input census. */
+function formatProbeInputs(inputs: ProbeInput[]): string {
+  const out: string[] = ['Per-probe inputs', '-'.repeat(60)];
+  const width = Math.max(...inputs.map((i) => i.probe.length));
+  for (const i of inputs) {
+    const label =
+      i.status === 'file-missing'
+        ? 'MISSING FILE'
+        : i.status === 'starved'
+          ? 'BELOW FLOOR'
+          : i.status === 'empty-by-design'
+            ? 'empty by design'
+            : 'ok';
+    out.push(
+      `  ${i.probe.padEnd(width)}  ${String(i.entries).padStart(3)} entries  floor ${i.floor}  ${label}  ${i.file}`
+    );
+  }
+  const total = inputs.reduce((n, i) => n + i.entries, 0);
+  out.push(`  ${inputs.length} probe(s), ${total} entr(ies) declared across their files`);
+  out.push('');
+  return out.join('\n');
+}
+
+// ---------------------------------------------------------------------------
 
 function main(): void {
   const args = process.argv.slice(2);
@@ -648,6 +836,38 @@ function main(): void {
     (f) => !(f.probe === 'overrides' && preventive.has(f.entry))
   );
 
+  // Per-probe input floors. Measured BEFORE the findings are rendered so the
+  // census is visible even on a run that then fails for a stale entry.
+  const probeInputs = measureProbeInputs(probes, CONSOLE_ROOT);
+  for (const i of probeInputs) {
+    if (i.status === 'file-missing') {
+      result.findings.push({
+        probe: i.probe,
+        file: i.file,
+        entry: '(the file itself)',
+        line: 1,
+        tier: 'fail',
+        why: `the "${i.probe}" probe's suppression file is not at ${i.file}, so it parsed zero entries and asserted nothing. In this repo an unreadable suppression file is indistinguishable from an empty one, which reads as "nothing is suppressed" -- the probe has stopped being a check rather than reporting a clean list.`,
+        fix: [
+          `if the file moved, point the probe at its new location (scripts/lib/policy-paths.ts is the seam for that)`,
+          `if the mechanism is genuinely gone, delete its probe from scripts/check-suppression-liveness.ts and its row from PROBE_INPUT_FLOORS`,
+        ],
+      });
+    } else if (i.status === 'starved') {
+      result.findings.push({
+        probe: i.probe,
+        file: i.file,
+        entry: '(the whole list)',
+        line: 1,
+        tier: 'fail',
+        why: `the "${i.probe}" probe parsed ${i.entries} entr(ies) from ${i.file}; its floor is ${i.floor}. An emptied list makes this probe silent while the run's totals stay healthy on the other probes -- the exact hiding place per-probe floors exist to close.`,
+        fix: [
+          `restore the entries, or -- if the list is now legitimately empty -- set its minEntries to 0 in PROBE_INPUT_FLOORS with an emptyIsCorrect reason saying why holding nothing is right`,
+        ],
+      });
+    }
+  }
+
   // Cross-cutting: a `# BLOCKER:` reason with no entries beneath it. Not
   // dangerous, but it documents a suppression that is not actually in force —
   // and verifyAllBlockers() cannot see it, because it walks entries.
@@ -664,7 +884,7 @@ function main(): void {
     '.ci/config/directive-quotes-allowlist.txt',
   ];
   for (const rel of BLOCKER_FILES) {
-    for (const o of findOrphanedBlockers(path.join(CONSOLE_ROOT, rel), rel)) {
+    for (const o of findOrphanedBlockers(inputPath(CONSOLE_ROOT, rel), rel)) {
       result.findings.push({
         probe: 'orphaned-blocker',
         file: o.file,
@@ -680,8 +900,11 @@ function main(): void {
   }
 
   if (jsonMode) {
-    console.log(JSON.stringify({ ...result, vacuous: isVacuous(result, probes.length) }, null, 2));
+    console.log(
+      JSON.stringify({ ...result, probeInputs, vacuous: isVacuous(result, probes.length) }, null, 2)
+    );
   } else {
+    console.log(formatProbeInputs(probeInputs));
     console.log(formatReport(result, { ci: process.env.CI === 'true' }));
   }
 

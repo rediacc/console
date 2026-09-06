@@ -28,6 +28,13 @@
  * need a 67-second astro build to answer a question the source already answers.
  * It also cannot know a command is retired unless RETIRED lists it: this is a
  * manifest, and a retirement that does not add its pattern here is not covered.
+ *
+ * ---- gate ----
+ * step: Retired commands in docs
+ * needs: node
+ * id: check:ci-retired-commands
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import { execFileSync } from 'node:child_process';

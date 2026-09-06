@@ -29,6 +29,12 @@ PATTERN SEMANTICS, matching GitHub's own: `owner/*`, `owner/repo`, and `owner/re
 An `@ref` pattern is EXACT on the ref, which is why allowing
 `bitwarden/sm-action@<sha>` rather than `bitwarden/*` makes a pin bump a two-place
 change -- deliberate, and stated in the composite's header beside the pin.
+
+---- gate ----
+step: Actions allowlist
+needs: none
+selftest: true
+---- end gate ----
 """
 
 from __future__ import annotations

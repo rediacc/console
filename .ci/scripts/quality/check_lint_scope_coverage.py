@@ -30,6 +30,16 @@ about code -- both were code no rule ever looked at.
      eslint FILE PATHS directly and so only ever measured config-level
      `ignores` -- the root list was the one part of lint scope it did not read.
 
+  4. A SHARD THAT DROPS A ROOT. `check:lint` is one eslint process over every
+     root, which measured 171s and pinned one worker for the whole of it, so it
+     is split into four scripts run in parallel. That split is a NEW way to
+     commit failure 3: a shard is a place a root can be deleted from, and a gate
+     that still believed the single old root list would report full coverage
+     while eslint stopped looking at a package. So the root list is followed
+     THROUGH the `npm run` links rather than read off one script -- see
+     script_roots(). The shard names are deliberately not written down here; a
+     fifth shard registers itself simply by being linked.
+
 Both are the same shape as the dead i18n rules: the instrument reports success
 because it never examined anything. check_lint_rule_liveness.py proves an
 ENABLED RULE can fire; this proves the FILES reach a rule at all.
@@ -38,13 +48,22 @@ WHAT IT DOES NOT DO. It does not judge whether a file's rules are the right
 rules -- only that some linter sees it. A file linted by a config that happens
 to enable nothing would pass here and be caught by the liveness gate instead.
 The two are complements and neither subsumes the other.
+
+---- gate ----
+step: Every source file reaches a linter
+needs: submodules
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import argparse
 import json
 import pathlib
+import re
 import subprocess
 import sys
+import typing
 
 # Extensions a linter is expected to cover, and the tool responsible.
 JS_EXT = (".js", ".jsx", ".cjs", ".mjs", ".ts", ".tsx")
@@ -81,15 +100,25 @@ ESLINT_EXEMPT_EXACT = {
     ),
 }
 
-# The npm scripts that carry eslint's ROOT LIST. All three must agree: widening
-# check:lint while `lint` and `fix:lint` keep the old list gives a developer a
-# clean local run over a narrower tree than CI enforces, which is the same
-# invisible-scope failure one script down.
+# The npm scripts that carry eslint's ROOT LIST. All three must agree about the
+# FILES they reach: widening check:lint while `lint` and `fix:lint` keep the old
+# list gives a developer a clean local run over a narrower tree than CI enforces,
+# which is the same invisible-scope failure one script down.
 LINT_ROOT_SCRIPTS = ("check:lint", "fix:lint", "lint")
+
+# The one of them CI runs. Its roots are the authority; the other two are compared
+# against it, because a developer script that is NARROWER than CI is the failure
+# and a developer script that is WIDER is a different one (a clean local run over
+# files CI never lints is still a lie about scope).
+LINT_CI_SCRIPT = "check:lint"
 
 # The wrapper the roots are positional arguments to. Its first argument is a heap
 # size in MB, so the roots begin two tokens later.
 ESLINT_RUNNER = "eslint-heap.sh"
+
+# `npm run <key>` inside a lint script. See script_roots() for why the links are
+# followed rather than treated as opaque.
+NPM_RUN = re.compile(r"\bnpm\s+run\s+([^\s&|;]+)")
 
 # Roots whose load-bearingness this gate CANNOT measure, each with the reason.
 # Same contract as ESLINT_EXEMPT: an entry is a reviewable claim, not a waiver.
@@ -153,17 +182,86 @@ def eslint_ignored(root, paths):
     return ignored
 
 
+class LintScope(typing.NamedTuple):
+    """What one lint script points eslint at, after following its `npm run` links."""
+
+    #: every positional root, first-seen order, deduped
+    roots: list
+    #: how many eslint invocations were reached. 0 means the script lints nothing.
+    calls: int
+    #: `npm run` links naming a script package.json does not define
+    dangling: list
+    #: the script keys walked to get here, for the error messages
+    chain: list
+
+
+def segment_roots(segment):
+    """The positional roots one `&&`-segment hands to eslint-heap.sh."""
+    tokens = segment.split()
+    start = next(i for i, t in enumerate(tokens) if ESLINT_RUNNER in t) + 2
+    roots = []
+    for token in tokens[start:]:
+        if token.startswith("-"):
+            break
+        roots.append(token)
+    return roots
+
+
+def script_roots(scripts, name, seen=None):
+    """Every eslint root `npm run <name>` ultimately reaches, following `npm run` links.
+
+    PARSED, NOT DUPLICATED, and TRANSITIVE for the same reason. A hard-coded copy
+    of the root list here would be a second source of truth that drifts from the
+    scripts it claims to describe, and a gate comparing its own constant against
+    itself proves nothing about what eslint actually runs over. A hard-coded list
+    of SHARD NAMES is the same mistake one level up: `check:lint` is an aggregate
+    of four sharded scripts, and naming those four here would mean a fifth shard
+    lints files this gate never counts, silently, which is failure 3 in the
+    docstring wearing a different hat. So the links are followed instead, and the
+    question stays the only one that matters: what is eslint actually pointed at.
+
+    A cycle contributes nothing and is not an error here -- npm itself would spin
+    forever on it, so it is not a scope failure this gate can usefully report.
+
+    Returns a LintScope, or None when `name` is not a script at all.
+    """
+    if seen is None:
+        seen = set()
+    if name in seen:
+        return LintScope([], 0, [], [])
+    seen.add(name)
+    body = scripts.get(name)
+    if body is None:
+        return None
+    roots, calls, dangling, chain = [], 0, [], [name]
+    for segment in body.split("&&"):
+        # The eslint call is one `&&`-joined segment; the rest of the script may be
+        # biome, whose scope is biome.json's allowlist and not these arguments, or
+        # a link to another script, which is followed.
+        if ESLINT_RUNNER in segment:
+            calls += 1
+            roots.extend(segment_roots(segment))
+            continue
+        link = NPM_RUN.search(segment)
+        if link is None:
+            continue
+        sub = script_roots(scripts, link.group(1), seen)
+        if sub is None:
+            dangling.append(link.group(1))
+            continue
+        roots.extend(sub.roots)
+        calls += sub.calls
+        dangling.extend(sub.dangling)
+        chain.extend(sub.chain)
+    return LintScope(list(dict.fromkeys(roots)), calls, dangling, chain)
+
+
 def lint_roots(root):
-    """The positional roots each lint script hands to eslint, parsed from package.json.
+    """{script name: LintScope} for the three lint scripts, parsed from package.json.
 
-    PARSED, NOT DUPLICATED. A hard-coded copy of the root list here would be a
-    second source of truth that drifts from the scripts it claims to describe,
-    and a gate comparing its own constant against itself proves nothing about
-    what eslint actually runs over.
-
-    Returns {script name: [roots]}, or None when package.json cannot be read at
-    all -- which is refused rather than treated as "no roots", because an empty
-    list would make every file look uncovered and blame the wrong thing.
+    Returns None when package.json cannot be read at all -- which is refused rather
+    than treated as "no roots", because an empty list would make every file look
+    uncovered and blame the wrong thing.
     """
     try:
         scripts = json.loads((root / "package.json").read_text())["scripts"]
@@ -171,23 +269,88 @@ def lint_roots(root):
         return None
     found = {}
     for name in LINT_ROOT_SCRIPTS:
-        body = scripts.get(name)
-        if body is None:
+        scope = script_roots(scripts, name)
+        if scope is None or scope.calls == 0:
             continue
-        # The eslint call is one `&&`-joined segment; the rest of the script is
-        # biome, whose scope is biome.json's allowlist and not these arguments.
-        segment = next((seg for seg in body.split("&&") if ESLINT_RUNNER in seg), None)
-        if segment is None:
-            continue
-        tokens = segment.split()
-        start = next(i for i, t in enumerate(tokens) if ESLINT_RUNNER in t) + 2
-        roots = []
-        for token in tokens[start:]:
-            if token.startswith("-"):
-                break
-            roots.append(token)
-        found[name] = roots
+        found[name] = scope
     return found
+
+
+def covers(candidates, some_roots):
+    """The candidate files a root list reaches."""
+    return {p for p in candidates if any(p == r or p.startswith(r + "/") for r in some_roots)}
+
+
+def unmeasured(candidates, some_roots):
+    """The roots that reach no tracked candidate, so coverage cannot speak for them."""
+    return {r for r in some_roots if not covers(candidates, [r])}
+
+
+def scope_disagreements(by_script, roots, candidates):
+    """Lines explaining how the lint scripts differ in SCOPE, or [] when they do not.
+
+    THE THREE MUST REACH THE SAME FILES, which is not the same as passing the same
+    LIST. `check:lint` is sharded into four scripts whose roots are packages/cli,
+    packages/www and so on, while `lint` and `fix:lint` stay unsharded and pass
+    `packages`. Different strings, identical scope. String equality would red on
+    that refinement while still missing the failure that matters -- a shard whose
+    roots stop reaching files CI lints -- so this compares COVERAGE over the tracked
+    candidates, plus set-equality on the roots coverage cannot speak for. That second
+    half is not decoration: a submodule root contributes no tracked file here, so
+    dropping it from one script only would otherwise be invisible.
+
+    ONE FUNCTION, TWO CALLERS, for the same reason uncovered_by() has one: the
+    direction tests drive exactly the code the verdict comes from, not a lookalike.
+    """
+    out = []
+    ci_covers = covers(candidates, roots)
+    ci_unmeasured = unmeasured(candidates, roots)
+    for name in LINT_ROOT_SCRIPTS:
+        if name == LINT_CI_SCRIPT:
+            continue
+        other = by_script[name].roots
+        other_covers = covers(candidates, other)
+        other_unmeasured = unmeasured(candidates, other)
+        only_ci = ci_covers - other_covers
+        only_other = other_covers - ci_covers
+        only_ci_um = ci_unmeasured - other_unmeasured
+        only_other_um = other_unmeasured - ci_unmeasured
+        if not (only_ci or only_other or only_ci_um or only_other_um):
+            continue
+        out.append("the lint scripts disagree about which files eslint sees:")
+        for label in LINT_ROOT_SCRIPTS:
+            scope = by_script[label]
+            via = "" if not scope.chain[1:] else "   (via %s)" % ", ".join(scope.chain[1:])
+            out.append("    %-16s %s%s" % (label, " ".join(scope.roots), via))
+        for title, files in (
+            ("%s lints, %s does not" % (LINT_CI_SCRIPT, name), sorted(only_ci)),
+            ("%s lints, %s does not" % (name, LINT_CI_SCRIPT), sorted(only_other)),
+        ):
+            if not files:
+                continue
+            out.append("")
+            out.append("  %d file(s) %s:" % (len(files), title))
+            out.extend("    %s" % path for path in files[:20])
+            if len(files) > 20:
+                out.append("    ... and %d more" % (len(files) - 20))
+        for title, missed in (
+            ("only %s passes" % LINT_CI_SCRIPT, sorted(only_ci_um)),
+            ("only %s passes" % name, sorted(only_other_um)),
+        ):
+            if not missed:
+                continue
+            out.append("")
+            out.append(
+                "  root(s) %s, and no tracked file here can speak for them: %s"
+                % (title, " ".join(missed))
+            )
+        out.append("")
+        out.append(
+            "  All of %s must reach the SAME files. Widening one alone gives a clean\n"
+            "  local run over a tree CI lints more of." % ", ".join(LINT_ROOT_SCRIPTS)
+        )
+        return out
+    return out
 
 
 def uncovered_by(paths, roots):
@@ -303,27 +466,26 @@ def main(argv=None):
     if missing:
         print(
             "no eslint root list found in package.json script(s): %s\n"
-            "  Either the script was renamed or it stopped invoking %s. Until this\n"
-            "  parses, nothing below can speak for eslint's scope."
-            % (", ".join(missing), ESLINT_RUNNER),
+            "  Either the script was renamed, or it stopped invoking %s -- directly or\n"
+            "  through the `npm run` links this gate follows. Until this parses, nothing\n"
+            "  below can speak for eslint's scope." % (", ".join(missing), ESLINT_RUNNER),
             file=sys.stderr,
         )
         return 1
 
-    # All three must agree, or a developer's `npm run lint` covers a narrower tree
-    # than CI's `check:lint` enforces and passes locally on code CI will reject.
-    distinct = {tuple(r) for r in by_script.values()}
-    if len(distinct) != 1:
-        print("the lint scripts disagree about eslint's roots:", file=sys.stderr)
-        for name in LINT_ROOT_SCRIPTS:
-            print("    %-12s %s" % (name, " ".join(by_script[name])), file=sys.stderr)
+    dangling = sorted({d for scope in by_script.values() for d in scope.dangling})
+    if dangling:
         print(
-            "\n  All of %s must pass the SAME roots. Widening one alone gives a clean\n"
-            "  local run over a tree CI lints more of." % ", ".join(LINT_ROOT_SCRIPTS),
+            "a lint script links to %d npm script(s) package.json does not define: %s\n"
+            "  The link contributes no eslint roots, so the scope measured below is a\n"
+            "  subset of what the script MEANT to lint -- and `npm run` would fail on it\n"
+            "  anyway. Fix the name rather than reading the numbers below."
+            % (len(dangling), ", ".join(dangling)),
             file=sys.stderr,
         )
         return 1
-    roots = list(distinct.pop())
+
+    roots = by_script[LINT_CI_SCRIPT].roots
 
     # VACUITY: no roots at all would make every file "uncovered" and report a
     # scope catastrophe when the truth is that the parse failed.
@@ -333,6 +495,12 @@ def main(argv=None):
             "  be given no paths at all, so the coverage numbers below are meaningless.",
             file=sys.stderr,
         )
+        return 1
+
+    findings = scope_disagreements(by_script, roots, candidates)
+    if findings:
+        for line in findings:
+            print(line, file=sys.stderr)
         return 1
 
     outside = uncovered_by(candidates, roots)
@@ -378,9 +546,17 @@ def main(argv=None):
         return 1
 
     proven = [r for r in roots if r not in ROOT_UNMEASURABLE]
+    shards = by_script[LINT_CI_SCRIPT].chain[1:]
+    via = ""
+    if shards:
+        via = "\n  %s reaches them through %d shard(s): %s" % (
+            LINT_CI_SCRIPT,
+            len(shards),
+            " ".join(shards),
+        )
     print(
         "%d eslint root(s) cover every tracked file; %d proven load-bearing by the\n"
-        "  drop-one mutant (%s)" % (len(roots), len(proven), " ".join(proven))
+        "  drop-one mutant (%s)%s" % (len(roots), len(proven), " ".join(proven), via)
     )
 
     # ---- the real scan ------------------------------------------------------

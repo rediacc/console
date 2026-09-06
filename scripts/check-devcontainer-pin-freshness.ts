@@ -48,6 +48,13 @@
  * Exit codes: 0 = fresh / deferred / held / could-not-check; 1 = a confirmed
  * stale pin, a malformed blocklist entry, or an --upgrade that could not resolve
  * every digest it needed.
+ *
+ * ---- gate ----
+ * step: Check devcontainer pin upstream freshness
+ * needs: node
+ * id: check:ci-devcontainer-pins
+ * lane: quality-go
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

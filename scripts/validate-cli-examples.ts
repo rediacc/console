@@ -6,6 +6,12 @@
  * This script covers: CLAUDE.md, skill files, CLI help text, i18n locales, Go source, and other docs.
  *
  * Usage: npx tsx scripts/validate-cli-examples.ts
+ *
+ * ---- gate ----
+ * step: CLI examples
+ * needs: node, submodules
+ * id: check:cli-examples
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

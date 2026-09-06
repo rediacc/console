@@ -31,6 +31,11 @@
  *
  * Control-first: every run first proves the detector on a synthetic leg that
  * neither side implements, and refuses to pass on an empty scan.
+ *
+ * ---- gate ----
+ * step: Backup protocol conformance
+ * needs: node, submodules
+ * ---- end gate ----
  */
 
 import { readFileSync } from 'node:fs';

@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Check config-migration runner + fixtures
+# needs: node
+# selftest: true
+# lane: quality-packages
+# ---- end gate ----
+
 # Verify the config-migration runner round-trips every committed fixture
 # through runMigrations() + RdcConfigSchema.parse() without error, and
 # that every version gap in [1..CURRENT_SCHEMA_VERSION-1] has a

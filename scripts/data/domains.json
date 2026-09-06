@@ -1,0 +1,240 @@
+{
+  "$comment": [
+    "THE PARTITION for the scripts/ reorganisation (workstream W9, phase P0).",
+    "",
+    "WHY IT EXISTS. Driver contract section 5d records a collision that is invisible",
+    "until both halves land: W7 relocates 23 JS and TS files out of .ci so that tree",
+    "becomes single-language, and their natural home is scripts/, which is exactly",
+    "where W9 installs a set-equality layout gate. Whichever lands second turns the",
+    "other red. The agreed ordering is that W9 publishes this file FIRST, with a",
+    "declared home for every relocated family, and W7 then relocates INTO those homes.",
+    "",
+    "WHY IT IS PATTERNS AND NOT A FILE LIST, which is the whole design. An enumeration",
+    "of the 218 files tracked under scripts/ today is stale on the next commit, and",
+    "peers are writing into this tree right now: three files under scripts/ were",
+    "modified within sixty seconds of this file being drafted. A rule set classifies a",
+    "file that does not exist yet, an enumeration cannot, and driver contract section 6",
+    "already forbids hand-typed counts for exactly this reason.",
+    "",
+    "HOW A FILE ADDED AFTER THIS FILE WAS WRITTEN IS CLASSIFIED. Three tiers, and the",
+    "third is the one that matters:",
+    "",
+    "  1. Rules are tried IN ORDER and the FIRST match wins. Order is semantics here",
+    "     exactly as it is in .ci/scripts/ci/scope-map.cjs, so a rule inserted in the",
+    "     middle changes the answer for everything below it. Any mover states where",
+    "     its rule sits.",
+    "",
+    "  2. A file matching a rule belongs in that rule's `home`. When `home` equals the",
+    "     directory the file is already in, the rule is a STAYS declaration and the",
+    "     `stays` field carries the references that break if it moves anyway.",
+    "",
+    "  3. A file matching NO rule is `unclassified`, and unclassified is RED, never",
+    "     quietly fine. The layout gate names the file and refuses. That asymmetry is",
+    "     the point: forgetting to declare a new family is loud, while a wrong",
+    "     declaration is at least a decision somebody made. A partition whose default",
+    "     is 'accept' cannot tell a new family from a typo."
+  ],
+
+  "version": 1,
+  "generatedBy": "hand-written; scripts/lib/domains.ts is the reader and the classifier",
+  "onUnclassified": "error",
+
+  "rules": [
+    {
+      "id": "runner",
+      "paths": ["scripts/ci-runner/**"],
+      "home": "scripts/ci-runner",
+      "stays": true,
+      "why": "The ci-runner is the manifest's own home. manifest.ts carries 139 gate-path references and 409 id: literals, and driver contract section 3 gives it exactly one writer, the root driver's merge queue. Moving the directory would put a rename inside the one file the whole programme serialises on."
+    },
+    {
+      "id": "binder",
+      "paths": ["scripts/gate-bind.ts"],
+      "home": "scripts",
+      "stays": true,
+      "why": "W2 is sole owner (driver contract section 3). The binder also identifies itself by comparing process.argv[1] against its own import.meta.url at gate-bind.ts:1521, and its inScope test requires a path under .ci/scripts, scripts or .ci/rediacc_ci."
+    },
+    {
+      "id": "tests",
+      "paths": ["scripts/__tests__/**"],
+      "home": "scripts/__tests__",
+      "stays": true,
+      "why": "Control tests, invoked by name from package.json (for example check:ci-locale-currency and check:ci-embed-asset-freshness each append a scripts/__tests__/*.control.ts leg). Their paths are inside the package.json command strings the root driver owns."
+    },
+    {
+      "id": "data",
+      "paths": ["scripts/data/**"],
+      "home": "scripts/data",
+      "stays": true,
+      "why": "Baselines, seeds and content. Driver contract section 5d asked for the content files to be moved out to data/; the seven NIS2 directive .txt files (2.16 MB) and their manifests are ALREADY here, so that obligation is satisfied and must not be undone. scripts/data/enumeration-vacuity-baseline.json is the file P2 must not disturb: it is an object with a note and a single sorted `unguarded` array whose entries are gate paths, and a rename reads to that gate as growth rather than as a rename."
+    },
+    {
+      "id": "lib",
+      "paths": ["scripts/lib/**"],
+      "home": "scripts/lib",
+      "stays": true,
+      "why": "Shared modules imported by relative path from roughly 30 gates. scripts/lib/gate-header.ts and scripts/lib/policy-paths.ts are single-writer files (driver contract section 3), and scripts/utils/ merges INTO this directory (see mergeIn below), so this is a destination, not a source."
+    },
+    {
+      "id": "utils-merge-source",
+      "paths": ["scripts/utils/**"],
+      "home": "scripts/lib",
+      "stays": false,
+      "mergeInto": "lib",
+      "why": "Three modules (console.ts, crc32.ts, translation-diff.ts) that are `lib` by every criterion and sit in a second directory for no stated reason. 25 import sites plus one eslint.config.js glob.",
+      "blockedOn": "Mechanically safe and NOT safe to execute concurrently. Proven safe: scripts/tsconfig.json includes ./**/*.ts so typecheck coverage is unchanged by a move within scripts/, and scripts/lib/*.ts already lints clean today without an allowDefaultProject entry. Blocked because 22 of the 25 importing files were modified in the working tree by other sessions at the time of measurement, and driver contract section 4 makes the checkout itself a machine mutex. This is a single-writer edit for the P2 agent.",
+      "consumers": [
+        "eslint.config.js:328 allowDefaultProject entry 'scripts/utils/*.ts' becomes dead and must be dropped in the same change",
+        ".ci/scripts/quality/lint-rule-liveness.mjs:431 names the path in a comment only"
+      ]
+    },
+    {
+      "id": "drills",
+      "paths": ["scripts/drills/**"],
+      "home": "scripts/drills",
+      "stays": true,
+      "why": "The live VM drill batteries. This prefix is load-bearing in five places and two of them fail SILENTLY GREEN rather than red, which is why the directory is pinned rather than merely inconvenient to move.",
+      "breaksIfMoved": [
+        ".ci/scripts/ci/scope-map.cjs:233 matchPrefix('scripts/drills/') with full: 'harness'. A missed prefix downgrades CI scope, so a drill edit would classify reduced and skip the whole VM matrix.",
+        ".ci/scripts/ci/greenlight.cjs:421 lists 'scripts/drills' in the cache-key closure. A missed prefix reuses a stale green.",
+        ".ci/scripts/quality/check-probe-parity.sh:45 PROBE=\"scripts/drills/transfer.sh\", hard fail at :56.",
+        ".ci/scripts/quality/check-drill-verdicts.sh:44 DRILL_LIB=\"scripts/drills/lib.sh\", hard fail at :48.",
+        ".ci/scripts/quality/check-scope-scripts-reachability.sh:196 uses scripts/drills/lib.sh as its positive control.",
+        ".ci/scripts/test/gates/test-scope-engine.sh:699 golden expectation, and test-gate-anti-vacuity.sh:61 fixture subject."
+      ]
+    },
+    {
+      "id": "operator-bash",
+      "paths": ["scripts/dev/**", "scripts/docker/**", "scripts/backup-cutover-preflight.sh"],
+      "home": "scripts/ops",
+      "stays": false,
+      "why": "Operator-only tools: a human runs them by hand and no workflow, npm key, run.sh verb or gate invokes them. Surveyed 2026-09-06, ten are unambiguously operator-only (apply-cf-redirect-rules.sh, backup-d1.sh, bws-map-refresh.py, deploy-bench.sh, derive-shadow-pass-list.sh, linode-cluster-validation.sh, r2-oneshot-scrub.sh, reset-bench.sh, backup-cutover-preflight.sh, docker/build-server.sh) and four more are operator-run with a CI-side reader or test.",
+      "blockedOn": "Driver contract section 2, the `scripts/dev` ownership row: W8 deletes its dead script, W0 and W8 make their edits at the current path, THEN W9 moves the directory. Not before.",
+      "exceptions": [
+        "scripts/dev/lib/cf-auth.sh is sourced by three siblings and moves with them.",
+        "scripts/dev/worktree.sh is NOT operator-only: .ci/legacy/run-legacy.sh:1066 dispatches it and .ci/scripts/test/gates/test-worktree-devbox-teardown.sh:33 executes it as its SUT."
+      ],
+      "breaksIfMoved": [
+        ".ci/scripts/quality/check-silent-failure-patterns.sh:66 SCAN_DIRS=(\".ci/scripts\" \"scripts/dev\"). A missing directory makes find return nothing and the gate reports success over half its corpus. SILENTLY GREEN.",
+        ".ci/scripts/security/shfmt.sh:116 loops over `scripts/dev scripts/docker` guarded by [[ -d ]] at :117, so a moved directory silently stops being format-checked. SILENTLY GREEN.",
+        "scripts/check-worker-secret-names.ts:66 parses scripts/dev/deploy-bench.sh with a floor of 20.",
+        ".ci/scripts/quality/check_bws_map.py:121 reads scripts/dev/secret-rename.py as its rename oracle.",
+        ".ci/scripts/test/gates/test-scrub-sentinel-empty.sh:31 and :47, test-worktree-devbox-teardown.sh:33, test-bws-map.sh:33 and :51, test-vacuity-floors.sh:106 all name paths under scripts/dev.",
+        "Dockerfile:12 and :32 mention scripts/docker/build-server.sh in comments only, which is also the only thing keeping it out of check-dead-bash's findings."
+      ]
+    },
+    {
+      "id": "toolchain-bash",
+      "paths": ["scripts/eslint-heap.sh", "scripts/pre-commit-check.sh"],
+      "home": "scripts",
+      "stays": true,
+      "why": "Two shell scripts that are pinned by NAME somewhere outside scripts/.",
+      "breaksIfMoved": [
+        "scripts/eslint-heap.sh: three package.json keys (check:lint, fix:lint, lint) plus .ci/scripts/quality/check_lint_scope_coverage.py:99 ESLINT_RUNNER = \"eslint-heap.sh\", and it is a registered gate leaf at scripts/ci-runner/manifest.ts:90.",
+        "scripts/pre-commit-check.sh: .claude/hooks/pre-bash/block-protected-files.sh:30 hardcodes the literal path in its PROTECTED regex. It has zero npm keys and its real wiring lives in the operator's untracked local settings, per .dead-bash-allowlist:56."
+      ]
+    },
+    {
+      "id": "tsconfig",
+      "paths": ["scripts/tsconfig.json"],
+      "home": "scripts",
+      "stays": true,
+      "why": "Discovered by tsc at this path and by eslint's projectService walking up from scripts/**/*.ts. Under the driver contract's own .json predicate, a config a tool discovers at a fixed path and offers no configurable alternative for stays where the tool looks for it."
+    },
+    {
+      "id": "gates",
+      "paths": ["scripts/check-*.ts"],
+      "home": "scripts/gates",
+      "stays": false,
+      "why": "The TypeScript gate bodies. This is the bulk of the P2 move.",
+      "blockedOn": "Strictly serial, single writer. Every moved file changes a path string in package.json (132 gate-path references measured) and in scripts/ci-runner/manifest.ts (139), both of which driver contract section 3 gives to the root driver's merge queue, and a gate file and its registry entry must land in the SAME commit because the parity gate reads the battery from disk in both directions.",
+      "notes": [
+        "scripts/gate-bind.ts's inScope test accepts any path under `scripts`, so scripts/gates/ stays visible to the binder.",
+        "scripts/check-worker-secret-names.ts and scripts/check-dead-bash.ts hardcode paths of OTHER files; moving them changes nothing about those strings, but moving their subjects does."
+      ]
+    },
+    {
+      "id": "generators",
+      "paths": [
+        "scripts/gen-*.ts",
+        "scripts/generate-*.ts",
+        "scripts/sync-*.ts",
+        "scripts/fetch-*.ts",
+        "scripts/i18n-*.ts",
+        "scripts/validate-*.ts"
+      ],
+      "home": "scripts/gen",
+      "stays": false,
+      "why": "Files that WRITE artefacts rather than assert about them. Keeping them mixed in with 117 check-*.ts is the reason `scripts/` reads as a single undifferentiated pile.",
+      "blockedOn": "Same merge queue as `gates`. scripts/gen-docs.ts, scripts/gen-gates-lock.ts, scripts/lib/doc-providers.ts and scripts/lib/doc-regions.ts are W11 and W2 files under active concurrent edit; they move only once those workstreams have handed over."
+    },
+
+    {
+      "id": "incoming-ci-helpers",
+      "paths": [".ci/scripts/ci/*.cjs"],
+      "home": "scripts/ci",
+      "stays": false,
+      "owner": "W7",
+      "why": "Nine .cjs helpers W7 relocates so .ci becomes single-language: autopilot-guide-comment, greenlight, label-guide-comment, report-nightly-status, scope-engine, scope-map, skip-plan-reconcile, validate-pr, watchdog-monitor.",
+      "notes": [
+        "scope-map.cjs is a single-writer file (driver contract section 3) and rule ORDER inside it is semantics. It moves last of the nine, and whoever moves it states where its rules sit.",
+        "greenlight.cjs:421-423 lists 'scripts/drills', 'run.sh' and '.ci/legacy' in its own cache-key closure; relocating the file does not change those strings but relocating anything they name does."
+      ]
+    },
+    {
+      "id": "incoming-sea-inject",
+      "paths": [".ci/scripts/build/sea-inject/*.mjs"],
+      "home": "scripts/build/sea-inject",
+      "stays": false,
+      "owner": "W7",
+      "why": "The seven-module streaming SEA injector (cli, common, elf, index, macho, pe, verify). It replaced postject because postject could not inject a blob this large, see issue #525, so it is load-bearing for every release build."
+    },
+    {
+      "id": "incoming-docs-tooling",
+      "paths": [".ci/scripts/docs/*.mjs"],
+      "home": "scripts/docs",
+      "stays": false,
+      "owner": "W7",
+      "why": "compress-cast-idle.mjs and process-cast-markers.mjs, the tutorial cast post-processors."
+    },
+    {
+      "id": "incoming-autopilot",
+      "paths": [".ci/scripts/autopilot/*.cjs"],
+      "home": "scripts/autopilot",
+      "stays": false,
+      "owner": "W7",
+      "why": "exfil-tripwire.cjs and validate-handoff.cjs."
+    },
+    {
+      "id": "incoming-lint-driver",
+      "paths": [".ci/scripts/quality/lint-rule-liveness.mjs"],
+      "home": "scripts/lint",
+      "stays": false,
+      "owner": "W7",
+      "why": "The ESLint-JS-API driver behind check_lint_rule_liveness.py. Its Python entry point STAYS at .ci/scripts/quality/, because four places name that path: package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, and the anti-vacuity registry in .ci/scripts/test/gates/test-gate-anti-vacuity.sh. Driver contract section 5d's rule applies: the ENTRY POINT lives where the binder can see it, the logic may live anywhere.",
+      "notes": [
+        "Do NOT add the .mjs to manifest.ts's `leaves` list. check-ci-parity.ts:488-495 derives `leaves` from the package.json command's shell structure and reports the extra entry as a hygiene finding, and scope-map.cjs:134 already forces the full harness scope on any .ci edit."
+      ]
+    },
+    {
+      "id": "incoming-test-tooling",
+      "paths": [".ci/scripts/test/smoke-test-preview.ts"],
+      "home": "scripts/test",
+      "stays": false,
+      "owner": "W7",
+      "why": "The single .ts file under .ci/scripts. scripts/tsconfig.json already includes ../.ci/scripts/**/*.ts, so this file is type-checked today and stays type-checked after the move by the ./**/*.ts include."
+    },
+    {
+      "id": "ci-fixtures",
+      "paths": [".ci/tutorials/**"],
+      "home": ".ci/tutorials",
+      "stays": true,
+      "why": "heartbeat.mjs is a tutorial FIXTURE application, not tooling. It is the twenty-third file in W7's raw JS-and-TS count under .ci and it must not be relocated with the other twenty-two: it is content the tutorial harness runs, and .ci becoming single-language does not mean a fixture app stops being JavaScript."
+    }
+  ],
+
+  "openQuestions": [
+    "Driver contract section 5d says `scripts/domains.json`; this file is at `scripts/data/domains.json`. scripts/data/ is where every other scripts-owned JSON already lives (20 of them), and the contract's own .json predicate keeps a file at a fixed path only when a tool discovers it there. Nothing discovers this one, so data/ is the consistent home. The contract text should be corrected rather than this file moved.",
+    "Driver contract section 5d says scripts/ holds 28 tracked non-TypeScript files. Measured 2026-09-06 at ac817a647: 164 .ts, 24 .json, 19 .sh, 7 .txt, 2 .py, 2 .md, 218 total, so 54 are not TypeScript. The 28 is 19+2+7 and silently excludes the .json and .md files, which this partition has to classify too."
+  ]
+}

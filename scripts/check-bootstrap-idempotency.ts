@@ -30,6 +30,15 @@
  * ANTI-VACUITY. ensure_deps must exist, must itself contain the install, and
  * setup() must call it. If any of those is false the scan has lost its subject
  * and this fails loudly rather than printing a green nobody earned.
+ *
+ * ---- gate ----
+ * step: Bootstrap paths install through the dependency stamp
+ * needs: node
+ * selftest: true
+ * why: ./run.sh setup is run repeatedly, so a second run must do no work. This
+ *      asserts every bootstrap entry point installs through ensure_deps' hash
+ *      stamp rather than shelling out to npm itself.
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';
@@ -39,7 +48,13 @@ import { fileURLToPath } from 'node:url';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-export const SCANNED = ['run.sh', '.ci/lib/setup.sh'];
+// `setup()` LIVES IN THE LEGACY BODY, not the router. The 2026-09-06 split left
+// run.sh a 120-line dispatcher and moved every verb implementation to
+// .ci/legacy/run-legacy.sh; this gate read run.sh and reported "lost its subject",
+// which is the honest refusal working -- a scan whose subject moved must go red, not
+// pass on an empty file.
+export const ENTRY = '.ci/legacy/run-legacy.sh';
+export const SCANNED = [ENTRY, '.ci/lib/setup.sh'];
 export const HELPER_FILE = '.ci/lib/local-common.sh';
 export const HELPER = 'ensure_deps';
 
@@ -222,14 +237,14 @@ const main = (): number => {
   }
   // setup() is the entry point this gate was written for; if it stops calling
   // the helper the gate has lost its subject.
-  const runSrc = fs.readFileSync(path.join(REPO, 'run.sh'), 'utf8');
+  const runSrc = fs.readFileSync(path.join(REPO, ENTRY), 'utf8');
   const setupFn = shellFunctions(runSrc).find((f) => f.name === 'setup');
   if (!setupFn) {
-    console.error('✗ run.sh no longer defines setup(); this gate has lost its subject.');
+    console.error(`✗ ${ENTRY} no longer defines setup(); this gate has lost its subject.`);
     return 1;
   }
   if (!setupFn.body.some((l) => new RegExp(`\\b${HELPER}\\b`).test(l))) {
-    console.error(`✗ run.sh setup() does not call ${HELPER}.`);
+    console.error(`✗ ${ENTRY} setup() does not call ${HELPER}.`);
     console.error('  Every ./run.sh setup would then re-run npm and recompile native modules');
     console.error('  even when nothing changed. That is the defect this gate exists for.');
     return 1;

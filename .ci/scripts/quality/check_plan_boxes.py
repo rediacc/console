@@ -66,6 +66,13 @@ REGENERATE with `--update`. The ledger is committed, so a stale one is a red wit
 one-command fix, and the regeneration is what makes the base-vs-head comparison
 meaningful later: A1 reads the BASE ledger via `git show`, which no working tree can
 rewrite.
+
+---- gate ----
+step: Plan checkbox ledger
+needs: none
+selftest: true
+lane: quality-branch
+---- end gate ----
 """
 
 from __future__ import annotations

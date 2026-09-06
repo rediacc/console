@@ -39,6 +39,11 @@
  * Control-first: both extractors are proven on synthetic input before any
  * verdict, each builder has a per-file floor so a broken regex cannot read as
  * "nothing to check", and the failure control plants a renamed key.
+ *
+ * ---- gate ----
+ * step: Worker secret names
+ * needs: node, submodules
+ * ---- end gate ----
  */
 
 import { readFileSync } from 'node:fs';
@@ -59,7 +64,9 @@ const BUILDERS: { file: string; floor: number }[] = [
   { file: '.ci/scripts/deploy/set-www-worker-secrets.sh', floor: 15 },
   { file: '.ci/scripts/deploy/set-preview-worker-secrets.sh', floor: 10 },
   { file: 'scripts/dev/deploy-bench.sh', floor: 20 },
-  { file: 'run.sh', floor: 10 },
+  // The payload moved with the 2026-09-06 router split; run.sh is now a dispatcher
+  // that builds no secret object. The floor caught it, which is what the floor is for.
+  { file: '.ci/legacy/run-legacy.sh', floor: 10 },
 ];
 
 /** `        KEY: $var,` inside a `jq -n '{ ... }'` object — the payload shape. */

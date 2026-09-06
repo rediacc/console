@@ -48,6 +48,15 @@
  * here would bury a removal commit under an unrelated sweep. New findings fail
  * at zero. A baseline entry that no longer fires must be REMOVED, so the file
  * cannot rot into a permanent excuse.
+ *
+ * ---- gate ----
+ * step: CI scripts declare the binaries they execute
+ * needs: node
+ * selftest: true
+ * why: A .ci script must declare the non-baseline binaries it runs. An
+ *      undeclared one exits 127 with no message under `set -euo pipefail`, and
+ *      reads as working code on any host that happens to have it.
+ * ---- end gate ----
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';

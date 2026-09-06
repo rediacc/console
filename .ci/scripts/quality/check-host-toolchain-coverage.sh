@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Host toolchain runtime coverage
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+# needs: node
+# selftest: true
+# ---- end gate ----
+
 # Every pinned gate tool must have a RUNTIME guard, not just a definition.
 #
 # WHY THIS EXISTS. check-toolchain-pins.sh's A6 rule guarantees a GATE that

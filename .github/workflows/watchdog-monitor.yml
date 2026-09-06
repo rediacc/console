@@ -156,8 +156,20 @@ jobs:
           # this one exited 1 and run 33704079162 reported failure having
           # monitored NOTHING -- a scaffold switched off the thing that watches
           # every other CI run, and it read like the watchdog working.
-          # CLAUDE_CODE_OAUTH_TOKEN is repo-scoped and survives the org deletion,
-          # so this read is live, not empty.
+          # THIS READ IS EMPTY ON THIS REPO, corrected 2026-09-06. The line here used
+          # to say "repo-scoped and survives the org deletion, so this read is live,
+          # not empty". Measured:
+          #   gh api repos/rediacc/console/actions/secrets -q '.secrets[].name'
+          #     -> BREAKPOINT_TUNNEL_TOKEN, BWS_ACCESS_TOKEN
+          #   gh api orgs/rediacc/actions/secrets -q '.total_count'  -> 0
+          # CLAUDE_CODE_OAUTH_TOKEN is repo-scoped on renet/account/elite -- and this
+          # workflow runs on CONSOLE, where it does not exist. Tier 1
+          # (CLOUDFLARE_API_TOKEN) is already known-empty, so BOTH classifier tiers
+          # are dead and every CI failure falls through to the retry allowlist: the
+          # "judgment nobody made" the paragraph above says this provider exists to
+          # prevent. Fixing it is a decision, not an edit -- add the repo secret
+          # (operator-only) or find the different shape the paragraph above rules
+          # out -- so what lands here is the truth, not a workaround.
           ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         with:
           script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})

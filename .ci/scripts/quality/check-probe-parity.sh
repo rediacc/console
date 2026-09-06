@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Capability-probe parity
+# needs: none
+# selftest: true
+# ---- end gate ----
+
 # Parity gate: a capability probe must exercise the operations its CONSUMER
 # depends on — not a convenient subset of them.
 #

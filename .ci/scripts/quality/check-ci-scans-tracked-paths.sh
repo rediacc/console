@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 # CI CANNOT EXECUTE WHAT GIT DOES NOT TRACK.
 #
 # A GitHub runner checks out tracked files only. So a workflow step or a CI shell script

@@ -31,6 +31,12 @@ typo/rename/dropped-source produces exactly that shape.
 WHAT IT DOES NOT DO. It does not execute anything, and it follows sourcing ONE level
 (the guard's own file plus whatever it directly sources) -- the same honest scoping
 disclosure check_python_gate_deps.py makes for Python imports.
+
+---- gate ----
+step: Guard feature completeness
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import pathlib

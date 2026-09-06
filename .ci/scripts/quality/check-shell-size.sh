@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# step: Shell file size
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+# needs: none
+# selftest: true
+# lane: quality-code
+# ---- end gate ----
+
 # A SHELL FILE CAN GROW UNTIL IT KILLS THE LINTER, and nothing noticed.
 #
 # WHAT WENT WRONG, measured 2026-08-25: a shellcheck 0.10.0 run over 453 files
@@ -19,11 +28,19 @@
 # `# shellcheck extended-analysis=false` is an explicit, reviewable statement
 # that the author knows the file is big, so the gate accepts it.
 #
-# WHY THIS THRESHOLD. Measured on the tree the day this gate was written: the
-# largest shell file is run.sh at 2,418 lines, then a 2,373-line gate test. The
-# 5,000 limit therefore flags nothing today, sits >2x above the real maximum so
-# ordinary growth never trips it, and is <half the 11,955 that actually caused
-# the OOM -- it fires long before the failure it exists to prevent.
+# WHY THIS THRESHOLD. It was set against a measured maximum, and that maximum has
+# MOVED TWICE since, in opposite directions, which is why this paragraph no longer
+# names a file or a number. It used to read "the largest shell file is run.sh at
+# 2,418 lines": run.sh is now 120 lines (the 2026-09-06 router split moved its body
+# to .ci/legacy/run-legacy.sh), and the real maximum today is LARGER than the figure
+# that sentence offered as the historic peak. A threshold justified by a specific
+# file's size is a comment that goes wrong every time that file changes, and goes
+# wrong silently because nothing re-derives it.
+#
+# What is durable: 5,000 sits far above anything this tree has held and far below
+# the 11,955 that actually caused the OOM, so it fires long before the failure it
+# exists to prevent. To re-derive the current maximum:
+#     git ls-files '*.sh' | xargs wc -l | sort -n | tail -3
 #
 # WHAT THIS GATE CANNOT SEE: lines are a proxy. A 3,000-line file of pathological
 # nesting could still be expensive, and a 6,000-line file of flat `case` arms is

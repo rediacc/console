@@ -1,4 +1,11 @@
 #!/usr/bin/env tsx
+// ---- gate ----
+// step: Docker image freshness
+// needs: node
+// selftest: true
+// lane: quality-content
+// ---- end gate ----
+
 import { spawnSync } from 'node:child_process';
 /**
  * Container base images go stale like every other dependency, and nothing watched them.

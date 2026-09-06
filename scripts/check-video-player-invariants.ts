@@ -20,6 +20,13 @@
  * WHAT A GREEN HERE DOES NOT MEAN: nothing is rendered, measured or clicked. A picker
  * that is inside the frame in the DOM and invisible, mispositioned or unclickable passes
  * this gate.
+ *
+ * ---- gate ----
+ * step: Video player invariants
+ * needs: node
+ * selftest: true
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

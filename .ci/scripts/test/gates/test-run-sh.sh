@@ -15,22 +15,28 @@
 # either a dispatch assertion or a source-level invariant, so this runs in the
 # bare-checkout CI lane. What it deliberately does NOT do is run a real gate --
 # that is what the gates themselves are for.
+#
+# TWO FILES SINCE 2026-09-06. `./run.sh` is now a router and the body it used to
+# hold is `.ci/legacy/run-legacy.sh`. The distinction below is deliberate and it
+# matters in both directions:
+#
+#   $RUN  the router, and the thing a person or a workflow actually types. Every
+#         DISPATCH case drives this, because dispatch is what the split must not
+#         change: `./run.sh quality all` has to reach the same code it did before.
+#   $SRC  the legacy body, and the thing the SOURCE-LEVEL cases read. quality_all
+#         and fix_shell live there now; grepping the router for them would find
+#         nothing, and three of the controls in section 2 and 3 PASS on nothing
+#         found -- a vacuous green in the exact place this file exists to prevent
+#         one.
 
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 RUN="$ROOT/run.sh"
+SRC="$ROOT/.ci/legacy/run-legacy.sh"
 
-fails=0
-count=0
-ok() {
-    count=$((count + 1))
-    echo "PASS: $1"
-}
-no() {
-    count=$((count + 1))
-    fails=$((fails + 1))
-    echo "FAIL: $1" >&2
-}
+# The tally (`ok`, `no`, `tally_finish`) is shared. It lived here in triplicate
+# until 2026-09-06; test-helpers.sh carries why all three moved at once.
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/test-helpers.sh"
 exits() { # exits <label> <want> <args...>
     local label="$1" want="$2"
     shift 2
@@ -58,7 +64,7 @@ body() { # body <file> <function-name>  -> the function's body, comments strippe
     ' "$1"
 }
 
-QA="$(body "$RUN" quality_all)"
+QA="$(body "$SRC" quality_all)"
 # HERE-STRINGS, NOT `printf | grep -q`, and this cost a CI red (run 33432878128, job
 # 99628247967). `grep -q` exits the instant it matches; bash's builtin `printf` is then
 # left writing into a closed pipe, prints `printf: write error: Broken pipe` and returns
@@ -83,12 +89,12 @@ else
 fi
 
 # --- 3. fix and check must use the SAME binary -------------------------------
-if grep -A 12 '^fix_shell()' "$RUN" | grep -q 'toolchain_acquire shfmt'; then
+if grep -A 12 '^fix_shell()' "$SRC" | grep -q 'toolchain_acquire shfmt'; then
     ok "fix shell formats with the pinned binary, the one the gate verifies with"
 else
     no "fix shell takes shfmt from PATH; it can format into a state the gate rejects"
 fi
-if grep -A 20 '^fix_shell()' "$RUN" | grep -qE '^\s+(find [^|]*-exec |")shfmt'; then
+if grep -A 20 '^fix_shell()' "$SRC" | grep -qE '^\s+(find [^|]*-exec |")shfmt'; then
     no "CONTROL: fix_shell still calls a bare shfmt somewhere"
 else
     ok "CONTROL: no bare shfmt invocation survives in fix_shell"
@@ -119,14 +125,253 @@ else
     no "CONTROL: routing can fail silently, which is the failure this design exists to prevent"
 fi
 
-# --- 5. run.sh must be runnable at all ----------------------------------------
+# --- 5. both halves must be runnable at all -----------------------------------
+# The legacy file is checked too, and not as symmetry: the router `exec`s it, so
+# a legacy file that does not parse or has lost its +x bit fails on the FIRST
+# verb anybody types, with the router named in the error and not the file at
+# fault. That is also why the router prints the path when the exec target is
+# missing rather than letting bash say it.
 if bash -n "$RUN" 2>/dev/null; then ok "run.sh parses"; else no "run.sh does not parse"; fi
 if [[ -x "$RUN" ]]; then ok "run.sh is executable"; else no "run.sh is not executable"; fi
+if bash -n "$SRC" 2>/dev/null; then ok "the legacy body parses"; else no "the legacy body does not parse"; fi
+if [[ -x "$SRC" ]]; then ok "the legacy body is executable"; else no "the legacy body is not executable"; fi
 
-echo
-if [[ "$fails" -eq 0 ]]; then
-    echo "✓ run.sh: $count control(s) passed"
-    exit 0
+# --- 6. THE SPLIT IS A PARTITION OF THE DOCUMENTED VERB SET -------------------
+#
+# WHAT THIS IS FOR. `./run.sh <verb>` now has three possible destinations: the
+# media entry point, the `rediacc_ci` Python package, and the legacy body. Every
+# workstream in the tooling transformation moves verbs between them, and the two
+# ways that goes wrong are silent in opposite directions:
+#
+#   AN ORPHAN. A verb deleted from the legacy dispatcher and not added to
+#     PORTED_VERBS falls through to the legacy file's `*)` arm and reports
+#     "Unknown command" -- indistinguishable from a typo, on a verb that is
+#     documented three lines above in the same file's own help.
+#   AN OVERLAP. A verb left in BOTH is served by whichever the router reaches
+#     first, so the port appears to work while the code it was meant to replace
+#     is what actually ran. That is the failure the whole program is about.
+#
+# So the assertion is set equality plus disjointness, in both directions, against
+# `show_help` -- the one inventory a person reads.
+#
+# IT ALSO CATCHES WHAT WAS ALREADY WRONG, which is why it is worth having beyond
+# the split. On the day it was written the dispatcher served SEVEN subcommands
+# `show_help` did not mention (`account seed-demo`, `devbox url`, `devbox exec`,
+# `devbox doctor`, `quality actions`, `quality suppressions`, `quality dead-bash`)
+# and the per-verb `Usage:` strings were a THIRD inventory that agreed with
+# neither -- `Usage: ./run.sh account [...]` had never listed `db`, which
+# `show_help` has documented all along.
+#
+# SECOND LEVEL, NOT JUST TOP LEVEL. All seven of those are subcommands. A check
+# over top-level verbs alone finds nothing here and would have shipped green.
+
+# Case-nesting DEPTH decides the level, never indentation: the docker-group route
+# code contains an inner `case` whose arms sit at the same indent as a real
+# subcommand, and an indentation rule reports its numeric arms as verbs.
+arms_of() { # arms_of <file> -> "TOP <verb>" / "SUB <top>/<sub>"
+    awk '
+        /^main\(\) \{/ { inmain = 1; next }
+        !inmain { next }
+        /^\}/ { exit }
+        {
+            line = $0
+            sub(/^[ \t]+/, "", line)
+            if (line ~ /^#/) next
+            if (line ~ /^esac/) { depth--; next }
+            if (line ~ /(^|[ \t;])case[ \t].*[ \t]in([ \t]|$)/) { depth++; next }
+            if (depth < 1) next
+            if (line !~ /^[a-zA-Z0-9_"*-][a-zA-Z0-9_"*|. -]*\)/) next
+            arms = line
+            sub(/\).*$/, "", arms)
+            n = split(arms, parts, "|")
+            for (i = 1; i <= n; i++) {
+                v = parts[i]
+                gsub(/^[ \t]+|[ \t]+$/, "", v)
+                gsub(/"/, "", v)
+                # `*` is the fallback, `""` the bare-verb default, a leading `-` a
+                # flag alias of the verb beside it, a bare number an inner arm.
+                if (v == "" || v == "*" || v ~ /^-/ || v ~ /^[0-9]+$/) continue
+                if (depth == 1) { top = v; print "TOP " v }
+                else if (depth == 2 && top != "") print "SUB " top "/" v
+            }
+        }
+    ' "$1" | sort -u
+}
+
+# The signature is the part before the first run of TWO spaces. Splitting on a
+# single space reads the first word of the prose as a subcommand.
+documented_in() { # documented_in <file> -> "TOP <verb>" / "SUB <top>/<sub>"
+    awk '
+        /^show_help\(\) \{/ { inh = 1; next }
+        !inh { next }
+        /^EOF$/ { exit }
+        /^\}/ { exit }
+        /^  [a-z]/ {
+            line = $0
+            sub(/^  /, "", line)
+            sig = line
+            if (match(sig, /[ \t][ \t]+/)) sig = substr(sig, 1, RSTART - 1)
+            desc = substr(line, length(sig) + 1)
+            n = split(sig, w, /[ \t]+/)
+            top = w[1]
+            if (top !~ /^[a-z][a-z0-9-]*$/) next
+            print "TOP " top
+            if (n < 2) next
+            # `<cmd>` means "the subcommands are enumerated in the description",
+            # which is how devbox and worktree are written. Anything else in
+            # brackets is a PARAMETER (`<slug>`, `[opts]`), not a subcommand.
+            if (w[2] == "<cmd>") {
+                m = split(desc, parts, "\\|")
+                if (m < 2) next
+                for (i = 1; i <= m; i++) {
+                    v = parts[i]
+                    gsub(/^[ \t]+|[ \t]+$/, "", v)
+                    if (v ~ /^[a-z][a-z0-9-]*$/) print "SUB " top "/" v
+                }
+                next
+            }
+            if (w[2] ~ /^[a-z][a-z0-9-]*$/) print "SUB " top "/" w[2]
+        }
+    ' "$1" | sort -u
+}
+
+# Read the table, never a regex over it: `. "$1"` gives the array bash sees, so a
+# multi-line or commented entry cannot fool the parser. The BASH_SOURCE guard at
+# the end of the router means sourcing it runs nothing.
+ported_of() { # ported_of <router> -> one verb per line
+    (
+        . "$1" >/dev/null 2>&1
+        printf '%s\n' ${PORTED_VERBS[@]+"${PORTED_VERBS[@]}"}
+    ) | sed '/^$/d' | sort -u
+}
+
+# The per-verb `Usage:` string, with nested groups removed first -- `devbox`
+# writes `url [term|account|db]` inside its own list, and cutting at the first
+# `]` would take those three for subcommands and lose the seven that follow.
+usage_of() { # usage_of <file> <verb> -> one subcommand per line
+    grep -oE "Usage: \./run\.sh $2 \[.*" "$1" |
+        head -n 1 |
+        sed -e 's/^[^[]*\[//' -e 's/\[[^]]*\]//g' -e 's/\].*$//' |
+        tr '|' '\n' |
+        sed -e 's/^[ \t]*//' -e 's/[ \t]*$//' -e '/^$/d' |
+        sort -u
+}
+
+# One line per problem, empty when the split is a partition. A findings FUNCTION
+# rather than inline assertions, so the control below can drive the same code
+# against a deliberately broken copy -- an assertion that has never been seen to
+# fire is not yet evidence of anything.
+verb_findings() { # verb_findings <router> <legacy>
+    local router="$1" legacy="$2" v
+    local rt lt dt
+
+    rt="$( (
+        arms_of "$router" | sed -n 's/^TOP //p'
+        ported_of "$router"
+    ) | sort -u)"
+    lt="$(arms_of "$legacy" | sed -n 's/^TOP //p')"
+    dt="$(documented_in "$legacy" | sed -n 's/^TOP //p')"
+
+    # `sed '/^$/d'` on every side: an EMPTY set printed by printf is one blank
+    # line, not zero lines, so an empty half would otherwise be reported as a
+    # finding about a verb whose name is the empty string -- an instrument
+    # inventing a defect, which is worse than one missing a real one.
+    comm -12 <(printf '%s\n' "$rt" | sed '/^$/d') <(printf '%s\n' "$lt" | sed '/^$/d') | sed 's/^/overlap /'
+    comm -23 <(printf '%s\n' "$rt" "$lt" | sed '/^$/d' | sort -u) <(printf '%s\n' "$dt" | sed '/^$/d') | sed 's/^/dispatched-but-undocumented /'
+    comm -13 <(printf '%s\n' "$rt" "$lt" | sed '/^$/d' | sort -u) <(printf '%s\n' "$dt" | sed '/^$/d') | sed 's/^/documented-but-unreachable /'
+
+    # Second level, only for the verbs that OWN a nested case. `provision`, `www`,
+    # `rotation` and `worktree` delegate their whole subcommand tree to another
+    # program, so their documented subcommands are that program's inventory and
+    # not this file's -- demanding they appear as arms here would be wrong.
+    for v in $(arms_of "$legacy" | sed -n 's|^SUB \([a-z0-9-]*\)/.*|\1|p' | sort -u); do
+        comm -23 \
+            <(arms_of "$legacy" | sed -n "s|^SUB $v/||p") \
+            <(documented_in "$legacy" | sed -n "s|^SUB $v/||p") | sed "s|^|dispatched-but-undocumented $v/|"
+        comm -13 \
+            <(arms_of "$legacy" | sed -n "s|^SUB $v/||p") \
+            <(documented_in "$legacy" | sed -n "s|^SUB $v/||p") | sed "s|^|documented-but-unreachable $v/|"
+        # The third inventory. A verb's own `Usage:` line is what a user sees after
+        # a typo, and it drifted from both of the others unnoticed for months.
+        if [[ -n "$(usage_of "$legacy" "$v")" ]]; then
+            comm -3 <(arms_of "$legacy" | sed -n "s|^SUB $v/||p") <(usage_of "$legacy" "$v") |
+                tr -d '\t' | sed "s|^|usage-line-drift $v/|"
+        fi
+    done
+}
+
+# ANTI-VACUITY BEFORE THE ASSERTION, because every claim above is "this set is
+# empty" and an extractor that matched nothing satisfies all of them at once.
+# Set-derived rather than a typed count: the sets must be non-empty and the two
+# halves must together cover every documented verb, which is the same fact the
+# assertion needs anyway.
+n_router=$(arms_of "$RUN" | grep -c '^TOP ')
+n_legacy=$(arms_of "$SRC" | grep -c '^TOP ')
+n_docs=$(documented_in "$SRC" | grep -c '^TOP ')
+n_subs=$(arms_of "$SRC" | grep -c '^SUB ')
+if [[ "$n_router" -gt 0 && "$n_legacy" -gt 0 && "$n_docs" -gt 0 && "$n_subs" -gt 0 ]]; then
+    ok "the extractors see a real tree: $n_router router arm(s), $n_legacy legacy arm(s), $n_subs subcommand(s), $n_docs documented verb(s)"
+else
+    no "CONTROL: an extractor returned an EMPTY set (router=$n_router legacy=$n_legacy subs=$n_subs docs=$n_docs); every assertion below would pass on nothing"
 fi
-echo "✗ run.sh: $fails of $count control(s) failed" >&2
-exit 1
+
+findings="$(verb_findings "$RUN" "$SRC")"
+if [[ -z "$findings" ]]; then
+    ok "router arms + legacy arms == the verbs show_help documents, with no overlap"
+else
+    no "the verb sets do not partition:"$'\n'"$(sed 's/^/    /' <<<"$findings")"
+fi
+
+# CONTROL, three ways, on a COPY so no tracked file is ever mutated. Each plants
+# one of the three failure shapes and requires the report to name it.
+ctl="$(mktemp -d)"
+cp "$RUN" "$ctl/run.sh"
+cp "$SRC" "$ctl/legacy.sh"
+
+# (a) a verb served by both halves.
+sed -i 's/^PORTED_VERBS=()$/PORTED_VERBS=(quality)/' "$ctl/run.sh"
+if grep -q '^overlap quality$' <<<"$(verb_findings "$ctl/run.sh" "$ctl/legacy.sh")"; then
+    ok "CONTROL: a verb in both PORTED_VERBS and the legacy dispatcher is reported as an overlap"
+else
+    no "CONTROL: an overlapping verb was NOT reported; the disjointness half proves nothing"
+fi
+cp "$RUN" "$ctl/run.sh"
+
+# (b) a documented verb nothing dispatches.
+sed -i 's/^        clean) clean ;;$//' "$ctl/legacy.sh"
+if grep -q '^documented-but-unreachable clean$' <<<"$(verb_findings "$ctl/run.sh" "$ctl/legacy.sh")"; then
+    ok "CONTROL: deleting a dispatch arm for a documented verb is reported as unreachable"
+else
+    no "CONTROL: an orphaned verb was NOT reported; the set equality proves nothing"
+fi
+cp "$SRC" "$ctl/legacy.sh"
+
+# (c) a subcommand that exists but is undocumented -- the seven this gate found.
+sed -i 's/^  fix shell           .*$//' "$ctl/legacy.sh"
+if grep -q '^dispatched-but-undocumented fix/shell$' <<<"$(verb_findings "$ctl/run.sh" "$ctl/legacy.sh")"; then
+    ok "CONTROL: deleting a help line for a live SUBCOMMAND is reported, so the second level is really checked"
+else
+    no "CONTROL: an undocumented subcommand was NOT reported; the second-level half proves nothing"
+fi
+rm -rf "$ctl"
+
+# --- 7. the router stays a router --------------------------------------------
+# A ceiling, not a style rule. The whole point of the split is that porting a verb
+# touches one line here; a router that starts absorbing logic re-creates the file
+# the split was undoing, one reasonable special case at a time.
+router_lines=$(wc -l <"$RUN")
+if [[ "$router_lines" -le 120 ]]; then
+    ok "run.sh is still a router ($router_lines lines, ceiling 120)"
+else
+    no "run.sh has grown to $router_lines lines; the ceiling is 120 and logic belongs on one side or the other"
+fi
+# The Python arm names a module that has to exist, or the first port fails with
+# ModuleNotFoundError and a verb nobody can reach.
+if grep -q 'python3 -m rediacc_ci' "$RUN" && [[ -f "$ROOT/.ci/rediacc_ci/__init__.py" ]]; then
+    ok "the router's Python arm names rediacc_ci, and that package is on disk"
+else
+    no "the router's Python arm and .ci/rediacc_ci/__init__.py disagree; the ported half cannot work"
+fi
+
+tally_finish "run.sh"
+exit $?

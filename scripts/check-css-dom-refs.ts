@@ -23,6 +23,13 @@
  *
  * Usage:
  *   npx tsx scripts/check-css-dom-refs.ts [--write-baseline] [--selftest]
+ *
+ * ---- gate ----
+ * step: CSS DOM references
+ * needs: node
+ * selftest: true
+ * lane: quality-content
+ * ---- end gate ----
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';

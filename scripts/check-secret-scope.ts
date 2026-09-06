@@ -46,10 +46,24 @@
  *                           .github/workflows/breakpoint.yml:188-207, which says a
  *                           cutover "needs a DIFFERENT shape than the others".
  *                           Until that shape exists, these reads must stay.
- *   CLAUDE_CODE_OAUTH_TOKEN repo-scoped on renet/account/elite
+ *   CLAUDE_CODE_OAUTH_TOKEN repo-scoped on renet/account/elite -- and NOT on console,
+ *                           which is where the one workflow reading it runs. Measured
+ *                           2026-09-06: console holds BREAKPOINT_TUNNEL_TOKEN and
+ *                           BWS_ACCESS_TOKEN only, and the org holds zero. So this
+ *                           entry forgives a read that resolves to the empty string.
+ *                           The allowlist keeps it because deleting the read would
+ *                           hide the defect rather than fix it; watchdog-monitor.yml
+ *                           carries the measurement and the decision it needs.
+ *
+ * ---- gate ----
+ * step: Secret scope
+ * needs: node
+ * lane: quality-security
+ * ---- end gate ----
  */
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { envRoot } from './lib/repo-root.js';
 import {
   baselineAdditions,
   commitBaseline,
@@ -57,7 +71,13 @@ import {
   selftestVerdict,
 } from './lib/shrink-only-baseline.js';
 
-const ROOT = process.env.SECRET_SCOPE_ROOT ?? process.cwd();
+// ANCHORED ON THIS FILE, not on the caller's working directory. This read
+// `process.env.SECRET_SCOPE_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence
+// did not see: its pattern only matched cwd as the FIRST argument of
+// path.resolve/join, so the commonest shape of its own rule passed. The
+// seam is preserved -- SECRET_SCOPE_ROOT still overrides -- but the default is
+// derived from this file's location.
+const ROOT = envRoot('SECRET_SCOPE_ROOT');
 const WORKFLOWS = join(ROOT, '.github', 'workflows');
 const BASELINE = join(ROOT, '.ci', 'config', 'secret-scope-baseline.json');
 const KEY = 'orgScopedReads';

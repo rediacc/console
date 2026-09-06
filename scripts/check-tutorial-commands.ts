@@ -29,6 +29,12 @@
  * Parsing is delegated to parseRdcCommand from the shared cli-reference-catalog,
  * the same instrument every other CLI gate uses, so "valid" means one thing
  * repo-wide and a command-tree change lands here automatically.
+ *
+ * ---- gate ----
+ * step: Validate tutorial storyboard commands against the live CLI
+ * needs: node
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import { readdirSync, readFileSync } from 'node:fs';

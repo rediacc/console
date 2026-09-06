@@ -38,6 +38,19 @@ WHAT IT DELIBERATELY DOES NOT DO. It does not police Dockerfiles that never
 rewrite apt sources. The stock `archive.ubuntu.com` is already a load-balanced
 pool of many machines, so a file that leaves sources alone is not carrying the
 single-point-of-failure this gate is about.
+
+---- gate ----
+step: Dockerfile mirror resilience
+needs: none
+selftest: true
+why: An apt source rewritten to ONE mirror must carry a fallback to another.
+     Born 2026-08-19, when azure.archive.ubuntu.com refused connections for
+     ninety minutes and took down four consecutive CI attempts: every apt
+     source had been rewritten to that single host, so the surrounding
+     five-attempt retry loop hammered the same dead mirror five times.
+     Existing checks counted retry ATTEMPTS and never asked whether the
+     attempts could reach a different SOURCE, which is why nothing caught it.
+---- end gate ----
 """
 
 import pathlib

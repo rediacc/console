@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Toolchain env/Dockerfile sync
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+# needs: node
+# selftest: true
+# why: check-toolchain-pins.sh's A1 deliberately EXEMPTS GO_VERSION/NODE_VERSION
+#      from its single-source check (they legitimately appear elsewhere: go.mod,
+#      third-party action inputs) -- which also removes any check that the TWO
+#      files meant to carry the identical value on purpose (toolchain.env and the
+#      Dockerfile's matching ARG) actually do. This is that narrower check.
+# ---- end gate ----
+
 # Gate: GO_VERSION and NODE_VERSION in toolchain.env and the devcontainer
 # Dockerfile's matching ARG lines must be identical.
 #

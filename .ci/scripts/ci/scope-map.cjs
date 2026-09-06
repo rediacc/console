@@ -99,6 +99,21 @@ const ROOT_MANIFESTS = new Set([
   'regions.json',
   'run.sh',
   'tsconfig.json',
+
+  // COMPLETED 2026-09-06. Five of the sixteen root allow/block lists were absent:
+  // .devcontainer-upgrade-blocklist, .plan-housekeeping-allowlist,
+  // .profiler-coverage-allowlist, .runner-advice-allowlist and
+  // .unverified-download-allowlist. Nothing was broken by the gap, because an
+  // unlisted root file falls through to `unclassified` which is ALSO full CI, so
+  // the scope was right and only the reason string was wrong. It is completed here
+  // because a PARTIAL set is a trap for the move of these files into .ci/policy:
+  // that change has to update this set coherently, and a reader checking "are they
+  // all here" would have concluded yes from eleven of them.
+  '.devcontainer-upgrade-blocklist',
+  '.plan-housekeeping-allowlist',
+  '.profiler-coverage-allowlist',
+  '.runner-advice-allowlist',
+  '.unverified-download-allowlist',
 ]);
 
 // Root files that are prose, not build inputs.

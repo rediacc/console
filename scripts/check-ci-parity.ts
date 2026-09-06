@@ -47,6 +47,13 @@
  * ESCAPE HATCH. .ci-parity-exempt, direction-tagged and BLOCKER-gated.
  *
  * Usage: npx tsx scripts/check-ci-parity.ts
+ *
+ * ---- gate ----
+ * step: Validate parity between the local gate set and the CI quality surface
+ * needs: node
+ * id: check:ci-parity
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -168,7 +175,13 @@ function resolveLeaves(
         : wsIdx >= 0
           ? (rest[wsIdx + 1] ?? undefined)
           : undefined;
-      const nextScope = ws ? (u.nameToDir.get(ws) ?? curScope) : curScope;
+      // `--workspace` TAKES A NAME OR A DIRECTORY, and resolving only the name made a
+      // real leaf invisible. `npm run typecheck --workspace packages/www` fell through
+      // `nameToDir` (which has no such key) to `curScope`, so it resolved against the
+      // ROOT manifest and `astro` -- a leaf check:types genuinely executes -- never
+      // reached the parity surface. A silent fallback to the root is the worst answer
+      // available here: it produces a plausible leaf set for the wrong package.
+      const nextScope = ws ? (u.nameToDir.get(ws) ?? (u.byDir.has(ws) ? ws : curScope)) : curScope;
       const sig = `${nextScope}\0${key}`;
       if (seen.has(sig)) continue;
       seen.add(sig);

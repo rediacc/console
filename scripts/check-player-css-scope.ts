@@ -22,13 +22,26 @@
  * stylesheet. Six floors make each of those a loud refusal instead of a green run, and
  * F6 is the positive half: the stylesheet must still REACH the player through a JS
  * chunk, or deleting plyr outright would pass this gate.
+ *
+ * ---- gate ----
+ * step: Player CSS scope
+ * needs: node
+ * lane: quality-www-build
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { envRoot } from './lib/repo-root.js';
 
-const ROOT = process.env.PLAYER_CSS_ROOT ?? process.cwd();
+// ANCHORED ON THIS FILE, not on the caller's working directory. This read
+// `process.env.PLAYER_CSS_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence
+// did not see: its pattern only matched cwd as the FIRST argument of
+// path.resolve/join, so the commonest shape of its own rule passed. The
+// seam is preserved -- PLAYER_CSS_ROOT still overrides -- but the default is
+// derived from this file's location.
+const ROOT = envRoot('PLAYER_CSS_ROOT');
 const DIST = path.join(ROOT, 'packages/www/dist');
 
 /** Both spellings of a mount, token-matched inside the class attribute. */

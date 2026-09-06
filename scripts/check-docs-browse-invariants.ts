@@ -46,6 +46,13 @@
  * CONTROL-FIRST. Every check is a function over source TEXT, so --selftest plants each
  * defect in memory and requires the production function to catch it. Nothing on disk is
  * touched, and a check that cannot fail fails the selftest instead of passing quietly.
+ *
+ * ---- gate ----
+ * step: Docs browse invariants
+ * needs: node
+ * selftest: true
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

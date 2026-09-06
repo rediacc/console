@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# step: Devbox exec invocation
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+# needs: none
+# selftest: true
+# lane: quality-code
+# ---- end gate ----
+
 # devbox_docker CAN ANSWER TWO WORDS, and every consumer must treat it that way.
 #
 # WHAT WENT WRONG, measured 2026-08-26:

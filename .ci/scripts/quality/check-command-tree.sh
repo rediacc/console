@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Command tree
+# needs: node
+# selftest: true
+# ---- end gate ----
+
 # Check that the exported command tree is up-to-date with the CLI.
 #
 # packages/cli/scripts/command-tree.json is the shipped snapshot of the live

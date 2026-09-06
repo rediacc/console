@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { memberKey, objectMembers } from './shared/json-ast.js';
+import { lintRoot } from '../lib/paths.js';
 
 const englishCache = new Map();
 
@@ -68,7 +69,7 @@ export const noUntranslatedTutorialTranscriptValues = {
     const transcriptsDir = options.transcriptsDir || 'packages/www/src/data/tutorial-transcripts';
     const minLength = options.minLength ?? DEFAULT_MIN_LENGTH;
 
-    const projectRoot = process.cwd();
+    const projectRoot = lintRoot(context);
     const absoluteTranscriptsDir = path.isAbsolute(transcriptsDir)
       ? transcriptsDir
       : path.join(projectRoot, transcriptsDir);

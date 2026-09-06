@@ -1391,7 +1391,14 @@ export default tseslint.config(
   {
     files: [
       '.ci/**/*.{js,cjs,mjs,ts}',
-      'eslint-rules/**/*.js',
+      // `.js` ALONE LEFT .mjs AND .cjs WITHOUT NODE GLOBALS, and the symptom is a
+      // `no-undef` on `process` for a reason that has nothing to do with the code.
+      // Measured 2026-09-06: `eslint --print-config` on a .mjs here reports no
+      // `process` global at all, on a .js it reports one. A test harness written in
+      // this directory was steered to .js to route around it. This matters beyond
+      // eslint-rules: W7 relocates 7 .mjs and 11 .cjs into scripts/, so the same
+      // extension gap is waiting in whatever lint block covers them.
+      'eslint-rules/**/*.{js,cjs,mjs}',
       '.github/actions/**/*.js',
       // The bundler and this config itself: root tooling, outside every
       // tsconfig, and previously ignored outright. The bundler produced only

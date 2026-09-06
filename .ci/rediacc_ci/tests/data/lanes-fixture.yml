@@ -1,0 +1,93 @@
+# A FIXTURE, not a real workflow. GitHub never runs it; it lives here so the
+# differential against scripts/ci-runner/lanes.ts has a STABLE input.
+#
+# WHY NOT THE REAL WORKFLOWS. lanes.ts's answer changes whenever anybody edits
+# .github/workflows, and those files have four other writers. A golden taken over
+# them would go stale on somebody else's commit and fail this suite for a reason
+# that has nothing to do with the code under test. This file changes only when
+# this test does.
+#
+# EVERY CONSTRUCT lanes.ts READS IS EXERCISED HERE, plus the three shapes where
+# it and rediacc_ci.workflows deliberately disagree. See tests/test_workflows.py.
+name: Lanes Fixture
+
+on:
+  workflow_dispatch:
+
+jobs:
+  # -- the fields lanes.ts and rediacc_ci.workflows AGREE on -------------------
+  plain-slim:
+    name: Plain slim
+    runs-on: ubuntu-slim
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install python tools
+        run: |
+          pip install ruff==0.16.1
+          pip install PyYAML==6.0.2
+
+  with-node:
+    name: With node
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: ./.github/actions/setup-workspace
+      - name: Do a thing
+        run: npm run build
+
+  all-submodules:
+    name: All submodules
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      - name: Targeted init is suppressed once '*' is present
+        run: git submodule update --init --depth 1 private/account
+
+  targeted-submodule:
+    name: Targeted submodule
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Init one submodule
+        run: |
+          git submodule update --init --depth 1 private/account
+          git submodule update --init private/renet
+
+  with-go:
+    name: With go
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+
+  # -- the three shapes where the two implementations DIVERGE ------------------
+  runner-with-a-trailing-comment:
+    name: Runner with a trailing comment
+    runs-on: ubuntu-latest # lanes.ts loses this entirely
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+  timeout-with-a-trailing-comment:
+    name: Timeout with a trailing comment
+    runs-on: ubuntu-slim
+    timeout-minutes: 8 # CHECK 3: slim jobs must declare <= 14
+    steps:
+      - uses: actions/checkout@v5
+
+  runner-from-an-expression:
+    name: Runner from an expression
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v5

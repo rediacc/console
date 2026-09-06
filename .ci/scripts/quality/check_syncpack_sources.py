@@ -26,6 +26,13 @@ The point of the list is to make that distinction VISIBLE -- an omission and a d
 look identical in a config file, and this gate is what tells them apart.
 
 Exit 1 on any uncovered manifest or unusable reason, 2 on a failed control.
+
+---- gate ----
+step: syncpack source coverage
+needs: submodules
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 from __future__ import annotations

@@ -39,8 +39,24 @@
 CMD=$(jq -r '.tool_input.command // empty' 2>/dev/null)
 
 # The verb is the sanctioned path; never block it.
+#
+# THE CARVE-OUT USED TO BE `*--roundlog*`, A SUBSTRING MATCH OVER THE WHOLE
+# COMMAND, and that is a bypass rather than an exemption. Measured 2026-09-06:
+#
+#   echo "see --roundlog" > agent/pr-babysit-0831-1.md   -> ALLOWED
+#   echo hi              > agent/pr-babysit-0831-1.md    -> BLOCKED
+#
+# The two commands truncate the same file; the first differs only by naming the
+# flag inside a string it is writing. Any truncating write passes by mentioning
+# the flag, which is the easiest possible thing to do by accident when the
+# payload is prose ABOUT the round-log workflow.
+#
+# The exemption now requires the flag to be an ARGUMENT TO worklist.py, which is
+# what actually makes a command the sanctioned path. Both are still substring
+# tests over command text -- the named residual below covers what that cannot
+# see -- but the pair has to occur together and in that order.
 case "$CMD" in
-    *--roundlog*) exit 0 ;;
+    *worklist.py*--roundlog*) exit 0 ;;
 esac
 
 # A round-log path must appear at all. Briefings have their own contract and are

@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: CLI contract
+# needs: node
+# selftest: true
+# lane: quality-packages
+# ---- end gate ----
+
 # Check that the generated CLI contract is up-to-date with the CLI.
 #
 # The contract (packages/shared/src/cli-contract/data) is derived from the live

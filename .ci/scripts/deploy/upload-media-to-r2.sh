@@ -1,152 +1,32 @@
 #!/bin/bash
-# Upload a single tutorial/solution video asset to R2 and update the
-# committed manifest (packages/www/src/data/video-manifest.json).
+# COMPATIBILITY ENTRY POINT. The per-file media publish primitive is
+# .ci/media/tools/upload-r2.sh now; it moved there in W10 phase 3, because it was the one
+# thing under .ci/scripts/deploy that publishes a rendered video rather than the product.
+# Its bulk siblings (sync-media-to-r2.sh, sync-media-from-r2.sh, purge-media-cache.sh)
+# are unchanged and stayed here.
 #
-# This is the per-file publish primitive used by:
-#   - packages/www/scripts/publish-tutorial-video-to-r2.ts (tutorial videos)
-#   - private/growth/video_pipeline/publish.py (solution videos, cross-repo —
-#     shells out to this script since it can't import a TS module directly)
+# WHY THIS FILE STILL EXISTS. One of its two callers is
+# private/growth/video_pipeline/publish.py, in a gitignored repository this checkout
+# cannot open, commit to, or even read to confirm how it spells this path. The other,
+# packages/www/scripts/publish-tutorial-video-to-r2.ts, is right here and could have been
+# repointed -- and deliberately was not, because two callers spelling one primitive two
+# different ways is a worse state than either spelling alone, and the cross-repo one
+# cannot be moved in this change. When the growth-side change lands, both move together
+# and this file goes with them.
 #
-# Not a generalization of upload-to-r2.sh: that script is coupled to the
-# release-sentinel/write-once model (immutable versioned artifacts). Media
-# assets are mutable-in-place (a re-record overwrites the same path), so
-# this is a separate, much smaller script.
+# NOT A WRAPPER WITH OPINIONS. exec, with no argument handling of its own, so argv,
+# stdin, stdout, stderr, signals and the exit status all belong to the real script.
+# Anything added here becomes a second implementation of a contract that already has one.
 #
-# Usage:
-#   upload-media-to-r2.sh --kind tutorials --key <castKey> --lang <lang> \
-#     --field mp4 --file <local-path>
-#   upload-media-to-r2.sh --kind solutions --key <slug> --lang <lang> \
-#     --field vertical --file <local-path>
+# HOW THE FORWARD IS PROVEN, given private/growth cannot be inspected:
+# .ci/scripts/test/gates/test-media-shims.sh drives THIS path with aws, npx and the
+# network absent and requires the invocation to arrive in .ci/media/tools/upload-r2.sh with
+# argv byte-identical, from an arbitrary cwd, with the exit status forwarded. The same
+# gate freezes the accepted flag set (--kind --key --lang --field --file --engine
+# --defer-manifest), which is the part a caller actually depends on, so a rename on the
+# far side of this exec is red here rather than at the next publish run.
 #
-# --field is one of: mp4, poster, vtt, chaptersVtt, wordsJson (tutorials) or
-# mp4, vertical, poster (solutions) — must match a field name the manifest
-# schema / URL builders expect (see update-video-manifest.ts's header comment).
-#
-# Environment:
-#   CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID      S3-compatible access key (required)
-#   CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY  S3-compatible secret key (required)
-#   CLOUDFLARE_R2_MEDIA_ENDPOINT           R2 endpoint URL (required)
-
+# DELETING THIS FILE IS A CROSS-REPO BREAKING CHANGE.
 set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/common.sh"
-
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-BUCKET="rediacc-www-media"
-CACHE_CONTROL="public, max-age=31536000"
-MANIFEST_HELPER="$REPO_ROOT/packages/www/scripts/lib/update-video-manifest.ts"
-
-KIND=""
-KEY=""
-LANG=""
-FIELD=""
-FILE=""
-ENGINE=""
-DEFER_MANIFEST=""
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --kind)
-            KIND="$2"
-            shift 2
-            ;;
-        --key)
-            KEY="$2"
-            shift 2
-            ;;
-        --lang)
-            LANG="$2"
-            shift 2
-            ;;
-        --field)
-            FIELD="$2"
-            shift 2
-            ;;
-        --file)
-            FILE="$2"
-            shift 2
-            ;;
-        # OPTIONAL. The TTS engine that narrated this asset, recorded into the
-        # manifest so CI can tell a current narration from a stale one. Callers
-        # that do not know it simply omit the flag.
-        --engine)
-            ENGINE="$2"
-            shift 2
-            ;;
-        # Append the manifest tuple to this file instead of updating the manifest
-        # now. A full tutorial sweep is 1170 files, and updating per file means
-        # 1170 cold `npx tsx` starts each rewriting a 440 KB JSON -- hours of pure
-        # overhead. The caller applies the whole file in one process afterwards.
-        # Omitted by every other caller, which keeps the original behaviour.
-        --defer-manifest)
-            DEFER_MANIFEST="$2"
-            shift 2
-            ;;
-        *)
-            log_error "Unknown argument: $1"
-            exit 1
-            ;;
-    esac
-done
-
-if [[ "$KIND" != "tutorials" && "$KIND" != "solutions" ]]; then
-    log_error "--kind must be 'tutorials' or 'solutions', got '$KIND'"
-    exit 1
-fi
-require_var KEY LANG FIELD FILE
-require_file "$FILE"
-require_var CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY CLOUDFLARE_R2_MEDIA_ENDPOINT
-require_cmd aws
-require_cmd npx
-require_cmd sha256sum
-require_cmd stat
-
-export AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"
-export AWS_SECRET_ACCESS_KEY="$CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY"
-export AWS_DEFAULT_REGION="auto"
-
-# Bucket key layout mirrors the local public/assets/{tutorials/video,videos}
-# tree minus BOTH the "public/" and "assets/" prefixes (see
-# .ci/docs/r2-media-setup.md #1). tutorials -> tutorials/video/<lang>/<file>,
-# solutions -> videos/solutions/<lang>/<file>.
-FILENAME="$(basename "$FILE")"
-if [[ "$KIND" == "tutorials" ]]; then
-    REMOTE_KEY="tutorials/video/${LANG}/${FILENAME}"
-else
-    REMOTE_KEY="videos/solutions/${LANG}/${FILENAME}"
-fi
-
-log_step "Uploading $FILE -> s3://$BUCKET/$REMOTE_KEY"
-aws s3 cp "$FILE" "s3://${BUCKET}/${REMOTE_KEY}" \
-    --endpoint-url "$CLOUDFLARE_R2_MEDIA_ENDPOINT" \
-    --cache-control "$CACHE_CONTROL" \
-    --no-progress
-
-log_step "Verifying upload (HEAD readback)"
-aws s3api head-object --bucket "$BUCKET" --key "$REMOTE_KEY" --endpoint-url "$CLOUDFLARE_R2_MEDIA_ENDPOINT" >/dev/null
-
-SIZE="$(stat -c%s "$FILE")"
-SHA256="$(sha256sum "$FILE" | cut -d' ' -f1)"
-
-log_step "Updating manifest: ${KIND}.${KEY}.${LANG}.${FIELD}"
-# The helper parses argv strictly in flag/value pairs, so an empty --engine would
-# shift everything and corrupt the call. Pass the flag only when we have a value.
-ENGINE_ARGS=()
-if [[ -n "$ENGINE" ]]; then
-    ENGINE_ARGS=(--engine "$ENGINE")
-fi
-
-if [[ -n "$DEFER_MANIFEST" ]]; then
-    # Tab-separated so the reader never has to guess at quoting. The upload and
-    # its HEAD readback have already happened; only the bookkeeping is deferred.
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$KIND" "$KEY" "$LANG" "$FIELD" "$REMOTE_KEY" "$SIZE" "$SHA256" "$ENGINE" \
-        >>"$DEFER_MANIFEST"
-else
-    npx tsx "$MANIFEST_HELPER" \
-        --kind "$KIND" --key "$KEY" --lang "$LANG" --field "$FIELD" \
-        --path "$REMOTE_KEY" --size "$SIZE" --sha256 "$SHA256" "${ENGINE_ARGS[@]}"
-fi
-
-log_info "Done: https://media.rediacc.com/${REMOTE_KEY}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+exec "$ROOT/.ci/media/tools/upload-r2.sh" "$@"

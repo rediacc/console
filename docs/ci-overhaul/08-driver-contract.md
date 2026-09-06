@@ -131,7 +131,7 @@ Baseline recorded at branch point `c6d3af163`, 2026-09-06:
 | `ci:quick` wall | 58,029 ms |
 | `ci:quick` selection | what `npm run ci -- --quick --list` prints; do not quote a number |
 | Local full-run floor | 785 s, set by `gate-test:claude-hooks` |
-| Manifest | 390 `gate: true`, 393 `id:` literals, and rising |
+| Manifest | 406 `gate: true`, 409 `id:` literals as of 2026-09-06, and RISING FAST. It read 390/393 when this table was written and 409 a few hours later, with peers adding entries mid-session. Run `npx tsx scripts/gen-docs.ts --list` rather than quoting this row. |
 | Gate test files | 131 |
 | Bash quality gates | 74 `check-*.sh` plus 5 wrappers |
 | Files with a `---- gate ----` header | 19 tracked, 14 parsing |
@@ -161,6 +161,17 @@ The technique that works, and does not touch the real index:
 3. Run the affected gates with that variable set.
 4. Delete the copy. The repository index and refs are never written.
 
+A THIRD CAUTION, and it cost a full false alarm on 2026-09-06. `cp .git/index` is not
+atomic against a concurrent writer. A copy taken while another session was writing the index
+came out with 12 entries instead of 4,720. Running `ci:quick` under that `GIT_INDEX_FILE`
+turned 45 gates red, with `check:ci-tracked-credentials` reporting `git ls-files returned 2
+path(s), floor is 500`, and a reviewer could reasonably have read that as the change breaking
+the tree. VALIDATE THE COPY BEFORE USING IT: compare `git ls-files | wc -l` under the copy
+against the same count under the real index, and refuse the copy if they differ by more than
+the paths you deliberately added. A truncated index does not announce itself; it just makes
+every enumerating gate look catastrophically red at once, which is the shape of a tree-wide
+regression rather than of a broken instrument.
+
 Two cautions learned the same day. Gates that build their own fixture trees must run
 WITHOUT that variable, or it leaks into the fixture and they fail for the wrong reason
 (`test-scope-gate-outputs.sh` is one). And a gate that reads the working tree rather than
@@ -169,6 +180,136 @@ workaround.
 
 Corollary for reviewers: a green gate run over unstaged deletions is not evidence until
 you know which side of that line the gate sits on.
+
+## 5c. Comment archaeology is a port acceptance criterion
+
+The comments in this tree are not decoration and they are not redundant with the code.
+`.claude`'s guards are 52 percent comment bytes, `command-scan.sh` records six separate
+rounds of bypass findings, and several gates carry the exact run id and date of the
+incident that produced them. A port that keeps the behaviour and summarises the prose has
+destroyed the only copy of why the behaviour is that shape. The next session then
+"simplifies" the line the comment was guarding, which is the failure TRAPS.md exists for.
+
+Three workstreams already carry a preservation assertion: the registry keeps a `why:`
+field per gate, the hooks port pins a comment-byte ratio against a committed baseline, and
+the media move asserts moved bodies byte-for-byte against their origin. The `.ci` port
+carried none, and it is the LARGEST body in the program: 74 quality gates plus 131 gate
+tests. That asymmetry was found by the completeness critic during planning, and it is
+closed here rather than left to each agent's judgement.
+
+THE RULE. Every ported file records, in the differential artifact its twin already
+produces, the comment-byte count of the bash original and of the Python port. A port whose
+comment bytes fall below 90 percent of the original's is refused. Docstrings count as
+comments; a module docstring is the natural home for a file-header block.
+
+WHY A RATIO AND NOT A DIFF. The prose must be allowed to change: `set -euo pipefail` needs
+explaining in bash and says nothing in Python, and a comment about an argument-splitting
+bug is meaningless once the arguments are a list. Demanding identical text would force
+agents to carry dead prose, which teaches the next reader a wrong model just as surely as
+deleting it. The ratio permits rewriting and refuses wholesale loss, which is the actual
+failure mode.
+
+WHAT THE RATIO CANNOT SEE, stated so a green is not read as more than it is: an agent can
+satisfy it by padding with generic prose while dropping the one paragraph that names a
+dated incident. So the artifact also lists every line of the original matching a date, a
+run id, a commit sha, or an issue number, and the reviewer confirms each survives
+somewhere. That list is short, mechanical to produce, and is the part worth a human's eye.
+
+## 5d. Cross-wave obligations
+
+Four things that belong to no single workstream and are therefore the ones most likely to
+be lost between them. Each was found by the completeness pass and is recorded here with the
+measurement that makes it actionable, so the wave that owns it does not have to rediscover it.
+
+### pytest belongs in the one install table
+
+W6 builds `setup/tools.py` and declares it the ONE install table. Its enumeration as drafted
+covers cc, make, jq, python3, git, curl, zstd, tmux, xz, node, go, gh, docker, ruff, shfmt,
+shellcheck, actionlint, uv, gitleaks, bws and PyYAML, and carries no pytest row. But W1, W5
+and W7 each make a Python test runner the PRIMARY local proof of their port. A table that
+installs everything except the thing the ports are judged by fails the operator requirement
+it exists to satisfy. W1 phase 1 already pins `PYTEST_VERSION` in `.devcontainer/toolchain.env`
+and provisions it through `.ci/bootstrap.sh`, so W6 adopts that pin rather than inventing one.
+
+### W9's layout gate must admit what W7 relocates
+
+These two collide by construction and the collision is invisible until both land. Measured
+2026-09-06:
+
+- W7 phase 1 relocates **23 JS and TS files** out of `.ci` so that tree becomes single
+  language. Their natural home is `scripts/`, which is exactly where W9 is installing a
+  TypeScript-only set-equality gate. Nine are `.cjs` under `.ci/scripts/ci`, seven are the
+  `sea-inject` `.mjs` family, and the rest are docs and quality helpers plus one `.ts`.
+- `scripts/` today already holds **55 tracked files that are not TypeScript**: 25 JSON, 19
+  shell scripts, 7 `.txt` files that are 2.16 MB of vendored EU directive text and are
+  content rather than tooling, 2 Python and 2 Markdown. The figure here read **28** until
+  2026-09-06 and was wrong in the direction that matters: it counted only the shell, Python
+  and text families and silently omitted the 25 JSON and 2 Markdown files, which the
+  partition has to classify exactly like the rest. Re-derive rather than trust:
+  `git ls-files scripts | grep -vE '\.ts$' | sed 's/.*\.//' | sort | uniq -c`.
+
+So W9 cannot simply assert TypeScript-only, and W7 cannot simply move JS into `scripts/`.
+The ordering that works: W9 publishes `scripts/data/domains.json` FIRST (the path here said
+`scripts/domains.json`, which the contract's own `.json` predicate would have moved), with a declared home for
+each relocated family and the content files moved out to `data/`; W7 then relocates into
+those declared homes; and W9's gate flips strict only after both. Whichever lands second
+extends the partition in the SAME change, never afterwards.
+
+### Cross-repo submodule pull requests need one owner and an order
+
+Three workstreams depend on changes in repositories this one cannot commit to, and all three
+hand the work off rather than doing it, which is how it reaches nobody. The repository has
+four submodules: `private/renet`, `private/account`, `private/elite`, `private/homebrew-tap`.
+The outstanding set is W8's `private/growth` publish retarget without which the `.env`
+truncation breaks a live pipeline, W9's three stale path strings in `private/account`, and a
+`private/renet` pointer bump that W9, W11 and W3 each separately require. One owner takes all
+of them, submodule PRs merge before the console pointer bump, and the console change that
+consumes them rides the same wave.
+
+### A gate's ENTRY POINT lives where the binder can see it
+
+`scripts/gate-bind.ts` enumerates its subjects with `git ls-files '.ci/scripts' 'scripts'` and
+its `inScope` test requires a path under one of those two prefixes. A gate whose file sits
+anywhere else can carry a perfectly well-formed `---- gate ----` header and the binder will
+neither register it nor complain that it is unregistered. It is invisible, which is worse
+than unregistered, because nothing reports the absence.
+
+That matters the moment the Python package exists: a gate placed at
+`.ci/rediacc_ci/check_pytest.py` cannot declare itself. So the rule is that a gate's ENTRY
+POINT lives in `.ci/scripts/quality/` (or `scripts/` for the TypeScript ones) even when all
+of its logic lives in the package and the entry point is three lines of import and dispatch.
+That is also where the 40 existing `check_*.py` gates already are, so it is the convention
+rather than a new rule.
+
+AMENDED 2026-09-06, same day, stated out loud rather than quietly reversed. W1 phase 2 landed
+the package's own test-runner gate and made the better argument: a gate that exists to run the
+package's suite belongs WITH the package, and forcing a shim into `.ci/scripts/quality` only to
+satisfy an enumeration is the tail wagging the dog. So the binder was widened to scan
+`.ci/rediacc_ci` instead. The rule that survives is the one underneath: a gate must live where
+the binder can SEE it, and when that is false the fix is to widen the scan or move the file,
+never to leave a header that silently does nothing.
+
+Second half of the same trap, measured 2026-09-06: a gate file that is NEW and not yet in a
+git index is invisible to the binder for the same reason, since `ls-files` reads the index.
+Two headers added this session appeared to do nothing until the files were made visible
+through the throwaway-index technique in section 5b. Before concluding a header does not
+work, check whether git can see the file at all.
+
+### The .json inventory has a shape, so give it a predicate
+
+Requirement 15 asks for the `.json` files to be organised, which is unfalsifiable as written.
+Measured today: **9 at the repository root** (`package.json`, `package-lock.json`,
+`tsconfig.json`, `biome.json`, `knip.jsonc`, `regions.json`, `css-custom-data.json` and the
+two `.syncpackrc` files), **15 under `.ci/config`**, and **20 under `scripts/data`**.
+
+The predicate that makes it checkable: a `.json` file stays at the root only when a tool
+discovers it there and offers no configurable path. That keeps `package.json`,
+`package-lock.json`, `tsconfig.json` and `biome.json`, and it is also why
+`css-custom-data.json` stays, since `.vscode/settings.json` names it. Everything else is
+policy (to `.ci/policy`), generated baseline (to a baselines directory), or content. The
+gate asserts BOTH directions: nothing outside the discovered set at the root, and every
+policy file present in the policy directory, so a move that forgets a reader is red rather
+than quiet.
 
 ## 6. Floor policy
 

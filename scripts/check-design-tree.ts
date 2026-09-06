@@ -16,6 +16,11 @@
  *
  * Usage:
  *   npx tsx scripts/check-design-tree.ts
+ *
+ * ---- gate ----
+ * step: Design tree
+ * needs: node
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import path from 'node:path';

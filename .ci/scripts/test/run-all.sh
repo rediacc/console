@@ -103,13 +103,99 @@ done
 
 # --- membership ------------------------------------------------------------
 #
-# Both lists are BY NAME, so a pattern-subset run ('test-gate-*.sh') classifies
-# correctly without any extra bookkeeping. Everything not named here is T.
+# Membership is BY NAME, so a pattern-subset run ('test-gate-*.sh') classifies
+# correctly without any extra bookkeeping. Anything unclassified is T.
+#
+# ---------------------------------------------------------------------------
+# THE ISOLATION CONTRACT (W2.4b). This runner is one of TWO schedulers over the
+# same 147 gate tests. The other is scripts/ci-runner/pool.ts, whose header
+# carries the contract's single definition; read it there rather than restating
+# it here, because a definition living in two places is the thing this change
+# exists to remove.
+#
+# In one line: `mutex: [r]` is an EXCLUSIVE claim on resource r, `reads: [r]` is
+# a SHARED one, and two gates may overlap unless one holds r exclusively and the
+# other holds r at all. That is exactly the W / S / T schedule below, so the
+# three sets are DERIVED from the manifest rather than typed out here:
+#
+#   W = declares a `tree:` resource under `mutex`   (the real-tree writers)
+#   S = declares a `tree:` resource under `reads`   (the scanners)
+#   T = declares neither                            (fixture-isolated)
+#
+# WHY IT MOVED. The two schedulers decided isolation SEPARATELY, and they
+# disagreed. Measured 2026-09-06 at commit ac817a647: this file honoured all
+# three writers, while the manifest registered them with no `mutex` at all --
+# zero of the 147 qualityGateTest entries carried one -- so `npm run ci` ran the
+# exact combination the header above calls "a flake manufactured by the runner".
+# Driven against the real pool, those three gates overlapped each other in every
+# pairing. The disagreement was invisible because nothing compared the two, and
+# it could not be fixed by editing one of them: a hand list inside a runner is
+# not something the other runner can read. Driver contract section 7 states the
+# same requirement, that adding a gate must not require an edit to a runner file.
+#
+# THE FALLBACK BELOW IS TEMPORARY AND LOUD. The mutex/reads declarations are a
+# registry change and the registry has a single writer; until it lands, this file
+# would otherwise lose the isolation it has today, which is the one outcome worse
+# than the disagreement. So it falls back to the previous hand lists and SAYS SO
+# on stderr. Delete the two *_FALLBACK arrays and the fallback branch in the same
+# change that lands the declarations.
+# ---------------------------------------------------------------------------
+
+REPO_ROOT_FOR_LOCK="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+GATES_LOCK="$REPO_ROOT_FOR_LOCK/scripts/ci-runner/gates.lock.json"
+
+# classify_from_lock <mutex|reads> -- basenames of gate tests whose manifest entry
+# declares a `tree:` resource under that claim strength, one per line. Empty when
+# the lock is unreadable or declares nothing; the CALLER decides what that means,
+# because "no declarations yet" and "lock is broken" must not silently become the
+# same thing as "nothing needs isolating".
+classify_from_lock() {
+    python3 - "$GATES_LOCK" "$1" <<'CLASSIFY' 2>/dev/null || true
+import json, os, sys
+
+lock_path, claim = sys.argv[1], sys.argv[2]
+try:
+    with open(lock_path, encoding="utf-8") as fh:
+        entries = json.load(fh)
+except (OSError, ValueError):
+    raise SystemExit(0)
+if not isinstance(entries, list):
+    raise SystemExit(0)
+
+for entry in entries:
+    if not isinstance(entry, dict):
+        continue
+    run = entry.get("run")
+    if not isinstance(run, str) or ".ci/scripts/test/gates/" not in run:
+        continue
+    claimed = entry.get(claim)
+    if not isinstance(claimed, list):
+        continue
+    if not any(isinstance(r, str) and r.startswith("tree:") for r in claimed):
+        continue
+    # A `run` is a command line in the general case, so take the word that
+    # actually names the script rather than assuming it is the whole string.
+    for word in run.split():
+        if word.startswith(".ci/scripts/test/gates/"):
+            print(os.path.basename(word))
+            break
+CLASSIFY
+}
 
 # W: writes into the real tree while it runs. Adding to this list is cheap;
 # leaving something off it is a flake.
-WRITER_TESTS=(
+#
+# FALLBACK COPY -- see the block above. The reasons stay with the entries because
+# they are the only record of why each one is here, and each names the exact line
+# that does the writing, which is what a `tree:` resource has to be derived from.
+WRITER_TESTS_FALLBACK=(
+    # Plants and deletes .ci/scripts/.gate-paths-exist{,-noise}-fixture.<pid>.ts;
+    # test-gate-paths-exist.sh:71 sets FIXTURE_DIR to the real .ci/scripts.
     test-gate-paths-exist.sh
+    # Plants and deletes scripts/.gate-anti-vacuity-fixture.ts
+    # (test-gate-anti-vacuity.sh:393). Its harness also COPIES scripts/ and
+    # .ci/scripts/ into a fixture, so it READS the resource the other two write,
+    # which is why it stays exclusive against them under a path-scoped contract.
     test-gate-anti-vacuity.sh
     # Swaps the REAL .ci/scripts/version/resolve-version.sh for a stub and
     # restores it (two sites: test-generate-tag-inputs.sh:289 and :311), because
@@ -126,7 +212,7 @@ WRITER_TESTS=(
 # the gate it drives. Written longest-first so the cost of the tail is legible
 # here; the scheduler itself spawns S in glob order, which costs nothing because
 # the members ahead of the long pole run in seconds.
-SCANNER_TESTS=(
+SCANNER_TESTS_FALLBACK=(
     test-dead-bash.sh
     test-ci-parity.sh
     test-review-status.sh
@@ -150,6 +236,40 @@ SCANNER_TESTS=(
     test-shell-counter-increment.sh
 )
 
+# A READ LOOP, and it is worth saying why it is neither of the two shorter
+# spellings, because both were tried and both are wrong here.
+#
+# NOT `ARR=($(cmd))`, which the two env seams below do use. Those split a VARIABLE
+# the operator typed; this splits COMMAND OUTPUT, which is SC2207 and a different
+# hazard: a test filename carrying a space would be silently split into two
+# non-existent members and both would then be classified as T, quietly losing the
+# isolation this block exists to establish. `check:ci-shell-lint` catches it.
+#
+# NOT `mapfile -t`, which is what shellcheck suggests for SC2207 and what this
+# code said for about an hour. `mapfile` is bash 4+, and `check:ci-shell-commands`
+# bans it repo-wide for the ubuntu-slim CI image, prescribing this exact loop in
+# its own fix line. Taking shellcheck's advice traded one gate's finding for
+# another's; the loop satisfies both. (This file already refuses to run below bash
+# 5.1, so `mapfile` would have WORKED here and still been a policy violation --
+# which is the kind of green a reviewer would have had no reason to question.)
+read_lines_into() {
+    local -n _dest="$1"
+    local _line
+    _dest=()
+    while IFS= read -r _line; do
+        [[ -n "$_line" ]] && _dest+=("$_line")
+    done
+}
+read_lines_into WRITER_TESTS < <(classify_from_lock mutex)
+read_lines_into SCANNER_TESTS < <(classify_from_lock reads)
+
+# THE FALLBACK IS CONSULTED LAST, AFTER THE ENV SEAMS, and the ordering is not
+# cosmetic. Put ahead of them it still fires when RUN_ALL_WRITERS has already
+# decided membership, so its notice lands in the stderr of a run whose isolation
+# was never in doubt -- and test-run-all-parallel.sh captures runner output with
+# `2>&1` and compares it byte-for-byte, so a diagnostic printed on a run that did
+# not need it is a diagnostic that ends up inside an assertion. Speak only when
+# nothing else has spoken.
 if [[ -n "${RUN_ALL_WRITERS+x}" ]]; then
     # BLOCKER: intentional word splitting of the injected W list into an array; quoting would make the whole space-separated string one member and the seam would silently classify nothing
     # shellcheck disable=SC2206
@@ -161,6 +281,20 @@ if [[ -n "${RUN_ALL_SCANNERS+x}" ]]; then
     # shellcheck disable=SC2206
     # BLOCKER: intentional word splitting of the injected S list
     SCANNER_TESTS=($RUN_ALL_SCANNERS)
+fi
+
+if [[ -z "${RUN_ALL_WRITERS+x}" && -z "${RUN_ALL_SCANNERS+x}" ]] &&
+    ((${#WRITER_TESTS[@]} == 0)) && ((${#SCANNER_TESTS[@]} == 0)); then
+    # NOT silent, and not a line that scrolls past either: it names the exact file
+    # that has to change to make it stop, so the fallback cannot become permanent
+    # by nobody noticing it is still there.
+    echo "run-all.sh: no 'tree:' isolation declared in scripts/ci-runner/gates.lock.json;" >&2
+    echo "  falling back to the hand-maintained W/S lists in this file. This is the" >&2
+    echo "  pre-W2.4b behaviour and is expected ONLY until the registry change lands" >&2
+    echo "  the mutex/reads declarations. Delete the *_FALLBACK arrays and this branch" >&2
+    echo "  in that same change." >&2
+    WRITER_TESTS=("${WRITER_TESTS_FALLBACK[@]}")
+    SCANNER_TESTS=("${SCANNER_TESTS_FALLBACK[@]}")
 fi
 
 # THE BATTERY MAY NOT LEAVE A MARK ON THE TREE, and this is here rather than in a
@@ -189,7 +323,18 @@ BATTERY_REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 # possible reason: a developer's tree nearly always has SOME modified file, so
 # the grep matched and returned 0. A CLEAN checkout is the case that breaks it,
 # and a clean checkout is exactly what CI has.
-tree_state() { (cd "$BATTERY_REPO_ROOT" && git status --porcelain 2>/dev/null | { grep -v '^??' || true; } | sort); }
+# `|| true` ON THE GIT CALL TOO, and it is the same bug one stage upstream.
+# `set -o pipefail` makes the pipeline take git's status, so anywhere git itself
+# exits non-zero -- a directory that is not a work tree, a broken .git, git absent
+# from PATH -- the whole battery aborts at this line with exit 128 and NOT ONE BYTE
+# of output, before its first test runs. Found 2026-09-06 driving this runner
+# against a fixture tree, which is exactly the setup the RUN_ALL_GATES_DIR seam
+# exists to allow. The comment above already describes this failure shape for the
+# grep and it is worth stating that the fix was applied to only one of the two
+# stages: a pipefail hazard is per-stage, so guarding the last one that can fail is
+# not guarding the pipeline. An unavailable git yields an empty snapshot on BOTH
+# sides, so the before/after comparison stays honest rather than firing spuriously.
+tree_state() { (cd "$BATTERY_REPO_ROOT" && { git status --porcelain 2>/dev/null || true; } | { grep -v '^??' || true; } | sort); }
 TREE_BEFORE="$(tree_state)"
 
 cd "$GATES_DIR"
@@ -203,6 +348,23 @@ shopt -u nullglob
 if ((${#TEST_FILES[@]} == 0)); then
     log_fail "No test files matched pattern: $PATTERN in $GATES_DIR"
 fi
+
+# THE EMPTY-SET CHECK ABOVE DOES NOT CATCH EVERY EMPTY SET, and the gap is only
+# visible once you know how nullglob decides. It drops a word that IS a glob and
+# matches nothing; a word containing no glob metacharacter is not a glob, so it
+# survives verbatim. `test-{a,b}.sh` is exactly that shape -- brace expansion is
+# NOT applied to the result of a parameter expansion, so the braces stay literal
+# and `{}` and `,` are not glob characters. The array is then one entry long, the
+# check above passes, and the run dies at `./test-{a,b}.sh: No such file or
+# directory` from line 266 with a shell error naming no cause.
+#
+# The DIRECTION was already safe -- it counted as a failed test with 0 assertions
+# rather than a short green -- so this changes the diagnostic, not the verdict.
+for f in "${TEST_FILES[@]}"; do
+    if [[ ! -f "$f" ]]; then
+        log_fail "Pattern '$PATTERN' yielded '$f', which is not a file in $GATES_DIR. A pattern with no glob character is taken literally (brace expansion does not apply to \$PATTERN), so it is not filtered by nullglob."
+    fi
+done
 
 # --- worker count ----------------------------------------------------------
 #

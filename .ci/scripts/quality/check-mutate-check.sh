@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Mutation runner self-test
+# needs: none
+# selftest: true
+# ---- end gate ----
+
 #
 # Gate: the mutation runner itself must keep working.
 #

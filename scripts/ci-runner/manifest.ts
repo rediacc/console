@@ -80,7 +80,21 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:lint',
     run: 'npm run check:lint',
     slow: true, // 244.9s measured
-    gate: true,
+    // gate:false since 2026-09-06. One eslint process over every root measured 166.5s and
+    // pinned one scheduler slot for the whole of it, so this is now the AGGREGATE of four
+    // sharded scripts, each scheduled on its own below. Measured the same day: the four run
+    // concurrently in 87.5s wall, about 1.90x -- NOT the 3.0x a per-root serial sum predicts,
+    // because four eslint processes contend and each costs 30-40% more concurrently than
+    // alone. The identical baseline re-measured 225.6s forty minutes later, so the ratio is a
+    // range and never a threshold.
+    // The body and `leaves` stay BYTE-IDENTICAL so the 'Lint' step still resolves to both
+    // leaves for every shard (R3), and CI keeps one step.
+    // WHAT HOLDS THE SHARDS HONEST: .ci/scripts/quality/check_lint_scope_coverage.py follows
+    // the `npm run` links out of this key and unions the roots it finds, so deleting a shard,
+    // or a root from a shard, reds on the files that stopped being linted. It deliberately
+    // does not hard-code the shard names, because a hard-coded list of four would silently
+    // stop counting a fifth.
+    gate: false,
     weight: 2,
     heavy: true,
     // eslint no longer runs directly: check:lint calls scripts/eslint-heap.sh,
@@ -88,6 +102,71 @@ export const GATES: readonly GateSpec[] = [
     // requested size (never raises -- CI keeps its full request) and then
     // execs eslint itself. The leaf is the wrapper, not the tool it wraps.
     leaves: ['scripts/eslint-heap.sh', 'biome'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Lint',
+    },
+  },
+  {
+    id: 'check:lint:cli',
+    run: 'npm run check:lint:cli',
+    slow: true, // 65.1s alone / 87.5s in the concurrent four
+    gate: true,
+    weight: 2,
+    heavy: true,
+    leaves: ['scripts/eslint-heap.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Lint',
+    },
+  },
+  {
+    id: 'check:lint:web',
+    run: 'npm run check:lint:web',
+    slow: true, // 60.8s alone / 83.2s in the concurrent four
+    gate: true,
+    weight: 2,
+    heavy: true,
+    leaves: ['scripts/eslint-heap.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Lint',
+    },
+  },
+  {
+    id: 'check:lint:tooling',
+    run: 'npm run check:lint:tooling',
+    slow: true, // measured in the concurrent four; retier from the reference worktree
+    gate: true,
+    weight: 2,
+    heavy: true,
+    leaves: ['scripts/eslint-heap.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Lint',
+    },
+  },
+  {
+    id: 'check:lint:account',
+    run: 'npm run check:lint:account',
+    slow: true, // measured in the concurrent four; retier from the reference worktree
+    gate: true,
+    weight: 2,
+    heavy: true,
+    // TWO leaves, not one: this shard alone chains `biome lint private/account/` after
+    // eslint. Landing it with the other three shards' single leaf reddened
+    // check:ci-parity hygiene immediately, which is the split-turns-hygiene-red case the
+    // proposal warned about and the reason leaves are derived with resolveLeaves rather
+    // than copied between sibling entries.
+    leaves: ['biome', 'scripts/eslint-heap.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -387,7 +466,12 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     mutex: ['build-artifacts'],
     heavy: true,
-    leaves: ['tsc', '.ci/scripts/quality/typecheck-workers.sh'],
+    // `astro` ADDED 2026-09-06, and its absence was not an oversight in this entry --
+    // it was invisible. check-ci-parity.ts resolved `--workspace` only as a package
+    // NAME, so `npm run typecheck --workspace packages/www` fell through to the ROOT
+    // manifest and the astro leaf never reached the parity surface. Fixing the resolver
+    // surfaced it on the first run.
+    leaves: ['tsc', 'astro', '.ci/scripts/quality/typecheck-workers.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -586,7 +670,14 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-setup-idempotency',
     run: 'npm run check:ci-setup-idempotency',
     gate: true,
-    paths: ['.ci/lib/**', 'run.sh', '.ci/scripts/quality/check-setup-idempotency.sh'],
+    paths: [
+      '.ci/lib/**',
+      'run.sh',
+      // The verb bodies, and setup() with them, moved here in the 2026-09-06 router
+      // split. Without this an edit to the file the gate READS does not select it.
+      '.ci/legacy/**',
+      '.ci/scripts/quality/check-setup-idempotency.sh',
+    ],
     leaves: ['.ci/scripts/quality/check-setup-idempotency.sh'],
     ci: {
       kind: 'step',
@@ -767,6 +858,12 @@ export const GATES: readonly GateSpec[] = [
       '.devcontainer/**',
       '.github/workflows/**',
       '.ci/scripts/**',
+      // The gate's own corpus is `git ls-files '.ci/*.sh'`, and under default (non-glob)
+      // pathspec matching `*` CROSSES `/`, so it already scans .ci/legacy/run-legacy.sh.
+      // This selector does not: `.ci/scripts/**` misses `.ci/legacy/`. Verified, not
+      // assumed -- the two matchers have different semantics and that gap is exactly how
+      // a gate keeps reading a file that no longer selects it.
+      '.ci/legacy/**',
       '.ci/config/constants.sh',
       'run.sh',
     ],
@@ -1334,6 +1431,92 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-branch',
       step: 'Plan checkbox ledger',
+    },
+  },
+  {
+    // The third plan gate, and it judges only lines a change ADDS. It was written,
+    // landed and then sat inert: it appeared in neither package.json nor the manifest,
+    // so it had never once run. That is the registration bottleneck's signature -- a
+    // worker finishes the logic in parallel and the last mile waits on the one file
+    // only the driver writes.
+    // Scope is plans and agent/INDEX.md only. agent/<session>/STATE.md is deliberately
+    // excluded: it is read-only to every session but its owner, so a red there would
+    // name a line the reader is forbidden to fix.
+    id: 'check:ci-plan-citations',
+    run: 'npm run check:ci-plan-citations',
+    gate: true,
+    paths: ['agent/PLAN-*.md', 'agent/INDEX.md', '.ci/scripts/quality/check_plan_citations.py'],
+    leaves: ['.ci/scripts/quality/check_plan_citations.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-branch',
+      step: 'Plan citations',
+    },
+  },
+  {
+    // The other half of the plan lifetime. check:ci-plan-boxes rules on a plan's
+    // boxes; this one rules on a COMPACTED plan's pointer back to its full text,
+    // which lives in a git blob and is the only thing standing between a record
+    // and an unreachable document that still advertises a recovery command.
+    id: 'check:ci-plan-record',
+    run: 'npm run check:ci-plan-record',
+    gate: true,
+    paths: [
+      'agent/PLAN-*.md',
+      // NOT agent/INDEX.md yet. The gate compares it against its own render, but the
+      // file is written by the first --plan-compact and no plan has been compacted, so
+      // declaring it here is a glob matching nothing -- which can only ever exclude.
+      // It goes in with the compaction wave, alongside the file itself.
+      '.ci/config/plan-boxes.json',
+      '.claude/hooks/stop/wl_planrec.py',
+      '.ci/scripts/quality/check_plan_record.py',
+    ],
+    leaves: ['.ci/scripts/quality/check_plan_record.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-branch',
+      step: 'Plan records',
+    },
+  },
+  {
+    // The five lint rules configured `off` everywhere are outside the liveness gate's
+    // universe BY CONSTRUCTION -- it can only observe a rule that fires -- so nothing
+    // in this repository ever executed them. A RuleTester harness is the only
+    // instrument that can, which is why this is a separate gate and not a wider net
+    // cast by the liveness one.
+    id: 'check:ci-lint-rule-units',
+    run: 'npm run check:ci-lint-rule-units',
+    gate: true,
+    paths: ['eslint-rules/**', 'scripts/check-lint-rule-units.ts'],
+    leaves: ['scripts/check-lint-rule-units.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Lint rule unit specs',
+    },
+  },
+  {
+    // The manifest's machine-readable projection, and the gate that keeps it faithful.
+    // Three readers parse this file as TEXT because they are not TypeScript; the lock is
+    // the file they should read instead. Emitter and checker landed together (invariant 1,
+    // the rediacc/console#549 failure class).
+    id: 'check:ci-gates-lock',
+    run: 'npm run check:ci-gates-lock',
+    gate: true,
+    paths: [
+      'scripts/ci-runner/manifest.ts',
+      'scripts/ci-runner/gates.lock.json',
+      'scripts/gen-gates-lock.ts',
+    ],
+    leaves: ['scripts/gen-gates-lock.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Gates lock',
     },
   },
   {
@@ -4391,6 +4574,32 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // 537.4s measured
     gate: true,
     qualityGateTest: true,
+    // SCOPED 2026-09-06. This declared no `paths` at all, so the heaviest gate in the
+    // repository -- the local full-run floor -- was selected by every `--changed` set,
+    // including ones that touch nothing it reads.
+    //
+    // The set was DERIVED from what the harness actually opens, not guessed. The leaf is
+    // a 40-line wrapper; all verdict-bearing work is in .claude/hooks/test-hooks.sh, and
+    // two of its dependencies live OUTSIDE .claude: it sources .ci/scripts/test/lib/
+    // git-fixture.sh, and its inline-python cases assert the verdicts of the detector
+    // .ci/scripts/quality/check_inline_python.py.
+    //
+    // `.claude/hooks/**`, NOT `.claude/hooks/**/*.sh`: the Python modules decide cases
+    // too (lib/sanctioned.py changes hook exit codes, and a ten-file loop runs the stop/
+    // and pre-bash test modules). The leaf is listed explicitly because `.claude/hooks/**`
+    // does not cover it and the leaf oracle requires a gate's own leaves to be selectable.
+    //
+    // KNOWN RESIDUE, stated rather than implied: two inputs are not glob-capturable. The
+    // harness reads live git state (`git rev-parse HEAD`) and writes a phantom file into
+    // the repo root during its run, so working-tree and branch state can move the verdict
+    // without any file in this list changing.
+    paths: [
+      '.claude/hooks/**',
+      '.claude/settings.json',
+      '.ci/scripts/test/lib/git-fixture.sh',
+      '.ci/scripts/quality/check_inline_python.py',
+      '.ci/scripts/test/gates/test-claude-hooks.sh',
+    ],
     leaves: ['.ci/scripts/test/gates/test-claude-hooks.sh'],
     ci: {
       kind: 'step',
@@ -4898,6 +5107,297 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-dead-case-arms.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'check:ci-pytest',
+    run: 'npm run check:ci-pytest',
+    gate: true,
+    leaves: ['.ci/rediacc_ci/check_pytest.py'],
+    paths: ['.ci/rediacc_ci/**', 'pyproject.toml'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Python package tests',
+    },
+  },
+  {
+    id: 'check:ci-pathspec-scope',
+    run: 'npm run check:ci-pathspec-scope',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_pathspec_scope.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Pathspec scope',
+    },
+  },
+  {
+    id: 'check:ci-package-key-budget',
+    run: 'npm run check:ci-package-key-budget',
+    gate: true,
+    leaves: ['scripts/check-package-key-budget.ts'],
+    paths: [
+      'scripts/check-package-key-budget.ts',
+      'package.json',
+      'scripts/ci-runner/manifest.ts',
+      'scripts/data/package-key-budget-baseline.json',
+    ],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Package key budget',
+    },
+  },
+  {
+    id: 'gate-test:blocker-golden-corpus',
+    run: '.ci/scripts/test/gates/test-blocker-golden-corpus.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-blocker-golden-corpus.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:policy-liveness-floors',
+    run: '.ci/scripts/test/gates/test-policy-liveness-floors.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-policy-liveness-floors.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    // The cross-repo exec shims. Their callers live in gitignored repositories this
+    // checkout cannot open, so the contract is verified from THIS side: argv arrives
+    // byte-for-byte, cwd and stdin survive, the exit status comes back, and the accepted
+    // flag and env-var surfaces are frozen as SETS. Renaming --defer-manifest would break
+    // private/growth's publish and nothing else catches it.
+    id: 'gate-test:media-shims',
+    run: '.ci/scripts/test/gates/test-media-shims.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-media-shims.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    // The portability seams. Every spelling is driven three ways: this host's, the BSD
+    // fallback with GNU hidden behind a stat that refuses -c, and a bare host where each
+    // must refuse by name. MEDIA_SHA256 is an ARRAY because one caller is find -exec,
+    // which cannot see a function.
+    id: 'gate-test:media-portable',
+    run: '.ci/scripts/test/gates/test-media-portable.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-media-portable.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    // Documentation accuracy as a gate: every .ci/ path any media file names must exist.
+    // It also gates the coverage instrument itself -- a gate test's stdout and exit status
+    // must be byte-identical with tracing on and off, because the first design perturbed
+    // its own subject and made eight of ten tests fail.
+    id: 'gate-test:media-docs',
+    run: '.ci/scripts/test/gates/test-media-docs.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-media-docs.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    // The comparator that decides whether a ported gate kept its twin's verdict.
+    // It is on the critical path for W7's 74 bash gates, W4's blocker-validator
+    // collapse and W8, so the thing that must not happen is a comparator that
+    // cannot report a mismatch: it would not merely fail to help, it would
+    // launder every port that followed with a green artifact nobody re-reads.
+    // Hence the three MUTATION CONTROLS in this test, which break one
+    // load-bearing line each in a COPY of the module and require the module's own
+    // selftest to go red; and hence a real pilot pair rather than a fixture --
+    // the two live blocker-validator implementations, plus the vendored
+    // breakpoint subset whose five recorded divergences are a mismatch nobody
+    // planted.
+    id: 'gate-test:shadow-gate',
+    run: '.ci/scripts/test/gates/test-shadow-gate.sh',
+    gate: true,
+    qualityGateTest: true,
+    // 12.6s/13.1s measured back to back in a feature worktree. Driver contract
+    // section 5 says no such number is admissible, so this is a placeholder that
+    // keeps the entry from being blank; the reference-worktree re-tiering box
+    // owns the final value and may drop `slow` entirely.
+    slow: true,
+    leaves: ['.ci/scripts/test/gates/test-shadow-gate.sh'],
+    paths: [
+      'scripts/lib/shadow-gate.ts',
+      '.ci/scripts/test/gates/test-shadow-gate.sh',
+      // The pilot pair it drives, and the file its corpus is lifted from. A change
+      // to any of these can move the recorded 5-old-only / 3-new-only divergence,
+      // which is an assertion in this test.
+      '.ci/scripts/lib/blocker-validator.sh',
+      'scripts/lib/blocker-validator.ts',
+      '.ci/breakpoint/lib/breakpoint-blocker.sh',
+      '.ci/scripts/test/gates/test-blocker-golden-corpus.sh',
+    ],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:policy-path',
+    run: '.ci/scripts/test/gates/test-policy-path.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-policy-path.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:docs-gen',
+    run: '.ci/scripts/test/gates/test-docs-gen.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-docs-gen.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:media-helpers',
+    run: '.ci/scripts/test/gates/test-media-helpers.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-media-helpers.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:media-venv',
+    run: '.ci/scripts/test/gates/test-media-venv.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-media-venv.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:media-cuda',
+    run: '.ci/scripts/test/gates/test-media-cuda.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-media-cuda.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:media-pool',
+    run: '.ci/scripts/test/gates/test-media-pool.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-media-pool.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:media-bridge',
+    run: '.ci/scripts/test/gates/test-media-bridge.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-media-bridge.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:media-r2',
+    run: '.ci/scripts/test/gates/test-media-r2.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-media-r2.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:media-args',
+    run: '.ci/scripts/test/gates/test-media-args.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-media-args.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:media-entry',
+    run: '.ci/scripts/test/gates/test-media-entry.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-media-entry.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

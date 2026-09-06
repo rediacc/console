@@ -30,6 +30,13 @@
  *
  * Usage:
  *   npx tsx scripts/check-baseline-key-semantics.ts [--selftest]
+ *
+ * ---- gate ----
+ * step: Baseline key semantics
+ * needs: node, submodules
+ * selftest: true
+ * lane: quality-content
+ * ---- end gate ----
  */
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';

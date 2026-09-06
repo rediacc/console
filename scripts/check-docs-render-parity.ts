@@ -47,6 +47,12 @@
  *
  * Run: npx tsx scripts/check-docs-render-parity.ts
  * Control: npx tsx scripts/__tests__/check-docs-render-parity.control.ts
+ *
+ * ---- gate ----
+ * step: Docs render parity
+ * needs: node
+ * lane: quality-www-build
+ * ---- end gate ----
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';

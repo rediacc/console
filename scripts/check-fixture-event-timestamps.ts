@@ -23,6 +23,12 @@
  * event goes to a different store, and a `bgwait` timestamp is a state-doc
  * field, not an event; policing those would be a false positive, and a guard
  * whose usual outcome is a false positive gets routed around.
+ *
+ * ---- gate ----
+ * step: Fixture event timestamps
+ * needs: node
+ * selftest: true
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

@@ -39,6 +39,15 @@ mkdir -p "$FIXTURE/.ci/scripts/quality" "$FIXTURE/.ci/scripts/lib" \
     "$FIXTURE/private/fakemod" "$FIXTURE/shim"
 cp "$REPO_ROOT/.ci/scripts/quality/check-go-deps.sh" "$FIXTURE/.ci/scripts/quality/"
 cp "$REPO_ROOT"/.ci/scripts/lib/*.sh "$FIXTURE/.ci/scripts/lib/"
+# release-age.sh stopped being self-contained on 2026-09-06: it is now a SHIM
+# over scripts/lib/release-age.ts, which holds the freshness rule once instead of
+# twice. Copying only .ci/scripts/lib is therefore no longer enough -- the
+# delegate would be unreachable, is_release_deferred would fail closed, and the
+# outdated case below would be silently deferred rather than reported. The gate
+# would pass while asserting nothing, which is the exact failure the rest of this
+# file exists to catch.
+mkdir -p "$FIXTURE/scripts/lib"
+cp "$REPO_ROOT/scripts/lib/release-age.ts" "$FIXTURE/scripts/lib/"
 printf 'module example.com/fakemod\n\ngo 1.25\n' >"$FIXTURE/private/fakemod/go.mod"
 : >"$FIXTURE/.go-deps-upgrade-blocklist"
 GATE="$FIXTURE/.ci/scripts/quality/check-go-deps.sh"

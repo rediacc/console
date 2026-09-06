@@ -60,6 +60,13 @@ whole of `.ci/` with `full: 'harness'`, so ANY edit under this directory already
 forces the full harness scope and reselects this gate.
 
 Design: agent/PLAN-lint-rule-matrix-probe.md
+
+---- gate ----
+step: Enabled lint rules can actually fire
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import argparse

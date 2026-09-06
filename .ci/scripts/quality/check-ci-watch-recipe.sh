@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: CI-watch recipe has one source
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+# needs: none
+# id: check:ci-watch-recipe
+# selftest: true
+# lane: quality-code
+# ---- end gate ----
+
 # Gate: there is ONE way to read CI, and every surface points at it.
 #
 # Why this exists. On 2026-08-25, landing console#574, the hand-rolled CI-watch

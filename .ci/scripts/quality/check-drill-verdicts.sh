@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Drill verdict logic
+# needs: none
+# selftest: true
+# ---- end gate ----
+
 # Behavioural gate for `drill_summary`'s verdict logic (scripts/drills/lib.sh).
 #
 # WHY THIS EXISTS. On 2026-08-05 a drill that ran ZERO assertions — because its

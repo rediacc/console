@@ -11,6 +11,12 @@
  *     locale, not just English -- an untranslated value used to become English silently
  *   - referenced tutorials are not drafts
  *   - the generated onboarding-content.json is up to date (freshness gate)
+ *
+ * ---- gate ----
+ * step: Validate account onboarding splash against canonical tutorials
+ * needs: node
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import { existsSync, readFileSync } from 'node:fs';

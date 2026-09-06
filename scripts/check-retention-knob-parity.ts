@@ -36,6 +36,11 @@
  *
  * Control-first: every run first proves the extractor on a synthetic layer that
  * is missing a knob, and refuses to pass if any layer yields nothing.
+ *
+ * ---- gate ----
+ * step: Retention knob parity
+ * needs: node, submodules
+ * ---- end gate ----
  */
 
 import { readFileSync } from 'node:fs';

@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Check content for AI slop patterns
+# needs: none
+# selftest: true
+# lane: quality-content
+# ---- end gate ----
+
 # Check content files for AI slop patterns
 #
 # Scans markdown documentation and blog posts against the banned phrase list

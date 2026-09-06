@@ -71,6 +71,11 @@
  * check"; a missing workflow, a missing builder, an unfindable step or an
  * empty env block all REFUSE rather than pass; and every allowlist entry must
  * fire at least once or the gate fails on the dead exemption.
+ *
+ * ---- gate ----
+ * step: Builder env contract
+ * needs: node
+ * ---- end gate ----
  */
 
 import { readFileSync } from 'node:fs';

@@ -41,6 +41,13 @@
  *
  * Exit codes: 0 = all pass; 1 = at least one quote failed; 2 = configuration
  * error (missing snapshot, allowlist with bad BLOCKER, etc.).
+ *
+ * ---- gate ----
+ * step: Verify NIS2 directive quotations match the official source
+ * needs: node
+ * id: check:ci-nis2-quotes
+ * lane: quality-content
+ * ---- end gate ----
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';

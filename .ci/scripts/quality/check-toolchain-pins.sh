@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Toolchain pins
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+# needs: none
+# selftest: true
+# lane: quality-code
+# ---- end gate ----
+
 # Gate: every gate-tool version is defined ONCE, and nothing acquires unpinned.
 #
 # Why this exists. Measured 2026-08-25, before .devcontainer/toolchain.env: ruff
@@ -65,9 +74,16 @@ else
 fi
 
 # --- A1. one definition per pin ----------------------------------------------
+# PATHSPEC: `.ci/*.sh`, NOT `.ci/**/*.sh`. Git's default (non-`:(glob)`) wildmatch
+# lets `*` cross `/`, so `.ci/*.sh` already reaches every depth, while `.ci/**/*.sh`
+# demands a literal slash after `.ci/` and therefore MISSES every script sitting
+# directly under `.ci/`. Measured 2026-09-06 when .ci/bootstrap.sh became the first
+# file in that class: the two spellings return the same 453 tracked files, and only
+# the second one drops bootstrap.sh. A scanner that silently skips a file is the
+# vacuity failure this gate exists to prevent, so the narrower spelling is a bug.
 scan_corpus() {
     git -C "$ROOT" ls-files \
-        '.github/workflows/*.yml' '.devcontainer/*' '.ci/**/*.sh' 'run.sh' 2>/dev/null
+        '.github/workflows/*.yml' '.devcontainer/*' '.ci/*.sh' 'run.sh' 2>/dev/null
 }
 
 dupes=()

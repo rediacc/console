@@ -15,6 +15,11 @@
  * Every run first proves the instrument on a control schema (the real schema
  * plus one deliberately unregistered leaf) — a gate that cannot fire is worse
  * than no gate.
+ *
+ * ---- gate ----
+ * step: Schema coverage
+ * needs: node
+ * ---- end gate ----
  */
 
 // Source imports (not @rediacc/shared dist) so the gate always judges the

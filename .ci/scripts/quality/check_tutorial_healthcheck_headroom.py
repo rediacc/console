@@ -47,6 +47,7 @@ CONTROL-FIRST
 `--selftest` plants both a too-tight and a generous healthcheck and requires the
 detector to flag exactly the tight one. Finding no compose files at all is a hard
 FAILURE, not a pass: a headroom check with nothing to check asserts nothing.
+
 """
 
 from __future__ import annotations

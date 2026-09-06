@@ -30,6 +30,23 @@
  *    scans (`git ls-files '*.sh'`), so pinning it to git's would be pinning it
  *    to the wrong semantics. Recorded here so the next reader does not
  *    "strengthen" this into a false gate.
+ *
+ * ---- gate ----
+ * step: Gate manifest self-consistency
+ * emit: false
+ * blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+ * needs: node
+ * selftest: true
+ * why: The manifest is the pre-push lane's only source of truth about which
+ *      gates are cheap and which files select them, and nothing re-reads it.
+ *      Three oracles, each with both directions in --selftest: a `slow` claim
+ *      must agree with the measured cache BOTH ways (a cheap gate marked slow
+ *      is the invisible direction -- the push stays fast while coverage
+ *      shrinks); a gate declaring paths must include its own leaves, or editing
+ *      the gate does not select the gate; and a declared glob must match at
+ *      least one tracked file. Found eight live leaf violations and one
+ *      mis-tiered gate on its first run.
+ * ---- end gate ----
  */
 
 import { execFileSync } from 'node:child_process';
@@ -63,7 +80,57 @@ interface Finding {
   text: string;
 }
 
-function tierFindings(specs: readonly GateSpec[], dur: Record<string, number>): Finding[] {
+/**
+ * How many raw measurements a gate needs before its cost is allowed to accuse it.
+ *
+ * FIVE FALSE REDS FROM ONE CAUSE, which makes it a defect in this oracle rather than
+ * five accidents. Invariant 13 says no timing from a feature worktree is admissible and
+ * that a 4.5s gate has been measured at 21s under two concurrent writers. The floor
+ * below already takes the CHEAPEST of `recent` for exactly that reason -- but min-of-N
+ * is only honest when at least one of the N was taken on a quiet machine, and after the
+ * samples for a gate are cleared the next few runs can all land under load. On
+ * 2026-09-06 gate-test:docs-gen and gate-test:media-args each held THREE samples, all
+ * contended (33.0s and 20.7s against an uncontended 0.9-7.1s), and this oracle read the
+ * floor of three bad numbers as a verdict.
+ *
+ * RECENT_KEEP in the runner is 5, so requiring 5 means a gate must have been measured a
+ * full window before it can be accused, and a single quiet run in that window is enough
+ * to bring the floor back down. It does not make contention impossible -- five
+ * consecutive contended runs would still convict -- and that residual is named here
+ * rather than hidden. The real cure is the designated quiesced reference worktree the
+ * driver contract calls for; this is what stops the oracle lying until that exists.
+ */
+export const MIN_SAMPLES_TO_TIER = 5;
+
+/**
+ * THE FLOOR IS THE RIGHT STATISTIC IN ONE DIRECTION ONLY, and that asymmetry is the
+ * whole reason this takes two maps.
+ *
+ * "Is this gate too SLOW for the fast lane" is judged on the CHEAPEST recent run,
+ * because contention only ever adds time: if a gate managed 4.5s once, 4.5s is what it
+ * costs, and the 21s reading was the machine, not the gate.
+ *
+ * "Is this gate too CHEAP to be marked slow" cannot use the same number, and using it
+ * shipped a real near-miss. gate-test:dead-bash measured 349.8s, 297.1s, 318.4s, 264.8s
+ * and 4.675s. The floor is 4.675s, so this oracle demanded `slow: true` be dropped from
+ * a gate that takes FIVE MINUTES four runs out of five -- moving it into the pre-push
+ * lane on the strength of one anomalous run that plainly did not do the work. A single
+ * fast outlier is how a slow gate gets promoted; a single slow outlier is only how a
+ * fast gate gets left alone. So the cheap direction reads the MEDIAN, where one outlier
+ * of five cannot carry the verdict.
+ */
+const median = (xs: readonly number[]): number => {
+  const a = [...xs].sort((x, y) => x - y);
+  const m = Math.floor(a.length / 2);
+  return a.length % 2 === 0 ? (a[m - 1] + a[m]) / 2 : a[m];
+};
+
+function tierFindings(
+  specs: readonly GateSpec[],
+  dur: Record<string, number>,
+  samples: Record<string, number> = {},
+  typical: Record<string, number> = {}
+): Finding[] {
   const out: Finding[] = [];
   // A GATE IS ALSO SLOW BY CLOSURE, and without this the two oracles here
   // contradict each other. check:ci-client-bundle-budget costs 0.8s ITSELF and
@@ -75,10 +142,15 @@ function tierFindings(specs: readonly GateSpec[], dur: Record<string, number>): 
   for (const spec of specs) {
     const ms = dur[spec.id];
     if (typeof ms !== 'number') continue;
-    if (spec.slow === true && ms < BUDGET_MS / SLACK && !slowByClosure.has(spec.id)) {
+    // An unjudgeable cost is not a passing one; it is counted and reported below.
+    const n = samples[spec.id];
+    if (n !== undefined && n < MIN_SAMPLES_TO_TIER) continue;
+    // The CHEAP direction reads the median, never the floor. See `median` above.
+    const mid = typical[spec.id] ?? ms;
+    if (spec.slow === true && mid < BUDGET_MS / SLACK && !slowByClosure.has(spec.id)) {
       out.push({
         oracle: 'tier',
-        text: `${spec.id} is marked slow but measures ${(ms / 1000).toFixed(1)}s — cheap enough for the pre-push lane. Drop \`slow: true\`.`,
+        text: `${spec.id} is marked slow but typically measures ${(mid / 1000).toFixed(1)}s — cheap enough for the pre-push lane. Drop \`slow: true\`.`,
       });
     }
     if (spec.slow !== true && ms > BUDGET_MS * SLACK) {
@@ -230,9 +302,22 @@ function globFindings(specs: readonly GateSpec[], tracked: readonly string[]): F
 /** CONTROL-FIRST. Each oracle is run against a planted defect and must find it,
  *  and against a clean fixture and must not. A gate whose green has never been
  *  contrasted with a red is not evidence. */
+/**
+ * How many controls the last `selftest()` actually ran, and a floor under it.
+ *
+ * COUNT-FREE ON PURPOSE. This was reported as a typed literal, "(19 controls)", and
+ * adding four controls made that line a lie no gate could catch -- the same class the
+ * floor policy names. The number is read back from what ran; the FLOOR is what stops the
+ * suite silently shrinking to nothing, which a self-reported count never could.
+ */
+let CONTROLS_RUN = 0;
+const MIN_CONTROLS = 19;
+
 function selftest(tracked: readonly string[]): number {
   let bad = 0;
+  CONTROLS_RUN = 0;
   const check = (label: string, cond: boolean): void => {
+    CONTROLS_RUN += 1;
     if (cond) process.stdout.write(`  PASS  ${label}\n`);
     else {
       bad += 1;
@@ -256,6 +341,44 @@ function selftest(tracked: readonly string[]): number {
   check(
     'tier CONTROL: a slow-marked gate that IS slow passes',
     tierFindings([spec({ slow: true })], { x: 60_000 }).length === 0
+  );
+  // The five-false-reds fix, both directions. Without the second control the
+  // precondition could be a blanket "never tier" and the suite would not notice.
+  check(
+    'tier: a thin window of measurements does NOT convict',
+    tierFindings([spec({})], { x: 60_000 }, { x: 3 }).length === 0
+  );
+  check(
+    'tier CONTROL: a full window still convicts, so the precondition is not a mute button',
+    tierFindings([spec({})], { x: 60_000 }, { x: MIN_SAMPLES_TO_TIER }).length === 1
+  );
+  check(
+    'tier CONTROL: a gate with no recorded window at all tiers as it always did',
+    tierFindings([spec({})], { x: 60_000 }, {}).length === 1
+  );
+  check(
+    'tier CONTROL: a thin window does not suppress the OPPOSITE finding either',
+    tierFindings([spec({ slow: true })], { x: 100 }, { x: 3 }).length === 0
+  );
+  // The near-miss this asymmetry exists for: four runs at ~300s and one at 4.7s.
+  // The floor says 4.7; the median says ~297. Only the median keeps the gate slow.
+  const DEAD_BASH = [349_801, 297_056, 318_402, 264_848, 4675];
+  check(
+    'tier: ONE fast outlier does not demote a gate that is slow four runs in five',
+    tierFindings(
+      [spec({ slow: true })],
+      { x: Math.min(...DEAD_BASH) },
+      { x: DEAD_BASH.length },
+      { x: 297_056 }
+    ).length === 0
+  );
+  check(
+    'tier CONTROL: a gate that is cheap in the MEDIAN is still told to drop slow',
+    tierFindings([spec({ slow: true })], { x: 100 }, { x: 5 }, { x: 100 }).length === 1
+  );
+  check(
+    'tier CONTROL: the SLOW direction still reads the floor, not the median',
+    tierFindings([spec({})], { x: 60_000 }, { x: 5 }, { x: 60_000 }).length === 1
   );
   check(
     'tier: a fast-lane gate that is expensive is caught',
@@ -374,11 +497,20 @@ function main(): number {
       process.stderr.write('CONTROL FAILED: check-gate-manifest oracles did not fire\n');
       return 1;
     }
-    process.stdout.write('check-gate-manifest: selftest ok (19 controls)\n');
+    if (CONTROLS_RUN < MIN_CONTROLS) {
+      process.stderr.write(
+        `CONTROL FAILED: only ${CONTROLS_RUN} control(s) ran, floor is ${MIN_CONTROLS}. ` +
+          'Controls were removed, not merely renamed.\n'
+      );
+      return 1;
+    }
+    process.stdout.write(`check-gate-manifest: selftest ok (${CONTROLS_RUN} controls)\n`);
     return 0;
   }
 
   const dur: Record<string, number> = {};
+  const samples: Record<string, number> = {};
+  const typical: Record<string, number> = {};
   try {
     const raw: Record<string, unknown> = JSON.parse(
       fs.readFileSync(path.join(REPO, '.ci', 'cache', 'gate-durations.json'), 'utf-8')
@@ -394,6 +526,12 @@ function main(): number {
         const { ewma, recent } = v as { ewma?: number; recent?: number[] };
         const floor = Array.isArray(recent) && recent.length > 0 ? Math.min(...recent) : ewma;
         if (typeof floor === 'number') dur[id] = floor;
+        // A bare number is the older cache shape and carries no window, so it is
+        // left unrecorded here and tiers as it always did.
+        if (Array.isArray(recent) && recent.length > 0) {
+          samples[id] = recent.length;
+          typical[id] = median(recent);
+        }
       }
     }
   } catch {
@@ -403,8 +541,22 @@ function main(): number {
     process.stdout.write('- tier oracle: no duration cache yet, so cost claims are unjudged\n');
   }
 
+  const unjudged = Object.entries(samples).filter(
+    ([id, n]) => n < MIN_SAMPLES_TO_TIER && typeof dur[id] === 'number'
+  );
+  if (unjudged.length > 0) {
+    process.stdout.write(
+      `- tier oracle: ${unjudged.length} gate(s) have fewer than ${MIN_SAMPLES_TO_TIER} ` +
+        'measurements, so their cost is NOT judged yet: ' +
+        `${unjudged
+          .slice(0, 6)
+          .map(([id, n]) => `${id} (${n})`)
+          .join(', ')}${unjudged.length > 6 ? ', ...' : ''}\n`
+    );
+  }
+
   const findings = [
-    ...tierFindings(GATES, dur),
+    ...tierFindings(GATES, dur, samples, typical),
     ...closureFindings(GATES),
     ...leafFindings(GATES),
     ...globFindings(GATES, tracked),

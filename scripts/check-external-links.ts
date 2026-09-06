@@ -17,6 +17,12 @@
  *   reason unnoticed (see "ALLOWLIST LIVENESS" below)
  * - Reports broken links with file location
  * - Exit code 1 on any broken link (CI-friendly)
+ *
+ * ---- gate ----
+ * step: External links
+ * needs: node
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

@@ -25,6 +25,12 @@
  * and nothing else. Not `os.getcwd()`, not `project_root(project_start())` --
  * project_start's own ladder already ends at cwd, so the shared form is a
  * superset of both and never resolves worse.
+ *
+ * ---- gate ----
+ * step: Worklist path resolution
+ * needs: node
+ * selftest: true
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

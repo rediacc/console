@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Check account portal (typecheck + build)
+# needs: node, submodules
+# selftest: true
+# lane: quality-packages
+# ---- end gate ----
+
 # Check that the account portal frontend compiles and builds correctly
 #
 # Usage:

@@ -32,6 +32,12 @@
  *   0 - the Dockerfile agrees with the lockfile and the artifacts are current,
  *       or the renet submodule is not checked out (nothing to attribute)
  *   1 - a drifted pin or a stale generated artifact
+ *
+ * ---- gate ----
+ * step: Check embed credits consistency
+ * needs: node, submodules
+ * lane: quality-go
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

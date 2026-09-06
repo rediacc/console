@@ -1,13 +1,21 @@
 /**
  * The gate INVENTORY's type shape, split out of manifest.ts on 2026-09-04.
  *
- * WHY SEPARATELY. manifest.ts is 5,654 lines and 192 KB, and three tools parse it as
- * TEXT with regexes keyed on the entry shape (wl_reggate.py, check-gate-id-convention.sh,
- * check_test_file_orphans.py), so it has to keep containing every entry literally. A
- * binder that DERIVES entries from per-gate declarations needs these types without
- * importing 378 entries and 192 KB to get them -- and so does anything else that only
- * wants the shape. Splitting the types is the non-behavioural half of that work: every
- * existing importer keeps working, because manifest.ts re-exports them.
+ * WHY SEPARATELY. manifest.ts is 5,654 lines and 192 KB. A binder that DERIVES entries
+ * from per-gate declarations needs these types without importing 378 entries and 192 KB
+ * to get them -- and so does anything else that only wants the shape. Splitting the types
+ * is the non-behavioural half of that work: every existing importer keeps working, because
+ * manifest.ts re-exports them.
+ *
+ * THE THREE TEXT PARSERS ARE GONE, and this paragraph used to give them as the reason
+ * manifest.ts "has to keep containing every entry literally". wl_reggate.py, then
+ * check-gate-id-convention.sh and check_test_file_orphans.py (both on 2026-09-06, W2.4a),
+ * were each moved onto `scripts/ci-runner/gates.lock.json`, the committed JSON projection
+ * of this literal. All three had been wrong in the same silent direction: the regex read
+ * 259 of 261 entries in one case and 373 of 420 in another, always short, always green.
+ * The literal is still the source of truth -- gen-gates-lock.ts projects it and
+ * check:ci-gates-lock keeps the two faithful -- but no longer because anything parses it
+ * as text, so do not cite a text parser as the constraint that keeps it in this shape.
  */
 
 export interface GateSpec {

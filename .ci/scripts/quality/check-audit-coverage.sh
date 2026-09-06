@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Check audit logging coverage for CLI operations
+# needs: none
+# selftest: true
+# ---- end gate ----
+
 # Check that all machine-level CLI operations have audit logging coverage.
 #
 # Verifies three invariants:

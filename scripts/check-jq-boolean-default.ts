@@ -1,4 +1,9 @@
 #!/usr/bin/env tsx
+// ---- gate ----
+// step: jq boolean defaults
+// needs: node
+// ---- end gate ----
+
 import { execFileSync } from 'node:child_process';
 /**
  * Gate: `// true` on a boolean field in a jq filter, which inverts its meaning.

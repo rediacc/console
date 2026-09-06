@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Control-first gates prove their plant landed
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+# needs: none
+# selftest: true
+# lane: quality-code
+# ---- end gate ----
+
 # Gate: a control-first gate that PLANTS its defect by pattern substitution must
 # prove the plant landed before trusting the control.
 #

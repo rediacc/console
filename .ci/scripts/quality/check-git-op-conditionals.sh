@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Git-op conditional guards
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+# needs: none
+# selftest: true
+# lane: quality-code
+# ---- end gate ----
+
 # A git-identity assignment used later without checking whether it failed OR
 # resolved to a KNOWN MISLEADING VALUE is a defect gates run git and observe
 # success but never inspect what a CONDITIONAL later does with that output.

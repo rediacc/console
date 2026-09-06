@@ -305,6 +305,16 @@ run_against_empty_tree() {
     mkdir -p "$TEMP/.ci"
     cp -r "$REPO_ROOT/.ci/scripts" "$TEMP/.ci/scripts"
     [[ -d "$REPO_ROOT/.ci/config" ]] && cp -r "$REPO_ROOT/.ci/config" "$TEMP/.ci/config"
+    # .ci/rediacc_ci too, and this one is not a convenience. The CI programs are
+    # moving into that Python package (docs/ci-overhaul/08-driver-contract.md
+    # section 2 fixes the path), so gates will start with `import rediacc_ci`.
+    # Copy only scripts/ and config/ and every one of them dies in here with
+    # ModuleNotFoundError -- which arrives as a NON-ZERO EXIT AND A MESSAGE
+    # ABOUT A MISSING INPUT, i.e. indistinguishable from the gate correctly
+    # rejecting an empty tree. This harness would then report every such gate as
+    # healthy while testing nothing about it. test_fixture_can_import_package
+    # below is the control that keeps this line honest.
+    [[ -d "$REPO_ROOT/.ci/rediacc_ci" ]] && cp -r "$REPO_ROOT/.ci/rediacc_ci" "$TEMP/.ci/rediacc_ci"
     # node_modules resolution walks upward from the script, so link the real
     # one in; the point of the fixture is an empty SOURCE tree, not a broken
     # runtime.
@@ -394,6 +404,68 @@ test_harness_catches_a_vacuous_validator() {
     log_pass "harness catches a vacuous validator (control case)"
 }
 
+test_fixture_can_import_package() {
+    # THE COPY LIST IS AN INPUT TO EVERY GATE RUN IN HERE, so it needs a control
+    # of its own. `import rediacc_ci` must work INSIDE the fixture; if it does
+    # not, a gate that uses the package fails here for a reason that has nothing
+    # to do with what the gate asserts, and that failure looks exactly like the
+    # empty-tree rejection this file is built to observe.
+    #
+    # RED-THEN-GREEN, run in that order rather than assumed: delete the
+    # `cp -r "$REPO_ROOT/.ci/rediacc_ci"` line in run_against_empty_tree and this
+    # case goes red with ModuleNotFoundError: No module named 'rediacc_ci'.
+    # Restore it and it goes green.
+    #
+    # The probe is planted under .ci/scripts/ specifically because that is a
+    # directory the fixture copies -- a probe outside the copy list could not be
+    # run in there at all. And it must resolve to the fixture's OWN copy of the
+    # package rather than the repo's, or the case would stay green with the
+    # copy-list line deleted; hence the last assertion.
+    # PID-KEYED, for the reason .ci/scripts/test/run-all.sh:19-27 records about
+    # the .gate-paths-exist pair: this schedule serialises the writer tests
+    # WITHIN one battery, but two batteries (two sessions in one tree) used to
+    # collide on a fixed fixture name, each trap deleting the other's file,
+    # which reads as "the detector is broken" rather than as a collision.
+    local probe=".ci/scripts/.rediacc-ci-import-probe.$$.py"
+    # BLOCKER: expanding the path now binds it into the trap so cleanup fires even if the variable is later reassigned
+    # shellcheck disable=SC2064
+    trap "rm -f '$REPO_ROOT/$probe'" RETURN
+
+    # sys.path is derived from the probe's OWN location, not from the cwd: that
+    # is how a real gate module under .ci/scripts/quality/ will reach the
+    # package, and it is what makes the "not the real repo" assertion below
+    # meaningful.
+    cat >"$REPO_ROOT/$probe" <<'PROBEEOF'
+import importlib
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+mod = importlib.import_module("rediacc_ci")
+print("imported rediacc_ci from " + str(mod.__file__))
+PROBEEOF
+
+    local out rc=0
+    out="$(run_against_empty_tree "$probe")" || rc=$?
+    # REMOVED HERE, BEFORE THE FIRST ASSERTION, and not left to the trap above.
+    # log_fail and every assert_* helper call `exit 1`, and a RETURN trap does
+    # NOT fire on exit -- so on a red run the trap never runs and the probe is
+    # left behind in a working tree that holds other sessions' uncommitted work.
+    # Measured while proving this case can fail: the planted .py survived the
+    # red run and showed up in `git status` as an untracked file. The trap stays
+    # as a belt for the path where run_against_empty_tree itself dies.
+    rm -f "$REPO_ROOT/$probe"
+    if [[ "$rc" -ne 0 ]]; then
+        printf '%s\n' "$out" >&2
+        log_fail "a gate run inside the fixture cannot import rediacc_ci (exit $rc) -- add .ci/rediacc_ci to the copy list in run_against_empty_tree"
+    fi
+    assert_contains "$out" "imported rediacc_ci from" "the probe must report the package it loaded"
+    # It must be the COPY. If this ever resolved to $REPO_ROOT the case would be
+    # green with the copy-list line deleted, which is the vacuity this whole file
+    # exists to police.
+    assert_not_contains "$out" "$REPO_ROOT/.ci/rediacc_ci" "the fixture must import its OWN copy of the package, not the repo's"
+    log_pass "a gate run inside the empty-tree fixture can import rediacc_ci"
+}
 test_fetch_retry_reads_every_file_type() {
     # PER-FILE-TYPE BLINDNESS: absence of matches is indistinguishable from success.
     #
@@ -527,6 +599,7 @@ test_sharedselftestcases_can_fail() {
 }
 
 log_test "test-gate-anti-vacuity"
+test_fixture_can_import_package
 test_fetch_retry_reads_every_file_type
 test_sharedselftestcases_can_fail
 test_runcontrols_can_fail

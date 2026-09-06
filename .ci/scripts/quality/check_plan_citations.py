@@ -1,0 +1,568 @@
+#!/usr/bin/env python3
+"""check:ci-plan-citations -- a citation ADDED to agent/ must resolve today.
+
+WHY THIS GATE EXISTS, and it has a measurement rather than an opinion.
+
+`agent/` is where this repo keeps the reasoning behind its own machinery, and the
+value of a plan or a record is entirely in the pointers it carries: a file:line,
+a gate id, another plan, a commit or a blob. Measured 2026-09-06 while designing
+W12: of 71 commit-shaped tokens already cited across those files, **37 no longer
+resolve**. More than half of the durable pointers this tree relies on are dead,
+and nothing reported it -- not one of them.
+
+The cure is NOT a sweep of the 37. A sweep fixes a day; this gate fixes the
+slope. It judges ONLY the lines a change ADDS, so:
+
+  * the existing dead citations are not this change's problem and do not red it;
+  * a change that adds a NEW dead pointer is red at the moment it is cheapest to
+    fix, which is while the author still knows what they meant.
+
+WHAT IS ASSERTED. Every citation on an added line resolves, using
+`wl_planrec.resolve` and NOTHING ELSE. There is deliberately no second copy of
+any resolver here: `citation_state`'s path regex alone carries five separately
+paid-for extension rounds (dotfiles, .astro, .mdx, .cast, leading dots), and a
+fresh regex in this file would re-open every one of them. Five kinds:
+
+  fileline   `path/to/file.ext:123` -- the file exists and has that many lines.
+  plan       `agent/PLAN-x.md` -- on disk (a COMPACTED record still is, which is
+             the whole point of compacting in place rather than deleting).
+  gate       `check:x` -- a key in package.json's scripts.
+  object     a 7-to-40 hex token -- a real blob OR a real commit. Either is
+             legitimate in a plan and demanding one would flag the other.
+
+WHAT IS DELIBERATELY NOT ASSERTED, so a green is not read as more than it is:
+
+  * Nothing here checks that the cited line SAYS what the sentence claims. That
+    is `wl_checks.cited_excerpts`'s job and ultimately a reader's. This proves
+    the pointer lands somewhere, which is the half a machine can settle.
+  * An ALL-DIGIT hex token is never judged. `[0-9a-f]{7,40}` also matches a CI
+    run id (100500447167), a date and an issue number, and those are the
+    evidence shapes `wl_checks.completion_evidence` treats as first-class.
+    Laundering a run id out of a plan to defend against an all-digit git object,
+    which does not occur, would destroy the most citable fact in the file. The
+    same asymmetry, in the same direction, as `wl_planrec.launder`.
+  * A line INSIDE a fenced code block is skipped. A plan that shows the reader
+    `git show <40 hex>` as an example is documenting a command, not citing an
+    object, and reding on it would teach sessions to stop writing examples.
+  * Only `agent/` is in scope. That is where the durable records live and where
+    the 37 dead pointers were measured. Widening this to `docs/` is a separate
+    decision with a much larger blast radius, and it should be made on its own
+    evidence rather than as a side effect of this gate.
+
+THE ANTI-VACUITY HALVES, both of them, because "no findings" and "read nothing"
+look identical from the outside:
+
+  1. THE CONTROL. `selftest()` runs the real extractor and the real resolvers
+     over four tokens that CANNOT resolve and four that MUST, against this
+     repository rather than a fixture. Both directions, and the silent half is
+     not a formality: "everything reds" is a check that cannot pass, which is
+     the shape a gate takes on when a resolver breaks.
+  2. THE PARSER-BLIND FLOOR. The extractor is also run over the WHOLE tracked
+     `agent/**/*.md` corpus. If that corpus is non-empty and yields ZERO
+     citations, the extractor is blind -- a broken regex, a collapsed glob -- and
+     the gate refuses a verdict instead of reporting a clean diff. The floor is
+     corpus-derived rather than a hand-typed count, per the driver contract's
+     floor policy: it is "the corpus must not be silent", not "there must be N".
+
+WHY IT READS THE WORKING TREE, not just HEAD. `git diff <base> -- agent` with no
+`...` compares the base commit to the WORKING TREE, so it judges uncommitted work
+too. This program's normal deliverable is an uncommitted tree, and a gate that
+could only see committed lines would be green on exactly the state it is meant to
+police. In CI on a pull request the working tree is the head commit, so the same
+code path answers the same question.
+
+Exit 0 green, 1 findings or vacuous input, 2 instrument control failed.
+"""
+
+from __future__ import annotations
+
+import os
+import pathlib
+import re
+import subprocess
+import sys
+
+ROOT = pathlib.Path(
+    os.environ.get("PLAN_CITATIONS_ROOT") or pathlib.Path(__file__).resolve().parents[3]
+)
+sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))
+
+try:
+    import wl_checks as CK
+    import wl_planfid as PFID
+    import wl_planrec as R
+except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-vacuity.sh
+    # A check that cannot see must SAY it cannot see. Every resolver this gate
+    # uses lives in those modules on purpose; without them there is nothing to
+    # compare and no verdict to give.
+    print(
+        f"VACUOUS INPUT: cannot import the citation resolvers from "
+        f"{ROOT / '.claude' / 'hooks' / 'stop'} ({_exc}). This gate resolves pointers ONLY "
+        f"through wl_planrec/wl_checks, so without them it has no oracle.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+#: The corpus, and the predicate that defines it. `agent/` holds three different
+#: kinds of document and only one of them belongs here.
+#:
+#: THE TEST IS OWNERSHIP: can the person who READS the finding fix it?
+#:
+#:   agent/PLAN-*.md, agent/INDEX.md   IN SCOPE. Shared, durable, and editable by
+#:       any session. These are also where the defect was measured: 37 of 71
+#:       commit-shaped tokens cited across the PLANS no longer resolve.
+#:
+#:   agent/<session>/STATE.md          OUT. It is per-session and, by construction
+#:       (`wl_store.py:403`), READ-ONLY to every session but its owner -- writable
+#:       only through `worklist.py --state`, which rewrites the whole section. A
+#:       red here names a line the reader is forbidden to touch, possibly written
+#:       by a session that no longer exists. That is a finding with no legal
+#:       remedy, which is how a gate earns a suppression.
+#:
+#:   agent/pr/*.md, agent/worklist/*   OUT. Generated. The fix for a dead pointer
+#:       in a generated file is a change to the generator, and reporting it at the
+#:       artifact teaches the wrong lesson.
+#:
+#: WHAT THIS CANNOT SEE, stated so a green is not read as more than it is: a dead
+#: pointer added to a STATE.md is invisible here. Measured 2026-09-06, this branch
+#: has two of them (`promote-stable.yml:68`, which lives at
+#: `.github/workflows/promote-stable.yml`, and `65820fd74`, a private/account
+#: gitlink that is not an object in this repository). Both are real and both were
+#: found by this gate before the scope was narrowed; they are reported to the
+#: driver rather than silently dropped. The narrowing is about who can act on a
+#: finding, not about whether the finding is true.
+SCOPE_DIR = "agent"
+SCOPE_SUFFIX = ".md"
+
+
+def in_scope(rel):
+    """Is this path one any session may fix? See the SCOPE_DIR block above."""
+    if not rel or not rel.endswith(SCOPE_SUFFIX):
+        return False
+    if rel == "agent/INDEX.md":
+        return True
+    return rel.startswith("agent/PLAN-")
+
+
+#: An object citation must be at least this long. NINE, and the number is
+#: MEASURED rather than borrowed from git.
+#:
+#: `wl_planrec.HEXTOK_RE` matches 7 to 40 hex because 7 is git's own abbreviation
+#: floor, and that is right for LAUNDERING (where a false positive costs one
+#: `[unresolved]` in model prose). It is wrong here, because in `agent/` an
+#: 8-hex token is overwhelmingly a SESSION PREFIX, a PR-TASK id or an epic id --
+#: none of which is a git object and none of which is meant to be one.
+#:
+#: Measured 2026-09-06 over the lines this branch adds under agent/: 28 object
+#: tokens of length 8, of which **20 of 20 distinct ones resolve to nothing**,
+#: because every one is an identity rather than a sha; and 11 of length 9, of
+#: which 8 resolve and 1 does not. So a floor of 9 removes an entire false
+#: class and keeps the true finding. Nine is also this repo's own convention:
+#: `wl_planrec.sha9` is what `done=` and `Full-Text:` are written with.
+#:
+#: WHAT IT CANNOT SEE, said out loud: a genuinely dead 7- or 8-character sha is
+#: now invisible to this gate. That is the trade, taken knowingly, because the
+#: alternative is a gate that reds on every session id in every STATE.md and is
+#: therefore switched off within a day.
+OBJECT_MIN = int(os.environ.get("PLAN_CITATIONS_OBJECT_MIN", "9"))
+
+#: How many findings are printed before the tail is summarised. A wall of
+#: findings is a wall nobody reads to the end of, and the fix for the first is
+#: usually the fix for the rest.
+MAX_SHOWN = int(os.environ.get("PLAN_CITATIONS_MAX_SHOWN", "40"))
+
+
+def _git(*args) -> str:
+    r = subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True, check=False)
+    return r.stdout if r.returncode == 0 else ""
+
+
+def base_ref() -> str | None:
+    """The commit this branch diverged from, or None.
+
+    The same resolution order `check_plan_boxes.base_ref` uses, and for the same
+    reason: CI hands us a branch NAME on a pull_request event and nothing at all
+    on a push, so the merge-base is computed rather than assumed. Diffing against
+    the tip of main would attribute every commit main gained since the branch
+    started to this branch, and every stale citation in them with it.
+    """
+    cand = os.environ.get("PLAN_CITATIONS_BASE") or ""
+    if not cand:
+        br = os.environ.get("GITHUB_BASE_REF") or ""
+        cand = f"origin/{br}" if br else "origin/main"
+    for ref in (cand, cand.replace("origin/", ""), "origin/main", "main"):
+        if not ref:
+            continue
+        got = _git("merge-base", "HEAD", ref).strip()
+        if got:
+            return got
+    return None
+
+
+HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
+
+
+def added_lines(base):
+    """[(rel, lineno, text)] for every line this branch ADDS under the scope.
+
+    Line numbers are the NEW file's, tracked through the hunk headers, because a
+    finding a reader cannot open is a finding they will not act on.
+    """
+    out = []
+    raw = _git("diff", "--unified=0", "--no-color", base, "--", SCOPE_DIR)
+    rel, lineno = None, 0
+    for line in raw.split("\n"):
+        if line.startswith("+++ "):
+            path = line[4:].strip()
+            # A PATH CONTAINING A SPACE IS QUOTED by git in the diff header, and
+            # an unstripped quote makes the `.md` suffix test false -- so the
+            # file would be silently skipped rather than judged. Silence is the
+            # one failure mode this gate cannot afford, since it is
+            # indistinguishable from a clean file.
+            if len(path) > 1 and path[0] == '"' and path[-1] == '"':
+                path = path[1:-1]
+            rel = None if path == "/dev/null" else path.removeprefix("b/")
+            continue
+        m = HUNK_RE.match(line)
+        if m:
+            lineno = int(m.group(1))
+            continue
+        if not line.startswith("+") or line.startswith("+++"):
+            continue
+        if in_scope(rel):
+            out.append((rel, lineno, line[1:]))
+        lineno += 1
+    return out
+
+
+def fenced_lines(root, rel):
+    """The set of 1-based line numbers inside a fenced code block in `rel`.
+
+    Read from the NEW file rather than inferred from the diff, because a hunk
+    carries no fence context: an added line in the middle of a block looks
+    exactly like an added line in prose. `PFID.FENCE_RE` is the same fence test
+    `plan_tasks` uses, so "inside a fence" means here what it means everywhere
+    else in this repo.
+    """
+    try:
+        text = (root / rel).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return set()
+    out, fenced = set(), False
+    for i, raw in enumerate(text.splitlines(), start=1):
+        if PFID.FENCE_RE.match(raw):
+            fenced = not fenced
+            out.add(i)
+            continue
+        if fenced:
+            out.add(i)
+    return out
+
+
+def citations(text):
+    """[(kind, token)] for every pointer on one line, in resolve()'s kinds.
+
+    THE ORDER MATTERS and it is the order `wl_planrec.launder` uses: file:line
+    first, because a path fragment inspected as hex would be rewritten out from
+    under the citation resolver. Plans before gates before objects for the same
+    reason -- each later shape is a superset of characters the earlier one owns.
+    """
+    out, spans = [], []
+
+    def take(rx, kind, group=0):
+        for m in rx.finditer(text or ""):
+            if any(m.start() < e and s < m.end() for s, e in spans):
+                continue
+            spans.append((m.start(), m.end()))
+            out.append((kind, m.group(group)))
+
+    take(CK.CITE_RE, "fileline")
+    take(R.PLAN_REF_RE, "plan")
+    take(R.GATE_RE, "gate")
+    for m in R.HEXTOK_RE.finditer(text or ""):
+        if any(m.start() < e and s < m.end() for s, e in spans):
+            continue
+        tok = m.group(1)
+        # See the docstring: an all-digit token is a run id, a date or an issue
+        # number far more often than it is a git object, and it is never judged.
+        if tok.isdigit() or len(tok) < OBJECT_MIN:
+            continue
+        out.append(("object", tok))
+    return out
+
+
+def submodule_paths(root):
+    """The submodule prefixes declared in `.gitmodules`, or ().
+
+    Read from the file rather than hardcoded, because the set changes and a
+    hardcoded list would go stale in exactly the direction that produces false
+    findings: a submodule added later would not be recognised.
+    """
+    out = []
+    for ln in _git("config", "-f", ".gitmodules", "--get-regexp", r"\.path$").split("\n"):
+        parts = ln.split()
+        if len(parts) == 2 and (pathlib.Path(root) / parts[1]).is_dir():
+            out.append(parts[1])
+    return tuple(out)
+
+
+def unresolved(root, kind, token):
+    """(bad, why) -- False means the pointer lands somewhere real.
+
+    `object` is the one kind with TWO acceptable answers, so it is asked twice.
+    Demanding a blob would flag every legitimate commit and demanding a commit
+    would flag every blob, and a record is entitled to carry either.
+    """
+    if kind == "object":
+        if R.resolve(root, "blob", token)[0] or R.resolve(root, "commit", token)[0]:
+            return False, ""
+        return True, (
+            "names neither a blob nor a commit in this clone. Three things it could be, "
+            "and the fix differs: (a) a commit sha on a branch, which `gh pr merge "
+            "--rebase` REWRITES -- cite the blob id instead (`git hash-object <file>`), "
+            "which is content-addressed and survives the merge; (b) a SUBMODULE gitlink, "
+            "which is never an object in this repository -- name the submodule beside it "
+            "so a reader knows where to look; (c) a typo"
+        )
+    ok, why = R.resolve(root, kind, token)
+    if ok:
+        return False, why
+    if kind == "fileline":
+        # A SUBMODULE-RELATIVE PATH IS STILL A FINDING, but not the one the plain
+        # message describes. A plan about renet naturally writes
+        # `pkg/chunkstore/uploader.go:71`, which is a real file -- inside
+        # private/renet, and unreachable from the console root where every reader
+        # of the plan is standing. "Does not exist" sends them looking for a
+        # deleted file; naming the submodule turns the same red into a one-word
+        # fix. Measured 2026-09-06 over the whole plan corpus: 40 of the
+        # unresolvable file:line citations, and this class is most of them.
+        head = token.split(":", 1)[0]
+        for sub in submodule_paths(root):
+            if (pathlib.Path(root) / sub / head).is_file():
+                return True, (
+                    "does not exist at the repository root, but %s/%s does. Write the "
+                    "submodule-qualified path so a reader standing in this repo can "
+                    "follow it" % (sub, head)
+                )
+    return True, why
+
+
+def problems_for(root, rows):
+    """[str] -- one finding per unresolvable citation on an added line."""
+    out, fences = [], {}
+    for rel, lineno, text in rows:
+        if rel not in fences:
+            fences[rel] = fenced_lines(root, rel)
+        if lineno in fences[rel]:
+            continue
+        for kind, token in citations(text):
+            bad, why = unresolved(root, kind, token)
+            if bad:
+                out.append(f"{rel}:{lineno}: adds {kind} citation `{token}` -- {why}")
+    return out
+
+
+def corpus_citations(root):
+    """(files, citations) over the whole tracked corpus. The parser-blind floor.
+
+    Counted with the SAME extractor the diff uses, which is the only way the
+    count means anything: a floor computed by a second, healthier parser would
+    stay comfortably above zero while the real one saw nothing.
+    """
+    listing = _git("ls-files", "--", SCOPE_DIR).split("\n")
+    files = [f for f in listing if in_scope(f.strip())]
+    n = 0
+    for rel in files:
+        try:
+            text = (root / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for raw in text.splitlines():
+            n += len(citations(raw))
+    return len(files), n
+
+
+# ---------------------------------------------------------------------------
+# CONTROL FIRST. Against the REAL repository rather than a fixture, deliberately:
+# every oracle here is a property of THIS tree (a plan on disk, a gate in
+# package.json, a commit in this history), so a fixture would prove that the
+# resolvers work on a fixture. What must be true is that they work here.
+
+
+def selftest(root):
+    """Plant one unresolvable pointer per kind and require a finding; then the
+    same four kinds resolvable and require SILENCE. Returns the number of
+    control failures."""
+    bad = 0
+
+    def ck(label, ok, detail=""):
+        nonlocal bad
+        print(f"  {'PASS' if ok else 'FAIL'}  {label}")
+        if not ok:
+            bad += 1
+            if detail:
+                print(f"        {detail}")
+
+    plans = [f for f in _git("ls-files", "--", SCOPE_DIR).split("\n") if "/PLAN-" in f]
+    head = _git("rev-parse", "HEAD").strip()
+    if not plans or not head:
+        ck(
+            "the control has something real to point at",
+            False,
+            f"{len(plans)} plan(s), HEAD={head!r}",
+        )
+        return bad
+
+    dead = [
+        ("fileline", "agent/PLAN-there-is-no-such-plan-zzz.md:9"),
+        ("plan", "agent/PLAN-there-is-no-such-plan-zzz.md"),
+        ("gate", "check:no-such-gate-zzz"),
+        ("object", "deadbeef" * 5),
+    ]
+    live = [
+        ("fileline", "package.json:1"),
+        ("plan", plans[0]),
+        ("gate", "check:ci-plan-record"),
+        ("object", head),
+    ]
+    for kind, token in dead:
+        got, _why = unresolved(root, kind, token)
+        ck(f"an unresolvable {kind} citation is reported ({token[:44]})", got)
+    for kind, token in live:
+        got, why = unresolved(root, kind, token)
+        ck(f"CONTROL: a real {kind} citation is SILENT ({token[:44]})", not got, why)
+
+    # The EXTRACTOR, separately from the resolvers: a line carrying all four
+    # shapes must yield all four. A resolver that works over an extractor that
+    # sees nothing is a gate that cannot fail.
+    probe = f"see {plans[0]}:12 and {plans[0]} plus check:ci-plan-record at {head[:12]}"
+    kinds = {k for k, _t in citations(probe)}
+    ck(
+        "the extractor finds all four citation kinds on one line",
+        kinds == {"fileline", "plan", "gate", "object"},
+        f"got {sorted(kinds)}",
+    )
+    # And the two documented exemptions, both directions.
+    ck(
+        "an all-digit run id is NOT treated as an object",
+        not any(t == "100500447167" for _k, t in citations("run 100500447167 failed")),
+    )
+    ck(
+        "CONTROL: a hex-and-letter token IS treated as an object",
+        any(k == "object" for k, _t in citations("at c6d3af163 the branch point")),
+    )
+    # THE FLOOR, both directions. An 8-hex session prefix must not be judged and
+    # a 9-hex sha must be; a floor that silently drifted to 7 would red on every
+    # session id in every STATE.md, which is how a gate gets switched off.
+    ck(
+        "an 8-hex session prefix is NOT treated as an object",
+        not any(k == "object" for k, _t in citations("session d1589e0b wrote this")),
+    )
+    ck(
+        "CONTROL: one more character IS",
+        any(k == "object" for k, _t in citations("session d1589e0bc wrote this")),
+    )
+    # THE SCOPE PREDICATE, both directions. A narrowed scope is the one change
+    # that can quietly turn a working gate into one that reads nothing, so the
+    # boundary is pinned rather than described.
+    ck("a plan is in scope", in_scope(plans[0]))
+    ck("...and so is the index", in_scope("agent/INDEX.md"))
+    ck("CONTROL: a per-session STATE.md is NOT", not in_scope("agent/d1589e0b/STATE.md"))
+    ck("CONTROL: a generated PR body is NOT", not in_scope("agent/pr/some-branch.md"))
+    ck("CONTROL: a file outside agent/ is NOT", not in_scope("docs/agent-reference/TRAPS.md"))
+
+    # The submodule advice, both directions. Skipped rather than failed when the
+    # submodules are not checked out, because a shallow CI checkout is a real
+    # environment and a control that cannot run must say so instead of reding.
+    subs = submodule_paths(root)
+    if subs:
+        probe = ""
+        for sub in subs:
+            for cand in sorted(pathlib.Path(root, sub).rglob("*.go"))[:1]:
+                probe = str(cand.relative_to(pathlib.Path(root, sub)))
+        if probe:
+            got, why = unresolved(root, "fileline", probe + ":1")
+            ck("a submodule-relative path is reported AS a submodule path", got and "but " in why)
+            ck("...naming where it really is", any(s2 in why for s2 in subs), why)
+        got, why = unresolved(root, "fileline", "package.json:1")
+        ck("CONTROL: a root-relative path is not given submodule advice", not got)
+    else:
+        print("  SKIP  submodule advice: no submodule is checked out here")
+    return bad
+
+
+def main(argv):
+    root = ROOT
+    print("plan citations: controls first, then the verdict")
+    if selftest(root):
+        print(
+            "✗ instrument control failed; every verdict below would be meaningless",
+            file=sys.stderr,
+        )
+        return 2
+    if "--selftest" in argv:
+        print("✓ selftest only; the diff was not judged")
+        return 0
+
+    n_files, n_cites = corpus_citations(root)
+    if n_files and not n_cites:
+        print(
+            f"VACUOUS INPUT: {n_files} tracked file(s) under {SCOPE_DIR}/ and the extractor "
+            f"found ZERO citations in any of them. That is a blind parser, not a clean "
+            f"corpus -- refusing a verdict rather than reporting a green diff nothing read.",
+            file=sys.stderr,
+        )
+        return 1
+
+    base = base_ref()
+    if base is None:
+        # NOT a failure and not a pass-by-default. With no base there is no set
+        # of ADDED lines, which is the only thing this gate judges. Saying so is
+        # the honest answer; inventing a base would judge the whole corpus and
+        # red on the 37 dead pointers this gate deliberately does not own.
+        print(
+            f"✓ plan citations: no merge base against origin/main or main, so there are no "
+            f"ADDED lines to judge. The corpus is {n_files} file(s) carrying {n_cites} "
+            f"citation(s) and was not judged -- this gate rules on what a change adds."
+        )
+        return 0
+
+    rows = added_lines(base)
+    problems = problems_for(root, rows)
+    if problems:
+        print(
+            f"✗ plan citations: {len(problems)} unresolvable pointer(s) on lines this "
+            f"change adds to a plan or to {R.INDEX_REL}:",
+            file=sys.stderr,
+        )
+        for p in problems[:MAX_SHOWN]:
+            print(f"    {p}", file=sys.stderr)
+        if len(problems) > MAX_SHOWN:
+            print(f"    ...and {len(problems) - MAX_SHOWN} more", file=sys.stderr)
+        print(
+            "\n  A pointer that does not resolve costs the next reader a `git show` and a\n"
+            "  wrong conclusion, which is worse than no pointer at all. Measured 2026-09-06:\n"
+            "  37 of 71 commit-shaped tokens already cited in agent/ are dead. This gate\n"
+            "  judges only what YOUR change adds, so every finding above is fixable now:\n"
+            "    * a commit sha on a branch is rewritten by `gh pr merge --rebase` -- cite\n"
+            "      the blob (`git hash-object <file>`), which survives the rebase;\n"
+            "    * a file:line that moved needs re-reading, which is the point of the rule;\n"
+            "    * an example rather than a citation belongs inside a fenced code block,\n"
+            "      which this gate skips.",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(
+        f"✓ plan citations: {len(rows)} added line(s) in plans or {R.INDEX_REL} since "
+        f"{base[:9]}, every citation on them resolves. Corpus floor: {n_files} in-scope "
+        f"file(s) carrying {n_cites} citation(s), so the extractor is not blind.\n"
+        f"  NOT judged, and deliberately: agent/<session>/STATE.md (read-only to every "
+        f"session but its owner) and the generated agent/pr and agent/worklist trees. "
+        f"See the SCOPE block for the ownership rule and the two real findings it costs."
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -65,6 +65,12 @@ argument rather than three conveniences.
 WHAT IT DOES NOT DO. It does not predict cost or duration, and it never edits a
 workflow. It asserts one thing: that a measured, repeatedly-observed fit is
 either taken or justified.
+
+---- gate ----
+step: Runner sizing advice
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import argparse

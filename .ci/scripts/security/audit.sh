@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# step: Audit
+# emit: false
+# blocker: BLOCKER: its workflow step carries two things a generated step cannot. Its `if:` adds `inputs.external_quality != 'skip'`, so emitting it would make the gate run when the operator asked to skip external quality; and its `env:` supplies GH_TOKEN, without which the `gh api /advisories/...` calls inside it fall from the 1000/hr github.token limit to the 60/hr anonymous one. Both losses are invisible in a diff of the emitted region.
+# needs: none
+# id: check:ci-security-audit
+# selftest: true
+# lane: quality-security
+# ---- end gate ----
+
 # Security audit with allowlist support + AI-navigable GHSA URLs.
 # Used by both ./run.sh quality audit and CI.
 #

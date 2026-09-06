@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Verify no peer dependency conflicts
+# needs: none
+# selftest: true
+# lane: quality-code
+# ---- end gate ----
+
 # Check for peer dependency conflicts
 # Usage: check-peer-deps.sh
 #

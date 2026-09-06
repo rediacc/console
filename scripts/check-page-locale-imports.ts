@@ -35,6 +35,12 @@
  *
  * Run: npx tsx scripts/check-page-locale-imports.ts
  * Control: npx tsx scripts/__tests__/check-page-locale-imports.control.ts
+ *
+ * ---- gate ----
+ * step: Page locale imports
+ * needs: node
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';

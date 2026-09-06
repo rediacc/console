@@ -252,6 +252,15 @@ readonly ACTIONLINT_SHA256_LINUX_ARM64="325e971b6ba9bfa504672e29be93c24981eeb1c0
 # down ourselves.
 readonly SHELLCHECK_SHA256_LINUX_AARCH64="324a7e89de8fa2aed0d0c28f3dab59cf84c6d74264022c00c22af665ed1a09bb"
 readonly SHELLCHECK_SHA256_LINUX_X86_64="6c881ab0698e4e6ea235245f22832860544f17ba386442fe7e9d629f8cbedf87"
+# DARWIN, added 2026-09-06 to finish the fix in .ci/scripts/lib/toolchain.sh. Until these
+# existed, an arm64 Mac resolved SHELLCHECK_SHA256_LINUX_AARCH64, downloaded the LINUX
+# tarball, and it PASSED its checksum because that is genuinely that file. The wrong OS
+# installed silently and failed much later as cannot-execute-binary-file, from a gate with
+# no idea it had installed the tool for another platform. Fetched from each release asset
+# and verified BY TYPE before recording (Mach-O 64-bit executables and XZ archives, not an
+# error page), which is the trap CLAUDE.md records about piping an unchecked HTTP response.
+readonly SHELLCHECK_SHA256_DARWIN_X86_64="ef27684f23279d112d8ad84e0823642e43f838993bbb8c0963db9b58a90464c2"
+readonly SHELLCHECK_SHA256_DARWIN_AARCH64="bbd2f14826328eee7679da7221f2bc3afb011f6a928b848c80c321f6046ddf81"
 
 # shfmt release BINARIES, for the lanes that have no Go.
 #
@@ -264,6 +273,12 @@ readonly SHELLCHECK_SHA256_LINUX_X86_64="6c881ab0698e4e6ea235245f22832860544f17b
 # file, so this is trust-on-first-use, said plainly.
 readonly SHFMT_SHA256_LINUX_AMD64="fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1"
 readonly SHFMT_SHA256_LINUX_ARM64="32d92acaa5cd8abb29fc49dac123dc412442d5713967819d8af2c29f1b3857c7"
+# DARWIN, added 2026-09-06. Same reason as the shellcheck pair above. The arch spelling
+# differs between the two upstreams and that is NOT a typo: shfmt ships Go release names
+# and uses amd64/arm64, shellcheck uses x86_64/aarch64. toolchain.sh keys each variable off
+# the arch token that tool itself uses, so the two spellings must not be unified.
+readonly SHFMT_SHA256_DARWIN_AMD64="6feedafc72915794163114f512348e2437d080d0047ef8b8fa2ec63b575f12af"
+readonly SHFMT_SHA256_DARWIN_ARM64="9680526be4a66ea1ffe988ed08af58e1400fe1e4f4aef5bd88b20bb9b3da33f8"
 
 # wrangler is installed globally in jobs that carry the production Cloudflare
 # API token, so it is pinned rather than floating on @latest.

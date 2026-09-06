@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# step: App admin permission
+# needs: none
+# id: check:ci-app-admin-perm
+# selftest: true
+# lane: quality-code
+# ---- end gate ----
+
 # Assert that no workflow or composite action ever requests the
 # `administration` permission on a `create-github-app-token` call.
 #

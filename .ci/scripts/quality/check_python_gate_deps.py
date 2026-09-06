@@ -24,6 +24,12 @@ WHAT IT DOES NOT DO. It does not follow imports transitively. A gate that runs
 its own helper module is one hop from this one, and the honest report of that
 limit belongs here rather than in a comment nobody reads: if a gate grows a
 helper with its own third-party import, this will not see it.
+
+---- gate ----
+step: Python gate deps
+needs: python-yaml
+selftest: true
+---- end gate ----
 """
 
 import pathlib

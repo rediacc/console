@@ -24,6 +24,12 @@
  * THE RULE. Every non-test call to a registered recovery function must pass a
  * context rooted at `context.Background()` or `context.TODO()` -- either inline,
  * or via a local created from one. Anything else fails.
+ *
+ * ---- gate ----
+ * step: Check recovery functions get an uncancellable context
+ * needs: node, submodules
+ * lane: quality-go
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

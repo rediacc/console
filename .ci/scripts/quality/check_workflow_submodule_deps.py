@@ -28,6 +28,12 @@ and reported nothing, which is the failure mode this repo keeps paying for.
 WHAT IT DOES NOT DO. It does not check that a submodule checkout is NEEDED --
 an unnecessary one costs fetch time, not correctness, and pruning those is a
 performance question with a different owner.
+
+---- gate ----
+step: Workflow submodule deps
+needs: python-yaml
+selftest: true
+---- end gate ----
 """
 
 import json

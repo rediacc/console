@@ -27,6 +27,15 @@
  * ANTI-VACUITY. The module is KNOWN to contain push and checkout calls, so
  * finding none means the file moved or the scan broke, not that it got safe.
  * That case fails loudly rather than printing a green nobody earned.
+ *
+ * ---- gate ----
+ * step: Mediated git tool stays lease-only and dry-run by default
+ * needs: node
+ * selftest: true
+ * why: Guards the ONE module allowed to drive a force push. It reaches git via
+ *      subprocess, which the pre-bash guards structurally cannot see, so this
+ *      static check is the only thing watching it.
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

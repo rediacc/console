@@ -35,6 +35,13 @@
  * churns when a paragraph moves above it, and a baseline that churns gets rewritten
  * wholesale, which is how a shrink-only file quietly becomes a rubber stamp. Same reasoning
  * as check-em-dash-surfaces.ts:434-435.
+ *
+ * ---- gate ----
+ * step: Sentence wrapping
+ * needs: node
+ * selftest: true
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

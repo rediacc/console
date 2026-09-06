@@ -19,10 +19,45 @@
  * TypeScript file and a ` *` docstring, because the gates are written in all three.
  */
 
+/**
+ * WHAT A DECLARATION IS ALLOWED TO BE, v2.
+ *
+ * v1 required `step`, and that single requirement made 158 of the 409 registered gates
+ * undeclarable rather than merely undeclared. Three shapes the manifest already records
+ * have no step of their own to name:
+ *
+ *   - the 143 gate-tests, which ALL ride one hand-written battery step
+ *     ("Quality-gate unit tests" in quality-security, ci-quality.yml:2191). None owns it,
+ *     so `--extract` correctly refuses them one by one for a reason that is true and
+ *     unfixable: `step "..." is shared by 143 entries; no one gate owns it`;
+ *   - the 13 `ci.kind: 'test'` entries, whose CI coverage IS a named gate-test riding
+ *     that same battery, and which carry a BLOCKER explaining why no lane can run them
+ *     directly;
+ *   - the 2 `ci.kind: 'local-only'` entries, which no CI step invokes at all.
+ *
+ * Demanding a step from those three forces the author to choose between lying (naming a
+ * step it does not own, which the binder then tries to emit) and not declaring (which
+ * leaves the gate hand-registered forever). `kind` is the third option, and it uses the
+ * manifest's own vocabulary so `gates.lock.json` can be generated from headers without
+ * inventing a translation.
+ *
+ * Only `step` emits a workflow step. The other three are the EXPLICIT NON-EMITTING
+ * CLASS: still bound, still checked against package.json and the manifest, still
+ * required to state their needs -- but never written into a gate-bind region.
+ */
+export type GateKind = 'step' | 'battery' | 'test' | 'local-only';
+
 /** One gate's declaration. Everything except `step` has a convention default. */
 export interface GateHeader {
-  /** The workflow step name. The only field with no sensible default. */
-  step: string;
+  /** Which of the four shapes this is. Absent means `step`, which is 251 of 409. */
+  kind: GateKind;
+  /**
+   * The workflow step name.
+   *
+   * Present for `step` (which OWNS it) and for `battery` (which RIDES it and must not
+   * emit it). Absent for `test` and `local-only`, which have no step at all.
+   */
+  step?: string;
   /** Capabilities the gate needs from its lane: submodules, node, python, go, ruff. */
   needs: string[];
   /** Override the id derived from the filename. */
@@ -37,6 +72,32 @@ export interface GateHeader {
   slow?: boolean;
   /** Free prose: why the gate exists. Emitted as the manifest entry's comment. */
   why?: string;
+  /**
+   * `emit: false` -- this gate OWNS its step and that step is hand-written. Verified
+   * like any other, never written into a gate-bind region.
+   *
+   * Measured need, not a hypothetical: 18 gates in quality-code run BETWEEN the lane's
+   * `Setup workspace` step and its `- id: setup` step, so their hand-written steps carry
+   * no `steps.setup.outcome` guard and run whether setup succeeded or not. Emitting them
+   * would move them below that guard, and the gates that would be silenced are the ones
+   * that explain a broken setup: check-setup-idempotency.sh, check-toolchain-pins.sh,
+   * check-host-toolchain-coverage.sh, check-hook-integrity.sh. A gate that only reports
+   * when the thing it inspects already worked is worth less than no gate.
+   *
+   * Requires `blocker:`, for the same reason the stepless kinds do: without a stated
+   * reason it is indistinguishable from a registration nobody finished.
+   */
+  emit?: boolean;
+  /** For `kind: test`: the gate-test whose run IS this gate's CI coverage. */
+  test?: string;
+  /**
+   * For `kind: test` and `kind: local-only`: why no lane runs this gate directly.
+   *
+   * Mandatory, and it is the same BLOCKER discipline the manifest already enforces on
+   * those two kinds. A non-emitting gate with no stated reason is indistinguishable from
+   * one whose registration was simply never finished.
+   */
+  blocker?: string;
 }
 
 const OPEN = /^\s*(?:#|\/\/|\*)?\s*-{2,}\s*gate\s*-{2,}\s*$/;
@@ -46,33 +107,95 @@ const FIELD = /^\s*(?:#|\/\/|\*)?\s*([a-z][a-z-]*)\s*:\s*(.*?)\s*$/;
 /** Strip a trailing `# ...` note, which is prose about the value, not the value. */
 const value = (raw: string): string => raw.replace(/\s+#\s.*$/, '').trim();
 
+const KINDS: readonly GateKind[] = ['step', 'battery', 'test', 'local-only'];
+
+/** A present block that does not yield a declaration, and the reason it does not. */
+export interface HeaderProblem {
+  error: string;
+}
+
 /**
- * The header block of one gate script, or null when it declares none.
+ * The header block of one gate script: a declaration, a REASON it is not one, or null
+ * when the file declares nothing at all.
  *
- * A file with an OPEN and no CLOSE returns null rather than reading to EOF: an
- * unterminated block would silently swallow the rest of the script as fields, and a
- * declaration that absorbs its own source is worse than an absent one.
+ * The three-way return is the whole point. v1 collapsed "no block" and "a malformed
+ * block" into one `null`, so a gate whose header had a typo was INVISIBLE rather than
+ * wrong: `gate-bind` skipped it, reported on the gates that did parse, and exited 0. A
+ * declaration that absorbs its own failure is the vacuity shape this program exists to
+ * refuse, so a block that opens must either declare or explain itself.
+ *
+ * A file with an OPEN and no CLOSE is an error rather than a silent skip for the same
+ * reason it was never read to EOF: an unterminated block would swallow the rest of the
+ * script as fields, and a declaration that absorbs its own source is worse than an
+ * absent one.
  */
-export function parseGateHeader(source: string): GateHeader | null {
+export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | null {
   const lines = source.split('\n');
   const open = lines.findIndex((l) => OPEN.test(l));
   if (open === -1) return null;
   const close = lines.findIndex((l, i) => i > open && CLOSE.test(l));
-  if (close === -1) return null;
+  if (close === -1) {
+    return {
+      error:
+        `a \`---- gate ----\` block opens at line ${open + 1} and never closes. The ` +
+        'closing marker is `---- end gate ----`; `---- /gate ----` is not it, and has ' +
+        'silently voided a declaration twice.',
+    };
+  }
 
   const fields = new Map<string, string>();
   for (const line of lines.slice(open + 1, close)) {
     const m = FIELD.exec(line);
     if (m) fields.set(m[1], value(m[2]));
   }
+
+  const rawKind = fields.get('kind') ?? 'step';
+  if (!KINDS.includes(rawKind as GateKind)) {
+    return { error: `kind: ${rawKind} is not one of ${KINDS.join(', ')}` };
+  }
+  const kind = rawKind as GateKind;
+
   const step = fields.get('step');
-  if (step === undefined || step === '') return null;
+  const owns = kind === 'step' || kind === 'battery';
+  if (owns && (step === undefined || step === '')) {
+    return {
+      error:
+        `kind: ${kind} needs a \`step:\`` +
+        (kind === 'battery' ? ' naming the shared step it rides' : ' naming the step it owns'),
+    };
+  }
+  if (!owns && step !== undefined) {
+    return {
+      error: `kind: ${kind} has no workflow step, so \`step: ${step}\` cannot be true`,
+    };
+  }
+  if (kind === 'test' && (fields.get('test') ?? '') === '') {
+    return {
+      error: 'kind: test needs `test:` naming the gate-test that runs it in CI',
+    };
+  }
+  const emitField = fields.get('emit');
+  if (emitField !== undefined && !/^(true|false|yes|no|1|0)$/i.test(emitField)) {
+    return { error: `emit: ${emitField} is not a boolean` };
+  }
+  const emit = emitField === undefined ? true : /^(true|yes|1)$/i.test(emitField);
+  if (!emit && kind !== 'step') {
+    return { error: `emit: false is only meaningful for kind: step, not kind: ${kind}` };
+  }
+  if ((!owns || !emit) && (fields.get('blocker') ?? '') === '') {
+    return {
+      error:
+        `${emit ? `kind: ${kind}` : 'emit: false'} needs \`blocker:\` stating why it is not ` +
+        'emitted. Without one it is indistinguishable from a registration nobody finished.',
+    };
+  }
 
   const bool = (k: string): boolean | undefined =>
     fields.has(k) ? /^(true|yes|1)$/i.test(fields.get(k) ?? '') : undefined;
 
   return {
-    step,
+    kind,
+    ...(owns ? { step: step as string } : {}),
     needs: (fields.get('needs') ?? '')
       .split(',')
       .map((s) => s.trim())
@@ -83,7 +206,27 @@ export function parseGateHeader(source: string): GateHeader | null {
     ...(bool('selftest') === undefined ? {} : { selftest: bool('selftest') }),
     ...(bool('slow') === undefined ? {} : { slow: bool('slow') }),
     ...(fields.has('why') ? { why: fields.get('why') } : {}),
+    ...(emit ? {} : { emit: false }),
+    ...(fields.has('test') ? { test: fields.get('test') } : {}),
+    ...(fields.has('blocker') ? { blocker: fields.get('blocker') } : {}),
   };
+}
+
+/** The declaration, or null for both "no block" and "a block that does not parse". */
+export function parseGateHeader(source: string): GateHeader | null {
+  const r = analyzeGateHeader(source);
+  return r === null || 'error' in r ? null : r;
+}
+
+/**
+ * Why a present block yielded no declaration, or null when there is nothing to explain.
+ *
+ * `gate-bind` calls this for every file `parseGateHeader` skipped, which is what turns a
+ * typo from invisible into a named binding problem.
+ */
+export function headerError(source: string): string | null {
+  const r = analyzeGateHeader(source);
+  return r !== null && 'error' in r ? r.error : null;
 }
 
 /**

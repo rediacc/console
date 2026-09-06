@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Compose env
+# needs: none
+# selftest: true
+# ---- end gate ----
+
 # Check that all docker-compose env var references are defined in ci-env.sh
 #
 # Prevents silent failures when env vars are added to docker-compose.yml

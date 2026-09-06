@@ -20,6 +20,11 @@
  *
  * Every run first proves the instrument on a control pair (a synthetic duplicate
  * that MUST be reported) — a gate that cannot fire is worse than no gate.
+ *
+ * ---- gate ----
+ * step: Shared constant duplication
+ * needs: node, submodules
+ * ---- end gate ----
  */
 
 import { readFileSync } from 'node:fs';

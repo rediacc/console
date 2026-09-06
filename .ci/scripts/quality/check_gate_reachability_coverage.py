@@ -33,6 +33,12 @@ ASSERTIONS
 CONTROL-FIRST. Simulates the pre-fix probe (manifest awareness removed) and
 requires assertion 2 to FAIL against it. If the planted defect passes, this gate
 declares itself broken and exits non-zero.
+
+---- gate ----
+step: Gate-reachability probe agrees with registrations
+needs: none
+selftest: true
+---- end gate ----
 """
 
 from __future__ import annotations

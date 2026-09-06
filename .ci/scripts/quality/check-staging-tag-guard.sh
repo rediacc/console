@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Staging tag guard
+# needs: none
+# selftest: true
+# lane: quality-security
+# ---- end gate ----
+
 # A CALLER MAY NOT HAND cleanup-staging.sh A TAG IT WILL REFUSE.
 #
 # WHY THIS EXISTS. cleanup-staging.sh deletes GHCR tags and guards itself with

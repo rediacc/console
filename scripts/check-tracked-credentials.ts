@@ -50,6 +50,12 @@
  * finished this gate HAD a baseline, so that reason had quietly stopped being true and
  * the only thing it still bought was a hole. Operator ruling 2026-09-05: close it. A
  * committed PAT or Slack token now reds on sight, and the one fixture is frozen by id.
+ *
+ * ---- gate ----
+ * step: Tracked credentials
+ * needs: node
+ * lane: quality-security
+ * ---- end gate ----
  */
 /*
  * THE BASELINE MUST STAY TRACKED. CI checks out only tracked files, so an untracked
@@ -61,6 +67,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { envRoot } from './lib/repo-root.js';
 import {
   baselineAdditions,
   commitBaseline,
@@ -68,7 +75,13 @@ import {
   selftestVerdict,
 } from './lib/shrink-only-baseline.js';
 
-const ROOT = process.env.TRACKED_CRED_ROOT ?? process.cwd();
+// ANCHORED ON THIS FILE, not on the caller's working directory. This read
+// `process.env.TRACKED_CRED_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence
+// did not see: its pattern only matched cwd as the FIRST argument of
+// path.resolve/join, so the commonest shape of its own rule passed. The
+// seam is preserved -- TRACKED_CRED_ROOT still overrides -- but the default is
+// derived from this file's location.
+const ROOT = envRoot('TRACKED_CRED_ROOT');
 const BASELINE = join(ROOT, '.ci', 'config', 'tracked-credentials-baseline.json');
 const KEY = 'credentialShapedFindings';
 

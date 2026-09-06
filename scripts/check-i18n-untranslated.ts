@@ -28,6 +28,12 @@
  *
  * Usage:
  *   npx tsx scripts/check-i18n-untranslated.ts
+ *
+ * ---- gate ----
+ * step: i18n untranslated
+ * needs: node
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import path from 'node:path';

@@ -31,6 +31,13 @@ THE ORACLE is packages/cli/scripts/command-tree.json, the exported Commander
 tree, not `rdc --help`. It needs no build, and check:ci-command-tree already
 proves it matches the shipped CLI, so a stale tree is somebody else's red rather
 than a silent pass here.
+
+---- gate ----
+step: Tutorial CLI validity
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import json

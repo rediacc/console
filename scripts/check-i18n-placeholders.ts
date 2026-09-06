@@ -29,6 +29,12 @@
  *
  * Usage:
  *   npx tsx scripts/check-i18n-placeholders.ts
+ *
+ * ---- gate ----
+ * step: i18n placeholders
+ * needs: node, submodules
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import path from 'node:path';

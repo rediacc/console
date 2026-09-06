@@ -1,4 +1,11 @@
 #!/usr/bin/env tsx
+// ---- gate ----
+// step: Locale sources
+// needs: node, submodules
+// selftest: true
+// lane: quality-i18n
+// ---- end gate ----
+
 import { execFileSync } from 'node:child_process';
 /**
  * One source for the site's locale set, enforced.

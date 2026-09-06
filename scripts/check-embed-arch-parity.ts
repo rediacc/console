@@ -31,6 +31,12 @@
  * Exit codes:
  *   0 - parity holds, or the renet submodule is not checked out
  *   1 - a missing arch, an unpinned fetch, or an incoherent entry
+ *
+ * ---- gate ----
+ * step: Check embed arch parity
+ * needs: node, submodules
+ * lane: quality-go
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

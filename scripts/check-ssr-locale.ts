@@ -21,6 +21,13 @@
  *
  * Usage:
  *   npx tsx scripts/check-ssr-locale.ts [--selftest]
+ *
+ * ---- gate ----
+ * step: SSR locale
+ * needs: node
+ * selftest: true
+ * lane: quality-www-build
+ * ---- end gate ----
  */
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';

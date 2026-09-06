@@ -52,6 +52,7 @@ registry. A fully general "infer any tool any script might need" scanner is
 not this gate's job; toolchain.sh and check-toolchain-pins.sh already own the
 pinned-binary half of that problem (ruff/go/shfmt/shellcheck/actionlint), and
 this owns the "job never set the resource up at all" half for anything else.
+
 """
 
 from __future__ import annotations

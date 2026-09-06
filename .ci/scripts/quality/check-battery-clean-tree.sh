@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Battery clean-tree guard
+# needs: none
+# selftest: true
+# ---- end gate ----
+
 # check:ci-battery-clean-tree -- run-all.sh's tree guard must survive a CLEAN checkout.
 #
 # WHY THIS EXISTS, and it is a defect this gate's own subject introduced. run-all.sh

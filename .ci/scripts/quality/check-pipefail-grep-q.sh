@@ -1,4 +1,18 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: No racing pipefail/grep -q detectors
+# emit: false
+# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+# needs: none
+# selftest: true
+# lane: quality-code
+# why: A detector built as `producer | grep -q` under pipefail cannot reliably
+#      fail: grep -q exits at its first match, SIGPIPEs the producer, and
+#      pipefail makes that 141 the verdict. check-ci-watch-recipe.sh shipped
+#      exactly that in both detectors and certified 124 files clean over a real
+#      offender for as long as it existed.
+# ---- end gate ----
+
 # Gate: under `pipefail`, a locally-defined function piped into `grep -q` makes
 # the pipeline's exit status a RACE, so a detector built that way can silently
 # stop being able to fail.

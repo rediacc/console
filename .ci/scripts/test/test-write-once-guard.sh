@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Unit tests for the sentinel-aware write_once_guard() in
 # .ci/scripts/deploy/upload-to-r2.sh. Mocks aws so the test runs offline.
 #

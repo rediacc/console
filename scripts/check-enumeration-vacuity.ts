@@ -32,6 +32,14 @@
  * is still a violation.
  *
  * Usage: npx tsx scripts/check-enumeration-vacuity.ts [--write-baseline] [--selftest]
+ *
+ * ---- gate ----
+ * step: Enumeration vacuity
+ * needs: node
+ * why: A gate that scans and finds nothing prints a tick indistinguishable from a
+ *      clean tree. Seeded shrink-only: 47 enumerating checks carry no vacuity guard
+ *      today, and a wall of 47 is a gate somebody disables.
+ * ---- end gate ----
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';

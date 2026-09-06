@@ -1,0 +1,43 @@
+{
+  "why": [
+    "The SCOPE of .ci/scripts/quality/check-hook-integrity.sh: which directories under",
+    ".claude/hooks/ are audited chains, and which guard files sit outside every chain.",
+    "",
+    "IT LIVES HERE RATHER THAN IN THE GATE BECAUSE THE PORTS ARE COMING. The .claude hook",
+    "port turns guards into Python and may add or rename a chain directory. While both",
+    "lists were bash arrays inside the gate, every such move was an edit to the enforcement",
+    "script itself, by whichever agent happened to be moving files. That is the shape the",
+    "gate exists to refuse: the enforcement layer quietly changing its own subject.",
+    "",
+    "THE COST OF GETTING THE CHAIN LIST WRONG IS MEASURED, NOT HYPOTHETICAL. post-bash was",
+    "absent from the array until 2026-08-28, so cancel-old-ci.sh and refresh-pr-body.sh sat",
+    "outside the inventory and could have been deleted with no gate noticing. Before that,",
+    "pre-edit and pre-ask were outside it too, and pre-edit/block-inline-python.sh was found",
+    "at zero cases in either direction.",
+    "",
+    "NEITHER LIST IS DERIVABLE, AND THAT IS WHY IT IS DECLARED. A chain cannot be found by",
+    "globbing for block-*: post-bash holds neither a block-* nor a warn-* file and is still a",
+    "real chain. Nor by reading settings.json's wiring: that also wires stop/, context/ and",
+    "trapguard/, and the first two are MACHINERY whose absence is LOUD (a missing stop hook",
+    "errors on every stop) rather than guards whose absence is SILENT. The admission rule is",
+    "whether absence is silent, which is a judgement, so it is written down.",
+    "",
+    "guards_outside_chains carries that same rule for individual files: trapguard/dispatch.py",
+    "means traps stop firing, require-jq.sh means a precondition goes unchecked, and both are",
+    "silent. stop/worklist.py and the context/*.py hooks are deliberately excluded.",
+    "",
+    "The gate REFUSES an empty list on either key. A scope file that scanned to nothing would",
+    "turn the whole inventory into a vacuous green, which is the failure this gate is about."
+  ],
+  "chains": [
+    "pre-bash",
+    "pre-edit",
+    "pre-ask",
+    "post-bash"
+  ],
+  "guards_outside_chains": [
+    "trapguard/dispatch.py",
+    "require-jq.sh",
+    "require-python.sh"
+  ]
+}

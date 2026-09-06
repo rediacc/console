@@ -1,0 +1,58 @@
+# 07. Tooling-transformation decisions
+
+[04-decisions.md](04-decisions.md) is the CI-overhaul record: what the operator locked, what
+was taken on recommendation, what is still open. This file is its sibling for the twelve
+workstream tooling transformation, and it exists for one reason.
+
+[08-driver-contract.md](08-driver-contract.md) records the conflicts found BEFORE the program
+started, when twelve independently drafted plans were compared. It cannot record what is
+decided DURING it. Those decisions were landing in code comments, where the next agent reads
+the comment, disagrees with a sentence rather than with a decision, and quietly reverses it.
+That has already happened once in this repository and cost a real oscillation: the
+`package-lock.json` npm 10 versus npm 11 flip described in CLAUDE.md was reverted back and
+forth by successive sessions for weeks, because each one read the prose, believed the tree was
+wrong, and fixed it.
+
+So: a decision that a later agent could reasonably reverse goes here, with the evidence, once.
+
+Rules for using this file. A row is added when a decision is MADE, not when it is proposed.
+Every row names the check that would refute it, because a decision with no refutation is a
+preference. A row is never edited to say something else; it is superseded by a new row that
+names the one it replaces, so the reasoning that was overturned stays readable.
+
+---
+
+## A. Decided, with evidence
+
+| # | Decision | Why, and what would refute it |
+|---|---|---|
+| T-1 | **The gate catalogue is derived from `scripts/ci-runner/gates.lock.json`, never from `scripts/ci-runner/manifest.ts`.** | The manifest is a single-writer file behind the root driver's merge queue for the whole program (08 section 3), and every additional reader of it is one more thing W2.4 has to carry across. Two text readers were drained onto the lock the same day this was decided. The swap was proved a no-op on content before it landed: 411 rows from each source, zero rows present in one and not the other, no duplicates on either side, equal as sets under a common sort. REFUTED BY: a lock that stops tracking the manifest, which is exactly what `check:ci-gates-lock` fires on |
+| T-2 | **Documentation targets are DISCOVERED, not listed.** `scripts/gen-docs.ts` scans tracked and untracked markdown for a `<!-- >>> gen-docs: <provider> -->` marker. | This is section 7 of the driver contract ("adding a gate, an allowlist entry, or a hook guard requires no edit to any workflow, runner or dispatcher file") applied to documentation. A document opts in by carrying a marker; the generator is never edited to add a target. Untracked files count because this program's standing rule is that work stays uncommitted, so a document that exists only in the working tree is the normal case. REFUTED BY: a target list appearing anywhere in the generator |
+| T-3 | **The pre-port record is a row SET, not a count or a floor.** | A floor of 300 over 388 entries still passes after 88 vanish, and a port that drops 88 while adding 88 different ones keeps the count exactly equal, so even count-equality passes. Membership is the only comparison that names what was lost. `--selftest` builds precisely that case and asserts all three verdicts, so the instrument is believed because a control fired, not because it is plausible. REFUTED BY: nothing, and that is the point; it is the same reasoning as 08 section 6's floor policy |
+| T-4 | **The record had to be taken BEFORE the ports, and it was.** `scripts/data/doc-registry-preport.json` is frozen at its recorded commit and `--snapshot` refuses to overwrite it without `--force`. | After a port there is nothing left to compare against: the tree only ever knows what it currently is. A re-baselined snapshot is indistinguishable from a correct one and silently destroys the only copy of the pre-port state. REFUTED BY: a `--force` re-baseline that is not announced out loud |
+| T-5 | **A drifted generated region is a hard red, not a stale sentence.** `gate-test:docs-gen` drives the generator in both directions. | Three hand-typed numbers went stale in silence in a single session and each was a confident falsehood the next reader would inherit: `.dead-bash-allowlist` said "the 17 gate scripts" against 131, `check-ci-parity.ts` said "runs 57 gate tests", `ci-gates.md` said "254 fast gates" against a live 312. A generator that quietly stops generating puts the tree straight back into that state, and the symptom is a document that looks fine. REFUTED BY: case B of the gate test, which perturbs one row and requires a non-zero exit |
+| T-6 | **There is a key for VERIFY and deliberately none for WRITE.** `npm run gen:docs` verifies; regenerating is spelled out as `npx tsx scripts/gen-docs.ts --write`. | A one-word way to overwrite every generated region is a way to overwrite them without reading the diff. The asymmetry is the safeguard. REFUTED BY: a `gen:docs:write` key appearing in `package.json` |
+| T-7 | **`docs/agent-reference/suppressions.md` documents READERS and liveness arrangements. It is not the inventory.** The inventory is the derived `suppressions` region of `scripts/data/doc-registry.md`. | The table had drifted to fewer rows than the tree carried mechanisms, and one of its rows described a ledger deleted in `7343ae9dc`, in the present tense. A hand-kept census of a thing the tree can enumerate is a census that will be wrong again. The reader column stays by hand because it cannot be derived honestly: a grep-for-the-basename version was built and observed flipping mid-run when a peer session staged an unrelated file. REFUTED BY: a mechanism that the derived region lists and no reader can be named for |
+| T-8 | **Prose cites files and symbols. It does not cite line numbers.** | A line number is invalidated by any edit anywhere above it, silently, and nothing in this repository re-derives one. Three were found wrong on one day: `check-native-rebuild.ts` cited `run.sh:1841` for a root install `run.sh` never held, `greenlight.cjs` cited `run.sh:1987` and `:1991` for a dispatch that had moved, and both were repaired by naming the file. A function name is greppable, survives every edit that does not rename it, and a rename is loud. REFUTED BY: any new `file:NNN` citation in a comment or document |
+| T-9 | **`gen-docs.ts` carries no `---- gate ----` header while this program runs.** Its registration is reported to the root driver as text. | `scripts/gate-bind.ts` treats the header as a declaration that four registrations already exist, so a header on an unregistered tool turns `check:ci-gate-bind` red. Those four files have a single writer (08 section 3) and a sub-driver is not it. REFUTED BY: the header being added in the same change as all four registrations, by the driver |
+| T-10 | **`--diff-snapshot` compares over the UNION of recorded and live providers, and `--list` refuses a provider that found nothing.** | Both were holes, found by asking what the instrument would print if it had not worked. The first draft looped over the LIVE provider list, so deleting a provider from the code meant its recorded rows were never compared at all: 411 gate rows could leave the record and the tool would print three cheerful `ok` lines and exit 0. The second returned 0 unconditionally, so `gates 0` read as "there are no gates" rather than "the instrument is broken". REFUTED BY: the two planted controls in `--selftest` that name a vanished provider and a broken lock |
+
+---
+
+## B. Deliberately NOT done, so nobody re-proposes them
+
+| # | Not done | Why |
+|---|---|---|
+| N-1 | A `Readers` column in the derived suppressions region | Built, then removed. It was `git grep` for each mechanism's basename, and it flipped mid-run on 2026-09-06 when a peer session staged an unrelated script: the `package.json` row changed with no change to any suppression. A cell derived from "who mentions this string anywhere" is volatile with respect to every unrelated edit in a checkout this program explicitly warns is shared (08 section 4). The mapping belongs where it can be pinned to a declared oracle, which is the probe table in `scripts/check-suppression-liveness.ts` |
+| N-2 | A numeric floor on the gates lock | Section 6 of the driver contract retires hand-typed counts. The lock reader refuses structurally instead: parses, is an array, is non-empty, every entry has an id and a `ci.kind`. That catches a broken instrument; the SET snapshot catches a silent partial drop. Two different jobs, neither of them a count |
+| N-3 | Naming a "wired yes/no" column in the hook-guards region | The naive column reports all thirty-odd `stop/wl_*.py` modules as unwired, which reads as thirty defects and buys nothing. Reachability is a transitive closure from what `settings.json` wires; the interesting output is the residue, a file under `.claude/hooks/` that nothing reaches at all |
+| N-4 | Adding generated regions to `CLAUDE.md`, `ci-gates.md`, `suppressions.md` or `TRAPS.md` in phase 0 or 1 | Each has exactly one writer during this program and the early phases are not that writer. They opt in later by carrying the same marker, which needs no change to the generator. `scripts/data/doc-registry.md` is the phase 0 home precisely so the mechanism can be proven somewhere nobody else is editing |
+
+---
+
+## C. Open, and who decides
+
+| # | Question | Default if unanswered |
+|---|---|---|
+| O-1 | Does `gen:docs` become a `gate: true` manifest entry of its own, or does `gate-test:docs-gen` remain the only CI reachability for the generator? | Keep `gate-test:docs-gen` as the sole entry. It already drives verify, write determinism, the selftest and the snapshot shape, so a second entry would run a strict subset. The root driver decides when it next opens `manifest.ts` |
+| O-2 | Do the four `.ci/scripts/quality` and `.ci/scripts/ci` prose corrections in the W11 registry proposal ride the phase they belong to, or land as one sweep? | One sweep, by whichever writer next holds those files. They are comments, not behaviour, and splitting them across four waves guarantees three get forgotten |

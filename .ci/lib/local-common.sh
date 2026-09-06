@@ -244,16 +244,34 @@ ensure_deps() {
     # matching. CI does still INSTALL with npm 10 (setup-node/Node 22 bundles it),
     # which is why check-lockfile.sh checks both majors.
     #
-    # The pin stays anyway, on the surviving half of the reason, and must NOT be
-    # flipped to npm 11 just to agree with the canonical form:
+    # THE ZOD HOIST NO LONGER REPRODUCES, MEASURED 2026-09-06, so the downgrade
+    # this comment used to justify is gone. It said: "npm 11 HOISTS differently:
+    # it flattens zod to the 3.25.76 copy that transitives drag in, ignoring the
+    # workspace-local zod@4.4.3 the lockfile pins", with packages/shared then
+    # failing to compile ("Property 'uuid' does not exist", a v4 API against a v3
+    # copy) and taking `./run.sh account dev` down with it. Reproduced on 11.9.0.
     #
-    # This is not cosmetic like the 27-line "dev": true flip. npm 11 HOISTS
-    # differently: it flattens zod to the 3.25.76 copy that transitives drag in,
-    # ignoring the workspace-local zod@4.4.3 the lockfile pins, and then
-    # `npm ls zod` reports `invalid: "^4.3.6" from packages/shared`. The visible
-    # symptom is packages/shared failing to compile with "Property 'uuid' does
-    # not exist" (v4 API against a v3 copy), which takes `./run.sh account dev`
-    # down with it. Reproduced on npm 11.9.0; npm@10 fixes it in one run.
+    # HOW IT WAS RE-TESTED, because a hoist is invisible to --package-lock-only
+    # and to --dry-run (neither writes a tree, and the tree is the whole question):
+    # the root package.json, package-lock.json, .npmrc and all seven workspace
+    # manifests were copied to a scratch directory and `npx -y npm@11 install
+    # --ignore-scripts` was run there, leaving this checkout's node_modules
+    # untouched. Every one of the eleven zod copies landed in the SAME place as in
+    # the npm 10 tree, packages/shared/node_modules/zod at 4.5.4 among them; the
+    # only differences were the three private/* submodule trees, which the probe
+    # deliberately did not copy.
+    #
+    # WHY IT STOPPED REPRODUCING, most likely: package.json now carries an explicit
+    # `overrides` entry forcing zod ^4.4.3 tree-wide, with its own BLOCKER reason
+    # about @modelcontextprotocol/sdk otherwise satisfying its `^3.25 || ^4.0`
+    # range with the older copy. That override makes the placement deterministic
+    # regardless of npm major, which is exactly what the downgrade was doing by
+    # hand.
+    #
+    # WHAT REMOVING IT BUYS (issue 587): the downgrade rewrote the root lockfile
+    # into npm 10's form on every local loop, which is the one path that could
+    # still re-trigger the flip issue 587 exists to stop. The residue note below
+    # is kept because a developer on npm 10 still produces it.
     #
     # THERE WAS A SECOND, PLAIN `npm install` ABOVE THIS ONE until 2026-08-27,
     # left by a rebase that kept both sides of a conflict where one superseded
@@ -261,13 +279,8 @@ ensure_deps() {
     # comment exists to prevent -- and logged "Installing dependencies..." a
     # second time. check:ci-native-rebuild found it by noticing that the install
     # at that line had no native rebuild within its window.
+    # WHATEVER npm IS ON PATH. No major-version downgrade: see the measurement above.
     local npm_cmd=(npm)
-    local npm_major
-    npm_major="$(npm --version 2>/dev/null | cut -d. -f1)"
-    if [[ -n "$npm_major" ]] && [[ "$npm_major" != "10" ]]; then
-        log_warn "npm $npm_major detected; installing with npm@10 to dodge the zod hoist (NOT to set lockfile form; npm 11 writes the canonical one)"
-        npm_cmd=(npx -y npm@10)
-    fi
 
     # KNOWN RESIDUE, recorded rather than hidden: this install writes the root
     # package-lock.json in npm 10's form, which since #587 is the NON-canonical one.

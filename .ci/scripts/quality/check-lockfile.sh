@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Lockfile
+# needs: node
+# selftest: true
+# ---- end gate ----
+
 # Validate EVERY package-lock.json in the tree, on two independent properties.
 #
 # ── Why this gate was rewritten ───────────────────────────────────────────────

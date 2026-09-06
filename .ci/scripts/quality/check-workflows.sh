@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Workflow banned patterns
+# needs: node
+# selftest: true
+# ---- end gate ----
+
 # Check workflow files for banned patterns
 #
 # Validates that GitHub Actions workflows and actions don't use patterns that

@@ -27,6 +27,12 @@
  * Exits 0 on success, 1 on any failure. Uses `node:dns/promises` with a 5s
  * per-query timeout and 3 retries with 1s/2s/4s backoff — matching the
  * external-network retry pattern used by `scripts/check-external-links.ts`.
+ *
+ * ---- gate ----
+ * step: DKIM notify DNS
+ * needs: node, submodules
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import { createHash } from 'node:crypto';

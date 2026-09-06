@@ -57,26 +57,19 @@ account_allocate_ports() {
         return 0
     fi
 
-    base=$(find_preferred_port "$ACCOUNT_DEV_PORT_PREFERRED" \
-        "$ACCOUNT_DEV_PORT_PREFERRED" "$ACCOUNT_DEV_PORT_RANGE_END")
-
-    # Verify next 2 ports are also free; if not, scan for 3 consecutive
-    if is_port_in_use $((base + 1)) || is_port_in_use $((base + 2)); then
-        local found=false
-        for candidate in $(seq "$ACCOUNT_DEV_PORT_PREFERRED" "$ACCOUNT_DEV_PORT_RANGE_END"); do
-            if ! is_port_in_use "$candidate" &&
-                ! is_port_in_use $((candidate + 1)) &&
-                ! is_port_in_use $((candidate + 2)); then
-                base=$candidate
-                found=true
-                break
-            fi
-        done
-        if [[ "$found" != "true" ]]; then
-            log_error "Cannot find 3 consecutive free ports in range ${ACCOUNT_DEV_PORT_PREFERRED}-${ACCOUNT_DEV_PORT_RANGE_END}"
-            exit 1
-        fi
-    fi
+    # ONE call, not a bash loop over a thousand candidates. This used to be
+    # `find_preferred_port` followed by a `seq` loop probing base, base+1 and
+    # base+2 for every candidate in 4800-5799. That was fine while
+    # is_port_in_use was bash (~5.7 ms a probe) and became a ~200-second worst
+    # case the moment it delegated to Python (~66 ms, one interpreter per
+    # probe). The answer is identical: a candidate below the first free port
+    # cannot start a free run, so scanning from the preferred base reaches the
+    # same port the two-stage version did.
+    base=$(find_consecutive_free_ports 3 \
+        "$ACCOUNT_DEV_PORT_PREFERRED" "$ACCOUNT_DEV_PORT_RANGE_END") || {
+        log_error "Cannot find 3 consecutive free ports in range ${ACCOUNT_DEV_PORT_PREFERRED}-${ACCOUNT_DEV_PORT_RANGE_END}"
+        exit 1
+    }
 
     GATEWAY_PORT=$base
     VITE_PORT=$((base + 1))

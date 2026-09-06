@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# step: Check subscription schema consistency
+# needs: go, node, submodules
+# selftest: true
+# ---- end gate ----
+
 # Check that subscription schema is up-to-date between TypeScript and Go
 #
 # Usage:

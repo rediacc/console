@@ -27,6 +27,12 @@
  * and reported success is the failure mode this whole gate was written about,
  * so "nothing to check" never silently means "pass": the controls still run,
  * and the skip says out loud what it did not look at.
+ *
+ * ---- gate ----
+ * step: Check embedded asset versions match their pins
+ * needs: node
+ * lane: quality-go
+ * ---- end gate ----
  */
 
 import { execFileSync } from 'node:child_process';

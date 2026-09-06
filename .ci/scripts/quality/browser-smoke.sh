@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Browser smoke
+# needs: node
+# selftest: true
+# lane: quality-www-build
+# ---- end gate ----
+
 # Run the browser smoke gate inside the official Playwright container.
 #
 # WHY A CONTAINER. The gate drives a real browser. On a bare GitHub runner that means

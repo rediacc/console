@@ -10,46 +10,65 @@
 #
 # Uses git log to determine when a line was added.
 #
-# WHY THIS REFUSES RATHER THAN GUESSING, measured 2026-09-03. `git log
-# --diff-filter=A` on a TRUNCATED history attributes every line present at the
-# graft boundary to the boundary commit, so an old suppression reports as new.
-# The same real entry, github.com/docker/docker in .go-deps-upgrade-blocklist:
+# THIS FILE IS A DELEGATING SHIM. The implementation lives in
+# .ci/rediacc_ci/core/age.py, which carries the reasoning in full: why a
+# truncated history makes this gate answer -1 rather than "fresh" (measured
+# 2026-09-03 against github.com/docker/docker in .go-deps-upgrade-blocklist,
+# 195 days on a full clone and 2 on a truncated one), and why the graft LIST is
+# the test rather than `git rev-parse --is-shallow-repository`.
 #
-#     full clone       195 days  (added 2026-02-20)
-#     truncated clone    2 days  (added 2026-09-01)
-#
-# AGE_WARN_DAYS is 180, so on the truncated clone that entry silently stops
-# warning, and at AGE_FAIL_DAYS=365 it could never fail. A liveness gate whose
-# whole job is expiring stale suppressions then expires nothing and says so in
-# green. Sibling of the same defect in check-plan-housekeeping.sh, found by
-# sweeping for it after that one landed.
-#
-# So entry_age_days prints -1 for CANNOT-VERIFY, and check_entry_age turns that
-# into a refusal in CI and a warning locally -- never into "fresh".
+# WHAT STAYS IN BASH, AND WHY. emit_advisory. It is a separate library with its
+# own contract -- eight optional associative arrays keyed by advisory id, and
+# the `::error::` / `::warning::` Actions form -- and its two callers
+# (.ci/scripts/security/audit.sh, .ci/scripts/quality/check-go-deps.sh) populate
+# those arrays before calling in. The port splits the DECISION (Python, and
+# testable without a runner) from the EMISSION (here, alongside every other
+# advisory in this repo). Neither caller changes.
 
 # Guard against double-sourcing.
 [[ -n "${__AGE_CHECK_SH_SOURCED:-}" ]] && return 0
-readonly __AGE_CHECK_SH_SOURCED=1
 
 # shellcheck source=emit-advisory.sh
 # BLOCKER: required for ci_error / ci_warn used by this library's public API
 source "$(dirname "${BASH_SOURCE[0]}")/emit-advisory.sh"
 
+# There is deliberately no bash fallback implementation: a fallback is a second
+# implementation, and this one decides whether a year-old suppression is
+# expired. Failing to load is louder than answering wrongly. REDIACC_CI_ROOT is
+# the package's single environment override (.ci/rediacc_ci/paths.py).
+__age_check_root="${REDIACC_CI_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
+if [[ ! -d "$__age_check_root/.ci/rediacc_ci/core" ]]; then
+    echo "age-check.sh: cannot find rediacc_ci under '$__age_check_root/.ci' (set REDIACC_CI_ROOT)" >&2
+    unset __age_check_root
+    return 1
+fi
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "age-check.sh: python3 is required; the age logic lives in rediacc_ci.core.age" >&2
+    unset __age_check_root
+    return 1
+fi
+readonly __AGE_CHECK_SH_SOURCED=1
+readonly AGE_CHECK_CI_DIR="$__age_check_root/.ci"
+unset __age_check_root
+
 readonly AGE_WARN_DAYS="${AGE_WARN_DAYS:-180}"
 readonly AGE_FAIL_DAYS="${AGE_FAIL_DAYS:-365}"
+
+# PYTHONPATH rather than `cd`: every caller runs git against ITS OWN cwd (the
+# gate's checkout, or a temp fixture that test-age-check.sh cds into), and
+# changing directory here would silently measure the wrong repository.
+_age_check_py() {
+    PYTHONPATH="$AGE_CHECK_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.age "$@"
+}
 
 # _age_grafts_file
 #
 # Path to a NON-EMPTY graft list, or empty when history is complete.
-# `git rev-parse --is-shallow-repository` is deliberately not the test: it
-# answers on the EXISTENCE of .git/shallow, and `git fetch --unshallow` against
-# a partial clone leaves that file behind empty. What corrupts an age is a
-# GRAFT, so the graft list is what gets asked. (Same reasoning, same words, as
-# check-plan-housekeeping.sh -- and if one of them is ever wrong, both are.)
+# Kept as a function because it was one: private by name, but a shim that drops
+# a helper is a shim that cannot be swapped back.
 _age_grafts_file() {
-    local f
-    f="$(git rev-parse --git-path shallow 2>/dev/null)" || return 0
-    [[ -n "$f" && -s "$f" ]] && echo "$f"
+    _age_check_py grafts-file
     return 0
 }
 
@@ -66,33 +85,7 @@ _age_grafts_file() {
 # commit where the pattern was added. This is more reliable than git blame
 # for files where lines have been renumbered.
 entry_age_days() {
-    local file="$1" pattern="$2"
-    # Find the commit that first added the pattern. %H alongside %ct so the
-    # commit can be tested against the graft list.
-    local line commit_sha commit_date grafts
-    line=$(git log --diff-filter=A --format='%H %ct' --follow -S "$pattern" -- "$file" 2>/dev/null | tail -1)
-    commit_sha="${line%% *}"
-    commit_date="${line##* }"
-    if [[ -z "$line" || -z "$commit_date" ]]; then
-        # No commit found. On a complete history that means the line is
-        # untracked and genuinely new; on a truncated one it means the
-        # introducing commit was cut away, which is not the same thing.
-        grafts="$(_age_grafts_file)"
-        if [[ -n "$grafts" ]]; then
-            echo -1
-        else
-            echo 0
-        fi
-        return 0
-    fi
-    grafts="$(_age_grafts_file)"
-    if [[ -n "$grafts" ]] && grep -qxF "$commit_sha" "$grafts" 2>/dev/null; then
-        echo -1
-        return 0
-    fi
-    local now_epoch=$(($(date +%s)))
-    echo $(((now_epoch - commit_date) / 86400))
-    return 0
+    _age_check_py days "$1" "$2"
 }
 
 # check_entry_age <file> <entry> <id> [<name>]
@@ -109,31 +102,26 @@ check_entry_age() {
     local entry="$2"
     local id="$3"
     local name="${4:-$id}"
-    local age
-    age=$(entry_age_days "$file" "$entry")
-    if ((age < 0)); then
-        # CANNOT VERIFY. In CI that is a refusal: this gate's entire purpose is
-        # expiring stale suppressions, and a truncated history makes every one
-        # of them look new. Locally it is a warning, because a developer's
-        # shallow clone is normal and should not block their run.
-        if [[ "${CI:-}" == "true" ]]; then
-            emit_advisory error "$id" "$name" \
-                "CANNOT VERIFY age: this checkout's history is truncated, so every suppression would report as new" \
-                "run this gate in a job whose actions/checkout carries fetch-depth: 0 and filter: blob:none"
+    local line rc=0
+
+    # The exit code IS the return value: 1 only for `error`. A warn returns 0,
+    # exactly as the bash implementation did, so a caller aggregating returns
+    # does not start failing on reminders.
+    line="$(_age_check_py verdict "$file" "$entry" \
+        "$AGE_WARN_DAYS" "$AGE_FAIL_DAYS" "${CI:-}")" || rc=$?
+
+    local level message remedy
+    IFS=$'\t' read -r level message remedy <<<"$line"
+
+    case "$level" in
+        error | warn) emit_advisory "$level" "$id" "$name" "$message" "$remedy" ;;
+        ok) ;;
+        *)
+            # A verdict this shim cannot read is not a pass. Anything other than
+            # the three known levels means the contract moved underneath it.
+            echo "age-check.sh: unreadable verdict '$line' for $file/$entry" >&2
             return 1
-        fi
-        emit_advisory warn "$id" "$name" \
-            "age DEFERRED: this checkout's history is truncated (git fetch --unshallow --filter=blob:none to answer it here)"
-        return 0
-    fi
-    if ((age > AGE_FAIL_DAYS)); then
-        emit_advisory error "$id" "$name" \
-            "suppression entry is $age days old (>$AGE_FAIL_DAYS) — yearly re-review required" \
-            "verify the BLOCKER reason is still valid; either refresh the entry OR take the fix"
-        return 1
-    elif ((age > AGE_WARN_DAYS)); then
-        emit_advisory warn "$id" "$name" \
-            "suppression entry is $age days old (>$AGE_WARN_DAYS) — due for re-review"
-    fi
-    return 0
+            ;;
+    esac
+    return "$rc"
 }
