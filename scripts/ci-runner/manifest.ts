@@ -1391,6 +1391,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-release-signing-coverage',
+    run: 'npm run check:ci-release-signing-coverage',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-release-signing-coverage.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Release signing coverage',
+    },
+  },
+  {
     id: 'check:ci-tracked-credentials',
     run: 'npm run check:ci-tracked-credentials',
     gate: true,

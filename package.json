@@ -145,6 +145,7 @@
     "check:ci-secret-scope": "tsx scripts/check-secret-scope.ts",
     "check:ci-tracked-credentials": "tsx scripts/check-tracked-credentials.ts",
     "check:ci-release-key-canonical": ".ci/scripts/quality/check-release-key-canonical.sh",
+    "check:ci-release-signing-coverage": ".ci/scripts/quality/check-release-signing-coverage.sh",
     "check:ci-secret-reachability": ".ci/scripts/quality/check_secret_reachability.py",
     "check:ci-scope-completeness": ".ci/scripts/quality/check_scope_completeness.py",
     "check:ci-hooks-resolvable": ".ci/scripts/quality/check_hooks_resolvable.py",

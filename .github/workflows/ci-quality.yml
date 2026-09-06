@@ -2113,6 +2113,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-release-key-canonical
 
+      # deb and rpm shipped unsigned, then apk did for the same reason a day later.
+      # Fixing formats one at a time as they are noticed IS the defect; this asks
+      # whether EVERY format the builder accepts refuses to ship unsigned.
+      - name: Release signing coverage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-release-signing-coverage
+
       # Offline by construction: compares the committed record against the
       # secrets each workflow references. The network lives only in --refresh.
       - name: Secret reachability
