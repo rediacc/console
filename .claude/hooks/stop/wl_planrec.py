@@ -1675,6 +1675,10 @@ def compact(root, rel, me, why="author", park=False, now=None):
                       set, and `check_plan_boxes.py`'s A3 refuses a finished
                       status over open boxes -- so this refusal is what keeps the
                       two gates from contradicting each other.
+
+    `--park` records `parked` WHATEVER the box count, including zero. A plan can
+    carry unfinished work in prose with no checkbox anywhere, and until 2026-09-06
+    that case silently produced `compacted` instead.
     """
     # ARGUMENTS FIRST, before anything reads or hashes a file. A bad `--why` is
     # the caller's typo and must be answered as one; validating it after the
@@ -1751,7 +1755,21 @@ def compact(root, rel, me, why="author", park=False, now=None):
                         % (k, len(replaced), UNRESOLVED, ", ".join(replaced[:5]))
                     )
 
-    status = STATUS_PARKED if (park and d["n_open"]) else STATUS_COMPACTED
+    # `--park` IS AN ASSERTION BY THE CALLER, NOT A DERIVATION FROM THE BOXES.
+    # This read `park and d["n_open"]`, so a plan with NO checkbox boxes at all
+    # took the `compacted` branch however loudly the caller asked for `parked`:
+    # a SILENT no-op that handed the plan a housekeeping exemption it had not
+    # earned. agent/PLAN-renet-fetch-hardening.md is the live case found
+    # 2026-09-06 -- zero boxes, seven of its eight sites still open in prose, and
+    # `Status: compacted`.
+    #
+    # Honouring the flag unconditionally can only err toward MORE nagging, never
+    # less: `parked` stays on the housekeeping clock, so a plan parked by mistake
+    # keeps asking to be finished. Nothing downstream reads `parked` as implying
+    # open boxes -- checked in check_plan_record.py (R6 treats parked as exempt
+    # from the placeholder rule and nothing else) and in check-plan-housekeeping.sh
+    # (`parked` is deliberately absent from the exemption branch at :431).
+    status = STATUS_PARKED if park else STATUS_COMPACTED
     head = "\n".join(text.splitlines()[:HEADER_LINES])
     # THE RAW LINE, not wl_checks.plan_owner. plan_owner RESOLVES the value down
     # to a session id, which is right for scoping the Stop hook's advisory and

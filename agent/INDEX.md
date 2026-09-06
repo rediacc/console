@@ -39,7 +39,7 @@ To read one in full:
 | agent/PLAN-localize-cheat-sheet-rendering.md | compacted | 0 / 0 / 0 | `f109c90887d63c381f47f648b684bcf281a24c53` |
 | agent/PLAN-npm-ci-parallel-parity.md | compacted | 0 / 0 / 0 | `579a43b2793afd84e1ec525e2c236f98ed11e94e` |
 | agent/PLAN-rclone-decommission.md | compacted | 0 / 0 / 0 | `09c51ce36a58383f4f12ac17ed21fe99cdbcab29` |
-| agent/PLAN-renet-fetch-hardening.md | compacted | 0 / 0 / 0 | `0f714f0ac7271327eb51438deb66d7250cb4b174` |
+| agent/PLAN-renet-fetch-hardening.md | parked | 0 / 0 / 0 | `0f714f0ac7271327eb51438deb66d7250cb4b174` |
 | agent/PLAN-require-testid-sweep.md | compacted | 0 / 0 / 0 | `d9c09956f72585468cd1af419f11a2077981748c` |
 | agent/PLAN-runtime-caller-identity.md | compacted | 0 / 0 / 0 | `61d22f80a7aa9243a0363a1e1245cd4ff7e3558a` |
 | agent/PLAN-scope-gates-split.md | compacted | 0 / 0 / 0 | `d1a4acd100bbcc1fbbace2d22f4d59663f7c2687` |
@@ -50,7 +50,7 @@ To read one in full:
 | agent/PLAN-unify-trap-corpus.md | compacted | 0 / 0 / 0 | `477232b48be389ccf464567572800f6dde8b0d5a` |
 | agent/PLAN-wire-account-vitest-ci.md | compacted | 0 / 0 / 0 | `5b450ce4f57e84c5814a44de44b81dc8d1d4c2a1` |
 
-32 record(s): 32 compacted, 0 parked. A parked record stays on the housekeeping clock on purpose -- its work is not finished, only its text is compacted.
+32 record(s): 31 compacted, 1 parked. A parked record stays on the housekeeping clock on purpose -- its work is not finished, only its text is compacted.
 
 ## Files these records touch
 
@@ -307,7 +307,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-promote-mutation-runner.md` | done | 923 | 0 | 0 | 51701 |
 | `agent/PLAN-rclone-decommission.md` | compacted | 56 | 0 | 0 | 3004 |
 | `agent/PLAN-reggate-effort-cap.md` | designed | 317 | 0 | 0 | 16667 |
-| `agent/PLAN-renet-fetch-hardening.md` | compacted | 52 | 0 | 0 | 2508 |
+| `agent/PLAN-renet-fetch-hardening.md` | parked | 33 | 0 | 0 | 886 |
 | `agent/PLAN-require-testid-sweep.md` | compacted | 53 | 0 | 0 | 2494 |
 | `agent/PLAN-resprofile-wave2.md` | approved | 137 | 0 | 0 | 8402 |
 | `agent/PLAN-resumable-rebase-executor.md` | implemented | 202 | 0 | 0 | 9886 |

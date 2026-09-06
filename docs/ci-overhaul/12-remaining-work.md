@@ -142,9 +142,14 @@ W2.3's generated manifest region plus the lock; W3 P3's shard matrix; W1 P4's
 
 ## Known open defects, each needing its own change
 
-- `--park` is a SILENT NO-OP for a plan with no checkbox boxes, so an unfinished
-  plan is recorded `compacted` and gains an unearned housekeeping exemption.
-  `renet-fetch-hardening` is the live case at 7 of 8 sites open.
+- ~~`--park` silent no-op~~ FIXED 2026-09-06. `wl_planrec.compact` chose the
+  status with `park and d["n_open"]`, so a plan with no checkbox boxes took the
+  `compacted` branch however loudly the caller asked for `parked`. It now
+  honours the flag unconditionally, which can only err toward more nagging.
+  Both directions driven on the real module over a four-cell matrix, and the
+  pre-fix line was re-planted to prove the control fires. The live case,
+  `renet-fetch-hardening` at 7 of 8 sites open, was revived and re-recorded as
+  `parked`; its Full-Text-Blob is unchanged, so nothing was lost.
 - `check-shape-duplication.ts` reports coordinates off by up to 243 lines and
   silently drops code from its own corpus: its string-literal replacement uses
   `[^'\\]`, which matches newlines, so an apostrophe inside a double-quoted
