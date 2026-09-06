@@ -303,6 +303,15 @@ else
             log_warn "RELEASE_GPG_PRIVATE_KEY not set, skipping $FORMAT signing"
             ;;
         apk)
+            # THE SAME DEFECT, one branch over. Found by sweeping the class rather
+            # than the instance: `-n "${APK_RSA_PRIVATE_KEY:-}"` above is false for
+            # an empty value exactly as the GPG one was, so an apk shipped unsigned
+            # and green. It gets the same treatment, or the fix would have covered
+            # two of the three formats this script builds.
+            if [[ "${RELEASE_SIGNING_REQUIRED:-0}" == "1" ]]; then
+                log_error "RELEASE_SIGNING_REQUIRED=1 but APK_RSA_PRIVATE_KEY is empty or unset -- refusing to ship an UNSIGNED apk. An empty value here means the secret resolved to nothing, not that signing was not wanted."
+                exit 1
+            fi
             log_warn "APK_RSA_PRIVATE_KEY not set, skipping APK signing"
             ;;
     esac

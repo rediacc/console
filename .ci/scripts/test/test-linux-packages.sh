@@ -463,6 +463,18 @@ phase4_validate_apt_metadata() {
     fi
     log_info "CONTROL: without the flag, an unsigned local build still succeeds"
 
+    # THE SIBLING FORMAT. apk signs with APK_RSA_PRIVATE_KEY through the same
+    # `-n` guard, so it shipped unsigned and green for the same reason. Asserted
+    # separately because the fix originally covered rpm/deb only.
+    if RELEASE_SIGNING_REQUIRED=1 APK_RSA_PRIVATE_KEY="" RELEASE_GPG_PRIVATE_KEY="" \
+        "$SCRIPT_DIR/../build/build-linux-pkg.sh" \
+        --binary "$TEST_DIR/rdc-dummy" --version "$TEST_VERSION" --arch amd64 \
+        --format apk --output "$TEST_DIR/packages-apk-unsigned" >/dev/null 2>&1; then
+        log_error "CONTROL FAILED: an EMPTY APK_RSA_PRIVATE_KEY shipped an unsigned apk under RELEASE_SIGNING_REQUIRED=1"
+        return 1
+    fi
+    log_info "CONTROL: an empty APK signing key is refused when signing is required"
+
     unset GNUPGHOME RELEASE_GPG_PRIVATE_KEY RELEASE_GPG_PUBLIC_KEY_FILE
     rm -rf "$gnupg_tmp"
 
