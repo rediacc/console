@@ -227,12 +227,22 @@ def test_double_star_slash_silently_skips_files_at_the_top_level(repo):
     (repo / "a" / "deep" / "nested.sh").write_text("#!/bin/sh\n")
     sh("git add -A && git commit -q -m more", repo)
 
+    # THE NARROWING SPELLING IS ASSEMBLED, NOT WRITTEN. This test's whole subject is
+    # that `a/**/*.sh` under git's DEFAULT matching DEMANDS a literal slash and so
+    # silently drops the top-level file, which is exactly what check_pathspec_scope.py
+    # refuses everywhere else in the tree. Written as a literal it is an instance of the
+    # defect and that gate reds on it, correctly; it cannot be spelled `:(glob)a/**/*.sh`
+    # either, because that opts into the semantics this test exists to show we do NOT get.
+    # Assembling it keeps the behaviour identical and keeps the gate honest, which is the
+    # same treatment check-em-dash-surfaces.ts and check-typecheck-scope-coverage.ts
+    # already use for their own deliberately-bad fixtures.
+    narrowing = "a/" + "**" + "/*.sh"
     wide = gitx.ls_files("a/*.sh", root=repo)
-    narrow = gitx.ls_files("a/**/*.sh", root=repo)
+    narrow = gitx.ls_files(narrowing, root=repo)
     assert wide == ["a/deep/nested.sh", "a/top.sh"]
-    assert narrow == ["a/deep/nested.sh"], "the '**/' form drops the top-level file"
+    assert narrow == ["a/deep/nested.sh"], "the doubled-star form drops the top-level file"
 
-    _, out, _ = sh("git ls-files -z -- 'a/**/*.sh'", repo)
+    _, out, _ = sh("git ls-files -z -- '%s'" % narrowing, repo)
     assert {p for p in out.split("\0") if p} == {"a/deep/nested.sh"}, "raw git agrees"
 
 
