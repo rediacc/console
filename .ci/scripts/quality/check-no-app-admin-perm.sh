@@ -35,7 +35,47 @@ cd "$REPO_ROOT"
 
 log_step "Checking for permission-administration in workflows/actions..."
 
-if grep -rn "permission-administration" .github/workflows/ .github/actions/ 2>/dev/null; then
+# THIS GATE FAILED OPEN, and it did so while PRINTING the violation it missed.
+#
+# `grep` exits 2 when an operand does not exist, and it does that even when it
+# found matches in the operands that DO exist. `if grep ...; then` reads any
+# non-zero as "no match", so with `.github/actions/` absent the gate printed
+#   .github/workflows/ci.yml:7:  permission-administration: write
+# to stdout and then announced "OK: no permission-administration requests
+# found" and exited 0. Reproduced 2026-09-06 under both ugrep and GNU grep, so
+# it is not an implementation quirk. It was latent only because both directories
+# happen to exist today: rename or delete either and this security gate is green
+# forever, which is the exact shape it exists to prevent in others.
+#
+# Two changes. The scan directories are checked FIRST, because a missing operand
+# means the gate cannot see its whole subject and must refuse rather than rule.
+# And the grep exit is read as three outcomes, not two: 0 found, 1 clean,
+# anything else an ERROR.
+SCAN_DIRS=(.github/workflows .github/actions)
+for d in "${SCAN_DIRS[@]}"; do
+    if [[ ! -d "$d" ]]; then
+        log_error "cannot scan $d: it does not exist, so this gate would rule on part of its subject."
+        log_error "A partial scan that reports OK is worse than no scan. Refusing."
+        exit 1
+    fi
+done
+
+# `set -e` KILLS AN ASSIGNMENT whose command substitution exits non-zero, and
+# grep exits 1 on the CLEAN case, so the guard below was never reached: the
+# script died silently at this line on every green tree. Disarmed around the
+# capture only, because the whole point here is to READ the exit code rather
+# than let the shell act on it.
+set +e
+hits="$(grep -rn "permission-administration" "${SCAN_DIRS[@]}" 2>&1)"
+rc=$?
+set -e
+if ((rc > 1)); then
+    log_error "grep exited $rc while scanning ${SCAN_DIRS[*]}, so this gate read an incomplete corpus:"
+    printf '%s\n' "$hits" >&2
+    exit 1
+fi
+if ((rc == 0)); then
+    printf '%s\n' "$hits"
     log_error "Found permission-administration request above."
     log_error "The rediacc-ci-cd App must not be granted administration:write."
     log_error "See CLAUDE.md \"App permission policy\" for rationale."
