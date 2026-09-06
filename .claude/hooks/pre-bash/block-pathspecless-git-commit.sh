@@ -3,12 +3,25 @@
 #
 # WHY, and it is not the reason people expect. `git add -- <exact paths>` is
 # correct and is NOT enough: a bare `git commit` afterwards writes whatever the
-# index holds, including everything a CONCURRENT SESSION staged before you got
-# there. The staging decision is scoped by intent and unscoped in execution.
+# index holds. The staging decision is scoped by intent and unscoped in execution.
+#
+# AND IT WAS NOT A PEER SESSION, which is the part worth getting right. Both
+# instances below were this session's OWN SUB-AGENTS, which run as separate
+# processes against the SAME index. So a single session with no peer at all is
+# still exposed. The first instance was not even a `git add`: `git mv` stages by
+# definition, measured, with nothing else run --
+#     $ git mv a.txt b.txt
+#     $ git diff --cached --name-status
+#     R100    a.txt   b.txt
+# The MOVE agent was told to move each policy list with `git mv`; it did exactly
+# that; fifteen renames were sitting in the shared index before the driver typed
+# anything. (A concurrent session would do the same, and on 2026-09-06 there
+# really was a second one in this checkout, so that case is not hypothetical
+# either. It just is not what happened.)
 #
 # Found live, twice in one session, 2026-09-06:
 #   - `git add -- <six named paths>` then `git commit` also landed fifteen
-#     `git mv` renames a peer agent had staged, moving every policy allow/block
+#     `git mv` renames a SUB-AGENT of this session had staged, moving every policy
 #     list into `.ci/policy/` WITHOUT any of their readers. HEAD then had the
 #     files at their new paths while scripts/lib/policy-paths.ts still read
 #     `const POLICY_DIR = '';` -- the exact half-landed state that seam exists
@@ -85,5 +98,5 @@ if printf '%s' "$SCAN" | grep -qE '(^|[[:space:]])--[[:space:]]+[^[:space:];&|<>
     exit 0
 fi
 
-echo '❌ BLOCKED: `git commit` with no pathspec commits the INDEX, not the paths you just added. This checkout is shared: a peer session'"'"'s staged work rides your commit. That has happened twice, and the second time was an hour after the trap was written down -- fifteen policy renames landed without their readers, then 108 files landed where 33 were intended. NAME WHAT YOU ARE COMMITTING: `git commit -F <message-file> -- <path> <path>`. Options go BEFORE the `--`, or git reads `-F` as a pathspec. `--amend` is not blocked. `-a` is: it stages every modified tracked file in a tree that holds other sessions'"'"' work.' >&2
+echo '❌ BLOCKED: `git commit` with no pathspec commits the INDEX, not the paths you just added. This checkout is shared, and your own SUB-AGENTS share the index too: `git mv` stages by definition, so their renames ride your commit with no `git add` anywhere. That has happened twice, and the second time was an hour after the trap was written down -- fifteen policy renames landed without their readers, then 108 files landed where 33 were intended. NAME WHAT YOU ARE COMMITTING: `git commit -F <message-file> -- <path> <path>`. Options go BEFORE the `--`, or git reads `-F` as a pathspec. `--amend` is not blocked. `-a` is: it stages every modified tracked file in a tree that holds other sessions'"'"' work.' >&2
 exit 2

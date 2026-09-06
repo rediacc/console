@@ -40,6 +40,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { refuseIfEmpty } from './lib/controls.js';
 
 const REPO = path.resolve(import.meta.dirname, '..');
 const RED = '\x1b[0;31m';
@@ -76,7 +77,7 @@ const RETIRED: Array<{ pattern: RegExp; what: string; instead: string }> = [
 
 /** Files a reader can end up looking at. */
 function readerFacingSources(): string[] {
-  return execFileSync(
+  const listed = execFileSync(
     'git',
     [
       'ls-files',
@@ -90,6 +91,11 @@ function readerFacingSources(): string[] {
   )
     .split('\n')
     .filter((f) => /\.(md|mdx|sh|json)$/.test(f));
+  return refuseIfEmpty(
+    listed,
+    'tracked .md, .mdx, .sh and .json files under the docs, marp, translations and tutorial surfaces',
+    'One of those four pathspecs moved, or the extension filter stopped matching. This gate exists to catch a doc that TEACHES a retired command, so an empty corpus is the one state in which its tick means nothing.'
+  );
 }
 
 export interface Finding {

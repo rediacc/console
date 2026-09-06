@@ -150,3 +150,36 @@ export function refused(...lines: string[]): 1 {
   console.error(lines.join('\n'));
   return 1;
 }
+
+/**
+ * VACUOUS: the corpus this gate enumerates came back EMPTY.
+ *
+ * A gate that scans a corpus and finds nothing prints a tick, and that tick is
+ * indistinguishable from a clean tree. `check:ci-enumeration-vacuity` exists to refuse
+ * that shape, and on 2026-09-06 it turned out that gate could not SEE most of its
+ * subjects: its predicate wants `git\s+ls-files`, and every TypeScript enumerator here
+ * writes the argv-array form, `execFileSync('git', ['ls-files', ...])`, where a comma
+ * stands between the two words. Nineteen tracked scripts were invisible to it, six of
+ * them without any guard at all, and this helper is what those six got.
+ *
+ * SET-BASED, NEVER A TYPED COUNT. Driver contract section 6: a floor must be set-based
+ * or corpus-derived. "The enumeration returned nothing" needs no number, cannot drift as
+ * the tree grows, and is the only floor that is exactly as strong the day it is written
+ * as five years later. A typed `MIN_FILES = 300` is worse than nothing, because it reads
+ * as diligence while sitting below any realistic truncation: the gates-lock emitter
+ * carried one 120 below its live count until it was replaced with a two-reading
+ * agreement check.
+ *
+ * `label` names the corpus in the operator's words, not the variable's: "tracked .sh
+ * files under .ci/scripts" tells a reader which pathspec to go and look at, where
+ * "files" tells them nothing.
+ */
+export function refuseIfEmpty<T>(items: T[], label: string, hint: string): T[] {
+  if (items.length > 0) return items;
+  refuse(
+    `✗ VACUOUS: the corpus is empty (${label}).`,
+    '  A scan of nothing prints the same tick as a clean tree, so this gate refuses',
+    '  rather than reporting a pass it did not earn.',
+    `  ${hint}`
+  );
+}

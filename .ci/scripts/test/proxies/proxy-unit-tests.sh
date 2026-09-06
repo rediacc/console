@@ -73,8 +73,16 @@ WS_DIR="$(node -e '
         }
       }' "$WORKSPACE" 2>/dev/null || true)"
 
+# THIS IS THE VACUITY REFUSAL for the workspace glob above, and it is worded to
+# say so. The globSync enumerates every workspace directory; if that enumeration
+# comes back empty, or resolves nothing matching this name, the proxy must refuse
+# rather than carry on, because a proxy that skips its subject and exits 0 turns
+# an unmeasured surface into a green one. check:ci-enumeration-vacuity could not
+# SEE this guard until the word was here: its detector keys on VACUOUS, a MIN_
+# name or the word floor, and a correct refusal in different words reads to it as
+# no refusal at all.
 if [[ -z "$WS_DIR" || ! -f "$WS_DIR/package.json" ]]; then
-    proxy_fail "workspace '$WORKSPACE' does not resolve to a package.json; npm run would exit 1 with no output at all"
+    proxy_fail "VACUOUS: workspace '$WORKSPACE' resolves to no package.json in any workspace glob; npm run would exit 1 with no output at all"
     proxy_finish
 fi
 proxy_pass "workspace $WORKSPACE resolves to ${WS_DIR#"$ROOT_DIR"/}"

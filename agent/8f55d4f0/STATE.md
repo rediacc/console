@@ -1,3 +1,5 @@
+## SESSION legacy 2026-09-06T19:02:15Z (adopted from a pre-section document)
+
 # Session 8f55d4f0 -- driver state
 
 Branch `0906-1`. Head `f9ade65db`. Updated 2026-09-06.
@@ -77,3 +79,68 @@ unstable. Wave 3 is T6 HOOKS, T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN.
   in-flight files without their dependency.
 - `git log --diff-filter=A` names the RENAME. Search content history: `git log -S`.
 - Never `git checkout`, `restore`, `stash`, `clean` or `reset`. Repair forward.
+
+## SESSION 8f55d4f0 2026-09-06T19:38:18Z
+
+Branch `0906-1`, head `01f7b312e` plus one worklist commit. Nothing of mine is
+uncommitted. No writer agents are live.
+
+## Next action
+
+1. **#c5870a54** Widen `enumerates()` in `scripts/check-enumeration-vacuity.ts`
+   to see the argv-array form of `git ls-files`, plus six corpus-derived floors
+   in check-dead-service-methods, check-jq-boolean-default,
+   check-merge-method-prose, check-retired-commands-in-docs,
+   check-shape-duplication and check-shell-declared-commands. Measured
+   2026-09-06: 19 tracked scripts are invisible to that predicate INCLUDING THE
+   GATE ITSELF, whose comment claims it is inside its own scope, and 6 carry no
+   guard. That adds 6 entries to a shrink-only baseline, so the regex and the
+   six floors land as ONE change. Floors corpus-derived, never typed.
+2. Correct the attribution in `.claude/hooks/pre-bash/block-pathspecless-git-commit.sh`
+   and its TRAPS entry `git-commit-takes-the-whole-index`. The staged renames
+   were MY OWN sub-agent's, not a peer session's, and the mechanism is that
+   `git mv` stages by definition: `git mv a.txt b.txt` alone leaves
+   `R100 a.txt b.txt` in the index, no `git add` anywhere. Both texts name a
+   plausible cause rather than the measured one.
+3. **#f79eb721** Re-measure `check:ci-gate-manifest`'s three `[tier]` findings
+   (gate-test:doc-region-parity, gate-test:docs-gen, check:ci-editorconfig) on a
+   still tree and set `slow:` from THAT run. The current numbers were taken with
+   up to seven writer agents live: inadmissible under invariant 13.
+4. **#4a9b14ce** `git push origin 880b1b3ee:main`. One commit, fast-forward from
+   `9295fb63c`, one file, +25 lines, operator-authorised. Until it lands,
+   rediacc/account PR #86 and every renet and elite review run stay red at
+   `discover-epics.sh: No such file or directory, exit 127`.
+
+CONDITION on 4 only: `block-unverified-push` refuses a push whose tree no gate
+run has judged. `bng44gxl5` (`npm run ci:quick`) is in flight for that, and any
+edit from 1 to 3 invalidates it, so one more run follows. A cost, not a blocker.
+
+## What is true right now
+
+W7 P2 COMPLETE: 77 of 77 quality gates have a Python twin, 76 of 77 shadow
+ledgers assert `equivalence holds`. The one red is `w7p2-stagingtag`, and it is
+permanent: three tree ids disqualified by rows recorded through a hole since
+closed, 12 qualifying trees over 9 finding sets, so the claim IS evidenced and
+only the assert cannot express it. DO NOT delete rows to make it green.
+
+Also complete this wave: W2.3's headers (148 of 148 gate tests, and the binder
+now READS them, which it did not when they landed), W3 P2 (10 heavy-job proxies
+returning 77 rather than 0), W4 P2 (15 policy lists into `.ci/policy`, fifteen
+not fourteen), W12 P1.8 (32 of 32 aged plans). No bash twin was deleted: that is
+invariant 5, and deletion is W7 P5.
+
+`docs/ci-overhaul/12-remaining-work.md` carries every remaining task with its
+ready-to-run prompt and the command that re-derives each status number. Wave 2
+still holds T5 (SETUP, W6 P2). Wave 3 is T6 HOOKS, T7 SWEEP-CI, T8 RECORDS,
+T9 ENVMAN. Wave 4 is driver-serial, no writer agents.
+
+## Volatile facts a fresh session would get wrong
+
+A SECOND Claude session is live in this checkout: pid 2222763, session
+`a20630a0-dac7-4561-94ce-4ff5f09fc6be`, started 17:43:15 today. It has never
+written to the worklist store, so nothing tracked points at it.
+`private/homebrew-tap` shows modified and is not mine.
+
+In an interactive shell `grep` is a FUNCTION wrapping ugrep 7.8.4; a script gets
+GNU grep 3.12. They disagree on `\x27` and on which files are searched: 231
+references under the wrapper, 226 under the real grep. Use `/usr/bin/grep`.

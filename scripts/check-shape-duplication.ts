@@ -73,7 +73,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { validateBlockerQuality } from './lib/blocker-validator.js';
-import { runControls } from './lib/controls.js';
+import { runControls, refuseIfEmpty } from './lib/controls.js';
 import { GREEN, NC, RED } from './lib/console.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -271,13 +271,21 @@ export function judge(
 }
 
 function tracked(): string[] {
-  const all = execFileSync('git', ['ls-files', ...FAMILIES], { cwd: ROOT, encoding: 'utf8' })
-    .split('\n')
-    .filter(Boolean);
-  return all.filter((f) => {
-    const src = readFileSync(path.join(ROOT, f), 'utf8');
-    return !src.includes(OPT_OUT);
-  });
+  const all = refuseIfEmpty(
+    execFileSync('git', ['ls-files', ...FAMILIES], { cwd: ROOT, encoding: 'utf8' })
+      .split('\n')
+      .filter(Boolean),
+    `tracked files matching ${FAMILIES.length} family pathspec(s)`,
+    'The families moved, or this is not a repository checkout.'
+  );
+  return refuseIfEmpty(
+    all.filter((f) => {
+      const src = readFileSync(path.join(ROOT, f), 'utf8');
+      return !src.includes(OPT_OUT);
+    }),
+    'the same corpus after the opt-out filter',
+    `Every one of the ${all.length} tracked file(s) carries the ${OPT_OUT} marker, which is a corpus that opted itself out entirely rather than a clean tree.`
+  );
 }
 
 function scan(files: string[]): Map<string, { h: string; line: number }[]> {

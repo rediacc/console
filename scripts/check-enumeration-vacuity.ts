@@ -84,9 +84,27 @@ const SUBJECT_RE = /\.(py|sh|ts)$/;
  * config file has no enumeration to be empty, and demanding a floor of it would be noise.
  */
 export const enumerates = (src: string): boolean =>
-  /git\s+ls-files|\.glob\(|\.rglob\(|globSync\(|readdirSync\(|find\s+\S+\s+-(name|type)\b/.test(
-    stripComments(stripHeredocs(src))
-  );
+  ENUMERATION_RE.test(stripComments(stripHeredocs(src)));
+
+/**
+ * THE ARGV-ARRAY ALTERNATIVE IS THE ONE THAT WAS MISSING, and its absence made this
+ * gate blind to every TypeScript enumerator in the repository, ITSELF INCLUDED.
+ *
+ * `git\s+ls-files` wants whitespace between the two words. TypeScript does not write it
+ * that way: `execFileSync('git', ['-C', ROOT, 'ls-files', ...])` puts a comma, a quote
+ * and often other argv elements between them. Measured 2026-09-06: 19 tracked scripts
+ * enumerate in a form the old predicate could not see, six of them with no guard at all,
+ * and this file, gate-bind.ts and check-dead-bash.ts were three of the nineteen. This
+ * file's own floor block opened "THIS GATE ENUMERATES TOO, so it obeys its own rule",
+ * which was false in the only sense that could be checked.
+ *
+ * The added branch matches `'ls-files'` as a QUOTED ARGV ELEMENT: quote, the literal,
+ * quote, then a comma or a closing bracket. That is narrow on purpose. Matching a bare
+ * `ls-files` anywhere would fire on this very comment, and matching `'git'` alone would
+ * fire on every `git rev-parse` in the tree, neither of which enumerates anything.
+ */
+const ENUMERATION_RE =
+  /git\s+ls-files|['"`]ls-files['"`]\s*[,\]]|\.glob\(|\.rglob\(|globSync\(|readdirSync\(|find\s+\S+\s+-(name|type)\b/;
 
 /**
  * A shell heredoc body is DATA, not code this file executes.
@@ -160,6 +178,16 @@ export const hasVacuityGuard = (src: string): boolean =>
   /\bMIN_[A-Z][A-Z0-9_]*\b/.test(src) ||
   /VACUOUS|vacuous/.test(src) ||
   /\bfloor\b/.test(src) ||
+  // `refuseIfEmpty` from scripts/lib/controls.ts. Added 2026-09-06 with the six
+  // conversions it exists for. This is a NARROWING of trust rather than a widening:
+  // the helper's only behaviour is to refuse an empty corpus, so a call to it cannot
+  // be a guard that does nothing, which is more than the three patterns above can
+  // promise. `MIN_X` satisfies the first line whether or not anything compares it,
+  // and this file's own output says so under "Blind spot".
+  /\brefuseIfEmpty\s*\(/.test(src) ||
+  // An explicit empty-corpus refusal written in the repo's older words. Anchored on
+  // "Refusing to run" plus "to scan" so a stray "refusing" in prose cannot satisfy it.
+  /Refusing to run:[^\n]*to scan/.test(src) ||
   /refusing to pass|proved nothing|lost its subject|lost the corpus/.test(src);
 
 const tracked = (): string[] =>
@@ -214,6 +242,53 @@ function selftest(): number {
   check(
     'CONTROL: reading ONE named config is not enumeration',
     !enumerates('data = json.load(open(".ci/config/thing.json"))')
+  );
+
+  // THE ARGV-ARRAY CONTROLS. The first is the shape that was invisible; the second and
+  // third are what stop the widening from becoming a match-anything rule.
+  check(
+    'the argv-array form of git ls-files is an enumeration',
+    enumerates("execFileSync('git', ['-C', ROOT, 'ls-files', 'scripts'])")
+  );
+  check(
+    'CONTROL: a bare mention of ls-files in prose is NOT, so this file does not flag itself',
+    !enumerates('// we should also handle ls-files one day\nconst x = 1;\n')
+  );
+  check(
+    'CONTROL: another git subcommand in argv form is not an enumeration',
+    !enumerates("execFileSync('git', ['rev-parse', 'HEAD'])")
+  );
+  // THE CLAIM THAT WAS FALSE, now checked on the line that carries it rather than on
+  // the whole file. Feeding this file's entire source to `enumerates` does NOT work, and
+  // the reason is worth keeping: `stripComments` removes `/* ... */` blocks, and this
+  // file's source contains the literal regex `/\/\*[\s\S]*?\*\//g` inside that very
+  // function, so a self-scan opens a block comment at that regex and swallows the code
+  // after it. That is the "a quoted body is data, not code" class this gate already
+  // knows, arriving from the other direction: here a piece of CODE reads as the opening
+  // of a comment. It is harmless against the real corpus, where `/*` inside a string
+  // literal is rare and only ever HIDES an enumeration from a gate that would then
+  // report it as guardless rather than as absent, but it is a real edge and it belongs
+  // written down instead of discovered again.
+  check(
+    'THE CLAIM THAT WAS FALSE: this gate enumerates in the form it could not see',
+    enumerates(
+      readFileSync(new URL(import.meta.url), 'utf8')
+        .split('\n')
+        .filter((l) => l.includes('ls-files'))
+        .join('\n')
+    )
+  );
+  check(
+    'refuseIfEmpty counts as a guard, because refusing is all it does',
+    hasVacuityGuard('return refuseIfEmpty(files, "tracked .sh", "hint");')
+  );
+  check(
+    'CONTROL: the word refuse alone does NOT satisfy the guard test',
+    !hasVacuityGuard('// this gate refuses a bad pin\nconst x = 1;\n')
+  );
+  check(
+    'an explicit empty-corpus refusal in the older words counts',
+    hasVacuityGuard("console.error('Refusing to run: no tracked files to scan.');")
   );
 
   check('a MIN_ floor is a guard', hasVacuityGuard('MIN_MANIFESTS = 8'));

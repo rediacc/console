@@ -2372,12 +2372,24 @@ Residue: the hook refuses a blanket `git add`, which is the other half of this a
   bare `git commit`, because at that point the unwanted paths were staged by someone
   else and git has no way to know you did not mean them.
 
-This checkout is shared and other sessions stage work in it. `git add -- <exact paths>`
-is correct and is NOT enough: `git commit` with no pathspec writes whatever the index
-holds, including everything a peer staged before you got there.
+`git add -- <exact paths>` is correct and is NOT enough: `git commit` with no pathspec
+writes whatever the index holds, including everything anything else staged before you got
+there.
+
+AND "ANYTHING ELSE" IS USUALLY YOUR OWN SUB-AGENTS, not a peer session. They run as
+separate processes against the SAME index, so a session working alone is fully exposed.
+Worse, the first instance involved no `git add` at all: `git mv` stages by definition,
+measured with nothing else run --
+
+    $ git mv a.txt b.txt
+    $ git diff --cached --name-status
+    R100    a.txt   b.txt
+
+The agent was told to move each policy list with `git mv`, did exactly that, and fifteen
+renames were in the shared index before the driver typed anything.
 
 Measured 2026-09-06. A driver ran `git add -- <six named paths>` and then `git commit`.
-The commit landed those six AND fifteen `git mv` renames a concurrent agent had staged,
+The commit landed those six AND those fifteen renames,
 moving every policy allow/block list into `.ci/policy/` with **none of its readers**.
 HEAD then had the files at their new paths while `scripts/lib/policy-paths.ts` still
 read `const POLICY_DIR = '';`. That seam exists specifically to make a half-landed move

@@ -67,7 +67,7 @@ import {
   renderRefusal,
   writeBaselineVerdict,
 } from './lib/shrink-only-baseline.js';
-import { refused } from './lib/controls.js';
+import { refused, refuseIfEmpty } from './lib/controls.js';
 
 /** Binaries that are NOT on a minimal POSIX host and can therefore be absent. */
 export const RISKY = [
@@ -131,9 +131,13 @@ export const scan = (root: string, files: string[]): Finding[] => {
 const key = (f: Finding) => `${f.file}\t${f.cmd}`;
 
 const tracked = (root: string): string[] =>
-  execFileSync('git', ['ls-files', '.ci/scripts'], { cwd: root, encoding: 'utf8' })
-    .split('\n')
-    .filter((f) => f.endsWith('.sh') && !f.includes('/test/'));
+  refuseIfEmpty(
+    execFileSync('git', ['ls-files', '.ci/scripts'], { cwd: root, encoding: 'utf8' })
+      .split('\n')
+      .filter((f) => f.endsWith('.sh') && !f.includes('/test/')),
+    'tracked .sh files under .ci/scripts, excluding /test/',
+    'The `/test/` exclusion is deliberate and is itself a recorded gap; if it ever widens to swallow the whole corpus, this refusal is what says so.'
+  );
 
 const selftest = (): number => {
   let bad = 0;

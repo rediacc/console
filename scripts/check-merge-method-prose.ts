@@ -37,7 +37,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { refused } from './lib/controls.js';
+import { refused, refuseIfEmpty } from './lib/controls.js';
 
 /** A merge method the platform refuses. Queryable: allow_squash_merge=false. */
 export const REJECTED = ['--squash'] as const;
@@ -76,11 +76,15 @@ export const prescribes = (line: string): boolean =>
 const SURFACES = ['.claude', 'docs/agent-reference'];
 
 const files = (root: string): string[] =>
-  execFileSync('git', ['ls-files', ...SURFACES], { cwd: root, encoding: 'utf8' })
-    .split('\n')
-    .filter((f) => /\.(md|sh|ts|py)$/.test(f))
-    // The gate's own controls quote the shapes it refuses.
-    .filter((f) => !f.endsWith('check-merge-method-prose.ts') && !f.includes('test-hooks.sh'));
+  refuseIfEmpty(
+    execFileSync('git', ['ls-files', ...SURFACES], { cwd: root, encoding: 'utf8' })
+      .split('\n')
+      .filter((f) => /\.(md|sh|ts|py)$/.test(f))
+      // The gate's own controls quote the shapes it refuses.
+      .filter((f) => !f.endsWith('check-merge-method-prose.ts') && !f.includes('test-hooks.sh')),
+    `tracked .md, .sh, .ts and .py files under ${SURFACES.join(' and ')}`,
+    'Either those directories moved or the extension filter no longer matches anything.'
+  );
 
 const selftest = (): number => {
   let bad = 0;

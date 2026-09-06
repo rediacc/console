@@ -40,6 +40,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { refuseIfEmpty } from './lib/controls.js';
 
 const REPO = path.resolve(import.meta.dirname, '..');
 const RED = '\x1b[0;31m';
@@ -63,13 +64,17 @@ const NOT_A_METHOD = new Set([
 ]);
 
 function tracked(): string[] {
-  return execFileSync('git', ['ls-files', '--', '*.ts', '*.tsx', '*.js', '*.mjs', '*.astro'], {
-    cwd: REPO,
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-  })
-    .split('\n')
-    .filter(Boolean);
+  return refuseIfEmpty(
+    execFileSync('git', ['ls-files', '--', '*.ts', '*.tsx', '*.js', '*.mjs', '*.astro'], {
+      cwd: REPO,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    })
+      .split('\n')
+      .filter(Boolean),
+    'tracked .ts, .tsx, .js, .mjs and .astro files',
+    'Run this from inside the repository, and check the pathspec still matches the tree.'
+  );
 }
 
 export interface Finding {
