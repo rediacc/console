@@ -551,6 +551,14 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/PLAN-rotation-gh-removal.md": {
+      "status": "plan",
+      "owner": "unowned",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
+      "done_sigs": []
+    },
     "agent/PLAN-runtime-caller-identity.md": {
       "status": "design",
       "owner": "unowned",
