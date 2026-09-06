@@ -235,8 +235,17 @@ ensure_deps() {
         return 0
     fi
 
-    # Install with npm 10, which is what CI pins (.ci/scripts/quality/check-lockfile.sh)
-    # and what the lockfile's nested layout describes.
+    # Install with npm 10. THE REASON IS THE HOIST BELOW, NOT THE LOCKFILE FORM.
+    #
+    # This comment used to justify the pin as "what CI pins and what the lockfile's
+    # nested layout describes". Half of that went stale on 2026-09-06 (issue #587):
+    # check-lockfile.sh now carries CANONICAL_NPM="npm@11", so npm 11's output is the
+    # canonical lockfile form and npm 10 is no longer the writer this should be
+    # matching. CI does still INSTALL with npm 10 (setup-node/Node 22 bundles it),
+    # which is why check-lockfile.sh checks both majors.
+    #
+    # The pin stays anyway, on the surviving half of the reason, and must NOT be
+    # flipped to npm 11 just to agree with the canonical form:
     #
     # This is not cosmetic like the 27-line "dev": true flip. npm 11 HOISTS
     # differently: it flattens zod to the 3.25.76 copy that transitives drag in,
@@ -256,9 +265,16 @@ ensure_deps() {
     local npm_major
     npm_major="$(npm --version 2>/dev/null | cut -d. -f1)"
     if [[ -n "$npm_major" ]] && [[ "$npm_major" != "10" ]]; then
-        log_warn "npm $npm_major detected; installing with npm@10 to match the lockfile layout"
+        log_warn "npm $npm_major detected; installing with npm@10 to dodge the zod hoist (NOT to set lockfile form; npm 11 writes the canonical one)"
         npm_cmd=(npx -y npm@10)
     fi
+
+    # KNOWN RESIDUE, recorded rather than hidden: this install writes the root
+    # package-lock.json in npm 10's form, which since #587 is the NON-canonical one.
+    # It shows up as 27 added `"dev": true` lines under node_modules/tsx/**. It is
+    # cosmetic (CLAUDE.md explains why) but it is diff noise on every local loop, so
+    # reconcile before committing:
+    #     npx -y npm@11 install --package-lock-only --ignore-scripts
 
     log_step "Installing dependencies..."
     (cd "$LOCAL_ROOT_DIR" && "${npm_cmd[@]}" install)

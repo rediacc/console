@@ -477,24 +477,49 @@ stamp so switching sides forces one honest reinstall instead of a loader error.
 
 ### The 27-line `package-lock.json` flip is npm 11 vs npm 10, and it is cosmetic
 
-A working tree can sprout a `package-lock.json` diff of exactly 27 deletions,
-all `"dev": true`, that nobody remembers making. Do not go hunting for the
-script that "corrupted" it, and do not commit it either:
+**npm 11 is canonical. This section said the opposite until 2026-09-06** (issue
+#587): `main` had been carrying npm 11's lockfile since `42e6a18f8` while this
+file called that form the deviation, so every session that read this section
+"fixed" it back and the flip oscillated. The operator was asked directly whether
+to revert the lockfile or migrate, and chose migrate. The direction below is
+therefore inverted from what you may remember; the measurements are unchanged,
+because the two forms differ only in the way described here.
 
-- **Trigger**: any `npm install`-family write run under the *system* npm 11
-  (`npm install --package-lock-only` reproduces it exactly). npm 11 omits
-  redundant nested dev markers that npm 10 writes. CI pins `npm@10`
-  (`check-lockfile.sh`), so npm 10's form is the canonical one.
+A working tree can sprout a `package-lock.json` diff of exactly 27 lines, all
+`"dev": true`, that nobody remembers making. Do not go hunting for the script
+that "corrupted" it, and do not commit it either:
+
+- **Trigger**: any `npm install`-family write run under **npm 10**
+  (`npx -y npm@10 install --package-lock-only` reproduces it exactly), which
+  ADDS 27 redundant nested dev markers that npm 11 omits. The canonical pin is
+  `CANONICAL_NPM="npm@11"` in `check-lockfile.sh`, and `.devcontainer/Dockerfile`
+  installs npm 11 so the environment that writes lockfiles writes that form.
+  Under npm 11 the same 27 lines appear as DELETIONS, which is the shape this
+  section used to describe as the fault.
+- **CI still installs with npm 10**, and that is not a contradiction: setup-node
+  with Node 22 bundles npm 10 and no workflow overrides it. Canonical means "the
+  form we write", not "the only npm that has to read it". `check:ci-lockfile`
+  runs `ci --dry-run` under BOTH majors for exactly this reason, so a form that
+  npm 10 could not install would still be caught.
 - **NOT the trigger**: `npm run install:natives`. `npm rebuild` does not write
-  the lockfile, verified on both a warm tree and a fresh one straight after
-  `npm@10 ci`. Nor do `npm outdated`, `npm ls`, or `npm audit`.
+  the lockfile, verified on both a warm tree and a fresh one straight after a
+  clean `npm ci`. Nor do `npm outdated`, `npm ls`, or `npm audit`.
 - **Impact: none.** All 27 entries sit under `node_modules/tsx/**`, and `tsx`
   is a devDependency still marked dev at its own node, so npm prunes the whole
-  subtree regardless. `npm@10 ci --omit=dev --dry-run` resolves 179 packages
-  from *either* form, and `check:ci-lockfile` passes both. It is diff noise,
+  subtree regardless. `npm ci --omit=dev --dry-run` resolves the same 179
+  packages from *either* form, and `check:ci-lockfile` passes both under both
+  majors (re-measured across all 11 lockfiles on 2026-09-06). It is diff noise,
   not a correctness problem, which is why there is no gate for it.
-- **Fix**: `npx -y npm@10 install --package-lock-only --ignore-scripts`
-  restores the canonical form byte for byte.
+- **Fix**: `npx -y npm@11 install --package-lock-only --ignore-scripts`
+  restores the canonical form byte for byte. If you are on npm 11 already, a
+  plain `npm install --package-lock-only --ignore-scripts` does the same thing.
+- **One pin deliberately still says npm 10**: `.ci/lib/local-common.sh` installs
+  with `npx -y npm@10` when the local npm is not 10. That is NOT about lockfile
+  form and must not be flipped to match this section. It guards a reproduced npm
+  11 HOISTING defect (zod flattened to a 3.x transitive copy, breaking
+  `packages/shared`), and the comment there explains it. Its side effect is that
+  `./run.sh` rewrites the root lockfile into the npm 10 form, so re-run the Fix
+  above before committing after a local-loop install.
 
 ```bash
 # Install dependencies

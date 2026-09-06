@@ -81,7 +81,12 @@ async function resolveTenant(request: Request, env: Env): Promise<string | null>
 
   if (!response.ok) return null;
 
-  const body = (await response.json()) as Introspection;
+  // json<T>() rather than an `as` assertion: @cloudflare/workers-types declares
+  // `json<T>(): Promise<T>`, so the type parameter is the supported way to name
+  // the shape. The assertion form inferred T from its own target and was
+  // therefore a no-op that @typescript-eslint/no-unnecessary-type-assertion
+  // flagged the moment workers/ entered the lint scope (2026-09-06).
+  const body = await response.json<Introspection>();
   if (!body.active || !body.orgId) return null;
   if (!body.scopes?.includes('proxy:exec')) return null;
 

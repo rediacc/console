@@ -199,6 +199,17 @@ RUN install -m 0755 -d /etc/apt/keyrings \
 ENV NVM_DIR=/usr/local/share/nvm
 ENV NVM_SYMLINK_CURRENT=true
 
+# npm is pinned one major AHEAD of what Node 22 bundles, deliberately. This image
+# is where lockfiles get WRITTEN, and since issue #587 (operator ruling 2026-09-06,
+# migrate rather than revert) npm 11's output form is the canonical one: see
+# CANONICAL_NPM in .ci/scripts/quality/check-lockfile.sh and CLAUDE.md's "27-line
+# package-lock.json flip" section. Leaving this at npm@10 is what kept the flip
+# oscillating -- the devcontainer rewrote every lockfile back into the npm 10 form
+# that the repo had already stopped treating as canonical.
+#
+# CI still INSTALLS with npm 10 (setup-node/Node 22 bundles it, and no workflow
+# overrides it), which is why check-lockfile.sh checks BOTH majors rather than
+# following this pin blindly.
 RUN mkdir -p "$NVM_DIR" \
     && curl -fsSL $CURL_RETRY https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
     && . "$NVM_DIR/nvm.sh" \
@@ -206,7 +217,7 @@ RUN mkdir -p "$NVM_DIR" \
     && nvm alias default ${NODE_VERSION} \
     && nvm use default \
     && ln -sf "$(nvm which default | xargs dirname | xargs dirname)" "$NVM_DIR/current" \
-    && npm install -g npm@10 \
+    && npm install -g npm@11 \
     && npm cache clean --force
 
 # Make node/npm available for subsequent RUN commands

@@ -21,6 +21,15 @@ about code -- both were code no rule ever looked at.
      a lint explosion in unrelated code, which is why it cost two attempts to
      attribute.
 
+  3. A SCOPE THAT CAN SILENTLY SHRINK. Fixed on 2026-09-06, when the roots were
+     widened to the seven below. Failures 1 and 2 were both cured by PASSING
+     MORE ROOTS, and nothing then held that widening in place: the roots are
+     positional arguments in package.json, so deleting one is a one-word edit
+     that removes files from every linter's view and leaves every gate green,
+     including this one. The original scan could not see it, because it feeds
+     eslint FILE PATHS directly and so only ever measured config-level
+     `ignores` -- the root list was the one part of lint scope it did not read.
+
 Both are the same shape as the dead i18n rules: the instrument reports success
 because it never examined anything. check_lint_rule_liveness.py proves an
 ENABLED RULE can fire; this proves the FILES reach a rule at all.
@@ -72,6 +81,28 @@ ESLINT_EXEMPT_EXACT = {
     ),
 }
 
+# The npm scripts that carry eslint's ROOT LIST. All three must agree: widening
+# check:lint while `lint` and `fix:lint` keep the old list gives a developer a
+# clean local run over a narrower tree than CI enforces, which is the same
+# invisible-scope failure one script down.
+LINT_ROOT_SCRIPTS = ("check:lint", "fix:lint", "lint")
+
+# The wrapper the roots are positional arguments to. Its first argument is a heap
+# size in MB, so the roots begin two tokens later.
+ESLINT_RUNNER = "eslint-heap.sh"
+
+# Roots whose load-bearingness this gate CANNOT measure, each with the reason.
+# Same contract as ESLINT_EXEMPT: an entry is a reviewable claim, not a waiver.
+ROOT_UNMEASURABLE = {
+    "private/account": (
+        "a git submodule (gitlink, mode 160000), so `git ls-files` returns the "
+        "pointer and none of the files under it. Dropping this root therefore "
+        "uncovers nothing HERE while still narrowing the real lint run, so the "
+        "mutant below cannot speak for it. It is separately linted by the second "
+        "half of the same npm script, `biome lint private/account/`"
+    ),
+}
+
 # A path that MUST be outside biome's includes. If biome starts processing it,
 # the allowlist has been discarded -- which is exactly what a stray comment in
 # the `files` object does, silently.
@@ -120,6 +151,53 @@ def eslint_ignored(root, paths):
         if any("File ignored" in (m.get("message") or "") for m in entry.get("messages", [])):
             ignored.append(rel)
     return ignored
+
+
+def lint_roots(root):
+    """The positional roots each lint script hands to eslint, parsed from package.json.
+
+    PARSED, NOT DUPLICATED. A hard-coded copy of the root list here would be a
+    second source of truth that drifts from the scripts it claims to describe,
+    and a gate comparing its own constant against itself proves nothing about
+    what eslint actually runs over.
+
+    Returns {script name: [roots]}, or None when package.json cannot be read at
+    all -- which is refused rather than treated as "no roots", because an empty
+    list would make every file look uncovered and blame the wrong thing.
+    """
+    try:
+        scripts = json.loads((root / "package.json").read_text())["scripts"]
+    except (OSError, ValueError, KeyError):
+        return None
+    found = {}
+    for name in LINT_ROOT_SCRIPTS:
+        body = scripts.get(name)
+        if body is None:
+            continue
+        # The eslint call is one `&&`-joined segment; the rest of the script is
+        # biome, whose scope is biome.json's allowlist and not these arguments.
+        segment = next((seg for seg in body.split("&&") if ESLINT_RUNNER in seg), None)
+        if segment is None:
+            continue
+        tokens = segment.split()
+        start = next(i for i, t in enumerate(tokens) if ESLINT_RUNNER in t) + 2
+        roots = []
+        for token in tokens[start:]:
+            if token.startswith("-"):
+                break
+            roots.append(token)
+        found[name] = roots
+    return found
+
+
+def uncovered_by(paths, roots):
+    """The files no lint root reaches.
+
+    The gate's real question when handed the WHOLE root list, and the mutant's
+    when handed the list minus one. One function for both so the mutant exercises
+    the same code the verdict comes from, rather than a lookalike of it.
+    """
+    return [p for p in paths if not any(p == r or p.startswith(r + "/") for r in roots)]
 
 
 class BiomeUnreadableError(Exception):
@@ -208,8 +286,104 @@ def main(argv=None):
         )
         return 1
 
-    # ---- the real scan ------------------------------------------------------
+    # ---- LINT ROOTS: they must cover everything, and must not silently shrink -
+    # The scan below hands eslint FILE PATHS, so it measures config `ignores` and
+    # is blind to the root list. This section is the other half: what package.json
+    # actually points eslint at.
     candidates = [f for f in files if not exempt(f)]
+    by_script = lint_roots(root)
+    if by_script is None:
+        print(
+            "could not read package.json's scripts, so the lint ROOT LIST cannot be\n"
+            "  checked. This is an ENVIRONMENT failure, not a scope failure.",
+            file=sys.stderr,
+        )
+        return 1
+    missing = [n for n in LINT_ROOT_SCRIPTS if n not in by_script]
+    if missing:
+        print(
+            "no eslint root list found in package.json script(s): %s\n"
+            "  Either the script was renamed or it stopped invoking %s. Until this\n"
+            "  parses, nothing below can speak for eslint's scope."
+            % (", ".join(missing), ESLINT_RUNNER),
+            file=sys.stderr,
+        )
+        return 1
+
+    # All three must agree, or a developer's `npm run lint` covers a narrower tree
+    # than CI's `check:lint` enforces and passes locally on code CI will reject.
+    distinct = {tuple(r) for r in by_script.values()}
+    if len(distinct) != 1:
+        print("the lint scripts disagree about eslint's roots:", file=sys.stderr)
+        for name in LINT_ROOT_SCRIPTS:
+            print("    %-12s %s" % (name, " ".join(by_script[name])), file=sys.stderr)
+        print(
+            "\n  All of %s must pass the SAME roots. Widening one alone gives a clean\n"
+            "  local run over a tree CI lints more of." % ", ".join(LINT_ROOT_SCRIPTS),
+            file=sys.stderr,
+        )
+        return 1
+    roots = list(distinct.pop())
+
+    # VACUITY: no roots at all would make every file "uncovered" and report a
+    # scope catastrophe when the truth is that the parse failed.
+    if not roots:
+        print(
+            "VACUOUS: parsed an EMPTY root list out of the lint scripts. eslint would\n"
+            "  be given no paths at all, so the coverage numbers below are meaningless.",
+            file=sys.stderr,
+        )
+        return 1
+
+    outside = uncovered_by(candidates, roots)
+    if outside:
+        print(
+            "%d tracked file(s) are outside every eslint ROOT, so no amount of config\n"
+            "correctness can reach them (roots: %s):" % (len(outside), " ".join(roots)),
+            file=sys.stderr,
+        )
+        for path in sorted(outside)[:40]:
+            print("    %s" % path, file=sys.stderr)
+        if len(outside) > 40:
+            print("    ... and %d more" % (len(outside) - 40), file=sys.stderr)
+        print(
+            "\n  Add the root to all of %s, or exempt the prefix in ESLINT_EXEMPT here\n"
+            "  WITH THE REASON it is not source." % ", ".join(LINT_ROOT_SCRIPTS),
+            file=sys.stderr,
+        )
+        return 1
+
+    # ---- CONTROL: the assertion above must have TEETH ------------------------
+    # "Everything is covered" is satisfied just as well by a root list that is too
+    # WIDE, and a passing coverage check says nothing about whether removing a
+    # root would be noticed. So mutate: drop each root in turn and require the
+    # very same uncovered_by() call to come back non-empty. A root whose removal
+    # changes nothing is a root this gate would let someone delete in silence.
+    for dropped in roots:
+        if uncovered_by(candidates, [r for r in roots if r != dropped]):
+            continue
+        why = ROOT_UNMEASURABLE.get(dropped)
+        if why is not None:
+            continue
+        print(
+            "CONTROL FAILED: dropping the root '%s' leaves every tracked file still\n"
+            "  covered, so this gate would stay GREEN if someone deleted it from\n"
+            "  package.json. The scope check above is not holding that root in place.\n"
+            "\n  Either the root is redundant (another root already contains it, and it\n"
+            "  should be removed deliberately rather than left as decoration), or its\n"
+            "  files are untracked/exempt here -- in which case add it to\n"
+            "  ROOT_UNMEASURABLE with the reason, the way private/account is." % dropped,
+            file=sys.stderr,
+        )
+        return 1
+
+    proven = [r for r in roots if r not in ROOT_UNMEASURABLE]
+    print(
+        "%d eslint root(s) cover every tracked file; %d proven load-bearing by the\n"
+        "  drop-one mutant (%s)" % (len(roots), len(proven), " ".join(proven))
+    )
+
+    # ---- the real scan ------------------------------------------------------
     ignored = eslint_ignored(root, candidates)
     if ignored is None:
         print("could not read eslint's report; refusing a verdict", file=sys.stderr)

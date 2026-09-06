@@ -107,6 +107,11 @@ export default {
   // block in every wrangler.*.toml is the other half; both are gated by
   // private/account/tests/integration/cron-wiring.test.ts.
   scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
-    accountApp.scheduled(controller, env as never, ctx);
+    // No `as never` here: the Hono entry declares `env: CloudflareEnv` and this
+    // worker's Env satisfies it, so the cast was load-bearing for nothing and
+    // @typescript-eslint/no-unnecessary-type-assertion said so as soon as
+    // workers/ entered the lint scope (2026-09-06). Keeping it would have hidden
+    // any real future divergence between the two Env shapes behind `never`.
+    accountApp.scheduled(controller, env, ctx);
   },
 };
