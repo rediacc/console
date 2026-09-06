@@ -458,7 +458,7 @@ export const hookSummaryProvider: Provider = {
       key: '(all events)',
       cells: [
         '(all events)',
-        String(new Set(wired.map((w) => `${w.event} ${w.matcher}`)).size),
+        String(new Set(wired.map((w) => `${w.event}\u0000${w.matcher}`)).size),
         String(new Set(wired.map((w) => w.file)).size),
       ],
     });

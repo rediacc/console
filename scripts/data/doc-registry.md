@@ -142,16 +142,33 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-hooks-resolvable | quality-static / Hooks resolvable | yes | no | no |
 | check:ci-host-toolchain-coverage | quality-code / Host toolchain runtime coverage | yes | no | no |
 | check:ci-hydration-clean | test: .ci/scripts/test/gates/test-hydration-clean.sh | yes | no | no |
+| check:ci-i18n-account-email-templates | quality-i18n / i18n | yes | no | no |
 | check:ci-i18n-cli-help-render | quality-i18n / i18n | yes | no | no |
 | check:ci-i18n-cli-key-usage | quality-i18n / i18n | yes | no | no |
 | check:ci-i18n-command-parity | quality-i18n / i18n command parity | yes | no | no |
-| check:ci-i18n-cross-locale | quality-i18n / i18n cross-locale | yes | no | no |
+| check:ci-i18n-completeness | quality-i18n / i18n | yes | no | no |
+| check:ci-i18n-cross-locale | quality-i18n / i18n cross-locale | no | no | no |
+| check:ci-i18n-cross-locale-core | quality-i18n / i18n cross-locale | yes | no | no |
+| check:ci-i18n-docs-inline | quality-i18n / i18n | yes | no | no |
+| check:ci-i18n-docs-render-parity | quality-i18n / i18n | yes | no | no |
+| check:ci-i18n-docs-untranslated | quality-i18n / i18n | yes | no | no |
+| check:ci-i18n-hardcoded-strings | quality-i18n / i18n | yes | no | no |
+| check:ci-i18n-hashes | quality-i18n / i18n | yes | no | no |
 | check:ci-i18n-ledger-growth | quality-i18n / i18n | yes | no | no |
 | check:ci-i18n-locale-only | quality-i18n / i18n | yes | no | no |
 | check:ci-i18n-media | quality-i18n / Tutorial media | yes | no | no |
+| check:ci-i18n-naturalization | quality-i18n / i18n | yes | no | no |
+| check:ci-i18n-page-locale-imports | quality-i18n / i18n | yes | no | no |
 | check:ci-i18n-placeholders | quality-i18n / i18n placeholders | yes | no | no |
 | check:ci-i18n-untranslated | quality-i18n / i18n untranslated | yes | no | no |
 | check:ci-i18n-value-types | quality-content / i18n value types match English | yes | no | no |
+| check:ci-i18n-www-cli-docs | quality-i18n / i18n | yes | no | no |
+| check:ci-i18n-www-comparison-refs | quality-i18n / i18n | yes | no | no |
+| check:ci-i18n-www-content | quality-i18n / i18n | yes | no | no |
+| check:ci-i18n-www-content-accuracy | quality-i18n / i18n | yes | no | no |
+| check:ci-i18n-www-docs-cli-usage | quality-i18n / i18n | yes | no | no |
+| check:ci-i18n-www-landing-cli-usage | quality-i18n / i18n | yes | no | no |
+| check:ci-i18n-www-translation-freshness | quality-i18n / i18n | yes | no | no |
 | check:ci-illustration-contract | quality-content / Dead CSS | yes | no | no |
 | check:ci-install-sh-config | quality-static / install.sh config tests | yes | no | no |
 | check:ci-jq-boolean-default | quality-code / jq boolean defaults | yes | no | no |
@@ -188,6 +205,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-peer-deps | quality-code / Verify no peer dependency conflicts | yes | no | no |
 | check:ci-pipefail-grep-q | quality-code / No racing pipefail/grep -q detectors | yes | yes | no |
 | check:ci-plan-boxes | quality-branch / Plan checkbox ledger | yes | no | no |
+| check:ci-plan-citations | quality-branch / Plan citations | yes | no | no |
 | check:ci-plan-housekeeping | quality-i18n / Plan file housekeeping | yes | no | no |
 | check:ci-plan-record | quality-branch / Plan records | yes | no | no |
 | check:ci-player-css-scope | quality-www-build / Player CSS scope | yes | yes | no |
@@ -204,7 +222,8 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-quality-gates | quality-security / Quality-gate unit tests | no | no | no |
 | check:ci-rdc-sh-env | quality-static / rdc.sh env tests | yes | no | no |
 | check:ci-recovery-context | quality-go / Check recovery functions get an uncancellable context | yes | no | no |
-| check:ci-redirects | quality-www-build / Redirects | yes | yes | no |
+| check:ci-redirect-integrity | quality-www-build / Redirects | yes | yes | no |
+| check:ci-redirects | quality-www-build / Redirects | no | yes | no |
 | check:ci-regions-sync | test: .ci/scripts/test/gates/test-regions-sync.sh | yes | no | no |
 | check:ci-release-bump-skip | test: .ci/scripts/quality/check-release-bump-skip.sh | yes | no | no |
 | check:ci-release-key-canonical | quality-security / Release key canonical | yes | no | no |
@@ -233,7 +252,8 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-secret-scope | quality-security / Secret scope | yes | no | no |
 | check:ci-security-audit | quality-security / Audit | yes | yes | no |
 | check:ci-sentence-wrapping | quality-content / Sentence wrapping | yes | no | no |
-| check:ci-seo | quality-www-build / SEO | yes | yes | no |
+| check:ci-seo | quality-www-build / SEO | no | yes | no |
+| check:ci-seo-core | quality-www-build / SEO | yes | yes | no |
 | check:ci-setup-idempotency | quality-code / Setup path idempotency | yes | no | no |
 | check:ci-shape-duplication | quality-code / Shape duplication | yes | no | no |
 | check:ci-shared-constant-duplication | quality-code / Shared constant duplication | yes | no | no |
@@ -293,8 +313,13 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:cli-examples | quality-code / CLI examples | yes | yes | no |
 | check:deps | quality-content / External dependency freshness | yes | yes | no |
 | check:format | quality-code / Format | yes | no | no |
-| check:i18n | quality-i18n / i18n | yes | yes | no |
-| check:lint | quality-code / Lint | yes | yes | no |
+| check:i18n | quality-i18n / i18n | no | yes | no |
+| check:i18n:key-usage | quality-i18n / i18n | yes | no | no |
+| check:lint | quality-code / Lint | no | yes | no |
+| check:lint:account | quality-code / Lint | yes | yes | no |
+| check:lint:cli | quality-code / Lint | yes | yes | no |
+| check:lint:tooling | quality-code / Lint | yes | yes | no |
+| check:lint:web | quality-code / Lint | yes | yes | no |
 | check:test-cli | quality-packages / Run CLI unit tests | yes | yes | no |
 | check:test-shared | quality-packages / Run shared package tests | yes | no | no |
 | check:test-workers | quality-www-build / Worker unit tests (workers/www) | yes | yes | no |
@@ -375,10 +400,13 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | gate-test:media-args | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:media-bridge | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:media-cuda | quality-security / Quality-gate unit tests | yes | no | yes |
+| gate-test:media-docs | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:media-entry | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:media-helpers | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:media-pool | quality-security / Quality-gate unit tests | yes | no | yes |
+| gate-test:media-portable | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:media-r2 | quality-security / Quality-gate unit tests | yes | no | yes |
+| gate-test:media-shims | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:media-venv | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:nightly-retry-filters | quality-security / Quality-gate unit tests | yes | no | yes |
 | gate-test:nightly-status-report | quality-security / Quality-gate unit tests | yes | no | yes |
@@ -446,11 +474,13 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | gate-test:workflow-pr-environment | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:worklist-hooks | quality-security / Quality-gate unit tests | yes | yes | yes |
 | gate-test:worktree-devbox-teardown | quality-security / Quality-gate unit tests | yes | no | yes |
+| gen:docs | local-only | no | no | no |
+| gen:gates-lock | local-only | no | no | no |
 | lint:unused | quality-code / Unused exports (knip) | yes | yes | no |
 | test:install-script | quality-static / Install-script tests | yes | no | no |
 | test:write-once-guard | quality-static / Write-once guard tests | yes | no | no |
 
-413 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
+443 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -530,6 +560,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | profile/bash_env.sh | (none) | (nothing) | sh |
 | profile/py/sitecustomize.py | (none) | via stop/wl_resprofile.py | py |
 | require-jq.sh | PostToolUse, PreToolUse | settings.json | sh |
+| require-python.sh | PostToolUse, PreToolUse | settings.json | sh |
 | stop/calibrate-judge-rules.py | (none) | (nothing) | py |
 | stop/test-adhoc-watch.py | (none) | via test-hooks.sh | py |
 | stop/test-always-tier.py | (none) | via stop/wl_checks.py | py |
@@ -601,8 +632,9 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | stop/worklist_messages.py | (none) | via pre-bash/warn-stale-index.sh | py |
 | test-hooks.sh | (none) | via pre-ask/block-settled-questions.sh | sh |
 | trapguard/dispatch.py | PostToolUse | settings.json | py |
+| why-on-edit.py | PreToolUse | settings.json | py |
 
-134 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
+136 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -640,7 +672,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .unverified-download-allowlist | 4 | # comment |
 | knip.jsonc | 26 | // comment |
 | package.json | 28 | JSON value |
-| scripts/ci-runner/gates.lock.json | 15 | JSON value |
+| scripts/ci-runner/gates.lock.json | 17 | JSON value |
 | scripts/data/shape-duplication-seed.json | 16 | JSON value |
 
 24 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
@@ -673,12 +705,15 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/keys | 1 | .asc 1 |
 | .ci/legacy | 1 | .sh 1 |
 | .ci/lib | 7 | .sh 7 |
-| .ci/media | 9 | .sh 9 |
+| .ci/media | 11 | .sh 11 |
+| .ci/media/tools | 2 | .sh 2 |
+| .ci/media/tts | 2 | (none) 1, .toml 1 |
 | .ci/policy | 1 | .md 1 |
 | .ci/prompts | 1 | .md 1 |
 | .ci/rediacc_ci | 8 | .py 8 |
 | .ci/rediacc_ci/core | 3 | .py 3 |
-| .ci/rediacc_ci/tests | 8 | .py 8 |
+| .ci/rediacc_ci/quality | 7 | .py 7 |
+| .ci/rediacc_ci/tests | 10 | .py 10 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/scripts/autopilot | 19 | .sh 16, .cjs 2, .json 1 |
 | .ci/scripts/autopilot/prompts | 2 | .md 2 |
@@ -696,7 +731,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/pr | 1 | .sh 1 |
 | .ci/scripts/private | 9 | .sh 9 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 126 | .sh 82, .py 41, .json 2, .mjs 1 |
+| .ci/scripts/quality | 133 | .sh 82, .py 48, .json 2, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/release | 21 | .sh 21 |
 | .ci/scripts/review | 4 | .sh 4 |
@@ -706,10 +741,11 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/signal | 1 | .sh 1 |
 | .ci/scripts/test | 18 | .sh 17, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
-| .ci/scripts/test/gates | 144 | .sh 144 |
+| .ci/scripts/test/gates | 147 | .sh 147 |
 | .ci/scripts/test/lib | 3 | .sh 3 |
 | .ci/scripts/test/manual | 1 | .sh 1 |
 | .ci/scripts/version | 4 | .sh 4 |
+| .ci/shadow | 6 | .jsonl 6 |
 | .ci/tutorials | 21 | .sh 20, .md 1 |
 | .ci/tutorials/apps/demo-pgadmin | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/apps/heartbeat | 2 | (none) 1, .yaml 1 |
@@ -717,6 +753,6 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/tutorials/apps/secrets-demo | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/lib | 4 | .sh 4 |
 
-59 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
+63 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
