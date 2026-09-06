@@ -350,11 +350,18 @@ tgit() { git -C "$1" -c user.email=fixture@example.invalid -c user.name=git-fixt
 record_tree() {
     local repo="$1" ids="$2" msg="$3"
     printf '%s\n' "$ids" >"$repo/fixture.txt"
+    # THE TOY GATE IS COPIED INTO THE FIXTURE AND COMMITTED WITH IT, rather than
+    # invoked from $WORK. Both sides must live INSIDE the tree being recorded,
+    # because the tree id is the content of both implementations: a row recorded
+    # with either side outside it attests to code that tree never held. The
+    # comparator refuses that outright as of 2026-09-06, so the old spelling
+    # exited 3 here -- correctly. This test now models the usage it is testing.
+    cp "$WORK/tiny-gate.sh" "$repo/tiny-gate.sh"
     tgit "$repo" add -A >/dev/null
     tgit "$repo" commit -q -m "$msg" >/dev/null
     (cd "$REPO_ROOT" && "$TSX" "$LIB" --repo "$repo" --pair k \
-        --old "bash $WORK/tiny-gate.sh $repo/fixture.txt old" \
-        --new "bash $WORK/tiny-gate.sh $repo/fixture.txt new" --record) >"$WORK/out" 2>"$WORK/err"
+        --old "bash $repo/tiny-gate.sh $repo/fixture.txt old" \
+        --new "bash $repo/tiny-gate.sh $repo/fixture.txt new" --record) >"$WORK/out" 2>"$WORK/err"
 }
 
 setup_k_repo() {
@@ -390,8 +397,8 @@ test_dirty_tree_is_refused_and_writes_nothing() {
     echo "uncommitted" >"$repo/scratch.txt"
     local rc=0
     (cd "$REPO_ROOT" && "$TSX" "$LIB" --repo "$repo" --pair dirty \
-        --old "bash $WORK/tiny-gate.sh $repo/fixture.txt old" \
-        --new "bash $WORK/tiny-gate.sh $repo/fixture.txt new" --record) \
+        --old "bash $repo/tiny-gate.sh $repo/fixture.txt old" \
+        --new "bash $repo/tiny-gate.sh $repo/fixture.txt new" --record) \
         >"$WORK/out" 2>"$WORK/err" || rc=$?
     ((rc == 3)) || log_fail "a --record over a dirty tree must exit 3, got $rc"
     assert_contains "$(cat "$WORK/out")" 'EQUIVALENT' 'the comparison itself still ran'
@@ -408,12 +415,12 @@ test_k_counts_distinct_trees_not_runs() {
     record_tree "$repo" "alpha" "t1"
     local rc=0
     (cd "$REPO_ROOT" && "$TSX" "$LIB" --repo "$repo" --pair k \
-        --old "bash $WORK/tiny-gate.sh $repo/fixture.txt old" \
-        --new "bash $WORK/tiny-gate.sh $repo/fixture.txt new" --record) >/dev/null 2>&1 || rc=$?
+        --old "bash $repo/tiny-gate.sh $repo/fixture.txt old" \
+        --new "bash $repo/tiny-gate.sh $repo/fixture.txt new" --record) >/dev/null 2>&1 || rc=$?
     ((rc == 0)) || log_fail "the second recording on a clean tree should succeed, got $rc"
     (cd "$REPO_ROOT" && "$TSX" "$LIB" --repo "$repo" --pair k \
-        --old "bash $WORK/tiny-gate.sh $repo/fixture.txt old" \
-        --new "bash $WORK/tiny-gate.sh $repo/fixture.txt new" --record) >/dev/null 2>&1 || true
+        --old "bash $repo/tiny-gate.sh $repo/fixture.txt old" \
+        --new "bash $repo/tiny-gate.sh $repo/fixture.txt new" --record) >/dev/null 2>&1 || true
 
     local rows
 
@@ -473,13 +480,13 @@ test_a_mismatch_cannot_be_cleared_by_rerunning() {
     tgit "$repo" add -A >/dev/null
     tgit "$repo" commit -q -m t1 >/dev/null
     (cd "$REPO_ROOT" && "$TSX" "$LIB" --repo "$repo" --pair k \
-        --old "bash $WORK/tiny-gate.sh $repo/fixture.txt old" \
+        --old "bash $repo/tiny-gate.sh $repo/fixture.txt old" \
         --new 'echo "✗ fixture.txt: something else is bad" >&2; exit 1' --record) >/dev/null 2>&1 || true
     # Now the honest comparison on the SAME tree, twice.
     record_tree_same() {
         (cd "$REPO_ROOT" && "$TSX" "$LIB" --repo "$repo" --pair k \
-            --old "bash $WORK/tiny-gate.sh $repo/fixture.txt old" \
-            --new "bash $WORK/tiny-gate.sh $repo/fixture.txt new" --record) >/dev/null 2>&1 || true
+            --old "bash $repo/tiny-gate.sh $repo/fixture.txt old" \
+            --new "bash $repo/tiny-gate.sh $repo/fixture.txt new" --record) >/dev/null 2>&1 || true
     }
     record_tree_same
     record_tree_same
