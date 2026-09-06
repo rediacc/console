@@ -79,7 +79,24 @@ jobs:
 
       # Every Linux job carries this (check:ci-profiler-coverage). It is a LOCAL
       # action, so it has to follow the checkout rather than lead the job.
+      #
+      # AND IT ONLY EXISTS IN CONSOLE. This is a reusable workflow, and `./` in a
+      # `uses:` resolves against the CALLER's checked-out tree, not against the
+      # repository that owns this file. rediacc/account, renet and elite all call
+      # it (.github/external-callers.yml), none of them vendors the action, and so
+      # every one of their review runs died here:
+      #   Can't find 'action.yml' ... under
+      #   '/home/runner/work/account/account/.github/actions/profiler'
+      # -- rediacc/account run 34006175748, "review / Discover epics", which is
+      # why PR #86 sat at UNSTABLE. The step is kept, not deleted: the coverage
+      # gate reads this line statically and the measurement is still wanted on
+      # console's own runs. It is the EXECUTION that is scoped.
+      #
+      # This is not a new idea in this file: the `Fetch secrets from Bitwarden`
+      # step below already carries the identical guard, for the identical reason.
+      # The profiler simply never got it.
       - uses: ./.github/actions/profiler
+        if: ${{ github.repository == 'rediacc/console' }}
         with:
           runner-label: ubuntu-latest
 
