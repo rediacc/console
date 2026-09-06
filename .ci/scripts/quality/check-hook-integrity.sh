@@ -133,9 +133,24 @@ for x in v:
     print(x)
 PY
 }
-mapfile -t GUARD_DIRS < <(scope_list guard_dirs)
-mapfile -t EXTRA_GUARDS < <(scope_list guards_outside_chains)
-mapfile -t CASE_SOURCES < <(scope_list case_sources)
+# `while read` RATHER THAN `mapfile`, and it is not a style choice. `mapfile` is
+# bash 4+ and `check:ci-shell-commands` rejects it as unavailable in the minimal
+# CI image; these three lines were the last three findings that gate had.
+# Behaviour is identical for this input: scope_list emits one entry per line and
+# an entry can never contain a newline, since it is a JSON string this file's own
+# reader has already rejected unless every element is a non-empty string.
+#
+# The trailing `|| true` on each is REQUIRED and is not defensive noise. `read`
+# returns non-zero at end of input, which under `set -e` would kill the script at
+# the last line of the loop and take the emptiness refusal below with it. That
+# refusal is the only thing standing between an unreadable scope file and a gate
+# that exits 0 having audited nothing.
+GUARD_DIRS=()
+while IFS= read -r _line; do GUARD_DIRS+=("$_line"); done < <(scope_list guard_dirs || true)
+EXTRA_GUARDS=()
+while IFS= read -r _line; do EXTRA_GUARDS+=("$_line"); done < <(scope_list guards_outside_chains || true)
+CASE_SOURCES=()
+while IFS= read -r _line; do CASE_SOURCES+=("$_line"); done < <(scope_list case_sources || true)
 if [ ${#GUARD_DIRS[@]} -eq 0 ] || [ ${#EXTRA_GUARDS[@]} -eq 0 ] || [ ${#CASE_SOURCES[@]} -eq 0 ]; then
     echo "${RED}✗${NC} hook integrity: scope file unreadable or empty: $SCOPE" >&2
     echo "     guard_dirs=${#GUARD_DIRS[@]} guards_outside_chains=${#EXTRA_GUARDS[@]} case_sources=${#CASE_SOURCES[@]}" >&2
