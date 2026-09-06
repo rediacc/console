@@ -704,6 +704,21 @@ check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add --all')" "blanke
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add .')" "blanket-git-add: a lone dot"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add :/')" "blanket-git-add: the repo-root magic pathspec"
 
+# block-pathspecless-git-commit.sh -- the OTHER half of the blanket-add trap, and
+# the half a correct `git add` does not protect you from. `git commit` writes the
+# INDEX, so a peer session's staged work rides your commit. Added 2026-09-06
+# after it happened TWICE in one session: fifteen policy renames landed without
+# their readers, then an hour later, after the trap was written down by the same
+# session, 108 files landed where 33 were intended.
+check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -m "x"')" "pathspecless-commit: -m with no pathspec"
+check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit')" "pathspecless-commit: the bare form"
+check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -a -m "x"')" "pathspecless-commit: -a stages every modified tracked file"
+check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -m "x" --')" "pathspecless-commit: a -- with nothing after it is the bare form in disguise"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -F msg.txt -- a/b.ts')" "pathspecless-commit: ALLOW a named pathspec"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -q -F - -- .ci/x.sh agent/y.md')" "pathspecless-commit: ALLOW several named paths"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit --amend --no-edit')" "pathspecless-commit: ALLOW an amend, which chooses no new content"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git add -- a.ts')" "pathspecless-commit: ALLOW a git add, which is a different guard's business"
+
 # block-destructive-git-restore.sh -- the four commands that DISCARD uncommitted
 # work. Added 2026-08-14 after `git checkout -- <one file>`, run to tidy up a
 # stray edit, destroyed another live session's uncommitted value in that file.

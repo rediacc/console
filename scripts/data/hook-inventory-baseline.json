@@ -21,6 +21,7 @@
   ".claude/hooks/pre-bash/block-merge-with-unpushed.sh",
   ".claude/hooks/pre-bash/block-nondraft-pr-create.sh",
   ".claude/hooks/pre-bash/block-nonstandard-branch-name.sh",
+  ".claude/hooks/pre-bash/block-pathspecless-git-commit.sh",
   ".claude/hooks/pre-bash/block-premature-ready.sh",
   ".claude/hooks/pre-bash/block-protected-files.sh",
   ".claude/hooks/pre-bash/block-raw-pr-body-edit.sh",
