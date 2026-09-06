@@ -1715,6 +1715,93 @@ GUIDE_MAX = int(os.environ.get("WORKLIST_GUIDE_MAX", "12"))
 # on a pointer somebody forgot, and a forgotten pointer ships whatever the
 # parent last recorded. A move to a new sha re-fires immediately regardless.
 SUBMODULE_LATCH_MIN = int(os.environ.get("WORKLIST_SUBMODULE_LATCH_MIN", "15"))
+# How long the same warning stays latched once a session has RECORDED a decision
+# about that exact (path, sha). Longer than the bare latch by a lot, and still
+# NOT permanent, because the reason the bare latch is time-boxed applies here
+# too: a decision can go stale, and a pointer nobody revisits ships whatever the
+# parent last recorded. A day means a decided pointer stops interrupting a
+# working session and still gets re-examined tomorrow.
+SUBMODULE_DECIDED_LATCH_MIN = int(os.environ.get("WORKLIST_SUBMODULE_DECIDED_LATCH_MIN", "1440"))
+
+
+def _json_or_none(line):
+    """One JSONL row, or None when the line is not a row. A ledger is
+    append-only under a lock, so a torn final line is possible and is not an
+    error worth propagating."""
+    try:
+        return json.loads(line)
+    except (ValueError, TypeError):
+        return None
+
+
+def submodule_decision_recorded(root, path, sha):
+    """Has ANY session ticked an item naming this submodule path and target sha?
+
+    The check offers two doors, KEEP (stage it) and DROP (`git submodule update
+    --checkout`), and there is a third that is often the right one: leave the
+    worktree alone and never stage it, which is correct when the parent's HEAD
+    already matches and the checkout belongs to a peer session. Nothing in the
+    warning could see that such a decision existed, so a session that had
+    decided, ticked and documented it was told off every fifteen minutes.
+
+    Reads the ledgers of EVERY session, not just this one, because a submodule
+    pointer is shared state: a peer's ruling on it is as binding as ours.
+
+    FAIL-SAFE BY CONSTRUCTION. Any error at all returns False, which restores
+    exactly the previous behaviour. This function runs inside the stop hook of
+    every session in the worktree, so the cost of it being wrong is not local,
+    and the safe direction is to warn too often rather than too rarely.
+    """
+    try:
+        store = pathlib.Path(root) / "agent" / "worklist"
+        if not store.is_dir():
+            return False
+        short = str(sha)[:9]
+        for led in store.glob("*.jsonl"):
+            try:
+                text = led.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            # TWO PASSES, because the decision is the ITEM and not any one event.
+            # A tick is `ev: state` with `s: "x"` -- that is the schema, not a
+            # guess: the store has no "tick" or "done" event kind at all, and a
+            # first draft looking for one matched nothing and would have shipped
+            # a predicate that could never fire. The other state value is "?" for
+            # a deferral, and a deferral is explicitly NOT a decision.
+            #
+            # The sha usually appears in the item's TITLE, on its `add` event,
+            # rather than in the tick evidence, and that is not an accident: a
+            # submodule commit is a gitlink and never an object in this
+            # repository, so `completion_evidence` REFUSES a tick whose only
+            # evidence is such a sha. The tick therefore describes the decision in
+            # prose while the title carries the pair. Matching one line at a time
+            # misses that, which a both-direction test caught here.
+            ticked = set()
+            events = []
+            for line in text.splitlines():
+                ev = _json_or_none(line)
+                if ev is None:
+                    continue
+                events.append(ev)
+                if ev.get("ev") == "state" and ev.get("s") == "x" and ev.get("id"):
+                    ticked.add(ev["id"])
+            for ev in events:
+                if ev.get("id") not in ticked:
+                    continue
+                blob = " ".join(v for v in ev.values() if isinstance(v, str))
+                if path in blob and short in blob:
+                    return True
+        return False
+    except (OSError, ValueError, TypeError):
+        # NARROW ON PURPOSE, and still fail-safe: these are what a missing store,
+        # an unreadable ledger or a malformed row can raise. A blind `except`
+        # here would also swallow a real programming error in this function and
+        # report "no decision", which is the safe DIRECTION but hides the bug
+        # forever. This runs in the stop hook of every session in the worktree,
+        # so a mistake is not local, but neither is a defect nobody can see.
+        return False
+
+
 GUIDE_TEXT_CHARS = 90
 
 # The allow-report diet (operator, 2026-07-31: "Why I see such a big
@@ -4078,7 +4165,15 @@ def run_stop(event, event_ok, worklist, hook_file):
         _sub = state_doc.get("subptr") or {}
         _same = _sub.get("sig") == _sub_sig
         _sub_age = C.stamp_age_min(_sub.get("at")) if _same else None
-        _due = (not _same) or _sub_age is None or _sub_age >= SUBMODULE_LATCH_MIN
+        # A RECORDED DECISION LENGTHENS THE LATCH; it never removes it. See
+        # submodule_decision_recorded: the third door (leave it, never stage it)
+        # is invisible to this warning, so a session that decided correctly was
+        # told off every fifteen minutes. A day is long enough to stop
+        # interrupting the work and short enough that a stale decision is
+        # re-examined rather than enshrined.
+        _decided = all(submodule_decision_recorded(root, p, b) for p, _a, b, _w in moves)
+        _latch = SUBMODULE_DECIDED_LATCH_MIN if _decided else SUBMODULE_LATCH_MIN
+        _due = (not _same) or _sub_age is None or _sub_age >= _latch
         if _due:
             vadd(
                 "submodule",
