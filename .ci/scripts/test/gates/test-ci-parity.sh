@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node
+# slow: true
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Both-directions test for scripts/check-ci-parity.ts.
 #
 # The gate's promise: the local gate set and the CI quality surface agree, so a
@@ -61,7 +69,7 @@ SCRIPTS_AGGREGATOR="$SCRIPTS_ALPHA_BETA,
 # is, so the computed-surface case gets its shape for free.
 scaffold() {
     local root="$1" steps="$2" scripts="${3:-$SCRIPTS_ALPHA}"
-    mkdir -p "$root/.github/workflows" "$root/.ci/scripts/quality" "$root/scripts"
+    mkdir -p "$root/.github/workflows" "$root/.ci/scripts/quality" "$root/.ci/policy" "$root/scripts"
     # The gate existence-checks every path-shaped leaf, so the fixture's leaves
     # have to be real files or every case would fail for the wrong reason.
     touch "$root/.ci/scripts/quality/check-alpha.sh" \
@@ -277,7 +285,7 @@ test_exemption_clears_a_finding() {
         run: .ci/scripts/quality/check-orphan.sh
 '"$STEP_ALPHA"
     manifest "$d" "$MANIFEST_ALPHA"
-    cat >"$d/.ci-parity-exempt" <<'EOF'
+    cat >"$d/.ci/policy/.ci-parity-exempt" <<'EOF'
 # BLOCKER: reads the pull request body through the GitHub API, so there is nothing for a local checkout to validate before the PR exists
 ci-only  .ci/scripts/quality/check-orphan.sh
 EOF
@@ -295,7 +303,7 @@ test_low_effort_blocker_is_rejected() {
         run: .ci/scripts/quality/check-orphan.sh
 '"$STEP_ALPHA"
     manifest "$d" "$MANIFEST_ALPHA"
-    cat >"$d/.ci-parity-exempt" <<'EOF'
+    cat >"$d/.ci/policy/.ci-parity-exempt" <<'EOF'
 # BLOCKER: tbd
 ci-only  .ci/scripts/quality/check-orphan.sh
 EOF
@@ -315,7 +323,7 @@ test_missing_direction_tag_is_rejected() {
         run: .ci/scripts/quality/check-orphan.sh
 '"$STEP_ALPHA"
     manifest "$d" "$MANIFEST_ALPHA"
-    cat >"$d/.ci-parity-exempt" <<'EOF'
+    cat >"$d/.ci/policy/.ci-parity-exempt" <<'EOF'
 # BLOCKER: reads the pull request body through the GitHub API, so there is nothing for a local checkout to validate before the PR exists
 .ci/scripts/quality/check-orphan.sh
 EOF

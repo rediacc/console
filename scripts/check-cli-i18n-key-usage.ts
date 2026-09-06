@@ -59,12 +59,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
+import { policyPath } from './lib/policy-paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, '..');
 const CLI_SRC = path.join(REPO_ROOT, 'packages/cli/src');
 const EN_CLI_JSON = path.join(CLI_SRC, 'i18n/locales/en/cli.json');
-const ORPHAN_ALLOWLIST = path.join(REPO_ROOT, '.cli-i18n-orphan-allowlist');
+const ORPHAN_ALLOWLIST = policyPath('.cli-i18n-orphan-allowlist', REPO_ROOT);
 const WWW_SRC = path.join(REPO_ROOT, 'packages/www/src');
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };

@@ -86,7 +86,7 @@ REPO_ROOT="$(get_repo_root)"
 cd "$REPO_ROOT"
 
 WORKFLOW_DIR="${PROFILER_COVERAGE_WORKFLOW_DIR:-.github/workflows}"
-ALLOWLIST="${PROFILER_COVERAGE_ALLOWLIST:-.profiler-coverage-allowlist}"
+ALLOWLIST="${PROFILER_COVERAGE_ALLOWLIST:-.ci/policy/.profiler-coverage-allowlist}"
 ACTION_DIR="${PROFILER_COVERAGE_ACTION_DIR:-.github/actions/profiler}"
 
 # Composite actions that carry the profiler on behalf of every job calling them.

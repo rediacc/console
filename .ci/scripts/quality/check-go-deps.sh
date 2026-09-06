@@ -40,7 +40,7 @@ source "$SCRIPT_DIR/../lib/age-check.sh"
 # BLOCKER: shared daily-batch freshness rule; defers just-published module updates like the npm gates
 source "$SCRIPT_DIR/../lib/release-age.sh"
 
-BLOCKLIST_FILE="$REPO_ROOT/.go-deps-upgrade-blocklist"
+BLOCKLIST_FILE="$REPO_ROOT/.ci/policy/.go-deps-upgrade-blocklist"
 declare -A BLOCKED_MODULES=() BLOCKED_MODULE_REASONS=()
 if [[ -f "$BLOCKLIST_FILE" ]]; then
     parse_blockered_list "$BLOCKLIST_FILE" BLOCKED_MODULES BLOCKED_MODULE_REASONS
@@ -226,7 +226,7 @@ if [[ ${#ALL_MAJOR[@]} -gt 0 ]]; then
 fi
 if [[ ${#ALL_BLOCKED[@]} -gt 0 ]]; then
     echo ""
-    log_info "Blocked packages (see .go-deps-upgrade-blocklist):"
+    log_info "Blocked packages (see .ci/policy/.go-deps-upgrade-blocklist):"
     for line in "${ALL_BLOCKED[@]}"; do echo "$line"; done
 fi
 if [[ ${#ALL_TOOFRESH[@]} -gt 0 ]]; then

@@ -69,22 +69,12 @@ const KNOWN_MODULES = [
 // configs, the gate allowlists, the submodule set itself. Any of these => full.
 // Exact basenames, matched only at the repo root.
 const ROOT_MANIFESTS = new Set([
-  '.actions-upgrade-blocklist',
-  '.audit-allowlist',
-  '.audit-prod-allowlist',
-  '.ci-parity-exempt',
   '.ci-trigger',
-  '.cli-i18n-orphan-allowlist',
-  '.dead-bash-allowlist',
-  '.deps-upgrade-blocklist',
   '.dockerignore',
-  '.e2e-coverage-allowlist',
   '.editorconfig',
-  '.embed-assets-upgrade-blocklist',
   '.gitattributes',
   '.gitignore',
   '.gitmodules',
-  '.go-deps-upgrade-blocklist',
   '.npmrc',
   '.syncpackrc-reasons.json',
   '.syncpackrc.json',
@@ -100,20 +90,20 @@ const ROOT_MANIFESTS = new Set([
   'run.sh',
   'tsconfig.json',
 
-  // COMPLETED 2026-09-06. Five of the sixteen root allow/block lists were absent:
-  // .devcontainer-upgrade-blocklist, .plan-housekeeping-allowlist,
-  // .profiler-coverage-allowlist, .runner-advice-allowlist and
-  // .unverified-download-allowlist. Nothing was broken by the gap, because an
-  // unlisted root file falls through to `unclassified` which is ALSO full CI, so
-  // the scope was right and only the reason string was wrong. It is completed here
-  // because a PARTIAL set is a trap for the move of these files into .ci/policy:
-  // that change has to update this set coherently, and a reader checking "are they
-  // all here" would have concluded yes from eleven of them.
-  '.devcontainer-upgrade-blocklist',
-  '.plan-housekeeping-allowlist',
-  '.profiler-coverage-allowlist',
-  '.runner-advice-allowlist',
-  '.unverified-download-allowlist',
+  // THE FIFTEEN ALLOW/BLOCK LISTS ARE GONE FROM HERE, and deliberately: W4 P2
+  // moved them out of the repository root into `.ci/policy/`, so their names no
+  // longer match anything at the root and listing them would be a set that can
+  // never fire. Their classification is unchanged -- `.ci/policy/<name>` is
+  // caught by the `ci-harness` rule below (matchPrefix('.ci/') => full), so a
+  // change to any of them still forces a full round. Only the REASON string
+  // moved with them, from `root-manifest:<name>` to `harness:.ci/policy/<name>`,
+  // which is what .ci/scripts/test/gates/test-scope-engine.sh pins.
+  //
+  // `.ci-trigger` STAYS, above, and is the one member of that family still here:
+  // it is not policy (no entries, no BLOCKER lines, no parser) and its whole
+  // semantic is the root gesture `touch .ci-trigger` forcing a full round, which
+  // only works if a human can find it at the root. .ci/policy/README.md section 3
+  // records that decision.
 ]);
 
 // Root files that are prose, not build inputs.

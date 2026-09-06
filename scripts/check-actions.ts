@@ -33,10 +33,11 @@ import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.j
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
 import { BLUE, DIM, GREEN, NC, RED, YELLOW } from './lib/console.js';
 import { githubToken } from './lib/github-token.js';
+import { policyPath } from './lib/policy-paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
-const BLOCKLIST_FILE = path.join(CONSOLE_ROOT, '.actions-upgrade-blocklist');
+const BLOCKLIST_FILE = policyPath('.actions-upgrade-blocklist', CONSOLE_ROOT);
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -370,7 +371,7 @@ ${YELLOW}ENVIRONMENT${NC}
 
 ${YELLOW}DESCRIPTION${NC}
   Checks for outdated GitHub Actions in workflow files and fails if any
-  are found. Actions can be blocklisted in .actions-upgrade-blocklist to
+  are found. Actions can be blocklisted in .ci/policy/.actions-upgrade-blocklist to
   prevent upgrade enforcement (e.g., actions requiring workflow changes).
 
 ${YELLOW}BLOCKLIST FORMAT${NC}
@@ -525,7 +526,9 @@ async function checkActions(): Promise<void> {
       `  and every workflow must still parse. A major bump (vN -> vN+1) needs a real CI run.\n`
     );
     console.log(`  ${DIM}If an upgrade genuinely cannot be taken, record it in`);
-    console.log(`  .actions-upgrade-blocklist (one per line, BLOCKER reason required):${NC}`);
+    console.log(
+      `  .ci/policy/.actions-upgrade-blocklist (one per line, BLOCKER reason required):${NC}`
+    );
     console.log(`    ${mustUpgrade[0].name}  # BLOCKER: <why this upgrade is not takeable>`);
     console.log();
   }

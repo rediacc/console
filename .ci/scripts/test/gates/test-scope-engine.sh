@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node, submodules
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: Unit test for the pure core of the CI scope engine
+# ---- end gate ----
+
 # Unit test for the pure core of the CI scope engine:
 # .ci/scripts/ci/scope-map.cjs and .ci/scripts/ci/scope-engine.cjs.
 #
@@ -694,7 +704,8 @@ test_representative_deltas_classify_to_pinned_verdicts() {
     local full_row
     for full_row in \
         '.github/workflows/ci.yml|workflow-closure:.github/workflows/ci.yml' \
-        '.audit-allowlist|root-manifest:.audit-allowlist' \
+        '.ci-trigger|root-manifest:.ci-trigger' \
+        '.ci/policy/.audit-allowlist|harness:.ci/policy/.audit-allowlist' \
         '.ci/lib/common.sh|harness:.ci/lib/common.sh' \
         'scripts/drills/lib.sh|harness:scripts/drills/lib.sh' \
         'scripts/generate-third-party-licenses.ts|harness:scripts/generate-third-party-licenses.ts'; do

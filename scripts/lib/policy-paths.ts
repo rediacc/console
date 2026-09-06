@@ -3,10 +3,10 @@
  *
  * WHY THIS EXISTS
  * ---------------
- * Sixteen allow / block / exempt files sit at the repository root today, and the
- * code that reads them mostly hard-codes that root, some of it cwd-relative after
- * a `cd`. They are moving to `.ci/policy/` (see .ci/policy/README.md for the
- * predicate and the move list). A move like that is only safe once there is a
+ * Fifteen allow / block / exempt files sat at the repository root, and the code
+ * that read them mostly hard-coded that root, some of it cwd-relative after a
+ * `cd`. They moved to `.ci/policy/` in W4 P2 (see .ci/policy/README.md for the
+ * predicate and the list). A move like that is only safe once there is a
  * single seam every reader goes through, because otherwise the move half-lands:
  * some readers follow, some do not, and the ones that do not read a file that is
  * no longer there -- which for every one of these mechanisms means "zero entries",
@@ -33,8 +33,9 @@
  *    naming the valid set, rather than returning a plausible path that resolves
  *    to nothing.
  *
- * THE MOVE, when it lands, is one edit: POLICY_DIR changes from '' to '.ci/policy'.
- * Nothing else in this module changes, and no caller changes at all.
+ * THE MOVE LANDED in W4 P2 as one edit here: POLICY_DIR went from '' to
+ * '.ci/policy'. Nothing else in this module changed, and no caller that already
+ * went through policyPath() changed at all.
  */
 
 import path from 'node:path';
@@ -48,12 +49,12 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..');
 /**
  * The directory, relative to the repository root, that holds the policy files.
  *
- * '' means the repository root, which is where all fifteen live TODAY. The move
- * phase flips this to '.ci/policy' and nothing else. It is a constant rather
+ * '.ci/policy' since W4 P2, which is where all fifteen live. '' would mean the
+ * repository root, where they lived until that move. It is a constant rather
  * than an environment variable on purpose: two locations that can both be live
  * at once is the failure mode rule 3 above exists to refuse.
  */
-const POLICY_DIR = '';
+const POLICY_DIR = '.ci/policy';
 
 /**
  * The names policyPath() will answer for: every suppression policy file that
@@ -114,7 +115,10 @@ export function policyPath(name: string, root: string = REPO_ROOT): string {
         ` move list in .ci/policy/README.md, in the same change.`
     );
   }
-  return POLICY_DIR === '' ? path.join(root, name) : path.join(root, POLICY_DIR, name);
+  // Unconditional join: path.join(root, '', name) is path.join(root, name), so a
+  // POLICY_DIR of '' still resolves to the repository root without a branch that
+  // the compiler can prove dead against the literal above.
+  return path.join(root, POLICY_DIR, name);
 }
 
 /** Absolute paths of every policy file, in POLICY_FILES order. */

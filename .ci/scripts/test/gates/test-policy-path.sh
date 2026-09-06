@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Test for scripts/lib/policy-paths.ts -- the ONE seam that says where a suppression policy file lives
+# ---- end gate ----
+
 # Test for scripts/lib/policy-paths.ts -- the ONE seam that says where a
 # suppression policy file lives.
 #
@@ -54,7 +63,7 @@ test_pure_join_needs_no_filesystem() {
     # that stat'ed anything would have to either throw or answer a second
     # location here; a pure join cannot tell the difference and says so.
     out=$(pp --path .deps-upgrade-blocklist --root "$empty")
-    assert_eq "$out" "$empty/.deps-upgrade-blocklist" \
+    assert_eq "$out" "$empty/.ci/policy/.deps-upgrade-blocklist" \
         "resolves against a root containing no .ci directory at all"
     # rmdir IS the second assertion: it refuses a non-empty directory, so a
     # helper that had touched, cached or created anything under the fixture root

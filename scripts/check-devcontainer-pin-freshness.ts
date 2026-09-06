@@ -69,6 +69,7 @@ import { parseDockerfileVersions } from './lib/dockerfile-versions.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
 import { GREEN, NC, RED, YELLOW } from './lib/console.js';
 import { githubToken } from './lib/github-token.js';
+import { policyPath } from './lib/policy-paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
@@ -90,7 +91,7 @@ const DOCKERFILE =
   process.env.DEVCONTAINER_DOCKERFILE || path.join(CONSOLE_ROOT, '.devcontainer/Dockerfile');
 const BLOCKLIST =
   process.env.DEVCONTAINER_BLOCKLIST_FILE ||
-  path.join(CONSOLE_ROOT, '.devcontainer-upgrade-blocklist');
+  policyPath('.devcontainer-upgrade-blocklist', CONSOLE_ROOT);
 
 const HTTP_TIMEOUT_MS = 15_000;
 

@@ -65,10 +65,14 @@ import {
   parseBlockeredList,
   validateBlockerQuality,
 } from './lib/blocker-validator.js';
+import { policyPath } from './lib/policy-paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.CI_PARITY_ROOT || path.resolve(__dirname, '..');
-const EXEMPT_FILE = '.ci-parity-exempt';
+// Repo-relative for display; the absolute path comes from the same seam, so a
+// message and the file it names can never drift apart.
+const EXEMPT_PATH = policyPath('.ci-parity-exempt', ROOT);
+const EXEMPT_FILE = path.relative(ROOT, EXEMPT_PATH);
 const BATTERY_DIR = '.ci/scripts/test/gates';
 const BATTERY_RUNNER = '.ci/scripts/test/run-all.sh';
 
@@ -753,7 +757,7 @@ function loadScripts(): ScriptUniverse {
  * the shared pair; only the two-column split is done here.
  */
 function loadExempt(): ExemptEntry[] {
-  const p = path.join(ROOT, EXEMPT_FILE);
+  const p = EXEMPT_PATH;
   if (!existsSync(p)) return [];
   const lines = readFileSync(p, 'utf-8').split('\n');
   const parsed = parseBlockeredList(p);

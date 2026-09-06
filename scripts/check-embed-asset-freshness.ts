@@ -55,6 +55,7 @@ import {
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
 import { GREEN, NC, RED, YELLOW } from './lib/console.js';
 import { githubToken } from './lib/github-token.js';
+import { policyPath } from './lib/policy-paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
@@ -63,7 +64,7 @@ const DOCKERFILE = path.join(CONSOLE_ROOT, 'private/renet/Dockerfile');
 // test can prove the BLOCKER-reason validation fires without mutating the real,
 // tracked .embed-assets-upgrade-blocklist.
 const BLOCKLIST =
-  process.env.EMBED_BLOCKLIST_FILE || path.join(CONSOLE_ROOT, '.embed-assets-upgrade-blocklist');
+  process.env.EMBED_BLOCKLIST_FILE || policyPath('.embed-assets-upgrade-blocklist', CONSOLE_ROOT);
 
 const HTTP_TIMEOUT_MS = 15_000;
 
@@ -270,7 +271,7 @@ async function main(): Promise<void> {
   console.log('='.repeat(60));
 
   if (blockerErrors.length > 0) {
-    console.error(`${RED}✗ .embed-assets-upgrade-blocklist has invalid entries:${NC}`);
+    console.error(`${RED}✗ .ci/policy/.embed-assets-upgrade-blocklist has invalid entries:${NC}`);
     for (const e of blockerErrors) console.error(`  ${e}`);
     process.exit(1);
   }
@@ -368,7 +369,7 @@ async function main(): Promise<void> {
   console.error('  applies); the --upgrade only rewrites the ARG, so re-run this gate to confirm.');
   console.error('');
   console.error('TO HOLD one back instead: add its base name (e.g. `k3s`) with a `# BLOCKER:`');
-  console.error('reason to .embed-assets-upgrade-blocklist.');
+  console.error('reason to .ci/policy/.embed-assets-upgrade-blocklist.');
   process.exit(1);
 }
 

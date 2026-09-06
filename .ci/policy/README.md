@@ -1,10 +1,16 @@
 # `.ci/policy/` -- where suppression policy lives
 
-**This directory is empty on purpose right now.** W4 phase 0 and 1 build the seam and
-the measurements that make the move safe; the move itself is a later phase. Nothing has
-been relocated yet, and every file named below is still at the repository root.
+**The move landed in W4 phase 2, on 2026-09-06.** W4 phases 0 and 1 built the seam and
+the measurements that made it safe; phase 2 relocated all fifteen files named below out of
+the repository root and into this directory, carrying every reader with them in the same
+change. `scripts/lib/policy-paths.ts` is where the location is held, and flipping its
+`POLICY_DIR` from `''` to `'.ci/policy'` was the whole of the move for every reader that
+already went through `policyPath()`.
 
-Read this before moving any of them, and before adding a seventeenth.
+The paths in the tables below are given as BARE NAMES, which is how the seam and every
+reader still refer to them; the file itself now lives at `.ci/policy/<name>`.
+
+Read this before moving any of them again, and before adding a sixteenth.
 
 ---
 
@@ -35,11 +41,13 @@ a reader must be red, not quiet.
 
 ---
 
-## 2. The files that move -- fifteen
+## 2. The files that moved -- fifteen
 
-Every one of these is at the repository root today. The reader column is what has to
-follow the file; the seam that makes that a one-line change is
-`scripts/lib/policy-paths.ts`.
+Every one of these was at the repository root until W4 P2 and now lives here. The reader
+column is what had to follow the file; the seam that made that a one-line change is
+`scripts/lib/policy-paths.ts`. The "how the path is built" column records the shape each
+reader had BEFORE the move, which is why four of them were dangerous -- it is kept as the
+record of what the seam was for, not as a description of the code today.
 
 | File | Entries today | Reader, by symbol | How the path is built today |
 |---|---|---|---|
@@ -76,27 +84,33 @@ missed these would leave four readers opening a file that is no longer there -- 
 every one of these mechanisms, a file that is not there parses as zero entries, which is
 indistinguishable from "nothing is suppressed".
 
-### Three things the move must carry with it
+### Three things the move carried with it, all three done in W4 P2
 
-- **`.ci/scripts/ci/scope-map.cjs` `ROOT_MANIFESTS`** (`:71-102`) names ten of the
-  fifteen by exact repo-relative path. After the move those names match nothing.
+- **`.ci/scripts/ci/scope-map.cjs` `ROOT_MANIFESTS`** named ten of the fifteen by exact
+  repo-relative path, and after the move those names matched nothing.
   Classification is preserved anyway -- `.ci/policy/<name>` is caught by the `ci-harness`
-  rule at `:144` (`matchPrefix('.ci/')` ⇒ `full: 'harness'`) -- so no delta stops forcing
-  full CI. What changes is the REASON string, from `root-manifest:<name>` to
-  `harness:.ci/policy/<name>`, and `.ci/scripts/test/gates/test-scope-engine.sh:697`
-  pins `'.audit-allowlist|root-manifest:.audit-allowlist'`. That test and the
-  `ROOT_MANIFESTS` entries move in the same change. The other five
-  (`.devcontainer-upgrade-blocklist`, `.plan-housekeeping-allowlist`,
-  `.profiler-coverage-allowlist`, `.runner-advice-allowlist`,
-  `.unverified-download-allowlist`) are not in `ROOT_MANIFESTS` at all and fall through
-  to `unclassified` ⇒ full today, so they are unaffected either way.
-- **`scripts/ci-runner/manifest.ts:1289`** lists `.plan-housekeeping-allowlist` in the
-  `paths:` array of `check:ci-plan-housekeeping`. Change detection for that gate breaks
-  silently if the path is not updated.
-- **`scripts/lib/doc-providers.ts:319-325`** builds the generated suppressions table in
+  rule (`matchPrefix('.ci/')` ⇒ `full: 'harness'`) -- so no delta stopped forcing full CI.
+  What changed is the REASON string, from `root-manifest:<name>` to
+  `harness:.ci/policy/<name>`. All fifteen names were DELETED from `ROOT_MANIFESTS` (five
+  of them were never in it and fell through to `unclassified` ⇒ full, which is the same
+  scope by a different route), and the pinned row in
+  `.ci/scripts/test/gates/test-scope-engine.sh` was re-pinned to two rows: `.ci-trigger`
+  keeps `root-manifest:` covered, and `.ci/policy/.audit-allowlist` pins the new
+  `harness:` reason.
+- **`scripts/ci-runner/manifest.ts`** lists `.plan-housekeeping-allowlist` in the `paths:`
+  array of `check:ci-plan-housekeeping`, and `scripts/ci-runner/gates.lock.json` mirrors
+  it. Change detection for that gate breaks silently if the path is not updated. Both
+  files are driver-owned (driver-contract 5e), so W4 P2 shipped the two lines as a patch
+  fragment for the driver to apply rather than editing them itself.
+- **`scripts/lib/doc-providers.ts`** builds the generated suppressions table in
   `scripts/data/doc-registry.md` by scanning every tracked non-source file that contains
-  `BLOCKER:`. It names nothing, so it needs no edit -- but the generated table's paths
-  change, and the artifact has to be regenerated in the same commit.
+  `BLOCKER:`. It names nothing, so it needed no edit -- but the generated table's paths
+  changed, so the artifact was regenerated (`npx tsx scripts/gen-docs.ts --write`) in the
+  same change, and the fourteen matching keys in the frozen pre-port SET record
+  (`scripts/data/doc-registry-preport.json`) were RE-KEYED in place. A rename reads to
+  `--diff-snapshot` as fourteen MISSING keys, which is fatal there; re-keying only those
+  fourteen strings is what keeps the record diffable without a `--snapshot --force` that
+  would have destroyed every other provider's pre-port state.
 
 ---
 

@@ -70,6 +70,21 @@ function inputPath(root: string, file: string): string {
   return isPolicyFileName(file) ? policyPath(file, root) : path.join(root, file);
 }
 
+/**
+ * Repo-relative LOCATION of one of this gate's inputs, for display.
+ *
+ * A probe's `file` field is what every message cites, and after the W4 P2 move a
+ * bare `.dead-bash-allowlist` would be a name the gate prints and a path nothing
+ * holds -- the "is not at <file>" finding would name a location the probe never
+ * looked at. Deriving the display string from the same seam that resolves the
+ * read keeps the two from ever disagreeing.
+ */
+function policyRel(file: string): string {
+  return isPolicyFileName(file)
+    ? path.relative(CONSOLE_ROOT, policyPath(file, CONSOLE_ROOT))
+    : file;
+}
+
 // ---------------------------------------------------------------------------
 // Oracles
 // ---------------------------------------------------------------------------
@@ -285,7 +300,7 @@ const listProbe = (
   fix: (entry: string, line: number) => string[]
 ): Probe => ({
   id,
-  file,
+  file: policyRel(file),
   tier: 'fail',
   minUniverse,
   entries: (root) => blockeredEntries(inputPath(root, file)),
@@ -303,7 +318,7 @@ const PROBES: Probe[] = [
     (entry, u) =>
       `no manifest declares "${entry}" (oracle: ${u.source}). scripts/check-deps.ts only consults this blocklist for names \`npm outdated\` reports, and \`npm outdated\` only reports declared deps — so this entry can never suppress anything.`,
     (entry, line) => [
-      `remove line ${line} ("${entry}") from .deps-upgrade-blocklist, then: npm run check:deps`,
+      `remove line ${line} ("${entry}") from .ci/policy/.deps-upgrade-blocklist, then: npm run check:deps`,
     ]
   ),
   listProbe(
@@ -314,7 +329,7 @@ const PROBES: Probe[] = [
     (entry, u) =>
       `no go.mod requires "${entry}" (oracle: ${u.source}); .ci/scripts/quality/check-go-deps.sh can never consult this entry.`,
     (entry, line) => [
-      `remove line ${line} ("${entry}") from .go-deps-upgrade-blocklist, then: npm run check:ci-renet`,
+      `remove line ${line} ("${entry}") from .ci/policy/.go-deps-upgrade-blocklist, then: npm run check:ci-renet`,
     ]
   ),
   listProbe(
@@ -325,7 +340,7 @@ const PROBES: Probe[] = [
     (entry, u) =>
       `"${entry}" is not an embedded asset any more (oracle: ${u.source}); it is absent from the renet Dockerfile ARGs, the known source list, or both.`,
     (entry, line) => [
-      `remove line ${line} ("${entry}") from .embed-assets-upgrade-blocklist, then: npm run check:ci-embed-asset-freshness`,
+      `remove line ${line} ("${entry}") from .ci/policy/.embed-assets-upgrade-blocklist, then: npm run check:ci-embed-asset-freshness`,
     ]
   ),
   // minUniverse 1, not the 3-5 its neighbours use: this inventory deliberately
@@ -340,7 +355,7 @@ const PROBES: Probe[] = [
     (entry, u) =>
       `"${entry}" is not a watched devcontainer pin (oracle: ${u.source}); it is absent from .devcontainer/Dockerfile's ARGs, from scripts/lib/devcontainer-pin-sources.ts, or both.`,
     (entry, line) => [
-      `remove line ${line} ("${entry}") from .devcontainer-upgrade-blocklist, then: npm run check:ci-devcontainer-pins`,
+      `remove line ${line} ("${entry}") from .ci/policy/.devcontainer-upgrade-blocklist, then: npm run check:ci-devcontainer-pins`,
     ]
   ),
   listProbe(
@@ -351,7 +366,7 @@ const PROBES: Probe[] = [
     (entry, u) =>
       `no tracked Dockerfile fetches "${entry}" any more (oracle: ${u.source}); the download was removed or re-pinned, so this exemption suppresses nothing.`,
     (entry, line) => [
-      `remove line ${line} ("${entry}") from .unverified-download-allowlist, then: npm run check:ci-unverified-downloads`,
+      `remove line ${line} ("${entry}") from .ci/policy/.unverified-download-allowlist, then: npm run check:ci-unverified-downloads`,
     ]
   ),
   listProbe(
@@ -362,7 +377,7 @@ const PROBES: Probe[] = [
     (entry, u) =>
       `no workflow or composite action uses "${entry}" (oracle: ${u.source}); scripts/check-actions.ts only reports on actions it finds a \`uses:\` for.`,
     (entry, line) => [
-      `remove line ${line} ("${entry}") from .actions-upgrade-blocklist, then: npm run check:actions`,
+      `remove line ${line} ("${entry}") from .ci/policy/.actions-upgrade-blocklist, then: npm run check:actions`,
     ]
   ),
   listProbe(
@@ -387,7 +402,7 @@ const PROBES: Probe[] = [
   ),
   {
     id: 'cli-i18n-orphan',
-    file: '.cli-i18n-orphan-allowlist',
+    file: policyRel('.cli-i18n-orphan-allowlist'),
     tier: 'fail',
     minUniverse: 50,
     entries: (root) => blockeredEntries(inputPath(root, '.cli-i18n-orphan-allowlist')),
@@ -422,12 +437,12 @@ const PROBES: Probe[] = [
     why: (entry, u) =>
       `no leaf key starts with "${entry}" (oracle: ${u.source}); the prefix exempts nothing from the orphan report in scripts/check-cli-i18n-key-usage.ts.`,
     fix: (entry, e) => [
-      `remove line ${e.line} ("${entry}") from .cli-i18n-orphan-allowlist, then: npm run check:ci-i18n-cli-key-usage`,
+      `remove line ${e.line} ("${entry}") from .ci/policy/.cli-i18n-orphan-allowlist, then: npm run check:ci-i18n-cli-key-usage`,
     ],
   },
   {
     id: 'dead-bash-allowlist',
-    file: '.dead-bash-allowlist',
+    file: policyRel('.dead-bash-allowlist'),
     tier: 'fail',
     // Structural guard, not a count floor: universe() returns null when the
     // shell tree is missing. A count floor would be the rejected ratio guard,
@@ -487,12 +502,12 @@ const PROBES: Probe[] = [
           ? `no shell function starts with "${entry.slice(9)}" (oracle: ${u.source}); the dispatch exemption covers nothing.`
           : `"${entry.slice(7)}" no longer exists (oracle: ${u.source}); the manual-entrypoint exemption covers nothing.`,
     fix: (entry, e) => [
-      `remove line ${e.line} ("${entry}") from .dead-bash-allowlist, then: npm run check:ci-dead-bash`,
+      `remove line ${e.line} ("${entry}") from .ci/policy/.dead-bash-allowlist, then: npm run check:ci-dead-bash`,
     ],
   },
   {
     id: 'parity-exempt',
-    file: '.ci-parity-exempt',
+    file: policyRel('.ci-parity-exempt'),
     tier: 'fail',
     // Structural guard, not a count floor: universe() returns null when there
     // are no workflows to read, and every entry can legitimately go stale at
@@ -539,7 +554,7 @@ const PROBES: Probe[] = [
     why: (entry, u) =>
       `no workflow invokes "${entry}" any more (oracle: ${u.source}); the exemption holds a hole open for a gate that no longer runs in CI.`,
     fix: (entry, e) => [
-      `remove line ${e.line} ("${entry}") from .ci-parity-exempt, then: npm run check:ci-parity`,
+      `remove line ${e.line} ("${entry}") from .ci/policy/.ci-parity-exempt, then: npm run check:ci-parity`,
     ],
   },
   {
@@ -884,7 +899,7 @@ function main(): void {
     '.ci/config/directive-quotes-allowlist.txt',
   ];
   for (const rel of BLOCKER_FILES) {
-    for (const o of findOrphanedBlockers(inputPath(CONSOLE_ROOT, rel), rel)) {
+    for (const o of findOrphanedBlockers(inputPath(CONSOLE_ROOT, rel), policyRel(rel))) {
       result.findings.push({
         probe: 'orphaned-blocker',
         file: o.file,

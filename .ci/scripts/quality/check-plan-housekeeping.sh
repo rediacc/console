@@ -82,7 +82,7 @@ if [[ "${CI:-}" == "true" ]]; then RED="" GREEN="" YEL="" NC=""; else
 fi
 
 CFG="${PLAN_HK_CONFIG:-$ROOT_DIR/.ci/config/plan-lifecycle.json}"
-ALLOWLIST="${PLAN_HK_ALLOWLIST:-$ROOT_DIR/.plan-housekeeping-allowlist}"
+ALLOWLIST="${PLAN_HK_ALLOWLIST:-$ROOT_DIR/.ci/policy/.plan-housekeeping-allowlist}"
 # Floor. Measured 2026-09-03: 70 tracked plans. Well under it on purpose -- this
 # guards against the glob losing the corpus, not against ordinary housekeeping.
 MIN_PLANS="${PLAN_HK_MIN_FILES:-30}"

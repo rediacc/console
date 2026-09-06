@@ -46,7 +46,7 @@ trust the sha in the full text.
 
 WHAT DID NOT LAND: the plan's Go test 4 (`TestBackupListBuildLocalArm`) does not
 exist, the CLI vitest tests 5 to 9 do not exist, `backup_list` is still waived at
-`.e2e-coverage-allowlist:20`, and step 7's `--datastore` flag was never added to
+`.ci/policy/.e2e-coverage-allowlist:20`, and step 7's `--datastore` flag was never added to
 `backup list`. The `Mode` to `Path` column rename was declined in favour of the
 plan's own fallback: the key stays `mode` and `packages/cli/src/commands/backup.ts:53` maps
 `mode: e.path ?? ''`.

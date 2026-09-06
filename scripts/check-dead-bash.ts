@@ -42,10 +42,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
 import { DIM, GREEN, NC, RED, YELLOW } from './lib/console.js';
+import { policyPath } from './lib/policy-paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.DEAD_BASH_ROOT || path.join(__dirname, '..');
-const ALLOWLIST = path.join(ROOT, '.dead-bash-allowlist');
+const ALLOWLIST = policyPath('.dead-bash-allowlist', ROOT);
 
 /** The two real definition forms: `name() {` and `function name {`. */
 const DEF_STRICT =
@@ -283,7 +284,7 @@ function main(): void {
       file: locs[0].file,
       line: locs[0].line,
       why: `shell function "${name}" is defined but never called anywhere in the tracked tree`,
-      fix: `delete ${name}() from ${locs[0].file}:${locs[0].line} — or, if it is reached by dynamic dispatch, add "dispatch:<prefix>" to .dead-bash-allowlist with a BLOCKER naming the dispatch site`,
+      fix: `delete ${name}() from ${locs[0].file}:${locs[0].line} — or, if it is reached by dynamic dispatch, add "dispatch:<prefix>" to .ci/policy/.dead-bash-allowlist with a BLOCKER naming the dispatch site`,
     });
   }
 
@@ -307,7 +308,7 @@ function main(): void {
       file: f,
       line: 1,
       why: `shell script "${f}" is never referenced by any other tracked file`,
-      fix: `delete ${f} — or add "glob:<dir>/" (found by a glob) or "manual:${f}" (an operator runs it directly) to .dead-bash-allowlist, with a BLOCKER naming the discovery site or the workflow it serves`,
+      fix: `delete ${f} — or add "glob:<dir>/" (found by a glob) or "manual:${f}" (an operator runs it directly) to .ci/policy/.dead-bash-allowlist, with a BLOCKER naming the discovery site or the workflow it serves`,
     });
   }
 

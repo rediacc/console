@@ -52,6 +52,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { globSync } from 'glob';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
+import { policyPath } from './lib/policy-paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, '..');
@@ -70,7 +71,7 @@ const HELPERS_DIR = path.join(E2E_DIR, 'src/utils/bridge/helpers');
 const WORKFLOWS_DIR =
   process.env.E2E_COV_WORKFLOWS_DIR ?? path.join(REPO_ROOT, '.github/workflows');
 const ALLOWLIST_FILE =
-  process.env.E2E_COV_ALLOWLIST ?? path.join(REPO_ROOT, '.e2e-coverage-allowlist');
+  process.env.E2E_COV_ALLOWLIST ?? policyPath('.e2e-coverage-allowlist', REPO_ROOT);
 
 const GREEN = '\x1b[32m';
 const RED = '\x1b[31m';

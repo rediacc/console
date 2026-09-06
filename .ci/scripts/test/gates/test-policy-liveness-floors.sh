@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Test for the PER-PROBE INPUT FLOORS in scripts/check-suppression-liveness.ts
+# ---- end gate ----
+
 # Test for the PER-PROBE INPUT FLOORS in scripts/check-suppression-liveness.ts.
 #
 # THE HOLE THIS CLOSES. The gate's anti-vacuity guard keys on entriesChecked
@@ -49,7 +58,7 @@ GATE="$REPO_ROOT/scripts/check-suppression-liveness.ts"
 make_full_fixture() {
     local t
     t="$(mktemp -d)"
-    mkdir -p "$t/.ci/scripts/quality" "$t/.ci/config" "$t/.github/workflows" \
+    mkdir -p "$t/.ci/scripts/quality" "$t/.ci/config" "$t/.ci/policy" "$t/.github/workflows" \
         "$t/.github/actions/app-token" "$t/packages/json"
 
     # Marker 1 of 3: package.json. Also the deps probe's oracle.
@@ -66,7 +75,7 @@ make_full_fixture() {
         .embed-assets-upgrade-blocklist .devcontainer-upgrade-blocklist \
         .unverified-download-allowlist .actions-upgrade-blocklist \
         .cli-i18n-orphan-allowlist .dead-bash-allowlist .ci-parity-exempt; do
-        cp "$REPO_ROOT/$f" "$t/$f"
+        cp "$REPO_ROOT/.ci/policy/$f" "$t/.ci/policy/$f"
     done
     cp "$REPO_ROOT/packages/json/.templates-skiplist" "$t/packages/json/.templates-skiplist"
     cp "$REPO_ROOT/.ci/config/content-quality-allowlist.txt" "$t/.ci/config/content-quality-allowlist.txt"
@@ -76,7 +85,7 @@ make_full_fixture() {
     # condemned as dead. Replace it with one entry the root manifest really does
     # declare, which keeps the probe RUNNING (that is the point) without a false
     # finding.
-    printf '# BLOCKER: live package pinned deliberately so this fixture exercises the deps probe for real\neslint\n' >"$t/.deps-upgrade-blocklist"
+    printf '# BLOCKER: live package pinned deliberately so this fixture exercises the deps probe for real\neslint\n' >"$t/.ci/policy/.deps-upgrade-blocklist"
 
     # The content-quality probe's oracle is per-path existence, and creating
     # packages/json above is enough to make it RUN. Materialise the paths its
@@ -135,17 +144,17 @@ no_mutation() { :; }
 # run's TOTALS still look healthy; only the per-probe floor can see it.
 mutate_empty_one_list() {
     printf '# BLOCKER: header left behind by an edit that dropped every entry beneath it\n' \
-        >"$1/.deps-upgrade-blocklist"
+        >"$1/.ci/policy/.deps-upgrade-blocklist"
 }
 
 # The move hazard, exactly: the file is gone from where the probe looks. Its
 # probe would parse zero entries and report a clean list.
-mutate_remove_one_file() { rm -f "$1/.cli-i18n-orphan-allowlist"; }
+mutate_remove_one_file() { rm -f "$1/.ci/policy/.cli-i18n-orphan-allowlist"; }
 
 # The same removal, in a root that is no longer full-shaped -- one of the three
 # markers isFullCheckout reads is taken away and nothing else changes.
 mutate_remove_one_file_from_partial_root() {
-    rm -f "$1/.cli-i18n-orphan-allowlist"
+    rm -f "$1/.ci/policy/.cli-i18n-orphan-allowlist"
     rm -rf "$1/.ci/scripts/quality"
 }
 
@@ -204,7 +213,7 @@ test_missing_file_fails_in_a_full_checkout() {
     run_case mutate_remove_one_file
     assert_exit_code 1 "$CASE_RC" "a probe whose file is not there must fail the gate"
     assert_contains "$CASE_OUT" "MISSING FILE" "the census marks the missing input"
-    assert_contains "$CASE_OUT" "is not at .cli-i18n-orphan-allowlist" "names the path it looked at"
+    assert_contains "$CASE_OUT" "is not at .ci/policy/.cli-i18n-orphan-allowlist" "names the path it looked at"
     assert_contains "$CASE_OUT" "policy-paths.ts" "points at the seam that moves a reader"
     log_pass "a policy file missing from a full checkout fails the gate"
 }

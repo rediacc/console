@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Tests for .ci/scripts/quality/check_runner_advice.py: a job whose own profile says it fits ubuntu-slim must actually be on ubuntu-slim
+# ---- end gate ----
+
 # Tests for .ci/scripts/quality/check_runner_advice.py: a job whose own profile
 # says it fits ubuntu-slim must actually be on ubuntu-slim, and a job already on
 # slim must not be sitting at slim's edge.
@@ -25,7 +34,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 GATE="$REPO_ROOT/.ci/scripts/quality/check_runner_advice.py"
 REPORT_AWK="$REPO_ROOT/.ci/scripts/ci/profiler/report.awk"
 VALIDATOR="$REPO_ROOT/.ci/scripts/lib/blocker-validator.sh"
-REAL_ALLOWLIST="$REPO_ROOT/.runner-advice-allowlist"
+REAL_ALLOWLIST="$REPO_ROOT/.ci/policy/.runner-advice-allowlist"
 
 LAST_OUT=""
 

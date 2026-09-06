@@ -17,7 +17,7 @@
 #     concrete test files, and only counts coverage from those. A verb mentioned
 #     only in a dark suite or a declared-but-uncalled harness method no longer
 #     counts — that dead-coverage is the failure mode the rewrite closes. The
-#     forward allowlist lives in .e2e-coverage-allowlist (BLOCKER-gated).
+#     forward allowlist lives in .ci/policy/.e2e-coverage-allowlist (BLOCKER-gated).
 #
 #   REVERSE (does a test dispatch a verb renet no longer registers?):
 #     Phase 3 below, unchanged. It scans ALL e2e sources — dark files included —

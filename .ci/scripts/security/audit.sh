@@ -208,8 +208,8 @@ DEFER_REASON=""
 # Exact-name match against .deps-upgrade-blocklist (entries: "name  # BLOCKER: …").
 deps_blocklist_has() {
     local pkg="$1"
-    [[ -n "$pkg" && -f .deps-upgrade-blocklist ]] || return 1
-    grep -qE "^${pkg//./\\.}([[:space:]]|\$)" .deps-upgrade-blocklist
+    [[ -n "$pkg" && -f .ci/policy/.deps-upgrade-blocklist ]] || return 1
+    grep -qE "^${pkg//./\\.}([[:space:]]|\$)" .ci/policy/.deps-upgrade-blocklist
 }
 
 # Epoch seconds (UTC) of a package version's publish time, or empty on failure.
@@ -244,7 +244,7 @@ should_defer_advisory() {
 
     # Condition B: the only fix moves a package we deliberately hold back.
     if deps_blocklist_has "$fix_pkg"; then
-        DEFER_REASON="fix requires ${fix_pkg}${fix_version:+@$fix_version}, held in .deps-upgrade-blocklist"
+        DEFER_REASON="fix requires ${fix_pkg}${fix_version:+@$fix_version}, held in .ci/policy/.deps-upgrade-blocklist"
         return 0
     fi
 
@@ -324,12 +324,12 @@ main() {
 
     # Parse allowlists and fail fast on any entry missing a BLOCKER annotation.
     log_info "Parsing allowlists"
-    parse_blockered_list ".audit-prod-allowlist" ALLOWED_PROD BLOCKER_PROD
-    parse_blockered_list ".audit-allowlist" ALLOWED_DEV BLOCKER_DEV
+    parse_blockered_list ".ci/policy/.audit-prod-allowlist" ALLOWED_PROD BLOCKER_PROD
+    parse_blockered_list ".ci/policy/.audit-allowlist" ALLOWED_DEV BLOCKER_DEV
 
     local blockers_ok=0
-    verify_all_blockers ".audit-prod-allowlist" BLOCKER_PROD || blockers_ok=1
-    verify_all_blockers ".audit-allowlist" BLOCKER_DEV || blockers_ok=1
+    verify_all_blockers ".ci/policy/.audit-prod-allowlist" BLOCKER_PROD || blockers_ok=1
+    verify_all_blockers ".ci/policy/.audit-allowlist" BLOCKER_DEV || blockers_ok=1
     if [[ $blockers_ok -ne 0 ]]; then
         log_error "Allowlist entries must include a quality '# BLOCKER: <reason>' — strict gate enforced"
         exit 1
@@ -340,10 +340,10 @@ main() {
     log_info "Checking allowlist entry ages"
     local age_fail=0 id
     for id in "${!ALLOWED_PROD[@]}"; do
-        check_entry_age ".audit-prod-allowlist" "$id" "$id" "audit-prod-allowlist entry" || age_fail=1
+        check_entry_age ".ci/policy/.audit-prod-allowlist" "$id" "$id" "audit-prod-allowlist entry" || age_fail=1
     done
     for id in "${!ALLOWED_DEV[@]}"; do
-        check_entry_age ".audit-allowlist" "$id" "$id" "audit-allowlist entry" || age_fail=1
+        check_entry_age ".ci/policy/.audit-allowlist" "$id" "$id" "audit-allowlist entry" || age_fail=1
     done
     if [[ $age_fail -ne 0 ]]; then
         log_error "Allowlist entries older than $AGE_FAIL_DAYS days must be re-reviewed — strict age gate enforced"
@@ -417,7 +417,7 @@ main() {
 
         if ((${#prod_unallowed[@]} > 0)); then
             # Partition: defer advisories whose only fix is not installable yet
-            # (minimum-release-age) or held in .deps-upgrade-blocklist; fail the rest.
+            # (minimum-release-age) or held in .ci/policy/.deps-upgrade-blocklist; fail the rest.
             local prod_failing=() info pkg fix_type is_major fix_version fix_value hint
             for advisory in "${prod_unallowed[@]}"; do
                 if should_defer_advisory "$advisory" audit-prod.json; then
@@ -439,13 +439,13 @@ main() {
                     fix_value=$(echo "$info" | jq -r '.fixValue // "null"')
                     hint=$(describe_fix "$fix_type" "$is_major" "$fix_version" "$fix_value")
                     emit_advisory error "$advisory" "$pkg" "$hint" \
-                        "fix by upgrading/overriding the affected package, OR add '# BLOCKER: <reason>' above $advisory in .audit-prod-allowlist"
+                        "fix by upgrading/overriding the affected package, OR add '# BLOCKER: <reason>' above $advisory in .ci/policy/.audit-prod-allowlist"
                 done
                 exit 1
             fi
-            ci_warn "Deferred ${#prod_unallowed[@]} production advisory(ies): fix not yet installable (minimum-release-age) or held in .deps-upgrade-blocklist"
+            ci_warn "Deferred ${#prod_unallowed[@]} production advisory(ies): fix not yet installable (minimum-release-age) or held in .ci/policy/.deps-upgrade-blocklist"
         fi
-        ci_warn "Allowed production vulnerabilities: $prod_total (see .audit-prod-allowlist)"
+        ci_warn "Allowed production vulnerabilities: $prod_total (see .ci/policy/.audit-prod-allowlist)"
     fi
 
     log_success "No production vulnerabilities"
@@ -498,24 +498,24 @@ main() {
                 fix_value=$(echo "$info" | jq -r '.fixValue // "null"')
                 hint=$(describe_fix "$fix_type" "$is_major" "$fix_version" "$fix_value")
                 emit_advisory error "$advisory" "$pkg" "$hint" \
-                    "fix by upgrading/overriding the affected package, OR add '# BLOCKER: <reason>' above $advisory in .audit-allowlist"
+                    "fix by upgrading/overriding the affected package, OR add '# BLOCKER: <reason>' above $advisory in .ci/policy/.audit-allowlist"
             done
             exit 1
         fi
-        ci_warn "Deferred ${#unallowed[@]} dev advisory(ies): fix not yet installable (minimum-release-age) or held in .deps-upgrade-blocklist"
+        ci_warn "Deferred ${#unallowed[@]} dev advisory(ies): fix not yet installable (minimum-release-age) or held in .ci/policy/.deps-upgrade-blocklist"
     fi
 
     local dev_only_count="${#dev_only_advisories[@]}"
     if [[ "$dev_only_count" -gt 0 ]]; then
-        ci_warn "Allowed dev vulnerabilities: $dev_only_count (see .audit-allowlist)"
+        ci_warn "Allowed dev vulnerabilities: $dev_only_count (see .ci/policy/.audit-allowlist)"
     fi
 
     # ── Pass 3: Strict stale-entry sweep ────────────────────────────
     log_info "Checking allowlist entries against available fixes (strict, BLOCKER-gated)"
 
     local stale_actionable=false
-    check_stale_entries ".audit-prod-allowlist" audit-prod.json ALLOWED_PROD BLOCKER_PROD
-    check_stale_entries ".audit-allowlist" audit-report.json ALLOWED_DEV BLOCKER_DEV
+    check_stale_entries ".ci/policy/.audit-prod-allowlist" audit-prod.json ALLOWED_PROD BLOCKER_PROD
+    check_stale_entries ".ci/policy/.audit-allowlist" audit-report.json ALLOWED_DEV BLOCKER_DEV
 
     if [[ "$stale_actionable" == "true" ]]; then
         log_error "Allowlist problems found — see errors above: an entry either has an available fix without a BLOCKER annotation, or is stale (the advisory no longer fires and the entry should be deleted)"

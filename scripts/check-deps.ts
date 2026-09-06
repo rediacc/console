@@ -34,10 +34,11 @@ import { fileURLToPath } from 'node:url';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
 import { BLUE, GREEN, NC, RED, YELLOW } from './lib/console.js';
+import { policyPath } from './lib/policy-paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
-const BLOCKLIST_FILE = path.join(CONSOLE_ROOT, '.deps-upgrade-blocklist');
+const BLOCKLIST_FILE = policyPath('.deps-upgrade-blocklist', CONSOLE_ROOT);
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -674,7 +675,7 @@ ${YELLOW}OPTIONS${NC}
 
 ${YELLOW}DESCRIPTION${NC}
   Checks for outdated npm dependencies and fails if any are found.
-  Packages can be blocklisted in .deps-upgrade-blocklist to prevent
+  Packages can be blocklisted in .ci/policy/.deps-upgrade-blocklist to prevent
   auto-upgrades (e.g., packages requiring manual migration).
 
 ${YELLOW}BLOCKLIST FORMAT${NC}

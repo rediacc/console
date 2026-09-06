@@ -43,21 +43,27 @@ this table for the notes; read the derived region for the inventory. **It is not
 must not be read as a census** -- a mechanism absent from these rows is not thereby unknown to
 the repository.
 
+**Where they live.** Fifteen of these files sat at the repository root until W4 P2 moved them
+into `.ci/policy/` (2026-09-06). `scripts/lib/policy-paths.ts` is the single seam that answers
+where one is; `.ci/policy/README.md` carries the predicate for what belongs there and the
+recorded reason `.ci-trigger` stayed at the root. Readers still name them by BARE NAME through
+that seam, so a grep for `.deps-upgrade-blocklist` will find the name in code that is correct.
+
 | Mechanism | File | Reader |
 |---|---|---|
-| Prod npm audit allowlist | `.audit-prod-allowlist` | `.ci/scripts/security/audit.sh` |
-| Dev npm audit allowlist | `.audit-allowlist` | same |
-| npm dep upgrade blocklist | `.deps-upgrade-blocklist` | `scripts/check-deps.ts` |
-| Go dep upgrade blocklist | `.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check-go-deps.sh` |
-| Embed-asset upgrade blocklist | `.embed-assets-upgrade-blocklist` | `scripts/check-embed-asset-freshness.ts` |
-| GitHub Actions upgrade blocklist | `.actions-upgrade-blocklist` | `scripts/check-actions.ts` |
+| Prod npm audit allowlist | `.ci/policy/.audit-prod-allowlist` | `.ci/scripts/security/audit.sh` |
+| Dev npm audit allowlist | `.ci/policy/.audit-allowlist` | same |
+| npm dep upgrade blocklist | `.ci/policy/.deps-upgrade-blocklist` | `scripts/check-deps.ts` |
+| Go dep upgrade blocklist | `.ci/policy/.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check-go-deps.sh` |
+| Embed-asset upgrade blocklist | `.ci/policy/.embed-assets-upgrade-blocklist` | `scripts/check-embed-asset-freshness.ts` |
+| GitHub Actions upgrade blocklist | `.ci/policy/.actions-upgrade-blocklist` | `scripts/check-actions.ts` |
 | Breakpoint drift acceptance | `.ci/breakpoint/.breakpoint-drift-accept` | `.ci/breakpoint/scripts/check-breakpoint-drift.sh` |
-| Dead-bash discovery allowlist | `.dead-bash-allowlist` | `scripts/check-dead-bash.ts` |
-| CI parity exemptions (direction-tagged) | `.ci-parity-exempt` | `scripts/check-ci-parity.ts` |
+| Dead-bash discovery allowlist | `.ci/policy/.dead-bash-allowlist` | `scripts/check-dead-bash.ts` |
+| CI parity exemptions (direction-tagged) | `.ci/policy/.ci-parity-exempt` | `scripts/check-ci-parity.ts` |
 | `package.json` overrides | `package.json`: `overrides` + `_overridesReasons` | `scripts/check-overrides-reasons.ts` |
 | knip suppressions (`ignore*` arrays) | `knip.jsonc` (inline `// BLOCKER:` comments) | `scripts/check-knip-blockers.ts` |
-| Plan-file housekeeping exemptions | `.plan-housekeeping-allowlist` | `.ci/scripts/quality/check-plan-housekeeping.sh` |
-| Runner sizing exemptions | `.runner-advice-allowlist` | `.ci/scripts/quality/check_runner_advice.py`. Liveness is enforced **in-gate** rather than by a `check-suppression-liveness.ts` probe, because the oracle (does this entry still suppress a MOVE_TO_SLIM finding?) *is* the comparison the gate already performs; same arrangement as `.profiler-coverage-allowlist`. Note the gate's own bootstrap rule, which is a suppression of a different kind: while `runner-sizing-baseline.json` is **pristine** (`refreshed_at` null and zero jobs) the gate warns and exits 0, because nothing has been measured yet; every other below-floor shape is a hard refusal, and `--refresh` will not write a baseline below the 5-job floor. Seeded therefore always means enforced, which is the only reason the pristine pass is not a permanent hole. The baseline carries `"format": 1`; an unknown, missing or corrupt version and any malformed job record are refused by name (naming the job and the field), never as a traceback, and `--refresh` refuses to merge into a version it cannot read |
+| Plan-file housekeeping exemptions | `.ci/policy/.plan-housekeeping-allowlist` | `.ci/scripts/quality/check-plan-housekeeping.sh` |
+| Runner sizing exemptions | `.ci/policy/.runner-advice-allowlist` | `.ci/scripts/quality/check_runner_advice.py`. Liveness is enforced **in-gate** rather than by a `check-suppression-liveness.ts` probe, because the oracle (does this entry still suppress a MOVE_TO_SLIM finding?) *is* the comparison the gate already performs; same arrangement as `.profiler-coverage-allowlist`. Note the gate's own bootstrap rule, which is a suppression of a different kind: while `runner-sizing-baseline.json` is **pristine** (`refreshed_at` null and zero jobs) the gate warns and exits 0, because nothing has been measured yet; every other below-floor shape is a hard refusal, and `--refresh` will not write a baseline below the 5-job floor. Seeded therefore always means enforced, which is the only reason the pristine pass is not a permanent hole. The baseline carries `"format": 1`; an unknown, missing or corrupt version and any malformed job record are refused by name (naming the job and the field), never as a traceback, and `--refresh` refuses to merge into a version it cannot read |
 | syncpack source exclusions | `.ci/config/syncpack-source-exclusions.json` | `.ci/scripts/quality/check_syncpack_sources.py`. A manifest declaring dependencies must be matched by a `source` glob or excluded here with a `BLOCKER:` reason; eight are, deliberately (two tutorial sample apps whose versions are part of the lesson text, four independently deployed Workers, `private/account/e2e`, and `private/account/web`'s own React tree). Liveness is **in-gate** rather than a `check-suppression-liveness.ts` probe, on the `.runner-advice-allowlist` precedent: the oracle (is this path still a tracked manifest that declares dependencies?) *is* the comparison the gate already performs, and it refuses an entry that suppresses nothing. The gate also refuses outright — CANNOT VERIFY, not a pass — when a directory its config names is absent, because it is about a SUBMODULE and an unchecked-out submodule turns a correct exclusion into a "dead entry" finding |
 
 ### Format
@@ -120,13 +126,13 @@ with the *oracle* that decides whether an entry is load-bearing:
 
 | Mechanism | Oracle | Tier |
 |---|---|---|
-| `.deps-upgrade-blocklist` | name declared in some `package.json` | fail |
-| `.go-deps-upgrade-blocklist` | module in a `go.mod` `require` | fail |
-| `.embed-assets-upgrade-blocklist` | base is a renet Dockerfile `ARG` **and** a known source | fail |
-| `.actions-upgrade-blocklist` | action has a `uses:` under `.github` | fail |
+| `.ci/policy/.deps-upgrade-blocklist` | name declared in some `package.json` | fail |
+| `.ci/policy/.go-deps-upgrade-blocklist` | module in a `go.mod` `require` | fail |
+| `.ci/policy/.embed-assets-upgrade-blocklist` | base is a renet Dockerfile `ARG` **and** a known source | fail |
+| `.ci/policy/.actions-upgrade-blocklist` | action has a `uses:` under `.github` | fail |
 | `package.json` `overrides` | key resolves to a `package-lock.json` node | **warn only** |
-| `.dead-bash-allowlist` | glob root exists / dispatch prefix matches a function / manual file exists | fail |
-| `.ci-parity-exempt` | a `ci-only` entry is still invoked by some workflow | fail |
+| `.ci/policy/.dead-bash-allowlist` | glob root exists / dispatch prefix matches a function / manual file exists | fail |
+| `.ci/policy/.ci-parity-exempt` | a `ci-only` entry is still invoked by some workflow | fail |
 | `.audit-*` | advisory present in `npm audit` | fail — owned by `audit.sh` |
 | `knip.jsonc` | — | knip self-detects via `--treat-config-hints-as-errors` |
 

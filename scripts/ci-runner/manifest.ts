@@ -1631,7 +1631,7 @@ export const GATES: readonly GateSpec[] = [
     paths: [
       'agent/PLAN-*.md',
       '.ci/config/plan-lifecycle.json',
-      '.plan-housekeeping-allowlist',
+      '.ci/policy/.plan-housekeeping-allowlist',
       '.ci/scripts/quality/check-plan-housekeeping.sh',
     ],
     leaves: ['.ci/scripts/quality/check-plan-housekeeping.sh'],

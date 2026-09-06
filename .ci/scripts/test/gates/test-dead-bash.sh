@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node
+# slow: true
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Integration test for scripts/check-dead-bash.ts.
 #
 # Must be provable BOTH ways: the detector fires on planted dead code AND the
@@ -44,7 +52,7 @@ GATE="$REPO_ROOT/scripts/check-dead-bash.ts"
 make_fixture() {
     local t
     t="$(mktemp -d)"
-    mkdir -p "$t/.ci/scripts/lib" "$t/scripts"
+    mkdir -p "$t/.ci/scripts/lib" "$t/.ci/policy" "$t/scripts"
     cat >"$t/.ci/scripts/lib/helpers.sh" <<'EOF'
 #!/bin/bash
 live_helper() {
@@ -214,7 +222,7 @@ test_glob_root_exempts_a_directory() {
     t="$(make_fixture)"
     mkdir -p "$t/scripts/globbed"
     printf '#!/bin/bash\necho found-by-glob\n' >"$t/scripts/globbed/test-thing.sh"
-    printf '# BLOCKER: expanded as a glob by a runner that never names these files individually\nglob:scripts/globbed/\n' >"$t/.dead-bash-allowlist"
+    printf '# BLOCKER: expanded as a glob by a runner that never names these files individually\nglob:scripts/globbed/\n' >"$t/.ci/policy/.dead-bash-allowlist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
     assert_exit_code 0 "$rc" "a glob-discovered file must not be reported"
@@ -226,7 +234,7 @@ test_dispatch_prefix_exempts_functions() {
     local t out rc=0
     t="$(make_fixture)"
     printf 'phase_alpha() {\n    echo dispatched\n}\n' >>"$t/.ci/scripts/lib/helpers.sh"
-    printf '# BLOCKER: assembled at runtime as "phase_$name" so no static call site can exist for these\ndispatch:phase_\n' >"$t/.dead-bash-allowlist"
+    printf '# BLOCKER: assembled at runtime as "phase_$name" so no static call site can exist for these\ndispatch:phase_\n' >"$t/.ci/policy/.dead-bash-allowlist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
     assert_exit_code 0 "$rc" "a dynamically dispatched function must not be reported"
@@ -238,7 +246,7 @@ test_manual_entry_exempts_a_file() {
     local t out rc=0
     t="$(make_fixture)"
     printf '#!/bin/bash\necho operator-runs-this\n' >"$t/scripts/manual-tool.sh"
-    printf '# BLOCKER: run directly by the operator when a manual reconciliation is needed, never from CI\nmanual:scripts/manual-tool.sh\n' >"$t/.dead-bash-allowlist"
+    printf '# BLOCKER: run directly by the operator when a manual reconciliation is needed, never from CI\nmanual:scripts/manual-tool.sh\n' >"$t/.ci/policy/.dead-bash-allowlist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
     assert_exit_code 0 "$rc" "an allowlisted manual entrypoint must not be reported"
@@ -249,7 +257,7 @@ test_manual_entry_exempts_a_file() {
 test_rejects_low_effort_blocker() {
     local t out rc=0
     t="$(make_fixture)"
-    printf '# BLOCKER: tbd\nglob:scripts/\n' >"$t/.dead-bash-allowlist"
+    printf '# BLOCKER: tbd\nglob:scripts/\n' >"$t/.ci/policy/.dead-bash-allowlist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
     assert_exit_code 1 "$rc" "a low-effort BLOCKER must be rejected"
@@ -260,7 +268,7 @@ test_rejects_low_effort_blocker() {
 test_rejects_unknown_entry_kind() {
     local t out rc=0
     t="$(make_fixture)"
-    printf '# BLOCKER: an entry with no recognised prefix must be refused rather than silently ignored\nscripts/whatever.sh\n' >"$t/.dead-bash-allowlist"
+    printf '# BLOCKER: an entry with no recognised prefix must be refused rather than silently ignored\nscripts/whatever.sh\n' >"$t/.ci/policy/.dead-bash-allowlist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
     assert_exit_code 1 "$rc" "an entry with no kind prefix must fail"

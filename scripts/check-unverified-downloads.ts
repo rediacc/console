@@ -49,11 +49,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
 import { GREEN, NC, RED, YELLOW } from './lib/console.js';
+import { policyPath } from './lib/policy-paths.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const ALLOWLIST =
-  process.env.UNVERIFIED_DOWNLOAD_ALLOWLIST || path.join(ROOT, '.unverified-download-allowlist');
+  process.env.UNVERIFIED_DOWNLOAD_ALLOWLIST || policyPath('.unverified-download-allowlist', ROOT);
 
 const VERIFY_RE = /sha256sum\s+-c|sha512sum\s+-c|gpg\s+--verify|cosign\s+verify/;
 const FETCH_RE = /\b(?:curl|wget)\b[^\n]*?(https?:\/\/[^\s"'\\]+)/g;

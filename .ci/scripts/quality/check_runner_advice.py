@@ -896,7 +896,7 @@ def main(argv=None):
     allowlist_path = pathlib.Path(
         args.allowlist
         or os.environ.get("RUNNER_ADVICE_ALLOWLIST")
-        or root / ".runner-advice-allowlist"
+        or root / ".ci/policy/.runner-advice-allowlist"
     )
 
     if not baseline_path.is_file() or not workflow_dir.is_dir():

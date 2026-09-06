@@ -654,26 +654,26 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 
 | Mechanism | BLOCKER lines | Comment form |
 |---|---|---|
-| .audit-allowlist | 1 | prose only (no live entry) |
-| .audit-prod-allowlist | 6 | # comment |
-| .ci-parity-exempt | 10 | # comment |
 | .ci/breakpoint/.breakpoint-drift-accept | 1 | prose only (no live entry) |
 | .ci/config/bws-unrequested.json | 3 | JSON value |
 | .ci/config/directive-quotes-allowlist.txt | 2 | prose only (no live entry) |
 | .ci/config/docker-npm-pin-exclusions.json | 3 | JSON value |
 | .ci/config/syncpack-source-exclusions.json | 8 | JSON value |
-| .cli-i18n-orphan-allowlist | 6 | inline |
-| .dead-bash-allowlist | 15 | # comment |
-| .deps-upgrade-blocklist | 11 | inline |
-| .devcontainer-upgrade-blocklist | 1 | prose only (no live entry) |
-| .e2e-coverage-allowlist | 3 | # comment |
-| .embed-assets-upgrade-blocklist | 1 | prose only (no live entry) |
-| .go-deps-upgrade-blocklist | 3 | # comment |
-| .plan-housekeeping-allowlist | 1 | prose only (no live entry) |
-| .profiler-coverage-allowlist | 4 | # comment |
-| .runner-advice-allowlist | 1 | prose only (no live entry) |
+| .ci/policy/.audit-allowlist | 1 | prose only (no live entry) |
+| .ci/policy/.audit-prod-allowlist | 6 | # comment |
+| .ci/policy/.ci-parity-exempt | 10 | # comment |
+| .ci/policy/.cli-i18n-orphan-allowlist | 6 | inline |
+| .ci/policy/.dead-bash-allowlist | 15 | # comment |
+| .ci/policy/.deps-upgrade-blocklist | 11 | inline |
+| .ci/policy/.devcontainer-upgrade-blocklist | 1 | prose only (no live entry) |
+| .ci/policy/.e2e-coverage-allowlist | 3 | # comment |
+| .ci/policy/.embed-assets-upgrade-blocklist | 1 | prose only (no live entry) |
+| .ci/policy/.go-deps-upgrade-blocklist | 3 | # comment |
+| .ci/policy/.plan-housekeeping-allowlist | 1 | prose only (no live entry) |
+| .ci/policy/.profiler-coverage-allowlist | 4 | # comment |
+| .ci/policy/.runner-advice-allowlist | 1 | prose only (no live entry) |
+| .ci/policy/.unverified-download-allowlist | 4 | # comment |
 | .syncpackrc-reasons.json | 8 | JSON value |
-| .unverified-download-allowlist | 4 | # comment |
 | knip.jsonc | 26 | // comment |
 | package.json | 28 | JSON value |
 | scripts/ci-runner/gates.lock.json | 17 | JSON value |
@@ -712,12 +712,12 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/media | 11 | .sh 11 |
 | .ci/media/tools | 2 | .sh 2 |
 | .ci/media/tts | 2 | (none) 1, .toml 1 |
-| .ci/policy | 1 | .md 1 |
+| .ci/policy | 16 | (none) 15, .md 1 |
 | .ci/prompts | 1 | .md 1 |
 | .ci/rediacc_ci | 8 | .py 8 |
 | .ci/rediacc_ci/core | 10 | .py 10 |
-| .ci/rediacc_ci/quality | 15 | .py 15 |
-| .ci/rediacc_ci/tests | 25 | .py 25 |
+| .ci/rediacc_ci/quality | 40 | .py 40 |
+| .ci/rediacc_ci/tests | 50 | .py 50 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/corpus | 17 | .list 17 |
@@ -753,7 +753,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/test/lib | 3 | .sh 3 |
 | .ci/scripts/test/manual | 1 | .sh 1 |
 | .ci/scripts/version | 4 | .sh 4 |
-| .ci/shadow | 14 | .jsonl 14 |
+| .ci/shadow | 39 | .jsonl 39 |
 | .ci/tutorials | 21 | .sh 20, .md 1 |
 | .ci/tutorials/apps/demo-pgadmin | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/apps/heartbeat | 2 | (none) 1, .yaml 1 |
