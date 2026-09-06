@@ -217,6 +217,27 @@ export interface LedgerRow {
   onlyOld: string[];
   onlyNew: string[];
   comments?: CommentAudit;
+  /**
+   * The normalization options this row was recorded under.
+   *
+   * WITHOUT THIS A ROW CANNOT BE REPRODUCED FROM THE LEDGER ALONE, and that is
+   * not theoretical: `--finding-re`, `--chatter-re` and `--mask-sha` each change
+   * which lines count as findings, so they change the verdict. An agent
+   * re-recording this estate on 2026-09-06 had to reverse-engineer them by
+   * fitting candidates against recorded rows, and got there only because one
+   * candidate reproduced a 40-finding set exactly while two others added a
+   * spurious line. Evidence you cannot re-run is testimony, not evidence.
+   *
+   * Optional so every row written before this field stays readable.
+   */
+  opts?: RowOpts;
+}
+
+/** The normalization flags a row was recorded under. Absent means defaults. */
+export interface RowOpts {
+  findingRe?: string;
+  chatterRe?: string;
+  maskSha?: boolean;
 }
 
 export interface LedgerSide {
@@ -874,7 +895,12 @@ export function ledgerPath(repoRoot: string, pair: string, override?: string): s
   return override ?? path.join(repoRoot, LEDGER_DIR, `${pair}.jsonl`);
 }
 
-export function toRow(cmp: Comparison, tree: TreeIdentity, comments?: CommentAudit): LedgerRow {
+export function toRow(
+  cmp: Comparison,
+  tree: TreeIdentity,
+  comments?: CommentAudit,
+  opts?: RowOpts
+): LedgerRow {
   const side = (s: SideRun): LedgerSide => ({
     cmd: s.cmd,
     exit: s.exit,
@@ -896,12 +922,74 @@ export function toRow(cmp: Comparison, tree: TreeIdentity, comments?: CommentAud
     onlyOld: cmp.onlyOld,
     onlyNew: cmp.onlyNew,
     ...(comments ? { comments } : {}),
+    ...(opts && (opts.findingRe || opts.chatterRe || opts.maskSha) ? { opts } : {}),
   };
 }
 
+/**
+ * Does a command reach OUTSIDE `repoRoot` for the code it runs?
+ *
+ * THE TREE ID IS A CLAIM ABOUT BOTH IMPLEMENTATIONS, and this is what made that
+ * claim false. `--record` verified `--repo` was CLEAN and never checked that the
+ * commands read anything inside it, so a row could be recorded while both sides
+ * were invoked out of a different checkout entirely. The tree id then names a
+ * fixture holding only the SUBJECT, and the row attests to code that tree never
+ * contained.
+ *
+ * That is not hypothetical: w7p2-stagingtag carries three tree ids recorded that
+ * way, and because assertEquivalent disqualifies an id UNCONDITIONALLY, they can
+ * never be cleared. Re-recording mints a new id and leaves the old one red. Six
+ * more ledgers reach their port through an absolute `PYTHONPATH`, which is the
+ * same hole staying quiet because those rows happen to agree.
+ *
+ * Detection is deliberately crude and errs toward refusing: any absolute path in
+ * the command that is not under `repoRoot`. It catches both observed shapes, a
+ * bare `/abs/other/checkout/...` invocation and `PYTHONPATH=/abs/other/...`, and
+ * it cannot be silently defeated by a relative path, which resolves under the
+ * repo by definition.
+ */
+export function reachesOutside(cmd: string, repoRoot: string): string[] {
+  const root = path.resolve(repoRoot);
+  const out: string[] = [];
+  for (const m of cmd.matchAll(/(^|[\s=:"'])(\/[^\s:"';|&)]+)/g)) {
+    const abs = m[2];
+    if (abs === undefined) continue;
+    // System paths are the INTERPRETER, not the code under comparison, so they are
+    // exempt. `/tmp` is deliberately NOT on this list even though it looks like it
+    // belongs: fixture repos are built under /tmp, so code read from /tmp outside
+    // the fixture is precisely the escape this refuses. A redirect to /tmp is
+    // caught too, which is a false refusal, and that is the direction to err in:
+    // a false refusal costs one edit, while a row recorded through this hole can
+    // never be cleared afterward.
+    if (/^\/(dev|proc|sys|usr|bin|sbin|lib|etc|opt|var)\b/.test(abs)) continue;
+    const rel = path.relative(root, abs);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) out.push(abs);
+  }
+  return [...new Set(out)];
+}
+
 /** Why a ledger write was refused, or null when it is allowed. */
-export function ledgerRefusal(tree: TreeIdentity): string | null {
+export function ledgerRefusal(
+  tree: TreeIdentity,
+  cmds?: { old: string; new: string; repoRoot: string }
+): string | null {
   if (tree.id === 'UNKNOWN') return 'the working directory is not a git repository with a HEAD';
+  if (cmds) {
+    const escapes = [
+      ...reachesOutside(cmds.old, cmds.repoRoot).map((p) => `old: ${p}`),
+      ...reachesOutside(cmds.new, cmds.repoRoot).map((p) => `new: ${p}`),
+    ];
+    if (escapes.length > 0) {
+      return (
+        'a command reads from OUTSIDE the recorded tree, so the tree id would not ' +
+        'describe the code that produced this row. The tree id is the content of BOTH ' +
+        'implementations; a row recorded this way attests to code the tree never held, ' +
+        'and assertEquivalent can never clear it afterward. Copy both implementations ' +
+        'into the fixture and invoke them by relative path.\n  ' +
+        escapes.join('\n  ')
+      );
+    }
+  }
   if (!tree.clean) {
     return (
       'the working tree is DIRTY, so this differential is not reproducible and is not ' +
@@ -915,7 +1003,11 @@ export function ledgerRefusal(tree: TreeIdentity): string | null {
 
 /** Append one row. Refuses on a dirty tree; there is deliberately no override. */
 export function appendLedger(repoRoot: string, row: LedgerRow, override?: string): void {
-  const refusal = ledgerRefusal(row.tree);
+  const refusal = ledgerRefusal(row.tree, {
+    old: row.old.cmd,
+    new: row.new.cmd,
+    repoRoot,
+  });
   if (refusal) throw new Error(refusal);
   const file = ledgerPath(repoRoot, row.pair, override);
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -1463,6 +1555,29 @@ export function main(argv: string[]): number {
       console.error('shadow-gate: --k must be a positive integer');
       return 2;
     }
+    // A LEDGER THAT DOES NOT EXIST IS NOT AN UNDER-RECORDED ONE. readLedger
+    // returns [] for a missing path, so a typo'd --pair used to print
+    // `0 row(s), 0 distinct clean tree(s)` and `5 are required`, which reads as
+    // "keep recording" rather than "you are pointing at nothing". The default
+    // name is `<pair>.jsonl` while every real ledger here is
+    // `<pair>.observations.jsonl`, so this is the EASY typo to make and it was
+    // made: an agent's first run of all four asserts reported four
+    // under-recorded pairs that were in fact four wrong filenames.
+    const ledgerFile = ledgerPath(repoRoot, pair, arg(argv, '--ledger'));
+    if (!fs.existsSync(ledgerFile)) {
+      console.error(`✗ ${pair}: no ledger at ${path.relative(repoRoot, ledgerFile)}`);
+      console.error('  This is a MISSING FILE, not an empty one. Nothing was compared, so');
+      console.error('  the absence of a verdict here is not evidence of anything.');
+      const near = fs.existsSync(path.join(repoRoot, LEDGER_DIR))
+        ? fs
+            .readdirSync(path.join(repoRoot, LEDGER_DIR))
+            .filter((f) => f.startsWith(pair) || f.includes(pair))
+        : [];
+      if (near.length > 0) {
+        console.error(`  Did you mean one of: ${near.join(', ')}`);
+      }
+      return 2;
+    }
     const rows = readLedger(repoRoot, pair, arg(argv, '--ledger'));
     const res = assertEquivalent(rows, k);
     console.log(
@@ -1496,6 +1611,15 @@ export function main(argv: string[]): number {
     ...(chatterRe ? { chatterRe: new RegExp(chatterRe) } : {}),
   };
 
+  // Recorded into the row VERBATIM as the operator typed them, not as compiled
+  // RegExp objects, so the ledger carries something a reader can paste back into
+  // a command line and re-run.
+  const rowOpts: RowOpts = {
+    ...(findingRe ? { findingRe } : {}),
+    ...(chatterRe ? { chatterRe } : {}),
+    ...(argv.includes('--mask-sha') ? { maskSha: true } : {}),
+  };
+
   const cmp = shadow(pair, oldCmd, newCmd, opts);
 
   const oldFile = arg(argv, '--old-file');
@@ -1507,7 +1631,7 @@ export function main(argv: string[]): number {
   const tree = treeIdentity(repoRoot, ledgerRel.startsWith('..') ? [] : [ledgerRel]);
 
   if (argv.includes('--json')) {
-    console.log(JSON.stringify(toRow(cmp, tree, comments), null, 2));
+    console.log(JSON.stringify(toRow(cmp, tree, comments, rowOpts), null, 2));
   } else {
     const icon = cmp.ok ? '✓' : '✗';
     console.log(`${icon} ${pair}: ${cmp.verdict} -- ${cmp.summary}`);
@@ -1530,12 +1654,17 @@ export function main(argv: string[]): number {
   }
 
   if (argv.includes('--record')) {
-    const refusal = ledgerRefusal(tree);
+    // The commands are passed HERE as well as inside appendLedger, because this
+    // preflight is the message the operator actually reads. Without them the
+    // escape check ran only in the library and the CLI reported whichever other
+    // refusal happened to come first, which on a shared checkout is always the
+    // dirty-tree one.
+    const refusal = ledgerRefusal(tree, { old: oldCmd, new: newCmd, repoRoot });
     if (refusal) {
       console.error(`✗ ${pair}: ledger write REFUSED -- ${refusal}`);
       return 3;
     }
-    appendLedger(repoRoot, toRow(cmp, tree, comments), ledgerFile);
+    appendLedger(repoRoot, toRow(cmp, tree, comments, rowOpts), ledgerFile);
     console.log(`  recorded ${cmp.verdict} for tree ${tree.id.slice(0, 12)} in ${ledgerRel}`);
   }
 
