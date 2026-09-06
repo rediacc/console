@@ -1736,6 +1736,7 @@
   {
     "id": "gate-test:doc-region-parity",
     "run": ".ci/scripts/test/gates/test-doc-region-parity.sh",
+    "slow": true,
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -3050,7 +3051,6 @@
   {
     "id": "check:ci-editorconfig",
     "run": "npm run check:ci-editorconfig",
-    "slow": true,
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check-editorconfig.sh"
@@ -5843,6 +5843,7 @@
   {
     "id": "gate-test:docs-gen",
     "run": ".ci/scripts/test/gates/test-docs-gen.sh",
+    "slow": true,
     "gate": true,
     "qualityGateTest": true,
     "leaves": [

@@ -1795,6 +1795,11 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:doc-region-parity',
     run: '.ci/scripts/test/gates/test-doc-region-parity.sh',
+    // 21.7s FLOOR over 5 runs (median 27.2s): it strips the markers from every
+    // discovered doc and re-runs gen-docs against each, so its cost is the
+    // document count and will only grow. The oracle judges the floor rather
+    // than the average precisely so contention cannot manufacture this.
+    slow: true,
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-doc-region-parity.sh'],
@@ -3021,7 +3026,10 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-editorconfig',
     run: 'npm run check:ci-editorconfig',
-    slow: true, // 12.9s measured
+    // WAS `slow: true, // 12.9s measured`, dropped 2026-09-06. The recorded
+    // window is [23.8, 4.6, 19.1, 4.7, 5.0]s: a 4.6s floor and a 5.0s median,
+    // with the two large samples being contention rather than cost. Cheap
+    // enough for the pre-push lane, which is where a formatting gate belongs.
     gate: true,
     leaves: ['.ci/scripts/quality/check-editorconfig.sh'],
     ci: {
@@ -5707,6 +5715,9 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:docs-gen',
     run: '.ci/scripts/test/gates/test-docs-gen.sh',
+    // 22.3s FLOOR over 5 runs (median 27.0s). Same shape as its sibling above:
+    // it drives the whole generator once per provider.
+    slow: true,
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-docs-gen.sh'],
