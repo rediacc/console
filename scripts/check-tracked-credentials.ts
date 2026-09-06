@@ -65,7 +65,7 @@ import {
   baselineAdditions,
   commitBaseline,
   sharedSelftestCases,
-  writeBaselineVerdict,
+  selftestVerdict,
 } from './lib/shrink-only-baseline.js';
 
 const ROOT = process.env.TRACKED_CRED_ROOT ?? process.cwd();
@@ -294,6 +294,53 @@ function selftest(): number {
     !hasPemBody('the private key is in Bitwarden')
   );
 
+  // THE TWO LISTS MUST NOT DRIFT APART AGAIN. This gate covered 4 of the 7 shapes
+  // in wl_store.py::_SECRET_SHAPES for months, while that redactor -- whose own
+  // comment says the shapes "must never reach a TRACKED file" -- caught all 7 at
+  // its door. Aligning them once fixes today; this keeps them aligned, by reading
+  // the redactor's list rather than a copy of it.
+  //
+  // BEHAVIOURAL, not textual. Comparing pattern SOURCES said this gate did not
+  // cover `ghp_`, because it spells that alternation `(ghp|gho|ghu|ghs|ghr)_` --
+  // a false alarm about a shape it has always caught. So each shape gets a sample
+  // and the question is whether the gate DETECTS it.
+  const redactor = join(ROOT, '.claude', 'hooks', 'stop', 'wl_store.py');
+  const sampleFor: Record<string, string> = {
+    '-----BEGIN': `-----BEGIN RSA PRIVATE KEY-----\n${'M'.repeat(64)}\n`,
+    ghp_: `ghp_${'a'.repeat(36)}`,
+    github_pat_: `github_pat_${'a'.repeat(24)}`,
+    AKIA: `AKIA${'A1B2C3D4E5F6G7H8'}`,
+    xox: `xoxb-${'1'.repeat(12)}`,
+    whsec_: `whsec_${'a'.repeat(28)}`,
+    'sk-': `sk-${'a'.repeat(36)}`,
+  };
+  const detects = (t: string) => AWS_RE.test(t) || TOKEN_RE.test(t) || hasPemBody(t);
+  let redactorShapes: string[] = [];
+  try {
+    const body = readFileSync(redactor, 'utf8');
+    const block = /_SECRET_SHAPES\s*=\s*\(([\s\S]*?)\n\)/.exec(body)?.[1] ?? '';
+    redactorShapes = [...block.matchAll(/re\.compile\(r"([^"]+)"\)/g)]
+      .map((m) => /^(?:\\b)?(-----BEGIN|sk-|[A-Za-z_]{2,})/.exec(m[1])?.[1] ?? '')
+      .filter(Boolean);
+  } catch {
+    redactorShapes = [];
+  }
+  // Anti-vacuity: an empty list would make the loop below assert nothing at all.
+  check(
+    'the redactor list was READ (not silently empty)',
+    redactorShapes.length >= 6,
+    `found ${redactorShapes.length}`
+  );
+  for (const shape of redactorShapes) {
+    const sample = sampleFor[shape];
+    // A shape with no sample is a NEW entry in the redactor this gate has not been
+    // taught -- exactly the drift being guarded against, so it fails loudly.
+    check(`covers wl_store shape '${shape}'`, sample !== undefined && detects(sample));
+  }
+  // CONTROL: the detector must REJECT a shape it does not cover, or every line
+  // above would pass against a `detects` that returns true unconditionally.
+  check('CONTROL: an uncovered shape is not detected', !detects('glpat-' + 'a'.repeat(20)));
+
   const old = ['a.ts:PEM_BODY', 'b.ts:PEM_BODY'];
   check(
     'a NEW credential is an addition',
@@ -303,21 +350,10 @@ function selftest(): number {
   check('CONTROL: an unchanged set adds nothing', baselineAdditions(old, old).length === 0);
   check(
     'the write path REFUSES a growing set',
-    writeBaselineVerdict({
-      baselineExists: true,
-      firstSeedFlag: false,
-      additions: ['c.md:AWS_KEY_ID'],
-    })?.kind === 'would-grow'
+    selftestVerdict({ additions: ['c.md:AWS_KEY_ID'] })?.kind === 'would-grow'
   );
   // CONTROL: draining must stay possible, or the backlog freezes instead of ratcheting.
-  check(
-    'CONTROL: the write path ALLOWS a shrinking set',
-    writeBaselineVerdict({
-      baselineExists: true,
-      firstSeedFlag: false,
-      additions: [],
-    }) === null
-  );
+  check('CONTROL: the write path ALLOWS a shrinking set', selftestVerdict({}) === null);
   // Proves the ERE half of the contract: git grep must ACCEPT both patterns. Without it
   // a PCRE-only construct passes every JS assertion above and dies on the first real run.
   let prefilterOk = true;
@@ -342,7 +378,7 @@ function selftest(): number {
   // CONTROL: the real corpus must clear it, or the floor reds every run and gets raised away.
   check('CONTROL: the real corpus clears the floor', trackedFiles(ROOT).length >= MIN_FILES);
 
-  if (n < 27) {
+  if (n < 32) {
     console.error(`FAIL  only ${n} control(s) ran; the battery is not being executed as written`);
     bad += 1;
   }

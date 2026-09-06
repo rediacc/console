@@ -54,6 +54,7 @@ import {
   baselineAdditions,
   commitBaseline,
   sharedSelftestCases,
+  selftestVerdict,
   writeBaselineVerdict,
 } from './lib/shrink-only-baseline.js';
 
@@ -129,18 +130,11 @@ function selftest(): number {
   check('CONTROL: an unchanged set adds nothing', baselineAdditions(old, old).length === 0);
   check(
     'the write path REFUSES a growing set',
-    writeBaselineVerdict({
-      baselineExists: true,
-      firstSeedFlag: false,
-      additions: ['b.yml:NEW'],
-    })?.kind === 'would-grow'
+    selftestVerdict({ additions: ['b.yml:NEW'] })?.kind === 'would-grow'
   );
   // CONTROL: draining must be permitted, or the gate would freeze the backlog
   // forever instead of ratcheting it down.
-  check(
-    'CONTROL: the write path ALLOWS a shrinking set',
-    writeBaselineVerdict({ baselineExists: true, firstSeedFlag: false, additions: [] }) === null
-  );
+  check('CONTROL: the write path ALLOWS a shrinking set', selftestVerdict({}) === null);
   // The floor is the difference between "clean" and "did not run".
   check('an empty corpus is under the floor', countWorkflows('/nonexistent') < MIN_WORKFLOWS);
   // CONTROL: the REAL corpus must clear it, or the floor would red every run and

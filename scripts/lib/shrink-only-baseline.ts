@@ -112,6 +112,22 @@ export const writeBaselineVerdict = (input: {
 };
 
 /**
+ * `writeBaselineVerdict` as a SELFTEST asks it: an existing baseline, no `--first-seed`,
+ * and the one field under test.
+ *
+ * Extracted 2026-09-06 because check:ci-shape-duplication caught the five-line call
+ * shape at three copies (check-em-dash-surfaces, check-secret-scope,
+ * check-tracked-credentials) and was right to: every gate's battery asks the same
+ * question and only the last field differs. Real call sites keep using
+ * writeBaselineVerdict directly -- their inputs are computed, so they are not this
+ * shape.
+ */
+export const selftestVerdict = (
+  under: Partial<Parameters<typeof writeBaselineVerdict>[0]>
+): WriteVerdict =>
+  writeBaselineVerdict({ baselineExists: true, firstSeedFlag: false, additions: [], ...under });
+
+/**
  * The refusal text. Shared so that every gate says the same thing about the same rule, and
  * so the one sentence that actually changes behaviour -- "Do NOT add it to the baseline" --
  * cannot go missing from one of them.
