@@ -7655,3 +7655,77 @@ optional precedes its monitor step). **Do not "fix" these with a step-scoped
 fetch**: `GITHUB_ENV` and `GITHUB_OUTPUT` are files any step in the job can read,
 so it isolates nothing from the shell. See
 `agent/PLAN-breakpoint-secret-shape.md`.
+
+---
+
+## The release was signing nothing, and two formats still are (2026-09-06)
+
+The section above ends with the org secrets deleted and CI reading Bitwarden. What
+that uncovered next was in the release, and none of it is visible in a diff.
+
+### An empty credential made the build SKIP signing and exit 0
+
+`build-linux-pkg.sh` guarded signing with `[[ -n "${RELEASE_GPG_PRIVATE_KEY:-}" ]]`.
+The org secret behind it was deleted, so the expression resolved to `""`, the guard
+was false, and the build shipped an UNSIGNED package while printing "skipping" and
+exiting 0. **This is the shape to distrust everywhere in this migration: an empty
+value is indistinguishable from "not wanted".** `RELEASE_SIGNING_REQUIRED=1`, set on
+both cd-stage signing steps, makes it fatal; local unsigned builds are unaffected.
+
+### Then the key itself was malformed, and the shadow had excused it
+
+With a real key arriving, `Build Linux packages` died one line after declaring it
+good:
+
+    ✓ Signing key matches the published public key (42EAD140...)
+    signing error: armored detach sign: decoding armored PGP keyring:
+    openpgp: invalid data: armor invalid
+
+A GPG private key does not fit one Bitwarden field, so it is stored as TWO items
+(`gpg-private.asc - 1` / `- 2`). Part 1 carries no trailing newline, so
+concatenating them WELDS part 1's last base64 line onto part 2's first. gpg reads
+that happily -- which is why the fingerprint check ticked -- and Go's armor decoder
+does not. Reproduced verbatim against x/crypto v0.56.0.
+`.ci/scripts/build/canonicalise-gpg-key.sh` re-exports through gpg before nfpm sees
+it, which repairs every variant gpg can read, and keeps the passphrase protection.
+
+The retired shadow had this in hand: `SHADOW_EXPECTED_MISMATCH:
+RELEASE_GPG_PRIVATE_KEY` was its ONE excused name, and its own comment said "a
+whitespace-only drift is still a drift". It was right, and it was excused anyway.
+
+### Fixing formats one at a time WAS the defect
+
+deb and rpm were fixed, then a class sweep found the identical `-n` guard on apk and
+that was fixed too -- reactively. A third format would have got nothing.
+`check:ci-release-signing-coverage` now reads the format list out of the builder's
+own validation case and requires each to refuse shipping unsigned or carry a
+reasoned exemption. Adding a `snap` format reds it immediately.
+
+**It cost a red on main to learn the rest.** Making apk required blocked v1.3.9,
+because APK_RSA_PRIVATE_KEY is set by NOTHING here and is absent from
+bws-secret-map.json. apk has never been signed; nfpm.yaml's apk `signature` block
+reads `${NFPM_APK_KEY_FILE}`, populated only when that variable is non-empty, which
+is what made it LOOK covered.
+
+### Two of four formats ship unsigned, for DIFFERENT reasons, both measured
+
+    archlinux  nfpm CANNOT sign it. Adding `archlinux.signature.key_file` fails at
+               config load: `field signature not found in type nfpm.ArchLinux`.
+    apk        nfpm CAN sign it; only the key is absent. Built both ways: with an
+               RSA key the archive carries `.SIGN.RSA.*.rsa.pub` (1002 bytes),
+               without one it carries no signature entry (581 bytes).
+
+The first archlinux reason written down was a GUESS -- "no signature block in
+nfpm.yaml", which reads as an omission someone could fix by adding one. They cannot.
+Every exemption in that gate now states a constraint that was RUN, because a reason
+nobody has executed can be wrong for months.
+
+### Also landed here
+- `check:ci-tracked-credentials`: nothing scanned tracked TEXT, which is how an AWS
+  key id sat in a design document for two days on a public repo. It is now bound to
+  `wl_store.py::_SECRET_SHAPES` -- the repo's own redactor, whose comment says those
+  shapes "must never reach a TRACKED file" -- because the gate covered 4 of its 7.
+- `check-workflow-gates.sh` CHECK 2 advertised contracts "in both directions" and
+  had three of four arms. The missing one, a callee DECLARING a secret nothing
+  reads, is why 57 such declarations accumulated.
+- breakpoint.yml's 3 org-scope reads dropped; org-scope reads **147 -> 1**.
