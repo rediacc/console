@@ -261,7 +261,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-agent-hints-implementation.md` | compacted | 84 | 0 | 0 | 4632 |
 | `agent/PLAN-agent-hints-in-stop-hook.md` | compacted | 70 | 0 | 0 | 3646 |
 | `agent/PLAN-ask-flow-preemptive-settled-check.md` | draft | 552 | 0 | 0 | 28343 |
-| `agent/PLAN-backup-list-executor-fix.md` | compacted | 81 | 0 | 0 | 5500 |
+| `agent/PLAN-backup-list-executor-fix.md` | compacted | 81 | 0 | 0 | 5511 |
 | `agent/PLAN-backup-quota-delta-gc.md` | compacted | 86 | 0 | 0 | 5603 |
 | `agent/PLAN-backup-restore-target-license.md` | compacted | 83 | 0 | 0 | 5579 |
 | `agent/PLAN-branch-aware-workflows.md` | partially | 154 | 2 | 3 | 9633 |
