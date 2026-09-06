@@ -18,6 +18,15 @@
 # needs the release key, which is a secret and is deliberately not available to a
 # quality job. It checks that the REFUSAL exists. `check:ci-release-key-canonical`
 # covers the key's usability, and test-linux-packages.sh signs real packages in CI.
+#
+# EVERY EXEMPTION BELOW STATES A TESTED CONSTRAINT, not a guess, because the first
+# archlinux reason was a guess and it was WRONG: it said "no signature block in
+# nfpm.yaml", which reads as an omission someone could fix by adding one. Adding one
+# fails at config load. The two constraints are different in kind and the difference
+# was measured, not reasoned:
+#   archlinux  nfpm CANNOT sign it -- `field signature not found in type nfpm.ArchLinux`
+#   apk        nfpm CAN sign it; only the key is absent (built both ways to check)
+# A reason that has not been run is a reason that can be wrong for months.
 set -uo pipefail
 ROOT="${SIGNING_COVERAGE_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}"
 BUILDER="${SIGNING_COVERAGE_BUILDER:-$ROOT/.ci/scripts/build/build-linux-pkg.sh}"
@@ -33,7 +42,7 @@ BUILDER="${SIGNING_COVERAGE_BUILDER:-$ROOT/.ci/scripts/build/build-linux-pkg.sh}
 #     finding rather than silently allowlisted.
 declare -A UNSIGNED_ON_PURPOSE=(
     [archlinux]="nfpm CANNOT sign archlinux at all -- adding a signature block fails at config load with 'field signature not found in type nfpm.ArchLinux' (measured against the pinned nfpm, 2026-09-06). Signing it needs a detached .sig produced outside nfpm and published beside the package"
-    [apk]="APK_RSA_PRIVATE_KEY is set by nothing in this repo and is absent from .ci/config/bws-secret-map.json, so apk has never been signed; nfpm.yaml's apk signature block reads an env var that is never populated. Minting an RSA key is the operator's call"
+    [apk]="the KEY is missing, not the capability -- VERIFIED 2026-09-06 by building both ways: with an RSA key the apk carries a .SIGN.RSA.*.rsa.pub entry, without one it carries none. APK_RSA_PRIVATE_KEY is set by nothing here and is absent from .ci/config/bws-secret-map.json, so nfpm.yaml's apk signature block reads an env var never populated. Mint an RSA key and this exemption goes"
 )
 
 MIN_FORMATS=4
