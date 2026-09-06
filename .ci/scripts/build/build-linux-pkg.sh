@@ -190,9 +190,20 @@ if [[ "$FORMAT" == "rpm" || "$FORMAT" == "deb" ]] && [[ -n "${RELEASE_GPG_PRIVAT
     # decoder does not, and the failure lands AFTER the fingerprint check below has
     # printed a tick. The why, and the reproduction, are in the script itself; it is
     # shared so check:ci-release-key-canonical exercises the real thing.
-    if "$(dirname "${BASH_SOURCE[0]}")/canonicalise-gpg-key.sh" \
-        "$GPG_KEY_FILE" "${RELEASE_GPG_PASSPHRASE:-}"; then
-        log_info "Re-exported the signing key through gpg for canonical armor"
+    # `|| canon_rc=$?` rather than a bare call: this script runs under `set -e`, so a
+    # non-zero exit terminates it before the next line can read $?. The repair case
+    # exits 10 ON PURPOSE, so a bare call aborted every build whose key needed
+    # repairing -- which is precisely the production case this signal exists for.
+    canon_rc=0
+    "$(dirname "${BASH_SOURCE[0]}")/canonicalise-gpg-key.sh" \
+        "$GPG_KEY_FILE" "${RELEASE_GPG_PASSPHRASE:-}" || canon_rc=$?
+    if [[ "$canon_rc" == "0" ]]; then
+        log_info "Signing key armor was already canonical"
+    elif [[ "$canon_rc" == "10" ]]; then
+        # LOUD ON PURPOSE. Repairing this every build and saying nothing is how the
+        # stored value stays broken forever. It is welded because a GPG key does not
+        # fit one Bitwarden field and the two halves were joined without a newline.
+        log_warn "SIGNING KEY WAS REPAIRED: the stored RELEASE_GPG_PRIVATE_KEY armor is malformed and this build fixed it in flight. Fix it AT SOURCE -- re-join the two Bitwarden halves WITH a newline -- or every build keeps papering over it."
     else
         # Not fatal on its own: the key may already be canonical, and the fingerprint
         # check below still has to pass. Say so rather than proceeding silently,
