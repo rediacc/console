@@ -65,10 +65,29 @@ const NOT_SUBJECT = /\/test\/gates\//;
 
 const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
-const tracked = (): string[] =>
-  execFileSync('git', ['-C', ROOT, 'ls-files', '.ci/scripts', 'scripts'], { encoding: 'utf-8' })
+/**
+ * Tracked subjects that are ACTUALLY PRESENT, plus the ones that are not.
+ *
+ * `git ls-files` reports the INDEX, and this gate then reads the WORKTREE. In a shared
+ * checkout those disagree the moment another session deletes a tracked file: on
+ * 2026-09-06 a peer ran this mid-way through a batch that removed docker-compose.yml,
+ * Rediaccfile and others, and readFileSync threw ENOENT out of node:fs. A stack trace is
+ * not a verdict -- the reader cannot tell "your gates are mis-registered" from "a file
+ * moved under me". Absent files are collected and REFUSED by name instead.
+ */
+const trackedSubjects = (): { present: string[]; missing: string[] } => {
+  const listed = execFileSync('git', ['-C', ROOT, 'ls-files', '.ci/scripts', 'scripts'], {
+    encoding: 'utf-8',
+  })
     .split('\n')
     .filter((f) => f !== '' && SUBJECT.test(f) && !NOT_SUBJECT.test(f));
+  const present: string[] = [];
+  const missing: string[] = [];
+  for (const f of listed) {
+    (fs.existsSync(path.join(ROOT, f)) ? present : missing).push(f);
+  }
+  return { present, missing };
+};
 
 /** One extraction attempt: every guard, no I/O decision. `next` is null when refused. */
 export function planExtract(
@@ -918,8 +937,21 @@ function main(argv: string[]): void {
   const workflow = read(WORKFLOW);
   const caps = laneCapabilities(workflow);
 
+  const { present, missing } = trackedSubjects();
+  if (missing.length > 0) {
+    console.error(
+      `✗ CANNOT VERIFY: ${missing.length} tracked file(s) are absent from the worktree:`
+    );
+    for (const f of missing.slice(0, 10)) console.error(`    ${f}`);
+    console.error('');
+    console.error('  The index and the worktree disagree, which in a shared checkout');
+    console.error('  usually means another session is mid-change. Refusing a verdict');
+    console.error('  rather than reading a tree that is moving.');
+    process.exit(1);
+  }
+
   const declared: Bound[] = [];
-  for (const f of tracked()) {
+  for (const f of present) {
     const b = bind(f, read(f));
     if (b !== null) declared.push(b);
   }
