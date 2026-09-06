@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: CLI docs stay in sync with their scripts' real flags
+# needs: none
+# lane: quality-code
+# ---- end gate ----
 # Gate: every CLI flag a script actually has is taught in its canonical doc.
 #
 # Why this exists. check-ci-watch-recipe.sh's Check G did this for exactly one

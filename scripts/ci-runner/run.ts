@@ -143,11 +143,24 @@ function parseArgs(argv: readonly string[]): Options {
         i += 1;
         break;
       case '--only':
-        opts.only = value(i, arg).split(',').filter(Boolean);
+        // APPENDS, and used to ASSIGN. A repeated flag silently discarded every
+        // earlier one, so `--only a --only b` ran ONLY b, printed
+        // `ci-runner: 1 gate` and exited green. The operator believes two gates
+        // passed; one did, and the other was never scheduled. That is a vacuous
+        // green produced by the selector rather than by a gate, which is the
+        // worse of the two because nothing in the output names a missing gate.
+        // The `1 gate` header line was the only tell and it reads as a count,
+        // not as a warning. Found 2026-09-06 by an agent that passed eleven
+        // separate --only flags and was told it had run one gate, ok.
+        // Comma-separated remains the documented spelling and still works.
+        opts.only = [...(opts.only ?? []), ...value(i, arg).split(',').filter(Boolean)];
         i += 1;
         break;
       case '--skip':
-        opts.skip = value(i, arg).split(',').filter(Boolean);
+        // Appends for the same reason as --only above: a dropped --skip is a
+        // gate that RUNS when the operator asked for it not to, which on a
+        // machine-mutex gate is worse than a dropped --only.
+        opts.skip = [...(opts.skip ?? []), ...value(i, arg).split(',').filter(Boolean)];
         i += 1;
         break;
       case '--manifest':

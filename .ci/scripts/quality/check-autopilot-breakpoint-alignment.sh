@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# kind: test
+# test: .ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh
+# blocker: BLOCKER: test-autopilot-breakpoint-alignment.sh:59 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real comparison executes every CI run; the mutated-copy cases around it prove both fire directions
+# id: check:ci-autopilot-bp-align
+# needs: none
+# ---- end gate ----
 # The autopilot's hold-open debug session COPIES three dispatch inputs from
 # breakpoint. This gate holds the copies to the original.
 #

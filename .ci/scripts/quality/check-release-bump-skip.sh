@@ -1,4 +1,10 @@
 #!/bin/bash
+# ---- gate ----
+# kind: test
+# test: .ci/scripts/quality/check-release-bump-skip.sh
+# blocker: BLOCKER: the gate IS the test -- it drives the real dispatch-release.sh decide branch with a shimmed gh through all five paths, so ci-quality.yml quality-security runs the real decision every CI run; it exists because a bump-none merge and a broken decision both produce "no release" and only the emitted signal distinguishes them, which no release gate could see
+# needs: none
+# ---- end gate ----
 # The bump-none decision must EMIT ITS SIGNAL, and only on the skip path.
 #
 # WHY THIS EXISTS. Two gates already cover neighbouring ground and neither
