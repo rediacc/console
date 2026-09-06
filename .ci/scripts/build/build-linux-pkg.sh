@@ -317,5 +317,18 @@ else
             # a key first, and that is the operator's to mint.
             log_warn "APK_RSA_PRIVATE_KEY not set, skipping APK signing (apk is declared-unsigned; see check-release-signing-coverage.sh)"
             ;;
+        archlinux)
+            # SAID OUT LOUD, like the other three. archlinux had no arm here, so it
+            # was the one format that finished unsigned in SILENCE while deb, rpm and
+            # apk each announced it -- and silence is what let "two of four formats
+            # ship unsigned" go unnoticed in the first place.
+            #
+            # It cannot be signed: nfpm has no signature support for archlinux at all
+            # (goreleaser/nfpm#628 open, PR #1065 unmerged), and doing it by hand
+            # would BREAK existing users -- pacman.conf(5) SigLevel Optional, which is
+            # what Arch ships as LocalFileSigLevel, makes "a signature from a key not
+            # in the keyring" a fatal error. A keyring rollout has to land first.
+            log_warn "archlinux packages are UNSIGNED: nfpm cannot sign them, and publishing a .sig before a keyring rollout would break pacman -U (see check-release-signing-coverage.sh)"
+            ;;
     esac
 fi
