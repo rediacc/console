@@ -2363,3 +2363,37 @@ works.
 
 Recorded by a session that did NOT make the fix: the failing case belongs to `8a720b7eb`
 and its evidence is there, not here.
+
+## `git log --diff-filter=A` names the RENAME, not the landing, and it does it confidently
+
+A plan file, a gate, or any tracked file that was ever MOVED has two adds in its history:
+the real one, and the one git infers at the new path. `--diff-filter=A` returns the
+second. It does not fail, warn, or return nothing; it returns a real commit that a reader
+will believe.
+
+Measured 2026-09-06 on `agent/PLAN-add-chunkstore-backup-verb.md`, whose plans were moved
+from `agent/0815-1/` to `agent/` with zero content change:
+
+    git log --diff-filter=A -- <path>           -> f7a5351a9  feat(www): simplify the marketing and docs site
+    git log --follow --diff-filter=A -- <path>  -> 120cd9e73  feat(backup): chunk-store cold path
+
+The first names a marketing-site commit as the landing of a chunk-store backup plan.
+
+**NO GATE CATCHES THIS.** `check:ci-plan-citations` resolves hex tokens against the
+repository, and `f7a5351a9` is a real object, so the citation passes every check the
+repo has. Only reading the commit's SUBJECT reveals that it has nothing to do with the
+claim it is supporting. That makes it worse than the stale-`Status:`-header problem this
+same wave was built to fix, because a header at least announces itself as a claim.
+
+The fix is `--follow`, and the discipline is to treat any result whose subject is
+unrelated to the subject under investigation as a rename artifact rather than a landing.
+Two cheaper alternatives that do not depend on rename detection at all: `git log -S
+'<distinctive string>' -- <file>` searches content history, and for a subject that lives
+in a submodule the landing is in THAT repository, where it must be named by subject line
+rather than by sha, since a gitlink is never an object in the parent.
+
+Found by a read-only investigator inside a compaction wave whose own briefing taught the
+broken command. The 22 records already written were audited and none had been fooled: one
+had discovered the trap independently and written it into its own record, and the others
+citing that commit were www plans for which it genuinely IS the landing. The brief was
+wrong; the writers were not.
