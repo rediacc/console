@@ -64,7 +64,7 @@ from rediacc_hooks import hookio, proc
 
 CHAIN = "pre-edit"
 TWIN = "pre-edit/block-edit-of-running-script.sh"
-ORDER = 6
+ORDER = 7
 
 # HOOK-CHAIN SIBLINGS ARE NOT A RUNNING JOB, and dropping the exclusion is not a
 # small over-block: every guard in a chain runs on the call carrying your edit,

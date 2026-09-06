@@ -50,7 +50,7 @@ from rediacc_hooks import hookio
 
 CHAIN = "pre-edit"
 TWIN = "pre-edit/block-suppressions.sh"
-ORDER = 3
+ORDER = 4
 
 # Narrowing 1, and the one the 2026-08-27 measurement exists for. Dropping the
 # extension test restores "does this content contain the token, anywhere, in

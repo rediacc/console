@@ -69,7 +69,7 @@ from rediacc_hooks import hookio
 
 CHAIN = "pre-edit"
 TWIN = "pre-edit/block-roundlog-write.sh"
-ORDER = 8
+ORDER = 9
 
 # CREATING one is not truncating one, and without this line the two halves of
 # the contract deadlock. Walking the documented path hit it head-on on

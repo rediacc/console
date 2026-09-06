@@ -103,10 +103,23 @@ def test_a_hit_outside_the_two_dirs_fires_on_neither(tmp_path: pathlib.Path) -> 
 
 
 def test_no_workflows_at_all_is_the_declared_divergence(tmp_path: pathlib.Path) -> None:
-    """Both halves of the one place the port is stronger, so it stays a decision.
+    """The divergence CLOSED, and this test now pins that both sides refuse.
 
-    The twin's `grep ... 2>/dev/null` cannot tell "no workflow asks for it" from
-    "there are no workflows", and reports the clean tree. The port refuses.
+    It used to assert `old_exit == 0`: the twin's `grep ... 2>/dev/null` could not
+    tell "no workflow asks for it" from "there are no workflows", and reported the
+    clean tree while the port refused. That was the one place the port was
+    stronger, recorded as a decision rather than a bug.
+
+    THE TWIN WAS THEN FIXED, in this same programme, because failing open is a
+    worse defect than a divergence: `grep` exits 2 on a missing operand WHILE
+    PRINTING its hits, so `if grep` was false and the gate printed the violation
+    and then declared the tree clean. The hardened twin checks its scan
+    directories first and reads grep's exit as three outcomes, so it now refuses
+    exactly where the port does.
+
+    Kept rather than deleted, and inverted rather than loosened: a test that
+    asserted a divergence must assert its ABSENCE once it closes, or nothing
+    notices if the twin ever fails open again.
     """
     root = tmp_path / "bare"
     (root / ".ci/scripts/quality").mkdir(parents=True)
@@ -115,8 +128,8 @@ def test_no_workflows_at_all_is_the_declared_divergence(tmp_path: pathlib.Path) 
     shutil.copy(repo / TWIN, root / TWIN)
     shutil.copy(repo / ".ci/scripts/lib/common.sh", root / ".ci/scripts/lib/common.sh")
     (old_exit, _, _), (new_exit, _, new_err) = run_both(root)
-    assert old_exit == 0, "the twin reports a clean tree with no .github at all"
-    assert new_exit == 1
+    assert old_exit == 1, "the hardened twin refuses a tree with no .github at all"
+    assert new_exit == 1, "and so does the port, which never did anything else"
     assert "scanned nothing" in new_err
 
 

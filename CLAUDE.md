@@ -537,14 +537,14 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 | Where it runs | Registered | `gate: true` | Slow | Is a gate test |
 |---|---|---|---|---|
 | (all lanes) | 455 | 445 | 90 | 148 |
-| local-only (CI never runs it) | 14 | 11 | 3 | 0 |
+| local-only (CI never runs it) | 12 | 9 | 3 | 0 |
 | step / build-renet | 1 | 1 | 1 | 0 |
 | step / quality-branch | 4 | 4 | 0 | 0 |
 | step / quality-code | 91 | 90 | 19 | 0 |
 | step / quality-content | 42 | 42 | 4 | 0 |
 | step / quality-go | 16 | 16 | 3 | 0 |
 | step / quality-i18n | 40 | 38 | 1 | 0 |
-| step / quality-packages | 12 | 12 | 7 | 0 |
+| step / quality-packages | 14 | 14 | 7 | 0 |
 | step / quality-security | 164 | 163 | 35 | 148 |
 | step / quality-static | 42 | 42 | 2 | 0 |
 | step / quality-www-build | 16 | 13 | 15 | 0 |

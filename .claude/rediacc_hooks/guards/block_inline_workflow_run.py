@@ -43,7 +43,7 @@ from rediacc_hooks import hookio
 
 CHAIN = "pre-edit"
 TWIN = "pre-edit/block-inline-workflow-run.sh"
-ORDER = 4
+ORDER = 5
 
 # The comment skip inside the block scalar. Without it every `#` line in a
 # `run: |` counts toward the limit, so a well-annotated 6-line step is refused
