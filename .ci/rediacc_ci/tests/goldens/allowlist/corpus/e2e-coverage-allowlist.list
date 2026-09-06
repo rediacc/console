@@ -1,0 +1,70 @@
+# e2e-tests coverage allowlist — renet functions shipped but not yet exercised
+# by a LIVE suite (one CI runs). Read by scripts/check-e2e-coverage.ts through
+# the shared BLOCKER contract (scripts/lib/blocker-validator.ts): every entry
+# needs a substantive reason, and an entry that BECOMES covered fails the gate
+# as stale — so this list can only shrink, never quietly harbor paid-down debt.
+#
+# This is the forward-direction allowlist ONLY (is every shipped verb tested?).
+# The reverse direction (does a test dispatch a verb renet no longer registers?)
+# lives in .ci/scripts/quality/check-e2e-coverage.sh and has no allowlist.
+
+# BLOCKER: legacy renet functions that predate the packages/e2e-tests suite and
+# are not yet exercised by any suite CI runs. The middleware-backed
+# packages/cli/tests suite that once covered them was retired; migrating each
+# into packages/e2e-tests is tracked follow-up work (the datastore-centric
+# redesign wave burns these down — repository_policy_{get,set}/repository_trim
+# land in the B4 policy/trim extension, the autostart family and repository_cat/
+# diff/ownership/prune/down_all/up_all follow). Remove a name here the moment its
+# e2e-test lands; the gate rejects a stale (now-covered) entry automatically.
+backup_delete
+backup_list
+ceph_client_mount
+ceph_client_unmount
+ceph_clone_image
+container_remove
+repository_autostart_disable
+repository_autostart_disable_all
+repository_autostart_enable
+repository_autostart_enable_all
+repository_autostart_list
+repository_cat
+repository_commit_meta
+repository_diff
+repository_down_all
+repository_ownership
+repository_prune
+repository_template_apply
+repository_up_all
+
+# BLOCKER: `backup restore` IS tested end to end, but not by a suite CI runs, and
+# this gate's question is membership in the LIVE set rather than "is it tested".
+# The proof is `programs/backup-storage/local-roundtrip.sh` (9 checks, exit 0):
+# it snapshots a real repository to a real S3 endpoint, restores it AS A
+# DIFFERENT REPO, and byte-compares source against restored -- the instrument
+# proved twice over, once by diffing against an older restore (`differ: byte
+# 16778241`) and once by planting a byte and requiring `cmp` to notice.
+#
+# It cannot confer coverage because `packages/e2e-tests/playwright.backup-storage.config.ts`
+# is run by NO workflow (verified: zero matches for `backup-storage.config` across
+# .github/workflows and .ci), so suite 26 is not in LIVE_CONFIG_REGISTRY. Wiring
+# it in needs a live account server plus a real machine in CI, which is the
+# cutover work this wave deliberately does not carry.
+#
+# This entry expires itself: the gate REJECTS an allowlisted name that becomes
+# covered, so the day suite 26 goes live this line fails until it is deleted.
+backup_restore
+
+# BLOCKER: machine_uninstall tears the renet install off a machine, so exercising
+# it means sacrificing the very VM the rest of the suite runs on. No live config
+# provisions a throwaway machine for it, and adding one is fleet work this wave
+# does not carry.
+#
+# It was NEVER covered. It only looked covered because the header comment of
+# 01-system-checks.test.ts lists the whole setup DOMAIN, and check-e2e-coverage
+# counted a verb literal appearing anywhere in a live suite -- comments included.
+# Stripping comments from that scan is what surfaced this, so the entry is a
+# pre-existing debt made visible rather than a new one.
+#
+# This entry expires itself: the gate REJECTS an allowlisted name that becomes
+# covered, so the day a suite really drives it, this line fails until deleted.
+machine_uninstall

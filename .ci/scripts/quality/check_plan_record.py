@@ -93,6 +93,7 @@ sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))
 
 try:
     import wl_checks as CK
+    import wl_planindex as PI
     import wl_planrec as R
 except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-vacuity.sh
     # A check that cannot see must SAY it cannot see. The record grammar lives in
@@ -298,7 +299,7 @@ def problems_for(root, rel, text, current_ledger):
     return out
 
 
-def index_problems(root, rows, update=False):
+def index_problems(root, rows, census="", update=False):
     """R8. `agent/INDEX.md` is a second reading of the records, so it is checked
     for EQUALITY rather than for containment: a stale row is exactly as wrong as
     a missing one, and only equality catches both.
@@ -306,8 +307,20 @@ def index_problems(root, rows, update=False):
     An EMPTY render means "no records", and an ABSENT file is equal to it. A repo
     with nothing compacted must not be forced to carry a generated table that
     says nothing -- that is the committed-lie shape `agent/README.md:11` names.
+
+    W12 P1.7: `census` IS THE SECOND HALF OF THE SAME FILE, and it is checked by
+    the same equality for the same reason. `wl_planindex` renders a `## Plan
+    census` section that SessionStart reads INSTEAD of opening all 83 plans; the
+    hook's own freshness check is `stat` only (path set plus byte size), so a plan
+    edited to the same length is invisible to it. This byte-equality against a
+    full re-read is the half that catches that, which is the only reason the hook
+    is allowed to trust the file at all.
+
+    It defaults to "" so the R8 controls below, which run in a fixture whose plan
+    set is not the one being censused, keep comparing exactly what they always
+    compared. Only the real-tree call site at the bottom passes a census.
     """
-    want = R.render_index(rows)
+    want = R.render_index(rows) + census
     path = pathlib.Path(root) / R.INDEX_REL
     try:
         got = path.read_text(encoding="utf-8")
@@ -320,11 +333,16 @@ def index_problems(root, rows, update=False):
         print(f"✓ wrote {R.INDEX_REL}: {len(rows)} record(s)")
         return []
     if not want:
-        # ZERO RECORDS AND A NON-EMPTY INDEX. `--update` deliberately does NOT
-        # "fix" this by truncating the file: nothing in this program deletes a
-        # committed document, and an --update that silently emptied one would be
-        # the first. It is reported in both modes, with the removal left to a
-        # person who can see what the file still claims.
+        # ZERO RECORDS, NO CENSUS, AND A NON-EMPTY INDEX. `--update` deliberately
+        # does NOT "fix" this by truncating the file: nothing in this program
+        # deletes a committed document, and an --update that silently emptied one
+        # would be the first. It is reported in both modes, with the removal left
+        # to a person who can see what the file still claims.
+        #
+        # Since W12 P1.7 this branch is only reachable when there are no plans
+        # EITHER, because any plan at all renders a census and makes `want`
+        # non-empty. That is the correct narrowing: an index over a tree with no
+        # plans and no records really is a document that says nothing.
         return [
             (
                 f"{R.INDEX_REL} exists ({len(got)} bytes) but there are no compacted or "
@@ -333,11 +351,20 @@ def index_problems(root, rows, update=False):
                 f"committed document."
             )
         ]
+    # THE CENSUS IS NAMED SEPARATELY. Once agent/INDEX.md carries both tables, a
+    # message about "the records on disk" sends the reader to look at the record
+    # table when the drift is almost always in the census: 83 plans change far
+    # more often than a handful of compaction records do, and SessionStart is
+    # what reads the census. Saying "0 record(s)" and nothing else is how a
+    # correct verdict gets dismissed as a stale gate.
+    n_census = len(PI.parse_census(census)) if census else 0
     return [
         (
-            f"{R.INDEX_REL} disagrees with the records on disk "
+            f"{R.INDEX_REL} disagrees with what is on disk "
             f"({len(got)} bytes present, {len(want)} bytes derived from "
-            f"{len(rows)} record(s)). Regenerate and commit it:\n"
+            f"{len(rows)} record(s) and {n_census} plan census row(s)). "
+            f"SessionStart reads the census section, so a stale one puts every "
+            f"session on the slow fallback. Regenerate and commit it:\n"
             f"      npm run check:ci-plan-record -- --update\n"
             f"      git add {R.INDEX_REL}"
         )
@@ -638,6 +665,51 @@ def selftest():
             f"render_index([])={R.render_index([])!r} problems={index_problems(root, [])}",
         )
 
+        # R8 CENSUS (W12 P1.7), both directions. The census is the half of
+        # agent/INDEX.md that SessionStart reads instead of opening every plan, and
+        # the hook's own freshness check is `stat` only. So this equality is the
+        # ONLY thing standing between a plan edited to the same byte length and a
+        # session reading a confidently wrong number. A control that only proved
+        # the matching case would leave that unproven.
+        cen = PI.render_census(PI.census_rows(root))
+        ck(
+            "R8 CENSUS CONTROL: the fixture renders a non-empty census naming the plan",
+            PI.CENSUS_SECTION in cen and rel in cen,
+            f"{cen[:160]!r}",
+        )
+        # THE PERTURBATION IS ASSERTED TO BE ONE. `str.replace` over a pattern
+        # that is not there is a no-op, and a "stale census" that is byte-identical
+        # to the fresh one would make the next control pass for the wrong reason.
+        drifted = cen.replace("| %d |" % len(cen.splitlines()), "| 99999 |", 1)
+        if drifted == cen:
+            drifted = cen.replace(f"`{rel}`", "`agent/PLAN-not-on-disk.md`", 1)
+        ck(
+            "R8 CENSUS CONTROL: the perturbation actually changes the census text",
+            drifted != cen,
+            "the drifted census is byte-identical to the fresh one",
+        )
+        R.write_atomic(root / R.INDEX_REL, R.render_index(rows) + cen)
+        ck(
+            "R8 CENSUS CONTROL: an index carrying the matching census is silent",
+            index_problems(root, rows, census=cen) == [],
+            f"got {index_problems(root, rows, census=cen)}",
+        )
+        ck(
+            "R8 CENSUS: an index whose census disagrees with the plans is reported",
+            index_problems(root, rows, census=drifted) != [],
+            "a drifted census was accepted",
+        )
+        # AND THE MISSING-CENSUS DIRECTION. An index that still carries only the
+        # record table, once a census is due, is exactly as wrong as a stale one:
+        # the hook would read CENSUS_ABSENT and fall back forever.
+        R.write_atomic(root / R.INDEX_REL, R.render_index(rows))
+        ck(
+            "R8 CENSUS: an index carrying NO census when one is due is reported",
+            index_problems(root, rows, census=cen) != [],
+            "an index with no census section was accepted",
+        )
+        (root / R.INDEX_REL).unlink()
+
         # THE ANTI-VACUITY CONTROL FOR THE WHOLE GATE: a plain plan is not a
         # record and must produce NOTHING. Without this, a parse() that returned
         # a record for every file would look identical to a clean tree.
@@ -697,7 +769,17 @@ def main(argv):
         problems.extend(problems_for(ROOT, rel, text, current))
 
     rows = R.index_rows(ROOT, recs)
-    problems.extend(index_problems(ROOT, rows, update=update))
+    # THIS DOES OPEN EVERY PLAN, and saying otherwise would be the wrong trade
+    # described the wrong way round. `recs` is reused so the directory is not
+    # walked twice, but `plan_box_census` reads all 83 files to count boxes. That
+    # cost is deliberately paid HERE, once per CI run, so that SessionStart and
+    # PostCompact -- which fire on every session and every compaction -- pay one
+    # file read instead. The point was never to stop reading the plans; it was to
+    # stop reading them on the interactive path.
+    census = PI.render_census(
+        PI.census_rows(ROOT, plan_records=lambda _r: recs, plan_box_census=CK.plan_box_census)
+    )
+    problems.extend(index_problems(ROOT, rows, census=census, update=update))
 
     if problems:
         print(
@@ -719,7 +801,9 @@ def main(argv):
         f"✓ plan records: {len(recs)} plan file(s) (floor {MIN_PLAN_FILES}), "
         f"{n_records} compacted or parked record(s), every pointer resolves, every "
         f"`done=` is attested by {R.LEDGER_REL} at the commit it names, and "
-        f"{R.INDEX_REL} matches."
+        f"{R.INDEX_REL} matches, census section included "
+        f"({len(PI.parse_census(census))} plan row(s) SessionStart reads instead of "
+        f"opening the plans)."
     )
     if n_records == 0:
         print(

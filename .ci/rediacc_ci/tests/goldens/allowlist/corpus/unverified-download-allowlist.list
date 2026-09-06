@@ -1,0 +1,25 @@
+# Remote artifacts a Dockerfile installs WITHOUT cryptographic verification.
+#
+# Read by scripts/check-unverified-downloads.ts. An entry is a substring of the
+# URL (or the image ref) that identifies the fetch, e.g. `awscli.amazonaws.com`.
+#
+# THE BAR IS "no verification is POSSIBLE", not "no verification is convenient".
+# If upstream publishes a sha256, a checksums.txt, or a release-API digest, pin it
+# instead of adding a line here -- five downloads were fixed that way on
+# 2026-09-01 and only these needed an exemption.
+#
+# Each entry needs a substantive BLOCKER reason (>=30 chars, no banned phrases),
+# validated by scripts/lib/blocker-validator.ts, and its liveness is probed by
+# scripts/check-suppression-liveness.ts.
+
+# BLOCKER: AWS publishes no sha256 for the CLI bundle -- the .sha256 URL returns 404 -- only a GPG .sig, which needs their signing key imported first; revisit if a checksum ever appears
+awscli.amazonaws.com
+
+# BLOCKER: piped straight into bash, so there is no artifact on disk to hash; only vendoring the installer script into this repo would make it verifiable
+raw.githubusercontent.com/nvm-sh/nvm
+
+# BLOCKER: piped straight into bash, same shape as the nvm installer above; the vendor publishes no pinned, checksummed release artifact to use instead
+claude.ai/install.sh
+
+# BLOCKER: this is an apt KEYRING, and apt itself verifies every package installed from that repo against it via signed-by, so the packages are covered even though this fetch is not
+download.docker.com/linux/ubuntu/gpg

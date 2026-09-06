@@ -4,9 +4,14 @@
 #   .ci/media/coverage.sh            report every module
 #   .ci/media/coverage.sh --min N    also exit 1 if any module is below N percent
 #   .ci/media/coverage.sh --uncovered <module>   list the lines nothing reached
-#   .ci/media/coverage.sh --only <test-name>     measure ONE gate test rather than all ten
+#   .ci/media/coverage.sh --only <test-name>     measure ONE gate test rather than the whole
+#                                    media battery
+#   .ci/media/coverage.sh --modules-without-tests  name the modules NO gate test drives,
+#                                    and exit 1 if there are any. Runs nothing, so it is
+#                                    instant; see the section that implements it for why
+#                                    it is an assertion while the percentage is not.
 #
-# WHY THIS EXISTS, AND WHAT IT IS NOT. The eight module gate tests were written subject by
+# WHY THIS EXISTS, AND WHAT IT IS NOT. The per-module gate tests were written subject by
 # subject, and each one argues in its header for the properties it asserts. What no header
 # can say is how much of its module those properties TOUCH. A file can have a confident
 # test suite, a green gate and a hundred lines that no test has ever run, and the way that
@@ -54,12 +59,21 @@ set -euo pipefail
 
 MEDIA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$MEDIA_DIR/../.." && pwd)"
-GATES="$ROOT_DIR/.ci/scripts/test/gates"
+
+# TWO SEAMS, and they exist so the assertion below can be driven against a fixture rather
+# than against the only tree it will ever see. A check whose corpus is hard-wired to the
+# real folder cannot be shown to FIRE: the real folder is clean, so the check prints
+# nothing, and "nothing" is what a broken check prints too. Pointing both roots at a
+# staged pair of directories is the only way to plant an untested module and watch it get
+# named. Unset in every normal run.
+SUBJECT_DIR="${MEDIA_COVERAGE_MODULE_DIR:-$MEDIA_DIR}"
+GATES="${MEDIA_COVERAGE_GATES_DIR:-$ROOT_DIR/.ci/scripts/test/gates}"
 
 MIN=""
 UNCOVERED=""
-# --only exists so the probe's own machinery can be gated cheaply. A full run drives all ten
-# media gate tests, which is far too slow for `npm run ci`; test-media-docs.sh measures one
+UNTESTED_ONLY=""
+# --only exists so the probe's own machinery can be gated cheaply. A full run drives EVERY
+# media gate test, which is far too slow for `npm run ci`; test-media-docs.sh measures one
 # fast test and asserts that the result is non-vacuous, which is what keeps this file from
 # rotting into a script that reports zeroes and is never read.
 ONLY="*"
@@ -77,8 +91,12 @@ while [ $# -gt 0 ]; do
             ONLY="$2"
             shift 2
             ;;
+        --modules-without-tests)
+            UNTESTED_ONLY=1
+            shift
+            ;;
         *)
-            echo "Usage: .ci/media/coverage.sh [--min <percent>] [--uncovered <module.sh>]" >&2
+            echo "Usage: .ci/media/coverage.sh [--min <percent>] [--uncovered <module.sh>] [--only <test>] [--modules-without-tests]" >&2
             exit 1
             ;;
     esac
@@ -92,12 +110,91 @@ trap 'rm -rf "$TRACE_DIR"' EXIT
 # instrument. The list is derived rather than typed so a new module is included the day it
 # lands, which is the opposite of how a hand-typed list behaves.
 modules=()
-for f in "$MEDIA_DIR"/*.sh; do
+for f in "$SUBJECT_DIR"/*.sh; do
+    [ -f "$f" ] || continue
     case "$(basename "$f")" in
         verify.sh | coverage.sh) continue ;;
     esac
     modules+=("$(basename "$f")")
 done
+
+# ---------------------------------------------------------------------------
+# MODULES WITH NO TEST AT ALL, which is a different question from a low percentage and is
+# the one this file could not answer until 2026-09-06.
+#
+# WHY THE PERCENTAGE DOES NOT ANSWER IT. media-entry.sh reads 0 percent and is one of the
+# most heavily driven files here: its tests run a sandbox COPY, and the header above
+# explains at length why counting the copy would be wrong. So zero means either "no test
+# runs this file itself" or "no test exists", and those two are the same number. A module
+# that landed with no test would sit next to media-entry.sh's honest zero and look
+# accounted for.
+#
+# THE PREDICATE IS "NAMED OUTSIDE A COMMENT", and the comment half is load-bearing rather
+# than fussy. Every one of these gate tests opens with a long header, and those headers
+# name sibling modules while arguing about scope -- test-media-docs.sh mentions pool.sh in
+# prose and drives none of it. Counting prose would let a module be "covered" by somebody
+# writing its name in a paragraph, which is the cheapest possible way to satisfy a check
+# and the least useful. Code that names a module is code that reaches for it.
+#
+# THIS IS AN ASSERTION, NOT A MEASUREMENT, and it is the one thing in this file that exits
+# non-zero on its own account. The distinction the header draws still holds: a percentage
+# is a metric and would get optimised, so it has no floor. "Does a test exist" is binary,
+# it has exactly one correct answer, and the answer today is that every module has one.
+# ---------------------------------------------------------------------------
+
+# named_outside_a_comment <module-basename> -- true when some media gate test names it in
+# code. NO `| grep -q`: this repository gates that shape (check:ci-pipefail-grep-q),
+# because grep -q closes the pipe and the writer dies of SIGPIPE, which under `set -o
+# pipefail` is a 141 the caller reads as a failure.
+#
+# `-H` IS NOT DECORATION AND COST ME A WRONG ANSWER. grep omits the filename prefix when it
+# is handed exactly ONE file, so the comment filter below -- which anchors on
+# `<file>:<line>:` -- silently stopped matching the moment the glob resolved to a single
+# test. Measured 2026-09-06 on a two-file fixture: a module named only inside a header
+# comment was reported as TESTED, which is precisely the false negative this predicate
+# exists to avoid. The real folder has eleven gate tests and would have hidden it forever.
+named_outside_a_comment() {
+    local hits
+    hits="$({ grep -Hn -F -- "$1" "$GATES"/test-media-*.sh 2>/dev/null || true; } |
+        { grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true; })"
+    [ -n "$hits" ]
+}
+
+modules_without_tests() {
+    local m
+    for m in "${modules[@]:-}"; do
+        [ -n "$m" ] || continue
+        named_outside_a_comment "$m" || printf '%s\n' "$m"
+    done
+}
+
+# VACUITY FIRST. An empty subject list makes the loop above report nothing, and nothing is
+# also what a fully tested folder reports. The two have to be told apart here or this whole
+# section is a check that cannot fail.
+if [ "${#modules[@]}" -eq 0 ]; then
+    echo "coverage: no subject modules under $SUBJECT_DIR, so 'which modules have no test' has nothing to answer about" >&2
+    exit 1
+fi
+
+untested="$(modules_without_tests)"
+if [ -n "$UNTESTED_ONLY" ]; then
+    if [ -n "$untested" ]; then
+        printf '%s\n' "$untested"
+        echo "coverage: the module(s) above are named by no media gate test outside a comment, so nothing exercises them" >&2
+        exit 1
+    fi
+    echo "every module under $SUBJECT_DIR is named in the code of at least one media gate test"
+    exit 0
+fi
+
+# THE SEAM IS FOR THE ASSERTION ONLY, and saying so beats discovering it. Everything below
+# resolves trace line numbers against the REAL folder's absolute paths, so a fixture
+# SUBJECT_DIR would make every module read zero percent and the report would be a
+# confident lie rather than an error.
+if [ -n "${MEDIA_COVERAGE_MODULE_DIR:-}" ]; then
+    echo "coverage: MEDIA_COVERAGE_MODULE_DIR is only meaningful with --modules-without-tests; the percentage below would be measured against traces from a different folder" >&2
+    exit 1
+fi
 
 # RUN THE SUITE UNDER TRACE. Every media gate test, each into its own trace file, with
 # failures tolerated: a red gate still produces a trace, and refusing to report coverage
@@ -178,6 +275,19 @@ if [ "${#failed[@]}" -gt 0 ]; then
     echo ""
     echo "note: these gate tests FAILED during the measured run, so their module's number is" >&2
     echo "      a floor and nothing more: ${failed[*]}" >&2
+fi
+
+# THE SAME ASSERTION, REPEATED IN THE FULL REPORT, because the full report is what a person
+# actually runs and a check nobody sees is a check nobody has. It is printed AFTER the table
+# so the zeroes above have their explanation next to them: a module in this list reads zero
+# because nothing tests it, and a module absent from it that still reads zero is exercised
+# only through the sandboxed chain.
+if [ -n "$untested" ]; then
+    echo ""
+    echo "MODULES WITH NO TEST AT ALL (no media gate test names them outside a comment):"
+    printf '%s\n' "$untested" | while IFS= read -r _m; do printf '  %s\n' "$_m"; done
+    echo "coverage: the module(s) above are named by no media gate test outside a comment, so nothing exercises them" >&2
+    exit 1
 fi
 
 if [ -n "$MIN" ]; then

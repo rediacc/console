@@ -1666,9 +1666,10 @@
     "gate": true,
     "paths": [
       "agent/PLAN-*.md",
-      ".ci/config/plan-boxes.json",
+      "agent/INDEX.md",
+      ".ci/scripts/quality/check_plan_record.py",
       ".claude/hooks/stop/wl_planrec.py",
-      ".ci/scripts/quality/check_plan_record.py"
+      ".claude/hooks/stop/wl_planindex.py"
     ],
     "leaves": [
       ".ci/scripts/quality/check_plan_record.py"
@@ -1715,6 +1716,35 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-code",
       "step": "Gates lock"
+    }
+  },
+  {
+    "id": "check:ci-doc-region-parity",
+    "run": "npm run check:ci-doc-region-parity",
+    "gate": true,
+    "leaves": [
+      "scripts/check-doc-region-parity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Doc region parity"
+    }
+  },
+  {
+    "id": "gate-test:doc-region-parity",
+    "run": ".ci/scripts/test/gates/test-doc-region-parity.sh",
+    "gate": true,
+    "qualityGateTest": true,
+    "leaves": [
+      ".ci/scripts/test/gates/test-doc-region-parity.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Quality-gate unit tests"
     }
   },
   {

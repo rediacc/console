@@ -1,0 +1,40 @@
+# Packages blocked from auto-upgrade (require manual migration).
+#
+# NOTE: do NOT add entries for versions that are merely too fresh. check-deps.ts
+# reads .npmrc `minimum-release-age` and automatically defers (does not fail on)
+# any `latest` published inside that window — npm cannot install it yet anyway,
+# and it clears itself once the version ages out. Only blocklist packages held
+# back for a real reason (breaking major, native rebuild, pin conflict, etc.).
+#
+# Format: package-name  # BLOCKER: <substantive reason>
+#
+# The BLOCKER convention is enforced by scripts/lib/blocker-validator.ts
+# (invoked from scripts/check-deps.ts): each line needs a 30+ char reason
+# that does not match the banned-phrase list. Blank line = end of group.
+#
+# To upgrade a blocked package: remove its line from this file and run
+#   npm run check:deps -- --upgrade
+
+# ESLint v10 — blocked until typescript-eslint, eslint-plugin-import, eslint-plugin-react support v10
+@eslint/js  # BLOCKER: v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
+
+# Astro/React integration
+@astrojs/react  # BLOCKER: 6.x is a major on the Astro integration stack while astro itself is deliberately held on the 5 line (see the astro entry below); move it with that migration, not standalone. Only the major is blocked — in-range 5.0.x patches still upgrade normally.
+@astrojs/mdx  # BLOCKER: v5.x requires astro@^6.0.0; we are on astro 5.x and astro v6 migration is not scheduled
+astro  # BLOCKER: www is built on the astro 5 line; v6/v7 are breaking majors covering the whole site build — same unscheduled-migration hold as @astrojs/mdx, take them together as a dedicated project
+
+# glob is pinned by the root overrides entry (see package.json _overridesReasons.glob)
+glob  # BLOCKER: root overrides force glob ^11 tree-wide and npm EOVERRIDE requires the declared devDep range to equal the override, so the v13 major cannot be taken until the override family is re-evaluated
+
+# @types/node major must match Node engine version (22.x)
+@types/node  # BLOCKER: v25+ targets Node 25 APIs; our engines field and CI runners are on Node 22
+
+# eslint-plugin-unicorn v66 — major release with new/renamed lint rules
+eslint-plugin-unicorn  # BLOCKER: v66 is a major release that adds and renames lint rules which would surface new violations across the whole monorepo; adoption deferred to a dedicated lint-tooling PR that audits and fixes the rule-set changes
+
+# playwright — E2E/test runner; any version bump changes the bundled browser revisions
+playwright  # BLOCKER: a playwright version bump changes the bundled browser revisions, so it is never a drop-in dependency bump — the pinned browsers must be re-downloaded (npx playwright install) and the E2E/bridge suites re-validated against the new revisions in the same change; take any future bump together with that test-infra revalidation
+@playwright/test  # BLOCKER: same hold as playwright above, and not a separate judgement call — @playwright/test@X depends on playwright@X pinned EXACTLY (verified: @playwright/test@1.62.0 -> "playwright": "1.62.0"), so upgrading it upgrades the browser revisions the entry above defers. Listing only `playwright` left the gate demanding the bump through its sibling; move both with the E2E/bridge revalidation.
+# ESLint v10 core — same constraint as @eslint/js: plugin ecosystem lacks v10 support
+eslint  # BLOCKER: v10 requires typescript-eslint/import/react plugin majors that have no eslint v10 peer support yet; take together with @eslint/js in a dedicated lint-tooling PR
+

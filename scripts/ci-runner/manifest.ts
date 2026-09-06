@@ -1635,13 +1635,15 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     paths: [
       'agent/PLAN-*.md',
-      // NOT agent/INDEX.md yet. The gate compares it against its own render, but the
-      // file is written by the first --plan-compact and no plan has been compacted, so
-      // declaring it here is a glob matching nothing -- which can only ever exclude.
-      // It goes in with the compaction wave, alongside the file itself.
-      '.ci/config/plan-boxes.json',
-      '.claude/hooks/stop/wl_planrec.py',
+      // agent/INDEX.md joined the gate's subject on 2026-09-06 with W12 P1.7. It used to
+      // be excluded on the correct reasoning that no plan had been compacted, so the glob
+      // matched nothing and could only exclude. It now exists and carries the plan census
+      // that SessionStart reads instead of opening 83 files, and R8 compares it byte for
+      // byte, so a hand-edit must reach the only gate that checks it.
+      'agent/INDEX.md',
       '.ci/scripts/quality/check_plan_record.py',
+      '.claude/hooks/stop/wl_planrec.py',
+      '.claude/hooks/stop/wl_planindex.py',
     ],
     leaves: ['.ci/scripts/quality/check_plan_record.py'],
     ci: {
@@ -1688,6 +1690,42 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-code',
       step: 'Gates lock',
+    },
+  },
+  {
+    // The parity half of scripts/gen-docs.ts, and the reason it is NOT a strict subset of
+    // gate-test:docs-gen: gen-docs DISCOVERS its targets by scanning for markers and refuses
+    // only when the target list is EMPTY, while that gate test asserts merely that at least
+    // one target was found. So a document that loses its markers stops being checked instead
+    // of failing, silently, with both green. Measured: strip CLAUDE.md's two marker lines and
+    // gen-docs still exits 0 saying `ok CLAUDE.md`. That is the rediacc/console#549 class and
+    // invariant 1, an emitter landing without its checker.
+    //
+    // No `paths:` DELIBERATELY. Its providers read the gates lock, the hook wiring, every
+    // tracked file carrying BLOCKER: and the whole .ci tree, so any list short of "the
+    // repository" is wrong, and a half-populated one makes --changed drop the gate silently.
+    id: 'check:ci-doc-region-parity',
+    run: 'npm run check:ci-doc-region-parity',
+    gate: true,
+    leaves: ['scripts/check-doc-region-parity.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Doc region parity',
+    },
+  },
+  {
+    id: 'gate-test:doc-region-parity',
+    run: '.ci/scripts/test/gates/test-doc-region-parity.sh',
+    gate: true,
+    qualityGateTest: true,
+    leaves: ['.ci/scripts/test/gates/test-doc-region-parity.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
     },
   },
   {

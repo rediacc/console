@@ -2530,11 +2530,13 @@ CLI_PLANWHY_NO_EDGE = (
 )
 
 CLI_PLANWHY_NO_INDEX = (
-    "nothing is recorded about %(path)s, because there is no index to read.\n"
+    "nothing is recorded about %(path)s, because there is no edge table to read.\n"
     "\n"
-    "%(index)s does not exist. That is the CORRECT state until the first plan is\n"
-    "compacted -- an empty generated table would be a document that says nothing --\n"
-    "so this is not a fault to fix. It becomes an answer as soon as a record exists:\n"
+    "%(index)s carries no record edges -- either the file is absent, or (since W12\n"
+    "P1.7) it exists carrying only the `## Plan census` SessionStart reads. Both are\n"
+    "the CORRECT state until the first plan is compacted -- an empty generated table\n"
+    "would be a document that says nothing -- so this is not a fault to fix. It\n"
+    "becomes an answer as soon as a record exists:\n"
     "\n"
     "  worklist.py --plan-compact <me>              what can be compacted today\n"
     "  npm run check:ci-plan-record -- --update     writes the index\n"

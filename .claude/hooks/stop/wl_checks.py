@@ -25,6 +25,7 @@ import wl_judge
 import wl_liveness
 import wl_planfid
 import wl_planfile
+import wl_planindex as PI
 import wl_reggate
 import wl_report
 import wl_requests
@@ -1380,33 +1381,80 @@ def plans_block(root):
 
     Each line carries its BOX COUNTS, and two summary lines carry the tree-wide
     totals -- see plan_box_census for why the per-stop advisory cannot supply them.
+
+    W12 P1.7: THE NUMBERS COME FROM `agent/INDEX.md` NOW, not from opening every
+    plan. Measured on this tree before the change, 166 `read_text` calls across 83
+    files and 2,018,737 bytes, on every SessionStart and every PostCompact, to
+    print 56 lines. `wl_planindex.index_census` answers the same question from ONE
+    file read plus a `stat` per plan.
+
+    THE FALLBACK IS THE OLD PATH AND IT IS LOUD. An absent or stale index does not
+    shorten this listing and does not empty it -- it rebuilds it by reading the
+    plans, exactly as before, and PREPENDS a banner naming the state, the
+    disagreement and the regeneration command. A plans block that went quiet
+    because its index was missing would be a worse defect than the cost it saves,
+    so the degraded path is slow-and-correct and never fast-and-blind.
     """
-    recs = plan_records(root)
-    live = [r for r in recs if r[1] not in PLAN_DONE_STATES]
-    if not live:
+    stats = PI.plan_stats(root)
+    if not stats:
         return "", []
-    counts, o_tot, d_tot, in_scope, exempt = plan_box_census(root, recs)
+    rows, state, detail = PI.index_census(root, stats=stats)
+    if state != PI.CENSUS_FRESH:
+        rows = PI.census_rows(root, plan_records=plan_records, plan_box_census=plan_box_census)
+    head = PI.banner(state, detail, len(stats))
+    # NEWEST FIRST, restored from the `stat` pass rather than from the committed
+    # file. `plan_records` has always sorted this way and `plan_status_excerpt`
+    # takes `live[0]` as "the newest live plan", so an index that dropped mtime
+    # would silently change which plan a compacted session gets excerpted. The
+    # sort is stable, so the by-path order inside an mtime tie is the same order
+    # `sorted(d.glob(...))` gave the old path.
+    mtimes = {rel: mt for rel, _sz, mt in stats}
+    rows = sorted(rows, key=lambda r: -mtimes.get(r[0], 0.0))
+    live = [r for r in rows if r[1] not in PLAN_DONE_STATES]
+    if not live:
+        # PLANS EXIST BUT NONE ARE LIVE. This used to return ("", []), which made
+        # "every plan is done" indistinguishable from "this project has no plans"
+        # -- both printed nothing. It is a real and reportable state, so it now
+        # renders its summary lines. The `not stats` guard above still returns
+        # ("", []) for a project with no plans at all, which is the case the
+        # early return was actually written for.
+        tail = _plan_census_summary(rows)
+        return (head + "\n".join(tail)) if tail else "", []
     lines = []
-    for rel, status, n in live:
-        boxes = counts.get(rel)
-        suffix = ", %d open box(es), %d ticked" % boxes if boxes else ""
+    for rel, status, n, n_open, n_done, _size in live:
+        suffix = ", %d open box(es), %d ticked" % (n_open, n_done) if (n_open or n_done) else ""
         lines.append("  %s [%s] (%d lines%s)" % (rel, status, n, suffix))
-    done = len(recs) - len(live)
+    done = len(rows) - len(live)
     if done:
         lines.append(
             "  (+%d done or superseded plan(s) in the same directory: historical "
             "record, read one only if you need the reasoning behind it)" % done
         )
-    if counts:
-        lines.append(
-            "  %d plan file(s) carry %d open box(es) and %d ticked, tree-wide."
-            % (len(counts), o_tot, d_tot)
-        )
-        lines.append(
-            "  %d of them are in scope for the per-stop advisory; %d are exempt by "
-            "Status, so their boxes are counted HERE and nowhere else." % (in_scope, exempt)
-        )
-    return "\n".join(lines), live
+    lines.extend(_plan_census_summary(rows))
+    return head + "\n".join(lines), [(r[0], r[1], r[2]) for r in live]
+
+
+def _plan_census_summary(rows):
+    """The two tree-wide totals lines, or [] when no plan carries a box.
+
+    Split out of plans_block because both of its exits need them and because the
+    arithmetic is the part that has to agree with `plan_box_census` exactly: a
+    plan with no boxes contributes NO row to the counts, which is why the filter
+    is on `(open or ticked)` and not on the plan set.
+    """
+    boxed = [r for r in rows if r[3] or r[4]]
+    if not boxed:
+        return []
+    o_tot = sum(r[3] for r in boxed)
+    d_tot = sum(r[4] for r in boxed)
+    in_scope = sum(1 for r in boxed if wl_planfile.in_scope_status(r[1]))
+    return [
+        "  %d plan file(s) carry %d open box(es) and %d ticked, tree-wide."
+        % (len(boxed), o_tot, d_tot),
+        "  %d of them are in scope for the per-stop advisory; %d are exempt by "
+        "Status, so their boxes are counted HERE and nowhere else."
+        % (in_scope, len(boxed) - in_scope),
+    ]
 
 
 def plan_status_excerpt(root, live):

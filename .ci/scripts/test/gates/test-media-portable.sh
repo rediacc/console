@@ -45,10 +45,20 @@ ABC_SHA256="edeaaff3f1774ad2888673770c6d64097e391bc362d7d6fb34982ddf0efd18cb"
 # resolved at SOURCE time by a command -v probe: a fallback test has to source the module
 # again with the emptied PATH in effect, not reuse the array this file already holds.
 # Output merged into LAST_PORTABLE; the return value is the code's.
+#
+# THE COVERAGE PRELUDE IS SPLICED IN, and leaving it out was a measurement defect rather
+# than a style slip. This file does not go through media_run_module -- it needs a shell
+# that sources ONLY portable.sh -- so it never inherited verify.sh's MEDIA_COVERAGE_FILE
+# seam, and .ci/media/coverage.sh therefore reported portable.sh at 7 PERCENT while a
+# 260-line gate test drove every seam in it three ways. That number was not a fact about
+# the tests, it was a fact about the instrument, and it pointed a reader at the one module
+# in this folder with the most thorough suite as the one most in need of tests. The prelude
+# is empty when MEDIA_COVERAGE_FILE is unset, so a normal run is unchanged, and the trace
+# goes to descriptor 9 rather than onto the streams captured below.
 LAST_PORTABLE=""
 probe_portable() {
     local rc=0
-    LAST_PORTABLE="$("$BASH" -c "source '$MODULE'; $1" 2>&1)" || rc=$?
+    LAST_PORTABLE="$("$BASH" -c "$(_media_coverage_prelude) source '$MODULE'; $1" 2>&1)" || rc=$?
     return "$rc"
 }
 
@@ -205,9 +215,20 @@ test_every_seam_refuses_out_loud_when_nothing_answers() {
 #   - any line calling _bridge_ssh, whose argument is a command that runs ON THE BRIDGE VM.
 #     That host is Linux by construction and seaming its `sha256sum` would be a category
 #     error: the seam picks a spelling for THIS machine.
+#
+# THREE MORE SPELLINGS WERE ADDED 2026-09-06, and the reason they were missing is worth
+# more than the patterns. The original set covers the tools portable.sh has a SEAM for, so
+# it was derived from the seam module: every function in there earned a pattern. That is a
+# scan that can only ever police what has already been fixed. `sed -i`, `readlink -f` and
+# `date -d` have no seam because nothing in this folder uses them -- which is exactly why
+# they are the ones that get written next by somebody on a Linux box, and none of the three
+# does what it says on macOS: BSD sed's `-i` demands a backup suffix, BSD readlink has no
+# `-f` at all, and BSD date reads `-d` as "daylight savings" rather than a date to parse.
+# Measured against this folder the day they were added: zero findings, so they cost nothing
+# today and refuse the careless version tomorrow.
 unseamed_uses() {
     local dir="$1"
-    grep -rnE '(\bnproc\b|\bsha256sum\b|\bshasum\b|stat -c|stat -f|grep -[a-zA-Z]*P|MemAvailable)' \
+    grep -rnE '(\bnproc\b|\bsha256sum\b|\bshasum\b|stat -c|stat -f|grep -[a-zA-Z]*P|MemAvailable|\bsed\b([[:space:]]+-[A-Za-z.]+)*[[:space:]]+-i|\breadlink\b[[:space:]]+-[A-Za-z]*f|\bdate\b[[:space:]]+-[A-Za-z]*d)' \
         --include='*.sh' "$dir" 2>/dev/null |
         grep -v '/portable\.sh:' |
         grep -vE '^[^:]+:[0-9]+:\s*#' |
@@ -220,7 +241,7 @@ test_no_unseamed_platform_tool_remains_in_this_folder() {
     [ -z "$found" ] || log_fail "un-seamed platform tools in .ci/media:
 $found
 Route each through .ci/media/portable.sh, or, if it genuinely runs on another machine, say so at the call site the way the bridge's remote hash does."
-    log_pass "no file in .ci/media names nproc, sha256sum, shasum, stat -c, stat -f, grep -P or MemAvailable outside the seam module"
+    log_pass "no file in .ci/media names nproc, sha256sum, shasum, stat -c, stat -f, grep -P, MemAvailable, sed -i, readlink -f or date -d outside the seam module"
 }
 
 test_the_unseamed_scan_can_fail() {
@@ -238,7 +259,9 @@ test_the_unseamed_scan_can_fail() {
 
     for spelling in 'x="$(nproc)"' 'h="$(sha256sum f)"' 'h="$(shasum -a 256 f)"' \
         't="$(stat -c %Y f)"' 't="$(stat -f %m f)"' 'g="$(grep -oP "x" f)"' \
-        'm="$(awk "/MemAvailable/" /proc/meminfo)"'; do
+        'm="$(awk "/MemAvailable/" /proc/meminfo)"' \
+        'sed -i "s/a/b/" f' 'sed -E -i "s/a/b/" f' 'p="$(readlink -f f)"' \
+        'd="$(date -d @123 +%s)"'; do
         i=$((i + 1))
         printf '%s\n' "$spelling" >"$d/media/planted-$i.sh"
         [ -n "$(unseamed_uses "$d/media")" ] ||
@@ -251,7 +274,25 @@ test_the_unseamed_scan_can_fail() {
     printf '# this comment mentions nproc and sha256sum and stat -c %%Y\n' >"$d/media/commented.sh"
     [ -z "$(unseamed_uses "$d/media")" ] ||
         log_fail "the scan treated a comment as a finding, which would force the seams' own prose out of the folder"
-    log_pass "the un-seamed scan finds all $i spellings when planted, and ignores a comment that names them"
+    rm -f "$d/media/commented.sh"
+
+    # THE OTHER DIRECTION, and the one an added pattern breaks. Every spelling below is
+    # POSIX and works on both platforms, and three of them sit one character away from a
+    # pattern above: `date -u` next to `date -d`, `sed -n` next to `sed -i`, `readlink`
+    # bare next to `readlink -f`. A regex widened carelessly starts refusing these, the
+    # folder goes red for code that is already correct, and the next person's fix is to
+    # delete the scan. .ci/media/tutorials.sh really does call `date -u +%Y...` and
+    # .ci/media/teaser.sh really does call `sed -n`, so this is not hypothetical.
+    local near
+    for near in 'stamp="$(date -u +%Y%m%dT%H%M%SZ)"' 'now="$(date +%s)"' \
+        'y="$(sed -n "s/x//p" f)"' 'p="$(readlink f)"' 'n="$(grep -c x f)"'; do
+        printf '%s\n' "$near" >"$d/media/portable-form.sh"
+        [ -z "$(unseamed_uses "$d/media")" ] ||
+            log_fail "the scan refused a spelling that is portable and in use: $near
+$(unseamed_uses "$d/media")"
+        rm -f "$d/media/portable-form.sh"
+    done
+    log_pass "the un-seamed scan finds all $i spellings when planted, ignores a comment that names them, and stays silent on the five portable forms this folder actually uses"
 }
 
 log_test "test-media-portable"

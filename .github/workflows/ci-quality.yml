@@ -900,6 +900,15 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-gates-lock
 
+      # The parity half of gen-docs, hand-written for the same reason `Gates lock`
+      # above is: quality-code has a gate-bind region but 73 of its gates still have
+      # hand-written steps outside it, so declaring a header here would make this the
+      # 74th and `gate:bind --write` would emit it into the region as a duplicate. It
+      # joins the region in the W2.6 lane cutover, with the rest.
+      - name: Doc region parity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-doc-region-parity
+
       - name: Worklist event builders
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-worklist-event-builders

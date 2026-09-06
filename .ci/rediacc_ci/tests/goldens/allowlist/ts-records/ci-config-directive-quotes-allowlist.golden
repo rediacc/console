@@ -1,0 +1,9 @@
+# rediacc_ci allowlist golden
+# reader: ts:scripts/lib/blocker-validator.ts::parseBlockeredList
+# command: parseBlockeredList(<corpus>, '#'); printf '%s\t%s\t%s\n' line entry blocker
+# projection: records
+# source: .ci/config/directive-quotes-allowlist.txt
+# corpus: corpus/ci-config-directive-quotes-allowlist.list
+# comment-char: #
+# corpus-sha256: 427e97e342d0e1573a7e475031bb895beaf8523c6eeab5ed84b689de239e27d0
+# ---

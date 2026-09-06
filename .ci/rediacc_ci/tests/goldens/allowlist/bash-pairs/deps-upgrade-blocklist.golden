@@ -1,0 +1,19 @@
+# rediacc_ci allowlist golden
+# reader: bash:.ci/scripts/lib/blocker-validator.sh::parse_blockered_list
+# command: parse_blockered_list <corpus> A B '#'; for k in ${!B[@]}; printf '%s\t%s\n'; LC_ALL=C sort
+# projection: pairs
+# source: .deps-upgrade-blocklist
+# corpus: corpus/deps-upgrade-blocklist.list
+# comment-char: #
+# corpus-sha256: 4f3503b547f2a7c1b7ba9535360541870947fae88d921e1869644670a3404070
+# ---
+@astrojs/mdx	v5.x requires astro@^6.0.0; we are on astro 5.x and astro v6 migration is not scheduled
+@astrojs/react	6.x is a major on the Astro integration stack while astro itself is deliberately held on the 5 line (see the astro entry below); move it with that migration, not standalone. Only the major is blocked — in-range 5.0.x patches still upgrade normally.
+@eslint/js	v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
+@playwright/test	same hold as playwright above, and not a separate judgement call — @playwright/test@X depends on playwright@X pinned EXACTLY (verified: @playwright/test@1.62.0 -> "playwright": "1.62.0"), so upgrading it upgrades the browser revisions the entry above defers. Listing only `playwright` left the gate demanding the bump through its sibling; move both with the E2E/bridge revalidation.
+@types/node	v25+ targets Node 25 APIs; our engines field and CI runners are on Node 22
+astro	www is built on the astro 5 line; v6/v7 are breaking majors covering the whole site build — same unscheduled-migration hold as @astrojs/mdx, take them together as a dedicated project
+eslint	v10 requires typescript-eslint/import/react plugin majors that have no eslint v10 peer support yet; take together with @eslint/js in a dedicated lint-tooling PR
+eslint-plugin-unicorn	v66 is a major release that adds and renames lint rules which would surface new violations across the whole monorepo; adoption deferred to a dedicated lint-tooling PR that audits and fixes the rule-set changes
+glob	root overrides force glob ^11 tree-wide and npm EOVERRIDE requires the declared devDep range to equal the override, so the v13 major cannot be taken until the override family is re-evaluated
+playwright	a playwright version bump changes the bundled browser revisions, so it is never a drop-in dependency bump — the pinned browsers must be re-downloaded (npx playwright install) and the E2E/bridge suites re-validated against the new revisions in the same change; take any future bump together with that test-infra revalidation

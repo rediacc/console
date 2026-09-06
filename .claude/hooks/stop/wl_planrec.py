@@ -1199,7 +1199,21 @@ def why_lines(root, path, index=None, limit=WHY_MAX_RECORDS):
     if index is None:
         index = why_index(root)
     if not index:
-        return [], (WHY_NO_INDEX if not (root / INDEX_REL).is_file() else WHY_NO_EDGE)
+        # THE PREDICATE IS "DOES THE FILE CARRY AN EDGE TABLE", NOT "DOES THE FILE EXIST".
+        # It used to be `.is_file()`, which was correct only while agent/INDEX.md was
+        # written solely by --plan-compact. Since W12 P1.7 the same file also carries a
+        # plan CENSUS, so it exists from the first census write even when no plan has
+        # been compacted and no edge has ever been recorded. Under the old test that
+        # made --plan-why answer WHY_NO_EDGE, which states as fact that the index was
+        # read and names no path matching this one -- the confident wrong answer this
+        # function's own docstring forbids six lines above.
+        try:
+            has_edges = EDGE_SECTION in (root / INDEX_REL).read_text(
+                encoding="utf-8", errors="replace"
+            )
+        except OSError:
+            has_edges = False
+        return [], (WHY_NO_EDGE if has_edges else WHY_NO_INDEX)
     hits = index.get(rel) or []
     if not hits:
         return [], WHY_NO_EDGE

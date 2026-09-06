@@ -23,6 +23,7 @@
     "check:actions": "tsx scripts/check-actions.ts",
     "check:ci-suppression-liveness": "tsx scripts/check-suppression-liveness.ts",
     "check:ci-dead-bash": "tsx scripts/check-dead-bash.ts",
+    "check:ci-doc-region-parity": "tsx scripts/check-doc-region-parity.ts --selftest && tsx scripts/check-doc-region-parity.ts",
     "check:ci-mutate-check": ".ci/scripts/quality/check-mutate-check.sh",
     "check:ci-hook-worklist-suite": ".claude/hooks/stop/test-worklist-v5.sh",
     "check:deps": "tsx scripts/check-deps.ts --selftest && tsx scripts/check-deps.ts",

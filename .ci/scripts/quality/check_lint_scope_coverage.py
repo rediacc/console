@@ -76,6 +76,15 @@ ESLINT_EXEMPT = {
     "packages/json/": "data templates for the JSON package, not program source",
     "private/": "submodules and sibling repos with their own CI",
     ".ci/cache/": "generated CI state, rewritten by CI on every run",
+    "eslint.config/": (
+        "the flat config itself, split out of eslint.config.js into six modules. "
+        "Same exemption as that file for the same two reasons, and one more that "
+        "is specific to the directory: no lint root reaches it, and no tsconfig "
+        "covers it, so the repo-wide type-aware block cannot parse these files at "
+        "all -- `npx eslint eslint.config/` answers with six 'was not found by the "
+        "project service' fatals and nothing else. Bringing them in means widening "
+        "a lint root AND a tsconfig, which is a scoped decision of its own"
+    ),
 }
 
 # Suffix-matched exemptions, same contract: each is a claim that the file is not

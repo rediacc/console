@@ -66,9 +66,27 @@ gh secret set CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY --org rediacc --body "<secre
 gh secret set CLOUDFLARE_R2_MEDIA_ENDPOINT --org rediacc --body "https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com"
 ```
 
-(Not yet wired into any workflow — CI/pipeline integration is a later phase of
-the video-migration plan. For now these are used locally/manually via
-`.ci/scripts/deploy/sync-media-to-r2.sh`.)
+**These three no longer come from GitHub org secrets in CI.** The `gh secret
+set` lines above are kept because they are still how you would seed a fresh
+account, but the live reader is Bitwarden: `.github/workflows/ci-quality.yml`
+fetches all three through `./.github/actions/bws-secrets` as
+`BWS_CLOUDFLARE_R2_MEDIA_*` and hands them to its "Restore tutorial-narration
+audio cache from R2" step, which runs
+`.ci/scripts/deploy/sync-media-from-r2.sh --audio-only`. That step is
+deliberately not held by the `media_quality` label, because it is setup rather
+than a gate.
+
+Re-derive the wiring rather than trusting this paragraph:
+
+```bash
+grep -n CLOUDFLARE_R2_MEDIA .github/workflows/*.yml
+```
+
+Corrected 2026-09-06. This section previously said "Not yet wired into any
+workflow", which stopped being true when the audio-cache restore landed: the
+gate chain `check:ci-i18n-media -> validate:content-media ->
+validate:tutorial-audio` silently SKIPS its central assertion when the audio
+tree is absent, and that restore step is what stops the skip.
 
 ## 5. Cloudflare Cache Rule
 
@@ -194,13 +212,41 @@ copies are removed from git entirely (gitignored) — see root `CLAUDE.md`'s
 
 There is a **fourth** media tree that this document historically omitted and
 that no sync script covers: `packages/www/public/media/founder/` (narration
-audio, captions, photos, posters, 138 files). It was untracked in #512 alongside
-the three above, but unlike them it was never mirrored to R2 and never added to
-`packages/www/.gitignore`, so for a while git history was the only copy of it
-that existed anywhere. Nothing in `HEAD` can regenerate it today: its generators
-(`packages/www/scripts/generate-team-video-audio.ts` and three siblings) were
-deleted in `8a537a367`. If the team-video feature is ever restored, restore the
-R2 coverage with it rather than letting it land back in git.
+audio, captions, photos, posters). It was untracked in #512 alongside the three
+above, but unlike them it was never mirrored to R2 and never added to
+`packages/www/.gitignore`, so git history is still the only copy of it that
+exists anywhere: it is absent from the working tree and
+`git ls-files packages/www/public/media/` returns nothing.
+
+Nothing in `HEAD` can regenerate it. Its generators
+(`packages/www/scripts/generate-team-video-audio.ts` plus
+`extract-team-video-transcripts.ts`,
+`scaffold-team-video-transcript-locales.js` and
+`validate-team-video-transcripts.js`) were deleted together with
+`src/components/TeamVideoPlayer.tsx` and `src/config/team-videos.ts`.
+
+**Do not quote a commit SHA for that deletion from memory.** This paragraph
+used to name 8a537a367 (written without backticks here on purpose, see below),
+which the 2026-08-23 history rewrite invalidated: that object still resolves in
+an old local clone but is an ancestor of nothing and appears on no branch, so
+the citation read as precise while pointing at a commit that is not in this
+repository's history. Re-derive it instead:
+
+```bash
+git log --diff-filter=D --oneline -- packages/www/scripts/generate-team-video-audio.ts
+```
+
+which answers `c482e6246` on the current graph. If the team-video feature is
+ever restored, restore the R2 coverage with it rather than letting it land back
+in git.
+
+**The backtick convention in this file is load-bearing.** A commit SHA inside
+backticks is a claim that this repository can resolve it and that it is an
+ancestor of `HEAD`; `.ci/scripts/test/gates/test-media-docs.sh` checks every one
+of them and reds when a rewrite invalidates one. A SHA written WITHOUT backticks
+is prose about a commit that is gone, which is the only way this section can
+record its own correction without the gate refusing the sentence that explains
+it.
 
 ## 7. Restoring media after a fresh clone
 
@@ -217,7 +263,23 @@ historical media blobs that no build, test, or gate ever opens. Git fetches
 individual blobs on demand if some command genuinely needs one, so this is not a
 shallow clone and does not truncate history. CI already does the same thing:
 every `fetch-depth: 0` checkout in `.github/workflows/` passes
-`filter: blob:none` (11 of them, paired one-for-one).
+`filter: blob:none`.
+
+The pairing is the durable claim; the COUNT is not, and this line used to carry
+one. It said "11 of them", which was true when written and was 14 when checked
+on 2026-09-06. Count it rather than reading a number here:
+
+```bash
+python3 -c 'import glob,yaml
+d=[s for f in glob.glob(".github/workflows/*.yml") for j in (yaml.safe_load(open(f)).get("jobs") or {}).values() for s in (j.get("steps") or []) if "actions/checkout" in str(s.get("uses",""))]
+w=[(s.get("with") or {}) for s in d]
+deep=[x for x in w if str(x.get("fetch-depth",""))=="0"]
+print(len(deep), "deep,", sum(1 for x in deep if x.get("filter")=="blob:none"), "of them filtered")'
+```
+
+`.ci/scripts/quality/check_git_history_depth.py` is the gate that keeps deep
+checkouts honest in the other direction, by refusing a job that reads history
+without having fetched it.
 
 The media itself is not in the working tree either way, which is what the rest
 of this section is for.
@@ -259,8 +321,17 @@ A clean dry-run (no pending uploads) confirms R2 has every current local byte.
 ## 9. Tutorial-audio cache (`tutorials/audio/`) — not CDN-served
 
 `packages/www/public/assets/tutorials/audio/` holds per-narration-step `.mp3`
-files synthesized by `private/generative/src/tutorial_tts/cli.py`
-(Qwen3-TTS). Unlike `tutorials/video/` and `videos/solutions/`, this is
+files synthesized by `private/generative/src/tutorial_tts/cli.py`. The engine
+behind it is **VoxCPM2**, which clones the narrator from the approved
+per-locale reference WAV; Qwen3-TTS is the LEGACY engine, still selectable via
+`TTS_ENGINE` and still installed in the image, but it is not what a plain run
+uses. This document said "Qwen3-TTS" flatly until 2026-09-06, which mattered
+more than a name: the two engines have different voice identity, so a reader
+budgeting a regeneration against the wrong one budgets the wrong thing.
+`.ci/media/tts/generative-pyproject.toml` records which is which, and
+`.ci/media/tts/Dockerfile` installs both.
+
+Unlike `tutorials/video/` and `videos/solutions/`, this is
 **not** a runtime-served asset — nothing in the browser player ever fetches
 a `.mp3`. `generate-tutorial-video.ts` / `scripts/lib/ffmpeg-video.ts` mux
 these files into the final tutorial `.mp4` at build time, then they're done;
@@ -274,11 +345,22 @@ to CDN-cache something nothing fetches over HTTP) and is only reachable via
 the S3 API (`sync-media-to-r2.sh` / `sync-media-from-r2.sh --audio-only`),
 never via `media.rediacc.com`.
 
-Restore/upload for this cache is wired into `run.sh`'s tutorial pipeline
-directly (`www_tutorial_audio_restore` / `www_tutorial_audio_upload` in
-`run.sh`, called from `www_tutorials_generate` and `www_tutorials_video`) —
-best-effort, so local iteration without `R2_MEDIA_*` set still works, just
-without the cache (narration gets re-synthesized instead of restored).
+Restore/upload for this cache is wired into the tutorial pipeline directly.
+`www_tutorial_audio_restore` and `www_tutorial_audio_upload` are defined in
+`.ci/media/r2.sh`, and `.ci/media/tutorials.sh` calls them from
+`www_tutorials_generate` and `www_tutorials_video`. Both are best-effort, so
+local iteration without `R2_MEDIA_*` set still works, just without the cache
+(narration gets re-synthesized instead of restored).
+
+**They are no longer in `run.sh`, and that is the correction this paragraph
+carries.** W10 moved the whole media surface into `.ci/media/`; `run.sh`'s
+`www` and `provision` arms now `exec .ci/media/media-entry.sh`, and a reader
+sent to `run.sh` for these two functions finds neither. `www_tutorials_media`,
+in `.ci/media/tutorials.sh`, deliberately calls NEITHER: it invokes
+`tutorial_tts.cli` directly, so it never restores published audio over fresh
+local narration and never publishes. (No line number here on purpose. A line
+number is a citation that rots on the next edit, and this file has already paid
+for one dead SHA.)
 `private/generative/src/tutorial_tts/cli.py`'s own cache-hit check
 (`absolute_audio.exists()`) is unchanged; it just benefits from the file
 already being present locally by the time it runs.

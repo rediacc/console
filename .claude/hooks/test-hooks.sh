@@ -2388,6 +2388,7 @@ for mod in context/test-context-bands.py \
     stop/test-completion-evidence.py \
     stop/test-always-tier.py \
     stop/test-planfile.py \
+    stop/test-planindex.py \
     stop/test-planrec.py \
     stop/test-reggate-ledger.py; do
     if [[ ! -f "$DIR/$mod" ]]; then
