@@ -95,27 +95,6 @@ on:
       # (.github/actions/bws-secrets). Every caller must pass it.
       BWS_ACCESS_TOKEN:
         required: true
-      APP_PRIVATE_KEY:
-        required: false
-      DOCKERHUB_USERNAME:
-        required: false
-      DOCKERHUB_TOKEN:
-        required: false
-      ACCOUNT_ED25519_PRIVATE_KEY:
-        required: false
-      ACCOUNT_ED25519_PUBLIC_KEY:
-        required: false
-      ACCOUNT_SERVER_API_KEY:
-        required: false
-      ACCOUNT_JWT_SECRET:
-        required: false
-      STRIPE_SANDBOX_SECRET_KEY:
-        required: false
-      STRIPE_SANDBOX_WEBHOOK_SECRET:
-        required: false
-      CLOUDFLARE_API_TOKEN:
-        required: false
-
 permissions:
   contents: read
   packages: read    # GHCR pull for test images

@@ -25,33 +25,6 @@ on:
     secrets:
       BWS_ACCESS_TOKEN:
         required: true
-      ACCOUNT_ED25519_PRIVATE_KEY:
-        required: true
-      ACCOUNT_ED25519_PUBLIC_KEY:
-        required: true
-      ACCOUNT_X25519_PRIVATE_KEY:
-        required: true
-      ACCOUNT_X25519_PUBLIC_KEY:
-        required: true
-      ACCOUNT_SERVER_API_KEY:
-        required: true
-      ACCOUNT_JWT_SECRET:
-        required: true
-      STRIPE_SECRET_KEY:
-        required: true
-      STRIPE_SANDBOX_SECRET_KEY:
-        required: true
-      STRIPE_WEBHOOK_SECRET_EU:
-        required: true
-      STRIPE_SANDBOX_WEBHOOK_SECRET:
-        required: true
-      AWS_SES_ACCESS_KEY_ID_EU:
-        required: true
-      AWS_SES_SECRET_ACCESS_KEY_EU:
-        required: true
-      CLOUDFLARE_TURNSTILE_SECRET_KEY:
-        required: true
-
 jobs:
   deploy:
     name: Deploy ${{ inputs.target }} Worker

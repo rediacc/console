@@ -31,9 +31,6 @@ on:
     secrets:
       BWS_ACCESS_TOKEN:
         required: true
-      ACCOUNT_ED25519_PUBLIC_KEY:
-        required: false
-
 permissions:
   contents: read
   packages: write   # GHCR push

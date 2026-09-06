@@ -5,8 +5,6 @@ on:
     secrets:
       BWS_ACCESS_TOKEN:
         required: true
-      DOCKERHUB_USERNAME:
-        required: true
 jobs:
   # ── Full VM provisioning test (KVM available) ──────────────────
   ops-vm-provision:

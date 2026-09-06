@@ -49,7 +49,14 @@ MAX_BASELINE_AGE_DAYS = 45
 
 # Vacuity floor. These trees reference dozens of secrets; a handful means the
 # scan broke and every comparison below would be over an empty set.
-MIN_REFERENCES = 10
+# 5 since 2026-09-05, down from 10. The corpus shrank because the references were
+# RETIRED, not because the scan broke: the org secrets were deleted and 131 consumer
+# reads moved to `${{ env.BWS_* }}`, taking org-scope reads from 147 to 4. What is
+# left is breakpoint.yml (which must not fetch -- a later step hands a human a shell)
+# and the watchdog's token, which cannot take a fetch ahead of its monitor step; a
+# gate in check-workflows.sh enforces that ordering. A floor lowered to match a
+# deliberate removal is honest; one lowered to match a finding is not.
+MIN_REFERENCES = 5
 
 BASELINE = ".ci/config/secret-reachability.json"
 

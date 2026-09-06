@@ -107,24 +107,6 @@
     "STRIPE_WEBHOOK_SECRET_ID": {
       "kind": "no-github-twin",
       "reason": "an endpoint identifier, not a credential."
-    },
-    "OBS_OTLP_CREDENTIALS_EU": {
-      "kind": "deferred",
-      "worklist": "481f326d",
-      "expires": "2026-11-01",
-      "reason": "REAL GAP. set-account-worker-secrets.sh:134 builds this name at runtime and _require_nonempty's it at :209; the rename points the org secret OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA} here. Only `./run.sh rotation rotate otlp-eu` can create it -- the value is readable nowhere, so this is operator work."
-    },
-    "OBS_OTLP_CREDENTIALS_US": {
-      "kind": "deferred",
-      "worklist": "481f326d",
-      "expires": "2026-11-01",
-      "reason": "REAL GAP, as OBS_OTLP_CREDENTIALS_EU. Create with `./run.sh rotation rotate otlp-us`."
-    },
-    "OBS_OTLP_CREDENTIALS_ASIA": {
-      "kind": "deferred",
-      "worklist": "481f326d",
-      "expires": "2026-11-01",
-      "reason": "REAL GAP, as OBS_OTLP_CREDENTIALS_EU. Create with `./run.sh rotation rotate otlp-asia`."
     }
   },
   "no_fetch_jobs": {

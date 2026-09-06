@@ -499,9 +499,6 @@ jobs:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
       # quality-i18n restores the R2 narration-audio cache so the tutorial-audio
       # gate can actually assert per-file existence (see ci-quality.yml).
-      CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
-      CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
-      CLOUDFLARE_R2_MEDIA_ENDPOINT: ${{ secrets.R2_MEDIA_ENDPOINT }}
 
   # ============================================================================
   # ENTRY-POINT TESTS: ./run.sh itself
@@ -755,7 +752,6 @@ jobs:
       renet_tag: ${{ needs.initialize.outputs.renet_tag }}
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-      ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
       # OTLP_AUTH_TOKEN removed: credentials are resolved at runtime (renet#51).
 
   build-docker:
@@ -778,7 +774,6 @@ jobs:
       rdc_exists: ${{ needs.initialize.outputs.rdc_exists }}
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-      ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
 
   build-docker-fast:
     name: Build (Docker Fast)
@@ -799,7 +794,6 @@ jobs:
       test_images_only: true
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-      ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
 
   build-cli:
     name: Build (CLI)
@@ -933,11 +927,6 @@ jobs:
       rdc_tag: ${{ needs.initialize.outputs.rdc_tag }}
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-      RELEASE_GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-      RELEASE_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-      CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
 
   # ============================================================================
   # COLUMN 4: TESTS + INFRA
@@ -976,13 +965,6 @@ jobs:
       run_drills: ${{ needs.initialize.outputs.run_drills }}
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      ACCOUNT_ED25519_PRIVATE_KEY: ${{ secrets.ACCOUNT_ED25519_PRIVATE_KEY }}
-      ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
-      ACCOUNT_SERVER_API_KEY: ${{ secrets.ACCOUNT_SERVER_API_KEY }}
-      ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
-      STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-      STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
 
   # ============================================================================
   # COLUMN 4D: OPS VM TESTS
@@ -1006,7 +988,6 @@ jobs:
     uses: ./.github/workflows/ci-ops-test.yml
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
   # ============================================================================
   # COLUMN 4C: ELITE RUN TEST

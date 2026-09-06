@@ -18,67 +18,17 @@ on:
     secrets:
       BWS_ACCESS_TOKEN:
         required: true
-      ACCOUNT_ED25519_PRIVATE_KEY:
-        required: true
-      ACCOUNT_ED25519_PUBLIC_KEY:
-        required: true
-      ACCOUNT_X25519_PRIVATE_KEY:
-        required: true
-      ACCOUNT_X25519_PUBLIC_KEY:
-        required: true
-      ACCOUNT_SERVER_API_KEY:
-        required: true
-      ACCOUNT_JWT_SECRET:
-        required: true
-      STRIPE_SECRET_KEY:
-        required: true
-      STRIPE_SANDBOX_SECRET_KEY:
-        required: true
-      STRIPE_WEBHOOK_SECRET_EU:
-        required: true
-      STRIPE_WEBHOOK_SECRET_US:
-        required: true
-      STRIPE_SANDBOX_WEBHOOK_SECRET:
-        required: true
-      AWS_SES_ACCESS_KEY_ID_EU:
-        required: true
-      AWS_SES_SECRET_ACCESS_KEY_EU:
-        required: true
-      AWS_SES_ACCESS_KEY_ID_US:
-        required: true
-      AWS_SES_SECRET_ACCESS_KEY_US:
-        required: true
-      STRIPE_WEBHOOK_SECRET_ASIA:
-        required: true
-      AWS_SES_ACCESS_KEY_ID_ASIA:
-        required: true
-      AWS_SES_SECRET_ACCESS_KEY_ASIA:
-        required: true
-      CLOUDFLARE_TURNSTILE_SECRET_KEY:
-        required: true
-      # An undeclared secret silently reads as "" inside a reusable workflow.
-      # These three were read by the "Set Worker secrets" step but never declared
-      # here nor passed by any caller, so every deployed account Worker got
-      # OTLP_CLIENT_CREDENTIALS="" and shipped no telemetry. Keep them declared.
-      OBS_OTLP_CREDENTIALS_EU:
-        required: true
-      OBS_OTLP_CREDENTIALS_US:
-        required: true
-      OBS_OTLP_CREDENTIALS_ASIA:
-        required: true
+      # These three used to be read but never declared, so every deployed account
+      # Worker got OTLP_CLIENT_CREDENTIALS="" and shipped no telemetry. Declaring
+      # them fixed that; fetching them from Bitwarden 2026-09-05 fixed it again,
+      # because the org secret the callers passed had been deleted and the whole
+      # chain was carrying "" a second time.
       # Chunk-store backup plane. `required: true` deliberately, and every
       # caller updated in the same change: these are optional in the Worker's
       # env schema, so an empty value does NOT fail the deploy -- it ships a
       # Worker whose backup endpoints answer 503 at runtime. That is the exact
       # shape of the OTLP bug above, and `required` is what turns it into a
       # loud workflow error instead of a silent production regression.
-      ACCOUNT_BACKUP_S3_ENDPOINT:
-        required: true
-      ACCOUNT_BACKUP_S3_ACCESS_KEY_ID:
-        required: true
-      ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY:
-        required: true
-
 jobs:
   # Read regions.json to build the deployment matrix
   read-regions:
@@ -225,6 +175,9 @@ jobs:
             STRIPE_WEBHOOK_SECRET_ASIA > BWS_STRIPE_WEBHOOK_SECRET_ASIA
             STRIPE_WEBHOOK_SECRET_EU > BWS_STRIPE_WEBHOOK_SECRET_EU
             STRIPE_WEBHOOK_SECRET_US > BWS_STRIPE_WEBHOOK_SECRET_US
+            OBS_OTLP_CREDENTIALS_ASIA > BWS_OBS_OTLP_CREDENTIALS_ASIA
+            OBS_OTLP_CREDENTIALS_EU > BWS_OBS_OTLP_CREDENTIALS_EU
+            OBS_OTLP_CREDENTIALS_US > BWS_OBS_OTLP_CREDENTIALS_US
 
       - uses: ./.github/actions/app-token
         id: app-token
@@ -342,9 +295,9 @@ jobs:
           BACKUP_BUCKET_EDGE: ${{ matrix.edgeBackupBucket }}
           BACKUP_BUCKET_STABLE: ${{ matrix.backupBucket }}
           CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ env.BWS_CLOUDFLARE_TURNSTILE_SECRET_KEY }}
-          OBS_OTLP_CREDENTIALS_ASIA: ${{ secrets.OBS_OTLP_CREDENTIALS_ASIA }}
-          OBS_OTLP_CREDENTIALS_EU: ${{ secrets.OBS_OTLP_CREDENTIALS_EU }}
-          OBS_OTLP_CREDENTIALS_US: ${{ secrets.OBS_OTLP_CREDENTIALS_US }}
+          OBS_OTLP_CREDENTIALS_ASIA: ${{ env.BWS_OBS_OTLP_CREDENTIALS_ASIA }}
+          OBS_OTLP_CREDENTIALS_EU: ${{ env.BWS_OBS_OTLP_CREDENTIALS_EU }}
+          OBS_OTLP_CREDENTIALS_US: ${{ env.BWS_OBS_OTLP_CREDENTIALS_US }}
           R2_JURISDICTION: ${{ matrix.r2Jurisdiction }}
           ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
           SELLER_ADDRESS_LINE1: ${{ vars.SELLER_ADDRESS_LINE1 }}

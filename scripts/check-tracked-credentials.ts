@@ -42,11 +42,14 @@
  * are no AWS-id fixtures here. Any AKIA/ASIA/AIDA/AROA id is therefore an addition and
  * reds on sight -- which is the class the operator actually asked about.
  *
- * DELIBERATELY NOT GATED: `ghp_` and `xox*` tokens. Both matched on the first run and
- * both hits were synthetic -- .claude/hooks/stop/worklist-cases/26-migrate.sh plants
- * `ghp_` + the literal alphabet to prove the worklist store redacts tokens. They need
- * the same fixture-vs-leak judgement the PEM half gets, and adding them without it would
- * seed this baseline with noise on day one.
+ * TOKEN SHAPES ARE GATED TOO, and the reason they were nearly left out is worth keeping.
+ * `ghp_` and `xox*` both matched on the first run and both hits were synthetic --
+ * .claude/hooks/stop/worklist-cases/26-migrate.sh plants `ghp_` + the literal alphabet to
+ * prove the worklist store redacts tokens. I first excluded them on the grounds that
+ * telling a fixture from a leak would need a baseline; by the time the PEM half was
+ * finished this gate HAD a baseline, so that reason had quietly stopped being true and
+ * the only thing it still bought was a hole. Operator ruling 2026-09-05: close it. A
+ * committed PAT or Slack token now reds on sight, and the one fixture is frozen by id.
  */
 /*
  * THE BASELINE MUST STAY TRACKED. CI checks out only tracked files, so an untracked
@@ -82,6 +85,8 @@ const KEY = 'credentialShapedFindings';
  */
 const AWS_RE = /\b(AKIA|ASIA|AIDA|AROA)[0-9A-Z]{16}\b/;
 const PEM_BEGIN = /-----BEGIN [A-Z ]*PRIVATE KEY-----/;
+/** GitHub personal-access / app / OAuth tokens, and Slack's bot and user tokens. */
+const TOKEN_RE = /\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b|\bxox[baprs]-[A-Za-z0-9-]{10,}/;
 /** Key material: a base64 run long enough that no prose or elision reaches it. */
 const B64_RUN = /^[A-Za-z0-9+/=]{40,}/;
 
@@ -144,7 +149,19 @@ function candidates(root: string): string[] {
   try {
     const out = execFileSync(
       'git',
-      ['-C', root, 'grep', '-lI', '-E', '-e', AWS_RE.source, '-e', PEM_BEGIN.source],
+      [
+        '-C',
+        root,
+        'grep',
+        '-lI',
+        '-E',
+        '-e',
+        AWS_RE.source,
+        '-e',
+        PEM_BEGIN.source,
+        '-e',
+        TOKEN_RE.source,
+      ],
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
     );
     return out.split('\n').filter(Boolean);
@@ -170,6 +187,7 @@ export function scan(root: string): string[] {
     }
     if (AWS_RE.test(text)) ids.add(`${f}:AWS_KEY_ID`);
     if (hasPemBody(text)) ids.add(`${f}:PEM_BODY`);
+    if (TOKEN_RE.test(text)) ids.add(`${f}:TOKEN`);
   }
   return [...ids].sort();
 }
@@ -207,6 +225,16 @@ function selftest(): number {
   check('CONTROL: prose naming AKIA does not match', !AWS_RE.test('we rotate the AKIA keys'));
   // The redacted spelling this repo now uses must stay clean, or the gate reds on its own fix.
   check('CONTROL: the redacted spelling is clean', !AWS_RE.test('ses-eu `AKIA...redacted`'));
+
+  // Assembled from parts for the same reason as the AWS id above: a literal here
+  // would make this gate a finding in its own scan.
+  const ghp = 'ghp' + '_' + 'A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8';
+  check('a GitHub token is detected', TOKEN_RE.test(`token ${ghp} here`));
+  check('a Slack token is detected', TOKEN_RE.test('xox' + 'b-1234567890-abcdef'));
+  // CONTROL: the prefix alone is a word people write in prose and in docs; only the
+  // full shape is a credential.
+  check('CONTROL: the bare prefix is not a finding', !TOKEN_RE.test('a ghp_ style token'));
+  check('CONTROL: a short xox- string is not a finding', !TOKEN_RE.test('xox-abc'));
 
   const body = 'MIIEowIBAAKCAQEA7x9kQ2mNvBc3pLzR8dYfWqTgXhJsKmPbNvCxZaEiOuYtRwQl';
   check('a real PEM block is detected', hasPemBody(`-----BEGIN RSA PRIVATE KEY-----\n${body}\n`));
@@ -280,7 +308,7 @@ function selftest(): number {
   // CONTROL: the real corpus must clear it, or the floor reds every run and gets raised away.
   check('CONTROL: the real corpus clears the floor', trackedFiles(ROOT).length >= MIN_FILES);
 
-  if (n < 17) {
+  if (n < 21) {
     console.error(`FAIL  only ${n} control(s) ran; the battery is not being executed as written`);
     bad += 1;
   }
@@ -312,11 +340,14 @@ function main(): number {
       key: KEY,
       note:
         'SHRINK-ONLY. Credential SHAPES in tracked files. Entries here are legitimate, ' +
-        'permanent test fixtures -- a validly-shaped key that a validator test cannot do ' +
-        'without. Nothing separates a good fixture from a real key by shape, so the known ' +
-        'ones are frozen and anything new reds. AWS_KEY_ID entries are NOT expected here ' +
-        'at all: there are no AWS-id fixtures in this repo, so one appearing means a real ' +
-        'access key id was committed to a PUBLIC remote -- rotate it, do not baseline it.',
+        'permanent test fixtures -- a validly-shaped key or token that a test cannot do ' +
+        'without. Nothing separates a good fixture from a real credential by shape, so the ' +
+        'known ones are frozen and anything new reds. AWS_KEY_ID entries are NOT expected ' +
+        'here at all: there are no AWS-id fixtures in this repo, so one appearing means a ' +
+        'real access key id was committed to a PUBLIC remote -- rotate it, do not baseline ' +
+        'it. A TOKEN entry is only ever a fixture whose value is visibly synthetic (the one ' +
+        'here is the literal alphabet); a real-looking token belongs in a revocation, not ' +
+        'in this file.',
       current,
       firstSeed: process.argv.includes('--first-seed'),
       read: (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null),

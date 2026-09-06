@@ -40,8 +40,14 @@ on:
         # steps below are repo-guarded for the same reason.
         required: false
       ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN:
-        required: true
-
+        # DECLARED BUT NO LONGER USED, on purpose. This job now fetches the token
+        # from Bitwarden (see the bws-secrets step below), so the value a caller
+        # passes here goes nowhere. The declaration stays because private/account
+        # and private/renet still PASS it: dropping it here does not break this
+        # repo, it breaks their next run, and those callers live in repositories
+        # this PR cannot change. Remove this only in the same change that updates
+        # both callers and .github/external-callers.yml.
+        required: false
 permissions:
   contents: read
 
