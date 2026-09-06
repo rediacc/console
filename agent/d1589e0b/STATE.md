@@ -1,44 +1,47 @@
-## SESSION d1589e0b 2026-09-06T04:20:39Z
+## SESSION d1589e0b 2026-09-06T05:04:28Z
 
-# v1.3.9 SHIPPED. Signing research inverted my default — do NOT sign archlinux.
+# 2 commits BLOCKED by a peer's uncommitted tree, not by anything of mine.
 
 ## Next action
-**Push `3d718d171`** (one local commit: apk key_name pin + withdrawn archlinux
-default). `ci:quick` is 312/312 on it. Then **get account PR #86 merged**
-(https://github.com/rediacc/account/pull/86) and only after that bump the console
-gitlink for `private/account` off `65820fd74` — a gitlink at an unmerged commit
-fails CI at CHECKOUT, not at a gate.
+**Re-run `ci:quick` and push `c6d3af163` + `376d107c8` once the shared tree is
+clean.** Both are verified; the blocker is that the pre-push gate judges the
+WORKING TREE, and session 74de73ca has ~40 uncommitted paths in it. Asked them as
+request `#3f5c5a2a`. Do NOT touch or revert their files, and do NOT `git add -A`.
+
+Then **get account PR #86 merged** (https://github.com/rediacc/account/pull/86)
+and only after that bump the console gitlink off `65820fd74` — a gitlink at an
+unmerged commit fails CI at CHECKOUT, not at a gate.
+
+## The peer's work, so it is not re-diagnosed as breakage
+`ci:quick` went 312/312 -> **306/312** and NONE of the 6 are mine:
+`check:ci-pr-task-trailers`, `ci-shell-declared-commands`, `ci-pr-epic-block`,
+`ci-allowlist-key-matching`, `ci-gate-bind` (crashes in `node:fs` readFileUtf8 on a
+missing path), `ci-enumeration-vacuity`. `git status` shows a devcontainer/toolchain
+overhaul plus deletions of `docker-compose.yml`, `Rediaccfile`, `.gemini/`,
+`.idx/`, `eslint-rules/i18n/shared/locale-cache.js`,
+`scripts/generate-update-index.ts`. My only file in that list is
+`.ci/scripts/build/build-linux-pkg.sh`, now committed.
 
 ## What is true right now
-console `main` = **b0602117e** on origin; local `3d718d171`, 1 ahead, tree clean.
-**v1.3.9 shipped** (release run 34009828511 green; tag + GitHub release 04:11:43Z).
+console `main` = **ce75a2dfa** on origin; local `376d107c8`, **2 ahead**.
+**v1.3.9 shipped** (release run 34009828511 green; tag + release 04:11:43Z).
 `private/account` branch `0906-1` at `9464cce7e` pushed, PR #86 open; the console
 submodule sits at the recorded `65820fd74`.
 
 ## DO NOT "just sign archlinux" — it breaks users
-A planning agent researched this from upstream and it INVERTED the default I had
-written. `pacman.conf(5)` defines SigLevel **Optional** — what Arch ships as
-`LocalFileSigLevel` — as "An invalid signature is a fatal error, **as is a
-signature from a key not in the keyring**." So publishing a detached `.sig` signed
-by a key no user holds turns a working `pacman -U` into a HARD FAILURE. The keyring
-rollout must land BEFORE the first signed artifact (Arch Linux ARM and Chaotic-AUR
-both do it that way). Verified against man.archlinux.org directly, not from the
-agent's summary.
+`pacman.conf(5)` SigLevel **Optional** — what Arch ships as `LocalFileSigLevel` —
+is "An invalid signature is a fatal error, **as is a signature from a key not in
+the keyring**." A detached `.sig` from a key no user holds turns a working
+`pacman -U` into a HARD FAILURE; the keyring rollout must land FIRST. nfpm also
+cannot sign archlinux natively (goreleaser/nfpm#628 open, PR #1065 unmerged).
+Verified against man.archlinux.org directly.
 
-nfpm also cannot sign archlinux natively: its `ArchLinux` struct has 4 fields and
-no signature; goreleaser/nfpm#628 is open with zero comments, PR #1065 unmerged.
-
-**apk is the opposite** — an unsigned `.apk` already needs `--allow-untrusted`, so
-signing is strictly an improvement. Only the KEY is missing. `key_name` is now
-PINNED to `releases@rediacc.com` in nfpm.yaml because APKv2 matches the pubkey by
-FILENAME, so the maintainer-email default would silently invalidate every deployed
-`/etc/apk/keys/*.rsa.pub` on a maintainer edit.
-
-## Two release jobs, not one — a thing I misread
-`Tag & Release` (early: artifacts, attestation) is NOT the tagging step;
-`Tag & GitHub Release` (late) is. Seeing the first succeed with no tag is normal,
-not an anomaly. Trace a dispatched release BY RUN ID: its check-runs are absent
-from the branch rollup, a documented false-green.
+**apk is the opposite and is now PREPARED, not deferred**: signing is already
+conditional on `NFPM_APK_KEY_FILE`, `key_name` is PINNED to
+`releases@rediacc.com` (APKv2 matches the pubkey by FILENAME, so the
+maintainer-email default would invalidate every deployed `/etc/apk/keys` entry),
+and `test-linux-packages.sh` proves BOTH paths every run. Only the RSA key is
+missing, and storing it needs BWS_ACCESS_TOKEN.
 
 ## Findings worth carrying
 1. **`""` READS AS "NOT WANTED".** An empty credential made the build SKIP signing
@@ -47,9 +50,10 @@ from the branch rollup, a documented false-green.
    joining WELDS two base64 lines. gpg reads it, Go says `armor invalid`.
 3. **131 consumer reads** fetched from Bitwarden AND still read the deleted GitHub
    secret. Org-scope reads **147 -> 1**.
-4. **Rotation resurrected 4 deleted org secrets.** PR #86 fixes that.
-5. **Comments count as reads.** `secrets.AWS_SES_*_EU` in prose registered a
+4. **Comments count as reads.** `secrets.AWS_SES_*_EU` in prose registered a
    secret named `AWS_SES_`.
+5. **Two release jobs**: `Tag & Release` (artifacts) is NOT the tagging step;
+   `Tag & GitHub Release` is. Trace a dispatched release BY RUN ID.
 
 ## Local tooling
 `bw`+`bws` on PATH; `~/.bw-session` unlocks the vault; `BWS_ACCESS_TOKEN` NOT in
@@ -57,13 +61,10 @@ env. `nfpm` via `.ci/scripts/build/ensure-nfpm.sh`; `createrepo_c`+`rpm` install
 so `test-linux-packages.sh` runs 21/21. **No shfmt binary**: format via
 `npm run check:ci-shell-format`, strip ANSI, `patch -p0`. **Strip ANSI before
 counting tsc errors.** `check:format` reaches INTO private/account.
-`breakpoint.yml` is VENDORED — edit `.ci/breakpoint/workflow/`, then
-`.ci/breakpoint/scripts/check-breakpoint-drift.sh --write`.
 
 ## Open — the operator's
-- `[?] #b822a33c` DEFAULT: leave BOTH unsigned, on evidence not inertia. Minting
-  the apk RSA key needs BWS_ACCESS_TOKEN and is the single remaining step there.
+- `[?] #b822a33c` DEFAULT: leave BOTH unsigned, on evidence not inertia.
 
 ## Operator-only
-1. **`BWS_ACCESS_TOKEN` EXPIRES 2026-09-08.** No `bws` verb rotates it.
+1. **`BWS_ACCESS_TOKEN` EXPIRES 2026-09-08.** Gates the apk RSA key.
 2. **The SM value for `RELEASE_GPG_PRIVATE_KEY` is still welded.** Hygiene only.
