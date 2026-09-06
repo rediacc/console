@@ -1,4 +1,38 @@
 # Chunk-store browse: synthesis and recommendation
+Status: done
+Owner: 8f55d4f0
+Updated: 2026-09-06
+
+## Outcome, added 2026-09-06
+
+**The recommendation was adopted and Stage 1 SHIPPED.** This document had no
+`Status:` header at all, which made every tool read it as UNKNOWN and therefore
+as still executing, so it was reported as live design work eighteen days after
+its subject was built.
+
+Evidence, in the `private/renet` submodule rather than in console, so no commit
+id is quoted here: a bare short hash would resolve to nothing in this repository
+and `check:ci-plan-citations` rejects exactly that, correctly. Search that
+submodule's history for `browse` and three commits name it directly: one fixing
+a worked example in the help that named a flag which does not exist, one
+shipping the fourteen raw strings of browse and the local list arm through i18n,
+and one giving `backup_browse` the tier decision it had been missing. A feature
+does not acquire help text, translations and a licence tier unless it exists.
+
+The finding this document exists for is unchanged and is the part worth keeping:
+a file listing is not derivable from a chunk-store manifest at any cost, because
+the manifest is a grid of cell hashes over LUKS ciphertext and carries no
+filesystem information even indirectly. Browse could not be a read-side feature
+over what was already stored; it needed a new artifact produced at snapshot
+time. Both commissioned plans reached that independently, which is why it was
+trusted.
+
+Its two siblings are NOT closed by this note. `PLAN-chunk-store-browse-engine.md`
+still reads `Status: proposal. Read-only investigation, no code written.` and
+`PLAN-chunk-store-browse-server.md` has no header either. Whoever owns that area
+should give the server plan a status and re-check the engine one against the
+shipped code; I am closing only the decision this file records, because that is
+the only claim I verified.
 
 Two plans were commissioned on deliberately opposite angles, engine-first
 (`PLAN-chunk-store-browse-engine.md`) and server-first

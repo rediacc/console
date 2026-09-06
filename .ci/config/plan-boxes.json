@@ -111,12 +111,12 @@
         "93a9925c",
         "95ad2397",
         "9e2a5387",
-        "a11bce7f",
         "a1e323b0",
         "b3eb3080",
         "d4ec61d3",
         "d6ac16e4",
         "d7124713",
+        "db1af832",
         "ddcd42ae",
         "ded91aaf",
         "f807942d"
@@ -124,8 +124,8 @@
       "done_sigs": []
     },
     "agent/PLAN-chunk-store-browse-DECISION.md": {
-      "status": "UNKNOWN",
-      "owner": "unowned",
+      "status": "done",
+      "owner": "8f55d4f0",
       "open": 0,
       "done": 0,
       "open_sigs": [],
