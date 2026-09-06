@@ -1,48 +1,71 @@
-## SESSION 8f55d4f0 2026-09-06T17:48:15Z
+# Session 8f55d4f0 -- driver state
 
-Branch **0906-1**, ~55 commits ahead of origin/main, 0 behind. No PR open.
-
-## WAVE 1 IS COMPLETE AND COMMITTED
-
-- **39 of 77 quality gates ported**; 39 shadow ledgers; **38 of 39 assert green** at K=5.
-- **W12 P1.8 CLOSED: 32 of 32 aged plans compacted.** agent/ 4.2M to 3.5M, zero deletions.
-- W2.3 headers: 226 declared of 445 lock entries.
-- `check:ci-shape-duplication` green. All four `gate-bind` defects fixed.
-
-The one red is **`w7p2-stagingtag`, and it can never pass.** Three tree ids are permanently disqualified by rows recorded through a hole since closed. It has 12 qualifying trees over 9 finding sets, so the claim is evidenced; only the assert cannot express it. **Do not delete rows to make it green.**
+Branch `0906-1`. Last commit `96355d3b5`. Updated 2026-09-06.
 
 ## ACT ON THIS FIRST
 
-PORT-E reported that its fixture-refresh script globbed too widely and **amended other wave agents' fixture commits** under the scratchpad, changing their tree ids. Their ledgers were not written, but **PORT-D was mid-record**. Verify PORT-D's four un-asserted pairs (`no-otlp-creds`, `pipefail-grep-q`, `pool-writer-safety`, `release-key-canonical`) and re-record any that cannot reach K=5. Its five modules exist; only ledgers are in doubt.
+Nothing is blocking. Six writer agents are live (see the wave below). When one
+reports, SPOT-CHECK ITS ARTIFACT, not its summary: re-run the assert or the
+count yourself. Two agent reports this session were confidently wrong about
+their own headline number.
 
-**Relaunch the waiter** (it fires once and exits):
-`python3 .claude/hooks/stop/wl_wait.py 8f55d4f0 --timeout 3600`, background, NO QUOTES anywhere.
+## Position, measured today not remembered
 
-## Where everything is written down
+| Body | Done | Total |
+|---|---|---|
+| Quality gates ported (W7 P2) | 39 | 77 |
+| Shadow pairs asserting green | 38 | 39 |
+| Gate tests with a header (W2.3) | 0 | 148 |
+| Aged plans compacted (W12 P1.8) | 32 | 32 |
+| Plan boxes | 67 | 130 |
 
-- **`docs/ci-overhaul/12-remaining-work.md`** carries every remaining task WITH ITS PROMPT, how wide each parallelises, the driver-only list, and the shadow recording recipe. Wave 2 is ready to launch from it.
-- **`docs/ci-overhaul/11-timing-baseline.md`**: 437 gates, wall 780.4s, 9.0x.
-- **TRAPS.md** now carries the rename trap (below).
+The single red pair is `w7p2-stagingtag`, permanently so: three tree ids are
+disqualified by rows recorded through a hole since closed. It carries 12
+qualifying trees over 9 finding sets, so the claim IS evidenced and only the
+assert cannot express it. DO NOT delete rows to make it green.
 
-## Two crons and a waiter
+PORT-D's five ledgers were verified independently after PORT-E disclosed that
+its fixture-refresh script amended sibling agents' fixture commits: all five
+assert green over 5 distinct trees. That risk is closed.
 
-`:23` work loop (investigate, validate, mark, report percentage, go parallel). `:47` mail poll, which must stop SILENTLY on an empty result. Both session-only, 7-day expiry.
+## Wave 2, launched 2026-09-06, six writers with disjoint ownership
 
-## Operator decisions, do not re-ask
+| Agent | Owns | Doing |
+|---|---|---|
+| PORT-F | .ci/rediacc_ci/quality + tests + .ci/shadow, 12 named gates | W7 P2 |
+| PORT-G | same dirs, 11 named gates | W7 P2 |
+| PORT-H | same dirs, 11 named gates | W7 P2 |
+| HDR-A | .ci/scripts/test/gates/test-*.sh entries 1-74 | W2.3 |
+| HDR-B | .ci/scripts/test/gates/test-*.sh entries 75-148 | W2.3 |
+| MOVE | 14 root policy dotfiles into .ci/policy + readers | W4 P2 |
 
-1. **Bitwarden:** default taken; the 2026-09-08 probe is the OPERATOR's and needs their shell.
-2. **W2.6 CLOSED at lane 3**; W3 P3's shard matrix supersedes it.
-3. **Release credential:** `gh release create` uses the App token; `contents: write` REMOVED from tag-and-release.
-4. **`private/homebrew-tap`:** permanently unstaged. The check now honours that recorded decision.
-5. Percentages are BY BOX and flatter: 148 gate tests are ONE box and are untouched.
+Four gates are EXCLUDED from the port slices until MOVE lands, because they read
+root dotfiles whose paths MOVE changes: check-e2e-coverage, check-go-deps,
+check-profiler-coverage, check-plan-housekeeping.
 
-## The trap that fooled my own brief
+## Driver-only, no agent may write these
 
-`git log --diff-filter=A` names the RENAME, not the landing, for any moved file, and returns a real commit so **no gate catches it**. `--follow` is only a PARTIAL fix: on one lookup it returned the same wrong commit. **Search content history first: `git log -S '<string>' -- <file>`.**
+package.json, scripts/ci-runner/manifest.ts, gates.lock.json, .github/workflows/**,
+CLAUDE.md, docs/agent-reference/TRAPS.md, scripts/data/doc-registry.md,
+scripts/lib/doc-providers.ts, .ci/breakpoint/**, agent/worklist/**.
+An agent authors its registration as literal patch lines; the driver pastes them.
+Only the driver runs `gate:bind --write`, once per wave, asserting `dropped` is empty.
 
-## Next action
+## What is next after this wave
 
-1. Verify and if needed re-record PORT-D's four ledgers (see ACT ON THIS FIRST).
-2. Relaunch the waiter.
-3. Launch wave 2 from `12-remaining-work.md`: PORT-F/G/H (39 gates, 3 agents), two gate-test header sets (148 files), MOVE (W4 P2, one serial writer), PROXY, SETUP.
-4. Then push **`880b1b3ee`** to main, one file, operator-authorised. Until it lands, rediacc/account PR #86 and every renet/elite review run stay red.
+`docs/ci-overhaul/12-remaining-work.md` carries every remaining task WITH its
+ready-to-run prompt. Wave 2 still holds T3 (PROXY, holds the machine mutex) and
+T5 (SETUP, W6 P2). Wave 3 is T6 HOOKS, T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN.
+Wave 4 is driver-serial with no writer agents at all.
+
+## Standing hazards paid for in this session
+
+- `git add` with a wildcard crossed an ownership boundary and swept another
+  agent's in-flight files without their dependency. HEAD imported a symbol that
+  did not exist; gates stayed green on success and threw on the refusal path.
+  Stage by explicit path.
+- `git log --diff-filter=A` names the RENAME, not the landing, and `--follow`
+  only sometimes repairs it. Search content history: `git log -S '<string>'`.
+- Exit codes from a pipeline were misread twice. `grep -c` exiting 1 is the
+  compound's exit.
+- Never `git checkout`, `restore`, `stash`, `clean` or `reset`. Repair forward.

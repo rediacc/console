@@ -8,14 +8,27 @@ re-derived. Status figures are measured, not remembered.
 
 | Body | Done | Total | % |
 |---|---|---|---|
-| Quality gates ported (W7 P2) | 38 | 77 | 49 |
+| Quality gates ported (W7 P2) | 39 | 77 | 51 |
 | Gate tests ported (W7 P3) | 0 | 148 | 0 |
-| Gates declaring a header (W2.3) | 226 | 445 | 51 |
-| Plans compacted (W12 P1.8) | 22 | 32 aged | 69 |
-| Shadow pairs proven | 31 | 32 | 97 |
-| Plan boxes | 67 | 130 | 52 |
+| Gate tests DECLARING a header (W2.3) | 0 | 148 | 0 |
+| Plans compacted (W12 P1.8) | 32 | 32 aged | 100 |
+| Shadow pairs proven | 38 | 39 | 97 |
+| Plan boxes | 67 | 130 | 51 |
 
-**The 52 percent is by BOX COUNT and it flatters us.** The single largest body,
+Re-measured 2026-09-06 after the PORT-D landing, not carried forward. The
+commands, so the next reader re-derives rather than trusts:
+
+    ls .ci/rediacc_ci/quality/*.py | grep -v __init__ | wc -l          # 39 ported
+    for l in .ci/shadow/*.observations.jsonl; do ... --assert --k 5; done  # 38 of 39
+    grep -l '^Status: compacted' agent/PLAN-*.md | wc -l               # 32
+    grep -cE '^\s*- \[x\]' <the plan>                                 # 67 of 130
+
+The one red pair is `w7p2-stagingtag` and it is expected: see Known open defects.
+The header row was wrong in the previous revision, which counted 226 of 445
+headers across the WHOLE tree and read it as W2.3 progress. W2.3's actual
+subject is the 148 gate tests, and every one of them has no header today.
+
+**The 51 percent is by BOX COUNT and it flatters us.** The single largest body,
 148 gate tests, is one box and is untouched. Bash is still present ON PURPOSE:
 invariant 5 forbids deleting a twin in the change that ports it, so deletion is
 W7 P5, the last phase.
