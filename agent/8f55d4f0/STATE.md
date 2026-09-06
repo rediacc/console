@@ -80,69 +80,64 @@ unstable. Wave 3 is T6 HOOKS, T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN.
 - `git log --diff-filter=A` names the RENAME. Search content history: `git log -S`.
 - Never `git checkout`, `restore`, `stash`, `clean` or `reset`. Repair forward.
 
-## SESSION 8f55d4f0 2026-09-06T22:08:52Z
+## SESSION 8f55d4f0 2026-09-06T22:27:32Z
 
-Branch `0906-1`, head `a6a351b84`. THE TREE IS MID-CUTOVER AND MOSTLY NOT MINE:
-46 `.claude/hooks/**` files DELETED, 7 modified, 50 untracked. That is HOOKS and
-SETUP working, not damage. Do not commit it blind, and NEVER `git checkout` or
-`restore` to tidy it: that destroys two agents' in-flight work.
-
-`block-unverified-push.sh`, `block-blanket-git-add.sh` and
-`block-destructive-git-restore.sh` are among the deleted, so those guards are
-OFF on disk right now. Behave as if they still fire.
+Branch `0906-1`, head `2f0c3515d`. `.github/workflows/ci-quality.yml` is byte-identical
+to its committed state; check:ci-gate-bind, check:ci-parity, check:ci-workflows and
+check:ci-actionlint are rc=0. HOOKS is still live: ~46 `.claude/hooks/**` files show
+DELETED and several `.claude/rediacc_hooks/**` modified. That is its cutover, not damage.
+NEVER `git checkout` or `restore` to tidy this tree.
 
 ## Next action
 
-1. **HOOKS (#609983e6) is deleting the bash guards: W5 P6, the riskiest moment
-   of the programme.** When it reports, verify YOURSELF before committing:
-   `.claude/hooks/test-hooks.sh` exits 0 with every assertion green;
-   `check:ci-pytest`, `check:ci-hook-integrity`, `check:ci-hooks-resolvable`
-   exit 0; `check:ci-shape-duplication` exits 0 AND its baseline SHRANK, because
-   deleting 43 `block-*.sh` shrinks a corpus that gate counts and
-   `scripts/data/shape-duplication-seed.json` must be re-keyed in the same
-   change (invariant 2). A guard that stops refusing is invisible everywhere
-   except a test that plants what it should refuse.
-2. **SETUP (#95f675d1) is at its assert.** `.ci/shadow/w6p2-toolchain.observations.jsonl`
-   exists now, so run `npx tsx scripts/lib/shadow-gate.ts --pair w6p2-toolchain
-   --assert --k 5` yourself. It has NOT deviated: `core/{platform,toolchain}.py`
-   predate this wave (W1 P3) and `.ci/rediacc_ci/setup/tools.py` is the install
-   table its brief named. An earlier STATE.md said otherwise; that was wrong.
-3. **#4a9b14ce, the push.** Run `npm run ci:quick` once BOTH agents have landed
-   and their work is committed, then `git push origin 880b1b3ee:main`. One
-   commit, fast-forward from `9295fb63c`, one file, +25 lines,
-   operator-authorised. Until it lands, rediacc/account PR #86 and every renet
-   and elite review run stay red at `discover-epics.sh: No such file or
-   directory, exit 127`. `check:ci-secret-reachability` is carried in
-   `.ci/config/carried-reds.json` with its operator-only door; carry nothing
-   else, everything else today was fixed.
-4. Then T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN from
-   `docs/ci-overhaul/12-remaining-work.md`, each held only by a collision with
-   HOOKS or SETUP. Then W7 P3: 148 gate tests to pytest, the largest body left
-   and ONE box.
+1. **HOOKS (#609983e6), the riskiest landing of the programme.** When it reports,
+   verify YOURSELF before committing: `.claude/hooks/test-hooks.sh` exits 0 with every
+   assertion green; `check:ci-pytest`, `check:ci-hook-integrity`,
+   `check:ci-hooks-resolvable` exit 0; `check:ci-shape-duplication` exits 0 AND its
+   baseline SHRANK, because deleting 43 `block-*.sh` shrinks a corpus that gate counts
+   and `scripts/data/shape-duplication-seed.json` must be re-keyed in the same change.
+   A guard that stops refusing is invisible everywhere except a test that plants what it
+   should refuse.
+2. **#4a9b14ce, the push.** After HOOKS lands and is committed: `npm run ci:quick` on a
+   still tree, then `git push origin 880b1b3ee:main`. One commit, fast-forward from
+   `9295fb63c`, one file, +25 lines, operator-authorised. Until it lands,
+   rediacc/account PR #86 and every renet and elite review run stay red at
+   `discover-epics.sh: No such file or directory, exit 127`.
+   `check:ci-secret-reachability` is carried in `.ci/config/carried-reds.json` with its
+   operator-only door; carry nothing else.
+3. **#0a1b79c4 W2.6 region cutover is DEFERRED and its DEFAULT is to leave it.** I tried
+   it this session and BROKE THE WORKFLOW: `gate:bind --write` emits cleanly with an
+   empty dropped set, but deleting the 112 hand-written duplicates it takes ownership of
+   removed TWO ENTIRE JOBS, quality-branch and quality-content. My deleter walked back
+   over the comment lines above each step, and for a step FIRST in its job that walk
+   crossed the job boundary and ate the job header, runs-on and permissions. Repaired
+   from a byte copy. If you retry: never cross a line matching `^  [a-z0-9-]+:$`, check
+   the JOB set and not only the step set, and run actionlint before believing anything.
+4. Then T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN from `docs/ci-overhaul/12-remaining-work.md`,
+   then W7 P3: 148 gate tests to pytest, the largest body left and ONE box.
 
 ## What is true right now
 
-W7 P2 COMPLETE, verified PAIRWISE rather than by count: all 77 bash quality
-gates have a Python twin AND are named by a shadow ledger, mapped by the bash
-path recorded inside each ledger row rather than by filename. 76 of 77 assert
-green. `w7p2-stagingtag` is permanently red: three tree ids disqualified by rows
-recorded through a hole since closed, 12 qualifying trees over 9 finding sets,
-so the claim IS evidenced and only the assert cannot express it. DO NOT delete
-rows to make it green.
+W6 P2 LANDED at `2f0c3515d`: the one install table (22 rows, 9 pinned, pytest among
+them) plus four macOS guards driven against a bash 3.2.0 built from source, each
+refusing with its version named. `w6p2-toolchain` asserts equivalence over 5 trees.
 
-Also complete: W2.3 headers (148 gate tests plus the 2 remaining run targets
-under `.ci/scripts/test`; gate-bind reads 376 declared), W3 P2 (10 proxies
-returning 77 not 0), W4 P2 (15 policy lists), W12 P1.8 (32 of 32 aged plans).
-No bash twin deleted: invariant 5, W7 P5 owns that. Plan boxes 71 of 130, which
-flatters, since 148 gate tests are one box.
+W7 P2 COMPLETE, verified pairwise: all 77 bash quality gates have a Python twin AND are
+named by a shadow ledger, mapped by the bash path recorded inside each ledger row. 76 of
+77 assert green; `w7p2-stagingtag` is permanently red (three tree ids disqualified by
+rows recorded through a closed hole; 12 qualifying trees over 9 finding sets, so the
+claim IS evidenced). DO NOT delete rows to make it green.
+
+Also complete: W2.3 headers (148 gate tests plus 2 run targets; gate-bind reads 376),
+W3 P2 (10 proxies returning 77 not 0), W4 P2 (15 policy lists), W12 P1.8 (32 of 32).
+No bash twin deleted: invariant 5, W7 P5 owns that.
 
 ## Volatile facts a fresh session would get wrong
 
 A SECOND Claude session is live here: pid 2222763, session `a20630a0-dac7-...`;
 `private/homebrew-tap` is its trace.
 
-FIVE times today an instrument of mine produced a finding that did not exist:
-grepping PASS when the vocabulary is `ok`; `python3 -m` on modules whose entry
-point is a shim; `return problems` against `return exempt, problems`; ledger-to-
-gate matching by filename when ids are abbreviated; and inferring SETUP drift
-from a directory listing. Check the instrument before the claim.
+SIX times today an instrument of mine was wrong before the claim it supported. Five
+invented findings; the sixth HID a real change: I verified the workflow's step-name set
+was unchanged (274/264 both sides) while two whole jobs had vanished, because a job
+header is not a `- name:` line. Choose the check that could see the damage.
