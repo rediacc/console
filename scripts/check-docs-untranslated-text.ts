@@ -32,6 +32,14 @@
  * Exit codes:
  *   0 - No untranslated text found
  *   1 - Untranslated text detected (blocking)
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n
+ * needs: node
+ * id: check:ci-i18n-docs-untranslated
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

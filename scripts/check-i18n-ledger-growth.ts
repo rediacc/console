@@ -46,6 +46,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { refused } from './lib/controls.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
@@ -194,10 +195,9 @@ function selftest(): number {
     );
   }
   if (bad > 0) {
-    process.stderr.write(
-      `check-i18n-ledger-growth: ${bad} control(s) failed; this gate cannot be trusted\n`
+    return refused(
+      `check-i18n-ledger-growth: ${bad} control(s) failed; this gate cannot be trusted`
     );
-    return 1;
   }
   return 0;
 }
@@ -219,11 +219,10 @@ function main(argv: string[]): number {
   if (!base) {
     // Fail rather than skip. With no base every key looks new, or none does; either way
     // "measured nothing" must never be reported as "found nothing".
-    process.stderr.write(
-      'check-i18n-ledger-growth: could not resolve a base ref (tried origin/main, HEAD).\n' +
-        'Pass one with --base <ref>. Refusing to run without a baseline.\n'
+    return refused(
+      'check-i18n-ledger-growth: could not resolve a base ref (tried origin/main, HEAD).',
+      'Pass one with --base <ref>. Refusing to run without a baseline.'
     );
-    return 1;
   }
 
   const enRel = `${DIR}/en.json`;
@@ -238,12 +237,11 @@ function main(argv: string[]): number {
   // FLOOR. A collapsed read makes every key look new (or none), and both directions are a
   // broken instrument reporting confidently.
   if (enBase.length < 1000 || enNow.length < 1000) {
-    process.stderr.write(
+    return refused(
       `check-i18n-ledger-growth: en.json flattened to ${enBase.length} keys at ${base} and ` +
-        `${enNow.length} now; both must exceed 1000.\n  The read is broken, so this verdict ` +
-        'would be vacuous.\n'
+        `${enNow.length} now; both must exceed 1000.`,
+      '  The read is broken, so this verdict would be vacuous.'
     );
-    return 1;
   }
 
   let ledger: Record<string, Record<string, unknown>>;
@@ -252,19 +250,17 @@ function main(argv: string[]): number {
       languages?: Record<string, Record<string, unknown>>;
     };
     if (!raw.languages || typeof raw.languages !== 'object') {
-      process.stderr.write(
-        `check-i18n-ledger-growth: ${LEDGER} has no "languages" object. Refusing to run:\n` +
-          'with no fingerprints this gate reports OK over every new key.\n'
+      return refused(
+        `check-i18n-ledger-growth: ${LEDGER} has no "languages" object. Refusing to run:`,
+        'with no fingerprints this gate reports OK over every new key.'
       );
-      return 1;
     }
     ledger = raw.languages;
   } catch (e) {
-    process.stderr.write(
-      `check-i18n-ledger-growth: cannot read ${LEDGER}: ${(e as Error).message}\n` +
-        'Refusing to run without it: an absent ledger measures nothing.\n'
+    return refused(
+      `check-i18n-ledger-growth: cannot read ${LEDGER}: ${(e as Error).message}`,
+      'Refusing to run without it: an absent ledger measures nothing.'
     );
-    return 1;
   }
 
   const locales = fs
@@ -272,11 +268,10 @@ function main(argv: string[]): number {
     .filter((f) => f.endsWith('.json') && !f.startsWith('.') && f !== 'en.json')
     .map((f) => f.replace(/\.json$/, ''));
   if (locales.length < 10) {
-    process.stderr.write(
-      `check-i18n-ledger-growth: found ${locales.length} locale file(s), expected 12.\n` +
-        '  The directory read is broken; a green here would be vacuous.\n'
+    return refused(
+      `check-i18n-ledger-growth: found ${locales.length} locale file(s), expected 12.`,
+      '  The directory read is broken; a green here would be vacuous.'
     );
-    return 1;
   }
 
   const findings = unfingerprintedNewKeys({ enBase, enNow, locales, ledger });
@@ -288,17 +283,19 @@ function main(argv: string[]): number {
         `fingerprint, in ${findings.length} locale/key pair(s) vs ${base}:\n\n`
     );
     for (const f of findings) process.stderr.write(`  ${f}\n`);
-    process.stderr.write(
-      '\nA key with no fingerprint can never be reported stale: check:ci-i18n-naturalization\n' +
-        'compares the recorded English CRC to the live one, and there is no recorded CRC to\n' +
-        'compare. Its translation can drift from English forever with every gate green.\n\n' +
-        '  Translate it, then stamp it, SCOPED to the group you touched:\n' +
-        '    cd private/growth/i18n_pipeline\n' +
-        '    ./run.sh --mark-done --lang <locale> --group <selector>\n\n' +
-        '  Never --all-stale to close a named key: it means "every key not in the ledger",\n' +
-        '  which on this catalog is ~1,965 per locale. See docs/agent-reference/TRAPS.md.\n'
+    return refused(
+      '',
+      'A key with no fingerprint can never be reported stale: check:ci-i18n-naturalization',
+      'compares the recorded English CRC to the live one, and there is no recorded CRC to',
+      'compare. Its translation can drift from English forever with every gate green.',
+      '',
+      '  Translate it, then stamp it, SCOPED to the group you touched:',
+      '    cd private/growth/i18n_pipeline',
+      '    ./run.sh --mark-done --lang <locale> --group <selector>',
+      '',
+      '  Never --all-stale to close a named key: it means "every key not in the ledger",',
+      '  which on this catalog is ~1,965 per locale. See docs/agent-reference/TRAPS.md.'
     );
-    return 1;
   }
 
   process.stdout.write(

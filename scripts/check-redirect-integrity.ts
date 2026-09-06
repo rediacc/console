@@ -13,6 +13,13 @@
  *
  * Run via: `npm run check:ci-redirects`
  * Fails fast with diagnostics on any violation.
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: Redirects
+ * needs: node
+ * lane: quality-www-build
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import path from 'node:path';

@@ -24,6 +24,13 @@
  * See docs/i18n/CONVENTIONS.md.
  *
  * Flags: --report  (verbose per-language breakdown; same exit semantics)
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n
+ * needs: node
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import path from 'node:path';

@@ -293,112 +293,192 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-i18n-hashes',
     gate: true,
     leaves: ['scripts/check-translation-hashes.ts'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-completeness',
     run: 'npm run check:ci-i18n-completeness',
     gate: true,
     leaves: ['scripts/check-translation-completeness.ts'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-docs-render-parity',
     run: 'npm run check:ci-i18n-docs-render-parity',
     gate: true,
     leaves: ['scripts/__tests__/check-docs-render-parity.control.ts'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-page-locale-imports',
     run: 'npm run check:ci-i18n-page-locale-imports',
     gate: true,
     leaves: ['scripts/__tests__/check-page-locale-imports.control.ts'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-docs-inline',
     run: 'npm run check:ci-i18n-docs-inline',
     gate: true,
     leaves: ['scripts/check-docs-inline-translations.ts'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-docs-untranslated',
     run: 'npm run check:ci-i18n-docs-untranslated',
     gate: true,
     leaves: ['scripts/check-docs-untranslated-text.ts'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-account-email-templates',
     run: 'npm run check:ci-i18n-account-email-templates',
     gate: true,
     leaves: ['scripts/check-account-email-templates.ts'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-hardcoded-strings',
     run: 'npm run check:ci-i18n-hardcoded-strings',
     gate: true,
     leaves: ['scripts/check-component-hardcoded-strings.ts'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-naturalization',
     run: 'npm run check:ci-i18n-naturalization',
     gate: true,
     leaves: ['scripts/check-i18n-naturalization.ts'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-www-cli-docs',
     run: 'npm run check:ci-i18n-www-cli-docs',
     gate: true,
     leaves: ['packages/www/scripts/validate-cli-docs.js'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-www-docs-cli-usage',
     run: 'npm run check:ci-i18n-www-docs-cli-usage',
     gate: true,
     leaves: ['packages/www/scripts/validate-docs-cli-usage.js'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-www-landing-cli-usage',
     run: 'npm run check:ci-i18n-www-landing-cli-usage',
     gate: true,
     leaves: ['packages/www/scripts/validate-landing-cli-usage.js'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-www-translation-freshness',
     run: 'npm run check:ci-i18n-www-translation-freshness',
     gate: true,
     leaves: ['packages/www/scripts/validate-translation-freshness.js'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-www-content',
     run: 'npm run check:ci-i18n-www-content',
     gate: true,
     leaves: ['packages/www/scripts/validate-content.js'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-www-content-accuracy',
     run: 'npm run check:ci-i18n-www-content-accuracy',
     gate: true,
     leaves: ['packages/www/scripts/validate-content-accuracy.js'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-www-comparison-refs',
     run: 'npm run check:ci-i18n-www-comparison-refs',
     gate: true,
     leaves: ['packages/www/scripts/validate-comparison-refs.js'],
-    ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: 'i18n' },
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
   },
   {
     id: 'check:ci-i18n-cli-key-usage',
@@ -705,12 +785,7 @@ export const GATES: readonly GateSpec[] = [
     // It boots the real www dev server and asserts on rendered DOM, so the whole astro graph
     // is in scope: the remark plugins, the i18n catalogs, and the two workspaces www depends
     // on. Narrowing to the content and the player component is the mistake to avoid.
-    paths: [
-      'packages/www/**',
-      'packages/shared/**',
-      'packages/locales/**',
-      'package.json',
-    ],
+    paths: ['packages/www/**', 'packages/shared/**', 'packages/locales/**', 'package.json'],
     leaves: ['packages/www/scripts/test-tutorial-player-release-gate.js'],
     ci: {
       kind: 'step',
@@ -1458,9 +1533,7 @@ export const GATES: readonly GateSpec[] = [
     // One glob covers the leaf, every wl_*.py it imports, worklist-cases/** and _harness.sh.
     // The harness pins every ambient path, so nothing outside this directory moves the
     // verdict. Do NOT narrow to *.sh: the Python modules ARE the subject.
-    paths: [
-      '.claude/hooks/stop/**',
-    ],
+    paths: ['.claude/hooks/stop/**'],
     weight: 2,
     heavy: true,
     leaves: ['.claude/hooks/stop/test-worklist-v5.sh'],
@@ -1479,10 +1552,7 @@ export const GATES: readonly GateSpec[] = [
     // shellcheck.sh enumerates with git ls-files '*.sh' plus untracked. toolchain.env is the
     // only non-.sh input: it pins SHELLCHECK_VERSION, and a different shellcheck emits
     // different findings.
-    paths: [
-      '**/*.sh',
-      '.devcontainer/toolchain.env',
-    ],
+    paths: ['**/*.sh', '.devcontainer/toolchain.env'],
     leaves: ['.ci/scripts/security/shellcheck.sh'],
     ci: {
       kind: 'step',
@@ -3102,11 +3172,7 @@ export const GATES: readonly GateSpec[] = [
     // gitlinks with no files underneath, so a /** form translates to a regex matching
     // nothing, and a glob that matches nothing can only exclude. A submodule content change
     // reaches this repository's diff only as a pointer bump on that path.
-    paths: [
-      'private/renet',
-      '.ci/scripts/private/run-renet.sh',
-      '.ci/scripts/lib/common.sh',
-    ],
+    paths: ['private/renet', '.ci/scripts/private/run-renet.sh', '.ci/scripts/lib/common.sh'],
     // 40.4s measured 2026-08-27, and only now: it used to die at exit 127 in
     // format.sh (goimports installed to $(go env GOPATH)/bin, which was on no
     // PATH) about a second in, so its old "fast" tier was the cost of crashing
@@ -5283,12 +5349,7 @@ export const GATES: readonly GateSpec[] = [
     // Its fixture is built by copying exactly these four trees, and its registry names
     // validators inside them. Broad, but it excludes packages/**, docs/**, .claude/** and
     // .github/**, which is where most changes land.
-    paths: [
-      'scripts/**',
-      '.ci/scripts/**',
-      '.ci/config/**',
-      '.ci/rediacc_ci/**',
-    ],
+    paths: ['scripts/**', '.ci/scripts/**', '.ci/config/**', '.ci/rediacc_ci/**'],
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-gate-anti-vacuity.sh'],
     ci: {

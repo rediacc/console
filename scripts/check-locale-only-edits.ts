@@ -33,6 +33,15 @@
  *   0 - no locale-only edits to already-naturalized keys
  *   1 - locale-only edits found, or the base ref could not be resolved
  *   2 - usage error
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n
+ * needs: node
+ * id: check:ci-i18n-locale-only
+ * run: tsx scripts/check-locale-only-edits.ts --selftest
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 
 import { execFileSync } from 'node:child_process';

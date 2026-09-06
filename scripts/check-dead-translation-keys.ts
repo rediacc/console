@@ -73,6 +73,13 @@
  * Usage:
  *   tsx scripts/check-dead-translation-keys.ts [--root <dir>] [--selftest] [--list]
  *                                              [--write-baseline [--first-seed]]
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n
+ * needs: node
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import os from 'node:os';

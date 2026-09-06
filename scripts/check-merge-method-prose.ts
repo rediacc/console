@@ -37,6 +37,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { refused } from './lib/controls.js';
 
 /** A merge method the platform refuses. Queryable: allow_squash_merge=false. */
 export const REJECTED = ['--squash'] as const;
@@ -168,10 +169,9 @@ const main = (): number => {
 
   // ANTI-VACUITY: a scan that reached no files would report a clean tree.
   if (scanned < 20) {
-    console.error(
+    return refused(
       `✗ only ${scanned} file(s) scanned; the surface globs are wrong, so this green means nothing.`
     );
-    return 1;
   }
 
   if (found.length) {

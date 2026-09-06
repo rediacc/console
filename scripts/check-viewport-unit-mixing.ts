@@ -35,6 +35,14 @@
  *   npx tsx scripts/check-viewport-unit-mixing.ts [--selftest]
  *
  * Exit: 0 clean, 1 finding (or a floor breach), 2 usage error.
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: Dead CSS
+ * needs: node
+ * run: tsx scripts/check-viewport-unit-mixing.ts --selftest
+ * lane: quality-content
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

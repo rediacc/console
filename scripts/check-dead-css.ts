@@ -24,6 +24,14 @@
  *
  * Usage:
  *   npx tsx scripts/check-dead-css.ts [--write-baseline] [--selftest] [--list]
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: Dead CSS
+ * needs: node
+ * selftest: true
+ * lane: quality-content
+ * ---- end gate ----
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';

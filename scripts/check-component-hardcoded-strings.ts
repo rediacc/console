@@ -17,6 +17,15 @@
  * Exit codes:
  *   0 - No issues (or warning-only mode)
  *   1 - Issues found in strict mode
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n
+ * needs: node
+ * id: check:ci-i18n-hardcoded-strings
+ * run: tsx scripts/check-component-hardcoded-strings.ts --strict
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

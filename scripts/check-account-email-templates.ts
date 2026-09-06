@@ -1,4 +1,11 @@
 #!/usr/bin/env node
+// ---- gate ----
+// kind: battery
+// step: i18n
+// needs: node, submodules
+// id: check:ci-i18n-account-email-templates
+// lane: quality-i18n
+// ---- end gate ----
 
 import fs from 'node:fs';
 import path from 'node:path';

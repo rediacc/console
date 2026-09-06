@@ -55,6 +55,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { GATES, type GateSpec } from './ci-runner/manifest';
+import { refused } from './lib/controls';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -498,11 +499,10 @@ function main(): number {
       return 1;
     }
     if (CONTROLS_RUN < MIN_CONTROLS) {
-      process.stderr.write(
+      return refused(
         `CONTROL FAILED: only ${CONTROLS_RUN} control(s) ran, floor is ${MIN_CONTROLS}. ` +
-          'Controls were removed, not merely renamed.\n'
+          'Controls were removed, not merely renamed.'
       );
-      return 1;
     }
     process.stdout.write(`check-gate-manifest: selftest ok (${CONTROLS_RUN} controls)\n`);
     return 0;

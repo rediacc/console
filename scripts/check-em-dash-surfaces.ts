@@ -32,6 +32,13 @@
  *   tsx scripts/check-em-dash-surfaces.ts --write-baseline --seed-surface <dir>
  *   tsx scripts/check-em-dash-surfaces.ts --write-baseline --first-seed
  *   tsx scripts/check-em-dash-surfaces.ts --selftest
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n
+ * needs: node
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';

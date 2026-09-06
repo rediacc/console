@@ -32,6 +32,13 @@
  *
  * Usage:
  *   tsx scripts/check-locale-config-divergence.ts [--root <dir>] [--selftest]
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n cross-locale
+ * needs: node, submodules
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import os from 'node:os';

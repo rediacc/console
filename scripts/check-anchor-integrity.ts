@@ -30,6 +30,13 @@
  *
  * Usage:
  *   tsx scripts/check-anchor-integrity.ts [--dist <dir>] [--selftest] [--max-report N]
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: Redirects
+ * needs: node
+ * lane: quality-www-build
+ * ---- end gate ----
  */
 import fs, { readdirSync, statSync } from 'node:fs';
 import os from 'node:os';

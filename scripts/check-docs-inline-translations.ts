@@ -19,6 +19,14 @@
  * Exit codes:
  *   0 - All inline translation keys are valid
  *   1 - Some keys are invalid or inconsistent (including line number mismatches)
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n
+ * needs: node
+ * id: check:ci-i18n-docs-inline
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

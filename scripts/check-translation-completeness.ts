@@ -16,6 +16,14 @@
  * Exit codes:
  *   0 - All translations are complete
  *   1 - Some translations are missing or untranslated
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n
+ * needs: node, submodules
+ * id: check:ci-i18n-completeness
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

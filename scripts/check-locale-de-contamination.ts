@@ -46,6 +46,13 @@
  *   tsx scripts/check-locale-de-contamination.ts [--root <dir>] [--baseline <file>]
  *   tsx scripts/check-locale-de-contamination.ts --selftest
  *   tsx scripts/check-locale-de-contamination.ts --write-baseline   (drain/reseed)
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n cross-locale
+ * needs: node, submodules
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import os from 'node:os';

@@ -16,6 +16,14 @@
  * Exit codes:
  *   0 - All hashes are up-to-date
  *   1 - Hash mismatch detected (need to run i18n:generate-hashes)
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n
+ * needs: node, submodules
+ * id: check:ci-i18n-hashes
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

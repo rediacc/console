@@ -14,6 +14,15 @@
  * (`462万ドル`, `4,62 milyon USD`, `600 $/Tag`). A broader "the locale must
  * contain the English amount" rule was tried first and produced 483 findings,
  * nearly all of them correct translations.
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n
+ * needs: node
+ * id: check:ci-locale-currency
+ * run: tsx scripts/check-locale-currency-integrity.ts && tsx scripts/__tests__/check-locale-currency-integrity.control.ts
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import path from 'node:path';

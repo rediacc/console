@@ -42,6 +42,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { refused } from './lib/controls.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
@@ -178,12 +179,11 @@ function main(argv: string[]): number {
   }
 
   if (files.length < MIN_FILES) {
-    process.stderr.write(
+    return refused(
       `check-illustration-contract: found ${files.length} asset(s) under ${DIRS.join(', ')}, ` +
-        `below the floor of ${MIN_FILES}.\n  The scan is not seeing the tree, so this verdict ` +
-        'would be vacuous.\n'
+        `below the floor of ${MIN_FILES}.`,
+      '  The scan is not seeing the tree, so this verdict would be vacuous.'
     );
-    return 1;
   }
 
   const findings = files

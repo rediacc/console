@@ -67,6 +67,7 @@ import {
   renderRefusal,
   writeBaselineVerdict,
 } from './lib/shrink-only-baseline.js';
+import { refused } from './lib/controls.js';
 
 /** Binaries that are NOT on a minimal POSIX host and can therefore be absent. */
 export const RISKY = [
@@ -180,7 +181,7 @@ const main = (): number => {
       additions: fs.existsSync(baseFile) ? baselineAdditions(base, found) : [],
     });
     if (verdict !== null) {
-      console.error(
+      return refused(
         `\n\x1b[31m✗\x1b[0m ${renderRefusal(verdict, {
           baselineLabel: DEFAULT_BASELINE,
           noun: 'undeclared-binary finding',
@@ -188,7 +189,6 @@ const main = (): number => {
           newCount: found.length,
         })}\n`
       );
-      return 1;
     }
     fs.mkdirSync(path.dirname(baseFile), { recursive: true });
     fs.writeFileSync(baseFile, `${JSON.stringify(found, null, 2)}\n`);
@@ -226,10 +226,9 @@ member with python3, which was already declared.`);
     );
     console.error('  remove these so it cannot rot into a permanent excuse:\n');
     for (const b of stale) console.error(`    ${b.replace('\t', '  ')}`);
-    console.error(
+    return refused(
       '\n  Regenerate with: npx tsx scripts/check-shell-declared-commands.ts --write-baseline'
     );
-    return 1;
   }
 
   console.log(`✓ no undeclared non-baseline binaries (${base.length} finding(s) still baselined)`);

@@ -34,6 +34,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GATES } from './ci-runner/manifest';
 import { baselineAdditions, renderRefusal, writeBaselineVerdict } from './lib/shrink-only-baseline';
+import { refused } from './lib/controls';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BASELINE = path.join(ROOT, 'scripts/data/package-key-budget-baseline.json');
@@ -106,16 +107,14 @@ const main = (): number => {
   const manifestIds = new Set(GATES.map((g) => g.id));
 
   if (scriptKeys.length < MIN_SCRIPT_KEYS) {
-    console.error(
+    return refused(
       `✗ VACUOUS: read ${scriptKeys.length} script key(s), floor ${MIN_SCRIPT_KEYS}. package.json did not parse as expected.`
     );
-    return 1;
   }
   if (manifestIds.size < MIN_MANIFEST_IDS) {
-    console.error(
+    return refused(
       `✗ VACUOUS: read ${manifestIds.size} manifest id(s), floor ${MIN_MANIFEST_IDS}. Every key would read as hand-written.`
     );
-    return 1;
   }
 
   const current = nonRegistryKeys(scriptKeys, manifestIds);
@@ -134,7 +133,7 @@ const main = (): number => {
     additions,
   });
   if (verdict) {
-    console.error(
+    return refused(
       renderRefusal(verdict, {
         baselineLabel: 'scripts/data/package-key-budget-baseline.json',
         noun: 'hand-written package.json script key',
@@ -142,7 +141,6 @@ const main = (): number => {
         newCount: current.length,
       })
     );
-    return 1;
   }
 
   const retired = previous.filter((k) => !current.includes(k));

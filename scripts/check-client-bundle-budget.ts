@@ -32,6 +32,13 @@
  *
  * Usage:
  *   tsx scripts/check-client-bundle-budget.ts [--dist <dir>] [--budget <bytes>] [--selftest]
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: SEO
+ * needs: node
+ * lane: quality-www-build
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import os from 'node:os';

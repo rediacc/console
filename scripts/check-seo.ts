@@ -5,6 +5,14 @@
  * by ESLint JSON rules (those handle translation content; this handles templates).
  *
  * Run: npx tsx scripts/check-seo.ts
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: SEO
+ * needs: node
+ * id: check:ci-seo-core
+ * lane: quality-www-build
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

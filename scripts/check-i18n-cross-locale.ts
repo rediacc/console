@@ -45,6 +45,14 @@
  *
  * Usage:
  *   tsx scripts/check-i18n-cross-locale.ts [--root <dir>] [--selftest]
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n cross-locale
+ * needs: node, submodules
+ * id: check:ci-i18n-cross-locale-core
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 import fs from 'node:fs';
 import os from 'node:os';

@@ -18,6 +18,15 @@
  * Exit codes:
  *   0 - All referenced keys exist
  *   1 - Some keys are missing from en.json
+ *
+ * ---- gate ----
+ * kind: battery
+ * step: i18n
+ * needs: node
+ * id: check:i18n:key-usage
+ * run: tsx scripts/check-translation-key-usage.ts && tsx scripts/__tests__/check-translation-key-usage.control.ts
+ * lane: quality-i18n
+ * ---- end gate ----
  */
 
 import fs from 'node:fs';

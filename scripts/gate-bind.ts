@@ -28,10 +28,11 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
 import { laneCapabilities, placeGate, satisfies } from './ci-runner/lanes.js';
+import type { GateKind } from './lib/gate-header.js';
 import {
   derivedId,
   derivedRun,
@@ -39,7 +40,6 @@ import {
   inferredNeeds,
   parseGateHeader,
 } from './lib/gate-header.js';
-import type { GateKind } from './lib/gate-header.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WORKFLOW = '.github/workflows/ci-quality.yml';
@@ -143,6 +143,33 @@ export function planExtract(
   if (rb === null || rb.id !== id || rb.step !== reg.step || !runOk) {
     const got = rb === null ? 'nothing' : `${rb.id} / "${rb.step}" / ${rb.run}`;
     return { error: `${reg.file}: header re-derives ${got}, not ${id} / "${reg.step}"` };
+  }
+  // THE WRITE MODE NOW RUNS THE VERIFIER'S OWN CHECK. Everything above proves the
+  // header re-derives the right id, step and run; NONE of it proved the lane can
+  // provide what the file needs, which is precisely what the verifier asserts a
+  // moment later. So --extract happily wrote headers that gate-bind then rejected,
+  // and on 2026-09-06 two of them reddened check:ci-gate-bind mid-wave and had to
+  // be stripped by hand. A tool whose write mode does not run its own verify is
+  // how a green plan produces a red tree.
+  //
+  // Refusing HERE turns that into a named refusal the caller can act on, which is
+  // the difference between "this gate cannot be declared, and here is why" and a
+  // broken tree someone else has to diagnose. The two known causes are a genuine
+  // lane mismatch (check-editorconfig.sh needs submodules its lane does not check
+  // out) and a false positive in inferredNeeds (its npx probe has no command
+  // position check, so it matches a parameter expansion). Both deserve a refusal
+  // rather than a write.
+  const extractLane = caps.get(reg.job);
+  if (extractLane === undefined) {
+    return { error: `${reg.file}: lane '${reg.job}' is not a job of ${WORKFLOW}` };
+  }
+  if (!satisfies(extractLane, needs)) {
+    return {
+      error:
+        `${reg.file}: lane '${reg.job}' does not provide all of ` +
+        `${JSON.stringify(needs)}, so a header here would not bind. ` +
+        'Either the lane genuinely lacks it, or inferredNeeds read a mention as an invocation.',
+    };
   }
   return { file: reg.file, next, step: reg.step, job: reg.job };
 }
@@ -493,7 +520,17 @@ export function registered(manifest: string, id: string): Registered | { error: 
   const end = text.indexOf('\n  },\n', at);
   if (start === -1 || end === -1) return { error: `could not bound the entry for '${id}'` };
   const block = text.slice(start, end);
-  const field = (k: string): string => new RegExp(`\\b${k}: '([^']*)'`).exec(block)?.[1] ?? '';
+  // BOTH QUOTE STYLES. This accepted single quotes only, so an entry whose value
+  // CONTAINS an apostrophe -- and is therefore written with double quotes in the
+  // manifest -- read as absent. check:ci-cli-doc-coverage's step is
+  // "CLI docs stay in sync with their scripts' real flags", so field('step')
+  // returned '' and --extract reported "entry is missing leaves, ci.step or
+  // ci.job". The entry was complete; the reader was not, and every other entry
+  // needing double quotes was silently un-extractable the same way.
+  const field = (k: string): string =>
+    new RegExp(`\\b${k}: '([^']*)'`).exec(block)?.[1] ??
+    new RegExp(`\\b${k}: "([^"]*)"`).exec(block)?.[1] ??
+    '';
   const file = /leaves: \[\s*'([^']+)'/.exec(block)?.[1] ?? '';
   // Only the prose ABOVE `id:`. A comment further down explains a later field.
   const head = block.slice(0, block.indexOf('id:'));
@@ -530,7 +567,16 @@ export function headerLines(
   // second is `selftest: true`; the other two are genuinely per-gate, and inventing
   // derivation rules for them would encode five gates' habits as a convention.
   const wanted = r.run ?? '';
-  if (wanted !== '' && wanted === derivedRun(r.file, true)) {
+  // `selftest: true` IS ONLY MEANINGFUL FOR .ts, because derivedRun branches on
+  // the flag only there. For a .sh or .py gate derivedRun(f, true) equals
+  // derivedRun(f), so the first arm always matched and every such header
+  // asserted a `--selftest` leg. Measured 2026-09-06 on the file this repo's
+  // briefs cite as the model: check-npmrc.sh carried `selftest: true` while
+  // containing ZERO occurrences of --selftest. Roughly 30 headers claimed a leg
+  // that does not exist. Inert for binding, and a declaration that lies is worse
+  // than a missing one, because the next reader trusts it.
+  const selftestIsReal = r.file.endsWith('.ts');
+  if (selftestIsReal && wanted !== '' && wanted === derivedRun(r.file, true)) {
     out.push('selftest: true');
   } else if (wanted !== '' && wanted !== derivedRun(r.file)) {
     out.push(`run: ${wanted}`);
@@ -604,17 +650,27 @@ export function insertHeader(
         ].join('\n');
       }
     }
+    // NO DOUBLE BLANK. The separator below used to be unconditional, so a file
+    // that ALREADY had a blank line at the insertion point got two, and
+    // `biome format` (which IS check:format) reds on that. It hit the one
+    // subject with no leading block comment during the 2026-09-06 header wave
+    // and had to be fixed by hand. A binder that writes a format-gate red is a
+    // write mode failing its own verify, the same shape as planExtract above.
     return [
       ...lines.slice(0, after),
       ...body.map((l) => `// ${l}`),
-      '',
+      ...(lines[after] === '' ? [] : ['']),
       ...lines.slice(after),
     ].join('\n');
   }
   // The normal path for .sh, and the fallback for anything else that takes `#`.
-  return [...lines.slice(0, after), ...body.map((l) => `# ${l}`), '', ...lines.slice(after)].join(
-    '\n'
-  );
+  // Same guard as the `//` branch above, for the same reason.
+  return [
+    ...lines.slice(0, after),
+    ...body.map((l) => `# ${l}`),
+    ...(lines[after] === '' ? [] : ['']),
+    ...lines.slice(after),
+  ].join('\n');
 }
 
 /**

@@ -84,6 +84,7 @@ import {
   providerById,
 } from './lib/doc-providers.js';
 import { findRegions, OPEN_RE, type Region } from './lib/doc-regions.js';
+import { refused } from './lib/controls.js';
 
 const HERE = import.meta.dirname;
 const REPO = path.resolve(HERE, '..');
@@ -680,10 +681,9 @@ function main(argv: string[]): number {
   // Controls before the verdict, same order and same reason as scripts/gen-gates-lock.ts:
   // a report from an instrument that cannot fail is worse than no report.
   if (selftest() !== 0) {
-    process.stderr.write(
-      'CONTROL FAILED: this gate cannot detect drift, so it refuses to rule on the docs.\n'
+    return refused(
+      'CONTROL FAILED: this gate cannot detect drift, so it refuses to rule on the docs.'
     );
-    return 1;
   }
 
   const root = usageRoot(argv);
@@ -705,17 +705,16 @@ function main(argv: string[]): number {
     corpus.ids.slice().sort(byCodePoint).join(',') !==
       importedIds.slice().sort(byCodePoint).join(',')
   ) {
-    process.stderr.write(
-      `VACUOUS: ${PROVIDER_SOURCE_REL} does not read back as the module this gate imported.\n` +
-        `  imported PROVIDERS : ${importedIds.length} [${importedIds.join(', ')}]\n` +
-        `  id: lines in text  : ${corpus.ids.length} [${corpus.ids.join(', ')}]\n` +
-        `  declared in text   : ${corpus.declared.length} [${corpus.declared.join(', ')}]\n` +
-        `  registered in text : ${corpus.registered.length} [${corpus.registered.join(', ')}]\n` +
-        '  These are independent readings of one file and they must agree. A shortfall means\n' +
-        '  the file was truncated, a provider was declared and never registered, or a stale\n' +
-        '  module is being served. Any of those makes a green here mean nothing.\n'
+    return refused(
+      `VACUOUS: ${PROVIDER_SOURCE_REL} does not read back as the module this gate imported.`,
+      `  imported PROVIDERS : ${importedIds.length} [${importedIds.join(', ')}]`,
+      `  id: lines in text  : ${corpus.ids.length} [${corpus.ids.join(', ')}]`,
+      `  declared in text   : ${corpus.declared.length} [${corpus.declared.join(', ')}]`,
+      `  registered in text : ${corpus.registered.length} [${corpus.registered.join(', ')}]`,
+      '  These are independent readings of one file and they must agree. A shortfall means',
+      '  the file was truncated, a provider was declared and never registered, or a stale',
+      '  module is being served. Any of those makes a green here mean nothing.'
     );
-    return 1;
   }
   pass(
     `provider corpus agrees four ways: ${importedIds.length} imported, ` +
@@ -744,11 +743,10 @@ function main(argv: string[]): number {
   //    an empty subject: a repository with no markdown, or no generated region, is not this
   //    repository, and a green over nothing is exactly the shape this gate exists to refuse.
   if (a.scanned === 0) {
-    process.stderr.write(
-      `VACUOUS: no markdown file was read under ${root}.\n` +
-        '  The gate is not seeing the tree, so its green would mean nothing.\n'
+    return refused(
+      `VACUOUS: no markdown file was read under ${root}.`,
+      '  The gate is not seeing the tree, so its green would mean nothing.'
     );
-    return 1;
   }
   if (a.targets.length === 0) {
     process.stderr.write(
