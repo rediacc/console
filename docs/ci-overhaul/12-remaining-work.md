@@ -10,7 +10,7 @@ re-derived. Status figures are measured, not remembered.
 |---|---|---|---|
 | Quality gates ported (W7 P2) | 39 | 77 | 51 |
 | Gate tests ported (W7 P3) | 0 | 148 | 0 |
-| Gate tests DECLARING a header (W2.3) | 0 | 148 | 0 |
+| Gate tests DECLARING a header (W2.3) | 148 | 148 | 100 |
 | Plans compacted (W12 P1.8) | 32 | 32 aged | 100 |
 | Shadow pairs proven | 38 | 39 | 97 |
 | Plan boxes | 67 | 130 | 51 |
@@ -24,9 +24,10 @@ commands, so the next reader re-derives rather than trusts:
     grep -cE '^\s*- \[x\]' <the plan>                                 # 67 of 130
 
 The one red pair is `w7p2-stagingtag` and it is expected: see Known open defects.
-The header row was wrong in the previous revision, which counted 226 of 445
-headers across the WHOLE tree and read it as W2.3 progress. W2.3's actual
-subject is the 148 gate tests, and every one of them has no header today.
+The header row was wrong two revisions ago, which counted 226 of 445 headers
+across the WHOLE tree and read it as W2.3 progress. W2.3's subject is the 148
+gate tests; all 148 now declare, and as of `1490d7b7d` the binder actually
+reads them, which it did not when they landed.
 
 **The 51 percent is by BOX COUNT and it flatters us.** The single largest body,
 148 gate tests, is one box and is untouched. Bash is still present ON PURPOSE:
@@ -79,13 +80,25 @@ differential. Your subjects are <list>. Follow the recording recipe in
 docs/ci-overhaul/12-remaining-work.md exactly. No registration is needed. Never
 edit or delete a bash twin. Transliterate comments: below a 0.90 comment-byte
 ratio is REFUSED IN CODE by the comparator. Report each assert output verbatim."
-EXCLUDE until T4 merges: check-e2e-coverage, check-go-deps,
-check-profiler-coverage, check-plan-housekeeping. They read root dotfiles whose
-paths T4 moves.
+The four that were EXCLUDED until T4 merged are released: check-e2e-coverage,
+check-go-deps, check-profiler-coverage and check-plan-housekeeping. T4 landed at
+`b80552370`, so port the CURRENT bytes and do not resurrect a root path from an
+older document. `POLICY_DIR` is `.ci/policy` now, and two of those four changed
+in that same commit.
 
-### T2. Gate-test headers. TWO AGENTS, split alphabetically, parallel.
-The 148 `.ci/scripts/test/gates/test-*.sh` with no header. They declare
-`kind: test` with a `blocker:`, which is non-emitting.
+### T2. Gate-test headers. DONE 2026-09-06 (ce8dbac6d, b80552370, 1490d7b7d).
+All 148 now declare a header. THE BRIEF'S `kind: test` WAS WRONG and both agents
+refused it from the parser rather than from each other: `kind: test` forbids
+`step:` and requires `test:` naming the gate-test that covers the entry, so it
+describes the 13 manifest entries whose CI coverage IS a gate-test, not the
+gate-tests themselves. The correct shape is `kind: battery` plus
+`step: Quality-gate unit tests`, which the binder's own selftest fixtures.
+
+The headers were NOT load-bearing when they landed, and that took two further
+fixes at `1490d7b7d`: `gate-bind.ts` excluded the whole `/test/gates/` tree from
+its subject scan, and separately a malformed header refused nothing in `--write`
+or `--dry-run` because the scan folded it into `problems`, which only the verify
+path reaches. Either alone would have made a planted defect fail to fire.
 PROMPT: "Add a `---- gate ----` header to each of <list>. Read
 scripts/lib/gate-header.ts for the parser v2 grammar. Derive id, run, step and
 lane from the EXISTING entry in gates.lock.json so the header restates the
@@ -102,11 +115,13 @@ it cannot share a wave with any other docker-touching set. The elite compose
 proxy and the Stripe offline test are CUT: both depend on a gitignored surface
 or a live third party and would become flaky gates.
 
-### T4. MOVE, W4 P2 policy folder. ONE AGENT, SERIAL, cannot be split.
-Measured: ZERO of the 91 allow/block list pairs have disjoint reader sets, so
-twelve agents would produce twelve conflicting branches. Moves the 14 root
-dotfiles into `.ci/policy/` with every reader, and each list's own liveness
-probe line, in one atomic change per list.
+### T4. MOVE, W4 P2 policy folder. DONE 2026-09-06 (b80552370).
+FIFTEEN lists moved, not fourteen: the plan's count was doc drift and
+`POLICY_FILES` is the checkable contract. `.ci-trigger` stays at root per W4 P0.
+Not one atomic change per list either, but ONE atomic change across the set:
+`POLICY_DIR` is a single constant and eleven readers reach it only through
+`policyPath()`, so moving one list while the constant stayed `''` would have
+broken that reader for the other fourteen.
 
 ### T5. SETUP, W6 P2. ONE AGENT.
 `.ci/rediacc_ci/core/{platform,toolchain}.py`, the toolchain port behind a

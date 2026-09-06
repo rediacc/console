@@ -51,11 +51,16 @@ nothing, finds nothing to complain about, and reports green. "Empty" and
 raises `ListNotFoundError`; a caller that genuinely wants the permissive
 behaviour writes `missing_ok=True` at the call site, where a reviewer sees it.
 
-AND THE PATHS RESOLVE FROM THE REPO ROOT, NOT FROM cwd. `audit.sh:327` passes
-the bare string `".audit-prod-allowlist"`, which is only correct while the gate
-is run from the root; the same call from a subdirectory finds nothing and, per
-the paragraph above, that nothing is indistinguishable from an empty list. Use
+AND THE PATHS RESOLVE FROM THE REPO ROOT, NOT FROM cwd. `audit.sh` used to pass
+the bare string `".audit-prod-allowlist"`, which was only correct while the gate
+ran from the root; the same call from a subdirectory finds nothing and, per the
+paragraph above, that nothing is indistinguishable from an empty list. Use
 `load(name)`, which goes through `rediacc_ci.paths.from_root`.
+
+The lists themselves moved to `.ci/policy/` on 2026-09-06 at b80552370, and
+`audit.sh` now reads them through the seam. `load(name)` still takes the BARE
+name: the directory is the seam's business, not the caller's, which is the whole
+point of having one.
 
 KNOWN CROSS-LANGUAGE HAZARDS, recorded because they are real and the goldens
 cannot see them (no list in the tree exercises any of them today):

@@ -11,14 +11,18 @@
 # Test for scripts/lib/policy-paths.ts -- the ONE seam that says where a
 # suppression policy file lives.
 #
-# WHY THE SEAM EXISTS. Sixteen allow / block / exempt files sit at the repository
-# root, and their readers mostly hard-code that root; three of them
-# (.audit-allowlist, .audit-prod-allowlist, .deps-upgrade-blocklist in
-# .ci/scripts/security/audit.sh, plus .profiler-coverage-allowlist in
-# check-profiler-coverage.sh) read a BARE RELATIVE NAME and are correct only
-# because the script happens to `cd` to the repo root first. They are moving to
-# .ci/policy/ (.ci/policy/README.md carries the predicate and the move list), and
-# a move like that half-lands unless every reader goes through one place.
+# WHY THE SEAM EXISTS, AND WHAT IT WAS FOR. FIFTEEN allow / block / exempt files
+# used to sit at the repository root with their readers mostly hard-coding it;
+# four of them (.audit-allowlist, .audit-prod-allowlist, .deps-upgrade-blocklist
+# in .ci/scripts/security/audit.sh, plus .profiler-coverage-allowlist in
+# check-profiler-coverage.sh) read a BARE RELATIVE NAME and were correct only
+# because the script happens to `cd` to the repo root first.
+#
+# THE MOVE LANDED 2026-09-06 at b80552370: POLICY_DIR is `.ci/policy` and all
+# fifteen are there. `.ci-trigger` stayed at root with its own recorded reason.
+# The seam earned itself twice over on the way: the readers had to travel in one
+# change, and when a commit landed the renames WITHOUT them, the half-landed
+# state was exactly what the seam is written to refuse.
 #
 # THE THREE PROPERTIES THIS FILE PINS, each of them a refusal:
 #
