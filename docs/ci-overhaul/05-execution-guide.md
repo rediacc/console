@@ -248,5 +248,11 @@ the operator again at the end rather than letting them dissolve.
   the class documented in 06-progress.md. `check-workflow-gates.sh` CHECK 4 now
   contract-checks both callers against `.github/external-callers.yml`; the bootstrap-script
   half is untouched and still open.
+  **Updated 2026-09-05:** console's reusable now FETCHES that token from Bitwarden, so the
+  value either caller passes is unused. The input stays DECLARED anyway -- dropping it does
+  not break this repo, it breaks their next run -- and the submodules' own
+  `CLAUDE_CODE_OAUTH_TOKEN` is repo-scoped, so it survived the org-secret deletion and those
+  callers still work. Removing the declaration belongs in the same change that updates both
+  callers and `external-callers.yml`.
 - `#533`'s underlying question is still unanswered.
 - The intra-quality serial gate chain.

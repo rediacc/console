@@ -6385,6 +6385,11 @@ Bitwarden Secrets Manager, behind a **shadow run** that proves the two agree bef
 anything is deleted. The org secrets are still authoritative and are deliberately
 NOT removed by this PR.
 
+> **SUPERSEDED 2026-09-05 — read "The shadow is retired" at the end of this file
+> before acting on anything in this section.** All 45 org secrets were deleted on
+> operator ruling, the shadow comparator is gone, and CI reads Bitwarden directly.
+> The paragraph above is kept as the record of what was true then, not as guidance.
+
 ### Five gates landed, and what each one is for
 
 | gate | asserts |
@@ -7530,3 +7535,123 @@ default backoff is 7.0s for three retries, so the backoff is real.
 to **stderr**. Running it directly and reading what appeared showed a pass; only the runner,
 which captures both streams, showed the red. Same shape as the Review Gate's reply oracle
 above: the stream you read is not necessarily the stream that decides.
+
+
+---
+
+## The shadow is retired, and what it caught on its way out (2026-09-05)
+
+Operator ruling: *"Bitwarden wins. We can't see github side. It's readonly. Get
+rid of them. We should not have github secrets at all."* All 45 rediacc org
+action secrets were deleted. Everything above about the shadow describes a
+migration that has now finished; this section is what that cost and what it
+taught.
+
+### Deleting the secrets took CI down, silently
+
+`shadow-compare.sh` compares a GitHub value against its Bitwarden twin, and its
+anti-vacuity arm fails when either side is empty -- correctly, because an absent
+GitHub secret and an empty Bitwarden value both hash to `e3b0c442...`, so without
+that arm two nothings compare EQUAL. With the GitHub side gone it fired at **40
+call sites**:
+
+    shadow CLOUDFLARE_R2_ACCESS_KEY_ID EMPTY (github=unset bitwarden=set***)
+    -- nothing was compared
+
+`Check Release State` failed, the watchdog CANCELLED the run, and Quality, Build,
+Tests and Review Gate never reported. **In `gh run list` that is indistinguishable
+from green**, which is why it sat unnoticed. Read the JOB's conclusion, never the
+run's.
+
+The comparator is now removed entirely: script, config, test gate, 40 steps and 10
+greenlight closure entries.
+
+### The removal was not the point; the 131 consumer reads were
+
+Those jobs were already fetching from Bitwarden AND still reading
+`${{ secrets.X }}` -- the deleted secret -- so a production deploy authenticated
+as **nobody** while looking healthy. 131 reads now use `${{ env.BWS_X }}`. Then 57
+`workflow_call` declarations nothing read, and 125 caller passthroughs the callees
+no longer declare, were removed **in that order**: a passthrough is dead only once
+the callee stops declaring the name, and the reverse order removes the passthrough
+while the callee still requires the secret. Org-scope reads went **147 -> 4**,
+frozen by `check:ci-secret-scope`.
+
+Two things any future sweep must know:
+
+- **GitHub kept the OLD name.** A job fetching `CLOUDFLARE_R2_ACCESS_KEY_ID` is
+  consumed by a line reading `secrets.R2_ACCESS_KEY_ID`. Without
+  `.ci/config/github-secret-preimage.json` every aliased read looks unrelated to
+  its fetch and gets left pointing at nothing. That file is down to 2 of 18 rows.
+- **The reference is not always the whole expression.** The deploy workflows pick
+  between live and sandbox Stripe keys with a multi-line ternary, so the reference
+  sits on a continuation line. `check_bws_map.py`'s `BWS_READ_RE` demanded the
+  reference BE the entire `${{ }}`, so four LIVE reads read as dead fetches and
+  assertion 13 skipped the ordering check for reads it could not see. Fixed, with
+  a control planting exactly that shape.
+
+`retire-shadowed-secrets.py` could not perform any of this: every edit it makes is
+found by the literal step name "Compare shadow secrets against GitHub", so with
+that step gone it refuses outright. Its refusal is correct and loud. It is also
+the tool that must NOT be trusted blindly -- it strips `workflow_call`
+declarations for names whose consumers still read them, which actionlint catches
+as `property "x" is not defined`.
+
+### The release was signing nothing, and the shadow had already said so
+
+`Stage Artifacts / Build Linux packages` then failed one line after declaring the
+key good:
+
+    ✓ Signing key matches the published public key (42EAD140...)
+    signing error: armored detach sign: decoding armored PGP keyring:
+    openpgp: invalid data: armor invalid
+
+**Root cause, reproduced rather than guessed.** A GPG private key does not fit one
+Bitwarden field, so it is stored as two items (`gpg-private.asc - 1` and `- 2`).
+Part 1 carries no trailing newline and part 2 has no armor header, so
+concatenating them WELDS part 1's last base64 line onto part 2's first. Measured
+against `x/crypto v0.56.0` with a throwaway key: gpg reads that block fine (which
+is why the fingerprint check ticked) and Go answers `openpgp: invalid data: armor
+invalid`, verbatim; joining with a newline is accepted. `build-linux-pkg.sh` now
+re-exports the key through gpg before nfpm sees it, which repairs every variant
+gpg can read -- and gpg reading it is what the fingerprint check already proves.
+The re-export keeps the passphrase protection.
+
+The shadow had this in hand and waved it through: `SHADOW_EXPECTED_MISMATCH:
+RELEASE_GPG_PRIVATE_KEY` was the ONE excused name, and its own comment said "a
+whitespace-only drift is still a drift, because the same value fed to a header or
+a URL would break on that byte". It was right, and it was excused anyway.
+
+**The green before it was worse than the red.** That step used to read the deleted
+org secret, got `""`, and an empty key made `build-linux-pkg.sh` SKIP signing and
+exit 0 -- the build passed by shipping an UNSIGNED package and printing
+"skipping". `RELEASE_SIGNING_REQUIRED=1` on both cd-stage signing steps makes that
+fatal now. **This is the shape to distrust everywhere in this migration: `""`
+reads as "not wanted".**
+
+### The gate that should have existed all along
+
+An AWS access key id sat in the clear in a tracked design document for two days on
+a PUBLIC repo. Six secret-related gates existed and none scanned tracked TEXT.
+`check:ci-tracked-credentials` now scans `git ls-files` for AWS key ids, PEM
+blocks with a real body, and GitHub/Slack token shapes.
+
+Two things it cost, both about telling a fixture from a leak:
+
+- **A PEM header is a shape; the body is the secret.** Matching the header alone
+  flagged 41 tracked files, every one an elision in docs or fixtures. Requiring
+  real base64 material takes it to 2 -- and those 2 are legitimate permanent
+  fixtures, which is why the gate has a shrink-only baseline at all.
+- **The gate flagged itself** the moment it was tracked, because its own selftest
+  needs a valid `AKIA` id. Assembled from parts rather than baselined, which also
+  states its honest limit: it matches LITERALS, so a credential split across a
+  concatenation evades it.
+
+### What is deliberately still on GitHub
+
+Four reads, all in workflows that cannot fetch: `breakpoint.yml` (a later step
+hands a human a shell) and `watchdog-monitor.yml` (a gate enforces that nothing
+optional precedes its monitor step). **Do not "fix" these with a step-scoped
+fetch**: `GITHUB_ENV` and `GITHUB_OUTPUT` are files any step in the job can read,
+so it isolates nothing from the shell. See
+`agent/PLAN-breakpoint-secret-shape.md`.
