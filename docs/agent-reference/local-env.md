@@ -98,12 +98,12 @@ there is no `server.json` any more) and its own token at
 universe with its own server, keys, machines, and token beside it at
 `api-token-<name>.json`; there are no `.rdc-dev/` or `.rdc-bench/` token files.
 
-Local development against the dev gateway is an explicit opt-in: `./rdc.sh --dev …`
-(or `RDC_DEV=1 ./rdc.sh …`). `--dev` reads `REDIACC_ACCOUNT_SERVER` and
+Local development against the dev gateway is an explicit opt-in: `./rdc.sh --dev <command>`
+(or `RDC_DEV=1 ./rdc.sh <command>`). `--dev` reads `REDIACC_ACCOUNT_SERVER` and
 `X25519_PUBLIC_KEY` from `private/account/.env`, seeds or patches
 `~/.config/rediacc/dev.json` with them, runs with `REDIACC_CONFIG=dev`, and fails
 fast if `./run.sh account dev` isn't running. Bench is just another config now:
-`./rdc.sh --config bench …` replaces the old `RDC_BENCH=1`. There is no `RDC_PROD`
+`./rdc.sh --config bench <command>` replaces the old `RDC_BENCH=1`. There is no `RDC_PROD`
 or `RDC_BENCH` any more. The renet build stays `--nolicense` in all wrapper modes;
 `RDC_RENET_LICENSE=1` is the independent enforcement opt-in (below).
 

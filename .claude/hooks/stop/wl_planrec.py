@@ -1473,8 +1473,11 @@ def ask_why(plan_text):
     env = dict(os.environ)
     env["STOPHOOK_CHILD"] = "1"
     prompt = WHY_PROMPT % {"plan": (plan_text or "")[:40000]}
-    try:
-        proc = subprocess.run(
+
+    # ONE PLACE THAT LAUNCHES IT, so the retry below re-runs the identical call
+    # rather than a hand-copied approximation of it.
+    def call():
+        return subprocess.run(
             [
                 exe,
                 "-p",
@@ -1495,13 +1498,27 @@ def ask_why(plan_text):
             check=False,
             stdin=subprocess.DEVNULL,
         )
+
+    try:
+        proc = call()
     except (OSError, subprocess.SubprocessError) as exc:
         return None, "plan_record model call failed: %s" % exc
+
+    # A SCHEMA EXHAUSTION IS A SAMPLE, NOT A VERDICT, and this site was the one
+    # that had not been told. `check:ci-schema-call-sites` named it, and the
+    # reason it matters here is worse than for the judge: this call writes a
+    # durable record. Refusing on one non-conforming sample would leave the
+    # compaction reporting "the model could not answer" and silently falling
+    # back to `--why auto`, which is a provenance the trailer would then have to
+    # state truthfully forever.
+    #
+    # The helper is bounded, not a loop: only the exhaustion subtype, only with
+    # budget headroom, only once, and never after a transport failure, which
+    # raises above and never reaches here.
     if proc.returncode != 0:
-        return None, "plan_record model call exited %d: %s" % (
-            proc.returncode,
-            (proc.stderr or proc.stdout or "<no output>").strip()[-300:],
-        )
+        proc, why = wl_judge.retry_schema_exhaustion("plan_record", proc, call)
+        if proc is None:
+            return None, why
     try:
         env_out = json.loads(proc.stdout)
     except ValueError as exc:
