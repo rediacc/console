@@ -109,7 +109,7 @@ plans=$(ls -1 agent/PLAN-*.md 2>/dev/null | wc -l | tr -d ' ')
 peers=$(find agent -mindepth 1 -maxdepth 1 -type d ! -name "${ME}" 2>/dev/null | wc -l | tr -d ' ')
 echo "DURABLE CONTEXT: my STATE.md ${state_age}; ${plans} plan file(s) under agent/"
 echo "  ${peers} peer session folder(s) beside mine under agent/. Theirs to write, mine to read."
-echo "  These survive a reboot. The worklist store lives under \$TMPDIR and does not."
+echo "  These survive a reboot. The worklist event log is tracked under agent/worklist/ and survives too; only locks, caches and briefs live under \$TMPDIR."
 # ZERO IS A FAILURE, NOT A REPORT. A brief that finds nothing when the tree is
 # full is indistinguishable from a brief on an empty tree, which is what let the
 # path bug live for eight days.

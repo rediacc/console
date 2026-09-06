@@ -5,7 +5,10 @@ Status: LANDED 2026-09-03, live on this machine, all gates green (`ci:quick` 292
 ## Operator rulings, 2026-09-03
 
 1. **Bash coverage cannot be dropped** -- "we have too many bash scripts, we cannot
-   discard them." Section 0's finding stands as a FACT about BASH_ENV, not as a reason
+   discard them." **SUPERSEDED 2026-09-06 by ruling 7 in `docs/ci-overhaul/04-decisions.md`
+   section A** (one language per folder; bash survives only as allowlisted shims plus the
+   media/tutorial pipeline, `.ci/breakpoint/` and the `.ci/tutorials/*.sh` recordings).
+   Section 0's finding stands as a FACT about BASH_ENV, not as a reason
    to go Python-only. A separate investigation (fable model) is testing mechanisms
    that survive trap replacement, `exec` and dash: shadowing the `trap` builtin with a
    function in the BASH_ENV file, the DEBUG/RETURN trap slots, kernel BSD process

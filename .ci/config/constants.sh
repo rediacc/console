@@ -42,7 +42,33 @@ unset _REDIACC_TOOLCHAIN_ENV
 # toolchain.env vs the Dockerfile -- this pair had the identical bug one file
 # over, just never caught because nothing compared it against anything.
 readonly NODE_VERSION_REQUIRED="${NODE_VERSION:?NODE_VERSION not sourced from toolchain.env}"
-readonly NODE_VERSION_MIN="${NODE_VERSION_REQUIRED}.0.0"
+
+# THE FLOOR IS SOURCED, NOT COMPOSED, and the line it replaced is the whole
+# reason. It read:
+#
+#     readonly NODE_VERSION_MIN="${NODE_VERSION_REQUIRED}.0.0"
+#
+# which derives from toolchain.env and so LOOKS like it obeys the rule the block
+# above states. It does not: NODE_VERSION is a bare MAJOR, and appending ".0.0"
+# invents a patch floor nobody chose. It yielded 22.0.0, while package.json and
+# packages/cli/package.json both required ">=22.13.0" -- so every shell path in
+# this repo enforced a floor 13 minors looser than the manifests, and a host on
+# Node 22.4 cleared ./run.sh setup only to fail later inside npm. Composing a
+# value from a pin is the same drift class as restating one; it just hides better.
+readonly NODE_VERSION_MIN="${NODE_VERSION_MIN:?NODE_VERSION_MIN not sourced from toolchain.env}"
+
+# AND THE TWO MUST DESCRIBE THE SAME MAJOR. NODE_VERSION says which major CI and
+# the image install; NODE_VERSION_MIN says the oldest release that is acceptable.
+# A floor of 20.x under an installed major of 22, or 23.x over it, is not a
+# stricter policy -- it is a pair of numbers that cannot both be honoured, and
+# whichever consumer reads only one of them decides the answer. Caught here
+# rather than in the gate because this is where anything that sources the pins
+# gets its first chance to refuse.
+if [[ "${NODE_VERSION_MIN%%.*}" != "$NODE_VERSION_REQUIRED" ]]; then
+    echo "constants.sh: NODE_VERSION_MIN=$NODE_VERSION_MIN is not on major $NODE_VERSION_REQUIRED (NODE_VERSION)" >&2
+    echo "  both live in .devcontainer/toolchain.env; move them together." >&2
+    return 1 2>/dev/null || exit 1
+fi
 
 # =============================================================================
 # PATHS (must be defined early, used by other sections)

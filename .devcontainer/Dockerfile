@@ -267,26 +267,72 @@ ENV PATH="$GOROOT/bin:$GOPATH/bin:$PATH"
 COPY toolchain.env /etc/rediacc/toolchain.env
 
 USER vscode
-# shfmt is PINNED, the rest stay @latest deliberately.
+# EVERY Go tool in this image is PINNED. That is a change of position, and the
+# original reasoning is kept below because it is still half right.
 #
-# shfmt decides a CI verdict, so an image that ships a different one than the
-# host or the runner makes the same gate disagree with itself -- which is what
-# `go install ...@latest` here plus an unpinned `curl webi.sh/shfmt | sh` in the
-# workflow actually produced. The others (gopls, dlv, staticcheck,
-# golangci-lint, goimports) are EDITOR tooling: nothing gates on their output,
-# so pinning them would buy churn rather than consistency.
+# WHAT WAS TRUE, AND STILL IS. shfmt decides a CI verdict, so an image that
+# ships a different one than the host or the runner makes the same gate
+# disagree with itself -- which is what a version-less `go install` here plus an
+# unpinned `curl webi.sh/shfmt | sh` in the workflow actually produced. shfmt's
+# pin therefore lives in toolchain.env with the other GATE pins, sourced below.
 #
-# The `: "${SHFMT_VERSION:?...}"` guard is not decoration: without it an empty
+# WHAT WAS WRONG. The previous line here read "the rest stay @latest
+# deliberately", on the grounds that gopls, dlv, staticcheck, golangci-lint and
+# goimports are EDITOR tooling that nothing gates on, so pinning them would buy
+# churn rather than consistency. The consistency argument was aimed only at
+# gate VERDICTS; it missed that `@latest` also means the image is not
+# REPRODUCIBLE. Two builds of the identical Dockerfile a week apart shipped
+# different tools, so "rebuild the image" was never a repeatable instruction,
+# and a golangci-lint that changed its default linter set between two builds
+# changed what a developer sees in their editor with nothing in the diff to
+# explain it. `@latest` at build time is also the one input a supply-chain
+# review cannot audit after the fact.
+#
+# WHY THESE PINS ARE ARGs AND NOT toolchain.env KEYS. toolchain.env's own header
+# states its rule: "a version a GATE depends on, that more than one lane
+# installs". Only ONE lane installs these -- this image -- and no gate reads
+# them, so they do not meet it. `ARG <NAME>_VERSION=` is also the only shape
+# scripts/lib/dockerfile-versions.ts parses, which is what lets
+# scripts/check-devcontainer-pin-freshness.ts tell us when one goes stale;
+# see scripts/lib/devcontainer-pin-sources.ts for which of the five it watches
+# and, for the two it cannot, why.
+#
+# NOTE THE MISSING UNDERSCORE in GOLANGCILINT_VERSION. That parser's regex is
+# /^ARG\s+([A-Z0-9]+)_VERSION=/ -- the base carries no underscore, so a
+# GOLANGCI_LINT_VERSION would not match at all and the freshness gate would
+# silently watch nothing. Renaming it means widening the shared parser first.
+ARG GOPLS_VERSION=0.23.0
+ARG DLV_VERSION=1.27.1
+# staticcheck ships TWO names for one build: the GitHub release is tagged
+# 2026.2.1 while the Go module version is v0.8.1. `go install` speaks module
+# versions, so that is what is pinned here; the freshness gate cannot compare
+# the two numbering schemes, which is why staticcheck is absent from
+# devcontainer-pin-sources.ts.
+ARG STATICCHECK_VERSION=0.8.1
+# golangci-lint v2 moved to the /v2 module path. Installing the old
+# `github.com/golangci/golangci-lint/cmd/golangci-lint` at a v2 version fails
+# outright, so the path below is not interchangeable with the pre-v2 one.
+ARG GOLANGCILINT_VERSION=2.13.2
+ARG GOIMPORTS_VERSION=0.49.0
+# The `: "${X_VERSION:?...}"` guards are not decoration: without them an empty
 # build arg silently resolves to `@v`, which Go treats as a floating reference,
-# and the image would quietly ship an unpinned shfmt again while looking pinned.
+# and the image would quietly ship an unpinned tool again while LOOKING pinned.
+# SHFMT_VERSION is guarded against toolchain.env (it is sourced); the other five
+# are guarded against their ARG defaults, which `docker build --build-arg
+# GOPLS_VERSION=` can blank out just as easily.
 RUN . /etc/rediacc/toolchain.env \
     && : "${SHFMT_VERSION:?toolchain.env did not define SHFMT_VERSION}" \
+    && : "${GOPLS_VERSION:?ARG GOPLS_VERSION resolved empty}" \
+    && : "${DLV_VERSION:?ARG DLV_VERSION resolved empty}" \
+    && : "${STATICCHECK_VERSION:?ARG STATICCHECK_VERSION resolved empty}" \
+    && : "${GOLANGCILINT_VERSION:?ARG GOLANGCILINT_VERSION resolved empty}" \
+    && : "${GOIMPORTS_VERSION:?ARG GOIMPORTS_VERSION resolved empty}" \
     && go telemetry off \
-    && go install golang.org/x/tools/gopls@latest \
-    && go install github.com/go-delve/delve/cmd/dlv@latest \
-    && go install honnef.co/go/tools/cmd/staticcheck@latest \
-    && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
-    && go install golang.org/x/tools/cmd/goimports@latest \
+    && go install "golang.org/x/tools/gopls@v${GOPLS_VERSION}" \
+    && go install "github.com/go-delve/delve/cmd/dlv@v${DLV_VERSION}" \
+    && go install "honnef.co/go/tools/cmd/staticcheck@v${STATICCHECK_VERSION}" \
+    && go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${GOLANGCILINT_VERSION}" \
+    && go install "golang.org/x/tools/cmd/goimports@v${GOIMPORTS_VERSION}" \
     && go install "mvdan.cc/sh/v3/cmd/shfmt@v${SHFMT_VERSION}" \
     && rm -rf /home/vscode/.cache/go-build \
     && rm -rf "$GOPATH/pkg/mod/cache"

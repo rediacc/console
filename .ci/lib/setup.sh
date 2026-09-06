@@ -37,7 +37,14 @@
 # same class of mistake this project already paid for once, when a documented
 # `curl` of a 404 baked an HTML error page into a signing key.
 setup_node_toolchain() {
-    local min="${NODE_VERSION_MIN:-22.0.0}"
+    # THE FLOOR IS REQUIRED, NOT DEFAULTED. This read `${NODE_VERSION_MIN:-22.0.0}`,
+    # and that default was the more dangerous of the two branches: it applied
+    # exactly when .ci/config/constants.sh had not been sourced, and 22.0.0 is
+    # LOOSER than the repo's real floor (engines.node ">=22.13.0"). So the
+    # unsourced path did not merely guess, it silently accepted a Node this repo
+    # does not support and reported "already present" for it. A missing floor is
+    # not a 22.0.0 floor; it is an unanswered question, and this now says so.
+    local min="${NODE_VERSION_MIN:?constants.sh was not sourced, so the Node floor is unknown}"
     local major="${NODE_VERSION_REQUIRED:-22}"
     local cur=""
 

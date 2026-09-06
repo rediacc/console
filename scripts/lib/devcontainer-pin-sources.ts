@@ -13,7 +13,7 @@
  * BW_VERSION -> "bw" and GLAB_VERSION -> "glab", but AGENT_BROWSER_VERSION does
  * not match at all and would need the shared parser widened first.
  *
- * WHY ONLY ONE ENTRY. The devcontainer image also pins glab (1.90.0), bottom
+ * WHY NOT EVERY PIN. The devcontainer image also pins glab (1.90.0), bottom
  * (0.12.3), agent-browser (0.26.0), openvscode-server (1.109.5) and a ttyd image
  * tag, and none of them is watched by anything either. They are absent here on
  * purpose, not by oversight: every one is already behind upstream, so seeding
@@ -21,6 +21,32 @@
  * unrelated tools" change nobody asked for, and a gate that is red on the day it
  * lands is a gate somebody disables. Adding one later is one entry plus,
  * ideally, its hashArgs. That is the whole migration.
+ *
+ * (That paragraph opened "WHY ONLY ONE ENTRY" when this file held bw alone. The
+ * count has moved twice since; the REASONING is what was worth keeping, so only
+ * the heading changed.)
+ *
+ * THE GO TOOLS, added when .devcontainer/Dockerfile stopped installing them at
+ * `@latest`. Three of the five are watchable and two are not, and the two are
+ * the interesting half:
+ *
+ *   staticcheck  dominikh/go-tools tags its RELEASES by date (2026.2.1) while
+ *                the Go MODULE version of the same build is v0.8.1. `go install`
+ *                speaks module versions, so v0.8.1 is what the Dockerfile pins,
+ *                and isNewer() comparing 2026.2.1 against 0.8.1 would report a
+ *                stale pin on every run forever. A watcher that is always red is
+ *                worse than none.
+ *   goimports    lives in golang/tools, which publishes 89 releases and every
+ *                one of them is tagged `gopls/*` (measured 2026-09-06 over the
+ *                newest 100). goimports is versioned by the x/tools module
+ *                (v0.49.0) and has no release of its own to compare against, so
+ *                there is nothing here for tagPrefix to select. Watching it would
+ *                need a tag-list source rather than a release-list one, which is
+ *                a different fetch than this gate makes.
+ *
+ * gopls IS watchable despite sharing that repo, precisely because `gopls/v` is
+ * the prefix those 89 releases carry -- the same monorepo problem tagPrefix was
+ * built for below, which is why it needed no new machinery.
  */
 
 /* NOT exported: `DevcontainerPinSource.hashArgs` is its only reference, and it is in
@@ -78,5 +104,34 @@ export const DEVCONTAINER_PIN_SOURCES: DevcontainerPinSource[] = [
       amd64: { arg: 'BWS_SHA256_AMD64', asset: (v) => `bws-x86_64-unknown-linux-gnu-${v}.zip` },
       arm64: { arg: 'BWS_SHA256_ARM64', asset: (v) => `bws-aarch64-unknown-linux-gnu-${v}.zip` },
     },
+  },
+  // The Go tools below carry NO hashArgs, and that is the documented "a pin with
+  // no hashes simply omits it" case rather than an oversight: `go install`
+  // verifies every module against the Go checksum database, which is a stronger
+  // guarantee than a sha256 we recorded ourselves. .ci/scripts/lib/toolchain.sh
+  // makes the identical argument for shfmt.
+  {
+    base: 'gopls',
+    display: 'gopls (Go language server)',
+    repo: 'golang/tools',
+    // NOT "v". Every release in this repo is a gopls one, and its tag is
+    // `gopls/v0.23.0` -- the module version with a directory prefix. Stripping
+    // exactly this prefix is what yields the value the Dockerfile ARG holds.
+    tagPrefix: 'gopls/v',
+  },
+  {
+    base: 'dlv',
+    display: 'Delve (Go debugger)',
+    repo: 'go-delve/delve',
+    tagPrefix: 'v',
+  },
+  {
+    // GOLANGCILINT_VERSION, no underscore: parseDockerfileVersions' base is
+    // /[A-Z0-9]+/, so a GOLANGCI_LINT_VERSION ARG would not be parsed and this
+    // entry would match nothing. See the note in .devcontainer/Dockerfile.
+    base: 'golangcilint',
+    display: 'golangci-lint',
+    repo: 'golangci/golangci-lint',
+    tagPrefix: 'v',
   },
 ];

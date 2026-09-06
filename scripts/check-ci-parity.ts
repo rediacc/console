@@ -32,8 +32,9 @@
  *      coverage -- it would make every other assertion vacuous.
  *   3. The control below runs before the real check on EVERY invocation.
  *
- * COVERAGE VIA A TEST IS DECLARED, NEVER INFERRED. run-all.sh runs 57 gate
- * tests, and grepping them for a script name is precisely how #549 would have
+ * COVERAGE VIA A TEST IS DECLARED, NEVER INFERRED. run-all.sh runs every
+ * test-*.sh under .ci/scripts/test/gates/ (the glob is the live count), and
+ * grepping them for a script name is precisely how #549 would have
  * been greenwashed: check-jq-boolean-default.ts is NAMED by
  * test-gate-anti-vacuity.sh:104 and that test ran green in CI for weeks while
  * the real scan never executed once. Mentioning a script is not executing it.

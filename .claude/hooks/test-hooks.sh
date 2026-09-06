@@ -51,6 +51,64 @@ check_out() {
     fi
 }
 
+# check_nojq <expected-exit> <script> <json-stdin> <label> <must-contain> [<bin-dir>]
+#
+# check_out(), but run against a HAND-BUILT PATH instead of this machine's. That
+# is the one condition require-jq.sh exists for, and it is the one condition no
+# other case in this file can express: every one of them runs with a healthy
+# toolchain, where require-jq.sh exits 0 on its first line and proves nothing.
+# Until 2026-09-06 the only trace of that condition anywhere in this suite was
+# the prose comment above hook_files().
+#
+# THE SANDBOX HOLDS EXACTLY WHAT require-jq.sh USES, no more: `cat` to slurp
+# stdin and `grep -qE` for the two carve-out matches. `command -v` and `printf`
+# are bash builtins and need no binary on disk. jq is absent by construction,
+# which is the entire point -- and bash itself is invoked by ABSOLUTE path
+# rather than symlinked in, so the sandbox stays an honest statement of that set.
+#
+# BUILD THE PAYLOAD FIRST, with bash_json/inject_json, BEFORE handing it here:
+# bash_json shells out to jq itself, so composing a payload under the restricted
+# PATH would break the harness rather than test the hook.
+#
+# The optional 6th argument names the sandbox, which is what makes the control
+# direction real: the SAME code path, the same payload, the same hook, differing
+# only in whether jq is on the PATH. An exit-2-when-absent case alone cannot
+# tell a working guard from one that refuses everything.
+NOJQ_BASH="$(command -v bash)"
+NOJQ_BIN=""
+WITHJQ_BIN=""
+nojq_sandboxes() {
+    local b
+    NOJQ_BIN="$(mktemp -d)"
+    WITHJQ_BIN="$(mktemp -d)"
+    for b in cat grep; do
+        ln -s "$(command -v "$b")" "$NOJQ_BIN/$b"
+        ln -s "$(command -v "$b")" "$WITHJQ_BIN/$b"
+    done
+    ln -s "$(command -v jq)" "$WITHJQ_BIN/jq"
+}
+check_nojq() {
+    local expected="$1" script="$2" json="$3" label="$4" needle="$5" bin="${6:-$NOJQ_BIN}" rc out
+    out="$(printf '%s' "$json" | PATH="$bin" "$NOJQ_BASH" "$DIR/$script" 2>&1 >/dev/null)"
+    rc=$?
+    # An empty needle asserts SILENCE, not "no assertion": the jq-present arm's
+    # whole claim is that the guard says nothing at all.
+    local ok=yes
+    [[ "$rc" == "$expected" ]] || ok=no
+    if [[ -n "$needle" ]]; then
+        grep -qF -- "$needle" <<<"$out" || ok=no
+    elif [[ -n "$out" ]]; then
+        ok=no
+    fi
+    if [[ "$ok" == yes ]]; then
+        PASS=$((PASS + 1))
+        printf 'ok   [%s] %s (exit %s)\n' "$expected" "$label" "$rc"
+    else
+        FAIL=$((FAIL + 1))
+        printf 'FAIL [%s] %s (got exit %s, said: %s)\n' "$expected" "$label" "$rc" "${out:-<nothing>}"
+    fi
+}
+
 bash_json() { printf '{"tool_input":{"command":%s}}' "$(jq -Rn --arg c "$1" '$c')"; }
 # Same, but flagged as a harness background task. block-long-sleep.sh raises its
 # sleep cap for these: a long sleep only costs anything in the foreground.
@@ -1127,6 +1185,36 @@ check 0 pre-bash/block-premature-ready.sh "$(bash_json 'gh pr view 531')" "prema
 # unanchored v1 fired on a round-log heredoc that merely mentioned the flow.
 check 0 pre-bash/block-premature-ready.sh "$(bash_json $'cat >> log.md <<EOF\ngreen-gated `gh pr ready` + hook-banned --admin\nEOF')" "premature-ready: prose mention in heredoc ignored"
 check 0 pre-bash/block-admin-merge.sh "$(bash_json $'cat >> log.md <<EOF\nthe old flow used gh pr merge --admin, now banned\nEOF')" "admin-merge: prose mention in heredoc ignored"
+
+# --- require-jq.sh: the guard that only has an opinion on a BROKEN toolchain --
+# Everything above this line runs on a machine that has jq, where require-jq.sh
+# exits 0 at its first line. These three cases are the only place in the suite
+# where it does any work at all.
+#
+# WHY A PostToolUse CASE EXISTS AS OF 2026-09-06. require-jq.sh was registered
+# first in all three PreToolUse chains and NOWHERE on PostToolUse, while both
+# post-bash hooks (cancel-old-ci.sh, refresh-pr-body.sh) read stdin with
+# `jq -r ... 2>/dev/null`. With no jq they got an empty string, matched nothing,
+# and exited 0 -- failing OPEN and silently. The exit is not a block there: the
+# Bash call has already run. It is the only thing that makes the broken
+# toolchain VISIBLE instead of letting two hooks quietly do nothing.
+#
+# Payloads are built here, with jq on the PATH, and only then handed to
+# check_nojq, which runs the hook under a PATH that has none. See check_nojq.
+nojq_sandboxes
+NOJQ_PRE_JSON="$(bash_json 'git push --force origin main')"
+NOJQ_POST_JSON="$(inject_json 'gh pr checks 42' 'all checks passed')"
+check_nojq 2 require-jq.sh "$NOJQ_PRE_JSON" \
+    "require-jq: a PreToolUse Bash payload is REFUSED when jq is missing" \
+    "BLOCKED: jq is not installed"
+check_nojq 2 require-jq.sh "$NOJQ_POST_JSON" \
+    "require-jq: a PostToolUse Bash payload is REFUSED when jq is missing" \
+    "On PostToolUse the tool has ALREADY run"
+# CONTROL, the direction that matters most: a guard that refuses everything
+# would pass both cases above and be useless. With jq present it must be mute.
+check_nojq 0 require-jq.sh "$NOJQ_PRE_JSON" \
+    "require-jq CONTROL: silent and exit 0 when jq IS present" "" "$WITHJQ_BIN"
+rm -rf "$NOJQ_BIN" "$WITHJQ_BIN"
 
 # --- merging with unpushed commits ------------------------------------------
 # NEAR-MISS 2026-09-01: a land pass had pushed `a3701d631` and was one step from

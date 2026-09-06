@@ -465,7 +465,6 @@ const CLOSURES = {
       'packages/cli',
       'packages/locales',
       'Dockerfile',
-      'docker-compose.yml',
       '.ci/docker',
       '.ci/scripts/build/buildx-push-web.sh',
       '.ci/scripts/ci/set-image-tags.sh',

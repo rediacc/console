@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
-# FAIL CLOSED when jq is missing. Registered FIRST in every PreToolUse chain.
+# FAIL CLOSED when jq is missing. Registered FIRST in every PreToolUse and
+# PostToolUse Bash hook chain.
+#
+# WIDENED to PostToolUse 2026-09-06. It was PreToolUse-only, which left the two
+# post-bash hooks (cancel-old-ci.sh, refresh-pr-body.sh) in exactly the state
+# described below: both read stdin with `jq -r ... 2>/dev/null`, so with no jq
+# they get an empty string and do nothing, quietly. On PostToolUse the tool has
+# ALREADY run, so a non-zero exit here prevents nothing -- it exists purely to
+# SURFACE the broken toolchain to the session, which is the difference between a
+# post-hook that is inert and a post-hook that says so.
 #
 # THE DEFECT THIS CLOSES, measured on a bare machine 2026-08-26. Every one of the
 # 22 pre-bash and 5 pre-edit hooks parses its stdin with
@@ -77,10 +86,14 @@ if [ "$allow" = maybe ]; then
 fi
 
 cat >&2 <<'MSG'
-BLOCKED: jq is not installed, and every PreToolUse hook in this repo parses its
-input with jq. Without it they all exit 0, which means ALLOW, so the entire guard
-set (force-push, blanket git add, destructive restore, worktree add, admin merge,
-amend, and 21 more) is silently inert.
+BLOCKED: jq is not installed, and every PreToolUse and PostToolUse Bash hook in
+this repo parses its input with jq. Without it they all exit 0, which means ALLOW,
+so the entire guard set (force-push, blanket git add, destructive restore,
+worktree add, admin merge, amend, and 21 more) is silently inert.
+
+On PostToolUse the tool has ALREADY run, so this exit prevents nothing: it is
+there to surface the broken toolchain to the session instead of letting
+cancel-old-ci.sh and refresh-pr-body.sh quietly do nothing.
 
 This hook fails closed rather than let that pass unnoticed.
 
