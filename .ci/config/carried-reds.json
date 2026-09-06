@@ -16,5 +16,10 @@
     "A narrowed run (--only/--skip) is refused before any of this is consulted,",
     "so carrying cannot become a second way to launder a partial lane."
   ],
-  "carried": []
+  "carried": [
+    {
+      "gate": "check:ci-secret-reachability",
+      "reason": "The secret-topology record was refreshed 2026-09-02T14:06:16Z and the topology changed 2026-09-05T00:00:00Z, AFTER it, so the record is young enough to pass its age limit while describing the world before the change. The gate says so itself and names the only cure: `--refresh`, which needs an admin:org token. No assistant session has one, and minting or using it is operator-only, so this is door:operator-only rather than work anybody here can do. Session d1589e0b ruled the same way on item #06182358 and left it red ON PURPOSE. Carried, not suppressed: CI still runs this gate and still fails on it, and this entry goes stale and REFUSES the moment a refresh makes it pass."
+    }
+  ]
 }
