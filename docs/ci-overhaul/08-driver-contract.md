@@ -202,6 +202,26 @@ produces, the comment-byte count of the bash original and of the Python port. A 
 comment bytes fall below 90 percent of the original's is refused. Docstrings count as
 comments; a module docstring is the natural home for a file-header block.
 
+**"REFUSED" NOW MEANS A GATE, AND UNTIL 2026-09-06 IT DID NOT.** This paragraph was
+written as though the floor were enforced, and the box tracking it was marked closed on
+that reading. It was not: `shadow-gate.ts` computed the ratio, stored it on every ledger
+row, and PRINTED `below the 0.90 floor` on the record path, but `assertEquivalent` -- the
+only function that rules -- never read `row.comments`, so `--assert` returned 0 with every
+row under the floor. The word "refused" described a human noticing a number, which is
+exactly the kind of criterion this contract exists to stop relying on. An adversarial
+survey found it by asking what would happen if nobody looked.
+
+It is now enforced in code, keyed on the exported `COMMENT_RATIO_FLOOR` so the number the
+record path prints and the number the assert rules on cannot drift apart. Only rows against
+COUNTED trees are judged, because a row on a disqualified tree is already refused and
+failing it twice makes the first message harder to act on; rows carrying no `comments`
+field are untouched, so ledgers written before this stay readable.
+
+Worth stating plainly because it is the reason this went unnoticed for so long: the floor
+was never masking a live violation. The worst ratio across all 100 recorded rows is 2.95,
+comfortably clear of 0.90. A criterion that nothing checks looks identical to a criterion
+everything passes, right up until the first port that would have failed it.
+
 WHY A RATIO AND NOT A DIFF. The prose must be allowed to change: `set -euo pipefail` needs
 explaining in bash and says nothing in Python, and a comment about an argument-splitting
 bug is meaningless once the arguments are a list. Demanding identical text would force
@@ -310,6 +330,35 @@ policy (to `.ci/policy`), generated baseline (to a baselines directory), or cont
 gate asserts BOTH directions: nothing outside the discovered set at the root, and every
 policy file present in the policy directory, so a move that forgets a reader is red rather
 than quiet.
+
+## 5e. A writer agent hands over its registration as a PATCH FRAGMENT
+
+Added 2026-09-06, because two rules in this contract contradicted each other and the
+contradiction had already removed roughly six workstream phases from the parallel plan
+before anyone noticed.
+
+Invariant 1 says an emitter and its parity gate land in the SAME change. The single-writer
+table above says `package.json`, `scripts/ci-runner/manifest.ts` and
+`.github/workflows/**` have exactly one writer, the driver. Read literally and together,
+NO box that registers a gate can be executed by an agent at all: the agent may write the
+gate but not the line that registers it, and the driver may write the line but is not the
+one writing the gate. A survey found W3 P2, W4 P4, W5 P5, W10 P5, W1 P6, W12 P3.1b and
+half of both W2.3 and W2.5 stranded on exactly that reading.
+
+THE RESOLUTION, which keeps both rules rather than weakening either. The agent writes the
+gate, its test, and its EXACT literal registration lines, quoted in its final report. The
+driver pastes those lines and commits the whole thing together. Invariant 1 holds, because
+gate and registration land in one commit; the single-writer rule holds, because only the
+driver ever writes the registry files.
+
+Proven in practice on 2026-09-06: ten concurrent writers handed over registrations this way
+and the registry files never had two writers. It costs the driver one paste per agent and
+it is the difference between a wave of eight and a wave of two.
+
+A REGISTRATION FRAGMENT IS NOT A SUGGESTION. It is literal text: the npm key with its exact
+body, the manifest entry with its `id`, `run`, `gate`, `leaves` and `ci` block, and the
+workflow step with its guard. An agent that reports "register this gate in the usual way"
+has handed over nothing, and the driver then has to derive what the agent already knew.
 
 ## 6. Floor policy
 
