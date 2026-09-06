@@ -1379,6 +1379,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-release-key-canonical',
+    run: 'npm run check:ci-release-key-canonical',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check-release-key-canonical.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Release key canonical',
+    },
+  },
+  {
     id: 'check:ci-tracked-credentials',
     run: 'npm run check:ci-tracked-credentials',
     gate: true,

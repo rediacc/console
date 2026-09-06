@@ -2105,6 +2105,14 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-tracked-credentials
 
+      # A release build signed NOTHING for a day: the key arrived welded (two
+      # Bitwarden halves joined without a newline), gpg read it, and nfpm's Go
+      # decoder did not. Uses a throwaway key -- the real one is a secret and
+      # deliberately out of scope here.
+      - name: Release key canonical
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-release-key-canonical
+
       # Offline by construction: compares the committed record against the
       # secrets each workflow references. The network lives only in --refresh.
       - name: Secret reachability

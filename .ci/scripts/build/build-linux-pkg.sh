@@ -186,49 +186,19 @@ if [[ "$FORMAT" == "rpm" || "$FORMAT" == "deb" ]] && [[ -n "${RELEASE_GPG_PRIVAT
     GPG_KEY_FILE="$BUILD_DIR/signing-key.gpg"
     echo "$RELEASE_GPG_PRIVATE_KEY" >"$GPG_KEY_FILE"
 
-    # CANONICALISE THE ARMOR BEFORE nfpm SEES IT.
-    #
-    # gpg parses armored keys leniently; nfpm decodes them with Go's
-    # openpgp.ReadArmoredKeyRing, which does not. A key that gpg reads happily can
-    # still fail there, and it fails AFTER the fingerprint check above has printed
-    # a tick -- which is exactly how run 33990640584 looked: "Signing key matches
-    # the published public key" immediately followed by
-    #
-    #     signing error: armored detach sign: decoding armored PGP keyring:
-    #     openpgp: invalid data: armor invalid
-    #
-    # Measured against x/crypto v0.56.0 on a throwaway key: trailing whitespace on
-    # the base64 lines is read fine by gpg and rejected by Go as "illegal base64
-    # data at input byte 0"; a corrupted CRC-24 gives "armor invalid" verbatim.
-    # The stored value's exact quirk does not matter, because importing and
-    # re-exporting through gpg repairs EVERY variant gpg can read -- and gpg
-    # reading it is precisely what the fingerprint check above already proved.
-    #
-    # The re-export keeps the key passphrase-protected (verified: signing with the
-    # right passphrase succeeds, and the wrong one still fails with "private key
-    # checksum failure"), so NFPM_*_PASSPHRASE below stays correct.
-    GPG_CANON_HOME="$BUILD_DIR/gnupg-canon"
-    rm -rf "$GPG_CANON_HOME"
-    mkdir -p "$GPG_CANON_HOME"
-    chmod 700 "$GPG_CANON_HOME"
-    if GNUPGHOME="$GPG_CANON_HOME" gpg --batch --pinentry-mode loopback \
-        --passphrase "${RELEASE_GPG_PASSPHRASE:-}" --import "$GPG_KEY_FILE" 2>/dev/null &&
-        canon_fpr=$(GNUPGHOME="$GPG_CANON_HOME" gpg --list-secret-keys --with-colons 2>/dev/null |
-            awk -F: '$1=="fpr"{print $10; exit}') && [[ -n "$canon_fpr" ]] &&
-        GNUPGHOME="$GPG_CANON_HOME" gpg --batch --pinentry-mode loopback \
-            --passphrase "${RELEASE_GPG_PASSPHRASE:-}" --armor \
-            --export-secret-keys "$canon_fpr" >"$GPG_KEY_FILE.canonical" 2>/dev/null &&
-        [[ -s "$GPG_KEY_FILE.canonical" ]]; then
-        mv "$GPG_KEY_FILE.canonical" "$GPG_KEY_FILE"
+    # CANONICALISE THE ARMOR BEFORE nfpm SEES IT. gpg parses leniently, nfpm's Go
+    # decoder does not, and the failure lands AFTER the fingerprint check below has
+    # printed a tick. The why, and the reproduction, are in the script itself; it is
+    # shared so check:ci-release-key-canonical exercises the real thing.
+    if "$(dirname "${BASH_SOURCE[0]}")/canonicalise-gpg-key.sh" \
+        "$GPG_KEY_FILE" "${RELEASE_GPG_PASSPHRASE:-}"; then
         log_info "Re-exported the signing key through gpg for canonical armor"
     else
-        # Not fatal on its own: the original file may already be canonical, and the
-        # fingerprint check below still has to pass. Say so rather than proceeding
-        # silently, because the next failure would come from inside nfpm.
-        log_warn "could not re-export the signing key through gpg; handing nfpm the key as stored"
-        rm -f "$GPG_KEY_FILE.canonical"
+        # Not fatal on its own: the key may already be canonical, and the fingerprint
+        # check below still has to pass. Say so rather than proceeding silently,
+        # because the next failure would come from inside nfpm.
+        log_warn "could not canonicalise the signing key; handing nfpm the key as stored"
     fi
-    rm -rf "$GPG_CANON_HOME"
 
     # THE PACKAGE SIGNING KEY MUST BE THE PUBLISHED PUBLIC KEY. Same check as
     # build-pkg-repo.sh, same day, same reason: dnf verifies every rpm against
