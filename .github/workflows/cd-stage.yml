@@ -156,6 +156,11 @@ jobs:
           NEXT_VERSION: ${{ inputs.next_version }}
           RELEASE_GPG_PRIVATE_KEY: ${{ env.BWS_RELEASE_GPG_PRIVATE_KEY }}
           RELEASE_GPG_PASSPHRASE: ${{ env.BWS_RELEASE_GPG_PASSPHRASE }}
+          # This is the RELEASE path: an absent key here means the fetch failed,
+          # never that signing was not wanted. Without this the build ships an
+          # unsigned package and goes green, which is what it did while the
+          # deleted org secret was resolving to the empty string.
+          RELEASE_SIGNING_REQUIRED: '1'
 
       # -----------------------------------------------------------------------
       # Step 3: Generate CLI manifest - ONCE
@@ -204,6 +209,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_GPG_PRIVATE_KEY: ${{ env.BWS_RELEASE_GPG_PRIVATE_KEY }}
           RELEASE_GPG_PASSPHRASE: ${{ env.BWS_RELEASE_GPG_PASSPHRASE }}
+          # This is the RELEASE path: an absent key here means the fetch failed,
+          # never that signing was not wanted. Without this the build ships an
+          # unsigned package and goes green, which is what it did while the
+          # deleted org secret was resolving to the empty string.
+          RELEASE_SIGNING_REQUIRED: '1'
 
       # -----------------------------------------------------------------------
       # Step 5: Stage Docker images (validates existence + retag to channel)

@@ -415,6 +415,54 @@ phase4_validate_apt_metadata() {
     fi
     log_info "CONTROL: build-linux-pkg.sh refuses a signing key that is not the published public key"
 
+    # A KEY WHOSE ARMOR LINES ARE WELDED MUST STILL SIGN. This is not a
+    # hypothetical shape. The GPG private key does not fit one Bitwarden field, so
+    # it is stored as two items; part 1 carries no trailing newline, and the
+    # Secrets Manager value was assembled by concatenating them, welding part 1's
+    # last base64 line onto part 2's first. gpg reads that happily -- the
+    # fingerprint check above passes -- and nfpm's Go armor decoder does not,
+    # which is how run 33990640584 died with
+    #     signing error: armored detach sign: decoding armored PGP keyring:
+    #     openpgp: invalid data: armor invalid
+    # AFTER printing "Signing key matches the published public key". build-linux-pkg.sh
+    # now re-exports through gpg to canonicalise the armor; this proves it.
+    local welded
+    welded=$(printf '%s' "$RELEASE_GPG_PRIVATE_KEY" | awk '
+        /^-----/ { print; next }
+        NR==6 { prev=$0; getline; printf "%s%s\n", prev, $0; next }
+        { print }')
+    if ! RELEASE_GPG_PRIVATE_KEY="$welded" \
+        "$SCRIPT_DIR/../build/build-linux-pkg.sh" \
+        --binary "$TEST_DIR/rdc-dummy" --version "$TEST_VERSION" --arch amd64 \
+        --format deb --output "$TEST_DIR/packages-welded" >/dev/null 2>&1; then
+        log_error "a deb build with WELDED armor lines failed; the gpg re-export is not canonicalising the key"
+        return 1
+    fi
+    log_info "CONTROL: a signing key with welded armor lines is canonicalised and still signs"
+
+    # AN EMPTY KEY MUST NOT SHIP AN UNSIGNED PACKAGE WHEN SIGNING IS REQUIRED.
+    # The org secret this used to read was deleted 2026-09-05, so the expression
+    # resolved to "" -- and "" read as "no signing wanted", so the build went GREEN
+    # having signed nothing.
+    if RELEASE_SIGNING_REQUIRED=1 RELEASE_GPG_PRIVATE_KEY="" \
+        "$SCRIPT_DIR/../build/build-linux-pkg.sh" \
+        --binary "$TEST_DIR/rdc-dummy" --version "$TEST_VERSION" --arch amd64 \
+        --format deb --output "$TEST_DIR/packages-unsigned" >/dev/null 2>&1; then
+        log_error "CONTROL FAILED: an EMPTY signing key shipped an unsigned deb under RELEASE_SIGNING_REQUIRED=1"
+        return 1
+    fi
+    log_info "CONTROL: an empty signing key is refused when signing is required"
+    # CONTROL for the control: without the flag, an empty key still skips quietly,
+    # so the assertion above is testing the flag and not a build that always fails.
+    if ! RELEASE_GPG_PRIVATE_KEY="" \
+        "$SCRIPT_DIR/../build/build-linux-pkg.sh" \
+        --binary "$TEST_DIR/rdc-dummy" --version "$TEST_VERSION" --arch amd64 \
+        --format deb --output "$TEST_DIR/packages-unsigned-ok" >/dev/null 2>&1; then
+        log_error "CONTROL FAILED: an unsigned local build (no RELEASE_SIGNING_REQUIRED) should still succeed"
+        return 1
+    fi
+    log_info "CONTROL: without the flag, an unsigned local build still succeeds"
+
     unset GNUPGHOME RELEASE_GPG_PRIVATE_KEY RELEASE_GPG_PUBLIC_KEY_FILE
     rm -rf "$gnupg_tmp"
 
