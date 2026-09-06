@@ -4,3 +4,6 @@
 {"kind":"charge","sig":"ebc6f004a834","why":"proven","at":"2026-09-05T17:30:16Z","br":"main"}
 {"kind":"charge","sig":"610f79376311","why":"proven","at":"2026-09-05T19:02:54Z","br":"main"}
 {"kind":"charge","sig":"c25ac68c83de","why":"proven","at":"2026-09-06T03:05:10Z","br":"main"}
+{"kind":"charge","sig":"dd1131be3744","why":"proven","at":"2026-09-06T03:43:55Z","br":"main"}
+{"kind":"debt","sig":"9696d1a551fd","blind_spot":"No gate validates PR body content for required retractions. Title/label checks miss body text; body-text tools don't know which content is mandatory.","surface":"none","artifact":"","charged":7,"at":"2026-09-06T03:53:21Z","br":"main"}
+{"kind":"charge","sig":"9696d1a551fd","why":"capped","at":"2026-09-06T03:53:21Z","br":"main"}
