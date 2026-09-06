@@ -594,16 +594,27 @@ jobs:
   tag-and-release:
     name: Tag & GitHub Release
     runs-on: ubuntu-latest
-    # contents: write is for exactly ONE step, "Create GitHub Release"
-    # (create-github-release.sh runs `gh release create` on github.token).
-    # The tag push, the submodule tags, the homebrew-tap bump and the contract
-    # floor push all ride the cd-preset App token via the global insteadOf
-    # credential, not GITHUB_TOKEN.
-    # This is the scope whose loss produces the half-completed release this
-    # repo has already seen twice: the tag lands and the Release does not.
+    # NO `contents: write`, and that is the point. Every write in this job now
+    # rides the cd-preset App token: the tag push, the submodule tags, the
+    # homebrew-tap bump and the contract floor push go through the global
+    # insteadOf credential, and "Create GitHub Release" is now explicitly on
+    # `steps.app-token.outputs.token` too.
+    #
+    # It used to be the ONE step left on github.token, and it runs LAST, after
+    # the tag push. So the job held two credentials to do one job and the
+    # fragile half went last: lose contents:write and the tag lands while the
+    # Release does not. That is not hypothetical, it is the half-completed
+    # release this repo saw twice, on v1.3.11 and v1.3.8, recorded in
+    # .github/actions/app-token/action.yml.
+    #
+    # One credential for the whole job means the failure mode is now all-or-
+    # nothing rather than partial, which is the property that matters for a
+    # release: a run that cannot authenticate produces no tag AND no Release,
+    # and promote-stable's assert-edge-tag-exists.sh then refuses to promote.
+    #
     # actions: read is for the cross-run download-artifact.
     permissions:
-      contents: write
+      contents: read
       actions: read
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test, validate-install-published]
     if: >-
@@ -692,7 +703,11 @@ jobs:
 
       - name: Create GitHub Release
         env:
-          GH_TOKEN: ${{ github.token }}
+          # The App token, not github.token. See this job's `permissions:` block:
+          # every other write here already uses it, and this step running last on
+          # a different credential is what made a lost scope produce a tag with no
+          # Release rather than a clean failure.
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ needs.init.outputs.next_version }}
         run: .ci/scripts/release/create-github-release.sh
 
