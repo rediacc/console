@@ -55,7 +55,6 @@ import {
   commitBaseline,
   sharedSelftestCases,
   selftestVerdict,
-  writeBaselineVerdict,
 } from './lib/shrink-only-baseline.js';
 
 const ROOT = process.env.SECRET_SCOPE_ROOT ?? process.cwd();
