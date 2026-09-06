@@ -33,6 +33,7 @@ BUILDER="${SIGNING_COVERAGE_BUILDER:-$ROOT/.ci/scripts/build/build-linux-pkg.sh}
 #     finding rather than silently allowlisted.
 declare -A UNSIGNED_ON_PURPOSE=(
     [archlinux]="nfpm archlinux packager has no signature block in .ci/config/nfpm.yaml; signing it is an operator key decision"
+    [apk]="APK_RSA_PRIVATE_KEY is set by nothing in this repo and is absent from .ci/config/bws-secret-map.json, so apk has never been signed; nfpm.yaml's apk signature block reads an env var that is never populated. Minting an RSA key is the operator's call"
 )
 
 MIN_FORMATS=4

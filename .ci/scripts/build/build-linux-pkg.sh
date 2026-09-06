@@ -303,16 +303,19 @@ else
             log_warn "RELEASE_GPG_PRIVATE_KEY not set, skipping $FORMAT signing"
             ;;
         apk)
-            # THE SAME DEFECT, one branch over. Found by sweeping the class rather
-            # than the instance: `-n "${APK_RSA_PRIVATE_KEY:-}"` above is false for
-            # an empty value exactly as the GPG one was, so an apk shipped unsigned
-            # and green. It gets the same treatment, or the fix would have covered
-            # two of the three formats this script builds.
-            if [[ "${RELEASE_SIGNING_REQUIRED:-0}" == "1" ]]; then
-                log_error "RELEASE_SIGNING_REQUIRED=1 but APK_RSA_PRIVATE_KEY is empty or unset -- refusing to ship an UNSIGNED apk. An empty value here means the secret resolved to nothing, not that signing was not wanted."
-                exit 1
-            fi
-            log_warn "APK_RSA_PRIVATE_KEY not set, skipping APK signing"
+            # NOT REQUIRED, and this is a correction. A class sweep found apk guarded
+            # by the same `-n "${VAR:-}"` shape as the GPG one and I made it required
+            # to match -- without checking that a key existed. It does not:
+            # APK_RSA_PRIVATE_KEY is set by NOTHING in this repo and is absent from
+            # .ci/config/bws-secret-map.json, so apk has never been signed. The guard
+            # therefore blocked the release for a credential nobody has (run
+            # 34003316362, v1.3.9, "refusing to ship an UNSIGNED apk").
+            #
+            # apk is a DECLARED-UNSIGNED format alongside archlinux, recorded in
+            # check-release-signing-coverage.sh so the gap stays visible rather than
+            # being re-discovered. Making it required is the right end state; it needs
+            # a key first, and that is the operator's to mint.
+            log_warn "APK_RSA_PRIVATE_KEY not set, skipping APK signing (apk is declared-unsigned; see check-release-signing-coverage.sh)"
             ;;
     esac
 fi
