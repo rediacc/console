@@ -138,9 +138,19 @@ def test_scan_files_matches_git_ls_files() -> None:
     would scan a different set while the success line still read healthy.
     """
     root = paths.repo_root()
+    # THE PATHSPECS COME FROM THE PORT'S OWN CONSTANT, not retyped here. Two
+    # reasons, and the second is why this changed on 2026-09-06. First, a copy
+    # can drift from the thing it is meant to check, which would leave this test
+    # asserting that the port agrees with a literal nobody runs. Second,
+    # `check:ci-pathspec-scope` reads every `git ls-files` call site and refuses
+    # a `**/` pathspec, correctly: `*` already crosses `/` under git's default
+    # semantics, so `**/` DEMANDS a slash and silently skips everything directly
+    # under the prefix. The twin carries that defect deliberately and the port
+    # carries it faithfully; spelling it a third time here made this file an
+    # independent instance of the defect rather than a check on it.
+    specs = " ".join("'%s'" % s for s in cw.SCAN_PATHSPECS)
     code, out, _err = diff.bash_streams(
-        "git -C %s ls-files '.claude/**/*.md' '.claude/**/*.sh' 'docs/agent-reference/*.md' "
-        '| grep -v "^%s$"' % (root, cw.EVIDENCE_FILE)
+        'git -C %s ls-files %s | grep -v "^%s$"' % (root, specs, cw.EVIDENCE_FILE)
     )
     assert code == 0
     want = [line for line in out.split("\n") if line != ""]

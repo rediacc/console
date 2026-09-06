@@ -1641,6 +1641,25 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run test:unit --workspace=@rediacc/www
 
+      # The two unit suites `.ci/scripts/test/run-unit.sh` has always driven and
+      # the manifest never registered. Found 2026-09-06 by set difference: that
+      # runner covers shared, cli:unit, provisioning and e2e-tests:unit, while
+      # the manifest carried cli, shared, www and workers. 11 tests over 2 files
+      # and 63 over 4, neither previously in `npm run ci` OR in this workflow.
+      #
+      # `check:test*` is the namespace check:ci-test-gate-wiring polices, and its
+      # rule is the reason these are steps rather than local-only: an unwired
+      # entry in that namespace is a silent coverage hole, not a convenience
+      # alias. Registering them without this step would have satisfied the
+      # manifest and left the hole exactly where it was.
+      - name: Run provisioning unit tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:test-provisioning
+
+      - name: Run e2e-tests unit suite
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:test-e2e-unit
+
       # This gate drives a real browser via `agent-browser`, and this job never
       # installed one -- it never ran in CI before today (see the manifest.ts
       # comment on check:test:tutorial-player), only locally on a devbox that

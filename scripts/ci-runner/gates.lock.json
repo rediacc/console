@@ -6964,8 +6964,10 @@
       ".ci/scripts/test/proxies/proxy-unit-tests.sh"
     ],
     "ci": {
-      "kind": "local-only",
-      "blocker": "BLOCKER: .ci/scripts/test/run-unit.sh drives this suite, but that runner is reached only from workflows outside paritySurface(); the four existing check:test-* entries cover cli, shared, www and workers and this one was simply never added. 11 tests across 2 files."
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Run provisioning unit tests"
     }
   },
   {
@@ -6977,8 +6979,10 @@
       ".ci/scripts/test/proxies/proxy-unit-tests.sh"
     ],
     "ci": {
-      "kind": "local-only",
-      "blocker": "BLOCKER: same hole as check:test-provisioning. .ci/scripts/test/run-unit.sh runs @rediacc/e2e-tests test:unit and nothing in the manifest did; 63 tests across 4 files. The playwright suites in that workspace are deliberately not included."
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Run e2e-tests unit suite"
     }
   }
 ]
