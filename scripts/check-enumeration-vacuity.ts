@@ -85,7 +85,7 @@ const SUBJECT_RE = /\.(py|sh|ts)$/;
  */
 export const enumerates = (src: string): boolean =>
   /git\s+ls-files|\.glob\(|\.rglob\(|globSync\(|readdirSync\(|find\s+\S+\s+-(name|type)\b/.test(
-    stripHeredocs(src)
+    stripComments(stripHeredocs(src))
   );
 
 /**
@@ -113,6 +113,43 @@ export const stripHeredocs = (src: string): string => {
     if (line.trim() === tag) tag = null;
   }
   return out.join('\n');
+};
+
+/**
+ * A COMMENT IS PROSE, NOT CODE, and this gate's own header already said so about
+ * heredocs while reading comments as source anyway.
+ *
+ * Caught 2026-09-06 on `.ci/scripts/quality/check_regions_sync.py`, a 33-line import shim
+ * that enumerates nothing. Its docstring EXPLAINS that `scripts/gate-bind.ts` enumerates
+ * its subjects with `git ls-files`, and the mention was read as the act. The file was
+ * then owed a floor it has no corpus for, and the only way to satisfy that demand would
+ * have been to write a floor over nothing, which is the vacuity this gate exists to
+ * refuse. A gate that can be satisfied by a lie is worse than one that misses a case.
+ *
+ * DELIBERATELY CONSERVATIVE, in the direction that keeps findings rather than drops them:
+ *
+ *   - a `#` comment is stripped only when it OPENS the line, so `cmd # note` keeps its
+ *     code and a `#` inside a quoted string is never touched. The observed class is a
+ *     whole-line comment or a docstring, and reaching further would risk blinding the
+ *     scan to a real call.
+ *   - Python triple-quoted blocks go entirely: a module docstring is the single most
+ *     likely place for a file to DESCRIBE an enumeration it does not perform.
+ *   - `//` is stripped only at line start, and block comments wholly, for the same reason.
+ *
+ * The opposite bug, silently exempting a file whose only `git ls-files` sat behind a `#`,
+ * is covered by the controls: a real call on a code line is still found.
+ */
+export const stripComments = (src: string): string => {
+  const TRIPLE_D = new RegExp('"'.repeat(3) + '[\\s\\S]*?' + '"'.repeat(3), 'g');
+  const TRIPLE_S = new RegExp("'".repeat(3) + '[\\s\\S]*?' + "'".repeat(3), 'g');
+  const noBlocks = src
+    .replace(TRIPLE_D, '')
+    .replace(TRIPLE_S, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  return noBlocks
+    .split('\n')
+    .filter((line) => !/^\s*(#|\/\/|\*)/.test(line))
+    .join('\n');
 };
 
 /**
@@ -189,6 +226,35 @@ function selftest(): number {
     'CONTROL: the same script WITH a floor is not',
     findings(() => 'MIN_X = 3\nfiles = root.glob("*.py")', ['x/check-a.py']).length === 0
   );
+  // THE COMMENT CONTROLS, and the second is the one that matters. Stripping prose can
+  // only be safe if a real call on a code line is still found; a strip that swallowed
+  // both would make this gate quieter and blinder at the same time.
+  const Q3 = '"'.repeat(3);
+  check(
+    'a `git ls-files` named only in a PYTHON DOCSTRING is prose, not an enumeration',
+    findings(
+      () => `x = 1\n${Q3}gate-bind enumerates with git ls-files.${Q3}\ny = 2\n`,
+      ['x/check-a.py']
+    ).length === 0
+  );
+  check(
+    'CONTROL: the same call on a CODE line is still found',
+    findings(() => 'out = run("git ls-files")\n', ['x/check-a.py']).length === 1
+  );
+  check(
+    'a whole-line `#` comment naming .glob( is prose',
+    findings(() => '# files = root.glob("*.py") would enumerate\nx = 1\n', ['x/check-a.py'])
+      .length === 0
+  );
+  check(
+    'CONTROL: a TRAILING `#` does NOT blind the scan -- the code before it still counts',
+    findings(() => 'files = root.glob("*.py")  # note\n', ['x/check-a.py']).length === 1
+  );
+  check(
+    'a `//` line comment in TypeScript is prose too',
+    findings(() => '// we call globSync() elsewhere\nconst x = 1;\n', ['x/check-a.ts']).length === 0
+  );
+
   check(
     'CONTROL: a non-enumerating script is out of scope entirely',
     findings(() => 'print("hello")', ['x/check-a.py']).length === 0
@@ -210,9 +276,24 @@ function main(argv: string[]): void {
   }
 
   const files = tracked();
-  // THIS GATE ENUMERATES TOO, so it obeys its own rule. Measured 2026-09-04: 67 enumerating
-  // scripts out of a wider check/gate-test population. A floor well under that catches a
-  // broken `git ls-files` without pinning the number to today's tree.
+  // THIS GATE ENUMERATES TOO, so it obeys its own rule -- BY HAND, not by its own
+  // detector, and the difference was measured on 2026-09-06 rather than assumed. Feed
+  // this file's own source to `enumerates()` and the answer is FALSE. The predicate
+  // wants `git\s+ls-files`, and every TypeScript enumerator in this repo writes the
+  // argv-array form instead: `execFileSync('git', ['-C', ROOT, 'ls-files', ...])`, where
+  // a comma stands between the two words. The floor below is real and wired; the claim
+  // that the gate is inside its own scope was not.
+  //
+  // MEASURED BLIND SPOT: 19 tracked scripts enumerate in a form this predicate cannot
+  // see, and 6 of them carry no vacuity guard, so widening the regex adds 6 findings to
+  // a baseline that may only SHRINK. That makes the widening a CLUSTER (one regex plus
+  // six corpus-derived floors) rather than a one-line fix, and it is tracked as such.
+  // Reproduce the count with the probe recorded in that item; do not re-derive it by
+  // eye, because the narrow and wide sets differ by more than the unguarded six.
+  //
+  // Measured 2026-09-04: 67 enumerating scripts out of a wider check/gate-test
+  // population. A floor well under that catches a broken `git ls-files` without pinning
+  // the number to today's tree.
   const MIN_SUBJECTS = Number(process.env.ENUM_VACUITY_MIN ?? 40);
   if (files.length < MIN_SUBJECTS) {
     console.error(
