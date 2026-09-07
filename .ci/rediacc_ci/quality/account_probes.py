@@ -111,10 +111,13 @@ the probe under test speaks HTTP through curl, so the readiness check has to
 prove HTTP is being answered, not merely that a port is open.
 """
 
+import contextlib
+import ctypes
 import os
 import pathlib
 import re
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -294,7 +297,38 @@ def start_listener(port: int) -> subprocess.Popen:
         [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
+        preexec_fn=_die_with_parent,  # noqa: PLW1509 - see the comment below
     )
+
+
+# PR_SET_PDEATHSIG: KILL THIS CHILD WHEN ITS PARENT DIES.
+#
+# Every caller already wraps start_listener in `try/finally: server.kill()`, and
+# that is enough for a normal exit. It is NOT enough when the PARENT is killed:
+# a SIGKILLed interpreter never reaches its finally, the listener survives, and
+# init adopts it. Measured on this box 2026-09-07: 131 orphaned
+# `python3 -m http.server` processes, the oldest 25 hours, parented to pid 1 --
+# left behind by pytest runs that were killed by `timeout` or by hand.
+#
+# It got worse the moment this suite went parallel: `check:ci-pytest` now runs
+# under `-n 8`, so a killed run strands up to eight workers' worth of listeners
+# instead of one process's worth.
+#
+# `preexec_fn` runs in the child between fork and exec. It is documented as
+# unsafe in a threaded parent, which is why it carries the noqa above rather
+# than a silent suppression: this helper is called from single-threaded gate and
+# test code, and the alternative (a wrapper process, or a reaper) costs more
+# than the two lines it saves. If this is ever called from a thread, replace it
+# with a process-group kill rather than removing the protection.
+def _die_with_parent() -> None:
+    """prctl(PR_SET_PDEATHSIG, SIGKILL). Best effort: Linux-only, never fatal."""
+    # Suppressed wholesale, deliberately: this runs between fork and exec, so a
+    # raise here would kill the spawn rather than the listener. A platform
+    # without libc or without prctl simply keeps the old behaviour.
+    with contextlib.suppress(Exception):
+        # 1 is PR_SET_PDEATHSIG. Named here rather than imported because Python
+        # has no binding for it and the number is part of the kernel ABI.
+        ctypes.CDLL("libc.so.6", use_errno=True).prctl(1, signal.SIGKILL)
 
 
 def main(argv: list[str] | None = None) -> int:
