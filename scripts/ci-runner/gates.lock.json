@@ -4489,6 +4489,9 @@
   {
     "id": "gate-test:autopilot-breakpoint-alignment",
     "run": ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -4580,6 +4583,9 @@
   {
     "id": "gate-test:autopilot-workflow-invariants",
     "run": ".ci/scripts/test/gates/test-autopilot-workflow-invariants.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -4951,6 +4957,9 @@
   {
     "id": "gate-test:breakpoint-portability",
     "run": ".ci/scripts/test/gates/test-breakpoint-portability.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -5041,6 +5050,9 @@
   {
     "id": "gate-test:ci-parity",
     "run": ".ci/scripts/test/gates/test-ci-parity.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "slow": true,
     "gate": true,
     "qualityGateTest": true,
@@ -5057,6 +5069,9 @@
   {
     "id": "gate-test:ci-runner",
     "run": ".ci/scripts/test/gates/test-ci-runner.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "slow": true,
     "gate": true,
     "qualityGateTest": true,
@@ -5293,6 +5308,9 @@
   {
     "id": "gate-test:dead-bash",
     "run": ".ci/scripts/test/gates/test-dead-bash.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "slow": true,
     "gate": true,
     "qualityGateTest": true,
@@ -5461,6 +5479,9 @@
   {
     "id": "gate-test:gate-anti-vacuity",
     "run": ".ci/scripts/test/gates/test-gate-anti-vacuity.sh",
+    "mutex": [
+      "tree:repo"
+    ],
     "slow": true,
     "gate": true,
     "paths": [
@@ -5483,6 +5504,9 @@
   {
     "id": "gate-test:gate-paths-exist",
     "run": ".ci/scripts/test/gates/test-gate-paths-exist.sh",
+    "mutex": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -5513,6 +5537,9 @@
   {
     "id": "gate-test:generate-tag-inputs",
     "run": ".ci/scripts/test/gates/test-generate-tag-inputs.sh",
+    "mutex": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -5543,6 +5570,9 @@
   {
     "id": "gate-test:greenlight",
     "run": ".ci/scripts/test/gates/test-greenlight.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "slow": true,
     "gate": true,
     "qualityGateTest": true,
@@ -5590,6 +5620,9 @@
   {
     "id": "gate-test:knip-blockers",
     "run": ".ci/scripts/test/gates/test-knip-blockers.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -5650,6 +5683,9 @@
   {
     "id": "gate-test:label-inventory",
     "run": ".ci/scripts/test/gates/test-label-inventory.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -5665,6 +5701,9 @@
   {
     "id": "gate-test:dead-case-arms",
     "run": ".ci/scripts/test/gates/test-dead-case-arms.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -5681,11 +5720,17 @@
     "id": "check:ci-pytest",
     "run": "npm run check:ci-pytest",
     "gate": true,
+    "weight": 8,
     "leaves": [
       ".ci/rediacc_ci/check_pytest.py"
     ],
+    "reads": [
+      "tree:repo"
+    ],
     "paths": [
       ".ci/rediacc_ci/**",
+      ".claude/rediacc_hooks/**",
+      ".ci/scripts/test/gates/**",
       "pyproject.toml"
     ],
     "ci": {
@@ -5846,6 +5891,9 @@
   {
     "id": "gate-test:docs-gen",
     "run": ".ci/scripts/test/gates/test-docs-gen.sh",
+    "mutex": [
+      "tree:repo"
+    ],
     "slow": true,
     "gate": true,
     "qualityGateTest": true,
@@ -5983,6 +6031,9 @@
   {
     "id": "gate-test:label-references",
     "run": ".ci/scripts/test/gates/test-label-references.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -6013,6 +6064,9 @@
   {
     "id": "gate-test:overrides-reasons",
     "run": ".ci/scripts/test/gates/test-overrides-reasons.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -6098,6 +6152,9 @@
   {
     "id": "gate-test:profiler-coverage",
     "run": ".ci/scripts/test/gates/test-profiler-coverage.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "slow": true,
     "gate": true,
     "qualityGateTest": true,
@@ -6130,6 +6187,9 @@
   {
     "id": "gate-test:runner-advice",
     "run": ".ci/scripts/test/gates/test-runner-advice.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -6190,6 +6250,9 @@
   {
     "id": "gate-test:review-status",
     "run": ".ci/scripts/test/gates/test-review-status.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "slow": true,
     "gate": true,
     "qualityGateTest": true,
@@ -6268,6 +6331,9 @@
   {
     "id": "gate-test:scope-gate-outputs",
     "run": ".ci/scripts/test/gates/test-scope-gate-outputs.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "slow": true,
     "gate": true,
     "qualityGateTest": true,
@@ -6299,6 +6365,9 @@
   {
     "id": "gate-test:shell-counter-increment",
     "run": ".ci/scripts/test/gates/test-shell-counter-increment.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -6360,6 +6429,9 @@
   {
     "id": "gate-test:suppression-liveness",
     "run": ".ci/scripts/test/gates/test-suppression-liveness.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "slow": true,
     "gate": true,
     "qualityGateTest": true,
@@ -6376,6 +6448,9 @@
   {
     "id": "gate-test:swallowed-failures",
     "run": ".ci/scripts/test/gates/test-swallowed-failures.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [
@@ -6391,6 +6466,9 @@
   {
     "id": "gate-test:trap-registry",
     "run": ".ci/scripts/test/gates/test-trap-registry.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "slow": true,
     "gate": true,
     "qualityGateTest": true,
@@ -6407,6 +6485,9 @@
   {
     "id": "gate-test:tutorial-render-queue",
     "run": ".ci/scripts/test/gates/test-tutorial-render-queue.sh",
+    "reads": [
+      "tree:repo"
+    ],
     "gate": true,
     "qualityGateTest": true,
     "leaves": [

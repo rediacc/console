@@ -4501,6 +4501,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:autopilot-breakpoint-alignment',
     run: '.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh',
+    reads: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh'],
@@ -4580,6 +4581,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:autopilot-workflow-invariants',
     run: '.ci/scripts/test/gates/test-autopilot-workflow-invariants.sh',
+    reads: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-autopilot-workflow-invariants.sh'],
@@ -4903,6 +4905,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:breakpoint-portability',
     run: '.ci/scripts/test/gates/test-breakpoint-portability.sh',
+    reads: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-breakpoint-portability.sh'],
@@ -4981,6 +4984,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:ci-parity',
     run: '.ci/scripts/test/gates/test-ci-parity.sh',
+    reads: ['tree:repo'],
     slow: true, // 42.3s measured
     gate: true,
     qualityGateTest: true,
@@ -4995,6 +4999,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:ci-runner',
     run: '.ci/scripts/test/gates/test-ci-runner.sh',
+    reads: ['tree:repo'],
     slow: true, // 16.9s measured
     gate: true,
     qualityGateTest: true,
@@ -5220,6 +5225,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:dead-bash',
     run: '.ci/scripts/test/gates/test-dead-bash.sh',
+    reads: ['tree:repo'],
     slow: true, // 199.8s measured
     gate: true,
     qualityGateTest: true,
@@ -5370,6 +5376,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:gate-anti-vacuity',
     run: '.ci/scripts/test/gates/test-gate-anti-vacuity.sh',
+    mutex: ['tree:repo'],
     slow: true, // 72.0s measured
     gate: true,
     // Its fixture is built by copying exactly these four trees, and its registry names
@@ -5388,6 +5395,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:gate-paths-exist',
     run: '.ci/scripts/test/gates/test-gate-paths-exist.sh',
+    mutex: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-gate-paths-exist.sh'],
@@ -5414,6 +5422,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:generate-tag-inputs',
     run: '.ci/scripts/test/gates/test-generate-tag-inputs.sh',
+    mutex: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-generate-tag-inputs.sh'],
@@ -5440,6 +5449,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:greenlight',
     run: '.ci/scripts/test/gates/test-greenlight.sh',
+    reads: ['tree:repo'],
     slow: true, // 14.8s measured
     gate: true,
     qualityGateTest: true,
@@ -5481,6 +5491,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:knip-blockers',
     run: '.ci/scripts/test/gates/test-knip-blockers.sh',
+    reads: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-knip-blockers.sh'],
@@ -5533,6 +5544,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:label-inventory',
     run: '.ci/scripts/test/gates/test-label-inventory.sh',
+    reads: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-label-inventory.sh'],
@@ -5546,6 +5558,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:dead-case-arms',
     run: '.ci/scripts/test/gates/test-dead-case-arms.sh',
+    reads: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-dead-case-arms.sh'],
@@ -5560,8 +5573,31 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-pytest',
     run: 'npm run check:ci-pytest',
     gate: true,
+    // THE GATE NOW RUNS pytest UNDER `-n 8`, so it claims 8 scheduler slots
+    // rather than 1. pool.ts:242 caps effective weight at the pool size, so this
+    // reads as "the whole pool" on a 2-slot CI runner and as 8 of 22 locally.
+    // Declaring less than `-n` asks for would be an undeclared claim on the
+    // machine -- the same defect class as the missing `mutex` that let the
+    // CLAUDE.md-rewriting gate run alongside this one.
+    weight: 8,
     leaves: ['.ci/rediacc_ci/check_pytest.py'],
-    paths: ['.ci/rediacc_ci/**', 'pyproject.toml'],
+    // THIS GATE DRIVES 29 REAL BASH TWINS AGAINST THE REAL TREE and declared no
+    // isolation while doing it, so pool.ts was free to schedule the four
+    // `tree:repo` writers -- one of which rewrites CLAUDE.md -- alongside it.
+    // test_twin_parity.py:203-208 names this hazard in prose and cannot fix it
+    // from inside pytest, because the claim has to be made HERE.
+    reads: ['tree:repo'],
+    // The old set was ['.ci/rediacc_ci/**', 'pyproject.toml'] and could not see two
+    // things this gate actually runs: `.claude/rediacc_hooks/**` is a testpaths root,
+    // and `.ci/scripts/test/gates/**` holds the twins test_twin_parity drives. Under
+    // `--changed` an edit to either did not select this gate, which is a path filter
+    // reporting a pass over code it never looked at.
+    paths: [
+      '.ci/rediacc_ci/**',
+      '.claude/rediacc_hooks/**',
+      '.ci/scripts/test/gates/**',
+      'pyproject.toml',
+    ],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5733,6 +5769,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:docs-gen',
     run: '.ci/scripts/test/gates/test-docs-gen.sh',
+    mutex: ['tree:repo'],
     // 22.3s FLOOR over 5 runs (median 27.0s). Same shape as its sibling above:
     // it drives the whole generator once per provider.
     slow: true,
@@ -5857,6 +5894,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:label-references',
     run: '.ci/scripts/test/gates/test-label-references.sh',
+    reads: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-label-references.sh'],
@@ -5883,6 +5921,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:overrides-reasons',
     run: '.ci/scripts/test/gates/test-overrides-reasons.sh',
+    reads: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-overrides-reasons.sh'],
@@ -5973,6 +6012,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:profiler-coverage',
     run: '.ci/scripts/test/gates/test-profiler-coverage.sh',
+    reads: ['tree:repo'],
     slow: true, // 21.5s measured
     gate: true,
     qualityGateTest: true,
@@ -6001,6 +6041,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:runner-advice',
     run: '.ci/scripts/test/gates/test-runner-advice.sh',
+    reads: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-runner-advice.sh'],
@@ -6053,6 +6094,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:review-status',
     run: '.ci/scripts/test/gates/test-review-status.sh',
+    reads: ['tree:repo'],
     slow: true, // 86.1s measured
     gate: true,
     qualityGateTest: true,
@@ -6121,6 +6163,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:scope-gate-outputs',
     run: '.ci/scripts/test/gates/test-scope-gate-outputs.sh',
+    reads: ['tree:repo'],
     slow: true, // 11.5s measured
     gate: true,
     qualityGateTest: true,
@@ -6148,6 +6191,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:shell-counter-increment',
     run: '.ci/scripts/test/gates/test-shell-counter-increment.sh',
+    reads: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-shell-counter-increment.sh'],
@@ -6205,6 +6249,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:suppression-liveness',
     run: '.ci/scripts/test/gates/test-suppression-liveness.sh',
+    reads: ['tree:repo'],
     slow: true, // 18.3s measured
     gate: true,
     qualityGateTest: true,
@@ -6219,6 +6264,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:swallowed-failures',
     run: '.ci/scripts/test/gates/test-swallowed-failures.sh',
+    reads: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-swallowed-failures.sh'],
@@ -6232,6 +6278,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:trap-registry',
     run: '.ci/scripts/test/gates/test-trap-registry.sh',
+    reads: ['tree:repo'],
     slow: true, // 10.2s measured, five samples (reads corpus, manifest, dispatcher, suite, settings)
     gate: true,
     qualityGateTest: true,
@@ -6246,6 +6293,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:tutorial-render-queue',
     run: '.ci/scripts/test/gates/test-tutorial-render-queue.sh',
+    reads: ['tree:repo'],
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-tutorial-render-queue.sh'],

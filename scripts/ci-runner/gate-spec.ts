@@ -43,6 +43,21 @@ export interface GateSpec {
   needs?: string[];
   /** Mutual-exclusion groups: no two gates sharing a group overlap. */
   mutex?: string[];
+  /**
+   * Resources this gate READS but does not write. Paired with `mutex`, which
+   * names what it WRITES; a `tree:<x>` in one may not overlap a `tree:<x>` in the
+   * other concurrently.
+   *
+   * WHY THIS FIELD EXISTS AND WHY IT WAS MISSING. W2.4 declared isolation a
+   * path-scoped contract and built BOTH readers -- `pool.ts` and the gate battery's
+   * `classify_from_lock` -- but the second claim it reads, `reads`, was never added
+   * here. So the 21 scanner gate tests were UNDECLARABLE by construction, the lock
+   * carried no `reads` key on any of 456 entries, and the battery ran on its loud
+   * fallback ("no 'tree:' isolation declared ... falling back to the hand-maintained
+   * W/S lists in this file") for the whole time the box read as done. A contract
+   * implemented by two readers with no data to read is not a contract.
+   */
+  reads?: string[];
   /** Scheduler slots. Default 1. */
   weight?: number;
   /** Memory-hungry (>=4 GB heap). Bounded by --heavy-limit. */
