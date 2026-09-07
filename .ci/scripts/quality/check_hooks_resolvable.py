@@ -208,8 +208,16 @@ def controls(root):
     # below. Using a Python hook here made mutating ANY python hook trip the
     # control instead of the finding, which refuses a verdict correctly but
     # tests nothing.
-    real = ".claude/hooks/pre-bash/block-admin-merge.sh"
-    if (root / real).is_file() and verdicts(root, [real]):
+    # A GUARD THAT STILL EXISTS AS A .sh, RE-KEYED 2026-09-07. This was
+    # `block-admin-merge.sh`, which the W5 cutover moved to `.claude/oracles/`,
+    # and the `is_file()` guard then made this control SKIP SILENTLY: the gate
+    # stayed green while the case that proves a real hook is not reported broken
+    # stopped running at all. `block-pathspecless-git-commit.sh` is the one
+    # pre-bash guard with no Python port, so it is a .sh that is still wired.
+    real = ".claude/hooks/pre-bash/block-pathspecless-git-commit.sh"
+    if not (root / real).is_file():
+        return f"the control's subject {real} is gone; re-key it rather than skipping"
+    if verdicts(root, [real]):
         return f"a real, present, executable hook ({real}) was reported as broken"
 
     # The ordering predicate, driven in BOTH directions off in-memory fixtures.
@@ -227,7 +235,7 @@ def controls(root):
         }
 
     lead = 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/require-jq.sh"'
-    other = 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-admin-merge.sh"'
+    other = 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-pathspecless-git-commit.sh"'
     if first_guard_verdicts(_fixture([lead, other])):
         return f"a fixture with {FIRST_GUARD} FIRST in both chains was reported as misordered"
     if not first_guard_verdicts(_fixture([other, lead])):
