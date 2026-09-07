@@ -107,7 +107,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-e2e-case-blind | quality-content / E2E case-blind assertions | yes | no | no |
 | check:ci-e2e-coverage | quality-content / Check E2E test coverage for all renet functions | yes | no | no |
 | check:ci-e2e-skip-hygiene | quality-content / Check E2E skip hygiene (no collected-then-skipped suites) | yes | no | no |
-| check:ci-editorconfig | quality-static / EditorConfig | yes | no | no |
+| check:ci-editorconfig | quality-static / EditorConfig | yes | yes | no |
 | check:ci-em-dash-surfaces | quality-i18n / i18n | yes | no | no |
 | check:ci-embed-arch-parity | quality-go / Check embed arch parity | yes | no | no |
 | check:ci-embed-asset-freshness | quality-go / Check embed-asset upstream freshness | yes | no | no |

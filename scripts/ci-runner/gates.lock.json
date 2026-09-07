@@ -1217,9 +1217,9 @@
     "run": "npm run check:ci-guard-mention-anchoring",
     "gate": true,
     "paths": [
-      ".claude/hooks/pre-bash/**",
-      ".claude/hooks/pre-edit/**",
-      ".claude/hooks/pre-ask/**",
+      ".claude/oracles/**",
+      ".claude/rediacc_hooks/guards/**",
+      ".claude/rediacc_hooks/dispatch.py",
       ".ci/scripts/quality/check_guard_mention_anchoring.py"
     ],
     "leaves": [
@@ -3053,6 +3053,7 @@
   {
     "id": "check:ci-editorconfig",
     "run": "npm run check:ci-editorconfig",
+    "slow": true,
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check-editorconfig.sh"

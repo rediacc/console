@@ -186,77 +186,10 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-editorconfig.sh
 
-      - name: Compose env
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check-compose-env.sh
 
-      - name: Check audit logging coverage for CLI operations
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check-audit-coverage.sh
 
-      - name: Shell lint
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/security/shellcheck.sh
 
-      # Self-test for the mutation runner. Cheap on purpose: it drives
-      # mutate-check.sh through all four of its verdicts against a miniature
-      # fixture suite, so it costs seconds rather than the 8-plus minutes two
-      # passes of the real suite would. It does NOT force a mutation per test
-      # case, which is not gateable; it stops the instrument rotting into
-      # something that always says OK.
-      - name: Mutation runner self-test
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check-mutate-check.sh
 
-      - name: Python lint + format (ruff)
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check-python-lint.sh
-
-      # Offline by construction: compares committed baseline durations against
-      # the timeout-minutes in the workflow files. The network lives only in its
-      # --refresh mode, which is not run here.
-      - name: CI job timeout headroom
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_job_timeout_headroom.py
-
-      # Offline by construction, same split: the committed profiler baseline
-      # against the `runs-on:` in the workflow files. The network lives only in
-      # --refresh, which harvests the profiler's own annotations.
-      - name: Runner sizing advice
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-runner-advice
-
-      # Offline by construction: compares the committed record against the
-      # secrets each workflow references. The network lives only in --refresh.
-      # A hook whose script has been renamed or deleted does not error — it
-      # silently stops firing, and every run afterwards looks clean. No token
-      # or submodule needed, so this belongs in the static lane.
-      - name: Hooks resolvable
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_hooks_resolvable.py
-
-      # A guard that calls a shared-lib function it never sourced dies at runtime
-      # with "command not found" on stderr -- which a warn/block test's "expect
-      # non-empty output" assertion cannot tell apart from a real warning. Proven
-      # live 2026-08-28: renaming warn-stale-index.sh's sourced hook_scan_target
-      # produced exactly that crash, and it would have passed the guard's own
-      # "warn" test case.
-      - name: Guard feature completeness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_guard_feature_completeness.py
-
-      # An apt source rewritten to ONE mirror must carry a fallback to another.
-      # Retrying a single point of failure is still a single point of failure:
-      # on 2026-08-19 a dead azure.archive.ubuntu.com took down four consecutive
-      # CI attempts because every source pointed at it and all five retries hit
-      # the same host. Static text analysis, no network, so it belongs here.
-      - name: Dockerfile mirror resilience
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_dockerfile_mirror_resilience.py
-
-      - name: Pathspec scope
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-pathspec-scope
 
       - name: Python package tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
@@ -273,65 +206,136 @@ jobs:
       # generator that owns the whole file would fight 258 hand-written steps, and this
       # repo's other generate-and-check pairs (contract.generated.ts) are region-scoped
       # for the same reason.
+      - name: Actions allowlist
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_actions_allowlist.py
+      - name: agent-browser exit status
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-agent-browser-exit.sh
       - name: Allowlist key matching
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_allowlist_key_matching.py
+      - name: Battery clean-tree guard
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-battery-clean-tree.sh
+      - name: Capability-probe parity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-probe-parity.sh
+      - name: Check audit logging coverage for CLI operations
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-audit-coverage.sh
+      - name: CI job timeout headroom
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_job_timeout_headroom.py
+      - name: Compose env
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-compose-env.sh
+      - name: Dev-stack liveness probes
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-account-probes.sh
+      - name: Dockerfile mirror resilience
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_dockerfile_mirror_resilience.py
+      - name: Drill verdict logic
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-drill-verdicts.sh
       - name: Environment names
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_environment_names.py
+      - name: Gate registration follows the gates/ convention
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-gate-id-convention.sh
+      - name: Gate-reachability probe agrees with registrations
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_gate_reachability_coverage.py
       - name: Git history depth
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
           python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
           .ci/scripts/quality/check_git_history_depth.py
-      - name: Schema call sites
+      - name: Guard feature completeness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_schema_call_sites.py
-      - name: Shell format
+        run: .ci/scripts/quality/check_guard_feature_completeness.py
+      - name: Hooks resolvable
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/security/shfmt.sh
-      # <<< gate-bind
-
-      # A job that READS submodule source must CHECK IT OUT. Tests + Infra /
-      # Unit parsed private/renet/pkg/prune/datastore.go with a bare checkout,
-      # failed on a file it never fetched, and cancelled 26 siblings; the ENOENT
-      # named a test file, so the evidence pointed at the wrong thing entirely.
-      # Reads workflow YAML only, so it needs no token and no submodule, which
-      # is why it belongs in the static lane.
-      # Both of these read workflow YAML and need PyYAML, so one install serves
-      # both and the assert stays with it.
+        run: .ci/scripts/quality/check_hooks_resolvable.py
+      - name: Install table
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/rediacc_ci/setup/tools.py
+      - name: Install-script tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/test/test-install-script.sh
+      - name: install.sh config tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/test/test-install-sh-config.sh
+      - name: Mutation runner self-test
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-mutate-check.sh
+      - name: No inline Python in JS/TS
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_inline_python.py
+      - name: Pathspec scope
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_pathspec_scope.py
+      - name: Pool-registered tests do not write the real tree
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-pool-writer-safety.sh
       - name: Python gate deps
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
           python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
           .ci/scripts/quality/check_python_gate_deps.py
-
+      - name: Python lint + format (ruff)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-python-lint.sh
+      - name: Review cap is measured coherently
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-review-cap-coherence.sh
+      - name: Review turn budget cannot starve a routed review
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-review-turn-capacity.sh
+      - name: Runner sizing advice
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_runner_advice.py
+      - name: Schema call sites
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_schema_call_sites.py
+      - name: Shell commands exist on the runner image
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/security/check-commands.sh
+      - name: Shell format
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/security/shfmt.sh
+      - name: Shell lint
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/security/shellcheck.sh
+      - name: Silent-failure patterns
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-silent-failure-patterns.sh
+      - name: Tracked runtime sidecars
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-tracked-sidecars.sh
+      - name: Workflow env provision
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: |
+          python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
+          python3 -c "import yaml; print('PyYAML', yaml.__version__)"
+          .ci/scripts/quality/check_workflow_env_provision.py
       - name: Workflow submodule deps
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        # PyYAML is installed HERE and pinned, and the version is asserted so a
-        # silent install failure cannot become a bare "no module named yaml"
-        # three lines later. Its sibling check_job_timeout_headroom.py
-        # deliberately hand-rolls a regex parser to avoid this dependency, and
-        # that is right for two fixed keys at one indentation level. This gate
-        # reads nested jobs, steps, uses and with blocks, where a hand-rolled
-        # parser would be a correctness risk in the one place that cannot afford
-        # one: a gate whose whole value is not lying about what it saw. A
-        # yaml-if-available-else-regex fallback was rejected outright, because
-        # two parsers means the gate means different things in CI and locally,
-        # which is the exact bug shape this wave already paid for twice.
         run: |
           python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
           .ci/scripts/quality/check_workflow_submodule_deps.py
-
-      - name: Battery clean-tree guard
+      - name: Write-once guard tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        # run-all.sh's tree snapshot must survive a CLEAN checkout. It did not, once,
-        # and the abort happened before the battery printed its first line -- so CI
-        # showed an exit 1 naming no test at all.
-        run: npm run check:ci-battery-clean-tree
+        run: .ci/scripts/test/test-write-once-guard.sh
+      # <<< gate-bind
+
+
+
 
       - name: Checkout cone covers what steps run
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
@@ -343,144 +347,18 @@ jobs:
           python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
           .ci/scripts/quality/check_checkout_cone.py
 
-      - name: Workflow env provision
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        # Reads workflow YAML only, so it sits in the static lane with its two
-        # siblings above and installs the same pinned PyYAML. The gate it
-        # enforces is that no job uses a variable nothing in that job provides --
-        # which is the defect that put THIS pin's own name into a pip error
-        # message three jobs over.
-        run: |
-          python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
-          python3 -c "import yaml; print('PyYAML', yaml.__version__)"
-          .ci/scripts/quality/check_workflow_env_provision.py
 
-      - name: No inline Python in JS/TS
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_inline_python.py
 
-      - name: Shell commands exist on the runner image
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/security/check-commands.sh
-
-      # 57 gate scripts follow one registration convention and NOTHING enforced it,
-      # so the 58th broke it. A reviewer caught that one; this catches the next.
-      - name: Gate registration follows the gates/ convention
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-gate-id-convention
-
-      # A gate test that writes into the real tree must run in run-all.sh's serial
-      # W chain. Left in the parallel pool it corrupts a concurrent reader and
-      # presents as an unrelated gate going red in a file that parses clean on the
-      # serial re-run -- a concurrency artifact, the most expensive failure shape
-      # here. test-generate-tag-inputs.sh was misfiled that way until 2026-08-17.
-      - name: Pool-registered tests do not write the real tree
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-pool-writer-safety
-
-      # A review that runs out of turns posts NOTHING and still spends an attempt against a
-      # finite allowance, so an under-resourced budget is the expensive failure, not the
-      # cheap one. Asserts the budget cannot starve any diff size it is willing to route.
-      - name: Review turn budget cannot starve a routed review
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-review-turn-capacity
-
-      # The gate and review-status must cap on the SAME numerator. When they did
-      # not, the gate stopped reviewing while review-status kept demanding one,
-      # and PR #553 became green, ready and permanently unmergeable.
-      - name: Review cap is measured coherently
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-review-cap-coherence
-
-      # The Stop hook's reachability probe once returned False for all 191 gates,
-      # telling sessions their wired gates were unwired. Keeps it honest.
-      - name: Gate-reachability probe agrees with registrations
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-gate-reachability-coverage
-
-      # Catches `aws s3 ls | wc -l`-style pipelines that abort a `set -eo
-      # pipefail` script on empty input. Written after three such outages in
-      # one day.
-      - name: Silent-failure patterns
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-silent-failures
-
-      # `agent-browser open` returns 1 when its stdout is REDIRECTED and 0 on a terminal,
-      # for a URL that loads correctly either way. Under `set -e` that kills a harness at
-      # its first page with no error text. No script may let that status decide flow.
-      - name: agent-browser exit status
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-agent-browser-exit
-
-      # A runner checks out tracked files only, so a step reaching into a gitignored path
-      # runs against a file that is not there. Five separate stops proposed exactly that.
       - name: CI executes only tracked paths
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-scans-tracked-paths
 
-      # Runtime sidecars must never be tracked. They have no static markers in
-      # source -- they exist only while a session runs -- so every other gate is
-      # blind to them by construction and `git ls-files` is the only observable
-      # that can tell. A committed .waiter-* heartbeat tells a fresh clone a
-      # waiter is running when none is, so that session goes silently deaf to
-      # peer messages. A `git add -A` swept two of them in on 2026-08-05.
-      - name: Tracked runtime sidecars
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-tracked-sidecars
 
-      # Unit tests for shell helpers. Deterministic, no network.
-      - name: Write-once guard tests
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/test/test-write-once-guard.sh
-
-      - name: Install-script tests
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/test/test-install-script.sh
-
-      # THE ONE INSTALL TABLE. Six bash enumerations answered "what does a
-      # machine need before the gates can run" and none compared the set
-      # installed against the set used, which is how the drafted table came to
-      # carry no pytest row at all. Hand-written rather than emitted: this lane's
       # gate-bind region would take over 111 hand-written steps at the same time,
-      # and that region cutover is W2.6's work with its own verification.
-      - name: Install table
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/rediacc_ci/setup/tools.py
-
-      # Pure bash, so these two are called by path: this lane has no
-      # node_modules and `npm run` would need one. check-ci-parity.ts resolves
-      # the path against the manifest, so both directions still agree.
-      - name: install.sh config tests
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/test/test-install-sh-config.sh
-
-      # Its sibling above ran in CI from the day it was written; this one ran
-      # only locally, for the same reason and with the same shape. Neither the
-      # forward gate nor the reverse one could see the asymmetry.
       - name: rdc.sh env tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/test/test-rdc-sh-env.sh
 
-      # Exercises the ABSENT case of a dependency probe, which is untested by
-      # construction everywhere else: on a developer box RustFS is always up, so
-      # the dead-port branch never runs. It shipped returning ALIVE for a dead
-      # port on 2026-08-04. Self-fails if its own control cannot fire.
-      - name: Dev-stack liveness probes
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check-account-probes.sh
-
-      # A drill that asserts NOTHING must not print PASSED. Exit codes cannot see
-      # this: the exit code was already correct: the claim was the bug.
-      - name: Drill verdict logic
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check-drill-verdicts.sh
-
-      # A capability probe must exercise the operations its consumer depends on.
-      # A runner permits `keyctl add` and denies `keyctl pipe`, so a write-only
-      # probe reports "usable" and the consumer fails anyway.
-      - name: Capability-probe parity
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check-probe-parity.sh
 
       - name: Check for Claude attribution
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' }}
@@ -507,29 +385,6 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
 
-      # Here, and not in quality-branch, because assertions A0 and A6 read only
-      # the working tree -- so this lane's depth-1 checkout is enough AND the
-      # gate keeps running on the nightly, which quality-branch (pull_request
-      # only) does not. When A1 lands -- no box may VANISH between base and head
-      # -- it needs a merge-base and the step moves. See
-      # agent/PLAN-plan-file-lifecycle.md.
-      # In the static lane because it reads only committed files. It exists because
-      # the constraint it checks lives in repository SETTINGS, so the failure it
-      # prevents surfaces only after a push, at action RESOLUTION, in a message that
-      # names no secret and no script (run 33690518859).
-      - name: Actions allowlist
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-actions-allowlist
-
-  # ============================================================================
-  # L2 BRANCH -- read-only, and kept in its own job.
-  # It used to be the ONLY `push`-preset app token in CI, because
-  # check-branch.sh rebased and republished the PR branch from here. That is
-  # gone: the script only REPORTS now, so this job runs on the default
-  # contents:read token with no app token at all. Do not hand it a writable
-  # token again -- its code comes from the PR itself, and the app bypasses the
-  # main-branch ruleset.
-  # ============================================================================
   quality-branch:
     name: Branch
     runs-on: ubuntu-slim
@@ -840,14 +695,6 @@ jobs:
       - name: No racing pipefail/grep -q detectors
         run: npm run check:ci-pipefail-grep-q
 
-      # Every CLI flag a script has must be taught in its canonical doc, or a
-      # flag exists that no session reading only the doc would ever learn.
-      - name: CLI docs stay in sync with their scripts' real flags
-        run: .ci/scripts/quality/check-cli-doc-coverage.sh
-
-      # Meta-gate: a control built by pattern substitution must prove the plant
-      # landed, or a reworded target line turns the control green against
-      # unmutated source.
       - name: Control-first gates prove their plant landed
         run: .ci/scripts/quality/check-control-vacuity.sh
 
@@ -897,40 +744,179 @@ jobs:
       # `steps.setup.outcome == 'success'`; a region above that step references a
       # step that has not run, the expression is empty, and every gate in the region
       # SKIPS while the job stays green.
+      - name: Action freshness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:actions
+      - name: App admin permission
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-no-app-admin-perm.sh
+      - name: AWS credential bridge
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-aws-credential-bridge
+      - name: Backup bucket conformance
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-backup-bucket-conformance
+      - name: Backup manifest shape parity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-backup-manifest-shape-parity
+      - name: Backup protocol conformance
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-backup-protocol-conformance
+      - name: Bootstrap paths install through the dependency stamp
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-bootstrap-idempotency
+      - name: Builder env contract
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-builder-env-contract
+      - name: Ceph image pin freshness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-ceph-image-pin
+      - name: CI fetch integrity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-fetch-integrity
+      - name: CI scripts declare the binaries they execute
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-shell-declared-commands
+      - name: CLI docs stay in sync with their scripts' real flags
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-cli-doc-coverage.sh
+      - name: CLI examples
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:cli-examples
+      - name: Command tree
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-command-tree.sh
+      - name: Design tree
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-design-tree
+      - name: Dockerfile npm pins
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_docker_npm_pins.py
+      - name: Enumeration vacuity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-enumeration-vacuity
+      - name: Every commit names its epic
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-pr-task-trailers
+      - name: Every source file reaches a linter
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_lint_scope_coverage.py
       - name: Fetch retry
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_fetch_retry.py
+      - name: Fixture event timestamps
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-fixture-event-timestamps
+      - name: Format command covers its config's scope
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_format_scope.py
       - name: Gate binding
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-gate-bind
+      - name: Gate cwd independence
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-gate-cwd-independence
+      - name: Greenlight closure paths
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-greenlight-closures.sh
+      - name: Instruction files do not prescribe a rejected merge method
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-merge-method-prose
+      - name: jq boolean defaults
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-jq-boolean-default
       - name: Judged rule wiring
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_judged_rule_wiring.py
       - name: knip BLOCKER reasons
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-knip-blockers
+      - name: Lint
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:lint:cli && npm run check:lint:web && npm run check:lint:tooling && npm run check:lint:account
+      - name: Lockfile
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-lockfile.sh
+      - name: Mediated git tool stays lease-only and dry-run by default
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-git-tool-safety
+      - name: Native modules rebuilt after every root install
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-native-rebuild
+      - name: Naturalization model policy
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-naturalization-model-policy
+      - name: No client-side key composition
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-no-client-key-composition
+      - name: Package key budget
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-package-key-budget
+      - name: PR epic block matches the published worklist
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-pr-epic-block
+      - name: Retention knob parity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-retention-knob-parity
       - name: Review prompt render
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_review_prompt_render.py
-      - name: Workflow orphan step keys
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-workflow-orphan-step-keys
       - name: Rubric calibration
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-rubric-calibration.sh
+      - name: Runtime imports are dependencies
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-runtime-imports-are-deps
+      - name: Schema coverage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-schema-coverage
       - name: Shape duplication
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-shape-duplication
+      - name: Shared constant duplication
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-shared-constant-duplication
+      - name: syncpack source coverage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_syncpack_sources.py
+      - name: Test suites are CI-reachable
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-test-scripts-reachable
+      - name: Typecheck scope coverage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-typecheck-scope-coverage
+      - name: Unused exports (knip)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/typecheck-workers.sh --install && knip --treat-config-hints-as-errors
+      - name: Verify no peer dependency conflicts
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-peer-deps.sh
+      - name: Versions
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:version
+      - name: Worker secret names
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-worker-secret-names
+      - name: Workflow banned patterns
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-workflows.sh
+      - name: Workflow lint (actionlint)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/security/actionlint.sh
+      - name: Workflow orphan step keys
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-workflow-orphan-step-keys
+      - name: Worklist event builders
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-worklist-event-builders
+      - name: Worklist path resolution
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-worklist-path-resolution
       - name: www build token
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-www-build-token.sh
       # <<< gate-bind
 
-      - name: Package key budget
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-package-key-budget
-
-      # HAND-REGISTERED, and deliberately carrying no `---- gate ----` header yet.
       # quality-code HAS a gate-bind region, but 73 of its gates still have hand-written
       # steps outside it, so `gate:bind --write` would emit all 73 into the region and
       # leave the hand-written copies as duplicates. Declaring this gate would make it the
@@ -948,149 +934,14 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-doc-region-parity
 
-      - name: Worklist event builders
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-worklist-event-builders
-      - name: Worklist path resolution
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-worklist-path-resolution
-      - name: Fixture event timestamps
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-fixture-event-timestamps
-      - name: Gate cwd independence
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-gate-cwd-independence
 
-      - name: Naturalization model policy
-        run: npm run check:ci-naturalization-model-policy
 
-      # TypeScript, so it belongs AFTER setup-workspace for the same reason the
-      # step above says so. Pairs with "Block legacy-peer-deps workarounds"
-      # earlier in this job: that one keeps ignore-scripts=true in .npmrc, this
-      # one keeps every root-workspace installer rebuilding the natives that
-      # flag blocks. The developer path was the blind spot -- `./run.sh setup`
-      # and `ensure_deps` both shipped a bare `npm install`.
-      - name: Native modules rebuilt after every root install
-        run: npm run check:ci-native-rebuild
 
-      # TypeScript, so it sits after setup-workspace for the same reason the
-      # steps above do. Guards .claude/hooks/stop/wl_git.py, which is the only
-      # module permitted to drive a force push: it assembles an argv inside
-      # Python and hands it to git via subprocess, so every pre-bash guard is
-      # structurally blind to it and this static check is the only watcher.
-      - name: Mediated git tool stays lease-only and dry-run by default
-        run: npm run check:ci-git-tool-safety
-
-      # ./run.sh setup is meant to be re-run freely. When setup() shelled out to
-      # npm directly instead of going through ensure_deps, every invocation
-      # recompiled cpu-features through node-gyp on an unchanged machine.
-      - name: Bootstrap paths install through the dependency stamp
-        run: npm run check:ci-bootstrap-idempotency
-
-      # allow_squash_merge is false on all five repos, so a prescribed --squash
-      # is a command that cannot succeed -- and two of the five sites were hook
-      # refusal messages, which carry the most authority and the least checking.
-      - name: Instruction files do not prescribe a rejected merge method
-        run: npm run check:ci-merge-method-prose
-
-      # An undeclared binary is a mute exit 127, not a missing feature: it kills
-      # the script before its own error paths can speak. Cost one live incident
-      # in review-status.sh on a host without unzip.
-      - name: CI scripts declare the binaries they execute
-        run: npm run check:ci-shell-declared-commands
-
-      # The description's epic block drives the per-epic review, so it must
-      # agree with agent/pr/<branch>.md. PR_NUMBER lets it check the live body;
-      # without it the gate still validates the snapshot and says so.
-      - name: PR epic block matches the published worklist
-        run: npm run check:ci-pr-epic-block
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Sibling of the same gap: the script itself already prefers
-          # PR_HEAD_REF (scripts/check-pr-epic-block.ts:114), but nothing set
-          # it, so on this workflow_call chain's detached checkout it fell all
-          # the way to `git branch --show-current` (empty) and the check
-          # silently reported "skipped: on an unknown branch" instead of
-          # actually validating the epic block.
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-
-      # The local hook cannot read a -F message, so this is where the trailer
-      # rule is actually enforced, against the commits that really landed.
-      - name: Every commit names its epic
-        run: npm run check:ci-pr-task-trailers
-        env:
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          PR_BASE_REF: origin/${{ github.event.pull_request.base.ref }}
-
-      # Text-only on purpose: it reads the pin file and the Go constant, never the
-      # registry. A gate that needs the network fails for reasons unrelated to what
-      # it guards.
-      - name: Ceph image pin freshness
-        run: npm run check:ci-ceph-image-pin
-
-      - name: Verify no peer dependency conflicts
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check-peer-deps.sh
-
-      - name: Versions
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run version:check
-
-      # An npm-10 vs npm-11 lockfile drift only ever surfaced as a red `npm ci`
-      # in a later job.
-      - name: Lockfile
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-lockfile
-
-      # Beside Lockfile deliberately: both gates are about files INSIDE
-      # private/account, and this is a job whose checkout sets submodules: true.
-      # It first landed in quality-branch, which checks out none, where it turned
-      # two correct exclusions into 'dead entry' findings (job 100494921545).
-      - name: syncpack source coverage
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-syncpack-sources
-
-      # HERE RATHER THAN IN quality-static, and for the identical reason the comment
-      # above gives about quality-branch. It first landed in quality-static, which
-      # checks out no submodules; private/account/Dockerfile vanished from the
-      # enumeration and its two correct exclusions were reported as dead scaffold
-      # (job 100870135489). The gate now refuses rather than mis-reporting, but a
-      # refusal is still a red -- so it belongs in a job that has the tree.
-      - name: Dockerfile npm pins
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_docker_npm_pins.py
-
-      # Beside the pin gate because it is the same failure wearing different clothes:
-      # that one catches a version that moves on its own, this one catches a check
-      # that stops looking. A gate whose scan comes back empty prints a tick, and the
-      # tick reads exactly like a clean tree -- which is how four separate gates in
-      # this repo went briefly blind, each found by hand and each invisible to the
-      # others.
-      - name: Enumeration vacuity
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-enumeration-vacuity
 
       - name: Format
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:format
 
-      - name: Lint
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:lint
-
-      # timeout-minutes, because this step is the only one in the job that talks to
-      # the npm registry: `lint:unused` runs typecheck-workers.sh --install first, and
-      # on run 33815742382 those four installs took 671s against 21-29s on the five
-      # runs before it. The job hit its own 15-minute ceiling at 15m19s, forty later
-      # gates never ran, and the conclusion was `cancelled` -- indistinguishable from
-      # a superseded run. A step-level ceiling makes the stall name itself and leaves
-      # the rest of the job its budget. The script now bounds and retries each install
-      # too; this is the backstop for the case where that is not enough.
-      - name: Unused exports (knip)
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        timeout-minutes: 8
-        run: npm run lint:unused
 
       - name: Check account route layer isolation
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
@@ -1104,171 +955,42 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-dead-bash
 
-      # Before TypeScript, not after: this asserts the chain below actually POINTS at
-      # every tsconfig in the repo. A project nobody runs cannot fail, so a green
-      # TypeScript step says nothing about it.
-      - name: Typecheck scope coverage
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-typecheck-scope-coverage
 
       - name: TypeScript
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run typecheck
 
-      # The tree first: nine validators (this lane's included) read
-      # command-tree.json as their model of the CLI, and a stale one fails OPEN
-      # — they keep passing while checking a CLI that no longer exists.
-      - name: Command tree
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-command-tree
 
-      - name: CLI examples
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:cli-examples
 
       - name: Command planes
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-command-planes
 
-      - name: Design tree
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-design-tree
-
-      - name: Schema coverage
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-schema-coverage
-
-      - name: Shared constant duplication
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-shared-constant-duplication
-
-      - name: Runtime imports are dependencies
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-runtime-imports-are-deps
-
-      - name: Backup manifest shape parity
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-backup-manifest-shape-parity
-
-      - name: CI fetch integrity
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-fetch-integrity
-
-      - name: AWS credential bridge
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-aws-credential-bridge
-
-      - name: Worker secret names
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-worker-secret-names
-
-      - name: Builder env contract
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-builder-env-contract
-
-      - name: Backup bucket conformance
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-backup-bucket-conformance
-
-      - name: Backup protocol conformance
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-backup-protocol-conformance
-
-      - name: No client-side key composition
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-no-client-key-composition
-
-      - name: Retention knob parity
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-retention-knob-parity
-
-      - name: Test suites are CI-reachable
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-test-scripts-reachable
-
-      - name: Every source file reaches a linter
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_lint_scope_coverage.py
-      - name: Format command covers its config's scope
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-format-scope
 
 
-      - name: Workflow banned patterns
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check-workflows.sh
 
-      # Prevents GHA transitive-skip propagation (finding J) from silently
-      # disabling downstream jobs, enforces the reusable-workflow secret
-      # contract, and enforces the ubuntu-slim timeout rule (CHECK 3).
+
+
+
+
+
+
+
+
+
+
+
+
+
       - name: Workflow structural gates
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-workflow-gates
 
-      - name: Greenlight closure paths
-        run: npm run check:ci-greenlight-closures
-
-      # .ci/breakpoint/ is VENDORED into other repos, so a local edit here is
-      # invisible to them and a local edit THERE is silently reverted by the
-      # next re-vendor. This proves the copy matches its manifest, and also
-      # cmp's workflow/breakpoint.yml against the live .github/ copy -- which
-      # matters because every other workflow gate scans .github/ only, so the
-      # template would otherwise be unreviewed by any of them.
       - name: Breakpoint drift
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-breakpoint-drift
 
-      # Keep the CI App off `administration`, which gates environment CRUD.
-      - name: App admin permission
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-app-admin-perm
 
-      # Pinned-action freshness + BLOCKER validation of
-      # .actions-upgrade-blocklist. GITHUB_TOKEN is REQUIRED, not a nicety:
-      # unauthenticated calls hit the 60 req/h GitHub API limit, and the script
-      # then reports those actions as "unknown" and still exits 0 — a silent
-      # fail-open that would make this gate meaningless exactly when it is rate
-      # limited.
-      # Parses workflow YAML rather than grepping it: `${{ }}` expression syntax
-      # and types, matrix property references, runner labels, action input
-      # names. Catches the class where a bad expression makes a run start with
-      # ZERO jobs and no error message anywhere -- which reached main and was
-      # only found by dispatching the workflow. Also the only gate that sees
-      # workflow TEMPLATES under .ci/*/workflow/, which .github-scoped gates
-      # cannot.
-      - name: Workflow lint (actionlint)
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-actionlint
-
-      - name: Action freshness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
-        run: .ci/scripts/quality/run-external-gate.sh npm run check:actions
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
-
-      # The proven rediacc/console#549 instance: this gate sat in the local
-      # chain and in no workflow, so nothing in CI ever ran its real scan. It is
-      # NAMED by test-gate-anti-vacuity.sh:104, and that test ran green for
-      # weeks while the scan never executed once -- which is why mentioning a
-      # script never counts as coverage in check-ci-parity.ts.
-      - name: jq boolean defaults
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-jq-boolean-default
-
-  # ============================================================================
-  # L5 CONTENT -- node + submodules. Content, tutorials, and every gate that
-  # touches the public network.
-  # Absorbs: content, locale-tutorial-assets, tutorial-casts,
-  #          tutorial-caption-sync, tutorial-parity, e2e-coverage, deps,
-  #          external-links, dkim-notify.
-  #
-  # The three network gates (check:deps, check:ci-external-links,
-  # check:ci-dkim-notify) are concentrated HERE deliberately: quality jobs never
-  # auto-retry (WATCHDOG_NO_RETRY_PATTERNS), so a transient DNS or registry blip
-  # reddens a lane with no second chance. Keeping all three in one lane bounds
-  # that blast radius to one lane instead of three.
-  # ============================================================================
   quality-content:
     name: Content
     runs-on: ubuntu-latest
@@ -1318,92 +1040,113 @@ jobs:
       # `steps.setup.outcome == 'success'`; a region above that step references a
       # step that has not run, the expression is empty, and every gate in the region
       # SKIPS while the job stays green.
-      - name: External dependency freshness
+      - name: Agent hints can actually fire
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:deps
-      # <<< gate-bind
-
-      # HAND-REGISTERED for now. quality-content HAS a gate-bind region, but 31 of its
-      # gates still have hand-written steps outside it, so `gate:bind --write` would
-      # emit all 31 into the region and leave the hand-written copies as duplicates.
-      # This joins the region in the W2.6 lane cutover, with the rest.
-      - name: Lint rule unit specs
+        run: .ci/scripts/quality/check_agent_hint_liveness.py
+      - name: Baseline key semantics
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-lint-rule-units
-
+        run: npm run check:ci-baseline-key-semantics
       - name: Check content for AI slop patterns
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-content-quality.sh
-
-      - name: Verify NIS2 directive quotations match the official source
+      - name: Check E2E skip hygiene (no collected-then-skipped suites)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-nis2-quotes
-
-      # Source-only content gate. check:ci-seo/-redirects/-cta-bolt all need a
-      # built www, so they live in quality-www-build instead.
+        run: npm run check:ci-e2e-skip-hygiene
+      - name: Check E2E test coverage for all renet functions
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-e2e-coverage.sh
       - name: CSS DOM references
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-css-dom-refs
+      - name: Dead service methods
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-dead-service-methods
+      - name: DKIM notify DNS
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-dkim-notify
+      - name: Docker image freshness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-docker-image-freshness
+      - name: Docs browse invariants
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-docs-browse-invariants
+      - name: Docs code-block copy units
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-docs-copy-units
+      - name: Docs thumbnail coverage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-docs-thumb-coverage
+      - name: E2E case-blind assertions
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_e2e_case_blind_assertions.py
+      - name: Enabled lint rules can actually fire
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_lint_rule_liveness.py
+      - name: External dependency freshness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:deps
+      - name: External links
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-external-links
+      - name: i18n value types match English
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_i18n_value_types.py
+      - name: Lint rule unit specs
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-lint-rule-units
+      - name: Pricing consistency
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-pricing-consistency
+      - name: Retired commands in docs
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-retired-commands
+      - name: Self-improving skill size
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-skill-size
+      - name: Sentence wrapping
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-sentence-wrapping
       - name: SVG theme reach
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-svg-theme-reach
+      - name: Test-gate wiring
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-test-gate-wiring
+      - name: Tutorial CLI validity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_tutorial_cli_validity.py
+      - name: Tutorials cannot skip themselves
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_tutorial_no_skips.py
+      - name: Validate account onboarding splash against canonical tutorials
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-account-onboarding
+      - name: Validate parity between the local gate set and the CI quality surface
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-parity
+      - name: Validate tutorial commands are non-interactive
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-tutorial-noninteractive
+      - name: Validate tutorial storyboard commands against the live CLI
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-tutorial-commands
+      - name: Verify NIS2 directive quotations match the official source
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-nis2-quotes
+      - name: Video player invariants
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-video-player-invariants
+      # <<< gate-bind
+
+      # HAND-REGISTERED for now. quality-content HAS a gate-bind region, but 31 of its
+
+
       - name: Dead CSS
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
           npm run check:ci-dead-css
           npm run check:ci-viewport-unit-mixing
           npm run check:ci-illustration-contract
-      # Gate 1 of the sentence-wrapping pair: asserts every multi-sentence catalog
-      # value rendered in text position goes through <Sentences>, which makes each
-      # sentence an atomic line-breaking unit. Source-level, sub-second. The step name
-      # must match the manifest `step` byte for byte or check:ci-parity fails.
-      - name: Sentence wrapping
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-sentence-wrapping
-      # Every doc needs a hand-authored browse thumbnail; there is no regenerate
-      # script, so a gap ships a blank card in all 13 locales silently.
-      - name: Docs thumbnail coverage
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-docs-thumb-coverage
-      # A copy button on a bare `}` or a YAML key hands the reader something they
-      # cannot paste; the classifier is lifted out of DocsLayout.astro and judged
-      # against the real corpus.
-      - name: Docs code-block copy units
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-docs-copy-units
-      # Structural cover for three fixes a browser would otherwise have to catch: the
-      # sr-only tally, one shared heading rule, and the pre-paint category decision.
-      - name: Docs browse invariants
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-docs-browse-invariants
-      # Skills an agent edits itself are capped, so improving one means sharpening
-      # it rather than appending to it.
-      - name: Self-improving skill size
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-skill-size
-      # The language picker must stay out of Plyr's quality pane, which plays a
-      # language nobody chose, and inside the player frame.
-      - name: Video player invariants
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-video-player-invariants
-      # Fourth pin kind to join the shared soak window, after npm deps, embedded assets
-      # and GitHub Actions. DOCKERHUB_TOKEN keeps Docker Hub's anonymous rate limit from
-      # making this vacuous; without it a limited response is reported as unknown and the
-      # gate FAILS rather than pretending everything is current.
-      - name: Docker image freshness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        env:
-          DOCKERHUB_TOKEN: ${{ env.BWS_DOCKERHUB_TOKEN }}
-        run: npm run check:ci-docker-image-freshness
-      - name: Baseline key semantics
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-baseline-key-semantics
-      - name: Test-gate wiring
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-test-gate-wiring
-      - name: Pricing consistency
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-pricing-consistency
 
       - name: Validate per-locale tutorial video assets exist
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
@@ -1443,129 +1186,15 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-tutorial-caption-sync
 
-      # Field-aware: validates card.commandFull and teardownCommand against the
-      # live CLI tree. Runs BEFORE parity because a storyboard command that does
-      # not exist is a worse failure than one that merely disagrees with its
-      # recording -- teardownCommand is executed by the harness, and
-      # card.commandFull is generated into the portal's first-run flow.
-      - name: Validate tutorial storyboard commands against the live CLI
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-tutorial-commands
-
-      # Tutorial scripts run headless inside asciinema. A command that stops to
-      # ask "are you sure?" never returns, and `2>/dev/null || true` hides the
-      # question rather than preventing it -- one such line hung a re-record for
-      # six hours.
-      - name: Validate tutorial commands are non-interactive
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-tutorial-noninteractive
-
-      # A local run is the promise that a developer finds CI failures before
-      # pushing, and the promise has to hold in BOTH directions: a gate wired
-      # into a workflow but not into the local set breaks it forwards, and a
-      # gate that runs only locally is a gate CI never enforces. This one gate
-      # replaced the two that each checked one direction; the third relation
-      # (local-only, rediacc/console#549) had no gate at all.
-      #
-      # The step NAME here deliberately no longer contains a literal npm
-      # invocation. The old name did, and matching whole workflow text for
-      # `npm run ci` made the entire gate set look CI-executed, which reported
-      # perfect parity forever.
-      - name: Validate parity between the local gate set and the CI quality surface
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-parity
-
-      # Tutorials are EXECUTABLE documentation: CI runs the sequence against real
-      # VMs and customers follow the same steps by hand. A renamed command or flag
-      # otherwise surfaces 20 minutes into a provisioned job, or in public.
-      - name: Tutorial CLI validity
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_tutorial_cli_validity.py
-
-      # getCombinedOutput() lowercases, so an assertion expecting a capital can
-      # NEVER match and reports the product broken while it is behaving. Four of
-      # these shipped in one wave, each costing a five-distro CI round.
-      - name: E2E case-blind assertions
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_e2e_case_blind_assertions.py
-
-      # A tutorial is executable documentation, so a skipped one is a
-      # customer-facing page nothing verifies. Skipping is denied outright:
-      # fix the tutorial rather than excusing it from the run.
-      - name: Tutorials cannot skip themselves
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_tutorial_no_skips.py
-
-      # knip has no class-member issue type, so an unused method on an exported
-      # singleton service is invisible to it. Nine of them had accumulated.
-      - name: Dead service methods
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-dead-service-methods
-
-      # A gate can be green over files the RENDERER ignores: 12 locales of the
-      # cheat sheet were corrected while the page served hardcoded English
-      # teaching retired commands. This checks what a reader is taught.
-      - name: Retired commands in docs
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-retired-commands
-
-      # media_quality: cross-checks the recordings against their storyboards
-      # and transcripts, so it fails on any half-finished re-recording pass.
-      # Same narrow, announced hold as the cast gate above.
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.media_quality != 'skip' }}
         run: npm run check:ci-tutorial-parity
 
-      - name: Validate account onboarding splash against canonical tutorials
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-account-onboarding
 
-      - name: Check E2E test coverage for all renet functions
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check-e2e-coverage.sh
 
-      - name: i18n value types match English
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_i18n_value_types.py
 
-      - name: Enabled lint rules can actually fire
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_lint_rule_liveness.py
 
-      - name: Agent hints can actually fire
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_agent_hint_liveness.py
 
-      # Static half of the zero-skip contract: every topology subdir of tests/
-      # must be excluded by the base playwright.config.ts, so the E2E Workers
-      # job never collects-then-skips a foreign-topology suite. The runtime half
-      # is run-e2e.sh --fail-on-skip in the E2E jobs themselves.
-      - name: Check E2E skip hygiene (no collected-then-skipped suites)
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-e2e-skip-hygiene
-
-      - name: External links
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
-        run: .ci/scripts/quality/run-external-gate.sh npm run check:ci-external-links
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
-
-      # Same external_quality treatment as external-links: both do live
-      # public-network lookups, so both skip on a labelled PR (offline branch
-      # work) and soften on the nightly.
-      - name: DKIM notify DNS
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
-        run: .ci/scripts/quality/run-external-gate.sh npm run check:ci-dkim-notify
-        env:
-          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
-
-      # Runs unconditionally, and is NOT behind media_quality: a skipped step
-      # is invisible (the job still reports success), so without this the two
-      # holds above would leave no trace anywhere in the log. It also refuses
-      # an unrecognised media_quality value, which is the only place a typo in
-      # that wiring is ever reported -- the step `if:` above would silently
-      # treat it as "run".
       - name: Announce media gates held by label
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:

@@ -1247,10 +1247,16 @@ export const GATES: readonly GateSpec[] = [
     // exact "half-populated path table" anti-pattern gate-author.md warns
     // against -- a guard added under pre-edit/pre-ask would not have
     // re-selected this gate on --changed.
+    // RE-KEYED BY THE W5 CUTOVER, which is invariant 2: the three chain
+    // directories moved and a glob that matches nothing can only EXCLUDE. The
+    // gate now reads its PATTERNS from the frozen oracles and PROBES the live
+    // Python guards, so both trees select it; the port tree is what actually
+    // refuses commands, and it was the one this table would have stopped
+    // watching.
     paths: [
-      '.claude/hooks/pre-bash/**',
-      '.claude/hooks/pre-edit/**',
-      '.claude/hooks/pre-ask/**',
+      '.claude/oracles/**',
+      '.claude/rediacc_hooks/guards/**',
+      '.claude/rediacc_hooks/dispatch.py',
       '.ci/scripts/quality/check_guard_mention_anchoring.py',
     ],
     leaves: ['.ci/scripts/quality/check_guard_mention_anchoring.py'],
@@ -3034,10 +3040,14 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-editorconfig',
     run: 'npm run check:ci-editorconfig',
-    // WAS `slow: true, // 12.9s measured`, dropped 2026-09-06. The recorded
-    // window is [23.8, 4.6, 19.1, 4.7, 5.0]s: a 4.6s floor and a 5.0s median,
-    // with the two large samples being contention rather than cost. Cheap
-    // enough for the pre-push lane, which is where a formatting gate belongs.
+    // SLOW AGAIN, and the reversal is the record worth keeping. On 2026-09-06 I
+    // dropped `slow: true` on a window of [23.8, 4.6, 19.1, 4.7, 5.0]s, reading
+    // the 4.6s floor as the honest cost and the two large samples as
+    // contention. A day later the window is [28.4, 25.9, 26.3, 27.5, 26.2]s: a
+    // 25.9s FLOOR, so the cheap runs were the outlier and not the rule. The
+    // oracle judges the floor precisely so one lucky run cannot argue a gate
+    // into the pre-push lane, and it caught my mistake within a day.
+    slow: true,
     gate: true,
     leaves: ['.ci/scripts/quality/check-editorconfig.sh'],
     ci: {
