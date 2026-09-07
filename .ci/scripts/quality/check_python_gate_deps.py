@@ -70,7 +70,13 @@ PIP_RE = re.compile(r"pip\s+install[^\n]*", re.IGNORECASE)
 
 # Directory names a script puts on sys.path, so its cross-directory imports can
 # be recognised as first-party.
-SYS_PATH_RE = re.compile(r"sys\.path\.(?:insert|append)\([^)]*?([A-Z_]+)\s*\)")
+# THE NAMED-VARIABLE FORM. `[^)]*?` could not cross the `)` of a nested call, so
+# `sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))` matched NOTHING and
+# the wl_* modules those five scripts import read as third-party dependencies the
+# gate would demand somebody pip install. Same defect as PARENTS_RE's first draft,
+# in the line right above it. `.*?` spans the call; the variable is still required
+# to be an ALL-CAPS name, which is what keeps this from matching arbitrary text.
+SYS_PATH_RE = re.compile(r"sys\.path\.(?:insert|append)\(.*?([A-Z_]+)\b")
 # `sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[N]))`, the
 # inline form; the capture is N.
 PARENTS_RE = re.compile(r"sys\.path\.(?:insert|append)\(.*?parents\[(\d+)\]")
@@ -90,6 +96,21 @@ def first_party_modules(script: pathlib.Path, body: str) -> set[str]:
     control depends on is not a widening, it is a hole.
     """
     names = {p.stem for p in script.parent.glob("*.py")}
+    # THE `/`-JOIN FORM, resolved from the sys.path LINE ITSELF rather than from a
+    # separate assignment: `sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))`.
+    # Five scripts write this and their wl_* imports still read as third-party after
+    # SYS_PATH_RE was widened, because DIR_ASSIGN_RE looks for the literals on the
+    # variable's ASSIGNMENT line and here they are on the insert line.
+    for line in body.split("\n"):
+        if "sys.path" not in line or "/" not in line:
+            continue
+        parts = [a or b for a, b in re.findall(r'"([^"]+)"|\'([^\']+)\'', line)]
+        if not parts:
+            continue
+        candidate = REPO.joinpath(*[part.strip("/") for part in parts])
+        if candidate.is_dir():
+            names |= {p.stem for p in candidate.glob("*.py")}
+
     for hint in SYS_PATH_RE.findall(body):
         for var, value in DIR_ASSIGN_RE.findall(body):
             if var != hint:
