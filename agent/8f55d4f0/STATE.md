@@ -80,64 +80,61 @@ unstable. Wave 3 is T6 HOOKS, T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN.
 - `git log --diff-filter=A` names the RENAME. Search content history: `git log -S`.
 - Never `git checkout`, `restore`, `stash`, `clean` or `reset`. Repair forward.
 
-## SESSION 8f55d4f0 2026-09-07T00:27:05Z
+## SESSION 8f55d4f0 2026-09-07T00:48:38Z
 
-Branch `0906-1`, head is the worklist commit after `7acaeca98`. BOTH WAVE-3 AGENTS
-HAVE LANDED and the tree is clean apart from an untracked `.err` that belongs to the
-other session. No agents are running.
+Branch `0906-1`, head `5d6f07955` plus a worklist commit. TREE IS CLEAN: no agents, no
+uncommitted files except an untracked `.err` that belongs to the OTHER live session.
+Leave that alone.
 
 ## Next action
 
-1. **#4a9b14ce, the push, and it is finally unblocked.** `ci:quick` is in flight as
-   `b5c47v7vs` on the first genuinely still tree of the session. On green:
+1. **#4a9b14ce, the push, and nothing is in its way now.** `ci:quick` is in flight as
+   `bwnjt71vb` on a genuinely clean tree. On green:
    `git push origin 880b1b3ee:main`. One commit, fast-forward from `9295fb63c`, one
    file, +25 lines, operator-authorised. Until it lands, rediacc/account PR #86 and
    every renet and elite review run stay red at `discover-epics.sh: No such file or
    directory, exit 127`. `check:ci-secret-reachability` is carried in
    `.ci/config/carried-reds.json` with its operator-only door; carry NOTHING else.
-2. **#a6635a5b** Re-record `w7p2-hosttoolchain`. It asserts green over 5 trees, but I
-   edited BOTH `check-host-toolchain-coverage.sh` and its port
-   `.ci/rediacc_ci/quality/host_toolchain_coverage.py` for the W5 path re-key, so the
-   rows attest to superseded bytes. Follow the recording recipe in
-   `docs/ci-overhaul/12-remaining-work.md`.
-3. **#0a1b79c4 W2.6 is DEFERRED, DEFAULT is a dedicated pass.** I attempted it and BROKE
-   THE WORKFLOW: deleting the 112 duplicates `gate:bind --write` takes ownership of
-   removed TWO ENTIRE JOBS, quality-branch and quality-content, because my deleter
-   walked back over each step's comment block and for a step FIRST in its job that walk
-   ate the job header. Repaired from a byte copy. If you retry: never cross a line
-   matching `^  [a-z0-9-]+:$`, check the JOB set not only the step set, actionlint
-   before believing anything.
-4. Then T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN from `docs/ci-overhaul/12-remaining-work.md`,
-   all three now UNBLOCKED since their collisions with HOOKS and SETUP are gone. Then
-   W7 P3: 148 gate tests to pytest, the largest body left and ONE box.
+2. Launch the rest of wave 3 from `docs/ci-overhaul/12-remaining-work.md`, all now
+   unblocked and file-disjoint: **T7 SWEEP-CI** (W1 P4, re-measure first, the 93
+   `sys.path` count predates the guard move), **T8 RECORDS** (W12 P3.1b/P3.2/P3.3/P3.4b,
+   its prerequisite of a merged compaction wave is met), **T9 ENVMAN** (W8 P2/P3/P4).
+3. **W7 P3 is the largest body left and is ONE box: 148 gate tests to pytest.**
+   Untouched. It is also where the local run's floor lives: `gate-test:claude-hooks`
+   780.4s and `check:ci-hook-worklist-suite` 686.4s are 24 minutes between them.
 
-## What landed, and what it is worth
+## What landed, measured this cycle
 
-W5 CUTOVER at `7acaeca98`: the dispatcher is live, settings.json went from 73 command
-entries to 30, and a Bash tool call from 456 process executions to 35, measured with
-6,394 counting shims. The bash twins were MOVED to `.claude/oracles/`, not deleted,
-because deleting them retires `test_guards_differential.py`, 5,844 cases and the only
-proof a port answers what its twin answered. I verified 46 of 47 byte-identical myself;
-the 47th is a disclosed forwarder. I also drove the live chain: `git add -A`,
-`git commit --amend --no-edit` and `git worktree add x` all exit 2, `echo hello` exits 0.
+W2.6 at `5d6f07955`: the gate-bind regions now emit and OWN their steps. 112
+hand-written duplicates removed, 10 jobs and 264 unique step names both before and
+after, actionlint green. The deleter guard written for one job-boundary failure found a
+SECOND at the other end of every span.
+
+W5 P5-P7 at `7acaeca98`: dispatcher live, settings.json 73 command entries to 30, 456
+process executions per Bash call to 35. The bash twins were MOVED to `.claude/oracles/`
+and MUST NOT be deleted by a later sweep: they are what `test_guards_differential.py`
+compares each port against, 5,844 cases.
 
 W6 P2 at `2f0c3515d`: the one install table, 22 rows, 9 pinned, WITH the pytest row,
-plus four macOS guards proved against a bash 3.2.0 built from source.
+plus four macOS guards proved on a bash 3.2.0 built from source.
 
-W7 P2 77/77, W3 P2 10/10, W4 P2 15/15, W12 P1.8 32/32. 78 shadow pairs, 77 green;
-`w7p2-stagingtag` is permanently red (three tree ids disqualified by rows recorded
-through a closed hole, 12 qualifying trees over 9 finding sets, so the claim IS
+All eight plan and registry gates rc=0 this cycle on a clean tree. 78 shadow pairs, 77
+green; `w7p2-stagingtag` is permanently red (three tree ids disqualified by rows
+recorded through a closed hole, 12 qualifying trees over 9 finding sets, so the claim IS
 evidenced). DO NOT delete rows to make it green.
+
+Plan boxes 75 of 130, which FLATTERS: the 148 gate tests are ONE box.
 
 ## Volatile facts a fresh session would get wrong
 
 A SECOND Claude session is live here: pid 2222763, session `a20630a0-dac7-...`. The
-untracked `.err` at the repo root is its litter, not yours; leave it.
+untracked `.err` at the repo root is its litter.
 
-`check-gate-manifest` judges the FLOOR of the last five samples, not the average. 52
-gates are over budget and all 52 are tiered.
+`check-gate-manifest` judges the FLOOR of the last five samples. I dropped
+`check:ci-editorconfig`'s `slow` on a 4.6s floor and had to restore it a day later at
+25.9s: one lucky run is not the cost.
 
-SIX times today an instrument of mine was wrong before the claim it supported. Five
-invented findings; the sixth HID a real change: I verified the workflow's step-name set
-was unchanged, 274/264 both sides, while two whole jobs had vanished, because a job
-header is not a `- name:` line. Choose the check that could see the damage.
+SEVEN times this session an instrument of mine was wrong before the claim it supported.
+The worst HID a real change: I verified a workflow's step-name set was unchanged while
+two whole jobs had vanished, because a job header is not a `- name:` line. Choose the
+check that could see the damage, and prefer a guard that REFUSES over care.
