@@ -250,7 +250,7 @@ reasoning without knowing the record exists.
 ## Plan census
 
 Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans
-block can be printed from THIS file instead of opening all 83 of them. The
+block can be printed from THIS file instead of opening all 86 of them. The
 hook checks freshness with `stat` alone (path set plus byte size) and falls
 back to reading the plans, loudly, when the two disagree.
 
@@ -278,6 +278,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-cold-path.md` | compacted | 74 | 0 | 0 | 4055 |
 | `agent/PLAN-commit-author-identity.md` | draft | 235 | 13 | 0 | 13995 |
 | `agent/PLAN-consolidate-test-scaffolding.md` | done | 90 | 0 | 4 | 4452 |
+| `agent/PLAN-devbox-uid-derived-image.md` | draft | 198 | 0 | 0 | 11080 |
 | `agent/PLAN-docker-image-freshness-soak-filter.md` | done | 117 | 0 | 0 | 5584 |
 | `agent/PLAN-duplication-angle.md` | implemented | 241 | 0 | 0 | 12492 |
 | `agent/PLAN-durable-reports-and-push-inbox.md` | compacted | 69 | 0 | 0 | 3705 |
@@ -305,6 +306,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-plan-file-lifecycle.md` | ready | 456 | 3 | 10 | 28868 |
 | `agent/PLAN-plyr-css-on-demand-loading.md` | draft | 138 | 11 | 0 | 7923 |
 | `agent/PLAN-promote-mutation-runner.md` | done | 923 | 0 | 0 | 51701 |
+| `agent/PLAN-pytest-parallelism.md` | done | 266 | 8 | 2 | 15592 |
 | `agent/PLAN-rclone-decommission.md` | compacted | 56 | 0 | 0 | 3004 |
 | `agent/PLAN-reggate-effort-cap.md` | designed | 317 | 0 | 0 | 16667 |
 | `agent/PLAN-renet-fetch-hardening.md` | parked | 33 | 0 | 0 | 886 |
@@ -337,7 +339,8 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 0 | 4529 |
 | `agent/PLAN-unify-trap-corpus.md` | compacted | 54 | 0 | 0 | 2755 |
 | `agent/PLAN-wire-account-vitest-ci.md` | compacted | 52 | 0 | 0 | 3048 |
+| `agent/PLAN-wl-report-liveness-oracle.md` | done | 199 | 0 | 7 | 11514 |
 | `agent/PLAN-worklist-ownership-continuity.md` | draft | 224 | 3 | 11 | 13033 |
 | `agent/PLAN-www-bundle-determinism.md` | draft | 212 | 0 | 0 | 10993 |
 
-83 plan(s), 17 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+86 plan(s), 19 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.

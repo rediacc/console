@@ -27,6 +27,14 @@
  *
  * ---- gate ----
  * step: Every commit names its epic
+ * emit: false
+ * blocker: BLOCKER: this step carries a per-step `env:` block and gate-bind cannot emit one
+ *     (scripts/gate-bind.ts emitStep writes name, if and run only). Measured 2026-09-07
+ *     during the region cutover: with this gate emitting, --write produced a region copy
+ *     with NO env beside the hand-written copy that has it, and deleting the hand-written
+ *     one as a duplicate would have silently stripped the variables this gate reads. Keep
+ *     the hand-written step until the binder learns env:, then delete this line and the
+ *     hand-written copy in the same change.
  * needs: node
  * selftest: true
  * why: Every commit must name the epic it belongs to, because the review selects

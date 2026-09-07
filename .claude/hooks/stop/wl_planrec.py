@@ -1842,9 +1842,30 @@ def compact(root, rel, me, why="author", park=False, now=None):
             "`done=abandoned`. If that is wrong, run `npm run check:ci-plan-boxes -- "
             "--update`, commit the ledger, and compact again." % d["n_abandoned"]
         )
+    # APPEND, NEVER ASSIGN. Rule 4 of this module's own contract says `## History`
+    # IS APPEND-ONLY, and until 2026-09-07 this line was a bare assignment, so the
+    # WRITER broke the convention the READER documents: a revive-then-re-compact
+    # replaced the single bullet instead of adding one, and every earlier bullet
+    # survived only in git. Found by the W12 P3.5 advisory census, whose C9
+    # candidate rule flags exactly this shape -- on its first run it named three
+    # records whose history had been rewritten rather than extended.
+    #
+    # The carry-forward needs no blob read: a revived record's `## History` is
+    # still in `text`, and parse() already extracts it. When `text` is a plain
+    # plan (the ordinary first compaction) the parse yields nothing and the
+    # result is byte-identical to the old behaviour.
+    # parse() returns None for a source that is not already a record, which is the
+    # ORDINARY case (a plain plan being compacted for the first time). Branch on it
+    # explicitly rather than letting the normal path fall through an exception
+    # handler: an except arm that fires on every healthy call is not a guard, it is
+    # control flow wearing a guard's clothes, and it hides the abnormal case it was
+    # written for.
+    parsed = parse(text)
+    carried = [ln for ln in ((parsed or {}).get("history") or []) if ln.strip().startswith("-")]
     rec["history"] = [
+        *carried,
         "- %s compacted by %s from `%s` (record-sig %s)"
-        % (stamp, (me or "?")[:8], prior or "UNKNOWN", record_sig(rec))
+        % (stamp, (me or "?")[:8], prior or "UNKNOWN", record_sig(rec)),
     ]
     out = render(rec)
     _assert_boxes_preserved(text, out, rel)

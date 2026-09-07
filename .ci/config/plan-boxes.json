@@ -222,6 +222,14 @@
         "b30a696d"
       ]
     },
+    "agent/PLAN-devbox-uid-derived-image.md": {
+      "status": "draft",
+      "owner": "unowned",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
+      "done_sigs": []
+    },
     "agent/PLAN-docker-image-freshness-soak-filter.md": {
       "status": "done",
       "owner": "854ac1c6",
@@ -534,6 +542,26 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
+    },
+    "agent/PLAN-pytest-parallelism.md": {
+      "status": "done",
+      "owner": "8f55d4f0",
+      "open": 8,
+      "done": 2,
+      "open_sigs": [
+        "0f263e14",
+        "16119952",
+        "1d4a0b97",
+        "20f5d32f",
+        "7f769165",
+        "90f06a32",
+        "f8d3ccc3",
+        "f9591a59"
+      ],
+      "done_sigs": [
+        "8b7d18d6",
+        "ce053824"
+      ]
     },
     "agent/PLAN-rclone-decommission.md": {
       "status": "compacted",
@@ -859,6 +887,22 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
+    },
+    "agent/PLAN-wl-report-liveness-oracle.md": {
+      "status": "done",
+      "owner": "8f55d4f0",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
+        "26be2ba4",
+        "66f279eb",
+        "769becb0",
+        "7e041871",
+        "a3c08add",
+        "c3ba6973",
+        "cd510b2d"
+      ]
     },
     "agent/PLAN-worklist-ownership-continuity.md": {
       "status": "draft",

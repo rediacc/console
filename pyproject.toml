@@ -207,12 +207,38 @@ docstring-code-format = false
 # reason would be a version, not the code. minversion turns that into a message.
 minversion = "7.0"
 
-# WHERE THE TESTS ARE. One entry today; the driver contract's arbitration names
-# three roots for the finished program -- .ci/rediacc_ci/tests, .ci/tests/gates
-# and .claude/rediacc_hooks/tests -- and the other two arrive with W5 and W7.
-# Add them here as they land, and to check_test_file_orphans' SEARCH_DIRS in the
-# same change (that pairing is W2's, and it is one edit, not three).
-testpaths = [".ci/rediacc_ci/tests", ".claude/rediacc_hooks/tests"]
+# WHERE THE TESTS ARE. Three roots now. The driver contract's arbitration named
+# the third one `.ci/tests/gates`; W7 P3 landed it at `.ci/rediacc_ci/tests/gates`
+# instead, so the ported battery is a SUBPACKAGE of the suite that already exists
+# (`rediacc_ci.tests.gates.*`) rather than a second top-level tree needing its own
+# `__init__.py` story and its own sys.path answer. The path is what moved; the
+# arbitration's point -- one named root per body of tests -- is unchanged.
+#
+# WHY A NESTED ROOT IS LISTED AT ALL, since `.ci/rediacc_ci/tests` already collects
+# it recursively. `check_pytest.corpus_test_count` globs `test_*.py` in each root
+# NON-recursively, so tests one directory deeper are collected by pytest and absent
+# from the corpus the collection floor is compared against. Naming the subdirectory
+# is what puts it under check_pytest's per-root "this root holds no test functions"
+# refusal -- the one that catches a whole suite collapsing while the summed total
+# stays comfortably above the floor. Measured 2026-09-07 on the same tree, with the
+# gates root already on disk: BEFORE the edit `corpus 1152 across 2 root(s)` /
+# `8768 collected`, AFTER `corpus 1204 across 3 root(s)` / `8769 collected`. The
+# collected count is +1 and not +52 because listing a parent and its child does NOT
+# double-collect -- pytest dedupes the args -- so the whole 52 was ALREADY being run
+# and simply was not being counted; the +1 is one test added between the two
+# measurements. That gap between "run" and "counted" is the hole this line closes.
+#
+# NO PAIRED EDIT TO check_test_file_orphans' SEARCH_DIRS IS NEEDED HERE, and that
+# is worth stating rather than leaving the next reader to wonder whether the pairing
+# above was forgotten: its `discover()` uses rglob, and `.ci/rediacc_ci/tests` is
+# already in SEARCH_DIRS, so every file under the new root was already a subject.
+# `collected_roots()` reads THIS list, so the new root confers reachability the day
+# it is added and stops the day it is removed.
+testpaths = [
+    ".ci/rediacc_ci/tests",
+    ".ci/rediacc_ci/tests/gates",
+    ".claude/rediacc_hooks/tests",
+]
 
 # THE IMPORT PATH, IN ONE PLACE. The package directory is `.ci/rediacc_ci`, so
 # the importable name is `rediacc_ci` with `.ci` on sys.path. Everything else in

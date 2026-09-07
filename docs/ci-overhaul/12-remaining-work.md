@@ -14,18 +14,19 @@ re-derived. Status figures are measured, not remembered.
 | Heavy-job proxies (W3 P2) | 10 | 10 | 100 |
 | Policy lists moved (W4 P2) | 15 | 15 | 100 |
 | Install table (W6 P2) | 1 | 1 | 100 |
-| Hooks dispatcher cutover (W5 P5-P7) | 1 | 1 | 100 |
-| Plans compacted (W12 P1.8) | 32 | 32 | 100 |
+| Hooks dispatcher cutover (W5 **P5-P6 only**) | 1 | 1 | 100 |
+| W5 **P7**, counted separately because the row above hid it | 0 | 4 | 0 |
+| Plans compacted (W12 P1.8) | 31 | 31 | 100 |
 | Gate tests ported to pytest (W7 P3) | 0 | 148 | 0 |
-| Plan boxes | 72 | 130 | 55 |
+| Plan boxes | 78 | 130 | 60 |
 
 Re-measured 2026-09-07 at the end of wave 3, not carried forward. The commands,
 so the next reader re-derives rather than trusts:
 
     ls .ci/rediacc_ci/quality/*.py | grep -v __init__ | wc -l          # 77 ported
-    for l in .ci/shadow/*.observations.jsonl; do ... --assert --k 5; done  # 76 of 77
-    grep -l '^Status: compacted' agent/PLAN-*.md | wc -l               # 32
-    grep -cE '^\s*- \[x\]' <the plan>                                 # 71 of 130
+    for l in .ci/shadow/*.observations.jsonl; do ... --assert --k 5; done  # 77 of 78
+    grep -l '^Status: compacted' agent/PLAN-*.md | wc -l               # 31
+    grep -cE '^\s*- \[x\]' <the plan>                                 # 78 of 130
 
 WHY 55 PERCENT AFTER A WAVE THIS LARGE. Box count is a poor unit and it always
 flattered us in one direction and cheats us in another. The single largest body
@@ -139,7 +140,15 @@ INCLUDING the pytest row. Must not touch `NODE_VERSION_MIN`.
 
 ## WAVE 3, up to 6 parallel
 
-### T6. HOOKS, W5 P5+P6+P7. DONE 2026-09-07 (`7acaeca98`).
+### T6. HOOKS, W5 P5+P6. DONE 2026-09-07 (`7acaeca98`). **P7 IS NOT DONE.**
+**Corrected 2026-09-07.** This heading and the summary row both claimed P5+P6+P7 at
+100 percent, and a green row is why nobody staffed P7. All four of its deliverables
+are measurably open: `gate-test:claude-hooks` is still ONE manifest entry at
+`manifest.ts:5010` carrying `slow: true`, so it was SCOPED by W3 P0 but never
+SHARDED and the 785 s local floor stands; the lifecycle is nowhere near 11 entries;
+`WORKLIST_*` has 138 distinct names and no registry; and cross-OS reaches exactly one
+file, `.claude/rediacc_hooks/proc.py`, whose `/proc`-versus-`ps` seam landed back in
+P1. P7 is startable now and needs a `manifest.ts` fragment for the shard leaves.
 The dispatcher is live. settings.json went from 73 command entries to 30 (the
 brief said 144; 73 was the measured figure at HEAD) and a Bash tool call from
 456 process executions to 35, counted with 6,394 shims rather than estimated.
@@ -181,6 +190,29 @@ W2.3's generated manifest region plus the lock; W3 P3's shard matrix; W1 P4's
 `run-legacy.sh`; W7 P5 deleting the bash twins once their ledgers retire them.
 
 ## Known open defects, each needing its own change
+
+- **`gate:bind --write` DROPS PER-STEP `env:`, and the repair is uncommitted.**
+  `grep -n env scripts/gate-bind.ts` returns only shebangs and test fixtures: the
+  binder has no env support at all. The W2.6 emission at `5d6f07955` therefore landed
+  steps with their env stripped. HEAD's `ci-quality.yml` holds 20 `env:` blocks where
+  the correct file holds 26, and the 11 missing lines sit on steps that READ them --
+  `check:ci-pr-task-trailers` (`PR_HEAD_REF`, `PR_BASE_REF`) and the Docker image
+  freshness step (`DOCKERHUB_TOKEN`). The repair exists only as uncommitted work in
+  this shared checkout: 711/340, 11 env lines added and ZERO removed, step-name set
+  byte-identical at 274 = 274, `check:ci-gate-bind` green at 377 declared gates.
+  **Teach the binder `env:` BEFORE the next `--write`, or that write re-strips them.**
+  This gates W2.3's manifest region and W3 P3's shard matrix, both of which run a
+  `--write` as their first act.
+
+- **`hookGuardsProvider` cannot see 117 of the files it claims to inventory, and its
+  parity gate cannot catch that.** `scripts/lib/doc-providers.ts:382` and `:440`
+  enumerate `lsFiles(root, '.claude/hooks')` and nothing else. After W5 P6 moved the
+  guards, `git ls-files` counts 90 under `.claude/hooks`, **65 under
+  `.claude/rediacc_hooks`** and **52 under `.claude/oracles`** -- the 46 ported guards
+  and the whole oracle corpus `test_guards_differential.py` compares against are
+  invisible to the generated region. `check:ci-doc-region-parity` compares generated
+  to regenerated, so both sides are equally blind and the document is LYING WHILE
+  GREEN. This is a vacuity hole of exactly the class TRAPS.md exists for.
 
 - **W2.6's region cutover is one command plus a careful deleter.**
   `gate:bind --write` emits with an EMPTY dropped set and loses no step (263 to

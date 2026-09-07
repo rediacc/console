@@ -1,0 +1,52 @@
+# Bash that is PERMANENTLY exempt from the one-language-per-folder rule.
+#
+# The rule is docs/ci-overhaul/04-decisions.md ruling 7 (2026-09-06): Python in
+# `.ci` and `.claude`, TypeScript in `scripts/`, JavaScript in `eslint-rules/`,
+# and bash only as an allowlisted shim carrying a BLOCKER reason. This file is
+# the allowlist that ruling names. Its reader is
+# `.ci/scripts/quality/check_language_policy.py`.
+#
+# THIS FILE IS NOT THE BACKLOG. The 520 non-exempt bash files that exist today
+# (measured 2026-09-07) are frozen in `.ci/config/language-policy-baseline.json`,
+# which is generated, shrink-only, and goes away entirely at the W1 P6 strict
+# flip. An entry HERE is a claim that the file will still be bash after that
+# flip. Moving something from the baseline into this file is not a drain, it is
+# a decision, and it needs a reason that survives the reading.
+#
+# Two entry kinds, because the liveness oracle differs and the gate checks both:
+#
+#   "tree:<prefix>/"   a whole directory whose bash is frozen by name. Live
+#                      while the directory still holds at least one bash file.
+#                      A `tree:` entry that covers nothing is refused: an
+#                      exemption that suppresses no finding is how a list
+#                      outlives its reasons.
+#   "shim:<path>"      one exact file that is a ONE-LINE shim. Live while the
+#                      file exists AND its effective body (everything that is
+#                      not the shebang, a blank line, a comment, or a bare
+#                      `set -...`) is still a single line. A shim that grew into
+#                      a program is refused BY NAME, because "one-line shim" is
+#                      the whole of its justification and it stopped being true.
+#
+# Each entry MUST carry a "# BLOCKER: <reason>" line above it, validated through
+# the canonical `.ci/scripts/lib/blocker-validator.sh` (30-character minimum, no
+# low-effort phrases). A blank line resets the tracked BLOCKER, which is the
+# repo-wide convention documented in docs/agent-reference/suppressions.md.
+
+# BLOCKER: the media and tutorial pipeline drives private/generative and private/growth, which are separate bash-native repositories this one only orchestrates; ruling 7 names it exempt by name, so its bash is the goal state rather than debt
+tree:.ci/media/
+
+# BLOCKER: vendored into other repositories and drift-locked by .ci/breakpoint/scripts/check-breakpoint-drift.sh, so a port here would be an unshippable fork of code whose whole contract is that it is byte-identical downstream; ruling 7 forbids a sweep from touching it
+tree:.ci/breakpoint/
+
+# BLOCKER: tutorial RECORDINGS whose text is the lesson a reader follows plus the sample apps' Rediaccfiles, which are bash by product definition (a Rediaccfile is a bash script renet sources); rewriting either in Python would change what the tutorial teaches
+tree:.ci/tutorials/
+
+# The "shim:" class is DELIBERATELY EMPTY, and empty is its correct state today.
+#
+# Ruling 7 names one-line shims as surviving bash, so the class has to exist for
+# the W1 P6 strict flip to have anywhere to put one. Measured 2026-09-07 across
+# the covered trees, exactly one tracked bash file has a single effective line
+# (.claude/oracles/pre-bash/lib/command-scan.sh) and it is ordinary debt, not a
+# frozen shim: nothing about it is claimed to be permanent. So it stays in the
+# baseline where a drain can reach it, rather than being promoted here to make
+# the number smaller.

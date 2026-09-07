@@ -16,11 +16,11 @@
 # Here, porting a verb is one line in PORTED_VERBS and nothing else moves.
 #
 # PORTED_VERBS IS EMPTY TODAY, a statement rather than an oversight: `.ci/rediacc_ci`
-# has no `__main__.py` yet, so every verb but the two media ones goes to the legacy
-# file and `./run.sh` behaves exactly as it did the day before the split. The seam is
-# not taken on trust -- .ci/scripts/test/gates/test-run-sh.sh asserts that this file's
-# arms and the legacy dispatcher PARTITION the verb set `show_help` documents, in both
-# directions, so a verb cannot be ported into a gap or served by both sides at once.
+# has a `__main__.py` now, but no verb has MOVED off bash, so every verb but the two
+# media ones goes to the legacy file and `./run.sh` behaves as it did the day before
+# the split. Not taken on trust -- .ci/scripts/test/gates/test-run-sh.sh asserts that
+# this file's arms and the legacy dispatcher PARTITION the verb set `show_help`
+# documents, in both directions: a verb cannot be ported into a gap or served twice.
 #
 # NOT A PLACE FOR LOGIC. Anything that is not "which implementation runs this verb"
 # belongs on one side or the other; a router that grows a special case has quietly

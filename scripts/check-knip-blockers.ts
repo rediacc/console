@@ -28,6 +28,7 @@
 import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { refuseIfEmpty } from './lib/controls.js';
 import { fileURLToPath } from 'node:url';
 import { type BlockeredEntry, verifyAllBlockers } from './lib/blocker-validator.js';
 
@@ -191,6 +192,39 @@ function main(): void {
   // parsed entries carry an extra `context` label that nothing reads, so
   // requiring it here only made the public-tag entries below unassignable.
   const entries: BlockeredEntry[] = parseKnipSuppressions(configPath);
+
+  // TWO READINGS THAT MUST AGREE, because this gate's corpus is not a file list
+  // and `check:ci-enumeration-vacuity` therefore never saw it. Every subject here
+  // comes out of parseKnipSuppressions(), a line-based JSONC walk over four
+  // hand-written regexes. Reformat knip.jsonc -- put an array on one line, change
+  // the quoting, let a formatter touch it -- and `keyOpenArray` stops matching, the
+  // walk yields nothing, `failures` is empty, and this gate prints
+  // "0 suppression entries validated" and exits 0. That tick is indistinguishable
+  // from a config with nothing to suppress.
+  //
+  // The second reading is deliberately NOT a count and NOT the same parser: it asks
+  // the raw bytes whether the file declares any suppression key at all. A declared
+  // key with zero extracted entries is a parser regression and nothing else. A
+  // config that genuinely declares no suppressions still passes, which is why this
+  // is an agreement check rather than a floor -- driver contract section 6, floors
+  // are set-based or corpus-derived, never a typed count.
+  const declaresSuppressionKey = fs
+    .readFileSync(configPath, 'utf-8')
+    .split('\n')
+    .some((line) => {
+      const m = line.trim().match(/^"([^"]+)":\s*\[/);
+      return m !== null && SUPPRESSION_KEYS.has(m[1] as string);
+    });
+  if (declaresSuppressionKey) {
+    refuseIfEmpty(
+      entries,
+      `suppression entries parsed from ${path.basename(configPath)}`,
+      `${path.basename(configPath)} declares at least one of ${[...SUPPRESSION_KEYS].join(', ')}, ` +
+        'but parseKnipSuppressions() extracted nothing. That is a parser regression, not a clean ' +
+        'config: check whether the array formatting still matches keyOpenArray/entryLine.'
+    );
+  }
+
   if (!process.argv.includes('--config')) {
     entries.push(...collectPublicTagEntries(CONSOLE_ROOT));
   }

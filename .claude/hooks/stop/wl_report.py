@@ -55,6 +55,7 @@ import os
 import pathlib
 import re
 import sys
+import time
 
 import wl_core as C
 
@@ -72,7 +73,25 @@ TITLE_MAX = 120
 SURFACE_MAX_LINES = int(os.environ.get("WORKLIST_REPORT_SURFACE_MAX", "25"))
 # `--scan` only indexes an agent whose transcript has stopped growing, so a
 # still-running agent is never captured mid-flight with a partial answer.
+#
+# THIS IS A PRE-FILTER, NOT THE VERDICT, and the distinction is the whole of
+# `running_agent_ids` below. mtime is evidence about whether an agent is
+# WRITING; the sentence above needs evidence about whether it is ALIVE. An
+# agent blocked in one Bash call is silent by construction for the length of
+# that call, so on 2026-09-07 two live agents -- one waiting on
+# `check:ci-pytest` (661 s in this repo's own receipt), one on the bash gate
+# battery (606 s) -- sailed past this check and were captured mid-thought.
+# Raising the number cannot fix it: a full local run here is 785 s, so any
+# threshold that survives a real gate makes the self-heal useless.
 SCAN_IDLE_MIN = float(os.environ.get("WORKLIST_REPORT_SCAN_IDLE_MIN", "5"))
+# How fresh a `.lastevent-<prefix>.json` sidecar must be for its roster to be
+# believed. A DEAD session's sidecar freezes with its tasks still "running", so
+# without this bound those ids would be protected forever and the self-heal
+# `scan()` exists for would starve permanently and silently. 30 is not a fresh
+# hand-picked number: `wl_store.py:1563` already answers "is this session live?"
+# with `LIVE_MIN = 30` against the same file, and two answers to one question
+# are how a codebase starts disagreeing with itself.
+SCAN_LIVE_MIN = float(os.environ.get("WORKLIST_REPORT_SCAN_LIVE_MIN", "30"))
 # `--scan` walks EVERY session's subagents dir under this project, and reads each
 # candidate transcript whole (they run to 1.4 MB). Unbounded, the first run on a
 # long-lived project would read gigabytes and resurrect months of finished agents
@@ -622,6 +641,73 @@ def handle_surface(event, hook_event, hook_path):
 # ---- scan (self-healing capture) --------------------------------------------
 
 
+def running_agent_ids(start):
+    """(ids, evidence) -- the sub-agents the HARNESS says are running right now.
+
+    THE ORACLE `scan()` WAS MISSING. mtime answers "is it writing?"; this answers
+    "is it alive?", and only the second one licenses the word "finished". The
+    harness records the answer already: `wl_checks.py` dumps the whole Stop event
+    to `<worklist>.lastevent-<prefix>.json` on every full stop, and its
+    `background_tasks` array carries one entry per task with `type`, `status` and
+    `id`.
+
+    THE JOIN IS THE WHOLE CLAIM, and it is exact rather than heuristic: for a
+    `type: "subagent"` entry the harness's `id` is byte-identical to the stem of
+    the transcript `scan()` globs. Verified live 2026-09-07 --
+    `background_tasks[].id == "ad7126a7fed2d4a5e"` beside
+    `agent-ad7126a7fed2d4a5e.jsonl` -- so `jsonl.stem.removeprefix("agent-")`
+    already produces the lookup key with no mapping in between. Case 13b in
+    test-report-inbox.sh pins that, so if the convention ever changes CI goes red
+    instead of quietly restoring the defect.
+
+    EVERY SESSION, NOT JUST THIS ONE. `scan()` walks all sessions' `subagents/`
+    dirs, so one session's roster is not enough; all sessions of a repo write
+    their sidecar beside the same worklist, which is why this globs.
+
+    FAIL-OPEN, AND THE DIRECTION MATTERS. The roster may only ever add a reason
+    to SKIP, never a reason to CAPTURE. An id in no roster, a stale roster, or no
+    readable sidecar at all all fall through to the mtime rule -- i.e. to exactly
+    today's behaviour. Refusing to capture when the oracle cannot see would be
+    fail-OFF, not fail-open, and would turn `scan()` into a permanent no-op.
+    Blindness is therefore RETURNED IN WORDS rather than as an innocent empty
+    set, because a check that cannot fail must say so.
+    """
+    try:
+        wl = C.worklist_for(start)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return set(), "BLIND: no worklist path for this project"
+    try:
+        sidecars = sorted(wl.parent.glob(wl.stem + ".lastevent-*.json"))
+    except OSError as exc:
+        return set(), "BLIND: cannot list %s (%s)" % (wl.parent, exc)
+    if not sidecars:
+        return set(), "BLIND: no .lastevent-*.json beside %s" % wl
+    ids, fresh, stale, bad = set(), 0, 0, 0
+    now = time.time()
+    for p in sidecars:
+        # ONE CORRUPT SIDECAR MUST NOT BLIND THE WHOLE ORACLE. This is case 12b's
+        # lesson applied a level up: there, one unreadable transcript used to kill
+        # the loop before everything sorted after it.
+        try:
+            if (now - p.stat().st_mtime) / 60.0 > SCAN_LIVE_MIN:
+                stale += 1
+                continue
+            doc = json.loads(p.read_text(encoding="utf-8"))
+            fresh += 1
+            for b in doc.get("background_tasks") or []:
+                if b.get("type") == "subagent" and b.get("status") == "running":
+                    ids.add(str(b.get("id") or ""))
+        except (OSError, ValueError, TypeError, AttributeError):
+            bad += 1
+    ids.discard("")
+    return ids, "%d fresh sidecar(s), %d stale, %d unreadable, %d running sub-agent(s)" % (
+        fresh,
+        stale,
+        bad,
+        len(ids),
+    )
+
+
 def _projects_dir():
     base = os.environ.get("CLAUDE_CONFIG_DIR")
     return (pathlib.Path(base) if base else pathlib.Path.home() / ".claude") / "projects"
@@ -783,6 +869,9 @@ def scan(store, start, idle_min=None):
     known = {str(e["id"]) for e in read_index(store)}
     now = C.utcnow()
     added = []
+    # ONCE PER SCAN, not once per agent: one glob and a few small reads, against a
+    # loop that already reads whole transcripts up to TRANSCRIPT_MAX_BYTES.
+    live_ids, _live_evidence = running_agent_ids(start)
     if proj.is_dir():
         for meta in sorted(proj.glob("*/subagents/*.meta.json")):
             jsonl = meta.with_name(meta.name[: -len(".meta.json")] + ".jsonl")
@@ -790,6 +879,13 @@ def scan(store, start, idle_min=None):
                 continue
             agent_id = jsonl.stem.removeprefix("agent-")
             if short_id(agent_id) in known:
+                continue
+            # THE HARNESS OUTRANKS THE CLOCK. Before the stat(), so a live agent
+            # costs one set lookup rather than a syscall. Capturing here does not
+            # merely record early: capture() returns None once an id is indexed,
+            # so a mid-flight row PERMANENTLY shadows the real report that arrives
+            # at SubagentStop. The half-answer becomes the only artifact.
+            if agent_id in live_ids:
                 continue
             try:
                 idle = (now.timestamp() - jsonl.stat().st_mtime) / 60.0
@@ -1089,6 +1185,18 @@ def main(argv):
             )
         if pruned:
             print("pruned %d body file(s) past %d days" % (len(pruned), int(RETENTION_DAYS)))
+        # THE ORACLE REPORTS ITS OWN STATE, always, including when it is blind.
+        # Without this line a blind scan and a working one are indistinguishable
+        # from the outside -- the check-that-cannot-fail class -- and "why was
+        # this agent captured?" has no answer anywhere. One bounded line.
+        live_ids, live_evidence = running_agent_ids(start)
+        print(
+            "liveness oracle: %s%s"
+            % (
+                live_evidence,
+                "" if not live_ids else "; held back " + " ".join(sorted(live_ids)),
+            )
+        )
         if not added and not pruned:
             print("nothing to index (%s)" % index_path(store))
         return 0

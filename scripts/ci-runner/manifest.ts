@@ -4230,6 +4230,23 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-language-policy',
+    run: 'npm run check:ci-language-policy',
+    gate: true,
+    // The verdict depends on tracked files under .ci and .claude and on nothing
+    // else, so these two globs are the COMPLETE dependency set rather than a
+    // narrowing for speed. The allowlist, the baseline and the blocker-validator
+    // this gate shells out to all live under .ci/ and are covered by the first.
+    paths: ['.ci/**', '.claude/**'],
+    leaves: ['.ci/scripts/quality/check_language_policy.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Language policy',
+    },
+  },
+  {
     id: 'check:ci-layout-overflow',
     run: 'npm run check:ci-layout-overflow',
     gate: true,
@@ -4611,6 +4628,20 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-hydration-clean.sh'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Quality-gate unit tests',
+    },
+  },
+  {
+    id: 'gate-test:language-policy',
+    run: '.ci/scripts/test/gates/test-language-policy.sh',
+    gate: true,
+    qualityGateTest: true,
+    reads: ['tree:repo'],
+    leaves: ['.ci/scripts/test/gates/test-language-policy.sh'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5573,6 +5604,17 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-pytest',
     run: 'npm run check:ci-pytest',
     gate: true,
+    // SLOW ON PURPOSE, and it gets slower with every port, which is the point.
+    // The tier oracle measured 367.9s (the FLOOR of the last five samples, per
+    // check-gate-manifest.ts:503, so not a contended one-off) and asked for this
+    // flag. It is not a regression to fix: the gate runs the WHOLE Python suite,
+    // 9165 tests, and W7 P3 adds roughly 200 more per batch as bash gate tests are
+    // ported to it. It is already parallel at `-n 8 --dist loadgroup` (823.93s to
+    // 396s, 2.08x, measured 2026-09-07), and the operator ruled STOP AT 2.08x
+    // rather than take the two further optimisations that were measured and
+    // costed. So the honest declaration is that this is a slow gate, not that it
+    // is a fast gate having a bad day.
+    slow: true,
     // THE GATE NOW RUNS pytest UNDER `-n 8`, so it claims 8 scheduler slots
     // rather than 1. pool.ts:242 caps effective weight at the pool size, so this
     // reads as "the whole pool" on a 2-slot CI runner and as 8 of 22 locally.
@@ -5601,7 +5643,24 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
+      // quality-security, NOT quality-static, and this was a live defect rather than
+      // a preference. Measured 2026-09-07: 23 of the 64 ported gate tests shell out
+      // to node tooling (npx, tsx, npm run, node_modules), and quality-static is one
+      // of only three lanes that runs NO setup-workspace, so it has neither node nor
+      // the workspace deps. Driven with node hidden from PATH, exactly as that runner
+      // sees it, three of those ported modules gave 24 failed / 1 passed. They do not
+      // skip; they fail.
+      //
+      // CI has not caught it because every port is still UNTRACKED, so the checkout
+      // CI runs has never contained one. The red would have arrived on the commit
+      // that landed them, which is the worst moment to discover a lane cannot run
+      // its own gate.
+      //
+      // quality-security is the coherent home rather than merely a working one: it
+      // has node, a 20 minute timeout against 18 steps, and it ALREADY hosts the
+      // "Quality-gate unit tests" battery that runs all 149 bash twins. The gate
+      // driving the ported versions of those same tests belongs beside them.
+      job: 'quality-security',
       step: 'Python package tests',
     },
   },

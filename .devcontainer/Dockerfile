@@ -145,6 +145,14 @@ RUN find /etc/apt -name 'ubuntu.sources' -o -name 'sources.list' 2>/dev/null \
                 llvm \
                 libbpf-dev \
                 linux-headers-generic \
+                # zstd: renet's build STAGES EMBEDDED ASSETS through it and refuses to
+                # produce a binary without it -- "zstd is required to stage embedded
+                # assets". It is declared in .ci/rediacc_ci/setup/tools.py (the one
+                # install table) and was present on the host, so `./rdc.sh ops up`
+                # worked there and failed INSIDE the devbox with a build error that
+                # named zstd but not the fact that the image had never installed it.
+                # Found 2026-09-07 testing ops in the container.
+                zstd \
                 qemu-kvm \
                 libvirt-daemon-system \
                 libvirt-clients \
@@ -275,6 +283,27 @@ ENV PATH="$GOROOT/bin:$GOPATH/bin:$PATH"
 # Actions are the other two), and the reason that file lives in this directory:
 # the build context IS .devcontainer/ (.github/workflows/ci-build-docker.yml:558),
 # so COPY cannot reach outside it.
+# =============================================================================
+# HEAVY, RARELY-CHANGING APT LAYERS -- DELIBERATELY ABOVE `COPY toolchain.env`.
+#
+# These two used to sit BELOW that COPY, which meant every pin bump in
+# toolchain.env invalidated them: `npx playwright install-deps chromium` pulls a
+# large dependency closure and is one of the most expensive layers in this image,
+# and neither block reads toolchain.env at all. Moving them above the COPY costs
+# nothing and stops a one-line version bump rebuilding them.
+#
+# The ordering rule this follows, and the reason the script COPYs live at the very
+# bottom: heavy and rare first, cheap and frequently-edited last. A layer only
+# rebuilds when it or something above it changes.
+# =============================================================================
+RUN apt-get update && \
+    npx playwright install-deps chromium && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends rpm createrepo-c && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY toolchain.env /etc/rediacc/toolchain.env
 
 USER vscode
@@ -397,9 +426,6 @@ USER root
 #
 # Refreshing the index in the same RUN keeps the two in step, and the list is cleaned up
 # so this does not bloat the image.
-RUN apt-get update && \
-    npx playwright install-deps chromium && \
-    rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
 # Linux packaging toolchain
@@ -418,9 +444,6 @@ RUN apt-get update && \
 # a version of them. nfpm is the opposite case and is NOT here -- it is pinned
 # with a checksum in .ci/config/constants.sh and installed by
 # .ci/scripts/build/ensure-nfpm.sh, which keeps that pin a single site.
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends rpm createrepo-c && \
-    rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
 # Global npm tools

@@ -455,6 +455,111 @@ old = time.time() - 3600
 os.utime(p, (old, old))' "$T"
 assert_has "13 control: backdated, the same agent IS indexed" "$(report_py --scan)" "running"
 
+echo "== 13b. THE HARNESS ROSTER OUTRANKS MTIME =="
+# WHAT CASE 13 CANNOT SEE, and why this is a separate case rather than another
+# arm of it. Case 13 varies exactly ONE thing -- mtime -- and both of its arms
+# AGREE with the mtime oracle, so it is a faithful test of the rule that was
+# implemented and structurally blind to that rule being wrong. The defect lives
+# in the one quadrant no fixture in this suite had ever built: STALE MTIME AND
+# STILL ALIVE. An agent blocked in a single Bash call is silent by construction
+# for the length of that call, so on 2026-09-07 two live agents -- one waiting
+# on check:ci-pytest (661s in this repo's own receipt), one on the bash gate
+# battery (606s) -- sailed past the idle check and were captured mid-thought.
+#
+# AND THE COST IS A LOST REPORT, not a premature row: capture() returns None
+# once an id is indexed, so the mid-flight row PERMANENTLY shadows the real
+# report that arrives at SubagentStop. The half-answer becomes the only
+# artifact that ever exists.
+#
+# THE JOIN IS THE WHOLE CLAIM, verified live before this was written: for a
+# type:"subagent" entry the harness's background_tasks[].id is BYTE-IDENTICAL
+# to the transcript's agent-<id>.jsonl stem. If that convention ever changes
+# this case goes red, which is exactly what should happen.
+scratch
+python3 - "$T" <<'PY'
+import json, os, pathlib, re, sys, time
+T = pathlib.Path(sys.argv[1])
+root = T / "repo"
+proj = T / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(root)) / "s" / "subagents"
+proj.mkdir(parents=True)
+# Both agents are IDENTICAL in every respect the mtime oracle can see: same
+# shape, same body length, same backdated mtime. The ONLY difference between
+# them is the roster. That is what makes this a test of the new oracle and not
+# accidentally a test of something else.
+old = time.time() - 3600
+for aid, atype in (("alive-7777777777777777", "liveagent"),
+                   ("adone-8888888888888888", "doneagent")):
+    (proj / ("agent-%s.meta.json" % aid)).write_text(json.dumps({"agentType": atype}))
+    p = proj / ("agent-%s.jsonl" % aid)
+    p.write_text(json.dumps({
+        "type": "assistant", "agentId": aid, "gitBranch": "testbr",
+        "message": {"content": [{"type": "text", "text":
+            "Now I have the full picture. Let me write the CLI. " * 8}]}}) + "\n")
+    os.utime(p, (old, old))  # STALE by mtime: the old oracle calls both finished
+
+# The sidecar wl_checks.py writes on every full stop, planted where
+# C.worklist_for(start) looks: $TMPDIR/claude-worklist/<slug>.lastevent-<p>.json
+wl = pathlib.Path(os.environ["TMPDIR"]) / "claude-worklist"
+wl.mkdir(parents=True, exist_ok=True)
+slug = re.sub(r"[^A-Za-z0-9._-]", "_", str(root)).strip("_")
+(wl / (slug + ".lastevent-aaaaaaaa.json")).write_text(json.dumps({
+    "session_id": "aaaaaaaa-1111", "background_tasks": [
+        # RUNNING, joined to the transcript by id alone.
+        {"id": "alive-7777777777777777", "type": "subagent", "status": "running",
+         "description": "blocked in a 661s gate"},
+        # A FINISHED peer in the SAME roster: proves the filter is `status`, not
+        # "appears in background_tasks at all".
+        {"id": "adone-8888888888888888", "type": "subagent", "status": "completed",
+         "description": "finished"},
+        # A RUNNING SHELL task: proves the filter is also `type`, so a shell id
+        # can never mask an agent.
+        {"id": "b701wk0zr", "type": "shell", "status": "running",
+         "command": "sleep 900"},
+    ]}))
+PY
+OUT13B="$(report_py --scan)"
+assert_lacks "13b a harness-RUNNING agent is not indexed despite a stale mtime" \
+    "$OUT13B" "liveagent"
+# THE CONTROL THAT MAKES THIS NON-VACUOUS: the identical fixture beside it,
+# differing ONLY in `status`, IS indexed. Without this, "lacks liveagent" is
+# satisfied by a scan that saw nothing at all.
+assert_has "13b control: its identical twin marked completed IS indexed" \
+    "$OUT13B" "doneagent"
+assert_eq "13b exactly one of the two was captured" \
+    "$(wc -l <"$T/store/index.jsonl" | tr -d ' ')" "1"
+
+# STALENESS OF THE ROSTER RELEASES THE HOLD. A dead session's sidecar freezes
+# with its tasks still "running"; if that protected an id forever the self-heal
+# scan() exists for would starve permanently and silently. SCAN_LIVE_MIN=0 ages
+# every sidecar out, so mtime decides -- i.e. exactly the pre-fix behaviour.
+assert_has "13b control: a STALE roster releases the hold and the agent IS indexed" \
+    "$(WORKLIST_REPORT_SCAN_LIVE_MIN=0 report_py --scan)" "liveagent"
+
+# BLINDNESS IS REPORTED, NOT SILENTLY ASSUMED HEALTHY. With no sidecar at all
+# (wiped TMPDIR, fresh worktree, CI) the oracle cannot see, and a check that
+# cannot fail must say so. It must ALSO still capture: skipping everything is
+# fail-OFF, not fail-open, and would make scan() a permanent no-op.
+scratch
+python3 - "$T" <<'PY'
+import json, os, pathlib, re, sys, time
+T = pathlib.Path(sys.argv[1])
+root = T / "repo"
+proj = T / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(root)) / "s" / "subagents"
+proj.mkdir(parents=True)
+aid = "ablind-999999999999999"
+(proj / ("agent-%s.meta.json" % aid)).write_text(json.dumps({"agentType": "blindagent"}))
+p = proj / ("agent-%s.jsonl" % aid)
+p.write_text(json.dumps({"type": "assistant", "agentId": aid, "gitBranch": "testbr",
+    "message": {"content": [{"type": "text", "text": "a finished report " * 20}]}}) + "\n")
+old = time.time() - 3600
+os.utime(p, (old, old))
+PY
+OUTBLIND="$(report_py --scan)"
+assert_has "13b control: with no roster at all the scan still self-heals" \
+    "$OUTBLIND" "blindagent"
+assert_has "13b control: and it NAMES its blindness rather than looking healthy" \
+    "$OUTBLIND" "BLIND"
+
 echo "== 14. torn index tail =="
 scratch
 stop_event "atorn-one-8888888888888888" torn-one "a real report $BIG"

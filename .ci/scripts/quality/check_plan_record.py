@@ -41,6 +41,47 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
       prose, so a record stays editable.
   R8  `agent/INDEX.md` EQUALS THE RENDER. `--update` writes it.
 
+THE ADVISORY CENSUS (W12 P3.5), AND WHY IT REFUSES NOTHING. R1..R8 are the rules
+this gate ENFORCES; the file's docstring has promised R1..R10 since it was
+written, and the two missing rungs are named in "WHAT IS DELIBERATELY NOT
+ASSERTED" below rather than in the list above -- they are rules that were
+considered and declined. Turning one on is a one-way door: the day it blocks, it
+blocks every open branch at once, and nobody knows today how many records it
+would refuse.
+
+So it is MEASURED first. Every real-tree run appends one row to
+`agent/census-plan-record.jsonl` recording what each CANDIDATE rule WOULD have
+refused, per record, with a UTC timestamp. After two weeks of rows,
+`--census-report` answers "has the window elapsed, and what would have been
+refused across it" from the rows alone -- not from anyone's memory of how the
+tree looked. The candidates:
+
+  C9   HISTORY APPEND-ONLY. The `## History` bullets in the most recent
+       COMMITTED version of this record must be a PREFIX of the ones on disk.
+       This is the rule the "not asserted" section below declines by name.
+  C10  A `parked` RECORD STILL CARRYING `<FILL: ...>`. R6 exempts `parked`
+       because its work is unfinished by definition, and that exemption has no
+       time bound: a record parked with placeholders forever is a record nobody
+       will ever fill.
+  C11  THE `Full-Text:` UPGRADE. `Full-Text` is optional while the text is not
+       on origin/main yet and is meant to be upgraded once it lands. A record
+       whose blob IS reachable from origin/main and still carries no `Full-Text`
+       line never took the upgrade.
+
+TWO PROPERTIES OF THE CENSUS, and they are not the same property.
+
+  * A CANDIDATE FIRING NEVER CHANGES A VERDICT OR AN EXIT CODE. That is the
+    whole point of an advisory rung. A tree where all three candidates fire on
+    every record still exits 0 if R1..R8 hold.
+  * A CENSUS THAT RECORDED NOTHING IS AN INSTRUMENT FAILURE AND EXITS 2. An
+    advisory check is the easiest thing in the world to make vacuous: delete its
+    call site and it reports exactly what a clean tree reports, forever, and the
+    two-week clock never starts. So the row is written and then READ BACK, the
+    file must have grown, and the census's own count of plans and records must
+    AGREE with the verdict loop's -- two readings of the corpus, not one number
+    trusted twice. Any of those failing is exit 2, the same code a failed
+    `--selftest` uses, because it is the same kind of failure.
+
 WHAT IS DELIBERATELY NOT ASSERTED, stated so a green is not read as more than it
 is.
 
@@ -79,6 +120,8 @@ Exit 0 green, 1 findings or vacuous input, 2 instrument control failed.
 
 from __future__ import annotations
 
+import datetime
+import io
 import json
 import os
 import pathlib
@@ -115,10 +158,52 @@ except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-v
 # catches the glob losing the corpus -- the same number check_plan_boxes.py uses.
 MIN_PLAN_FILES = int(os.environ.get("PLAN_RECORD_MIN_PLANS", "20"))
 
+# THE ADVISORY CENSUS. `agent/census-*.jsonl` is globbed by `--census-report` so
+# that a future per-branch split (the shape `agent/reggate/<branch>.jsonl` already
+# uses, to keep an append-only log out of merge conflicts) needs no reader change.
+CENSUS_REL = "agent/census-plan-record.jsonl"
+CENSUS_GLOB = "census-*.jsonl"
+
+# The POLICY window from the box this census exists to serve ("a two-week advisory
+# census before any blocking rung"), not a floor. It is what `--census-report`
+# compares the recorded span against; it never gates this run.
+CENSUS_WINDOW_DAYS = int(os.environ.get("PLAN_RECORD_CENSUS_DAYS", "14"))
+
+# The candidate rules, keyed by the rung a future blocking version would carry.
+# The text is the refusal that rung would print, kept HERE rather than at the
+# three call sites so the census row, the report and the eventual rung cannot
+# drift into describing three different rules.
+CANDIDATES = {
+    "C9-history-append-only": (
+        "`## History` is documented as append-only and this record lost or rewrote a "
+        "bullet it carried in its previous committed version"
+    ),
+    "C10-parked-placeholder": (
+        "a `parked` record still carries an unfilled `<FILL: ...>` placeholder; R6 "
+        "exempts `parked` and that exemption has no time bound"
+    ),
+    "C11-fulltext-upgrade": (
+        "the blob is reachable from origin/main and the record still carries no "
+        "`Full-Text: <sha9> <path>` line, so the upgrade never happened"
+    ),
+}
+
 
 def _git(root, *args):
     r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, check=False)
     return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def _git_raw(root, *args):
+    """`_git` without the `.strip()`.
+
+    C9 compares a committed blob against the bytes on disk, and `_git`'s strip
+    removes the trailing newline from one side only -- which would make EVERY
+    record look modified and hand the census a baseline it never uses. The strip
+    is right for `rev-parse` and wrong for `show`, so both exist.
+    """
+    r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, check=False)
+    return r.stdout if r.returncode == 0 else ""
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +454,384 @@ def index_problems(root, rows, census="", update=False):
             f"      git add {R.INDEX_REL}"
         )
     ]
+
+
+# ---------------------------------------------------------------------------
+# THE ADVISORY CENSUS. Nothing below reaches a verdict about a record; the only
+# way any of it changes an exit code is by FAILING TO RECORD, which is exit 2.
+
+
+def _prior_record_text(root, rel, current):
+    """The newest COMMITTED version of `rel` that parses as a record and differs
+    from the bytes on disk, or "".
+
+    NOT `HEAD~1` and not the merge-base, and both alternatives were measured
+    before this one was chosen. The merge-base yields ZERO comparable pairs on
+    this branch today: all 32 records were compacted after it, so at the base
+    every one of them is still a plain plan and C9 would have had nothing to say
+    while looking exactly as green as a clean corpus. `HEAD~1` is wrong the other
+    way -- a record untouched for twenty commits has no diff there either.
+
+    "The previous version that was already a record" is the comparison the
+    append-only convention actually makes, and it is topology-independent: it
+    answers the same on a branch, on main, and in a working tree with
+    uncommitted edits (the identity skip below is what covers that last case --
+    when nothing is modified, HEAD's own blob IS the bytes on disk and is
+    stepped over).
+    """
+    # A SEARCH BOUND, NOT A FLOOR (driver contract section 6 governs floors, and
+    # this is not one). Exhausting it yields SILENCE, which is a false negative in
+    # an advisory census rather than a false red -- the safe direction. It is 100
+    # rather than a handful because of the revive path: a record revived back into
+    # a plan, edited for a week and re-compacted has every one of those plan
+    # commits sitting between the two record versions, and a tight cap would stop
+    # before reaching the baseline exactly when C9 has the most to say.
+    log = _git(root, "log", "--format=%H", "--", rel)
+    for sha in log.split()[:100]:
+        blob = _git_raw(root, "show", "%s:%s" % (sha, rel))
+        if not blob or blob == current:
+            continue
+        if R.parse(blob) is not None:
+            return blob
+    return ""
+
+
+def candidate_findings(root, rel, text):
+    """[(candidate_id, detail)] -- what a future BLOCKING rung would refuse about
+    this one record. Advisory by construction: the caller records it and does not
+    branch on it."""
+    rec = R.parse(text)
+    if rec is None:
+        return []
+    out = []
+
+    # ---- C9 history append-only -----------------------------------------
+    prior = _prior_record_text(root, rel, text)
+    if prior:
+        was = [ln.strip() for ln in (R.parse(prior) or {}).get("history", [])]
+        now = [ln.strip() for ln in rec["history"]]
+        if now[: len(was)] != was:
+            # WHICH bullet broke it, not just that one did. A count alone sends
+            # the reader to `git log -p` on a 30 KB file to find out whether a
+            # line was deleted or reworded, and those are different defects.
+            lost = [b for b in was if b not in now]
+            out.append(
+                (
+                    "C9-history-append-only",
+                    "%d bullet(s) before, %d now; the old list is not a prefix of the new "
+                    "one. First bullet no longer present: %s"
+                    % (
+                        len(was),
+                        len(now),
+                        (lost[0][:110] if lost else "(all still present, but reordered)"),
+                    ),
+                )
+            )
+
+    # ---- C10 a parked record still carrying a placeholder ----------------
+    if rec["status"] == R.STATUS_PARKED:
+        hits = sorted(set(R.PLACEHOLDER_RE.findall(text)))
+        if hits:
+            out.append(
+                (
+                    "C10-parked-placeholder",
+                    "%d distinct placeholder(s): %s" % (len(hits), ", ".join(hits[:3])),
+                )
+            )
+
+    # ---- C11 the Full-Text upgrade that never happened -------------------
+    if rec["blob"] and not rec["full_text_sha"]:
+        # EVERY COMMIT THAT TOUCHED THE BLOB, not just the newest, and the
+        # difference is not a refinement. `--find-object` matches ADDITIONS and
+        # DELETIONS alike, so the newest hit for a compacted plan is usually the
+        # commit that REMOVED the plan text -- which may sit on an unmerged
+        # branch. Taking `-1` therefore answered "not landed" for a blob that
+        # landed twenty commits ago; the fixture caught it on the first run.
+        carried = _git(
+            root, "log", "--format=%H", "-20", "--all", "--find-object=" + rec["blob"]
+        ).split()
+        for sha in carried:
+            ok, _why = R.resolve(root, "ancestor", sha)
+            if ok:
+                out.append(
+                    (
+                        "C11-fulltext-upgrade",
+                        "blob %s is carried by landed commit %s and no `Full-Text:` line "
+                        "names it" % (rec["blob"][:12], sha[:9]),
+                    )
+                )
+                break
+    return out
+
+
+def census_row(root, recs):
+    """One row of the census: what the candidates would refuse across the WHOLE
+    corpus, right now.
+
+    `recs` is the gate's own `[(rel, status, lines)]` enumeration. The statuses
+    and the file bytes are RE-READ here rather than taken from the verdict loop,
+    so the two counts `census_append` compares are genuinely two readings.
+    """
+    flagged = {cid: [] for cid in CANDIDATES}
+    by_status = {}
+    n_records = 0
+    for rel, _status, _lines in recs:
+        try:
+            text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        rec = R.parse(text)
+        st = rec["status"] if rec else "not-a-record"
+        by_status[st] = by_status.get(st, 0) + 1
+        if rec is None:
+            continue
+        n_records += 1
+        for cid, detail in candidate_findings(root, rel, text):
+            flagged[cid].append({"plan": rel, "detail": detail})
+
+    return {
+        "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "commit": _git(root, "rev-parse", "HEAD")[:9],
+        "branch": _git(root, "rev-parse", "--abbrev-ref", "HEAD"),
+        "plans_examined": len(recs),
+        "records_examined": n_records,
+        "by_status": dict(sorted(by_status.items())),
+        "would_refuse": sum(len(v) for v in flagged.values()),
+        "candidates": {cid: flagged[cid] for cid in sorted(flagged)},
+    }
+
+
+def census_rows(path):
+    """Every well-formed row in one census file. A truncated last line is skipped
+    rather than fatal: the file is appended to by concurrent runs in a shared
+    checkout, and losing a verdict over a half-written byte would be the wrong
+    trade for a log whose whole job is to keep accumulating."""
+    out = []
+    try:
+        raw = pathlib.Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return out
+    for raw_line in raw.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and row.get("ts"):
+            out.append(row)
+    return out
+
+
+# The row fields that carry an OBSERVATION. `ts` is deliberately absent: two runs
+# minutes apart over an unchanged tree observe the same thing, and the clock is
+# not the observation.
+CENSUS_PAYLOAD_KEYS = ("commit", "plans_examined", "records_examined", "by_status", "candidates")
+
+
+def census_is_same_day_repeat(last, row):
+    """True when `row` observes exactly what `last` observed, ON THE SAME UTC DAY.
+
+    WHY THE FILE IS NOT APPENDED TO ON EVERY SINGLE RUN, stated where the
+    deviation is rather than in a report nobody re-reads. The census file is
+    TRACKED, and three things in this repo react to a modified tracked file:
+    `.ci/scripts/test/run-all.sh`'s clean-tree guard fails the whole gate battery
+    on one, `wl_git.py`'s `dirt_verdict` counts it as uncommitted real work and
+    blocks the stop hook's rebase path, and nothing anywhere caps the size of an
+    append-only file. A row per invocation would put a permanently-dirty file in
+    a shared checkout and grow without bound, and the operator would learn to
+    `git checkout` it -- which is how the two-week window quietly gets reset.
+
+    THE COLLAPSE IS PER UTC DAY, NOT PER PAYLOAD, and that boundary is the load-
+    bearing part. Collapsing on the payload alone would let a tree that does not
+    change for a fortnight record ONE row, and `--census-report` would then
+    compute a span of zero days over a window that really had elapsed. A day
+    boundary always breaks the tie, so the file gains at least one row for every
+    day the gate ran, which is exactly what the span is derived from.
+    """
+    if not last:
+        return False
+    if str(last.get("ts", ""))[:10] != row["ts"][:10]:
+        return False
+    return all(last.get(k) == row.get(k) for k in CENSUS_PAYLOAD_KEYS)
+
+
+def census_append(root, row, expect_plans, expect_records):
+    """Record `row`, then READ IT BACK. (ok, message).
+
+    THE FLOORS ARE SET-BASED, and there are four, because an advisory check has
+    no verdict of its own to notice when it stops working:
+
+      1. The census's own plan and record counts must EQUAL the verdict loop's.
+         Two readings of the corpus, not one number trusted twice. A glob that
+         collapsed, or a `parse()` that started returning None for everything,
+         moves one and not the other.
+      2. The corpus must be non-empty. `MIN_PLAN_FILES` already refuses before
+         this is reached, so this is the belt to those braces -- and it is stated
+         over the PLANS, never over the records, for the reason `MIN_PLAN_FILES`
+         gives: zero records is a legitimate tree, so a floor on records would be
+         a floor that cannot be met.
+      3. On an append, the file must hold MORE rows after than before. Not "the
+         write did not raise": an append to a path something else truncates, and
+         a row that fails to serialise, both raise nothing useful.
+      4. On a same-day repeat, where there is deliberately no append, the file
+         must ALREADY end with a row whose payload equals this run's. That is a
+         stronger read-back than the append path has, and it is what stops the
+         collapse from becoming the vacuity hatch: "nothing was written" is only
+         acceptable while the thing that would have been written is provably
+         already there.
+    """
+    if row["plans_examined"] != expect_plans or row["records_examined"] != expect_records:
+        return False, (
+            "CENSUS DISAGREES WITH THE VERDICT: the census read %d plan(s) and %d "
+            "record(s); the verdict loop read %d and %d. Two readings of one corpus "
+            "returned different sets, so one of them is reading something that is not "
+            "there -- and a census over the wrong corpus is worse than none, because "
+            "the two-week window would still elapse."
+            % (row["plans_examined"], row["records_examined"], expect_plans, expect_records)
+        )
+    if row["plans_examined"] == 0:
+        return False, (
+            "VACUOUS CENSUS: 0 plan file(s). A row recording nothing looks exactly like "
+            "a row recording a clean corpus, and the window would elapse on rows that "
+            "measured nothing."
+        )
+
+    path = pathlib.Path(root) / CENSUS_REL
+    have = census_rows(path)
+    last = have[-1] if have else None
+    every_run = os.environ.get("PLAN_RECORD_CENSUS_EVERY_RUN") == "1"
+
+    if not every_run and census_is_same_day_repeat(last, row):
+        # FLOOR 4. Re-read from disk rather than trusting `have`, so a file
+        # truncated between the two reads is caught rather than assumed away.
+        back = census_rows(path)
+        if not back or not all(back[-1].get(k) == row.get(k) for k in CENSUS_PAYLOAD_KEYS):
+            return False, (
+                "CENSUS NOT RECORDED: %s was judged to already hold today's observation "
+                "and does not. Nothing was appended and nothing is on disk, which is the "
+                "exact shape of an advisory check that silently stopped measuring." % CENSUS_REL
+            )
+        return True, (
+            "✓ census: %s already carries this observation for %s (%d row(s); %d "
+            "record(s) examined, %d would be refused). No row appended -- the file is "
+            "tracked, and a row per invocation would leave it permanently modified. "
+            "Set PLAN_RECORD_CENSUS_EVERY_RUN=1 to force one."
+            % (CENSUS_REL, row["ts"][:10], len(back), row["records_examined"], row["would_refuse"])
+        )
+
+    before = len(have)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # A TRAILING NEWLINE ON EVERY ROW IS NOT COSMETIC. `check-editorconfig.sh`
+        # walks `git ls-files` extension-blind and fails any tracked file that does
+        # not end with one, so a writer that omitted it on the last row would red a
+        # whole-tree gate that has nothing to do with plan records.
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
+    except (OSError, TypeError, ValueError) as exc:
+        return False, "CENSUS NOT RECORDED: cannot append to %s (%s)" % (CENSUS_REL, exc)
+
+    after = census_rows(path)
+    if len(after) <= before:
+        return False, (
+            "CENSUS NOT RECORDED: %s held %d row(s) before the append and %d after. The "
+            "write reported success and the file did not grow." % (CENSUS_REL, before, len(after))
+        )
+    return True, (
+        "✓ census: row %d appended to %s at %s -- %d record(s) examined, %d would be "
+        "refused by the candidate rules (%s). Nothing WAS refused; run "
+        "`npm run check:ci-plan-record -- --census-report` for the window."
+        % (
+            len(after),
+            CENSUS_REL,
+            row["ts"],
+            row["records_examined"],
+            row["would_refuse"],
+            ", ".join(
+                "%s=%d" % (cid.split("-")[0], len(v))
+                for cid, v in sorted(row["candidates"].items())
+            ),
+        )
+    )
+
+
+def census_report(root, out=sys.stdout, err=sys.stderr):
+    """Answer, FROM THE ROWS ALONE: has the two-week window elapsed, and what
+    would have been refused across it. 0 green, 1 when there is nothing to read.
+
+    The elapsed span is derived from the recorded `ts` values, which is the whole
+    reason a timestamp is on every row. Nothing here consults the clock for
+    anything but "now", and nothing consults anyone's memory of when the census
+    started.
+    """
+    files = sorted((pathlib.Path(root) / "agent").glob(CENSUS_GLOB))
+    rows = []
+    for f in files:
+        rows.extend(census_rows(f))
+    if not rows:
+        print(
+            "VACUOUS CENSUS: no rows in %s (%d file(s) globbed). There is nothing to "
+            "report a window over; the census has not run, or its file was removed."
+            % (str(pathlib.Path(root) / "agent" / CENSUS_GLOB), len(files)),
+            file=err,
+        )
+        return 1
+
+    def when(row):
+        return datetime.datetime.strptime(row["ts"], "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=datetime.UTC
+        )
+
+    rows.sort(key=when)
+    first, last = when(rows[0]), when(rows[-1])
+    span = (last - first).total_seconds() / 86400.0
+    elapsed = span >= CENSUS_WINDOW_DAYS
+
+    print(
+        "plan-record advisory census: %d row(s) across %d file(s)" % (len(rows), len(files)),
+        file=out,
+    )
+    print("  first row  %s" % rows[0]["ts"], file=out)
+    print("  last row   %s" % rows[-1]["ts"], file=out)
+    print(
+        "  span       %.2f day(s) of %d -- window %s"
+        % (span, CENSUS_WINDOW_DAYS, "ELAPSED" if elapsed else "NOT yet elapsed"),
+        file=out,
+    )
+    if not elapsed:
+        print(
+            "  %.2f more day(s) of rows before a blocking rung may be proposed."
+            % (CENSUS_WINDOW_DAYS - span),
+            file=out,
+        )
+
+    total = 0
+    for cid in sorted(CANDIDATES):
+        runs = [r for r in rows if r.get("candidates", {}).get(cid)]
+        plans = sorted({h["plan"] for r in runs for h in r["candidates"][cid]})
+        total += len(plans)
+        print(
+            "\n  %s -- fired in %d of %d run(s), naming %d distinct plan(s)"
+            % (cid, len(runs), len(rows), len(plans)),
+            file=out,
+        )
+        print("      would refuse: %s" % CANDIDATES[cid], file=out)
+        for pl in plans:
+            print("      - %s" % pl, file=out)
+        if not plans:
+            print(
+                "      - nothing, across every recorded row. A rung that refuses nothing "
+                "is CHEAP to turn on, not pointless: this is the evidence for that.",
+                file=out,
+            )
+    print(
+        "\n  %d distinct plan(s) would be refused in total if all three rungs blocked today."
+        % total,
+        file=out,
+    )
+    return 0
 
 
 # ---------------------------------------------------------------------------
@@ -717,6 +1180,172 @@ def selftest():
             "CONTROL: the gate says nothing about a file that is not a record",
             judge("# P\nStatus: executing\n\n## Tasks\n- [ ] something entirely ordinary\n") == [],
         )
+
+        # ------------------------------------------------------------------
+        # THE ADVISORY CENSUS, both directions on every candidate.
+        #
+        # An advisory check is the easiest thing in the world to make vacuous:
+        # delete its call site and it reports exactly what a clean corpus
+        # reports, forever, while the two-week clock silently never starts. So
+        # every candidate is planted AND its negation is planted, and the
+        # recorder itself is driven through all four of its floors.
+        #
+        # THE RECORD IS COMMITTED FIRST, because C9's baseline is "the previous
+        # committed version that was already a record" and without a commit
+        # there is no baseline -- which would make both C9 controls pass by
+        # measuring nothing.
+        (root / rel).write_text(clean, encoding="utf-8")
+        _run(root, "git", "add", "-A")
+        _run(root, "git", "commit", "-qm", "fixture: the plan is compacted into a record")
+
+        def cand(text, at=rel):
+            return {cid for cid, _d in candidate_findings(root, at, text)}
+
+        hist_line = R.parse(clean)["history"][0]
+        ck(
+            "CENSUS CONTROL: the fixture record has a `## History` bullet to compare",
+            hist_line.startswith("- ") and hist_line in clean,
+            f"got {hist_line!r}",
+        )
+        ck(
+            "CENSUS CONTROL: the previous committed version of the record is found",
+            R.parse(_prior_record_text(root, rel, clean + "- later\n")) is not None,
+            "no committed baseline; both C9 controls below would prove nothing",
+        )
+
+        # C9, the flagged direction: the bullet was REWRITTEN, not appended to.
+        # This is the exact shape three real records in agent/ are in -- a
+        # revive-and-re-compact replaces the single bullet rather than adding one.
+        ck(
+            "C9: a `## History` bullet rewritten since the last committed version is flagged",
+            "C9-history-append-only" in cand(clean.replace(hist_line, hist_line + " EDITED", 1)),
+        )
+        # C9, the silent direction: a bullet APPENDED under the same first one.
+        ck(
+            "C9 CONTROL: APPENDING a bullet is not flagged (that is the convention working)",
+            "C9-history-append-only"
+            not in cand(clean + "- 2026-01-02T00:00:00Z revived and re-compacted\n"),
+        )
+        # C9's own vacuity control: with no committed baseline there is nothing to
+        # compare, and the candidate must stay SILENT rather than guess.
+        ck(
+            "C9 CONTROL: a record with no committed history is not flagged",
+            "C9-history-append-only"
+            not in cand(
+                clean.replace(hist_line, hist_line + " EDITED", 1),
+                at="agent/PLAN-never-committed.md",
+            ),
+        )
+
+        # C10, both directions. The fixture is `parked` and `--why auto` left
+        # `<FILL: outcome>` and `<FILL: lessons>` in it -- which is precisely the
+        # state R6 EXEMPTS, and precisely what the candidate rung would stop
+        # exempting forever.
+        ck(
+            "C10: a `parked` record still carrying `<FILL:>` is flagged",
+            "C10-parked-placeholder" in cand(clean),
+        )
+        ck(
+            "C10 CONTROL: the same record with its placeholders written out is not flagged",
+            "C10-parked-placeholder"
+            not in cand(R.PLACEHOLDER_RE.sub("a paragraph a person wrote", clean)),
+        )
+        ck(
+            "C10 CONTROL: placeholders under `compacted` belong to R6, which already blocks",
+            "C10-parked-placeholder"
+            not in cand(clean.replace("Status: parked", "Status: compacted", 1)),
+        )
+
+        # C11, both directions.
+        ft_line = next(ln for ln in clean.splitlines() if ln.startswith("Full-Text: "))
+        ck(
+            "C11 CONTROL: a record that already carries `Full-Text:` is not flagged",
+            "C11-fulltext-upgrade" not in cand(clean),
+        )
+        ck(
+            "C11: a landed blob with no `Full-Text:` line is flagged",
+            "C11-fulltext-upgrade" in cand(clean.replace(ft_line + "\n", "", 1)),
+        )
+
+        # ---- THE RECORDER, driven through all four floors ------------------
+        fixture_recs = [(rel, "parked", len(clean.splitlines()))]
+        row = census_row(root, fixture_recs)
+        ck(
+            "CENSUS: the row counts the corpus it was handed",
+            (row["plans_examined"], row["records_examined"]) == (1, 1),
+            f"got {(row['plans_examined'], row['records_examined'])}",
+        )
+        ck(
+            "CENSUS: the row carries what the candidates found, not just that they ran",
+            row["would_refuse"] >= 1 and row["candidates"]["C10-parked-placeholder"] != [],
+            f"got {row['would_refuse']} and {row['candidates']}",
+        )
+        # FLOOR 1, the two-readings disagreement.
+        ck(
+            "CENSUS FLOOR: a count that disagrees with the verdict loop REFUSES",
+            census_append(root, row, 99, 1)[0] is False,
+        )
+        # FLOOR 2, an empty corpus.
+        ck(
+            "CENSUS FLOOR: a row over ZERO plans REFUSES rather than recording nothing",
+            census_append(root, census_row(root, []), 0, 0)[0] is False,
+        )
+        # FLOOR 3, the append and its read-back.
+        ok_w, msg_w = census_append(root, row, 1, 1)
+        n_after = len(census_rows(root / CENSUS_REL))
+        ck("CENSUS: the first row is recorded", ok_w and n_after == 1, f"{ok_w} {msg_w} {n_after}")
+        ck(
+            "CENSUS: the recorded row round-trips through the reader byte-identically",
+            census_rows(root / CENSUS_REL)[0] == row,
+        )
+        # FLOOR 4, the same-day collapse -- and it must not become the hatch.
+        ok_r, _msg_r = census_append(root, dict(row, ts=row["ts"]), 1, 1)
+        ck(
+            "CENSUS: a same-day repeat of the same observation appends no second row",
+            ok_r and len(census_rows(root / CENSUS_REL)) == 1,
+        )
+        ck(
+            "CENSUS CONTROL: the collapse is per UTC DAY, so tomorrow's identical row lands",
+            census_is_same_day_repeat(row, dict(row, ts="2099-01-01T00:00:00Z")) is False,
+        )
+        ck(
+            "CENSUS CONTROL: a DIFFERENT observation on the same day is not a repeat",
+            census_is_same_day_repeat(row, dict(row, would_refuse=0, candidates={})) is False,
+        )
+        os.environ["PLAN_RECORD_CENSUS_EVERY_RUN"] = "1"
+        census_append(root, row, 1, 1)
+        forced = len(census_rows(root / CENSUS_REL))
+        del os.environ["PLAN_RECORD_CENSUS_EVERY_RUN"]
+        ck(
+            "CENSUS CONTROL: PLAN_RECORD_CENSUS_EVERY_RUN=1 forces the row anyway",
+            forced == 2,
+            f"got {forced}",
+        )
+
+        # ---- THE REPORT, which is the only thing that answers the box ------
+        buf = io.StringIO()
+        ck(
+            "CENSUS REPORT: it reads the recorded rows and answers",
+            census_report(root, out=buf) == 0,
+        )
+        said = buf.getvalue()
+        ck(
+            "CENSUS REPORT: it names the window and whether it has elapsed",
+            "NOT yet elapsed" in said and "day(s) of %d" % CENSUS_WINDOW_DAYS in said,
+            f"got {said!r}",
+        )
+        ck(
+            "CENSUS REPORT: it names every candidate and the plans each would refuse",
+            all(cid in said for cid in CANDIDATES) and rel in said,
+            f"got {said!r}",
+        )
+        # AND THE OTHER DIRECTION: no rows must REFUSE, not report a clean window.
+        (root / CENSUS_REL).unlink()
+        ck(
+            "CENSUS REPORT: with NO rows it refuses rather than reporting an empty window",
+            census_report(root, out=io.StringIO(), err=io.StringIO()) == 1,
+        )
+
     return bad
 
 
@@ -725,6 +1354,12 @@ def selftest():
 
 def main(argv):
     update = "--update" in argv
+    # A PURE READER, and it runs before anything else on purpose. `--census-report`
+    # answers "has the window elapsed" from the recorded rows and must stay usable
+    # on a tree whose R1..R8 verdict is red -- the window is about the CANDIDATE
+    # rules and has nothing to say about the enforced ones.
+    if "--census-report" in argv:
+        return census_report(ROOT)
     print("plan records: controls first, then the verdict")
     if selftest():
         print(
@@ -781,6 +1416,16 @@ def main(argv):
     )
     problems.extend(index_problems(ROOT, rows, census=census, update=update))
 
+    # ---- THE ADVISORY CENSUS -------------------------------------------------
+    # IT RUNS ON BOTH PATHS, red and green. A measurement window with a hole in it
+    # wherever some unrelated rule failed is a window nobody can reason about, and
+    # the candidates say nothing about R1..R8 either way.
+    #
+    # `census_row` is computed from its OWN re-read of every plan; the two counts
+    # handed to `census_append` come from the verdict loop above. That is the
+    # two-readings floor, and it is why the counts are passed rather than shared.
+    census_ok, census_msg = census_append(ROOT, census_row(ROOT, recs), len(recs), n_records)
+
     if problems:
         print(
             f"✗ plan records: {len(problems)} problem(s) across {n_records} record(s):",
@@ -795,6 +1440,10 @@ def main(argv):
             "    .claude/hooks/stop/worklist.py --plan-revive <me> <path> --write",
             file=sys.stderr,
         )
+        # The census verdict is reported here too, and it does NOT change this
+        # exit code: 1 already says "findings", and a census failure on top of
+        # findings is a second thing to fix, not a different one.
+        print(("  " + census_msg) if census_ok else ("✗ " + census_msg), file=sys.stderr)
         return 1
 
     print(
@@ -810,6 +1459,20 @@ def main(argv):
             "  0 records is the expected state until the first compaction wave. The rules\n"
             "  above ran against the planted fixtures in --selftest, not against nothing."
         )
+    # THE ONE WAY THE CENSUS REACHES AN EXIT CODE, and it is never because a
+    # candidate FIRED. Exit 2 is this file's "instrument control failed" code, and
+    # a census that recorded nothing is exactly that: it reports what a clean
+    # corpus reports, forever, while the two-week clock never starts.
+    if not census_ok:
+        print("✗ " + census_msg, file=sys.stderr)
+        print(
+            "  The advisory census is the only thing measuring what a future blocking\n"
+            "  rung would refuse. R1..R8 all passed; this exit is about the instrument,\n"
+            "  not about the records.",
+            file=sys.stderr,
+        )
+        return 2
+    print(census_msg)
     return 0
 
 

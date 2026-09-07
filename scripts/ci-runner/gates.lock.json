@@ -4312,6 +4312,24 @@
     }
   },
   {
+    "id": "check:ci-language-policy",
+    "run": "npm run check:ci-language-policy",
+    "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/**"
+    ],
+    "leaves": [
+      ".ci/scripts/quality/check_language_policy.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Language policy"
+    }
+  },
+  {
     "id": "check:ci-layout-overflow",
     "run": "npm run check:ci-layout-overflow",
     "gate": true,
@@ -4620,6 +4638,24 @@
     "qualityGateTest": true,
     "leaves": [
       ".ci/scripts/test/gates/test-hydration-clean.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Quality-gate unit tests"
+    }
+  },
+  {
+    "id": "gate-test:language-policy",
+    "run": ".ci/scripts/test/gates/test-language-policy.sh",
+    "gate": true,
+    "qualityGateTest": true,
+    "reads": [
+      "tree:repo"
+    ],
+    "leaves": [
+      ".ci/scripts/test/gates/test-language-policy.sh"
     ],
     "ci": {
       "kind": "step",
@@ -5720,6 +5756,7 @@
     "id": "check:ci-pytest",
     "run": "npm run check:ci-pytest",
     "gate": true,
+    "slow": true,
     "weight": 8,
     "leaves": [
       ".ci/rediacc_ci/check_pytest.py"
@@ -5736,7 +5773,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-static",
+      "job": "quality-security",
       "step": "Python package tests"
     }
   },

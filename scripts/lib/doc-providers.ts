@@ -305,8 +305,18 @@ const wiredHooks = (root: string): WiredHook[] => {
         // `python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/y.py" --flag`. Pull every hook path out
         // of it rather than assuming one shape, so a wrapper that runs two guards is not
         // silently reported as running one.
-        for (const hit of (h.command ?? '').matchAll(/\.claude\/hooks\/([A-Za-z0-9_./-]+)/g)) {
-          out.push({ event, matcher: m.matcher ?? '(any)', file: hit[1] ?? '' });
+        // BOTH hook trees, and the alternation is load-bearing rather than tidy. This
+        // pattern was `\.claude\/hooks\/`, which cannot match `.claude/rediacc_hooks/`:
+        // measured 2026-09-07 it found 14 of the 15 hook paths in the wiring and missed
+        // exactly `.claude/rediacc_hooks/dispatch.py`. That one miss is the whole problem,
+        // because the dispatcher is the ONLY edge from settings.json into the 64 guard
+        // modules, so widening the FILE LIST without fixing this pattern would seed the
+        // closure without its single entry point and report all 64 live guards as dead code.
+        // Captures repo-relative now, so a key names a real path from the repo root.
+        for (const hit of (h.command ?? '').matchAll(
+          /\.claude\/(?:hooks|rediacc_hooks)\/[A-Za-z0-9_./-]+/g,
+        )) {
+          out.push({ event, matcher: m.matcher ?? '(any)', file: hit[0] ?? '' });
         }
       }
     }
@@ -335,13 +345,42 @@ const reachability = (root: string, wired: Set<string>, files: string[]): Map<st
   const text = new Map<string, string>();
   for (const rel of files) {
     try {
-      text.set(rel, fs.readFileSync(path.join(root, '.claude/hooks', rel), 'utf-8'));
+      // REPO-RELATIVE. This used to join `.claude/hooks` back on, which quietly made that
+      // one directory the only thing this closure could ever read.
+      text.set(rel, fs.readFileSync(path.join(root, rel), 'utf-8'));
     } catch {
       text.set(rel, '');
     }
   }
   const reached = new Map<string, string>();
   for (const w of wired) reached.set(w, 'settings.json');
+
+  // TWO KINDS OF EDGE THIS TEXTUAL CLOSURE CANNOT SEE, both of which would otherwise be
+  // reported as dead code. The comment above promises that over-admitting is the safe
+  // direction and that this table "never invents a false accusation"; without these two
+  // seeds it does exactly that, and the accusation lands on live guards.
+  //
+  // 1. GLOB DISCOVERY. `.claude/rediacc_hooks/dispatch.py` does not name a single guard.
+  //    It globs `block_*.py`, `warn_*.py` and `require_*.py` under `guards/` and keeps the
+  //    modules declaring a matching `CHAIN`. Measured 2026-09-07:
+  //    `python3 .claude/rediacc_hooks/dispatch.py --list` prints
+  //    `pre-bash warn_submodule_deletions ...`, while the closure reported that same file as
+  //    reached by nothing, because no reached file contains its name.
+  // 2. PYTEST COLLECTION. `pyproject.toml:237-241` names `.claude/rediacc_hooks/tests` in
+  //    `testpaths`, so a `test_*.py` there is run by the suite, not by the wiring.
+  for (const rel of files) {
+    if (reached.has(rel)) continue;
+    const base = path.basename(rel);
+    if (
+      /\.claude\/rediacc_hooks\/guards\//.test(rel) &&
+      /^(block|warn|require)_[A-Za-z0-9_]+\.py$/.test(base) &&
+      /^CHAIN\s*=/m.test(text.get(rel) ?? '')
+    ) {
+      reached.set(rel, 'via dispatch.py (glob)');
+    } else if (/\.claude\/rediacc_hooks\/tests\//.test(rel) && /^test_.*\.py$/.test(base)) {
+      reached.set(rel, 'via pytest (testpaths)');
+    }
+  }
   let grew = true;
   while (grew) {
     grew = false;
@@ -368,7 +407,7 @@ const reachability = (root: string, wired: Set<string>, files: string[]): Map<st
 export const hookGuardsProvider: Provider = {
   id: 'hook-guards',
   scans:
-    'the `hooks` wiring in .claude/settings.json, closed transitively over the tracked files under .claude/hooks/',
+    'the `hooks` wiring in .claude/settings.json, closed transitively over the tracked files under .claude/hooks/ and .claude/rediacc_hooks/ (.claude/oracles/ excluded on purpose: those twins are wired to no event by design)',
   columns: ['Hook file', 'Events', 'Reached', 'Language'],
   rows: (root) => {
     const wired = wiredHooks(root);
@@ -379,13 +418,28 @@ export const hookGuardsProvider: Provider = {
       events.set(w.file, set);
     }
 
-    const { present } = presentFiles(root, lsFiles(root, '.claude/hooks'));
+    // BOTH HOOK TREES, and why .claude/oracles is NOT a third.
+    //
+    // Until 2026-09-07 this scanned `.claude/hooks` alone, which made this region's own promise
+    // unkeepable: it says a tracked file nothing reaches is dead code sitting beside live
+    // guards, while 64 tracked modules under `.claude/rediacc_hooks` were not in the set at all,
+    // so they could never be reported in either direction. The parity gate could not catch it,
+    // because it compares this generator against itself: both sides were equally blind and the
+    // document was wrong while the gate was green.
+    //
+    // `.claude/oracles` is excluded ON PURPOSE and must stay excluded. Those 50 files are the
+    // bash twins the Python guards are differentially compared against
+    // (`test_guards_differential`). They are deliberately wired to NO event, so a reachability
+    // closure would correctly find nothing reaching them and report all 50 as dead code. That is
+    // precisely the reading that gets a differential corpus "simplified" away, which is the
+    // failure this region exists to prevent rather than to cause. Their coverage is the
+    // differential test, not the wiring.
+    const { present } = presentFiles(root, lsFiles(root, '.claude/hooks', '.claude/rediacc_hooks'));
     const members = present
       .filter((f) => /\.(sh|py)$/.test(f))
-      .map((f) => f.slice('.claude/hooks/'.length))
       // State snapshots and byte-compiled caches are not hooks. Both are per-session litter that
       // would make this record differ between two machines looking at the same commit.
-      .filter((f) => !f.startsWith('state/') && !f.includes('__pycache__'));
+      .filter((f) => !f.includes('/state/') && !f.includes('__pycache__'));
 
     const reached = reachability(root, new Set(events.keys()), members);
     const keys = new Set([...members, ...events.keys()]);
@@ -400,7 +454,8 @@ export const hookGuardsProvider: Provider = {
       ],
     }));
   },
-  missing: (root) => presentFiles(root, lsFiles(root, '.claude/hooks')).missing,
+  missing: (root) =>
+    presentFiles(root, lsFiles(root, '.claude/hooks', '.claude/rediacc_hooks')).missing,
 };
 
 /**
@@ -437,14 +492,17 @@ export const hookSummaryProvider: Provider = {
       byEvent.set(w.event, row);
     }
 
-    const { present } = presentFiles(root, lsFiles(root, '.claude/hooks'));
+    // Same two trees as hook-guards, for the same reason its comment gives: this row set and
+    // that one must describe the same tree, or the summary and the reference disagree. Before
+    // 2026-09-07 both were scoped to `.claude/hooks`, so the residue count below counted the
+    // unreached files of ONE tree while calling itself "tracked hook files nothing reaches".
+    const { present } = presentFiles(root, lsFiles(root, '.claude/hooks', '.claude/rediacc_hooks'));
     const members = present
       .filter((f) => /\.(sh|py)$/.test(f))
-      .map((f) => f.slice('.claude/hooks/'.length))
       // Identical exclusions to hook-guards, and they must stay identical: state snapshots and
       // byte-compiled caches are per-session litter, so counting them here and not there would
       // make the summary and the reference disagree about the same tree.
-      .filter((f) => !f.startsWith('state/') && !f.includes('__pycache__'));
+      .filter((f) => !f.includes('/state/') && !f.includes('__pycache__'));
     const reached = reachability(root, new Set(wired.map((w) => w.file)), members);
     const unreached = members.filter((f) => !reached.has(f)).length;
 
@@ -468,7 +526,8 @@ export const hookSummaryProvider: Provider = {
     });
     return rows;
   },
-  missing: (root) => presentFiles(root, lsFiles(root, '.claude/hooks')).missing,
+  missing: (root) =>
+    presentFiles(root, lsFiles(root, '.claude/hooks', '.claude/rediacc_hooks')).missing,
 };
 
 /* ------------------------------------------------------------ suppressions */
