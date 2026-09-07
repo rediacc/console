@@ -23,8 +23,18 @@
 # WHAT IT DOES, AND DELIBERATELY NOTHING MORE. It gets uv, checksum-verified
 # against a pin, into a repo-local directory; then it gets pytest via uv,
 # because uv is the only thing on this host that can install a Python package
-# at all. It does not create a venv, does not touch the system Python, does not
-# write outside .ci/cache/ (gitignored), and does not run any test.
+# at all; then it gets pytest-xdist INTO THAT SAME pytest environment, because
+# the test gate runs the suite in parallel and a plugin that is absent is a
+# suite that silently runs on one core. It does not create a venv, does not
+# touch the system Python, does not write outside .ci/cache/ (gitignored), and
+# does not run any test.
+#
+# THREE TOOLS, THREE RUNGS, THREE ROWS -- never two tools and an assumption.
+# The install arm is IDEMPOTENT BY RESOLUTION rather than by a stamp file, so
+# each thing is asked for separately: on a machine that already has pytest,
+# resolve_pytest succeeds and install_pytest is never reached, and anything
+# folded into that function would then be installed nowhere at all while the
+# report still read `ok`.
 #
 # THE RESOLVER IS A SIBLING, NOT A NEW IDEA. Rungs and their order are lifted
 # from resolve_ruff in .ci/scripts/quality/check-python-lint.sh:
@@ -167,6 +177,46 @@ resolve_pytest() {
     return 1
 }
 
+# The pytest-xdist version REGISTERED IN THE PYTEST THAT WILL ACTUALLY RUN, or
+# nothing. `pytest -VV` lists its registered plugins as `<name>-<version> at
+# <path>`, so this asks the resolved binary rather than looking for a file: rung
+# 2 of resolve_pytest can return a pytest from PATH whose environment is not
+# $TOOL_DIR at all, and a plugin present in the cache but absent from THAT
+# interpreter is not installed for any purpose here.
+#
+# EXACTLY `-VV`, AND NEVER `--version -VV`, WHICH SILENTLY PRINTS THE SHORT FORM.
+# Measured against pytest 9.1.1 on 2026-09-07, and it cost one wrong red here:
+# `_pytest/config/__init__.py:210-216` short-circuits the whole run when
+# `args.count("--version") + args.count("-V") == 1`, counting TOKENS. `-VV` is
+# one token that is neither of those, so `pytest --version -VV` scores 1, takes
+# the fast path, prints `pytest 9.1.1` and exits 0 having ignored the verbosity
+# it was asked for. `pytest --version -V` (score 2) prints the plugin list;
+# `pytest --version -VV` does not. A probe on that spelling reports EVERY plugin
+# as absent, which reads as a failed install rather than a mis-parsed flag.
+#
+# NO VERSION LITERAL, per the header: the sed captures whatever digits are
+# registered and the caller compares them against $PYTEST_XDIST_VERSION.
+xdist_version_of() {
+    "$1" -VV 2>/dev/null |
+        sed -n 's/.*pytest-xdist-\([0-9][0-9.]*\).*/\1/p' | head -1
+}
+
+# A SEPARATE RUNG, NOT A CHANGE TO resolve_pytest, and that is the whole point.
+# The install arm below is idempotent BY RESOLUTION: on every machine that
+# already has pytest at the pin, resolve_pytest succeeds and install_pytest is
+# never called, so folding xdist into that path would silently install it
+# nowhere. Asked separately, it is installed separately.
+#
+# There is no PYTEST_XDIST_BIN rung: xdist has no binary. PYTEST_BIN still
+# decides WHICH pytest is asked, which is the only override that means anything.
+resolve_xdist() {
+    local pytest_bin
+    pytest_bin="$(resolve_pytest)" || return 1
+    [ "$(xdist_version_of "$pytest_bin")" = "$PYTEST_XDIST_VERSION" ] || return 1
+    printf '%s' "$pytest_bin"
+    return 0
+}
+
 install_uv() {
     local triple sfx sha_var want url tmp got
     read -r triple sfx < <(uv_target) || return 1
@@ -233,6 +283,32 @@ install_pytest() {
     printf '%s' "$TOOL_BIN_DIR/pytest"
 }
 
+install_xdist() {
+    local uv="$1" got
+    echo "bootstrap: installing pytest-xdist ${PYTEST_XDIST_VERSION} into the pytest environment via uv" >&2
+    # `uv tool install --with` REINSTALLS the pytest tool with the plugin in its
+    # environment. That is why the pytest pin is repeated on this line and not
+    # dropped: `--with` alone does not name the tool, and naming pytest without
+    # its version would resolve the newest one and silently unpin the runner
+    # this whole file exists to pin.
+    UV_TOOL_DIR="$TOOL_DIR" UV_TOOL_BIN_DIR="$TOOL_BIN_DIR" \
+        "$uv" tool install --quiet --force \
+        --with "pytest-xdist==${PYTEST_XDIST_VERSION}" "pytest==${PYTEST_VERSION}" || {
+        echo "${RED}bootstrap${NC}: uv tool install pytest-xdist failed" >&2
+        return 1
+    }
+    # VERIFIED BY ASKING PYTEST, not by trusting uv's exit code. A plugin that
+    # installed into the wrong environment, or that pytest refuses to load,
+    # leaves `-n` failing at gate time with a message about an unknown option --
+    # which reads as a broken gate rather than a missing plugin.
+    got="$(xdist_version_of "$(resolve_pytest)")"
+    [ "$got" = "$PYTEST_XDIST_VERSION" ] || {
+        echo "${RED}bootstrap${NC}: uv reported success but pytest registers pytest-xdist '${got:-none}'" >&2
+        return 1
+    }
+    printf '%s' "$TOOL_BIN_DIR/pytest"
+}
+
 # One row per tool. `want` is always printed next to `have`, because "pytest:
 # ok" tells the reader nothing about WHICH pytest answered.
 report_row() {
@@ -240,7 +316,7 @@ report_row() {
 }
 
 report() {
-    local uv pytest rc=0
+    local uv pytest xdist rc=0
     printf 'root: %s\n' "$ROOT"
     printf 'lane: %s\n\n' "$(toolchain_lane)"
     report_row tool pinned resolved
@@ -254,6 +330,15 @@ report() {
         report_row pytest "$PYTEST_VERSION" "$pytest"
     else
         report_row pytest "$PYTEST_VERSION" "${YELLOW}ABSENT${NC}"
+        rc=1
+    fi
+    # ITS OWN ROW, because "pytest: ok" says nothing about whether the suite can
+    # be run in parallel. The resolved column shows the pytest the plugin is
+    # registered in, since that is the thing the answer is about.
+    if xdist="$(resolve_xdist)"; then
+        report_row xdist "$PYTEST_XDIST_VERSION" "in $xdist"
+    else
+        report_row xdist "$PYTEST_XDIST_VERSION" "${YELLOW}ABSENT${NC}"
         rc=1
     fi
     report_row python3 "-" "$(command -v python3 || echo "${YELLOW}ABSENT${NC}")"
@@ -294,6 +379,12 @@ case "${1:-install}" in
         else
             pytest_bin="$(install_pytest "$uv_bin")" || exit 1
             echo "${GREEN}ok${NC}   pytest ${PYTEST_VERSION} installed at $pytest_bin"
+        fi
+        if xdist_in="$(resolve_xdist)"; then
+            echo "${GREEN}ok${NC}   pytest-xdist ${PYTEST_XDIST_VERSION} already in $xdist_in"
+        else
+            xdist_in="$(install_xdist "$uv_bin")" || exit 1
+            echo "${GREEN}ok${NC}   pytest-xdist ${PYTEST_XDIST_VERSION} installed into $xdist_in"
         fi
         exit 0
         ;;

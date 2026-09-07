@@ -96,6 +96,41 @@ from rediacc_ci.controls import Controls
 
 # See the module docstring for why this is a constant and floor 2 is not.
 MIN_TESTS = 150
+# HOW LONG THE SUITE MAY TAKE BEFORE THIS GATE REFUSES, and it is a refusal rather
+# than a crash: see the TimeoutExpired arm in run_pytest.
+#
+# 900 was the value until 2026-09-07, chosen when the corpus was small. That day it
+# measured 810.16s -- 90 seconds of margin -- while the corpus grew from 318s to
+# 675s in a single day and gains about 200 tests per gate-test port batch. The
+# number is now sized against a MEASURED floor with real headroom, not against the
+# last run that happened to fit, and it is a module constant so raising it is one
+# visible edit rather than a literal buried in a call.
+RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 2400)
+
+# HOW MANY WORKERS, and it is not `auto`. `-n auto` takes every core (24 here)
+# and oversubscribes against the ci-runner's own 22-slot pool, which is already
+# running 356 other gates. The shape and the reason are copied from
+# `battery._default_jobs` rather than re-derived.
+#
+# `-n` AND `weight` MOVE TOGETHER. `pool.ts:242` caps effective weight at the
+# pool size, so `weight: 8` reads as "the whole pool" on a 2-slot CI runner and
+# as 8 of 22 locally. An `-n` larger than the declared weight is an undeclared
+# claim on the machine, which is how a parallel gate makes a lane SLOWER.
+#
+# WHY 8 AND NOT MORE, measured on the full corpus: serial 823.93s; `-n 8` with
+# working groups 381.41s (2.16x); `-n 16` 377.18s. Sixteen buys nothing, because
+# the floor is now the 294.65s guards fixture pinned to a single worker. Raising
+# this number is pointless until that driver is parallelised internally.
+PYTEST_JOBS_CAP = 8
+
+
+def jobs() -> int:
+    """Worker count for the parallel run. PYTEST_JOBS overrides; 1 is serial."""
+    override = os.environ.get("PYTEST_JOBS")
+    if override and override.isdigit() and int(override) > 0:
+        return int(override)
+    return max(1, min(PYTEST_JOBS_CAP, os.cpu_count() or 1))
+
 
 # Mirrors `python_files` in the root pyproject.toml. Pinned to one form there so
 # the corpus count below and pytest's own collection cannot disagree about which
@@ -108,10 +143,38 @@ TEST_GLOB = "test_*.py"
 # does not inflate the count.
 TEST_DEF_RE = re.compile(r"^def (test_\w+)\s*\(", re.MULTILINE)
 
-# pytest's own report lines. `collected N items` comes from the header, `N passed`
+# pytest's own report lines. The collection count comes from the header, `N passed`
 # from the summary. Both are parsed because they answer different questions: how
 # many the collector FOUND, and how many actually ran to a pass.
-COLLECTED_RE = re.compile(r"collected (\d+) items?")
+#
+# THE COLLECTION HEADER HAS TWO SPELLINGS, AND THIS IS THE UNION OF THEM. Under
+# pytest-xdist the CONTROLLER does not collect: each worker collects, and the
+# header changes shape entirely. Measured on this tree, 2026-09-07, pytest 9.1.1
+# with xdist 3.8.0, all three byte-for-byte:
+#
+#   serial   collected 30 items
+#   -n 1     1 worker [30 items]
+#   -n 2     2 workers [30 items]
+#
+# THE SERIAL LINE IS NOT MERELY MOVED, IT IS GONE: an `-n` run prints no
+# `collected` line anywhere. Matching only the first spelling therefore returns
+# None the moment the gate is parallelised, `verdict` says "pytest printed no
+# collection line", and the gate fails naming a problem that does not exist while
+# a perfectly healthy suite is running. That is the exact mystery red this union
+# exists to prevent, and it is why the second alternative landed BEFORE any `-n`
+# reached the argv.
+#
+# The worker alternative is ANCHORED with re.MULTILINE and the serial one is not.
+# The serial spelling was unanchored before this change and stays that way, so
+# nothing that used to parse stops parsing; the worker spelling has to be
+# anchored, because `\d+ workers \[` is a shape a traceback or a failure message
+# could easily contain mid-line, and a count read out of prose is worse than no
+# count at all.
+COLLECTED_RE = re.compile(
+    r"collected (\d+) items?"
+    r"|^(\d+) workers? \[(\d+) items?\]",
+    re.MULTILINE,
+)
 PASSED_RE = re.compile(r"(\d+) passed")
 
 # The `pytest` row of `.ci/bootstrap.sh doctor`: name, pinned version, resolved
@@ -163,8 +226,21 @@ def parse_counts(text: str) -> tuple[int | None, int | None]:
     """
     collected = COLLECTED_RE.search(text)
     passed = PASSED_RE.search(text)
+    # WHICHEVER ALTERNATIVE MATCHED. Group 1 is the serial count, group 3 the
+    # worker-header one; group 2 is the worker COUNT and is deliberately not
+    # returned here, because this function answers "how many tests", not "how
+    # many processes".
+    #
+    # `is not None` rather than `or`, and that is not style: a genuine collection
+    # of ZERO makes group(1) the string "0", which is falsy, so `group(1) or
+    # group(3)` would fall through to None and crash int() -- turning the single
+    # most important refusal this gate makes (exit 0 having collected nothing)
+    # into a traceback.
+    count = None
+    if collected is not None:
+        count = collected.group(1) if collected.group(1) is not None else collected.group(3)
     return (
-        int(collected.group(1)) if collected else None,
+        int(count) if count is not None else None,
         int(passed.group(1)) if passed else None,
     )
 
@@ -259,6 +335,20 @@ def cannot_run(reason: str) -> int:
     return EXIT_CANNOT_RUN
 
 
+def _as_text(chunk) -> str:
+    """TimeoutExpired.output is bytes, str, or None depending on how far the child got.
+
+    Normalising here rather than at the call site because getting it wrong yields a
+    TypeError raised while REPORTING a timeout, which replaces one uninformative
+    traceback with another.
+    """
+    if chunk is None:
+        return ""
+    if isinstance(chunk, bytes):
+        return chunk.decode("utf-8", "replace")
+    return str(chunk)
+
+
 def run_pytest(pytest_bin: str, cwd: pathlib.Path, args: list[str] | None = None):
     """(returncode, combined output). Args default to none, so `testpaths` applies.
 
@@ -268,14 +358,36 @@ def run_pytest(pytest_bin: str, cwd: pathlib.Path, args: list[str] | None = None
     that never reached the summary was parsed out of the wrong stream and read as
     "no collection line", which is a true statement about the wrong reason.
     """
-    proc = subprocess.run(
-        [pytest_bin, *(args or [])],
-        capture_output=True,
-        text=True,
-        check=False,
-        cwd=str(cwd),
-        timeout=900,
-    )
+    try:
+        proc = subprocess.run(
+            [pytest_bin, *(args or [])],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=str(cwd),
+            timeout=RUN_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired as exc:
+        # A TIMEOUT IS A VERDICT, NOT A TRACEBACK. Until 2026-09-07 this call had a
+        # bare `timeout=900` and `main()` no handler, so `TimeoutExpired` propagated
+        # out of the gate as an uncaught exception: no verdict, no exit 77, just a
+        # stack trace naming subprocess. That was 90 seconds away from happening on
+        # its own -- the suite measured 810.16s the same day and grows about 200
+        # tests per gate-test port batch.
+        #
+        # The partial output is RETURNED rather than discarded, because a suite that
+        # ran for RUN_TIMEOUT_S and then hung has usually printed the failing test
+        # already, and throwing that away leaves the reader with nothing to act on.
+        # `.output` and `.stderr` are bytes-or-str-or-None depending on how far the
+        # child got, so both are normalised.
+        partial = _as_text(exc.output) + _as_text(exc.stderr)
+        return 1, (
+            "%s\ncheck_pytest: the suite did not finish within %ds. That is this "
+            "gate refusing, not pytest failing: no verdict was reached, so nothing "
+            "here says the tests pass. Re-run on a quiesced tree; if it is genuinely "
+            "this slow now, raise RUN_TIMEOUT_S against a measured floor rather than "
+            "guessing.\n" % (partial, RUN_TIMEOUT_S)
+        )
     return proc.returncode, proc.stdout + proc.stderr
 
 
@@ -291,7 +403,13 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     the point of having one: the gate that proves the suite runs is itself a
     consumer of the thing the suite tests.
     """
-    c = Controls("check_pytest", floor=16, verbose=verbose)
+    # FLOOR RAISED WITH THE SUITE, 16 -> 25. It was 16 against 19 controls; the
+    # parallel-header work adds nine (six string fixtures and three against a real
+    # two-worker run), so 19 -> 28. A floor left at 16 would keep passing with the
+    # entire parallel block deleted, which is precisely the "the file is not being
+    # executed as written" failure the floor exists for. Slack is kept at three,
+    # the same margin the previous pair carried.
+    c = Controls("check_pytest", floor=25, verbose=verbose)
 
     # A CORPUS SIZE THAT IS COMFORTABLY ABOVE THE FLOOR, DERIVED FROM IT. These
     # controls used to write 65 as a literal, and raising MIN_TESTS from 40 to 120
@@ -314,6 +432,42 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
         (healthy, healthy - 1),
     )
     c.check("'collected 1 item' is singular in pytest", parse_counts("collected 1 item")[0], 1)
+
+    # -- the PARALLEL header, both directions. See COLLECTED_RE.
+    c.check(
+        "THE PARALLEL HEADER: `N workers [M items]` is a collection line too",
+        parse_counts("2 workers [%d items]\n%d passed in 41.02s" % (healthy, healthy)),
+        (healthy, healthy),
+    )
+    c.check(
+        "'1 worker [1 item]' is singular on both nouns under -n 1",
+        parse_counts("1 worker [1 item]")[0],
+        1,
+    )
+    c.check(
+        "CONTROL: the SERIAL header still parses, so the union added a form "
+        "rather than replacing one",
+        parse_counts("collected %d items" % healthy)[0],
+        healthy,
+    )
+    c.check(
+        "CONTROL: a run that printed NEITHER header is still refused (this is "
+        "the -q shape: xdist prints `bringing up nodes...` and no count at all)",
+        parse_counts("bringing up nodes...\nbringing up nodes...\n\n.....")[0],
+        None,
+    )
+    c.check(
+        "CONTROL: `created: 2/2 workers` is not a collection line -- it names "
+        "processes, not tests, and carries no item count",
+        parse_counts("created: 2/2 workers")[0],
+        None,
+    )
+    c.check(
+        "CONTROL: the worker form is ANCHORED, so `... 3 workers [7 items]` "
+        "inside a failure message yields no count",
+        parse_counts("E   AssertionError: expected 3 workers [7 items]")[0],
+        None,
+    )
 
     # -- verdict, the whole matrix
     c.check(
@@ -404,6 +558,43 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
         c.check("CONTROL: the same fixture with a TRUE assertion exits 0", rc, 0)
         c.check("CONTROL: ...and collects exactly the one test", parse_counts(out), (1, 1))
 
+        # -- AND THE SAME FIXTURE UNDER -n, AGAINST THE REAL PLUGIN.
+        #
+        # The six string controls above prove the union matches bytes THIS FILE
+        # types. They cannot prove it matches bytes pytest EMITS, and those are
+        # the ones the gate reads. An xdist release rewording its header would
+        # leave every fixture green and the real gate blind, which is the whole
+        # shape this repo keeps paying for. So the header is parsed here out of a
+        # genuine two-worker run.
+        rc, out = run_pytest(
+            pytest_bin,
+            d,
+            ["-p", "no:cacheprovider", "-n", "2", "--dist", "loadgroup", str(d)],
+        )
+        if "unrecognized arguments" in out or "no such option" in out:
+            # A NAMED REFUSAL, not a mystifying (None, None). Without this the
+            # reader sees a parse control fail and goes looking at the regex,
+            # which is correct-looking and innocent.
+            c.fail(
+                "pytest does not understand -n: pytest-xdist is not in this "
+                "pytest's environment. Run `bash .ci/bootstrap.sh` (its xdist row "
+                "reports ABSENT) rather than editing this control",
+                out.strip().splitlines()[-1] if out.strip() else "no output",
+            )
+        else:
+            c.check("PARALLEL: a real -n 2 run of the fixture exits 0", rc, 0)
+            c.check(
+                "PARALLEL: and THIS MACHINE's xdist header parses to the same "
+                "(collected, passed) the serial run gave",
+                parse_counts(out),
+                (1, 1),
+            )
+            c.falsy(
+                "CONTROL FOR THAT: the -n run printed no serial `collected` line "
+                "at all, so it was the worker alternative that matched",
+                "collected 1 item" in out,
+            )
+
     return c.report()
 
 
@@ -477,7 +668,7 @@ def main(argv: list[str]) -> int:
             return EXIT_FAIL
     print("info: corpus %d across %d root(s) (floor %d)" % (corpus, len(per_root), MIN_TESTS))
 
-    returncode, out = run_pytest(pytest_bin, root)
+    returncode, out = run_pytest(pytest_bin, root, ["-n", str(jobs()), "--dist", "loadgroup"])
     collected, passed = parse_counts(out)
     # pytest exit 4 is a USAGE error: this repo's own ini table is wrong. That is
     # a defect in the tree, not an absent tool, so it is a 1 and never a 77.

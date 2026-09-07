@@ -466,6 +466,23 @@ def parse_stream(text):
     return records
 
 
+# EVERY XDIST WORKER REBUILDS A SESSION FIXTURE, because "session" is scoped to a
+# PROCESS and xdist workers ARE processes. The `bash_results` fixture below forks
+# env -i bash once per case across 6017 cases, about 18,000 processes, and this module's tests are otherwise pure in-process comparison -- so
+# without this declaration its cases scatter across every worker and each one pays
+# the full driver again.
+#
+# Measured 2026-09-07: this file and test_shellscan_differential.py together serve
+# 6446 of 8968 tests (72 percent of the corpus). At `-n 8` that is roughly 240,000
+# forks of duplicated setup before a single one of those tests does useful work,
+# which is why the suite is 1.64x SLOWER under 8 workers than serial (619.17s vs
+# 1013.59s on a quiesced box).
+#
+# The group pins all of this module's tests to ONE worker, so the fixture is built
+# once. It is INERT without `--dist loadgroup`, so it changes nothing today.
+XDIST_GROUP = "hooks-guards"
+
+
 @pytest.fixture(scope="session")
 def bash_results(tmp_path_factory):
     """Run every real guard over the whole corpus, once, in one bash process."""

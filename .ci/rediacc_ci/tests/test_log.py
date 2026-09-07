@@ -35,6 +35,33 @@ import pytest
 from rediacc_ci import log
 from rediacc_ci.tests import differential as diff
 
+
+@pytest.fixture(autouse=True)
+def _no_global_logger_leak():
+    """Drop the module-global logger after every test in this file.
+
+    THE LEAK THIS CLOSES, and it is a real order-dependence bug that predates any
+    parallelism. `log.reset()` binds `sys.stderr` BY VALUE into `_default`
+    (log.py:266). Called from a test where pytest's `capsys` has replaced
+    `sys.stderr`, the global keeps a reference to that test's `CaptureIO`.
+    Teardown closes it, and every later `log.*` in the same PROCESS then raises
+    `ValueError: I/O operation on closed file` at log.py:209 -- `emit` suppresses
+    ValueError around `flush()` but not around `write()`.
+
+    It was invisible serially for a reason that is pure luck: a later test in this
+    same file, `test_reset_replaces_the_default_and_returns_it`, has no `capsys`
+    and happened to heal the global on its way past. Reproduced with no xdist at
+    all, two tests in order -- `1 failed, 1 passed`; insert the healer between them
+    and it is `3 passed`.
+
+    `None` rather than a stream is the correct reset, because `default()` is
+    documented to build LAZILY against the live `sys.stderr`; handing it a stream
+    here would just move the same stale binding one step later.
+    """
+    yield
+    log._default = None
+
+
 # The library under differential test, and the exact calls made against it. One
 # constant so every case drives the SAME script and a case cannot silently test
 # a different message than the one it compares.

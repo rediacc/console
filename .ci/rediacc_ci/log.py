@@ -179,9 +179,30 @@ class Logger:
     """
 
     def __init__(self, stream=None, colour: bool | None = None, env=None) -> None:
-        self.stream = sys.stderr if stream is None else stream
+        # `stream=None` IS RESOLVED AT EMIT TIME, NOT HERE, and that is the whole
+        # point of the property below. This line used to read
+        #     self.stream = sys.stderr if stream is None else stream
+        # which captured whatever `sys.stderr` happened to be at CONSTRUCTION.
+        # Under pytest's `capsys` that is a per-test CaptureIO which teardown then
+        # CLOSES, so a module-global logger built during one test kept writing to
+        # a dead file and every later `log.*` in the process raised
+        # `ValueError: I/O operation on closed file` from `emit`.
+        #
+        # It was invisible serially because a later test in the same file happened
+        # to rebuild the global; xdist distributes a module across processes, so
+        # the healer and the poisoner land in different workers. It was then
+        # patched module-by-module with autouse fixtures -- test_log.py and two
+        # others -- which left every OTHER module unprotected and the class
+        # unfixed. This is the root: an explicit stream is still bound by value,
+        # exactly as callers expect, and only the None case follows sys.stderr.
+        self._stream = stream
         self.env = os.environ if env is None else env
         self.colour = colour_allowed(self.stream, self.env) if colour is None else colour
+
+    @property
+    def stream(self):
+        """The live stream. `sys.stderr` NOW when built with `stream=None`."""
+        return sys.stderr if self._stream is None else self._stream
 
     def format(self, level: str, message: str) -> str:
         """The exact line, WITHOUT its trailing newline.

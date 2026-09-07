@@ -568,6 +568,41 @@ TOOLS: tuple[Tool, ...] = (
         ),
     ),
     Tool(
+        name="pytest-xdist",
+        purpose=(
+            "the parallel scheduler check:ci-pytest runs the suite under. Without "
+            "it `-n` is an unknown option, the gate exits 4, and the whole suite "
+            "reports as a usage error rather than as a missing plugin"
+        ),
+        pin_key="PYTEST_XDIST_VERSION",
+        install={
+            "apt": ".ci/bootstrap.sh install",
+            "dnf": ".ci/bootstrap.sh install",
+            "pacman": ".ci/bootstrap.sh install",
+            "apk": ".ci/bootstrap.sh install",
+            "brew": ".ci/bootstrap.sh install",
+            "repo": ".ci/bootstrap.sh install   # uv tool install --with pytest-xdist==<pin>",
+        },
+        provenance=(
+            ".ci/bootstrap.sh install_xdist, and .devcontainer/toolchain.env PYTEST_XDIST_VERSION"
+        ),
+        probe=None,
+        python_dist="xdist",
+        note=(
+            "DELIBERATELY ABSENT FROM toolchain.TOOL_KEYS, and A2's second loop is "
+            "what permits that: a row may name a pin_key that is in the pins file "
+            "without being in TOOL_KEYS. TOOL_KEYS is compared arm-for-arm against "
+            "the bash `toolchain_pin_for` case, and every arm there resolves a "
+            "BINARY; xdist is a plugin living inside pytest's own environment with "
+            "nothing on PATH, so an arm for it would pin a tool no lane can exec. "
+            "A DISTRIBUTION, like PyYAML, so --report asks the interpreter -- and "
+            "it will read ABSENT on this host, correctly: it is importable from "
+            "the uv tool venv .ci/bootstrap.sh built, not from the system python3. "
+            "`.ci/bootstrap.sh --check` is the thing that owns that resolution and "
+            "it carries its own xdist row."
+        ),
+    ),
+    Tool(
         name="gitleaks",
         purpose="the tracked-credentials scan",
         pin_key=None,

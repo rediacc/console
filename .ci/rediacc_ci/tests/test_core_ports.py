@@ -39,6 +39,21 @@ from rediacc_ci import paths
 from rediacc_ci.core import ports
 from rediacc_ci.tests import differential as diff
 
+# THE ONE GENUINELY SHARED RESOURCE NO REGISTRY CAN DECLARE, so this module names
+# it itself. `_free_range_base` calls `find_consecutive_free_ports(n, 20000,
+# 30000)`, which returns the FIRST free run in the range -- deterministic by
+# design, because a devbox URL a human bookmarked has to keep resolving to the
+# same port. Two xdist workers asking at the same instant therefore both get
+# 20000, both bind it, and one of them fails a race that has nothing to do with
+# the code under test.
+#
+# The lock join in rediacc_ci.xdist_groups cannot see this: the contested
+# resource is the HOST'S PORT SPACE, not the tree, and gates.lock.json only
+# speaks `tree:`. The repo-root conftest reads this attribute and turns it into
+# `@pytest.mark.xdist_group("ports")`, which sends every test here to one worker.
+# INERT without `--dist loadgroup`, so it changes nothing about a serial run.
+XDIST_GROUP = "ports"
+
 # The pre-port body of `.ci/lib/find-port.sh`, frozen. Copied from the file as
 # it stood immediately before W7 phase 1, including `_sha256sum_portable` --
 # whose macOS branch is the single clearest thing the port deleted, since
