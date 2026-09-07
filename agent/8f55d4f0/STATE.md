@@ -80,61 +80,55 @@ unstable. Wave 3 is T6 HOOKS, T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN.
 - `git log --diff-filter=A` names the RENAME. Search content history: `git log -S`.
 - Never `git checkout`, `restore`, `stash`, `clean` or `reset`. Repair forward.
 
-## SESSION 8f55d4f0 2026-09-07T00:48:38Z
+## SESSION 8f55d4f0 2026-09-07T01:00:35Z
 
-Branch `0906-1`, head `5d6f07955` plus a worklist commit. TREE IS CLEAN: no agents, no
-uncommitted files except an untracked `.err` that belongs to the OTHER live session.
-Leave that alone.
+Branch `0906-1`. Tree clean but for an untracked `.err` belonging to the OTHER live
+session. No agents running.
 
 ## Next action
 
-1. **#4a9b14ce, the push, and nothing is in its way now.** `ci:quick` is in flight as
-   `bwnjt71vb` on a genuinely clean tree. On green:
-   `git push origin 880b1b3ee:main`. One commit, fast-forward from `9295fb63c`, one
-   file, +25 lines, operator-authorised. Until it lands, rediacc/account PR #86 and
-   every renet and elite review run stay red at `discover-epics.sh: No such file or
-   directory, exit 127`. `check:ci-secret-reachability` is carried in
-   `.ci/config/carried-reds.json` with its operator-only door; carry NOTHING else.
-2. Launch the rest of wave 3 from `docs/ci-overhaul/12-remaining-work.md`, all now
-   unblocked and file-disjoint: **T7 SWEEP-CI** (W1 P4, re-measure first, the 93
-   `sys.path` count predates the guard move), **T8 RECORDS** (W12 P3.1b/P3.2/P3.3/P3.4b,
-   its prerequisite of a merged compaction wave is met), **T9 ENVMAN** (W8 P2/P3/P4).
-3. **W7 P3 is the largest body left and is ONE box: 148 gate tests to pytest.**
-   Untouched. It is also where the local run's floor lives: `gate-test:claude-hooks`
-   780.4s and `check:ci-hook-worklist-suite` 686.4s are 24 minutes between them.
+1. **W2.6 IS REVERTED AND MUST NOT BE RE-LANDED AS-IS.** `gate:bind --write` DROPS
+   PER-STEP `env:` BLOCKS. Measured: six emitted steps lost theirs (PR epic block,
+   Every commit names its epic, Action freshness, Docker image freshness, External
+   links, DKIM notify DNS), and three gates caught it:
+   `check:ci-pr-head-ref-completeness`, `check:ci-bws-map`, `check:ci-python-gate-deps`.
+   I reverted `.github/workflows/ci-quality.yml` from my own byte copy and all three
+   went green again. THE EMITTER MUST CARRY `env:` (a header field, or emit it from
+   the manifest) before the regions can own those steps. My earlier verification
+   checked the job set and step NAMES and passed, because neither can see a missing
+   `env:` block: that is the third time this session a check agreed while the damage
+   was elsewhere.
+2. **#4a9b14ce, the push.** `npm run ci:quick` then `git push origin 880b1b3ee:main`.
+   One commit, fast-forward from `9295fb63c`, one file, +25 lines,
+   operator-authorised. Until it lands, rediacc/account PR #86 and every renet and
+   elite review run stay red at `discover-epics.sh: No such file or directory, exit
+   127`. `check:ci-secret-reachability` is carried in `.ci/config/carried-reds.json`
+   with its operator-only door; carry NOTHING else. Every other red named today was
+   fixed.
+3. Then T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN from
+   `docs/ci-overhaul/12-remaining-work.md`, all unblocked and file-disjoint. Then
+   W7 P3: 148 gate tests to pytest, the largest body left and ONE box.
 
-## What landed, measured this cycle
+## What is true right now
 
-W2.6 at `5d6f07955`: the gate-bind regions now emit and OWN their steps. 112
-hand-written duplicates removed, 10 jobs and 264 unique step names both before and
-after, actionlint green. The deleter guard written for one job-boundary failure found a
-SECOND at the other end of every span.
+W5 P5-P7 landed (`7acaeca98`): dispatcher live, settings.json 73 command entries to
+30, 456 execs per Bash call to 35. The bash twins were MOVED to `.claude/oracles/`
+and MUST NOT be deleted: they are what `test_guards_differential.py` compares each
+port against. W6 P2 landed (`2f0c3515d`): the install table with its pytest row plus
+four macOS guards proved on a bash 3.2.0 built from source.
 
-W5 P5-P7 at `7acaeca98`: dispatcher live, settings.json 73 command entries to 30, 456
-process executions per Bash call to 35. The bash twins were MOVED to `.claude/oracles/`
-and MUST NOT be deleted by a later sweep: they are what `test_guards_differential.py`
-compares each port against, 5,844 cases.
-
-W6 P2 at `2f0c3515d`: the one install table, 22 rows, 9 pinned, WITH the pytest row,
-plus four macOS guards proved on a bash 3.2.0 built from source.
-
-All eight plan and registry gates rc=0 this cycle on a clean tree. 78 shadow pairs, 77
-green; `w7p2-stagingtag` is permanently red (three tree ids disqualified by rows
-recorded through a closed hole, 12 qualifying trees over 9 finding sets, so the claim IS
-evidenced). DO NOT delete rows to make it green.
-
-Plan boxes 75 of 130, which FLATTERS: the 148 gate tests are ONE box.
+W7 P2 77/77. 78 shadow pairs, 77 green; `w7p2-stagingtag` is permanently red and its
+claim IS evidenced, so DO NOT delete rows to make it green. Plan boxes 75 of 130,
+which flatters: 148 gate tests are ONE box.
 
 ## Volatile facts a fresh session would get wrong
 
-A SECOND Claude session is live here: pid 2222763, session `a20630a0-dac7-...`. The
-untracked `.err` at the repo root is its litter.
+A SECOND Claude session is live here: pid 2222763. The untracked `.err` is its litter.
 
-`check-gate-manifest` judges the FLOOR of the last five samples. I dropped
-`check:ci-editorconfig`'s `slow` on a 4.6s floor and had to restore it a day later at
-25.9s: one lucky run is not the cost.
+`check-gate-manifest` judges the FLOOR of the last five samples, not the average.
 
-SEVEN times this session an instrument of mine was wrong before the claim it supported.
-The worst HID a real change: I verified a workflow's step-name set was unchanged while
-two whole jobs had vanished, because a job header is not a `- name:` line. Choose the
-check that could see the damage, and prefer a guard that REFUSES over care.
+EIGHT times this session an instrument of mine was wrong before the claim it
+supported. The pattern is always the same: the check could not have seen the damage.
+A step-name set cannot see a missing job or a missing `env:`; an `is_file()` guard
+turns a moved subject into a silent skip; `[^)]*` cannot cross a nested paren. Prefer
+a guard that REFUSES over a check that agrees.
