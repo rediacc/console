@@ -150,12 +150,22 @@ def extract_gated_tools(text: str) -> list[str]:
 
 
 def extract_array(text: str, name: str) -> list[str]:
-    """`NAME=(a b c)` -> ["a", "b", "c"], sorted and de-duplicated.
+    """`NAME=(a b c)` or `NAME = ("a", "b", "c")` -> ["a", "b", "c"], sorted, unique.
 
-    Space-separated only; see the port notes on `tr ' '`. Anchored at column 1
+    BOTH SPELLINGS, and the second one is not optional. W5 P7 made the runtime
+    guard a PYTHON module, so `NPX_TOOLS = ("ruff", "go", ...)` is what this now
+    reads; the bash form is still here because this gate's own control fixtures
+    write it. Reading only the bash form made the port report "NPX_TOOLS or
+    BARE_TOOLS could not be read" against a guard that plainly declares them,
+    while the twin read them fine -- a MISMATCH_FINDINGS the shadow differential
+    caught on the first re-record after the cutover, and which no amount of
+    reading the diff would have shown, because the path constant had been
+    updated and only the READER had not.
+
+    Space-separated or comma-separated; quotes are stripped. Anchored at column 1
     and confined to one line, which is the blind spot the notes describe.
     """
-    pattern = re.compile(r"^%s=\(([^)]*)\)" % re.escape(name))
+    pattern = re.compile(r"^%s ?=[ ]?\(([^)]*)\)" % re.escape(name))
     tools: set[str] = set()
     for line in text.split("\n"):
         match = pattern.match(line)
@@ -163,7 +173,8 @@ def extract_array(text: str, name: str) -> list[str]:
             continue
         # See extract_gated_tools: `grep -o` feeds sed the match alone, so the
         # `$` anchor in the twin's substitution always fires.
-        tools.update(part for part in match.group(1).split(" ") if part)
+        raw = match.group(1).replace('"', "").replace("'", "").replace(",", " ")
+        tools.update(part for part in raw.split(" ") if part)
     return sorted(tools)
 
 
