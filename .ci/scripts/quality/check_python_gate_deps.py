@@ -71,6 +71,9 @@ PIP_RE = re.compile(r"pip\s+install[^\n]*", re.IGNORECASE)
 # Directory names a script puts on sys.path, so its cross-directory imports can
 # be recognised as first-party.
 SYS_PATH_RE = re.compile(r"sys\.path\.(?:insert|append)\([^)]*?([A-Z_]+)\s*\)")
+# `sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[N]))`, the
+# inline form; the capture is N.
+PARENTS_RE = re.compile(r"sys\.path\.(?:insert|append)\(.*?parents\[(\d+)\]")
 DIR_ASSIGN_RE = re.compile(r"^([A-Z_]+)\s*=\s*(.+)$", re.MULTILINE)
 
 
@@ -101,6 +104,27 @@ def first_party_modules(script: pathlib.Path, body: str) -> set[str]:
             candidate = REPO.joinpath(*[part.strip("/") for part in parts])
             if candidate.is_dir():
                 names |= {p.stem for p in candidate.glob("*.py")}
+
+    # THE INLINE BOOTSTRAP, which is the idiom this repo actually writes and
+    # which the named-variable path above cannot see:
+    #     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+    # Eight scripts use it, and a script that puts the package root on the path
+    # and then imports the package was being called a third-party dependency,
+    # with the gate demanding somebody `pip install rediacc_ci`. That is the
+    # same hole the docstring above describes, one spelling further along.
+    #
+    # PACKAGES AS WELL AS MODULES: `parents[N]` here points at a directory whose
+    # children are packages (`rediacc_ci/`), not loose `.py` files, so a
+    # `glob("*.py")` finds nothing at all and the widening would be silent.
+    for depth in PARENTS_RE.findall(body):
+        try:
+            root = script.resolve().parents[int(depth)]
+        except (IndexError, ValueError):
+            continue
+        if not root.is_dir():
+            continue
+        names |= {p.stem for p in root.glob("*.py")}
+        names |= {d.name for d in root.iterdir() if (d / "__init__.py").is_file()}
     return names
 
 

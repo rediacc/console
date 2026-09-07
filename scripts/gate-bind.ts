@@ -1650,7 +1650,9 @@ function main(argv: string[]): void {
     // header on 2026-09-06, for a convention they follow correctly.
     const lockEntry = lockById.get(b.id);
     const runsScriptDirectly =
-      lockEntry !== undefined && !lockEntry.run.startsWith('npm run ') && lockEntry.run.endsWith('.sh');
+      lockEntry !== undefined &&
+      !lockEntry.run.startsWith('npm run ') &&
+      lockEntry.run.endsWith('.sh');
     if (lockEntry?.qualityGateTest === true || runsScriptDirectly) {
       if (lockEntry.run !== b.run) {
         problems.push(
