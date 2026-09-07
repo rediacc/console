@@ -65,6 +65,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import time
 import tokenize
 
 import pytest
@@ -76,7 +77,15 @@ US = "\x1f"
 RS = "\x1e"
 
 ROOT = guardcorpus.repo_root()
-HOOKS = ROOT / ".claude" / "hooks"
+# THE ORACLE ROOT. The bash originals moved out of `.claude/hooks/` at the P7
+# cutover: nothing registers them any more, and
+# `.ci/scripts/quality/check_hooks_resolvable.py` is right to refuse an
+# unregistered guard sitting in a chain directory ("a guard nobody calls is worse
+# than no guard: it reads as coverage"). They are kept, byte for byte, because
+# this file is what they are FOR -- see oracles/README.md. `TWIN` is unchanged and
+# still chain-qualified, so it is a key into this root rather than a path into the
+# live tree.
+ORACLES = ROOT / ".claude" / "oracles"
 ARTIFACT_DIR = pathlib.Path(__file__).resolve().parent / ".artifacts"
 
 FULL = os.environ.get("REDIACC_GUARD_DIFF_FULL", "") not in ("", "0")
@@ -361,10 +370,13 @@ def build_cases():
     cases = []
     for stem in guards.stems():
         module = guards.load(stem)
-        # TWIN is chain-qualified relative to `.claude/hooks`, which is exactly
-        # how `check-hook-integrity.sh` keys a guard and exactly how the suite
-        # names one in a `check` call, so no translation is needed here.
-        key = module.TWIN
+        # THE SUITE'S KEY, which since the P7 cutover is the MODULE and not the
+        # twin: a case reads `check 2 guards/block_x.py`, because that is the key
+        # `check-hook-integrity.sh` inventories the live guard under and one
+        # spelling has to drive the suite, the coverage gate and this corpus.
+        # TWIN still names the bash original and is used, a few lines down, to
+        # find it in the oracle tree.
+        key = "guards/%s.py" % stem
         named = own.get(key, [])
         seen = set()
         picked = []
@@ -405,7 +417,7 @@ CASES, HARVEST_STATS, POOL = build_cases()
 # the language gate exists to refuse. Written to a temporary directory, it is
 # not a second language in the tree.
 DRIVER = r"""#!/usr/bin/env bash
-IN_DIR="$1"; HOOKS="$2"; WORK="$3"
+IN_DIR="$1"; ORACLES="$2"; WORK="$3"
 US=$'\037'
 RS=$'\036'
 for meta in "$IN_DIR"/case-*.meta; do
@@ -427,7 +439,7 @@ for meta in "$IN_DIR"/case-*.meta; do
     # experiments and reporting agreement, which is why the caller now also
     # asserts this driver wrote nothing to stderr.
     mapfile -t ENVV < "$envfile"
-    env -i "${ENVV[@]}" bash "$HOOKS/$guard" < "$base.json" > "$WORK/out" 2> "$WORK/err"
+    env -i "${ENVV[@]}" bash "$ORACLES/$guard" < "$base.json" > "$WORK/out" 2> "$WORK/err"
     rc=$?
     printf 'rc%s%s%s' "$US" "$rc" "$RS"
     printf 'out%s' "$US"; cat "$WORK/out"; printf '%s' "$RS"
@@ -476,7 +488,7 @@ def bash_results(tmp_path_factory):
     driver = work / "driver.bash"
     driver.write_text(DRIVER, encoding="utf-8")
     proc = subprocess.run(
-        ["bash", str(driver), str(inputs), str(HOOKS), str(scratch)],
+        ["bash", str(driver), str(inputs), str(ORACLES), str(scratch)],
         capture_output=True,
         check=False,
         env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": os.environ.get("HOME", "/")},
@@ -508,16 +520,28 @@ def python_fields(stem, payload, extra, stubs, work):
     process environment exactly as its bash twin inherits the shell's. Passing
     an `env` only to `dispatch` would leave those children reading the test
     runner's environment while the bash side read the case's.
+
+    `time.tzset()` IS NOT DECORATION, and it is the one piece of libc state that
+    an in-process side does not get from swapping a dict. `TZ` is read by libc
+    once and cached, so `datetime.now()` here would keep answering in the test
+    runner's own zone however the case set the variable, while the bash side --
+    a fresh process per case -- read the case's zone. Measured 2026-09-07:
+    without this call, `block_stale_pr_branch_date` reported the port as
+    diverging under a pinned `TZ=UTC` when the port was right and the HARNESS was
+    the thing ignoring the variable. Restoring the runner's own zone afterwards
+    matters for the same reason.
     """
     env = _base_env(_stub_dir(work, dict(DEFAULT_STUBS, **stubs)), extra, work)
     saved = dict(os.environ)
     os.environ.clear()
     os.environ.update(env)
+    time.tzset()
     try:
         rc, out, err = dispatch.run_one(stem, payload, cwd=str(ROOT), env=env)
     finally:
         os.environ.clear()
         os.environ.update(saved)
+        time.tzset()
     return {"rc": str(rc), "out": out, "err": err}
 
 
@@ -584,11 +608,13 @@ def test_every_ported_guard_is_registered():
 def test_every_port_has_a_present_twin():
     for stem in guards.stems():
         module = guards.load(stem)
-        twin = HOOKS / module.TWIN
+        twin = ORACLES / module.TWIN
         assert twin.is_file(), (
-            "%s names .claude/hooks/%s as its twin and that file is not on disk. Both "
-            "copies coexist until the P6 cutover; without the twin this differential has "
-            "no oracle." % (stem, module.TWIN)
+            "%s names %s as its twin and that file is not in the oracle tree. The bash "
+            "originals are kept at .claude/oracles/ precisely so this "
+            "differential still has an oracle after the cutover; without it every "
+            "comparison below is between the port and itself."
+            % (stem, ".claude/oracles/%s" % module.TWIN)
         )
 
 
@@ -690,16 +716,39 @@ def test_the_differential_can_fail(tmp_path, bash_results):
 
 DIVERGENCES = divergence_cases()
 
+# THE EMPTY SET IS A PASS, NOT A SKIP, and that distinction was live red at HEAD.
+# Every port's KNOWN_DIVERGENCES is empty today (block_long_sleep's dissolved when
+# its twin was fixed to force base ten on 2026-09-06), so `parametrize` was handed
+# an empty list, and pytest turns an empty parameter set into a SKIP:
+#
+#   SKIPPED [1] test_guards_differential.py:694: got empty parameter set for
+#   (stem, label, payload, reason)
+#
+# `check:ci-pytest` refuses a skip on purpose ("pytest exited 0 but reports 8467
+# passed out of 8468 collected. A skipped or deselected test is not a passing one,
+# and the difference is invisible in the exit code"), so the whole gate exited 1
+# while nothing was wrong. The honest empty state was being reported as an unrun
+# test. A sentinel row runs the SAME function, asserts the table really is empty,
+# and returns; the moment a port declares a divergence the sentinel disappears and
+# the real cases run.
+NO_DIVERGENCE = (None, "no port declares a divergence", "", "")
+
 
 @pytest.mark.parametrize(
     ("stem", "label", "payload", "reason"),
-    DIVERGENCES,
-    ids=["%s|%s" % (d[0], d[1]) for d in DIVERGENCES],
+    DIVERGENCES or [NO_DIVERGENCE],
+    ids=["%s|%s" % (d[0], d[1]) for d in DIVERGENCES] or ["<none declared>"],
 )
 def test_declared_divergence_is_still_exactly_that(tmp_path, stem, label, payload, reason):
     """A declared divergence must diverge, and only where it says it does."""
+    if stem is None:
+        assert not DIVERGENCES, (
+            "the sentinel row ran while %d divergence(s) are declared, so the real "
+            "cases were skipped" % len(DIVERGENCES)
+        )
+        return
     module = guards.load(stem)
-    twin = HOOKS / module.TWIN
+    twin = ORACLES / module.TWIN
     env = _base_env(_stub_dir(tmp_path, DEFAULT_STUBS), {}, tmp_path)
     proc = subprocess.run(
         ["bash", str(twin)],
@@ -797,7 +846,7 @@ def test_comment_ratio_and_archaeology(bash_results):
     failures = []
     for stem in guards.stems():
         module = guards.load(stem)
-        twin = HOOKS / module.TWIN
+        twin = ORACLES / module.TWIN
         port = pathlib.Path(module.__file__)
         bash_bytes, bash_lines = bash_comment_bytes(twin)
         py_bytes, py_units = python_comment_bytes(port)
@@ -808,7 +857,7 @@ def test_comment_ratio_and_archaeology(bash_results):
         rows.append(
             {
                 "guard": stem,
-                "original": ".claude/hooks/%s" % module.TWIN,
+                "original": ".claude/oracles/%s" % module.TWIN,
                 "port": str(port.relative_to(ROOT)),
                 "original_comment_bytes": bash_bytes,
                 "original_comment_lines": bash_lines,

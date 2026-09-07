@@ -254,7 +254,7 @@ answers confidently and wrongly.
 
 ## Editing a shell script while a background job is RUNNING it
 Trap-Id: edit-of-a-running-shell-script
-Enforced-By: file:.claude/hooks/pre-edit/block-edit-of-running-script.sh, file:.claude/hooks/pre-bash/block-bash-write-to-running-script.sh
+Enforced-By: file:.claude/rediacc_hooks/guards/block_edit_of_running_script.py, file:.claude/rediacc_hooks/guards/block_bash_write_to_running_script.py
 Residue: Scope is `.sh` only, deliberately: a `.ts` or `.py` is read into memory once, so editing it mid-run is confusing rather than corrupting and the guards stay silent there.
 
 Bash reads a script LAZILY, by byte offset, not into memory. Rewrite the file
@@ -464,7 +464,7 @@ that the edit-back was exact.
 
 ## "Clean vs HEAD" is the wrong baseline in a tree that was already dirty
 Trap-Id: clean-vs-head-is-the-wrong-baseline
-Enforced-By: file:.claude/hooks/pre-bash/block-destructive-git-restore.sh
+Enforced-By: file:.claude/rediacc_hooks/guards/block_destructive_git_restore.py
 Residue: The guard refuses the command. It cannot repair a tree where the discard already happened, and "identical to what was there before I arrived" is not a state git can answer for.
 
 The forbidden-command rule (never `git checkout` / `restore` / `stash` / `clean`)
@@ -871,7 +871,7 @@ Only visible because stderr was read separately. Define helpers at the top.
 
 ## A watch verdict is not evidence
 Trap-Id: a-watch-verdict-is-not-evidence
-Enforced-By: file:.claude/hooks/pre-bash/block-adhoc-sanctioned.sh
+Enforced-By: file:.claude/rediacc_hooks/guards/block_adhoc_sanctioned.py
 Residue: The guard refuses ad-hoc watch loops. It cannot make a session RE-READ the Jobs API before acting on a verdict it already holds, nor notice a run that grew from 42 to 48 jobs while being read.
 
 This whole class is why `.ci/scripts/ci/ci-trace.py` exists and why ad-hoc watch
@@ -909,7 +909,7 @@ of no message arriving. Check, or say you have not checked.
 
 ## A blanket `git add -A` sweep imports other sessions' half-landed work
 Trap-Id: blanket-git-add-imports-other-work
-Enforced-By: file:.claude/hooks/pre-bash/block-blanket-git-add.sh
+Enforced-By: file:.claude/rediacc_hooks/guards/block_blanket_git_add.py
 Residue: The guard names its escape, `git add -A -- <path>`. What stays judgment is what to do once a sweep-imported file reds your branch: ask the owner, and never weaken another session's gate to get green.
 
 The standing rule to commit and push everything every round is what keeps a
@@ -1166,7 +1166,7 @@ invariant does not cover.
 
 ## A `pgrep -f <pattern>` guard inside a shell whose own command line contains that pattern waits forever
 Trap-Id: pgrep-f-matches-its-own-command-line
-Enforced-By: file:.claude/hooks/pre-bash/block-self-matching-pgrep.sh
+Enforced-By: file:.claude/rediacc_hooks/guards/block_self_matching_pgrep.py
 Residue: The second half is unguarded: a waiter whose condition has become true and which is still running is WEDGED, and liveness cannot tell it from patience. Only the exit CONDITION separates them.
 
 A background waiter written as
@@ -2366,7 +2366,7 @@ and its evidence is there, not here.
 
 ## `git commit` commits the INDEX, so a peer's staged work rides your commit
 Trap-Id: git-commit-takes-the-whole-index
-Enforced-By: file:.claude/hooks/pre-bash/block-blanket-git-add.sh
+Enforced-By: file:.claude/rediacc_hooks/guards/block_blanket_git_add.py
 Residue: the hook refuses a blanket `git add`, which is the other half of this and
   the half that was already known. Nothing refuses a scoped `git add` followed by a
   bare `git commit`, because at that point the unwanted paths were staged by someone

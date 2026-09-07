@@ -165,6 +165,31 @@ ignore = [
     # Stated rather than listed: a redundant "D103" here would read as load
     # bearing to the next person and survive the day "D" is narrowed.
 ]
+"**/rediacc_hooks/guards/test-block_*.py" = [
+    # N999 (invalid module name). These four are per-guard control harnesses,
+    # not modules: nothing imports them, `guards.stems()` admits only
+    # `block_`/`warn_`/`require_` prefixes, and pytest's `test_*.py` glob does
+    # not match a hyphen either. They run as scripts, from
+    # `.claude/hooks/test-hooks.sh`.
+    #
+    # THE HYPHEN IS REQUIRED BY A GATE, which is why this is a config entry and
+    # not a rename. `.ci/scripts/quality/check-hook-integrity.sh` credits a
+    # guard with BOTH directions when a dedicated suite sits beside it under the
+    # exact name `test-<stem>.py`, where <stem> is the guard module's own
+    # filename stem. Renaming to `test_block_unverified_push.py` would make that
+    # file invisible to the gate, and two of these four are the ONLY coverage
+    # those guards have -- their block direction needs a planted pre-push
+    # receipt and a fixture repo, which the one-line `check` helper in the suite
+    # cannot express. The gate would then report a fully covered guard as
+    # newly uncovered, and the cheap way to clear that is to baseline it, which
+    # retires the assertion for good.
+    #
+    # They only started tripping N999 when the W5 P7 cutover moved them beside
+    # their guards, which is inside a package; at their old path
+    # (.claude/hooks/pre-bash/) there is no __init__.py and ruff did not treat
+    # them as modules.
+    "N999",
+]
 
 [tool.ruff.format]
 docstring-code-format = false

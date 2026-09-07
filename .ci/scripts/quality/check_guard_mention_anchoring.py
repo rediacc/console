@@ -53,7 +53,40 @@ import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-HOOKS = REPO_ROOT / ".claude" / "hooks"
+# W5 P7 CUTOVER. The guards are Python modules now, run through ONE dispatcher
+# command per chain; the bash originals are frozen at .claude/oracles/<chain>/ and
+# are still what this file reads PATTERNS out of, because `instantiate` understands
+# POSIX bracket expressions and shell quoting, not Python `re`.
+#
+# THE PROBE RUNS THE LIVE GUARD, which is the half that must not be frozen: a gate
+# probing the retired file would keep passing while the thing that actually refuses
+# commands went unchecked.
+#
+# THE RESIDUE, stated rather than left to be found: a pattern edited in the PORT and
+# not in the oracle is invisible here, because the oracle cannot change. That is
+# acceptable only as an interim. The end state is to drop the oracle and drive each
+# guard's own EDGE_CASES, since every module already declares literal instances of
+# what it matches, wrapping each in prose and asserting silence. That needs no
+# instantiator at all.
+HOOKS = REPO_ROOT / ".claude" / "oracles"
+DISPATCH = REPO_ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"
+
+
+def guard_argv(guard):
+    """How to RUN the guard this path names.
+
+    A path under the oracle tree names a RETIRED bash file whose live equivalent is
+    the Python module of the same stem, so it is dispatched. Anything else is run as
+    a file, which is what the throwaway fixtures `controls()` writes have to be: they
+    are bash by construction, deliberately, so that rewording a real guard cannot
+    silently void the control.
+    """
+    try:
+        guard.relative_to(HOOKS)
+    except ValueError:
+        return ["bash", str(guard)]
+    return [sys.executable, str(DISPATCH), guard.stem.replace("-", "_")]
+
 
 # EVERY CHAIN, not just pre-bash. Scoping this to one directory was the same
 # hole check-hook-integrity.sh has now had twice (pre-edit/pre-ask in its
@@ -238,7 +271,7 @@ def fires(guard: Path, command: str, kind: str = "command", file_path: str = "")
     payload = payload_for(kind, command, file_path)
     try:
         proc = subprocess.run(
-            ["bash", str(guard)],
+            guard_argv(guard),
             input=payload,
             capture_output=True,
             text=True,
@@ -316,7 +349,7 @@ def controls() -> None:
             rlog.write_text("## STATUS (round 1)\n")
             edit_payload = payload_for("edit", "irrelevant content", str(rlog))
             proc = subprocess.run(
-                ["bash", str(edit_guard)],
+                guard_argv(edit_guard),
                 input=edit_payload,
                 capture_output=True,
                 text=True,

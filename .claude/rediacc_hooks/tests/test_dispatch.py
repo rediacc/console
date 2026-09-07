@@ -73,49 +73,117 @@ def test_no_two_modules_share_a_twin():
         seen[twin] = stem
 
 
-def settings_order():
-    """The position of every guard in `.claude/settings.json`, chain-qualified.
+DISPATCH_RE = re.compile(r"rediacc_hooks/dispatch\.py\"?\s+--chain\s+([a-z-]+)")
 
-    DERIVED, NOT TYPED. Driver contract section 6: "a floor must be set-based or
-    corpus-derived, never a hand-typed count." ORDER is exactly such a number,
-    and on its first run this check found 27 of 35 declarations wrong by one --
-    every module whose author counted the GUARDS in a chain and not its
-    commands, since `require-jq.sh` holds position 1 of all four. A uniqueness
-    test would have caught only the four that happened to collide.
+
+def effective_order():
+    """The position every guard REALLY runs at, keyed by module name.
+
+    HOW THIS CHANGED AT THE P7 CUTOVER, said out loud because the test below no
+    longer means quite what it used to and a name that outlives its meaning is
+    the trap this package exists to avoid.
+
+    Before the cutover `.claude/settings.json` named all 38 pre-bash guards as
+    their own commands, so it was an INDEPENDENT oracle: a module could declare
+    ORDER = 12 and the file said 13, and the mismatch was a fact about two
+    separate records disagreeing. On its first run that caught 27 of 35
+    declarations wrong by one, every module whose author counted the GUARDS in a
+    chain rather than its COMMANDS, since require-jq.sh holds position 1 of all
+    four.
+
+    Settings.json now names ONE command per chain. It still fixes the BASE -- how
+    many commands run before the dispatcher, and therefore what position the
+    chain's first guard occupies -- but the order WITHIN the dispatcher is
+    `by_chain`, which sorts on ORDER itself. So the remaining independent facts
+    are: the base, the length, and that the declared numbers form a contiguous
+    run with no gap and no duplicate. Those are exactly what changes when someone
+    adds, removes or reorders a COMMAND entry, which is the mistake the original
+    check was built for and the one the brief calls out. What is no longer
+    checkable from outside is two guards SWAPPING ORDER values, because after the
+    collapse ORDER is the definition of the run order rather than a claim about
+    another file. That is stated here rather than papered over.
     """
     settings = json.loads((ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))
     order = {}
-    pattern = re.compile(
-        r"\.claude/hooks/((?:pre-bash|pre-edit|pre-ask|post-bash)/[A-Za-z0-9_.-]+\.sh)"
-    )
     for event in ("PreToolUse", "PostToolUse"):
         for block in settings.get("hooks", {}).get(event, []) or []:
-            commands = [h.get("command", "") for h in block.get("hooks", []) or []]
-            for position, command in enumerate(commands, start=1):
-                found = pattern.search(command)
-                if found:
-                    order[found.group(1)] = position
+            position = 0
+            for hook in block.get("hooks", []) or []:
+                command = hook.get("command", "")
+                found = DISPATCH_RE.search(command)
+                if not found:
+                    position += 1
+                    continue
+                for module in guards.by_chain(found.group(1)):
+                    position += 1
+                    order[module.__name__] = position
     return order
 
 
-def test_declared_order_matches_settings_json():
-    """ORDER is what the cutover will emit, so it has to be what runs today.
+def dispatched_chains():
+    """Every chain `.claude/settings.json` routes to the dispatcher."""
+    settings = json.loads((ROOT / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    chains = []
+    for event in ("PreToolUse", "PostToolUse"):
+        for block in settings.get("hooks", {}).get(event, []) or []:
+            for hook in block.get("hooks", []) or []:
+                found = DISPATCH_RE.search(hook.get("command", ""))
+                if found:
+                    chains.append(found.group(1))
+    return chains
 
-    A wrong ORDER is invisible until P6 rewrites `.claude/settings.json` from
-    this registry, at which point the chain runs in an order nobody chose and
-    every guard still passes its own differential.
+
+def test_every_ported_chain_is_dispatched():
+    """A chain with ports but no dispatcher entry is 37 guards that stopped running.
+
+    This is the assertion the cutover turns on. Nothing else in the tree notices a
+    chain that quietly left settings.json: `check_hooks_resolvable.py` checks that
+    the paths it names RESOLVE, not that the chains it used to run are still there.
     """
-    order = settings_order()
-    assert order, "no hook paths parsed out of .claude/settings.json"
+    routed = set(dispatched_chains())
+    ported = {guards.load(stem).CHAIN for stem in guards.stems()}
+    assert ported <= routed, (
+        "these chains have ported guards but nothing in .claude/settings.json runs "
+        "them, so every guard they carry is inert: %s" % sorted(ported - routed)
+    )
+
+
+def test_declared_order_is_the_chain_settings_json_runs():
+    """ORDER is what the dispatcher emits, so it has to be based where the chain is.
+
+    Contiguity AND base, both derived (driver contract section 6). A command entry
+    added ahead of the dispatcher moves every guard behind it, which is exactly the
+    re-key the port brief warns about: "any entry you add, remove or reorder
+    re-keys every ORDER after it, in the same change".
+    """
+    order = effective_order()
+    assert order, "no chain in .claude/settings.json routes to the dispatcher at all"
     wrong = []
     for stem in guards.stems():
         module = guards.load(stem)
-        real = order.get(module.TWIN)
+        real = order.get(module.__name__)
         if real is None:
-            wrong.append("%s: %s is not registered in settings.json at all" % (stem, module.TWIN))
+            wrong.append(
+                "%s: chain %r is not dispatched by settings.json, so this guard never runs"
+                % (stem, module.CHAIN)
+            )
         elif real != module.ORDER:
-            wrong.append("%s: ORDER = %d (declared %d)" % (stem, real, module.ORDER))
+            wrong.append(
+                "%s: runs at position %d, declares ORDER = %d" % (stem, real, module.ORDER)
+            )
     assert not wrong, "\n".join(wrong)
+
+    # And the shape, so a chain whose numbers are individually right but jointly
+    # broken (a gap, a repeat, a base of zero) is a failure rather than a shrug.
+    for chain in sorted({guards.load(s).CHAIN for s in guards.stems()}):
+        declared = [m.ORDER for m in guards.by_chain(chain)]
+        assert declared == list(range(declared[0], declared[0] + len(declared))), (
+            "%s declares a non-contiguous chain: %s" % (chain, declared)
+        )
+        assert declared[0] >= 2, (
+            "%s starts at position %d, so require-jq.sh and require-python.sh are not "
+            "both ahead of it" % (chain, declared[0])
+        )
 
 
 def test_chain_order_is_unique_per_chain():

@@ -15,7 +15,19 @@ import sys
 # path under one operator's checkout is the exact failure CLAUDE.md's "Worktree Warning"
 # names -- in any other worktree, container or CI runner it would silently test a stale copy,
 # or nothing at all, while still reporting success.
-HOOK = str(pathlib.Path(__file__).resolve().parent / "block-git-amend.sh")
+# THIS HARNESS SITS BESIDE ITS GUARD, which is what
+# .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file:
+# `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions,
+# and it is the only credit these four have because their block direction needs
+# fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
+#
+# THE GUARD IS A PYTHON MODULE NOW. W5 P7 ported it and moved the bash original
+# to .claude/oracles/, where the differential still compares the two
+# byte for byte. This harness drives the LIVE guard, which is the dispatcher, for
+# the reason the cutover exists at all: a suite that kept driving the retired file
+# would keep passing while the thing that actually runs went unchecked.
+DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
+GUARD_ARGV = [sys.executable, DISPATCH, "block_git_amend"]
 A = "git commit --" + "amend"  # assembled so this file is not itself a tripwire
 
 CASES = [
@@ -55,7 +67,7 @@ CASES = [
 
 def run(cmd):
     p = subprocess.run(
-        ["bash", HOOK],
+        GUARD_ARGV,
         input=json.dumps({"tool_input": {"command": cmd}}),
         capture_output=True,
         text=True,

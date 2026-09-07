@@ -537,7 +537,7 @@ def pr_list(
     """Pull requests as dicts. RAISES on a failed call; [] means genuinely none.
 
     The return type carries the whole rule: there is no value of this function
-    that means "I could not ask". `.claude/hooks/pre-bash/block-second-open-pr.sh:39-52`
+    that means "I could not ask". `.claude/rediacc_hooks/guards/block_second_open_pr.py:64-72`
     reaches the same conclusion in bash and says why -- "An unreadable list is
     not evidence that the list is empty" -- and fails closed. A Python caller
     gets that for free here, because the alternative to catching the exception is

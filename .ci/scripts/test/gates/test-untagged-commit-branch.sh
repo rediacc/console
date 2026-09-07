@@ -32,7 +32,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # shellcheck source=../lib/test-helpers.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GUARD="${GUARD:-$REPO_ROOT/.claude/hooks/pre-bash/block-untagged-commit.sh}"
+# W5 P7: the guard is a Python module run through the dispatcher, so the
+# invocation now carries arguments and has to be an ARRAY rather than a path.
+GUARD_CMD=("python3" "$REPO_ROOT/.claude/rediacc_hooks/dispatch.py" "block_untagged_commit")
 REAL="f2757830"
 TYPO="f2757831"
 
@@ -62,10 +64,10 @@ run_guard() {
         "$(jq -Rn --arg c "$(printf 'git commit -m "feat: x\n\nPR-TASK: %s"' "$id")" '$c')")
     if [[ -n "$env_k" ]]; then
         printf '%s' "$json" | (cd "$D" && env -u PR_HEAD_REF -u GITHUB_HEAD_REF \
-            CLAUDE_PROJECT_DIR="$D" "$env_k=$env_v" bash "$GUARD" >/dev/null 2>&1) || rc=$?
+            CLAUDE_PROJECT_DIR="$D" "$env_k=$env_v" "${GUARD_CMD[@]}" >/dev/null 2>&1) || rc=$?
     else
         printf '%s' "$json" | (cd "$D" && env -u PR_HEAD_REF -u GITHUB_HEAD_REF \
-            CLAUDE_PROJECT_DIR="$D" bash "$GUARD" >/dev/null 2>&1) || rc=$?
+            CLAUDE_PROJECT_DIR="$D" "${GUARD_CMD[@]}" >/dev/null 2>&1) || rc=$?
     fi
     printf '%s' "$rc"
 }

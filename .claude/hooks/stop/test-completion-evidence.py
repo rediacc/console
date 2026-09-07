@@ -39,9 +39,21 @@ MUST_PASS = [
     # blocklist this repo suppresses through, so the tick that most needs a
     # record was the one that could not leave one.
     ("an extensionless root dotfile resolves", "drained an entry, see .gitignore:9"),
+    # RE-KEYED 2026-09-06, and the re-key is the finding. This case cited
+    # `.dead-bash-allowlist:19`, a root allowlist that W4's policy move
+    # (b80552370) relocated to `.ci/policy/.dead-bash-allowlist`. Nothing about
+    # CITE_RE changed, but the control went red and stayed red, so `test-hooks.sh`
+    # exited 1 at HEAD for a reason unrelated to any hook. A control keyed on a
+    # path that another workstream is allowed to move is a control that reports
+    # its own staleness as a defect in the thing it guards.
+    #
+    # `.ci-trigger` is now the ONLY hyphenated extensionless root dotfile the tree
+    # has (`git ls-files | grep -E '^\.[A-Za-z0-9_]+-[A-Za-z0-9_-]*$'` returns
+    # exactly it), and W4 P0 keeps it at the root deliberately, so it is the one
+    # subject the no-slash branch of CITE_RE can still be driven against.
     (
-        "a hyphenated root allowlist resolves",
-        "removed the stale row at .dead-bash-allowlist:19",
+        "a hyphenated root dotfile resolves",
+        "re-armed the trigger at .ci-trigger:1",
     ),
 ]
 

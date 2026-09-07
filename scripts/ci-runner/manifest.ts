@@ -1138,7 +1138,7 @@ export const GATES: readonly GateSpec[] = [
     // surface changing is when they can drift.
     paths: [
       '.ci/scripts/quality/check-toolchain-pins.sh',
-      '.claude/hooks/pre-bash/block-host-toolchain-run.sh',
+      '.claude/rediacc_hooks/guards/block_host_toolchain_run.py',
       '.ci/scripts/quality/check-host-toolchain-coverage.sh',
     ],
     leaves: ['.ci/scripts/quality/check-host-toolchain-coverage.sh'],
@@ -5950,7 +5950,7 @@ export const GATES: readonly GateSpec[] = [
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-untagged-commit-branch.sh'],
     paths: [
-      '.claude/hooks/pre-bash/block-untagged-commit.sh',
+      '.claude/rediacc_hooks/guards/block_untagged_commit.py',
       '.ci/scripts/test/gates/test-untagged-commit-branch.sh',
     ],
     ci: {

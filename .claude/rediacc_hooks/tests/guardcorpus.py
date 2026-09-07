@@ -10,12 +10,21 @@ answers as its own twin does. `.claude/hooks/test-hooks.sh` already holds that
 pairing, and holds it as the accumulated record of every bypass and every
 over-block this repo has paid for:
 
-    check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit ...')" "label"
-    ^     ^ ^                                  ^                               ^
-    verb  | the guard                          the event                       why
+    check 2 guards/block_raw_pr_body_edit.py "$(bash_json 'gh pr edit ...')" "label"
+    ^     ^ ^                                 ^                              ^
+    verb  | the guard                         the event                      why
 
 so one pass over the file yields (guard, payload) for every call site. Those
 are the inputs; the ORACLE is the bash guard itself, run on the same bytes.
+
+THE KEY SPELLING CHANGED AT THE P7 CUTOVER and the reason is not cosmetic. A
+case names its guard by the key `check-hook-integrity.sh` inventories it under,
+so that one spelling drives the suite, credits the coverage assertion and keys
+this corpus. The guards are Python modules now, living at
+`.claude/rediacc_hooks/guards/`, so the key is `guards/<module>.py`; the bash
+original the differential compares against was moved to
+`.claude/oracles/<chain>/<name>.sh` and is reached through the
+port module's own TWIN field rather than by rewriting the key.
 
 THE EXPECTED EXIT CODE IN COLUMN 2 IS DELIBERATELY NOT THE ORACLE, and that is
 the difference between a differential and a re-run of the suite. Several
@@ -186,9 +195,11 @@ def _payload_from(raw, names):
 def harvest_cases():
     """`[(guard, payload, label, suite_rc)]` plus the stats the floors read.
 
-    `guard` is chain-qualified exactly as `check-hook-integrity.sh` keys it
-    (`pre-bash/block-x.sh`), because "two chains can never collide on one
-    basename" is a property worth keeping in both places.
+    `guard` is the key `check-hook-integrity.sh` inventories the guard under --
+    `guards/block_x.py` for a port, `pre-bash/block-x.sh` for one still in bash
+    -- because "two chains can never collide on one basename" is a property
+    worth keeping in both places, and because one spelling driving the suite and
+    keying the coverage gate is what stops the two drifting.
     """
     src = SUITE.read_text(encoding="utf-8")
     names = corpus._assignments(src)
@@ -201,7 +212,11 @@ def harvest_cases():
             continue
         i = _skip_blanks(src, i)
         guard_word, i = _raw_word(src, i)
-        if not re.fullmatch(r"[a-z-]+/[A-Za-z0-9_.-]+\.sh", guard_word):
+        # `.py` AS WELL AS `.sh`, and `guards/` as well as a chain name. The
+        # ported guards are modules; a reader anchored to the old spelling would
+        # recover ZERO cases for all 46 of them and the recovery ratio below
+        # would be the only thing that said so.
+        if not re.fullmatch(r"[a-z_-]+/[A-Za-z0-9_.-]+\.(?:sh|py)", guard_word):
             continue
         sites += 1
         i = _skip_blanks(src, i)
@@ -294,6 +309,12 @@ DEGENERATE_PAYLOADS = [
 ]
 
 
-def guard_path(root, guard):
-    """The bash twin on disk, from the chain-qualified key."""
-    return pathlib.Path(root) / ".claude" / "hooks" / guard
+# The retired bash originals. They are NOT hooks and nothing registers them; see
+# `.claude/oracles/README.md` for why they are kept and why they
+# had to leave `.claude/hooks/`.
+ORACLES = "oracles"
+
+
+def guard_path(root, twin):
+    """The bash original on disk, from a port module's chain-qualified TWIN."""
+    return pathlib.Path(root) / ".claude" / ORACLES / twin

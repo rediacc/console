@@ -12,12 +12,25 @@ fact the guard establishes with `command -v`, exactly as it does in the wild.
 
 import json
 import os
+import pathlib
 import shutil
 import subprocess
 import sys
 import tempfile
 
-GUARD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "block-host-toolchain-run.sh")
+# THIS HARNESS SITS BESIDE ITS GUARD, which is what
+# .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file:
+# `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions,
+# and it is the only credit these four have because their block direction needs
+# fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
+#
+# THE GUARD IS A PYTHON MODULE NOW. W5 P7 ported it and moved the bash original
+# to .claude/oracles/, where the differential still compares the two
+# byte for byte. This harness drives the LIVE guard, which is the dispatcher, for
+# the reason the cutover exists at all: a suite that kept driving the retired file
+# would keep passing while the thing that actually runs went unchecked.
+DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
+GUARD_ARGV = [sys.executable, DISPATCH, "block_host_toolchain_run"]
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
 
 # A PATH with the real tools plus a shim dir we control.
@@ -39,7 +52,7 @@ def run(cmd, path=None):
     if path is not None:
         env["PATH"] = path
     return subprocess.run(
-        ["bash", GUARD],
+        GUARD_ARGV,
         input=json.dumps({"tool_input": {"command": cmd}}),
         capture_output=True,
         text=True,
@@ -53,7 +66,7 @@ def run_full(cmd, path=None):
     if path is not None:
         env["PATH"] = path
     return subprocess.run(
-        ["bash", GUARD],
+        GUARD_ARGV,
         input=json.dumps({"tool_input": {"command": cmd}}),
         capture_output=True,
         text=True,

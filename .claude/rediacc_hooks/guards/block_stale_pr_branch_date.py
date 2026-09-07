@@ -27,12 +27,32 @@ ESCAPE HATCH: PR_BRANCH_DATE_OK=1 for a deliberately long-lived branch, e.g.
 resuming a genuinely multi-day wave onto its original PR. It is an env var and
 not a flag so it cannot be pasted in by habit.
 
-PORT NOTE ON THE CLOCK. `date +%m%d` is the one input here that neither side
-controls, and the differential runs both implementations within seconds of each
-other, so they agree except across a midnight boundary. `TZ=UTC` is pinned in
-the harness environment for both sides so that boundary is at least the same
-boundary; a run that straddles it would report a divergence that is real but
-not a defect, and this note is the reason a reader would recognise it.
+PORT NOTE ON THE CLOCK, and the defect it hid until 2026-09-07.
+
+`date +%m%d` is the one input here that neither side controls. The differential
+runs both implementations within seconds of each other, so they agree except
+across a midnight boundary, and `TZ=UTC` is pinned in the harness environment
+for BOTH sides so that boundary is at least the same boundary.
+
+THAT PIN IS ALSO WHAT MADE THE DIFFERENTIAL BLIND. This port read the clock as
+`datetime.now(tz=datetime.UTC)` -- UTC unconditionally -- while the twin's bare
+`date +%m%d` reads LOCAL time and merely honours TZ. Under the harness both are
+UTC, so the two could never disagree there; in production, on a machine at
+UTC+2, they disagreed for the two hours after local midnight. Measured on
+2026-09-07 at 00:47 CEST: `test-hooks.sh` reported
+
+    FAIL [0] stale-pr-branch: today's MMDD allowed (got exit 2)
+
+with the port refusing branch `0907-9` and saying "today is 0906" while the twin
+allowed it. That is a guard REFUSING correct work, which is the shape that gets a
+guard bypassed rather than obeyed.
+
+The fix is one call: `datetime.now()` is local and honours TZ, exactly as `date`
+does, so the harness's `TZ=UTC` still makes both sides agree and production now
+agrees too. The general lesson is worth the paragraph: a harness that PINS an
+environment variable removes the only input that distinguishes two
+implementations, and the differential then proves they agree about everything
+except the thing that differs.
 """
 
 import datetime
@@ -63,12 +83,40 @@ EDGE_CASES = [
     ("gh pr edit is not gh pr create", "gh pr edit 42 --add-label ci"),
     ("prose naming the verb", "echo 'then gh pr create --draft'"),
     ("a wrapper payload is still at a command position", "sh -c 'gh pr create --head 0825-2'"),
+    # THE TWO CLOCKS, and these two cases exist because a defect lived between
+    # them. One head carries UTC's today, the other carries the machine's local
+    # today; on any machine whose offset is not zero they are DIFFERENT strings
+    # for part of every day, so an implementation that hard-codes UTC and one
+    # that honours TZ answer differently on at least one of them. Computed at
+    # import rather than written as a literal: a fixed date would be stale
+    # tomorrow and the pair would collapse back into "two old branches".
+    (
+        "a head carrying UTC's today",
+        "gh pr create --draft --head %s-9 --fill"
+        % datetime.datetime.now(tz=datetime.UTC).strftime("%m%d"),
+    ),
+    (
+        "a head carrying the machine's LOCAL today",
+        "gh pr create --draft --head %s-9 --fill" % datetime.datetime.now().strftime("%m%d"),  # noqa: DTZ005
+    ),
 ]
 
 ENVS = [
     ("default", {}, {}),
     # The escape hatch, driven rather than described.
     ("escape-hatch", {"PR_BRANCH_DATE_OK": "1"}, {}),
+    # TWO EXTREME TIME ZONES, and they are the control for the clock defect the
+    # module docstring records. `_base_env` pins `TZ=UTC` for both sides, which
+    # is right for determinism and is exactly what made a UTC-hardcoded port
+    # indistinguishable from a TZ-honouring twin: the harness had removed the
+    # only input that told them apart. `env.update(extra)` runs after that pin,
+    # so a module can put the variable back, and these two put it as far either
+    # side of the line as real zones go (UTC+14 and UTC-12). With the two
+    # today-cases above, one of these four combinations always straddles a date
+    # boundary, so the differential can see the class rather than being blind to
+    # it by construction.
+    ("tz-far-east", {"TZ": "Etc/GMT-14"}, {}),
+    ("tz-far-west", {"TZ": "Etc/GMT+12"}, {}),
 ]
 
 
@@ -112,7 +160,11 @@ def run(ev):
     if not shape:
         return hookio.ALLOW
     br_date = branch.split("-", 1)[0]
-    today = datetime.datetime.now(tz=datetime.UTC).strftime("%m%d")
+    # LOCAL, not UTC. The twin is a bare `date +%m%d`, which is local time
+    # honouring TZ; `datetime.now(tz=UTC)` ignores TZ and was wrong by a day for
+    # two hours every night east of Greenwich. See the clock note in the module
+    # docstring for the measurement.
+    today = datetime.datetime.now().strftime("%m%d")  # noqa: DTZ005 -- see above
     if br_date == today:
         return hookio.ALLOW
 

@@ -44,7 +44,11 @@ import re
 import sys
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
-HOOKS_DIR = REPO_ROOT / ".claude" / "hooks"
+# W5 P7 CUTOVER. The bash guards moved to `.claude/oracles/`, frozen, and the live
+# guards are Python modules. This gate reads BASH function calls, so its corpus is
+# the oracle tree; the ported guards' equivalent check is the import graph, which
+# Python raises on by itself.
+HOOKS_DIR = REPO_ROOT / ".claude" / "oracles"
 
 DEF_RE = re.compile(r"^\s*(?:function\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*\(\)\s*\{", re.MULTILINE)
 SOURCE_RE = re.compile(
@@ -161,6 +165,24 @@ def find_offenders() -> list[str]:
     hook_files = [
         f for f in hook_files if not f.name.startswith("test-") and "worklist-cases" not in f.parts
     ]
+
+    # ANTI-VACUITY, AND IT HAD NONE UNTIL 2026-09-07. This gate scanned
+    # `.claude/hooks/**/*.sh` and reported "every called feature resolves" on a
+    # corpus that had just lost 46 of its 80 files to the W5 cutover. It stayed
+    # GREEN across that, because a scan of a third of a tree finds no broken call
+    # in the two thirds it no longer looks at. The move is what surfaced it; a
+    # deletion or a moved directory would have done the same thing silently.
+    #
+    # SET-BASED, NOT A TYPED COUNT: the floor is "the directory this gate names
+    # contains guards at all". Driver contract section 6 forbids a hand-typed
+    # number, and a number here would have to be re-keyed by every port anyway.
+    if not hook_files:
+        raise SystemExit(
+            "\u2717 VACUOUS: %s holds no guard scripts, so this gate would report that\n"
+            "  every called feature resolves having read nothing. Either the tree moved\n"
+            "  again or the glob no longer matches; refusing rather than passing.\n"
+            % HOOKS_DIR.relative_to(REPO_ROOT)
+        )
 
     # Global set: every function name defined ANYWHERE in the hook tree, so a call
     # that resolves nowhere locally but matches something elsewhere is a real signal

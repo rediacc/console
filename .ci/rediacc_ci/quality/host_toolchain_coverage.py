@@ -109,7 +109,7 @@ from rediacc_ci.controls import Controls
 # The two files whose literal lists must agree. Absolute paths in the twin's
 # messages, so they are joined to the root rather than kept relative.
 PINS_REL = ".ci/scripts/quality/check-toolchain-pins.sh"
-GUARD_REL = ".claude/hooks/pre-bash/block-host-toolchain-run.sh"
+GUARD_REL = ".claude/rediacc_hooks/guards/block_host_toolchain_run.py"
 
 # `grep -oE "^GATED_TOOLS='[^']*'"`. Anchored, single-line; see the port notes.
 _GATED_RE = re.compile(r"^GATED_TOOLS='([^']*)'")

@@ -63,9 +63,12 @@ extract_gated_tools() {
 # extract_array <file> <array-name>
 # Reads `NAME=(a b c)` and prints one tool per line.
 extract_array() {
-    grep -oE "^${2}=\\([^)]*\\)" "$1" 2>/dev/null |
-        sed -E "s/^${2}=\\(([^)]*)\\)$/\\1/" |
-        tr ' ' '\n' | sed '/^$/d' | sort -u
+    # BOTH SPELLINGS. `NAME=(a b c)` is the bash form this gate's own control
+    # fixtures write; `NAME = ("a", "b", "c")` is the Python port. Quotes and
+    # commas are stripped, so one reader covers both.
+    grep -oE "^${2} ?=[ ]?[(][^)]*[)]" "$1" 2>/dev/null |
+        sed -E "s/^${2} ?=[ ]?\\(([^)]*)\\)$/\\1/" |
+        tr -d '",' | tr ' ' '\n' | sed '/^$/d' | sort -u
 }
 
 # --- controls first: a gate nobody has watched fail is not a gate ------------
@@ -106,7 +109,9 @@ pass "control: full coverage reports nothing missing"
 
 # --- the real scan -------------------------------------------------------------
 PINS="$ROOT/.ci/scripts/quality/check-toolchain-pins.sh"
-GUARD="$ROOT/.claude/hooks/pre-bash/block-host-toolchain-run.sh"
+# W5 P7: the runtime guard is a Python module now. NPX_TOOLS and BARE_TOOLS are
+# the same two names in the same shape, so only the path and the array reader move.
+GUARD="$ROOT/.claude/rediacc_hooks/guards/block_host_toolchain_run.py"
 
 if [ ! -f "$PINS" ]; then
     fail "the pinned-tools source is gone: $PINS"

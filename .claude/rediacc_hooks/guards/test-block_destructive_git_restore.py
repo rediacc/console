@@ -16,7 +16,19 @@ import pathlib
 import subprocess
 import sys
 
-HOOK = pathlib.Path(__file__).with_name("block-destructive-git-restore.sh")
+# THIS HARNESS SITS BESIDE ITS GUARD, which is what
+# .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file:
+# `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions,
+# and it is the only credit these four have because their block direction needs
+# fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
+#
+# THE GUARD IS A PYTHON MODULE NOW. W5 P7 ported it and moved the bash original
+# to .claude/oracles/, where the differential still compares the two
+# byte for byte. This harness drives the LIVE guard, which is the dispatcher, for
+# the reason the cutover exists at all: a suite that kept driving the retired file
+# would keep passing while the thing that actually runs went unchecked.
+DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
+GUARD_ARGV = [sys.executable, DISPATCH, "block_destructive_git_restore"]
 
 # MUST BLOCK: every one of these discards uncommitted work.
 BLOCK = [
@@ -61,9 +73,7 @@ def run(cmd: str) -> int:
     payload = json.dumps({"tool_input": {"command": cmd}})
     # check=False is explicit: this harness EXPECTS non-zero exits (a blocked
     # command is the hook working), so raising on them would invert the test.
-    proc = subprocess.run(
-        ["bash", str(HOOK)], input=payload, capture_output=True, text=True, check=False
-    )
+    proc = subprocess.run(GUARD_ARGV, input=payload, capture_output=True, text=True, check=False)
     return proc.returncode
 
 
