@@ -52,7 +52,7 @@ Cite the command, not the number. A box that pins a count is wrong by constructi
 | Gate tests ported / live / deleted | 64 of 149 / 64 / 0 | `grep -rh '^BASH_TWIN' .ci/rediacc_ci/tests/gates/*.py \| sort -u \| wc -l` |
 | Workflow-invoked scripts shimmed | 0 of 215 (348 call sites) | `grep -rhoE '\.ci/scripts/[A-Za-z0-9_./-]+\.sh' .github/workflows/` |
 | `deploy/` + `release/` ported | 0 of 48 | -- |
-| Bash libs shimmed | 2 of 15 | `age-check.sh:62`, `find-port.sh:68` |
+| Bash libs shimmed | 2 of 15 | `.ci/scripts/lib/age-check.sh:62`, `.ci/lib/find-port.sh:68` |
 | Lock entries | 458 total, 448 `gate: true`, 149 gate tests, 95 slow, 45 with `paths` | `gates.lock.json` |
 | Workflow steps region-emitted | 150 of 276; **126 hand-written** | walk the `>>> gate-bind` markers |
 | Plan boxes ticked | 81 of 131 | -- |
@@ -89,10 +89,10 @@ Nine pinned counts were stale, four premises false, three prerequisites missing.
 | W8: 1,014 env names | **745** under a stated method; 1,014 is not reproducible |
 | TRAPS floor 75 | **77 / 77** |
 | M11: 46 records | **32** (31 compacted + 1 parked) |
-| W6 P5: `LEGACY_ARMS_MAX` reaches zero | **the name does not exist.** The budget is a partition assertion at `test-run-sh.sh:278-306,:329` plus a 120-line `run.sh` ceiling at `:372-375`. run.sh is at **120 of 120** |
+| W6 P5: `LEGACY_ARMS_MAX` reaches zero | **the name does not exist.** The budget is a partition assertion at `.ci/scripts/test/gates/test-run-sh.sh:278-306,:329` plus a 120-line `run.sh` ceiling at `:372-375`. run.sh is at **120 of 120** |
 | W9 P2: baseline is "one sorted array" | an **object** with 42 `unguarded` entries. Hazard stands, description does not |
 | Gaps: "the language-policy gate does not exist" | it exists, registered three-point, and **blocks on growth** |
-| W12 P2.7: "A5 in `04-decisions.md`" | **not there.** A5 is a gate rule at `check_plan_boxes.py:41,:428`. P3.2's "A6" DOES mean `04-decisions.md:22-23`. Two schemes, adjacent boxes |
+| W12 P2.7: "A5 in `04-decisions.md`" | **not there.** A5 is a gate rule at `.ci/scripts/quality/check_plan_boxes.py:41,:428`. P3.2's "A6" DOES mean `docs/ci-overhaul/04-decisions.md:22-23`. Two schemes, adjacent boxes |
 | Gaps: `private/growth` submodule PR | **not a submodule.** `.gitmodules` lists four; `.gitignore:85` ignores it |
 | W8 P1: "exactly two agents" | **one writer.** The residue is ~24 entries of one secret name on a single-writer file, and all four directions are already gated |
 
@@ -121,7 +121,7 @@ model. Two are referenced nowhere.
 produces a red gate. That test was mine, and it was wrong.
 
 `gate-bind`'s check arm is fail-closed on all of this. The binder already scans the
-package (`gate-bind.ts:98`, `inScope` at `:201-202`, self-control at `:1069`), so this is not a
+package (`scripts/gate-bind.ts:98`, `inScope` at `:201-202`, self-control at `:1069`), so this is not a
 tooling gap -- it means the 78 headers cannot land as a cheap preparatory box. **They ARE
 W7 P4 for the quality tree**, one atomic commit per gate. This is the largest re-ordering here.
 
@@ -129,21 +129,21 @@ W7 P4 for the quality tree**, one atomic commit per gate. This is the largest re
 
 `scripts/ci-runner/gate-spec.ts` has no `env` field (complete list: noProfile, id, run, gate,
 needs, mutex, reads, weight, heavy, paths, slow, qualityGateTest, leaves, ci) and
-`emitStep` (`gate-bind.ts:408-419`) hardcodes
+`emitStep` (`scripts/gate-bind.ts:408-419`) hardcodes
 `if: ${{ !cancelled() && steps.${guard}.outcome == 'success' }}` with no extension point.
 **Six gate files already carry the literal blocker string `gate-bind cannot emit one`** and sit
 at `emit: false` for that reason alone; ~14 steps carry an extra `if:` conjunct. All 26 `env:`
 blocks sit outside the regions, which is why 126 of 276 steps are hand-written. Fixing `env`
 alone leaves those unshardable. This is W2.4's missing `reads?: string[]` recurring, and it
-violates the programme's own acceptance test at `08-driver-contract.md:377-385`.
+violates the programme's own acceptance test at `docs/ci-overhaul/08-driver-contract.md:377-385`.
 
 Two further holes in the same machinery:
-- `gate-bind.ts:1567-1569` filters `dropped` to `claimed` and refuses only on `claimed`. Bare
+- `scripts/gate-bind.ts:1567-1569` filters `dropped` to `claimed` and refuses only on `claimed`. Bare
   `dropped` is never printed on the write path and never asserted empty -- the 2026-09-05
   four-deleted-steps shape, still open.
-- **Nothing in the tree checks a step's `env:` at all.** `check-ci-parity.ts:29` states as a
+- **Nothing in the tree checks a step's `env:` at all.** `scripts/check-ci-parity.ts:29` states as a
   design rule that an `env:` value is not an invocation. Strip `DOCKERHUB_TOKEN` from
-  `ci-quality.yml:1159` in a scratch copy today and the whole battery stays green.
+  `.github/workflows/ci-quality.yml:1159` in a scratch copy today and the whole battery stays green.
 
 ### P-C. 142 of the 521 files are named by no plan box
 
@@ -162,7 +162,7 @@ and it would have produced a confident false correction.
 `env`/`pr`/`signal` 3, `.ci/bootstrap.sh`, `.ci/config/constants.sh`,
 `.claude/lib/standing-orders-brief.sh`.
 
-**A new shim is illegal.** `check_language_policy.py:143` sets `SHIM_MAX_LINES = 1`. The two
+**A new shim is illegal.** `.ci/scripts/quality/check_language_policy.py:143` sets `SHIM_MAX_LINES = 1`. The two
 existing shims are 127 and 145 lines and survive only because both are grandfathered INSIDE the
 baseline; any new one is an addition that `write_verdict` (`:441`) refuses even when the total
 shrinks. Only **3 files repo-wide** have a one-line effective body. So the allowlist is not an
@@ -186,7 +186,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
 
 ## T-PORT
 
-- [ ] **PRE-A0 S** `check-ci-parity` learns `python3 -m`. `resolveLeaves` (`check-ci-parity.ts:139-228`)
+- [ ] **PRE-A0 S** `check-ci-parity` learns `python3 -m`. `resolveLeaves` (`scripts/check-ci-parity.ts:139-228`)
       has no `python3` arm, so `python3 -m rediacc_ci.quality.npmrc` resolves to the bare token
       `python3` and `leaves` can never match. ~40 lines + 4 controls.
       **Acceptance:** every `-m` body resolves to its tracked module path; no entry resolves to
@@ -213,7 +213,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       -- so the first ~87s of added work is absorbed by spread. Re-tier after every batch, in the
       quiesced reference worktree only (invariant 14).
 - [ ] **W7P3-RT S, 1 writer** The 26 real-tree twins. `xdist_groups.group_for()` already returns
-      `REAL_TREE_GROUP`, but `test_twin_parity.py:211-219` **refuses outright** to drive any
+      `REAL_TREE_GROUP`, but `.ci/rediacc_ci/tests/gates/test_twin_parity.py:211-219` **refuses outright** to drive any
       ported twin in that set: the isolation machinery exists and the parity driver forbids using
       it. Replace the blanket refusal with a per-module opt-in (`REAL_TREE_TWIN = True`) that also
       requires `REAL_TREE_GROUP`. These 26 include `test-ci-parity.sh`, `test-language-policy.sh`,
@@ -226,7 +226,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `tree:` declaration in the lock. **Acceptance:**
       `real_tree_twins(lock, runner=/dev/null) == real_tree_twins(lock, runner=run-all.sh)` as a
       SET -- that equality IS the retirement licence and is checkable before anything is deleted.
-      Re-key the `PATTERN="test-*.sh"` glob discovery `check-dead-bash.ts:19-20` depends on, same
+      Re-key the `PATTERN="test-*.sh"` glob discovery `scripts/check-dead-bash.ts:19-20` depends on, same
       change (invariant 2).
 - [ ] **W7P4-Q S batches, 2 writers** The quality-tree cutover -- this is P-A. Six batches of 13.
       **One convention, decided: all 77 declare directly in the package module, no entry point.**
@@ -238,9 +238,9 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       the id sets declared under `.ci/rediacc_ci/quality/` and `.ci/scripts/quality/` are
       DISJOINT and their union equals the quality ids in the lock -- one assertion catching both
       a missed twin-header removal and a missed port-header addition.
-      **Also fix `check_pytest.py:74-78`** in batch 1: it still says the binder "only scans
+      **Also fix `.ci/rediacc_ci/check_pytest.py:74-78`** in batch 1: it still says the binder "only scans
       `.ci/scripts/` and `scripts/`" and that a header there "would be inert". False since
-      2026-09-06 (`08-driver-contract.md:303-311`), and it is the only in-code statement of the
+      2026-09-06 (`docs/ci-overhaul/08-driver-contract.md:303-311`), and it is the only in-code statement of the
       rule anyone porting a gate will find.
       **Trap:** a NEW file not yet in a git index is invisible to the binder (`ls-files` reads the
       index). Use the throwaway-index technique in `08-driver-contract.md` section 5b, and
@@ -308,9 +308,9 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       REFUSED.
 - [ ] **A2 S, cheapest high-value box in the programme** The strip guard. `--write` refuses when
       `dropped` is non-empty **for any reason**, with `--allow-drop <step>` as the one typed
-      escape. Plus a new gate `check:ci-step-env-parity` asserting each step's `env:` map equals
+      escape. Plus a new gate, id check-ci-step-env-parity (this box creates it), asserting each step's `env:` map equals
       `lock[id].env ?? {}`, both directions.
-      **Red proof available today:** strip `DOCKERHUB_TOKEN` from `ci-quality.yml:1159` in a
+      **Red proof available today:** strip `DOCKERHUB_TOKEN` from `.github/workflows/ci-quality.yml:1159` in a
       scratch copy and run the whole battery -- nothing reds. That is the receipt.
 - [ ] **A3 S** Retire the six `env`/`if` hold-outs. The 21 setup-ordering hold-outs stay held out
       permanently and correctly; assert their set is unchanged so this box cannot emit one.
@@ -350,7 +350,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       than select nothing ("nothing changed" and "the differ broke" are the same shape).
 - [ ] **B5 S** The timing contract. The three pytest receipts do not actually disagree -- they are
       three statistics of one gate: a single instrumented run (381.41s), a re-measurement (396s),
-      and the floor of five (367.9s). `check-gate-manifest.ts:511-520` already rules that the
+      and the floor of five (367.9s). `scripts/check-gate-manifest.ts:511-520` already rules that the
       oracle judges the FLOOR, so 367.9s is the only one computed the admissible way. Record
       `docs/ci-overhaul/12-w3-timing-contract.md`: one statistic, one source (a quiesced reference
       worktree, `git status --porcelain` empty, tree id recorded). **No target in this slice is
@@ -358,7 +358,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       structural boxes. The quality-tier wall has never been measured and must come from the
       GitHub run, not a worktree.
 - [ ] **C1 S, driver-only** W2.3's generated manifest region. **Its invariant-3 precondition has
-      lifted** -- all four text readers now read the lock, and `gate-spec.ts:10-18` says so.
+      lifted** -- all four text readers now read the lock, and `scripts/ci-runner/gate-spec.ts:10-18` says so.
       **Scope honestly:** a header owns only `{kind, step, needs, id, run, lane, selftest, slow,
       why, emit, test, blocker}` plus A1's `{env, when}`. It does NOT own `gate`, `leaves`,
       `paths`, `weight`, `heavy`, `mutex`, `reads`, `qualityGateTest` or the prose. So derive the
@@ -381,7 +381,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       strace** -- unavailable on macOS, needs ptrace in containers, and a baseline CI cannot
       reproduce is the same class of problem as the missing one. **Anti-vacuity: a run producing
       zero counts is a refusal**, which is exactly the failure shape of the baseline that vanished.
-- [ ] **D1 C** Cross-OS. Only W5 P1's `/proc`-vs-`ps` seam exists (`proc.py:32-43`);
+- [ ] **D1 C** Cross-OS. Only W5 P1's `/proc`-vs-`ps` seam exists (`.claude/rediacc_hooks/proc.py:32-43`);
       `dispatch.py` has zero platform handling. Enumerate every platform-sensitive operation, give
       each a seam with an env override, and assert the enumeration is complete: a scanner's finding
       set must EQUAL the declared seam set, both directions.
@@ -394,10 +394,10 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       declared in the registry with reasons, not hardcoded.
 - [ ] **D3 S, long pole** Shard the hook suite. `test-hooks.sh` is **2,774 lines**, `slow: true,
       // 537.4s`, one `run:`. `run_tests.py` (100 lines) is wired to nothing and says so.
-      **Invariant 2 bites in six places, all verified:** `language-policy-baseline.json:476`;
+      **Invariant 2 bites in six places, all verified:** `.ci/config/language-policy-baseline.json:476`;
       `.ci/policy/.dead-bash-allowlist:42` plus three golden files encoding the line index;
-      `trap_registry.py:227` (`TRAP_HOOK_SUITE`, a single path constant, plus two control
-      fixtures); `hook_integrity.py:69` (`SUITE=`, single path); and two line-numbered measurement
+      `.ci/rediacc_ci/quality/trap_registry.py:227` (`TRAP_HOOK_SUITE`, a single path constant, plus two control
+      fixtures); `.ci/rediacc_ci/quality/hook_integrity.py:69` (`SUITE=`, single path); and two line-numbered measurement
       comments already stale against 2,774. **All six re-keyed in the same change, or the split is
       not done.** **Acceptance:** the multiset of assertion labels across shards equals the
       pre-split multiset, extracted by the same extractor on both sides. Floor corpus-derived,
@@ -410,9 +410,9 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `test_guards_differential` already does. Clause 2 is required because a collapse that drops
       a guard passes clause 1 perfectly.
 - [ ] **E1 S, largest single port in this track** `setup` in Python. `.ci/rediacc_ci/setup/` holds
-      only `__init__.py` and `tools.py`; the 22 rows DESCRIBE installs and `tools.py:167-169` says
+      only `__init__.py` and `tools.py`; the 22 rows DESCRIBE installs and `.ci/rediacc_ci/setup/tools.py:167-169` says
       so ("prose, not something this module executes"). `setup` is still bash: `run.sh:97`
-      `PORTED_VERBS=()` -> `run-legacy.sh:1068` -> `setup()` `:543-715` + `setup_check()` `:719`,
+      `PORTED_VERBS=()` -> `.ci/legacy/run-legacy.sh:1068` -> `setup()` `:543-715` + `setup_check()` `:719`,
       driving seven functions in `.ci/lib/setup.sh` -- **~1,117 bash lines**. No `.claude` wiring,
       no opt-in git hooks. Keep the prose rows: they are what a human pastes when the executor
       refuses (invariant 9). **Acceptance:** shadow ledger at K=5 (the `w6p2-toolchain` shape),
@@ -426,7 +426,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
 - [ ] **E3 S** Legacy arms to zero. Correct the plan's phantom `LEGACY_ARMS_MAX` to what the tree
       enforces. `PORTED_VERBS=(setup)` is line-neutral, so the 120/120 ceiling does not block E1;
       growing the array does, and that is a decision this box makes rather than discovers.
-      **The trap:** `test-run-sh.sh:315-327` requires `n_legacy > 0` before believing any
+      **The trap:** `.ci/scripts/test/gates/test-run-sh.sh:315-327` requires `n_legacy > 0` before believing any
       assertion, so **the anti-vacuity clause must be rewritten in the same change that makes
       `n_legacy` zero**, or the gate guarding the migration reds at the moment it succeeds.
 
@@ -455,16 +455,18 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       prints `sha256(client-id)` truncated to 16 hex and it equals the `mc-ci-read` row.
       Greenness is explicitly not the acceptance -- old-token-green and new-token-green are
       indistinguishable. Red first: dispatch before the swap and assert it prints
-      `00991b3077ee8f57`.
+      the OLD fingerprint, i.e. the `client_id_sha256` that
+      `.ci/config/bws-token-expiry.json` records for `mc_migrate_claude`. Cite the file,
+      not the value: the value changes at the cutover, which is the whole point.
 - [ ] **W4-D1 S** The `.ci/policy` contract has already drifted, **one day after the move**.
-      `POLICY_FILES` holds 15 (`policy-paths.ts:69-86`); the directory holds 16.
-      `.language-policy-allowlist` is reached by a hardcoded join at `check_language_policy.py:112`,
+      `POLICY_FILES` holds 15 (`scripts/lib/policy-paths.ts:69-86`); the directory holds 16.
+      `.language-policy-allowlist` is reached by a hardcoded join at `.ci/scripts/quality/check_language_policy.py:112`,
       bypassing the seam. **Acceptance:** three-way set equality -- directory == `POLICY_FILES` ==
       the Python name set. This box is the evidence that W4 P4b's inventory gate is load-bearing,
       not cosmetic.
-- [ ] **W4 P4a S** Python `policy_path`. Five hardcoded literals (`go_deps.py:178`,
-      `plan_housekeeping.py:238`, `profiler_coverage.py:166`, `check_language_policy.py:112/114`,
-      `check_runner_advice.py:899`). **Design constraint:** `test-policy-path.sh:79` asserts the TS
+- [ ] **W4 P4a S** Python `policy_path`. Five hardcoded literals (`.ci/rediacc_ci/quality/go_deps.py:178`,
+      `.ci/rediacc_ci/quality/plan_housekeeping.py:238`, `.ci/rediacc_ci/quality/profiler_coverage.py:166`, `.ci/scripts/quality/check_language_policy.py:112/114`,
+      `.ci/scripts/quality/check_runner_advice.py:899`). **Design constraint:** `.ci/scripts/test/gates/test-policy-path.sh:79` asserts the TS
       seam does "no stat, no readdir" and proves it with an `rmdir`. The Python twin must satisfy
       the same property, so `policy_path()` is a pure join and the inventory readdir is a SEPARATE
       instrument. Every env override stays in front of the seam.
@@ -475,9 +477,9 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `{.language-policy-allowlist}`. A gate that cannot detect the drift that already happened is
       not the gate.
 - [ ] **W4 P4c C** The prose sweep gets a PREDICATE, absorbing the stale
-      `check-suppression-liveness.ts:61` comment ("Today POLICY_DIR is '' and this is a provable
+      `scripts/check-suppression-liveness.ts:61` comment ("Today POLICY_DIR is '' and this is a provable
       no-op", untrue since `b80552370`). Rules: no comment may assert a `POLICY_DIR` value
-      differing from `policy-paths.ts:57`; no comment may cite a policy file by a root path.
+      differing from `scripts/lib/policy-paths.ts:57`; no comment may cite a policy file by a root path.
 - [ ] **W4 P5 C -- REFUSE, and record the refusal** `bws-secret-map.json` fails three of the four
       `.ci/policy/README.md` clauses: it carries `refreshed_at` and is regenerated wholesale
       (clause 1); it has zero BLOCKER lines and a per-UUID reason would be invented (clause 2);
@@ -500,7 +502,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
 - [ ] **W8 P1a S, ONE writer** Prove irreducibility as a SET. **The drain largely already
       happened**: `check-workflow-gates.sh` CHECK 2 enforces all four directions (`:258`,
       `:270-288` recording a 57-declaration sweep, `:336-345`) with a liveness arm at `:302-305`,
-      registered at `manifest.ts:2537`. Residue: 13 files mentioning `workflow_call`, **2 distinct
+      registered at `scripts/ci-runner/manifest.ts:2537`. Residue: 13 files mentioning `workflow_call`, **2 distinct
       secret names**, 14 caller passthroughs all `BWS_ACCESS_TOKEN`, **zero `secrets: inherit`**.
       **New content:** assert `DECLARED_UNUSED_OK` is exactly the set of names pinned alive by
       `.github/external-callers.yml` -- today that justification is a comment and the registry
@@ -529,13 +531,13 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       change (invariant 1). Re-key `doc-registry-preport.json` for any moved key string.
 - [ ] **W8 P4 C, cheapest real win** The cure is call-site adoption, not new code.
       `core/env.py` is DONE and PROVEN against a LIVE `set -a; source` in a subshell
-      (`test_core_env.py:74-105`, `:434`), with a `python3 -m rediacc_ci.core.env` CLI -- and
+      (`.ci/rediacc_ci/tests/test_core_env.py:74-105`, `:434`), with a `python3 -m rediacc_ci.core.env` CLI -- and
       **zero production importers**. `bws_env_load` likewise has zero callers. Both orphaned.
-      **Seven sites with a disposition each:** `constants.sh:22` STAYS bash (sourced before Python
-      is guaranteed; bootstrap circularity) until W6 P3; `account.sh:438` and `:791` retarget;
-      `toolchain.sh:34` is bootstrap-sensitive, measure first; `run-legacy.sh:185` **do not
+      **Seven sites with a disposition each:** `.ci/config/constants.sh:22` STAYS bash (sourced before Python
+      is guaranteed; bootstrap circularity) until W6 P3; `.ci/lib/account.sh:438` and `:791` retarget;
+      `.ci/scripts/lib/toolchain.sh:34` is bootstrap-sensitive, measure first; `.ci/legacy/run-legacy.sh:185` **do not
       retarget** (W6 P5 deletes it -- record the decision so it is not re-found and mistaken for a
-      miss); `deploy-bench.sh:137` retarget before W9 P2 moves it;
+      miss); `scripts/dev/deploy-bench.sh:137` retarget before W9 P2 moves it;
       `programs/backup-storage/start-local-plane.sh:60` retarget -- its own comment at `:57-59`
       already reasons about precedence, the best demonstration that the rule is real.
       **Out of scope in writing:** `private/growth` (gitignored separate checkout) and
@@ -556,19 +558,19 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
 
 - [ ] **X0.1 S, do first** Fix the A5/A6 collision in the plan text and adopt PREFIXED decision
       ids (`D-A6`, `G-A5`). Three schemes collide today: `A5`/`A6` are gate rules at
-      `check_plan_boxes.py:41`/`:42-44`; `04-decisions.md` section A item 6 (`:22-23`) is the
+      `.ci/scripts/quality/check_plan_boxes.py:41`/`:42-44`; `04-decisions.md` section A item 6 (`:22-23`) is the
       operator override licence. P2.7's subject is the gate rule; P3.2's is the decisions doc.
 - [ ] **W11 P4a C** `policy` provider + region replacing `.ci/policy/README.md`'s hand-typed
       section 2, whose heading literally reads "fifteen" against 16 files on disk.
       **Acceptance:** two-direction set equality, key set == `ls .ci/policy` minus README ==
       `POLICY_FILES`. **It is RED on landing**, which surfaces W4-D1 structurally; this box does
       not fix it, it hands the one-line addition to that box as a fragment.
-      **Do not derive the Readers column by grep** -- `doc-providers.ts:568-583` records that a
+      **Do not derive the Readers column by grep** -- `scripts/lib/doc-providers.ts:568-583` records that a
       grep-derived Readers column flipped mid-run on 2026-09-06 and forbids re-adding it.
 - [ ] **W11 P4b C** `test-split` provider + region in `07-port-brief.md`, rendering the residue as
       an explicit `(unregistered)` row. Non-empty is legal and visible; silence is not.
 - [ ] **W11 P5a S** Providers `bootstrap`, `job-graph`, `media` with their regions, one commit.
-      `check-doc-region-parity.ts:22-30` makes invariant 1 automatic here: a provider without a
+      `scripts/check-doc-region-parity.ts:22-30` makes invariant 1 automatic here: a provider without a
       region reds immediately.
 - [ ] **W11 P5b S** The 140-line cut. **Session Defaults is lines 9-233 -- 225 lines, 39% of the
       file, frozen byte-identical** (verified: `## Session Defaults` at 9, `## Architecture` at
@@ -585,7 +587,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
 - [ ] **W11 P5c BLOCKED ON W8** The `env-manifest` region has no home until W8 P2 exists. Record
       it as blocked so P5 is not ticked at three of four.
 - [ ] **W12 P2.7a S, before the wave** `check_plan_boxes.py` rule A5 becomes never-delete. The
-      deadlock A5 avoided no longer exists: `check-plan-housekeeping.sh:51` states "THE REMEDY IS
+      deadlock A5 avoided no longer exists: `.ci/scripts/quality/check-plan-housekeeping.sh:51` states "THE REMEDY IS
       NO LONGER 'DELETE IT', AND THAT WORD IS GONE ON PURPOSE." **New control: a 41-day-old plan
       with one surviving-nowhere open box must be REFUSED** -- the exact case that passes today.
 - [ ] **W12 P2.7b S, before the wave** Two TRAPS entries: the `title_of()` class (slug fallback,
@@ -611,14 +613,14 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       exists, do not re-implement it; and every `## Outcome` is derived from
       `git log --find-object` / `git log -- <path>`, **never from a `Status:` header.**
 - [ ] **W12 P3.5 S, calendar-gated ~2026-09-21** Tick with evidence. Mechanism DONE
-      (`check_plan_record.py:44`, window `:167-168`, anti-vacuity `:74-79`, four set-based floors
+      (`.ci/scripts/quality/check_plan_record.py:44`, window `:167-168`, anti-vacuity `:74-79`, four set-based floors
       `:663`); tracked census at `agent/census-plan-record.jsonl`, span 0.41 of 14 days.
       **Do not close the window early to get a quiet number** -- B1 runs inside it and will move
       `would_refuse`, which is exactly what the census exists to measure. **C11 at 0/4 is the one
       to watch:** a candidate that never fires is either a rule with no subject or a broken
       instrument, and the tick must say which.
 - [ ] **W12 P3.1b C, before W9 P2** Read epic ids from the ledger, not a published document.
-      `check-pr-task-trailers.ts:285` reads `agent/pr/<branch>.md`, itself generated by
+      `scripts/check-pr-task-trailers.ts:285` reads `agent/pr/<branch>.md`, itself generated by
       `worklist.py --publish`. **The fix is cheaper than the plan implies:**
       `agent/worklist/epics.jsonl` is already tracked and append-only (W12 P3.1a moved it out of
       TMPDIR). **Acceptance:** ledger ids == snapshot ids, both directions -- ledger-only means
@@ -630,7 +632,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       id must resolve to a row. Reuse `check_plan_citations.py`'s resolver rather than growing a
       second one.
 - [ ] **W12 P3.3 S, after the wave** Status vocabulary in config. **The box's premise is partly
-      wrong:** there are TWO sets, not three -- `CLOSED_STATES` at `wl_planfile.py:221` is
+      wrong:** there are TWO sets, not three -- `CLOSED_STATES` at `.claude/hooks/stop/wl_planfile.py:221` is
       CHECKBOX state, and building it from a plan-status vocabulary is a category error. The drift
       this closes is real: `check-plan-housekeeping.sh` and `check_plan_record.py` each re-derive
       `compacted`/`parked` with their own regexes.
@@ -665,7 +667,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `package.json`, 159 in `manifest.ts`, 157 in `gates.lock.json` -- three driver-only files at
       once. **Two couplings the predecessor did not name:** (a) `ci-tree`'s row key is the
       directory, and `doc-registry-preport.json` carries `.ci/scripts/{ci,build/sea-inject,docs,autopilot}`
-      among its keys; `gen-docs.ts:268` says MISSING keys are **fatal** to `--diff-snapshot`, so
+      among its keys; `scripts/gen-docs.ts:268` says MISSING keys are **fatal** to `--diff-snapshot`, so
       the moves break the programme's own verification instrument unless the four keys are
       re-keyed in the same commit -- never `--snapshot --force`. (b) the 42-entry
       `unguarded` baseline. Plus the six invariant-2 inventories.
@@ -673,18 +675,18 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `scripts/check-` and a blanket sed would break `MANIFEST.sha256`.
 - [ ] **U1 C** Requirement 15: a `json-inventory` provider + region over root / `.ci/config` /
       `scripts/data` / `.ci/policy`, with `Discovered by` and `Configurable path?` cells. The
-      predicate exists only as prose at `08-driver-contract.md:318-334` and **three of its numbers
+      predicate exists only as prose at `docs/ci-overhaul/08-driver-contract.md:318-334` and **three of its numbers
       went stale in one day**, which is the argument for generating it.
 - [ ] **U2 S after P6a, OPERATOR-GATED** Cross-repo PRs. **`private/growth` is not a submodule** --
       `.gitmodules` lists four and `.gitignore:85` ignores it. That clause cannot be executed as
       written; split it into a decision box (documented clone-and-remote procedure, or promotion
       to a real submodule). Name an owner and record the merge order the `pr-merge` skill encodes.
-- [ ] **U3 C** Widen `test-shrink-only-composition.sh:97-102`. It greps `--include=*.ts
+- [ ] **U3 C** Widen `.ci/scripts/test/gates/test-shrink-only-composition.sh:97-102`. It greps `--include=*.ts
       --include=*.js` over `scripts/` and `packages/www/scripts/` -- **two** blind spots: it
       excludes `.py` AND its roots exclude the entire `.ci/` tree. Live subjects today: exactly
       one tracked `.py` offers `--write-baseline` (`check_language_policy.py`) plus
-      `check_resprofile.py:365`'s equivalent `--reseed-class` over an ACCUMULATING baseline. **The
-      hole is self-declared** -- `check_language_policy.py:418-428` says the port "names the
+      `.ci/scripts/quality/check_resprofile.py:365`'s equivalent `--reseed-class` over an ACCUMULATING baseline. **The
+      hole is self-declared** -- `.ci/scripts/quality/check_language_policy.py:418-428` says the port "names the
       resulting coverage gap ... out loud rather than leaving it to be discovered" and the test was
       never widened. The green is not vacuous, just scoped to a language and two directories the
       programme is migrating away from.
@@ -706,7 +708,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       admission route.
       **Language:** Python under `.ci/rediacc_ci/quality/`, per ruling 7 -- a
       `scripts/check-dead-python.ts` would be renamed twice by W9 P2 and W7.
-- [ ] **U5 C** `check-shape-duplication.ts:122`: `/'(?:[^'\\]|\\.)*'/g` -- `[^'\\]` matches
+- [ ] **U5 C** `scripts/check-shape-duplication.ts:122`: `/'(?:[^'\\]|\\.)*'/g` -- `[^'\\]` matches
       newlines, so an apostrophe inside a double-quoted message eats every line to the next quote.
       Reports coordinates off by up to 243 lines and silently drops code from its own corpus.
       Corpus is 345 files / 275 shapes; a fix re-keys every fingerprint at once, so it is its own
