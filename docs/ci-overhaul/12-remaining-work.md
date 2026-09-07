@@ -9,15 +9,17 @@ re-derived. Status figures are measured, not remembered.
 | Body | Done | Total | % |
 |---|---|---|---|
 | Quality gates ported (W7 P2) | 77 | 77 | 100 |
-| Shadow pairs asserting green | 76 | 77 | 99 |
+| Shadow pairs asserting green | 77 | 78 | 99 |
 | Gate tests declaring a header (W2.3) | 148 | 148 | 100 |
 | Heavy-job proxies (W3 P2) | 10 | 10 | 100 |
 | Policy lists moved (W4 P2) | 15 | 15 | 100 |
+| Install table (W6 P2) | 1 | 1 | 100 |
+| Hooks dispatcher cutover (W5 P5-P7) | 1 | 1 | 100 |
 | Plans compacted (W12 P1.8) | 32 | 32 | 100 |
 | Gate tests ported to pytest (W7 P3) | 0 | 148 | 0 |
-| Plan boxes | 71 | 130 | 55 |
+| Plan boxes | 72 | 130 | 55 |
 
-Re-measured 2026-09-06 at the end of wave 2, not carried forward. The commands,
+Re-measured 2026-09-07 at the end of wave 3, not carried forward. The commands,
 so the next reader re-derives rather than trusts:
 
     ls .ci/rediacc_ci/quality/*.py | grep -v __init__ | wc -l          # 77 ported
@@ -78,7 +80,7 @@ Acceptance is `--assert --k 5` exiting 0 with at least two distinct fingerprints
 
 ## WAVE 2, up to 9 parallel
 
-### T1. PORT-F/G/H, the last 39 quality gates. THREE AGENTS, fully parallel.
+### T1. PORT-F/G/H/I. DONE 2026-09-06. All 77 quality gates have a proven twin.
 Owns per gate only: `.ci/rediacc_ci/quality/<mod>.py`,
 `.ci/rediacc_ci/tests/test_quality_<mod>.py`,
 `.ci/shadow/w7p2-<name>.observations.jsonl`.
@@ -115,7 +117,7 @@ declares `emit: false` plus `blocker:`. Verify with `gate-bind.ts --dry-run` and
 `--only check:ci-gate-bind`, both exit 0, and the declared count must rise by
 exactly the number you added. Never run `--write`."
 
-### T3. PROXY, W3 P2 heavy-job proxies. ONE AGENT.
+### T3. PROXY, W3 P2 heavy-job proxies. DONE 2026-09-06 (`fab50886f`).
 Owns new files under `.ci/scripts/test/` only. Each proxy returns 77 when its
 toolchain is absent. HOLDS A MACHINE MUTEX (docker, port 4800, account.db), so
 it cannot share a wave with any other docker-touching set. The elite compose
@@ -130,31 +132,47 @@ Not one atomic change per list either, but ONE atomic change across the set:
 `policyPath()`, so moving one list while the constant stayed `''` would have
 broken that reader for the other fourteen.
 
-### T5. SETUP, W6 P2. ONE AGENT.
+### T5. SETUP, W6 P2. DONE 2026-09-07 (`2f0c3515d`).
 `.ci/rediacc_ci/core/{platform,toolchain}.py`, the toolchain port behind a
 differential shadow gate, the four macOS bash fixes, and the one install table
 INCLUDING the pytest row. Must not touch `NODE_VERSION_MIN`.
 
 ## WAVE 3, up to 6 parallel
 
-### T6. HOOKS, W5 P5+P6+P7. ONE AGENT, long.
-Owns `.claude/settings.json`, `.claude/hooks/**`, `.claude/rediacc_hooks/**`.
-47 guards are ported but nothing routes to the dispatcher yet; settings.json
-still has 144 command entries. MUST re-key `scripts/data/shape-duplication-seed.json`
-in the same change: deleting 43 `block-*.sh` shrinks a corpus that gate counts,
-which is invariant 2.
+### T6. HOOKS, W5 P5+P6+P7. DONE 2026-09-07 (`7acaeca98`).
+The dispatcher is live. settings.json went from 73 command entries to 30 (the
+brief said 144; 73 was the measured figure at HEAD) and a Bash tool call from
+456 process executions to 35, counted with 6,394 shims rather than estimated.
 
-### T7. SWEEP-CI, W1 P4, `.ci` half only. ONE AGENT.
+THE BASH TWINS WERE MOVED TO `.claude/oracles/`, NOT DELETED, and a future
+sweep must not "finish the job" by removing them: they are what
+`test_guards_differential.py` compares each port against, 5,844 cases and the
+only proof a port answers what its twin answered. They sit at `.claude/oracles/`
+and not one level deeper inside the package because a third of these guards
+derive the repo root as `dirname/../../..`; at the deeper path the differential
+reported 30 divergences across five guards.
+
+Two things it found that outlive the phase. A port read the clock as UTC where
+its twin's `date +%m%d` is LOCAL, and the differential could never have caught
+it because the harness pins `TZ=UTC` for both sides; `time.tzset()` had to be
+added before the harness even honoured a per-case TZ. And
+`check_guard_feature_completeness.py` had NO vacuity floor, reporting "every
+called feature resolves" on a corpus that had lost 46 of its 80 files.
+
+### T7. SWEEP-CI, W1 P4. ONE AGENT. NOW UNBLOCKED.
 Measured 93 `sys.path` occurrences across 47 files, NOT the plan's 24. The
-`.claude` half is deferred: 14 of its files are `wl_*.py`, which T6 is live in.
+`.claude` half was deferred because T6 was live in `wl_*.py`; T6 has landed, so
+both halves are available. Re-measure before staffing: the W5 cutover moved 46
+guards into `.claude/rediacc_hooks/guards/` and the count will have changed.
 
 ### T8. RECORDS, W12 P3.1b/P3.2/P3.3/P3.4b. ONE AGENT.
 Hard prerequisite: ALL compaction batches merged. P3.3 and P3.4b change what
 `check_plan_record.py` accepts while a compaction wave runs `--update`.
 
-### T9. ENVMAN, W8 P2/P3/P4. ONE AGENT.
+### T9. ENVMAN, W8 P2/P3/P4. ONE AGENT. NOW UNBLOCKED.
 Do not delete `.ci/lib/local-common.sh` until W6's quality lane and W8's
-retarget both land.
+retarget both land. W6 P2 landed at `2f0c3515d`, so the `.ci/scripts/lib`
+collision that held this is gone; the quality-lane half of W6 (P5) has not.
 
 ## WAVE 4, DRIVER-SERIAL, no writer agents
 
@@ -163,6 +181,19 @@ W2.3's generated manifest region plus the lock; W3 P3's shard matrix; W1 P4's
 `run-legacy.sh`; W7 P5 deleting the bash twins once their ledgers retire them.
 
 ## Known open defects, each needing its own change
+
+- **W2.6's region cutover is one command plus a careful deleter.**
+  `gate:bind --write` emits with an EMPTY dropped set and loses no step (263 to
+  264 names, `comm` empty), leaving 112 hand-written duplicates the regions now
+  own and the gate names one by one. AN INLINE ATTEMPT ON 2026-09-07 DELETED TWO
+  ENTIRE JOBS, `quality-branch` and `quality-content`: the deleter walked back
+  over each step's comment block to take its prose, and for a step FIRST in its
+  job that walk crossed the job boundary and ate the header, `runs-on` and
+  `permissions`. Repaired from a byte copy. The recipe: never cross a line
+  matching `^  [a-z0-9-]+:$`; assert the JOB set as well as the step set,
+  because a step-name comparison is STRUCTURALLY BLIND to a missing job and will
+  agree while the damage is there; run actionlint before believing anything.
+
 
 - ~~`--park` silent no-op~~ FIXED 2026-09-06. `wl_planrec.compact` chose the
   status with `park and d["n_open"]`, so a plan with no checkbox boxes took the
