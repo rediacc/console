@@ -80,66 +80,62 @@ unstable. Wave 3 is T6 HOOKS, T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN.
 - `git log --diff-filter=A` names the RENAME. Search content history: `git log -S`.
 - Never `git checkout`, `restore`, `stash`, `clean` or `reset`. Repair forward.
 
-## SESSION 8f55d4f0 2026-09-06T23:31:12Z
+## SESSION 8f55d4f0 2026-09-07T00:27:05Z
 
-Branch `0906-1`, head `87946bfab`. HOOKS is still live and mid-cutover: 50 `.claude/`
-files DELETED, 10 modified, 56 untracked. That is its work, not damage. NEVER
-`git checkout` or `restore` to tidy this tree.
-
-The settings.json collapse is DONE (Bash chain 40 command entries to 4, pre-edit 11 to
-4, pre-ask to 3) and the replacement was DRIVEN, not assumed: `git add -A` exit 2,
-`git push --force origin main` exit 2, `git checkout -- x.ts` exit 2, `echo hello`
-exit 0. The guards still refuse through `.claude/rediacc_hooks/dispatch.py`.
+Branch `0906-1`, head is the worklist commit after `7acaeca98`. BOTH WAVE-3 AGENTS
+HAVE LANDED and the tree is clean apart from an untracked `.err` that belongs to the
+other session. No agents are running.
 
 ## Next action
 
-1. **Land HOOKS (#609983e6).** Verify YOURSELF before committing:
-   `.claude/hooks/test-hooks.sh` exits 0 with every assertion green;
-   `check:ci-pytest`, `check:ci-hook-integrity`, `check:ci-hooks-resolvable` exit 0;
-   and `check:ci-shape-duplication` exits 0 AND its baseline SHRANK, because deleting
-   43 `block-*.sh` shrinks a corpus that gate counts, so
-   `scripts/data/shape-duplication-seed.json` must be re-keyed in the same change.
-   Commit with an EXPLICIT pathspec: `git commit -F <file> -- <paths>`, options before
-   the `--`. A bare `git commit` takes the whole index including another agent's work.
-2. **#4a9b14ce, the push.** After HOOKS lands and is committed: `npm run ci:quick` on a
-   still tree, then `git push origin 880b1b3ee:main`. One commit, fast-forward from
-   `9295fb63c`, one file, +25 lines, operator-authorised. Until it lands,
-   rediacc/account PR #86 and every renet and elite review run stay red at
-   `discover-epics.sh: No such file or directory, exit 127`.
-   `check:ci-secret-reachability` is carried in `.ci/config/carried-reds.json` with its
-   operator-only door; carry nothing else.
-3. **#0a1b79c4 W2.6 is DEFERRED, DEFAULT is a dedicated pass.** I tried it and BROKE THE
-   WORKFLOW: deleting the 112 duplicates `gate:bind --write` takes ownership of removed
-   TWO ENTIRE JOBS, quality-branch and quality-content, because my deleter walked back
-   over each step's comment block and for a step FIRST in its job that walk ate the job
-   header. Repaired from a byte copy. If you retry: never cross a line matching
-   `^  [a-z0-9-]+:$`, check the JOB set not only the step set, actionlint before
-   believing anything.
+1. **#4a9b14ce, the push, and it is finally unblocked.** `ci:quick` is in flight as
+   `b5c47v7vs` on the first genuinely still tree of the session. On green:
+   `git push origin 880b1b3ee:main`. One commit, fast-forward from `9295fb63c`, one
+   file, +25 lines, operator-authorised. Until it lands, rediacc/account PR #86 and
+   every renet and elite review run stay red at `discover-epics.sh: No such file or
+   directory, exit 127`. `check:ci-secret-reachability` is carried in
+   `.ci/config/carried-reds.json` with its operator-only door; carry NOTHING else.
+2. **#a6635a5b** Re-record `w7p2-hosttoolchain`. It asserts green over 5 trees, but I
+   edited BOTH `check-host-toolchain-coverage.sh` and its port
+   `.ci/rediacc_ci/quality/host_toolchain_coverage.py` for the W5 path re-key, so the
+   rows attest to superseded bytes. Follow the recording recipe in
+   `docs/ci-overhaul/12-remaining-work.md`.
+3. **#0a1b79c4 W2.6 is DEFERRED, DEFAULT is a dedicated pass.** I attempted it and BROKE
+   THE WORKFLOW: deleting the 112 duplicates `gate:bind --write` takes ownership of
+   removed TWO ENTIRE JOBS, quality-branch and quality-content, because my deleter
+   walked back over each step's comment block and for a step FIRST in its job that walk
+   ate the job header. Repaired from a byte copy. If you retry: never cross a line
+   matching `^  [a-z0-9-]+:$`, check the JOB set not only the step set, actionlint
+   before believing anything.
 4. Then T7 SWEEP-CI, T8 RECORDS, T9 ENVMAN from `docs/ci-overhaul/12-remaining-work.md`,
-   then W7 P3: 148 gate tests to pytest, the largest body left and ONE box.
+   all three now UNBLOCKED since their collisions with HOOKS and SETUP are gone. Then
+   W7 P3: 148 gate tests to pytest, the largest body left and ONE box.
 
-## Measured this cycle, on a tree HOOKS is writing
+## What landed, and what it is worth
 
-78 shadow pairs, 77 green. The one red is `w7p2-stagingtag`, permanently: three tree ids
-disqualified by rows recorded through a closed hole, 12 qualifying trees over 9 finding
-sets, so the claim IS evidenced and only the assert cannot express it. DO NOT delete rows.
+W5 CUTOVER at `7acaeca98`: the dispatcher is live, settings.json went from 73 command
+entries to 30, and a Bash tool call from 456 process executions to 35, measured with
+6,394 counting shims. The bash twins were MOVED to `.claude/oracles/`, not deleted,
+because deleting them retires `test_guards_differential.py`, 5,844 cases and the only
+proof a port answers what its twin answered. I verified 46 of 47 byte-identical myself;
+the 47th is a disclosed forwarder. I also drove the live chain: `git add -A`,
+`git commit --amend --no-edit` and `git worktree add x` all exit 2, `echo hello` exits 0.
 
-ALL EIGHT plan and registry gates rc=0 this cycle, including check:ci-python-lint, which
-was red last cycle on HOOKS's own files and which HOOKS has since cleaned.
+W6 P2 at `2f0c3515d`: the one install table, 22 rows, 9 pinned, WITH the pytest row,
+plus four macOS guards proved against a bash 3.2.0 built from source.
 
-W7 P2 77/77, W6 P2 landed, W3 P2 10/10, W4 P2 15/15, W12 P1.8 32/32, headers 377 of 850
-subjects with 0 malformed, 456 lock entries. Plan boxes 72 of 130, which FLATTERS: the
-148 gate tests to pytest are ONE box and are untouched.
+W7 P2 77/77, W3 P2 10/10, W4 P2 15/15, W12 P1.8 32/32. 78 shadow pairs, 77 green;
+`w7p2-stagingtag` is permanently red (three tree ids disqualified by rows recorded
+through a closed hole, 12 qualifying trees over 9 finding sets, so the claim IS
+evidenced). DO NOT delete rows to make it green.
 
 ## Volatile facts a fresh session would get wrong
 
-A SECOND Claude session is live here: pid 2222763, session `a20630a0-dac7-...`;
-`private/homebrew-tap` is its trace.
+A SECOND Claude session is live here: pid 2222763, session `a20630a0-dac7-...`. The
+untracked `.err` at the repo root is its litter, not yours; leave it.
 
-`check-gate-manifest` judges the FLOOR of the last five samples, not the average, so a
-contention excuse for its findings is wrong. 52 gates are over budget and all 52 are
-tiered; the top two, `gate-test:claude-hooks` 780.4s and `check:ci-hook-worklist-suite`
-686.4s, are 24 minutes of the local run and are exactly what HOOKS is rewriting.
+`check-gate-manifest` judges the FLOOR of the last five samples, not the average. 52
+gates are over budget and all 52 are tiered.
 
 SIX times today an instrument of mine was wrong before the claim it supported. Five
 invented findings; the sixth HID a real change: I verified the workflow's step-name set
