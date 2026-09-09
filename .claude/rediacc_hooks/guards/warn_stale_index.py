@@ -61,13 +61,11 @@ DEFECT = ("if hookio.grep_q(WORKING_TREE_FORM, scan):", "if False:")
 # rather than remembered. hook_scan_target strips QUOTED spans and extracts
 # `sh -c` payloads; unquoted prose survives it, so the anchor is what separates
 # a command from a sentence.
-COMMIT_AT_COMMAND_POS = (
-    r"(^|[;&|(]|&&|\|\|)[" + hookio.SPACE + r"]*git[" + hookio.SPACE + r"]+commit"
-)
+COMMIT_AT_COMMAND_POS = hookio.rx(r"(^|[;&|(]|&&|\|\|)[{S}]*git[{S}]+commit")
 
 # `-a` / `--all`: the index is not what gets committed, so there is nothing to
 # be stale.
-WORKING_TREE_FORM = r"git +commit[^|;&]*(-a[" + hookio.SPACE + r"]|--all\b)"
+WORKING_TREE_FORM = hookio.rx(r"git +commit[^|;&]*(-a[{S}]|--all\b)")
 
 
 def _fixture_git(cwd, *args):

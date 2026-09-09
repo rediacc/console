@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-form-validation.sh`.
 
-Tests for `scripts/check-form-validation.ts`.
+Tests for `scripts/gates/check-form-validation.ts`.
 
 The gate is RED on the real tree today: five of the six forms in packages/www
 disable browser validation without replacing it, or read an input and silently
@@ -29,7 +29,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-form-validation.sh"
 
-GATE = paths.from_root("scripts", "check-form-validation.ts")
+GATE = paths.from_root("scripts/gates", "check-form-validation.ts")
 
 # The leniency planted by the mutant: accept a captcha guard as validation, which
 # is exactly what would let ContactForm pass while an empty submit still reaches

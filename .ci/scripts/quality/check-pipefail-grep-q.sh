@@ -1,17 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: No racing pipefail/grep -q detectors
-# emit: false
-# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
-# needs: none
-# selftest: true
-# lane: quality-code
-# why: A detector built as `producer | grep -q` under pipefail cannot reliably
-#      fail: grep -q exits at its first match, SIGPIPEs the producer, and
-#      pipefail makes that 141 the verdict. check-ci-watch-recipe.sh shipped
-#      exactly that in both detectors and certified 124 files clean over a real
-#      offender for as long as it existed.
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-pipefail-grep-q is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_pipefail_grep_q.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_pipefail_grep_q.py" but its header derives "...check-pipefail-grep-q.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Gate: under `pipefail`, a locally-defined function piped into `grep -q` makes
 # the pipeline's exit status a RACE, so a detector built that way can silently
@@ -30,13 +25,19 @@
 #
 #     hands_out_banned() { advice_only "$1" | grep -qE '<banned>'; }
 #
-# Measured 2026-08-27 against .claude/hooks/test-hooks.sh (1644 lines, hit at
+# Measured 2026-08-27 against .claude/hooks/test-hooks.sh, 1,644 lines then (hit at
 # line 692 of the filtered stream): 8/8 trips WITHOUT pipefail, 0/8 WITH it. The
 # gate had been printing "no hand-rolled watch in 124 scanned file(s)" over a
 # real offender, and went red exactly once -- under `npm run ci`'s parallel load,
 # where the timing flipped. Its own four controls could not have caught it: all
 # of them ran on 2-line fixtures, where the producer finishes long before
 # `grep -q` exits, so the mechanism does not exist at that size.
+#
+# THE SUBJECT IS THE SIZE, NOT THAT FILE. It was 1,644 lines the day this was
+# measured, 2,774 by 2026-09-09, and it is being ported out of bash into
+# .claude/rediacc_hooks/tests/ -- so the citation is dated on purpose and the
+# large-file control below is what keeps the measurement reproducible after the
+# file it names is gone.
 #
 # WHY A LOCALLY-DEFINED FUNCTION IS THE TEST, and not "any pipe into grep -q".
 # There are 115 `| grep -q` sites under pipefail in this repo. What makes the shape
@@ -127,8 +128,20 @@ offenders() {
 }
 
 scan_files() {
-    git -C "$ROOT" ls-files \
-        '.ci/scripts/**/*.sh' 'scripts/**/*.sh' '.claude/hooks/**/*.sh' 2>/dev/null
+    # `:(glob)` IS LOAD-BEARING, NOT DECORATION. Without it git reads `**` as
+    # DEMANDING a slash, so `scripts/**/*.sh` matches nothing at depth 1 and this
+    # corpus silently skipped six tracked shell files -- require-jq.sh,
+    # require-python.sh, test-hooks.sh, backup-cutover-preflight.sh,
+    # eslint-heap.sh and pre-commit-check.sh. Measured 2026-09-08: 471 files
+    # before, 477 after. A corpus that quietly omits its own depth-1 members is
+    # the failure this gate exists to catch, one level up.
+    #
+    # ONE LINE, also deliberately: `check:ci-pathspec-scope` detects a
+    # `git ls-files` call and its quoted pathspecs ON ONE LINE, so the backslash
+    # continuation this used to carry made both this call and its port invisible
+    # to the gate that audits pathspecs. It could not see either live instance of
+    # the shape it exists to find.
+    git -C "$ROOT" ls-files ':(glob).ci/scripts/**/*.sh' ':(glob)scripts/**/*.sh' ':(glob).claude/hooks/**/*.sh' 2>/dev/null
 }
 
 # ---- controls, by construction ----------------------------------------------

@@ -53,7 +53,7 @@ ORDER = 20
 # outage rather than a check -- the exact failure its own header forbids.
 DEFECT = ("if _is_ancestor(remote, local, root):", "if False:")
 
-PUSH = r"(^|[|;&" + hookio.SPACE + r"])git push([" + hookio.SPACE + r"]|$)"
+PUSH = hookio.rx(r"(^|[|;&{S}])git push([{S}]|$)")
 DRY_RUN = r"git push[^|;&]*--dry-run"
 
 
@@ -195,6 +195,20 @@ def run(ev):
 
     root = ev.project_dir
     this_root = hookio.git_out(["rev-parse", "--show-toplevel"], cwd=root)
+    # AN EMPTY ROOT IS A FAILED rev-parse, NOT A ROOT AT "". `git_out` without
+    # `want_rc` returns "" both when git succeeds with empty output and when it
+    # fails, so the two are indistinguishable here -- and the consumer cannot
+    # tell either: `shellscan.py:582` joins `this_root + "/" + hint`, so a
+    # relative `-C nested` resolves to the absolute `/nested` instead of
+    # `<repo>/nested`. It then rev-parses a path outside this tree, and whatever
+    # that answers decides whether this guard stays silent. Reproduced
+    # 2026-09-08 by calling git_out with a cwd that is not a repository.
+    #
+    # ALLOW rather than block: this hook is an ADVISORY drift warning, and a
+    # guard that cannot establish where it is has no standing to judge a command.
+    # Refusing here would fire on every invocation outside a checkout.
+    if this_root == "":
+        return hookio.ALLOW
     if shellscan.target_root(cmd, this_root) != "":
         return hookio.ALLOW
 

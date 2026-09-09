@@ -16,7 +16,7 @@ Deliberately NOT folded into every self-improving skill: `testing`
 (`.claude/skills/testing/SKILL.md`) is a pure router across six docs with no
 single script whose CLI surface it owns, so there is nothing to flag-diff there.
 And `rdc`'s CLI docs already have their own, different mechanism
-(`scripts/check-cli-docs.ts`, generation-based, checks the OPPOSITE direction --
+(`scripts/gates/check-cli-docs.ts`, generation-based, checks the OPPOSITE direction --
 no stale flag mentioned that doesn't exist) -- not reinvented here.
 
 Extraction is genuinely per-script-family: Python argparse and this repo's own
@@ -279,7 +279,9 @@ def selftest() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
 
-        def plant(py_flags: list[str], ts_flags: list[str], doc_a: str, doc_b: str) -> None:
+        def expect_finding(
+            py_flags: list[str], ts_flags: list[str], doc_a: str, doc_b: str
+        ) -> None:
             (root / ".ci/scripts/ci").mkdir(parents=True, exist_ok=True)
             (root / ".claude/skills/ci-watch").mkdir(parents=True, exist_ok=True)
             (root / "scripts/ci-runner").mkdir(parents=True, exist_ok=True)
@@ -308,7 +310,7 @@ def selftest() -> int:
         taught_py = "\n".join(py)
         taught_ts = "\n".join(ts)
 
-        plant(py, ts, taught_py, taught_ts)
+        expect_finding(py, ts, taught_py, taught_ts)
         ctl.check("CONTROL: every flag taught is clean", run(), 0)
 
         # THE WRAPPED CALL. `add_argument(` on one line and the flag on the next
@@ -322,25 +324,25 @@ def selftest() -> int:
 
         # THE PLANT: one flag exists but is not taught, in each pair separately so
         # a gate that only ever reads the first row is caught.
-        plant(py, ts, "\n".join(py[:2]), taught_ts)
+        expect_finding(py, ts, "\n".join(py[:2]), taught_ts)
         ctl.check("PLANT: an untaught argparse flag is caught", run(), 1)
-        plant(py, ts, taught_py, "\n".join(ts[:2]))
+        expect_finding(py, ts, taught_py, "\n".join(ts[:2]))
         ctl.check("PLANT: an untaught switch-case flag is caught", run(), 1)
 
         # THE MIRROR the reviewer waves through: teaching it again must go quiet.
-        plant(py, ts, taught_py, taught_ts)
+        expect_finding(py, ts, taught_py, taught_ts)
         ctl.check("MIRROR: teaching the flag makes it clean again", run(), 0)
 
         # ANTI-VACUITY: a script with no flags at all. `0 of 0 taught` would be a
         # green over nothing.
-        plant([], ts, taught_py, taught_ts)
+        expect_finding([], ts, taught_py, taught_ts)
         ctl.check("VACUITY: zero extracted flags is a refusal, not a clean pair", run(), 1)
 
         # A missing script and a missing doc are each refusals rather than skips.
-        plant(py, ts, taught_py, taught_ts)
+        expect_finding(py, ts, taught_py, taught_ts)
         (root / ".ci/scripts/ci/ci-trace.py").unlink()
         ctl.check("VACUITY: a missing script is a refusal", run(), 1)
-        plant(py, ts, taught_py, taught_ts)
+        expect_finding(py, ts, taught_py, taught_ts)
         (root / ".claude/skills/ci-watch/SKILL.md").unlink()
         ctl.check("VACUITY: a missing doc is a refusal", run(), 1)
 
@@ -348,13 +350,13 @@ def selftest() -> int:
         # LONGER one still counts as a mention, because the twin's test is a
         # substring test. Pinned so a port that "improved" it to a word-boundary
         # match is caught: that would be a different gate.
-        plant(["--json"], ts, "--json-output only", taught_ts)
+        expect_finding(["--json"], ts, "--json-output only", taught_ts)
         ctl.check("SUBSTRING: --json is taught by a mention of --json-output", run(), 0)
 
         # And the shape that makes the constructed control meaningful: a doc that
         # mentions NONE of the flags cannot supply a target, so the control
         # reports that it could not test anything rather than passing.
-        plant(py, ts, "nothing relevant here", taught_ts)
+        expect_finding(py, ts, "nothing relevant here", taught_ts)
         ctl.check("CONTROL VACUITY: a doc with no flag at all is a refusal", run(), 1)
 
     return 0 if ctl.report() else 1

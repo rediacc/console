@@ -43,7 +43,7 @@ COMPARE_STEP = "Compare shadow secrets against GitHub"
 
 # A wrong RETIRE_ROOT makes the glob below return nothing, and every edit this script
 # performs is then a silent no-op that still reports "already retired?" -- which is this
-# script's own entry in the WHY block of scripts/check-enumeration-vacuity.ts. Measured
+# script's own entry in the WHY block of scripts/gates/check-enumeration-vacuity.ts. Measured
 # 2026-09-04: 33 workflow files. The floor catches a bad root, not today's count.
 MIN_WORKFLOWS = int(os.environ.get("RETIRE_MIN_WORKFLOWS", "20"))
 

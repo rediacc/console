@@ -193,48 +193,27 @@ def run(ev):
     truncating = False
 
     # `>` that is not `>>` and not `2>&1`-style fd plumbing, aimed at the log.
-    if hookio.grep_q_line(r"[^>&2]>[" + hookio.BLANK + r"]*[^>|&" + hookio.BLANK + r"]*" + RL, cmd):
+    if hookio.grep_q_line(hookio.rx(r"[^>&2]>[{B}]*[^>|&{B}]*") + RL, cmd):
         truncating = True
     # cp with the log as DESTINATION, i.e. the LAST argument of that segment. `cp <log>
     # /backup/` names the log as a SOURCE, which is a pure read, and blocking it contradicted
     # this file's own "reads are untouched" guarantee two paragraphs up. Backing the log up is
     # the single most useful thing a session can do with it, and this refused it.
     if hookio.grep_q_line(
-        r"(^|["
-        + hookio.BLANK
-        + r";|&])cp["
-        + hookio.BLANK
-        + r"]"
-        + SEG
-        + RL
-        + r"["
-        + hookio.BLANK
-        + r"]*($|[;|&])",
+        hookio.rx(r"(^|[{B};|&])cp[{B}]") + SEG + RL + hookio.rx(r"[{B}]*($|[;|&])"),
         cmd,
     ):
         truncating = True
     # mv and truncate stay position-independent, and NOT by oversight: `mv <log> elsewhere`
     # reads as a source too, but it REMOVES the log from its path, so unlike cp it is
     # destructive in exactly the way this guard exists to catch.
-    if hookio.grep_q_line(
-        r"(^|[" + hookio.BLANK + r";|&])(mv|truncate)[" + hookio.BLANK + r"]" + SEG + RL, cmd
-    ):
+    if hookio.grep_q_line(hookio.rx(r"(^|[{B};|&])(mv|truncate)[{B}]") + SEG + RL, cmd):
         truncating = True
-    if hookio.grep_q_line(
-        r"(^|[" + hookio.BLANK + r";|&])dd[" + hookio.BLANK + r"]" + SEG + r"of=" + SEG + RL, cmd
-    ):
+    if hookio.grep_q_line(hookio.rx(r"(^|[{B};|&])dd[{B}]") + SEG + r"of=" + SEG + RL, cmd):
         truncating = True
     # sed -i on the log, with any flags before the -i.
     if hookio.grep_q_line(
-        r"sed["
-        + hookio.BLANK
-        + r"]+(-[^"
-        + hookio.BLANK
-        + r"]+["
-        + hookio.BLANK
-        + r"]+)*-i"
-        + SEG
-        + RL,
+        hookio.rx(r"sed[{B}]+(-[^{B}]+[{B}]+)*-i") + SEG + RL,
         cmd,
     ):
         truncating = True
@@ -242,13 +221,13 @@ def run(ev):
     # was wrong: `-[^[:space:]]*a` matched `--output-error=warn`, and an unscoped
     # test passed on a decoy append to an unrelated file.
     tee_matches = hookio.grep_o(
-        r"(^|[" + hookio.BLANK + r";|&])tee[" + hookio.BLANK + r"]" + SEG + RL,
+        hookio.rx(r"(^|[{B};|&])tee[{B}]") + SEG + RL,
         hookio._here_string(cmd),
     )
     if tee_matches:
         tee_seg = tee_matches[-1]
         if not hookio.grep_q_line(
-            r"[" + hookio.BLANK + r"](--append|-[A-Za-z]*a[A-Za-z]*)([" + hookio.BLANK + r"]|$)",
+            hookio.rx(r"[{B}](--append|-[A-Za-z]*a[A-Za-z]*)([{B}]|$)"),
             tee_seg,
         ):
             truncating = True

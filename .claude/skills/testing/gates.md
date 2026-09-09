@@ -5,12 +5,12 @@ content shape, a rule that must hold across a corpus.
 
 ## Where the file goes
 
-`scripts/check-*.ts`, `packages/*/scripts/check-*.ts` (a gate about www belongs
+`scripts/gates/check-*.ts`, `packages/*/scripts/check-*.ts` (a gate about www belongs
 beside www), `.ci/scripts/quality/check-*.sh` or `check_*.py`.
 
 ## Three-point wiring, all three required
 
-1. `package.json` → `"check:ci-<name>": "tsx scripts/check-<name>.ts --selftest && tsx scripts/check-<name>.ts"`
+1. `package.json` → `"check:ci-<name>": "tsx scripts/gates/check-<name>.ts --selftest && tsx scripts/gates/check-<name>.ts"`
 2. `scripts/ci-runner/manifest.ts` → an entry with `id`, `run`, `gate: true`, `leaves`, and its `ci` step
 3. `.github/workflows/ci-quality.yml` → the step named in the manifest
 

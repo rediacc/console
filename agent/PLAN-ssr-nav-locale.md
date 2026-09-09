@@ -18,7 +18,7 @@ still says `proposed` and is wrong. `packages/www/src/layouts/BaseLayout.astro:3
 passes `lang={currentLang}` to Navigation and the five other SSR'd islands;
 `packages/www/src/components/Navigation.tsx:41` prefers the prop over the hook.
 The gate the plan called the half that matters exists as
-`scripts/check-ssr-locale.ts`, wired as `check:ci-ssr-locale`. Landed in
+`scripts/gates/check-ssr-locale.ts`, wired as `check:ci-ssr-locale`. Landed in
 f7a5351a9. The hook itself is deliberately unchanged, as the plan said.
 
 ## Lessons

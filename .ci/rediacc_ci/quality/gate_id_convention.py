@@ -126,6 +126,20 @@ from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
 # The prefix that makes a `run` string a gates/ script.
+# THE COLOURS ARE UNCONDITIONAL IN THE TWIN, and so they are here. The twin
+# assigns `RED=$'\033[0;31m'` at check-gate-id-convention.sh:81-83 with no tty
+# test at all, so it writes escape bytes into a pipe as readily as into a
+# terminal. The first draft of this port printed the glyphs bare, and the W7 P4
+# cutover differential caught it: same exit code, same words, stdout 311 bytes
+# against the twin's 322. Eleven bytes of escape is not a cosmetic gap, it is
+# the differential failing, and a port that cannot be compared byte for byte
+# cannot be cut over. Matching the twin exactly is the requirement; TTY-gating
+# is a separate change for both sides at once, not something to introduce on
+# one side during a move.
+RED = "\033[0;31m"
+GREEN = "\033[0;32m"
+NC = "\033[0m"
+
 GATES = ".ci/scripts/test/gates/test-"
 
 # The alias form the 2026-08-08 entry used: `npm run [--silent] <key>`, anchored
@@ -277,7 +291,7 @@ def main(argv: list[str] | None = None) -> int:
     gates_dir = root / GATES_DIR_REL
 
     def fail(message: str) -> int:
-        print("✗ %s" % message, file=sys.stderr)
+        print("%s✗%s %s" % (RED, NC, message), file=sys.stderr)
         return 1
 
     if not lock.is_file():
@@ -343,7 +357,10 @@ def main(argv: list[str] | None = None) -> int:
         real_out, real_err = evaluate(str(lock), str(pkg), str(gates_dir))
 
     if real_out:
-        print("✗ gate registration does not follow the gates/ convention:", file=sys.stderr)
+        print(
+            "%s✗%s gate registration does not follow the gates/ convention:" % (RED, NC),
+            file=sys.stderr,
+        )
         # `printf '  %s\n' "$REAL_OUT"` is ONE format cycle over a quoted
         # multi-line value, so only the first line carries the indent.
         print("  %s" % "\n".join(real_out), file=sys.stderr)
@@ -366,7 +383,10 @@ def main(argv: list[str] | None = None) -> int:
         print("  is the gate that says so.", file=sys.stderr)
         return 1
 
-    print("✓ every gates.lock.json entry that runs a gates/ script uses the gate-test: convention")
+    print(
+        "%s✓%s every gates.lock.json entry that runs a gates/ script uses the "
+        "gate-test: convention" % (GREEN, NC)
+    )
     for line in real_err:
         print(re.sub(r"^# ", "  scope: ", line))
     print("  control 1 fired on the planted check:ci-* alias (%d finding(s))" % len(control_out))

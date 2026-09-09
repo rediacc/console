@@ -91,6 +91,7 @@ step: Check Go dependency freshness
 needs: none
 selftest: true
 lane: quality-go
+`.ci/scripts/quality/check-go-deps.sh` by an awk range over its `env-EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
 ---- end gate ----
 """
 

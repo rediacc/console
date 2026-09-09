@@ -64,6 +64,7 @@ deleting it is W7 P5's job in a later change.
 step: Workflow banned patterns
 needs: node
 selftest: true
+slow: true
 ---- end gate ----
 """
 

@@ -48,15 +48,24 @@ repository to write in a form that cannot fail:
   * NO HAND-TYPED FLOORS. Every count in here is derived from the corpus or
     from the readers' own tables.
 
-THE DEFECT THIS SUITE FOUND ON THE WAY. `validate_blocker_quality` in the bash
-reader normalizes with `echo "$reason"`, and bash's `echo` builtin eats a word
-that is exactly `-n`, `-e` or `-E`. A BLOCKER reason of `-n` is therefore
-measured as ZERO characters by bash and TWO by TypeScript, and the two print
-different messages for the same input. Both still reject it, so no gate is
-currently wrong; `test_bash_echo_builtin_eats_a_dash_n_reason` pins the
-divergence and this module follows the TypeScript reading, which is the correct
-one. The fix belongs in `.ci/scripts/lib/blocker-validator.sh`, which this
-workstream does not own.
+THE DEFECT THIS SUITE FOUND ON THE WAY, AND ITS FIX. `validate_blocker_quality`
+in the bash reader used to normalize with `echo "$reason"`, and bash's `echo`
+builtin eats a word that is exactly `-n`, `-e` or `-E`. A BLOCKER reason of `-n`
+was therefore measured as ZERO characters by bash and TWO by TypeScript. Both
+still rejected it, so no gate was wrong, and this suite recorded the divergence
+and said the fix belonged in the bash file. It landed on 2026-09-09 with the
+collapse: neither shared reader normalizes anything any more, both ask this
+module, and `test_the_bash_echo_builtin_defect_is_gone_and_stays_gone` now
+asserts the agreement plus a reproduction of the old normalization proving the
+control still has something to detect.
+
+WHAT THIS SUITE NO LONGER HAS TO CARRY. It says below that the readers are
+separate implementations; since 2026-09-09 they are CLIENTS, which is why every
+comparison here still passes and why none of them would notice a phrase present
+in a reader's own table and absent from this module's. That direction is
+`.ci/rediacc_ci/tests/test_blocker_implementations.py`'s, and it exists because
+this file's reason corpus is generated FROM `LOW_EFFORT_PHRASES` at :370 and is
+structurally blind to the list being short.
 
 REGENERATING THE GOLDENS: `PYTHONPATH=.ci python3 .ci/rediacc_ci/tests/
 test_core_allowlist.py --record` from the repo root, with node_modules present.
@@ -725,13 +734,23 @@ def test_bash_reason_validator_agrees_with_python_on_every_case(tmp_path):
     _agree("bash reason verdicts", out, _python_reason_rows(cases))
 
 
-def test_bash_echo_builtin_eats_a_dash_n_reason(tmp_path):
-    """THE DEFECT. `echo "-n"` prints nothing, so bash measures a 2-char reason
-    as 0 characters and prints a different message from the other two readers.
+def test_the_bash_echo_builtin_defect_is_gone_and_stays_gone(tmp_path):
+    """THE DEFECT, AND THE COLLAPSE THAT REMOVED IT.
 
-    Recorded rather than worked around. Both readers still REJECT `-n`, so no
-    gate is currently wrong, and the fix belongs in the bash file this
-    workstream does not own. This module follows the TypeScript reading.
+    `echo "-n"` in bash prints NOTHING, so `validate_blocker_quality` used to
+    normalize a two-character reason to zero characters and print a different
+    message from the other two readers. This suite recorded that divergence
+    rather than working around it, and said in as many words that the fix
+    belonged in the bash file and that this control should be retired when it
+    landed. It landed on 2026-09-09: the bash reader no longer normalizes
+    anything, it asks `rediacc_ci.core.allowlist`, so `echo` is not on the path.
+
+    THE CONTROL IS RETIRED BY INVERSION, NOT BY DELETION. What was "the two
+    disagree, and here is the digest that proves it" is now "the two agree, and
+    here is the same digest on both sides", plus a reproduction of the old
+    normalization showing the driver WOULD still see the divergence if it came
+    back. Deleting it would have removed the only test in this repository that
+    exercises a reason bash's `echo` can eat.
     """
     tsv = tmp_path / "dashn.tsv"
     tsv.write_text("dashn\t-n\n", encoding="utf-8")
@@ -744,17 +763,34 @@ def test_bash_echo_builtin_eats_a_dash_n_reason(tmp_path):
     assert mine is not None
     assert mine.kind == "too-short"
     assert "(2 chars, minimum 30)" in mine.message
-    assert _sha256(mine.message) != digest, (
-        "bash now agrees with the other two readers on a bare '-n' reason; the "
-        "echo-builtin defect has been fixed and this control should be retired"
+    assert _sha256(mine.message) == digest, (
+        "bash and the canonical disagree on a bare '-n' reason again. The reader "
+        "used to normalize with the `echo` builtin, which eats `-n`, `-e` and `-E`; "
+        "if that shape has returned to .ci/scripts/lib/blocker-validator.sh it is "
+        "the same defect, not a new one."
     )
-    assert (
-        "(0 chars, minimum 30)"
-        in _run_bash(
-            "source .ci/scripts/lib/blocker-validator.sh\n"
-            'validate_blocker_quality dashn "-n" "%s" || true\n' % REASON_FILE,
-            [],
-        )[1]
+
+    # The message the bash reader actually prints, end to end, through ci_error.
+    printed = _run_bash(
+        "source .ci/scripts/lib/blocker-validator.sh\n"
+        'validate_blocker_quality dashn "-n" "%s" || true\n' % REASON_FILE,
+        [],
+    )[1]
+    assert "(2 chars, minimum 30)" in printed, printed
+    assert "(0 chars, minimum 30)" not in printed, printed
+
+    # THE CONTROL, so this is not a test that would pass with the differential
+    # broken: reproduce the OLD normalization and show it still yields zero, i.e.
+    # the divergence is genuinely absent rather than merely unmeasured.
+    old_normalization = _run_bash(
+        'n=$(echo "-n" | tr "[:upper:]" "[:lower:]" | '
+        "sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/[.!?,;:]*$//')\n"
+        'printf "%s\\n" "${#n}"\n',
+        [],
+    )[1].strip()
+    assert old_normalization == "0", (
+        "the `echo` builtin no longer eats `-n` on this bash, so this control is "
+        "measuring nothing; got %r" % old_normalization
     )
 
 
@@ -905,11 +941,44 @@ def _record() -> int:
     for directory in (CORPUS_DIR, BASH_PAIRS_DIR, TS_RECORDS_DIR, REASONS_DIR):
         directory.mkdir(parents=True, exist_ok=True)
 
+    # THROUGH `_live_source`, NOT `root / source`, and this is a FIX rather than a
+    # tidy-up. `SOURCES` names each list at its historical repo-root path, and
+    # `dee3ade8b` moved all fifteen into `.ci/policy/`. The live differential above
+    # already resolves by basename through `git ls-files` and kept working; only
+    # this recorder was left on the hardcoded path, so `--record` died on its first
+    # file with `FileNotFoundError: .../.actions-upgrade-blocklist` and every golden
+    # became unrefreshable. That is not a cosmetic outage: eight corpora were
+    # legitimately refreshed afterwards and their `corpus-sha256` headers could not
+    # follow, which is what `test_ts_records_golden_matches_the_python_records_projection`
+    # was reporting.
+    #
+    # `SOURCES` is deliberately NOT path-qualified to fix this. `_slug` derives every
+    # golden's FILENAME from the source string, so adding `.ci/policy/` would rename
+    # all seventeen goldens -- a re-baseline of the whole suite wearing the costume
+    # of a one-line fix.
     frozen: list[str] = []
+    missing: list[str] = []
     for source in SOURCES:
+        live = _live_source(source)
+        if live is None:
+            missing.append(source)
+            continue
         target = CORPUS_DIR / ("%s.list" % _slug(source))
-        shutil.copyfile(root / source, target)
+        shutil.copyfile(live, target)
         frozen.append(str(target))
+    if missing:
+        # LOUD, AND WITHOUT WRITING ANYTHING. A partial re-record would leave the
+        # corpus half old and half new with no marker saying which, and `None` handed
+        # to `copyfile` raises a TypeError that names neither the list nor the move.
+        print(
+            "cannot record: %d corpus source(s) are not tracked anywhere under any\n"
+            "  basename, so `git ls-files` cannot find where they moved to:\n    %s\n"
+            "  Point SOURCES at a list that still exists, or drop the entry. Do NOT\n"
+            "  path-qualify SOURCES to make this pass: _slug would rename the goldens."
+            % (len(missing), "\n    ".join(missing)),
+            file=sys.stderr,
+        )
+        return 1
 
     bash_docs, _ = _bash_pairs(frozen)
     ts_docs = _ts_records(frozen)

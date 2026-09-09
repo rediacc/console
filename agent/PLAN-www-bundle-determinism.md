@@ -5,7 +5,7 @@ Updated: 2026-09-03
 
 ## Recommendation, in one line
 
-`scripts/check-client-bundle-budget.ts:62` matches `/\bimport\s+["']/`, but rollup emits
+`scripts/gates/check-client-bundle-budget.ts:62` matches `/\bimport\s+["']/`, but rollup emits
 bare side-effect imports with **no** space (`import"./x.js"`). The homepage's script entry
 is a 129-byte facade whose only three edges are all that form, so the graph walk dead-ends
 and 124,673 B goes unmeasured. Fix the regex. The 082f7aa94 "failure" was the gate telling
@@ -95,7 +95,7 @@ budget set just above today's figure is a gate that ratifies the defect.
 
 ### Step 1 (non-negotiable) -- the measurement
 
-At `scripts/check-client-bundle-budget.ts:62`, `\s+` becomes `\s*`, with the reason stated
+At `scripts/gates/check-client-bundle-budget.ts:62`, `\s+` becomes `\s*`, with the reason stated
 inline. `\s*` adds no false positives: `import(` cannot match (a paren is not a quote) and
 `import.meta` has no quote; `from"..."` is already covered by `:60`.
 

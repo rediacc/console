@@ -1,9 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# step: Workflow banned patterns
-# needs: node
-# selftest: true
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-workflows is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_workflows.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_workflows.py" but its header derives ".ci/scripts/quality/check-workflows.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Check workflow files for banned patterns
 #
@@ -447,16 +450,24 @@ check_pr_environment_names
 check_gh_slurp_jq() {
     local scan_files=("${GITHUB_YAMLS[@]}")
     while IFS= read -r f; do scan_files+=("$f"); done \
-        < <(find .ci/scripts -name '*.sh' -type f 2>/dev/null)
+        < <(find .ci/scripts \( -name '*.sh' -o -name '*.py' \) -type f 2>/dev/null)
 
     slurp_jq_offenders() {
         # stdin: file content. Prints line numbers where one gh invocation
         # (including line continuations, which is how the real regression was
         # written) carries both flags. Comments do not count.
         awk '
-            /^[[:space:]]*#/ { joined = ""; next }
+            /^[[:space:]]*#/ { joined = ""; depth = 0; next }
             { line = $0; n[++c] = NR
               if (joined != "") { joined = joined " " line } else { joined = line; start = NR }
+              # BASH CONTINUES WITH A BACKSLASH, PYTHON WITH AN OPEN BRACKET, and the
+              # second is a running DEPTH, not a line suffix. Mirrors the port at
+              # rediacc_ci/quality/workflows.py:slurp_jq_offenders line for line, so the
+              # shadow pair stays equivalent; the port widened first and this follows
+              # rather than being left to diverge silently.
+              opens = gsub(/[([{]/, "&", line); closes = gsub(/[)\]}]/, "&", line)
+              depth += opens - closes; if (depth < 0) depth = 0
+              if (depth > 0) next
               if (line ~ /\\[[:space:]]*$/) next
               if (joined ~ /--slurp/ && joined ~ /--jq/) print start
               joined = "" }'

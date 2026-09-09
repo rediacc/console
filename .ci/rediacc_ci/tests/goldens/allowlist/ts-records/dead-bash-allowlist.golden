@@ -5,10 +5,10 @@
 # source: .dead-bash-allowlist
 # corpus: corpus/dead-bash-allowlist.list
 # comment-char: #
-# corpus-sha256: 69896f9575dc3cba1183efc5a0ceb2e383930aac2717cf3c17124555db074f54
+# corpus-sha256: 4c3441791a767999ec3c4d9c36d3d6c5edfed2efd463e909df8ebc1a20b9a723
 # ---
 20	glob:.ci/scripts/test/gates/	expanded as a glob by .ci/scripts/test/run-all.sh (PATTERN="test-*.sh" into TEST_FILES), so every test-*.sh under that root is executed without ever being named individually
-23	glob:.ci/tutorials/	three sites expand this directory as a glob and name no file in it individually -- .ci/media/tutorials.sh (for script in "$tutorials_dir"/tutorial-*.sh, and "$tutorials_dir/tutorial-${name}.sh" built from an argument), .ci/tutorials/run-sequence.sh (for script in "$SCRIPT_DIR"/tutorial-*.sh, plus a per-slug existence check derived from the docs frontmatter), and scripts/check-tutorial-noninteractive.ts (readdirSync of .ci/tutorials filtered to .sh)
+23	glob:.ci/tutorials/	three sites expand this directory as a glob and name no file in it individually -- .ci/media/tutorials.sh (for script in "$tutorials_dir"/tutorial-*.sh, and "$tutorials_dir/tutorial-${name}.sh" built from an argument), .ci/tutorials/run-sequence.sh (for script in "$SCRIPT_DIR"/tutorial-*.sh, plus a per-slug existence check derived from the docs frontmatter), and scripts/gates/check-tutorial-noninteractive.ts (readdirSync of .ci/tutorials filtered to .sh)
 26	dispatch:phase_	assembled at runtime in scripts/dev/linode-cluster-validation.sh as "phase_$p", so phase_preflight/phase_plan/phase_idempotency have no static call site
 36	manual:.ci/scripts/deploy/deploy-proxy.sh	deliberately not wired into the release pipeline; its own header at the top of the file states MANUAL ONLY, and it is run by the operator when a proxy deploy is needed
 39	manual:.ci/scripts/security/dependency-inventory.sh	NIS2/CRA supply-chain SBOM enumeration, run by the operator on demand when a dependency inventory is required for compliance evidence rather than on every build

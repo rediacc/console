@@ -30,7 +30,7 @@ SHIPPED, all three legs, measured on 2026-09-06.
 - The gate exists and PASSES. `npm run check:ci-shared-esm-resolvable` exits 0 and
   prints: "shared is importable as declared (134 built modules imported by Node, 27
   concrete export targets present; 3-arm control fired)". Its script is
-  `scripts/check-shared-esm-resolvable.ts`.
+  `scripts/gates/check-shared-esm-resolvable.ts`.
 
 THE HEADER SAID `Status: draft`, AND THE TREE DISAGREES. The work is in the tree and
 the gate that proves it runs. The header was simply never updated after the plan was

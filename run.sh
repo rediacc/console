@@ -34,7 +34,7 @@ LEGACY_RUNNER="$ROOT_DIR/.ci/legacy/run-legacy.sh"
 # in the SAME change that deletes its arm from the legacy dispatcher: the gate
 # test refuses an orphan and an overlap alike, so a half-done port is red rather
 # than ambiguous.
-PORTED_VERBS=()
+PORTED_VERBS=(setup)
 
 # `.ci` on PYTHONPATH, not an install: the package directory is `.ci/rediacc_ci`, so
 # the importable name is `rediacc_ci` with `.ci` on the path, which is what pyproject

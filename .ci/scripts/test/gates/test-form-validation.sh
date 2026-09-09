@@ -6,7 +6,7 @@
 # needs: node
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
 # ---- end gate ----
-# Tests for scripts/check-form-validation.ts.
+# Tests for scripts/gates/check-form-validation.ts.
 #
 # The gate is RED on the real tree today: five of the six forms in packages/www disable
 # browser validation without replacing it, or read an input and silently discard it. The
@@ -27,7 +27,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-GATE="$REPO_ROOT/scripts/check-form-validation.ts"
+GATE="$REPO_ROOT/scripts/gates/check-form-validation.ts"
 [ -f "$GATE" ] || log_fail "gate not found: $GATE"
 
 test_selftest_passes_and_plants_both_shapes() {

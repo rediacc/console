@@ -47,6 +47,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls
+
 ROOT = Path(os.environ.get("ACTIONS_ALLOWLIST_ROOT") or Path(__file__).resolve().parents[3])
 RECORD = ROOT / ".ci" / "config" / "actions-allowlist.json"
 
@@ -176,12 +179,8 @@ def main(argv: list[str]) -> int:
         print(f"VACUOUS INPUT: {RECORD.name} does not parse ({exc})", file=sys.stderr)
         return 1
 
-    print("actions allowlist: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("actions allowlist", selftest):
+        return refusal
 
     files = corpus()
     used = used_actions(files)

@@ -1,10 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# step: Check config-migration runner + fixtures
-# needs: node
-# selftest: true
-# lane: quality-packages
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-config-migrations is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_config_migrations.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_config_migrations.py" but its header derives "...check-config-migrations.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Verify the config-migration runner round-trips every committed fixture
 # through runMigrations() + RdcConfigSchema.parse() without error, and

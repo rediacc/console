@@ -61,7 +61,7 @@ Compacted-By: 8f55d4f0
 Compacted-At: 2026-09-06T17:06:10Z
 Boxes: 0 attested, 0 open, 0 abandoned
 Epics: none
-Touched: .claude/settings.json, package.json, scripts/ci-runner/manifest.ts, .ci/scripts/test/gates/test-worklist-hooks.sh, .ci/scripts/quality/lint-rule-liveness.mjs, scripts/check-ci-parity.ts, .ci/scripts/test/mutate-check.sh
+Touched: .claude/settings.json, package.json, scripts/ci-runner/manifest.ts, .ci/scripts/test/gates/test-worklist-hooks.sh, .ci/scripts/quality/lint-rule-liveness.mjs, scripts/gates/check-ci-parity.ts, .ci/scripts/test/mutate-check.sh
 Gates: check:ci-agent-hint-liveness, check:ci-hook-worklist-suite
 Why-Source: auto
 Read-History: `git show 1cc03bcbe8b95625789dabc41f2c5b84b83dd032` recovers the text; `git log --find-object=1cc03bcbe8b95625789dabc41f2c5b84b83dd032 --all` names the commit

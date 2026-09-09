@@ -106,7 +106,7 @@ done < <(printf '%s' "$CMD" | grep -oE '(-F|--file)([[:space:]]+|=)[^[:space:];|
 #
 # `git branch --show-current` prints EMPTY when detached rather than lying, and
 # the CI environment names the branch outright. Same resolution order as
-# scripts/check-pr-task-trailers.ts, so the gate and the guard agree about which
+# scripts/gates/check-pr-task-trailers.ts, so the gate and the guard agree about which
 # branch they are judging.
 BRANCH="${PR_HEAD_REF:-${GITHUB_HEAD_REF:-$(git -C "${ROOT:-.}" branch --show-current 2>/dev/null)}}"
 # A HALTED REBASE IS THE DETACHED CASE THAT ACTUALLY MATTERS HERE. This repo

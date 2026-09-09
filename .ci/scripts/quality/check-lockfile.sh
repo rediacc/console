@@ -1,9 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# step: Lockfile
-# needs: node
-# selftest: true
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-lockfile is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_lockfile.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_lockfile.py" but its header derives "...check-lockfile.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Validate EVERY package-lock.json in the tree, on two independent properties.
 #
@@ -63,7 +66,15 @@
 #     in round 9 of the 0707 campaign (wrangler/workers-types peer). So this gate proves
 #     "both pinned npms can RESOLVE this lockfile", NOT "either can install it". A gate whose name
 #     overstates its coverage is the disease being cured here; the cure must not reintroduce
-#     it. For a real install check, use CLAUDE.md's clean-room recipe.
+#     it. For a real install check, use THE CLEAN-ROOM RECIPE, which lives here rather
+#     than in CLAUDE.md because that section was archaeology and was cut on 2026-09-09:
+#     copy the root manifests, the lockfile, .npmrc and all seven workspace package.json
+#     files to a scratch directory and run `npx -y npm@<major> install --ignore-scripts`
+#     there. It has to be a REAL tree: both a hoist and a peer ERESOLVE are invisible to
+#     --package-lock-only and --dry-run, neither of which writes a node_modules. Run that
+#     way on 2026-09-06, all eleven zod copies landed exactly where the npm 10 tree puts
+#     them, packages/shared/node_modules/zod at 4.5.4 included -- which is what retired
+#     the npm@10 pin that .ci/lib/local-common.sh used to carry.
 #
 # Run via: npm run check:ci-lockfile
 

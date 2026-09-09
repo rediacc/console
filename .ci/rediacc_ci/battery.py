@@ -73,11 +73,22 @@ EXIT CODES
     .ci/rediacc_ci/battery.py --list        print the schedule without running it
     .ci/rediacc_ci/battery.py --selftest    prove this runner can fail
 
-NOT YET REGISTERED. There is no `---- gate ----` header here for the same reason
-check_pytest.py has none: `scripts/gate-bind.ts` only scans `.ci/scripts/` and
-`scripts/`, so a header at this path would be inert -- a declaration that reads as
-wired and is not. Registration is the root driver's, via package.json, the manifest
-and the workflow.
+NO `---- gate ----` HEADER HERE, AND THE REASON THIS FILE USED TO GIVE WAS FALSE.
+It said `scripts/gate-bind.ts` "only scans `.ci/scripts/` and `scripts/`", so a
+header at this path would be inert. Measured 2026-09-09 by CALLING the real
+function rather than reading it: `inScope('.ci/rediacc_ci/battery.py')` is TRUE.
+`.ci/rediacc_ci` was added to that regex on 2026-09-06 and the comment above it
+says why -- a header outside the scan is INVISIBLE rather than unregistered, which
+is worse. The live scope is `scripts/gate-bind.ts:207-208`:
+`/^(\\.ci\\/scripts|\\.ci\\/rediacc_ci|scripts)\\//`. A stale premise here would have
+decided the registration, so it is corrected rather than left as prose.
+
+THE DECISION IS UNCHANGED, but it now rests on the real reason: this file is a
+RUNNER, not a gate. `check:ci-quality-gates` is registered by hand in
+`scripts/ci-runner/manifest.ts` with `gate: false` against the existing
+"Quality-gate unit tests" step, exactly as its predecessor was, and the runner it
+points at carries no header either. Registration is the root driver's, via
+package.json, the manifest and the workflow.
 """
 
 import concurrent.futures
@@ -92,6 +103,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from rediacc_ci import paths
+from rediacc_ci import proc as ci_proc
 from rediacc_ci.controls import Controls
 
 GATES_SUBDIR = (".ci", "scripts", "test", "gates")
@@ -267,23 +279,28 @@ class Outcome:
 
 def run_one(gates_dir: pathlib.Path, name: str, timeout: int = 1800) -> Outcome:
     outcome = Outcome(name)
-    try:
-        proc = subprocess.run(
-            ["./" + name],
-            cwd=str(gates_dir),
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=timeout,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
+    # THROUGH THE SHARED RUNNER. Every one of these is a bash gate test that
+    # spawns children of its own -- `npm run`, `npx tsx`, a planted fixture's
+    # own subshell. `subprocess.run(capture_output=True, timeout=...)` kills the
+    # test script and then blocks in communicate() on pipes a grandchild still
+    # holds, so the battery's per-test timeout could not actually bound a test.
+    # `proc.run` gives each test its own session and signals the whole group.
+    #
+    # THE LAUNCH CHECK MOVED AHEAD OF THE RUN, because it can no longer be read
+    # off the result. `proc.run` reports a failed spawn as rc 127 with the
+    # OSError on stderr, and a gate test whose own body hits `command not found`
+    # exits 127 too -- indistinguishable after the fact. Asking the filesystem
+    # first keeps "could not be launched" (no verdict) apart from "ran and
+    # exited 127" (a verdict, and a failing one).
+    if not os.access(gates_dir / name, os.X_OK):
         # NOT recorded. A test that could not be launched has no verdict, and
         # reporting rc=1 here would say "your gate test failed", which is false.
-        outcome.log = "battery: could not run %s: %s\n" % (name, exc)
+        outcome.log = "battery: could not run %s: not an executable file\n" % name
         return outcome
+    result = ci_proc.run(["./" + name], cwd=gates_dir, timeout=timeout)
     outcome.recorded = True
-    outcome.rc = proc.returncode
-    outcome.log = proc.stdout + proc.stderr
+    outcome.rc = result.returncode
+    outcome.log = result.stdout + result.stderr
     outcome.assertions = len(PASS_RE.findall(ANSI_RE.sub("", outcome.log)))
     return outcome
 
@@ -787,6 +804,14 @@ def main(argv: list[str]) -> int:
     # The controls run BEFORE the battery is judged, and a control failure refuses
     # to judge it at all: a verdict from an instrument that cannot fail is worse
     # than no verdict.
+    #
+    # THE LABEL IS NOT DECORATION. `Controls.report()` prints a bare "N control(s)
+    # passed", and this call happens before anything else, so the FIRST line of
+    # every CI transcript was a count of nothing named. run-all.sh spelled its
+    # equivalent "tree-guard selftest: N control(s) passed" on one line; the text
+    # lives in rediacc_ci.controls and is shared, so the label goes above it here
+    # rather than into every other caller's output.
+    print("runner controls, before the battery is judged:")
     if not selftest():
         print(
             "%s✗ CONTROL FAILED%s: this runner's own controls did not pass, so it refuses\n"

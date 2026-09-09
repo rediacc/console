@@ -67,8 +67,57 @@ def _gate_files() -> list[pathlib.Path]:
 
 def test_the_corpus_is_not_empty() -> None:
     """ZERO INPUTS IS A FAILURE. Every comparison below is vacuous if the glob
-    stops matching, and a vacuous comparison passes silently."""
-    assert len(_gate_files()) >= 50, "the gate directory collapsed; every case below proves nothing"
+    stops matching, and a vacuous comparison passes silently.
+
+    DERIVED, NOT TYPED, and the difference is about to matter. This read
+    `>= 50` against a directory holding 77 `check-*.sh`. W7 P5 deletes that
+    family, so the typed number turns an anti-vacuity guard into a FALSE RED
+    partway through a legitimate deletion -- and the porter's cheapest way past
+    a false red is to lower the number, which is how a floor stops meaning
+    anything. `check_guard_feature_completeness.py:176` already argues the
+    general case for this tree ("SET-BASED, NOT A TYPED COUNT ... a number here
+    would have to be re-keyed by every port anyway"), and driver contract
+    section 6 forbids the hand-typed form outright.
+
+    So the floor is set EQUALITY against git rather than a constant: the glob
+    must see exactly the `check-*.sh` files the repository tracks. That is
+    strictly STRONGER than `>= 50` -- it catches a glob that narrows by one,
+    which a floor of 50 would sit through for twenty-seven deletions -- and it
+    walks down with P5 on its own. When the family reaches zero the `assert
+    tracked` below fires and says the honest thing: this file's subject is
+    gone, so delete it with the family rather than re-flooring it.
+    """
+    tracked = {
+        pathlib.Path(line).name
+        for line in subprocess.run(
+            ["git", "-C", str(paths.repo_root()), "ls-files", ".ci/scripts/quality/check-*.sh"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.splitlines()
+        if line
+    }
+    assert tracked, (
+        "git tracks no .ci/scripts/quality/check-*.sh at all. If W7 P5 has finished "
+        "deleting the family, this file's subject no longer exists: delete it with the "
+        "family instead of lowering a floor to keep a green over an empty corpus."
+    )
+    # SUBSET, NOT EQUALITY, and the direction is the whole point. I wrote this as `==`
+    # and it was wrong within hours: another writer left an untracked
+    # `check-env-file-adoption.sh` in the directory and the glob saw 78 against git's 77,
+    # so a test whose subject is "did the corpus COLLAPSE" started failing because the
+    # corpus GREW. An extra untracked file is in-flight work, which is the normal state of
+    # this tree; a tracked file the glob cannot see is the collapse this guards.
+    #
+    # The `>=` floor this replaced was worse in the other direction: it sat through
+    # twenty-seven deletions. Subset catches a narrowing of ONE and is indifferent to
+    # growth, which is exactly the asymmetry the failure mode has.
+    seen = {p.name for p in _gate_files()}
+    unseen = sorted(tracked - seen)
+    assert tracked <= seen, (
+        "git tracks %d file(s) the glob cannot see, so every case below runs over the "
+        "difference and proves nothing about it: %s" % (len(unseen), unseen)
+    )
 
 
 def test_the_port_and_the_live_grep_agree_on_every_gate() -> None:

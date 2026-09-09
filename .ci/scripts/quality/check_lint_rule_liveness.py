@@ -66,6 +66,7 @@ step: Enabled lint rules can actually fire
 needs: none
 selftest: true
 lane: quality-content
+slow: true
 ---- end gate ----
 """
 

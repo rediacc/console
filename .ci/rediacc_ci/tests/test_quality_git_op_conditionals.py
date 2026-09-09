@@ -238,3 +238,125 @@ def test_untracked_files_are_in_scope(tmp_path: pathlib.Path) -> None:
 def test_selftest_is_green() -> None:
     """The gate's own controls, driven in-process. Exit 0 or the port is broken."""
     assert goc.selftest() == 0
+
+
+# ---------------------------------------------------------------------------
+# THE PYTHON HALF.
+#
+# Same philosophy as above: run the TWIN'S ACTUAL BYTES, not a retyped copy. The
+# awk program and `scan_python_file` are sliced out of the shell script at test
+# time and executed, so a divergence between the two implementations fails here
+# rather than being discovered when the differential ledger is next recorded.
+#
+# THIS IS NOT PARANOIA. Writing the mirror produced exactly one such divergence
+# on 2026-09-08 and it was invisible on this tree: the awk emitted
+# `B\t\t<lineno>` for the bare shape, tab is IFS whitespace, bash `read` collapsed
+# the empty field, and the twin printed `bare-statement-line-` with NO NUMBER
+# while the port printed `bare-statement-line-2`. Neither side has a bare finding
+# on the real tree, so both were "equal" and green.
+
+
+def _twin_python_scanner(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A runnable harness holding the twin's own python-scanning bytes."""
+    twin = (
+        pathlib.Path(goc.__file__).resolve().parents[3]
+        / ".ci/scripts/quality/check-git-op-conditionals.sh"
+    )
+    text = twin.read_text(encoding="utf-8")
+    awk_start = text.index("PY_SCAN_AWK='")
+    awk_end = text.index("}'", awk_start) + 2
+    fn_start = text.index("scan_python_file() {")
+    fn_end = text.index("\n}\n", fn_start) + 3
+    harness = tmp_path / "harness.sh"
+    harness.write_text(
+        '#!/usr/bin/env bash\nset -uo pipefail\nROOT="$2"\n'
+        + text[awk_start:awk_end]
+        + "\n"
+        + text[fn_start:fn_end]
+        + '\nscan_python_file "$1"\n',
+        encoding="utf-8",
+    )
+    return harness
+
+
+# One entry per shape the python predicate has to get right. The comment is the
+# property; `fires` is only a readability aid, the ASSERTION is twin == port.
+PY_CASES = [
+    'branch = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\nif not branch:\n    pass\n',
+    'branch = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\nif branch == "HEAD":\n    pass\n',
+    # THE SPLIT CALL: `git` on the head line, `rev-parse` on the continuation.
+    'remote = hookio.git_out(\n    ["rev-parse", "--abbrev-ref", "HEAD"], cwd=root\n)\n',
+    # The bare shape, whose line number is the divergence described above.
+    'def cb():\n    return hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"]) or "main"\n',
+    # A compound truthiness guard, which a narrower `if var:` spelling missed.
+    'p = hookio.git_out(["rev-parse", "--git-path", "x"])\nif p and pathlib.Path(p).is_file():\n    pass\n',
+    # Fail-loud.
+    'sha = subprocess.run(["git", "rev-parse", "HEAD"], check=True).stdout\n',
+    # `github_api` carries the letters `git` and is not the git CLI.
+    'b = github_api(["rev-parse", "--abbrev-ref", "HEAD"])\nif b == "main":\n    pass\n',
+    # A control body is fixture territory; the def AFTER it is not.
+    (
+        'def selftest():\n    b = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\n\n\n'
+        'def main():\n    c = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\n'
+    ),
+    # The over-join regression: brackets inside a regex constant.
+    'A = (\n    r"(^|[;&|(]|&&"\n    + r"]*git["\n)\nb = hookio.git_out(["rev-parse", "HEAD"])\nif not b:\n    pass\n',
+    # Not an identity command at all.
+    'status = hookio.git_out(["status", "--porcelain"])\nif status != "":\n    pass\n',
+]
+
+
+@pytest.mark.parametrize("body", PY_CASES)
+def test_python_predicate_agrees_with_the_twins_awk(body: str, tmp_path: pathlib.Path) -> None:
+    harness = _twin_python_scanner(tmp_path)
+    target = tmp_path / "case.py"
+    target.write_text(body, encoding="utf-8")
+    proc = subprocess.run(
+        ["bash", str(harness), str(target), str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    twin = sorted(line for line in proc.stdout.split("\n") if line)
+    port = sorted(goc.scan_python_text(body, "case.py"))
+    assert twin == port, "twin %r != port %r for %r" % (twin, port, body)
+
+
+def test_the_hooks_python_glob_needs_the_flat_spelling(tmp_path: pathlib.Path) -> None:
+    """`**/*.py` DROPS every top-level module, including the one defining git_out.
+
+    The sibling of the `.sh` case above, in the other direction. git's default
+    pathspec is wildmatch without pathname mode, so the flat `*.py` recurses and
+    the `**` form demands a literal slash. Getting this backwards costs SIX files
+    here, one of which is `hookio.py`.
+    """
+    root = tmp_path / "r"
+    (root / ".claude" / "rediacc_hooks" / "guards").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
+    (root / ".claude/rediacc_hooks/hookio.py").write_text("x = 1\n", encoding="utf-8")
+    (root / ".claude/rediacc_hooks/guards/g.py").write_text("x = 1\n", encoding="utf-8")
+
+    flat = goc.scan_files(root, (".claude/rediacc_hooks/*.py",))
+    starred = goc.scan_files(root, (".claude/rediacc_hooks/**/*.py",))
+    assert ".claude/rediacc_hooks/hookio.py" in flat
+    assert ".claude/rediacc_hooks/hookio.py" not in starred
+    assert goc.PY_SCAN_GLOBS[0] == ".claude/rediacc_hooks/*.py"
+
+
+def test_the_split_call_is_found_which_a_line_scanner_missed() -> None:
+    """The python analogue of the `-C` case: real, and invisible line by line."""
+    body = 'remote = hookio.git_out(\n    ["rev-parse", "--abbrev-ref", "HEAD"], cwd=root\n)\n'
+    assert goc.scan_python_text(body, "f.py") == ["f.py:remote"]
+    # Line by line, NEITHER line carries both tokens -- which is the whole point.
+    head, cont = body.split("\n")[:2]
+    assert "rev-parse" not in head
+    assert not goc._PY_GIT_TOKEN.search(cont)
+
+
+@pytest.mark.parametrize("name", ["d/test-x.py", "d/test_x.py"])
+def test_test_files_are_out_of_scope_with_either_separator(name: str) -> None:
+    """This tree spells one of them with a HYPHEN, so a `test_`-only rule misses it."""
+    body = 'b = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])\n'
+    assert goc.scan_python_text(body, name) == []
+    assert goc.scan_python_text(body, "d/x.py") == ["d/x.py:b"]

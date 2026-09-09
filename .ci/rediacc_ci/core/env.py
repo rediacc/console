@@ -39,9 +39,16 @@ WHY THE SHELL WINS OVER THE FILE
 This INVERTS `set -a; source`, which lets the file overwrite the shell, and the
 inversion is deliberate rather than incidental.
 
-`.ci/lib/account.sh:432-440` is the live case: `account_allocate_ports`
-computes GATEWAY_PORT into the shell, and four lines later `source .env`
-runs with the file free to overwrite it. Every override this repo ships arrives
+`.ci/lib/account.sh:432-440` is the case this was written from, and the
+specifics were WRONG until 2026-09-09: `account_allocate_ports` computes
+GATEWAY_PORT into the shell four lines before `source .env`, but GATEWAY_PORT is
+not a key the file has ever carried (measured against the live
+`private/account/.env`, and against the template at `.ci/lib/account.sh:206-250`
+that writes it). What the file DOES carry, and therefore did overwrite, is
+`PORT`, `ROOT_EMAIL`, `REDIACC_ACCOUNT_SERVER` and `WEBAUTHN_ORIGIN`. The
+argument is unchanged and the fix is the same; only the example was fiction, and
+a fiction in the paragraph explaining WHY is the kind that gets quoted onward.
+Every override this repo ships arrives
 through the environment -- a workflow `env:` block, a `GITHUB_ENV` append, a
 developer typing `PORT=4900 ./run.sh` -- and file-wins silently discards all of
 them in favour of a value written to disk months earlier. An override that is

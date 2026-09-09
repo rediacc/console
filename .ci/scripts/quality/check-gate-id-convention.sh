@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: Gate registration follows the gates/ convention
-# needs: none
-# selftest: true
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-gate-id-convention is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_gate_id_convention.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_gate_id_convention.py" but its header derives ".ci/scripts/quality/check-gate-id-convention.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Assert that a manifest entry which RUNS a gates/ script is registered as
 # `gate-test:<name>` and carries no redundant npm alias.

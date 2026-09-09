@@ -1,10 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# kind: test
-# test: .ci/scripts/test/gates/test-regions-sync.sh
-# blocker: BLOCKER: test-regions-sync.sh drives the REAL gate over the REAL regions.json and packages/shared/src/regions/data.json inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), and its controls plant a divergence, an empty file and invalid JSON to prove all three refusals fire; the two files are held together by hand (no build step syncs them, despite what index.ts used to claim) and data.json is the ONLY region list users get because ${SITE_URL}/regions.json returns 404, so silent drift would ship to every install
-# needs: none
-# ---- end gate ----
+# HEADER REMOVED 2026-09-07 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-regions-sync is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_regions_sync.py, so a header here would declare a
+# registration that has moved, and gate-bind refuses that by name:
+#   package.json runs "...check_regions_sync.py" but its header derives "...check-regions-sync.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 # The two copies of the region list must be identical.
 #
 # WHY. `packages/shared/src/regions/index.ts` imports `./data.json` and its

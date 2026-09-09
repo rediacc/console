@@ -18,7 +18,7 @@
 #
 # continue-on-error is NOT an option here: check-workflows.sh bans it
 # repo-wide, and the repo's precedent for non-blocking behaviour is a
-# script-level soft-fail (see scripts/check-embed-asset-freshness.ts, "FAIL
+# script-level soft-fail (see scripts/gates/check-embed-asset-freshness.ts, "FAIL
 # SOFT"). This wrapper is that precedent, factored out once instead of being
 # re-implemented inside every external gate.
 #

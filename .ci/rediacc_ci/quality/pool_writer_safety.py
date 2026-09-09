@@ -4,8 +4,38 @@ Ported from `.ci/scripts/quality/check-pool-writer-safety.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live until a
 differential ledger row exists over K distinct trees. Its gate header registers
 it as step "Pool-registered tests do not write the real tree", needs none,
-selftest true. The registration lives in `.ci/scripts/test/run-all.sh`, and this
-gate catches the one that is not in it.
+selftest true.
+
+-----------------------------------------------------------------------------
+RETARGETED 2026-09-09 (W7P3-BAT): THE REGISTRATION IS THE LOCK, NOT THE RUNNER.
+-----------------------------------------------------------------------------
+
+The registration used to live in `.ci/scripts/test/run-all.sh`, as the
+hand-maintained `WRITER_TESTS` / `WRITER_TESTS_FALLBACK` arrays, and this gate
+parsed them out of that file's TEXT. `battery.py` replaces run-all.sh and has no
+such array on purpose -- it classifies from
+`scripts/ci-runner/gates.lock.json`'s `mutex: ["tree:..."]` declarations, which
+is the same contract `scripts/ci-runner/pool.ts` schedules by, and a third hand
+list would be the duplication the whole port exists to remove.
+
+So the subject moved with the runner. Left parsing run-all.sh this gate would
+have gone one of two ways once that file was deleted, and both are worse than a
+red: it would REFUSE ("runner not found", exit 1) and read as a bug in the
+deletion, or -- had anyone "fixed" that by treating an absent runner as clean --
+it would pass forever while policing nothing.
+
+THE RETARGET IS NOT A WEAKENING, MEASURED RATHER THAN ASSERTED. On this tree,
+2026-09-09: the old parse over run-all.sh returned 4 names
+(`test-docs-gen.sh`, `test-gate-anti-vacuity.sh`, `test-gate-paths-exist.sh`,
+`test-generate-tag-inputs.sh`) and the lock's `mutex` set returns those 4 plus
+`test-shrink-only-composition.sh`. `old - new` is EMPTY, so nothing that was
+being demanded stopped being demanded; the one addition is a test the lock
+already serialises and the hand list had never been updated to carry, which is
+itself the argument against hand lists.
+
+`reads` IS DELIBERATELY NOT ACCEPTED as a registration. A scanner is released to
+run beside other scanners; only `mutex` puts a test in the serial W chain, so a
+writer declared `reads` is exactly the flake this gate exists to catch.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED WHOLE. These paragraphs are measurements and dated
@@ -58,7 +88,7 @@ little wall time, under-declaring manufactures a flake, and the gate should not
 push anybody toward the expensive side of that asymmetry.
 
 Exit codes:
-  0 - every real-tree writer is registered in WRITER_TESTS
+  0 - every real-tree writer declares a `mutex` `tree:` resource in the lock
   1 - an unregistered writer, or the gate could not prove itself (see CONTROL)
 
 THE SCANNER, in the twin's own words. Two passes over each file. Pass 1
@@ -171,9 +201,17 @@ its write is deliberately not a finding.
 
 `grep -qxF "$base" <<<"$REGISTERED"` IS AN EXACT WHOLE-LINE FIXED MATCH, so
 membership is a set lookup here and not a substring test. A substring test would
-let `test-foo.sh` be satisfied by a registration of `test-foo.sh.bak`.
+let `test-foo.sh` be satisfied by a registration of `test-foo.sh.bak`. The
+retarget kept that property: the lock parser emits basenames and membership is
+still an exact set lookup.
+
+THE THREE ANTI-VACUITY REFUSALS SURVIVED THE RETARGET ONE FOR ONE, because they
+are what make the verdict mean anything: the LOCK being absent (was: the runner),
+the parse returning ZERO writers (was: an empty WRITER_TESTS), and the gates
+directory being empty. Each one exits 1 and says which.
 """
 
+import json
 import os
 import pathlib
 import re
@@ -184,10 +222,26 @@ from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
 # The twin's seams, kept by name so one harness drives either implementation.
+# `POOL_SAFETY_RUNNER` BECAME `POOL_SAFETY_LOCK` IN THE 2026-09-09 RETARGET, and
+# the rename is deliberate rather than cosmetic: the seam now points at the
+# declaration file, and a seam still called RUNNER would invite a caller to hand
+# this gate a runner it no longer reads, which is the quietest way to make a
+# fixture-driven control test nothing.
 GATES_DIR_ENV = "POOL_SAFETY_GATES_DIR"
-RUNNER_ENV = "POOL_SAFETY_RUNNER"
+LOCK_ENV = "POOL_SAFETY_LOCK"
 GATES_DIR_REL = (".ci", "scripts", "test", "gates")
-RUNNER_REL = (".ci", "scripts", "test", "run-all.sh")
+LOCK_REL = ("scripts", "ci-runner", "gates.lock.json")
+
+# A lock entry is a gate test when its `run` names a script under this prefix.
+# `run` is a command line in the general case, so the WORD that starts with the
+# prefix is taken rather than the whole string.
+GATES_RUN_PREFIX = ".ci/scripts/test/gates/"
+
+# The claim strength that means "serialised writer". `reads` is NOT accepted: a
+# scanner is released to run beside other scanners, so a writer hiding in that
+# set is exactly the flake this gate exists for.
+WRITER_CLAIM = "mutex"
+TREE_RESOURCE_PREFIX = "tree:"
 
 # ---------------------------------------------------------------------------
 # The awk scanner's patterns, one Python name per awk construct so a reader can
@@ -228,13 +282,11 @@ _HEREDOC_RE = re.compile(r"<<-?[ \t]*['\"]?[A-Za-z_][A-Za-z0-9_]*")
 _HEREDOC_LEAD_RE = re.compile(r"^<<-?[ \t]*")
 _HERESTRING_RE = re.compile(r"<<<")
 
-# `sed -n '/^WRITER_TESTS\(_FALLBACK\)\?=(/,/^)/p'` -- BOTH arrays, unioned.
-_ARRAY_START_RE = re.compile(r"^WRITER_TESTS(?:_FALLBACK)?=\(")
-_ARRAY_END_RE = re.compile(r"^\)")
-# `grep -oE 'test-[A-Za-z0-9._-]+\.sh'`.
-_TEST_NAME_RE = re.compile(r"test-[A-Za-z0-9._-]+\.sh")
-# `grep -vE '^[[:space:]]*#'`, with the POSIX class written out.
-_ARRAY_COMMENT_RE = re.compile(r"^[ \t\n\v\f\r]*#")
+# THE TWO ARRAY PATTERNS ARE GONE WITH THE 2026-09-09 RETARGET. They read
+# `WRITER_TESTS(_FALLBACK)?=(` out of run-all.sh, and battery.py has no such
+# array: it classifies from the lock and carries no hand list at all, on purpose
+# (three copies of one definition is the defect the whole port removes). The
+# registered set is now read from the lock by `registered_writers` below.
 
 
 def _fields(line: str) -> list[str]:
@@ -411,30 +463,49 @@ def scan_file(path: pathlib.Path) -> str:
     return "\n".join(scan_text(text, path.name))
 
 
-def registered_writers(runner_text: str) -> list[str]:
-    """`sed -n '/^WRITER_TESTS\\(_FALLBACK\\)\\?=(/,/^)/p' | grep -v '#' | grep -o | sort -u`.
+def registered_writers(lock_text: str) -> list[str]:
+    """Gate-test basenames declared `mutex: ["tree:..."]` in gates.lock.json.
 
-    BOTH arrays, unioned. Which one run-all.sh actually uses is decided at RUN
-    time by whether the lock declares any isolation, so a gate reading only one
-    goes quiet the moment that branch flips.
+    RETARGETED 2026-09-09. This used to parse `WRITER_TESTS(_FALLBACK)?=(` out of
+    run-all.sh. battery.py has no such array by design, so the registration it
+    schedules by is the lock, and this is `battery.classify_from_lock(lock,
+    "mutex")` transliterated -- the same algorithm run-all.sh itself carried as
+    an inline python3 heredoc at run-all.sh:292. Reading the same declaration the
+    runner schedules by is the point: a gate that read a SECOND list would be the
+    third copy of one definition, and copies disagree.
+
+    MEASURED AT THE RETARGET, and it is the reason this is not a weakening: the
+    old parse returned 4 names and this one returns those same 4 plus
+    test-shrink-only-composition.sh, which run-all.sh's hand list had never been
+    updated to carry. Set difference in the other direction is empty.
+
+    An unparseable or non-list lock contributes NOTHING rather than raising,
+    which is `battery.classify_from_lock`'s documented behaviour; the CALLER
+    turns that into the anti-vacuity refusal, because "nothing is declared" and
+    "the lock is broken" must not silently become "nothing needs isolating".
     """
-    inside = False
-    kept: list[str] = []
-    for line in runner_text.split("\n"):
-        if not inside:
-            if _ARRAY_START_RE.match(line):
-                inside = True
-                kept.append(line)
-            continue
-        kept.append(line)
-        # sed's range END is inclusive and can restart on a later match.
-        if _ARRAY_END_RE.match(line):
-            inside = False
+    try:
+        entries = json.loads(lock_text)
+    except ValueError:
+        return []
+    if not isinstance(entries, list):
+        return []
     names: set[str] = set()
-    for line in kept:
-        if _ARRAY_COMMENT_RE.match(line):
+    for entry in entries:
+        if not isinstance(entry, dict):
             continue
-        names.update(_TEST_NAME_RE.findall(line))
+        run = entry.get("run")
+        if not isinstance(run, str) or GATES_RUN_PREFIX not in run:
+            continue
+        claimed = entry.get(WRITER_CLAIM)
+        if not isinstance(claimed, list):
+            continue
+        if not any(isinstance(r, str) and r.startswith(TREE_RESOURCE_PREFIX) for r in claimed):
+            continue
+        for word in run.split():
+            if word.startswith(GATES_RUN_PREFIX):
+                names.add(os.path.basename(word))
+                break
     return sorted(names)
 
 
@@ -501,7 +572,7 @@ def main(argv: list[str] | None = None) -> int:
 
     repo_root = get_repo_root()
     gates_dir = pathlib.Path(os.environ.get(GATES_DIR_ENV) or repo_root.joinpath(*GATES_DIR_REL))
-    runner = pathlib.Path(os.environ.get(RUNNER_ENV) or repo_root.joinpath(*RUNNER_REL))
+    lock = pathlib.Path(os.environ.get(LOCK_ENV) or repo_root.joinpath(*LOCK_REL))
 
     with tempfile.TemporaryDirectory() as control_name:
         control_dir = pathlib.Path(control_name)
@@ -525,17 +596,17 @@ def main(argv: list[str] | None = None) -> int:
             print("  %s" % control_noise, file=sys.stderr)
             return 1
 
-    if not runner.is_file():
+    if not lock.is_file():
         return _log_fail(
-            "check-pool-writer-safety: runner not found at %s; refusing to pass while measuring "
-            "nothing" % runner
+            "check-pool-writer-safety: gate lock not found at %s; refusing to pass while "
+            "measuring nothing" % lock
         )
 
-    registered = registered_writers(runner.read_text(encoding="utf-8", errors="replace"))
+    registered = registered_writers(lock.read_text(encoding="utf-8", errors="replace"))
     if not registered:
         return _log_fail(
-            "check-pool-writer-safety: parsed an EMPTY WRITER_TESTS out of %s; the array shape "
-            "changed and this gate would pass everything" % runner
+            "check-pool-writer-safety: parsed ZERO mutex tree: writers out of %s; the declaration "
+            "shape changed and this gate would pass everything" % lock
         )
 
     # `shopt -s nullglob; GATE_FILES=("$GATES_DIR"/test-*.sh)`. Sorted, because a
@@ -548,7 +619,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     registered_set = set(registered)
-    runner_rel = _strip_root(str(runner), str(repo_root))
+    lock_rel = _strip_root(str(lock), str(repo_root))
 
     violations = 0
     for gate_file in gate_files:
@@ -558,9 +629,9 @@ def main(argv: list[str] | None = None) -> int:
         if gate_file.name in registered_set:
             continue
         log.error(
-            "%s writes into the real tree but is NOT in WRITER_TESTS in %s, so run-all.sh "
-            "schedules it in the pool alongside tests that read the same paths:"
-            % (gate_file.name, runner_rel)
+            "%s writes into the real tree but declares no mutex tree: resource in %s, so "
+            "battery.py schedules it in the pool alongside tests that read the same paths:"
+            % (gate_file.name, lock_rel)
         )
         # THE TWIN'S `printf '  %s\n' "$hits"` WITH ONE MULTI-LINE ARGUMENT: only
         # the FIRST line is indented. Carried; see the port notes.
@@ -569,22 +640,24 @@ def main(argv: list[str] | None = None) -> int:
 
     if violations > 0:
         log.error(
-            "%d unregistered real-tree writer(s). Add each to WRITER_TESTS in %s so it runs in "
-            "the serial W chain. A write left in the pool does not fail cleanly: it corrupts a "
-            "concurrent reader and presents as an unrelated gate going red in a file that parses "
-            "fine on the serial re-run." % (violations, runner_rel)
+            "%d unregistered real-tree writer(s). Declare mutex: ['tree:repo'] on each one's "
+            "entry in scripts/ci-runner/manifest.ts and regenerate %s, so it runs in the serial "
+            "W chain. A write left in the pool does not fail cleanly: it corrupts a concurrent "
+            "reader and presents as an unrelated gate going red in a file that parses fine on "
+            "the serial re-run." % (violations, lock_rel)
         )
         return 1
 
     log.info(
-        "every real-tree writer among %d gate tests is registered in WRITER_TESTS (controls fired "
-        "in both directions, so this verdict is real)" % len(gate_files)
+        "every real-tree writer among %d gate tests declares a mutex tree: resource (%d declared, "
+        "controls fired in both directions, so this verdict is real)"
+        % (len(gate_files), len(registered))
     )
     return 0
 
 
 def _strip_root(path: str, root: str) -> str:
-    """`${RUNNER#"$REPO_ROOT"/}` -- drop the root prefix, or leave the path alone."""
+    """`${LOCK#"$REPO_ROOT"/}` -- drop the root prefix, or leave the path alone."""
     prefix = root + "/"
     return path.removeprefix(prefix)
 
@@ -742,34 +815,98 @@ def selftest() -> int:
         1,
     )
 
-    # -- the registered-writer parser, and its two refusals -------------------
-    runner = (
-        "WRITER_TESTS=($RUN_ALL_WRITERS)\n"
-        ")\n"
-        "WRITER_TESTS_FALLBACK=(\n"
-        "    # test-generate-tag-inputs.sh:88 and :309 swap the real resolver\n"
-        "    test-generate-tag-inputs.sh\n"
-        "    test-age-check.sh\n"
-        ")\n"
+    # -- the registered-writer parser, and its refusals -----------------------
+    #
+    # RETARGETED 2026-09-09: these cases were bash arrays until battery.py
+    # replaced run-all.sh. The subject is now the lock, so the fixtures are JSON,
+    # and the two directions that matter are unchanged: a real declaration is
+    # read, and every near-miss parses EMPTY so the caller refuses.
+    lock_text = json.dumps(
+        [
+            {
+                "id": "gate-test:generate-tag-inputs",
+                "run": "bash .ci/scripts/test/gates/test-generate-tag-inputs.sh",
+                "mutex": ["tree:repo"],
+            },
+            {
+                "id": "gate-test:age-check",
+                "run": ".ci/scripts/test/gates/test-age-check.sh",
+                "mutex": ["tree:repo", "npm:install"],
+            },
+            {
+                "id": "gate-test:quiet",
+                "run": ".ci/scripts/test/gates/test-quiet.sh",
+                "reads": ["tree:repo"],
+            },
+            {
+                "id": "gate-test:free",
+                "run": ".ci/scripts/test/gates/test-free.sh",
+            },
+            {
+                "id": "check:elsewhere",
+                "run": "npx tsx scripts/gates/check-elsewhere.ts",
+                "mutex": ["tree:repo"],
+            },
+        ]
     )
     ctl.check(
-        "PARSE: both arrays are read and unioned",
-        registered_writers(runner),
+        "PARSE: a mutex tree: declaration registers the gate test",
+        registered_writers(lock_text),
         ["test-age-check.sh", "test-generate-tag-inputs.sh"],
     )
     ctl.check(
-        "PARSE: a name mentioned only in a COMMENT inside the array is dropped",
-        registered_writers("WRITER_TESTS=(\n    # test-only-a-comment.sh\n    test-real.sh\n)\n"),
-        ["test-real.sh"],
+        "PARSE: the SCRIPT word is taken out of a `run` that is a command line",
+        registered_writers(
+            '[{"run": "bash -x .ci/scripts/test/gates/test-x.sh --flag", "mutex": ["tree:repo"]}]'
+        ),
+        ["test-x.sh"],
     )
-    # THE RE-KEY THAT MADE THIS NECESSARY: the computed assignment alone holds no
-    # test names, and the twin's old pattern parsed EMPTY.
+    # THE ONE-DIRECTIONAL CLAIM STRENGTH. A scanner is released beside other
+    # scanners, so `reads` is NOT a writer registration; accepting it would
+    # silence exactly the flake this gate exists for.
     ctl.check(
-        "VACUITY: the computed assignment ALONE parses empty, which must be refused",
-        registered_writers("WRITER_TESTS=($RUN_ALL_WRITERS)\n)\n"),
+        "PARSE: a `reads` declaration is NOT a writer registration",
+        registered_writers('[{"run": ".ci/scripts/test/gates/test-r.sh", "reads": ["tree:repo"]}]'),
         [],
     )
-    ctl.check("VACUITY: an empty runner parses empty", registered_writers(""), [])
+    ctl.check(
+        "PARSE: a mutex resource that is not a tree: does not register",
+        registered_writers(
+            '[{"run": ".ci/scripts/test/gates/test-n.sh", "mutex": ["npm:install"]}]'
+        ),
+        [],
+    )
+    ctl.check(
+        "PARSE: a NON-gate-test entry with mutex tree: is not a gate test",
+        registered_writers('[{"run": "npx tsx scripts/gates/check-x.ts", "mutex": ["tree:repo"]}]'),
+        [],
+    )
+    ctl.check("VACUITY: an empty lock parses empty", registered_writers(""), [])
+    ctl.check("VACUITY: unparseable JSON parses empty", registered_writers("{not json"), [])
+    ctl.check(
+        "VACUITY: a JSON OBJECT rather than a list parses empty", registered_writers("{}"), []
+    )
+    # THE REAL LOCK IS NOT EMPTY, and this is the case that would have caught the
+    # retarget landing against a lock whose shape had moved: every fixture above
+    # is synthetic, and a parser that agreed with all of them while reading the
+    # live file as empty would look perfect here.
+    ctl.check(
+        "REAL: the live lock declares at least the four historical writers",
+        set(
+            registered_writers(
+                (paths.repo_root() / "scripts" / "ci-runner" / "gates.lock.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+        )
+        >= {
+            "test-docs-gen.sh",
+            "test-gate-anti-vacuity.sh",
+            "test-gate-paths-exist.sh",
+            "test-generate-tag-inputs.sh",
+        },
+        True,
+    )
 
     ctl.check("VACUITY: an empty file yields no hits", scan_text("", "t.sh"), [])
     ctl.check(

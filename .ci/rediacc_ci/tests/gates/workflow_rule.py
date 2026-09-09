@@ -1,5 +1,5 @@
 """`.ci/scripts/test/lib/workflow-rule.sh`, ported. The harness for the rules
-that live inside `.ci/scripts/quality/check-workflows.sh`.
+that live inside `.ci/scripts/quality/check_workflows.py`.
 
 WHY IT IS SHARED, and why between exactly these callers rather than every
 workflow test. check-workflows.sh hosts several banned-pattern rules, and each
@@ -54,7 +54,7 @@ def run_check(
         env["CI"] = "true"
     if extra_env:
         env.update(extra_env)
-    return harness.run(["bash", str(CHECK)], env=env)
+    return harness.run([str(CHECK)], env=env)
 
 
 def write_job(path: pathlib.Path, *lines: str) -> None:

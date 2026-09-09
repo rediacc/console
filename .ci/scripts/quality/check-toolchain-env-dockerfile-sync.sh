@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: Toolchain env/Dockerfile sync
-# emit: false
-# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
-# needs: node
-# selftest: true
-# why: check-toolchain-pins.sh's A1 deliberately EXEMPTS GO_VERSION/NODE_VERSION
-#      from its single-source check (they legitimately appear elsewhere: go.mod,
-#      third-party action inputs) -- which also removes any check that the TWO
-#      files meant to carry the identical value on purpose (toolchain.env and the
-#      Dockerfile's matching ARG) actually do. This is that narrower check.
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-toolchain-env-dockerfile-sync is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_toolchain_env_dockerfile_sync.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_toolchain_env_dockerfile_sync.py" but its header derives ".ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Gate: GO_VERSION and NODE_VERSION in toolchain.env and the devcontainer
 # Dockerfile's matching ARG lines must be identical.

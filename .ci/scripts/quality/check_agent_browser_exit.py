@@ -87,6 +87,7 @@ here. It stays on disk as the differential twin; deletion is W7 P5's job.
 step: agent-browser exit status
 needs: none
 selftest: true
+`slow: true
 ---- end gate ----
 """
 

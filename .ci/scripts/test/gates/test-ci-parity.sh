@@ -7,7 +7,7 @@
 # slow: true
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
 # ---- end gate ----
-# Both-directions test for scripts/check-ci-parity.ts.
+# Both-directions test for scripts/gates/check-ci-parity.ts.
 #
 # The gate's promise: the local gate set and the CI quality surface agree, so a
 # local run catches CI failures before a push AND nothing runs locally that CI
@@ -34,7 +34,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test gate
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GATE="$REPO_ROOT/scripts/check-ci-parity.ts"
+GATE="$REPO_ROOT/scripts/gates/check-ci-parity.ts"
 
 LAST_OUT=""
 
@@ -106,6 +106,13 @@ jobs:
     steps:
 $steps
 YAML
+    # loadScripts() derives its tracked set from `git ls-files`, so a fixture
+    # that is not a repository makes the gate throw before it asserts anything.
+    # Init and add rather than tolerating a non-repo root: an empty tracked set
+    # would silently stop `python3 -m <module>` resolving, which is the one
+    # thing that set is for.
+    git -C "$root" init --quiet
+    git -C "$root" add -A
 }
 
 # manifest <root> <json-array>
@@ -383,6 +390,27 @@ test_test_dir_gates_are_swept_in() {
     log_pass "a .ci/scripts/test/test-*.sh gate counts as gate-shaped (F3)"
 }
 
+test_ported_python_gates_are_swept_in() {
+    # THE WIDENING THIS SUITE DID NOT PIN. On 2026-09-08 GATE_SHAPED in
+    # scripts/gates/check-ci-parity.ts went from `check-[\w.-]+\.sh` to
+    # `check[-_][\w.-]+\.(?:sh|py)`, because W7 P4 repoints these very workflow
+    # lines at Python ports and the old spelling stopped judging a gate the moment
+    # it was ported -- silently, since a matcher that stops matching reports
+    # nothing. Every case above passes a `.sh` name, so the widened branch was
+    # exercised by no control at all and could have been reverted without a red.
+    local d="$1"
+    scaffold "$d" '      - name: Ported gate
+        run: .ci/scripts/quality/check_planted_port.py
+'"$STEP_ALPHA"
+    manifest "$d" "$MANIFEST_ALPHA"
+
+    local rc=0
+    run_gate "$d" || rc=$?
+    assert_exit_code 1 "$rc" "a ported check_*.py gate CI runs must be swept in"
+    assert_contains "$LAST_OUT" "check_planted_port.py" "names the ported gate"
+    log_pass "a .ci/scripts/quality/check_*.py gate counts as gate-shaped (the W7 P4 widening)"
+}
+
 test_empty_manifest_refuses() {
     local d="$1"
     scaffold "$d" "$STEP_ALPHA"
@@ -526,6 +554,7 @@ with_temp_dir test_missing_direction_tag_is_rejected
 with_temp_dir test_path_in_a_yaml_comment_is_not_an_invocation
 with_temp_dir test_non_gate_scripts_are_not_swept_in
 with_temp_dir test_test_dir_gates_are_swept_in
+with_temp_dir test_ported_python_gates_are_swept_in
 with_temp_dir test_empty_manifest_refuses
 with_temp_dir test_empty_workflow_tree_refuses
 with_temp_dir test_missing_entry_job_collapses_the_surface

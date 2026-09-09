@@ -1,5 +1,5 @@
 # e2e-tests coverage allowlist — renet functions shipped but not yet exercised
-# by a LIVE suite (one CI runs). Read by scripts/check-e2e-coverage.ts through
+# by a LIVE suite (one CI runs). Read by scripts/gates/check-e2e-coverage.ts through
 # the shared BLOCKER contract (scripts/lib/blocker-validator.ts): every entry
 # needs a substantive reason, and an entry that BECOMES covered fails the gate
 # as stale — so this list can only shrink, never quietly harbor paid-down debt.

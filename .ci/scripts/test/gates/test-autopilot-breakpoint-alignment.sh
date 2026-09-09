@@ -29,7 +29,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/gates/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GATE="$REPO_ROOT/.ci/scripts/quality/check-autopilot-breakpoint-alignment.sh"
+# THE SUBJECT IS THE REGISTERED GATE, and W7 P4 moved that to the Python entry
+# point. This harness IS this gate's entire CI coverage (it is `kind: test`), so
+# leaving it on the twin would keep CI green while never running what the
+# registry invokes -- a check that cannot fail.
+GATE="$REPO_ROOT/.ci/scripts/quality/check_autopilot_breakpoint_alignment.py"
 REAL_BP="$REPO_ROOT/.ci/breakpoint/workflow/breakpoint.yml"
 REAL_AP="$REPO_ROOT/.github/workflows/autopilot.yml"
 
@@ -44,7 +48,7 @@ run_gate() {
     local rc=0
     AUTOPILOT_BP_ALIGN_BREAKPOINT_FILE="${1:-$REAL_BP}" \
         AUTOPILOT_BP_ALIGN_AUTOPILOT_FILE="${2:-$REAL_AP}" \
-        bash "$GATE" >"$WORK/out.txt" 2>"$WORK/err.txt" || rc=$?
+        python3 "$GATE" >"$WORK/out.txt" 2>"$WORK/err.txt" || rc=$?
     echo "$rc"
 }
 

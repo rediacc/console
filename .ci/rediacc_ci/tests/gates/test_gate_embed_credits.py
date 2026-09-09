@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-embed-credits.sh`.
 
-Integration test for `scripts/check-embed-credits.ts`.
+Integration test for `scripts/gates/check-embed-credits.ts`.
 
 Verifies the gate accepts the real in-tree inventories and rejects a Dockerfile pin
 that has drifted from the lockfile and a hand-edited generated artifact, using the
@@ -26,7 +26,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-embed-credits.sh"
 
-VALIDATOR = paths.from_root("scripts", "check-embed-credits.ts")
+VALIDATOR = paths.from_root("scripts/gates", "check-embed-credits.ts")
 DOCKERFILE = paths.from_root("private", "renet", "Dockerfile")
 CREDITS_GO = paths.from_root("private", "renet", "pkg", "embed", "credits_data.go")
 

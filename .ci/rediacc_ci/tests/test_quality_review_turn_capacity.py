@@ -69,7 +69,10 @@ def build(tmp_path: pathlib.Path, source: str | None) -> pathlib.Path:
     (root / ".ci" / "rediacc_ci" / "quality").mkdir(parents=True)
     shutil.copytree(src / ".ci" / "scripts" / "lib", root / ".ci" / "scripts" / "lib")
     shutil.copy2(src / TWIN, root / TWIN)
-    for name in ("__init__.py", "log.py", "paths.py", "controls.py"):
+    # `proc.py` is in the list because the port routes its `bash -c` harness
+    # through the shared runner; without it the specimen dies at import and the
+    # differential compares a traceback with the twin's verdict.
+    for name in ("__init__.py", "log.py", "paths.py", "controls.py", "proc.py"):
         shutil.copy2(src / ".ci" / "rediacc_ci" / name, root / ".ci" / "rediacc_ci" / name)
     for name in ("__init__.py", "%s.py" % MODULE):
         shutil.copy2(
@@ -215,7 +218,14 @@ def test_selftest_exits_zero_and_prints_a_count():
     )
     assert code == 0, err
     assert "control(s) passed" in out
-    assert int(out.split(" control(s)")[0].strip()) >= 12
+    # 11, DOWN FROM 12, and the reason matters because lowering a floor is
+    # normally the wrong move. The control that went was
+    # "the control's mutation actually changes the text", which asserted for
+    # ONE plant what `rediacc_ci.controls.plant()` now refuses for all five:
+    # coverage went UP while the count went down. If this number ever needs
+    # lowering again without a matching line in the gate's own derived floor,
+    # that is controls quietly not running, which is what this asserts.
+    assert int(out.split(" control(s)")[0].strip()) >= 11
 
 
 def test_the_twin_is_still_present():

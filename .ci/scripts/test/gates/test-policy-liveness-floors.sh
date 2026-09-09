@@ -5,10 +5,10 @@
 # needs: none
 # lane: quality-security
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
-# why: Test for the PER-PROBE INPUT FLOORS in scripts/check-suppression-liveness.ts
+# why: Test for the PER-PROBE INPUT FLOORS in scripts/gates/check-suppression-liveness.ts
 # ---- end gate ----
 
-# Test for the PER-PROBE INPUT FLOORS in scripts/check-suppression-liveness.ts.
+# Test for the PER-PROBE INPUT FLOORS in scripts/gates/check-suppression-liveness.ts.
 #
 # THE HOLE THIS CLOSES. The gate's anti-vacuity guard keys on entriesChecked
 # across the WHOLE run (isVacuous in scripts/lib/suppression-liveness.ts), so it
@@ -44,7 +44,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GATE="$REPO_ROOT/scripts/check-suppression-liveness.ts"
+GATE="$REPO_ROOT/scripts/gates/check-suppression-liveness.ts"
 
 # A fixture that is FULL-SHAPED (carries all three markers isFullCheckout looks
 # for) and GREEN, so every later case changes exactly one thing.

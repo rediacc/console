@@ -29,8 +29,8 @@ ORDER = 9
 # is the sanctioned thing to do.
 DEFECT = ("and not hookio.grep_q(BRIDGE, scan)", "and True")
 
-SSH_DOCKER = r"\bssh\b[" + hookio.SPACE + r"][^|;&]*\bdocker\b"
-BRIDGE = r"\bssh\b[" + hookio.SPACE + r"][^|;&]*192\.168\.111\."
+SSH_DOCKER = hookio.rx(r"\bssh\b[{S}][^|;&]*\bdocker\b")
+BRIDGE = hookio.rx(r"\bssh\b[{S}][^|;&]*192\.168\.111\.")
 
 MESSAGE = (
     "❌ BLOCKED: Do not run raw ssh+docker on a rediacc-managed machine. Use: ./rdc.sh "

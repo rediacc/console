@@ -327,46 +327,28 @@ When writing documentation, help text, error messages, or code comments, follow 
 
 ## i18n / Translations
 
-English (`packages/www/src/i18n/translations/en.json`) is the source of truth; the 12
-other locales are derived. **Read `docs/i18n/CONVENTIONS.md` before touching any
-translation.** Key rules:
+English (`packages/www/src/i18n/translations/en.json`) is the source of truth; the 12 other
+locales are DERIVED and **naturalized** — idiomatic, never word-for-word. Optimize English
+first, then lock it with `npm run i18n:generate-hashes`; on an English change re-translate
+only the delta. `check-i18n-naturalization` blocks `check:i18n` when a naturalized key goes
+stale.
 
-- English must read as natural, daily language (grade 5-7 for marketing; technical for
-  docs). Optimize English first, then lock it: after any English value change run
-  `npm run i18n:generate-hashes`.
-- Non-English values are **naturalized** (native, idiomatic phrasing, NOT literal /
-  word-for-word). Never bulk-replace a locale file with machine/literal translations.
-  Preserve every `{{placeholder}}`, HTML tag, number, and product name; mirror English
-  keys/order/structure; change values only.
-- **On English change, re-translate only the delta**: `npm run i18n:naturalize-status`
-  lists the stale keys; re-naturalize just those via `private/growth/i18n_pipeline`
-  (`./run.sh --lang <lang> --surface <surface>` — its ledger skips already-done keys).
-- **Use `--model haiku`** (the default, cheapest capable model — English/Turkish were done
-  on haiku; the ledger records the model per language). Only bump to sonnet/opus for a
-  language whose haiku output reads awkward. Cost compounds ×12 languages.
-- `check-i18n-naturalization` is a blocking gate in `check:i18n`: it fails when an
-  already-naturalized key goes stale (English changed without re-naturalizing).
+**Read [docs/i18n/CONVENTIONS.md](docs/i18n/CONVENTIONS.md) before touching any translation.**
+It carries the pipeline, the per-language ledger, and why `--model haiku` is the default.
 
 ## Local environment (setup, devbox, `./rdc.sh`)
 
-`./run.sh setup` prepares a machine and hands back a URL, idempotently: host tools, docker,
-the devcontainer image, then ONE devbox container per worktree. Every container sits behind a
-single shared traefik proxy routing by Host header, so the whole machine publishes exactly one
-port. `./run.sh devbox up|status|stop|remove|shell|logs` drives the container and
-`./run.sh setup --check` reports what is missing without changing anything. Servers started
-inside the devbox must bind `0.0.0.0` (`REDIACC_DEV_BIND`), or traefik answers 502.
+`./run.sh setup` prepares a machine idempotently and hands back a URL: host tools, docker, the
+devcontainer image, then ONE devbox container per worktree behind a shared traefik proxy, so the
+machine publishes exactly one port. `./run.sh devbox up|status|stop|shell|logs` drives it.
+Servers inside the devbox must bind `0.0.0.0` (`REDIACC_DEV_BIND`) or traefik answers 502.
 
-Bare `./rdc.sh` behaves like an installed `rdc` and therefore targets PRODUCTION. Local
-development against the dev gateway is an explicit opt-in, `./rdc.sh --dev` (or `RDC_DEV=1`),
-and bench is just another config, `./rdc.sh --config bench`. There is no `RDC_PROD` or
-`RDC_BENCH`.
+Bare `./rdc.sh` targets PRODUCTION. Local development is an explicit opt-in, `./rdc.sh --dev`
+(or `RDC_DEV=1`); bench is just another config, `./rdc.sh --config bench`. There is no
+`RDC_PROD` or `RDC_BENCH`.
 
-**[docs/agent-reference/local-env.md](docs/agent-reference/local-env.md)** carries the rest,
-and it is worth reading BEFORE fighting any of it rather than after: the four setup steps,
-why the docker-group gap closes itself, why `account db` serves sqlite-web and not Drizzle
-Studio, why the container runs as YOU and why `node_modules` is not shared with the host, the
-`--native` SEA loop, the `RDC_RENET_LICENSE=1` license reproduction and where its public key
-does NOT come from, the `rdc run` escape hatch, `./run.sh rotation`, and `scripts/dev/`.
+**[docs/agent-reference/local-env.md](docs/agent-reference/local-env.md)** carries the rest, and
+is worth reading BEFORE fighting any of it rather than after.
 
 ## Build & Test
 
@@ -376,55 +358,15 @@ does NOT come from, the `rdc run` escape hatch, `./run.sh rotation`, and `script
 
 ### The 27-line `package-lock.json` flip is npm 11 vs npm 10, and it is cosmetic
 
-**npm 11 is canonical. This section said the opposite until 2026-09-06** (issue
-#587): `main` had been carrying npm 11's lockfile since `42e6a18f8` while this
-file called that form the deviation, so every session that read this section
-"fixed" it back and the flip oscillated. The operator was asked directly whether
-to revert the lockfile or migrate, and chose migrate. The direction below is
-therefore inverted from what you may remember; the measurements are unchanged,
-because the two forms differ only in the way described here.
-
-A working tree can sprout a `package-lock.json` diff of exactly 27 lines, all
-`"dev": true`, that nobody remembers making. Do not go hunting for the script
-that "corrupted" it, and do not commit it either:
-
-- **Trigger**: any `npm install`-family write run under **npm 10**
-  (`npx -y npm@10 install --package-lock-only` reproduces it exactly), which
-  ADDS 27 redundant nested dev markers that npm 11 omits. The canonical pin is
-  `CANONICAL_NPM="npm@11"` in `check-lockfile.sh`, and `.devcontainer/Dockerfile`
-  installs npm 11 so the environment that writes lockfiles writes that form.
-  Under npm 11 the same 27 lines appear as DELETIONS, which is the shape this
-  section used to describe as the fault.
-- **CI still installs with npm 10**, and that is not a contradiction: setup-node
-  with Node 22 bundles npm 10 and no workflow overrides it. Canonical means "the
-  form we write", not "the only npm that has to read it". `check:ci-lockfile`
-  runs `ci --dry-run` under BOTH majors for exactly this reason, so a form that
-  npm 10 could not install would still be caught.
-- **NOT the trigger**: `npm run install:natives`. `npm rebuild` does not write
-  the lockfile, verified on both a warm tree and a fresh one straight after a
-  clean `npm ci`. Nor do `npm outdated`, `npm ls`, or `npm audit`.
-- **Impact: none.** All 27 entries sit under `node_modules/tsx/**`, and `tsx` is a
-  devDependency still marked dev at its own node, so npm prunes the whole subtree
-  regardless. `npm ci --omit=dev --dry-run` resolves the same 179 packages from *either*
-  form, and `check:ci-lockfile` passes both under both majors (re-measured across all 11
-  lockfiles on 2026-09-06). Diff noise, not a correctness problem: hence no gate.
-- **Fix**: `npx -y npm@11 install --package-lock-only --ignore-scripts`
-  restores the canonical form byte for byte. If you are on npm 11 already, a
-  plain `npm install --package-lock-only --ignore-scripts` does the same thing.
-- **That npm 10 pin is GONE, re-tested 2026-09-06.** `.ci/lib/local-common.sh`
-  used to install with `npx -y npm@10` whenever the local npm was not 10,
-  guarding a reproduced npm 11 hoisting defect (zod flattened to a 3.x
-  transitive copy, breaking `packages/shared`). It no longer reproduces. THE
-  CLEAN-ROOM RECIPE, which `check-lockfile.sh` cites by that name: copy the root
-  manifests, the lockfile, `.npmrc` and all seven workspace `package.json` files to a
-  scratch directory and run `npx -y npm@<major> install --ignore-scripts` there -- a real
-  tree, because both a hoist and a peer ERESOLVE are invisible to `--package-lock-only`
-  and `--dry-run`, neither of which writes a `node_modules`. Run that way on 2026-09-06,
-  all eleven zod copies landed exactly where the npm 10 tree puts them, including
-  `packages/shared/node_modules/zod` at 4.5.4. The likely cause is the
-  `overrides` entry now forcing zod `^4.4.3` tree-wide. Removing the downgrade
-  also closes the last path that rewrote the root lockfile into the
-  non-canonical form on every local loop, which is what #587 exists to stop.
+A tree can sprout a `package-lock.json` diff of exactly 27 lines, all `"dev": true`, that
+nobody remembers making. It is npm 10 writing what npm 11 omits, the impact is nil (all 27
+sit under `node_modules/tsx/**`, pruned either way), and the fix is
+`npx -y npm@11 install --package-lock-only --ignore-scripts`. **Do not go hunting for the
+script that "corrupted" it, and do not commit it.** npm 11 is canonical; CI installing under
+npm 10 is not a contradiction, and `check:ci-lockfile` resolves every lockfile under both.
+The reasoning, the clean-room recipe and the retired npm@10 pin live in
+[.ci/scripts/quality/check-lockfile.sh](.ci/scripts/quality/check-lockfile.sh), where the
+enforcement is.
 
 ```bash
 # Install dependencies
@@ -475,15 +417,13 @@ downloaded from `cli/stable/`, serving `www.rediacc.com`. R2 layout:
 
 Tutorial and solution videos and the tutorial-narration audio cache live in Cloudflare R2
 (bucket `rediacc-www-media`, served at `media.rediacc.com`), not in git. A fresh checkout has
-none of them and does not need them for `npm run dev`: the site fetches from the CDN at
-runtime and the two CI gates check the manifest, not the filesystem. The git-history rewrite
-that removed them landed 2026-08-23 and changed every commit SHA in the repository.
+none of them and does not need them for `npm run dev`: the site fetches from the CDN at runtime
+and the two CI gates check the manifest, not the filesystem.
 
-**[docs/agent-reference/media-assets.md](docs/agent-reference/media-assets.md)** carries the
-four prefixes (the fourth is the one that was never mirrored to R2), the pre-publish
-completeness gate that lives in `private/growth` and must never be removed from
-`publish-solutions.sh`, the audio-cache exception to the Cache Rule, the sync scripts and
-their credentials, and both consequences of the history rewrite.
+**[docs/agent-reference/media-assets.md](docs/agent-reference/media-assets.md)** carries the four
+prefixes, the pre-publish completeness gate that must never leave `publish-solutions.sh`, the
+audio-cache exception to the Cache Rule, the sync scripts, and both consequences of the
+2026-08-23 history rewrite that changed every commit SHA in the repository.
 
 ## CI/CD Pipeline
 
@@ -536,17 +476,17 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 
 | Where it runs | Registered | `gate: true` | Slow | Is a gate test |
 |---|---|---|---|---|
-| (all lanes) | 458 | 448 | 95 | 149 |
+| (all lanes) | 481 | 471 | 95 | 149 |
 | local-only (CI never runs it) | 12 | 9 | 3 | 0 |
 | step / build-renet | 1 | 1 | 1 | 0 |
-| step / quality-branch | 4 | 4 | 0 | 0 |
-| step / quality-code | 91 | 90 | 19 | 0 |
+| step / quality-branch | 5 | 5 | 0 | 0 |
+| step / quality-code | 100 | 99 | 19 | 0 |
 | step / quality-content | 42 | 42 | 4 | 0 |
 | step / quality-go | 16 | 16 | 3 | 0 |
 | step / quality-i18n | 40 | 38 | 3 | 0 |
 | step / quality-packages | 14 | 14 | 7 | 0 |
 | step / quality-security | 166 | 165 | 37 | 149 |
-| step / quality-static | 43 | 43 | 3 | 0 |
+| step / quality-static | 56 | 56 | 3 | 0 |
 | step / quality-www-build | 16 | 13 | 15 | 0 |
 | test (a gate test drives it) | 13 | 13 | 0 | 0 |
 
@@ -573,7 +513,7 @@ Scans: the `hooks` wiring in .claude/settings.json, folded to one row per event,
 | SubagentStop | 1 | 1 |
 | TeammateIdle | 1 | 1 |
 | (all events) | 11 | 15 |
-| (tracked hook files nothing reaches) | - | 2 |
+| (tracked hook files nothing reaches) | - | 3 |
 
 10 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
 

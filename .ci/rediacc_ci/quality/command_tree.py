@@ -16,9 +16,9 @@ the argument:
       scripts/lib/positional-cli-detector.ts  (and, through it, the two ESLint rules
                                                no-positional-cli-syntax{,-source} and
                                                packages/www/scripts/validate-docs-cli-usage.js)
-      scripts/validate-cli-examples.ts
-      scripts/check-cli-docs.ts
-      scripts/check-design-tree.ts
+      scripts/gen/validate-cli-examples.ts
+      scripts/gates/check-cli-docs.ts
+      scripts/gates/check-design-tree.ts
       packages/cli/scripts/check-command-planes.ts
 
     Nothing regenerated it, and nothing checked it. A stale tree does not fail

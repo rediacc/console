@@ -5,7 +5,7 @@
 # source: .deps-upgrade-blocklist
 # corpus: corpus/deps-upgrade-blocklist.list
 # comment-char: #
-# corpus-sha256: 4f3503b547f2a7c1b7ba9535360541870947fae88d921e1869644670a3404070
+# corpus-sha256: c5ac9c9a68909adf5009ccdfe72ade1c112f50c52133fed7070767f4b532c10e
 # ---
 19	@eslint/js	v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
 22	@astrojs/react	6.x is a major on the Astro integration stack while astro itself is deliberately held on the 5 line (see the astro entry below); move it with that migration, not standalone. Only the major is blocked — in-range 5.0.x patches still upgrade normally.

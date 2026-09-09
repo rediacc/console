@@ -655,7 +655,7 @@ test_representative_deltas_classify_to_pinned_verdicts() {
     # THE REPORTED CASE (commit bcc4f1ee1, 2026-08-06): an Apache-2.0
     # attribution-URL check that ran the ceph fork test, because scripts/**
     # was a single blanket harness rule. Kept recognisable as the incident.
-    expect_classify "gate source only" "reduced|18|" 'scripts/check-embed-credits.ts'
+    expect_classify "gate source only" "reduced|18|" 'scripts/gates/check-embed-credits.ts'
     expect_classify "gate lib only" "reduced|18|" 'scripts/lib/blocker-validator.ts'
     expect_classify "ci-runner only" "reduced|18|" 'scripts/ci-runner/manifest.ts'
     # The tracked agent/ notes root. STATE.md is rewritten many times per
@@ -672,7 +672,7 @@ test_representative_deltas_classify_to_pinned_verdicts() {
     # The over-eager-skip direction: a gate source must not SUPPRESS a real
     # module that another file in the same delta pulls in.
     expect_classify "MIXED gate source + one cli file" "reduced|18|$cli_keys" \
-        'scripts/check-cli-docs.ts' 'packages/cli/src/commands/repo.ts'
+        'scripts/gates/check-cli-docs.ts' 'packages/cli/src/commands/repo.ts'
     # THE REPORTED CASE, kept recognisable as the report it came from: the
     # exact four paths of push 1d172438f..208c8a2d9, whose run 30983418337 ran
     # all eighteen keys. A regression test for a real incident should be
@@ -708,7 +708,7 @@ test_representative_deltas_classify_to_pinned_verdicts() {
         '.ci/policy/.audit-allowlist|harness:.ci/policy/.audit-allowlist' \
         '.ci/lib/common.sh|harness:.ci/lib/common.sh' \
         'scripts/drills/lib.sh|harness:scripts/drills/lib.sh' \
-        'scripts/generate-third-party-licenses.ts|harness:scripts/generate-third-party-licenses.ts'; do
+        'scripts/gen/generate-third-party-licenses.ts|harness:scripts/gen/generate-third-party-licenses.ts'; do
         local path="${full_row%%|*}" reason="${full_row##*|}"
         printf '%s\n' "$path" | plan
         assert_eq "$(pget 'p.mode')" "full" "$path forces full CI"

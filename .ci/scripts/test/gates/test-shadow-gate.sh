@@ -97,7 +97,11 @@ build_corpus() {
     # blind port gets blessed on, which is why rule 2 has to refuse it.
     grep '^real-\|^len-30' "$CORPUS" >"$CORPUS_CLEAN" || true
     local n
-    n=$(grep -c . "$CORPUS")
+    # `|| true` because this file inherits errexit from common.sh and a bare
+    # `VAR=$(... grep -c ...)` takes the substitution's exit status: grep counting
+    # ZERO exits 1, so the shell dies HERE, on the line before the check written
+    # for exactly that state. Same class as test-run-sh.sh:317.
+    n=$(grep -c . "$CORPUS" || true)
     # A collapsed corpus would make every case below vacuously green.
     ((n >= 14)) || log_fail "corpus collapsed to $n case(s); the recorded floor is 14"
 }
@@ -273,13 +277,25 @@ test_real_pair_divergence_is_named() {
 
 test_planted_dropped_finding() {
     local planted="$WORK/planted-drop.ts"
-    # One line removed from the port's banned-substring list. Nothing else.
-    sed "s|^  'deferred to a dedicated dependency-bump pr',|  // PLANTED: line removed|" \
+    # ONE banned substring removed from the port. Nothing else.
+    #
+    # RETARGETED 2026-09-09. This used to delete a literal line from the port's
+    # own `LOW_EFFORT_BLOCKER_SUBSTRINGS` array. That array is gone: the port
+    # reads the table from `rediacc_ci.core.allowlist`, which is also what the
+    # bash OLD side reads, so a plant in the shared table would move BOTH sides
+    # and produce no divergence at all. The plant therefore has to sit in the
+    # part of the port that is still the port's: the loop that consumes the
+    # table. Dropping the entry there is behaviourally the same one-line defect
+    # the old sed produced, and the assertion below is unchanged.
+    sed "s|^  for (const pattern of c.substrings) {|  for (const pattern of c.substrings.filter((p) => p !== 'deferred to a dedicated dependency-bump pr')) {|" \
         "$REPO_ROOT/scripts/lib/blocker-validator.ts" >"$planted"
     cmp -s "$REPO_ROOT/scripts/lib/blocker-validator.ts" "$planted" &&
-        log_fail "the plant changed nothing; the banned-substring list moved"
+        log_fail "the plant changed nothing; the substring loop moved"
 
-    sg --pair t-plant --old "$OLD_SIDE" --new "$TSX $WORK/gate-ts.ts $planted $CORPUS"
+    # REDIACC_CI_ROOT because the planted COPY lives in $WORK, and the port
+    # resolves the canonical package relative to its own file. Without it the
+    # copy would refuse to run, which is a divergence for the wrong reason.
+    sg --pair t-plant --old "$OLD_SIDE" --new "REDIACC_CI_ROOT=$REPO_ROOT $TSX $WORK/gate-ts.ts $planted $CORPUS"
     ((SG_RC == 1)) || log_fail "a planted dropped finding must exit 1, got $SG_RC"
     assert_contains "$SG_OUT" 'MISMATCH_FINDINGS' 'the verdict'
     assert_contains "$SG_OUT" 'only-old  [error] corpus.txt: defer-dedicated rejected as deferral' \
@@ -439,7 +455,8 @@ test_k_counts_distinct_trees_not_runs() {
 
     local rows
 
-    rows=$(grep -c . "$repo/.ci/shadow/k.jsonl")
+    # Same inherited-errexit guard as the corpus count above.
+    rows=$(grep -c . "$repo/.ci/shadow/k.jsonl" || true)
     ((rows == 3)) || log_fail "expected 3 ledger rows, found $rows"
 
     rc=0

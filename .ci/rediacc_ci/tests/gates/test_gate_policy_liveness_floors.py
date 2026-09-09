@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-policy-liveness-floors.sh`.
 
-Test for the PER-PROBE INPUT FLOORS in `scripts/check-suppression-liveness.ts`.
+Test for the PER-PROBE INPUT FLOORS in `scripts/gates/check-suppression-liveness.ts`.
 
 THE HOLE THIS CLOSES. The gate's anti-vacuity guard keys on `entriesChecked` across
 the WHOLE run (`isVacuous` in `scripts/lib/suppression-liveness.ts`), so it only
@@ -45,7 +45,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-policy-liveness-floors.sh"
 
-GATE = paths.from_root("scripts", "check-suppression-liveness.ts")
+GATE = paths.from_root("scripts/gates", "check-suppression-liveness.ts")
 TSX = paths.from_root("node_modules", ".bin", "tsx")
 
 POLICY_FILES = (

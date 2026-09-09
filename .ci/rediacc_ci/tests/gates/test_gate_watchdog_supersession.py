@@ -61,10 +61,10 @@ process.stdout.write(v.superseded ? "superseded" : "normal");
 
 
 def subject(gate):
-    if not WATCHDOG.is_file():
-        gate.log_fail("subject under test is missing: %s" % WATCHDOG)
-    harness.require_tool("node", "install Node.js; the watchdog is a CommonJS module")
-    return WATCHDOG
+    # The four lines this used to hold were byte-identical in three watchdog gate tests;
+    # they live in `harness` now. See harness.watchdog_subject for why this one is
+    # extractable where an assertion message is not.
+    return harness.watchdog_subject(gate, WATCHDOG)
 
 
 def node(gate, script: str, *args: str) -> harness.RunResult:
@@ -199,15 +199,9 @@ def test_the_api_lookup_fails_closed_in_source(gate):
     """The predicate cannot protect itself from hasNewerRun throwing. Assert the
     catch arm exists and returns false, because a `throw` escaping there would
     crash the poll loop and a `return true` would swallow failures wholesale."""
-    body: list[str] = []
-    collecting = False
-    for line in subject(gate).read_text(encoding="utf-8").splitlines():
-        if not collecting and line.startswith("async function hasNewerRun"):
-            collecting = True
-        if collecting:
-            body.append(line)
-            if line == "}":
-                break
+    body = harness.block_from(
+        subject(gate).read_text(encoding="utf-8"), "async function hasNewerRun"
+    )
     text = "\n".join(body)
     if not text:
         gate.log_fail("hasNewerRun could not be located, so its failure mode is unchecked")

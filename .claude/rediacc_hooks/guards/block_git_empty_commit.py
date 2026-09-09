@@ -67,13 +67,7 @@ DEFECT = ('if claim != "":', "if False:")
 # SAME DEFECT CLASS as block-bash-write-to-running-script.sh and
 # block-roundlog-truncate.sh, both fixed earlier the same day: a guard that
 # matches a MENTION rather than a TARGET.
-ALLOW_EMPTY = (
-    r"(^|[;&|(]|&&|\|\|)["
-    + hookio.SPACE
-    + r"]*git["
-    + hookio.SPACE
-    + r"]+commit[^|;&]*--allow-empty"
-)
+ALLOW_EMPTY = hookio.rx(r"(^|[;&|(]|&&|\|\|)[{S}]*git[{S}]+commit[^|;&]*--allow-empty")
 
 ADVICE = (
     "Instead, rerun the run: for failures in tunnel-CONSUMER jobs (Tests+Infra E2E / CLI / "

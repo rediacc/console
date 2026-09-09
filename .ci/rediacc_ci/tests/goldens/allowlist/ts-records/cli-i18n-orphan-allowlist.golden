@@ -5,7 +5,7 @@
 # source: .cli-i18n-orphan-allowlist
 # corpus: corpus/cli-i18n-orphan-allowlist.list
 # comment-char: #
-# corpus-sha256: 4ba73989bbf3c8fce154ea20e90e3ead32bbad534f6538697cbb1b0765c906b4
+# corpus-sha256: c028f45a67c0d57eb807ff3456ea43fcdb39702feb080070ba56d28cac113858
 # ---
 17	commands.sync.	repo-sync.ts builds t(`commands.sync.${mode}.completed|failed|starting|progress`) where mode is upload|download; the full leaf key is never a static literal, so the upload/download subtrees are only reachable at runtime.
 18	errors.term.	term.ts renders t(`errors.term.${codeKey}`) mapping an SSH exit code to a message; the per-code leaves are concatenated at runtime and never appear as a static t() literal.

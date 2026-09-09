@@ -122,7 +122,8 @@ strictly in order, each a refusal the next depends on. C only after A2, or
 ## What this design does NOT cover
 - Minting. Web-vault only; every part of this plan is downstream of a value the operator already holds.
 - Advance warning of any kind. Deliberately.
-- The read/write token split from `agent/PLAN-env-to-bitwarden.md:225-226`.
+- The read/write token split from `agent/archive/plans/PLAN-env-to-bitwarden.md:225-226`
+  (archived byte-identical 2026-09-09; see `agent/PLAN-completion-strategy.md` section 2).
 - Rotating anything else; downstream secrets belong to `private/account/scripts/rotation/`.
 - Revoking the old token. A revoke reminder firing before propagation is verified is worse than none. OPEN QUESTION for the operator: should it print one after B4 passes?
 - Proving the right value landed in a GitHub secret. Unreadable by design; the next CI run is the only end-to-end proof.

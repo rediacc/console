@@ -335,7 +335,15 @@ def main(argv: list[str] | None = None) -> int:
 
     # THE SHAPE, NOT JUST THE VERDICT: the count is printed so a reader notices
     # when it collapses, and the residue paragraph names what is NOT covered.
-    log.info("greenlight closures: all %d declared path(s) exist and are tracked" % n)
+    # STDOUT, AND DELIBERATELY NOT `log.info`. The house logger writes to stderr,
+    # which would split ONE paragraph across TWO streams: the headline on stderr
+    # and its own indented continuation lines below on stdout. A reader piping
+    # stdout would see six dangling continuation lines under no heading. The twin
+    # echoes all seven to stdout, `battery_clean_tree` does the same for the same
+    # reason, and the control branch above already states the rule ("STDOUT for
+    # the control's own line, matching the twin"). The `\u2713` is written out
+    # rather than delegated because `log.info` is what prefixes it.
+    print("\u2713 greenlight closures: all %d declared path(s) exist and are tracked" % n)
     print("  (controls: a missing path and an untracked path each reported, a clean pair silent)")
     print("  Residue, stated because it is NOT covered: TRACKED is not IN HEAD. A path that is")
     print("  staged but uncommitted still resolves to nothing on the candidate side, so")

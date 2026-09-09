@@ -17,12 +17,12 @@ measured `1 failed, 8944 passed in 810.16s`. It runs serially: `pyproject.toml:2
 Three measured facts, each verified against this tree:
 
 **It is 45x the next gate.** Taking the FLOOR of `recent` per gate from
-`.ci/cache/gate-durations.json` -- the statistic `scripts/check-gate-manifest.ts:503`
+`.ci/cache/gate-durations.json` -- the statistic `scripts/gates/check-gate-manifest.ts:503`
 uses -- no other quick-lane gate has a floor above 17.0s, and the sum of all 357 floors
 is 1227.2s against a 22-slot pool. The lane's throughput-bound wall is about 56s.
 Everything above that is this one gate.
 
-**It is about to crash rather than report.** `check_pytest.py:277` passes `timeout=900`
+**It is about to crash rather than report.** `.ci/rediacc_ci/check_pytest.py:277` passes `timeout=900`
 and `main()` has no `except subprocess.TimeoutExpired`, so at 810.16s measured there are
 90 seconds of margin before the gate raises a traceback instead of returning a verdict.
 The corpus grows about 200 tests per W7 P3 batch.
@@ -44,7 +44,7 @@ writes to a real-tree path. The plants are in-memory: read the real file, edit t
 string, write the result into `tmp_path`. The `shutil.copy` calls copy FROM the real tree
 INTO a tmp root.
 
-It is enforced, not lucky: `test_twin_parity.py:187-213` already computes the lock join
+It is enforced, not lucky: `.ci/rediacc_ci/tests/gates/test_twin_parity.py:187-213` already computes the lock join
 and FAILS the port if any ported module's `BASH_TWIN` is in the `mutex | reads` set, with
 its own anti-vacuity refusal for an empty union. Measured: 29 of 29 ported modules
 resolve against the lock, and ZERO are in either claim.
@@ -60,12 +60,12 @@ day one and would get suppressed. That is the design-changing fact.
 | Writes outside `tmp_path` into the real tree | 0 | not a hazard |
 | `os.chdir` | 2 (save/restore pair) | not a hazard: workers are PROCESSES |
 | `os.environ` mutation without monkeypatch | 35 | not a hazard, same reason; pre-existing fragility |
-| Deterministic port allocation | 1 (`test_core_ports.py:209`, first free run in 20000-30000) | REAL: two workers pick 20000 |
+| Deterministic port allocation | 1 (`.ci/rediacc_ci/tests/test_core_ports.py:209`, first free run in 20000-30000) | REAL: two workers pick 20000 |
 | The gate drives 29 real bash twins against the real tree while declaring NO isolation to the pool | 29 | REAL and pre-existing |
 
 ## The design
 
-**`-n` does NOT go in `addopts`, and this is load-bearing.** `test_twin_parity.py:154`
+**`-n` does NOT go in `addopts`, and this is load-bearing.** `.ci/rediacc_ci/tests/gates/test_twin_parity.py:154`
 runs a NESTED `python -m pytest` per module, which reads the same ini. With `-n auto` in
 `addopts`, 24 outer workers each spawning 24 inner workers is 576 processes. `-n` goes on
 the gate's argv instead, so nested parity runs stay serial and a hand-typed `pytest`
@@ -73,12 +73,12 @@ stays serial.
 
 **Worker count is `min(8, os.cpu_count())`, not `auto`.** `auto` oversubscribes against
 the runner's own 22-slot pool. The shape and the reason are already written down at
-`battery.py:480-484`: several tests shell out to npx/tsx, and 20 concurrent node startups
+`.ci/rediacc_ci/battery.py:480-484`: several tests shell out to npx/tsx, and 20 concurrent node startups
 cost more in contention than they buy. Override with `PYTEST_JOBS`. Pair with `weight: 8`
-on the manifest entry; `pool.ts:242` caps effective weight at the pool size, so a 2-slot
+on the manifest entry; `scripts/ci-runner/pool.ts:242` caps effective weight at the pool size, so a 2-slot
 CI pool reads it as "the whole pool".
 
-**`--dist loadgroup`, with the group DERIVED from the lock.** `xdist/remote.py:236-254`
+**`--dist loadgroup`, with the group DERIVED from the lock.** the installed pytest-xdist package, remote.py lines 236-254 (third-party, not in this repo)
 reads `xdist_group` in the worker and `continue`s on items without it, so ungrouped tests
 distribute freely. A new `.ci/rediacc_ci/xdist_groups.py` exposes `group_for(module)`,
 using `battery.classify_from_lock` verbatim -- no fourth copy -- plus a module-level
@@ -108,7 +108,7 @@ needs a SEPARATE xdist check rather than a change to the pytest one.
 
 Ordered so no half-done state is corrupting: through box 4 the suite runs as it does today.
 
-- [ ] 1. PARTIAL (the box stays OPEN; `[~]` is not one of this repo's four states): the serial baseline is recorded (8945 tests, exit 0, stderr empty, ~617-660s
+- [x] 1. **CLOSED BY OPERATOR RULING, not by completion, and that distinction is the point.** The three-run FLOOR and the `--durations` long pole were never taken, because the operator ruled STOP AT 2.08x before box 10's re-measure needed them; box 10 was satisfied instead by the tier oracle's own floor (367.9s over five samples), which is the same statistic taken by the instrument that judges it. Original text: the serial baseline is recorded (8945 tests, exit 0, stderr empty, ~617-660s
       with only a read-only agent in the tree). The three-run FLOOR and the --durations long pole
       are NOT yet taken, and box 10 needs them. Measure the before HONESTLY on a quiesced tree, three runs, keep the FLOOR, and
       record the 40 slowest tests. The 675.3s receipt is NOT the before -- it was measured
@@ -118,17 +118,17 @@ Ordered so no half-done state is corrupting: through box 4 the suite runs as it 
 - [x] 3. Declare the isolation the gate ALREADY needs: `reads: ['tree:repo']` on
       `check:ci-pytest`, and extend `paths` to cover `.claude/rediacc_hooks/**` and
       `.ci/scripts/test/gates/**`, neither of which the current filter can see.
-- [ ] 4. Pin and provision xdist: `PYTEST_XDIST_VERSION=3.8.0`, a `resolve_xdist` rung,
+- [x] 4. Pin and provision xdist: `PYTEST_XDIST_VERSION=3.8.0`, a `resolve_xdist` rung,
       a `setup/tools.py` row NOT added to `TOOL_KEYS`. Suite still serial after this box.
-- [ ] 5. Prove xdist works here at all: one hand run of `-n 2 --dist loadgroup`, and
+- [x] 5. Prove xdist works here at all: one hand run of `-n 2 --dist loadgroup`, and
       capture the exact header bytes.
-- [ ] 6. Teach the gate to read the parallel header. WITHOUT this, `-n` makes
+- [x] 6. Teach the gate to read the parallel header. WITHOUT this, `-n` makes
       `COLLECTED_RE` return None and the gate fails naming the WRONG problem.
-- [ ] 7. Land the group derivation, still with no `-n`. Markers are inert without
+- [x] 7. Land the group derivation, still with no `-n`. Markers are inert without
       `--dist loadgroup`, so the suite must still pass serially.
-- [ ] 8. Turn it on: `-n`, `--dist loadgroup`, `weight: 8`.
-- [ ] 9. Add the four controls below, each with a planted-defect demonstration.
-- [ ] 10. Re-measure and retier on a quiesced tree.
+- [x] 8. Turn it on: `-n`, `--dist loadgroup`, `weight: 8`.
+- [x] 9. Add the four controls below, each with a planted-defect demonstration.
+- [x] 10. Re-measure and retier on a quiesced tree.
 
 ## The control that proves the parallelism is real
 

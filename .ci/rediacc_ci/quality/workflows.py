@@ -638,16 +638,35 @@ def slurp_jq_offenders(text: str) -> list[int]:
     out: list[int] = []
     joined = ""
     start = 0
+    depth = 0
     for number, line in enumerate(text.split("\n"), start=1):
         if COMMENT_RE.match(line):
             joined = ""
+            depth = 0
             continue
         if joined != "":
             joined = joined + " " + line
         else:
             joined = line
             start = number
-        if CONTINUATION_RE.search(line):
+        # BASH CONTINUES WITH A BACKSLASH, PYTHON WITH AN OPEN BRACKET, and the second
+        # is not a line SUFFIX -- it is a running depth. A per-line test was written
+        # first and its control refused it: in
+        #     subprocess.run(
+        #         [
+        #             "gh", "api", "repos/x/issues",
+        #             "--paginate", "--slurp",
+        #             "--jq", ".[]",
+        # the third line opens nothing, so a suffix test ends the join there and the
+        # `--slurp`/`--jq` pair two lines later is never seen. Counting brackets across
+        # the joined text is what actually spans the call.
+        #
+        # QUOTED BRACKETS ARE NOT DISCOUNTED. Over-joining can only make this scan see
+        # MORE of a command; its failure mode is missing one, so the cheap reading is
+        # the safe one in the direction that matters. A comment resets both, as before.
+        depth += sum(line.count(c) for c in "([{") - sum(line.count(c) for c in ")]}")
+        depth = max(depth, 0)
+        if depth > 0 or CONTINUATION_RE.search(line):
             continue
         if "--slurp" in joined and "--jq" in joined:
             out.append(start)
@@ -663,7 +682,14 @@ def check_gh_slurp_jq(errors: Errors, root: pathlib.Path, files: list[str]) -> N
         for dirpath, _dirnames, filenames in os.walk(ci_scripts):
             for name in filenames:
                 candidate = pathlib.Path(dirpath) / name
-                if name.endswith(".sh") and candidate.is_file():
+                # `.py` JOINED `.sh` HERE ON 2026-09-08, and the omission was the
+                # extension-shaped matcher class rather than a decision: W7 ported the
+                # quality gates under this very tree to Python, and a gate that shells
+                # out to `gh api --slurp --jq` is exactly as broken in Python as in bash.
+                # A matcher keyed on `.sh` does not report that it stopped looking; it
+                # reports nothing, and exits 0. 72 `.py` files under `.ci/scripts`
+                # mention `gh` and none of them was being read.
+                if name.endswith((".sh", ".py")) and candidate.is_file():
                     scan_files.append(str(candidate.relative_to(root)))
 
     control = slurp_jq_offenders('gh api repos/x/issues --paginate --slurp \\\n    --jq ".[]"\n')

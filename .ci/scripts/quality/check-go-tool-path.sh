@@ -1,18 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: Go tool PATH
-# emit: false
-# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
-# needs: none
-# selftest: true
-# lane: quality-code
-# why: Console's own scripts already use the right shape -- toolchain.sh installs
-#      with GOBIN and invokes by absolute path, which is why check:ci-shell-format
-#      passes on a host with no shfmt on PATH. This gate exists so that stays
-#      true: the defect it names cost four instances in the renet submodule on
-#      2026-08-27, each one a `go install` followed by a bare invocation, and CI
-#      could not see any of them because actions/setup-go masks it.
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-go-tool-path is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_go_tool_path.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_go_tool_path.py" but its header derives "...check-go-tool-path.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # A script that INSTALLS a Go tool must be able to FIND it.
 #

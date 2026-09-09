@@ -247,7 +247,7 @@ const RULES = [
   // file is only caught by install_methods/package_tests, which ARE gated.
   {
     name: 'scripts-license-gen',
-    match: (p) => p === 'scripts/generate-third-party-licenses.ts',
+    match: (p) => p === 'scripts/gen/generate-third-party-licenses.ts',
     full: 'harness',
   },
 

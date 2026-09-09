@@ -102,14 +102,14 @@ PLAN_GLOBS = ("*/agent/PLAN-*.md", "agent/PLAN-*.md")
 # (wl_checks.PLAN_HEADER_LINES).
 HEADER_LINES = 10
 
-RECORD_STATUS = r"^Status:[" + hookio.SPACE + r"]*(compacted|parked)[" + hookio.SPACE + r"]*$"
-BLOB_FIELD = r"^Full-Text-Blob:[" + hookio.SPACE + r"]*([0-9a-f]{40}).*"
-SIG_FIELD = r"^Record-Sig:[" + hookio.SPACE + r"]*([0-9a-f]{8}).*"
+RECORD_STATUS = hookio.rx(r"^Status:[{S}]*(compacted|parked)[{S}]*$")
+BLOB_FIELD = hookio.rx(r"^Full-Text-Blob:[{S}]*([0-9a-f]{40}).*")
+SIG_FIELD = hookio.rx(r"^Record-Sig:[{S}]*([0-9a-f]{8}).*")
 
 HEADER_FIELD = r"^(Status|Owner|Full-Text|Full-Text-Blob|Record-Sig):"
 DONE_ATTESTATION = r"done=([0-9a-f]{9}|open|abandoned)"
-BOX_LINE = r"^[" + hookio.SPACE + r"]*[-*+][" + hookio.SPACE + r"]+\[[ xX]\][" + hookio.SPACE + r"]"
-RECORD_LINE = r"^[" + hookio.SPACE + r"]{4}\(record\)[" + hookio.SPACE + r"]"
+BOX_LINE = hookio.rx(r"^[{S}]*[-*+][{S}]+\[[ xX]\][{S}]")
+RECORD_LINE = hookio.rx(r"^[{S}]{4}\(record\)[{S}]")
 
 # The 12-character floor keeps a short body from matching ordinary prose.
 MIN_BODY = 12

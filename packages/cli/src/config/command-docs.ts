@@ -3,7 +3,7 @@
  * search keywords, and list-output tabulation hints. A separate module from
  * COMMAND_METADATA (which is at its max-lines budget) — this file is pure
  * data with NO imports, so the contract generator AND the repo-root
- * scripts/validate-cli-examples.ts can both load it without dragging in the
+ * scripts/gen/validate-cli-examples.ts can both load it without dragging in the
  * CLI. Keep it dependency-free.
  *
  * Every registry is keyed by a command's pathKey (e.g. "repo fork"). The

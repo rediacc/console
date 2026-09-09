@@ -1,10 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# kind: test
-# test: .ci/scripts/test/gates/test-profiler-coverage.sh
-# blocker: BLOCKER: test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") -- real .github/workflows, real .profiler-coverage-allowlist, real .github/actions/profiler/action.yml, real floors -- so the full 121-job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree-only case can never exercise
-# needs: none
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-profiler-coverage is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_profiler_coverage.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_profiler_coverage.py" but its header derives ".ci/scripts/quality/check-profiler-coverage.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Every job that runs on a Linux runner must be profiled, and every job that is
 # profiled must be configured correctly.

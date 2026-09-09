@@ -1,9 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# step: Command tree
-# needs: node
-# selftest: true
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-command-tree is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_command_tree.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_command_tree.py" but its header derives "...check-command-tree.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Check that the exported command tree is up-to-date with the CLI.
 #
@@ -13,9 +16,9 @@
 #   scripts/lib/positional-cli-detector.ts  (and, through it, the two ESLint rules
 #                                            no-positional-cli-syntax{,-source} and
 #                                            packages/www/scripts/validate-docs-cli-usage.js)
-#   scripts/validate-cli-examples.ts
-#   scripts/check-cli-docs.ts
-#   scripts/check-design-tree.ts
+#   scripts/gen/validate-cli-examples.ts
+#   scripts/gates/check-cli-docs.ts
+#   scripts/gates/check-design-tree.ts
 #   packages/cli/scripts/check-command-planes.ts
 #
 # Nothing regenerated it, and nothing checked it. A stale tree does not fail loudly:

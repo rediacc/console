@@ -126,7 +126,7 @@ test_gate_runs_the_selftest() {
 # the chain string no longer names any gate, so the assertion went red. It is
 # the same string-parsing assumption that made check-ci-chain-parity.ts and
 # check-gate-reachability.ts unfixable in place. The manifest is the gate set
-# now, and scripts/check-ci-parity.ts is what keeps it honest against CI.
+# now, and scripts/gates/check-ci-parity.ts is what keeps it honest against CI.
 test_gate_is_in_the_gate_manifest() {
     local manifest="$REPO_ROOT/scripts/ci-runner/manifest.ts"
     [[ -f "$manifest" ]] || log_fail "no gate manifest at $manifest, so this assertion would be vacuous"

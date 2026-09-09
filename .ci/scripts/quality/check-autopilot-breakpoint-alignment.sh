@@ -1,11 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# kind: test
-# test: .ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh
-# blocker: BLOCKER: test-autopilot-breakpoint-alignment.sh:59 runs the gate seam-free against the real .ci/breakpoint/workflow/breakpoint.yml and .github/workflows/autopilot.yml inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real comparison executes every CI run; the mutated-copy cases around it prove both fire directions
-# id: check:ci-autopilot-bp-align
-# needs: none
-# ---- end gate ----
+# HEADER REMOVED 2026-09-07 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-autopilot-bp-align is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_autopilot_breakpoint_alignment.py, so a header here would declare a
+# registration that has moved, and gate-bind refuses that by name:
+#   package.json runs "...check_autopilot_breakpoint_alignment.py" but its header derives "...check-autopilot-breakpoint-alignment.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 # The autopilot's hold-open debug session COPIES three dispatch inputs from
 # breakpoint. This gate holds the copies to the original.
 #

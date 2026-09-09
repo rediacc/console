@@ -395,7 +395,7 @@ def main(argv: list[str] | None = None) -> int:
     # got right by reading the twin rather than by watching the comparator.
     print(
         "\u2713 %d pattern-substitution control(s) prove their plant landed; %d built by "
-        "construction (exempt); %d python gate(s) NOT scanned (this check parses bash)"
+        "construction (exempt); %d python gate(s) NOT scanned here -- check:ci-python-control-plants owns them"
         % (checked, exempt, py_unscanned)
     )
     return 0

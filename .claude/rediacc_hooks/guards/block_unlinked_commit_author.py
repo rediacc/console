@@ -73,22 +73,12 @@ ORDER = 5
 # produced the 2026-09-03 rewrite is not looked at.
 DEFECT = ("if override:", "if False:")
 
-COMMIT_AT_COMMAND_POS = (
-    r"(^|[;&|(]|\$\(|`)["
-    + hookio.SPACE
-    + r"]*git(["
-    + hookio.SPACE
-    + r"]+-[A-Za-z-]+(["
-    + hookio.SPACE
-    + r"]+[^ ;&|]+)?)*["
-    + hookio.SPACE
-    + r"]+commit(["
-    + hookio.SPACE
-    + r"]|$)"
+COMMIT_AT_COMMAND_POS = hookio.rx(
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
 )
 
-C_FLAG = r"\-c[" + hookio.SPACE + r']+"?user\.email=[^"' + hookio.SPACE + r"]+"
-ENV_FLAG = r"(GIT_AUTHOR_EMAIL|GIT_COMMITTER_EMAIL|EMAIL)=[^" + hookio.SPACE + r"]+"
+C_FLAG = hookio.rx(r'\-c[{S}]+"?user\.email=[^"{S}]+')
+ENV_FLAG = hookio.rx(r"(GIT_AUTHOR_EMAIL|GIT_COMMITTER_EMAIL|EMAIL)=[^{S}]+")
 AUTHOR_FLAG = (
     r"\-\-author[= ]+(\"[^\"]*<[^>]+>\"|'[^']*<[^>]+>'|[^"
     + hookio.SPACE
@@ -223,7 +213,7 @@ def run(ev):
     # message cannot widen the region.
     pre = cmd.split("commit", 1)[0] if "commit" in cmd else cmd
     cflags = [
-        hookio.sed_sub(r"^-c[" + hookio.SPACE + r']+"?', "", match).rstrip("\n")
+        hookio.sed_sub(hookio.rx(r'^-c[{S}]+"?'), "", match).rstrip("\n")
         for match in hookio.grep_o(C_FLAG, pre)
     ]
     cflags = [kv for kv in cflags if kv != ""]
@@ -252,9 +242,7 @@ def run(ev):
     deauthored = cmd
     deauthored = hookio.sed_sub(r'(-m|--message)[= ]+"[^"]*"', r"\1 MSG", deauthored)
     deauthored = hookio.sed_sub(r"(-m|--message)[= ]+'[^']*'", r"\1 MSG", deauthored)
-    deauthored = hookio.sed_sub(
-        r"(-F|--file)[= ]+[^" + hookio.SPACE + r"]+", r"\1 FILE", deauthored
-    )
+    deauthored = hookio.sed_sub(hookio.rx(r"(-F|--file)[= ]+[^{S}]+"), r"\1 FILE", deauthored)
     override = ""
     first = hookio.grep_o(AUTHOR_FLAG, deauthored)[:1]
     if first:

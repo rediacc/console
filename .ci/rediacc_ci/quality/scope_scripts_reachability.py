@@ -9,7 +9,7 @@ WHY THIS EXISTS, in the twin's own words, because the failure is invisible:
     .ci/scripts/ci/scope-map.cjs was narrowed: gate sources became a zero-job
     `gates` module so an attribution-URL check would stop running the ceph fork
     test. Two subsets were carved out to stay full because a GATED job genuinely
-    executes them -- scripts/drills/ and scripts/generate-third-party-licenses.ts.
+    executes them -- scripts/drills/ and scripts/gen/generate-third-party-licenses.ts.
 
     That carve-out list was traced BY HAND, once, at one commit. Nothing stopped
     the next reachable file from being added and silently narrowed: a new
@@ -514,7 +514,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
     # ---- CONTROL: a synthetic reachable path MUST be judged a violation ----
-    control_mode = classify_mode(root, "scripts/check-embed-credits.ts")
+    control_mode = classify_mode(root, "scripts/gates/check-embed-credits.ts")
     if control_mode != "reduced":
         print(
             "%s✗ CONTROL FAILED%s: a known gate source classified '%s', not 'reduced'."

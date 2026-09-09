@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: agent-browser exit status
-# needs: none
-# selftest: true
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-agent-browser-exit is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_agent_browser_exit.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_agent_browser_exit.py" but its header derives "...check-agent-browser-exit.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # `agent-browser open` has an EXIT CODE THAT DEPENDS ON WHETHER STDOUT IS A TTY.
 #

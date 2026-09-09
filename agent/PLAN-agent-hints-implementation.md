@@ -75,7 +75,7 @@ Compacted-By: 8f55d4f0
 Compacted-At: 2026-09-06T17:06:09Z
 Boxes: 0 attested, 0 open, 0 abandoned
 Epics: none
-Touched: package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, scripts/check-ci-parity.ts, .claude/agents/account-dev.md, .ci/scripts/quality/check_gate_reachability_coverage.py, .ci/scripts/test/gates/test-worklist-hooks.sh, .ci/scripts/test/mutate-check.sh
+Touched: package.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, scripts/gates/check-ci-parity.ts, .claude/agents/account-dev.md, .ci/scripts/quality/check_gate_reachability_coverage.py, .ci/scripts/test/gates/test-worklist-hooks.sh, .ci/scripts/test/mutate-check.sh
 Gates: check:ci-agent-hint-liveness, check:ci-parity
 Why-Source: auto
 Read-History: `git show 9e7c10012356718cff5eda813cae38e7287f31da` recovers the text; `git log --find-object=9e7c10012356718cff5eda813cae38e7287f31da --all` names the commit

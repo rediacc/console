@@ -10,6 +10,10 @@ readonly ACCOUNT_LIB_LOADED=1
 
 # Source port utilities
 source "$CI_LIB_DIR/find-port.sh"
+# env_file_load: reads a KEY=value file without executing it, and lets the SHELL
+# win over the file. Both .env loads below use it; see the call sites for why
+# that precedence is the whole point.
+source "$(cd "$CI_LIB_DIR/../.." && pwd)/scripts/lib/env-file.sh"
 
 # =============================================================================
 # INTERNAL HELPERS
@@ -434,10 +438,20 @@ account_dev() {
     # Generate .env if needed
     account_ensure_env
 
-    # Load environment
-    set -a
-    source "$ACCOUNT_DIR/.env"
-    set +a
+    # Load environment. NOT `set -a; source`, for two reasons that are the whole
+    # point of env_file_load: it PARSES instead of executing (this file holds
+    # ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, ACCOUNT_JWT_SECRET
+    # and ACCOUNT_SERVER_API_KEY, and rdc.sh:240-245 already refuses to source it
+    # for exactly that reason), and the SHELL wins over the file. The keys this
+    # inverts today are the ones the template writes: PORT, ROOT_EMAIL,
+    # REDIACC_ACCOUNT_SERVER, WEBAUTHN_ORIGIN and the Stripe slots. So
+    # `REDIACC_ACCOUNT_SERVER=... ./run.sh account dev` now reaches the gateway
+    # instead of being discarded in favour of a line written to disk months ago.
+    # GATEWAY_PORT/VITE_PORT/ASTRO_PORT are NOT in the file (measured against the
+    # live private/account/.env, 143 lines, 2026-09-09), so the ports
+    # account_allocate_ports just computed were never actually at risk here --
+    # the header of rediacc_ci/core/env.py used to claim they were.
+    env_file_load "$ACCOUNT_DIR/.env" || return 1
 
     # Dependencies
     ensure_deps
@@ -788,9 +802,10 @@ account_test_e2e() {
         exit 1
     fi
 
-    set -a
-    source "$account_env"
-    set +a
+    # Same rule as account_dev: the shell wins. An E2E run started with
+    # GATEWAY_PORT or REDIACC_ACCOUNT_SERVER already exported is pointing the
+    # tests somewhere on purpose, and the file must not quietly redirect them.
+    env_file_load "$account_env" || return 1
 
     # Check dev gateway is running
     local gateway_port="${GATEWAY_PORT:-}"

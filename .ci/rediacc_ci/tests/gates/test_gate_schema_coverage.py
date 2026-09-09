@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-schema-coverage.sh`.
 
-Integration test for `scripts/check-schema-coverage.ts` (`check:ci-schema-coverage`).
+Integration test for `scripts/gates/check-schema-coverage.ts` (`check:ci-schema-coverage`).
 
 The gate walks `RdcConfigSchema`'s type tree and fails closed on any Zod leaf
 without a `SENSITIVITY_REGISTRY` entry, and on any registry template that matches
@@ -33,7 +33,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-schema-coverage.sh"
 
-SUT = paths.from_root("scripts", "check-schema-coverage.ts")
+SUT = paths.from_root("scripts/gates", "check-schema-coverage.ts")
 TSX = paths.from_root("node_modules", ".bin", "tsx")
 SHARED = paths.from_root("packages", "shared")
 # HOISTED, NOT PER-WORKSPACE, and the first draft of this port got it wrong.

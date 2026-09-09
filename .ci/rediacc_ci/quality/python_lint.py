@@ -426,6 +426,31 @@ def main(argv: list[str] | None = None) -> int:
             print("    %s" % name, file=sys.stderr)
         return 1
 
+    # `toolchain_load || exit 1`, which the twin runs at
+    # check-python-lint.sh:137 -- AFTER the two vacuity refusals above and
+    # BEFORE the resolver below, so the order here is the twin's order and not a
+    # convenient one.
+    #
+    # WHY THE PORT NEEDED THIS AT ALL. The module notes above explain that the
+    # pins file's RUFF_VERSION is immediately overwritten by the literal, so the
+    # port skips reading the file for the VERSION and is right to. What it also
+    # skipped was `toolchain_load`'s REFUSAL: with the pins file gone the twin
+    # exits 1 having printed nothing else, and this port went on to lint with
+    # whatever resolver it could find. That is an anti-vacuity refusal quietly
+    # dropped in a port, which is the shape this whole programme exists to
+    # catch. Found by the W7 P4 batch 8a cutover differential on a fixture tree
+    # that had no `.devcontainer/`: twin exit 1 with one line of stderr, port
+    # exit 0 with a full green report over 12 files.
+    #
+    # The early return on REDIACC_TOOLCHAIN_LOADED is `toolchain.sh:28`, kept
+    # because a caller that has already sourced the pins legitimately has no
+    # file to re-read.
+    if not os.environ.get("REDIACC_TOOLCHAIN_LOADED"):
+        pins = pathlib.Path(root) / ".devcontainer" / "toolchain.env"
+        if not os.access(pins, os.R_OK):
+            print("toolchain: pins file missing or unreadable: %s" % pins, file=sys.stderr)
+            return 1
+
     ruff = resolve_ruff()
     if ruff is None:
         print("%serror%s: ruff is not available and neither is uvx." % (red, nc), file=sys.stderr)
@@ -496,7 +521,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         if check.returncode != 0:
             print(file=sys.stderr)
-            print("%s✗%s ruff reported findings in tracked Python." % (red, nc), file=sys.stderr)
+            print(
+                "%s✗%s ruff reported findings in Python this gate scans "
+                "(tracked and untracked)." % (red, nc),
+                file=sys.stderr,
+            )
             print(
                 "  Fix them. Do NOT add a per-line noqa to get past this gate: if a rule",
                 file=sys.stderr,

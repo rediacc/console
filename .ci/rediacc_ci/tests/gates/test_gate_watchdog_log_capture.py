@@ -117,10 +117,10 @@ FAST_FAIL_JOB = "Stage Artifacts / Stage Artifacts"
 
 
 def subject(gate):
-    if not WATCHDOG.is_file():
-        gate.log_fail("subject under test is missing: %s" % WATCHDOG)
-    harness.require_tool("node", "install Node.js; the watchdog is a CommonJS module")
-    return WATCHDOG
+    # The four lines this used to hold were byte-identical in three watchdog gate tests;
+    # they live in `harness` now. See harness.watchdog_subject for why this one is
+    # extractable where an assertion message is not.
+    return harness.watchdog_subject(gate, WATCHDOG)
 
 
 def harness_script(gate, tmp_path: pathlib.Path) -> pathlib.Path:

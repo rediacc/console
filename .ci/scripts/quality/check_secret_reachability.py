@@ -56,14 +56,29 @@ MAX_BASELINE_AGE_DAYS = 45
 
 # Vacuity floor. These trees reference dozens of secrets; a handful means the
 # scan broke and every comparison below would be over an empty set.
-# 5 since 2026-09-05, down from 10. The corpus shrank because the references were
-# RETIRED, not because the scan broke: the org secrets were deleted and 131 consumer
-# reads moved to `${{ env.BWS_* }}`, taking org-scope reads from 147 to 4. What is
-# left is breakpoint.yml (which must not fetch -- a later step hands a human a shell)
-# and the watchdog's token, which cannot take a fetch ahead of its monitor step; a
-# gate in check-workflows.sh enforces that ordering. A floor lowered to match a
-# deliberate removal is honest; one lowered to match a finding is not.
-MIN_REFERENCES = 5
+# 1 since 2026-09-09, down from 5, down from 10. The corpus shrinks because references
+# are RETIRED, not because the scan breaks -- and it has now reached its floor in the
+# literal sense: ONE is the TERMINAL STATE of this migration, because `BWS_ACCESS_TOKEN`
+# is the bootstrap credential every other secret is fetched WITH, so it can never itself
+# be fetched. Everything else is in Bitwarden.
+#
+# ANY FLOOR ABOVE 1 REDS AT THE FINISH LINE, which is the trap this repository keeps
+# paying for: a threshold calibrated mid-migration becomes a false failure at the moment
+# the migration succeeds. On 2026-09-09 the operator deleted every non-BWS repo secret on
+# all three repositories, deliberately, to force the stragglers into the open -- so the
+# count was always going to arrive here.
+#
+# ONE STILL DISTINGUISHES "clean" FROM "did not run", which is the only job a floor has:
+# 21 workflows reference BWS_ACCESS_TOKEN, so a scan that stopped seeing the tree yields
+# 0 and reds, while any healthy tree yields at least 1.
+#
+# The single remaining non-BWS reference is `BREAKPOINT_TUNNEL_TOKEN` in breakpoint.yml,
+# and it is UNREACHABLE as of that deletion. It is not an oversight and it must NOT be
+# "migrated": that job's later steps include `Start debug shell`, and bws-secrets exports
+# through GITHUB_ENV into every later step, so fetching there would hand a human on the
+# runner the credential that reads all 58 secrets. A step-scoped repo secret is the
+# correct shape for it -- see the reasoning at breakpoint.yml:196-214.
+MIN_REFERENCES = 1
 
 BASELINE = ".ci/config/secret-reachability.json"
 
@@ -183,7 +198,21 @@ def references(repo_root):
     for path in files:
         text = path.read_text(encoding="utf-8", errors="replace")
         declared = declared_secrets(text)
-        for m in SECRET_RE.finditer(text):
+        # A `#` COMMENT IS NOT A REFERENCE. Scanning raw text made the two the same thing,
+        # so a comment RECORDING that some `secrets.X` was removed reported as a live read
+        # of it -- the removal tripping the gate the removal satisfied. Measured 2026-09-09
+        # on watchdog-monitor.yml: every real reference was repointed at Bitwarden and the
+        # gate still named CLAUDE_CODE_OAUTH_TOKEN, from the comment explaining why.
+        #
+        # The pressure that creates is the harm: the cheapest way to green is to delete the
+        # explanation, and then nobody knows why the credential went. Its sibling
+        # `scripts/gates/check-secret-scope.ts` carries the identical filter, added the same day
+        # for the identical reason; so do check:ci-env-file-adoption and
+        # block_host_toolchain_run. YAML has one comment form, so a `#` opening a line is
+        # the whole rule -- a trailing `#` can sit inside a `${{ }}` string and
+        # over-scanning is the safe direction.
+        code = "\n".join(ln for ln in text.split("\n") if not ln.lstrip().startswith("#"))
+        for m in SECRET_RE.finditer(code):
             if m.group(1) not in BUILTIN and m.group(1) not in declared:
                 names.add(m.group(1))
     return names, len(files)
@@ -207,7 +236,17 @@ def refresh(root, baseline_path):
             ".secrets[]|[.name,.visibility]|@tsv",
         ]
     )
-    if not listing:
+    # `is None`, NOT falsy. `gh()` returns None when the call FAILED and stdout when it
+    # succeeded -- and an org with zero Actions secrets produces EMPTY stdout, which is
+    # falsy. So `if not listing` read "the migration finished" as "you lack an admin
+    # token", and the record became permanently unrefreshable at the exact moment the
+    # thing it tracks reached its terminal state.
+    #
+    # Not hypothetical: the org secrets were deleted 2026-09-05, this record was last
+    # refreshed 2026-09-02, and the gate has been red ever since with an error message
+    # blaming the operator's credentials. Measured 2026-09-09 with an admin:org token in
+    # hand: `gh api orgs/rediacc/actions/secrets --jq .total_count` returns 0 and exits 0.
+    if listing is None:
         print("refresh: cannot read the org secret list (needs an admin token)", file=sys.stderr)
         return 1
 
@@ -286,7 +325,7 @@ def verdicts(refs_by_repo, record):
                 expiry, why = waiver
                 if dt.datetime.now(dt.UTC).date().isoformat() <= expiry:
                     print(
-                        f"  KNOWN, waived until {expiry}: {repo_name}/{n} — {why}",
+                        f"  KNOWN, waived until {expiry}: {repo_name}/{n}: {why}",
                         file=sys.stderr,
                     )
                     continue

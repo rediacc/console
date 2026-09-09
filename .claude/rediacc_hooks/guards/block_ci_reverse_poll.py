@@ -38,19 +38,9 @@ ORDER = 12
 # computed the two halves with the same expression the pattern uses, which
 # reads well and cannot work: the planter searches the module's TEXT, and the
 # text holds `hookio.BLANK`, not its value. Caught on the first run.
-DEFECT = ('r"]*sleep"', 'r"]*"')
+DEFECT = ("&&[{B}]*sleep", "&&[{B}]*")
 
-PATTERN = (
-    r"gh["
-    + hookio.BLANK
-    + r"]+run["
-    + hookio.BLANK
-    + r"]+view["
-    + hookio.BLANK
-    + r"]+[0-9]+[^|;&]*--jq[^|;&]*&&["
-    + hookio.BLANK
-    + r"]*sleep"
-)
+PATTERN = hookio.rx(r"gh[{B}]+run[{B}]+view[{B}]+[0-9]+[^|;&]*--jq[^|;&]*&&[{B}]*sleep")
 
 MESSAGE = (
     "❌ BLOCKED: Reverse polling pattern (gh run view followed by sleep). "

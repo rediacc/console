@@ -1,7 +1,9 @@
 Status: draft
 Owner: 74de73ca
 Date: 2026-09-02
-Supersedes: the classification in `agent/PLAN-env-to-bitwarden.md` Part 1. That plan's
+Supersedes: the classification in `agent/archive/plans/PLAN-env-to-bitwarden.md` Part 1
+(archived byte-identical 2026-09-09; see `agent/PLAN-completion-strategy.md` section 2).
+That plan's
 Parts 2-7 (consumer map, fetch helper, clone protocol, gate retargets, migration order)
 still stand except where Part 6 below amends them.
 Scope: design. The two-way mapping in Part 2 was RUN (read-only, names only). Nothing was

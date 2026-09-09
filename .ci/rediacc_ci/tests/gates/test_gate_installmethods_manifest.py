@@ -34,11 +34,12 @@ import os
 import pathlib
 
 from rediacc_ci import paths
-from rediacc_ci.tests.gates import harness
+from rediacc_ci.tests.gates import harness, shellsubject
 
 BASH_TWIN = ".ci/scripts/test/gates/test-installmethods-manifest.sh"
 
 TARGET = paths.from_root(".ci", "scripts", "test", "test-install-methods.sh")
+SUBJECT = shellsubject.Subject(TARGET)
 
 GOOD = (
     '{"version":"1.2.17","binaries":{"linux-x64":'
@@ -84,30 +85,6 @@ cat "$FAKE_MANIFEST"
 """
 
 
-def source(gate) -> str:
-    if not TARGET.is_file():
-        gate.log_fail("target not found: %s" % TARGET)
-    return TARGET.read_text(encoding="utf-8")
-
-
-def extract_fn(gate, name: str) -> str:
-    body: list[str] = []
-    collecting = False
-    for line in source(gate).splitlines():
-        if not collecting and line.startswith("%s() {" % name):
-            collecting = True
-        if collecting:
-            body.append(line)
-            if line == "}":
-                break
-    if not body:
-        gate.log_fail(
-            "%s() not found in %s -- renamed or removed, so these tests would check nothing"
-            % (name, paths.relative_to_root(TARGET))
-        )
-    return "\n".join(body)
-
-
 class Fixture:
     def __init__(self, gate, tmp_path: pathlib.Path) -> None:
         harness.require_tool(
@@ -132,8 +109,8 @@ class Fixture:
                     "log_info() { :; }",
                     "log_warn() { :; }",
                     "log_error() { :; }",
-                    extract_fn(gate, "verify_version"),
-                    extract_fn(gate, "test_update_check"),
+                    SUBJECT.shell_fn(gate, "verify_version"),
+                    SUBJECT.shell_fn(gate, "test_update_check"),
                     "DRY_RUN=false",
                     'REPO_URL="https://releases.example.invalid"',
                     'REPO_CHANNEL="edge"',

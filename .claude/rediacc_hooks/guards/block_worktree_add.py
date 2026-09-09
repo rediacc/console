@@ -41,19 +41,9 @@ DEFECT = ("if hookio.grep_q(RUN_SH_CREATE, scan):", "if False:")
 # PORT NOTE. The bash writes this pattern inside DOUBLE quotes, so `\\\$\\(`
 # reaches grep as `\$\(` and the backtick is bare. Here the pattern is a raw
 # Python string, so the same ERE is spelled once instead of twice.
-GIT_AT_CMD = (
-    r"(^|[;&|(]|\$\(|`)["
-    + hookio.SPACE
-    + r"]*git(["
-    + hookio.SPACE
-    + r"]+-[A-Za-z-]+(["
-    + hookio.SPACE
-    + r"]+[^ ;&|]+)?)*["
-    + hookio.SPACE
-    + r"]+"
-)
+GIT_AT_CMD = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")
 
-WORKTREE_ADD = GIT_AT_CMD + r"worktree[" + hookio.SPACE + r"]+add([" + hookio.SPACE + r"]|$)"
+WORKTREE_ADD = GIT_AT_CMD + hookio.rx(r"worktree[{S}]+add([{S}]|$)")
 
 # THE WRAPPER SAILED STRAIGHT PAST THE CHECK ABOVE. `./run.sh worktree create`
 # reaches scripts/dev/worktree.sh, which runs `git worktree add -b ...` -- the
@@ -73,18 +63,8 @@ WORKTREE_ADD = GIT_AT_CMD + r"worktree[" + hookio.SPACE + r"]+add([" + hookio.SP
 # scripts/dev/worktree.sh create` puts the INTERPRETER in command position, not
 # the script, so a command-position-anchored match misses it entirely. Caught by
 # driving both forms through this hook rather than reading the regex.
-RUN_SH_CREATE = (
-    r"(^|[;&|(]|\$\(|`)["
-    + hookio.SPACE
-    + r"]*((bash|sh)["
-    + hookio.SPACE
-    + r"]+)?(\./)?(run\.sh|[A-Za-z0-9_./-]*worktree\.sh)["
-    + hookio.SPACE
-    + r"]+(worktree["
-    + hookio.SPACE
-    + r"]+)?create(["
-    + hookio.SPACE
-    + r"]|$)"
+RUN_SH_CREATE = hookio.rx(
+    r"(^|[;&|(]|\$\(|`)[{S}]*((bash|sh)[{S}]+)?(\./)?(run\.sh|[A-Za-z0-9_./-]*worktree\.sh)[{S}]+(worktree[{S}]+)?create([{S}]|$)"
 )
 
 GIT_MESSAGE = (

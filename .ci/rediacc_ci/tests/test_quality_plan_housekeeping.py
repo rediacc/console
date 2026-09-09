@@ -29,6 +29,7 @@ So every case below runs the REAL sed or the REAL bash against the Python.
 import datetime as dt
 import pathlib
 import subprocess
+import sys
 
 import pytest
 
@@ -36,11 +37,17 @@ from rediacc_ci import log, paths
 from rediacc_ci.quality import plan_housekeeping as hk
 
 TWIN = paths.CI_DIR.parent / ".ci" / "scripts" / "quality" / "check-plan-housekeeping.sh"
+CONFIG = paths.CI_DIR.parent / ".ci" / "config" / "plan-lifecycle.json"
 
 # check-plan-housekeeping.sh:128 and :138, verbatim.
 BLOB_SED = r"""sed -n '1,10s/^Full-Text-Blob:[[:space:]]*\([0-9a-f]\{40\}\)[[:space:]]*$/\1/p' "$1" | head -1"""
+# W12 P3.3. BUILT FROM THE CONFIG, NOT TYPED. This literal used to carry the
+# alternation `compacted\|parked` verbatim, which made it the THIRD copy of one
+# vocabulary beside the two twins. A test that hard-types what it is checking
+# cannot see the two implementations agree on a word the config no longer has.
 STATUS_SED = (
-    r"""sed -n '1,10s/^Status:[[:space:]]*\(compacted\|parked\)[[:space:]]*$/\1/p' "$1" | head -1"""
+    r"""sed -n '1,10s/^Status:[[:space:]]*\(%s\)[[:space:]]*$/\1/p' "$1" | head -1"""
+    % r"\|".join(hk.record_states(CONFIG))
 )
 # check-plan-housekeeping.sh:425, the DISPLAY status, whole-file on purpose.
 DISPLAY_SED = (
@@ -333,3 +340,115 @@ def test_inline_controls_hold() -> None:
 
 def test_selftest_passes() -> None:
     assert hk.selftest() == 0
+
+
+# ---------------------------------------------------------------------------
+# W12 P3.3. The record-status vocabulary: ONE source, and the mirror is checked
+# ---------------------------------------------------------------------------
+
+
+def test_the_config_mirror_equals_wl_planrec_record_states_both_directions() -> None:
+    """`.ci/config/plan-lifecycle.json` mirrors `wl_planrec.RECORD_STATES`.
+
+    THE ORIGIN IS THE HOOK CONSTANT, not the config. `check_plan_record.py`
+    imports `R.RECORD_STATES` by name (`:1405`) and cannot drift; the
+    housekeeping pair CANNOT import it, because that gate must stay runnable in
+    a checkout with no `.claude/`, which is the only reason a config exists at
+    all. So the config is a mirror, and this is the comparison that makes it one
+    rather than a fourth copy.
+
+    BOTH DIRECTIONS, and the reverse is the interesting one: a state added to
+    the hook and not to the config makes a plan a record in `check:ci-plan-record`
+    and an OFFENDER in `check:ci-plan-housekeeping`, on a clock, with no way for
+    the author to tell which reader is wrong.
+
+    NOT SKIPPED WHEN THE HOOKS ARE ABSENT WITHOUT SAYING SO. `pytest.skip` prints
+    the reason, which is the difference between "checked and equal" and "not
+    checked".
+    """
+    stop = paths.CI_DIR.parent / ".claude" / "hooks" / "stop"
+    if not (stop / "wl_planrec.py").is_file():
+        pytest.skip("no %s in this checkout, so the mirror has no origin to compare against" % stop)
+
+    sys.path.insert(0, str(stop))
+    try:
+        import wl_planrec  # noqa: PLC0415 -- the sys.path hop above is what makes it importable
+    finally:
+        sys.path.remove(str(stop))
+
+    mirror = set(hk.record_states(CONFIG))
+    origin = set(wl_planrec.RECORD_STATES)
+    assert mirror, "the config carries no record_states, so nothing would ever be a record"
+    assert origin, "wl_planrec.RECORD_STATES is empty, so the origin itself has no vocabulary"
+    assert mirror - origin == set(), "in the config but not in wl_planrec.RECORD_STATES"
+    assert origin - mirror == set(), "in wl_planrec.RECORD_STATES but not in the config"
+
+
+def test_neither_twin_hard_types_the_alternation_any_more() -> None:
+    """The point of the config is that the word appears in ONE place.
+
+    A twin that reads the config AND keeps its old literal still works, and the
+    literal is then a copy waiting to be edited by someone who greps for the
+    word. This asserts the copies are gone from both twins rather than merely
+    inert.
+    """
+
+    def code_only(text: str, comment: str) -> str:
+        """The file with its comment lines dropped.
+
+        BOTH TWINS QUOTE THE OLD LITERAL IN A COMMENT, on purpose: the archaeology
+        of why the vocabulary moved is the most useful thing in either file. A
+        raw substring check reads that prose as a live copy and reds for a reason
+        that has nothing to do with the code, which is the shape of a control
+        that fires on its own fixture.
+        """
+        return "\n".join(ln for ln in text.split("\n") if not ln.lstrip().startswith(comment))
+
+    py = code_only(
+        (paths.CI_DIR / "rediacc_ci" / "quality" / "plan_housekeeping.py").read_text(
+            encoding="utf-8"
+        ),
+        "#",
+    )
+    sh = code_only(TWIN.read_text(encoding="utf-8"), "#")
+    # The Python twin's status regex, and the bash twin's sed alternation.
+    assert "(compacted|parked)" not in py
+    assert r"\(compacted\|parked\)" not in sh
+    # ...and both really do read the key, so this is not passing by deletion.
+    assert '"record_states"' in py or "record_states" in py
+    assert "record_states" in sh
+
+
+def test_an_empty_vocabulary_matches_nothing_rather_than_the_empty_status() -> None:
+    """The failure mode a naive `"|".join([])` produces.
+
+    The empty alternation `()` matches `Status:` with nothing after it, so a
+    plan whose header is a bare `Status:` would be reported as a record whose
+    status is the empty string, and `record_status(path) == "compacted"` would be
+    False while `record_status(path)` was truthy nowhere. Cheaper to make the
+    empty vocabulary unmatchable and refuse in `main()`.
+    """
+    assert hk._status_re(()).match("Status: compacted") is None
+    assert hk._status_re(()).match("Status: ") is None
+    assert hk._status_re(("compacted",)).match("Status: compacted") is not None
+    assert hk._status_re(("compacted",)).match("Status: parked") is None
+
+
+def test_record_states_reads_nothing_rather_than_guessing(tmp_path: pathlib.Path) -> None:
+    """An unreadable or key-less config yields (), never a default vocabulary.
+
+    () is the SAFE direction: nothing is a record, so nothing is exempt and every
+    aged plan stays on the clock. A hard-coded fallback would exempt plans
+    because a file failed to parse.
+    """
+    missing = tmp_path / "nope.json"
+    assert hk.record_states(missing) == ()
+    keyless = tmp_path / "keyless.json"
+    keyless.write_text('{"warn_days": 26}', encoding="utf-8")
+    assert hk.record_states(keyless) == ()
+    torn = tmp_path / "torn.json"
+    torn.write_text("{not json", encoding="utf-8")
+    assert hk.record_states(torn) == ()
+    good = tmp_path / "good.json"
+    good.write_text('{"record_states": ["compacted"]}', encoding="utf-8")
+    assert hk.record_states(good) == ("compacted",)

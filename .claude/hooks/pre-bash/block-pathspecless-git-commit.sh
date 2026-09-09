@@ -50,8 +50,15 @@
 # and any commit that already carries a `--` pathspec.
 source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
 
-INPUT=$(cat)
-CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
+# BOUNDED (hook_read_payload, above): a blocking guard that hangs is a tool call
+# that never returns, and it REFUSES on the deadline because a guard which cannot
+# read the command cannot clear it either.
+if ! hook_read_payload; then
+    printf 'no payload arrived on stdin within %ss; refusing rather than hanging the tool call.\n' \
+        "$HOOK_PAYLOAD_TIMEOUT" >&2
+    exit 2
+fi
+CMD=$(printf '%s' "$HOOK_PAYLOAD" | jq -r '.tool_input.command // empty' 2>/dev/null)
 [[ -z "$CMD" ]] && exit 0
 
 SCAN=$(hook_scan_target "$CMD")

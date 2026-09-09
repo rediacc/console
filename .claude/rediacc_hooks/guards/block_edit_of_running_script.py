@@ -319,7 +319,7 @@ def pattern_for(base):
     left the same hole open on the Edit door.
     """
     esc = re.sub(META, r"\\\1", base[1:])
-    return r"(^|[/" + hookio.SPACE + r"])[" + base[:1] + r"]" + esc
+    return hookio.rx(r"(^|[/{S}])[") + base[:1] + r"]" + esc
 
 
 def live_shells(pat, limit):

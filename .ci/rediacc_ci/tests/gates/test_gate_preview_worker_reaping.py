@@ -32,6 +32,7 @@ READ-ONLY against the subject; this module writes nothing anywhere.
 import re
 
 from rediacc_ci import paths
+from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-preview-worker-reaping.sh"
 
@@ -77,15 +78,7 @@ def source(gate) -> str:
 
 def phase_body(gate) -> list[str]:
     """`cleanup_preview_workers`'s body, as lines. Empty is a REFUSAL."""
-    body: list[str] = []
-    collecting = False
-    for line in source(gate).splitlines():
-        if not collecting and line.startswith("cleanup_preview_workers() {"):
-            collecting = True
-        if collecting:
-            body.append(line)
-            if line == "}":
-                break
+    body = harness.block_from(source(gate), "cleanup_preview_workers() {")
     if not body:
         gate.log_fail("could not extract cleanup_preview_workers from the subject")
     return body

@@ -356,7 +356,7 @@ export default [
       '^Pro$',
       // Clustering track label: an IT anglicism retained by several locales
       // (de/es/fr/it/pt); mirrors ALLOWED_IDENTICAL in
-      // scripts/check-translation-completeness.ts
+      // scripts/gates/check-translation-completeness.ts
       '^Clustering$',
       // Words that are legitimately identical in many target languages
       // (borrowed/shared vocabulary across European languages and international tech terms)
@@ -403,7 +403,7 @@ export default [
       // "Region"/"Image"/"Cluster"/"Datastore" — genuine German/French/
       // Italian cognates or established loanwords for these cloud/storage
       // nouns; already allowlisted for the same reason in the broader
-      // scripts/check-translation-completeness.ts ALLOWED_IDENTICAL set.
+      // scripts/gates/check-translation-completeness.ts ALLOWED_IDENTICAL set.
       '^(Region|Image|Cluster|Datastore)$',
       // IEC binary storage-unit symbols (KiB/MiB/GiB/TiB/PiB/EiB). This same
       // file's storageQuotaHelperText key already keeps "GiB" verbatim,

@@ -28,13 +28,14 @@ TWO FILES, AND THE DISTINCTION IS LOAD BEARING IN BOTH DIRECTIONS. Since the
          them would find nothing and three controls would PASS on nothing found,
          which is the vacuous green this file exists to prevent.
 
-WHAT THE PORT RESPELLS, AND WHAT IT DOES NOT. The twin's five extractors are awk
-and sed programs (`arms_of`, `documented_in`, `ported_of`, `usage_of`,
-`verb_findings`); this module reimplements four of them in Python, rule for rule,
-and keeps the fifth in bash on purpose. `ported_of` SOURCES the router and prints
-the array bash itself sees, because a regex over the table can be fooled by a
-multi-line or commented entry, and the router's `BASH_SOURCE` guard means sourcing
-it runs nothing. That is the twin's argument and it survives the port unchanged.
+WHAT THE PORT RESPELLS, AND WHAT IT DOES NOT. The twin's seven extractors and
+findings functions are awk, sed and shell (`arms_of`, `documented_in`, `ported_of`,
+`usage_of`, `router_table_of`, `verb_findings`, `vacuity_findings`); this module
+reimplements six of them in Python, rule for rule, and keeps `ported_of` in bash on
+purpose: it SOURCES the router and prints the array bash itself sees, because a regex
+over the table can be fooled by a multi-line or commented entry, and the router's
+`BASH_SOURCE` guard means sourcing it runs nothing. That is the twin's argument and it
+survives the port unchanged.
 
 THE REIMPLEMENTED EXTRACTORS THEREFORE OWE A CONTROL OF THEIR OWN, which is the
 one case this port ADDS. `test_the_extractors_survive_the_traps_the_awk_documents`
@@ -74,17 +75,19 @@ differs, and in both the port names the real cause and the twin does not.
    fails where it happens. The twin's own parse control reds in that same state,
    which is why the verdicts still agree.
 
-2. THE TWIN'S ANTI-VACUITY CONTROL CANNOT FIRE, and the port's can. Section 4
-   sources `.ci/lib/local-common.sh`, which sources `.ci/scripts/lib/common.sh:11`
-   -- `set -euo pipefail`. Everything after that line in the twin runs under
-   errexit it never asked for, so when an extractor returns nothing,
-   `n_router=$(arms_of "$RUN" | grep -c '^TOP ')` (test-run-sh.sh:317) exits 1 on
-   grep's no-match status and KILLS the script four lines before the control that
-   would have said "an extractor returned an EMPTY set". Measured 2026-09-08 with
-   `main() {` renamed in the router: the twin stops after "the legacy body is
-   executable", prints 12 of its 23 PASS lines and no verdict line at all. The
-   port reports `router=0 legacy=16 subs=50 docs=18` and carries on to the rest of
-   its controls. Both are red, so parity holds; only the diagnostic differs.
+2. THE PORT REPORTS AN UNREADABLE ROUTER AS UNREAD. This entry used to say the
+   twin's anti-vacuity control COULD NOT FIRE, because section 4 sources
+   `.ci/lib/local-common.sh` -> `.ci/scripts/lib/common.sh:11` -- `set -euo
+   pipefail` -- and `n_router=$(arms_of "$RUN" | grep -c '^TOP ')` then died on
+   grep's no-match status four lines before the control that would have said so.
+   THE TWIN FIXED THAT on 2026-09-09 with `|| true` on all four counts
+   (test-run-sh.sh:378-383), and the fix is measured here rather than taken on
+   faith: with `main() {` renamed to `mainX() {` in a scratch copy of the router,
+   the twin now runs to its verdict, printing 26 PASS and 5 FAIL of 31 controls
+   -- four dispatch failures and `documented-but-unreachable provision` / `www`.
+   The port reports the same shape from the same numbers. What remains of the
+   divergence is only entry 1 above: a router that cannot be SOURCED is unread
+   rather than empty, and the port says so where it happens.
 
 NO `XDIST_GROUP` for the same class of reason: no port is bound, no module global
 is mutated, and the environment overlay each lane probe uses is passed to one
@@ -301,6 +304,56 @@ def documented_in(source: str) -> set[str]:
     return found
 
 
+def router_table_of(source: str) -> tuple[int, list[str]]:
+    """`PORTED_VERBS`'s footprint: (row count, the rows that are NOT a bare verb name).
+
+    THE TABLE IS NOT LOGIC, decided 2026-09-09 rather than discovered later. `run.sh:16`
+    promises that "porting a verb is one line in PORTED_VERBS and nothing else moves",
+    and the file sits at the ceiling: the moment that array goes multi-line, the very
+    next port has to raise the ceiling in the same commit, which is a second edit per
+    port and the exact contradiction of the promise. Worse, raising a ceiling to land a
+    change is how a ceiling stops meaning anything. So the ceiling measures the router's
+    LOGIC and the verb table is excluded from it.
+
+    THE WHOLE TABLE IS EXCLUDED, its two structural lines included, and that is the
+    difference between "cheaper" and "free". Excluding only the verb ROWS leaves the
+    `PORTED_VERBS=(` / `)` pair costing one line more than the single-line spelling, so
+    the FIRST port that needs a multi-line table still has to raise the ceiling --
+    measured on the real file 2026-09-09: 124 lines, 3 rows excluded, 121 of 120, red by
+    one. The single-line form is excluded too, so the two spellings cost the same
+    nothing and no port ever pays for the shape of the table.
+
+    THE HOLE THAT OPENS, AND WHAT CLOSES IT. An exclusion is somewhere to hide code. A
+    row is excluded only when it is a BARE VERB NAME (optionally with a trailing
+    comment) or blank; anything else inside the array is counted as logic AND returned
+    by name, so a `$(...)` smuggled between two verbs costs a line and a finding rather
+    than buying an exemption.
+    """
+    rows = 0
+    bad: list[str] = []
+    intable = False
+    for raw in source.splitlines():
+        if not intable:
+            if not raw.startswith("PORTED_VERBS=("):
+                continue
+            rows += 1
+            # A line that closes its own parenthesis is the single-line spelling;
+            # anything else opens the multi-line one.
+            if not re.search(r"\)[ \t]*$", raw):
+                intable = True
+            continue
+        if re.match(r"^[ \t]*\)", raw):
+            rows += 1
+            intable = False
+            continue
+        line = re.sub(r"[ \t]*#.*$", "", raw).strip(" \t")
+        if line == "" or VERB_RE.match(line):
+            rows += 1
+            continue
+        bad.append(line)
+    return rows, bad
+
+
 def usage_of(source: str, verb: str) -> set[str]:
     """A verb's own `Usage:` line, NESTED GROUPS REMOVED FIRST.
 
@@ -393,6 +446,86 @@ def verb_findings(gate, router, legacy) -> list[str]:
         if usage:
             findings += ["usage-line-drift %s/%s" % (top, s) for s in sorted(armed ^ usage)]
     return findings
+
+
+def vacuity_findings(
+    router: int, ported: int, legacy: int, docs: int, subs: int, doc_subs: int
+) -> list[str]:
+    """One line per way the extractors could be measuring NOTHING. Empty is the good case.
+
+    ANTI-VACUITY BEFORE THE ASSERTION, because every claim `verb_findings` makes is
+    "this set is empty" and an extractor that matched nothing satisfies all of them at
+    once. A findings FUNCTION for the same reason `verb_findings` is one: the controls
+    drive it against numbers they choose, so each clause is SEEN to fire rather than
+    assumed to. Arguments in the order the messages print them.
+
+    REWRITTEN 2026-09-09, AND THE REWRITE IS THE POINT. The clause that stood here
+    required `legacy > 0`, and that is a floor the migration is TRYING TO BREACH: the
+    whole purpose of PORTED_VERBS is that the legacy dispatcher ends at zero arms, so
+    the gate guarding the port would have gone red at the exact moment the port
+    succeeded -- and the cheap way out of that is to lower the floor, which retires the
+    assertion. There is no named budget anywhere in the tree; the number that reaches
+    zero is `legacy` and nothing else.
+
+    WHAT REPLACES IT, AND WHY NOTHING IS LOST. The floor was belt-and-braces over an
+    assertion that already catches a blind extractor far more loudly: with `arms_of`
+    returning nothing for the legacy file, `verb_findings` reports every documented
+    verb as `documented-but-unreachable`, which is 16 findings today rather than one.
+    And the extractor's LIVENESS is proven every run by control (b) in the partition
+    case, which deletes a real dispatch arm from a copy and requires the report to name
+    it; an extractor that saw nothing could not pass that. So the three clauses below
+    are the ones that stay true in every state of the migration INCLUDING its last:
+
+      1. something is documented          -- both set comparisons are against `docs`
+      2. something is dispatched          -- by the router, the ported table, or legacy
+      3. subcommands are still extracted  -- but only WHILE the legacy file still
+                                             dispatches top-level verbs, because when it
+                                             dispatches none it owns no second level
+
+    THE ONE THING THIS CANNOT PRE-SOLVE, stated so the last port does not discover it.
+    `documented_in` reads SRC, so `show_help` moving to Python is the commit where SRC
+    and clause 1 have to be retargeted at whatever owns the help text then
+    (`rediacc_ci/__main__.py` derives `--help` from its VERBS table already). Every port
+    BEFORE that one is now safe; that one still needs a hand on it.
+    """
+    findings: list[str] = []
+    if docs <= 0:
+        findings.append(
+            "show_help documents no verb, so both set comparisons are against an empty set"
+        )
+    if router + ported + legacy <= 0:
+        findings.append(
+            "nothing dispatches anything (router=%d ported=%d legacy=%d); the partition "
+            "is between two empty sets" % (router, ported, legacy)
+        )
+    if not (legacy == 0 or doc_subs == 0 or subs > 0):
+        findings.append(
+            "the legacy file dispatches %d verb(s) and documents %d subcommand(s), but "
+            "the arm extractor found 0 of them; the second level is checking nothing"
+            % (legacy, doc_subs)
+        )
+    return findings
+
+
+def counts_of(gate) -> tuple[int, int, int, int, int, int]:
+    """The six numbers `vacuity_findings` judges, read off the REAL tree.
+
+    One function rather than two copies: the partition case asks whether today's tree
+    is vacuous, and the control case asks the same question again as its negative half
+    (`today's real numbers are not reported as vacuous either`). Two transcriptions of
+    the same six extractor calls would be two chances to read a different tree.
+    """
+    router_arms = arms_of(read(RUN))
+    legacy_arms = arms_of(read(SRC))
+    documented = documented_in(read(SRC))
+    return (
+        len(level(router_arms, "TOP ")),
+        len(ported_of(gate, RUN)),
+        len(level(legacy_arms, "TOP ")),
+        len(level(documented, "TOP ")),
+        len({e for e in legacy_arms if e.startswith("SUB ")}),
+        len({e for e in documented if e.startswith("SUB ")}),
+    )
 
 
 def plant(gate, path, pattern: str, replacement: str, why: str) -> None:
@@ -580,24 +713,20 @@ def test_the_split_is_a_partition_of_the_documented_verb_set(gate):
     """
     # ANTI-VACUITY BEFORE THE ASSERTION, because every claim here is "this set is
     # empty" and an extractor that matched nothing satisfies all of them at once.
-    router_arms = arms_of(read(RUN))
-    legacy_arms = arms_of(read(SRC))
-    documented = documented_in(read(SRC))
-    shape = (
-        len(level(router_arms, "TOP ")),
-        len(level(legacy_arms, "TOP ")),
-        len({e for e in legacy_arms if e.startswith("SUB ")}),
-        len(level(documented, "TOP ")),
-    )
-    if all(shape):
-        gate.ok(
-            "the extractors see a real tree: %d router arm(s), %d legacy arm(s), "
-            "%d subcommand(s), %d documented verb(s)" % shape
+    # SET-DERIVED AND STATE-INDEPENDENT: see `vacuity_findings` for why the clause
+    # that used to require a non-empty legacy dispatcher had to go.
+    router, ported, legacy, docs, subs, doc_subs = counts_of(gate)
+    vacuity = vacuity_findings(router, ported, legacy, docs, subs, doc_subs)
+    if vacuity:
+        gate.no(
+            "an extractor returned an EMPTY set; every assertion below would pass on "
+            "nothing:\n%s" % "\n".join("    " + line for line in vacuity)
         )
     else:
-        gate.no(
-            "CONTROL: an extractor returned an EMPTY set (router=%d legacy=%d subs=%d "
-            "docs=%d); every assertion below would pass on nothing" % shape
+        gate.ok(
+            "the extractors see a real tree: %d router arm(s) + %d ported + %d legacy = "
+            "%d dispatched, %d subcommand(s), %d documented verb(s)"
+            % (router, ported, legacy, router + ported + legacy, subs, docs)
         )
 
     findings = verb_findings(gate, RUN, SRC)
@@ -616,7 +745,7 @@ def test_the_split_is_a_partition_of_the_documented_verb_set(gate):
         shutil.copyfile(SRC, legacy)
 
         # (a) a verb served by both halves.
-        plant(gate, router, r"^PORTED_VERBS=\(\)$", "PORTED_VERBS=(quality)", "the overlap half")
+        plant(gate, router, r"^PORTED_VERBS=\(.*$", "PORTED_VERBS=(quality)", "the overlap half")
         if "overlap quality" in verb_findings(gate, router, legacy):
             gate.ok(
                 "CONTROL: a verb in both PORTED_VERBS and the legacy dispatcher is "
@@ -654,19 +783,140 @@ def test_the_split_is_a_partition_of_the_documented_verb_set(gate):
     gate.tally_finish("the verb partition")
 
 
-def test_the_router_stays_a_router(gate):
-    """The ceiling, and the one arm whose target has to exist."""
-    # `wc -l`, which counts NEWLINES: a final line with no terminator is not counted
-    # by either, so the two numbers cannot drift on a file the formatter has seen.
-    router_lines = RUN.read_bytes().count(b"\n")
-    if router_lines <= ROUTER_LINE_CEILING:
+def test_the_vacuity_clauses_fire_and_the_finish_line_is_not_a_failure(gate):
+    """Both directions on all three clauses of `vacuity_findings`.
+
+    A CLAUSE THAT HAS NEVER BEEN SEEN TO FIRE IS NOT YET A CHECK, so each of the three
+    shapes it names is driven directly with numbers chosen to produce it.
+
+    THE NEGATIVE HALF IS THE ONE THIS PAIR EXISTS FOR. The clause these replaced
+    required a non-empty legacy dispatcher, which is the state the migration is working
+    to leave: it would have gone red at the exact moment the port succeeded, on the gate
+    whose whole job is guarding that port. So the TERMINAL state -- every verb ported,
+    legacy dispatcher empty, second level legitimately empty with it -- is asserted NOT
+    to be a vacuity failure, and today's real numbers are asserted the same way, because
+    three positives and no negative would be satisfied by a function that always fires.
+    """
+    for label, needle, counts in (
+        (
+            "an empty show_help is reported",
+            "documents no verb",
+            (2, 0, 16, 0, 50, 50),
+        ),
+        (
+            "a tree where nothing dispatches is reported",
+            "nothing dispatches",
+            (0, 0, 0, 18, 50, 50),
+        ),
+        (
+            "a live legacy dispatcher with no extracted subcommands is reported",
+            "second level is checking nothing",
+            (2, 0, 16, 18, 0, 50),
+        ),
+    ):
+        if any(needle in finding for finding in vacuity_findings(*counts)):
+            gate.ok("CONTROL: %s" % label)
+        else:
+            gate.no("CONTROL: %s -- the clause did NOT fire, so its green proves nothing" % label)
+
+    terminal = vacuity_findings(2, 16, 0, 18, 0, 50)
+    if not terminal:
         gate.ok(
-            "run.sh is still a router (%d lines, ceiling %d)" % (router_lines, ROUTER_LINE_CEILING)
+            "CONTROL: the TERMINAL state (every verb ported, legacy dispatcher empty) is "
+            "not a vacuity failure"
         )
     else:
         gate.no(
-            "run.sh has grown to %d lines; the ceiling is %d and logic belongs on one "
-            "side or the other" % (router_lines, ROUTER_LINE_CEILING)
+            "CONTROL: the terminal state is reported as vacuous; this gate reds when the "
+            "migration succeeds:\n%s" % "\n".join("    " + line for line in terminal)
+        )
+
+    live = vacuity_findings(*counts_of(gate))
+    if not live:
+        gate.ok("CONTROL: today's real numbers are not reported as vacuous either")
+    else:
+        gate.no(
+            "CONTROL: the clause fires on the live tree, so the two cases above prove "
+            "nothing about it:\n%s" % "\n".join("    " + line for line in live)
+        )
+    gate.tally_finish("the vacuity clauses")
+
+
+def test_the_verb_table_is_excluded_from_the_ceiling_whole(gate):
+    """`router_table_of`, both directions, on fixtures rather than on the one real file.
+
+    THE EXCLUSION IS A HOLE UNTIL SOMETHING CLOSES IT, so the middle case is the one
+    that matters: a `$(...)` smuggled between two verb names must cost a logic line AND
+    be named, not buy an exemption. The other two say the two spellings of the same
+    table cost the same nothing, which is what stops the first multi-line table from
+    having to raise the ceiling in the same commit that lands a port.
+
+    FIXTURES, NOT `run.sh`. The real file carries exactly one shape at a time; driven
+    only against it, two of these three rules would never be exercised at all.
+    """
+    rows = (
+        (
+            "a multi-line verb table is excluded WHOLE, structural lines included",
+            "PORTED_VERBS=(\n    setup\n    quality   # already ported\n\n)\n",
+            "5 0",
+            "the verb-table exclusion miscounted",
+        ),
+        (
+            "code smuggled into the verb table is counted as logic and named, not exempted",
+            "PORTED_VERBS=(\n    setup\n    $(curl -s http://example.invalid/verbs)\n)\n",
+            "3 1",
+            "code inside PORTED_VERBS was silently exempted from the ceiling",
+        ),
+        (
+            "the single-line form is excluded too, so the two spellings cost the same",
+            "PORTED_VERBS=(setup quality)\n",
+            "1 0",
+            "the single-line form was counted as logic",
+        ),
+    )
+    for label, fixture, want, complaint in rows:
+        table_rows, bad = router_table_of(fixture)
+        got = "%d %d" % (table_rows, len(bad))
+        if got == want:
+            gate.ok("CONTROL: %s" % label)
+        else:
+            gate.no("CONTROL: %s: got %r, want %r%s" % (complaint, got, want, _named(bad)))
+    gate.tally_finish("the verb-table exclusion")
+
+
+def _named(bad: list[str]) -> str:
+    """The offending rows, indented, or nothing at all when there are none."""
+    return "".join("\n    " + line for line in bad)
+
+
+def test_the_router_stays_a_router(gate):
+    """The ceiling over the router's LOGIC, and the one arm whose target has to exist.
+
+    THE TABLE IS NOT LOGIC. `router_table_of`'s docstring carries the argument; what
+    matters here is that the number compared against the ceiling is the file's line
+    count MINUS the whole `PORTED_VERBS` table, so no port ever pays for the shape of
+    the table and no ceiling ever has to be raised to land one.
+    """
+    # `wc -l`, which counts NEWLINES: a final line with no terminator is not counted
+    # by either, so the two numbers cannot drift on a file the formatter has seen.
+    router_lines = RUN.read_bytes().count(b"\n")
+    table_rows, table_bad = router_table_of(read(RUN))
+    logic_lines = router_lines - table_rows
+    if table_bad:
+        gate.no(
+            "PORTED_VERBS holds %d line(s) that are not a bare verb name; the array is a "
+            "table, not somewhere to put code:%s" % (len(table_bad), _named(table_bad))
+        )
+    if logic_lines <= ROUTER_LINE_CEILING:
+        gate.ok(
+            "run.sh is still a router (%d logic lines of %d, plus %d verb-table row(s) = %d)"
+            % (logic_lines, ROUTER_LINE_CEILING, table_rows, router_lines)
+        )
+    else:
+        gate.no(
+            "run.sh has grown to %d lines of logic (plus %d verb-table row(s)); the "
+            "ceiling is %d and logic belongs on one side or the other"
+            % (logic_lines, table_rows, ROUTER_LINE_CEILING)
         )
     # The Python arm names a module that has to exist, or the first port fails with
     # ModuleNotFoundError and a verb nobody can reach.

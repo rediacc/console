@@ -142,6 +142,7 @@ import tempfile
 import wl_core as C
 import wl_planfid as PFID
 import wl_planfile as PF
+import wl_proc
 
 # ---------------------------------------------------------------------------
 # Bounds and constants.
@@ -1477,7 +1478,7 @@ def ask_why(plan_text):
     # ONE PLACE THAT LAUNCHES IT, so the retry below re-runs the identical call
     # rather than a hand-copied approximation of it.
     def call():
-        return subprocess.run(
+        return wl_proc.run(
             [
                 exe,
                 "-p",
@@ -1491,18 +1492,15 @@ def ask_why(plan_text):
                 "--max-budget-usd",
                 wl_judge.JUDGE_BUDGET_USD,
             ],
-            capture_output=True,
-            text=True,
             timeout=wl_judge.JUDGE_TIMEOUT_S,
             env=env,
-            check=False,
-            stdin=subprocess.DEVNULL,
         )
 
-    try:
-        proc = call()
-    except (OSError, subprocess.SubprocessError) as exc:
-        return None, "plan_record model call failed: %s" % exc
+    proc = call()
+    if proc.timed_out:
+        return None, "plan_record model call timed out after %ds" % wl_judge.JUDGE_TIMEOUT_S
+    if proc.returncode == wl_proc.SPAWN_FAILED_RC and not proc.stdout:
+        return None, "plan_record model call failed: %s" % proc.stderr.strip()
 
     # A SCHEMA EXHAUSTION IS A SAMPLE, NOT A VERDICT, and this site was the one
     # that had not been told. `check:ci-schema-call-sites` named it, and the

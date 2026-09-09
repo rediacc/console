@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: Release signing coverage
-# needs: none
-# selftest: true
-# lane: quality-security
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-release-signing-coverage is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_release_signing_coverage.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_release_signing_coverage.py" but its header derives "...check-release-signing-coverage.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # EVERY RELEASE PACKAGE FORMAT MUST BE SIGNED, OR BE DECLARED UNSIGNED ON PURPOSE.
 #

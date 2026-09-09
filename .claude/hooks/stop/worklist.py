@@ -260,6 +260,59 @@ def _identity_or_die(me, die):
 STDIN_WAIT_SECONDS = 10.0
 
 
+# The `--state` document's own budget. Larger than STDIN_WAIT_SECONDS because a
+# caller genuinely typing or generating a 4 KB document is not a hook pipe, and
+# smaller than any human's patience: the point is a bound, not a race.
+STATE_STDIN_WAIT_SECONDS = 30.0
+
+
+def _read_document(seconds: float = STATE_STDIN_WAIT_SECONDS):
+    """Read a document from stdin to EOF, bounded on the FIRST byte. -> (text, ok).
+
+    WHY THIS IS NOT `sys.stdin.read()`, which is what `--state` used to call.
+    `isatty()` catches an interactive terminal and nothing else, and the case it
+    misses is the one that actually happens: stdin inherited from a parent that
+    holds the write end open and never writes. A backgrounded tool invocation
+    hands over exactly that, and a bare read then blocks forever. Measured
+    2026-09-08 -- a `--state` call sat for 81 minutes, silent, its OS process
+    alive, until it was killed by hand. `_read_event` above already carries this
+    lesson in its own docstring: a process that hangs is worse than one that
+    fails, because it stalls the session instead of failing it. The verb that
+    writes the compaction-recovery document had the property the hook beside it
+    was fixed for.
+
+    THE DEADLINE IS ON THE FIRST BYTE, not on the whole document. A writer that
+    has started is a writer that will finish, and bounding the total would refuse
+    a legitimate slow producer halfway through and write nothing. Nothing arriving
+    at all is the failure being bounded here.
+    """
+    try:
+        fd = sys.stdin.fileno()
+    except (OSError, ValueError, AttributeError):
+        # No real fd (a StringIO harness, pytest capture): there is no pipe to
+        # block on, so the plain read cannot hang.
+        try:
+            return sys.stdin.read(), True
+        except Exception:  # noqa: BLE001 - any read failure here means no body
+            return "", False
+
+    deadline = time.monotonic() + seconds
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return "", False
+        try:
+            ready, _, _ = select.select([fd], [], [], min(remaining, 0.25))
+        except (OSError, ValueError):
+            break
+        if ready:
+            break
+    try:
+        return sys.stdin.read(), True
+    except Exception:  # noqa: BLE001 - any read failure here means no body
+        return "", False
+
+
 def _read_event():
     """Read the Stop payload from stdin, bounded, without hanging or crashing.
 
@@ -1453,7 +1506,19 @@ def main():
         if sys.stdin.isatty():
             sys.stderr.write(M.CLI_STATE_NO_BODY % (" (stdin is a terminal)", prefix))
             sys.exit(2)
-        body = sys.stdin.read()
+        body, arrived = _read_document()
+        if not arrived:
+            sys.stderr.write(
+                M.CLI_STATE_NO_BODY
+                % (
+                    " (stdin stayed open and silent for %gs; the document is read from STDIN, "
+                    "so redirect a file into it or use a heredoc -- an inherited stdin that "
+                    "nobody writes to would otherwise block this command forever)"
+                    % STATE_STDIN_WAIT_SECONDS,
+                    prefix,
+                )
+            )
+            sys.exit(2)
         # An EMPTY stdin is its own diagnosis, not a short document. The shape
         # check would call it `thin: 0 chars`, which reads as "too short" when
         # the truth is "never arrived" -- and the commonest cause is passing

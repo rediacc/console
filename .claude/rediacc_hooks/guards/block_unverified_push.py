@@ -67,18 +67,8 @@ ORDER = 39
 # PR #579.
 DEFECT = ("if r_tree != tree:", "if False:")
 
-PUSH_AT_COMMAND_POS = (
-    r"(^|[;&|(]|\$\(|`)["
-    + hookio.SPACE
-    + r"]*git(["
-    + hookio.SPACE
-    + r"]+-[A-Za-z-]+(["
-    + hookio.SPACE
-    + r"]+[^ ;&|]+)?)*["
-    + hookio.SPACE
-    + r"]+push(["
-    + hookio.SPACE
-    + r"]|$)"
+PUSH_AT_COMMAND_POS = hookio.rx(
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+push([{S}]|$)"
 )
 
 DRY_RUN = r"git push[^|;&]*--dry-run"

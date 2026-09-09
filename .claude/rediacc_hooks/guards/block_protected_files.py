@@ -41,14 +41,7 @@ DEFECT = (r")[^;&|]*", r").*")
 
 PROTECTED = r"(\.claude/settings\.json|scripts/pre-commit-check\.sh)"
 
-VERB_AND_PATH = (
-    r"(git restore|git checkout|(^|["
-    + hookio.SPACE
-    + r";|&])rm["
-    + hookio.SPACE
-    + r"])[^;&|]*"
-    + PROTECTED
-)
+VERB_AND_PATH = hookio.rx(r"(git restore|git checkout|(^|[{S};|&])rm[{S}])[^;&|]*") + PROTECTED
 
 MESSAGE = "❌ BLOCKED: Cannot delete or restore protected hook files"
 

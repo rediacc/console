@@ -254,6 +254,28 @@ ported_of() { # ported_of <router> -> one verb per line
     ) | sed '/^$/d' | sort -u
 }
 
+# "<rows> <bad>" then one indented line per non-verb row. A FUNCTION, so the
+# controls below can drive it against copies rather than only against the one file
+# it will ever be called on in anger.
+router_table_of() { # router_table_of <router>
+    awk '
+        !intable && /^PORTED_VERBS=\(/ {
+            rows++
+            if ($0 !~ /\)[ \t]*$/) intable = 1
+            next
+        }
+        intable {
+            if ($0 ~ /^[ \t]*\)/) { rows++; intable = 0; next }
+            line = $0
+            sub(/[ \t]*#.*$/, "", line)
+            gsub(/^[ \t]+|[ \t]+$/, "", line)
+            if (line == "" || line ~ /^[a-z][a-z0-9-]*$/) { rows++; next }
+            bad++; badlines = badlines "\n    " line
+        }
+        END { printf "%d %d%s", rows + 0, bad + 0, badlines }
+    ' "$1"
+}
+
 # The per-verb `Usage:` string, with nested groups removed first -- `devbox`
 # writes `url [term|account|db]` inside its own list, and cutting at the first
 # `]` would take those three for subcommands and lose the seven that follow.
@@ -314,14 +336,69 @@ verb_findings() { # verb_findings <router> <legacy>
 # Set-derived rather than a typed count: the sets must be non-empty and the two
 # halves must together cover every documented verb, which is the same fact the
 # assertion needs anyway.
-n_router=$(arms_of "$RUN" | grep -c '^TOP ')
-n_legacy=$(arms_of "$SRC" | grep -c '^TOP ')
-n_docs=$(documented_in "$SRC" | grep -c '^TOP ')
-n_subs=$(arms_of "$SRC" | grep -c '^SUB ')
-if [[ "$n_router" -gt 0 && "$n_legacy" -gt 0 && "$n_docs" -gt 0 && "$n_subs" -gt 0 ]]; then
-    ok "the extractors see a real tree: $n_router router arm(s), $n_legacy legacy arm(s), $n_subs subcommand(s), $n_docs documented verb(s)"
+# `|| true` ON ALL FOUR, and without it this whole block was UNREACHABLE in the
+# one state it exists for. Section 4 sources `.ci/lib/local-common.sh`, which at
+# :21 sources `.ci/scripts/lib/common.sh`, whose :11 is `set -euo pipefail` -- so
+# everything from there on runs under an errexit this file never asked for.
+# `grep -c` exits 1 when it counts zero, so an extractor that matched NOTHING
+# killed the script here, four lines before the control below that would have
+# said so. Measured 2026-09-08 by renaming `main()` in the subject: rc=1, last
+# traced command this line, 12 of 23 PASS lines printed, and NO verdict at all.
+# The control written for the empty-set case could not fire in the empty-set case.
+#
+# REWRITTEN 2026-09-09. The clause that stood here required `n_legacy > 0`, and that
+# is a floor the migration is TRYING TO BREACH: the whole point of PORTED_VERBS is
+# that the legacy dispatcher ends at zero arms, so the gate guarding the port would
+# have gone red at the exact moment the port succeeded, and the cheap way out of that
+# is to lower the floor, which retires the assertion. There is no named budget
+# anywhere in the tree -- `LEGACY_ARMS_MAX` does not exist and never did -- so the
+# number that reaches zero is `n_legacy` on the line below and nothing else.
+#
+# WHAT REPLACES IT, and why nothing is lost. The floor was belt-and-braces over an
+# assertion that already catches a blind extractor much more loudly: with `arms_of`
+# returning nothing for the legacy file, `verb_findings` reports every documented
+# verb as `documented-but-unreachable`, which is 16 findings today rather than one.
+# And the extractor's LIVENESS is proven every run by control (b) below, which
+# deletes a real dispatch arm from a copy and requires the report to name it -- an
+# extractor that saw nothing could not pass that. So the three clauses here are the
+# ones that stay true in every state of the migration INCLUDING its last:
+#
+#   1. something is documented          -- both set comparisons are against `dt`
+#   2. something is dispatched          -- by the router, the ported table, or legacy
+#   3. subcommands are still extracted  -- but only WHILE the legacy file still
+#                                          dispatches top-level verbs, because when
+#                                          it dispatches none it owns no second level
+#
+# THE ONE THING THIS CANNOT PRE-SOLVE, stated so the last port does not discover it.
+# `documented_in` reads `$SRC`, so `show_help` moving to Python is the commit where
+# `$SRC` and clause 1 have to be retargeted at whatever owns the help text then
+# (`rediacc_ci/__main__.py` derives `--help` from its VERBS table already). Every
+# port BEFORE that one is now safe; that one still needs a hand on it.
+n_router=$(arms_of "$RUN" | grep -c '^TOP ' || true)
+n_ported=$(ported_of "$RUN" | grep -c . || true)
+n_legacy=$(arms_of "$SRC" | grep -c '^TOP ' || true)
+n_docs=$(documented_in "$SRC" | grep -c '^TOP ' || true)
+n_subs=$(arms_of "$SRC" | grep -c '^SUB ' || true)
+n_doc_subs=$(documented_in "$SRC" | grep -c '^SUB ' || true)
+
+# A findings FUNCTION, for the same reason `verb_findings` is one: the control below
+# drives it against numbers it chooses, so the clause is seen to fire rather than
+# assumed to. Arguments in the order the message prints them.
+vacuity_findings() { # vacuity_findings <router> <ported> <legacy> <docs> <subs> <doc_subs>
+    local r="$1" p="$2" l="$3" d="$4" s="$5" ds="$6"
+    [[ "$d" -gt 0 ]] ||
+        echo "show_help documents no verb, so both set comparisons are against an empty set"
+    [[ $((r + p + l)) -gt 0 ]] ||
+        echo "nothing dispatches anything (router=$r ported=$p legacy=$l); the partition is between two empty sets"
+    [[ "$l" -eq 0 || "$ds" -eq 0 || "$s" -gt 0 ]] ||
+        echo "the legacy file dispatches $l verb(s) and documents $ds subcommand(s), but the arm extractor found 0 of them; the second level is checking nothing"
+}
+
+vacuity="$(vacuity_findings "$n_router" "$n_ported" "$n_legacy" "$n_docs" "$n_subs" "$n_doc_subs")"
+if [[ -z "$vacuity" ]]; then
+    ok "the extractors see a real tree: $n_router router arm(s) + $n_ported ported + $n_legacy legacy = $((n_router + n_ported + n_legacy)) dispatched, $n_subs subcommand(s), $n_docs documented verb(s)"
 else
-    no "CONTROL: an extractor returned an EMPTY set (router=$n_router legacy=$n_legacy subs=$n_subs docs=$n_docs); every assertion below would pass on nothing"
+    no "an extractor returned an EMPTY set; every assertion below would pass on nothing:"$'\n'"$(sed 's/^/    /' <<<"$vacuity")"
 fi
 
 findings="$(verb_findings "$RUN" "$SRC")"
@@ -338,7 +415,18 @@ cp "$RUN" "$ctl/run.sh"
 cp "$SRC" "$ctl/legacy.sh"
 
 # (a) a verb served by both halves.
-sed -i 's/^PORTED_VERBS=()$/PORTED_VERBS=(quality)/' "$ctl/run.sh"
+#
+# THE PLANT IS ASSERTED TO HAVE LANDED, because this sed is anchored to a literal
+# line of the real run.sh (`PORTED_VERBS=()`). The day that line gains a verb the
+# pattern matches nothing, the copy already contains the overlap the control means
+# to introduce, and the control reports PASS having planted NOTHING -- it would be
+# green for a reason that has nothing to do with what it claims to check.
+if ! grep -qE '^PORTED_VERBS=\(' "$ctl/run.sh"; then
+    no "CONTROL PLANT DID NOT LAND: run.sh no longer carries a PORTED_VERBS table at all, so the overlap control below plants nothing and passes for free"
+fi
+sed -i -E 's/^PORTED_VERBS=\(.*/PORTED_VERBS=(quality)/' "$ctl/run.sh"
+grep -q '^PORTED_VERBS=(quality)$' "$ctl/run.sh" ||
+    no "CONTROL PLANT DID NOT LAND: the overlap was not written into the copy"
 if grep -q '^overlap quality$' <<<"$(verb_findings "$ctl/run.sh" "$ctl/legacy.sh")"; then
     ok "CONTROL: a verb in both PORTED_VERBS and the legacy dispatcher is reported as an overlap"
 else
@@ -347,7 +435,16 @@ fi
 cp "$RUN" "$ctl/run.sh"
 
 # (b) a documented verb nothing dispatches.
+#
+# PLANT ASSERTED, both halves, for the reason (a) states above: this sed is anchored to a
+# literal dispatch arm of the real legacy file, and the day that arm is reindented or
+# reworded the pattern matches nothing, the copy is IDENTICAL to the source, and the
+# control below reports PASS having deleted nothing.
+grep -q '^        clean) clean ;;$' "$ctl/legacy.sh" ||
+    no "CONTROL PLANT DID NOT LAND: the legacy dispatcher no longer carries a 'clean)' arm in that shape, so the unreachable-verb control below plants nothing and passes for free"
 sed -i 's/^        clean) clean ;;$//' "$ctl/legacy.sh"
+grep -q '^        clean) clean ;;$' "$ctl/legacy.sh" &&
+    no "CONTROL PLANT DID NOT LAND: the dispatch arm survived the deletion in the copy"
 if grep -q '^documented-but-unreachable clean$' <<<"$(verb_findings "$ctl/run.sh" "$ctl/legacy.sh")"; then
     ok "CONTROL: deleting a dispatch arm for a documented verb is reported as unreachable"
 else
@@ -356,7 +453,13 @@ fi
 cp "$SRC" "$ctl/legacy.sh"
 
 # (c) a subcommand that exists but is undocumented -- the seven this gate found.
+#
+# PLANT ASSERTED, same argument as (a) and (b).
+grep -q '^  fix shell           ' "$ctl/legacy.sh" ||
+    no "CONTROL PLANT DID NOT LAND: the legacy help text no longer documents 'fix shell' in that shape, so the undocumented-subcommand control below plants nothing and passes for free"
 sed -i 's/^  fix shell           .*$//' "$ctl/legacy.sh"
+grep -q '^  fix shell           ' "$ctl/legacy.sh" &&
+    no "CONTROL PLANT DID NOT LAND: the help line survived the deletion in the copy"
 if grep -q '^dispatched-but-undocumented fix/shell$' <<<"$(verb_findings "$ctl/run.sh" "$ctl/legacy.sh")"; then
     ok "CONTROL: deleting a help line for a live SUBCOMMAND is reported, so the second level is really checked"
 else
@@ -364,15 +467,117 @@ else
 fi
 rm -rf "$ctl"
 
+# --- 6b. controls for the two clauses REWRITTEN 2026-09-09 (E3) ----------------
+# Both branches below are new, and a new branch that has never been seen to fire is
+# not yet a check. Each clause is driven directly, in both directions.
+
+# (d) THE VACUITY CLAUSE FIRES on each of the three shapes it names.
+fires() { # fires <label> <needle> <args to vacuity_findings...>
+    local label="$1" needle="$2"
+    shift 2
+    if grep -q "$needle" <<<"$(vacuity_findings "$@")"; then
+        ok "CONTROL: $label"
+    else
+        no "CONTROL: $label -- the clause did NOT fire, so its green proves nothing"
+    fi
+}
+fires "an empty show_help is reported" "documents no verb" 2 0 16 0 50 50
+fires "a tree where nothing dispatches is reported" "nothing dispatches" 0 0 0 18 50 50
+fires "a live legacy dispatcher with no extracted subcommands is reported" \
+    "second level is checking nothing" 2 0 16 18 0 50
+
+# (e) THE CLAUSE THIS REWRITE EXISTS FOR, and the one the old one got wrong. When
+# every top-level verb has been ported, the legacy dispatcher holds ZERO arms and the
+# second level is legitimately empty with it. The old clause required n_legacy > 0
+# and would have gone red at the exact moment the migration succeeded, on the gate
+# whose whole job is guarding that migration.
+if [[ -z "$(vacuity_findings 2 16 0 18 0 50)" ]]; then
+    ok "CONTROL: the TERMINAL state (every verb ported, legacy dispatcher empty) is not a vacuity failure"
+else
+    no "CONTROL: the terminal state is reported as vacuous; this gate reds when the migration succeeds:"$'\n'"$(vacuity_findings 2 16 0 18 0 50)"
+fi
+if [[ -z "$(vacuity_findings "$n_router" "$n_ported" "$n_legacy" "$n_docs" "$n_subs" "$n_doc_subs")" ]]; then
+    ok "CONTROL: today's real numbers are not reported as vacuous either"
+else
+    no "CONTROL: the clause fires on the live tree, so the two cases above prove nothing about it"
+fi
+
+# (f) THE TABLE EXCLUSION, both directions, on copies. A multi-line PORTED_VERBS must
+# cost the ceiling nothing, and anything in it that is not a verb name must cost it a
+# line AND be named.
+tctl="$(mktemp -d)"
+{
+    echo 'PORTED_VERBS=('
+    echo '    setup'
+    echo '    quality   # already ported'
+    echo ''
+    echo ')'
+} >"$tctl/table.sh"
+if [[ "$(router_table_of "$tctl/table.sh")" == "5 0" ]]; then
+    ok "CONTROL: a multi-line verb table is excluded WHOLE, structural lines included"
+else
+    no "CONTROL: the verb-table exclusion miscounted: got '$(router_table_of "$tctl/table.sh")', want '5 0'"
+fi
+{
+    echo 'PORTED_VERBS=('
+    echo '    setup'
+    echo '    $(curl -s http://example.invalid/verbs)'
+    echo ')'
+} >"$tctl/smuggled.sh"
+smuggled="$(router_table_of "$tctl/smuggled.sh")"
+if [[ "${smuggled%%$'\n'*}" == "3 1" ]]; then
+    ok "CONTROL: code smuggled into the verb table is counted as logic and named, not exempted"
+else
+    no "CONTROL: code inside PORTED_VERBS was silently exempted from the ceiling: got '${smuggled%%$'\n'*}', want '3 1'"
+fi
+printf 'PORTED_VERBS=(setup quality)\n' >"$tctl/oneline.sh"
+if [[ "$(router_table_of "$tctl/oneline.sh")" == "1 0" ]]; then
+    ok "CONTROL: the single-line form is excluded too, so the two spellings cost the same"
+else
+    no "CONTROL: the single-line form was counted as logic: got '$(router_table_of "$tctl/oneline.sh")', want '1 0'"
+fi
+rm -rf "$tctl"
+
 # --- 7. the router stays a router --------------------------------------------
 # A ceiling, not a style rule. The whole point of the split is that porting a verb
 # touches one line here; a router that starts absorbing logic re-creates the file
 # the split was undoing, one reasonable special case at a time.
+#
+# THE TABLE IS NOT LOGIC, decided 2026-09-09 rather than discovered later. run.sh:16
+# promises that "porting a verb is one line in PORTED_VERBS and nothing else moves",
+# and the file sits at 120 of 120: the moment that array goes multi-line, the very
+# next port has to raise this ceiling in the same commit, which is a second edit per
+# port and the exact contradiction of the promise. Worse, raising a ceiling to land a
+# change is how a ceiling stops meaning anything. So the ceiling measures the
+# router's LOGIC and the verb table is excluded from it.
+#
+# THE WHOLE TABLE IS EXCLUDED, its two structural lines included, and that is the
+# difference between "cheaper" and "free". Excluding only the verb rows leaves the
+# `PORTED_VERBS=(` / `)` pair costing one line more than the single-line form, so the
+# FIRST port that needs a multi-line table still has to raise the ceiling -- measured
+# on the real file 2026-09-09: 124 lines, 3 rows excluded, 121 of 120, red by one.
+# The single-line form is excluded too, so the two spellings cost the same nothing
+# and no port ever pays for the shape of the table.
+#
+# THE HOLE THAT OPENS, AND WHAT CLOSES IT. An exclusion is somewhere to hide code. A
+# row is excluded only when it is a BARE VERB NAME (optionally with a trailing
+# comment) or blank; anything else inside the array is counted as logic AND reported
+# by name, so a `$(...)` smuggled between two verbs costs a line and a finding rather
+# than buying an exemption.
+router_table="$(router_table_of "$RUN")"
+table_rows="${router_table%% *}"
+table_rest="${router_table#* }"
+table_bad="${table_rest%%$'\n'*}"
+table_bad="${table_bad%% *}"
 router_lines=$(wc -l <"$RUN")
-if [[ "$router_lines" -le 120 ]]; then
-    ok "run.sh is still a router ($router_lines lines, ceiling 120)"
+logic_lines=$((router_lines - table_rows))
+if [[ "$table_bad" -gt 0 ]]; then
+    no "PORTED_VERBS holds $table_bad line(s) that are not a bare verb name; the array is a table, not somewhere to put code:$(sed "s/^[0-9]* [0-9]*//" <<<"$router_table")"
+fi
+if [[ "$logic_lines" -le 120 ]]; then
+    ok "run.sh is still a router ($logic_lines logic lines of 120, plus $table_rows verb-table row(s) = $router_lines)"
 else
-    no "run.sh has grown to $router_lines lines; the ceiling is 120 and logic belongs on one side or the other"
+    no "run.sh has grown to $logic_lines lines of logic (plus $table_rows verb-table row(s)); the ceiling is 120 and logic belongs on one side or the other"
 fi
 # The Python arm names a module that has to exist, or the first port fails with
 # ModuleNotFoundError and a verb nobody can reach.

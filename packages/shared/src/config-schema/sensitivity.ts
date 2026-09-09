@@ -15,7 +15,7 @@
  * entry here (exact, wildcard, or a registered ancestor container), except the
  * envelope fields the coverage gate explicitly excludes (schemaVersion, id,
  * version, encryption). The CI gate `check:ci-schema-coverage`
- * (scripts/check-schema-coverage.ts) walks RdcConfigSchema and fails closed on
+ * (scripts/gates/check-schema-coverage.ts) walks RdcConfigSchema and fails closed on
  * any Zod leaf introduced without a registry entry — and on any registry entry
  * whose template no longer matches a schema node (stale residue).
  *

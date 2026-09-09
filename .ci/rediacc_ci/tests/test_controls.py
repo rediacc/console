@@ -21,7 +21,7 @@ count, zero failures, and exit 0, which reads as green everywhere it is reported
 
 import pytest
 
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, VacuousPlantError, plant, plant_re
 
 
 def test_a_clean_run_is_ok():
@@ -294,3 +294,77 @@ def test_two_runners_do_not_share_state():
 
 def test_a_runner_keeps_its_name():
     assert Controls("wl_planfile", floor=1).name == "wl_planfile"
+
+
+# ---- plant() / plant_re(): a mutant that does not mutate --------------------
+#
+# THE ASYMMETRY THIS MODULE'S HEADER NAMES APPLIES HARDEST HERE. `plant` exists
+# so a control cannot silently feed its gate the CLEAN fixture and report a pass
+# for an assertion it never made. A `plant` that raised on everything would
+# satisfy every refusal case below, so each one is paired with the mutation it
+# must still perform.
+
+
+def test_plant_performs_the_mutation_it_is_asked_for():
+    """The happy path FIRST, or every refusal below is met by a broken plant."""
+    assert plant("a b", "b", "c") == "a c"
+    assert plant("aa", "a", "b") == "bb", "every occurrence, not just the first"
+    assert plant("aa", "a", "b", 1) == "ba", "and count= still bounds it"
+
+
+def test_plant_refuses_a_needle_that_is_not_there():
+    with pytest.raises(VacuousPlantError) as exc:
+        plant("a b", "zzz", "c")
+    assert "zzz" in str(exc.value), "the message names the needle that was missing"
+    assert "CLEAN input" in str(exc.value), "and says what the control would have run against"
+
+
+def test_plant_refuses_replacing_a_string_with_itself():
+    """ITS OWN REFUSAL, distinct from the missing-needle one, because it is a
+    different author mistake: a typo, not a drifted fixture. This is the case
+    that catches the real one found in the tree on 2026-09-08 --
+    `_FIXTURE_HEALTHY.replace("max_turns=140", "max_turns=140")` in
+    `rediacc_ci/quality/review_turn_capacity.py`, a dead leg chained ahead of a
+    live substitution inside the port of the very gate `control_vacuity` uses as
+    its own control."""
+    with pytest.raises(VacuousPlantError) as exc:
+        plant("max_turns=140 here", "max_turns=140", "max_turns=140")
+    # ASSERT ON WHAT ONLY THIS BRANCH SAYS. `old == new` is also caught further
+    # down by the byte-identical check, so a looser assertion here (the word
+    # "identical", say) passes whether or not this refusal exists at all -- it
+    # re-asks a question the next branch already answers. Verified by planting:
+    # deleting the `old == new` arm leaves the suite green under the loose form
+    # and reds it under this one.
+    assert "with itself" in str(exc.value), "the typo case keeps its own diagnosis"
+    # MIRROR: the same call with a genuinely different replacement is fine.
+    assert plant("max_turns=140 here", "max_turns=140", "max_turns=9") == "max_turns=9 here"
+
+
+def test_plant_refuses_a_count_that_replaces_nothing():
+    """`count=0` is the ONE way to reach the byte-identical arm: the needle is
+    present and differs from its replacement, yet nothing is substituted. Found
+    by planting -- deleting that arm left the suite green until this case
+    existed, which meant the branch was asserted by nothing."""
+    with pytest.raises(VacuousPlantError) as exc:
+        plant("aa", "a", "b", 0)
+    assert "byte-identical" in str(exc.value)
+
+
+def test_plant_refuses_an_empty_needle():
+    with pytest.raises(VacuousPlantError):
+        plant("anything", "", "x")
+
+
+def test_plant_re_matches_or_refuses():
+    assert plant_re("a1b", r"\d", "X") == "aXb"
+    with pytest.raises(VacuousPlantError) as exc:
+        plant_re("ab", r"\d", "X")
+    assert "zero times" in str(exc.value)
+
+
+def test_plant_re_refuses_a_match_that_changes_nothing():
+    """A pattern CAN match and still produce identical bytes -- the count check
+    alone would pass this, so the byte comparison is not redundant."""
+    with pytest.raises(VacuousPlantError) as exc:
+        plant_re("abc", r"b", "b")
+    assert "byte-identical" in str(exc.value)

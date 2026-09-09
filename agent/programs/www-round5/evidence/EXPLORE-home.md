@@ -453,7 +453,7 @@ Gates that fire:
    with flat dotted paths including `pages.disasterRecovery.faq.items.0.question`,
    `...items.0.answer`, `...faq.heading`, and so on. Renumbering invalidates the hashes of
    every shifted item. Regenerate with `npm run i18n:generate-hashes`
-   (`package.json:206` -> `scripts/generate-translation-hashes.ts`; also aliased
+   (`package.json:206` -> `scripts/gen/generate-translation-hashes.ts`; also aliased
    `fix:i18n` `:195` and `i18n:update-hashes` `:208`).
 
 3. **`scripts/check-i18n-naturalization.ts:36`** - reads

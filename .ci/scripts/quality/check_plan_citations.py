@@ -82,16 +82,33 @@ lane: quality-branch
 
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import re
 import subprocess
 import sys
 
+import _cipath  # noqa: F401
+from rediacc_ci import paths
+
 ROOT = pathlib.Path(
     os.environ.get("PLAN_CITATIONS_ROOT") or pathlib.Path(__file__).resolve().parents[3]
 )
-sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))
+# The hop onto the Stop hook's directory, through the package's own resolver.
+# `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not,
+# and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal
+# lives, so the move planned for that program is a one-line change there rather
+# than a sweep of nine call sites. ROOT is passed explicitly: this gate honours
+# its own PLAN_CITATIONS_ROOT override, which the resolver's default root does not read.
+#
+# THIS IS THE GATE THAT GAINED A PACKAGE DEPENDENCY TO LOSE ITS HOP, and it is
+# the only one of the five: the other four already imported `rediacc_ci`. Said
+# out loud because it is a real trade, not a free tidy -- `.ci/rediacc_ci` must
+# now be present for this gate to start. Every harness that runs it already
+# copies that directory (`test-gate-anti-vacuity.sh` names it explicitly), and a
+# missing package fails loudly at the import rather than skipping a check.
+paths.on_sys_path(paths.hooks_stop_dir(ROOT))
 
 try:
     import wl_checks as CK
@@ -293,8 +310,45 @@ def citations(text):
         # number far more often than it is a git object, and it is never judged.
         if tok.isdigit() or len(tok) < OBJECT_MIN:
             continue
+        # A SHAPE FINGERPRINT IS NOT A GIT OBJECT, and it looks exactly like one: 12 hex
+        # characters, which this gate judges as an abbreviated sha and can never resolve.
+        # `check:ci-shape-duplication` prints these and tells the reader to cite them --
+        # "put its FINGERPRINT into shape-duplication-seed.json" -- so a plan explaining
+        # WHY a shape was accepted has to name it, and every such plan line was an
+        # unresolvable-pointer failure. Measured 2026-09-08: `94f3f7e6f351` and
+        # `aea2bc733552` both reported that way, while an earlier plan's `98b21fa52e5d`
+        # passed only because it happens to prefix a real object in this clone -- so the
+        # gate was already wrong here and was being saved by coincidence.
+        #
+        # The seed file is the authority, not a pattern: a token is a fingerprint only if
+        # the corpus actually carries it, which cannot silence a typo'd sha.
+        if tok in shape_fingerprints(ROOT):
+            continue
         out.append(("object", tok))
     return out
+
+
+_SHAPE_FINGERPRINTS: dict[str, frozenset[str]] = {}
+
+
+def shape_fingerprints(root=None):
+    """Every fingerprint `check:ci-shape-duplication` has recorded, seeded or accepted.
+
+    Read from the seed rather than pattern-matched, so a hex token only stops being an
+    object citation when the duplication corpus really carries it. A missing or malformed
+    seed yields the EMPTY set, which fails safe: every hex token stays judged as an object.
+    """
+    root = ROOT if root is None else root
+    key = str(root)
+    if key not in _SHAPE_FINGERPRINTS:
+        seed = pathlib.Path(root) / "scripts" / "data" / "shape-duplication-seed.json"
+        try:
+            data = json.loads(seed.read_text(encoding="utf-8"))
+            names = set(data.get("shapes") or []) | set((data.get("accepted") or {}).keys())
+        except (OSError, ValueError, AttributeError):
+            names = set()
+        _SHAPE_FINGERPRINTS[key] = frozenset(str(n) for n in names)
+    return _SHAPE_FINGERPRINTS[key]
 
 
 def submodule_paths(root):

@@ -1,10 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# kind: test
-# test: .ci/scripts/quality/check-release-bump-skip.sh
-# blocker: BLOCKER: the gate IS the test -- it drives the real dispatch-release.sh decide branch with a shimmed gh through all five paths, so ci-quality.yml quality-security runs the real decision every CI run; it exists because a bump-none merge and a broken decision both produce "no release" and only the emitted signal distinguishes them, which no release gate could see
-# needs: none
-# ---- end gate ----
+# HEADER REMOVED 2026-09-07 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-release-bump-skip is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_release_bump_skip.py, so a header here would declare a
+# registration that has moved, and gate-bind refuses that by name:
+#   package.json runs "...check_release_bump_skip.py" but its header derives "...check-release-bump-skip.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 # The bump-none decision must EMIT ITS SIGNAL, and only on the skip path.
 #
 # WHY THIS EXISTS. Two gates already cover neighbouring ground and neither

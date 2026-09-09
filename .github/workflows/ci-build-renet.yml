@@ -146,7 +146,7 @@ jobs:
       # it could never have lived in a quality job. Here it inspects the real
       # release binaries, which is the only place the claim is falsifiable.
       - name: Assert no OTLP credentials baked into the built binaries
-        run: .ci/scripts/quality/check-no-otlp-creds.sh
+        run: .ci/scripts/quality/check_no_otlp_creds.py
 
       # Save even if a later step fails (the staging work is done and valid);
       # the receipt makes a partially-staged tree self-healing on restore.

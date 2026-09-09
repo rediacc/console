@@ -25,6 +25,23 @@ CI with the exact message above, while a false positive blocks a correct workflo
 
 Exit 1 on any uncovered invocation, 2 on a failed control.
 
+---- gate ----
+kind: step
+step: Checkout cone covers what steps run
+lane: quality-static
+needs-not: node
+blocker: BLOCKER: this gate is pure Python and never runs node. `inferredNeeds`
+     reads string literals, and the only npx/tsx/node text here is the REGEX
+     that DETECTS interpreter invocations in workflow files (:66) plus the
+     selftest descriptions that exercise it (:177-180). Measured 2026-09-07:
+     without this line the binder refuses with "lane quality-static does not
+     provide all of [node, python-yaml]", which is how this file came to be the
+     only one of 49 Python gates in this tree with no header at all. Tightening
+     the inference instead was REJECTED on measurement: 24 files would lose it
+     and at least one, test_gate_policy_path.py, really does execute
+     node_modules/.bin/tsx.
+why: A step may not run a file its job never checked out.
+---- end gate ----
 """
 
 from __future__ import annotations

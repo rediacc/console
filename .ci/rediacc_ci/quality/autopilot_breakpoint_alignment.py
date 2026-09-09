@@ -97,7 +97,7 @@ import re
 import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, plant
 
 BREAKPOINT_FILE_ENV = "AUTOPILOT_BP_ALIGN_BREAKPOINT_FILE"
 AUTOPILOT_FILE_ENV = "AUTOPILOT_BP_ALIGN_AUTOPILOT_FILE"
@@ -361,7 +361,8 @@ def selftest() -> int:
             "PLANT: send-email.default drift is caught",
             run(
                 _BREAKPOINT_FIXTURE,
-                _AUTOPILOT_FIXTURE.replace(
+                plant(
+                    _AUTOPILOT_FIXTURE,
                     "      send-email:\n        type: boolean\n        default: true",
                     "      send-email:\n        type: boolean\n        default: false",
                 ),
@@ -372,7 +373,8 @@ def selftest() -> int:
             "PLANT: debug-shell.type drift is caught",
             run(
                 _BREAKPOINT_FIXTURE,
-                _AUTOPILOT_FIXTURE.replace(
+                plant(
+                    _AUTOPILOT_FIXTURE,
                     "      debug-shell:\n        type: boolean",
                     "      debug-shell:\n        type: string",
                 ),
@@ -383,7 +385,7 @@ def selftest() -> int:
             "PLANT: a dropped duration option is caught",
             run(
                 _BREAKPOINT_FIXTURE,
-                _AUTOPILOT_FIXTURE.replace("'30', '45'", "'30'"),
+                plant(_AUTOPILOT_FIXTURE, "'30', '45'", "'30'"),
             ),
             1,
         )
@@ -391,8 +393,10 @@ def selftest() -> int:
             "PLANT: a reordered duration list is caught (order is part of the value)",
             run(
                 _BREAKPOINT_FIXTURE,
-                _AUTOPILOT_FIXTURE.replace(
-                    "['5', '10', '15', '30', '45']", "['10', '5', '15', '30', '45']"
+                plant(
+                    _AUTOPILOT_FIXTURE,
+                    "['5', '10', '15', '30', '45']",
+                    "['10', '5', '15', '30', '45']",
                 ),
             ),
             1,
@@ -403,9 +407,7 @@ def selftest() -> int:
             "MIRROR: quoting and spacing inside the list are not drift",
             run(
                 _BREAKPOINT_FIXTURE,
-                _AUTOPILOT_FIXTURE.replace(
-                    "['5', '10', '15', '30', '45']", '[ 5,10, "15" ,30,45 ]'
-                ),
+                plant(_AUTOPILOT_FIXTURE, "['5', '10', '15', '30', '45']", '[ 5,10, "15" ,30,45 ]'),
             ),
             0,
         )
@@ -422,16 +424,15 @@ def selftest() -> int:
         )
         ctl.check(
             "VACUITY: a renamed input (hold-duration gone) is refused, not passed",
-            run(
-                _BREAKPOINT_FIXTURE, _AUTOPILOT_FIXTURE.replace("hold-duration:", "hold_duration:")
-            ),
+            run(_BREAKPOINT_FIXTURE, plant(_AUTOPILOT_FIXTURE, "hold-duration:", "hold_duration:")),
             1,
         )
         ctl.check(
             "VACUITY: a missing send-email.default is refused, not compared to empty",
             run(
                 _BREAKPOINT_FIXTURE,
-                _AUTOPILOT_FIXTURE.replace(
+                plant(
+                    _AUTOPILOT_FIXTURE,
                     "      send-email:\n        type: boolean\n        default: true",
                     "      send-email:\n        type: boolean",
                 ),
@@ -445,7 +446,8 @@ def selftest() -> int:
             "VACUITY: a block-style options list is refused rather than read as empty",
             run(
                 _BREAKPOINT_FIXTURE,
-                _AUTOPILOT_FIXTURE.replace(
+                plant(
+                    _AUTOPILOT_FIXTURE,
                     "        options: ['5', '10', '15', '30', '45']",
                     "        options:\n          - '5'\n          - '10'",
                 ),
@@ -456,8 +458,8 @@ def selftest() -> int:
         # THE FLOOR, and its mirror. Four options is below MIN_DURATION_OPTIONS,
         # so an ALIGNED pair must still be refused -- a green there would mean
         # the extractor matched something that is not the option list.
-        four = _BREAKPOINT_FIXTURE.replace("'30', '45'", "'30'")
-        four_ap = _AUTOPILOT_FIXTURE.replace("'30', '45'", "'30'")
+        four = plant(_BREAKPOINT_FIXTURE, "'30', '45'", "'30'")
+        four_ap = plant(_AUTOPILOT_FIXTURE, "'30', '45'", "'30'")
         ctl.check("FLOOR: four aligned options is still a refusal", run(four, four_ap), 1)
         ctl.check(
             "FLOOR MIRROR: exactly %d aligned options passes" % MIN_DURATION_OPTIONS,

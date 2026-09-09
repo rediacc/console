@@ -110,7 +110,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, plant
 
 # The three directories the twin walks between, relative to the repository root.
 WEB_REL = "private/account/web"
@@ -420,7 +420,8 @@ def selftest() -> int:
         marker = base / "reached-phase-5"
         onb_stub = bindir / "npm"
         onb_stub.write_text(
-            _NPM_STUB.replace(
+            plant(
+                _NPM_STUB,
                 'echo "stub: onboarding"',
                 'echo "stub: onboarding"; : > "%s"' % marker,
             ),

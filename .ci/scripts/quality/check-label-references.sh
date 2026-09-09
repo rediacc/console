@@ -1,11 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# kind: test
-# id: check:ci-label-refs
-# test: .ci/scripts/test/gates/test-label-references.sh
-# blocker: BLOCKER: test-label-references.sh:116 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions
-# needs: none
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-label-refs is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_label_references.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_label_references.py" but its header derives "...check-label-references.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Every GitHub label a workflow or .ci script references by name must be
 # declared in .github/labels.yml.

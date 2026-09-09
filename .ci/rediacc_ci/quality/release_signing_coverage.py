@@ -91,7 +91,7 @@ import subprocess
 import sys
 import tempfile
 
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, plant
 
 # The POSIX space class, written out. `\s` on a Python str additionally matches
 # U+00A0, U+2028 and friends, so a builder line indented with a non-breaking
@@ -468,7 +468,7 @@ def selftest() -> int:
         )
         ctl.check(
             "VACUITY: three formats is below the floor of %d" % MIN_FORMATS,
-            run(_CLEAN_BUILDER.replace("deb | rpm | apk | archlinux)", "deb | rpm | apk)")),
+            run(plant(_CLEAN_BUILDER, "deb | rpm | apk | archlinux)", "deb | rpm | apk)")),
             1,
         )
 
@@ -476,15 +476,17 @@ def selftest() -> int:
         # 2026-09-05 shape itself, one format over.
         ctl.check(
             "PLANT: an unguarded, unexempt format is caught",
-            run(_CLEAN_BUILDER.replace("rpm | deb)", "rpm)")),
+            run(plant(_CLEAN_BUILDER, "rpm | deb)", "rpm)")),
             1,
         )
         # PLANT 2: a fifth format added with no guard and no exemption.
         ctl.check(
             "PLANT: a NEW format added with no guard is caught",
             run(
-                _CLEAN_BUILDER.replace(
-                    "deb | rpm | apk | archlinux)", "deb | rpm | apk | archlinux | snap)"
+                plant(
+                    _CLEAN_BUILDER,
+                    "deb | rpm | apk | archlinux)",
+                    "deb | rpm | apk | archlinux | snap)",
                 )
             ),
             1,
@@ -495,7 +497,8 @@ def selftest() -> int:
         ctl.check(
             "PLANT: an exemption that outlived its cause is caught",
             run(
-                _CLEAN_BUILDER.replace(
+                plant(
+                    _CLEAN_BUILDER,
                     '        echo "nfpm cannot sign archlinux"',
                     '        if [[ "${RELEASE_SIGNING_REQUIRED:-0}" == "1" ]]; then exit 1; fi',
                 )
@@ -506,8 +509,8 @@ def selftest() -> int:
         ctl.check(
             "PLANT: an exemption naming no real format is caught",
             run(
-                _CLEAN_BUILDER.replace(
-                    "deb | rpm | apk | archlinux)", "deb | rpm | apk | rpmv4 | msi)"
+                plant(
+                    _CLEAN_BUILDER, "deb | rpm | apk | archlinux)", "deb | rpm | apk | rpmv4 | msi)"
                 )
             ),
             1,
@@ -517,7 +520,7 @@ def selftest() -> int:
         # direction a "tidier" rewrite of the parser would invert.
         ctl.check(
             "MIRROR: extra spacing in the validation case still parses",
-            run(_CLEAN_BUILDER.replace("deb | rpm | apk | archlinux)", "deb|rpm|apk|archlinux)")),
+            run(plant(_CLEAN_BUILDER, "deb | rpm | apk | archlinux)", "deb|rpm|apk|archlinux)")),
             0,
         )
         ctl.check(

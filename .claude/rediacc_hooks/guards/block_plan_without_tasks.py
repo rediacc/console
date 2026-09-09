@@ -97,7 +97,7 @@ DEFECT = ("if not hookio.grep_q(TASK_LINE, on_disk):", "if False:")
 
 PLAN_GLOBS = ("*/agent/PLAN-*.md", "agent/PLAN-*.md", "*/.claude/plans/*.md")
 
-TASK_LINE = r"^[" + hookio.SPACE + r"]*[-*+] \[[ xX]\] "
+TASK_LINE = hookio.rx(r"^[{S}]*[-*+] \[[ xX]\] ")
 
 # The embedded program, unchanged. "<checkbox-count> <parsed-task-count>", or
 # empty when anything at all went wrong -- see FAILS OPEN above.

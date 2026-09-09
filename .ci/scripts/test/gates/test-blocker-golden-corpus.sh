@@ -74,7 +74,7 @@ read -r -d '' CORPUS <<'EOF' || true
 real-deps-eslint|v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support|accept|accept|accept
 real-deps-astro|6.x is a major on the Astro integration stack while astro itself is deliberately held on the 5 line; move it with that migration, not standalone.|accept|accept|accept
 real-go-landlock|v0.9.0 is a 0.x minor that can change the Landlock config API; this gates repo-sandbox isolation, so adoption needs sandbox-behavior validation on a live cluster before bumping|accept|accept|accept
-real-dead-bash|iterated as a glob by run.sh (for script in tutorials_dir/tutorial-*.sh) and by the readdirSync scans in scripts/check-tutorial-commands.ts and check-tutorial-noninteractive.ts|accept|accept|accept
+real-dead-bash|iterated as a glob by run.sh (for script in tutorials_dir/tutorial-*.sh) and by the readdirSync scans in scripts/gates/check-tutorial-commands.ts and check-tutorial-noninteractive.ts|accept|accept|accept
 real-parity-exempt|reads the PR head/base refs from the GITHUB_* event environment; outside a pull_request event there is no branch pair to validate, so a local run has nothing to check|accept|accept|accept
 real-unverified-dl|AWS publishes no sha256 for the CLI bundle -- the .sha256 URL returns 404 -- only a GPG .sig, which needs their signing key imported first; revisit if a checksum ever appears|accept|accept|accept
 real-audit-prod|astro 6 is a major migration tracked separately; the marketing site is the only consumer and the advisory is build-time only|accept|accept|accept
@@ -214,7 +214,11 @@ test_corpus_is_large_enough_and_real() {
         log_error "corpus has $n cases; the recorded floor is 14"
         exit 1
     }
-    reals=$(corpus_ids | grep -c '^real-')
+    # `|| true` because this file inherits errexit from common.sh and a bare
+    # `VAR=$(... grep -c ...)` takes the substitution's exit status: grep counting
+    # ZERO exits 1, so the shell dies HERE, on the line before the check written
+    # for exactly that state. Same class as test-run-sh.sh:317.
+    reals=$(corpus_ids | grep -c '^real-' || true)
     ((reals >= 5)) || {
         log_error "corpus has $reals verbatim entries from live allowlists; at least 5 are required"
         exit 1
@@ -269,45 +273,105 @@ test_recorded_divergence_is_still_exactly_five() {
 }
 
 # --- the perturbation controls ---------------------------------------------
-# A corpus that cannot fail records nothing. Each control copies ONE
-# implementation, breaks it in the smallest realistic way (a phrase dropped from
-# the banned list -- precisely what a careless collapse does), and requires the
-# comparison to notice. The copies are temp files; no tracked file is touched,
-# and the breakpoint original is never opened for writing.
+# A corpus that cannot fail records nothing. Each control breaks ONE
+# implementation in the smallest realistic way and requires the comparison to
+# notice. No tracked file is touched, and the breakpoint original is never
+# opened for writing.
+#
+# TWO OF THE THREE CHANGED SHAPE ON 2026-09-09, and the change is the point.
+# The TypeScript and bash validators used to carry their own copies of the
+# banned-phrase list, so "drop one phrase from the list" was a one-line sed on
+# each file. They are now CLIENTS of rediacc_ci.core.allowlist, and dropping a
+# phrase from their text would perturb nothing -- the bash file still carries the
+# array as a mirror, and a sed on it would leave every verdict unchanged, which
+# is a control that quietly stops controlling. So the phrase is now dropped from
+# the CANONICAL, in a scratch tree, and the assertion is that the clients FOLLOW.
+# That is a strictly stronger claim than the old one: it proves the delegation is
+# live rather than decorative.
+#
+# The first draft of that retarget was itself vacuous and the guard below caught
+# it: `sed 's/^    "tbd",$//'` on a copy of the canonical leaves a BLANK LINE, the
+# tuple still parses, and the phrase is gone -- but if the literal were ever
+# rewrapped onto a shared line the sed would match nothing and the "perturbed"
+# canonical would be identical to the real one. `scratch_canonical` diffs the two
+# and refuses when they are the same bytes.
 
-test_perturbing_typescript_is_caught() {
-    local d rc=0
-    d="$(mktemp -d)"
-    write_reasons "$d/reasons"
-    # Drop exactly one phrase from the banned list, which is what a careless
-    # collapse does. 'tbd' is chosen because two corpus cases depend on it -- the
-    # bare phrase and the normalised '  TBD  ' -- so the control also proves the
-    # normalisation path is being exercised rather than only the literal one.
-    sed "s/^  'tbd',$//" "$TS_LIB" >"$d/perturbed.ts"
-    grep -q "^  'wip',$" "$d/perturbed.ts" || {
-        log_error "the perturbation did not land: the TS banned list no longer has the shape this sed targets"
+# scratch_canonical <dir>
+#
+# Builds the four-file minimum that `python3 -m rediacc_ci.core.allowlist` needs
+# under <dir>/.ci, with "tbd" removed from LOW_EFFORT_PHRASES, and REFUSES if the
+# removal did not land. 'tbd' is chosen because two corpus cases depend on it,
+# the bare phrase and the normalised '  TBD  ', so the control also proves the
+# normalisation path is exercised rather than only the literal one.
+scratch_canonical() {
+    local d="$1"
+    mkdir -p "$d/.ci/rediacc_ci/core"
+    cp "$REPO_ROOT/.ci/rediacc_ci/__init__.py" "$REPO_ROOT/.ci/rediacc_ci/paths.py" \
+        "$d/.ci/rediacc_ci/"
+    cp "$REPO_ROOT/.ci/rediacc_ci/core/__init__.py" "$d/.ci/rediacc_ci/core/"
+    sed '/^    "tbd",$/d' "$REPO_ROOT/.ci/rediacc_ci/core/allowlist.py" \
+        >"$d/.ci/rediacc_ci/core/allowlist.py"
+    if cmp -s "$REPO_ROOT/.ci/rediacc_ci/core/allowlist.py" \
+        "$d/.ci/rediacc_ci/core/allowlist.py"; then
+        log_error "the perturbation did not land: LOW_EFFORT_PHRASES no longer holds a bare '\"tbd\",' line"
         exit 1
-    }
-    run_ts "$d/perturbed.ts" "$d/reasons" >"$d/ts" 2>/dev/null
-    compare_column 0 "typescript(perturbed)" "$d/ts" 2>/dev/null || rc=1
-    rm -rf "$d"
-    assert_eq "$rc" "1" "dropping one banned phrase from the TS list must break the corpus"
-    log_pass "control: a perturbed TypeScript validator fails the corpus"
+    fi
+    # And the scratch copy must still RUN. A python file broken by the sed would
+    # make every client fail loudly, which also produces a mismatch and would let
+    # this control pass for the wrong reason.
+    if ! PYTHONPATH="$d/.ci" python3 -m rediacc_ci.core.allowlist reason x "tbd" f >/dev/null 2>&1; then
+        : # exit 1 is the expected REJECT; only a usage/import error matters
+    fi
+    if ! PYTHONPATH="$d/.ci" python3 -m rediacc_ci.core.allowlist contract >/dev/null 2>&1; then
+        log_error "the perturbed canonical does not import; the control would fail for the wrong reason"
+        exit 1
+    fi
 }
 
-test_perturbing_bash_is_caught() {
+test_perturbing_the_canonical_is_followed_by_typescript() {
     local d rc=0
     d="$(mktemp -d)"
     write_reasons "$d/reasons"
-    # The canonical bash lib sources emit-advisory.sh from its own directory, so
-    # the copy needs its sibling beside it.
-    cp "$REPO_ROOT/.ci/scripts/lib/emit-advisory.sh" "$d/emit-advisory.sh"
-    sed 's/"tbd" "wip"/"wip"/' "$SH_LIB" >"$d/perturbed.sh"
-    run_sh "$d/perturbed.sh" "$d/reasons" >"$d/sh" 2>/dev/null
-    compare_column 1 "bash(perturbed)" "$d/sh" 2>/dev/null || rc=1
+    scratch_canonical "$d"
+    REDIACC_CI_ROOT="$d" run_ts "$TS_LIB" "$d/reasons" >"$d/ts" 2>/dev/null
+    compare_column 0 "typescript(perturbed canonical)" "$d/ts" 2>/dev/null || rc=1
     rm -rf "$d"
-    assert_eq "$rc" "1" "dropping one banned phrase from the bash list must break the corpus"
-    log_pass "control: a perturbed bash validator fails the corpus"
+    assert_eq "$rc" "1" "dropping one banned phrase from the canonical must change the TypeScript verdicts"
+    log_pass "control: the TypeScript client follows a perturbed canonical"
+}
+
+test_perturbing_the_canonical_is_followed_by_bash() {
+    local d rc=0
+    d="$(mktemp -d)"
+    write_reasons "$d/reasons"
+    scratch_canonical "$d"
+    REDIACC_CI_ROOT="$d" run_sh "$SH_LIB" "$d/reasons" >"$d/sh" 2>/dev/null
+    compare_column 1 "bash(perturbed canonical)" "$d/sh" 2>/dev/null || rc=1
+    rm -rf "$d"
+    assert_eq "$rc" "1" "dropping one banned phrase from the canonical must change the bash verdicts"
+    log_pass "control: the bash client follows a perturbed canonical"
+}
+
+test_perturbing_the_typescript_normaliser_is_caught() {
+    # THE ONE DECISION STILL WRITTEN IN TYPESCRIPT. The client renders the message
+    # from the canonical's templates and matches against the canonical's tables,
+    # but it lowercases and trims the reason itself, because doing that in a
+    # subprocess would cost one interpreter start per entry. That step therefore
+    # needs its own control: without it, the '  TBD  ' case would stop being
+    # normalised and nothing above would notice.
+    local d rc=0
+    d="$(mktemp -d)"
+    write_reasons "$d/reasons"
+    sed 's/^    \.toLowerCase()$//' "$TS_LIB" >"$d/perturbed.ts"
+    if cmp -s "$TS_LIB" "$d/perturbed.ts"; then
+        log_error "the perturbation did not land: normalize() no longer has a bare .toLowerCase() line"
+        exit 1
+    fi
+    REDIACC_CI_ROOT="$REPO_ROOT" run_ts "$d/perturbed.ts" "$d/reasons" >"$d/ts" 2>/dev/null
+    compare_column 0 "typescript(no lowercase)" "$d/ts" 2>/dev/null || rc=1
+    rm -rf "$d"
+    assert_eq "$rc" "1" "dropping the lowercase step from the TS normaliser must break the corpus"
+    log_pass "control: the TypeScript-side normalisation is exercised"
 }
 
 test_perturbing_breakpoint_copy_is_caught() {
@@ -363,8 +427,9 @@ log_test "test-blocker-golden-corpus"
 test_corpus_is_large_enough_and_real
 test_three_way_reproduction
 test_recorded_divergence_is_still_exactly_five
-test_perturbing_typescript_is_caught
-test_perturbing_bash_is_caught
+test_perturbing_the_canonical_is_followed_by_typescript
+test_perturbing_the_canonical_is_followed_by_bash
+test_perturbing_the_typescript_normaliser_is_caught
 test_perturbing_breakpoint_copy_is_caught
 test_breakpoint_original_is_untouched
 echo ""

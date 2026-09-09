@@ -146,6 +146,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import allowlist
+from rediacc_ci.policy_paths import policy_rel
 
 # `[[:space:]]` in the C locale, minus the newline, which cannot occur inside a
 # line either implementation looks at.
@@ -163,7 +164,10 @@ MIN_JOBS_ENV = "PROFILER_COVERAGE_MIN_JOBS"
 MIN_LINUX_ENV = "PROFILER_COVERAGE_MIN_LINUX"
 
 DEFAULT_WORKFLOW_DIR = ".github/workflows"
-DEFAULT_ALLOWLIST = ".ci/policy/.profiler-coverage-allowlist"
+# THROUGH THE SEAM (W4 P4a). Still a repo-RELATIVE string, because the twin's
+# `${PROFILER_COVERAGE_ALLOWLIST:-.ci/policy/.profiler-coverage-allowlist}` is
+# relative too and this gate is compared against it byte for byte.
+DEFAULT_ALLOWLIST = policy_rel(".profiler-coverage-allowlist")
 DEFAULT_ACTION_DIR = ".github/actions/profiler"
 
 # `${VAR-default}` rather than `${VAR:-default}` ON PURPOSE: a test that sets it
@@ -650,7 +654,10 @@ def main(argv: list[str] | None = None) -> int:
         if failures:
             for message in failures:
                 head, _, tail = message.partition("\n")
-                log.error(head)
+                # `ci_error`, not `log.error`: the twin's head line comes from
+                # `verify_all_blockers`, which is `ci_error`. The tail is a plain
+                # `echo` on both sides and stays on stdout.
+                ci_error(head)
                 if tail:
                     print(tail)
             log.error(
@@ -971,6 +978,38 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
     return 0
+
+
+def _in_ci() -> bool:
+    """`[[ "${CI:-}" == "true" ]]`, the exact test the shell libraries use."""
+    return os.environ.get("CI", "") == "true"
+
+
+def ci_error(message: str) -> None:
+    """`::error::<m>` on stdout under CI, `log_error <m>` on stderr otherwise.
+
+    THE TWIN REACHES THIS THROUGH `blocker-validator.sh`, WHICH REACHES
+    `emit-advisory.sh:136`. Every head line `verify_all_blockers` prints -- the
+    missing reason, the low-effort placeholder, the routine-bump deferral and
+    the too-short reason -- goes through `ci_error`, while the CONTINUATION
+    lines beneath each are plain `echo` to stdout and the gate's own two
+    "this is a hole in the invariant" lines are plain `log_error` to stderr.
+    Three different renderings in one failure, and only the head moves stream.
+
+    THIS WAS A REAL PORT GAP, found by the W7 P4 batch 8a cutover differential
+    and not by any test. Driven with CI=true against an allowlist entry whose
+    BLOCKER had been reset by an inserted blank line, the twin put
+    `::error::Allowlist ...` on STDOUT and this port put `✗ Allowlist ...` on
+    STDERR: same exit code, same words, different stream and different prefix.
+    Under `CI=true`, which is how CI runs it, the annotation is what surfaces
+    the finding in the Actions UI, so losing it is losing the report while
+    keeping the red. `go_deps.py:220` and `swallowed_failures.py:525` carry the
+    same helper for the same reason.
+    """
+    if _in_ci():
+        print("::error::%s" % message)
+    else:
+        log.error(message)
 
 
 def _verify_one(entry: str, reason: str, file: str) -> list[str]:

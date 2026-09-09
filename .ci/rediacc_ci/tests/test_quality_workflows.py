@@ -205,3 +205,51 @@ def test_the_uses_anchor_blind_spot_is_pinned() -> None:
     """
     assert mod.USES_RE.search("        uses: actions/checkout@v4")
     assert not mod.USES_RE.search("      - uses: actions/checkout@v4")
+
+
+# --- the .py widening, 2026-09-08 -------------------------------------------
+# `check_gh_slurp_jq` walked `.ci/scripts` taking only `.sh`, so once W7 ported the
+# quality gates to Python the scan stopped reading 72 files that mention `gh` -- and it
+# reported nothing about it, because a matcher that stops matching finds no offenders and
+# exits 0. The glob now takes both, and `slurp_jq_offenders` had to learn Python's
+# continuation, which is a running BRACKET DEPTH rather than a trailing backslash.
+
+_PY_OFFENDER = (
+    "import subprocess\n"
+    "subprocess.run(\n"
+    "    [\n"
+    '        "gh", "api", "repos/x/issues",\n'
+    '        "--paginate", "--slurp",\n'
+    '        "--jq", ".[]",\n'
+    "    ],\n"
+    ")\n"
+)
+
+
+def test_a_wrapped_python_gh_call_is_seen():
+    """THE REGRESSION. A per-line `ends with an open bracket` test was written first and
+    this refused it: the `"gh", "api", ...` line opens nothing, so a suffix test ends the
+    join two lines before `--slurp` and `--jq` ever meet."""
+    assert mod.slurp_jq_offenders(_PY_OFFENDER) == [2]
+
+
+def test_the_bash_form_still_fires():
+    """The corpus this was written against must not move. Depth and backslash are
+    independent tests, ORed, so bash sees exactly what it saw before."""
+    assert mod.slurp_jq_offenders(
+        'gh api repos/x/issues --paginate --slurp \\\n    --jq ".[]"\n'
+    ) == [1]
+
+
+def test_a_wrapped_python_call_without_slurp_is_not_a_finding():
+    """THE ANTI-SILENCER HALF, and the one that makes joining safe to widen: joining more
+    lines together must not start inventing pairs. The same five-line call with no
+    `--slurp` is clean."""
+    clean = _PY_OFFENDER.replace('"--paginate", "--slurp",', '"--paginate",')
+    assert mod.slurp_jq_offenders(clean) == []
+
+
+def test_a_comment_still_resets_the_join():
+    """Unchanged behaviour, asserted because the depth counter is reset in the same arm
+    and a reset that forgot one of the two would leak a bracket across a comment."""
+    assert mod.slurp_jq_offenders('gh api x --slurp \\\n# a comment\n    --jq ".[]"\n') == []

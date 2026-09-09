@@ -5,7 +5,7 @@ WHY THIS EXISTS. This repo's guard layer is largely hooks: they block a
 non-draft PR create, a premature `gh pr ready`, an admin merge, a force push, a
 `git worktree add`, a long sleep, a push onto a rebased branch. Each one is a
 check, and a hook whose script has been renamed, moved or deleted **does not
-error — it simply stops firing.** The guard disappears and every subsequent run
+error: it simply stops firing.** The guard disappears and every subsequent run
 looks clean, which is the exact failure this session spent a night eliminating
 everywhere else: a check that reports success while doing nothing.
 

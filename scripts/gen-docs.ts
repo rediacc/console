@@ -7,7 +7,7 @@
  * stale in SILENCE. Three found and corrected in a single session on 2026-09-06:
  *
  *   - `.dead-bash-allowlist` said "the 17 gate scripts". There are 131.
- *   - scripts/check-ci-parity.ts said "runs 57 gate tests".
+ *   - scripts/gates/check-ci-parity.ts said "runs 57 gate tests".
  *   - docs/agent-reference/ci-gates.md said "254 fast gates" against a live 312.
  *
  * Each was true when written. Nothing re-derived any of them, so each decayed into a confident
@@ -203,6 +203,30 @@ interface Snapshot {
   why: string[];
   recorded_at_commit: string;
   providers: Record<string, { rows: number; keys: string[] }>;
+  /**
+   * Recorded rows whose subject is legitimately GONE, each with the reason it went.
+   *
+   * WHY THIS EXISTS RATHER THAN `--snapshot --force`. The snapshot is a PRE-PORT record
+   * kept so a later wave can prove it lost nothing; re-recording it to clear two real
+   * removals would discard that proof for all 900-odd other rows to silence two. So a
+   * removal is acknowledged HERE, one key at a time, and the reason is mandatory -- an
+   * empty one is refused, because a retirement without a reason is a suppression and
+   * `docs/agent-reference/suppressions.md` is the file that governs those.
+   *
+   * It cannot hide a regression: an acknowledged row is still PRINTED on every run, just
+   * not counted, so the list stays visible and reviewable in the diff.
+   */
+  retired?: Record<string, Record<string, string>>;
+  /** Provider sets re-taken by `--re-record`, keeping the superseded rows readable. */
+  superseded?: Record<
+    string,
+    {
+      at: string;
+      why: string;
+      was: { rows: number; keys: string[] };
+      previously_recorded_at: string;
+    }
+  >;
 }
 
 const liveSets = (root: string): Record<string, { rows: number; keys: string[] }> => {
@@ -235,6 +259,68 @@ export function setDiff(
     added: after.filter((k) => !b.has(k)).sort(byCodePoint),
     countEqual: before.length === after.length,
   };
+}
+
+/**
+ * Re-record ONE provider's set, leaving every other provider's pre-port rows alone.
+ *
+ * WHY THIS IS NOT `--force`. A provider can be re-keyed or re-scoped so completely that
+ * its recorded key set can never match again -- `hook-guards` went from hook-relative to
+ * repo-relative keys AND dropped `.claude/oracles/` from its scan, so all 132 of its rows
+ * became unmatchable at once. Retiring them one by one is honest but leaves that provider
+ * with no signal: a genuine future drop would arrive among 132 acknowledged lines. The
+ * answer is to re-take THAT provider and nothing else, which is what `--force` cannot do,
+ * since it rewrites all of them to silence one.
+ *
+ * The old set is not simply discarded. It moves to `superseded`, with the commit it was
+ * taken at and the reason, so the pre-port rows remain readable rather than deleted --
+ * this file's whole purpose is that a later wave can see what was there before.
+ */
+function reRecordProvider(root: string, id: string, why: string): number {
+  const abs = path.join(root, SNAPSHOT);
+  if (!fs.existsSync(abs)) {
+    console.error(`${RED}no snapshot${NC} at ${SNAPSHOT}; run --snapshot first`);
+    return 1;
+  }
+  if (!why.trim()) {
+    console.error(`${RED}--re-record needs --why "<reason>"${NC}`);
+    console.error('  Re-taking a provider throws away the comparison that finds a silent drop.');
+    console.error('  An unexplained one is indistinguishable from hiding a regression.');
+    return 1;
+  }
+  const snap = JSON.parse(fs.readFileSync(abs, 'utf-8')) as Snapshot;
+  const live = liveSets(root);
+  if (!snap.providers[id]) {
+    console.error(`${RED}${id} is not in the snapshot${NC}; nothing to re-record`);
+    return 1;
+  }
+  if (!live[id]) {
+    console.error(
+      `${RED}${id} is not a live provider${NC}; a vanished provider is a DROP, not a re-key`
+    );
+    return 1;
+  }
+  let commit = 'unknown';
+  try {
+    commit = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf-8' }).trim();
+  } catch {
+    commit = 'unknown';
+  }
+  snap.superseded ??= {};
+  snap.superseded[id] = {
+    at: commit,
+    why,
+    was: snap.providers[id],
+    previously_recorded_at: snap.recorded_at_commit,
+  };
+  snap.providers[id] = live[id];
+  if (snap.retired?.[id]) delete snap.retired[id];
+  fs.writeFileSync(abs, `${JSON.stringify(snap, null, 2)}\n`);
+  console.log(
+    `re-recorded ${id}: ${snap.superseded[id].was.keys.length} -> ${live[id].keys.length} row(s); ` +
+      `the old set is kept under superseded.${id}`
+  );
+  return 0;
 }
 
 function writeSnapshot(root: string, force: boolean): number {
@@ -329,21 +415,37 @@ function diffSnapshot(root: string): number {
   }
   const snap = JSON.parse(fs.readFileSync(abs, 'utf-8')) as Snapshot;
   const verdicts = diffAll(snap.providers, liveSets(root));
+  const retired = snap.retired ?? {};
   let bad = 0;
   for (const v of verdicts) {
-    if (v.missing.length === 0) {
+    const reasons = retired[v.id] ?? {};
+    const acknowledged = v.missing.filter((k) => (reasons[k] ?? '').trim().length > 0);
+    const unexplained = v.missing.filter((k) => (reasons[k] ?? '').trim().length === 0);
+
+    // Acknowledged rows are PRINTED whether or not anything is wrong, so a retirement
+    // list cannot quietly grow into a place regressions go to hide.
+    for (const k of acknowledged)
+      console.log(`${GREEN}retired${NC} ${v.id}: ${k} -- ${reasons[k]}`);
+
+    if (unexplained.length === 0) {
       console.log(
-        `${GREEN}ok${NC}   ${v.id}: ${v.before} recorded, ${v.after} live, +${v.added.length} added`
+        `${GREEN}ok${NC}   ${v.id}: ${v.before} recorded, ${v.after} live, ` +
+          `+${v.added.length} added, ${acknowledged.length} retired`
       );
       continue;
     }
     bad += 1;
     console.error(
-      `${RED}DROPPED${NC} ${v.id}: ${v.missing.length} recorded row(s) are gone` +
+      `${RED}DROPPED${NC} ${v.id}: ${unexplained.length} recorded row(s) are gone` +
         (v.gone ? ' -- THE WHOLE PROVIDER NO LONGER EXISTS' : '') +
         (v.countEqual ? ' (and the COUNT is unchanged, which is why a floor would pass)' : '')
     );
-    for (const k of v.missing) console.error(`       - ${k}`);
+    for (const k of unexplained) console.error(`       - ${k}`);
+    console.error(
+      `       If the subject is legitimately gone, add it to \`retired.${v.id}\` in ` +
+        `${SNAPSHOT} WITH THE REASON. Do not run \`--snapshot --force\`: that discards ` +
+        `the pre-port record for every other row to silence these.`
+    );
   }
   return bad === 0 ? 0 : 1;
 }
@@ -537,6 +639,11 @@ function selftest(): number {
 
 function main(argv: string[]): number {
   if (argv.includes('--selftest')) return selftest() === 0 ? 0 : 1;
+  if (argv.includes('--re-record')) {
+    const at = argv.indexOf('--re-record');
+    const w = argv.indexOf('--why');
+    return reRecordProvider(ROOT, argv[at + 1] ?? '', w >= 0 ? (argv[w + 1] ?? '') : '');
+  }
   if (argv.includes('--snapshot')) return writeSnapshot(ROOT, argv.includes('--force'));
   if (argv.includes('--diff-snapshot')) return diffSnapshot(ROOT);
 

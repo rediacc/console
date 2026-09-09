@@ -47,12 +47,8 @@ DEFECT = ('if hookio.case_glob(tok, "--*"):', "if False:")
 # means a doc line, a worklist note or an `echo` explaining the rule is refused
 # as if it were the rule being broken. This NARROWS PROSE ONLY: every control
 # below still blocks the real command, at line start and after a separator.
-WRITES_A_FILE = (
-    r"(^|[;&|(])["
-    + hookio.SPACE
-    + r"]*(sudo["
-    + hookio.SPACE
-    + r"]+)?agent-browser\b[^;|&]*\b(screenshot|pdf|download)\b"
+WRITES_A_FILE = hookio.rx(
+    r"(^|[;&|(])[{S}]*(sudo[{S}]+)?agent-browser\b[^;|&]*\b(screenshot|pdf|download)\b"
 )
 
 SEGMENT_SPAN = r"\bagent-browser\b[^;|&]*"

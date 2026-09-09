@@ -3,9 +3,9 @@
  * `ARG <BASE>_VERSION` in .devcontainer/Dockerfile that a gate should watch, and
  * where its upstream releases live.
  *
- * Extracted from scripts/check-devcontainer-pin-freshness.ts for the same reason
+ * Extracted from scripts/gates/check-devcontainer-pin-freshness.ts for the same reason
  * embed-asset-sources.ts was extracted from its gate: that script calls main() at
- * module scope, so scripts/check-suppression-liveness.ts cannot import it for the
+ * module scope, so scripts/gates/check-suppression-liveness.ts cannot import it for the
  * constants without running the whole freshness check, network included.
  *
  * `base` matches the key parseDockerfileVersions() produces, lowercased. NOTE its

@@ -63,38 +63,14 @@ BEGIN_MARKER = "<!-- worklist-epics:begin -->"
 # Measured on PR #585, 2026-09-03: the body carries worklist-epics AND pushed-head.
 GENERATED_MARKERS = ("worklist-epics", "pushed-head")
 
-BODY_FILE_ARGS = r"--body-file([" + hookio.SPACE + r"]+|=)[^" + hookio.SPACE + r";|&]+"
-API_VERB = r"^[" + hookio.SPACE + r"]*gh[" + hookio.SPACE + r"]+api([" + hookio.SPACE + r"]|$)"
+BODY_FILE_ARGS = hookio.rx(r"--body-file([{S}]+|=)[^{S};|&]+")
+API_VERB = hookio.rx(r"^[{S}]*gh[{S}]+api([{S}]|$)")
 API_PULLS = r"pulls/[0-9]+"
-API_PATCH = (
-    r"(^|["
-    + hookio.SPACE
-    + r"])(-X|--method)["
-    + hookio.SPACE
-    + r"]+PATCH(["
-    + hookio.SPACE
-    + r"]|$)"
+API_PATCH = hookio.rx(r"(^|[{S}])(-X|--method)[{S}]+PATCH([{S}]|$)")
+API_BODY_FLAG = hookio.rx(
+    r"(^|[{S}])(-F|-f|--field|--raw-field)[{S}]+body=|(^|[{S}])--input([{S}]|=)"
 )
-API_BODY_FLAG = (
-    r"(^|["
-    + hookio.SPACE
-    + r"])(-F|-f|--field|--raw-field)["
-    + hookio.SPACE
-    + r"]+body=|(^|["
-    + hookio.SPACE
-    + r"])--input(["
-    + hookio.SPACE
-    + r"]|=)"
-)
-API_BODY_ARGS = (
-    r"((-F|--field)["
-    + hookio.SPACE
-    + r"]+body=@|--input(["
-    + hookio.SPACE
-    + r"]+|=))[^"
-    + hookio.SPACE
-    + r";|&]+"
-)
+API_BODY_ARGS = hookio.rx(r"((-F|--field)[{S}]+body=@|--input([{S}]+|=))[^{S};|&]+")
 
 REFUSE_WHOLE_BODY = """BLOCKED: do not write a PR body by hand.
 
@@ -204,7 +180,7 @@ def _visible_body(cmd, seg, root):
     """
     body = cmd if shellscan.flag_present(seg, "body") else ""
     saw_file = False
-    for name in _body_files(cmd, BODY_FILE_ARGS, r"^--body-file([" + hookio.SPACE + r"]+|=)"):
+    for name in _body_files(cmd, BODY_FILE_ARGS, hookio.rx(r"^--body-file([{S}]+|=)")):
         if name in {"", "-"}:
             continue
         for cand in (name, "%s/%s" % (root, name)):
@@ -318,7 +294,7 @@ def run(ev):
         for name in _body_files(
             api_segs,
             API_BODY_ARGS,
-            r"^((-F|--field)[" + hookio.SPACE + r"]+body=@|--input([" + hookio.SPACE + r"]+|=))",
+            hookio.rx(r"^((-F|--field)[{S}]+body=@|--input([{S}]+|=))"),
         ):
             if name == "":
                 continue

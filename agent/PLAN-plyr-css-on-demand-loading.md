@@ -125,12 +125,12 @@ it wants its own item.
 
 ## Tasks
 
-- [ ] Write `scripts/check-player-css-scope.ts` with the six floors and eight selftest plants, BEFORE any source change
+- [ ] Write `scripts/gates/check-player-css-scope.ts` with the six floors and eight selftest plants, BEFORE any source change
 - [ ] Run it against the existing dist and confirm it reports exactly 794 offenders
 - [ ] Write `packages/www/src/scripts/tutorial-video-styles.ts` exporting `ensurePlayerStyles()`, memoised, resolving on load OR error so a missing sheet leaves an ugly player rather than none
 - [ ] Delete `TutorialVideoPlayer.tsx:23-24`, leaving a comment pointing at the new module and saying why
 - [ ] Await `Promise.all([ensurePlayerStyles(), import(player)])` in the hydrator before `createRoot`
-- [ ] Re-point the stale `BLOCKER:` citation in `scripts/check-dead-css.ts:53-62`
+- [ ] Re-point the stale `BLOCKER:` citation in `scripts/gates/check-dead-css.ts:53-62`
 - [ ] Add the source-level invariant to `check-video-player-invariants.ts` (hydrator must await the styles before `createRoot`) with mutants that delete and that reorder the call
 - [ ] Write `.ci/scripts/test/gates/test-player-css-scope.sh` with both mutants, written OUTSIDE the repo to avoid check:ci-pool-writer-safety
 - [ ] Three-point wiring: package.json key, two manifest entries, and a `Player CSS scope` step in quality-www-build whose name matches the manifest byte for byte

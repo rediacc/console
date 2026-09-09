@@ -6,10 +6,10 @@
 # lane: quality-security
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
 # slow: true
-# why: Both-ways test for the inline-run rule in .ci/scripts/quality/check-workflows.sh
+# why: Both-ways test for the inline-run rule in .ci/scripts/quality/check_workflows.py
 # ---- end gate ----
 
-# Both-ways test for the inline-run rule in .ci/scripts/quality/check-workflows.sh.
+# Both-ways test for the inline-run rule in .ci/scripts/quality/check_workflows.py.
 #
 # The rule keeps CI step LOGIC out of workflow YAML: a `run:` block scalar whose
 # shell logic exceeds INLINE_MAX_LOGIC (8) non-blank/non-comment lines is a
@@ -40,7 +40,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test gate
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-CHECK="$REPO_ROOT/.ci/scripts/quality/check-workflows.sh"
+CHECK="$REPO_ROOT/.ci/scripts/quality/check_workflows.py"
 
 LAST_OUT=""
 
@@ -49,7 +49,7 @@ LAST_OUT=""
 run_check() {
     local dir="$1" rc=0
     LAST_OUT="$(WORKFLOW_INLINE_ONLY=1 WORKFLOW_DIR="$dir" \
-        bash "$CHECK" 2>&1)" || rc=$?
+        "$CHECK" 2>&1)" || rc=$?
     return "$rc"
 }
 
@@ -137,6 +137,11 @@ test_boundary_at_threshold() {
     rc=0
     run_check "$d" || rc=$?
     assert_exit_code 1 "$rc" "9 logic lines is over the limit and must fail"
+    # THE COUNT, NOT JUST THE CODE. A bare `rc=1` here is satisfied by a YAML
+    # parse error in the fixture or a gate that refuses for any other reason,
+    # which would make this boundary case pass while measuring no boundary.
+    assert_contains "$LAST_OUT" "has 9 logic lines" \
+        "and it must fail BECAUSE the step has 9, naming the count it measured"
     log_pass "boundary is exact: 8 passes, 9 fails"
 }
 

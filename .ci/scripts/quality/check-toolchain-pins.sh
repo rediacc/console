@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: Toolchain pins
-# emit: false
-# blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
-# needs: none
-# selftest: true
-# lane: quality-code
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-toolchain-pins is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_toolchain_pins.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_toolchain_pins.py" but its header derives ".ci/scripts/quality/check-toolchain-pins.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Gate: every gate-tool version is defined ONCE, and nothing acquires unpinned.
 #
@@ -160,7 +160,7 @@ fi
 #
 # NOTE ON SHAPE, because it is the opposite of what it may look like: a workflow
 # invoking a gate SCRIPT directly (`run: .ci/scripts/security/shfmt.sh`) is the
-# REQUIRED pattern here -- scripts/check-ci-parity.ts enforces three-point wiring
+# REQUIRED pattern here -- scripts/gates/check-ci-parity.ts enforces three-point wiring
 # in which the workflow step names the script. It is invoking the TOOL that is
 # forbidden, not invoking the script.
 wf_direct=()

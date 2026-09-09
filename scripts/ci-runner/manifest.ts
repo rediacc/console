@@ -1,7 +1,7 @@
 /**
  * The single gate inventory both halves of the local CI runner consume.
  *
- * scripts/check-ci-parity.ts reads it as the authoritative "what the local run
+ * scripts/gates/check-ci-parity.ts reads it as the authoritative "what the local run
  * executes" set, and scripts/ci-runner/run.ts schedules it. Before this file
  * existed both facts were encoded in one place: the 93-step `&&` string at
  * package.json `scripts.ci`. Two gates parsed that string as their input, so
@@ -41,7 +41,7 @@ import type { GateSpec } from './gate-spec.js';
  *     The package.json key stays as a developer convenience; it just leaves the
  *     gate set.
  *   - check:ci-chain-parity and check:ci-gate-reachability are gone entirely:
- *     scripts/check-ci-parity.ts subsumes and replaces both (plan section 6.1).
+ *     scripts/gates/check-ci-parity.ts subsumes and replaces both (plan section 6.1).
  *
  * FOUR ENTRIES ARE ALSO REACHED THROUGH check:i18n: check:ci-i18n-cli-key-usage,
  * check:ci-i18n-cli-help-render, check:cli-docs and check:ci-i18n-locale-only.
@@ -55,7 +55,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:version',
     run: 'npm run check:version',
     gate: true,
-    leaves: ['scripts/check-workspace-versions.ts', 'syncpack'],
+    leaves: ['scripts/gates/check-workspace-versions.ts', 'syncpack'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -68,7 +68,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:deps',
     slow: true, // 17.8s measured
     gate: true,
-    leaves: ['scripts/check-deps.ts'],
+    leaves: ['scripts/gates/check-deps.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -189,11 +189,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Unused exports (knip)',
     },
   },
+  // >>> gen-manifest: region 1
   {
     id: 'check:ci-knip-blockers',
     run: 'npm run check:ci-knip-blockers',
     gate: true,
-    leaves: ['scripts/check-knip-blockers.ts'],
+    leaves: ['scripts/gates/check-knip-blockers.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -201,6 +202,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'knip BLOCKER reasons',
     },
   },
+  // <<< gen-manifest: region 1
   {
     id: 'check:format',
     run: 'npm run check:format',
@@ -229,17 +231,17 @@ export const GATES: readonly GateSpec[] = [
     // that writes packages/www/src/__control_probe__.tsx while knip scans.
     gate: false,
     leaves: [
-      'scripts/check-translation-hashes.ts',
-      'scripts/check-translation-completeness.ts',
-      'scripts/check-translation-key-usage.ts',
+      'scripts/gates/check-translation-hashes.ts',
+      'scripts/gates/check-translation-completeness.ts',
+      'scripts/gates/check-translation-key-usage.ts',
       'scripts/__tests__/check-translation-key-usage.control.ts',
       'scripts/__tests__/check-docs-render-parity.control.ts',
       'scripts/__tests__/check-page-locale-imports.control.ts',
-      'scripts/check-cli-i18n-key-usage.ts',
+      'scripts/gates/check-cli-i18n-key-usage.ts',
       'packages/cli/scripts/check-cli-i18n-help-render.ts',
-      'scripts/check-docs-inline-translations.ts',
-      'scripts/check-docs-untranslated-text.ts',
-      'scripts/check-account-email-templates.ts',
+      'scripts/gates/check-docs-inline-translations.ts',
+      'scripts/gates/check-docs-untranslated-text.ts',
+      'scripts/gates/check-account-email-templates.ts',
       'packages/www/scripts/validate-cli-docs.js',
       'packages/www/scripts/validate-docs-cli-usage.js',
       'packages/www/scripts/validate-landing-cli-usage.js',
@@ -247,15 +249,15 @@ export const GATES: readonly GateSpec[] = [
       'packages/www/scripts/validate-content.js',
       'packages/www/scripts/validate-content-accuracy.js',
       'packages/www/scripts/validate-comparison-refs.js',
-      'scripts/check-component-hardcoded-strings.ts',
-      'scripts/check-cli-docs.ts',
-      'scripts/check-i18n-naturalization.ts',
-      'scripts/check-locale-only-edits.ts',
-      'scripts/check-i18n-ledger-growth.ts',
-      'scripts/check-dead-translation-keys.ts',
-      'scripts/check-em-dash-surfaces.ts',
+      'scripts/gates/check-component-hardcoded-strings.ts',
+      'scripts/gates/check-cli-docs.ts',
+      'scripts/gates/check-i18n-naturalization.ts',
+      'scripts/gates/check-locale-only-edits.ts',
+      'scripts/gates/check-i18n-ledger-growth.ts',
+      'scripts/gates/check-dead-translation-keys.ts',
+      'scripts/gates/check-em-dash-surfaces.ts',
       'packages/www/scripts/check-client-i18n-freshness.ts',
-      'scripts/check-locale-currency-integrity.ts',
+      'scripts/gates/check-locale-currency-integrity.ts',
       'scripts/__tests__/check-locale-currency-integrity.control.ts',
     ],
     ci: {
@@ -283,7 +285,7 @@ export const GATES: readonly GateSpec[] = [
     mutex: ['www-src-probe'],
     leaves: [
       'scripts/__tests__/check-translation-key-usage.control.ts',
-      'scripts/check-translation-key-usage.ts',
+      'scripts/gates/check-translation-key-usage.ts',
     ],
     ci: {
       kind: 'step',
@@ -292,11 +294,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
+  // >>> gen-manifest: region 2
   {
     id: 'check:ci-i18n-hashes',
     run: 'npm run check:ci-i18n-hashes',
     gate: true,
-    leaves: ['scripts/check-translation-hashes.ts'],
+    leaves: ['scripts/gates/check-translation-hashes.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -308,7 +311,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-i18n-completeness',
     run: 'npm run check:ci-i18n-completeness',
     gate: true,
-    leaves: ['scripts/check-translation-completeness.ts'],
+    leaves: ['scripts/gates/check-translation-completeness.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -316,6 +319,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
+  // <<< gen-manifest: region 2
   {
     id: 'check:ci-i18n-docs-render-parity',
     run: 'npm run check:ci-i18n-docs-render-parity',
@@ -344,11 +348,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
+  // >>> gen-manifest: region 3
   {
     id: 'check:ci-i18n-docs-inline',
     run: 'npm run check:ci-i18n-docs-inline',
     gate: true,
-    leaves: ['scripts/check-docs-inline-translations.ts'],
+    leaves: ['scripts/gates/check-docs-inline-translations.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -360,7 +365,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-i18n-docs-untranslated',
     run: 'npm run check:ci-i18n-docs-untranslated',
     gate: true,
-    leaves: ['scripts/check-docs-untranslated-text.ts'],
+    leaves: ['scripts/gates/check-docs-untranslated-text.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -372,7 +377,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-i18n-account-email-templates',
     run: 'npm run check:ci-i18n-account-email-templates',
     gate: true,
-    leaves: ['scripts/check-account-email-templates.ts'],
+    leaves: ['scripts/gates/check-account-email-templates.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -384,7 +389,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-i18n-hardcoded-strings',
     run: 'npm run check:ci-i18n-hardcoded-strings',
     gate: true,
-    leaves: ['scripts/check-component-hardcoded-strings.ts'],
+    leaves: ['scripts/gates/check-component-hardcoded-strings.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -396,7 +401,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-i18n-naturalization',
     run: 'npm run check:ci-i18n-naturalization',
     gate: true,
-    leaves: ['scripts/check-i18n-naturalization.ts'],
+    leaves: ['scripts/gates/check-i18n-naturalization.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -404,6 +409,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
+  // <<< gen-manifest: region 3
   {
     id: 'check:ci-i18n-www-cli-docs',
     run: 'npm run check:ci-i18n-www-cli-docs',
@@ -492,7 +498,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-i18n-cli-key-usage',
     run: 'npm run check:ci-i18n-cli-key-usage',
     gate: true,
-    leaves: ['scripts/check-cli-i18n-key-usage.ts'],
+    leaves: ['scripts/gates/check-cli-i18n-key-usage.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -516,7 +522,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:cli-docs',
     run: 'npm run check:cli-docs',
     gate: true,
-    leaves: ['scripts/check-cli-docs.ts'],
+    leaves: ['scripts/gates/check-cli-docs.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -529,7 +535,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-locale-currency',
     gate: true,
     leaves: [
-      'scripts/check-locale-currency-integrity.ts',
+      'scripts/gates/check-locale-currency-integrity.ts',
       'scripts/__tests__/check-locale-currency-integrity.control.ts',
     ],
     ci: {
@@ -539,11 +545,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
+  // >>> gen-manifest: region 4
   {
     id: 'check:ci-i18n-locale-only',
     run: 'npm run check:ci-i18n-locale-only',
     gate: true,
-    leaves: ['scripts/check-locale-only-edits.ts'],
+    leaves: ['scripts/gates/check-locale-only-edits.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -551,11 +558,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
+  // <<< gen-manifest: region 4
   {
     id: 'check:ci-i18n-ledger-growth',
     run: 'npm run check:ci-i18n-ledger-growth',
     gate: true,
-    leaves: ['scripts/check-i18n-ledger-growth.ts'],
+    leaves: ['scripts/gates/check-i18n-ledger-growth.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -586,11 +594,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Tutorial media',
     },
   },
+  // >>> gen-manifest: region 5
   {
     id: 'check:ci-rubric-calibration',
     run: 'npm run check:ci-rubric-calibration',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-rubric-calibration.sh'],
+    leaves: ['.ci/scripts/quality/check_rubric_calibration.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -602,7 +611,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-www-build-token',
     run: 'npm run check:ci-www-build-token',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-www-build-token.sh'],
+    leaves: ['.ci/scripts/quality/check_www_build_token.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -610,6 +619,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'www build token',
     },
   },
+  // <<< gen-manifest: region 5
   {
     id: 'check:ci-shape-duplication',
     run: 'npm run check:ci-shape-duplication',
@@ -617,7 +627,7 @@ export const GATES: readonly GateSpec[] = [
     // to claim was a contended sample; the tier oracle judges the floor of
     // `recent` for exactly that reason.
     gate: true,
-    leaves: ['scripts/check-shape-duplication.ts'],
+    leaves: ['scripts/gates/check-shape-duplication.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -625,6 +635,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shape duplication',
     },
   },
+  // >>> gen-manifest: region 6
   {
     id: 'check:ci-fetch-retry',
     run: 'npm run check:ci-fetch-retry',
@@ -673,12 +684,13 @@ export const GATES: readonly GateSpec[] = [
       step: 'Git history depth',
     },
   },
+  // <<< gen-manifest: region 6
   {
     id: 'check:ci-typecheck-scope-coverage',
     run: 'npm run check:ci-typecheck-scope-coverage',
     slow: true, // 17.7s: `tsc --showConfig` on all 13 projects, twice (selftest + real run)
     gate: true,
-    leaves: ['scripts/check-typecheck-scope-coverage.ts'],
+    leaves: ['scripts/gates/check-typecheck-scope-coverage.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -706,6 +718,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'TypeScript',
     },
   },
+  // >>> gen-manifest: region 7
   {
     id: 'check:ci-tutorial-healthcheck-headroom',
     run: 'npm run check:ci-tutorial-healthcheck-headroom',
@@ -718,6 +731,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Tutorial healthcheck headroom',
     },
   },
+  // <<< gen-manifest: region 7
   {
     id: 'check:ci-guard-mutations',
     run: 'npm run check:ci-guard-mutations',
@@ -725,7 +739,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     weight: 2,
     heavy: true,
-    leaves: ['scripts/check-guard-mutations.ts'],
+    leaves: ['scripts/gates/check-guard-mutations.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -787,6 +801,9 @@ export const GATES: readonly GateSpec[] = [
     // the timeout (packages/www/scripts/test-tutorial-player-release-gate.js)
     // alongside wiring this in.
     id: 'check:test:tutorial-player',
+    env: {
+      PUBLIC_VIDEO_CDN_BASE_URL: 'https://media.rediacc.com',
+    },
     run: 'npm run check:test:tutorial-player',
     slow: true, // spins up a real astro dev server; measured ~90s+ cold
     gate: true,
@@ -825,6 +842,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Worker unit tests (workers/www)',
     },
   },
+  // >>> gen-manifest: region 8
   {
     id: 'check:ci-install-sh-config',
     run: 'npm run check:ci-install-sh-config',
@@ -837,6 +855,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'install.sh config tests',
     },
   },
+  // <<< gen-manifest: region 8
   {
     id: 'check:ci-rdc-sh-env',
     run: 'npm run check:ci-rdc-sh-env',
@@ -850,10 +869,41 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // FIRST REGISTRATION, not a cutover. `check-ci-job-aggregation.sh` was invoked by
+    // nothing at all -- no key, no entry, no workflow line -- so CI ran its gate test
+    // and never the gate. Added 2026-09-08 with the port, through its header and one
+    // `gate:bind --write`.
+    id: 'check:ci-ci-job-aggregation',
+    run: 'npm run check:ci-ci-job-aggregation',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_ci_job_aggregation.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'CI job aggregation',
+    },
+  },
+  {
+    // FIRST REGISTRATION, same story: the scanner for probes whose failure is
+    // indistinguishable from an empty result was itself unrun.
+    id: 'check:ci-swallowed-failures',
+    run: 'npm run check:ci-swallowed-failures',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_swallowed_failures.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Swallowed failures',
+    },
+  },
+  // >>> gen-manifest: region 9
+  {
     id: 'check:ci-probe-parity',
     run: 'npm run check:ci-probe-parity',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-probe-parity.sh'],
+    leaves: ['.ci/scripts/quality/check_probe_parity.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -865,7 +915,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-drill-verdicts',
     run: 'npm run check:ci-drill-verdicts',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-drill-verdicts.sh'],
+    leaves: ['.ci/scripts/quality/check_drill_verdicts.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -877,7 +927,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-account-probes',
     run: 'npm run check:ci-account-probes',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-account-probes.sh'],
+    leaves: ['.ci/scripts/quality/check_account_probes.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -885,11 +935,21 @@ export const GATES: readonly GateSpec[] = [
       step: 'Dev-stack liveness probes',
     },
   },
+  // <<< gen-manifest: region 9
   {
     id: 'check:ci-npmrc',
     run: 'npm run check:ci-npmrc',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-npmrc.sh'],
+    // W7 P4 PILOT, 2026-09-07: the FIRST port cut over from bash to Python.
+    // The leaf is the Python entry point now, not check-npmrc.sh. The twin is
+    // NOT deleted (invariant 5 forbids that in the porting change; deletion is
+    // W7 P5) -- what changed is only which of the two the registry invokes.
+    // Condition for cutting over is the one the sibling entry points name in
+    // their own docstrings: the differential ledger says the port kept its
+    // verdict. `shadow-gate --pair w7p2-npmrc --assert --k 5` reports
+    // equivalence over 5 distinct trees, and driven again on this tree both
+    // sides exit 0 with byte-identical stdout AND stderr.
+    leaves: ['.ci/scripts/quality/check_npmrc.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -907,9 +967,9 @@ export const GATES: readonly GateSpec[] = [
       // The verb bodies, and setup() with them, moved here in the 2026-09-06 router
       // split. Without this an edit to the file the gate READS does not select it.
       '.ci/legacy/**',
-      '.ci/scripts/quality/check-setup-idempotency.sh',
+      '.ci/scripts/quality/check_setup_idempotency.py',
     ],
-    leaves: ['.ci/scripts/quality/check-setup-idempotency.sh'],
+    leaves: ['.ci/scripts/quality/check_setup_idempotency.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -923,7 +983,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-native-rebuild',
     run: 'npm run check:ci-native-rebuild',
     gate: true,
-    leaves: ['scripts/check-native-rebuild.ts'],
+    leaves: ['scripts/gates/check-native-rebuild.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -938,7 +998,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-git-tool-safety',
     run: 'npm run check:ci-git-tool-safety',
     gate: true,
-    leaves: ['scripts/check-git-tool-safety.ts'],
+    leaves: ['scripts/gates/check-git-tool-safety.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -953,7 +1013,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-bootstrap-idempotency',
     run: 'npm run check:ci-bootstrap-idempotency',
     gate: true,
-    leaves: ['scripts/check-bootstrap-idempotency.ts'],
+    leaves: ['scripts/gates/check-bootstrap-idempotency.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -965,9 +1025,13 @@ export const GATES: readonly GateSpec[] = [
     // Every commit must name the epic it belongs to, because the review selects
     // an epic's commits by trailer. An untagged commit is reviewed by nobody.
     id: 'check:ci-pr-task-trailers',
+    env: {
+      PR_BASE_REF: 'origin/${{ github.event.pull_request.base.ref }}',
+      PR_HEAD_REF: '${{ github.event.pull_request.head.ref }}',
+    },
     run: 'npm run check:ci-pr-task-trailers',
     gate: true,
-    leaves: ['scripts/check-pr-task-trailers.ts'],
+    leaves: ['scripts/gates/check-pr-task-trailers.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -982,7 +1046,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-merge-method-prose',
     run: 'npm run check:ci-merge-method-prose',
     gate: true,
-    leaves: ['scripts/check-merge-method-prose.ts'],
+    leaves: ['scripts/gates/check-merge-method-prose.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -997,7 +1061,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-shell-declared-commands',
     run: 'npm run check:ci-shell-declared-commands',
     gate: true,
-    leaves: ['scripts/check-shell-declared-commands.ts'],
+    leaves: ['scripts/gates/check-shell-declared-commands.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1010,9 +1074,14 @@ export const GATES: readonly GateSpec[] = [
     // published snapshot, since a generated section nobody checks drifts while
     // still looking authoritative.
     id: 'check:ci-pr-epic-block',
+    env: {
+      GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}',
+      PR_HEAD_REF: '${{ github.event.pull_request.head.ref }}',
+      PR_NUMBER: '${{ github.event.pull_request.number }}',
+    },
     run: 'npm run check:ci-pr-epic-block',
     gate: true,
-    leaves: ['scripts/check-pr-epic-block.ts'],
+    leaves: ['scripts/gates/check-pr-epic-block.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1025,7 +1094,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-control-vacuity',
     gate: true,
     paths: ['.ci/scripts/quality/**'],
-    leaves: ['.ci/scripts/quality/check-control-vacuity.sh'],
+    leaves: ['.ci/scripts/quality/check_control_vacuity.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1037,8 +1106,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-devcontainer-scripts',
     run: 'npm run check:ci-devcontainer-scripts',
     gate: true,
-    paths: ['.devcontainer/**', '.ci/scripts/quality/check-devcontainer-scripts.sh'],
-    leaves: ['.ci/scripts/quality/check-devcontainer-scripts.sh'],
+    paths: ['.devcontainer/**', '.ci/scripts/quality/check_devcontainer_scripts.py'],
+    leaves: ['.ci/scripts/quality/check_devcontainer_scripts.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1052,8 +1121,15 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     // Any shell file anywhere can grow into the linter-killing range, so this
     // one is deliberately not path-narrowed.
-    paths: ['**/*.sh'],
-    leaves: ['.ci/scripts/quality/check-shell-size.sh'],
+    //
+    // THE LEAF IS LISTED EXPLICITLY, and it has to be. `**/*.sh` used to cover the
+    // gate's own file for free, because the gate WAS a `.sh`. The W7 P4 cutover
+    // made the leaf a `.py`, the glob stopped matching it, and `check:ci-gate-manifest`
+    // caught the consequence by name: "declares paths but not its own leaf --
+    // editing the gate does not select the gate". Any cutover of a gate whose
+    // `paths` glob is extension-shaped inherits this.
+    paths: ['**/*.sh', '.ci/scripts/quality/check_shell_size.py'],
+    leaves: ['.ci/scripts/quality/check_shell_size.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1068,8 +1144,8 @@ export const GATES: readonly GateSpec[] = [
     // The lane library and anything that could add a call site to it. Narrow on
     // purpose: this gate reasons about devbox.sh's own invocations, and a wider
     // path filter would imply a coverage it does not have.
-    paths: ['.ci/lib/devbox.sh', '.ci/scripts/quality/check-devbox-exec.sh'],
-    leaves: ['.ci/scripts/quality/check-devbox-exec.sh'],
+    paths: ['.ci/lib/devbox.sh', '.ci/scripts/quality/check_devbox_exec.py'],
+    leaves: ['.ci/scripts/quality/check_devbox_exec.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1098,7 +1174,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/config/constants.sh',
       'run.sh',
     ],
-    leaves: ['.ci/scripts/quality/check-toolchain-pins.sh'],
+    leaves: ['.ci/scripts/quality/check_toolchain_pins.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1118,9 +1194,9 @@ export const GATES: readonly GateSpec[] = [
     paths: [
       '.devcontainer/toolchain.env',
       '.devcontainer/Dockerfile',
-      '.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh',
+      '.ci/scripts/quality/check_toolchain_env_dockerfile_sync.py',
     ],
-    leaves: ['.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh'],
+    leaves: ['.ci/scripts/quality/check_toolchain_env_dockerfile_sync.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1137,11 +1213,11 @@ export const GATES: readonly GateSpec[] = [
     // NPX_TOOLS/BARE_TOOLS) are two independently maintained lists. Either
     // surface changing is when they can drift.
     paths: [
-      '.ci/scripts/quality/check-toolchain-pins.sh',
+      '.ci/rediacc_ci/quality/toolchain_pins.py',
       '.claude/rediacc_hooks/guards/block_host_toolchain_run.py',
-      '.ci/scripts/quality/check-host-toolchain-coverage.sh',
+      '.ci/scripts/quality/check_host_toolchain_coverage.py',
     ],
-    leaves: ['.ci/scripts/quality/check-host-toolchain-coverage.sh'],
+    leaves: ['.ci/scripts/quality/check_host_toolchain_coverage.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1157,8 +1233,16 @@ export const GATES: readonly GateSpec[] = [
     // defects lived (a git identity capture guarded against empty but not
     // against rev-parse --abbrev-ref HEAD's misleading literal "HEAD" on a
     // detached checkout, in both an assignment and a bare-statement shape).
-    paths: ['.claude/hooks/**/*.sh', '.ci/scripts/quality/*.sh'],
-    leaves: ['.ci/scripts/quality/check-git-op-conditionals.sh'],
+    // BOTH suffixes plus the port module: `globToRegExp('.ci/scripts/quality/*.sh')`
+    // is `^\.ci/scripts/quality/[^/]*\.sh$`, which does not match the new `.py`
+    // leaf, and gate-manifest's leaf-self-inclusion oracle reds without it.
+    paths: [
+      '.claude/hooks/**/*.sh',
+      '.ci/scripts/quality/*.sh',
+      '.ci/scripts/quality/*.py',
+      '.ci/rediacc_ci/quality/git_op_conditionals.py',
+    ],
+    leaves: ['.ci/scripts/quality/check_git_op_conditionals.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1177,7 +1261,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-go-tool-path',
     gate: true,
     paths: ['.ci/**', 'scripts/**'],
-    leaves: ['.ci/scripts/quality/check-go-tool-path.sh'],
+    leaves: ['.ci/scripts/quality/check_go_tool_path.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1280,8 +1364,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-gate-manifest',
     run: 'npm run check:ci-gate-manifest',
     gate: true,
-    paths: ['scripts/ci-runner/**', 'scripts/check-gate-manifest.ts'],
-    leaves: ['scripts/check-gate-manifest.ts'],
+    paths: ['scripts/ci-runner/**', 'scripts/gates/check-gate-manifest.ts'],
+    leaves: ['scripts/gates/check-gate-manifest.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1303,7 +1387,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-trap-registry',
     run: 'npm run check:ci-trap-registry',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-trap-registry.sh'],
+    leaves: ['.ci/scripts/quality/check_trap_registry.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1344,7 +1428,7 @@ export const GATES: readonly GateSpec[] = [
       '.claude/hooks/**',
       'scripts/data/hook-inventory-baseline.json',
       'scripts/data/hook-coverage-baseline.json',
-      '.ci/scripts/quality/check-hook-integrity.sh',
+      '.ci/scripts/quality/check_hook_integrity.py',
       // Added 2026-09-06 with W11 P3. This gate's audited corpus AND its case corpus
       // are now both decided by this file, and run.ts only selects a path-scoped gate
       // when a changed file matches one of its globs. Without this entry a commit
@@ -1353,7 +1437,7 @@ export const GATES: readonly GateSpec[] = [
       // reds. That is the silent-narrowing shape this program keeps finding.
       'scripts/data/hook-audit-scope.json',
     ],
-    leaves: ['.ci/scripts/quality/check-hook-integrity.sh'],
+    leaves: ['.ci/scripts/quality/check_hook_integrity.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1372,7 +1456,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // 13.5s standalone / 37.0s contended: it greps every shell file twice
     gate: true,
     paths: ['.ci/scripts/**', 'scripts/**', '.claude/hooks/**'],
-    leaves: ['.ci/scripts/quality/check-pipefail-grep-q.sh'],
+    leaves: ['.ci/scripts/quality/check_pipefail_grep_q.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1392,9 +1476,9 @@ export const GATES: readonly GateSpec[] = [
       '.claude/agents/**',
       '.claude/hooks/**',
       'docs/agent-reference/**',
-      '.ci/scripts/quality/check-ci-watch-recipe.sh',
+      '.ci/scripts/quality/check_ci_watch_recipe.py',
     ],
-    leaves: ['.ci/scripts/quality/check-ci-watch-recipe.sh'],
+    leaves: ['.ci/scripts/quality/check_ci_watch_recipe.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1413,9 +1497,14 @@ export const GATES: readonly GateSpec[] = [
       '.claude/skills/ci-watch/**',
       'scripts/ci-runner/run.ts',
       'docs/agent-reference/ci-gates.md',
+      // BOTH halves of the pair, on purpose: `leaves` names what CI RUNS and
+      // moved to the port at the W7 P4 cutover, while `paths` decides which
+      // changes SELECT this gate. The twin stays on disk until W7 P5, so an
+      // edit to it must still select the gate that compares against it.
+      '.ci/scripts/quality/check_cli_doc_coverage.py',
       '.ci/scripts/quality/check-cli-doc-coverage.sh',
     ],
-    leaves: ['.ci/scripts/quality/check-cli-doc-coverage.sh'],
+    leaves: ['.ci/scripts/quality/check_cli_doc_coverage.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1423,11 +1512,12 @@ export const GATES: readonly GateSpec[] = [
       step: "CLI docs stay in sync with their scripts' real flags",
     },
   },
+  // >>> gen-manifest: region 10
   {
     id: 'check:ci-ceph-image-pin',
     run: 'npm run check:ci-ceph-image-pin',
     gate: true,
-    leaves: ['scripts/check-ceph-image-pin.ts'],
+    leaves: ['scripts/gates/check-ceph-image-pin.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1439,7 +1529,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-naturalization-model-policy',
     run: 'npm run check:ci-naturalization-model-policy',
     gate: true,
-    leaves: ['scripts/check-naturalization-model-policy.ts'],
+    leaves: ['scripts/gates/check-naturalization-model-policy.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1447,12 +1537,13 @@ export const GATES: readonly GateSpec[] = [
       step: 'Naturalization model policy',
     },
   },
+  // <<< gen-manifest: region 10
   {
     id: 'check:ci-script-exec-bit',
     run: 'npm run check:ci-script-exec-bit',
     slow: true, // 22.1s measured
     gate: true,
-    leaves: ['.ci/scripts/quality/check-script-exec-bit.sh'],
+    leaves: ['.ci/scripts/quality/check_script_exec_bit.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1472,10 +1563,10 @@ export const GATES: readonly GateSpec[] = [
       '**/package-lock.json',
       '**/package.json',
       'private/account',
-      '.ci/scripts/quality/check-lockfile.sh',
+      '.ci/scripts/quality/check_lockfile.py',
       '.ci/scripts/lib/common.sh',
     ],
-    leaves: ['.ci/scripts/quality/check-lockfile.sh'],
+    leaves: ['.ci/scripts/quality/check_lockfile.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1483,11 +1574,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Lockfile',
     },
   },
+  // >>> gen-manifest: region 11
   {
     id: 'check:ci-peer-deps',
     run: 'npm run check:ci-peer-deps',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-peer-deps.sh'],
+    leaves: ['.ci/scripts/quality/check_peer_deps.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1495,8 +1587,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Verify no peer dependency conflicts',
     },
   },
+  // <<< gen-manifest: region 11
   {
     id: 'check:ci-security-audit',
+    env: {
+      GH_TOKEN: '${{ github.token }}',
+    },
     run: 'npm run check:ci-security-audit',
     slow: true, // 60.9s measured
     gate: true,
@@ -1513,19 +1609,20 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-scope-scripts-reachability',
     slow: true, // 24.3s measured
     gate: true,
-    leaves: ['.ci/scripts/quality/check-scope-scripts-reachability.sh'],
+    leaves: ['.ci/scripts/quality/check_scope_scripts_reachability.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-security',
-      step: 'Scope map — reachable scripts/ paths force full CI',
+      step: 'Scope map, reachable scripts/ paths force full CI',
     },
   },
+  // >>> gen-manifest: region 12
   {
     id: 'check:ci-mutate-check',
     run: 'npm run check:ci-mutate-check',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-mutate-check.sh'],
+    leaves: ['.ci/scripts/quality/check_mutate_check.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1533,6 +1630,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Mutation runner self-test',
     },
   },
+  // <<< gen-manifest: region 12
   // The 675-assertion suite behind the stop hook. check:ci-mutate-check does
   // NOT cover this: it drives a miniature fixture-suite.sh to prove the
   // MUTATION RUNNER still reports four verdicts, and never runs the real suite.
@@ -1575,6 +1673,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shell lint',
     },
   },
+  // >>> gen-manifest: region 13
   {
     id: 'check:ci-shell-format',
     run: 'npm run check:ci-shell-format',
@@ -1591,7 +1690,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-python-lint',
     run: 'npm run check:ci-python-lint',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-python-lint.sh'],
+    leaves: ['.ci/scripts/quality/check_python_lint.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1599,6 +1698,27 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python lint + format (ruff)',
     },
   },
+  // <<< gen-manifest: region 13
+  {
+    id: 'check:ci-python-control-plants',
+    run: 'npm run check:ci-python-control-plants',
+    gate: true,
+    // The verdict depends only on the Python gate sources under these two trees.
+    // TWO GLOBS AND NOT A FILE LIST, deliberately: a W7 P4 cutover landing a port
+    // under the first one is in scope the moment it exists, with no registration
+    // and no baseline row to hand-edit. That is the property a shrink-only
+    // baseline would have cost, and it is argued in
+    // agent/PLAN-ci-vacuity-baseline-registry.md section 5.
+    paths: ['.ci/rediacc_ci/**', '.ci/scripts/quality/**'],
+    leaves: ['.ci/scripts/quality/check_python_control_plants.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Python control plants',
+    },
+  },
+  // >>> gen-manifest: region 14
   {
     id: 'check:ci-bws-map',
     run: 'npm run check:ci-bws-map',
@@ -1611,6 +1731,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Bitwarden secret map',
     },
   },
+  // <<< gen-manifest: region 14
   // Offline by construction: it compares .ci/config/actions-allowlist.json, a
   // committed copy of repository settings, against every `uses:` line. The network
   // lives only in --refresh, for the same reason check_secret_reachability splits
@@ -1646,9 +1767,9 @@ export const GATES: readonly GateSpec[] = [
       'agent/PLAN-*.md',
       '.ci/config/plan-lifecycle.json',
       '.ci/policy/.plan-housekeeping-allowlist',
-      '.ci/scripts/quality/check-plan-housekeeping.sh',
+      '.ci/scripts/quality/check_plan_housekeeping.py',
     ],
-    leaves: ['.ci/scripts/quality/check-plan-housekeeping.sh'],
+    leaves: ['.ci/scripts/quality/check_plan_housekeeping.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1665,6 +1786,9 @@ export const GATES: readonly GateSpec[] = [
   // than letting a skip read as a clean result.
   {
     id: 'check:ci-resprofile',
+    env: {
+      GITHUB_BASE_REF: '${{ github.base_ref }}',
+    },
     noProfile: true,
     run: 'npm run check:ci-resprofile',
     // Judges the PREVIOUS run's process-tree captures (rotated by this runner at
@@ -1679,7 +1803,241 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // Box A2's other half. `gate-bind` pins header -> workflow for an emitted step; this
+    // pins workflow -> lock, and the two together close the chain. Without it a step's
+    // `env:` could be dropped in a rewrite and nothing would red: the measured receipt is
+    // stripping DOCKERHUB_TOKEN from ci-quality.yml and running the whole battery green.
+    id: 'check:ci-step-env-parity',
+    run: 'npm run check:ci-step-env-parity',
+    gate: true,
+    leaves: ['scripts/gates/check-ci-step-env-parity.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Step env parity',
+    },
+  },
+  {
+    // W8 P2. Every environment variable this repo reads or supplies, classified by who
+    // supplies the value and who may read it. Five readers derive the corpus from tracked
+    // files on EVERY run and no count is written down anywhere: the box quoted 1,014, its
+    // own design note re-measured 745 then 721 then 777, and the swing was one developer's
+    // .env.pre-rename.bak. Four set-arithmetic clauses hold the derived set against an
+    // eight-shard classification; the eighth shard is tombstones, so "a dead name came
+    // back" and "a new name is unclassified" are one assertion rather than two mechanisms
+    // to keep in sync.
+    id: 'check:ci-env-manifest',
+    run: 'npm run check:ci-env-manifest',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_env_manifest.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Env manifest',
+    },
+  },
+  {
+    // W8 P4. `set -a; source <envfile>` EXECUTES the file and lets it overwrite the shell,
+    // on files holding ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_JWT_SECRET. Three sites
+    // adopted env_file_load; this sweeps for the pattern returning, RUNS each adopted
+    // site's own line against a planted override, and drives a real `set -a; source` on
+    // the same fixture demanding the OPPOSITE answer -- without which the per-site check
+    // would pass just as happily against a helper that read nothing at all.
+    id: 'check:ci-env-file-adoption',
+    run: 'npm run check:ci-env-file-adoption',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_env_file_adoption.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Env file adoption',
+    },
+  },
+  {
+    // D0. The exec baseline W5's "2 processes per Bash tool call" target is defined against;
+    // it did not exist in the tree until 2026-09-09, so the target was unfalsifiable. Pins
+    // per-tool and per-event harness process counts from .claude/settings.json and refuses
+    // in BOTH directions, which is what makes D4's collapse claim its own numbers.
+    id: 'check:ci-hook-exec-baseline',
+    run: 'npm run check:ci-hook-exec-baseline',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_hook_exec_baseline.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Hook exec baseline',
+    },
+  },
+  {
+    // D1. `.claude/rediacc_hooks` has exactly ONE platform seam and nothing kept it that way.
+    // A /proc read added to a guard works for every reviewer, because every reviewer is on
+    // Linux, and fails silently on macOS by finding nothing. AST, not grep: a textual sweep
+    // for pgrep returns 15 hits and 14 are prose or a pattern matched against someone
+    // else's command line.
+    id: 'check:ci-hook-cross-os',
+    run: 'npm run check:ci-hook-cross-os',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_hook_cross_os.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Hook cross-OS seams',
+    },
+  },
+  {
+    // W4 P3d. The vendored blocker copy under .ci/breakpoint must stay a strict subset of
+    // the canonical list, and the corpus's "exactly five divergences" was a MAGIC NUMBER:
+    // it said which count, never which five, so it could not see one row leaving as
+    // another arrived. This derives all five and attributes each, and refuses rather than
+    // judging when the digest has already drifted (that is check-breakpoint-drift's job).
+    id: 'check:ci-vendored-blocker-derivation',
+    run: 'npm run check:ci-vendored-blocker-derivation',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_vendored_blocker_derivation.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Vendored blocker derivation',
+    },
+  },
+  {
+    // The control-plant class in bash and TypeScript, tree-wide. Python is delegated to
+    // check:ci-python-control-plants and the delegation is ASSERTED, not documented: if that
+    // entry point stops existing or stops being registered, this gate REFUSES rather than
+    // leaving a third of the class unscanned. A control mutant built by raw substitution
+    // passes for free when its needle has gone -- it scans unmutated text and asserts the
+    // opposite verdict about it. Seeded 2026-09-09 at 25 unproven plants of 33; the baseline
+    // is shrink-only and set-equal in both directions.
+    // NO `paths:` ON PURPOSE: the corpus is every tracked .sh and .ts, so a path table would
+    // make `--changed` drop this gate exactly when a control moves.
+    id: 'check:ci-plant-proofs',
+    run: 'npm run check:ci-plant-proofs',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_plant_proofs.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Control plant proofs',
+    },
+  },
+  {
+    // W8 P6. 445 module:NAME pairs across 164 tracked Python modules, derived from the AST
+    // and frozen as a shrink-only SET. Set equality BOTH ways is what makes the baseline
+    // untrimmable: deleting an entry whose read persists reds as NEW, banking one no read
+    // backs reds as STALE. A blanket `--write` `-baseline` (written split: the shrink-only
+    // gate's offerer scan is a text grep, so quoting the flag whole makes this comment an
+    // offender) is refused whenever it would ADD a
+    // pair, so a trimmer cannot reseed past it; additions are typed with --allow-new, which
+    // is itself checked against the derived set so it cannot pre-bank. 124 read sites hold
+    // the name in a variable, so constant resolution recovers 87 pairs a literal scan
+    // cannot see -- it is load-bearing, not polish.
+    id: 'check:ci-python-env-registry',
+    run: 'npm run check:ci-python-env-registry',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_python_env_registry.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Python env registry',
+    },
+  },
+  {
+    // D2. 133 WORKLIST_* names read at 181 sites with no registry and no schema. A typo'd name
+    // reads as UNSET, and for the four flags defaulting to `on` that is fail-open. Set
+    // equality both ways. Derived from the AST rather than grep, which is why it is 133 and
+    // not the grep answer of 134: WORKLIST_EMAIL is prose-only history, read nowhere.
+    id: 'check:ci-worklist-env-registry',
+    run: 'npm run check:ci-worklist-env-registry',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_worklist_env_registry.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Worklist env registry',
+    },
+  },
+  {
+    // E2. rdc.sh's --native SEA build moved to rediacc_ci.native. `plan()` takes system and
+    // machine as ARGUMENTS defaulting to the host, so all three platform arms are driven
+    // from one Linux box every run -- strictly more than the macOS CI job the box asked
+    // for, which would have covered one arm.
+    id: 'check:ci-rdc-native',
+    run: 'npm run check:ci-rdc-native',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_rdc_native.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'rdc.sh wrapper budget and --native arms',
+    },
+  },
+  {
+    // W9 P2.0, the precondition that makes W9 P2's move safe. `scripts/data/domains.json`
+    // classified 228 files and NOTHING read it. Clause 1 (total classification) enforces
+    // from day one and costs nothing today, which is the point: it refuses the file that
+    // belongs to no domain, and a file nobody classified is one the move has no
+    // destination for. Scope is enumerated INDEPENDENTLY of the rules, or clause 1 would
+    // be a tautology.
+    id: 'check:ci-domain-partition',
+    run: 'npm run check:ci-domain-partition',
+    gate: true,
+    leaves: ['scripts/gates/check-domain-partition.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'scripts/ domain partition',
+    },
+  },
+  {
+    // U4. The Python twin of the dead-bash instrument. SIX execution routes, not three:
+    // wired, pytest, shadow, glob, imported, mentioned. Prose is deliberately NOT a route
+    // -- `agent/`, `docs/`, `*.md` and `.ci/shadow/` are excluded, the last so the shadow
+    // route can EXPIRE when its bash twin goes rather than vouching for itself forever.
+    id: 'check:ci-dead-python',
+    run: 'npm run check:ci-dead-python',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_dead_python.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Dead Python',
+    },
+  },
+  {
+    // W4 P4b. Four directions over the policy directory, because a one-way check reads a
+    // DELETED list as "nothing is suppressed": nothing on disk outside POLICY_FILES,
+    // nothing in POLICY_FILES missing from disk, Python and TypeScript agreeing on both
+    // the names and POLICY_DIR, and no literal policy-path join outside the two seams.
+    // Its honest control is a run against 19c45c78e, the commit whose drift this estate
+    // actually suffered; it reds there naming exactly `.language-policy-allowlist`.
+    id: 'check:ci-policy-inventory',
+    run: 'npm run check:ci-policy-inventory',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_policy_inventory.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Policy inventory',
+    },
+  },
+  {
     id: 'check:ci-plan-boxes',
+    env: {
+      GITHUB_BASE_REF: '${{ github.base_ref }}',
+    },
     run: 'npm run check:ci-plan-boxes',
     gate: true,
     paths: [
@@ -1696,6 +2054,24 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // The other half of box X0.1. X0.1 PREFIXED the ids so `D-A6` could not be transcribed
+    // as a gate rule; this asserts a `D-` id resolves to a row at all, and that a
+    // supersession is stated out loud in a commit rather than happening silently.
+    id: 'check:ci-decision-ids',
+    env: {
+      GITHUB_BASE_REF: '${{ github.base_ref }}',
+    },
+    run: 'npm run check:ci-decision-ids',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_decision_ids.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-branch',
+      step: 'Decision ids',
+    },
+  },
+  {
     // The third plan gate, and it judges only lines a change ADDS. It was written,
     // landed and then sat inert: it appeared in neither package.json nor the manifest,
     // so it had never once run. That is the registration bottleneck's signature -- a
@@ -1705,6 +2081,9 @@ export const GATES: readonly GateSpec[] = [
     // excluded: it is read-only to every session but its owner, so a red there would
     // name a line the reader is forbidden to fix.
     id: 'check:ci-plan-citations',
+    env: {
+      GITHUB_BASE_REF: '${{ github.base_ref }}',
+    },
     run: 'npm run check:ci-plan-citations',
     gate: true,
     paths: ['agent/PLAN-*.md', 'agent/INDEX.md', '.ci/scripts/quality/check_plan_citations.py'],
@@ -1722,6 +2101,9 @@ export const GATES: readonly GateSpec[] = [
     // which lives in a git blob and is the only thing standing between a record
     // and an unreachable document that still advertises a recovery command.
     id: 'check:ci-plan-record',
+    env: {
+      GITHUB_BASE_REF: '${{ github.base_ref }}',
+    },
     run: 'npm run check:ci-plan-record',
     gate: true,
     paths: [
@@ -1753,8 +2135,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-lint-rule-units',
     run: 'npm run check:ci-lint-rule-units',
     gate: true,
-    paths: ['eslint-rules/**', 'scripts/check-lint-rule-units.ts'],
-    leaves: ['scripts/check-lint-rule-units.ts'],
+    paths: ['eslint-rules/**', 'scripts/gates/check-lint-rule-units.ts'],
+    leaves: ['scripts/gates/check-lint-rule-units.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1798,7 +2180,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-doc-region-parity',
     run: 'npm run check:ci-doc-region-parity',
     gate: true,
-    leaves: ['scripts/check-doc-region-parity.ts'],
+    leaves: ['scripts/gates/check-doc-region-parity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1879,6 +2261,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'syncpack source coverage',
     },
   },
+  // >>> gen-manifest: region 15
   {
     id: 'check:ci-secret-reachability',
     run: 'npm run check:ci-secret-reachability',
@@ -1895,7 +2278,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-secret-scope',
     run: 'npm run check:ci-secret-scope',
     gate: true,
-    leaves: ['scripts/check-secret-scope.ts'],
+    leaves: ['scripts/gates/check-secret-scope.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1907,7 +2290,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-release-key-canonical',
     run: 'npm run check:ci-release-key-canonical',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-release-key-canonical.sh'],
+    leaves: ['.ci/scripts/quality/check_release_key_canonical.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1931,7 +2314,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-release-signing-coverage',
     run: 'npm run check:ci-release-signing-coverage',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-release-signing-coverage.sh'],
+    leaves: ['.ci/scripts/quality/check_release_signing_coverage.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1943,7 +2326,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-tracked-credentials',
     run: 'npm run check:ci-tracked-credentials',
     gate: true,
-    leaves: ['scripts/check-tracked-credentials.ts'],
+    leaves: ['scripts/gates/check-tracked-credentials.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1975,6 +2358,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Hooks resolvable',
     },
   },
+  // <<< gen-manifest: region 15
   {
     id: 'check:ci-guard-feature-completeness',
     run: 'npm run check:ci-guard-feature-completeness',
@@ -2007,6 +2391,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Dockerfile mirror resilience',
     },
   },
+  // >>> gen-manifest: region 16
   {
     id: 'check:ci-workflow-submodule-deps',
     run: 'npm run check:ci-workflow-submodule-deps',
@@ -2071,7 +2456,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-dead-service-methods',
     run: 'npm run check:ci-dead-service-methods',
     gate: true,
-    leaves: ['scripts/check-dead-service-methods.ts'],
+    leaves: ['scripts/gates/check-dead-service-methods.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2083,12 +2468,36 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-retired-commands',
     run: 'npm run check:ci-retired-commands',
     gate: true,
-    leaves: ['scripts/check-retired-commands-in-docs.ts'],
+    leaves: ['scripts/gates/check-retired-commands-in-docs.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-content',
       step: 'Retired commands in docs',
+    },
+  },
+  {
+    id: 'check:ci-inner-timeout-reachable',
+    run: 'npm run check:ci-inner-timeout-reachable',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_inner_timeout_reachable.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Inner kill timers are reachable',
+    },
+  },
+  {
+    id: 'check:ci-control-in-string',
+    run: 'npm run check:ci-control-in-string',
+    gate: true,
+    leaves: ['scripts/gates/check-control-in-string.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Controls are not written inside string literals',
     },
   },
   {
@@ -2139,6 +2548,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n value types match English',
     },
   },
+  // <<< gen-manifest: region 16
   {
     id: 'check:ci-lint-rule-liveness',
     run: 'npm run check:ci-lint-rule-liveness',
@@ -2152,6 +2562,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Enabled lint rules can actually fire',
     },
   },
+  // >>> gen-manifest: region 17
   {
     id: 'check:ci-agent-hint-liveness',
     run: 'npm run check:ci-agent-hint-liveness',
@@ -2188,7 +2599,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-video-player-invariants',
     run: 'npm run check:ci-video-player-invariants',
     gate: true,
-    leaves: ['scripts/check-video-player-invariants.ts'],
+    leaves: ['scripts/gates/check-video-player-invariants.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2203,7 +2614,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-skill-size',
     run: 'npm run check:ci-skill-size',
     gate: true,
-    leaves: ['scripts/check-skill-size.ts'],
+    leaves: ['scripts/gates/check-skill-size.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2218,7 +2629,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-docs-browse-invariants',
     run: 'npm run check:ci-docs-browse-invariants',
     gate: true,
-    leaves: ['scripts/check-docs-browse-invariants.ts'],
+    leaves: ['scripts/gates/check-docs-browse-invariants.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2234,7 +2645,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-docs-copy-units',
     run: 'npm run check:ci-docs-copy-units',
     gate: true,
-    leaves: ['scripts/check-docs-copy-units.ts'],
+    leaves: ['scripts/gates/check-docs-copy-units.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2246,7 +2657,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-docs-thumb-coverage',
     run: 'npm run check:ci-docs-thumb-coverage',
     gate: true,
-    leaves: ['scripts/check-docs-thumb-coverage.ts'],
+    leaves: ['scripts/gates/check-docs-thumb-coverage.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2258,7 +2669,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-sentence-wrapping',
     run: 'npm run check:ci-sentence-wrapping',
     gate: true,
-    leaves: ['scripts/check-sentence-wrapping.ts'],
+    leaves: ['scripts/gates/check-sentence-wrapping.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2278,6 +2689,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Test-file orphan check',
     },
   },
+  // <<< gen-manifest: region 17
   {
     id: 'check:ci-lint-scope-coverage',
     run: 'npm run check:ci-lint-scope-coverage',
@@ -2342,7 +2754,7 @@ export const GATES: readonly GateSpec[] = [
     // REAL tree_state() rather than copying it, and refuses if that function is gone.
     run: 'npm run check:ci-battery-clean-tree',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-battery-clean-tree.sh'],
+    leaves: ['.ci/scripts/quality/check_battery_clean_tree.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2365,6 +2777,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow env provision',
     },
   },
+  // >>> gen-manifest: region 18
   {
     id: 'check:ci-shell-commands',
     run: 'npm run check:ci-shell-commands',
@@ -2381,7 +2794,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-gate-id-convention',
     run: 'npm run check:ci-gate-id-convention',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-gate-id-convention.sh'],
+    leaves: ['.ci/scripts/quality/check_gate_id_convention.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2393,7 +2806,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-pool-writer-safety',
     run: 'npm run check:ci-pool-writer-safety',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-pool-writer-safety.sh'],
+    leaves: ['.ci/scripts/quality/check_pool_writer_safety.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2401,6 +2814,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pool-registered tests do not write the real tree',
     },
   },
+  // <<< gen-manifest: region 18
   {
     id: 'gate-test:edge-verify-retries',
     run: '.ci/scripts/test/gates/test-edge-verify-retries.sh',
@@ -2414,11 +2828,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Quality-gate unit tests',
     },
   },
+  // >>> gen-manifest: region 19
   {
     id: 'check:ci-review-turn-capacity',
     run: 'npm run check:ci-review-turn-capacity',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-review-turn-capacity.sh'],
+    leaves: ['.ci/scripts/quality/check_review_turn_capacity.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2430,7 +2845,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-review-cap-coherence',
     run: 'npm run check:ci-review-cap-coherence',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-review-cap-coherence.sh'],
+    leaves: ['.ci/scripts/quality/check_review_cap_coherence.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2450,13 +2865,14 @@ export const GATES: readonly GateSpec[] = [
       step: 'Gate-reachability probe agrees with registrations',
     },
   },
+  // <<< gen-manifest: region 19
   {
     id: 'check:ci-gate-cwd-independence',
     run: 'npm run check:ci-gate-cwd-independence',
     gate: true,
     // why: a gate that names cwd to build a path means something different
     // under every caller, and "it passed locally" is then true and useless
-    leaves: ['scripts/check-gate-cwd-independence.ts'],
+    leaves: ['scripts/gates/check-gate-cwd-independence.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2470,7 +2886,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     // why: the store sorts by timestamp, so a fixture's literal past date folds
     // before the item it closes and silently does nothing
-    leaves: ['scripts/check-fixture-event-timestamps.ts'],
+    leaves: ['scripts/gates/check-fixture-event-timestamps.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2484,7 +2900,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     // why: three verbs each spelled "find the worklist" differently and only the
     // unlucky one was ever wrong; a per-site test cannot see a cross-site rule
-    leaves: ['scripts/check-worklist-path-resolution.ts'],
+    leaves: ['scripts/gates/check-worklist-path-resolution.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2497,7 +2913,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-worklist-event-builders',
     gate: true,
     // why: a second hand-rolled snapshot builder silently reopened finished work
-    leaves: ['scripts/check-worklist-event-builders.ts'],
+    leaves: ['scripts/gates/check-worklist-event-builders.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2510,7 +2926,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-workflows',
     slow: true, // 12.0s measured
     gate: true,
-    leaves: ['.ci/scripts/quality/check-workflows.sh'],
+    leaves: ['.ci/scripts/quality/check_workflows.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2518,11 +2934,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow banned patterns',
     },
   },
+  // >>> gen-manifest: region 20
   {
     id: 'check:ci-greenlight-closures',
     run: 'npm run check:ci-greenlight-closures',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-greenlight-closures.sh'],
+    leaves: ['.ci/scripts/quality/check_greenlight_closures.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2530,6 +2947,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Greenlight closure paths',
     },
   },
+  // <<< gen-manifest: region 20
   {
     id: 'check:ci-workflow-gates',
     run: 'npm run check:ci-workflow-gates',
@@ -2542,6 +2960,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow structural gates',
     },
   },
+  // >>> gen-manifest: region 21
   {
     id: 'check:ci-actionlint',
     run: 'npm run check:ci-actionlint',
@@ -2554,6 +2973,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow lint (actionlint)',
     },
   },
+  // <<< gen-manifest: region 21
   {
     id: 'check:ci-breakpoint-drift',
     run: 'npm run check:ci-breakpoint-drift',
@@ -2566,11 +2986,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Breakpoint drift',
     },
   },
+  // >>> gen-manifest: region 22
   {
     id: 'check:ci-app-admin-perm',
     run: 'npm run check:ci-app-admin-perm',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-no-app-admin-perm.sh'],
+    leaves: ['.ci/scripts/quality/check_no_app_admin_perm.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2582,7 +3003,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-tracked-sidecars',
     run: 'npm run check:ci-tracked-sidecars',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-tracked-sidecars.sh'],
+    leaves: ['.ci/scripts/quality/check_tracked_sidecars.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2590,11 +3011,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Tracked runtime sidecars',
     },
   },
+  // <<< gen-manifest: region 22
   {
     id: 'check:ci-scans-tracked-paths',
     run: 'npm run check:ci-scans-tracked-paths',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-ci-scans-tracked-paths.sh'],
+    leaves: ['.ci/scripts/quality/check_ci_scans_tracked_paths.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2611,7 +3033,7 @@ export const GATES: readonly GateSpec[] = [
     // is over the line too.
     slow: true,
     gate: true,
-    leaves: ['.ci/scripts/quality/check-agent-browser-exit.sh'],
+    leaves: ['.ci/scripts/quality/check_agent_browser_exit.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2619,11 +3041,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'agent-browser exit status',
     },
   },
+  // >>> gen-manifest: region 23
   {
     id: 'check:ci-silent-failures',
     run: 'npm run check:ci-silent-failures',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-silent-failure-patterns.sh'],
+    leaves: ['.ci/scripts/quality/check_silent_failure_patterns.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2635,7 +3058,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-compose-env',
     run: 'npm run check:ci-compose-env',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-compose-env.sh'],
+    leaves: ['.ci/scripts/quality/check_compose_env.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2647,7 +3070,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-e2e-coverage',
     run: 'npm run check:ci-e2e-coverage',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-e2e-coverage.sh'],
+    leaves: ['.ci/scripts/quality/check_e2e_coverage.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2659,7 +3082,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-e2e-skip-hygiene',
     run: 'npm run check:ci-e2e-skip-hygiene',
     gate: true,
-    leaves: ['scripts/check-e2e-skip-hygiene.ts'],
+    leaves: ['scripts/gates/check-e2e-skip-hygiene.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2671,7 +3094,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-audit-coverage',
     run: 'npm run check:ci-audit-coverage',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-audit-coverage.sh'],
+    leaves: ['.ci/scripts/quality/check_audit_coverage.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2679,6 +3102,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check audit logging coverage for CLI operations',
     },
   },
+  // <<< gen-manifest: region 23
   {
     id: 'check:ci-cli-contract',
     run: 'npm run check:ci-cli-contract',
@@ -2686,7 +3110,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     needs: ['build:packages'],
     mutex: ['build-artifacts'],
-    leaves: ['.ci/scripts/quality/check-cli-contract.sh'],
+    leaves: ['.ci/scripts/quality/check_cli_contract.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2701,7 +3125,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     needs: ['build:packages'],
     mutex: ['build-artifacts'],
-    leaves: ['.ci/scripts/quality/check-command-tree.sh'],
+    leaves: ['.ci/scripts/quality/check_command_tree.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2721,11 +3145,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Command planes',
     },
   },
+  // >>> gen-manifest: region 24
   {
     id: 'check:ci-design-tree',
     run: 'npm run check:ci-design-tree',
     gate: true,
-    leaves: ['scripts/check-design-tree.ts'],
+    leaves: ['scripts/gates/check-design-tree.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2737,7 +3162,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-i18n-placeholders',
     run: 'npm run check:ci-i18n-placeholders',
     gate: true,
-    leaves: ['scripts/check-i18n-placeholders.ts'],
+    leaves: ['scripts/gates/check-i18n-placeholders.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2749,7 +3174,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-i18n-untranslated',
     run: 'npm run check:ci-i18n-untranslated',
     gate: true,
-    leaves: ['scripts/check-i18n-untranslated.ts'],
+    leaves: ['scripts/gates/check-i18n-untranslated.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2757,6 +3182,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n untranslated',
     },
   },
+  // <<< gen-manifest: region 24
   {
     id: 'check:ci-i18n-cross-locale',
     run: 'npm run check:ci-i18n-cross-locale',
@@ -2766,9 +3192,9 @@ export const GATES: readonly GateSpec[] = [
     // run. Body and `leaves` unchanged so the step still resolves to every child's leaves.
     gate: false,
     leaves: [
-      'scripts/check-i18n-cross-locale.ts',
-      'scripts/check-locale-de-contamination.ts',
-      'scripts/check-locale-config-divergence.ts',
+      'scripts/gates/check-i18n-cross-locale.ts',
+      'scripts/gates/check-locale-de-contamination.ts',
+      'scripts/gates/check-locale-config-divergence.ts',
     ],
     ci: {
       kind: 'step',
@@ -2777,11 +3203,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n cross-locale',
     },
   },
+  // >>> gen-manifest: region 25
   {
     id: 'check:ci-i18n-cross-locale-core',
     run: 'npm run check:ci-i18n-cross-locale-core',
     gate: true,
-    leaves: ['scripts/check-i18n-cross-locale.ts'],
+    leaves: ['scripts/gates/check-i18n-cross-locale.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2793,7 +3220,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-docs-structure-parity',
     run: 'npm run check:ci-docs-structure-parity',
     gate: true,
-    leaves: ['scripts/check-docs-structure-parity.ts'],
+    leaves: ['scripts/gates/check-docs-structure-parity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2811,7 +3238,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-locale-de-contamination',
     run: 'npm run check:ci-locale-de-contamination',
     gate: true,
-    leaves: ['scripts/check-locale-de-contamination.ts'],
+    leaves: ['scripts/gates/check-locale-de-contamination.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2823,7 +3250,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-locale-sources',
     run: 'npm run check:ci-locale-sources',
     gate: true,
-    leaves: ['scripts/check-locale-sources.ts'],
+    leaves: ['scripts/gates/check-locale-sources.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2835,7 +3262,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-i18n-command-parity',
     run: 'npm run check:ci-i18n-command-parity',
     gate: true,
-    leaves: ['scripts/check-cli-docs.ts'],
+    leaves: ['scripts/gates/check-cli-docs.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2847,7 +3274,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-config-migrations',
     run: 'npm run check:ci-config-migrations',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-config-migrations.sh'],
+    leaves: ['.ci/scripts/quality/check_config_migrations.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2859,7 +3286,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-schema-coverage',
     run: 'npm run check:ci-schema-coverage',
     gate: true,
-    leaves: ['scripts/check-schema-coverage.ts'],
+    leaves: ['scripts/gates/check-schema-coverage.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2871,7 +3298,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-shared-constant-duplication',
     run: 'npm run check:ci-shared-constant-duplication',
     gate: true,
-    leaves: ['scripts/check-shared-constant-duplication.ts'],
+    leaves: ['scripts/gates/check-shared-constant-duplication.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2883,7 +3310,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-shared-esm-resolvable',
     run: 'npm run check:ci-shared-esm-resolvable',
     gate: true,
-    leaves: ['scripts/check-shared-esm-resolvable.ts'],
+    leaves: ['scripts/gates/check-shared-esm-resolvable.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2895,7 +3322,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-runtime-imports-are-deps',
     run: 'npm run check:ci-runtime-imports-are-deps',
     gate: true,
-    leaves: ['scripts/check-runtime-imports-are-deps.ts'],
+    leaves: ['scripts/gates/check-runtime-imports-are-deps.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2907,7 +3334,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-backup-manifest-shape-parity',
     run: 'npm run check:ci-backup-manifest-shape-parity',
     gate: true,
-    leaves: ['scripts/check-backup-manifest-shape-parity.ts'],
+    leaves: ['scripts/gates/check-backup-manifest-shape-parity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2919,7 +3346,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-fetch-integrity',
     run: 'npm run check:ci-fetch-integrity',
     gate: true,
-    leaves: ['scripts/check-ci-fetch-integrity.ts'],
+    leaves: ['scripts/gates/check-ci-fetch-integrity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2931,7 +3358,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-aws-credential-bridge',
     run: 'npm run check:ci-aws-credential-bridge',
     gate: true,
-    leaves: ['scripts/check-aws-credential-bridge.ts'],
+    leaves: ['scripts/gates/check-aws-credential-bridge.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2943,7 +3370,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-worker-secret-names',
     run: 'npm run check:ci-worker-secret-names',
     gate: true,
-    leaves: ['scripts/check-worker-secret-names.ts'],
+    leaves: ['scripts/gates/check-worker-secret-names.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2955,7 +3382,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-builder-env-contract',
     run: 'npm run check:ci-builder-env-contract',
     gate: true,
-    leaves: ['scripts/check-builder-env-contract.ts'],
+    leaves: ['scripts/gates/check-builder-env-contract.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2967,7 +3394,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-backup-bucket-conformance',
     run: 'npm run check:ci-backup-bucket-conformance',
     gate: true,
-    leaves: ['scripts/check-backup-bucket-conformance.ts'],
+    leaves: ['scripts/gates/check-backup-bucket-conformance.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2979,7 +3406,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-backup-protocol-conformance',
     run: 'npm run check:ci-backup-protocol-conformance',
     gate: true,
-    leaves: ['scripts/check-backup-protocol-conformance.ts'],
+    leaves: ['scripts/gates/check-backup-protocol-conformance.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2996,7 +3423,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-no-client-key-composition',
     run: 'npm run check:ci-no-client-key-composition',
     gate: true,
-    leaves: ['scripts/check-no-client-key-composition.ts'],
+    leaves: ['scripts/gates/check-no-client-key-composition.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3012,7 +3439,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-retention-knob-parity',
     run: 'npm run check:ci-retention-knob-parity',
     gate: true,
-    leaves: ['scripts/check-retention-knob-parity.ts'],
+    leaves: ['scripts/gates/check-retention-knob-parity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3029,7 +3456,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-test-scripts-reachable',
     run: 'npm run check:ci-test-scripts-reachable',
     gate: true,
-    leaves: ['scripts/check-test-scripts-reachable.ts'],
+    leaves: ['scripts/gates/check-test-scripts-reachable.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3037,6 +3464,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Test suites are CI-reachable',
     },
   },
+  // <<< gen-manifest: region 25
   {
     id: 'check:ci-editorconfig',
     run: 'npm run check:ci-editorconfig',
@@ -3049,7 +3477,7 @@ export const GATES: readonly GateSpec[] = [
     // into the pre-push lane, and it caught my mistake within a day.
     slow: true,
     gate: true,
-    leaves: ['.ci/scripts/quality/check-editorconfig.sh'],
+    leaves: ['.ci/scripts/quality/check_editorconfig.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3069,7 +3497,8 @@ export const GATES: readonly GateSpec[] = [
     // log_warns, so biome.json is deliberately NOT here.
     paths: [
       'private/account',
-      '.ci/scripts/quality/check-account-portal.sh',
+      '.ci/scripts/quality/check_account_portal.py',
+      '.ci/rediacc_ci/quality/account_portal.py',
       '.ci/scripts/lib/common.sh',
       'packages/www/scripts/build-account-onboarding.ts',
       'packages/www/src/data/account-onboarding.json',
@@ -3079,7 +3508,7 @@ export const GATES: readonly GateSpec[] = [
       'package.json',
     ],
     heavy: true,
-    leaves: ['.ci/scripts/quality/check-account-portal.sh'],
+    leaves: ['.ci/scripts/quality/check_account_portal.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3216,9 +3645,12 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-go-deps',
+    env: {
+      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
+    },
     run: 'npm run check:ci-go-deps',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-go-deps.sh'],
+    leaves: ['.ci/scripts/quality/check_go_deps.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3234,7 +3666,7 @@ export const GATES: readonly GateSpec[] = [
     // steady-state one the lane is sized against.
     gate: true,
     mutex: ['renet-bin'],
-    leaves: ['.ci/scripts/quality/check-renet-types.sh'],
+    leaves: ['.ci/scripts/quality/check_renet_types.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3258,18 +3690,19 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-renet-tiers',
     run: 'npm run check:ci-renet-tiers',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-renet-tier-map.sh'],
+    leaves: ['.ci/scripts/quality/check_renet_tier_map.py'],
     ci: {
       kind: 'local-only',
       blocker:
         'BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes',
     },
   },
+  // >>> gen-manifest: region 26
   {
     id: 'check:ci-embed-credits',
     run: 'npm run check:ci-embed-credits',
     gate: true,
-    leaves: ['scripts/check-embed-credits.ts'],
+    leaves: ['scripts/gates/check-embed-credits.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3281,7 +3714,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-embed-arch-parity',
     run: 'npm run check:ci-embed-arch-parity',
     gate: true,
-    leaves: ['scripts/check-embed-arch-parity.ts'],
+    leaves: ['scripts/gates/check-embed-arch-parity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3289,11 +3722,19 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embed arch parity',
     },
   },
+  // <<< gen-manifest: region 26
   {
     id: 'check:ci-embed-asset-freshness',
+    env: {
+      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
+      GITHUB_TOKEN: '${{ github.token }}',
+    },
     run: 'npm run check:ci-embed-asset-freshness',
     gate: true,
-    leaves: ['scripts/check-embed-asset-freshness.ts', 'scripts/__tests__/github-token.control.ts'],
+    leaves: [
+      'scripts/gates/check-embed-asset-freshness.ts',
+      'scripts/__tests__/github-token.control.ts',
+    ],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3301,11 +3742,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embed-asset upstream freshness',
     },
   },
+  // >>> gen-manifest: region 27
   {
     id: 'check:ci-unverified-downloads',
     run: 'npm run check:ci-unverified-downloads',
     gate: true,
-    leaves: ['scripts/check-unverified-downloads.ts'],
+    leaves: ['scripts/gates/check-unverified-downloads.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3315,9 +3757,13 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-devcontainer-pins',
+    env: {
+      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
+      GITHUB_TOKEN: '${{ github.token }}',
+    },
     run: 'npm run check:ci-devcontainer-pins',
     gate: true,
-    leaves: ['scripts/check-devcontainer-pin-freshness.ts'],
+    leaves: ['scripts/gates/check-devcontainer-pin-freshness.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3325,6 +3771,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check devcontainer pin upstream freshness',
     },
   },
+  // <<< gen-manifest: region 27
   {
     id: 'check:ci-embed-asset-versions',
     run: 'npm run check:ci-embed-asset-versions',
@@ -3333,7 +3780,7 @@ export const GATES: readonly GateSpec[] = [
     // 51.7) -- not load noise, which is what the floor rule filters out. It
     // unpacks and hashes embedded assets, so the cost is real work.
     slow: true,
-    leaves: ['scripts/check-embed-asset-versions.ts'],
+    leaves: ['scripts/gates/check-embed-asset-versions.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3341,11 +3788,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embedded asset versions match their pins',
     },
   },
+  // >>> gen-manifest: region 28
   {
     id: 'check:ci-recovery-context',
     run: 'npm run check:ci-recovery-context',
     gate: true,
-    leaves: ['scripts/check-recovery-context.ts'],
+    leaves: ['scripts/gates/check-recovery-context.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3353,12 +3801,13 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check recovery functions get an uncancellable context',
     },
   },
+  // <<< gen-manifest: region 28
   {
     id: 'check:ci-no-otlp-creds',
     run: 'npm run check:ci-no-otlp-creds',
     slow: true, // 21.2s measured
     gate: true,
-    leaves: ['.ci/scripts/quality/check-no-otlp-creds.sh'],
+    leaves: ['.ci/scripts/quality/check_no_otlp_creds.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-build-renet.yml',
@@ -3366,11 +3815,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Assert no OTLP credentials baked into the built binaries',
     },
   },
+  // >>> gen-manifest: region 29
   {
     id: 'check:ci-subscription-schema',
     run: 'npm run check:ci-subscription-schema',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-subscription-schema.sh'],
+    leaves: ['.ci/scripts/quality/check_subscription_schema.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3382,7 +3832,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-pricing-consistency',
     run: 'npm run check:ci-pricing-consistency',
     gate: true,
-    leaves: ['scripts/check-pricing-consistency.ts'],
+    leaves: ['scripts/gates/check-pricing-consistency.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3390,6 +3840,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pricing consistency',
     },
   },
+  // <<< gen-manifest: region 29
   {
     id: 'check:ci-seo',
     run: 'npm run check:ci-seo',
@@ -3401,7 +3852,7 @@ export const GATES: readonly GateSpec[] = [
     // leaves (R3, check-ci-parity.ts) and CI keeps one step.
     gate: false,
     needs: ['build:www'],
-    leaves: ['scripts/check-seo.ts', 'scripts/check-client-bundle-budget.ts'],
+    leaves: ['scripts/gates/check-seo.ts', 'scripts/gates/check-client-bundle-budget.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3415,7 +3866,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // needs build:www; the closure rule (check-gate-manifest.ts) forces it
     gate: true,
     needs: ['build:www'],
-    leaves: ['scripts/check-seo.ts'],
+    leaves: ['scripts/gates/check-seo.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3434,7 +3885,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
     needs: ['build:www'],
-    leaves: ['scripts/check-docs-render-parity.ts'],
+    leaves: ['scripts/gates/check-docs-render-parity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3444,11 +3895,12 @@ export const GATES: readonly GateSpec[] = [
   },
   // Its cheap source-level complement: no build, so it lives in the i18n lane. It is a
   // proxy (an inline English string is invisible to it) and cannot replace the gate above.
+  // >>> gen-manifest: region 30
   {
     id: 'check:ci-page-locale-imports',
     run: 'npm run check:ci-page-locale-imports',
     gate: true,
-    leaves: ['scripts/check-page-locale-imports.ts'],
+    leaves: ['scripts/gates/check-page-locale-imports.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3456,12 +3908,17 @@ export const GATES: readonly GateSpec[] = [
       step: 'Page locale imports',
     },
   },
+  // <<< gen-manifest: region 30
   {
     id: 'check:ci-external-links',
+    env: {
+      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
+      GITHUB_TOKEN: '${{ github.token }}',
+    },
     run: 'npm run check:ci-external-links',
     slow: true, // 17.2s measured
     gate: true,
-    leaves: ['scripts/check-external-links.ts'],
+    leaves: ['scripts/gates/check-external-links.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3471,9 +3928,12 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-dkim-notify',
+    env: {
+      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
+    },
     run: 'npm run check:ci-dkim-notify',
     gate: true,
-    leaves: ['scripts/check-dkim-notify.ts'],
+    leaves: ['scripts/gates/check-dkim-notify.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3481,11 +3941,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'DKIM notify DNS',
     },
   },
+  // >>> gen-manifest: region 31
   {
     id: 'check:ci-css-dom-refs',
     run: 'npm run check:ci-css-dom-refs',
     gate: true,
-    leaves: ['scripts/check-css-dom-refs.ts'],
+    leaves: ['scripts/gates/check-css-dom-refs.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3497,7 +3958,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-svg-theme-reach',
     run: 'npm run check:ci-svg-theme-reach',
     gate: true,
-    leaves: ['scripts/check-svg-theme-reach.ts'],
+    leaves: ['scripts/gates/check-svg-theme-reach.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3509,7 +3970,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-dead-css',
     run: 'npm run check:ci-dead-css',
     gate: true,
-    leaves: ['scripts/check-dead-css.ts'],
+    leaves: ['scripts/gates/check-dead-css.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3521,7 +3982,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-viewport-unit-mixing',
     run: 'npm run check:ci-viewport-unit-mixing',
     gate: true,
-    leaves: ['scripts/check-viewport-unit-mixing.ts'],
+    leaves: ['scripts/gates/check-viewport-unit-mixing.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3529,11 +3990,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Dead CSS',
     },
   },
+  // <<< gen-manifest: region 31
   {
     id: 'check:ci-illustration-contract',
     run: 'npm run check:ci-illustration-contract',
     gate: true,
-    leaves: ['scripts/check-illustration-contract.ts'],
+    leaves: ['scripts/gates/check-illustration-contract.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3551,7 +4013,10 @@ export const GATES: readonly GateSpec[] = [
     // the 'Redirects' step still resolves to both children's leaves and CI keeps one step.
     gate: false,
     needs: ['build:www'],
-    leaves: ['scripts/check-redirect-integrity.ts', 'scripts/check-anchor-integrity.ts'],
+    leaves: [
+      'scripts/gates/check-redirect-integrity.ts',
+      'scripts/gates/check-anchor-integrity.ts',
+    ],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3565,7 +4030,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // needs build:www; the closure rule forces it
     gate: true,
     needs: ['build:www'],
-    leaves: ['scripts/check-redirect-integrity.ts'],
+    leaves: ['scripts/gates/check-redirect-integrity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3586,11 +4051,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Browser smoke',
     },
   },
+  // >>> gen-manifest: region 32
   {
     id: 'check:ci-captcha-recovery',
     run: 'npm run check:ci-captcha-recovery',
     gate: true,
-    leaves: ['scripts/check-captcha-recovery.ts'],
+    leaves: ['scripts/gates/check-captcha-recovery.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3598,6 +4064,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Captcha recovery',
     },
   },
+  // <<< gen-manifest: region 32
   {
     id: 'check:ci-page-density',
     run: 'npm run check:ci-page-density',
@@ -3621,7 +4088,7 @@ export const GATES: readonly GateSpec[] = [
     // runner recorded that refusal as a FAILURE on every local lane. Seven
     // sibling gates that read dist already declare this; these two never did.
     needs: ['build:www'],
-    leaves: ['scripts/check-landmarks.ts'],
+    leaves: ['scripts/gates/check-landmarks.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3638,7 +4105,7 @@ export const GATES: readonly GateSpec[] = [
     // probes were comparable", which is correct anti-vacuity behaviour and was
     // being classified as a failure.
     needs: ['build:www'],
-    leaves: ['scripts/check-ssr-locale.ts'],
+    leaves: ['scripts/gates/check-ssr-locale.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3646,11 +4113,15 @@ export const GATES: readonly GateSpec[] = [
       step: 'SSR locale',
     },
   },
+  // >>> gen-manifest: region 33
   {
     id: 'check:ci-docker-image-freshness',
+    env: {
+      DOCKERHUB_TOKEN: '${{ env.BWS_DOCKERHUB_TOKEN }}',
+    },
     run: 'npm run check:ci-docker-image-freshness',
     gate: true,
-    leaves: ['scripts/check-docker-image-freshness.ts'],
+    leaves: ['scripts/gates/check-docker-image-freshness.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3658,6 +4129,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Docker image freshness',
     },
   },
+  // <<< gen-manifest: region 33
   {
     id: 'check:ci-baseline-key-semantics',
     run: 'npm run check:ci-baseline-key-semantics',
@@ -3668,7 +4140,7 @@ export const GATES: readonly GateSpec[] = [
     // here -- conflating the two is what check:ci-parity caught on this entry's
     // first real run.
     paths: [
-      'scripts/check-baseline-key-semantics.ts',
+      'scripts/gates/check-baseline-key-semantics.ts',
       'scripts/data/dead-translation-keys-baseline.json',
       'scripts/data/dead-css-baseline.json',
       'scripts/data/sentence-wrapping-baseline.json',
@@ -3683,7 +4155,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/quality/job-timeout-baseline.json',
       '.ci/scripts/quality/runner-sizing-baseline.json',
     ],
-    leaves: ['scripts/check-baseline-key-semantics.ts'],
+    leaves: ['scripts/gates/check-baseline-key-semantics.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3699,8 +4171,12 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-test-gate-wiring',
     run: 'npm run check:ci-test-gate-wiring',
     gate: true,
-    paths: ['package.json', 'scripts/ci-runner/manifest.ts', 'scripts/check-test-gate-wiring.ts'],
-    leaves: ['scripts/check-test-gate-wiring.ts'],
+    paths: [
+      'package.json',
+      'scripts/ci-runner/manifest.ts',
+      'scripts/gates/check-test-gate-wiring.ts',
+    ],
+    leaves: ['scripts/gates/check-test-gate-wiring.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3708,11 +4184,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Test-gate wiring',
     },
   },
+  // >>> gen-manifest: region 34
   {
     id: 'check:ci-search-index',
     run: 'npm run check:ci-search-index',
     gate: true,
-    leaves: ['scripts/check-search-index-freshness.ts'],
+    leaves: ['scripts/gates/check-search-index-freshness.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3720,6 +4197,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Search index',
     },
   },
+  // <<< gen-manifest: region 34
   {
     id: 'check:ci-cta-bolt',
     run: 'npm run check:ci-cta-bolt',
@@ -3739,7 +4217,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-content-quality',
     slow: true, // 17.3s measured
     gate: true,
-    leaves: ['.ci/scripts/quality/check-content-quality.sh'],
+    leaves: ['.ci/scripts/quality/check_content_quality.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3747,11 +4225,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check content for AI slop patterns',
     },
   },
+  // >>> gen-manifest: region 35
   {
     id: 'check:ci-nis2-quotes',
     run: 'npm run check:ci-nis2-quotes',
     gate: true,
-    leaves: ['scripts/check-directive-quotes.ts'],
+    leaves: ['scripts/gates/check-directive-quotes.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3759,12 +4238,13 @@ export const GATES: readonly GateSpec[] = [
       step: 'Verify NIS2 directive quotations match the official source',
     },
   },
+  // <<< gen-manifest: region 35
   {
     id: 'check:cli-examples',
     run: 'npm run check:cli-examples',
     slow: true, // 22.7s measured
     gate: true,
-    leaves: ['scripts/validate-cli-examples.ts'],
+    leaves: ['scripts/gen/validate-cli-examples.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3772,11 +4252,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'CLI examples',
     },
   },
+  // >>> gen-manifest: region 36
   {
     id: 'check:ci-tutorial-commands',
     run: 'npm run check:ci-tutorial-commands',
     gate: true,
-    leaves: ['scripts/check-tutorial-commands.ts'],
+    leaves: ['scripts/gates/check-tutorial-commands.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3788,7 +4269,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-tutorial-noninteractive',
     run: 'npm run check:ci-tutorial-noninteractive',
     gate: true,
-    leaves: ['scripts/check-tutorial-noninteractive.ts'],
+    leaves: ['scripts/gates/check-tutorial-noninteractive.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3796,6 +4277,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate tutorial commands are non-interactive',
     },
   },
+  // <<< gen-manifest: region 36
   {
     id: 'check:ci-tutorial-parity',
     run: 'npm run check:ci-tutorial-parity',
@@ -3898,11 +4380,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate published tutorial word-timing sync (real ASR alignment, not estimated)',
     },
   },
+  // >>> gen-manifest: region 37
   {
     id: 'check:ci-account-onboarding',
     run: 'npm run check:ci-account-onboarding',
     gate: true,
-    leaves: ['scripts/check-account-onboarding.ts'],
+    leaves: ['scripts/gates/check-account-onboarding.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3914,7 +4397,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-overrides-reasons',
     run: 'npm run check:ci-overrides-reasons',
     gate: true,
-    leaves: ['scripts/check-overrides-reasons.ts'],
+    leaves: ['scripts/gates/check-overrides-reasons.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3926,7 +4409,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-syncpack-reasons',
     run: 'npm run check:ci-syncpack-reasons',
     gate: true,
-    leaves: ['scripts/check-syncpack-reasons.ts'],
+    leaves: ['scripts/gates/check-syncpack-reasons.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3934,11 +4417,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'BLOCKER validator — syncpack versionGroups',
     },
   },
+  // <<< gen-manifest: region 37
   {
     id: 'check:ci-suppression-liveness',
     run: 'npm run check:ci-suppression-liveness',
     gate: true,
-    leaves: ['scripts/check-suppression-liveness.ts'],
+    leaves: ['scripts/gates/check-suppression-liveness.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3951,7 +4435,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-dead-bash',
     slow: true, // 141.7s measured
     gate: true,
-    leaves: ['scripts/check-dead-bash.ts'],
+    leaves: ['scripts/gates/check-dead-bash.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3961,9 +4445,13 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:actions',
+    env: {
+      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
+      GITHUB_TOKEN: '${{ github.token }}',
+    },
     run: 'npm run check:actions',
     gate: true,
-    leaves: ['scripts/check-actions.ts'],
+    leaves: ['scripts/gates/check-actions.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3971,11 +4459,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Action freshness',
     },
   },
+  // >>> gen-manifest: region 38
   {
     id: 'check:ci-jq-boolean-default',
     run: 'npm run check:ci-jq-boolean-default',
     gate: true,
-    leaves: ['scripts/check-jq-boolean-default.ts'],
+    leaves: ['scripts/gates/check-jq-boolean-default.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3983,11 +4472,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'jq boolean defaults',
     },
   },
+  // <<< gen-manifest: region 38
   {
     id: 'check:ci-dead-case-arms',
     run: 'npm run check:ci-dead-case-arms',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-dead-case-arms.sh'],
+    leaves: ['.ci/scripts/quality/check_dead_case_arms.py'],
     ci: {
       kind: 'test',
       test: '.ci/scripts/test/gates/test-dead-case-arms.sh',
@@ -3999,7 +4489,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-label-refs',
     run: 'npm run check:ci-label-refs',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-label-references.sh'],
+    leaves: ['.ci/scripts/quality/check_label_references.py'],
     ci: {
       kind: 'test',
       test: '.ci/scripts/test/gates/test-label-references.sh',
@@ -4011,7 +4501,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-label-inventory',
     run: 'npm run check:ci-label-inventory',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-label-inventory.sh'],
+    leaves: ['.ci/scripts/quality/check_label_inventory.py'],
     ci: {
       kind: 'test',
       test: '.ci/scripts/test/gates/test-label-inventory.sh',
@@ -4023,7 +4513,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-profiler-coverage',
     run: 'npm run check:ci-profiler-coverage',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-profiler-coverage.sh'],
+    leaves: ['.ci/scripts/quality/check_profiler_coverage.py'],
     ci: {
       kind: 'test',
       test: '.ci/scripts/test/gates/test-profiler-coverage.sh',
@@ -4043,11 +4533,12 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: no quality lane can run this against the live ruleset, but test-autopilot-workflow-invariants.sh:23-24 points both GATE and REAL at the real .github/workflows/autopilot.yml, so run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") executes the real scan over the real tree every CI run',
     },
   },
+  // >>> gen-manifest: region 39
   {
     id: 'check:ci-go-module-sync',
     run: 'npm run check:ci-go-module-sync',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-go-module-sync.sh'],
+    leaves: ['.ci/scripts/quality/check_go_module_sync.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4055,6 +4546,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check Go module sync against the renet worktree',
     },
   },
+  // <<< gen-manifest: region 39
   {
     // Structural, not semantic. "every declared env var must be referenced" was
     // measured first and rejected: 290 of 849 step env vars have no textual
@@ -4064,7 +4556,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-workflow-orphan-step-keys',
     run: 'npm run check:ci-workflow-orphan-step-keys',
     gate: true,
-    leaves: ['scripts/check-workflow-orphan-step-keys.ts'],
+    leaves: ['scripts/gates/check-workflow-orphan-step-keys.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4088,7 +4580,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-autopilot-bp-align',
     run: 'npm run check:ci-autopilot-bp-align',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-autopilot-breakpoint-alignment.sh'],
+    leaves: ['.ci/scripts/quality/check_autopilot_breakpoint_alignment.py'],
     ci: {
       kind: 'test',
       test: '.ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh',
@@ -4148,11 +4640,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
+  // >>> gen-manifest: region 40
   {
     id: 'check:ci-em-dash-surfaces',
     run: 'npm run check:ci-em-dash-surfaces',
     gate: true,
-    leaves: ['scripts/check-em-dash-surfaces.ts'],
+    leaves: ['scripts/gates/check-em-dash-surfaces.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4164,7 +4657,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-locale-config-divergence',
     run: 'npm run check:ci-locale-config-divergence',
     gate: true,
-    leaves: ['scripts/check-locale-config-divergence.ts'],
+    leaves: ['scripts/gates/check-locale-config-divergence.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4176,7 +4669,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-dead-translation-keys',
     run: 'npm run check:ci-dead-translation-keys',
     gate: true,
-    leaves: ['scripts/check-dead-translation-keys.ts'],
+    leaves: ['scripts/gates/check-dead-translation-keys.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4184,6 +4677,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
+  // <<< gen-manifest: region 40
   // Both of these read packages/www/dist, so `needs: ['build:www']` is not an optimisation:
   // without it they would be scheduled before the build and REFUSE, which is correct but
   // useless. Same reasoning as check:ci-docs-render-parity above.
@@ -4193,7 +4687,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
     needs: ['build:www'],
-    leaves: ['scripts/check-anchor-integrity.ts'],
+    leaves: ['scripts/gates/check-anchor-integrity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4207,7 +4701,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // reads the built dist; needs build:www like its neighbour
     gate: true,
     needs: ['build:www'],
-    leaves: ['scripts/check-player-css-scope.ts'],
+    leaves: ['scripts/gates/check-player-css-scope.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4221,7 +4715,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
     needs: ['build:www'],
-    leaves: ['scripts/check-client-bundle-budget.ts'],
+    leaves: ['scripts/gates/check-client-bundle-budget.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4250,7 +4744,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-layout-overflow',
     run: 'npm run check:ci-layout-overflow',
     gate: true,
-    leaves: ['scripts/check-layout-overflow.ts'],
+    leaves: ['scripts/gates/check-layout-overflow.ts'],
     ci: {
       kind: 'test',
       test: '.ci/scripts/test/gates/test-layout-overflow.sh',
@@ -4262,7 +4756,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-hydration-clean',
     run: 'npm run check:ci-hydration-clean',
     gate: true,
-    leaves: ['scripts/check-hydration-clean.ts'],
+    leaves: ['scripts/gates/check-hydration-clean.ts'],
     ci: {
       kind: 'test',
       test: '.ci/scripts/test/gates/test-hydration-clean.sh',
@@ -4274,7 +4768,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-form-validation',
     run: 'npm run check:ci-form-validation',
     gate: true,
-    leaves: ['scripts/check-form-validation.ts'],
+    leaves: ['scripts/gates/check-form-validation.ts'],
     ci: {
       kind: 'test',
       test: '.ci/scripts/test/gates/test-form-validation.sh',
@@ -4287,10 +4781,44 @@ export const GATES: readonly GateSpec[] = [
   // their workflow step (ci-quality.yml quality-content) rather than adding a
   // new one, so the surface keeps exactly one parity step.
   {
+    // B4. `--changed` scopes by `paths` and only 46 of 465 gates declare any, so the other
+    // 419 are selected by nothing. Worse than fail-open: on an EMPTY file list the rule
+    // INVERTS -- no file matches any glob, so the 46 scoped gates drop and the run reports
+    // green having skipped them. Both unusable change sets (unresolvable differ, zero files)
+    // now REFUSE instead of scoping. No `paths` key here on purpose: always selected.
+    id: 'check:ci-changed-selection',
+    run: 'npm run check:ci-changed-selection',
+    gate: true,
+    leaves: ['scripts/gates/check-changed-selection.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Changed-file selection contract',
+    },
+  },
+  {
+    // E1. The shadow ledger proves the bash and Python `setup` agreed over five frozen
+    // trees and says nothing about tomorrow's, so the phase ORDER is re-derived from both
+    // implementations on every run. Order and not just the set: swapping two phases leaves
+    // the finding count and the name set identical, so an unordered comparison passes it.
+    id: 'check:ci-setup-port-parity',
+    run: 'npm run check:ci-setup-port-parity',
+    gate: true,
+    leaves: ['.ci/rediacc_ci/setup/port_parity.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Setup port parity',
+    },
+  },
+  // >>> gen-manifest: region 41
+  {
     id: 'check:ci-parity',
     run: 'npm run check:ci-parity',
     gate: true,
-    leaves: ['scripts/check-ci-parity.ts'],
+    leaves: ['scripts/gates/check-ci-parity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4298,6 +4826,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate parity between the local gate set and the CI quality surface',
     },
   },
+  // <<< gen-manifest: region 41
 
   // F3: two Quality/Static steps that ran in CI and nowhere else. The forward
   // gate could not see them because its BARE_GATE pattern only covered
@@ -4351,6 +4880,9 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'build:www',
+    env: {
+      GITHUB_TOKEN: '${{ github.token }}',
+    },
     run: 'npm run build:www',
     slow: true, // 131.9s measured
     gate: false,
@@ -4370,10 +4902,31 @@ export const GATES: readonly GateSpec[] = [
   // 443s battery twice, and 443s is 43% of the measured serial total (plan
   // section 2). The npm key stays because CI wants one step for it.
   {
+    // B3. A matrix job's result is ONE roll-up, so shards are invisible without an
+    // intra-workflow aggregator. Clause 1 is the SET of `<lane>#<i>/<of>` receipts, not a
+    // count, and each receipt carries its own `of` and gate count -- so a leg that ran
+    // against a different plan is caught even when the totals agree. Its shard counts come
+    // from `SHARD_COUNTS` in lanes.ts, the same constant the matrix emitter will read, so
+    // no second copy of the number exists to drift.
+    id: 'check:ci-quality-complete',
+    run: 'npm run check:ci-quality-complete',
+    gate: true,
+    leaves: ['scripts/gates/check-quality-complete.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Quality shard aggregation',
+    },
+  },
+  {
     id: 'check:ci-quality-gates',
+    env: {
+      PR_HEAD_REF: '${{ github.event.pull_request.head.ref }}',
+    },
     run: 'npm run check:ci-quality-gates',
     gate: false,
-    leaves: ['.ci/scripts/test/run-all.sh'],
+    leaves: ['.ci/rediacc_ci/battery.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4481,6 +5034,20 @@ export const GATES: readonly GateSpec[] = [
     run: '.ci/scripts/test/gates/test-shrink-only-composition.sh',
     gate: true,
     qualityGateTest: true,
+    // THIS TEST WRITES INTO THE TRACKED TREE and said so nowhere until 2026-09-07.
+    // Two of its cases create `scripts/zz-composition-control-probe.ts` and
+    // `scripts/zz-composition-mention-probe.ts` under $REPO_ROOT (`:179`, `:197`)
+    // and `rm -f` them again, and it also greps `scripts/` and
+    // `packages/www/scripts/` recursively, so it is a writer AND a scanner.
+    //
+    // Found by a port agent screening it as a batch-7 candidate, which is the
+    // moment the omission would have become a defect rather than a latent one:
+    // `xdist_groups.real_tree_twins()` reads this declaration, so with none here
+    // the parity driver's `test_no_ported_twin_is_a_real_tree_writer_or_scanner`
+    // would have ADMITTED it, and `check:ci-pytest` would have become a real-tree
+    // writer with no isolation known to either scheduler. It declined to port it
+    // and handed the one-line fix back, which is the invariant-13 contract working.
+    mutex: ['tree:repo'],
     leaves: ['.ci/scripts/test/gates/test-shrink-only-composition.sh'],
     ci: {
       kind: 'step',
@@ -4822,10 +5389,10 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-release-bump-skip',
     run: 'npm run check:ci-release-bump-skip',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-release-bump-skip.sh'],
+    leaves: ['.ci/scripts/quality/check_release_bump_skip.py'],
     ci: {
       kind: 'test',
-      test: '.ci/scripts/quality/check-release-bump-skip.sh',
+      test: '.ci/scripts/quality/check_release_bump_skip.py',
       blocker:
         'BLOCKER: the gate IS the test -- it drives the real dispatch-release.sh decide branch with a shimmed gh through all five paths, so ci-quality.yml quality-security runs the real decision every CI run; it exists because a bump-none merge and a broken decision both produce "no release" and only the emitted signal distinguishes them, which no release gate could see',
     },
@@ -4834,7 +5401,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-regions-sync',
     run: 'npm run check:ci-regions-sync',
     gate: true,
-    leaves: ['.ci/scripts/quality/check-regions-sync.sh'],
+    leaves: ['.ci/scripts/quality/check_regions_sync.py'],
     ci: {
       kind: 'test',
       test: '.ci/scripts/test/gates/test-regions-sync.sh',
@@ -5664,6 +6231,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python package tests',
     },
   },
+  // >>> gen-manifest: region 42
   {
     id: 'check:ci-pathspec-scope',
     run: 'npm run check:ci-pathspec-scope',
@@ -5676,13 +6244,14 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pathspec scope',
     },
   },
+  // <<< gen-manifest: region 42
   {
     id: 'check:ci-package-key-budget',
     run: 'npm run check:ci-package-key-budget',
     gate: true,
-    leaves: ['scripts/check-package-key-budget.ts'],
+    leaves: ['scripts/gates/check-package-key-budget.ts'],
     paths: [
-      'scripts/check-package-key-budget.ts',
+      'scripts/gates/check-package-key-budget.ts',
       'package.json',
       'scripts/ci-runner/manifest.ts',
       'scripts/data/package-key-budget-baseline.json',
@@ -5803,6 +6372,10 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/lib/blocker-validator.sh',
       'scripts/lib/blocker-validator.ts',
       '.ci/breakpoint/lib/breakpoint-blocker.sh',
+      // The pilot pair are CLIENTS of this module as of 2026-09-09; it decides both
+      // sides' verdicts, so a change here can move the recorded divergence this test
+      // asserts, and `--changed` would not otherwise select the gate.
+      '.ci/rediacc_ci/core/allowlist.py',
       '.ci/scripts/test/gates/test-blocker-golden-corpus.sh',
     ],
     ci: {
@@ -6538,7 +7111,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-enumeration-vacuity',
     run: 'npm run check:ci-enumeration-vacuity',
     gate: true,
-    leaves: ['scripts/check-enumeration-vacuity.ts'],
+    leaves: ['scripts/gates/check-enumeration-vacuity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6957,6 +7530,20 @@ export const GATES: readonly GateSpec[] = [
       step: 'Install table',
     },
   },
+  // >>> gen-manifest: region 43
+  {
+    id: 'check:ci-gen-manifest',
+    run: 'npm run check:ci-gen-manifest',
+    gate: true,
+    leaves: ['scripts/gen/gen-manifest.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Generated manifest regions',
+    },
+  },
+  // <<< gen-manifest: region 43
 ];
 
 /** The root workflow every CI run enters through. */

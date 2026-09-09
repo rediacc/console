@@ -15,7 +15,6 @@
     ".ci/lib/find-port.sh",
     ".ci/lib/local-common.sh",
     ".ci/lib/service.sh",
-    ".ci/lib/setup.sh",
     ".ci/scripts/autopilot/autopilot-gate.sh",
     ".ci/scripts/autopilot/autopilot-push.sh",
     ".ci/scripts/autopilot/compose-prompt.sh",

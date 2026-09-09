@@ -296,6 +296,23 @@ if os.path.exists(os.path.join(REPO, "private/account/.env")):
     cases.append(
         (
             0,
+            run(
+                "source scripts/lib/env-file.sh; env_file_load private/account/.env;"
+                " ./run.sh --publish-www --langs en",
+                REAL,
+            ),
+            # THE FORM THIS GUARD NOW ADVISES. Pinned here because the message and the
+            # predicate are in different functions and nothing else holds them together:
+            # a guard that recommends a command it then blocks is worse than one that
+            # recommends nothing. `set -a; .` stays accepted above -- it is still a real
+            # way to get the credentials into the shell, it is just no longer the one to
+            # print, because it EXECUTES a file holding two private keys.
+            "CONTROL: the form the message now advises is accepted",
+        )
+    )
+    cases.append(
+        (
+            0,
             run("CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=x ./run.sh --publish-www --langs en", REAL),
             "CONTROL: setting the credential inline states the intent, so it is accepted",
         )

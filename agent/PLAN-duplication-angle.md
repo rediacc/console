@@ -47,7 +47,7 @@ that fires twice a year."*
 
 Adds are not that number. The number is how often a shape that was NOT in the seed reaches
 its third copy — i.e. how often the gate FIRES. Measured by replaying the real
-`judge()` / `normalise()` / `windows()` from `scripts/check-shape-duplication.ts` over
+`judge()` / `normalise()` / `windows()` from `scripts/gates/check-shape-duplication.ts` over
 historical trees read straight out of the object store (`git cat-file --batch`; nothing
 checked out, nothing written outside a scratchpad), at three plausible install points:
 
@@ -93,7 +93,7 @@ consolidate, or stay red forever. Its single exit was re-running `--seed`, which
 every new shape at once and leaves no record — so the only way past one legitimate
 divergence was a command that silently suppresses the entire gate.
 
-Fixed in `scripts/check-shape-duplication.ts`:
+Fixed in `scripts/gates/check-shape-duplication.ts`:
 
 - `accepted: { "<hash>": "BLOCKER: <reason>" }` in the seed file, each reason validated by
   the SAME `validateBlockerQuality` every other allowlist uses

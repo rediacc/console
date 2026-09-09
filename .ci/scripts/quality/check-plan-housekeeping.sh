@@ -1,10 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# step: Plan file housekeeping
-# needs: none
-# selftest: true
-# lane: quality-i18n
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-plan-housekeeping is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_plan_housekeeping.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_plan_housekeeping.py" but its header derives ".ci/scripts/quality/check-plan-housekeeping.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # check:ci-plan-housekeeping -- a plan file nobody has touched for delete_days
 # must be deleted, and the gate says the exact date each one goes red.
@@ -94,6 +96,21 @@ MIN_PLANS="${PLAN_HK_MIN_FILES:-30}"
 WARN_DAYS=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['warn_days'])" "$CFG") || exit 2
 DELETE_DAYS=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['delete_days'])" "$CFG") || exit 2
 PLAN_GLOB=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['plan_glob'])" "$CFG") || exit 2
+# W12 P3.3. THE RECORD-STATUS VOCABULARY COMES FROM THE CONFIG, not from a
+# literal in the sed below. It used to be the alternation `compacted\|parked`
+# typed here, again in `.ci/rediacc_ci/quality/plan_housekeeping.py` and a third
+# time verbatim in `.ci/rediacc_ci/tests/test_quality_plan_housekeeping.py`.
+# Adding a state meant finding all three, and missing one makes a plan a RECORD
+# in one reader and an OFFENDER in the other -- the exact disagreement
+# record_status()'s own comment warns about. The config is a MIRROR of
+# `wl_planrec.RECORD_STATES`; the mirror is compared against the origin in both
+# directions by the twin test, because a mirror nobody compares is a fourth copy.
+RECORD_STATES_ALT=$(python3 -c "import json,sys;print(r'\\|'.join(json.load(open(sys.argv[1]))['record_states']))" "$CFG") || exit 2
+[[ -n "$RECORD_STATES_ALT" ]] || {
+    echo "VACUOUS INPUT: $CFG carries no record_states, so no plan could ever be read as a" >&2
+    echo "  compaction record and every compacted plan would lose its exemption at once." >&2
+    exit 2
+}
 
 # ---------------------------------------------------------------------------
 # CONTROL FIRST. The age arithmetic is the whole gate, so it is proven on
@@ -135,7 +152,7 @@ record_status() { # <plan file> -> `compacted` / `parked`, or nothing
     # wl_planrec.parse exactly. Otherwise a plan whose prose quotes
     # `Status: compacted` routes into the compacted branch and is reported as an
     # offender regardless of its age.
-    sed -n '1,10s/^Status:[[:space:]]*\(compacted\|parked\)[[:space:]]*$/\1/p' "$1" | head -1
+    sed -n "1,10s/^Status:[[:space:]]*\($RECORD_STATES_ALT\)[[:space:]]*\$/\1/p" "$1" | head -1
 }
 blob_is_real() { # <blob> -> 0 when git has it AS A BLOB
     [[ -n "${1:-}" ]] || return 1

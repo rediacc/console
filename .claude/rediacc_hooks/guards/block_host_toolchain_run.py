@@ -69,6 +69,7 @@ would make the host-bound walk look at a different set of paths.
 import glob as globmod
 import os
 import pathlib
+import re
 
 from rediacc_hooks import hookio, shellscan
 
@@ -232,22 +233,44 @@ def _split_glob(text):
 
 def _npx_pattern(tool):
     return (
-        r"(^|[;&|(]|\$\(|`)["
-        + hookio.SPACE
-        + r"]*npx(["
-        + hookio.SPACE
-        + r"]+(-y|--yes))?["
-        + hookio.SPACE
-        + r"]+"
+        hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*npx([{S}]+(-y|--yes))?[{S}]+")
         + tool
-        + r"(["
-        + hookio.SPACE
-        + r"]|$)"
+        + hookio.rx(r"([{S}]|$)")
     )
 
 
 def _bare_pattern(tool):
-    return r"(^|[;&|(]|\$\(|`)[" + hookio.SPACE + r"]*" + tool + r"([" + hookio.SPACE + r"]|$)"
+    return hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*") + tool + hookio.rx(r"([{S}]|$)")
+
+
+def _is_invoked(key, scan):
+    """Is `key` being RUN here, or merely NAMED?
+
+    A plain `grep_q(key, scan, fixed=True)` was the rule, and it blocked reading the
+    script as well as running it. Measured 2026-09-09: `grep -n assets/videos
+    .ci/scripts/deploy/sync-media-to-r2.sh` was refused with a message about credentials
+    that a grep does not need, and `sed -n 1,5p <same path>` likewise. Only `echo
+    '<path>'` escaped, and for the wrong reason -- `scan_target` strips QUOTED spans, so
+    the guard was anchored on quoting rather than on invocation.
+
+    The rule is command position: the token holding the key opens the command, follows a
+    separator, or is the argument of an interpreter (`bash`, `sh`, `zsh`, `source`, `.`).
+    Anything else -- a path handed to grep, sed, cat, head, wc, an editor -- is a
+    mention. `npm run <script>` and `./path/to/it` both still read as invocations.
+
+    DELIBERATELY NOT A READER BLOCKLIST. Enumerating grep/sed/cat/head/less/awk means the
+    next reader command is a fresh false positive, and false positives are what teach a
+    session to route around a guard: this one cost a writer a workaround before it cost
+    me a command.
+    """
+    interp = r"(bash|sh|zsh|source|\.|npm[{S}]+run|npx)"
+    # ONE `rx()` OVER THE WHOLE PATTERN. The first cut put the middle class outside it,
+    # so `{S}` stayed literal and `[^{S};&|]` read as "not {, S, }, ; & or |" -- which
+    # matches a SPACE, letting the pattern skip the whole command and find the key
+    # anywhere. Every mention case still blocked and the failure looked like the anchor
+    # not working rather than the class being wrong.
+    pat = hookio.rx(r"(^|[;&|(]|\$\(|`|" + interp + r"[{S}]+)[{S}]*[^{S};&|]*" + re.escape(key))
+    return hookio.grep_q(pat, scan)
 
 
 def run(ev):
@@ -261,7 +284,7 @@ def run(ev):
     repo_root = str(hookio.repo_root())
 
     # Already routed through the devbox, or driving the devbox itself: out of scope.
-    if hookio.grep_q(r"devbox|docker[" + hookio.SPACE + r"]+exec", cmd):
+    if hookio.grep_q(hookio.rx(r"devbox|docker[{S}]+exec"), cmd):
         return hookio.ALLOW
 
     for tool in NPX_TOOLS:
@@ -286,7 +309,7 @@ def run(ev):
     account_env = "%s/private/account/.env" % repo_root
     if pathlib.Path(account_env).is_file():
         for key, var in NEEDS_ENV:
-            if not hookio.grep_q(key, scan, fixed=True):
+            if not _is_invoked(key, scan):
                 continue
             # Already sourcing the file, or setting the credential inline: fine.
             if hookio.grep_q("private/account/.env", cmd, fixed=True):
@@ -310,10 +333,17 @@ def run(ev):
                 "and warns about the wrong thing. That happened on 2026-08-28: 52 files copied, 0\n"
                 "uploaded, and the closing line blamed unset env vars that were about to be set.\n"
                 "\n"
-                "Source the file in the same command:\n"
+                "Load the file in the same command:\n"
                 "\n"
-                "    set -a; . private/account/.env; set +a\n"
+                "    source scripts/lib/env-file.sh;"
+                " env_file_load private/account/.env\n"
                 "    <your command>\n"
+                "\n"
+                "Not `set -a; . private/account/.env; set +a`: that EXECUTES the file (it"
+                " holds\n"
+                "ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_JWT_SECRET, and a $(...) in a value"
+                " would\n"
+                "run) and lets the file overwrite anything you set on the command line.\n"
                 "\n"
                 "If you are deliberately doing a local-only copy, say so by setting the variable\n"
                 "yourself (%s=) so the intent is in the command rather than in your memory.\n"

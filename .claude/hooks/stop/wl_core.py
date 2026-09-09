@@ -134,6 +134,30 @@ def lease_state(line):
     return "fresh"
 
 
+def lease_remaining_tag(line):
+    """`, 59m left` for a fresh lease, `` for anything else.
+
+    A DEADLINE THAT IS ONLY ABSOLUTE IS AMBIGUOUS TO A READER IN A DIFFERENT DAY. UTC and
+    a +0200 local clock disagree about the DATE for two hours out of every twenty-four,
+    and during that window an `until:2026-09-08T23:36Z` reads as yesterday to anyone whose
+    own clock says the 9th. That happened on 2026-09-08 and cost a round trip: the lease
+    had 59 minutes left and was reported as expired.
+
+    Relative time has no timezone, so it cannot be misread. Absolute stays too, because it
+    is the form the store round-trips.
+    """
+    m = LEASE.search(line or "")
+    if not m or lease_state(line) != "fresh":
+        return ""
+    stamp = m.group(1)
+    fmt = "%Y-%m-%dT%H:%M:%S" if stamp.count(":") == 2 else "%Y-%m-%dT%H:%M"
+    try:
+        until = datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.UTC)
+    except ValueError:
+        return ""
+    return ", %dm left" % max(0, round((until - utcnow()).total_seconds() / 60))
+
+
 # LINEAGE ALIASES: the ids a compaction gave to ONE conversation.
 #
 # A compaction can hand a continuous session a new id, and the ownership rule --

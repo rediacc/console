@@ -10,7 +10,7 @@
 #
 # WHY IT NEEDS A GATE AT ALL. scripts/gen-docs.ts exists because hand-typed registry numbers go
 # stale in silence: `.dead-bash-allowlist` said "the 17 gate scripts" against 131,
-# scripts/check-ci-parity.ts said "runs 57 gate tests", and docs/agent-reference/ci-gates.md said
+# scripts/gates/check-ci-parity.ts said "runs 57 gate tests", and docs/agent-reference/ci-gates.md said
 # "254 fast gates" against a live 312. A generator that quietly stops generating puts the tree
 # straight back into that state, and the symptom -- a document that looks fine -- is invisible.
 #

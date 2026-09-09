@@ -2097,6 +2097,14 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
                 wtag = "worker:%s%s" % (wid or "?", " [%s]" % osw if osw else "")
                 if rec.get("lease_tolerated"):
                     wtag += " (lease expired, worker verified alive: auto-honored; renew or tick when it lands)"
+                # THE DEADLINE IS RENDERED RELATIVE AS WELL AS ABSOLUTE, because the
+                # absolute form alone is misread the moment the reader's LOCAL date has
+                # rolled over while UTC has not. Measured 2026-09-08T22:37Z: local was
+                # already 2026-09-09 00:37 CEST, the item carried `until:2026-09-08T23:36Z`,
+                # and the stop-gate judge read that as "in the past" and refused a
+                # legitimate stop. `lease_state` had it right all along -- it compares in
+                # UTC -- so nothing was wrong except what the line SHOWED.
+                wtag += C.lease_remaining_tag(rec["line"])
                 rows.append(
                     (
                         3,

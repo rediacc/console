@@ -74,6 +74,52 @@ from rediacc_hooks.shellscan import (  # noqa: F401
 ALLOW = 0
 DENY = 2
 
+# The placeholders `rx` below understands. `{S}` is the whole `[[:space:]]`
+# class and `{B}` is the same class without the newline, matching the two
+# constants re-exported above; there is no third, because a guard needing a
+# third would be inventing a fourth spelling of the thing this module exists to
+# have one of.
+_RX_CLASSES = (("{S}", SPACE), ("{B}", BLANK))
+
+
+def rx(pattern):
+    """A guard's regex written as ONE raw string, with `{S}` / `{B}` for the classes.
+
+    WHAT IT REPLACES, AND WHY THAT WAS WORTH A FUNCTION. A guard that needs the
+    space class inside a character class cannot interpolate a constant into a
+    raw literal, so twenty-three of them built the pattern by concatenation::
+
+        NODE_BUNDLE = (
+            r"(^|[;&|(]|["
+            + hookio.SPACE
+            + r"])node["
+            + hookio.SPACE
+            + r"]+..."
+        )
+
+    Every line of that except the fragments is scaffolding, and the scaffolding
+    is IDENTICAL in every guard that has one: `check:ci-shape-duplication`
+    reported it as its two largest Python findings the moment the guards entered
+    its corpus, ten copies of one six-line window and eight of another. There is
+    nothing per-guard in those lines to preserve -- the regex fragments are the
+    content, and they survive here verbatim inside a single readable string.
+
+    IT REFUSES A PATTERN WITH NO PLACEHOLDER, and that refusal is the point
+    rather than tidiness. `rx(r"git push")` would return its argument unchanged
+    and read, at every call site, as though the space class were involved when it
+    is not; the next edit would add `[ ]` by hand and the two spellings this
+    module exists to prevent would be back. A call that buys nothing is a
+    mistake, so it says so.
+    """
+    if not any(token in pattern for token, _ in _RX_CLASSES):
+        raise ValueError(
+            "rx() was given a pattern with no {S} or {B} placeholder: %r. "
+            "Write it as a plain literal, or use the placeholder." % pattern
+        )
+    for token, expansion in _RX_CLASSES:
+        pattern = pattern.replace(token, expansion)
+    return pattern
+
 
 class Event:
     """One hook invocation: the payload in, the three results out.

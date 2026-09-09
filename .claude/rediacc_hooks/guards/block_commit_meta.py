@@ -58,22 +58,8 @@ DEFECT = ("if not hookio.grep_q(AUTHORS_A_MESSAGE, cmd):", "if False:")
 # commit that carries a trailer. Excluding `;|&` from the gap tokens keeps the
 # verb and its subcommand in one clause, which is the same fix
 # block-protected-files needed for the same reason on the same day.
-AUTHORS_A_MESSAGE = (
-    r"(^|[;&|(]|["
-    + hookio.SPACE
-    + r"])git["
-    + hookio.SPACE
-    + r"]+([^"
-    + hookio.SPACE
-    + r";|&]+["
-    + hookio.SPACE
-    + r"]+)*(commit|tag)\b|(^|[;&|(]|["
-    + hookio.SPACE
-    + r"])gh["
-    + hookio.SPACE
-    + r"]+pr["
-    + hookio.SPACE
-    + r"]+(create|edit)\b"
+AUTHORS_A_MESSAGE = hookio.rx(
+    r"(^|[;&|(]|[{S}])git[{S}]+([^{S};|&]+[{S}]+)*(commit|tag)\b|(^|[;&|(]|[{S}])gh[{S}]+pr[{S}]+(create|edit)\b"
 )
 
 # THE COLON IS WHAT MAKES IT A TRAILER. The token was left unanchored on
@@ -94,14 +80,8 @@ AUTHORS_A_MESSAGE = (
 # trailer git accepts, and the colon-only draft let it through -- caught by the
 # suite case pinning exactly that form. `Generated with` keeps its line anchor,
 # which it earned over three separate false positives.
-TRAILER_OR_FOOTER = (
-    r"Co-Authored-By["
-    + hookio.SPACE
-    + r"]*[:=]|^["
-    + hookio.SPACE
-    + r"]*([^0-9A-Za-z]{0,4}["
-    + hookio.SPACE
-    + r"]*)?Generated with\b"
+TRAILER_OR_FOOTER = hookio.rx(
+    r"Co-Authored-By[{S}]*[:=]|^[{S}]*([^0-9A-Za-z]{0,4}[{S}]*)?Generated with\b"
 )
 
 MESSAGE = "❌ BLOCKED: Do not add Co-Authored-By or Generated with lines in commits."

@@ -8,7 +8,7 @@
  * consumed at nine call sites and every one of them still writes its own assertion closure
  * and its own loop.
  *
- * Measured 2026-09-01 across `scripts/check-*.ts`: 35 of 101 files hand-roll the closure,
+ * Measured 2026-09-01 across `scripts/gates/check-*.ts`: 35 of 101 files hand-roll the closure,
  * in two idioms — a `failures: string[]` form (12 files, 8 byte-identical) and a counter
  * form (20 files, 5 clusters). ~196 duplicated lines.
  *

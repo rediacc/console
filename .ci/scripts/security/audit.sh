@@ -7,6 +7,8 @@
 # id: check:ci-security-audit
 # selftest: true
 # lane: quality-security
+# slow: true
+# env-GH_TOKEN: ${{ github.token }}
 # ---- end gate ----
 
 # Security audit with allowlist support + AI-navigable GHSA URLs.
@@ -59,8 +61,17 @@ run_audit() {
     npm audit --json "$@" >"$output" || audit_exit=$?
 
     if ! jq empty "$output" 2>/dev/null; then
-        log_error "npm audit failed to produce valid JSON (exit code: $audit_exit)"
-        log_error "This may indicate a network error or npm registry issue"
+        # A KILLED AUDIT IS NOT A REGISTRY PROBLEM. `npm audit` cut short by a
+        # step timeout or an OOM leaves truncated JSON and a 128+n status, and
+        # the old pair of lines then blamed the network for a local kill --
+        # sending the reader to the one place the answer is not.
+        if [[ $audit_exit -gt 128 && $audit_exit -lt 160 ]]; then
+            log_error "npm audit was KILLED by signal $((audit_exit - 128)) (raw $audit_exit) before it finished writing JSON"
+            log_error "This is a local kill (timeout or OOM), NOT a registry or network fault"
+        else
+            log_error "npm audit failed to produce valid JSON (exit code: $audit_exit)"
+            log_error "This may indicate a network error or npm registry issue"
+        fi
         exit 1
     fi
 }
@@ -194,7 +205,7 @@ get_advisory_fix_info() {
 }
 
 # ── Time-drift / blocklist deferral ─────────────────────────────────
-# Mirrors scripts/check-deps.ts: an advisory whose ONLY fix is a version npm
+# Mirrors scripts/gates/check-deps.ts: an advisory whose ONLY fix is a version npm
 # cannot install yet (younger than .npmrc minimum-release-age) or a package we
 # deliberately hold back in .deps-upgrade-blocklist is NOT actionable — failing
 # on it is a false positive that no `npm audit fix` can clear today. We defer
@@ -203,7 +214,7 @@ DEFER_REASON=""
 
 # The freshness window + daily-batch eligibility rule live in
 # .ci/scripts/lib/release-age.sh (is_release_deferred), shared with the go gate
-# and mirrored by scripts/check-deps.ts.
+# and mirrored by scripts/gates/check-deps.ts.
 
 # Exact-name match against .deps-upgrade-blocklist (entries: "name  # BLOCKER: …").
 deps_blocklist_has() {

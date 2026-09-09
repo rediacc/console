@@ -807,7 +807,14 @@ ensure_renet_built() {
     # rebuild even though this function no longer passes a flag.
     local stamp_file="$LOCAL_ROOT_DIR/.ci/cache/build-renet.stamp"
     local _license_mode="nolicense"
-    if [[ "${RDC_RENET_LICENSE:-0}" == "1" || "${RDC_BENCH:-0}" == "1" ]]; then
+    # `RDC_BENCH` WAS THE SECOND ARM HERE AND IT IS DEAD. `rdc.sh` contains the string
+    # ZERO times, `.ci/scripts/test/test-rdc-sh-env.sh:81` lists it among the dead names it
+    # enforces the absence of, and `docs/environment-variables.md:104`,
+    # `docs/agent-reference/local-env.md:106` and CLAUDE.md all say so. Bench is a CONFIG
+    # now -- `./rdc.sh --config bench` -- so the arm could only ever be taken by someone
+    # exporting a variable nothing else reads. Removed 2026-09-09; found by the W8 P2 env
+    # manifest, which is the first instrument in this repo that looks at bash reads at all.
+    if [[ "${RDC_RENET_LICENSE:-0}" == "1" ]]; then
         _license_mode="enforce"
     fi
     local _account_key="${ACCOUNT_ED25519_PUBLIC_KEY:-}"

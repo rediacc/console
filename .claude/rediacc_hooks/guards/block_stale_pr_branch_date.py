@@ -70,7 +70,7 @@ ORDER = 24
 # shape that gets a guard bypassed rather than obeyed.
 DEFECT = ('if ev.env("PR_BRANCH_DATE_OK") != "":', "if False:")
 
-HEAD_FLAG = r"(--head|-H)[" + hookio.SPACE + r"=]+[A-Za-z0-9._/-]+"
+HEAD_FLAG = hookio.rx(r"(--head|-H)[{S}=]+[A-Za-z0-9._/-]+")
 
 EDGE_CASES = [
     # An explicit --head wins over the checkout, which is what makes the stale
@@ -145,9 +145,7 @@ def run(ev):
     branch = ""
     matches = hookio.grep_o(HEAD_FLAG, hookio._printf_line(scan))
     if matches:
-        branch = hookio.sed_sub(r"^(--head|-H)[" + hookio.SPACE + r"=]+", "", matches[0]).rstrip(
-            "\n"
-        )
+        branch = hookio.sed_sub(hookio.rx(r"^(--head|-H)[{S}=]+"), "", matches[0]).rstrip("\n")
     if branch == "":
         branch = hookio.git_out(["-C", cwd, "branch", "--show-current"])
     if branch == "":

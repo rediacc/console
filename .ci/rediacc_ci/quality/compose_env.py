@@ -92,7 +92,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, plant
 
 # The two subjects, relative to the repository root.
 CI_ENV_SUBPATH = ".ci/scripts/infra/ci-env.sh"
@@ -387,14 +387,16 @@ def selftest() -> int:
 
         # THE PLANT: drop the variable from the heredoc while leaving the
         # reference. Exactly the shape the gate exists for.
-        unpersisted = _CI_ENV.replace("PERSISTED_ONE=yes\n", "")
+        unpersisted = plant(_CI_ENV, "PERSISTED_ONE=yes\n", "")
         ctl.check("PLANT: an unpersisted reference is caught", run(_COMPOSE, unpersisted), 1)
 
         # AND THE NEAR MISS: the same assignment moved OUTSIDE the heredoc. It
         # is exported, it works in that shell, and it is gone in the next step.
         # A gate that grepped the whole file would pass this.
-        exported_only = _CI_ENV.replace("PERSISTED_ONE=yes\n", "").replace(
-            "OUTSIDE_THE_BLOCK=no\n", "PERSISTED_ONE=yes\nOUTSIDE_THE_BLOCK=no\n"
+        exported_only = plant(
+            plant(_CI_ENV, "PERSISTED_ONE=yes\n", ""),
+            "OUTSIDE_THE_BLOCK=no\n",
+            "PERSISTED_ONE=yes\nOUTSIDE_THE_BLOCK=no\n",
         )
         ctl.check(
             "PLANT: an assignment outside the heredoc does not count",

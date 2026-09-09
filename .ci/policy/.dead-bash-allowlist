@@ -1,4 +1,4 @@
-# Discovery mechanisms that scripts/check-dead-bash.ts cannot see statically.
+# Discovery mechanisms that scripts/gates/check-dead-bash.ts cannot see statically.
 #
 # This file covers HOW something is reached, never WHETHER it should exist.
 # "glob:<dir>/"        a directory whose .sh files are found by a glob, so no
@@ -9,7 +9,7 @@
 # NOT a place to park dead code. If a script or function is genuinely unused,
 # delete it — there is one operator and no external consumers. An entry here is
 # a claim about a discovery mechanism, and it is checked: the liveness probe in
-# scripts/check-suppression-liveness.ts fails when a glob root no longer exists
+# scripts/gates/check-suppression-liveness.ts fails when a glob root no longer exists
 # or a dispatch prefix matches zero functions.
 #
 # Each entry MUST carry a "# BLOCKER: <reason>" naming the discovering site and
@@ -19,7 +19,7 @@
 # BLOCKER: expanded as a glob by .ci/scripts/test/run-all.sh (PATTERN="test-*.sh" into TEST_FILES), so every test-*.sh under that root is executed without ever being named individually
 glob:.ci/scripts/test/gates/
 
-# BLOCKER: three sites expand this directory as a glob and name no file in it individually -- .ci/media/tutorials.sh (for script in "$tutorials_dir"/tutorial-*.sh, and "$tutorials_dir/tutorial-${name}.sh" built from an argument), .ci/tutorials/run-sequence.sh (for script in "$SCRIPT_DIR"/tutorial-*.sh, plus a per-slug existence check derived from the docs frontmatter), and scripts/check-tutorial-noninteractive.ts (readdirSync of .ci/tutorials filtered to .sh)
+# BLOCKER: three sites expand this directory as a glob and name no file in it individually -- .ci/media/tutorials.sh (for script in "$tutorials_dir"/tutorial-*.sh, and "$tutorials_dir/tutorial-${name}.sh" built from an argument), .ci/tutorials/run-sequence.sh (for script in "$SCRIPT_DIR"/tutorial-*.sh, plus a per-slug existence check derived from the docs frontmatter), and scripts/gates/check-tutorial-noninteractive.ts (readdirSync of .ci/tutorials filtered to .sh)
 glob:.ci/tutorials/
 
 # BLOCKER: assembled at runtime in scripts/dev/linode-cluster-validation.sh as "phase_$p", so phase_preflight/phase_plan/phase_idempotency have no static call site

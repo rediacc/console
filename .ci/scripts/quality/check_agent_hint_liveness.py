@@ -48,6 +48,9 @@ import re
 import sys
 import tempfile
 
+import _cipath  # noqa: F401
+from rediacc_ci import paths
+
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 AGENTS_DIR = os.path.join(REPO_ROOT, ".claude", "agents")
 HOOK_DIR = os.path.join(REPO_ROOT, ".claude", "hooks", "stop")
@@ -126,7 +129,12 @@ def load_matcher():
             f"{HOOK_DIR}/wl_agents.py not found. The hint matcher is gone or renamed; "
             "fix the wiring deliberately rather than letting this gate pass over its absence."
         )
-    sys.path.insert(0, HOOK_DIR)
+    # Through the package's resolver, not a bare insert: `paths.on_sys_path` is
+    # idempotent, and this hop runs inside a FUNCTION that a caller may call more
+    # than once, which is the case a hand-written insert leaves duplicate copies
+    # behind for. HOOK_DIR is passed rather than recomputed so the die() messages
+    # above and the directory actually added stay the same string.
+    paths.on_sys_path(HOOK_DIR)
     try:
         # Deferred deliberately: HOOK_DIR must be on sys.path first, and a
         # top-level import would make this gate uncollectable outside the repo.
@@ -557,6 +565,23 @@ def main() -> int:
         # has. Their stopwords are still covered by the four planted defects the
         # anti-vacuity harness runs above.
         "pre-existing bug fixed while there: setup ran bare npm install",
+        #
+        # THE `verb` MISFIRE, 2026-09-08, verbatim, and the same shape one class
+        # wider. `verb` sits in exactly ONE description (backup-storage: "the rdc
+        # backup and rdc datastore CLI verbs") so discriminative() hands it over
+        # at full weight, while the word is house vocabulary everywhere else --
+        # CLAUDE.md says "Use the VERBS, not the file", and worklist_messages.py
+        # prints it back at the session every stop. This sentence is about a stdin
+        # hang in worklist.py itself; `no way to` supplied the impossibility half
+        # and `verb` the whole of the domain half, scoring on the single term
+        # ['verb']. Deleting `"verb verbs"` from wl_agents._STOPWORD_TEXT makes
+        # this line fire and this gate exit 1; that was measured in a scratch
+        # repo root, not assumed. A real backup claim still fires, on
+        # ['chunk', 'datastore', 'prune', 'restore', 'snapshot', 'store'].
+        (
+            "the verb that writes the compaction-recovery document therefore had "
+            "no way to fail; it just stopped, and the liveness check reports it as alive"
+        ),
     ):
         stray, _ = matcher.pushback_for(neutral, AGENTS_DIR)
         if stray:

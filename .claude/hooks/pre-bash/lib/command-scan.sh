@@ -141,8 +141,39 @@ _hook_strip_env_prefix() {
 #
 # Sets CMD and SCAN in the caller's scope. Returns 1 when there is no command, so the
 # caller's whole preamble becomes:  hook_init || exit 0
+# hook_read_payload -- the hook event body, read from stdin under a DEADLINE.
+#
+# BOUNDED, because `$(cat)` and a bare `jq` reading stdin are not. Either one on
+# a stdin that stays open and silent blocks forever, and these run as PreToolUse
+# and PostToolUse hooks: a hang here is not a slow check, it is a tool call that
+# never returns. `require-python.sh:66` measured that arm directly -- stdin held
+# open by a writer that never writes gave exit 124 under an external timeout,
+# against exit 2 in 0s once stdin is closed -- and bounded itself; this is the
+# sweep of the same class across the four sites that read the payload the other
+# way and were left behind.
+#
+# `read -t` RATHER THAN `timeout cat`: a bash builtin cannot itself be missing,
+# and it costs no process. `-d ''` reads to NUL, i.e. to EOF, so the ordinary
+# path returns NON-ZERO with HOOK_PAYLOAD set and only a status above 128 is the
+# deadline firing -- which is why callers must test `-gt 128` and never `!= 0`.
+#
+# THE CALLER DECIDES WHAT A TIMEOUT MEANS, and it is not the same answer in both
+# directions: a blocking guard refuses (its whole purpose is to say no when it
+# cannot tell), an advisory PostToolUse hook exits 0 (it never had standing to
+# block anything). Returning the status instead of acting on it is what lets one
+# reader serve both.
+HOOK_PAYLOAD_TIMEOUT="${HOOK_PAYLOAD_TIMEOUT:-10}"
+hook_read_payload() {
+    HOOK_PAYLOAD=""
+    IFS= read -r -d "" -t "$HOOK_PAYLOAD_TIMEOUT" HOOK_PAYLOAD
+    local rc=$?
+    [ "$rc" -gt 128 ] && return "$rc"
+    return 0
+}
+
 hook_init() {
-    CMD=$(jq -r '.tool_input.command' 2>/dev/null)
+    hook_read_payload || return 2
+    CMD=$(printf '%s' "$HOOK_PAYLOAD" | jq -r '.tool_input.command' 2>/dev/null)
     [ -z "$CMD" ] && return 1
     SCAN=$(hook_scan_target "$CMD")
     return 0

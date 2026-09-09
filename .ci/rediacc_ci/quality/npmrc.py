@@ -93,7 +93,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, plant
 
 # The file, relative to the repository root. The twin `cd`s to the root and
 # writes a bare `.npmrc`; this is the same fact with the cd removed.
@@ -315,13 +315,13 @@ def selftest() -> int:
         # value instead of grepping for the literal `ignore-scripts=true`.
         ctl.check(
             "PLANT: a wrong value is caught",
-            run(_CLEAN.replace("minimum-release-age=1440", "minimum-release-age=60")),
+            run(plant(_CLEAN, "minimum-release-age=1440", "minimum-release-age=60")),
             1,
         )
         # PLANT 4: present, empty. Reported as MISSING; see the port notes.
         ctl.check(
             "PLANT: an empty value is caught",
-            run(_CLEAN.replace("allow-git=none", "allow-git=")),
+            run(plant(_CLEAN, "allow-git=none", "allow-git=")),
             1,
         )
         # PLANT 5: last-one-wins. An earlier good line does not rescue a later
@@ -343,7 +343,7 @@ def selftest() -> int:
         # invert if someone "unified" the two greps onto `-i`.
         ctl.check(
             "PLANT: a capitalised required key does not satisfy it",
-            run(_CLEAN.replace("ignore-scripts=true", "Ignore-Scripts=true")),
+            run(plant(_CLEAN, "ignore-scripts=true", "Ignore-Scripts=true")),
             1,
         )
 

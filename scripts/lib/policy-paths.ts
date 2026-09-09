@@ -78,10 +78,29 @@ const POLICY_FILES = Object.freeze([
   '.e2e-coverage-allowlist',
   '.embed-assets-upgrade-blocklist',
   '.go-deps-upgrade-blocklist',
+  // W4-D1, CLOSED 2026-09-08. This name landed in the directory on 2026-09-07 with
+  // check:ci-language-policy and was NOT added here, so 16 dotfiles on disk faced 15
+  // names for a day with nothing red: its gate reached it through a hardcoded literal
+  // instead of policyPath(), and a reader that bypasses the seam does not need the list
+  // to know the file exists, which is exactly why a stale list is invisible. Both halves
+  // are fixed: the literal became policy_path() in W4 P4a, and check:ci-policy-inventory
+  // now asserts three-way set equality between this list, the Python one and the
+  // directory, so the same drift cannot recur silently.
+  '.language-policy-allowlist',
   '.plan-housekeeping-allowlist',
   '.profiler-coverage-allowlist',
   '.runner-advice-allowlist',
   '.unverified-download-allowlist',
+  // D0, 2026-09-09. THE ONLY NON-DOTFILE AND THE ONLY .json IN THIS SET, and both are
+  // deliberate. It is a pinned MEASUREMENT of what the hook wiring costs, not a list of
+  // exempted entries, so a name-per-line dotfile could not hold it; it is policy by the
+  // README's four-part predicate all the same, because every number in it is a claim
+  // about the world that a change to .claude/settings.json can stop being true.
+  'hook-exec-baseline.json',
+  // D2, 2026-09-09. The WORKLIST_* environment registry: 133 names across 60 files at
+  // 183 read sites, with no registry and no schema before this. A typo'd name reads as
+  // UNSET, which for a flag defaulting to `on` is the FAIL-OPEN direction.
+  'worklist-env-registry.json',
 ] as const);
 
 type PolicyFileName = (typeof POLICY_FILES)[number];

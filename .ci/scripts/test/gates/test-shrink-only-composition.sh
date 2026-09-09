@@ -19,7 +19,7 @@
 #
 # A reseed that drains thirty findings and absorbs one satisfies the first, violates the
 # second, and prints a SMALLER number while doing it. On 2026-08-20 the guard was added to
-# scripts/check-em-dash-surfaces.ts and refused, on its first real run, a reseed that would
+# scripts/gates/check-em-dash-surfaces.ts and refused, on its first real run, a reseed that would
 # have enshrined two em dashes a background naturalization job had introduced minutes
 # earlier. That is the failure this file exists to keep closed.
 #
@@ -86,18 +86,74 @@ is_in() {
     return 1
 }
 
-# Every file that offers the flag.
+# Every file that offers the flag, in EVERY language that can hold a baseline writer.
 #
-# NOTE THE `-e`. Writing this as `grep -rl -- "--write-baseline" --include=*.ts ...` looks
-# correct and is not: grep here is ugrep 7.5.0, and after the `--` separator it reads the
-# `--include=` arguments as FILENAMES. It warns to stderr, exits 2, and still prints a
-# plausible-looking file list, so with stderr suppressed the bug is invisible until
-# `set -o pipefail` turns it into an unexplained exit. `-e` passes a pattern that begins
-# with a dash without closing the option list.
+# TWO BLIND SPOTS CLOSED, 2026-09-08 (U3). This enumerator used to read
+#   grep -rl -e "--write-baseline" --include=*.ts --include=*.js scripts/ packages/www/scripts/
+# which excluded `.py` AND excluded the whole `.ci/` tree. Both halves matter now: ruling 7
+# moves gates into Python under `.ci`, and the first Python shrink-only baseline landed on
+# 2026-09-07 outside both filters -- `.ci/scripts/quality/check_language_policy.py`, freezing
+# 521 paths. THE HOLE WAS SELF-DECLARED: that gate's own comment says the port "names the
+# resulting coverage gap in gate-test:shrink-only-composition out loud rather than leaving it
+# to be discovered", and it was still open a day later. The green here was never false, just
+# scoped to a language and two directories the programme is migrating away from.
+# Measured on this tree: 20 file(s) scanned before, 21 after, of which 1 is the Python writer
+# that was invisible. No `.ts` or `.js` offerer lives under `.ci/` today, so the root half of
+# the widening changes no count -- it removes a way for the count to be wrong later.
+#
+# ENUMERATED FROM `git ls-files` RATHER THAN FROM A ROOT LIST, which is what makes the root
+# half permanent: a directory created next month is in the corpus the day it exists. The
+# extension filter is a git PATHSPEC rather than a grep, so a filename can never be read as
+# an option.
+#
+# NOTE THE `-e`. Writing this as `grep -l -- "--write-baseline" ...` looks correct and is
+# not: grep here is ugrep, and after the `--` separator it reads the remaining arguments as
+# FILENAMES. It warns to stderr, exits 2, and still prints a plausible-looking file list, so
+# with stderr suppressed the bug is invisible until `set -o pipefail` turns it into an
+# unexplained exit. `-e` passes a pattern that begins with a dash without closing the option
+# list.
+all_offerers() {
+    git ls-files --cached --others --exclude-standard -z -- '*.ts' '*.js' '*.py' |
+        xargs -0 -r grep -l -e "--write-baseline" 2>/dev/null | sort
+}
+
+# `|| true` on both: grep exits 1 on no match, and under `set -o pipefail` an empty half
+# would abort the run instead of being REPORTED as empty, which is the opposite of the
+# anti-vacuity rule below. Emptiness is a verdict here, not a crash.
 offerers() {
-    grep -rl -e "--write-baseline" \
-        --include=*.ts --include=*.js \
-        scripts/ packages/www/scripts/ 2>/dev/null | sort
+    all_offerers | grep -E '\.(ts|js)$' || true
+}
+
+offerers_py() {
+    all_offerers | grep -E '\.py$' || true
+}
+
+# THE PYTHON HALF HAS NO SHARED GUARD TO IMPORT, and pretending otherwise would make this
+# check unsatisfiable. `scripts/lib/shrink-only-baseline.ts` is TypeScript with no Python
+# binding, so `check_language_policy.py` carries a faithful PORT of its decision half
+# (`baseline_additions`, `write_verdict`, `render_refusal`) and says so in its own comment.
+# Until a shared Python guard exists, CONSUMING THE PORT is the contract, and it is stated
+# here as one rather than leaving the language uncovered. Three conditions, because any one
+# alone is satisfiable while the write path stays unconditional: the file must DEFINE or
+# IMPORT `write_verdict`, must CALL it somewhere other than its own definition, and must
+# compute `baseline_additions`. A file that only names them in a comment is not guarded,
+# which the mention control proves.
+#
+# `-P`, not `-E`: ugrep returns SILENT FALSE ZEROS when `^` is alternated, and the first
+# pattern below alternates exactly that way.
+py_reaches_guard() {
+    local f="$1"
+    grep -qP '^(def write_verdict\(|from [\w.]+ import .*\bwrite_verdict\b)' "$f" || return 1
+    grep -qP '(?<!def )\bwrite_verdict\(' "$f" || return 1
+    grep -qP '\bbaseline_additions\(' "$f" || return 1
+    return 0
+}
+
+unguarded_py() {
+    local f
+    for f in $(offerers_py); do
+        py_reaches_guard "$f" || echo "$f"
+    done
 }
 
 # Files that offer the flag, are not exempt, and reach the guard by no route.
@@ -121,13 +177,22 @@ test_guard_module_exists() {
     log_pass "the shared composition guard exists at $GUARD"
 }
 
+# EACH CORPUS IS REFUSED SEPARATELY. A populated half does not excuse an empty one: with a
+# single summed count, the `.py` half could go to zero -- the enumerator broken, the pathspec
+# mistyped, the tree reorganised -- and 20 TypeScript offerers would carry the total straight
+# past the floor while the language this programme is migrating TO went unchecked. That is
+# the exact shape of the blind spot U3 closed, so the fix must not be re-openable by silence.
 test_scan_is_not_vacuous() {
-    local n
+    local n m
     n="$(offerers | wc -l)"
+    m="$(offerers_py | wc -l)"
     if [[ "$n" -lt 8 ]]; then
-        log_fail "only $n file(s) offer --write-baseline; the scan is not seeing the tree, so its green would mean nothing"
+        log_fail "only $n TypeScript/JavaScript file(s) offer --write-baseline; the scan is not seeing the tree, so its green would mean nothing"
     fi
-    log_pass "scan sees $n file(s) offering --write-baseline"
+    if [[ "$m" -eq 0 ]]; then
+        log_fail "ZERO Python file(s) offer --write-baseline. One did on 2026-09-07 (check_language_policy.py, 521 paths). Zero means the enumerator stopped seeing .py, not that the debt went away -- and this half of the gate would be asserting nothing."
+    fi
+    log_pass "scan sees $n ts/js and $m python file(s) offering --write-baseline"
 }
 
 test_every_gate_consumes_the_guard() {
@@ -173,6 +238,109 @@ test_pending_set_only_shrinks() {
     log_pass "the unguarded set has not grown (${#PENDING[@]} known)"
 }
 
+# The Python writers, against the ported guard. Separate from the TypeScript check because
+# the routes are different, not because the rule is: one imports a shared module, the other
+# consumes a port of it, and both must refuse a reseed that would ABSORB a new finding.
+test_every_python_writer_consumes_the_guard() {
+    local bad found=0 f
+    bad="$(unguarded_py)"
+    for f in $bad; do
+        log_error "  $f offers --write-baseline and consumes neither a shared guard nor the ported one"
+        found=1
+    done
+    if [[ "$found" -eq 1 ]]; then
+        log_error ""
+        log_error "  A shrink-only baseline that reseeds unconditionally can drain thirty findings,"
+        log_error "  absorb one brand new one, and print a smaller number while doing it."
+        log_error "  Port the decision half of $GUARD the way check_language_policy.py did:"
+        log_error "  baseline_additions() for the diff, write_verdict() before the write."
+        log_fail "at least one Python baseline writer bypasses the composition guard"
+    fi
+    local n
+    n="$(offerers_py | wc -l)"
+    log_pass "every Python baseline writer consumes the guard ($n offerer(s) scanned)"
+    # VISIBLE EVERY RUN. There is no shared Python guard yet, so each writer carries its own
+    # copy of the decision half. That is real duplication and it is stated rather than left
+    # to be discovered a second time.
+    for f in $(offerers_py); do
+        log_info "PORTED GUARD (no shared Python module exists yet): $f"
+    done
+}
+
+# CONTROL. Plant an unguarded PYTHON writer where the OLD enumerator could not look -- under
+# `.ci/`, with a `.py` suffix -- and require detection. This is the control that proves the
+# widening is real: run against the previous enumerator it detects nothing at all, because
+# neither the extension nor the directory was in scope.
+test_control_unguarded_python_reseed_is_detected() {
+    local probe=".ci/scripts/quality/zz_composition_control_probe.py"
+    cat >"$probe" <<'EOF'
+#!/usr/bin/env python3
+"""Temporary control fixture. Offers --write-baseline with no composition guard."""
+
+import sys
+
+if "--write-baseline" in sys.argv:
+    print("unconditional reseed")
+EOF
+    local seen=0 detected=0
+    [ -n "$(offerers_py | grep -x "$probe")" ] && seen=1
+    [ -n "$(unguarded_py | grep -x "$probe")" ] && detected=1
+    rm -f "$probe"
+    [[ -f "$probe" ]] && log_fail "python control probe was not removed"
+    [[ "$seen" -eq 1 ]] || log_fail "CONTROL FAILED: the enumerator did not even SEE a .py offerer under .ci/, so the widening is not in effect"
+    [[ "$detected" -eq 1 ]] || log_fail "CONTROL FAILED: an unguarded Python reseed was NOT detected, so this half cannot fail"
+    log_pass "CONTROL: a planted unguarded Python reseed under .ci/ is seen and detected"
+}
+
+# CONTROL, the other direction. A Python file that only MENTIONS the ported guard in prose
+# must NOT count as guarded, and one that genuinely consumes it MUST. Both in one probe file
+# so the two answers come from the same scanner on the same run.
+test_control_python_mention_is_not_a_guard() {
+    local probe=".ci/scripts/quality/zz_composition_mention_probe.py"
+    cat >"$probe" <<'EOF'
+#!/usr/bin/env python3
+"""Temporary control fixture. Names write_verdict( and baseline_additions( in PROSE only."""
+
+import sys
+
+# write_verdict( and baseline_additions( appear here and nowhere else.
+if "--write-baseline" in sys.argv:
+    print("unconditional reseed")
+EOF
+    local mentioned=0
+    [ -n "$(unguarded_py | grep -x "$probe")" ] && mentioned=1
+    cat >"$probe" <<'EOF'
+#!/usr/bin/env python3
+"""Temporary control fixture. Actually consumes the ported decision half."""
+
+import sys
+
+
+def baseline_additions(old, new):
+    known = set(old)
+    return [x for x in new if x not in known]
+
+
+def write_verdict(*, baseline_exists, first_seed, additions):
+    if not baseline_exists and not first_seed:
+        return "missing-baseline"
+    return "would-grow" if additions else None
+
+
+if "--write-baseline" in sys.argv:
+    added = baseline_additions([], [])
+    if write_verdict(baseline_exists=True, first_seed=False, additions=added):
+        sys.exit(1)
+EOF
+    local guarded=1
+    [ -n "$(unguarded_py | grep -x "$probe")" ] && guarded=0
+    rm -f "$probe"
+    [[ -f "$probe" ]] && log_fail "python mention probe was not removed"
+    [[ "$mentioned" -eq 1 ]] || log_fail "CONTROL FAILED: a prose mention of write_verdict was accepted as a guard route"
+    [[ "$guarded" -eq 1 ]] || log_fail "CONTROL FAILED: a writer that really consumes the ported guard was reported unguarded, so this check flags correct work"
+    log_pass "CONTROL: naming the ported guard in a comment does not count, consuming it does"
+}
+
 # CONTROL. Plant a file with the OLD unconditional shape and require detection. Without
 # this, `unguarded()` returning nothing proves nothing about the scanner.
 test_control_unguarded_reseed_is_detected() {
@@ -213,7 +381,7 @@ EOF
 # BEHAVIOURAL. The one gate that accepts --baseline, so the write can be aimed at a copy and
 # the live suppression file is never touched. Proven both directions.
 test_refusal_end_to_end() {
-    local gate="scripts/check-em-dash-surfaces.ts"
+    local gate="scripts/gates/check-em-dash-surfaces.ts"
     local live="scripts/data/em-dash-surfaces-baseline.json"
     [[ -f "$live" ]] || log_fail "$live is missing"
 
@@ -268,9 +436,12 @@ log_test "test-shrink-only-composition"
 test_guard_module_exists
 test_scan_is_not_vacuous
 test_every_gate_consumes_the_guard
+test_every_python_writer_consumes_the_guard
 test_pending_set_only_shrinks
 test_control_unguarded_reseed_is_detected
 test_control_mention_is_not_an_import
+test_control_unguarded_python_reseed_is_detected
+test_control_python_mention_is_not_a_guard
 test_refusal_end_to_end
 echo ""
 log_pass "all tests passed"

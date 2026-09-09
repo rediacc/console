@@ -60,6 +60,11 @@ export interface GateHeader {
   step?: string;
   /** Capabilities the gate needs from its lane: submodules, node, python, go, ruff. */
   needs: string[];
+  /**
+   * Capabilities `inferredNeeds` guessed that the gate does NOT have, each with a
+   * reason. See `inferredNeeds` for why this exists and why it must carry a reason.
+   */
+  needsNot: string[];
   /** Override the id derived from the filename. */
   id?: string;
   /** Override the run command derived from the extension. */
@@ -70,6 +75,32 @@ export interface GateHeader {
   selftest?: boolean;
   /** Mark it slow for the fast-lane tier. */
   slow?: boolean;
+  /**
+   * Step-level `env:`, one `env-<KEY>: <value>` line per key.
+   *
+   * ONE KEY PER LINE, not a comma list, because the values are GitHub expressions --
+   * `${{ github.event.pull_request.number }}` -- and splitting a comma list correctly
+   * would mean knowing when a comma is inside `${{ }}`. A grammar that needs a parser
+   * to read one field is a grammar that will be read wrong.
+   *
+   * WHY THE HEADER AND NOT THE WORKFLOW. 17 registered steps carry `env:` in
+   * `ci-quality.yml` today and no lock entry records one, so `gate-bind` emitting such a
+   * step would drop its env and report a tidy `rewrote N region(s)`. Nothing reds: the
+   * receipt is stripping `DOCKERHUB_TOKEN` from `check:ci-docker-image-freshness` and
+   * running the whole battery green. Declaring env HERE puts it in the lock, which is
+   * what makes the emitted step reproducible and the parity gate possible.
+   */
+  env?: Record<string, string>;
+  /**
+   * An extra condition ANDed onto the standard step guard. It never REPLACES it.
+   *
+   * A field that could replace the guard re-opens invariant 11 through a side door: the
+   * standard `if:` is what keeps a gate from running when setup failed, and a gate that
+   * could opt out of it could opt out of the whole ordering contract. So `when` is a
+   * CONJUNCT, always, and `steps.` is refused inside it -- a step reference is exactly
+   * the shape that would let a gate reach around setup and judge its own prerequisites.
+   */
+  when?: string;
   /** Free prose: why the gate exists. Emitted as the manifest entry's comment. */
   why?: string;
   /**
@@ -103,6 +134,8 @@ export interface GateHeader {
 const OPEN = /^\s*(?:#|\/\/|\*)?\s*-{2,}\s*gate\s*-{2,}\s*$/;
 const CLOSE = /^\s*(?:#|\/\/|\*)?\s*-{2,}\s*end gate\s*-{2,}\s*$/;
 const FIELD = /^\s*(?:#|\/\/|\*)?\s*([a-z][a-z-]*)\s*:\s*(.*?)\s*$/;
+/** `env-<KEY>: <value>`. Uppercase by design: an env var that is not SHOUTY is a typo. */
+const ENV_FIELD = /^\s*(?:#|\/\/|\*)?\s*env-([A-Z][A-Z0-9_]*)\s*:\s*(.*?)\s*$/;
 
 /** Strip a trailing `# ...` note, which is prose about the value, not the value. */
 const value = (raw: string): string => raw.replace(/\s+#\s.*$/, '').trim();
@@ -144,7 +177,16 @@ export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | 
   }
 
   const fields = new Map<string, string>();
+  const env = new Map<string, string>();
   for (const line of lines.slice(open + 1, close)) {
+    // ENV FIRST. `FIELD` only accepts lowercase keys, so `env-GITHUB_TOKEN:` does not
+    // match it at all -- checking env first is what makes that a feature (a dedicated
+    // grammar) rather than an accident (a silently ignored line).
+    const e = ENV_FIELD.exec(line);
+    if (e) {
+      env.set(e[1], value(e[2]));
+      continue;
+    }
     const m = FIELD.exec(line);
     if (m) fields.set(m[1], value(m[2]));
   }
@@ -174,6 +216,21 @@ export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | 
       error: 'kind: test needs `test:` naming the gate-test that runs it in CI',
     };
   }
+  // `needs-not` REQUIRES a reason, for the same argument the BLOCKER convention makes
+  // everywhere else in this repo: an unexplained subtraction from a safety-side default
+  // is indistinguishable from a mistake, and this one subtracts from a capability claim
+  // whose failure mode is a gate dying on a clean runner.
+  const needsNotRaw = (fields.get('needs-not') ?? '').trim();
+  if (needsNotRaw !== '' && (fields.get('blocker') ?? '') === '') {
+    return {
+      error:
+        'needs-not needs a `blocker:` saying WHY the inference is wrong for this file. ' +
+        'inferredNeeds deliberately over-infers, because over-inferring only blocks a ' +
+        'declaration while under-inferring kills the gate on a clean runner, so removing ' +
+        'one of its guesses is a claim that has to be argued rather than asserted.',
+    };
+  }
+
   const emitField = fields.get('emit');
   if (emitField !== undefined && !/^(true|false|yes|no|1|0)$/i.test(emitField)) {
     return { error: `emit: ${emitField} is not a boolean` };
@@ -190,12 +247,43 @@ export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | 
     };
   }
 
+  // `when` IS A CONJUNCT AND MAY NOT REACH FOR A STEP. See the field's own comment: a
+  // `steps.` reference is how a gate would reach around the setup guard and judge its own
+  // prerequisites, which is invariant 11 re-opened through a side door.
+  const when = fields.get('when');
+  if (when !== undefined && when.includes('steps.')) {
+    return {
+      error:
+        `when: ${when} references \`steps.\`. The standard guard already handles step ` +
+        'outcomes; a `when` that can see them can contradict it, and ANDing a ' +
+        'contradiction is how a gate stops running while still looking registered.',
+    };
+  }
+  if (when !== undefined && when.trim() === '') {
+    return { error: 'when: is empty. Omit the field rather than ANDing nothing.' };
+  }
+  // An env value that is empty is a variable set to the empty string, which is NOT the
+  // same as unset and has bitten this repo before through toolchain_pin_for returning "".
+  for (const [k, v] of env) {
+    if (v.trim() === '') {
+      return {
+        error:
+          `env-${k}: is empty. An empty value SETS the variable to "", which a reader ` +
+          'cannot tell from a deliberate blank; omit the line to leave it unset.',
+      };
+    }
+  }
+
   const bool = (k: string): boolean | undefined =>
     fields.has(k) ? /^(true|yes|1)$/i.test(fields.get(k) ?? '') : undefined;
 
   return {
     kind,
     ...(owns ? { step: step as string } : {}),
+    needsNot: (fields.get('needs-not') ?? '')
+      .split(',')
+      .map((x) => x.trim())
+      .filter((x) => x !== '' && x !== 'none'),
     needs: (fields.get('needs') ?? '')
       .split(',')
       .map((s) => s.trim())
@@ -205,6 +293,8 @@ export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | 
     ...(fields.has('lane') ? { lane: fields.get('lane') } : {}),
     ...(bool('selftest') === undefined ? {} : { selftest: bool('selftest') }),
     ...(bool('slow') === undefined ? {} : { slow: bool('slow') }),
+    ...(env.size > 0 ? { env: Object.fromEntries([...env].sort()) } : {}),
+    ...(when === undefined ? {} : { when }),
     ...(fields.has('why') ? { why: fields.get('why') } : {}),
     ...(emit ? {} : { emit: false }),
     ...(fields.has('test') ? { test: fields.get('test') } : {}),
@@ -235,7 +325,19 @@ export function headerError(source: string): string | null {
  */
 export function derivedId(repoPath: string): string {
   const base = (repoPath.split('/').pop() ?? '').replace(/\.(py|sh|ts|cjs|mjs)$/, '');
-  if (repoPath.includes('/test/gates/')) return `gate-test:${base.replace(/^test[-_]/, '')}`;
+  // BOTH ARMS NORMALISE `_` TO `-`, and until 2026-09-08 only the second did.
+  // The prefix strip has been `[-_]`-tolerant on both lines for a while, which
+  // made the missing normalisation on the gate-test arm read as deliberate. It
+  // was not: every one of the 149 `id: 'gate-test:...'` entries in
+  // scripts/ci-runner/manifest.ts is hyphenated, so a ported `test_gate_lanes.py`
+  // would have derived `gate-test:gate_lanes` and matched none of them.
+  // LATENT RATHER THAN LIVE TODAY, stated so nobody reads this as a bug that was
+  // biting: `.ci/scripts/test/gates/` holds 149 files and 0 `.py`, and the pytest
+  // ports live under `.ci/rediacc_ci/tests/gates/` -- note the `s` -- which this
+  // branch does not match and which carries no gate header anyway. It fires on
+  // the first battery test ported IN PLACE.
+  if (repoPath.includes('/test/gates/'))
+    return `gate-test:${base.replace(/^test[-_]/, '').replace(/_/g, '-')}`;
   return `check:ci-${base.replace(/^check[-_]/, '').replace(/_/g, '-')}`;
 }
 

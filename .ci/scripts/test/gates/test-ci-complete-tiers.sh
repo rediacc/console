@@ -149,9 +149,15 @@ test_unset_var_still_fails() {
         [[ "$key" == "RESULT_TESTS" ]] && continue
         env_kv+=("${key}=${BASELINE_RESULTS[$key]}")
     done
-    local rc=0
-    env -i PATH="$PATH" HOME="$HOME" "${env_kv[@]}" bash "$ASSERT" >/dev/null 2>&1 || rc=$?
+    local rc=0 out
+    # CAPTURED, NOT DISCARDED. `>/dev/null 2>&1` threw away the only evidence
+    # that the run failed for the MISSING VARIABLE rather than for a broken
+    # fixture, an env -i that stripped something the script needs, or a syntax
+    # error -- all of which also exit 1.
+    out="$(env -i PATH="$PATH" HOME="$HOME" "${env_kv[@]}" bash "$ASSERT" 2>&1)" || rc=$?
     assert_exit_code 1 "$rc" "unset RESULT_ var fails even on fast path"
+    assert_contains "$out" "TESTS: <unset>" \
+        "and the refusal must name the UNSET variable, not fail for another reason"
     log_pass "unset RESULT_ var fails even on fast path"
 }
 

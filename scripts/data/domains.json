@@ -104,7 +104,7 @@
       "breaksIfMoved": [
         ".ci/scripts/quality/check-silent-failure-patterns.sh:66 SCAN_DIRS=(\".ci/scripts\" \"scripts/dev\"). A missing directory makes find return nothing and the gate reports success over half its corpus. SILENTLY GREEN.",
         ".ci/scripts/security/shfmt.sh:116 loops over `scripts/dev scripts/docker` guarded by [[ -d ]] at :117, so a moved directory silently stops being format-checked. SILENTLY GREEN.",
-        "scripts/check-worker-secret-names.ts:66 parses scripts/dev/deploy-bench.sh with a floor of 20.",
+        "scripts/gates/check-worker-secret-names.ts:66 parses scripts/dev/deploy-bench.sh with a floor of 20.",
         ".ci/scripts/quality/check_bws_map.py:121 reads scripts/dev/secret-rename.py as its rename oracle.",
         ".ci/scripts/test/gates/test-scrub-sentinel-empty.sh:31 and :47, test-worktree-devbox-teardown.sh:33, test-bws-map.sh:33 and :51, test-vacuity-floors.sh:106 all name paths under scripts/dev.",
         "Dockerfile:12 and :32 mention scripts/docker/build-server.sh in comments only, which is also the only thing keeping it out of check-dead-bash's findings."
@@ -130,19 +130,19 @@
     },
     {
       "id": "gates",
-      "paths": ["scripts/check-*.ts"],
+      "paths": ["scripts/gates/check-*.ts"],
       "home": "scripts/gates",
-      "stays": false,
-      "why": "The TypeScript gate bodies. This is the bulk of the P2 move.",
-      "blockedOn": "Strictly serial, single writer. Every moved file changes a path string in package.json (132 gate-path references measured) and in scripts/ci-runner/manifest.ts (139), both of which driver contract section 3 gives to the root driver's merge queue, and a gate file and its registry entry must land in the SAME commit because the parity gate reads the battery from disk in both directions.",
+      "stays": true,
+      "why": "The TypeScript gate bodies, 125 of them. THE P2 MOVE IS DONE: they left scripts/ for scripts/gates/ on 2026-09-09, so this is now a STAYS declaration, and the references that break if they move again are the ones the move had to rewrite: the npm script commands in package.json, the leaves entries in scripts/ci-runner/manifest.ts and the generated scripts/ci-runner/gates.lock.json, the knip root entry glob, and 219 further files across .ci/, .claude/, scripts/ and packages/.",
       "notes": [
         "scripts/gate-bind.ts's inScope test accepts any path under `scripts`, so scripts/gates/ stays visible to the binder.",
-        "scripts/check-worker-secret-names.ts and scripts/check-dead-bash.ts hardcode paths of OTHER files; moving them changes nothing about those strings, but moving their subjects does."
+        "Every moved file sits one directory deeper, so its own root derivation gained one `..`; 259 lines across the 125 files were rewritten for that and for the relative import specifiers."
       ]
     },
     {
       "id": "generators",
       "paths": [
+        "scripts/gen/**",
         "scripts/gen-*.ts",
         "scripts/generate-*.ts",
         "scripts/sync-*.ts",
@@ -152,7 +152,7 @@
       ],
       "home": "scripts/gen",
       "stays": false,
-      "why": "Files that WRITE artefacts rather than assert about them. Keeping them mixed in with 117 check-*.ts is the reason `scripts/` reads as a single undifferentiated pile.",
+      "why": "Files that WRITE artefacts rather than assert about them. Keeping them mixed in with 117 check-*.ts is the reason `scripts/` reads as a single undifferentiated pile. THE HOME ITSELF IS THE FIRST PATTERN, added 2026-09-09: the rule declared `scripts/gen` as a destination and matched only files still sitting OUTSIDE it, so the first file to actually arrive there -- scripts/gen/gen-manifest.ts -- went UNCLASSIFIED and red. A rule that reds at the moment the move it asks for succeeds is the finish-line trap; the same line will be needed for scripts/ops when the operator-script leg lands.",
       "blockedOn": "Same merge queue as `gates`. scripts/gen-docs.ts, scripts/gen-gates-lock.ts, scripts/lib/doc-providers.ts and scripts/lib/doc-regions.ts are W11 and W2 files under active concurrent edit; they move only once those workstreams have handed over."
     },
 

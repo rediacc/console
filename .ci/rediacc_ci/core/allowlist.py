@@ -34,7 +34,7 @@ port that picked one would silently be wrong about the other:
 The difference is not academic. `.ci-parity-exempt` is direction-tagged, so its
 entry lines read `ci-only  <path>` and the shared parsers both take the FIRST
 whitespace token as the key. Nine entry lines in that file collapse to ONE key
-under the bash reader; `scripts/check-ci-parity.ts:751` carries a comment about
+under the bash reader; `scripts/gates/check-ci-parity.ts:751` carries a comment about
 having to correct for it. A caller that needs per-entry reasons must use
 `records`, and this module makes the choice visible instead of leaving it to
 whichever reader happened to be reachable from the language the gate was in.
@@ -82,6 +82,7 @@ them is deleted -- `.ci/rediacc_ci/core/__init__.py` states that contract for
 every module in this subpackage.
 """
 
+import json
 import os
 import pathlib
 import re
@@ -180,6 +181,124 @@ _EM_DASH = "\u2014"
 
 _TRAILING_PUNCTUATION = re.compile(r"[.!?,;:]+$")
 
+# ---------------------------------------------------------------------------
+# The message text, as TEMPLATES, because it is now rendered in two languages.
+# ---------------------------------------------------------------------------
+#
+# WHY TEMPLATES AND NOT f-STRINGS. Until 2026-09-09 these four messages existed
+# three times over: here, in `.ci/scripts/lib/blocker-validator.sh`, and again in
+# `scripts/lib/blocker-validator.ts`, each with its own quoting and its own
+# chance to drift a word. The two shells are now CLIENTS of this module, and the
+# TypeScript one renders the message itself (a subprocess per reason is too slow
+# for a gate that validates a whole list in a loop), so the text has to cross a
+# language boundary as DATA. `contract()` ships exactly this table.
+#
+# THE SUBSTITUTION IS ONE PASS OVER THE TEMPLATE, never over the result. A
+# BLOCKER reason is attacker-adjacent text in the only sense that matters here:
+# somebody will eventually write a reason containing the characters `{entry}`,
+# and a naive `replace()` chain would then splice the entry id into the middle of
+# their prose and the two languages would disagree about the bytes. `_render`
+# walks the template with a regex and resolves each field from a dict, so an
+# injected value is never rescanned. `test_core_allowlist` plants exactly that
+# reason.
+_FIELD = re.compile(r"\{([a-z]+)\}")
+
+MESSAGE_TEMPLATES: dict[str, tuple[str, ...]] = {
+    "low-effort": (
+        'Allowlist {file}: BLOCKER for entry {entry} is a low-effort placeholder ("{reason}")',
+        (
+            '  Rejected because: "{normalized}" matches the banned-phrase list {emdash} this '
+            "adds no information beyond 'we suppressed it'"
+        ),
+        (
+            "  Action: write a specific reason. Good BLOCKERs cite the upstream pin, the "
+            "package chain, OR why runtime isn't affected."
+        ),
+        (
+            "  Example: 'electron-builder 26.x pins plist > xmldom 0.8.x; build-time only, "
+            "requires major electron migration'"
+        ),
+    ),
+    "deferral": (
+        (
+            "Allowlist {file}: BLOCKER for entry {entry} defers a routine bump instead of "
+            'justifying a hold ("{reason}")'
+        ),
+        (
+            '  Rejected because: it contains "{pattern}" {emdash} the upgrade blocklist is '
+            "for bumps that genuinely cannot be taken now (breaking major, pin conflict, "
+            "native rebuild, known regression), not for deferring a routine installable bump."
+        ),
+        (
+            "  Note: check-deps already auto-defers freshly-published versions (until the "
+            "next UTC day after they age the minimum-release-age window), so there is no "
+            "need to blocklist a fresh release."
+        ),
+        (
+            "  Action: TAKE the bump ('npm run check:deps -- --upgrade'), OR cite the "
+            "concrete technical blocker (which package pins what, what breaks)."
+        ),
+    ),
+    "too-short": (
+        (
+            "Allowlist {file}: BLOCKER for entry {entry} is too short ({length} chars, "
+            "minimum {min})"
+        ),
+        '  Current: "{reason}"',
+        (
+            "  Action: a BLOCKER must explain WHO pins what, WHY the fix cannot be taken "
+            "now, and ideally WHEN to revisit."
+        ),
+        (
+            "  Example: 'axios 1.15.0 pins follow-redirects <1.16.0; not runtime-exposed in "
+            "CLI auth path; revisit when axios bumps'"
+        ),
+    ),
+    "missing": (
+        ("Allowlist {file}: entry {entry} is missing a '# BLOCKER: <reason>' comment above it"),
+        (
+            "  Action: add a line like '# BLOCKER: <who pins what / why we cannot take the "
+            "fix>' immediately above {entry} in {file}"
+        ),
+    ),
+}
+
+
+def _render(kind: str, **fields: str) -> str:
+    """One template, one pass, values never rescanned. See the note above."""
+    values = dict(fields)
+    values["emdash"] = _EM_DASH
+
+    def resolve(match: re.Match) -> str:
+        name = match.group(1)
+        if name not in values:
+            raise KeyError("template %r references {%s}, which no caller supplies" % (kind, name))
+        return values[name]
+
+    return "\n".join(_FIELD.sub(resolve, line) for line in MESSAGE_TEMPLATES[kind])
+
+
+def contract() -> dict:
+    """Everything a non-Python client needs to render the same verdicts.
+
+    THIS IS THE COLLAPSE. `scripts/lib/blocker-validator.ts` used to carry its own
+    copy of both tables, the floor and all four messages, under a comment asking
+    the next author to keep them in sync by hand. It now asks for this dict once
+    per process and renders from it, so there is one place the rule is written.
+
+    `version` is here so a client that finds a shape it does not understand can
+    refuse loudly instead of reading a missing key as an empty list. An empty
+    phrase table would make every low-effort reason pass.
+    """
+    return {
+        "version": 1,
+        "minLength": MIN_REASON_LENGTH,
+        "emdash": _EM_DASH,
+        "phrases": list(LOW_EFFORT_PHRASES),
+        "substrings": list(LOW_EFFORT_SUBSTRINGS),
+        "templates": {kind: list(lines) for kind, lines in MESSAGE_TEMPLATES.items()},
+    }
+
 
 class ListNotFoundError(FileNotFoundError):
     """The list file is not there.
@@ -237,7 +356,7 @@ def parse_text(text: str, comment_char: str = "#") -> list[Entry]:
         stripped = raw.strip()
         if not stripped:
             # A blank line resets the group. This is the documented contract, and
-            # it is also why `scripts/check-suppression-liveness.ts:894` has to
+            # it is also why `scripts/gates/check-suppression-liveness.ts:894` has to
             # hunt for reasons that cover no entries at all: the readers walk
             # entries, so a reason orphaned by a stray blank line is invisible.
             current = ""
@@ -356,21 +475,12 @@ def validate_reason(entry: str, reason: str, file: str) -> Rejection | None:
             return Rejection(
                 "low-effort",
                 normalized,
-                "\n".join(
-                    [
-                        'Allowlist %s: BLOCKER for entry %s is a low-effort placeholder ("%s")'
-                        % (file, entry, reason),
-                        '  Rejected because: "%s" matches the banned-phrase list %s this adds '
-                        "no information beyond 'we suppressed it'" % (normalized, _EM_DASH),
-                        (
-                            "  Action: write a specific reason. Good BLOCKERs cite the "
-                            "upstream pin, the package chain, OR why runtime isn't affected."
-                        ),
-                        (
-                            "  Example: 'electron-builder 26.x pins plist > xmldom 0.8.x; "
-                            "build-time only, requires major electron migration'"
-                        ),
-                    ]
+                _render(
+                    "low-effort",
+                    file=file,
+                    entry=entry,
+                    reason=reason,
+                    normalized=normalized,
                 ),
             )
 
@@ -379,26 +489,12 @@ def validate_reason(entry: str, reason: str, file: str) -> Rejection | None:
             return Rejection(
                 "deferral",
                 normalized,
-                "\n".join(
-                    [
-                        "Allowlist %s: BLOCKER for entry %s defers a routine bump instead of "
-                        'justifying a hold ("%s")' % (file, entry, reason),
-                        '  Rejected because: it contains "%s" %s the upgrade blocklist is for '
-                        "bumps that genuinely cannot be taken now (breaking major, pin "
-                        "conflict, native rebuild, known regression), not for deferring a "
-                        "routine installable bump." % (pattern, _EM_DASH),
-                        (
-                            "  Note: check-deps already auto-defers freshly-published "
-                            "versions (until the next UTC day after they age the "
-                            "minimum-release-age window), so there is no need to blocklist "
-                            "a fresh release."
-                        ),
-                        (
-                            "  Action: TAKE the bump ('npm run check:deps -- --upgrade'), OR "
-                            "cite the concrete technical blocker (which package pins what, "
-                            "what breaks)."
-                        ),
-                    ]
+                _render(
+                    "deferral",
+                    file=file,
+                    entry=entry,
+                    reason=reason,
+                    pattern=pattern,
                 ),
             )
 
@@ -406,20 +502,13 @@ def validate_reason(entry: str, reason: str, file: str) -> Rejection | None:
         return Rejection(
             "too-short",
             normalized,
-            "\n".join(
-                [
-                    "Allowlist %s: BLOCKER for entry %s is too short (%d chars, minimum %d)"
-                    % (file, entry, len(normalized), MIN_REASON_LENGTH),
-                    '  Current: "%s"' % reason,
-                    (
-                        "  Action: a BLOCKER must explain WHO pins what, WHY the fix cannot "
-                        "be taken now, and ideally WHEN to revisit."
-                    ),
-                    (
-                        "  Example: 'axios 1.15.0 pins follow-redirects <1.16.0; not "
-                        "runtime-exposed in CLI auth path; revisit when axios bumps'"
-                    ),
-                ]
+            _render(
+                "too-short",
+                file=file,
+                entry=entry,
+                reason=reason,
+                length=str(len(normalized)),
+                min=str(MIN_REASON_LENGTH),
             ),
         )
 
@@ -434,14 +523,7 @@ def missing_reason(entry: str, file: str) -> str:
     wart is the job; diverging from it would make this module's output something
     a gate could not adopt without changing its own expected text.
     """
-    return "\n".join(
-        [
-            "Allowlist %s: entry %s is missing a '# BLOCKER: <reason>' comment above it"
-            % (file, entry),
-            "  Action: add a line like '# BLOCKER: <who pins what / why we cannot take the "
-            "fix>' immediately above %s in %s" % (entry, file),
-        ]
-    )
+    return _render("missing", file=file, entry=entry)
 
 
 def verify(entries: list[Entry], file: str) -> list[str]:
@@ -476,11 +558,16 @@ def unreasoned(entries: list[Entry]) -> list[Entry]:
 def main(argv: list[str]) -> int:
     if not argv:
         print(
-            "usage: python3 -m rediacc_ci.core.allowlist <records|pairs|verify|reason> [args]",
+            "usage: python3 -m rediacc_ci.core.allowlist "
+            "<records|pairs|verify|verify-rows|reason|contract> [args]",
             file=sys.stderr,
         )
         return 2
     verb, rest = argv[0], argv[1:]
+
+    if verb == "contract":
+        print(json.dumps(contract(), ensure_ascii=True, sort_keys=True))
+        return 0
 
     if verb in ("records", "pairs", "verify"):
         if not rest:
@@ -504,6 +591,37 @@ def main(argv: list[str]) -> int:
         failures = verify(entries, path)
         for message in failures:
             print(message)
+        return 1 if failures else 0
+
+    if verb == "verify-rows":
+        # THE BATCH FORM, for `verify_all_blockers` in the bash client. It reads
+        # `<entry>\t<reason>` rows on stdin and frames each failure as
+        # `\x1e<line-count>` followed by exactly that many lines. A COUNTED FRAME
+        # rather than a sentinel line: a sentinel is forgeable by a BLOCKER
+        # reason, which is user text, and a forged frame would let a rejection
+        # hide inside another rejection's message.
+        if not rest:
+            print("verify-rows needs a list path (used only in the message)", file=sys.stderr)
+            return 2
+        file = rest[0]
+        failures: list[str] = []
+        for raw in sys.stdin.read().split("\n"):
+            if raw == "":
+                continue
+            entry, sep, reason = raw.partition("\t")
+            if not sep:
+                print("verify-rows: row %r carries no TAB separator" % raw, file=sys.stderr)
+                return 2
+            if not reason:
+                failures.append(missing_reason(entry, file))
+                continue
+            rejection = validate_reason(entry, reason, file)
+            if rejection is not None:
+                failures.append(rejection.message)
+        for message in failures:
+            lines = message.split("\n")
+            sys.stdout.write("\x1e%d\n" % len(lines))
+            sys.stdout.write("".join(line + "\n" for line in lines))
         return 1 if failures else 0
 
     if verb == "reason":

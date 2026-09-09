@@ -91,7 +91,7 @@ files. New plugin, following the established pattern:
 
 ## 4. i18n mechanics (verified; two independent systems — do not conflate)
 
-- **JSON manifests** (`scripts/generate-translation-hashes.ts`, `.translation-hashes.json`):
+- **JSON manifests** (`scripts/gen/generate-translation-hashes.ts`, `.translation-hashes.json`):
   covers en.json-style trees (www translations, CLI locales, account). The CLI reshape's
   new/renamed command strings flow HERE → re-naturalize via `private/growth/i18n_pipeline`
   (ledger-driven delta; Sonnet).

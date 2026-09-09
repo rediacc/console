@@ -89,7 +89,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, plant
 
 # The harness under test, repo-relative. The twin `cd`s to the root and names it
 # bare; this is the same fact with the cd removed.
@@ -342,7 +342,8 @@ drill_summary() {
 # THE 2026-08-05 DEFECT ITSELF, as a fixture: a zero-assertion run that says
 # PASSED. This is the mutant the gate exists to catch, and a suite without it is
 # a suite that has never seen this gate fire.
-_VACUOUS_LIB = _GOOD_LIB.replace(
+_VACUOUS_LIB = plant(
+    _GOOD_LIB,
     "        printf '  drill %s SKIPPED (0 assertions ran)\\n' \"$DRILL_NAME\"\n        return 0\n",
     "        printf '  drill %s PASSED\\n' \"$DRILL_NAME\"\n        return 0\n",
 )
@@ -424,7 +425,8 @@ def selftest() -> int:
         ctl.check(
             "PLANT: a summary hard-wired to SKIPPED is caught by the CONTROL case",
             run(
-                _GOOD_LIB.replace(
+                plant(
+                    _GOOD_LIB,
                     "    printf '  drill %s PASSED\\n' \"$DRILL_NAME\"\n    return 0",
                     "    printf '  drill %s SKIPPED\\n' \"$DRILL_NAME\"\n    return 0",
                 )
@@ -437,7 +439,8 @@ def selftest() -> int:
         ctl.check(
             "PLANT: a failing run that exits 0 is caught",
             run(
-                _GOOD_LIB.replace(
+                plant(
+                    _GOOD_LIB,
                     "        printf '  drill %s FAILED\\n' \"$DRILL_NAME\"\n        return 1",
                     "        printf '  drill %s FAILED\\n' \"$DRILL_NAME\"\n        return 0",
                 )
@@ -450,7 +453,8 @@ def selftest() -> int:
         ctl.check(
             "PLANT: a selftest that does not refuse is caught",
             run(
-                _GOOD_LIB.replace(
+                plant(
+                    _GOOD_LIB,
                     "            printf '  SELFTEST DID NOT FIRE: a planted failure "
                     "went unnoticed\\n'\n            return 1",
                     "            printf '  all good\\n'\n            return 0",

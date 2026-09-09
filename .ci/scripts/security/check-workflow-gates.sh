@@ -101,6 +101,23 @@ if [[ -z "${SLIM_TIMEOUT_REQUIRE_COVERAGE:-}" ]]; then
     SLIM_TIMEOUT_REQUIRE_COVERAGE="$REAL_WORKFLOW_TREE"
 fi
 
+# The external-caller registry. Resolved HERE, not next to CHECK 4, because two
+# checks read it: CHECK 4 owns the caller/callee contract, and CHECK 2's arm (a3)
+# asserts that every DECLARED_UNUSED_OK exemption is pinned alive by an entry in
+# this file. One resolution, one rule, so a fixture tree cannot be real for one
+# arm and synthetic for the other.
+EXTERNAL_CALLERS_ROOT="${EXTERNAL_CALLERS_ROOT:-$ROOT_DIR}"
+if [[ -z "${EXTERNAL_CALLERS_FILE:-}" ]]; then
+    if [[ "$WORKFLOWS_DIR" == "$ROOT_DIR/.github/workflows" ]]; then
+        EXTERNAL_CALLERS_FILE="$ROOT_DIR/.github/external-callers.yml"
+    else
+        # A CHECK 1/2/3 fixture tree has no external callers to speak of. The
+        # real tree always takes the branch above, so this is not an escape
+        # hatch anyone can reach by accident.
+        EXTERNAL_CALLERS_FILE=""
+    fi
+fi
+
 # Anti-vacuity: a missing directory used to `exit 0` here, which meant a moved
 # or renamed workflow tree turned this gate into a no-op that still reported
 # success. Nothing to check is a failure, not a pass.
@@ -197,7 +214,7 @@ fi
 # --- Check 2 ---------------------------------------------------------------
 log_info "Checking reusable-workflow secret/input contracts"
 
-python3 - "$WORKFLOWS_DIR" "$REAL_WORKFLOW_TREE" <<'PYEOF'
+python3 - "$WORKFLOWS_DIR" "$REAL_WORKFLOW_TREE" "$EXTERNAL_CALLERS_FILE" <<'PYEOF'
 import os
 import re
 import sys
@@ -205,6 +222,7 @@ import yaml
 
 workflows_dir = sys.argv[1]
 real_tree = sys.argv[2] == 'true'
+registry_file = sys.argv[3]
 
 # `secrets.X`, but not when it is part of a path or filename -- otherwise
 # "set-account-worker-secrets.sh" reads as a reference to a secret named `sh`.
@@ -223,7 +241,21 @@ for fname in sorted(os.listdir(workflows_dir)):
         with open(path) as f:
             text = f.read()
         docs[fname] = yaml.safe_load(text)
-        texts[fname] = text
+        # COMMENTS ARE NOT USES. `texts` feeds USE_RE, which decides whether a workflow
+        # "reads" a secret, and a raw read counted `# ... secrets.X ...` as a use. So a
+        # comment RECORDING that some secrets.X was removed made the callee look like it
+        # still consumed the name, and the contract check then demanded a declaration for
+        # something nothing reads. Measured 2026-09-09 while retiring exactly such a
+        # reference: two explanatory lines kept the declaration alive.
+        #
+        # This is the FIFTH gate in this tree found with the same blindness in one day --
+        # check:ci-env-file-adoption, block_host_toolchain_run, check-secret-scope.ts and
+        # check_secret_reachability.py were the others. The shared shape is a text scan
+        # standing in for a semantic one, and the shared cost is pressure to delete the
+        # explanation to get green.
+        texts[fname] = "\n".join(
+            "" if ln.lstrip().startswith("#") else ln for ln in text.split("\n")
+        )
     except (yaml.YAMLError, OSError) as e:
         print(f"{fname}: unreadable ({e})", file=sys.stderr)
         sys.exit(1)
@@ -267,13 +299,28 @@ for fname, doc in docs.items():
 # declaration with no read, so dead scaffolding grew quietly on the one surface
 # where a stale secret name is most misleading -- a caller reads the declaration
 # and passes a value that goes nowhere.
-DECLARED_UNUSED_OK = {
-    # Its consumer fetches this from Bitwarden now, so the passed value IS unused --
-    # but private/account and private/renet still PASS it, and dropping the
-    # declaration does not break this repo, it breaks their next run. Remove it in
-    # the same change that updates both callers and .github/external-callers.yml.
-    ('claude-review-reusable.yml', 'ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN'),
-}
+# A LIST, converted below, deliberately: `{...}` with its last member deleted is
+# `{}`, which is an empty DICT, and the set arithmetic in arm (a3) then dies with
+# a TypeError while `in` and `sorted()` above degrade to silently matching
+# nothing. Draining this list to empty is the declared endgame (W8 P1b), so the
+# empty form has to be the safe one. Found by planting exactly that drain.
+_DECLARED_UNUSED_OK = [
+    # DRAINED 2026-09-08, and the premise this entry rested on was FALSE.
+    # It said the consumer "fetches this from Bitwarden now, so the passed value IS
+    # unused". Measured: the fetch step is guarded on `github.repository ==
+    # 'rediacc/console'`, and in a REUSABLE workflow `github.repository` is the
+    # CALLER's repo -- so for rediacc/account and rediacc/renet that step never ran
+    # and the token was EMPTY. The passed secret was unread not because their half of
+    # the migration had landed but because it had never been written, and deleting the
+    # declaration would have made a live outage permanent.
+    # `claude-review-reusable.yml` now reads
+    # `env.BWS_... || secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`, which restores the
+    # read for both callers, and that is what makes this exemption genuinely removable.
+]
+DECLARED_UNUSED_OK = set(_DECLARED_UNUSED_OK)
+if len(DECLARED_UNUSED_OK) != len(_DECLARED_UNUSED_OK):
+    print("DECLARED_UNUSED_OK contains a duplicate entry", file=sys.stderr)
+    sys.exit(1)
 for fname, doc in docs.items():
     wc = workflow_call(doc)
     if not wc:
@@ -310,6 +357,78 @@ if real_tree:
             offenders.append(f"DECLARED_UNUSED_OK: {fname} no longer declares {name}; drop the exemption")
         elif name in used:
             offenders.append(f"DECLARED_UNUSED_OK: {fname} now READS {name}; drop the exemption")
+
+# (a3) every DECLARED_UNUSED_OK exemption must be PINNED ALIVE by a real entry in
+# .github/external-callers.yml, and every pair that registry pins alive must be
+# named by the exemption list. Set equality, both directions.
+#
+# WHY: the only legitimate reason to keep a declaration nothing reads is that a
+# caller in ANOTHER repository still passes it, so deleting the declaration
+# breaks their next run rather than this PR. Until now that justification lived
+# in a COMMENT above the set. A comment cannot go stale loudly: retire the
+# external caller and the exemption stays, looking like coverage, protecting a
+# declaration nothing on earth passes any more.
+#
+# Scoped exactly like the liveness sweep above, and for the same reason: a
+# CHECK 1/2/3 fixture tree has no registry, and an arm that cannot see the thing
+# it probes for must stay silent rather than condemn it.
+if real_tree and registry_file:
+    reg_offenders = []
+    try:
+        with open(registry_file) as fh:
+            registry = yaml.safe_load(fh.read())
+    except (yaml.YAMLError, OSError) as exc:
+        reg_offenders.append(
+            f"arm (a3): {registry_file} unreadable ({exc}) -- the exemption list "
+            f"cannot be justified against a registry that will not parse"
+        )
+        registry = None
+    reg_entries = (registry or {}).get('callers') or []
+    if not reg_offenders and (not isinstance(reg_entries, list) or not reg_entries):
+        # Zero inputs is a failure, never a pass: with an empty registry every
+        # exemption would look unjustified and an empty exemption list would look
+        # perfect, and the arm would be asserting nothing either way.
+        reg_offenders.append(
+            f"arm (a3): {os.path.basename(registry_file)} declares no callers -- "
+            f"nothing can pin an exemption alive, so this arm is blind"
+        )
+        reg_entries = []
+
+    pinned_unused = set()
+    for entry in reg_entries:
+        if not isinstance(entry, dict) or 'calls' not in entry:
+            continue  # CHECK 4 owns the shape of a registry entry
+        callee = os.path.basename(entry['calls'])
+        doc = docs.get(callee)
+        if doc is None:
+            continue  # CHECK 4 reports a registered call to a callee that is gone
+        declared = set((workflow_call(doc).get('secrets') or {}).keys())
+        used = set(USE_RE.findall(texts[callee])) - IMPLICIT
+        passed = entry.get('passes_secrets')
+        names = declared if passed == 'inherit' else set(passed or [])
+        pinned_unused |= {(callee, n) for n in (names & declared) - used}
+
+    for fname, name in sorted(DECLARED_UNUSED_OK - pinned_unused):
+        reg_offenders.append(
+            f"DECLARED_UNUSED_OK exempts {fname}/{name}, but no entry in "
+            f"{os.path.basename(registry_file)} pins it alive -- nothing outside this "
+            f"repo passes it, so delete the declaration and the exemption, not the check"
+        )
+    for fname, name in sorted(pinned_unused - DECLARED_UNUSED_OK):
+        reg_offenders.append(
+            f"{os.path.basename(registry_file)} pins {fname}/{name} alive (an external "
+            f"caller passes a secret {fname} declares and never reads), but "
+            f"DECLARED_UNUSED_OK does not name it -- reconcile the two, or delete the "
+            f"declaration and the registry entry together"
+        )
+
+    offenders.extend(reg_offenders)
+    if not reg_offenders:
+        print(
+            f"info: arm (a3): {len(DECLARED_UNUSED_OK)} declared-unused exemption(s) == "
+            f"{len(pinned_unused)} pinned alive by {len(reg_entries)} external-caller "
+            f"entr{'y' if len(reg_entries) == 1 else 'ies'}"
+        )
 
 # (b)/(c) caller <-> callee contract
 for fname, doc in docs.items():
@@ -496,18 +615,9 @@ fi
 # contract against each declaration, verifies the declaration still matches the
 # caller's real file when the submodule is checked out, and refuses to let an
 # undeclared external caller exist.
-EXTERNAL_CALLERS_ROOT="${EXTERNAL_CALLERS_ROOT:-$ROOT_DIR}"
-if [[ -z "${EXTERNAL_CALLERS_FILE:-}" ]]; then
-    if [[ "$WORKFLOWS_DIR" == "$ROOT_DIR/.github/workflows" ]]; then
-        EXTERNAL_CALLERS_FILE="$ROOT_DIR/.github/external-callers.yml"
-    else
-        # A CHECK 1/2/3 fixture tree has no external callers to speak of. The
-        # real tree always takes the branch above, so this is not an escape
-        # hatch anyone can reach by accident.
-        EXTERNAL_CALLERS_FILE=""
-    fi
-fi
-
+# EXTERNAL_CALLERS_ROOT / EXTERNAL_CALLERS_FILE are resolved near the top of the
+# file, because CHECK 2's arm (a3) needs the same registry and must resolve it
+# the same way rather than growing a second copy of the rule.
 if [[ -z "$EXTERNAL_CALLERS_FILE" ]]; then
     log_info "Skipping external-caller contract check (fixture tree: no registry)"
 else
@@ -823,10 +933,18 @@ for path in files:
 # -- the composite is renamed, the cones are widened, the glob breaks -- the check
 # passes for a reason indistinguishable from correctness, so say which it was.
 if checked == 0:
+    # And it FAILS, rather than announcing the vacuity and exiting 0 as it did
+    # until 2026-09-09. "This is the vacuous case, not a pass" followed by a green
+    # success line is a gate that has stopped meaning its own name: 10 jobs are in
+    # this set today, so an empty one is a broken matcher, never a clean tree.
     print(
-        "info: no job both fetches from Bitwarden and narrows its checkout; "
-        "CHECK 5 asserted nothing (this is the vacuous case, not a pass)"
+        "error: no job both fetches from Bitwarden and narrows its checkout, so "
+        "CHECK 5 asserted nothing. Ten jobs were in this set on 2026-09-09; an "
+        "empty set means the bws-secrets composite was renamed, the sparse-checkout "
+        "key moved, or the workflow glob stopped matching. Fix the matcher above.",
+        file=sys.stderr,
     )
+    sys.exit(1)
 
 for line in offenders:
     print(f"error: {line}", file=sys.stderr)
@@ -903,7 +1021,17 @@ MONITOR = "Monitor jobs and cancel on failure"
 # Steps the monitor genuinely depends on: the checkout that puts its scripts on
 # disk, and the deterministic attempt cap, which must run first BECAUSE it writes
 # the env var the monitor reads.
-PREREQS = {"Attempt cap (deterministic backstop)"}
+PREREQS = {
+    "Attempt cap (deterministic backstop)",
+    # Added 2026-09-09. The monitor's two classifier tiers read credentials this step
+    # exports; without them it does not degrade gracefully, it hands the retry decision to
+    # an allowlist nobody reviewed -- which is the harm the workflow's own comment
+    # describes. That is the PREREQS contract: allowed to fail BECAUSE the monitor cannot
+    # run correctly without it. The org secrets it replaces were deleted 2026-09-05 to
+    # force exactly this migration, and this workflow was the last consumer still reading
+    # them.
+    "Fetch secrets from Bitwarden",
+}
 MAX_TIMEOUT_MINUTES = 5
 
 
@@ -940,11 +1068,15 @@ for job_id, job in (doc.get("jobs") or {}).items():
             f"watchdog-monitor.yml: job '{job_id}' runs {name!r} BEFORE {MONITOR!r}, "
             f"and it can stop the watch: a failure there ends the job and the watchdog "
             f"monitors nothing while reporting a failure that looks like its own. "
-            f"Three ways out, in order of preference: move it after the monitor with "
-            f"`if: always()`; or, if the monitor genuinely needs its output, give it "
-            f"BOTH `continue-on-error: true` and `timeout-minutes: <= "
-            f"{MAX_TIMEOUT_MINUTES}` so it can neither fail nor hang the job; or add it "
-            f"to PREREQS in CHECK 6 saying why it must be allowed to fail."
+            f"TWO ways out. Move it after the monitor with `if: always()`; or add it to "
+            f"PREREQS in CHECK 6 saying why it must be allowed to fail. "
+            f"A THIRD ROUTE EXISTS IN THIS CHECK'S LOGIC AND IS CLOSED IN THIS REPO: "
+            f"`continue-on-error: true` with `timeout-minutes: <= {MAX_TIMEOUT_MINUTES}` "
+            f"satisfies the property here, but check-workflows.sh bans the keyword "
+            f"outright, so CI refuses it minutes later. Two sessions have now spent effort "
+            f"discovering that -- the second on 2026-09-09, because this message advertised "
+            f"the route while only the comment above recorded the ban. It is named here "
+            f"rather than hidden so the next reader does not rediscover it a third time."
         )
 
 # ANTI-VACUITY: a renamed monitor step would empty this check silently, and an

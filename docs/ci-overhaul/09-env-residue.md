@@ -236,10 +236,44 @@ Safe in isolation: the callee still declares the secret as `required: false`, so
 stops passing it is valid. Merge both. Each repo's own `claude-review` run on its next PR is the
 green proof; no console deploy is involved.
 
+**BLOCKED, measured 2026-09-09. Do not run Box 1 or Box 2 as written.** Deleting the
+declaration leaves the two external callers with NO token path at all, so their reviews run
+unauthenticated. `claude-review-reusable.yml:343` consumes
+`env.BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`, and the step that sets it (`:234-242`) carries
+`if: ${{ github.repository == 'rediacc/console' }}`. For a reusable workflow called from
+another repo, `github.repository` is the CALLER's, so that step is skipped and the env var is
+empty. `7343ae9dc` (2026-09-05) flipped `:343` from `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`
+to the env form and left the guard behind, so account and renet have been reviewing with a
+blank credential since that commit; the passed secret is unread not because it was migrated
+for them, but because their branch of the migration was never written. They cannot pass
+`BWS_ACCESS_TOKEN` either, which is exactly why it is `required: false` at `:36-41`.
+
+The fix restores the read instead of deleting it, which also drains the exemption because a
+read declaration is not a declared-unused one:
+
+```yaml
+# .github/workflows/claude-review-reusable.yml:343
+          claude_code_oauth_token: ${{ env.BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN || secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
+```
+
+Console runs take the env value (the fetch step ran); external callers take the secret they
+already pass. `DECLARED_UNUSED_OK` then drains to empty with no submodule PR and no registry
+edit. Proven on a scratch copy of the real tree on 2026-09-09: CHECK 2 and CHECK 4 both green,
+`arm (a3): 0 declared-unused exemption(s) == 0 pinned alive by 2 external-caller entries`.
+
+**And the registry entries must SURVIVE.** Deleting them, as the plan box words it, empties
+`callers:`, which CHECK 4 and arm (a3) both treat as blind and fail on (reproduced: rc=1,
+"declares no callers"). Only the two `passes_secrets` ROWS may go, and only if the callers
+really stop passing the value. The list below is the original Box 2 and is kept for the shape
+of the work, not as an instruction.
+
 **Box 2 — console, one commit, after both submodule PRs are on `main`.**
 - delete `claude-review-reusable.yml:42` and its comment block `:43-49`
-- delete the `DECLARED_UNUSED_OK` exemption `.ci/scripts/security/check-workflow-gates.sh:270-276`
-  (an exemption naming a declaration that is gone is itself refused by the arm below it)
+- delete the `DECLARED_UNUSED_OK` exemption `.ci/scripts/security/check-workflow-gates.sh:293-299`
+  (an exemption naming a declaration that is gone is itself refused by the arm below it, and
+  since 2026-09-09 also by arm (a3), which requires every exemption to be pinned alive by a
+  real `.github/external-callers.yml` entry). The list is a LIST converted to a set at `:300`
+  precisely so draining it to empty stays valid Python.
 - delete the two `passes_secrets: [ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN]` rows in
   `.github/external-callers.yml:28,34`
 - update the prose that names the pair: `.ci/scripts/quality/check_secret_reachability.py:7`
@@ -273,10 +307,10 @@ in W8 moves.
 
 ## 6. `secrets.X` reads outside the allowlist today
 
-The allowlist is `ALLOWED` in `scripts/check-secret-scope.ts:71-76`:
+The allowlist is `ALLOWED` in `scripts/gates/check-secret-scope.ts:71-76`:
 `GITHUB_TOKEN`, `BWS_ACCESS_TOKEN`, `BREAKPOINT_TUNNEL_TOKEN`, `CLAUDE_CODE_OAUTH_TOKEN`.
 
-**Count today: 1.** `npx tsx scripts/check-secret-scope.ts` → exit 0,
+**Count today: 1.** `npx tsx scripts/gates/check-secret-scope.ts` → exit 0,
 `✓ secret scope: 1 org-scope read(s) frozen, none added`. The one entry is
 `watchdog-monitor.yml:CLOUDFLARE_API_TOKEN` (`.ci/config/secret-scope-baseline.json`, read at
 `.github/workflows/watchdog-monitor.yml:139`), frozen shrink-only with a stated goal state of an
@@ -319,7 +353,7 @@ BWS_ACCESS_TOKEN
 `CLAUDE_CODE_OAUTH_TOKEN` exists on `rediacc/renet`, `rediacc/account` and `rediacc/elite` — not
 on `rediacc/console`, which is where `watchdog-monitor.yml` runs. `gh api orgs/rediacc/actions/secrets`
 returns `total_count: 0`, and all 8 environments hold zero secrets, so there is no other scope
-it could resolve from. `scripts/check-secret-scope.ts:49` records the same wrong reason
+it could resolve from. `scripts/gates/check-secret-scope.ts:49` records the same wrong reason
 ("repo-scoped on renet/account/elite") as the justification for allowlisting it.
 
 Consequence: the watchdog's tier 1 (`CLOUDFLARE_API_TOKEN`) is already known-empty and baselined,
@@ -382,7 +416,7 @@ Not deleted here: it falls outside the file set this phase owns.
 15 KB of machinery that strips `GH_<NAME>` lines and `SHADOW_NAMES` entries. Neither pattern
 occurs in any workflow. It is still load-bearing for two gates that use it as a subject —
 `.ci/scripts/test/gates/test-vacuity-floors.sh:98-104` and
-`scripts/check-enumeration-vacuity.ts:15,64,166` — so it cannot simply be deleted; those two
+`scripts/gates/check-enumeration-vacuity.ts:15,64,166` — so it cannot simply be deleted; those two
 would have to be re-keyed to another subject in the same change. Recorded so the deletion is not
 attempted as a one-liner.
 

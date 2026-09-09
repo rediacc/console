@@ -34,13 +34,19 @@ both of its detectors:
 
     hands_out_banned() { advice_only "$1" | grep -qE '<banned>'; }
 
-Measured 2026-08-27 against .claude/hooks/test-hooks.sh (1644 lines, hit at line
-692 of the filtered stream): 8/8 trips WITHOUT pipefail, 0/8 WITH it. The gate had
+Measured 2026-08-27 against .claude/hooks/test-hooks.sh, 1,644 lines then (hit at
+line 692 of the filtered stream): 8/8 trips WITHOUT pipefail, 0/8 WITH it. The gate had
 been printing "no hand-rolled watch in 124 scanned file(s)" over a real offender,
 and went red exactly once -- under `npm run ci`'s parallel load, where the timing
 flipped. Its own four controls could not have caught it: all of them ran on
 2-line fixtures, where the producer finishes long before `grep -q` exits, so the
 mechanism does not exist at that size.
+
+THE SUBJECT IS THE SIZE, NOT THAT FILE. It was 1,644 lines the day this was
+measured, 2,774 by 2026-09-09, and it is being ported out of bash into
+.claude/rediacc_hooks/tests/ -- so the citation is dated on purpose and the
+large-file control below is what keeps the measurement reproducible after the
+file it names is gone.
 
 WHY A LOCALLY-DEFINED FUNCTION IS THE TEST, and not "any pipe into grep -q".
 There are 115 `| grep -q` sites under pipefail in this repo. What makes the shape
@@ -168,7 +174,16 @@ from rediacc_ci.controls import Controls
 
 # The corpus, as git pathspecs. Handed to `git ls-files` verbatim; see the port
 # notes for why this is not rewritten as a glob walk.
-PATHSPECS = (".ci/scripts/**/*.sh", "scripts/**/*.sh", ".claude/hooks/**/*.sh")
+# `:(glob)` IS LOAD-BEARING: without it git reads `**` as demanding a slash, so
+# these matched nothing at depth 1 and the corpus silently skipped six tracked
+# shell files. Measured 2026-09-08: 471 before, 477 after. Kept BYTE-EQUAL to the
+# twin's spelling at `check-pipefail-grep-q.sh`, since the shadow ledger compares
+# the two verdicts and a corpus difference would read as a behavioural divergence.
+PATHSPECS = (
+    ":(glob).ci/scripts/**/*.sh",
+    ":(glob)scripts/**/*.sh",
+    ":(glob).claude/hooks/**/*.sh",
+)
 
 # `grep -qE 'set -[a-z]*o pipefail|set -o pipefail'`. Only a script that actually
 # sets pipefail can have the bug; without it the pipeline reports grep's status

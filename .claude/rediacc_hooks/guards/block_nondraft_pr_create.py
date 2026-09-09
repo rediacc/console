@@ -30,7 +30,7 @@ ORDER = 23
 # makes an unrelated one look compliant.
 DEFECT = ("hookio.grep_q_line(HAS_DRAFT, seg)", "hookio.grep_q_line(HAS_DRAFT, scan)")
 
-HAS_DRAFT = r"(^|[" + hookio.SPACE + r"])(--draft|-d)([" + hookio.SPACE + r"=]|$)"
+HAS_DRAFT = hookio.rx(r"(^|[{S}])(--draft|-d)([{S}=]|$)")
 
 PUBLIC_MESSAGE = (
     "❌ BLOCKED: PRs on %s must be created as DRAFTS: add --draft to 'gh pr create'. The PR "

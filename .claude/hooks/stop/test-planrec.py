@@ -180,7 +180,7 @@ def build(td):
     ledger([])
     sh(root, "git", "add", "-A")
     # A PR-TASK trailer, so derive() has a real epic to find rather than a
-    # hand-written list. The trailer grammar is scripts/check-pr-task-trailers.ts's.
+    # hand-written list. The trailer grammar is scripts/gates/check-pr-task-trailers.ts's.
     sh(root, "git", "commit", "-qm", "fixture: the box is open\n\nPR-TASK: abc123def")
     before = git_out(root, "rev-parse", "HEAD")
 

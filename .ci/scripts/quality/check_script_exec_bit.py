@@ -45,6 +45,7 @@ blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-writte
 needs: none
 selftest: true
 lane: quality-code
+slow: true
 ---- end gate ----
 """
 

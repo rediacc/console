@@ -1,22 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# step: Trap registry dispositions
-# emit: false
-# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
-# needs: none
-# selftest: true
-# lane: quality-code
-# why: TRAPS.md is a REGISTRY, not prose: every `## ` entry names the instrument
-#      that enforces it, and the gate proves that pointer RESOLVES and is LIVE.
-#      Presence alone would be worse than nothing -- the cheapest thing to name
-#      under a coverage gate is a check that cannot fire -- so a gate: pointer
-#      must be scheduled by `npm run ci`, a hook: rule must have both a firing
-#      and a silent case, and a file: pointer must be reachable from something
-#      that runs it. No `paths`, deliberately: pointers resolve against the
-#      manifest, package.json, the dispatcher, the hook suite and settings.json,
-#      so almost any change can dangle one, and a half-populated path table
-#      would drop the gate from --changed exactly when it was needed.
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-trap-registry is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_trap_registry.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_trap_registry.py" but its header derives ".ci/scripts/quality/check-trap-registry.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Gate: docs/agent-reference/TRAPS.md is a REGISTRY, not a pile of prose. Every
 # `## ` entry declares which instrument enforces it, that pointer resolves, and
@@ -115,7 +105,7 @@ TRAP_FILE_ROOT="${TRAP_FILE_ROOT:-$REPO_ROOT}"
 # a floor only fails when the corpus is below it, so an unratcheted floor is invisible
 # to the gate and visible only to its own control. Adding an entry means bumping this
 # number in the same commit; there is no other signal.
-TRAP_FLOOR="${TRAP_FLOOR:-77}"
+TRAP_FLOOR="${TRAP_FLOOR:-84}"
 
 ID_RE='^[a-z0-9][a-z0-9-]{2,48}$'
 

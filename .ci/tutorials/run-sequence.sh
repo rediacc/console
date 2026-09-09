@@ -111,7 +111,15 @@ for slug in "${sequence[@]}"; do
     bash "$SCRIPT_DIR/tutorial-$slug.sh" >"$log" 2>&1
     rc=$?
     dur=$(($(date +%s) - start))
-    results+=("$(printf '%-20s rc=%-3s %4ss' "$slug" "$rc" "$dur")")
+    # A KILLED TUTORIAL IS NOT A TUTORIAL THAT FAILED. Without this the summary
+    # table shows `rc=143` beside a normal-looking duration and reads as the
+    # script's own verdict.
+    if [[ $rc -gt 128 && $rc -lt 160 ]]; then
+        rc_text="killed:SIG$((rc - 128))"
+    else
+        rc_text="$rc"
+    fi
+    results+=("$(printf '%-20s rc=%-12s %4ss' "$slug" "$rc_text" "$dur")")
     echo "${results[-1]}"
     if [[ $rc -ne 0 ]]; then
         failed=1

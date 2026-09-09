@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: Host toolchain runtime coverage
-# emit: false
-# blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
-# needs: node
-# selftest: true
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-host-toolchain-coverage is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_host_toolchain_coverage.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_host_toolchain_coverage.py" but its header derives "...check-host-toolchain-coverage.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Every pinned gate tool must have a RUNTIME guard, not just a definition.
 #

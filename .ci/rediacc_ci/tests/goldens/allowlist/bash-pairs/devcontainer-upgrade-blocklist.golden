@@ -5,5 +5,5 @@
 # source: .devcontainer-upgrade-blocklist
 # corpus: corpus/devcontainer-upgrade-blocklist.list
 # comment-char: #
-# corpus-sha256: 00a6e5e3a60cd568c38eb83f653be39f023dc42a65650217fb077b648ab6b892
+# corpus-sha256: cd5155203d95e945e609935d55a8929ca3fb896e3d68ea451649f852ed0b9671
 # ---

@@ -81,7 +81,7 @@ structurally).
 | shellcheck (`.ci/scripts/security/shellcheck.sh`) | guarded `find examples -name '*.sh'` block |
 | eslint | add `'examples/**'` to global ignores (belt-and-braces; the `**/*.ts` glob would otherwise hit any stray TS) |
 | biome / knip | nothing — allowlist/workspace-based, examples/ invisible (do NOT add a package.json to examples/) |
-| `check:cli-examples` (`scripts/validate-cli-examples.ts`) | add `examples/**/*.{md,sh}` to TARGET_GLOBS; a dedicated `.sh` extractor (strip `\|\| true`, redirects, pipes) is a separate low-risk task — the whole-file positional scan already applies |
+| `check:cli-examples` (`scripts/gen/validate-cli-examples.ts`) | add `examples/**/*.{md,sh}` to TARGET_GLOBS; a dedicated `.sh` extractor (strip `\|\| true`, redirects, pipes) is a separate low-risk task — the whole-file positional scan already applies |
 | editorconfig | repo-wide: 4-space shell indent, LF |
 
 ## 5. CI topology

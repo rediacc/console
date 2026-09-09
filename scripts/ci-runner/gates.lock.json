@@ -4,7 +4,7 @@
     "run": "npm run check:version",
     "gate": true,
     "leaves": [
-      "scripts/check-workspace-versions.ts",
+      "scripts/gates/check-workspace-versions.ts",
       "syncpack"
     ],
     "ci": {
@@ -20,7 +20,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      "scripts/check-deps.ts"
+      "scripts/gates/check-deps.ts"
     ],
     "ci": {
       "kind": "step",
@@ -141,7 +141,7 @@
     "run": "npm run check:ci-knip-blockers",
     "gate": true,
     "leaves": [
-      "scripts/check-knip-blockers.ts"
+      "scripts/gates/check-knip-blockers.ts"
     ],
     "ci": {
       "kind": "step",
@@ -170,17 +170,17 @@
     "slow": true,
     "gate": false,
     "leaves": [
-      "scripts/check-translation-hashes.ts",
-      "scripts/check-translation-completeness.ts",
-      "scripts/check-translation-key-usage.ts",
+      "scripts/gates/check-translation-hashes.ts",
+      "scripts/gates/check-translation-completeness.ts",
+      "scripts/gates/check-translation-key-usage.ts",
       "scripts/__tests__/check-translation-key-usage.control.ts",
       "scripts/__tests__/check-docs-render-parity.control.ts",
       "scripts/__tests__/check-page-locale-imports.control.ts",
-      "scripts/check-cli-i18n-key-usage.ts",
+      "scripts/gates/check-cli-i18n-key-usage.ts",
       "packages/cli/scripts/check-cli-i18n-help-render.ts",
-      "scripts/check-docs-inline-translations.ts",
-      "scripts/check-docs-untranslated-text.ts",
-      "scripts/check-account-email-templates.ts",
+      "scripts/gates/check-docs-inline-translations.ts",
+      "scripts/gates/check-docs-untranslated-text.ts",
+      "scripts/gates/check-account-email-templates.ts",
       "packages/www/scripts/validate-cli-docs.js",
       "packages/www/scripts/validate-docs-cli-usage.js",
       "packages/www/scripts/validate-landing-cli-usage.js",
@@ -188,15 +188,15 @@
       "packages/www/scripts/validate-content.js",
       "packages/www/scripts/validate-content-accuracy.js",
       "packages/www/scripts/validate-comparison-refs.js",
-      "scripts/check-component-hardcoded-strings.ts",
-      "scripts/check-cli-docs.ts",
-      "scripts/check-i18n-naturalization.ts",
-      "scripts/check-locale-only-edits.ts",
-      "scripts/check-i18n-ledger-growth.ts",
-      "scripts/check-dead-translation-keys.ts",
-      "scripts/check-em-dash-surfaces.ts",
+      "scripts/gates/check-component-hardcoded-strings.ts",
+      "scripts/gates/check-cli-docs.ts",
+      "scripts/gates/check-i18n-naturalization.ts",
+      "scripts/gates/check-locale-only-edits.ts",
+      "scripts/gates/check-i18n-ledger-growth.ts",
+      "scripts/gates/check-dead-translation-keys.ts",
+      "scripts/gates/check-em-dash-surfaces.ts",
       "packages/www/scripts/check-client-i18n-freshness.ts",
-      "scripts/check-locale-currency-integrity.ts",
+      "scripts/gates/check-locale-currency-integrity.ts",
       "scripts/__tests__/check-locale-currency-integrity.control.ts"
     ],
     "ci": {
@@ -216,7 +216,7 @@
     ],
     "leaves": [
       "scripts/__tests__/check-translation-key-usage.control.ts",
-      "scripts/check-translation-key-usage.ts"
+      "scripts/gates/check-translation-key-usage.ts"
     ],
     "ci": {
       "kind": "step",
@@ -230,7 +230,7 @@
     "run": "npm run check:ci-i18n-hashes",
     "gate": true,
     "leaves": [
-      "scripts/check-translation-hashes.ts"
+      "scripts/gates/check-translation-hashes.ts"
     ],
     "ci": {
       "kind": "step",
@@ -244,7 +244,7 @@
     "run": "npm run check:ci-i18n-completeness",
     "gate": true,
     "leaves": [
-      "scripts/check-translation-completeness.ts"
+      "scripts/gates/check-translation-completeness.ts"
     ],
     "ci": {
       "kind": "step",
@@ -287,7 +287,7 @@
     "run": "npm run check:ci-i18n-docs-inline",
     "gate": true,
     "leaves": [
-      "scripts/check-docs-inline-translations.ts"
+      "scripts/gates/check-docs-inline-translations.ts"
     ],
     "ci": {
       "kind": "step",
@@ -301,7 +301,7 @@
     "run": "npm run check:ci-i18n-docs-untranslated",
     "gate": true,
     "leaves": [
-      "scripts/check-docs-untranslated-text.ts"
+      "scripts/gates/check-docs-untranslated-text.ts"
     ],
     "ci": {
       "kind": "step",
@@ -315,7 +315,7 @@
     "run": "npm run check:ci-i18n-account-email-templates",
     "gate": true,
     "leaves": [
-      "scripts/check-account-email-templates.ts"
+      "scripts/gates/check-account-email-templates.ts"
     ],
     "ci": {
       "kind": "step",
@@ -329,7 +329,7 @@
     "run": "npm run check:ci-i18n-hardcoded-strings",
     "gate": true,
     "leaves": [
-      "scripts/check-component-hardcoded-strings.ts"
+      "scripts/gates/check-component-hardcoded-strings.ts"
     ],
     "ci": {
       "kind": "step",
@@ -343,7 +343,7 @@
     "run": "npm run check:ci-i18n-naturalization",
     "gate": true,
     "leaves": [
-      "scripts/check-i18n-naturalization.ts"
+      "scripts/gates/check-i18n-naturalization.ts"
     ],
     "ci": {
       "kind": "step",
@@ -455,7 +455,7 @@
     "run": "npm run check:ci-i18n-cli-key-usage",
     "gate": true,
     "leaves": [
-      "scripts/check-cli-i18n-key-usage.ts"
+      "scripts/gates/check-cli-i18n-key-usage.ts"
     ],
     "ci": {
       "kind": "step",
@@ -483,7 +483,7 @@
     "run": "npm run check:cli-docs",
     "gate": true,
     "leaves": [
-      "scripts/check-cli-docs.ts"
+      "scripts/gates/check-cli-docs.ts"
     ],
     "ci": {
       "kind": "step",
@@ -497,7 +497,7 @@
     "run": "npm run check:ci-locale-currency",
     "gate": true,
     "leaves": [
-      "scripts/check-locale-currency-integrity.ts",
+      "scripts/gates/check-locale-currency-integrity.ts",
       "scripts/__tests__/check-locale-currency-integrity.control.ts"
     ],
     "ci": {
@@ -512,7 +512,7 @@
     "run": "npm run check:ci-i18n-locale-only",
     "gate": true,
     "leaves": [
-      "scripts/check-locale-only-edits.ts"
+      "scripts/gates/check-locale-only-edits.ts"
     ],
     "ci": {
       "kind": "step",
@@ -526,7 +526,7 @@
     "run": "npm run check:ci-i18n-ledger-growth",
     "gate": true,
     "leaves": [
-      "scripts/check-i18n-ledger-growth.ts"
+      "scripts/gates/check-i18n-ledger-growth.ts"
     ],
     "ci": {
       "kind": "step",
@@ -556,7 +556,7 @@
     "run": "npm run check:ci-rubric-calibration",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-rubric-calibration.sh"
+      ".ci/scripts/quality/check_rubric_calibration.py"
     ],
     "ci": {
       "kind": "step",
@@ -570,7 +570,7 @@
     "run": "npm run check:ci-www-build-token",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-www-build-token.sh"
+      ".ci/scripts/quality/check_www_build_token.py"
     ],
     "ci": {
       "kind": "step",
@@ -584,7 +584,7 @@
     "run": "npm run check:ci-shape-duplication",
     "gate": true,
     "leaves": [
-      "scripts/check-shape-duplication.ts"
+      "scripts/gates/check-shape-duplication.ts"
     ],
     "ci": {
       "kind": "step",
@@ -655,7 +655,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      "scripts/check-typecheck-scope-coverage.ts"
+      "scripts/gates/check-typecheck-scope-coverage.ts"
     ],
     "ci": {
       "kind": "step",
@@ -707,7 +707,7 @@
     "weight": 2,
     "heavy": true,
     "leaves": [
-      "scripts/check-guard-mutations.ts"
+      "scripts/gates/check-guard-mutations.ts"
     ],
     "ci": {
       "kind": "step",
@@ -765,6 +765,9 @@
   },
   {
     "id": "check:test:tutorial-player",
+    "env": {
+      "PUBLIC_VIDEO_CDN_BASE_URL": "https://media.rediacc.com"
+    },
     "run": "npm run check:test:tutorial-player",
     "slow": true,
     "gate": true,
@@ -831,11 +834,39 @@
     }
   },
   {
+    "id": "check:ci-ci-job-aggregation",
+    "run": "npm run check:ci-ci-job-aggregation",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_ci_job_aggregation.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "CI job aggregation"
+    }
+  },
+  {
+    "id": "check:ci-swallowed-failures",
+    "run": "npm run check:ci-swallowed-failures",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_swallowed_failures.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Swallowed failures"
+    }
+  },
+  {
     "id": "check:ci-probe-parity",
     "run": "npm run check:ci-probe-parity",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-probe-parity.sh"
+      ".ci/scripts/quality/check_probe_parity.py"
     ],
     "ci": {
       "kind": "step",
@@ -849,7 +880,7 @@
     "run": "npm run check:ci-drill-verdicts",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-drill-verdicts.sh"
+      ".ci/scripts/quality/check_drill_verdicts.py"
     ],
     "ci": {
       "kind": "step",
@@ -863,7 +894,7 @@
     "run": "npm run check:ci-account-probes",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-account-probes.sh"
+      ".ci/scripts/quality/check_account_probes.py"
     ],
     "ci": {
       "kind": "step",
@@ -877,7 +908,7 @@
     "run": "npm run check:ci-npmrc",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-npmrc.sh"
+      ".ci/scripts/quality/check_npmrc.py"
     ],
     "ci": {
       "kind": "step",
@@ -894,10 +925,10 @@
       ".ci/lib/**",
       "run.sh",
       ".ci/legacy/**",
-      ".ci/scripts/quality/check-setup-idempotency.sh"
+      ".ci/scripts/quality/check_setup_idempotency.py"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-setup-idempotency.sh"
+      ".ci/scripts/quality/check_setup_idempotency.py"
     ],
     "ci": {
       "kind": "step",
@@ -911,7 +942,7 @@
     "run": "npm run check:ci-native-rebuild",
     "gate": true,
     "leaves": [
-      "scripts/check-native-rebuild.ts"
+      "scripts/gates/check-native-rebuild.ts"
     ],
     "ci": {
       "kind": "step",
@@ -925,7 +956,7 @@
     "run": "npm run check:ci-git-tool-safety",
     "gate": true,
     "leaves": [
-      "scripts/check-git-tool-safety.ts"
+      "scripts/gates/check-git-tool-safety.ts"
     ],
     "ci": {
       "kind": "step",
@@ -939,7 +970,7 @@
     "run": "npm run check:ci-bootstrap-idempotency",
     "gate": true,
     "leaves": [
-      "scripts/check-bootstrap-idempotency.ts"
+      "scripts/gates/check-bootstrap-idempotency.ts"
     ],
     "ci": {
       "kind": "step",
@@ -950,10 +981,14 @@
   },
   {
     "id": "check:ci-pr-task-trailers",
+    "env": {
+      "PR_BASE_REF": "origin/${{ github.event.pull_request.base.ref }}",
+      "PR_HEAD_REF": "${{ github.event.pull_request.head.ref }}"
+    },
     "run": "npm run check:ci-pr-task-trailers",
     "gate": true,
     "leaves": [
-      "scripts/check-pr-task-trailers.ts"
+      "scripts/gates/check-pr-task-trailers.ts"
     ],
     "ci": {
       "kind": "step",
@@ -967,7 +1002,7 @@
     "run": "npm run check:ci-merge-method-prose",
     "gate": true,
     "leaves": [
-      "scripts/check-merge-method-prose.ts"
+      "scripts/gates/check-merge-method-prose.ts"
     ],
     "ci": {
       "kind": "step",
@@ -981,7 +1016,7 @@
     "run": "npm run check:ci-shell-declared-commands",
     "gate": true,
     "leaves": [
-      "scripts/check-shell-declared-commands.ts"
+      "scripts/gates/check-shell-declared-commands.ts"
     ],
     "ci": {
       "kind": "step",
@@ -992,10 +1027,15 @@
   },
   {
     "id": "check:ci-pr-epic-block",
+    "env": {
+      "GH_TOKEN": "${{ secrets.GITHUB_TOKEN }}",
+      "PR_HEAD_REF": "${{ github.event.pull_request.head.ref }}",
+      "PR_NUMBER": "${{ github.event.pull_request.number }}"
+    },
     "run": "npm run check:ci-pr-epic-block",
     "gate": true,
     "leaves": [
-      "scripts/check-pr-epic-block.ts"
+      "scripts/gates/check-pr-epic-block.ts"
     ],
     "ci": {
       "kind": "step",
@@ -1012,7 +1052,7 @@
       ".ci/scripts/quality/**"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-control-vacuity.sh"
+      ".ci/scripts/quality/check_control_vacuity.py"
     ],
     "ci": {
       "kind": "step",
@@ -1027,10 +1067,10 @@
     "gate": true,
     "paths": [
       ".devcontainer/**",
-      ".ci/scripts/quality/check-devcontainer-scripts.sh"
+      ".ci/scripts/quality/check_devcontainer_scripts.py"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-devcontainer-scripts.sh"
+      ".ci/scripts/quality/check_devcontainer_scripts.py"
     ],
     "ci": {
       "kind": "step",
@@ -1044,10 +1084,11 @@
     "run": "npm run check:ci-shell-size",
     "gate": true,
     "paths": [
-      "**/*.sh"
+      "**/*.sh",
+      ".ci/scripts/quality/check_shell_size.py"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-shell-size.sh"
+      ".ci/scripts/quality/check_shell_size.py"
     ],
     "ci": {
       "kind": "step",
@@ -1062,10 +1103,10 @@
     "gate": true,
     "paths": [
       ".ci/lib/devbox.sh",
-      ".ci/scripts/quality/check-devbox-exec.sh"
+      ".ci/scripts/quality/check_devbox_exec.py"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-devbox-exec.sh"
+      ".ci/scripts/quality/check_devbox_exec.py"
     ],
     "ci": {
       "kind": "step",
@@ -1088,7 +1129,7 @@
       "run.sh"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-toolchain-pins.sh"
+      ".ci/scripts/quality/check_toolchain_pins.py"
     ],
     "ci": {
       "kind": "step",
@@ -1104,10 +1145,10 @@
     "paths": [
       ".devcontainer/toolchain.env",
       ".devcontainer/Dockerfile",
-      ".ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh"
+      ".ci/scripts/quality/check_toolchain_env_dockerfile_sync.py"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh"
+      ".ci/scripts/quality/check_toolchain_env_dockerfile_sync.py"
     ],
     "ci": {
       "kind": "step",
@@ -1121,12 +1162,12 @@
     "run": "npm run check:ci-host-toolchain-coverage",
     "gate": true,
     "paths": [
-      ".ci/scripts/quality/check-toolchain-pins.sh",
+      ".ci/rediacc_ci/quality/toolchain_pins.py",
       ".claude/rediacc_hooks/guards/block_host_toolchain_run.py",
-      ".ci/scripts/quality/check-host-toolchain-coverage.sh"
+      ".ci/scripts/quality/check_host_toolchain_coverage.py"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-host-toolchain-coverage.sh"
+      ".ci/scripts/quality/check_host_toolchain_coverage.py"
     ],
     "ci": {
       "kind": "step",
@@ -1141,10 +1182,12 @@
     "gate": true,
     "paths": [
       ".claude/hooks/**/*.sh",
-      ".ci/scripts/quality/*.sh"
+      ".ci/scripts/quality/*.sh",
+      ".ci/scripts/quality/*.py",
+      ".ci/rediacc_ci/quality/git_op_conditionals.py"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-git-op-conditionals.sh"
+      ".ci/scripts/quality/check_git_op_conditionals.py"
     ],
     "ci": {
       "kind": "step",
@@ -1162,7 +1205,7 @@
       "scripts/**"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-go-tool-path.sh"
+      ".ci/scripts/quality/check_go_tool_path.py"
     ],
     "ci": {
       "kind": "step",
@@ -1238,10 +1281,10 @@
     "gate": true,
     "paths": [
       "scripts/ci-runner/**",
-      "scripts/check-gate-manifest.ts"
+      "scripts/gates/check-gate-manifest.ts"
     ],
     "leaves": [
-      "scripts/check-gate-manifest.ts"
+      "scripts/gates/check-gate-manifest.ts"
     ],
     "ci": {
       "kind": "step",
@@ -1255,7 +1298,7 @@
     "run": "npm run check:ci-trap-registry",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-trap-registry.sh"
+      ".ci/scripts/quality/check_trap_registry.py"
     ],
     "ci": {
       "kind": "step",
@@ -1289,11 +1332,11 @@
       ".claude/hooks/**",
       "scripts/data/hook-inventory-baseline.json",
       "scripts/data/hook-coverage-baseline.json",
-      ".ci/scripts/quality/check-hook-integrity.sh",
+      ".ci/scripts/quality/check_hook_integrity.py",
       "scripts/data/hook-audit-scope.json"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-hook-integrity.sh"
+      ".ci/scripts/quality/check_hook_integrity.py"
     ],
     "ci": {
       "kind": "step",
@@ -1313,7 +1356,7 @@
       ".claude/hooks/**"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-pipefail-grep-q.sh"
+      ".ci/scripts/quality/check_pipefail_grep_q.py"
     ],
     "ci": {
       "kind": "step",
@@ -1332,10 +1375,10 @@
       ".claude/agents/**",
       ".claude/hooks/**",
       "docs/agent-reference/**",
-      ".ci/scripts/quality/check-ci-watch-recipe.sh"
+      ".ci/scripts/quality/check_ci_watch_recipe.py"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-ci-watch-recipe.sh"
+      ".ci/scripts/quality/check_ci_watch_recipe.py"
     ],
     "ci": {
       "kind": "step",
@@ -1353,10 +1396,11 @@
       ".claude/skills/ci-watch/**",
       "scripts/ci-runner/run.ts",
       "docs/agent-reference/ci-gates.md",
+      ".ci/scripts/quality/check_cli_doc_coverage.py",
       ".ci/scripts/quality/check-cli-doc-coverage.sh"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-cli-doc-coverage.sh"
+      ".ci/scripts/quality/check_cli_doc_coverage.py"
     ],
     "ci": {
       "kind": "step",
@@ -1370,7 +1414,7 @@
     "run": "npm run check:ci-ceph-image-pin",
     "gate": true,
     "leaves": [
-      "scripts/check-ceph-image-pin.ts"
+      "scripts/gates/check-ceph-image-pin.ts"
     ],
     "ci": {
       "kind": "step",
@@ -1384,7 +1428,7 @@
     "run": "npm run check:ci-naturalization-model-policy",
     "gate": true,
     "leaves": [
-      "scripts/check-naturalization-model-policy.ts"
+      "scripts/gates/check-naturalization-model-policy.ts"
     ],
     "ci": {
       "kind": "step",
@@ -1399,7 +1443,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-script-exec-bit.sh"
+      ".ci/scripts/quality/check_script_exec_bit.py"
     ],
     "ci": {
       "kind": "step",
@@ -1417,11 +1461,11 @@
       "**/package-lock.json",
       "**/package.json",
       "private/account",
-      ".ci/scripts/quality/check-lockfile.sh",
+      ".ci/scripts/quality/check_lockfile.py",
       ".ci/scripts/lib/common.sh"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-lockfile.sh"
+      ".ci/scripts/quality/check_lockfile.py"
     ],
     "ci": {
       "kind": "step",
@@ -1435,7 +1479,7 @@
     "run": "npm run check:ci-peer-deps",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-peer-deps.sh"
+      ".ci/scripts/quality/check_peer_deps.py"
     ],
     "ci": {
       "kind": "step",
@@ -1446,6 +1490,9 @@
   },
   {
     "id": "check:ci-security-audit",
+    "env": {
+      "GH_TOKEN": "${{ github.token }}"
+    },
     "run": "npm run check:ci-security-audit",
     "slow": true,
     "gate": true,
@@ -1465,13 +1512,13 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-scope-scripts-reachability.sh"
+      ".ci/scripts/quality/check_scope_scripts_reachability.py"
     ],
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-security",
-      "step": "Scope map — reachable scripts/ paths force full CI"
+      "step": "Scope map, reachable scripts/ paths force full CI"
     }
   },
   {
@@ -1479,7 +1526,7 @@
     "run": "npm run check:ci-mutate-check",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-mutate-check.sh"
+      ".ci/scripts/quality/check_mutate_check.py"
     ],
     "ci": {
       "kind": "step",
@@ -1546,13 +1593,31 @@
     "run": "npm run check:ci-python-lint",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-python-lint.sh"
+      ".ci/scripts/quality/check_python_lint.py"
     ],
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-static",
       "step": "Python lint + format (ruff)"
+    }
+  },
+  {
+    "id": "check:ci-python-control-plants",
+    "run": "npm run check:ci-python-control-plants",
+    "gate": true,
+    "paths": [
+      ".ci/rediacc_ci/**",
+      ".ci/scripts/quality/**"
+    ],
+    "leaves": [
+      ".ci/scripts/quality/check_python_control_plants.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Python control plants"
     }
   },
   {
@@ -1598,10 +1663,10 @@
       "agent/PLAN-*.md",
       ".ci/config/plan-lifecycle.json",
       ".ci/policy/.plan-housekeeping-allowlist",
-      ".ci/scripts/quality/check-plan-housekeeping.sh"
+      ".ci/scripts/quality/check_plan_housekeeping.py"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-plan-housekeeping.sh"
+      ".ci/scripts/quality/check_plan_housekeeping.py"
     ],
     "ci": {
       "kind": "step",
@@ -1612,6 +1677,9 @@
   },
   {
     "id": "check:ci-resprofile",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
     "noProfile": true,
     "run": "npm run check:ci-resprofile",
     "gate": true,
@@ -1626,7 +1694,192 @@
     }
   },
   {
+    "id": "check:ci-step-env-parity",
+    "run": "npm run check:ci-step-env-parity",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-ci-step-env-parity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Step env parity"
+    }
+  },
+  {
+    "id": "check:ci-env-manifest",
+    "run": "npm run check:ci-env-manifest",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_env_manifest.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Env manifest"
+    }
+  },
+  {
+    "id": "check:ci-env-file-adoption",
+    "run": "npm run check:ci-env-file-adoption",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_env_file_adoption.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Env file adoption"
+    }
+  },
+  {
+    "id": "check:ci-hook-exec-baseline",
+    "run": "npm run check:ci-hook-exec-baseline",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_hook_exec_baseline.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Hook exec baseline"
+    }
+  },
+  {
+    "id": "check:ci-hook-cross-os",
+    "run": "npm run check:ci-hook-cross-os",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_hook_cross_os.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Hook cross-OS seams"
+    }
+  },
+  {
+    "id": "check:ci-vendored-blocker-derivation",
+    "run": "npm run check:ci-vendored-blocker-derivation",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_vendored_blocker_derivation.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Vendored blocker derivation"
+    }
+  },
+  {
+    "id": "check:ci-plant-proofs",
+    "run": "npm run check:ci-plant-proofs",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_plant_proofs.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Control plant proofs"
+    }
+  },
+  {
+    "id": "check:ci-python-env-registry",
+    "run": "npm run check:ci-python-env-registry",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_python_env_registry.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Python env registry"
+    }
+  },
+  {
+    "id": "check:ci-worklist-env-registry",
+    "run": "npm run check:ci-worklist-env-registry",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_worklist_env_registry.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Worklist env registry"
+    }
+  },
+  {
+    "id": "check:ci-rdc-native",
+    "run": "npm run check:ci-rdc-native",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_rdc_native.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "rdc.sh wrapper budget and --native arms"
+    }
+  },
+  {
+    "id": "check:ci-domain-partition",
+    "run": "npm run check:ci-domain-partition",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-domain-partition.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "scripts/ domain partition"
+    }
+  },
+  {
+    "id": "check:ci-dead-python",
+    "run": "npm run check:ci-dead-python",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_dead_python.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Dead Python"
+    }
+  },
+  {
+    "id": "check:ci-policy-inventory",
+    "run": "npm run check:ci-policy-inventory",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_policy_inventory.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Policy inventory"
+    }
+  },
+  {
     "id": "check:ci-plan-boxes",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
     "run": "npm run check:ci-plan-boxes",
     "gate": true,
     "paths": [
@@ -1645,7 +1898,27 @@
     }
   },
   {
+    "id": "check:ci-decision-ids",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
+    "run": "npm run check:ci-decision-ids",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_decision_ids.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Decision ids"
+    }
+  },
+  {
     "id": "check:ci-plan-citations",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
     "run": "npm run check:ci-plan-citations",
     "gate": true,
     "paths": [
@@ -1665,6 +1938,9 @@
   },
   {
     "id": "check:ci-plan-record",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
     "run": "npm run check:ci-plan-record",
     "gate": true,
     "paths": [
@@ -1690,10 +1966,10 @@
     "gate": true,
     "paths": [
       "eslint-rules/**",
-      "scripts/check-lint-rule-units.ts"
+      "scripts/gates/check-lint-rule-units.ts"
     ],
     "leaves": [
-      "scripts/check-lint-rule-units.ts"
+      "scripts/gates/check-lint-rule-units.ts"
     ],
     "ci": {
       "kind": "step",
@@ -1726,7 +2002,7 @@
     "run": "npm run check:ci-doc-region-parity",
     "gate": true,
     "leaves": [
-      "scripts/check-doc-region-parity.ts"
+      "scripts/gates/check-doc-region-parity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -1814,7 +2090,7 @@
     "run": "npm run check:ci-secret-scope",
     "gate": true,
     "leaves": [
-      "scripts/check-secret-scope.ts"
+      "scripts/gates/check-secret-scope.ts"
     ],
     "ci": {
       "kind": "step",
@@ -1828,7 +2104,7 @@
     "run": "npm run check:ci-release-key-canonical",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-release-key-canonical.sh"
+      ".ci/scripts/quality/check_release_key_canonical.py"
     ],
     "ci": {
       "kind": "step",
@@ -1856,7 +2132,7 @@
     "run": "npm run check:ci-release-signing-coverage",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-release-signing-coverage.sh"
+      ".ci/scripts/quality/check_release_signing_coverage.py"
     ],
     "ci": {
       "kind": "step",
@@ -1870,7 +2146,7 @@
     "run": "npm run check:ci-tracked-credentials",
     "gate": true,
     "leaves": [
-      "scripts/check-tracked-credentials.ts"
+      "scripts/gates/check-tracked-credentials.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2014,7 +2290,7 @@
     "run": "npm run check:ci-dead-service-methods",
     "gate": true,
     "leaves": [
-      "scripts/check-dead-service-methods.ts"
+      "scripts/gates/check-dead-service-methods.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2028,13 +2304,41 @@
     "run": "npm run check:ci-retired-commands",
     "gate": true,
     "leaves": [
-      "scripts/check-retired-commands-in-docs.ts"
+      "scripts/gates/check-retired-commands-in-docs.ts"
     ],
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-content",
       "step": "Retired commands in docs"
+    }
+  },
+  {
+    "id": "check:ci-inner-timeout-reachable",
+    "run": "npm run check:ci-inner-timeout-reachable",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_inner_timeout_reachable.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Inner kill timers are reachable"
+    }
+  },
+  {
+    "id": "check:ci-control-in-string",
+    "run": "npm run check:ci-control-in-string",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-control-in-string.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Controls are not written inside string literals"
     }
   },
   {
@@ -2127,7 +2431,7 @@
     "run": "npm run check:ci-video-player-invariants",
     "gate": true,
     "leaves": [
-      "scripts/check-video-player-invariants.ts"
+      "scripts/gates/check-video-player-invariants.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2141,7 +2445,7 @@
     "run": "npm run check:ci-skill-size",
     "gate": true,
     "leaves": [
-      "scripts/check-skill-size.ts"
+      "scripts/gates/check-skill-size.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2155,7 +2459,7 @@
     "run": "npm run check:ci-docs-browse-invariants",
     "gate": true,
     "leaves": [
-      "scripts/check-docs-browse-invariants.ts"
+      "scripts/gates/check-docs-browse-invariants.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2169,7 +2473,7 @@
     "run": "npm run check:ci-docs-copy-units",
     "gate": true,
     "leaves": [
-      "scripts/check-docs-copy-units.ts"
+      "scripts/gates/check-docs-copy-units.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2183,7 +2487,7 @@
     "run": "npm run check:ci-docs-thumb-coverage",
     "gate": true,
     "leaves": [
-      "scripts/check-docs-thumb-coverage.ts"
+      "scripts/gates/check-docs-thumb-coverage.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2197,7 +2501,7 @@
     "run": "npm run check:ci-sentence-wrapping",
     "gate": true,
     "leaves": [
-      "scripts/check-sentence-wrapping.ts"
+      "scripts/gates/check-sentence-wrapping.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2280,7 +2584,7 @@
     "run": "npm run check:ci-battery-clean-tree",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-battery-clean-tree.sh"
+      ".ci/scripts/quality/check_battery_clean_tree.py"
     ],
     "ci": {
       "kind": "step",
@@ -2322,7 +2626,7 @@
     "run": "npm run check:ci-gate-id-convention",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-gate-id-convention.sh"
+      ".ci/scripts/quality/check_gate_id_convention.py"
     ],
     "ci": {
       "kind": "step",
@@ -2336,7 +2640,7 @@
     "run": "npm run check:ci-pool-writer-safety",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-pool-writer-safety.sh"
+      ".ci/scripts/quality/check_pool_writer_safety.py"
     ],
     "ci": {
       "kind": "step",
@@ -2365,7 +2669,7 @@
     "run": "npm run check:ci-review-turn-capacity",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-review-turn-capacity.sh"
+      ".ci/scripts/quality/check_review_turn_capacity.py"
     ],
     "ci": {
       "kind": "step",
@@ -2379,7 +2683,7 @@
     "run": "npm run check:ci-review-cap-coherence",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-review-cap-coherence.sh"
+      ".ci/scripts/quality/check_review_cap_coherence.py"
     ],
     "ci": {
       "kind": "step",
@@ -2407,7 +2711,7 @@
     "run": "npm run check:ci-gate-cwd-independence",
     "gate": true,
     "leaves": [
-      "scripts/check-gate-cwd-independence.ts"
+      "scripts/gates/check-gate-cwd-independence.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2421,7 +2725,7 @@
     "run": "npm run check:ci-fixture-event-timestamps",
     "gate": true,
     "leaves": [
-      "scripts/check-fixture-event-timestamps.ts"
+      "scripts/gates/check-fixture-event-timestamps.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2435,7 +2739,7 @@
     "run": "npm run check:ci-worklist-path-resolution",
     "gate": true,
     "leaves": [
-      "scripts/check-worklist-path-resolution.ts"
+      "scripts/gates/check-worklist-path-resolution.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2449,7 +2753,7 @@
     "run": "npm run check:ci-worklist-event-builders",
     "gate": true,
     "leaves": [
-      "scripts/check-worklist-event-builders.ts"
+      "scripts/gates/check-worklist-event-builders.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2464,7 +2768,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-workflows.sh"
+      ".ci/scripts/quality/check_workflows.py"
     ],
     "ci": {
       "kind": "step",
@@ -2478,7 +2782,7 @@
     "run": "npm run check:ci-greenlight-closures",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-greenlight-closures.sh"
+      ".ci/scripts/quality/check_greenlight_closures.py"
     ],
     "ci": {
       "kind": "step",
@@ -2534,7 +2838,7 @@
     "run": "npm run check:ci-app-admin-perm",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-no-app-admin-perm.sh"
+      ".ci/scripts/quality/check_no_app_admin_perm.py"
     ],
     "ci": {
       "kind": "step",
@@ -2548,7 +2852,7 @@
     "run": "npm run check:ci-tracked-sidecars",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-tracked-sidecars.sh"
+      ".ci/scripts/quality/check_tracked_sidecars.py"
     ],
     "ci": {
       "kind": "step",
@@ -2562,7 +2866,7 @@
     "run": "npm run check:ci-scans-tracked-paths",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-ci-scans-tracked-paths.sh"
+      ".ci/scripts/quality/check_ci_scans_tracked_paths.py"
     ],
     "ci": {
       "kind": "step",
@@ -2577,7 +2881,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-agent-browser-exit.sh"
+      ".ci/scripts/quality/check_agent_browser_exit.py"
     ],
     "ci": {
       "kind": "step",
@@ -2591,7 +2895,7 @@
     "run": "npm run check:ci-silent-failures",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-silent-failure-patterns.sh"
+      ".ci/scripts/quality/check_silent_failure_patterns.py"
     ],
     "ci": {
       "kind": "step",
@@ -2605,7 +2909,7 @@
     "run": "npm run check:ci-compose-env",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-compose-env.sh"
+      ".ci/scripts/quality/check_compose_env.py"
     ],
     "ci": {
       "kind": "step",
@@ -2619,7 +2923,7 @@
     "run": "npm run check:ci-e2e-coverage",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-e2e-coverage.sh"
+      ".ci/scripts/quality/check_e2e_coverage.py"
     ],
     "ci": {
       "kind": "step",
@@ -2633,7 +2937,7 @@
     "run": "npm run check:ci-e2e-skip-hygiene",
     "gate": true,
     "leaves": [
-      "scripts/check-e2e-skip-hygiene.ts"
+      "scripts/gates/check-e2e-skip-hygiene.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2647,7 +2951,7 @@
     "run": "npm run check:ci-audit-coverage",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-audit-coverage.sh"
+      ".ci/scripts/quality/check_audit_coverage.py"
     ],
     "ci": {
       "kind": "step",
@@ -2668,7 +2972,7 @@
       "build-artifacts"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-cli-contract.sh"
+      ".ci/scripts/quality/check_cli_contract.py"
     ],
     "ci": {
       "kind": "step",
@@ -2689,7 +2993,7 @@
       "build-artifacts"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-command-tree.sh"
+      ".ci/scripts/quality/check_command_tree.py"
     ],
     "ci": {
       "kind": "step",
@@ -2717,7 +3021,7 @@
     "run": "npm run check:ci-design-tree",
     "gate": true,
     "leaves": [
-      "scripts/check-design-tree.ts"
+      "scripts/gates/check-design-tree.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2731,7 +3035,7 @@
     "run": "npm run check:ci-i18n-placeholders",
     "gate": true,
     "leaves": [
-      "scripts/check-i18n-placeholders.ts"
+      "scripts/gates/check-i18n-placeholders.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2745,7 +3049,7 @@
     "run": "npm run check:ci-i18n-untranslated",
     "gate": true,
     "leaves": [
-      "scripts/check-i18n-untranslated.ts"
+      "scripts/gates/check-i18n-untranslated.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2759,9 +3063,9 @@
     "run": "npm run check:ci-i18n-cross-locale",
     "gate": false,
     "leaves": [
-      "scripts/check-i18n-cross-locale.ts",
-      "scripts/check-locale-de-contamination.ts",
-      "scripts/check-locale-config-divergence.ts"
+      "scripts/gates/check-i18n-cross-locale.ts",
+      "scripts/gates/check-locale-de-contamination.ts",
+      "scripts/gates/check-locale-config-divergence.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2775,7 +3079,7 @@
     "run": "npm run check:ci-i18n-cross-locale-core",
     "gate": true,
     "leaves": [
-      "scripts/check-i18n-cross-locale.ts"
+      "scripts/gates/check-i18n-cross-locale.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2789,7 +3093,7 @@
     "run": "npm run check:ci-docs-structure-parity",
     "gate": true,
     "leaves": [
-      "scripts/check-docs-structure-parity.ts"
+      "scripts/gates/check-docs-structure-parity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2803,7 +3107,7 @@
     "run": "npm run check:ci-locale-de-contamination",
     "gate": true,
     "leaves": [
-      "scripts/check-locale-de-contamination.ts"
+      "scripts/gates/check-locale-de-contamination.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2817,7 +3121,7 @@
     "run": "npm run check:ci-locale-sources",
     "gate": true,
     "leaves": [
-      "scripts/check-locale-sources.ts"
+      "scripts/gates/check-locale-sources.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2831,7 +3135,7 @@
     "run": "npm run check:ci-i18n-command-parity",
     "gate": true,
     "leaves": [
-      "scripts/check-cli-docs.ts"
+      "scripts/gates/check-cli-docs.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2845,7 +3149,7 @@
     "run": "npm run check:ci-config-migrations",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-config-migrations.sh"
+      ".ci/scripts/quality/check_config_migrations.py"
     ],
     "ci": {
       "kind": "step",
@@ -2859,7 +3163,7 @@
     "run": "npm run check:ci-schema-coverage",
     "gate": true,
     "leaves": [
-      "scripts/check-schema-coverage.ts"
+      "scripts/gates/check-schema-coverage.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2873,7 +3177,7 @@
     "run": "npm run check:ci-shared-constant-duplication",
     "gate": true,
     "leaves": [
-      "scripts/check-shared-constant-duplication.ts"
+      "scripts/gates/check-shared-constant-duplication.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2887,7 +3191,7 @@
     "run": "npm run check:ci-shared-esm-resolvable",
     "gate": true,
     "leaves": [
-      "scripts/check-shared-esm-resolvable.ts"
+      "scripts/gates/check-shared-esm-resolvable.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2901,7 +3205,7 @@
     "run": "npm run check:ci-runtime-imports-are-deps",
     "gate": true,
     "leaves": [
-      "scripts/check-runtime-imports-are-deps.ts"
+      "scripts/gates/check-runtime-imports-are-deps.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2915,7 +3219,7 @@
     "run": "npm run check:ci-backup-manifest-shape-parity",
     "gate": true,
     "leaves": [
-      "scripts/check-backup-manifest-shape-parity.ts"
+      "scripts/gates/check-backup-manifest-shape-parity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2929,7 +3233,7 @@
     "run": "npm run check:ci-fetch-integrity",
     "gate": true,
     "leaves": [
-      "scripts/check-ci-fetch-integrity.ts"
+      "scripts/gates/check-ci-fetch-integrity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2943,7 +3247,7 @@
     "run": "npm run check:ci-aws-credential-bridge",
     "gate": true,
     "leaves": [
-      "scripts/check-aws-credential-bridge.ts"
+      "scripts/gates/check-aws-credential-bridge.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2957,7 +3261,7 @@
     "run": "npm run check:ci-worker-secret-names",
     "gate": true,
     "leaves": [
-      "scripts/check-worker-secret-names.ts"
+      "scripts/gates/check-worker-secret-names.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2971,7 +3275,7 @@
     "run": "npm run check:ci-builder-env-contract",
     "gate": true,
     "leaves": [
-      "scripts/check-builder-env-contract.ts"
+      "scripts/gates/check-builder-env-contract.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2985,7 +3289,7 @@
     "run": "npm run check:ci-backup-bucket-conformance",
     "gate": true,
     "leaves": [
-      "scripts/check-backup-bucket-conformance.ts"
+      "scripts/gates/check-backup-bucket-conformance.ts"
     ],
     "ci": {
       "kind": "step",
@@ -2999,7 +3303,7 @@
     "run": "npm run check:ci-backup-protocol-conformance",
     "gate": true,
     "leaves": [
-      "scripts/check-backup-protocol-conformance.ts"
+      "scripts/gates/check-backup-protocol-conformance.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3013,7 +3317,7 @@
     "run": "npm run check:ci-no-client-key-composition",
     "gate": true,
     "leaves": [
-      "scripts/check-no-client-key-composition.ts"
+      "scripts/gates/check-no-client-key-composition.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3027,7 +3331,7 @@
     "run": "npm run check:ci-retention-knob-parity",
     "gate": true,
     "leaves": [
-      "scripts/check-retention-knob-parity.ts"
+      "scripts/gates/check-retention-knob-parity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3041,7 +3345,7 @@
     "run": "npm run check:ci-test-scripts-reachable",
     "gate": true,
     "leaves": [
-      "scripts/check-test-scripts-reachable.ts"
+      "scripts/gates/check-test-scripts-reachable.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3056,7 +3360,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-editorconfig.sh"
+      ".ci/scripts/quality/check_editorconfig.py"
     ],
     "ci": {
       "kind": "step",
@@ -3072,7 +3376,8 @@
     "gate": true,
     "paths": [
       "private/account",
-      ".ci/scripts/quality/check-account-portal.sh",
+      ".ci/scripts/quality/check_account_portal.py",
+      ".ci/rediacc_ci/quality/account_portal.py",
       ".ci/scripts/lib/common.sh",
       "packages/www/scripts/build-account-onboarding.ts",
       "packages/www/src/data/account-onboarding.json",
@@ -3083,7 +3388,7 @@
     ],
     "heavy": true,
     "leaves": [
-      ".ci/scripts/quality/check-account-portal.sh"
+      ".ci/scripts/quality/check_account_portal.py"
     ],
     "ci": {
       "kind": "step",
@@ -3236,10 +3541,13 @@
   },
   {
     "id": "check:ci-go-deps",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}"
+    },
     "run": "npm run check:ci-go-deps",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-go-deps.sh"
+      ".ci/scripts/quality/check_go_deps.py"
     ],
     "ci": {
       "kind": "step",
@@ -3256,7 +3564,7 @@
       "renet-bin"
     ],
     "leaves": [
-      ".ci/scripts/quality/check-renet-types.sh"
+      ".ci/scripts/quality/check_renet_types.py"
     ],
     "ci": {
       "kind": "step",
@@ -3270,7 +3578,7 @@
     "run": "npm run check:ci-renet-tiers",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-renet-tier-map.sh"
+      ".ci/scripts/quality/check_renet_tier_map.py"
     ],
     "ci": {
       "kind": "local-only",
@@ -3282,7 +3590,7 @@
     "run": "npm run check:ci-embed-credits",
     "gate": true,
     "leaves": [
-      "scripts/check-embed-credits.ts"
+      "scripts/gates/check-embed-credits.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3296,7 +3604,7 @@
     "run": "npm run check:ci-embed-arch-parity",
     "gate": true,
     "leaves": [
-      "scripts/check-embed-arch-parity.ts"
+      "scripts/gates/check-embed-arch-parity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3307,10 +3615,14 @@
   },
   {
     "id": "check:ci-embed-asset-freshness",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}",
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
     "run": "npm run check:ci-embed-asset-freshness",
     "gate": true,
     "leaves": [
-      "scripts/check-embed-asset-freshness.ts",
+      "scripts/gates/check-embed-asset-freshness.ts",
       "scripts/__tests__/github-token.control.ts"
     ],
     "ci": {
@@ -3325,7 +3637,7 @@
     "run": "npm run check:ci-unverified-downloads",
     "gate": true,
     "leaves": [
-      "scripts/check-unverified-downloads.ts"
+      "scripts/gates/check-unverified-downloads.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3336,10 +3648,14 @@
   },
   {
     "id": "check:ci-devcontainer-pins",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}",
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
     "run": "npm run check:ci-devcontainer-pins",
     "gate": true,
     "leaves": [
-      "scripts/check-devcontainer-pin-freshness.ts"
+      "scripts/gates/check-devcontainer-pin-freshness.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3354,7 +3670,7 @@
     "gate": true,
     "slow": true,
     "leaves": [
-      "scripts/check-embed-asset-versions.ts"
+      "scripts/gates/check-embed-asset-versions.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3368,7 +3684,7 @@
     "run": "npm run check:ci-recovery-context",
     "gate": true,
     "leaves": [
-      "scripts/check-recovery-context.ts"
+      "scripts/gates/check-recovery-context.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3383,7 +3699,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-no-otlp-creds.sh"
+      ".ci/scripts/quality/check_no_otlp_creds.py"
     ],
     "ci": {
       "kind": "step",
@@ -3397,7 +3713,7 @@
     "run": "npm run check:ci-subscription-schema",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-subscription-schema.sh"
+      ".ci/scripts/quality/check_subscription_schema.py"
     ],
     "ci": {
       "kind": "step",
@@ -3411,7 +3727,7 @@
     "run": "npm run check:ci-pricing-consistency",
     "gate": true,
     "leaves": [
-      "scripts/check-pricing-consistency.ts"
+      "scripts/gates/check-pricing-consistency.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3429,8 +3745,8 @@
       "build:www"
     ],
     "leaves": [
-      "scripts/check-seo.ts",
-      "scripts/check-client-bundle-budget.ts"
+      "scripts/gates/check-seo.ts",
+      "scripts/gates/check-client-bundle-budget.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3448,7 +3764,7 @@
       "build:www"
     ],
     "leaves": [
-      "scripts/check-seo.ts"
+      "scripts/gates/check-seo.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3466,7 +3782,7 @@
       "build:www"
     ],
     "leaves": [
-      "scripts/check-docs-render-parity.ts"
+      "scripts/gates/check-docs-render-parity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3480,7 +3796,7 @@
     "run": "npm run check:ci-page-locale-imports",
     "gate": true,
     "leaves": [
-      "scripts/check-page-locale-imports.ts"
+      "scripts/gates/check-page-locale-imports.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3491,11 +3807,15 @@
   },
   {
     "id": "check:ci-external-links",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}",
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
     "run": "npm run check:ci-external-links",
     "slow": true,
     "gate": true,
     "leaves": [
-      "scripts/check-external-links.ts"
+      "scripts/gates/check-external-links.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3506,10 +3826,13 @@
   },
   {
     "id": "check:ci-dkim-notify",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}"
+    },
     "run": "npm run check:ci-dkim-notify",
     "gate": true,
     "leaves": [
-      "scripts/check-dkim-notify.ts"
+      "scripts/gates/check-dkim-notify.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3523,7 +3846,7 @@
     "run": "npm run check:ci-css-dom-refs",
     "gate": true,
     "leaves": [
-      "scripts/check-css-dom-refs.ts"
+      "scripts/gates/check-css-dom-refs.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3537,7 +3860,7 @@
     "run": "npm run check:ci-svg-theme-reach",
     "gate": true,
     "leaves": [
-      "scripts/check-svg-theme-reach.ts"
+      "scripts/gates/check-svg-theme-reach.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3551,7 +3874,7 @@
     "run": "npm run check:ci-dead-css",
     "gate": true,
     "leaves": [
-      "scripts/check-dead-css.ts"
+      "scripts/gates/check-dead-css.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3565,7 +3888,7 @@
     "run": "npm run check:ci-viewport-unit-mixing",
     "gate": true,
     "leaves": [
-      "scripts/check-viewport-unit-mixing.ts"
+      "scripts/gates/check-viewport-unit-mixing.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3579,7 +3902,7 @@
     "run": "npm run check:ci-illustration-contract",
     "gate": true,
     "leaves": [
-      "scripts/check-illustration-contract.ts"
+      "scripts/gates/check-illustration-contract.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3597,8 +3920,8 @@
       "build:www"
     ],
     "leaves": [
-      "scripts/check-redirect-integrity.ts",
-      "scripts/check-anchor-integrity.ts"
+      "scripts/gates/check-redirect-integrity.ts",
+      "scripts/gates/check-anchor-integrity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3616,7 +3939,7 @@
       "build:www"
     ],
     "leaves": [
-      "scripts/check-redirect-integrity.ts"
+      "scripts/gates/check-redirect-integrity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3645,7 +3968,7 @@
     "run": "npm run check:ci-captcha-recovery",
     "gate": true,
     "leaves": [
-      "scripts/check-captcha-recovery.ts"
+      "scripts/gates/check-captcha-recovery.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3678,7 +4001,7 @@
       "build:www"
     ],
     "leaves": [
-      "scripts/check-landmarks.ts"
+      "scripts/gates/check-landmarks.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3696,7 +4019,7 @@
       "build:www"
     ],
     "leaves": [
-      "scripts/check-ssr-locale.ts"
+      "scripts/gates/check-ssr-locale.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3707,10 +4030,13 @@
   },
   {
     "id": "check:ci-docker-image-freshness",
+    "env": {
+      "DOCKERHUB_TOKEN": "${{ env.BWS_DOCKERHUB_TOKEN }}"
+    },
     "run": "npm run check:ci-docker-image-freshness",
     "gate": true,
     "leaves": [
-      "scripts/check-docker-image-freshness.ts"
+      "scripts/gates/check-docker-image-freshness.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3724,7 +4050,7 @@
     "run": "npm run check:ci-baseline-key-semantics",
     "gate": true,
     "paths": [
-      "scripts/check-baseline-key-semantics.ts",
+      "scripts/gates/check-baseline-key-semantics.ts",
       "scripts/data/dead-translation-keys-baseline.json",
       "scripts/data/dead-css-baseline.json",
       "scripts/data/sentence-wrapping-baseline.json",
@@ -3740,7 +4066,7 @@
       ".ci/scripts/quality/runner-sizing-baseline.json"
     ],
     "leaves": [
-      "scripts/check-baseline-key-semantics.ts"
+      "scripts/gates/check-baseline-key-semantics.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3756,10 +4082,10 @@
     "paths": [
       "package.json",
       "scripts/ci-runner/manifest.ts",
-      "scripts/check-test-gate-wiring.ts"
+      "scripts/gates/check-test-gate-wiring.ts"
     ],
     "leaves": [
-      "scripts/check-test-gate-wiring.ts"
+      "scripts/gates/check-test-gate-wiring.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3773,7 +4099,7 @@
     "run": "npm run check:ci-search-index",
     "gate": true,
     "leaves": [
-      "scripts/check-search-index-freshness.ts"
+      "scripts/gates/check-search-index-freshness.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3806,7 +4132,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-content-quality.sh"
+      ".ci/scripts/quality/check_content_quality.py"
     ],
     "ci": {
       "kind": "step",
@@ -3820,7 +4146,7 @@
     "run": "npm run check:ci-nis2-quotes",
     "gate": true,
     "leaves": [
-      "scripts/check-directive-quotes.ts"
+      "scripts/gates/check-directive-quotes.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3835,7 +4161,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      "scripts/validate-cli-examples.ts"
+      "scripts/gen/validate-cli-examples.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3849,7 +4175,7 @@
     "run": "npm run check:ci-tutorial-commands",
     "gate": true,
     "leaves": [
-      "scripts/check-tutorial-commands.ts"
+      "scripts/gates/check-tutorial-commands.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3863,7 +4189,7 @@
     "run": "npm run check:ci-tutorial-noninteractive",
     "gate": true,
     "leaves": [
-      "scripts/check-tutorial-noninteractive.ts"
+      "scripts/gates/check-tutorial-noninteractive.ts"
     ],
     "ci": {
       "kind": "step",
@@ -3988,7 +4314,7 @@
     "run": "npm run check:ci-account-onboarding",
     "gate": true,
     "leaves": [
-      "scripts/check-account-onboarding.ts"
+      "scripts/gates/check-account-onboarding.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4002,7 +4328,7 @@
     "run": "npm run check:ci-overrides-reasons",
     "gate": true,
     "leaves": [
-      "scripts/check-overrides-reasons.ts"
+      "scripts/gates/check-overrides-reasons.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4016,7 +4342,7 @@
     "run": "npm run check:ci-syncpack-reasons",
     "gate": true,
     "leaves": [
-      "scripts/check-syncpack-reasons.ts"
+      "scripts/gates/check-syncpack-reasons.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4030,7 +4356,7 @@
     "run": "npm run check:ci-suppression-liveness",
     "gate": true,
     "leaves": [
-      "scripts/check-suppression-liveness.ts"
+      "scripts/gates/check-suppression-liveness.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4045,7 +4371,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      "scripts/check-dead-bash.ts"
+      "scripts/gates/check-dead-bash.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4056,10 +4382,14 @@
   },
   {
     "id": "check:actions",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}",
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
     "run": "npm run check:actions",
     "gate": true,
     "leaves": [
-      "scripts/check-actions.ts"
+      "scripts/gates/check-actions.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4073,7 +4403,7 @@
     "run": "npm run check:ci-jq-boolean-default",
     "gate": true,
     "leaves": [
-      "scripts/check-jq-boolean-default.ts"
+      "scripts/gates/check-jq-boolean-default.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4087,7 +4417,7 @@
     "run": "npm run check:ci-dead-case-arms",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-dead-case-arms.sh"
+      ".ci/scripts/quality/check_dead_case_arms.py"
     ],
     "ci": {
       "kind": "test",
@@ -4100,7 +4430,7 @@
     "run": "npm run check:ci-label-refs",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-label-references.sh"
+      ".ci/scripts/quality/check_label_references.py"
     ],
     "ci": {
       "kind": "test",
@@ -4113,7 +4443,7 @@
     "run": "npm run check:ci-label-inventory",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-label-inventory.sh"
+      ".ci/scripts/quality/check_label_inventory.py"
     ],
     "ci": {
       "kind": "test",
@@ -4126,7 +4456,7 @@
     "run": "npm run check:ci-profiler-coverage",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-profiler-coverage.sh"
+      ".ci/scripts/quality/check_profiler_coverage.py"
     ],
     "ci": {
       "kind": "test",
@@ -4152,7 +4482,7 @@
     "run": "npm run check:ci-go-module-sync",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-go-module-sync.sh"
+      ".ci/scripts/quality/check_go_module_sync.py"
     ],
     "ci": {
       "kind": "step",
@@ -4166,7 +4496,7 @@
     "run": "npm run check:ci-workflow-orphan-step-keys",
     "gate": true,
     "leaves": [
-      "scripts/check-workflow-orphan-step-keys.ts"
+      "scripts/gates/check-workflow-orphan-step-keys.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4193,7 +4523,7 @@
     "run": "npm run check:ci-autopilot-bp-align",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-autopilot-breakpoint-alignment.sh"
+      ".ci/scripts/quality/check_autopilot_breakpoint_alignment.py"
     ],
     "ci": {
       "kind": "test",
@@ -4220,7 +4550,7 @@
     "run": "npm run check:ci-em-dash-surfaces",
     "gate": true,
     "leaves": [
-      "scripts/check-em-dash-surfaces.ts"
+      "scripts/gates/check-em-dash-surfaces.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4234,7 +4564,7 @@
     "run": "npm run check:ci-locale-config-divergence",
     "gate": true,
     "leaves": [
-      "scripts/check-locale-config-divergence.ts"
+      "scripts/gates/check-locale-config-divergence.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4248,7 +4578,7 @@
     "run": "npm run check:ci-dead-translation-keys",
     "gate": true,
     "leaves": [
-      "scripts/check-dead-translation-keys.ts"
+      "scripts/gates/check-dead-translation-keys.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4266,7 +4596,7 @@
       "build:www"
     ],
     "leaves": [
-      "scripts/check-anchor-integrity.ts"
+      "scripts/gates/check-anchor-integrity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4284,7 +4614,7 @@
       "build:www"
     ],
     "leaves": [
-      "scripts/check-player-css-scope.ts"
+      "scripts/gates/check-player-css-scope.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4302,7 +4632,7 @@
       "build:www"
     ],
     "leaves": [
-      "scripts/check-client-bundle-budget.ts"
+      "scripts/gates/check-client-bundle-budget.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4334,7 +4664,7 @@
     "run": "npm run check:ci-layout-overflow",
     "gate": true,
     "leaves": [
-      "scripts/check-layout-overflow.ts"
+      "scripts/gates/check-layout-overflow.ts"
     ],
     "ci": {
       "kind": "test",
@@ -4347,7 +4677,7 @@
     "run": "npm run check:ci-hydration-clean",
     "gate": true,
     "leaves": [
-      "scripts/check-hydration-clean.ts"
+      "scripts/gates/check-hydration-clean.ts"
     ],
     "ci": {
       "kind": "test",
@@ -4360,7 +4690,7 @@
     "run": "npm run check:ci-form-validation",
     "gate": true,
     "leaves": [
-      "scripts/check-form-validation.ts"
+      "scripts/gates/check-form-validation.ts"
     ],
     "ci": {
       "kind": "test",
@@ -4369,11 +4699,39 @@
     }
   },
   {
+    "id": "check:ci-changed-selection",
+    "run": "npm run check:ci-changed-selection",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-changed-selection.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Changed-file selection contract"
+    }
+  },
+  {
+    "id": "check:ci-setup-port-parity",
+    "run": "npm run check:ci-setup-port-parity",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/setup/port_parity.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Setup port parity"
+    }
+  },
+  {
     "id": "check:ci-parity",
     "run": "npm run check:ci-parity",
     "gate": true,
     "leaves": [
-      "scripts/check-ci-parity.ts"
+      "scripts/gates/check-ci-parity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4428,6 +4786,9 @@
   },
   {
     "id": "build:www",
+    "env": {
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
     "run": "npm run build:www",
     "slow": true,
     "gate": false,
@@ -4446,11 +4807,28 @@
     }
   },
   {
+    "id": "check:ci-quality-complete",
+    "run": "npm run check:ci-quality-complete",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-quality-complete.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Quality shard aggregation"
+    }
+  },
+  {
     "id": "check:ci-quality-gates",
+    "env": {
+      "PR_HEAD_REF": "${{ github.event.pull_request.head.ref }}"
+    },
     "run": "npm run check:ci-quality-gates",
     "gate": false,
     "leaves": [
-      ".ci/scripts/test/run-all.sh"
+      ".ci/rediacc_ci/battery.py"
     ],
     "ci": {
       "kind": "step",
@@ -4464,6 +4842,9 @@
     "run": ".ci/scripts/test/gates/test-shrink-only-composition.sh",
     "gate": true,
     "qualityGateTest": true,
+    "mutex": [
+      "tree:repo"
+    ],
     "leaves": [
       ".ci/scripts/test/gates/test-shrink-only-composition.sh"
     ],
@@ -4864,11 +5245,11 @@
     "run": "npm run check:ci-release-bump-skip",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-release-bump-skip.sh"
+      ".ci/scripts/quality/check_release_bump_skip.py"
     ],
     "ci": {
       "kind": "test",
-      "test": ".ci/scripts/quality/check-release-bump-skip.sh",
+      "test": ".ci/scripts/quality/check_release_bump_skip.py",
       "blocker": "BLOCKER: the gate IS the test -- it drives the real dispatch-release.sh decide branch with a shimmed gh through all five paths, so ci-quality.yml quality-security runs the real decision every CI run; it exists because a bump-none merge and a broken decision both produce \"no release\" and only the emitted signal distinguishes them, which no release gate could see"
     }
   },
@@ -4877,7 +5258,7 @@
     "run": "npm run check:ci-regions-sync",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check-regions-sync.sh"
+      ".ci/scripts/quality/check_regions_sync.py"
     ],
     "ci": {
       "kind": "test",
@@ -5796,10 +6177,10 @@
     "run": "npm run check:ci-package-key-budget",
     "gate": true,
     "leaves": [
-      "scripts/check-package-key-budget.ts"
+      "scripts/gates/check-package-key-budget.ts"
     ],
     "paths": [
-      "scripts/check-package-key-budget.ts",
+      "scripts/gates/check-package-key-budget.ts",
       "package.json",
       "scripts/ci-runner/manifest.ts",
       "scripts/data/package-key-budget-baseline.json"
@@ -5901,6 +6282,7 @@
       ".ci/scripts/lib/blocker-validator.sh",
       "scripts/lib/blocker-validator.ts",
       ".ci/breakpoint/lib/breakpoint-blocker.sh",
+      ".ci/rediacc_ci/core/allowlist.py",
       ".ci/scripts/test/gates/test-blocker-golden-corpus.sh"
     ],
     "ci": {
@@ -6719,7 +7101,7 @@
     "run": "npm run check:ci-enumeration-vacuity",
     "gate": true,
     "leaves": [
-      "scripts/check-enumeration-vacuity.ts"
+      "scripts/gates/check-enumeration-vacuity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -7119,6 +7501,20 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-static",
       "step": "Install table"
+    }
+  },
+  {
+    "id": "check:ci-gen-manifest",
+    "run": "npm run check:ci-gen-manifest",
+    "gate": true,
+    "leaves": [
+      "scripts/gen/gen-manifest.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Generated manifest regions"
     }
   }
 ]

@@ -1,9 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# step: Dev-stack liveness probes
-# needs: none
-# selftest: true
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-account-probes is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_account_probes.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_account_probes.py" but its header derives "...check-account-probes.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Behavioural gate for the dev-stack liveness probes in .ci/lib/account.sh.
 #

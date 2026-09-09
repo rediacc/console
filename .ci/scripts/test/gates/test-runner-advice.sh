@@ -468,7 +468,17 @@ test_is_pristine_requires_the_format() {
     out="$(
         python3 - "$GATE" <<'PY'
 import importlib.util
+import pathlib
 import sys
+
+# THE SUBJECT'S OWN DIRECTORY, because `_cipath` is a SIBLING module and only a path
+# INVOCATION puts that directory on `sys.path[0]`. `spec_from_file_location` does not,
+# so once a quality entry point routes its `.ci` hop through `import _cipath`, every
+# by-path probe of it dies with `ModuleNotFoundError: No module named '_cipath'` before
+# reaching its assertion. The pytest PORT of this file already carries this insert at
+# five sites; the twin did not, and started failing the day check_runner_advice.py
+# gained the import. Kept in step deliberately: test_twin_parity.py compares verdicts.
+sys.path.insert(0, str(pathlib.Path(sys.argv[1]).resolve().parent))
 
 spec = importlib.util.spec_from_file_location("check_runner_advice", sys.argv[1])
 module = importlib.util.module_from_spec(spec)
@@ -500,6 +510,15 @@ test_refresh_refuses_an_unreadable_format() {
 import importlib.util
 import pathlib
 import sys
+
+# THE SUBJECT'S OWN DIRECTORY, because `_cipath` is a SIBLING module and only a path
+# INVOCATION puts that directory on `sys.path[0]`. `spec_from_file_location` does not,
+# so once a quality entry point routes its `.ci` hop through `import _cipath`, every
+# by-path probe of it dies with `ModuleNotFoundError: No module named '_cipath'` before
+# reaching its assertion. The pytest PORT of this file already carries this insert at
+# five sites; the twin did not, and started failing the day check_runner_advice.py
+# gained the import. Kept in step deliberately: test_twin_parity.py compares verdicts.
+sys.path.insert(0, str(pathlib.Path(sys.argv[1]).resolve().parent))
 
 spec = importlib.util.spec_from_file_location("check_runner_advice", sys.argv[1])
 module = importlib.util.module_from_spec(spec)
@@ -542,6 +561,15 @@ test_refresh_refuses_a_partial_harvest() {
 import importlib.util
 import pathlib
 import sys
+
+# THE SUBJECT'S OWN DIRECTORY, because `_cipath` is a SIBLING module and only a path
+# INVOCATION puts that directory on `sys.path[0]`. `spec_from_file_location` does not,
+# so once a quality entry point routes its `.ci` hop through `import _cipath`, every
+# by-path probe of it dies with `ModuleNotFoundError: No module named '_cipath'` before
+# reaching its assertion. The pytest PORT of this file already carries this insert at
+# five sites; the twin did not, and started failing the day check_runner_advice.py
+# gained the import. Kept in step deliberately: test_twin_parity.py compares verdicts.
+sys.path.insert(0, str(pathlib.Path(sys.argv[1]).resolve().parent))
 
 spec = importlib.util.spec_from_file_location("check_runner_advice", sys.argv[1])
 module = importlib.util.module_from_spec(spec)
@@ -662,7 +690,17 @@ assert_parity() {
     py_verdict="$(
         python3 - "$GATE" "$row" <<'PY'
 import importlib.util
+import pathlib
 import sys
+
+# THE SUBJECT'S OWN DIRECTORY, because `_cipath` is a SIBLING module and only a path
+# INVOCATION puts that directory on `sys.path[0]`. `spec_from_file_location` does not,
+# so once a quality entry point routes its `.ci` hop through `import _cipath`, every
+# by-path probe of it dies with `ModuleNotFoundError: No module named '_cipath'` before
+# reaching its assertion. The pytest PORT of this file already carries this insert at
+# five sites; the twin did not, and started failing the day check_runner_advice.py
+# gained the import. Kept in step deliberately: test_twin_parity.py compares verdicts.
+sys.path.insert(0, str(pathlib.Path(sys.argv[1]).resolve().parent))
 
 spec = importlib.util.spec_from_file_location("check_runner_advice", sys.argv[1])
 module = importlib.util.module_from_spec(spec)
@@ -752,7 +790,17 @@ test_harvester_skip_rule() {
     out="$(
         python3 - "$GATE" <<'PY'
 import importlib.util
+import pathlib
 import sys
+
+# THE SUBJECT'S OWN DIRECTORY, because `_cipath` is a SIBLING module and only a path
+# INVOCATION puts that directory on `sys.path[0]`. `spec_from_file_location` does not,
+# so once a quality entry point routes its `.ci` hop through `import _cipath`, every
+# by-path probe of it dies with `ModuleNotFoundError: No module named '_cipath'` before
+# reaching its assertion. The pytest PORT of this file already carries this insert at
+# five sites; the twin did not, and started failing the day check_runner_advice.py
+# gained the import. Kept in step deliberately: test_twin_parity.py compares verdicts.
+sys.path.insert(0, str(pathlib.Path(sys.argv[1]).resolve().parent))
 
 spec = importlib.util.spec_from_file_location("check_runner_advice", sys.argv[1])
 module = importlib.util.module_from_spec(spec)

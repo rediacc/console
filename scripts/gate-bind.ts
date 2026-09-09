@@ -31,7 +31,13 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { laneCapabilities, placeGate, satisfies } from './ci-runner/lanes.js';
+import {
+  SHARD_COUNTS,
+  laneCapabilities,
+  placeGate,
+  satisfies,
+  shardPlan,
+} from './ci-runner/lanes.js';
 import type { GateKind } from './lib/gate-header.js';
 import {
   derivedId,
@@ -217,6 +223,10 @@ export interface Bound {
   emit?: boolean;
   needs: string[];
   lane?: string;
+  /** Step-level `env:`, declared as `env-<KEY>:` lines in the gate header. */
+  env?: Record<string, string>;
+  /** An extra condition ANDed onto the standard guard. Never replaces it. */
+  when?: string;
 }
 
 /** A gate a region actually writes: kind `step`, and therefore carrying one. */
@@ -235,7 +245,19 @@ export const emits = (b: Bound): b is Emitting =>
 export function bind(file: string, source: string): Bound | null {
   const h = parseGateHeader(source);
   if (h === null) return null;
-  const needs = [...new Set([...h.needs, ...inferredNeeds(source)])].sort();
+  // The union is the safe default: an author who forgets a need is corrected by the
+  // inference. `needs-not` is the ONE way back out, and it costs a `blocker:` reason
+  // (enforced in analyzeGateHeader), because the inference reads string literals and a
+  // control's own description routinely names a tool it does not run. Measured
+  // 2026-09-07: `ctl.check("TOOLING: an absent npx yields 127, ...")` in
+  // account_portal.py and a selftest description in check_checkout_cone.py both infer
+  // `node` for pure-Python gates. Tightening the pattern instead was REJECTED on
+  // measurement: 24 files would lose the inference and at least one of them,
+  // test_gate_policy_path.py, really does execute node_modules/.bin/tsx.
+  const denied = new Set(h.needsNot);
+  const needs = [...new Set([...h.needs, ...inferredNeeds(source)])]
+    .filter((n) => !denied.has(n))
+    .sort();
   return {
     file,
     id: h.id ?? derivedId(file),
@@ -245,6 +267,15 @@ export function bind(file: string, source: string): Bound | null {
     ...(h.emit === false ? { emit: false } : {}),
     needs,
     ...(h.lane === undefined ? {} : { lane: h.lane }),
+    // CARRIED FROM THE HEADER, and the omission of these two lines is what a real-tree
+    // plant caught after twelve selftest controls had all passed: `emitStep` handled env
+    // and `when` correctly, `Bound` declared them, and NOTHING copied them across, so a
+    // gate declaring `env-PROBE_TOKEN` bound to a step with no env and `gate-bind
+    // --dry-run` reported `already matches`. A selftest that calls `emitStep` directly
+    // cannot see this, which is exactly the specialist's rule about a green that only
+    // proves the helper functions work.
+    ...(h.env === undefined ? {} : { env: h.env }),
+    ...(h.when === undefined ? {} : { when: h.when }),
   };
 }
 
@@ -405,15 +436,69 @@ export function regionGuard(markerLine: string): string {
   return GUARD_RE.exec(markerLine)?.[1] ?? 'setup';
 }
 
+/**
+ * Which shard each gate of a sharded lane belongs to, or null for an unsharded lane.
+ *
+ * WHY THE DRIVER COMPUTES THIS AND A HEADER CANNOT. A1 made `when` a header field, and a
+ * shard conjunct is the one `when` an author must never write: it depends on how many legs
+ * the lane has and on how `shardPlan` balanced them, both of which change when any OTHER
+ * gate is added. A hand-written `matrix.shard == 3` is stale the moment the lane grows,
+ * and stale in the silent direction -- the gate simply stops running, on a leg that still
+ * reports green.
+ *
+ * WITHOUT THIS, A MATRIX MAKES CI SLOWER, NOT FASTER. Four legs each running all 166 of
+ * `quality-security`'s steps is four times the work for the same coverage. The conjunct is
+ * what turns a matrix into a split.
+ *
+ * The plan comes from the SAME `shardPlan` over the SAME `SHARD_COUNTS` that
+ * `check:ci-quality-complete` re-runs, so the emitter and the aggregator cannot disagree
+ * about which leg holds what. A lane whose plan is REFUSED yields null rather than a
+ * partial assignment: emitting some steps with a conjunct and some without would leave the
+ * unconjuncted ones running on every leg, which is the failure this exists to prevent.
+ */
+export function shardAssignment(
+  job: string,
+  lock: readonly Parameters<typeof shardPlan>[0][number][],
+  caps: Parameters<typeof shardPlan>[1]
+): Map<string, number> | null {
+  const want = SHARD_COUNTS[job];
+  if (want === undefined) return null;
+  const plan = shardPlan(lock, caps, { [job]: want });
+  if ('error' in plan) return null;
+  const out = new Map<string, number>();
+  for (const lane of plan.lanes) {
+    for (const shard of lane.shards) {
+      for (const id of shard.ids) out.set(id, shard.index);
+    }
+  }
+  return out;
+}
+
 export function emitStep(b: Emitting, guard = 'setup'): string[] {
   const cmd = b.run.startsWith('tsx ') ? `npm run ${b.id}` : b.run;
   const acquire = b.needs.flatMap((n) => ACQUIRE[n] ?? []);
-  const head = [
-    `      - name: ${b.step}`,
-    `        if: \${{ !cancelled() && steps.${guard}.outcome == 'success' }}`,
-  ];
-  if (acquire.length === 0) return [...head, `        run: ${cmd}`];
-  return [...head, '        run: |', ...acquire, `          ${cmd}`];
+  // `when` IS ANDED ON, NEVER SUBSTITUTED. The standard guard is what stops a gate
+  // running after setup failed; a field that could replace it would let a gate opt out
+  // of the ordering contract, which is invariant 11 through a side door. Parenthesised
+  // so a `when` containing `||` cannot bind looser than the `&&` and swallow the guard --
+  // `a && b || c` is `(a && b) || c`, which would run the step on a failed setup.
+  const cond =
+    `!cancelled() && steps.${guard}.outcome == 'success'` + (b.when ? ` && (${b.when})` : '');
+  const head = [`      - name: ${b.step}`, `        if: \${{ ${cond} }}`];
+  // ENV BEFORE RUN, and sorted, because the map is emitted from an object whose key order
+  // is otherwise insertion order -- a generator whose output depends on parse order is a
+  // generator that produces spurious diffs and breaks the idempotency control below.
+  const env =
+    b.env && Object.keys(b.env).length > 0
+      ? [
+          '        env:',
+          ...Object.keys(b.env)
+            .sort()
+            .map((k) => `          ${k}: ${(b.env as Record<string, string>)[k]}`),
+        ]
+      : [];
+  if (acquire.length === 0) return [...head, ...env, `        run: ${cmd}`];
+  return [...head, ...env, '        run: |', ...acquire, `          ${cmd}`];
 }
 
 /**
@@ -439,6 +524,34 @@ export function emitStep(b: Emitting, guard = 'setup'): string[] {
  * makes the deletion correct and the SILENCE the defect.
  */
 /**
+ * Split `dropped` into the two refusals the strip guard makes, and the silence.
+ *
+ * EXPORTED SO A CONTROL CAN DRIVE IT. This logic lived inline in `main`, where nothing
+ * could reach it -- a refusal no test exercises is a refusal nobody has watched fire, and
+ * this file's own selftest is the instrument that would have caught the gap it closes.
+ *
+ * `claimed` is a REGRESSION: the manifest still names the step, so removing it stops that
+ * gate running in CI. `unclaimed` is merely UNEXPLAINED: it may be legitimate cleanup, but
+ * a step carries `env:`, `if:`, `with:` and secrets that no gate reads, so dropping one is
+ * invisible. The receipt for that, measured: strip `DOCKERHUB_TOKEN` from
+ * `.github/workflows/ci-quality.yml:1159` in a scratch copy, run the whole battery, and
+ * nothing reds. Hence refuse both, and keep them separate so the message can say which.
+ */
+export function classifyDrops(
+  dropped: string[],
+  emitted: Set<string>,
+  allowDrop: Set<string>,
+  manifest: string
+): { claimed: string[]; unclaimed: string[] } {
+  const stepOf = (d: string) => d.slice(d.indexOf(': ') + 2);
+  const live = dropped.filter((d) => !emitted.has(d) && !allowDrop.has(stepOf(d)));
+  return {
+    claimed: live.filter((d) => manifest.includes(`step: '${stepOf(d)}'`)),
+    unclaimed: live.filter((d) => !manifest.includes(`step: '${stepOf(d)}'`)),
+  };
+}
+
+/**
  * `only` NAMES THE LANES THIS CALL MAY REWRITE. Undefined means all of them.
  *
  * A region belonging to a lane outside `only` is copied through UNTOUCHED, not rewritten
@@ -451,7 +564,14 @@ export function emitStep(b: Emitting, guard = 'setup'): string[] {
 export function rewriteRegions(
   workflow: string,
   byLane: Map<string, Emitting[]>,
-  only?: ReadonlySet<string>
+  only?: ReadonlySet<string>,
+  /**
+   * Per-lane gate -> shard-leg assignment, from `shardAssignment`. OPTIONAL and defaulting
+   * to none, so every existing caller and both selftest controls keep emitting exactly the
+   * steps they emitted before: an unsharded lane must not gain a conjunct, and today only
+   * one lane is in `SHARD_COUNTS`.
+   */
+  shards?: ReadonlyMap<string, ReadonlyMap<string, number>>
 ): { text: string; lanes: string[]; dropped: string[] } {
   const lines = workflow.split('\n');
   const out: string[] = [];
@@ -490,8 +610,20 @@ export function rewriteRegions(
       i += 1;
     }
     const guard = regionGuard(raw);
+    // THE SHARD CONJUNCT IS ANDED ONTO ANY HEADER `when`, NEVER SUBSTITUTED FOR IT, and the
+    // header half is parenthesised for the reason `emitStep` documents: `a || b && c` binds
+    // the wrong way and would put a gate on every leg.
+    const shardOf = shards?.get(job) ?? null;
     for (const b of (byLane.get(job) ?? []).slice().sort((a, z) => a.step.localeCompare(z.step))) {
-      out.push(...emitStep(b, guard));
+      const leg = shardOf?.get(b.id);
+      const step =
+        leg === undefined
+          ? b
+          : {
+              ...b,
+              when: b.when ? `(${b.when}) && matrix.shard == ${leg}` : `matrix.shard == ${leg}`,
+            };
+      out.push(...emitStep(step, guard));
     }
     while (i < lines.length && !CLOSE_RE.test(lines[i])) {
       const step = /^\s*-\s*name:\s*(.+?)\s*$/.exec(lines[i]);
@@ -1063,7 +1195,7 @@ function selftest(): number {
     'CONTROL: a duplicate in a DIFFERENT job is not this job’s problem',
     stepCountInJob(`${DUP.replace('  a:', '  b:')}`, 'a', 'X') === 0
   );
-  ck('a gate under scripts/ is in scope', inScope('scripts/check-deps.ts'));
+  ck('a gate under scripts/ is in scope', inScope('scripts/gates/check-deps.ts'));
   ck(
     'a gate inside the python package is in scope, or its header would be inert',
     inScope('.ci/rediacc_ci/check_pytest.py')
@@ -1272,6 +1404,91 @@ function selftest(): number {
     'rewriting is IDEMPOTENT -- the second pass changes nothing',
     rewriteRegions(rw.text, new Map([['quality-static', [b2]]])).text === rw.text
   );
+
+  // --- the strip guard (box A2) -------------------------------------------------
+  // A REFUSAL NOBODY HAS WATCHED FIRE IS NOT A REFUSAL. Each of these drives
+  // `classifyDrops` directly, which is why it was extracted out of `main`.
+  const DROP = ['quality-static: Check X'];
+  const MANIFEST_WITH = "  { id: 'check:x', step: 'Check X' },";
+  const none = new Set<string>();
+
+  ck(
+    'strip guard: a drop that nothing re-emits and no manifest entry names is UNCLAIMED',
+    classifyDrops(DROP, none, none, '').unclaimed.length === 1 &&
+      classifyDrops(DROP, none, none, '').claimed.length === 0
+  );
+  ck(
+    'strip guard: the same drop with the manifest still naming the step is CLAIMED, a regression',
+    classifyDrops(DROP, none, none, MANIFEST_WITH).claimed.length === 1 &&
+      classifyDrops(DROP, none, none, MANIFEST_WITH).unclaimed.length === 0
+  );
+  ck(
+    'CONTROL: a step the rewrite RE-EMITS is not a drop at all, in either bucket',
+    classifyDrops(DROP, new Set(DROP), none, MANIFEST_WITH).claimed.length === 0 &&
+      classifyDrops(DROP, new Set(DROP), none, MANIFEST_WITH).unclaimed.length === 0
+  );
+  ck(
+    '`--allow-drop <step>` is the ONE typed escape, and it silences both buckets',
+    classifyDrops(DROP, none, new Set(['Check X']), '').unclaimed.length === 0 &&
+      classifyDrops(DROP, none, new Set(['Check X']), MANIFEST_WITH).claimed.length === 0
+  );
+  ck(
+    'CONTROL: --allow-drop matches the STEP, not a prefix of it, so it cannot over-silence',
+    classifyDrops(DROP, none, new Set(['Check']), '').unclaimed.length === 1
+  );
+  ck(
+    'CONTROL: an empty drop list is silent, so the guard cannot fire on a clean rewrite',
+    classifyDrops([], none, none, MANIFEST_WITH).unclaimed.length === 0
+  );
+
+  // --- env and the `when` conjunct (box A1) --------------------------------------
+  const base = {
+    file: 'x.py',
+    id: 'check:ci-x',
+    run: 'x.py',
+    kind: 'step' as const,
+    step: 'X',
+    needs: [],
+  };
+  const line = (out: string[], k: string) => out.find((l) => l.trim().startsWith(k)) ?? '';
+
+  ck(
+    'env is emitted, sorted, between the guard and the run',
+    (() => {
+      const out = emitStep({ ...base, env: { ZED: '1', ALPHA: '2' } });
+      const i = out.findIndex((l) => l.trim() === 'env:');
+      return (
+        i > 0 &&
+        out[i + 1].trim() === 'ALPHA: 2' &&
+        out[i + 2].trim() === 'ZED: 1' &&
+        out[i + 3].trim().startsWith('run:')
+      );
+    })()
+  );
+  ck(
+    'CONTROL: a gate with no env emits no `env:` key at all, not an empty map',
+    !emitStep(base).some((l) => l.trim() === 'env:')
+  );
+  ck(
+    '`when` is ANDed onto the standard guard, which survives verbatim',
+    (() => {
+      const g = line(emitStep({ ...base, when: "github.event_name == 'push'" }), 'if:');
+      return (
+        g.includes("!cancelled() && steps.setup.outcome == 'success'") &&
+        g.includes("&& (github.event_name == 'push')")
+      );
+    })()
+  );
+  ck(
+    'a `when` containing `||` is PARENTHESISED, so it cannot bind looser and swallow the guard',
+    line(emitStep({ ...base, when: 'a || b' }), 'if:').includes("outcome == 'success' && (a || b)")
+  );
+  ck(
+    'CONTROL: no `when` leaves the guard byte-identical to what it was before A1',
+    line(emitStep(base), 'if:').trim() ===
+      "if: ${{ !cancelled() && steps.setup.outcome == 'success' }}"
+  );
+
   return bad;
 }
 
@@ -1300,6 +1517,12 @@ function main(argv: string[]): void {
   // shape: they cannot be made once for eight lanes.
   const laneIdx = argv.indexOf('--lane');
   const onlyLane = laneIdx >= 0 ? argv[laneIdx + 1] : undefined;
+  // `--allow-drop <step>` IS THE ONE TYPED ESCAPE from the strip guard below, repeatable.
+  // Typed, because the whole point is that removing a step from CI should cost a
+  // deliberate keystroke naming the step, not a silent line in a summary.
+  const allowDrop = new Set(
+    argv.flatMap((a, i) => (a === '--allow-drop' && argv[i + 1] ? [argv[i + 1]] : []))
+  );
   if (argv.includes('--selftest')) {
     const n = selftest();
     console.log(`${n === 0 ? '✓' : '✗'} gate-bind selftest: ${n} failure(s)`);
@@ -1450,6 +1673,11 @@ function main(argv: string[]): void {
   const lockById = new Map(lock.map((g) => [g.id, g]));
   const workflow = read(WORKFLOW);
   const caps = laneCapabilities(workflow);
+  // The lock, for the shard assignment below. Read here and not inside the loop so a
+  // malformed lock fails once, loudly, rather than once per sharded lane.
+  const lockEntries = JSON.parse(read('scripts/ci-runner/gates.lock.json')) as Parameters<
+    typeof shardAssignment
+  >[1];
 
   const { present, missing } = trackedSubjects();
   if (missing.length > 0) {
@@ -1552,7 +1780,15 @@ function main(argv: string[]): void {
       );
       process.exit(1);
     }
-    const { text, lanes, dropped } = rewriteRegions(workflow, scoped, only);
+    // THE SHARD ASSIGNMENT, computed once per run from the SAME plan the aggregator
+    // re-runs. A lane absent from SHARD_COUNTS yields nothing and its steps emit exactly
+    // as before, which is what keeps this change inert for the nine unsharded lanes.
+    const shardMap = new Map<string, ReadonlyMap<string, number>>();
+    for (const job of Object.keys(SHARD_COUNTS)) {
+      const assigned = shardAssignment(job, lockEntries, caps);
+      if (assigned !== null) shardMap.set(job, assigned);
+    }
+    const { text, lanes, dropped } = rewriteRegions(workflow, scoped, only, shardMap);
     // REFUSE TO SILENTLY DELETE A STEP THE MANIFEST STILL POINTS AT. A step inside the
     // region that no declared gate emits is either stale (fine to drop) or a gate
     // someone hand-added in the wrong place (NOT fine -- dropping it stops that gate
@@ -1564,10 +1800,34 @@ function main(argv: string[]): void {
     const emitted = new Set(
       [...scoped.entries()].flatMap(([lane, gates]) => gates.map((b) => `${lane}: ${b.step}`))
     );
-    const claimed = dropped.filter((d) => {
-      const step = d.slice(d.indexOf(': ') + 2);
-      return !emitted.has(d) && manifest.includes(`step: '${step}'`);
-    });
+    // THE STRIP GUARD (box A2). The refusal below catches a drop the MANIFEST still
+    // names, which is the loudest case. It is not the only harmful one, and the gap has
+    // a receipt: strip `DOCKERHUB_TOKEN` from `.github/workflows/ci-quality.yml:1159` in
+    // a scratch copy and run the whole battery -- NOTHING reds. A step can carry `env:`,
+    // `if:`, a `with:` block or a secret that no manifest entry mentions, and dropping it
+    // was reported as a tidy `rewrote N region(s)`.
+    //
+    // So `--write` now refuses on ANY drop the rewrite cannot re-emit, whatever the
+    // reason, and `--allow-drop <step>` is the single typed escape. The two refusals stay
+    // SEPARATE rather than merged: a manifest-claimed drop is a regression and says so,
+    // while an unexplained drop may be legitimate cleanup that simply has to be named.
+    const { claimed, unclaimed } = classifyDrops(dropped, emitted, allowDrop, manifest);
+    if (unclaimed.length > 0) {
+      console.error(`✗ refusing to write: ${unclaimed.length} step(s) would be REMOVED from a`);
+      console.error('  region and re-emitted by nothing.');
+      for (const c of unclaimed) console.error(`    ${c}`);
+      console.error('');
+      console.error('  A dropped step takes its `env:`, `if:`, `with:` and secrets with it, and');
+      console.error('  no gate reads those, so the removal would be invisible: measured by');
+      console.error('  stripping DOCKERHUB_TOKEN from ci-quality.yml and running the whole');
+      console.error('  battery green. If the removal is intended, name it:');
+      for (const c of unclaimed) {
+        console.error(
+          `    npx tsx scripts/gate-bind.ts --write --allow-drop '${c.slice(c.indexOf(': ') + 2)}'`
+        );
+      }
+      process.exit(1);
+    }
     if (claimed.length > 0) {
       console.error(`✗ refusing to write: ${claimed.length} step(s) inside a region are`);
       console.error('  registered in the manifest but emitted by no declared gate.');
@@ -1652,7 +1912,13 @@ function main(argv: string[]): void {
     const runsScriptDirectly =
       lockEntry !== undefined &&
       !lockEntry.run.startsWith('npm run ') &&
-      lockEntry.run.endsWith('.sh');
+      // `.py` TOO, and for the W7 P4 reason. A gate registered as a bare path with
+      // no package.json key keeps that shape when its path is repointed at a Python
+      // port; keying on `.sh` alone meant the checks below -- run must match the
+      // header's derived run, and no package.json key may exist -- silently stopped
+      // applying to a gate the moment it was ported. Same class as the `paths:`
+      // glob that stops selecting its own gate once the leaf is a `.py`.
+      (lockEntry.run.endsWith('.sh') || lockEntry.run.endsWith('.py'));
     if (lockEntry?.qualityGateTest === true || runsScriptDirectly) {
       if (lockEntry.run !== b.run) {
         problems.push(

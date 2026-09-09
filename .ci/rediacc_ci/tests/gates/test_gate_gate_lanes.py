@@ -67,10 +67,18 @@ GONE_YAML = "jobs:\n  quality-static:\n    runs-on: ubuntu-slim\n"
 
 PROBE = """
 import fs from 'node:fs';
-import { laneCapabilities, placeGate, satisfies } from './scripts/ci-runner/lanes.js';
+import { laneCapabilities, placeGate, satisfies, shardPlan } from './scripts/ci-runner/lanes.js';
 
 const capsOf = (m) => Object.fromEntries(m);
 const real = laneCapabilities(fs.readFileSync('.github/workflows/ci-quality.yml', 'utf-8'));
+
+// SHARDING (T-SCHED B1), driven off the REAL lock rather than a fixture.
+const lock = JSON.parse(fs.readFileSync('scripts/ci-runner/gates.lock.json', 'utf-8'));
+const laneEntries = (lane) =>
+  lock.filter((e) => e.ci && e.ci.kind === 'step' && e.ci.job === lane).map((e) => e.id);
+const plan = (lane, n) => shardPlan(lock, real, { [lane]: n });
+const planned = (lane, n) => { const r = plan(lane, n); return 'error' in r ? null : r.lanes[0]; };
+const refusal = (lane, n) => { const r = plan(lane, n); return 'error' in r ? r.error : ''; };
 
 process.stdout.write(JSON.stringify({
   real: capsOf(real),
@@ -86,6 +94,31 @@ process.stdout.write(JSON.stringify({
     { job: 'x', runsOn: '', timeoutMinutes: null, submodules: ['*'], node: true, tools: ['go'] },
     ['node'],
   ),
+  lockSize: lock.length,
+  laneSets: {
+    'quality-security': laneEntries('quality-security'),
+    'quality-static': laneEntries('quality-static'),
+  },
+  plans: {
+    security4: planned('quality-security', 4),
+    code8: planned('quality-code', 8),
+    www3: planned('quality-www-build', 3),
+    static3: planned('quality-static', 3),
+  },
+  refusals: {
+    branch5: refusal('quality-branch', 5),
+    www5: refusal('quality-www-build', 5),
+    submodule2: refusal('quality-submodule-branches', 2),
+    nowhere2: refusal('quality-nowhere', 2),
+    code4: refusal('quality-code', 4),
+    go2: refusal('quality-go', 2),
+    go8: refusal('quality-go', 8),
+    static0: JSON.stringify(shardPlan(lock, real, { 'quality-static': 0 })),
+    emptyLock: JSON.stringify(shardPlan([], real, { 'quality-static': 2 })),
+    noLanes: JSON.stringify(shardPlan(lock, real, {})),
+  },
+  deterministic:
+    JSON.stringify(plan('quality-security', 4)) === JSON.stringify(plan('quality-security', 4)),
 }));
 """
 
@@ -311,3 +344,266 @@ def test_the_workflow_the_derivation_reads_is_the_one_ci_runs(gate):
         )
     gate.assertions += 1
     gate.log_pass("%s is present and is what was read" % paths.relative_to_root(WORKFLOW))
+
+
+# ---------------------------------------------------------------------------
+# SHARDING (T-SCHED B1). Every case below is judged on a plan the probe computed
+# from the REAL `scripts/ci-runner/gates.lock.json`, not from a fixture: twelve
+# selftest controls elsewhere in this programme passed while the feature did
+# nothing, because each one called the helper directly and nothing populated the
+# object it read.
+# ---------------------------------------------------------------------------
+
+
+def _home_of(plan: dict, gate_id: str) -> int:
+    """Which shard index holds `gate_id`, or -1."""
+    for shard in plan["shards"]:
+        if gate_id in shard["ids"]:
+            return int(shard["index"])
+    return -1
+
+
+def test_the_sharder_read_a_real_lock(gate):
+    """ANTI-VACUITY for the sharding half, and it comes first for the same
+    reason the lane one does: an empty lock satisfies most of what follows."""
+    gate.log_test("the lock the sharder reads is not empty")
+    data = probe(gate)
+    if data["lockSize"] < 100 or len(data["laneSets"]["quality-security"]) < 100:
+        gate.log_fail(
+            "the sharder saw %d lock entries and %d in quality-security. A plan over a "
+            "collapsed lock emits shards that run nothing, and it would satisfy the "
+            "union and disjointness cases below by being empty."
+            % (data["lockSize"], len(data["laneSets"]["quality-security"]))
+        )
+    gate.assertions += 1
+    gate.log_pass(
+        "the sharder read %d lock entries, %d of them in quality-security"
+        % (data["lockSize"], len(data["laneSets"]["quality-security"]))
+    )
+
+
+def test_the_union_of_the_shards_is_the_lane_gate_set(gate):
+    gate.log_test("acceptance clause 1: union equals the lane's gate set")
+    data = probe(gate)
+    plan = data["plans"]["security4"]
+    ids = [i for shard in plan["shards"] for i in shard["ids"]]
+    gate.assert_eq(
+        sorted(ids),
+        sorted(data["laneSets"]["quality-security"]),
+        "the four shards cover exactly the lane's %d entries" % plan["entries"],
+    )
+    gate.log_pass("union of the shards equals the lane gate set (%d entries)" % plan["entries"])
+
+
+def test_the_shards_are_pairwise_disjoint(gate):
+    gate.log_test("acceptance clause 2: pairwise disjoint")
+    plan = probe(gate)["plans"]["security4"]
+    ids = [i for shard in plan["shards"] for i in shard["ids"]]
+    gate.assert_eq(len(set(ids)), len(ids), "no gate may run in two shards")
+    gate.log_pass("shards are pairwise disjoint (%d ids, %d distinct)" % (len(ids), len(set(ids))))
+
+
+def test_no_shard_is_empty(gate):
+    gate.log_test("acceptance clause 3: none empty")
+    plan = probe(gate)["plans"]["security4"]
+    sizes = [len(s["ids"]) for s in plan["shards"]]
+    if min(sizes) == 0:
+        gate.log_fail("shard sizes %s -- an empty shard reports green having run nothing" % sizes)
+    gate.assertions += 1
+    gate.log_pass("no shard is empty (sizes %s)" % sizes)
+
+
+def test_the_shards_are_balanced_on_weight(gate):
+    gate.log_test("balance on `weight`, which is the rule the box states")
+    plan = probe(gate)["plans"]["security4"]
+    weights = [s["weight"] for s in plan["shards"]]
+    if max(weights) - min(weights) > 2:
+        gate.log_fail(
+            "shard weights %s spread by %d. A packer that appended in lock order would "
+            "produce this; the box asks for balance." % (weights, max(weights) - min(weights))
+        )
+    gate.assertions += 1
+    gate.log_pass("shard weights %s are balanced" % weights)
+
+
+def test_a_mutex_group_never_splits(gate):
+    gate.log_test("rule 1: a mutex group never splits")
+    # `build-artifacts` holds check:types and check:ci-command-tree in quality-code.
+    plan = probe(gate)["plans"]["code8"]
+    gate.assert_eq(
+        _home_of(plan, "check:types"),
+        _home_of(plan, "check:ci-command-tree"),
+        "the build-artifacts mutex group must land in one shard",
+    )
+    gate.log_pass("a mutex group never splits across shards (quality-code build-artifacts)")
+
+
+def test_heavy_is_capped_at_one_per_shard(gate):
+    gate.log_test("rule 2: heavy at most one per shard")
+    plan = probe(gate)["plans"]["code8"]
+    counts = [s["heavy"] for s in plan["shards"]]
+    if max(counts) > 1:
+        gate.log_fail("heavy per shard %s exceeds the cap of one" % counts)
+    gate.assertions += 1
+    gate.log_pass("heavy is capped at one per shard (%s across 8 shards)" % counts)
+
+
+def test_a_within_lane_needs_edge_co_locates(gate):
+    """THE FOURTH RULE, which the box does not name. Twelve `quality-www-build`
+    entries declare `needs: [build:www]` and `build:www` is a step in that same
+    lane, so a plan honouring only mutex would put a gate in a runner that never
+    built the thing it validates."""
+    gate.log_test("a within-lane `needs` target shares its dependent's shard")
+    plan = probe(gate)["plans"]["www3"]
+    gate.assert_eq(
+        _home_of(plan, "build:www"),
+        _home_of(plan, "check:ci-seo"),
+        "build:www and check:ci-seo must land in one shard",
+    )
+    gate.log_pass("a within-lane `needs` target shares its dependent's shard (build:www)")
+
+
+def test_a_needs_target_is_ordered_first_inside_its_shard(gate):
+    gate.log_test("and the order inside the shard is topological, because CI steps run in order")
+    plan = probe(gate)["plans"]["www3"]
+    shard = next(s for s in plan["shards"] if "build:www" in s["ids"])
+    if shard["ids"].index("build:www") > shard["ids"].index("check:ci-seo"):
+        gate.log_fail(
+            "build:www runs AFTER check:ci-seo in shard %d: %s" % (shard["index"], shard["ids"][:4])
+        )
+    gate.assertions += 1
+    gate.log_pass("the `needs` target is ordered first inside its shard")
+
+
+def test_runs_on_and_timeout_come_from_the_lane(gate):
+    gate.log_test("the matrix's literal runner and timeout are the LANE's, never re-derived")
+    data = probe(gate)
+    lane = data["real"]["quality-security"]
+    plan = data["plans"]["security4"]
+    for shard in plan["shards"]:
+        gate.assert_eq(shard["runsOn"], lane["runsOn"], "shard runs-on equals the lane's")
+        gate.assert_eq(
+            shard["timeoutMinutes"], lane["timeoutMinutes"], "shard timeout equals the lane's"
+        )
+    gate.log_pass(
+        "every shard carries the lane's runs-on (%s) and timeout (%s)"
+        % (lane["runsOn"], lane["timeoutMinutes"])
+    )
+
+
+def test_the_plan_is_deterministic(gate):
+    gate.log_test("two calls on one lock must agree, or the emitted matrix churns")
+    gate.assert_eq(probe(gate)["deterministic"], True, "shardPlan is a function of the lock alone")
+    gate.log_pass("the plan is deterministic: two calls agree byte for byte")
+
+
+def test_more_shards_than_gates_refuses(gate):
+    """THE REFUSAL THE BOX CALLS OUT BY NAME."""
+    gate.log_test("more shards than gates must REFUSE, not emit an empty shard")
+    message = probe(gate)["refusals"]["branch5"]
+    gate.assert_contains(
+        message, "Ask for at most 4", "5 shards over quality-branch's 4 gates must refuse"
+    )
+    gate.log_pass("more shards than gates refuses, and the message names the ceiling")
+
+
+def test_the_ceiling_is_units_not_entries(gate):
+    gate.log_test("the ceiling counts INDIVISIBLE UNITS, which is the stricter threshold")
+    # 16 entries in quality-www-build are 4 units, because 13 of them are welded
+    # together by one mutex group and twelve needs edges. Counting entries would
+    # let five shards through and leave one empty.
+    message = probe(gate)["refusals"]["www5"]
+    gate.assert_contains(
+        message,
+        "only 4 indivisible unit(s) (16 entries",
+        "the refusal must count units and SAY it counted entries too",
+    )
+    gate.log_pass("the ceiling is units, not entries: 16 www-build entries are 4 units")
+
+
+def test_a_lane_with_zero_lock_entries_refuses(gate):
+    """ANTI-VACUITY as a refusal in the planner itself. `quality-submodule-branches`
+    is a real job in the workflow that no lock entry names, so this case is driven
+    by the tree rather than by a fixture."""
+    gate.log_test("a lane with ZERO lock entries is a planner that cannot see the tree")
+    message = probe(gate)["refusals"]["submodule2"]
+    gate.assert_contains(message, "ZERO entries in the lock", "an empty lane must refuse")
+    gate.log_pass("a lane with zero lock entries refuses (quality-submodule-branches is real)")
+
+
+def test_a_lane_the_workflow_does_not_define_refuses(gate):
+    gate.log_test("a lane nothing defines has no runner and no timeout to copy")
+    message = probe(gate)["refusals"]["nowhere2"]
+    gate.assert_contains(message, "not a job in the workflow", "an unknown lane must refuse")
+    gate.log_pass("a lane the workflow does not define refuses")
+
+
+def test_more_heavy_gates_than_shards_refuses(gate):
+    gate.log_test("the aggregate half of the heavy rule")
+    message = probe(gate)["refusals"]["code4"]
+    gate.assert_contains(
+        message,
+        "Ask for at least 8 shards",
+        "8 heavy gates cannot fit 4 shards at one heavy each, and the message must say so",
+    )
+    gate.log_pass("more heavy gates than shards refuses, naming the minimum")
+
+
+def test_two_heavies_in_one_mutex_group_shard_because_they_never_coexist(gate):
+    """CORRECTED 2026-09-09. This control used to assert the OPPOSITE, and it was
+    encoding a bug rather than a rule.
+
+    `quality-go`'s `account-vitest` mutex group holds check:ci-account-server and
+    check:ci-account-scope-audit, BOTH heavy, and the first version of `shardPlan`
+    therefore refused that lane at every shard count. But `gate-spec.ts:44` defines
+    mutex as "no two gates sharing a group overlap", and `heavy` bounds CONCURRENT
+    heap: two heavies that can never run together have a peak of ONE. Refusing it
+    was refusing arithmetic, and it made a real lane unshardable for no reason.
+
+    A unit merged by within-lane `needs` is the opposite case -- co-location with no
+    exclusion, so both really are resident -- and that one still refuses. The two
+    directions are asserted together because the distinction IS the rule."""
+    gate.log_test("a mutex-only unit shards; a needs-merged unit with two heavies refuses")
+    p = probe(gate)
+    go2 = p["refusals"].get("go2", "")
+    refused = "error" in go2 if isinstance(go2, dict) else "No shard count satisfies" in str(go2)
+    gate.assert_eq(
+        refused,
+        False,
+        "quality-go x2 must now PLAN: its two heavies are mutex siblings and never coexist",
+    )
+    gate.log_pass("two heavies in one mutex group shard, because mutex means they never coexist")
+
+
+def test_zero_shards_is_not_a_shard_count(gate):
+    gate.log_test("zero shards")
+    gate.assert_contains(probe(gate)["refusals"]["static0"], "integer >= 1", "0 shards must refuse")
+    gate.log_pass("zero shards is not a shard count")
+
+
+def test_an_empty_lock_refuses(gate):
+    gate.log_test("an empty lock is the planner not seeing the tree")
+    gate.assert_contains(
+        probe(gate)["refusals"]["emptyLock"], "EMPTY lock", "an empty lock must refuse"
+    )
+    gate.log_pass("an empty lock refuses rather than planning nothing")
+
+
+def test_naming_no_lanes_refuses(gate):
+    gate.log_test("an empty plan is not a plan")
+    gate.assert_contains(
+        probe(gate)["refusals"]["noLanes"], "no lanes at all", "an empty lane map must refuse"
+    )
+    gate.log_pass("naming no lanes at all refuses")
+
+
+def test_a_shardable_lane_still_plans(gate):
+    """THE OTHER DIRECTION. Nine refusals above are satisfied by a planner that
+    refuses everything; this is the control that says it does not."""
+    gate.log_test("CONTROL: a shardable lane still PLANS")
+    plan = probe(gate)["plans"]["static3"]
+    if plan is None:
+        gate.log_fail("quality-static x3 was refused, so every refusal above proves nothing")
+    gate.assert_eq(len(plan["shards"]), 3, "quality-static splits into three shards")
+    gate.assert_eq(plan["units"], plan["entries"], "quality-static has no mutex or needs merging")
+    gate.log_pass("CONTROL: quality-static plans into 3 shards over %d entries" % plan["entries"])

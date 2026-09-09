@@ -2,10 +2,10 @@
  * Language identification for locale and documentation gates.
  *
  * WHY IT IS A LIBRARY AND NOT A COPY. This detector was built inside
- * scripts/check-i18n-cross-locale.ts and fought a long false-positive battle to get here:
+ * scripts/gates/check-i18n-cross-locale.ts and fought a long false-positive battle to get here:
  * a first version that compared values across locales reported 136 false positives on the
  * es/pt pair alone, and the two-independent-signals design below is what survived. When
- * scripts/check-docs-untranslated-text.ts was found to be PROVEN DEAD -- a wholly English
+ * scripts/gates/check-docs-untranslated-text.ts was found to be PROVEN DEAD -- a wholly English
  * paragraph appended to packages/www/src/content/docs/de/quick-start.md exited 0 -- the
  * fix needed exactly this detector at paragraph granularity. Copying it would have given
  * the repo two stopword tables to drift apart, which is the shape that produced the

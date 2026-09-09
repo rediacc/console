@@ -35,7 +35,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '../..');
-const GATE = path.join(REPO, 'scripts/check-page-locale-imports.ts');
+const GATE = path.join(REPO, 'scripts/gates/check-page-locale-imports.ts');
 
 /** Verbatim from rdc-cheat-sheet.astro as it stood before the fix; see the header. */
 const CHEAT_SHEET_ASTRO = [

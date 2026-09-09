@@ -174,6 +174,25 @@ class Result:
                 self.duration,
                 self.returncode,
             )
+        # A SIGNALLED CHILD DID NOT "EXIT", and saying so sends the reader after
+        # the wrong cause. `subprocess` reports a signalled child as a NEGATIVE
+        # returncode and a shell in between reports 128+N; either way the process
+        # was terminated from outside rather than deciding to fail, so the thing
+        # to suspect is a deadline or an OOM kill, not the command's own logic.
+        # Learned the expensive way on 2026-09-08 in `wl_judge`, whose equivalent
+        # line read "judge exited 143" and let a reader conclude the model was
+        # unreachable -- the remedy that message offers is to DISABLE the gate.
+        sig = (
+            -self.returncode
+            if self.returncode < 0
+            else (self.returncode - 128 if 128 < self.returncode < 160 else 0)
+        )
+        if sig:
+            return "%s was KILLED by signal %d (exit %d), not a failure of its own" % (
+                " ".join(self.argv),
+                sig,
+                self.returncode,
+            )
         return "%s exited %d" % (" ".join(self.argv), self.returncode)
 
 

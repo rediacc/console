@@ -77,9 +77,9 @@ CODE_SUFFIXES = (
 TOKENS = r"eslint-disabl[e]|@ts-ignor[e]|@ts-nochec[k]|@ts-expect-erro[r]|biome-ignor[e]"
 
 # Narrowing 2. `//`, `/*`, a JSX `{/*`, a continued block-comment `*`, or `#`.
-OPENER = r"(//+|/\*+|\{[" + hookio.SPACE + r"]*/\*+|^[" + hookio.SPACE + r"]*\*+|#)"
+OPENER = hookio.rx(r"(//+|/\*+|\{[{S}]*/\*+|^[{S}]*\*+|#)")
 
-PATTERN = OPENER + r"[" + hookio.SPACE + r"]*(" + TOKENS + r")"
+PATTERN = OPENER + hookio.rx(r"[{S}]*(") + TOKENS + r")"
 
 # The message's tokens, kept in halves in the SOURCE and whole in the OUTPUT.
 # See the port note above; this is the `""` concatenation the bash uses.

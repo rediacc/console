@@ -7,7 +7,7 @@
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
 # ---- end gate ----
 # Test for the release-age deferral and the anti-vacuity guard in
-# scripts/check-actions.ts.
+# scripts/gates/check-actions.ts.
 #
 # TWO DEFECTS THIS COVERS.
 #
@@ -46,7 +46,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/gates/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GATE="$REPO_ROOT/scripts/check-actions.ts"
+GATE="$REPO_ROOT/scripts/gates/check-actions.ts"
 LIB="$REPO_ROOT/scripts/lib/release-age.ts"
 
 # window <published-iso> <now-iso> <min-age-ms> -> "deferred" | "eligible"
@@ -67,7 +67,7 @@ test_the_shared_lib_is_what_the_gate_uses() {
     # Anti-vacuity for this file: every behavioural assertion below drives the
     # shared lib, so if the gate stopped delegating to it they would all pass
     # while proving nothing about the gate.
-    assert_contains "$(cat "$GATE")" "from './lib/release-age.js'" \
+    assert_contains "$(cat "$GATE")" "from '../lib/release-age.js'" \
         "check-actions.ts delegates to the shared release-age lib"
     assert_contains "$(cat "$GATE")" "isWithinFreshnessWindow(published, nowMs, minReleaseAgeMs)" \
         "and calls it with the publish time it fetched, not a local copy of the rule"

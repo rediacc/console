@@ -12,7 +12,7 @@ prose is the only copy of why the gate has this shape.
 This gate has two halves:
 
   FORWARD (is every shipped renet function exercised by a suite CI RUNS?):
-    delegated to `scripts/check-e2e-coverage.ts`. Bash cannot honestly parse a
+    delegated to `scripts/gates/check-e2e-coverage.ts`. Bash cannot honestly parse a
     playwright config to learn which files a job selects, so the forward pass is
     TypeScript: it imports each LIVE config, expands its projects into the
     concrete test files, and only counts coverage from those. A verb mentioned
@@ -80,7 +80,7 @@ PORT NOTES. What changed in the translation, and what deliberately did not.
 -----------------------------------------------------------------------------
 
 THE FORWARD HALF IS STILL SHELLED OUT, and that is the port, not a shortcut.
-The twin runs `npx tsx scripts/check-e2e-coverage.ts` from the repository root
+The twin runs `npx tsx scripts/gates/check-e2e-coverage.ts` from the repository root
 and keeps only its exit code; its output goes straight to the gate's own two
 streams. Reimplementing a playwright-config expansion in Python would be a
 SECOND forward half, and two implementations of one rule is the failure this
@@ -162,7 +162,7 @@ E2E_SUBDIRS = ("src", "tests")
 TS_SUFFIX = ".ts"
 
 # The forward half, run from the repository root exactly as the twin runs it.
-FORWARD_ARGV = ("npx", "tsx", "scripts/check-e2e-coverage.ts")
+FORWARD_ARGV = ("npx", "tsx", "scripts/gates/check-e2e-coverage.ts")
 
 # The array the reverse half reads, and the three patterns that bound it. The
 # twin uses bash `=~` on each line, which finds the FIRST match in the line, so
@@ -295,7 +295,7 @@ def raw_dispatches(files: list[str]) -> list[tuple[str, str, int]]:
 
 
 def forward_half(root: pathlib.Path) -> int:
-    """`(cd "$REPO_ROOT" && npx tsx scripts/check-e2e-coverage.ts)`, exit code only.
+    """`(cd "$REPO_ROOT" && npx tsx scripts/gates/check-e2e-coverage.ts)`, exit code only.
 
     STREAMS ARE INHERITED, NOT CAPTURED. See the PORT NOTES: the TypeScript
     half's findings are the gate's findings, and a port that buffered them would

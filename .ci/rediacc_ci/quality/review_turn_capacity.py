@@ -111,11 +111,11 @@ parsing it.
 
 import os
 import re
-import subprocess
 import sys
 
 from rediacc_ci import paths
-from rediacc_ci.controls import Controls
+from rediacc_ci import proc as ci_proc
+from rediacc_ci.controls import Controls, plant
 
 # The twin's escape sequences, verbatim and unconditional. See the port notes.
 RED = "\033[0;31m"
@@ -229,19 +229,16 @@ def turns_for(size: int, fn: str) -> str:
     """
     env = dict(os.environ)
     env["FAKE_SIZE"] = str(size)
-    try:
-        proc = subprocess.run(
-            ["bash", "-c", harness(fn)],
-            capture_output=True,
-            text=True,
-            check=False,
-            env=env,
-            timeout=60,
-        )
-    except (OSError, subprocess.SubprocessError):
+    # THROUGH THE SHARED RUNNER: this is `bash -c` around a harness that stubs
+    # `gh` and calls the real function, so the child spawns children. With
+    # `subprocess.run(capture_output=True, timeout=...)` a stub that never
+    # returns kills bash and then blocks in communicate() on a pipe the stub
+    # still holds -- the port hangs where the twin would have timed out.
+    result = ci_proc.run(["bash", "-c", harness(fn)], env=env, timeout=60)
+    if result.timed_out or result.returncode == ci_proc.SPAWN_FAILED_RC:
         return "0"
     # `$(...)` strips trailing newlines; `${out:-0}` supplies the default.
-    return proc.stdout.strip("\n") or "0"
+    return result.stdout.strip("\n") or "0"
 
 
 def evaluate(fn: str, min_per_kloc: int) -> list[str]:
@@ -441,7 +438,7 @@ def selftest() -> int:
         ("the whole body, anchors included", _FIXTURE_HEALTHY, True),
         (
             "a renamed function extracts nothing",
-            _FIXTURE_HEALTHY.replace("emit_review_turns", "emit_turns"),
+            plant(_FIXTURE_HEALTHY, "emit_review_turns", "emit_turns"),
             False,
         ),
         ("an empty file extracts nothing", "", False),
@@ -460,24 +457,27 @@ def selftest() -> int:
         # density.
         (
             "the pre-incident density is caught",
-            _FIXTURE_HEALTHY.replace("per_kloc=25", "per_kloc=8"),
+            plant(_FIXTURE_HEALTHY, "per_kloc=25", "per_kloc=8"),
             True,
         ),
         (
             "a budget that emits nothing is caught by TOTAL",
-            _FIXTURE_HEALTHY.replace('echo "review_turns=$turns" >>"$GITHUB_OUTPUT"', ":"),
+            plant(_FIXTURE_HEALTHY, 'echo "review_turns=$turns" >>"$GITHUB_OUTPUT"', ":"),
             True,
         ),
         (
             "a budget that shrinks with size is caught by MONOTONIC",
-            _FIXTURE_HEALTHY.replace(
-                "local turns=$((kloc * per_kloc))", "local turns=$((200 - kloc))"
+            plant(
+                _FIXTURE_HEALTHY,
+                "local turns=$((kloc * per_kloc))",
+                "local turns=$((200 - kloc))",
             ),
             True,
         ),
         (
             "a budget that never reaches its own ceiling is caught by CEILING",
-            _FIXTURE_HEALTHY.replace("max_turns=140", "max_turns=140").replace(
+            plant(
+                _FIXTURE_HEALTHY,
                 '[[ "$turns" -gt "$max_turns" ]] && turns="$max_turns"',
                 '[[ "$turns" -gt "$max_turns" ]] && turns="$max_turns"\n'
                 '    [[ "${changed:-0}" -gt 29999 ]] && turns=60',
@@ -486,7 +486,8 @@ def selftest() -> int:
         ),
     ]
 
-    floor = len(extraction) + len(properties) + 3
+    # +2, not +3: the mutation-is-real check above became `plant()`'s job.
+    floor = len(extraction) + len(properties) + 2
     ctl = Controls("review-turn-capacity", floor=floor)
 
     for label, text, want in extraction:
@@ -494,13 +495,10 @@ def selftest() -> int:
     for label, text, want in properties:
         ctl.check("evaluate: %s" % label, bool(evaluate(text, DEFAULT_MIN_TURNS_PER_KLOC)), want)
 
-    # THE MUTANT MUST BE A REAL MUTATION. A control that plants nothing is the
-    # failure this gate's own refusal message names, so it is asserted here too.
-    ctl.check(
-        "the control's mutation actually changes the text",
-        _FIXTURE_HEALTHY.replace(MUTANT_FROM, MUTANT_TO) != _FIXTURE_HEALTHY,
-        True,
-    )
+    # THE ONE-OFF PROOF IS GONE, and deliberately: `plant()` now refuses a
+    # mutation that would not change the fixture, for EVERY site above rather
+    # than for the single one this check covered. Keeping it would assert what
+    # the constructor has already made impossible.
     # THE MEASURED FACTS ARE NOT TUNING KNOBS.
     ctl.check("the starvation point is PR #553's diff size", STARVED_LINES, 2802)
     ctl.check("the starving budget is 50 turns", STARVED_TURNS, 50)

@@ -333,7 +333,7 @@ print(R.gate_only_fixset(pathlib.Path(sys.argv[1]).parent.parent.parent.parent, 
       else R.gate_only_fixset(__import__("os").environ["CLAUDE_PROJECT_DIR"], [sys.argv[2]]))
 PYEOF
 }
-fixcommit scripts/check-thing.ts "fix(gate): a gate artifact"
+fixcommit scripts/gates/check-thing.ts "fix(gate): a gate artifact"
 SHA_GATE="$(git -C "$BASE/proj" rev-parse HEAD)"
 fixcommit packages/cli/src/real.ts "fix(cli): product code"
 SHA_PROD="$(git -C "$BASE/proj" rev-parse HEAD)"

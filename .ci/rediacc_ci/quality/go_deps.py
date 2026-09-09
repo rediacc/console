@@ -169,13 +169,16 @@ from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import age as agecheck
 from rediacc_ci.core import allowlist
+from rediacc_ci.policy_paths import policy_rel
 
-# The list moved to `.ci/policy/` in W4 P2 (commit b80552370). It is spelled out
-# here exactly as the twin spells it, and NOT reconstructed from a helper: the
-# TypeScript seam `scripts/lib/policy-paths.ts` is deliberately a pure join with
-# no filesystem access, and its rule 3 refuses a transition fallback, so there is
-# one location at a time and hard-coding it here cannot half-land.
-BLOCKLIST_REL = ".ci/policy/.go-deps-upgrade-blocklist"
+# The list moved to `.ci/policy/` in W4 P2 (commit b80552370). It used to be
+# spelled out here, on the argument that the TypeScript seam is unreachable from
+# Python and a literal cannot half-land while there is one location at a time.
+# The first half of that stopped being true in W4 P4a: `rediacc_ci.policy_paths`
+# is the seam's Python twin, a pure join with the same three rules, and going
+# through it means an unknown name raises HERE instead of resolving to a path
+# that reads as an empty blocklist.
+BLOCKLIST_REL = policy_rel(".go-deps-upgrade-blocklist")
 
 # `age-check.sh`'s two knobs, with the same environment overrides and the same
 # defaults. `readonly AGE_WARN_DAYS="${AGE_WARN_DAYS:-180}"`.

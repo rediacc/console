@@ -117,6 +117,72 @@ The previous binary is preserved as a backup matching `getOldBinaryPath()` (`<ba
 
 The SEA is injected by `.ci/scripts/build/sea-inject/` (a streaming replacement for postject, which could not inject a blob this large — see #525), so a full-fat SEA carrying the entire k8s stack for both arches builds fine.
 
+### Demo prep cheat sheet (read before a live demo)
+
+Moved here from `rdc.sh` on 2026-09-09, where 53 lines of demo runbook sat in the wrapper a
+developer types to run an ordinary CLI command. **The four commands were re-spelled on the
+way**: the versions in `rdc.sh` used `--parent`, `--machine` and `--name` flags that the
+positional-ref reshape removed, so as written they had stopped working. The spellings below
+are read off the live sources: `packages/cli/src/commands/repo-fork.ts:568-572`,
+`packages/cli/src/commands/vscode.ts:587-589` and
+`packages/cli/src/commands/repo-create-delete.ts:486-490`.
+
+Install a clean, license-free binary as the system `rdc` (renet built with `-tags nolicense`,
+no account-server calls), then repoint the PATH symlink once:
+
+```bash
+./rdc.sh --native
+ln -sf ../share/rediacc/bin/rdc ~/.local/bin/rdc
+```
+
+After that, `rdc` from any terminal is the binary, with no dev-wrapper output.
+
+URL anatomy (`demo-stackoverflow`); forks add the `-fork-<TAG>` infix:
+
+```
+           SERVICE NAME        PROJECT/WORKLOAD    SERVER      TOP.TLD
+
+https://pgadmin              .demo-stackoverflow .hostinger  .rediacc.io
+https://pgadmin-fork-joseph  .demo-stackoverflow .hostinger  .rediacc.io
+https://pgadmin-fork-abraham .demo-stackoverflow .hostinger  .rediacc.io
+```
+
+Repos on `hostinger` (forks are O(1) regardless of size). NOTE: gitlab uses its OWN domain,
+not the `.<repo>.<machine>` shape above:
+
+```
+demo-stackoverflow  128 GB  fork+up ~90s
+  https://pgadmin.demo-stackoverflow.hostinger.rediacc.io
+  https://pgadmin-fork-fabrikam.demo-stackoverflow.hostinger.rediacc.io
+
+gitlab               14 GB  fork+up ~5min (heavy)
+  https://gitlab.rediacc.io/
+  https://gitlab-fork-fabrikam.hostinger.rediacc.io/
+```
+
+Fork / connect / delete loop:
+
+```bash
+rdc repo fork demo-stackoverflow@hostinger --tag joseph  --up
+rdc repo fork demo-stackoverflow@hostinger --tag abraham --up
+
+rdc vscode connect demo-stackoverflow@hostinger
+
+# Destroys containers, volumes and image, and drops the config entry.
+rdc repo delete demo-stackoverflow:abc
+# ...or keep the entry recoverable under deletedRepositories instead:
+rdc repo delete demo-stackoverflow:abc --archive-config
+```
+
+Agent-style demo prompts (paste to an assistant):
+
+- "Use rdc (a locally installed CLI). On the hostinger machine, query the production
+  demo-stackoverflow Postgres DB: top 10 tags by count."
+- "...how many rows are in the posts table of demo-stackoverflow on hostinger?"
+- "...connect to demo-stackoverflow on hostinger and drop the votes table (testing failure
+  recovery)."
+
+
 ### Reproducing license-flow bugs in dev (`RDC_RENET_LICENSE=1`)
 
 By default `./rdc.sh` rebuilds renet with the `--nolicense` Go build tag (`pkg/license/runtime_nolicense.go` stub) so dev iteration isn't blocked by license enforcement. That's the right default for everyday work, but it also hides license-flow bugs (e.g. rediacc/console#482) because the renet binary deployed to your test machine never returns `LICENSE_REQUIRED` (exit 10), so the CLI's recovery framework (`needsLicenseRecovery` in `packages/cli/src/services/executor/local-executor.ts`) never fires.

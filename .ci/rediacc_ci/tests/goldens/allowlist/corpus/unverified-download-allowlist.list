@@ -1,6 +1,6 @@
 # Remote artifacts a Dockerfile installs WITHOUT cryptographic verification.
 #
-# Read by scripts/check-unverified-downloads.ts. An entry is a substring of the
+# Read by scripts/gates/check-unverified-downloads.ts. An entry is a substring of the
 # URL (or the image ref) that identifies the fetch, e.g. `awscli.amazonaws.com`.
 #
 # THE BAR IS "no verification is POSSIBLE", not "no verification is convenient".
@@ -10,7 +10,7 @@
 #
 # Each entry needs a substantive BLOCKER reason (>=30 chars, no banned phrases),
 # validated by scripts/lib/blocker-validator.ts, and its liveness is probed by
-# scripts/check-suppression-liveness.ts.
+# scripts/gates/check-suppression-liveness.ts.
 
 # BLOCKER: AWS publishes no sha256 for the CLI bundle -- the .sha256 URL returns 404 -- only a GPG .sig, which needs their signing key imported first; revisit if a checksum ever appears
 awscli.amazonaws.com

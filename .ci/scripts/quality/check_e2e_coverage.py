@@ -28,7 +28,7 @@ NO `id:` IS CORRECT HERE, checked rather than assumed: `derivedId`
 manifest id.
 
 `needs: node, submodules` IS THE LOAD-BEARING FIELD OF THIS BATCH. The twin got
-both for free from its own body: `npx tsx scripts/check-e2e-coverage.ts` matches
+both for free from its own body: `npx tsx scripts/gates/check-e2e-coverage.ts` matches
 the node pattern and its prose names `private/renet`. This entry point contains
 NEITHER string outside its docstring, and `inferredNeeds` strips Python
 docstrings as prose (`gate-header.ts:301`), so it infers NOTHING at all. Copied
@@ -50,7 +50,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stderr: BYTE-IDENTICAL, 342 bytes
 
 Byte-identical INCLUDING the colour escapes, which is not luck: the forward half
-of this gate is `npx tsx scripts/check-e2e-coverage.ts` with its streams
+of this gate is `npx tsx scripts/gates/check-e2e-coverage.ts` with its streams
 INHERITED, so the coloured block on stdout is written by the same TypeScript
 process in both runs. Nothing was normalised here.
 

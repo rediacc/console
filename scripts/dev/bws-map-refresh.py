@@ -53,6 +53,33 @@ MIN_ENTRIES = 40
 EXPIRY = ROOT / ".ci" / "config" / "bws-token-expiry.json"
 
 
+# `expires` HAS THREE STATES and this reader used to accept only one of them.
+#
+# It did `dt.date.fromisoformat(str(e["expires"]))` inside a try that swallows ValueError
+# and returns, so a single non-date row silently disabled the WHOLE warning -- including
+# for the other rows, which is the worst direction. That was invisible while the file held
+# exactly one dated token; the 2026-09-09 split into a never-expiring local account and an
+# unverified CI one is what made it reachable.
+#
+# Bitwarden's own default is no expiry ("When the token Expires. By default, Never." --
+# bitwarden.com/help/access-tokens), so `null` is the COMMON case, not an edge one, and
+# "unknown" has to stay distinct from it: null is a claim that the token never expires,
+# "unknown" is a record that nobody checked. Collapsing them would let an unverified CI
+# credential read as safe forever.
+NEVER = "never"
+UNKNOWN = "unknown"
+
+
+def _expiry_of(entry):
+    """A `datetime.date`, or the NEVER / UNKNOWN sentinel. Raises on a malformed date."""
+    raw = entry.get("expires")
+    if raw is None:
+        return NEVER
+    if isinstance(raw, str) and raw.strip().lower() == UNKNOWN:
+        return UNKNOWN
+    return dt.date.fromisoformat(str(raw))
+
+
 def _live_client_fingerprint() -> str:
     """sha256 of the CLIENT ID half of BWS_ACCESS_TOKEN, or "" when absent.
 
@@ -88,7 +115,7 @@ def warn_if_token_expiring() -> None:
         entries = doc["tokens"]
         if not isinstance(entries, list) or not entries:
             return
-        tokens = [(e, dt.date.fromisoformat(str(e["expires"]))) for e in entries]
+        tokens = [(e, _expiry_of(e)) for e in entries]
     except (OSError, ValueError, KeyError, TypeError):
         return  # absent or malformed is not this script's job to enforce
 
@@ -132,7 +159,16 @@ def warn_if_token_expiring() -> None:
 
     today = dt.datetime.now(dt.UTC).date()
     shouted = False
-    for entry, expires in sorted(tokens, key=lambda t: t[1]):
+    # A row with no countdown is REPORTED, not warned about, and never sorted against a
+    # date. Silence here would be indistinguishable from "checked, and fine".
+    for entry, expires in [(e, d) for e, d in tokens if not isinstance(d, dt.date)]:
+        if expires is UNKNOWN:
+            print(
+                f"   (note: {entry.get('name', '?')} has no verified expiry in {where}; "
+                f"fill it in from the web vault so a lapse cannot arrive unannounced)"
+            )
+    dated = sorted([(e, d) for e, d in tokens if isinstance(d, dt.date)], key=lambda t: t[1])
+    for entry, expires in dated:
         left = (expires - today).days
         if left > warn_days:
             continue

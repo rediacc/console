@@ -1,7 +1,7 @@
 """Port of `.ci/scripts/test/gates/test-e2e-coverage.sh`.
 
 Integration test for the FORWARD half of the e2e-coverage gate
-(`scripts/check-e2e-coverage.ts`), driven through its `E2E_COV_*` overrides
+(`scripts/gates/check-e2e-coverage.ts`), driven through its `E2E_COV_*` overrides
 against a controlled fixture tree.
 
 "Prove the instrument": the primary case PLANTS a renet function whose only
@@ -13,7 +13,7 @@ about them. The remaining cases exercise the allowlist pass, the stale-entry
 guard, and the registry/workflow drift self-check.
 
 The fixture is entirely inside `tmp_path`; the only real-tree access is READING
-`scripts/check-e2e-coverage.ts` to run it.
+`scripts/gates/check-e2e-coverage.ts` to run it.
 """
 
 from rediacc_ci import paths
@@ -21,7 +21,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-e2e-coverage.sh"
 
-GATE = paths.from_root("scripts", "check-e2e-coverage.ts")
+GATE = paths.from_root("scripts/gates", "check-e2e-coverage.ts")
 
 FUNCTIONS_TS = """export const RENET_FUNCTIONS = [
   'live_verb',
@@ -101,7 +101,9 @@ def build_fixture(gate, root):
 def run_gate(gate, root, registry: str = "playwright.fixture.config.ts") -> harness.RunResult:
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % GATE)
-    harness.require_tool("npx", "install Node.js; this gate drives scripts/check-e2e-coverage.ts")
+    harness.require_tool(
+        "npx", "install Node.js; this gate drives scripts/gates/check-e2e-coverage.ts"
+    )
     return harness.run(
         ["npx", "tsx", str(GATE)],
         env={

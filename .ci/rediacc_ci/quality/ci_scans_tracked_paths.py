@@ -18,7 +18,7 @@ argument are both load-bearing:
     zero tracked files in console. Each time, the reason it could not work had to
     be re-derived by hand.
 
-    `scripts/check-gate-manifest.ts` closed one door: a manifest LEAF git does
+    `scripts/gates/check-gate-manifest.ts` closed one door: a manifest LEAF git does
     not track is now refused. This closes the other: a workflow `run:` line, or a
     `.ci/scripts` command, that reaches into an ignored path.
 
@@ -104,7 +104,14 @@ SELF = "check-ci-scans-tracked-paths.sh"
 # The two surfaces scanned, and the two extensions. Anything a runner executes
 # lives in one of these; a third surface is a deliberate widening, not a typo.
 SURFACES = ((".github", "workflows"), (".ci", "scripts"))
-INCLUDES = (".yml", ".sh")
+# `.py` ALONGSIDE `.sh`, and the twin at .ci/scripts/quality/check-ci-scans-tracked-paths.sh:85
+# carries the same widening, because the two must agree or the shadow differential
+# disagrees on the corpus rather than on the verdict. SURFACES above already puts
+# `.ci/scripts` in scope, so only the extension filter was keeping the ported gates
+# out. Measured 2026-09-08: 45 quality gates exist ONLY as `check_*.py`, with no
+# `.sh` twin left to cover them by accident, so a ported gate that invokes a
+# gitignored path was judged by nothing.
+INCLUDES = (".yml", ".sh", ".py")
 
 # The command-position prefixes. A line whose whitespace-stripped form does not
 # start with one of these is not running anything, whatever else it names.

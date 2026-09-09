@@ -10,7 +10,7 @@ already went through `policyPath()`.
 The paths in the tables below are given as BARE NAMES, which is how the seam and every
 reader still refer to them; the file itself now lives at `.ci/policy/<name>`.
 
-Read this before moving any of them again, and before adding a sixteenth.
+Read this before moving any of them again, and before adding another.
 
 ---
 
@@ -41,7 +41,7 @@ a reader must be red, not quiet.
 
 ---
 
-## 2. The files that moved -- fifteen
+## 2. The files that moved in W4 P2, and the live inventory
 
 Every one of these was at the repository root until W4 P2 and now lives here. The reader
 column is what had to follow the file; the seam that made that a one-line change is
@@ -49,23 +49,23 @@ column is what had to follow the file; the seam that made that a one-line change
 reader had BEFORE the move, which is why four of them were dangerous -- it is kept as the
 record of what the seam was for, not as a description of the code today.
 
-| File | Entries today | Reader, by symbol | How the path is built today |
-|---|---|---|---|
-| `.actions-upgrade-blocklist` | 0 | `scripts/check-actions.ts` `BLOCKLIST_FILE` | root join |
-| `.audit-allowlist` | 0 | `.ci/scripts/security/audit.sh` `parse_blockered_list ".audit-allowlist"` | **bare relative name**, correct only after the `cd "$ROOT_DIR"` in `main()` |
-| `.audit-prod-allowlist` | 10 | `.ci/scripts/security/audit.sh` `parse_blockered_list ".audit-prod-allowlist"` | **bare relative name**, same `cd` |
-| `.ci-parity-exempt` | 9 | `scripts/check-ci-parity.ts` `EXEMPT_FILE` | env seam (`CI_PARITY_ROOT`) over root join |
-| `.cli-i18n-orphan-allowlist` | 5 | `scripts/check-cli-i18n-key-usage.ts` `ORPHAN_ALLOWLIST` | root join |
-| `.dead-bash-allowlist` | 14 | `scripts/check-dead-bash.ts` `ALLOWLIST` | env seam (`DEAD_BASH_ROOT`) over root join |
-| `.deps-upgrade-blocklist` | 10 | `scripts/check-deps.ts` `BLOCKLIST_FILE`; the audit gate's `deps_blocklist_has()` | root join; **and a bare relative name** in `deps_blocklist_has` |
-| `.devcontainer-upgrade-blocklist` | 0 | `scripts/check-devcontainer-pin-freshness.ts` `DEVCONTAINER_BLOCKLIST_FILE` | env seam over root join |
-| `.e2e-coverage-allowlist` | 21 | `scripts/check-e2e-coverage.ts` `E2E_COV_ALLOWLIST` | env seam over root join |
-| `.embed-assets-upgrade-blocklist` | 0 | `scripts/check-embed-asset-freshness.ts` `EMBED_BLOCKLIST_FILE` | env seam over root join |
-| `.go-deps-upgrade-blocklist` | 2 | `.ci/scripts/quality/check-go-deps.sh` `BLOCKLIST_FILE` | root join |
-| `.plan-housekeeping-allowlist` | 0 | `.ci/scripts/quality/check-plan-housekeeping.sh` `ALLOWLIST` | env seam (`PLAN_HK_ALLOWLIST`) over root join |
-| `.profiler-coverage-allowlist` | 71 | `.ci/scripts/quality/check-profiler-coverage.sh` `ALLOWLIST` | **bare relative name**, correct only after the `cd "$REPO_ROOT"` above it |
-| `.runner-advice-allowlist` | 0 | `.ci/scripts/quality/check_runner_advice.py` `allowlist_path` | flag, then env (`RUNNER_ADVICE_ALLOWLIST`), then root join |
-| `.unverified-download-allowlist` | 4 | `scripts/check-unverified-downloads.ts` `UNVERIFIED_DOWNLOAD_ALLOWLIST` | env seam over root join |
+| File | Reader, by symbol | How the path is built today |
+|---|---|---|
+| `.actions-upgrade-blocklist` | `scripts/gates/check-actions.ts` `BLOCKLIST_FILE` | root join |
+| `.audit-allowlist` | `.ci/scripts/security/audit.sh` `parse_blockered_list ".audit-allowlist"` | **bare relative name**, correct only after the `cd "$ROOT_DIR"` in `main()` |
+| `.audit-prod-allowlist` | `.ci/scripts/security/audit.sh` `parse_blockered_list ".audit-prod-allowlist"` | **bare relative name**, same `cd` |
+| `.ci-parity-exempt` | `scripts/gates/check-ci-parity.ts` `EXEMPT_FILE` | env seam (`CI_PARITY_ROOT`) over root join |
+| `.cli-i18n-orphan-allowlist` | `scripts/gates/check-cli-i18n-key-usage.ts` `ORPHAN_ALLOWLIST` | root join |
+| `.dead-bash-allowlist` | `scripts/gates/check-dead-bash.ts` `ALLOWLIST` | env seam (`DEAD_BASH_ROOT`) over root join |
+| `.deps-upgrade-blocklist` | `scripts/gates/check-deps.ts` `BLOCKLIST_FILE`; the audit gate's `deps_blocklist_has()` | root join; **and a bare relative name** in `deps_blocklist_has` |
+| `.devcontainer-upgrade-blocklist` | `scripts/gates/check-devcontainer-pin-freshness.ts` `DEVCONTAINER_BLOCKLIST_FILE` | env seam over root join |
+| `.e2e-coverage-allowlist` | `scripts/gates/check-e2e-coverage.ts` `E2E_COV_ALLOWLIST` | env seam over root join |
+| `.embed-assets-upgrade-blocklist` | `scripts/gates/check-embed-asset-freshness.ts` `EMBED_BLOCKLIST_FILE` | env seam over root join |
+| `.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check-go-deps.sh` `BLOCKLIST_FILE` | root join |
+| `.plan-housekeeping-allowlist` | `.ci/scripts/quality/check-plan-housekeeping.sh` `ALLOWLIST` | env seam (`PLAN_HK_ALLOWLIST`) over root join |
+| `.profiler-coverage-allowlist` | `.ci/scripts/quality/check-profiler-coverage.sh` `ALLOWLIST` | **bare relative name**, correct only after the `cd "$REPO_ROOT"` above it |
+| `.runner-advice-allowlist` | `.ci/scripts/quality/check_runner_advice.py` `allowlist_path` | flag, then env (`RUNNER_ADVICE_ALLOWLIST`), then root join |
+| `.unverified-download-allowlist` | `scripts/gates/check-unverified-downloads.ts` `UNVERIFIED_DOWNLOAD_ALLOWLIST` | env seam over root join |
 
 Readers are cited by SYMBOL rather than by line, deliberately. This checkout is shared
 with other sessions (`docs/ci-overhaul/08-driver-contract.md` section 4), and the first
@@ -74,7 +74,7 @@ time the file was written, because unrelated edits landed above them. A symbol s
 that; a line number is a claim about a tree nobody has any more.
 
 Eleven of the fifteen are additionally read by
-`scripts/check-suppression-liveness.ts`, which since 2026-09-06 routes every one of
+`scripts/gates/check-suppression-liveness.ts`, which since 2026-09-06 routes every one of
 those reads through `policyPath()` and therefore needs no edit when the move lands.
 
 **The four bare-relative reads are the reason the seam exists.** `audit.sh` and
@@ -83,6 +83,62 @@ because they `cd` to the repository root first. A move that updated the root joi
 missed these would leave four readers opening a file that is no longer there -- and in
 every one of these mechanisms, a file that is not there parses as zero entries, which is
 indistinguishable from "nothing is suppressed".
+
+### The live inventory, generated
+
+The table above is the RECORD OF A MOVE and stops being true the moment a file is added,
+which has now happened three times (section 5). The table below is re-derived from the tree
+on every `gen-docs` run and is checked byte for byte by `check:ci-doc-region-parity`, so
+it cannot say fifteen while the directory holds eighteen. That sentence is not hypothetical:
+this heading read "fifteen" against sixteen files on disk for a day, and against eighteen by
+the time it was fixed.
+
+Three things it shows that a hand-typed table cannot. **Entries** is re-counted, so a
+suppression list that quietly filled up is visible here without anyone re-reading it.
+**In POLICY_FILES** is the two-direction set equality between the directory and BOTH seams,
+so `ts only`, `py only` or `NEITHER` in that column is the half-landed move
+`scripts/lib/policy-paths.ts` exists to prevent. And a name that is in a seam with **NO
+FILE ON DISK** gets a row of its own rather than being absent, because absence is exactly
+how that failure hides: every reader here treats a missing file as zero entries, which is
+indistinguishable from "nothing is suppressed".
+
+The column that is NOT here is Readers, and its absence is deliberate:
+`scripts/lib/doc-providers.ts` records that a grep-derived Readers column flipped mid-run
+on 2026-09-06 when an unrelated peer session staged a file, and forbids re-adding it. The
+reader mapping above is hand-written and cited by symbol for the same reason.
+
+<!-- >>> gen-docs: policy -->
+<!-- Tracked files only, via git ls-files, which is the rule every provider in -->
+<!-- doc-providers.ts follows: an untracked file is not yet part of the repository's -->
+<!-- contract. check:ci-policy-inventory reads the DIRECTORY instead, so an untracked -->
+<!-- policy file is a finding there and invisible here. That is the intended split. -->
+
+Scans: every tracked file in the policy directory, against `POLICY_FILES` in both seams (`scripts/lib/policy-paths.ts`, `.ci/rediacc_ci/policy_paths.py`).
+
+| File | Shape | Entries | BLOCKER lines | In POLICY_FILES |
+|---|---|---|---|---|
+| `.actions-upgrade-blocklist` | name per line | 0 | 0 | both |
+| `.audit-allowlist` | name per line | 0 | 1 | both |
+| `.audit-prod-allowlist` | name per line | 10 | 6 | both |
+| `.ci-parity-exempt` | name per line | 9 | 10 | both |
+| `.cli-i18n-orphan-allowlist` | name per line | 5 | 6 | both |
+| `.dead-bash-allowlist` | name per line | 14 | 15 | both |
+| `.deps-upgrade-blocklist` | name per line | 10 | 11 | both |
+| `.devcontainer-upgrade-blocklist` | name per line | 0 | 1 | both |
+| `.e2e-coverage-allowlist` | name per line | 21 | 3 | both |
+| `.embed-assets-upgrade-blocklist` | name per line | 0 | 1 | both |
+| `.go-deps-upgrade-blocklist` | name per line | 2 | 3 | both |
+| `.language-policy-allowlist` | name per line | 8 | 9 | both |
+| `.plan-housekeeping-allowlist` | name per line | 0 | 1 | both |
+| `.profiler-coverage-allowlist` | name per line | 71 | 4 | both |
+| `.runner-advice-allowlist` | name per line | 0 | 1 | both |
+| `.unverified-download-allowlist` | name per line | 4 | 4 | both |
+| `hook-exec-baseline.json` | JSON table | - | 1 | both |
+| `worklist-env-registry.json` | JSON table | - | 0 | both |
+
+18 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
+
+<!-- <<< gen-docs -->
 
 ### Three things the move carried with it, all three done in W4 P2
 
@@ -172,7 +228,7 @@ preserved author dates, so these dates span it unaffected.
 blamed cleanly, and the run reproduced identically on a second pass. Six of the fifteen
 hold zero entries and are recorded as such rather than with a sentinel -- and each of the
 six says in its own header that empty is its correct state, which is why
-`scripts/check-suppression-liveness.ts` gives three of them a `minEntries` of 0 rather
+`scripts/gates/check-suppression-liveness.ts` gives three of them a `minEntries` of 0 rather
 than demanding they be populated.
 
 ### Summary
@@ -389,3 +445,129 @@ than demanding they be populated.
 | 22 | `claude.ai/install.sh` | 2026-09-01 | 4 |
 | 25 | `download.docker.com/linux/ubuntu/gpg` | 2026-09-01 | 4 |
 
+
+---
+
+## 5. Files BORN here, which section 2 cannot describe
+
+Section 2 is the record of a move. Two names now in `POLICY_FILES` never moved, because
+they were written into this directory in the first place, and a reader looking for them
+in that table will not find them.
+
+| File | Added | Reader, by symbol | Why it is policy |
+|---|---|---|---|
+| `.language-policy-allowlist` | `.ci/scripts/quality/check_language_policy.py` | a per-path exemption from ruling 7, each with a `BLOCKER:` reason |
+| `hook-exec-baseline.json` | 2026-09-09 (D0) | `.ci/rediacc_ci/quality/hook_exec_baseline.py`, through `policy_path()` | see below |
+| `worklist-env-registry.json` | 2026-09-09 (D2) | `.ci/rediacc_ci/quality/worklist_env_registry.py`, through `policy_path()` | see below |
+
+### `hook-exec-baseline.json` is the only non-dotfile and the only `.json` here
+
+Both are deliberate, and it still satisfies the section 1 predicate on all four clauses.
+
+It is a PINNED MEASUREMENT rather than a list of exempted entries: how many processes the
+harness starts for one tool call, derived from `.claude/settings.json` by
+`.claude/rediacc_hooks/execcount.py`. A name-per-line dotfile cannot hold a table of
+per-tool, per-reading counts, which is why the shape differs from its neighbours.
+
+* **A decision, not data.** Every number in it is a claim about the world that an edit to
+  `.claude/settings.json` can stop being true, and the gate refuses in BOTH directions:
+  growth is a regression, and a SHRINK is also refused, with the new value printed to
+  paste. A baseline that silently absorbs an improvement cannot prove the next one.
+* **BLOCKER-gated.** Its `ambiguousMatchers` block is the suppression surface, and every
+  entry there carries a `BLOCKER:` reason the gate checks for by name. There is one entry
+  today: the `Bash` matcher is written bare rather than anchored, and nothing in this
+  repository records whether the harness matches by `search` or by `fullmatch`, so under
+  one reading `Bash` also selects the tool `BashOutput` and under the other it does not.
+  The two readings differ by nine processes. It is pinned rather than guessed at, and it
+  shrinks by anchoring the matcher to `^Bash$`, never by editing the list.
+* **It has a parser.** `hook_exec_baseline.load_baseline()`, which refuses an empty
+  `probeTools` and a missing `measured` block rather than reporting zero findings.
+* **Its location is an implementation detail.** One reader, reaching it through
+  `policy_path("hook-exec-baseline.json")`.
+
+W5's target is "2 processes per Bash tool call". It is 12 today, and until 2026-09-09
+there was no artifact in the tree stating the 12, which is why this file exists.
+
+### `worklist-env-registry.json`, the second non-dotfile, and the same argument
+
+Every `WORKLIST_*` environment name the program reads: 133 of them, across 28 files that
+READ one (60 mention one at all, the difference being 30 shell fixtures that only ASSIGN
+them), at 181 read sites. Measured 2026-09-09; there was no registry and no schema before
+that date.
+
+* **A decision, not data.** The `kind` of each name is a human's claim that the derivation
+  is right, and the derivation is wrong for three names in this tree today: the default
+  `"1"` cannot distinguish a boolean from a count, and `WORKLIST_REPORT_PER_STOP`,
+  `WORKLIST_AGENT_HINT_MIN_MARGIN` and `WORKLIST_AGENT_PUSHBACK_MIN_SCORE` are all counts.
+* **BLOCKER-gated in substance if not in spelling.** Its suppression surface is the
+  `exclusions` block, and each prefix carries the reason it is excluded rather than the
+  gate hardcoding it. An exclusion that matches zero tracked paths is a finding, which is
+  the liveness half. Three of the five kinds (`flag`, `handle`, `corpus`) additionally
+  require a substantive `why`, because those are the three where a typo turns something
+  OFF or narrows what is looked at.
+* **It has a parser.** `worklist_env_registry.load_registry()`, which refuses an empty
+  name set and an empty exclusion set rather than reporting zero findings.
+* **Its location is an implementation detail.** One reader, through
+  `policy_path("worklist-env-registry.json")`.
+
+The defect it exists for: a typo'd name reads as UNSET. Four names default to `on`
+(`WORKLIST_AGENT_HINT`, `WORKLIST_AGENT_PUSHBACK`, `WORKLIST_CADENCE`, `WORKLIST_FOCUS`),
+so a misspelling leaves them running while the author believes they are off.
+
+---
+
+## 6. The file REFUSED entry: `.ci/config/bws-secret-map.json`
+
+W4 P5 asked whether the Bitwarden secret map belongs here. **The answer is no**, and the
+answer is recorded rather than merely acted on, because the next reader will have the same
+idea: it is a `.json` under `.ci/`, it is read by CI, and section 5 has just established
+that a `.json` can live here. It still fails **three of the four section 1 clauses**, which
+is a worse case than `.ci-trigger` in section 3, and that one already got a section of its
+own.
+
+Measured 2026-09-09 against `.ci/config/bws-secret-map.json`, 191 lines, 58 secrets:
+
+- **Clause 1, decision not data: FAILS.** It carries `refreshed_at` (line 12) and is
+  regenerated WHOLESALE from Bitwarden by `scripts/dev/bws-map-refresh.py`, with a second
+  writer at `private/account/scripts/rotation/lib/bws-map.ts:75` that refreshes it after a
+  rotation. Every row is a NAME to UUID pair that Bitwarden decides and this repository
+  copies. Nobody chose any of it, so no row can stop being true in the way a suppression can:
+  it goes stale, which is a different failure with a different fix (re-run the refresher).
+- **Clause 2, BLOCKER-gated: FAILS.** Zero `BLOCKER:` lines, and there is no honest one to
+  write. A per-UUID reason would have to be invented, and an invented reason is the exact
+  thing `docs/agent-reference/suppressions.md` exists to keep out of these files.
+- **Clause 3, has a parser: PASSES.** `.ci/scripts/quality/check_bws_map.py:115` opens it as
+  `MAP`. This is the one clause it satisfies, and on its own it proves nothing: section 3
+  refused `.ci-trigger` for failing exactly this clause, so passing it is necessary and not
+  sufficient.
+- **Clause 4, location is an implementation detail: FAILS, and this is the decisive one.**
+  `.github/actions/bws-secrets/action.yml:71` builds the path as
+  `${{ github.action_path }}/../../../.ci/config/bws-secret-map.json`, so the location is
+  reached by walking UP from the composite action's own directory at run time, and the next
+  line fails the job with `bws-secret-map.json not found at $MAP` if the walk misses. Two
+  more readers live OUTSIDE this repository's checkout, in the `private/account` submodule:
+  `private/account/scripts/rotation/lib/bws-map.ts:39` holds the path as
+  `join('.ci', 'config', 'bws-secret-map.json')` and searches upward for the console
+  checkout that has it, and
+  `private/account/tests/integration/rotation-bitwarden-names.test.ts:46` joins the same
+  path to assert the map exists. That is an EXTERNAL CONTRACT, which is the clause that
+  keeps `package.json` and `biome.json` at the repository root.
+
+It is a worse case than `.language-policy-baseline.json`, which was kept out for clause 1
+alone. Three clauses fail here, and one of the three is the cross-repository one.
+
+### The mechanical assertion, so the decision reopens loudly
+
+A refusal written only in prose is a refusal nobody re-derives. `check:ci-policy-inventory`
+therefore asserts all three failing clauses every run
+(`.ci/scripts/quality/check_policy_inventory.py`, direction 7):
+
+1. the file EXISTS at `.ci/config/bws-secret-map.json` (a refusal about a file that is gone
+   is not a refusal, it is a stale paragraph),
+2. it is NOT under `.ci/policy/`, and its name is in neither seam's `POLICY_FILES`,
+3. it contains ZERO `BLOCKER:` occurrences.
+
+The third is the live one. If somebody ever writes reasons into it, clause 2 stops failing,
+the argument above is no longer complete, and the gate reds pointing at this section instead
+of letting the decision drift. The correct response to that red is to re-run the section 1
+predicate here, not to widen the gate.

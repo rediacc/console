@@ -7,7 +7,7 @@
 # slow: true
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
 # ---- end gate ----
-# Integration test for scripts/check-dead-bash.ts.
+# Integration test for scripts/gates/check-dead-bash.ts.
 #
 # Must be provable BOTH ways: the detector fires on planted dead code AND the
 # real tree is clean. The detector also has to NOT fire on the two discovery
@@ -16,7 +16,7 @@
 #
 # THE REAL-TREE HALF LIVES IN check:ci-dead-bash, NOT HERE (changed 2026-09-06).
 # This file used to open with test_passes_on_real_repo, which ran
-# `npx tsx scripts/check-dead-bash.ts` over the whole repository -- byte for byte
+# `npx tsx scripts/gates/check-dead-bash.ts` over the whole repository -- byte for byte
 # the same scan that `check:ci-dead-bash` (package.json) already runs as its own
 # first-class manifest gate. Both are scheduled in the same full local run, so
 # the real-tree scan executed TWICE per `npm run ci`.
@@ -45,7 +45,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GATE="$REPO_ROOT/scripts/check-dead-bash.ts"
+GATE="$REPO_ROOT/scripts/gates/check-dead-bash.ts"
 
 # A fixture with one referenced script and one referencing caller, so the tree
 # is healthy before each test bends exactly one thing.
@@ -87,7 +87,7 @@ DELEGATION_MANIFEST="${DELEGATION_MANIFEST:-$REPO_ROOT/scripts/ci-runner/manifes
 # no longer registered anywhere. Split out of the test so the CONTROL below can
 # drive the identical code path against a planted defect rather than a lookalike.
 delegation_verdict() {
-    local key='check:ci-dead-bash' leaf='scripts/check-dead-bash.ts' line entry
+    local key='check:ci-dead-bash' leaf='scripts/gates/check-dead-bash.ts' line entry
 
     # `|| true` on both extractions: under `set -euo pipefail` a non-matching
     # grep or awk would abort before the diagnostic could print, turning "the
@@ -150,7 +150,7 @@ test_delegation_assertion_fires() {
     t="$(mktemp -d)"
 
     grep -v -F '"check:ci-dead-bash":' "$REPO_ROOT/package.json" >"$t/pkg-missing.json"
-    sed 's#"check:ci-dead-bash": "tsx scripts/check-dead-bash.ts"#"check:ci-dead-bash": "tsx scripts/check-something-else.ts"#' \
+    sed 's#"check:ci-dead-bash": "tsx scripts/gates/check-dead-bash.ts"#"check:ci-dead-bash": "tsx scripts/check-something-else.ts"#' \
         "$REPO_ROOT/package.json" >"$t/pkg-repointed.json"
     sed "s/id: 'check:ci-dead-bash',/id: 'check:ci-dead-bash-renamed',/" \
         "$DELEGATION_MANIFEST" >"$t/manifest-noentry.ts"

@@ -6,10 +6,10 @@
 # lane: quality-security
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
 # slow: true
-# why: Integration test for scripts/check-suppression-liveness.ts
+# why: Integration test for scripts/gates/check-suppression-liveness.ts
 # ---- end gate ----
 
-# Integration test for scripts/check-suppression-liveness.ts.
+# Integration test for scripts/gates/check-suppression-liveness.ts.
 #
 # The gate must be provable BOTH ways: it passes on a clean tree AND it fires on
 # a planted stale entry. A gate that only ever passes proves nothing — this repo
@@ -29,7 +29,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GATE="$REPO_ROOT/scripts/check-suppression-liveness.ts"
+GATE="$REPO_ROOT/scripts/gates/check-suppression-liveness.ts"
 
 # Build a fixture repo that is healthy on every probe, then let each test bend
 # exactly one thing. Echoes the fixture path.

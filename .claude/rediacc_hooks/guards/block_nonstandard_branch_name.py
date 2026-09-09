@@ -49,16 +49,8 @@ ORDER = 17
 DEFECT = (r"^[0-9a-f]{7,40}$|^origin/|^refs/", r"^[0-9a-f]{7,40}$|/")
 
 # Cheap reject: no branch-creating verb anywhere.
-HAS_BRANCH_VERB = (
-    r"git(["
-    + hookio.SPACE
-    + r"]+-[A-Za-z-]+(["
-    + hookio.SPACE
-    + r"]+[^ ;&|]+)?)*["
-    + hookio.SPACE
-    + r"]+(branch|checkout|switch)(["
-    + hookio.SPACE
-    + r"]|$)"
+HAS_BRANCH_VERB = hookio.rx(
+    r"git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+(branch|checkout|switch)([{S}]|$)"
 )
 
 # -b/-B (checkout), -c/-C (switch): the new name is the next token.
@@ -68,44 +60,22 @@ HAS_BRANCH_VERB = (
 # the words -- `SLASH='git checkout -b some/name'` -- and refused a line that
 # runs nothing. Requiring `git` after a command boundary is what makes this a
 # guard on an act rather than on a vocabulary.
-GIT_AT_CMD = (
-    r"(^|[;&|(]|\$\(|`)["
-    + hookio.SPACE
-    + r"]*git(["
-    + hookio.SPACE
-    + r"]+-[A-Za-z-]+(["
-    + hookio.SPACE
-    + r"]+[^ ;&|]+)?)*["
-    + hookio.SPACE
-    + r"]+"
+GIT_AT_CMD = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")
+
+NEW_BRANCH_FLAG = GIT_AT_CMD + hookio.rx(
+    r"(checkout|switch)([{S}]+-[A-Za-z-]+)*[{S}]+-[bBcC][{S}]+[^{S};|&)]+"
 )
 
-NEW_BRANCH_FLAG = (
-    GIT_AT_CMD
-    + r"(checkout|switch)(["
-    + hookio.SPACE
-    + r"]+-[A-Za-z-]+)*["
-    + hookio.SPACE
-    + r"]+-[bBcC]["
-    + hookio.SPACE
-    + r"]+[^"
-    + hookio.SPACE
-    + r";|&)]+"
-)
+LAST_FIELD = hookio.rx(r"[^{S}]+$")
 
-LAST_FIELD = r"[^" + hookio.SPACE + r"]+$"
-
-BRANCH_TAIL = GIT_AT_CMD + r"branch[" + hookio.SPACE + r"]+[^;|&]*"
+BRANCH_TAIL = GIT_AT_CMD + hookio.rx(r"branch[{S}]+[^;|&]*")
 
 # A read-only or delete invocation is not our business.
-READ_ONLY = (
-    r"(^|["
-    + hookio.SPACE
-    + r"])-(d|D|r|a|v|-list|-show-current|-contains|-merged|-no-merged|-delete|-remotes|-all"
-    + r"|-verbose|-set-upstream-to|-unset-upstream|-edit-description)"
+READ_ONLY = hookio.rx(
+    r"(^|[{S}])-(d|D|r|a|v|-list|-show-current|-contains|-merged|-no-merged|-delete|-remotes|-all|-verbose|-set-upstream-to|-unset-upstream|-edit-description)"
 )
 
-RENAME = r"(^|[" + hookio.SPACE + r"])-[mM]([" + hookio.SPACE + r"]|$)"
+RENAME = hookio.rx(r"(^|[{S}])-[mM]([{S}]|$)")
 
 EDGE_CASES = [
     ("the 2026-08-26 shape", "git checkout -b 0826-1-prerebase"),
@@ -169,7 +139,7 @@ def run(ev):
     # suffixed one does not -- which is exactly how this session fixed its own.
     if candidate == "":
         cut = hookio.sed_sub(
-            r".*[" + hookio.SPACE + r"]branch[" + hookio.SPACE + r"]+",
+            hookio.rx(r".*[{S}]branch[{S}]+"),
             "",
             hookio._grep_out(hookio.grep_o(BRANCH_TAIL, cmd)),
             count=1,

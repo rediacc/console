@@ -98,9 +98,10 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
-
+import _cipath  # noqa: F401
 from rediacc_ci.controls import Controls
+from rediacc_ci.core import allowlist
+from rediacc_ci.policy_paths import policy_path
 
 ROOT = pathlib.Path(
     os.environ.get("LANGUAGE_POLICY_ROOT") or pathlib.Path(__file__).resolve().parents[3]
@@ -109,9 +110,13 @@ BASELINE = pathlib.Path(
     os.environ.get("LANGUAGE_POLICY_BASELINE")
     or ROOT / ".ci" / "config" / "language-policy-baseline.json"
 )
+# THROUGH THE SEAM (W4 P4a), with the environment override still in FRONT of it.
+# The hardcoded join this replaces is the one that let `.language-policy-allowlist`
+# land in `.ci/policy/` on 2026-09-07 while both POLICY_FILES lists stayed at
+# fifteen names, with nothing red for a day: a reader that does not go through the
+# seam cannot be counted by the inventory that checks the seam.
 ALLOWLIST = pathlib.Path(
-    os.environ.get("LANGUAGE_POLICY_ALLOWLIST")
-    or ROOT / ".ci" / "policy" / ".language-policy-allowlist"
+    os.environ.get("LANGUAGE_POLICY_ALLOWLIST") or policy_path(".language-policy-allowlist", ROOT)
 )
 # ANCHORED ON THIS FILE, NOT ON `ROOT`, and the difference is the whole point of the
 # seam. `ROOT` is the tree being JUDGED and a test points it at a fixture; the
@@ -141,6 +146,21 @@ BASELINE_LABEL = ".ci/config/language-policy-baseline.json"
 # A `shim:` entry claims ONE line. Ruling 7's words are "one-line shims", so the
 # constant is the ruling and not a tuning knob.
 SHIM_MAX_LINES = 1
+
+# THE THIRD KIND, ADDED 2026-09-09 FOR W7P6's NAMED PRECONDITION.
+# `tree:` exempts a directory and `shim:` exempts a one-line file, so a file that is
+# permanently bash, multi-line, and ALONE in its directory had nowhere to go: the two
+# candidates for `.ci/bootstrap.sh` were `tree:.ci/` (which exempts the entire port
+# backlog) and moving the file into a directory invented to hold it (which churns 34
+# referencing files to satisfy a grammar). `file:` is the narrow one: ONE exact path,
+# no line cap, and strictly narrower than the `tree:` entry it replaces.
+#
+# IT IS DELIBERATELY THE WEAKEST ORACLE, so the gate refuses it wherever a stronger
+# one applies: a `file:` entry naming a ONE-LINE body is rejected by name and told to
+# be a `shim:`, because `shim:` dies when the file grows and `file:` cannot. Without
+# that rule `file:` is a superset of `shim:` and every future author picks the one
+# that never complains, which retires a live check by accident.
+KINDS = ("tree", "shim", "file")
 
 SHEBANG_SHELLS = (b"bash", b"/sh", b" sh", b"zsh")
 
@@ -258,48 +278,50 @@ def effective_lines(root: pathlib.Path, rel: str) -> int:
 def parse_allowlist(text: str) -> tuple[list[tuple[str, str, str]], list[str]]:
     """Parse the BLOCKER-gated allowlist into (kind, value, reason) triples.
 
-    The grouping semantics are the repo-wide ones documented in
-    docs/agent-reference/suppressions.md and implemented in
-    .ci/scripts/lib/blocker-validator.sh: a `# BLOCKER:` line arms a reason, a blank
-    line disarms it, an ordinary comment leaves it armed. They are reimplemented here
-    rather than shelled out to because the bash version returns its results through a
-    nameref into an ASSOCIATIVE ARRAY, which has no useful subprocess encoding; the
-    QUALITY rule, which is the part with the banned-phrase list that actually drifts,
-    is delegated (see `blocker_quality_problem`).
+    THE GROUPING IS NOT REIMPLEMENTED HERE ANY MORE. It used to be, on the
+    argument that the bash reader returns through a nameref into an associative
+    array with no useful subprocess encoding. That argument expired when the
+    grammar moved into `rediacc_ci.core.allowlist`, which is Python, importable,
+    and proved byte-compatible with both shared readers over a frozen corpus of
+    every real list in this tree.
 
-    Returns the entries plus a list of parse problems, so a malformed entry is named
-    rather than silently dropped. A dropped entry is an exemption that stops
-    exempting, which surfaces as a mystery finding about a file nobody touched.
+    THREE THINGS THE LOCAL COPY GOT WRONG, none of which had fired:
+
+      * it split with `str.splitlines()`, which also breaks on \r, \x0b, \x0c,
+        \x1c-\x1e, \x85, \u2028 and \u2029. None of those is a line boundary to
+        either shared reader, so a reason carrying one parsed into more entries
+        here than anywhere else.
+      * `line.lstrip("#")` armed a reason from `## BLOCKER:`, which the shared
+        grammar does not recognise. An entry under one would have been read as
+        reasoned here and unreasoned everywhere else.
+      * it had no inline `entry  # BLOCKER: reason` branch, so an entry written in
+        the documented inline form parsed with an empty reason.
+
+    What stays here is the part that IS this gate's: the `tree:`/`shim:` shape,
+    and naming a malformed entry rather than dropping it. A dropped entry is an
+    exemption that stops exempting, which surfaces as a mystery finding about a
+    file nobody touched.
     """
     entries: list[tuple[str, str, str]] = []
     problems: list[str] = []
-    reason = ""
-    for number, raw in enumerate(text.splitlines(), start=1):
-        line = raw.strip()
-        if not line:
-            reason = ""
-            continue
-        if line.startswith("#"):
-            body = line.lstrip("#").strip()
-            if body.startswith("BLOCKER:"):
-                reason = body[len("BLOCKER:") :].strip()
-            continue
+    for record in allowlist.parse_text(text):
+        line = record.entry
         kind, _, value = line.partition(":")
-        if kind not in {"tree", "shim"} or not value:
+        if kind not in KINDS or not value:
             problems.append(
-                "%s:%d: %r is not an allowlist entry. Entries are `tree:<prefix>/` or "
-                "`shim:<path>`; anything else is a typo that would silently exempt nothing."
-                % (ALLOWLIST.name, number, line)
+                "%s:%d: %r is not an allowlist entry. Entries are `tree:<prefix>/`, "
+                "`shim:<path>` or `file:<path>`; anything else is a typo that would "
+                "silently exempt nothing." % (ALLOWLIST.name, record.line, line)
             )
             continue
         if kind == "tree" and not value.endswith("/"):
             problems.append(
                 "%s:%d: `tree:%s` must end in a slash. Without it the prefix matches "
                 "sibling directories that merely start with the same characters, which is "
-                "how an exemption silently widens." % (ALLOWLIST.name, number, value)
+                "how an exemption silently widens." % (ALLOWLIST.name, record.line, value)
             )
             continue
-        entries.append((kind, value, reason))
+        entries.append((kind, value, record.blocker))
     return entries, problems
 
 
@@ -365,7 +387,7 @@ def exemption_for(rel: str, entries: list[tuple[str, str, str]]) -> tuple[str, s
     for kind, value, _ in entries:
         if kind == "tree" and rel.startswith(value):
             return (kind, value)
-        if kind == "shim" and rel == value:
+        if kind in {"shim", "file"} and rel == value:
             return (kind, value)
     return None
 
@@ -379,13 +401,18 @@ def dead_entries(
     `syncpack-source-exclusions.json` precedent recorded in
     docs/agent-reference/suppressions.md: the oracle (does this entry still cover a
     real bash file?) IS the comparison the gate already performs, so a separate probe
-    in scripts/check-suppression-liveness.ts would be a second implementation of the
+    in scripts/gates/check-suppression-liveness.ts would be a second implementation of the
     same question.
 
     The `shim:` oracle has a second half that matters more than the first. An entry
     whose file still exists but has GROWN past one line is dead in the way that
     counts: "it is a one-line shim" was the entire justification, and it stopped
     being true without the file ever being deleted.
+
+    The `file:` oracle has a second half too, pointing the OTHER way: an entry whose
+    file SHRANK to one line is refused and told to become a `shim:`, because at that
+    point the stronger oracle applies and declining it is a choice to be watched less
+    closely.
     """
     problems: list[str] = []
     for kind, value, _ in entries:
@@ -399,11 +426,23 @@ def dead_entries(
             continue
         if value not in corpus:
             problems.append(
-                "shim:%s is not a tracked bash file. Delete the entry -- an exemption that "
-                "suppresses nothing is how a list outlives its reasons." % value
+                "%s:%s is not a tracked bash file. Delete the entry -- an exemption that "
+                "suppresses nothing is how a list outlives its reasons." % (kind, value)
             )
             continue
         lines = effective_lines(root, value)
+        if kind == "file":
+            # THE DOWNGRADE REFUSAL. See KINDS. A `file:` entry over a one-line body
+            # buys nothing a `shim:` entry does not, and throws away the only oracle
+            # that notices a shim turning into a program.
+            if lines <= SHIM_MAX_LINES:
+                problems.append(
+                    "file:%s has %d effective line(s), so it is a one-line shim and must "
+                    "be written `shim:%s`. The `file:` kind has no line oracle at all; "
+                    "using it here would retire the check that notices this file growing "
+                    "into a program." % (value, lines, value)
+                )
+            continue
         if lines > SHIM_MAX_LINES:
             problems.append(
                 "shim:%s has %d effective lines, not %d. Its exemption says 'one-line shim', "
@@ -553,7 +592,7 @@ def selftest() -> int:
     for that reason and because five copies of the hand-rolled one had already drifted
     (see .ci/rediacc_ci/controls.py's header).
     """
-    controls = Controls("language policy", floor=26)
+    controls = Controls("language policy", floor=32)
     # THE TREE UNDER TEST, not the one this file happens to live in. Anchoring on
     # __file__ here made the controls assert against the real repository even when the
     # caller had pointed the gate at a fixture, which is a coupling in the one place
@@ -601,7 +640,11 @@ def selftest() -> int:
         )
 
     # -- exemption matching ---------------------------------------------------
-    entries = [("tree", ".ci/media/", "r"), ("shim", ".ci/x/one.sh", "r")]
+    entries = [
+        ("tree", ".ci/media/", "r"),
+        ("shim", ".ci/x/one.sh", "r"),
+        ("file", ".ci/boot.sh", "r"),
+    ]
     controls.truthy(
         "a tree: entry covers a file beneath it",
         exemption_for(".ci/media/tools/x.sh", entries),
@@ -615,6 +658,12 @@ def selftest() -> int:
     controls.check(
         "CONTROL: a shim: entry covers nothing else in its directory",
         exemption_for(".ci/x/two.sh", entries),
+        None,
+    )
+    controls.truthy("a file: entry covers its exact path", exemption_for(".ci/boot.sh", entries))
+    controls.check(
+        "CONTROL: a file: entry is exact, not a prefix -- it does not cover a sibling",
+        exemption_for(".ci/boot.sh.bak", entries),
         None,
     )
 
@@ -632,6 +681,12 @@ def selftest() -> int:
         "# BLOCKER: a reason that is long enough to be substantive\n# an ordinary note\ntree:.ci/x/\n"
     )
     controls.truthy("an ordinary comment leaves the reason armed", parsed[0][2])
+    parsed, problems = parse_allowlist(
+        "# BLOCKER: a reason that is long enough to be substantive\nfile:.ci/bootstrap.sh\n"
+    )
+    controls.check(
+        "the file: kind is a recognised entry, not a typo", (parsed[0][0], problems), ("file", [])
+    )
     _, problems = parse_allowlist("junk:.ci/x/\n")
     controls.check("an unknown entry kind is a named problem", len(problems), 1)
     _, problems = parse_allowlist("tree:.ci/media\n")
@@ -654,6 +709,35 @@ def selftest() -> int:
         len(dead_entries([("shim", ".ci/gone/x.sh", "r")], corpus, here)),
         1,
     )
+    controls.check(
+        "CONTROL: a file: entry naming an untracked path is reported dead",
+        len(dead_entries([("file", ".ci/gone/boot.sh", "r")], corpus, here)),
+        1,
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        box = pathlib.Path(tmp)
+        (box / ".ci").mkdir()
+        (box / ".ci" / "boot.sh").write_text(
+            "#!/usr/bin/env bash\nset -eu\nfoo\nbar\n", encoding="utf-8"
+        )
+        (box / ".ci" / "one.sh").write_text(
+            "#!/usr/bin/env bash\nset -eu\nexec other\n", encoding="utf-8"
+        )
+        controls.check(
+            "a file: entry over a MULTI-line tracked bash file is live",
+            dead_entries([("file", ".ci/boot.sh", "r")], [".ci/boot.sh"], box),
+            [],
+        )
+        controls.check(
+            "CONTROL: a file: entry over a ONE-line body is refused and told to be a shim:",
+            len(dead_entries([("file", ".ci/one.sh", "r")], [".ci/one.sh"], box)),
+            1,
+        )
+        controls.truthy(
+            "and the refusal names shim: as the kind to use instead",
+            "shim:.ci/one.sh"
+            in dead_entries([("file", ".ci/one.sh", "r")], [".ci/one.sh"], box)[0],
+        )
 
     # -- the shrink-only guard, both halves -----------------------------------
     old = ["a.sh", "b.sh", "c.sh"]

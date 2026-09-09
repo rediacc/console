@@ -117,6 +117,7 @@ step: Check content for AI slop patterns
 needs: none
 selftest: true
 lane: quality-content
+`slow: true
 ---- end gate ----
 """
 

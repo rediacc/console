@@ -45,7 +45,7 @@ RDC_CLOSURE_PATHS = (
     ".ci/scripts/build/build-cli-musl.sh",
     ".ci/scripts/build/build-cli-executables.sh",
     ".ci/scripts/build/prepare-cli-assets.sh",
-    "scripts/generate-third-party-licenses.ts",
+    "scripts/gen/generate-third-party-licenses.ts",
     ".github/workflows/ci-build-cli.yml",
     ".github/workflows/ci-build-docker.yml",
 )

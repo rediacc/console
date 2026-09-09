@@ -5,7 +5,7 @@
 # source: .cli-i18n-orphan-allowlist
 # corpus: corpus/cli-i18n-orphan-allowlist.list
 # comment-char: #
-# corpus-sha256: 4ba73989bbf3c8fce154ea20e90e3ead32bbad534f6538697cbb1b0765c906b4
+# corpus-sha256: c028f45a67c0d57eb807ff3456ea43fcdb39702feb080070ba56d28cac113858
 # ---
 commands.config.infra.push.dns	infra-provision.ts logDnsAction builds `commands.config.infra.push.dns${Created|Updated|Deleted}` from a DnsAction; the dnsCreated/dnsUpdated/dnsDeleted leaves are concatenated at runtime, not static literals.
 commands.machine.health.	machine/health.ts emits t(`commands.machine.health.${field.key}`) over a runtime field list; the per-field leaves are built dynamically and never appear as a static literal.

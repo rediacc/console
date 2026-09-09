@@ -39,6 +39,8 @@ in test-hooks.sh, because two guards matching adjacent shapes is exactly where
 a regex change silently swallows the wrong one.
 """
 
+import pathlib
+
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
@@ -53,18 +55,8 @@ DEFECT = (r"($|[;&|<>]|[0-9]*>)", r"($|[;&|])")
 # Command position: line start, or after ; & | ( $( or a backtick. Flags
 # between `git` and `add` (-C <path>, -c k=v) stay matched, since they change
 # where the command runs, not what it stages.
-GIT_ADD = (
-    r"(^|[;&|(]|\$\(|`)["
-    + hookio.SPACE
-    + r"]*git(["
-    + hookio.SPACE
-    + r"]+-[A-Za-z-]+(["
-    + hookio.SPACE
-    + r"]+[^ ;&|]+)?)*["
-    + hookio.SPACE
-    + r"]+add["
-    + hookio.SPACE
-    + r"]+"
+GIT_ADD = hookio.rx(
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+add[{S}]+"
 )
 
 # What counts as "nothing followed it". End of line, another command, OR a
@@ -72,13 +64,13 @@ GIT_ADD = (
 # tree exactly like the bare form, and an earlier version of this guard let both
 # through because `>` was not in the terminator set. Caught in review of PR #566
 # and confirmed by running the guard: all three shapes exited 0.
-END = r"[" + hookio.SPACE + r"]*($|[;&|<>]|[0-9]*>)"
+END = hookio.rx(r"[{S}]*($|[;&|<>]|[0-9]*>)")
 
 # A trailing `--` with NO pathspec after it is also blanket. git treats
 # `git add -A --` as no restriction at all, so the escape this guard advertises
 # (name a pathspec) must actually contain one; an empty pathspec list is the
 # bare form wearing the escape's clothes.
-BARE_DDASH = r"([" + hookio.SPACE + r"]+--[" + hookio.SPACE + r"]*)?"
+BARE_DDASH = hookio.rx(r"([{S}]+--[{S}]*)?")
 
 BLANKET_ALL = GIT_ADD + r"(-A|--all)" + BARE_DDASH + END
 BLANKET_DOT = GIT_ADD + r"\." + BARE_DDASH + END
@@ -109,7 +101,26 @@ EDGE_CASES = [
     ("a named file", "git add packages/cli/src/foo.ts"),
     # The cross-talk control.
     ("worktree add is another guard's business", "git worktree add /tmp/wt main"),
+    # SCOPE, added 2026-09-09. A scratch repo under a session's own scratchpad is not
+    # this shared checkout and firing there only teaches sessions to route around the
+    # guard. A SUBMODULE is not that case: different toplevel, same shared tree.
+    ("a foreign scratch repo is not this checkout", "git -C /tmp/scratch/plantree add -A"),
+    ("a submodule IS this checkout and stays guarded", "git -C private/account add -A"),
 ]
+
+
+def _is_inside(target, root):
+    """Is `target` the project tree or a path beneath it?
+
+    Compared as resolved paths and not as strings, so `/home/x/console-2` is not read
+    as living inside `/home/x/console`. Unresolvable answers True -- keep guarding.
+    """
+    try:
+        t = pathlib.Path(target).resolve()
+        r = pathlib.Path(root).resolve()
+    except OSError:
+        return True
+    return t == r or r in t.parents
 
 
 def run(ev):
@@ -118,6 +129,35 @@ def run(ev):
         return hookio.ALLOW
 
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+
+    # THIS GUARD'S ARGUMENT IS ABOUT *THIS* CHECKOUT -- that it is shared, and that a
+    # sweep here reaches another live session's uncommitted work. Neither is true of a
+    # throwaway repo a session builds under its own scratchpad, and firing there spends
+    # the guard's credibility on a command that could not harm anything: measured
+    # 2026-09-09, a writer was refused in a scratch repo by a message naming twelve
+    # files in a checkout it could not reach, and worked around the guard rather than
+    # being protected by it.
+    #
+    # `target_root` AND NOT THE EVENT'S CWD, which was the first fix and was wrong. This
+    # harness RESETS the shell's directory after every call, so `ev.cwd` is the project
+    # directory on every invocation and a cwd test can never fire. The directory that
+    # matters is the one spelled in the COMMAND -- `git -C <dir>` or a leading
+    # `cd <dir> &&` -- which is exactly what `target_root` extracts. Its own comment
+    # records this same defect being found twice before, in block-untagged-commit and
+    # block-unverified-push.
+    #
+    # OUTSIDE THE PROJECT TREE, not merely a different toplevel. A SUBMODULE is a
+    # different toplevel and is emphatically not foreign: private/account is shared,
+    # frozen, and full of other people's work, and a `git -C private/account add -A`
+    # is the exact sweep this guard exists to refuse. Standing down on "different
+    # toplevel" alone allowed it -- caught by asking, before shipping, which repos the
+    # new predicate had just stopped protecting.
+    #
+    # Empty target means "this root, or unresolvable", so the guard keeps guarding by
+    # default; a resolvable target under the project directory keeps guarding too.
+    _target = shellscan.target_root(scan, shellscan.repo_root_env())
+    if _target != "" and not _is_inside(_target, shellscan.repo_root_env()):
+        return hookio.ALLOW
 
     for pat in (BLANKET_ALL, BLANKET_DOT, BLANKET_ROOT):
         if hookio.grep_q(pat, scan):

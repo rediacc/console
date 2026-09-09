@@ -735,13 +735,57 @@ def test_no_em_dashes_in_the_module_or_this_file():
         assert em_dash not in path.read_text(encoding="utf-8"), path
 
 
-def test_every_file_the_module_cites_still_exists():
-    text = (paths.repo_root() / ".ci/rediacc_ci/core/dockerx.py").read_text(encoding="utf-8")
-    cited = {
+# A citation whose target this repository deliberately RETIRED, with the reason.
+#
+# `.ci/lib/setup.sh` is cited here as PROVENANCE, not as a live pointer: this module is
+# the port of it, and each citation records which bash lines a function came from. E1
+# deleted the original once the port landed, so these citations are history and are kept
+# on purpose. Repointing them at the port would make the module cite itself and destroy
+# the only record of what came from where; deleting them would lose it outright.
+#
+# The reason is mandatory and the entry must still be CITED, so this cannot quietly
+# become a place where a genuinely vanished file hides.
+RETIRED_SOURCES = {
+    ".ci/lib/setup.sh": (
+        "ported into .ci/rediacc_ci/setup/ by E1 and deleted in the same campaign; "
+        "the citations are the port's provenance, deliberately kept"
+    ),
+}
+
+
+def _cited_paths(text: str) -> set[str]:
+    return {
         match.group(1)
         for match in re.finditer(
             r"((?:\.ci|scripts|docs|\.claude)/[\w./-]+\.(?:sh|py|ts|md))", text
         )
     }
+
+
+def test_every_file_the_module_cites_still_exists():
+    text = (paths.repo_root() / ".ci/rediacc_ci/core/dockerx.py").read_text(encoding="utf-8")
+    cited = _cited_paths(text)
     assert cited, "the docstring cites no files at all, so this check is vacuous"
-    assert {rel for rel in cited if not (paths.repo_root() / rel).exists()} == set()
+    missing = {rel for rel in cited if not (paths.repo_root() / rel).exists()}
+    assert missing - set(RETIRED_SOURCES) == set()
+
+
+def test_retired_sources_are_still_cited_and_carry_a_reason():
+    """The exemption cannot outlive its use, and cannot be reasonless.
+
+    An entry nothing cites any more is dead weight that would silence a future
+    citation of the same path; an entry with a blank reason is a suppression.
+    """
+    text = (paths.repo_root() / ".ci/rediacc_ci/core/dockerx.py").read_text(encoding="utf-8")
+    cited = _cited_paths(text)
+    for rel, reason in RETIRED_SOURCES.items():
+        assert rel in cited, "%s is exempted but no longer cited; drop the entry" % rel
+        assert reason.strip(), rel
+
+
+def test_a_vanished_file_that_is_not_retired_still_fails():
+    """CONTROL: the exemption is a named list, not a blanket."""
+    cited = _cited_paths("see .ci/lib/no-such-file.sh for details")
+    assert cited == {".ci/lib/no-such-file.sh"}
+    missing = {rel for rel in cited if not (paths.repo_root() / rel).exists()}
+    assert missing - set(RETIRED_SOURCES) == {".ci/lib/no-such-file.sh"}

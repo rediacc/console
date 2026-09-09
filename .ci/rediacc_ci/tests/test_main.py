@@ -26,6 +26,7 @@ these two are the ones whose failure mode is silence.
 
 import json
 import pathlib
+import re
 import shlex
 import subprocess
 import sys
@@ -42,7 +43,16 @@ REAL_MAIN = pathlib.Path(cli.__file__)
 # The three lines the fixtures rewrite. Each is asserted to have matched, so a
 # refactor that changes a spelling reds these tests instead of quietly turning
 # them into a run of the unmodified file.
-TABLE_LINE = "VERBS: tuple[Verb, ...] = ()"
+# THE TABLE'S ASSIGNMENT, HOWEVER MANY ROWS IT HOLDS. A literal `= ()` was
+# enough while the table was empty and stopped matching the day `setup` was
+# ported: the assertion below then refused to run rather than silently testing
+# an unmodified file, which is the assertion working. Both spellings are
+# matched -- the empty one-liner, and a multi-row tuple closed by a `)` in
+# column zero, which is how ruff formats it.
+TABLE_RE = re.compile(
+    r"^VERBS: tuple\[Verb, \.\.\.\] = \(\)$|^VERBS: tuple\[Verb, \.\.\.\] = \(.*?^\)$",
+    re.MULTILINE | re.DOTALL,
+)
 PROBE_TABLE = 'VERBS: tuple[Verb, ...] = (Verb("probe", "print the argv it got", "probe"),)'
 SLICE_LINE = "    rest = list(argv[1:])"
 BROKEN_SLICE_LINE = "    rest = list(argv)"
@@ -70,7 +80,7 @@ def _fixture(tmp_path, *, main_source: str | None = None) -> pathlib.Path:
     `main_source` defaults to the real file; the controls pass a broken variant.
     """
     source = REAL_MAIN.read_text(encoding="utf-8") if main_source is None else main_source
-    planted = source.replace(TABLE_LINE, PROBE_TABLE)
+    planted = TABLE_RE.sub(lambda _match: PROBE_TABLE, source, count=1)
     assert planted != source, (
         "the verb table's spelling changed; this fixture registered nothing and "
         "every dispatch case below would have run against an empty table"

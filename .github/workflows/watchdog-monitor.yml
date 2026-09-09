@@ -84,6 +84,31 @@ jobs:
             .github/actions
             .ci/config
 
+      # BOTH CLASSIFIER TIERS AUTHENTICATED WITH THE EMPTY STRING UNTIL 2026-09-09.
+      # The org secrets were deleted 2026-09-05 -- deliberately, to force every consumer
+      # onto Bitwarden and make the stragglers fail loudly. This workflow was the one that
+      # never got its fetch, and an absent secret in Actions is "" rather than an error, so
+      # tier 1 and tier 2 both failed as if their providers were down. The file's own note
+      # below says tier 2 exists so that "without a second provider every failure fell
+      # through to the allowlist and a judgment nobody made decided whether to spend a
+      # ~500-machine-minute retry" -- with both blank that was the operating mode.
+      #
+      # WHY THIS STEP IS ALLOWED TO PRECEDE THE MONITOR, which CHECK 6 of
+      # check-workflow-gates.sh otherwise forbids: it is registered in that check's PREREQS,
+      # whose contract is "steps that must be allowed to fail, because the monitor cannot
+      # run correctly without them". That is exactly this step -- a monitor with no
+      # classifier credentials does not degrade, it hands the retry decision to an allowlist
+      # nobody reviewed. The alternative route, `continue-on-error`, is banned repo-wide by
+      # check-workflows.sh; a previous session tried it and reverted, and so did I before
+      # reading the note at check-workflow-gates.sh:984-994.
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
+
       # Deterministic attempt-cap backstop, deliberately OUTSIDE the AI-driven
       # monitor process it guards: a misclassification loop cannot talk its way
       # past a separate step that just reads run_attempt. Writes
@@ -145,8 +170,8 @@ jobs:
           # this the evidence for "real break or flake?" is destroyed by the
           # very action taken in response to it.
           WATCHDOG_LOG_CAPTURE_DIR: ${{ runner.temp }}/watchdog-logs
-          # Classifier tier 1: Cloudflare / DeepSeek V4 Pro.
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Classifier tier 1: Cloudflare / DeepSeek V4 Pro, from Bitwarden.
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           # Classifier tier 2: Anthropic, on the org's OAuth token. Tier 1 has
           # been returning HTTP 402 (billing) continuously, which is an
@@ -180,7 +205,9 @@ jobs:
           # prevent. Fixing it is a decision, not an edit -- add the repo secret
           # (operator-only) or find the different shape the paragraph above rules
           # out -- so what lands here is the truth, not a workaround.
-          ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # The vault name carries the ANTHROPIC_ prefix; the short spelling this line
+          # used is in no map and no vault, so it could only ever have been empty.
+          ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ env.BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
         with:
           script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 

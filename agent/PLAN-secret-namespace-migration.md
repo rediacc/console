@@ -458,7 +458,7 @@ plumbing entirely (clean break, no fallback):
   Proven on five inputs including idempotence and a non-R2 endpoint.
 - `.ci/config/secret-reachability.json` loses the now-dead record; the gate reports 45
   refs, controls firing both ways.
-- **New gate `check:ci-backup-bucket-conformance`** (`scripts/check-backup-bucket-conformance.ts`),
+- **New gate `check:ci-backup-bucket-conformance`** (`scripts/gates/check-backup-bucket-conformance.ts`),
   wired three-point, asserting bucket AND jurisdiction agreement across all six
   deployments. Proven by planting three separate defects — bucket mismatch, jurisdiction
   mismatch, missing field — each of which fired with a precise message; restore verified
@@ -2622,3 +2622,15 @@ is the reason the org secrets still exist.
 What ends this plan for good: the operator re-seeds the three, every compare step says
 `match`, the excused-mismatch ledger empties itself, and only then does the deletion
 run. None of that needs this document.
+
+## Part 26 — two operator-gated boxes carried over from the archived GitHub-secrets plan (2026-09-09)
+
+The GitHub-secrets removal plan was archived byte-identical to
+`agent/archive/plans/PLAN-github-secrets-removal.md` (11 of its 13 open boxes retired
+there; see `agent/PLAN-completion-strategy.md` section 2). Its two operator-only boxes
+are carried forward here so they stay open and actionable rather than buried in the
+archive (full original wording, including its own citations, is at
+`agent/archive/plans/PLAN-github-secrets-removal.md:551` and `:578`):
+
+- [ ] **(operator, Q2)** `./run.sh rotation rotate otlp-{eu,us,asia}`, closing row O3 and the deferred exemptions in `.ci/config/bws-unrequested.json`
+- [ ] **(operator, irreversible)** Delete 44 GitHub secrets; keep `BWS_ACCESS_TOKEN` in `console`, `account`, `renet`

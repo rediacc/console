@@ -73,7 +73,7 @@ raises `GhBadOutputError` rather than returning whatever `json.loads` made of it
 `value()` refuses an EMPTY string where a scalar was expected.
 
 The reason that refusal is not paranoia is written down in this repository at
-`docs/dev-environments.md:102-110` and `scripts/check-external-links.ts:174-186`:
+`docs/dev-environments.md:102-110` and `scripts/gates/check-external-links.ts:174-186`:
 a documented one-liner piped an unchecked HTTP response into
 `ACCOUNT_ED25519_PUBLIC_KEY`. The URL had started answering 404. With `curl -f`
 the variable was assigned the EMPTY string; without `-f` the 404's HTML BODY was
@@ -680,7 +680,7 @@ def secret_value(name: str) -> str:
     `ACCOUNT_ED25519_PUBLIC_KEY` ended up empty (with `curl -f`) or holding the
     404's HTML body (without it), the build succeeded either way, and every
     production-signed licence failed as `invalid_signature`
-    (docs/dev-environments.md:102-110, scripts/check-external-links.ts:174-186).
+    (docs/dev-environments.md:102-110, scripts/gates/check-external-links.ts:174-186).
 
     THE ANSWER IS NOT A DIFFERENT URL. There is no live endpoint, and
     `.ci/scripts/quality/check_bws_map.py:69-73` records the mirror image on the

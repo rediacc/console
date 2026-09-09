@@ -68,7 +68,7 @@ the tool at the pin, would silently lint with whatever the runner image happens
 to ship. Nothing does that today; this exists so nothing starts. NOTE ON SHAPE,
 because it is the opposite of what it may look like: a workflow invoking a gate
 SCRIPT directly (`run: .ci/scripts/security/shfmt.sh`) is the REQUIRED pattern
-here -- scripts/check-ci-parity.ts enforces three-point wiring in which the
+here -- scripts/gates/check-ci-parity.ts enforces three-point wiring in which the
 workflow step names the script. It is invoking the TOOL that is forbidden, not
 invoking the script.
 
@@ -204,16 +204,42 @@ GATED_TOOLS = "shfmt|shellcheck|ruff|actionlint"
 CORPUS_PATHSPECS = (".github/workflows/*.yml", ".devcontainer/*", ".ci/*.sh", "run.sh")
 
 # The pathspecs A6 scans, tracked AND untracked.
+#
+# `*.py` IS HERE, AND SO IS THIS GATE'S OWN PORT IN THE EXEMPT LIST BELOW. Both
+# halves were spelled `.sh` only, which is worse than either alone: the scan could
+# not see a ported gate that restates a pin, AND the exemption naming
+# `check-toolchain-pins.sh` would stop covering this gate the moment W7 P5 deletes
+# that twin -- leaving the port neither scanned nor excused, then scanned and NOT
+# excused as soon as the glob widened. Measured 2026-09-08: the registered gate is
+# already `.ci/scripts/quality/check_toolchain_pins.py` (package.json:134), so the
+# exemption was naming a file the registry no longer invokes.
+# THE `.py` HALF IS MEASURED AND DELIBERATELY NOT ADDED YET. Driven 2026-09-08 with
+# `.ci/scripts/quality/*.py` and `.ci/scripts/security/*.py` in this tuple, A6 reported
+# SEVENTEEN ported gates as trusting PATH instead of acquiring at the pin --
+# check_branch.py, check_python_lint.py, check_release_state.py and fourteen more. That
+# is not obviously seventeen defects: A6 was written against bash call sites, and a
+# Python gate reaching a tool through `rediacc_ci.proc.run(["git", ...])` presents the
+# same way whether the tool is pinned or is an unpinned system binary. Landing a red on
+# a shared tree to find out is the wrong order; triaging those seventeen is a wave, and
+# the widening lands with it. The EXEMPT lists below are widened NOW regardless, because
+# they can only ever silence and never fire.
 GATE_PATHSPECS = (".ci/scripts/quality/*.sh", ".ci/scripts/security/*.sh")
 
 # Files that may legitimately restate a pin: the pins file itself, and anything
-# whose job is to talk ABOUT pins (this gate, its test, the resolver).
+# whose job is to talk ABOUT pins (this gate, its test, the resolver). Both
+# spellings of this gate are listed while the twin is still on disk; invariant 5
+# keeps it there until W7 P5, and dropping the `.sh` name early would re-scan a
+# file that is still the differential's other half.
 EXEMPT_EXACT = (
     ".devcontainer/toolchain.env",
     ".ci/scripts/quality/check-toolchain-pins.sh",
+    ".ci/scripts/quality/check_toolchain_pins.py",
     ".ci/scripts/lib/toolchain.sh",
 )
-EXEMPT_GLOBS = (".ci/scripts/test/gates/test-toolchain*.sh",)
+EXEMPT_GLOBS = (
+    ".ci/scripts/test/gates/test-toolchain*.sh",
+    ".ci/rediacc_ci/tests/gates/test_gate_toolchain*.py",
+)
 
 # A3's floor. A pins file that shrank below this is a collapsed corpus, not a
 # clean tree.
@@ -556,17 +582,22 @@ def check_a10(report: Report, root: pathlib.Path) -> None:
             print("         %s" % entry)
 
 
-def run_controls(report: Report, root: pathlib.Path, tmp: pathlib.Path) -> None:
-    """Every control, by CONSTRUCTION. Fixtures written literally, never sampled.
+def run_a8_controls(report: Report, tmp: pathlib.Path) -> None:
+    """The A8 controls, run INLINE right after A8, exactly where the twin runs them.
 
-    A control built by substituting into real source stops controlling anything
-    the day that source is reworded, which is what
-    `check-control-vacuity.sh` exists to catch.
+    ORDER IS OUTPUT, and output is what the differential compares. These two
+    lines sit between A8 and A6 in `check-toolchain-pins.sh:181-197`; running
+    them from the tail block instead left both sides with the same 21 lines in
+    a different order, which is a real disagreement and not a normalisation.
+
+    THE MKDIR MOVED HERE WITH THEM. The twin's own comment at line 181 says
+    "mkdir first": the shared fixture dir used to be created further down, and
+    writing before it existed made these controls silently write nothing.
+    Creating it here keeps that property while restoring the twin's order.
     """
     control_dir = tmp / "c"
     control_dir.mkdir(parents=True, exist_ok=True)
 
-    # -- A8 controls -------------------------------------------------------
     wf_direct = control_dir / "wf-direct.yml"
     wf_direct.write_text("        run: shfmt -d .\n", encoding="utf-8")
     if any(
@@ -591,7 +622,13 @@ def run_controls(report: Report, root: pathlib.Path, tmp: pathlib.Path) -> None:
     else:
         report.ok("A8 control: invoking the gate script is not flagged")
 
-    # -- A9 control, by construction: a copy plus an APPENDED no-op override --
+
+def run_a9_control(report: Report, root: pathlib.Path, tmp: pathlib.Path) -> None:
+    """The A9 control, INLINE after A9, where the twin runs it (twin line 286).
+
+    By construction: a copy of the real library plus an APPENDED no-op override,
+    never a substitution into sampled source.
+    """
     a9_dir = tmp / "a9"
     a9_dir.mkdir(parents=True, exist_ok=True)
     library = root / ".ci" / "scripts" / "lib" / "toolchain.sh"
@@ -612,6 +649,21 @@ def run_controls(report: Report, root: pathlib.Path, tmp: pathlib.Path) -> None:
             report.fail("A9 CONTROL DID NOT FIRE: the mutant still resolved a pin ('%s')" % ctl)
     else:
         report.fail("A9 CONTROL WAS NOT PLANTED: the mutant library is unmodified")
+
+
+def run_controls(report: Report, tmp: pathlib.Path) -> None:
+    """The remaining controls, by CONSTRUCTION, in the twin's tail order.
+
+    A control built by substituting into real source stops controlling anything
+    the day that source is reworded, which is what
+    `check-control-vacuity.sh` exists to catch.
+
+    `run_a8_controls` already created the shared fixture dir. The `exist_ok`
+    here is not decoration: it keeps this function callable on its own, so the
+    split cannot make the tail controls depend on an ordering accident.
+    """
+    control_dir = tmp / "c"
+    control_dir.mkdir(parents=True, exist_ok=True)
 
     # -- A1 controls -------------------------------------------------------
     (control_dir / "pins.env").write_text("RUFF_VERSION=9.9.9\n", encoding="utf-8")
@@ -761,13 +813,14 @@ def main(argv: list[str] | None = None) -> int:
         scanned = check_a1(report, root, pins)
         check_a2(report, root)
         check_a8(report, root)
-        # The A8 controls sit here in the twin, between A8 and A6, because the
-        # shared fixture dir is created in the controls section further down and
-        # writing before it exists made them silently write nothing.
+        # INLINE, between A8 and A6, because that is where the twin prints them
+        # (check-toolchain-pins.sh:181-197) and the differential compares bytes.
+        run_a8_controls(report, tmpdir)
         check_a6(report, root)
         check_a9(report, root)
+        run_a9_control(report, root, tmpdir)
         check_a10(report, root)
-        run_controls(report, root, tmpdir)
+        run_controls(report, tmpdir)
 
     print()
     if report.fails == 0:

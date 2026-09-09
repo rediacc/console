@@ -46,7 +46,6 @@ source "$ROOT_DIR/.ci/config/constants.sh"
 source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
 source "$ROOT_DIR/.ci/lib/local-common.sh"
 source "$ROOT_DIR/.ci/lib/service.sh"
-source "$ROOT_DIR/.ci/lib/setup.sh"
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -419,19 +418,19 @@ quality_deps() {
 quality_actions() {
     check_node_version
     log_step "Checking GitHub Actions versions..."
-    npx tsx "$ROOT_DIR/scripts/check-actions.ts"
+    npx tsx "$ROOT_DIR/scripts/gates/check-actions.ts"
 }
 
 quality_dead_bash() {
     check_node_version
     log_step "Checking for dead shell functions and orphaned scripts..."
-    npx tsx "$ROOT_DIR/scripts/check-dead-bash.ts"
+    npx tsx "$ROOT_DIR/scripts/gates/check-dead-bash.ts"
 }
 
 quality_suppressions() {
     check_node_version
     log_step "Checking suppression liveness (are allowlist entries still needed?)..."
-    npx tsx "$ROOT_DIR/scripts/check-suppression-liveness.ts"
+    npx tsx "$ROOT_DIR/scripts/gates/check-suppression-liveness.ts"
 }
 
 quality_audit() {
@@ -540,281 +539,9 @@ check_full() {
 #   4. image     pull the devcontainer image  (skipped if present)
 #   5. devbox    one container per worktree; port from its path, hostname from its branch
 #   6. report    the URL to open
-setup() {
-    local do_check=false force_pull=false do_start=true
-
-    # Make docker usable in THIS run if the group was added but not activated.
-    SCRIPT_ENTRYPOINT="$ROOT_DIR/run.sh" reexec_with_docker_group setup "$@"
-
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --check)
-                do_check=true
-                shift
-                ;;
-            --pull)
-                force_pull=true
-                shift
-                ;;
-            --no-start)
-                do_start=false
-                shift
-                ;;
-            --help | -h)
-                cat <<'EOF'
-Usage: ./run.sh setup [OPTIONS]
-
-  --check      Report what is missing and change nothing
-  --pull       Re-pull the devcontainer image even if present
-  --no-start   Prepare the host and image, but do not create the container
-  --help       Show this help
-
-Related: ./run.sh devbox [up|status|stop|remove|shell|logs]
-EOF
-                return 0
-                ;;
-            *)
-                log_error "Unknown option for setup: $1"
-                return 2
-                ;;
-        esac
-    done
-
-    # shellcheck source=/dev/null
-    source "$ROOT_DIR/.ci/lib/devbox.sh"
-
-    if [[ "$do_check" == true ]]; then
-        setup_check
-        return $?
-    fi
-
-    log_step "Rediacc console setup"
-    echo ""
-
-    # TOOLCHAIN, AND IT IS ALLOWED TO INSTALL. Two waves wrote this function on
-    # the same day and the rebase offered them as either/or, which they are not:
-    # 0826-2 built the devcontainer flow whose step 1 CHECKED for tooling and
-    # never installed it, and 0826-3 built the installers because a bare machine
-    # stopped at that check with a bare report. The check was the gap; these are
-    # what fills it.
-    setup_node_toolchain || return 1
-    # NO `:-22.0.0` DEFAULT ANY MORE. The fallback did not make this line more
-    # robust, it made a real failure invisible: it fired precisely when
-    # .ci/config/constants.sh had NOT been sourced, and then let setup pass a
-    # machine on Node 22.4 that the repo's own engines.node (">=22.13.0")
-    # rejects. The operator would see a green setup and a failure later, inside
-    # npm, naming neither this file nor the floor. `:?` turns that same
-    # condition into one loud line naming the missing variable.
-    check_node_version "${NODE_VERSION_MIN:?constants.sh was not sourced, so the Node floor is unknown}" || return 1
-    echo ""
-
-    # Before npm install: install:natives hard-requires a compiler.
-    setup_system_tools || return 1
-    echo ""
-
-    # Submodules BEFORE the first phase that READS one, and the merge moved
-    # which phase that is. 0826-2 put this immediately before the docker phase,
-    # correctly, because that phase read private/renet/go.mod. 0826-3's
-    # setup_go_toolchain reads the SAME file and now runs earlier, so leaving
-    # the init where it was would resurrect the exact failure the comment below
-    # describes -- on a fresh clone, "Cannot determine the required Go version",
-    # a message that never mentions submodules. check:ci-setup-idempotency
-    # caught this ordering, which is the whole reason that gate exists.
-    #
-    # Best-effort (`|| true`) for the same reason devcontainer.json is: a
-    # developer without access to every private submodule should still get a
-    # working devbox.
-    if [[ -f "$ROOT_DIR/.gitmodules" ]]; then
-        log_step "Initializing submodules"
-        bash "$ROOT_DIR/.devcontainer/init-submodules.sh" --quiet || true
-        echo ""
-    fi
-
-    # Mandatory: ./rdc.sh rebuilds renet from source and stops dead without Go.
-    setup_go_toolchain || return 1
-    echo ""
-
-    # Mandatory: the PR guards fail closed without gh.
-    setup_gh_cli || return 1
-    echo ""
-
-    # KEPT, not replaced. ensure_host_tools also checks zstd, curl and git,
-    # which none of the installers above cover, so deleting it would quietly
-    # narrow the preflight while looking like a simplification. After the
-    # installers it should pass; if it does not, it names what is still missing.
-    ensure_host_tools || return 1
-    ensure_bashcov_sup
-    echo ""
-
-    log_step "Git and GitHub account"
-    setup_git_identity
-    setup_git_credentials || return 1
-    echo ""
-
-    # Dependencies THROUGH ensure_deps, never a raw npm install: it hashes
-    # package.json, package-lock.json and .npmrc and skips on a match, so a
-    # second setup does not recompile cpu-features through node-gyp for nothing.
-    ensure_deps
-
-    # Credential-drift REPORT, advisory and never fatal. The bench equivalent in
-    # scripts/dev/deploy-bench.sh blocks and is right to -- it guards a DEPLOY.
-    # Setup ships nothing, and blocking a developer's bootstrap on a credential
-    # only an ops owner can rotate strands the one person who cannot fix it.
-    # Reported at all because nothing else reports it: a rotated-out SES key sat
-    # in private/account/.env until the stop hook's operator email began 403ing
-    # days later, with the symptom several steps removed from the cause. That
-    # consumer has since been removed; the exposure has not, because run.sh
-    # itself pushes the same quartet into the account worker's secrets.
-    #
-    # It compares IDENTIFIERS against rotation-manifest.json, never secrets, and
-    # never contacts a provider: liveness is `rotation check`'s job and needs
-    # admin credentials. Skips loudly when the private submodule is absent.
-    if [[ "${SKIP_ENV_DRIFT_CHECK:-}" != "1" ]] && [[ -f "$ROOT_DIR/private/account/.env" ]]; then
-        echo ""
-        log_step "Credential drift check"
-        if ! npm run --silent check:env-credential-drift; then
-            log_warn "A credential in private/account/.env is not in the rotation manifest."
-            log_warn "ROTATION IS AN OPS TASK, NOT A DEVELOPER ONE, so this does not stop setup."
-            log_warn "It surfaces later as an unrelated failure (a 403 from an API days on),"
-            log_warn "and the developer who hits that is not the person who can fix it."
-            log_warn "Whoever owns rotation: ./run.sh rotation rotate <slug>"
-        fi
-    fi
-
-    if ! ensure_docker_installed; then
-        log_error "Docker could not be prepared; cannot continue"
-        return 1
-    fi
-
-    if ! devbox_ensure_image "$force_pull"; then
-        log_error "Could not obtain $DEVBOX_IMAGE"
-        return 1
-    fi
-
-    if [[ "$do_start" != true ]]; then
-        log_info "Host prepared. Create the container with: ./run.sh devbox up"
-        return 0
-    fi
-
-    devbox_up || return 1
-
-    # THE URLS ARE THE DELIVERABLE. devbox_up has already printed the probed
-    # route table, so these two lines are the bookmark, not the report: the pair
-    # a person actually needs after a fresh machine setup. Terminal is named
-    # explicitly because it is new and nothing else would tell anyone it exists.
-    echo ""
-    log_info "Setup complete."
-    log_info "  VS Code:  $(devbox_url)"
-    log_info "  Terminal: $(devbox_url term)   tmux in the browser"
-    echo ""
-    log_info "Everything below runs INSIDE the devbox:"
-    log_info "  ./run.sh account dev    start the account dev stack"
-    log_info "  ./run.sh account db     browse the dev database"
-    log_info "  ./run.sh devbox shell   a shell in the container"
-    return 0
-}
 
 # Report-only counterpart of setup(). Must never mutate anything: it is what an
 # operator runs to find out why setup would do work, and what the CI gate drives.
-setup_check() {
-    local pending=0
-
-    log_step "Setup status for $(devbox_worktree)"
-    echo ""
-
-    if command -v node &>/dev/null; then
-        printf '  node        %s\n' "$(node --version)"
-    else
-        printf '  node        MISSING (install Node >= %s)\n' "$NODE_VERSION_MIN"
-        pending=$((pending + 1))
-    fi
-
-    if command -v go &>/dev/null; then
-        printf '  go          %s\n' "$(go version | awk '{print $3}')"
-    else
-        printf '  go          absent (setup installs it only if docker is missing)\n'
-    fi
-
-    # THE PHASES THE MERGE ADDED TO setup() MUST ALSO BE REPORTED HERE. This
-    # function's whole contract is to be the report-only counterpart -- what an
-    # operator runs to find out why setup would do work -- so a phase that setup
-    # performs and check does not mention makes the count a lie. Caught by
-    # running `--check` after merging the two waves' setup(): it said "2 item(s)
-    # would be acted on" while setup would also have installed gh and written a
-    # git identity.
-    if command -v gh &>/dev/null; then
-        printf '  gh          %s\n' "$(gh --version | head -1 | awk '{print $3}')"
-    else
-        printf '  gh          MISSING (setup installs it; the PR guards fail closed without it)\n'
-        pending=$((pending + 1))
-    fi
-
-    if command -v cc &>/dev/null || command -v gcc &>/dev/null; then
-        printf '  compiler    %s\n' "$( (cc --version 2>/dev/null || gcc --version) | head -1 | awk '{print $1, $NF}')"
-    else
-        printf '  compiler    MISSING (setup installs build-essential; install:natives needs it)\n'
-        pending=$((pending + 1))
-    fi
-
-    if [[ -n "$(git config --global user.email 2>/dev/null)" ]]; then
-        printf '  git identity %s\n' "$(git config --global user.email)"
-    else
-        printf '  git identity UNSET (setup asks for it once, then remembers)\n'
-        pending=$((pending + 1))
-    fi
-
-    if docker version &>/dev/null; then
-        printf '  docker      %s\n' "$(docker --version | sed 's/,.*//')"
-    elif command -v docker &>/dev/null; then
-        printf '  docker      installed but NOT usable as %s (log out/in, or newgrp docker)\n' "$USER"
-        pending=$((pending + 1))
-    else
-        printf '  docker      MISSING (setup installs it via renet install-docker --source=docker-repo)\n'
-        pending=$((pending + 1))
-    fi
-
-    if devbox_image_present; then
-        printf '  image       present (%s)\n' "$DEVBOX_IMAGE"
-    else
-        printf '  image       MISSING (%s)\n' "$DEVBOX_IMAGE"
-        pending=$((pending + 1))
-    fi
-
-    # THE '?' FALLBACK WAS A LANDMINE. run.sh is `set -euo pipefail`, and
-    # $(('?' + N)) is an arithmetic syntax error ("operand expected"), so the
-    # printf never ran and setup_check ABORTED. The visible symptom would have
-    # been check-setup-idempotency failing with "setup --check never mentioned
-    # 'port block'" -- a gate failure naming the wrong cause entirely. It is
-    # unreachable today only because find_port_block walks all 100 slots before
-    # giving up, which is luck, not design.
-    local base_port
-    base_port="$(devbox_base_port 2>/dev/null || echo '')"
-    if [[ "$base_port" =~ ^[0-9]+$ ]]; then
-        printf '  port block  %s-%s\n' "$base_port" "$((base_port + DEVBOX_PORT_BLOCK - 1))"
-    else
-        printf '  port block  unavailable (no free block in %s-%s)\n' \
-            "$DEVBOX_PORT_RANGE_START" "$DEVBOX_PORT_RANGE_END"
-    fi
-
-    if devbox_container_running; then
-        printf '  devbox      running (%s)\n' "$(devbox_container_name)"
-    elif [[ -n "$(devbox_container_id 2>/dev/null)" ]]; then
-        printf '  devbox      stopped (%s)\n' "$(devbox_container_name)"
-        pending=$((pending + 1))
-    else
-        printf '  devbox      not created\n'
-        pending=$((pending + 1))
-    fi
-
-    echo ""
-    if [[ "$pending" -eq 0 ]]; then
-        log_info "Nothing to do; ./run.sh setup would be a no-op"
-        devbox_status
-        return 0
-    fi
-    log_warn "$pending item(s) would be acted on by ./run.sh setup"
-    return 1
-}
 
 # =============================================================================
 # CLEAN
@@ -1064,10 +791,6 @@ main() {
         worktree)
             shift
             "$ROOT_DIR/scripts/dev/worktree.sh" "$@"
-            ;;
-        setup)
-            shift
-            setup "$@"
             ;;
         devbox)
             shift

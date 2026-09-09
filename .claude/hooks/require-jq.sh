@@ -64,7 +64,26 @@ if command -v jq >/dev/null 2>&1; then
     exit 0
 fi
 
-INPUT=$(cat)
+# BOUNDED, because `INPUT=$(cat)` is not. `cat` on a stdin that stays open and
+# silent blocks forever, and this guard runs as a PreToolUse hook: a hang here
+# is not a slow check, it is a tool call that never returns. Measured
+# 2026-09-08 with the interpreter hidden from PATH so this arm is actually
+# reached and stdin held open by a writer that never writes -- exit 124, killed
+# by an external timeout, against exit 2 in 0s once stdin is closed.
+#
+# `read -t` RATHER THAN `timeout cat`, because this arm exists precisely when
+# the environment is degraded and a bash builtin cannot itself be missing.
+# `-d ''` reads to NUL, i.e. to EOF, so the normal path returns non-zero with
+# INPUT set; only a status above 128 is the deadline firing.
+#
+# AND IT REFUSES ON TIMEOUT, matching what this file already does with a
+# payload it cannot understand: the fallback here is to block, never to allow.
+INPUT=""
+IFS= read -r -d "" -t 10 INPUT
+if [ "$?" -gt 128 ]; then
+    printf 'no payload arrived on stdin within 10s; refusing rather than hanging the tool call.\n' >&2
+    exit 2
+fi
 
 # Any chaining/substitution metacharacter: refuse without further thought.
 case "$INPUT" in

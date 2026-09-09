@@ -81,13 +81,7 @@ DEFECT = ("if not _matches(pat, cmd):\n            continue", "if False:\n      
 # "TRAPS.md explains why until pgrep -xf never exits" refused as if it were the
 # loop itself. This narrows PROSE only -- the real loop, at line start or after
 # a separator, is still caught by the control below.
-LOOP_WITH_PGREP = (
-    r"(^|[;&|(]|&&|\|\|)["
-    + hookio.SPACE
-    + r"]*(until|while)[^;]*pgrep["
-    + hookio.SPACE
-    + r"]+-[a-zA-Z]*f"
-)
+LOOP_WITH_PGREP = hookio.rx(r"(^|[;&|(]|&&|\|\|)[{S}]*(until|while)[^;]*pgrep[{S}]+-[a-zA-Z]*f")
 
 # The pattern is the first argument after the flag cluster: quoted either way,
 # or bare up to the next whitespace.
@@ -101,7 +95,7 @@ PATTERN_ARG = (
     + r";|&)]+)"
 )
 
-STRIP_VERB = r"^pgrep[" + hookio.SPACE + r"]+-[a-zA-Z]*f[" + hookio.SPACE + r"]+"
+STRIP_VERB = hookio.rx(r"^pgrep[{S}]+-[a-zA-Z]*f[{S}]+")
 
 MESSAGE = """BLOCKED: this wait loop can never exit. Its pgrep pattern matches itself.
 

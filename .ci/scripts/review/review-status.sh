@@ -75,10 +75,15 @@ require_var GITHUB_REPOSITORY
 
 CHECK_NAME="${CHECK_NAME:-Review Complete}"
 HYGIENE_DIR="${REVIEW_STATUS_HYGIENE_DIR:-$SCRIPT_DIR/../quality}"
+# THE PORTS, not the twins. W7 P4 cut these three over on 2026-09-08: CI now
+# invokes `.ci/scripts/quality/check_<name>.py`, and a pipeline that kept running
+# the `.sh` would be proving a file CI no longer uses. Each is executed directly
+# below rather than through `bash`, so the shebang picks the interpreter and the
+# extension does not have to be a shell one.
 HYGIENE_SCRIPTS=(
-    check-resolved-threads.sh
-    check-review-comments.sh
-    check-review-report-replies.sh
+    check_resolved_threads.py
+    check_review_comments.py
+    check_review_report_replies.py
 )
 
 # --- constants, sourced from the gate script rather than duplicated ----------

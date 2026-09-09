@@ -3,13 +3,17 @@
   // Fully strict: files, exports, types, duplicates, dependencies all enforced.
   // Every entry in an ignore* array below needs a `// BLOCKER:` comment per the
   // repo convention (CLAUDE.md); one BLOCKER covers the entries after it until a
-  // blank line. Gate: scripts/check-knip-blockers.ts (+ knip's own
+  // blank line. Gate: scripts/gates/check-knip-blockers.ts (+ knip's own
   // --treat-config-hints-as-errors catches ignores that stop matching anything).
   // In-code exceptions use `/** @public BLOCKER: <reason> */` JSDoc tags.
   "workspaces": {
     ".": {
       "entry": [
-        "scripts/*.ts"
+        "scripts/*.ts",
+        // W9 P2: the 125 check-*.ts gates moved to scripts/gates/. They are entry
+        // points (npm scripts run them directly), not imported by anything, so
+        // without this glob knip reports every one of them as an unused file.
+        "scripts/gates/*.ts"
       ],
       "project": [
         "*.{js,ts}",
@@ -195,7 +199,7 @@
     // BLOCKER: declared in packages/www to carry the 5.9.3 security override pin for the @astrojs/rss transitive chain (see _overridesReasons.fast-xml-parser); www code never imports it directly
     "fast-xml-parser",
 
-    // BLOCKER: declared in packages/www, which owns browser testing, and imported from the hoisted tree by scripts/check-browser-smoke.ts at the root. Declaring it a second time at root would create a second range to hold in sync with a package check:deps deliberately blocks from upgrading (a playwright bump changes the pinned browser revisions and needs E2E revalidation), so one declaration in one workspace is the correct shape
+    // BLOCKER: declared in packages/www, which owns browser testing, and imported from the hoisted tree by scripts/gates/check-browser-smoke.ts at the root. Declaring it a second time at root would create a second range to hold in sync with a package check:deps deliberately blocks from upgrading (a playwright bump changes the pinned browser revisions and needs E2E revalidation), so one declaration in one workspace is the correct shape
     "playwright"
   ],
   "ignoreBinaries": [
@@ -231,7 +235,7 @@
     "pdftotext",
     "rclone",
 
-    // BLOCKER: go toolchain spawned by scripts/generate-third-party-licenses.ts to run go-licenses for the renet Go-dependency section of THIRD_PARTY_LICENSES; host toolchain, not an npm dependency
+    // BLOCKER: go toolchain spawned by scripts/gen/generate-third-party-licenses.ts to run go-licenses for the renet Go-dependency section of THIRD_PARTY_LICENSES; host toolchain, not an npm dependency
     "go"
   ]
 }

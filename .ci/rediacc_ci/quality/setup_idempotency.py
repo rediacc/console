@@ -607,14 +607,62 @@ INIT_RE = re.compile(r"init-submodules\.sh|git submodule (update|init)")
 READER_RE = re.compile(r"ensure_docker_installed|private/renet|private/account")
 
 
+def python_function_body(text: str, name: str) -> str:
+    """The body of a top-level `def <name>(`, by INDENTATION. "" when absent.
+
+    THE PYTHON TWIN OF `function_body`, needed because the SUBJECT MOVED. See
+    `check_g`: `setup()` was ported to `rediacc_ci.setup.machine.run_setup`, and
+    an invariant that only knows how to read bash retires itself at the exact
+    moment the port lands. Kept as text rather than `ast`, so the comment
+    stripping in `check_g` still applies to the same string either way.
+    """
+    start = re.compile(r"^def %s\(" % re.escape(name))
+    out: list[str] = []
+    inside = False
+    for line in text.split("\n"):
+        if not inside:
+            if start.search(line):
+                inside = True
+                out.append(line)
+            continue
+        if line.strip() == "" or line[:1] in (" ", "\t"):
+            out.append(line)
+            continue
+        break
+    return "\n".join(out)
+
+
 def check_g(report: Report, runsh: pathlib.Path) -> bool:
-    """G: setup() initialises submodules before any phase that reads one."""
+    """G: setup initialises submodules before any phase that reads one.
+
+    TWO SUBJECTS, ONE INVARIANT, and the fallback is the whole point. `setup()`
+    was ported to `rediacc_ci.setup.machine.run_setup`; the ordering rule it
+    enforces did not move with it, it applies to whichever implementation is
+    the live one. Written against the bash alone, this assertion would have gone
+    RED at the moment the port succeeded, which is the same trap
+    `.ci/scripts/test/gates/test-run-sh.sh:315-327` had to be rewritten to
+    escape. `INIT_RE` and `READER_RE` match both languages unchanged: the Python
+    names `init-submodules.sh` in its `ctx.run` and `ensure_docker_installed` in
+    its `bridge.call`, which are the same two tokens the bash used.
+
+    THE REFUSAL IS WHEN NEITHER EXISTS, which is a tree with no setup at all.
+    """
     body = function_body(read_text(runsh), "setup")
+    subject = runsh.name
+    if body == "":
+        port = runsh.parent.parent / "rediacc_ci" / "setup" / "machine.py"
+        body = python_function_body(read_text(port), "run_setup")
+        subject = "%s run_setup()" % port.name
     # COMMENTS STRIPPED, and that is load-bearing; see the header.
     body = "\n".join(re.sub(r"[ \t]*#.*$", "", line) for line in body.split("\n"))
     if body == "":
-        report.fail("G: no setup() function in %s" % runsh.name)
+        report.fail(
+            "G: no setup() in %s and no run_setup() in rediacc_ci/setup/machine.py. "
+            "The subject has not moved, it is GONE, and this assertion is checking "
+            "nothing." % runsh.name
+        )
         return False
+    del subject
     lines = body.split("\n")
 
     init_line = 0
@@ -643,6 +691,56 @@ def check_g(report: Report, runsh: pathlib.Path) -> bool:
         )
         return False
     return True
+
+
+def g_subject(root: pathlib.Path, tmpdir: pathlib.Path, body_file: pathlib.Path):
+    """(text, make_copy, docker_anchor, init_line) for whichever setup `check_g` reads.
+
+    ONE INVARIANT, TWO LANGUAGES. Before the cutover the subject is the bash
+    `setup()`; after it, `rediacc_ci.setup.machine.run_setup`. The two plants
+    below need the subject's TEXT, a place to write the mutated copy that
+    `check_g` will find, and the line that marks the first phase which READS a
+    submodule. All three differ by language and nothing else does.
+    """
+    bash_text = read_text(body_file)
+    if function_body(bash_text, "setup"):
+        return (
+            bash_text,
+            lambda tag: tmpdir / ("run-%s.sh" % tag),
+            "if ! ensure_docker_installed; then",
+            '        bash "$ROOT_DIR/.devcontainer/init-submodules.sh" --quiet || true',
+        )
+    port = root / ".ci" / "rediacc_ci" / "setup" / "machine.py"
+
+    def make(tag: str) -> pathlib.Path:
+        # `check_g` derives the port path as `runsh.parent.parent/rediacc_ci/
+        # setup/machine.py`, so the copy has to sit in that shape rather than
+        # anywhere convenient. The `runsh` it is handed must NOT define setup(),
+        # which an empty file satisfies.
+        base = tmpdir / tag
+        (base / "rediacc_ci" / "setup").mkdir(parents=True, exist_ok=True)
+        (base / "legacy").mkdir(parents=True, exist_ok=True)
+        (base / "legacy" / "run-legacy.sh").write_text("", encoding="utf-8")
+        return base / "rediacc_ci" / "setup" / "machine.py"
+
+    return (
+        read_text(port),
+        make,
+        'bridge.call("ensure_docker_installed"',
+        '    ctx.run(["bash", "init-submodules.sh"])',
+    )
+
+
+def g_runsh(written: pathlib.Path) -> pathlib.Path:
+    """The path to hand `check_g` for a copy `g_subject` produced.
+
+    For the bash subject that is the file itself; for the Python subject it is
+    the empty `legacy/run-legacy.sh` beside it, because `check_g` takes the
+    LEGACY path and finds the port relative to it.
+    """
+    if written.name == "machine.py":
+        return written.parent.parent.parent / "legacy" / "run-legacy.sh"
+    return written
 
 
 def run_control(label: str, fn, *args) -> bool:
@@ -826,8 +924,15 @@ def main(argv: list[str] | None = None) -> int:
         # G-controls: two plants, because presence and ORDER are different
         # defects and a check that only notices absence would pass the one that
         # actually shipped later.
-        legacy = read_text(setup_body_file)
-        run_noinit = tmpdir / "run-noinit.sh"
+        # THE CONTROLS FOLLOW THE SUBJECT. `check_g` reads the bash `setup()` while
+        # it exists and `machine.run_setup` afterwards, so a control that always
+        # plants into the bash goes VACUOUS at the cutover -- observed exactly
+        # once, as `CONTROL IS VACUOUS: G(order)`, on a tree where the assertion
+        # itself was passing against the Python. `g_subject` returns the file the
+        # assertion will really read, the path to hand `check_g`, and the anchor
+        # line the ORDER plant inserts after.
+        legacy, g_arg, docker_anchor, late_line = g_subject(root, tmpdir, setup_body_file)
+        run_noinit = g_arg("noinit")
         run_noinit.write_text(
             "\n".join(line for line in legacy.split("\n") if "init-submodules.sh" not in line),
             encoding="utf-8",
@@ -838,7 +943,7 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             control_fails = 1
-        elif not run_control("G (submodule init absent)", check_g, run_noinit):
+        elif not run_control("G (submodule init absent)", check_g, g_runsh(run_noinit)):
             print(
                 "%sCONTROL DID NOT FIRE%s: G (submodule init absent) -- the planted defect "
                 "passed." % (red, nc),
@@ -852,11 +957,9 @@ def main(argv: list[str] | None = None) -> int:
             if "init-submodules.sh" in line:
                 continue
             late.append(line)
-            if "if ! ensure_docker_installed; then" in line:
-                late.append(
-                    '        bash "$ROOT_DIR/.devcontainer/init-submodules.sh" --quiet || true'
-                )
-        run_lateinit = tmpdir / "run-lateinit.sh"
+            if docker_anchor in line:
+                late.append(late_line)
+        run_lateinit = g_arg("lateinit")
         run_lateinit.write_text("\n".join(late), encoding="utf-8")
         if "init-submodules" not in read_text(run_lateinit):
             print(
@@ -864,7 +967,7 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             control_fails = 1
-        elif not run_control("G (submodule init after the reader)", check_g, run_lateinit):
+        elif not run_control("G (submodule init after the reader)", check_g, g_runsh(run_lateinit)):
             print(
                 "%sCONTROL DID NOT FIRE%s: G (submodule init after the reader) -- the planted "
                 "defect passed." % (red, nc),

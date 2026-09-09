@@ -6,7 +6,7 @@
 # needs: node, submodules
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
 # ---- end gate ----
-# Integration test for scripts/check-embed-asset-freshness.ts.
+# Integration test for scripts/gates/check-embed-asset-freshness.ts.
 #
 # Drives the gate through EMBED_FRESHNESS_FIXTURE (a JSON map of base -> latest
 # version/date used instead of the network), so it runs offline and
@@ -22,7 +22,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-VALIDATOR="$REPO_ROOT/scripts/check-embed-asset-freshness.ts"
+VALIDATOR="$REPO_ROOT/scripts/gates/check-embed-asset-freshness.ts"
 
 # The gate reads the real Dockerfile pins from the renet submodule; without it
 # there is nothing to compare against.

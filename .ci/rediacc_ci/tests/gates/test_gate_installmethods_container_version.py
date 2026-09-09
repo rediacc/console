@@ -37,11 +37,12 @@ import pathlib
 import re
 
 from rediacc_ci import paths
-from rediacc_ci.tests.gates import harness
+from rediacc_ci.tests.gates import harness, shellsubject
 
 BASH_TWIN = ".ci/scripts/test/gates/test-installmethods-container-version.sh"
 
 TARGET = paths.from_root(".ci", "scripts", "test", "test-install-methods.sh")
+SUBJECT = shellsubject.Subject(TARGET)
 
 FENCE_RE = re.compile(r"^VERSION_FENCE_(?:BEGIN|END)=.*$", re.MULTILINE)
 
@@ -57,43 +58,13 @@ FENCED_METHODS = (
 )
 
 
-def source(gate) -> str:
-    if not TARGET.is_file():
-        gate.log_fail("target not found: %s" % TARGET)
-    return TARGET.read_text(encoding="utf-8")
-
-
-def extract_fn(gate, name: str) -> str:
-    """The body of `name()` from the subject, or a LOUD refusal.
-
-    `awk "/^name\\(\\) \\{/,/^\\}/"` in the twin. Every extraction is checked for
-    emptiness: a renamed or deleted function must make this file REFUSE, not
-    quietly test nothing.
-    """
-    body: list[str] = []
-    collecting = False
-    for line in source(gate).splitlines():
-        if not collecting and line.startswith("%s() {" % name):
-            collecting = True
-        if collecting:
-            body.append(line)
-            if line == "}":
-                break
-    if not body:
-        gate.log_fail(
-            "%s() not found in %s -- renamed or removed, so these tests would check nothing"
-            % (name, paths.relative_to_root(TARGET))
-        )
-    return "\n".join(body)
-
-
 def prelude(gate, tmp_path: pathlib.Path) -> pathlib.Path:
     """A sourceable file carrying the subject's REAL fence functions.
 
     `log_info`/`log_warn`/`log_error` are stubbed to no-ops because the
     functions under test call them and their output is not what is being judged.
     """
-    fence_lines = [ln for ln in source(gate).splitlines() if FENCE_RE.fullmatch(ln)]
+    fence_lines = [ln for ln in SUBJECT.text(gate).splitlines() if FENCE_RE.fullmatch(ln)]
     if not fence_lines:
         gate.log_fail("VERSION_FENCE_BEGIN/END not found in %s" % paths.relative_to_root(TARGET))
     parts = [
@@ -101,10 +72,10 @@ def prelude(gate, tmp_path: pathlib.Path) -> pathlib.Path:
         "log_warn() { :; }",
         "log_error() { :; }",
         *fence_lines,
-        extract_fn(gate, "verify_version"),
-        extract_fn(gate, "version_fence_probe"),
-        extract_fn(gate, "extract_fenced_version"),
-        extract_fn(gate, "run_container_version_test"),
+        SUBJECT.shell_fn(gate, "verify_version"),
+        SUBJECT.shell_fn(gate, "version_fence_probe"),
+        SUBJECT.shell_fn(gate, "extract_fenced_version"),
+        SUBJECT.shell_fn(gate, "run_container_version_test"),
         # A stand-in for `docker run`: runs the REAL fenced probe the install
         # functions paste into their container scripts, so the probe itself is
         # under test and not just the host-side comparison. $1 is what the
@@ -243,7 +214,7 @@ def test_every_container_method_routes_through_the_fence(gate):
     """Structural, so a future edit that reverts one method to a bare
     `${PKG_BINARY_NAME} --version` is caught here rather than in a release."""
     for fn in FENCED_METHODS:
-        body = extract_fn(gate, fn)
+        body = SUBJECT.shell_fn(gate, fn)
         gate.assert_contains(
             body, "run_container_version_test", "%s must verify its version host-side" % fn
         )
@@ -254,7 +225,7 @@ def test_every_container_method_routes_through_the_fence(gate):
     # (it captures `docker run --rm <image> --version` directly), so it must not
     # contain either token -- if it did, the loop above would be matching
     # something present in every function and asserting nothing.
-    body = extract_fn(gate, "test_docker_pull_and_run")
+    body = SUBJECT.shell_fn(gate, "test_docker_pull_and_run")
     gate.assert_not_contains(
         body,
         "version_fence_probe",

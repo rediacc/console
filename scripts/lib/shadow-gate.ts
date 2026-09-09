@@ -1082,10 +1082,29 @@ export interface AssertResult {
  */
 export function assertEquivalent(rows: LedgerRow[], k: number): AssertResult {
   const reasons: string[] = [];
-  const clean = rows.filter((r) => r.tree.clean);
-  if (clean.length !== rows.length) {
+
+  // A ROW WITH NO `tree` AT ALL, which the `tree.clean` filter below cannot see.
+  // The comment above anticipates a hand-edited ledger and handles exactly one
+  // shape of it -- `clean=false` -- so a row missing the field crashed the whole
+  // run with `TypeError: Cannot read properties of undefined (reading 'clean')`
+  // and a stack trace naming neither the pair nor the row. Found 2026-09-08 when
+  // a DIFFERENT kind of ledger was written into `.ci/shadow/` under the
+  // `*.observations.jsonl` name this tool enumerates: the standing sweep reported
+  // `RED twin-parity` for a file that was working perfectly, and the message said
+  // nothing about which file or why. A malformed row is a finding to report, not
+  // an exception to throw.
+  const shaped = rows.filter((r) => r && typeof r.tree === 'object' && r.tree !== null);
+  if (shaped.length !== rows.length) {
     reasons.push(
-      `${rows.length - clean.length} row(s) carry tree.clean=false and were ignored; ` +
+      `${rows.length - shaped.length} row(s) carry no \`tree\` object and were ignored; ` +
+        'this ledger was hand-edited, truncated, or is not a shadow-pair ledger at all ' +
+        '(every file matching .ci/shadow/*.observations.jsonl is read as one)'
+    );
+  }
+  const clean = shaped.filter((r) => r.tree.clean);
+  if (clean.length !== shaped.length) {
+    reasons.push(
+      `${shaped.length - clean.length} row(s) carry tree.clean=false and were ignored; ` +
         'appendLedger cannot write those, so the ledger has been hand-edited'
     );
   }
@@ -1327,6 +1346,24 @@ function selftest(repoRoot: string): number {
     dup.verdict === 'MISMATCH_FINDINGS' && dup.onlyOld.length === 1,
     { verdict: dup.verdict, onlyOld: dup.onlyOld }
   );
+
+  // A LEDGER ROW THAT IS NOT A LEDGER ROW. Anything matching
+  // `.ci/shadow/*.observations.jsonl` is read as a shadow-pair ledger, so a
+  // foreign or truncated file lands here; before 2026-09-08 it threw a raw
+  // TypeError naming neither the pair nor the row.
+  const malformed = assertEquivalent([{ subject: 'x', agreed: true } as unknown as LedgerRow], 1);
+  ck(
+    'MALFORMED: a row with no `tree` is REPORTED, not thrown',
+    malformed.ok === false && malformed.reasons.some((r) => r.includes('no `tree` object')),
+    { ok: malformed.ok, reasons: malformed.reasons }
+  );
+  const mixed = assertEquivalent(
+    [{ subject: 'x', agreed: true } as unknown as LedgerRow, ...([] as LedgerRow[])],
+    1
+  );
+  ck('MALFORMED: and the run continues to a verdict', typeof mixed.ok === 'boolean', {
+    ok: mixed.ok,
+  });
 
   // Severity is part of the finding. A port that downgrades error to warning has
   // changed the verdict even though the text is identical.

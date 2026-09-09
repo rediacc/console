@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: Scope map — reachable scripts/ paths force full CI
-# needs: node
-# selftest: true
-# lane: quality-security
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-scope-scripts-reachability is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_scope_scripts_reachability.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_scope_scripts_reachability.py" but its header derives ".ci/scripts/quality/check-scope-scripts-reachability.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Every ROOT scripts/ path reachable from non-quality CI code must classify FULL.
 #
@@ -12,7 +14,7 @@
 # .ci/scripts/ci/scope-map.cjs was narrowed: gate sources became a zero-job
 # `gates` module so an attribution-URL check would stop running the ceph fork
 # test. Two subsets were carved out to stay full because a GATED job genuinely
-# executes them -- scripts/drills/ and scripts/generate-third-party-licenses.ts.
+# executes them -- scripts/drills/ and scripts/gen/generate-third-party-licenses.ts.
 #
 # That carve-out list was traced BY HAND, once, at one commit. Nothing stopped
 # the next reachable file from being added and silently narrowed: a new
@@ -186,7 +188,7 @@ if [[ "$_ctl_ci" != ".ci/scripts/synthetic-ci-probe.sh" ]]; then
 fi
 
 # ---- CONTROL: a synthetic reachable path MUST be judged a violation ----------
-control_mode="$(classify_mode "scripts/check-embed-credits.ts")"
+control_mode="$(classify_mode "scripts/gates/check-embed-credits.ts")"
 if [[ "$control_mode" != "reduced" ]]; then
     echo "${RED}✗ CONTROL FAILED${NC}: a known gate source classified '$control_mode', not 'reduced'." >&2
     echo "  The checker cannot tell a narrowed path from a full one, so its verdict" >&2

@@ -81,6 +81,9 @@ test_scalar_form_is_caught() {
     local rc=0
     run_check "$d" || rc=$?
     assert_exit_code 1 "$rc" "the scalar shorthand is refused too"
+    # NAME THE RULE, since the shared gate exits 1 for any of its dozen rules.
+    assert_contains "$LAST_OUT" "pr-prefixed deployment environment" \
+        "and it must be the pr-environment rule that fired, not another"
     log_pass "the scalar shorthand is caught, so the rule is not a name:-grep"
 }
 

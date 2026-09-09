@@ -6,7 +6,7 @@
 # needs: node, submodules
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
 # ---- end gate ----
-# Both-ways test for scripts/check-embed-arch-parity.ts.
+# Both-ways test for scripts/gates/check-embed-arch-parity.ts.
 #
 # The gate exists because arm64 criu silently became a different version from
 # amd64 criu and every existing gate stayed green: nothing carried an
@@ -36,7 +36,7 @@ run_with_filter() {
     jq "$filter" "$REAL_LOCKFILE" >"$TEMP/lock.json"
     local out rc=0
     out=$(cd "$REPO_ROOT" && EMBED_PARITY_LOCKFILE="$TEMP/lock.json" \
-        npx tsx scripts/check-embed-arch-parity.ts 2>&1) || rc=$?
+        npx tsx scripts/gates/check-embed-arch-parity.ts 2>&1) || rc=$?
     echo "$out"
     return "$rc"
 }
@@ -47,7 +47,7 @@ test_accepts_real_lockfile() {
         return
     fi
     local out rc=0
-    out=$(cd "$REPO_ROOT" && npx tsx scripts/check-embed-arch-parity.ts 2>&1) || rc=$?
+    out=$(cd "$REPO_ROOT" && npx tsx scripts/gates/check-embed-arch-parity.ts 2>&1) || rc=$?
     assert_exit_code 0 "$rc" "the real lockfile should pass arch parity"
     assert_contains "$out" "arch entries" "success output reports what it checked"
     log_pass "real lockfile passes arch parity"

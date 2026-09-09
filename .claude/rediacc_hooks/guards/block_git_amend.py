@@ -39,14 +39,8 @@ DEFECT = (r'"%s\n%s" % (stripped, wrapped)', r'"%s\n%s" % (stripped, "")')
 # means a doc line, a worklist note or an `echo` explaining the rule is refused
 # as if it were the rule being broken. This NARROWS PROSE ONLY: every control
 # below still blocks the real command, at line start and after a separator.
-AMEND = (
-    r"(^|[;&|(])["
-    + hookio.SPACE
-    + r"]*git commit[^|;&]*--amend|(^|[;&|(])["
-    + hookio.SPACE
-    + r"]*git commit[^|;&]*["
-    + hookio.SPACE
-    + r"]-[a-zA-Z]*amend"
+AMEND = hookio.rx(
+    r"(^|[;&|(])[{S}]*git commit[^|;&]*--amend|(^|[;&|(])[{S}]*git commit[^|;&]*[{S}]-[a-zA-Z]*amend"
 )
 
 MESSAGE = (
@@ -111,15 +105,13 @@ def _strip_cat_heredocs(text):
             continue
         line = record
         # only consider a heredoc whose writer is cat or tee
-        writer = re.search(
-            r"(^|[|;&" + hookio.SPACE + r"])(cat|tee)([" + hookio.SPACE + r"]|$)", line
-        )
+        writer = re.search(hookio.rx(r"(^|[|;&{S}])(cat|tee)([{S}]|$)"), line)
         found = re.search(r"<<-?[" + hookio.SPACE + r"]*['\"]?[A-Za-z_][A-Za-z0-9_]*['\"]?", line)
         if writer and found:
             d = found.group(0)
             # remember the tab-stripping form for the terminator match
             dash = bool(re.search(r"^<<-", d))
-            d = re.sub(r"^<<-?[" + hookio.SPACE + r"]*", "", d)
+            d = re.sub(hookio.rx(r"^<<-?[{S}]*"), "", d)
             d = re.sub(r"['\"]", "", d)
             delim = d
             inside = True

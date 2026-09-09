@@ -482,6 +482,44 @@ def test_which_answers_from_the_given_path_only():
     assert proc.which("sh", {"PATH": "/nonexistent"}) is None
 
 
+def _described(rc):
+    """`describe()` for a finished child with returncode `rc`."""
+    return proc.Result(
+        argv=["x"], returncode=rc, stdout="", stderr="", timed_out=False, duration=0.1
+    ).describe()
+
+
+def test_describe_says_killed_when_a_signal_ended_the_child():
+    """A SIGNALLED CHILD DID NOT "EXIT", and calling it one misdirects the reader.
+
+    Learned expensively on 2026-09-08 in `wl_judge`, whose equivalent line read
+    "judge exited 143" and let a reader conclude the model was unreachable -- the
+    remedy that message offers is to DISABLE the gate. The model was healthy; an
+    outer deadline had SIGTERMed the child.
+
+    BOTH SPELLINGS, deliberately: `subprocess` reports a signalled child as a
+    NEGATIVE returncode, while a shell in between reports 128+N -- and the live
+    failure arrived as 143, the shell form, so testing only the negative form
+    would have missed the case that actually happened.
+    """
+    assert "KILLED by signal 15" in _described(-15)
+    assert "KILLED by signal 15" in _described(143)
+    assert "KILLED by signal 9" in _described(137)
+
+
+def test_describe_does_not_say_killed_for_an_ordinary_failure():
+    """THE MIRROR. Without it the three above are satisfied by a `describe()`
+    that says KILLED unconditionally, which is the same defect inverted."""
+    assert "KILLED" not in _described(1)
+    assert "exited 1" in _described(1)
+    assert "KILLED" not in _described(2)
+    # 160 is OUTSIDE the signal band: 128+32 is not a signal any child here
+    # sends, and treating the whole 128+ range as signals would swallow real
+    # exit codes from commands that legitimately return them.
+    assert "KILLED" not in _described(160)
+    assert "exited 160" in _described(160)
+
+
 def test_subprocess_is_reachable_at_all():
     """ANTI-VACUITY for every case in this file."""
     assert subprocess.run(["true"], check=False, capture_output=True).returncode == 0

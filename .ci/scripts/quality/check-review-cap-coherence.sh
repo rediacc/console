@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: Review cap is measured coherently
-# needs: none
-# selftest: true
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-review-cap-coherence is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_review_cap_coherence.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_review_cap_coherence.py" but its header derives "...check-review-cap-coherence.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Assert the two review scripts measure the SAME thing against the SAME cap.
 #

@@ -1,10 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# step: CLI contract
-# needs: node
-# selftest: true
-# lane: quality-packages
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-cli-contract is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_cli_contract.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_cli_contract.py" but its header derives "...check-cli-contract.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Check that the generated CLI contract is up-to-date with the CLI.
 #

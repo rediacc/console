@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-embed-asset-freshness.sh`.
 
-Integration test for `scripts/check-embed-asset-freshness.ts`.
+Integration test for `scripts/gates/check-embed-asset-freshness.ts`.
 
 Drives the gate through `EMBED_FRESHNESS_FIXTURE` (a JSON map of base -> latest
 version/date used instead of the network), so it runs offline and
@@ -34,7 +34,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-embed-asset-freshness.sh"
 
-VALIDATOR = paths.from_root("scripts", "check-embed-asset-freshness.ts")
+VALIDATOR = paths.from_root("scripts/gates", "check-embed-asset-freshness.ts")
 SOURCES = paths.from_root("scripts", "lib", "embed-asset-sources.ts")
 DOCKERFILE = paths.from_root("private", "renet", "Dockerfile")
 

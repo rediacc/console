@@ -2231,7 +2231,7 @@ gates were built after it was written, and they are the heaviest part of the res
 ### 8.1 The five new regeneration obligations
 
 1. **`packages/cli/scripts/command-tree.json`** (committed). Consumed by
-   `scripts/check-cli-docs.ts`, the www doc generators, and two ESLint rules. Nothing diffs
+   `scripts/gates/check-cli-docs.ts`, the www doc generators, and two ESLint rules. Nothing diffs
    it against the live tree directly, but `validate:cli-docs` regenerates `cli-application.md`
    from it in memory and diffs against disk for all 13 languages, so a stale tree surfaces
    there.
@@ -3210,9 +3210,9 @@ in a test, not a comment.
 | Validator | Was | Consequence |
 |---|---|---|
 | `EXCLUDED_TOP_LEVEL` (`command-tree-lib.ts`) | 5 of 6 entries named commands that do not exist (`login`, `logout`, `trace`, `cancel`, `retry`) | An entry here is invisible to the plane gate, MCP coverage, console coverage AND the docs checks. Add a top-level `cancel` tomorrow and it is silently exempt from all of them. Pruned to `run`; every remaining entry is now asserted to be a live command. |
-| `scripts/check-cli-docs.ts` | hand-copied that same list, and registered every name as a VALID arg-accepting command | The gate whose job is catching stale docs would have BLESSED `rdc login --whatever`. Fixed by IMPORTING the list, so divergence is impossible rather than merely corrected. |
-| `scripts/check-cli-docs.ts` (extractor + globs) | markdown-only, non-recursive, and blind to a quote before `rdc` | `.ci/tutorials/` holds ~14 EXECUTABLE scripts making 337 `rdc` calls. They were in no glob, and even once globbed the scanner read no `.sh` line and no `run_cmd "rdc …"` wrapper. Adding the glob ALONE would have been a false fix: 337 calls "covered" by a scanner reading none of them. Fixed all three; 174 real violations surfaced and were fixed. |
-| `scripts/check-cli-docs.ts` (`--fix` RENAMES) | pointed `machine status` -> `machine query`, the OPPOSITE of this phase's rename | `--fix` would have rewritten CORRECT docs into broken ones. The repair tool would have been the thing introducing the staleness. Re-keyed, and the script now hard-fails if any RENAMES target is not a live command. |
+| `scripts/gates/check-cli-docs.ts` | hand-copied that same list, and registered every name as a VALID arg-accepting command | The gate whose job is catching stale docs would have BLESSED `rdc login --whatever`. Fixed by IMPORTING the list, so divergence is impossible rather than merely corrected. |
+| `scripts/gates/check-cli-docs.ts` (extractor + globs) | markdown-only, non-recursive, and blind to a quote before `rdc` | `.ci/tutorials/` holds ~14 EXECUTABLE scripts making 337 `rdc` calls. They were in no glob, and even once globbed the scanner read no `.sh` line and no `run_cmd "rdc …"` wrapper. Adding the glob ALONE would have been a false fix: 337 calls "covered" by a scanner reading none of them. Fixed all three; 174 real violations surfaced and were fixed. |
+| `scripts/gates/check-cli-docs.ts` (`--fix` RENAMES) | pointed `machine status` -> `machine query`, the OPPOSITE of this phase's rename | `--fix` would have rewritten CORRECT docs into broken ones. The repair tool would have been the thing introducing the staleness. Re-keyed, and the script now hard-fails if any RENAMES target is not a live command. |
 | `positional-cli-detector.ts` (+ its 2 ESLint copies) | its placeholder pass ran over EVERY command path | Its own docstring always said "used for PARENT commands"; only the code said "all". Harmless until P4 gave leaves positional refs — at which point it flagged `rdc datastore create <name>`, the CORRECT form, and told the author the command "accepts zero positional arguments", which is false. It forbade the grammar the phase is built on. Scoped to parents-with-no-positional; pinned by `.ci/scripts/test/gates/test-positional-detector.sh`, proven red on the old logic. |
 
 **The shape they share, and it is the phase's thesis one level up:** a validator's blind spot is
@@ -3418,7 +3418,7 @@ error whose entire job is to LIST THE VALID NAMES never listed the clusters, in 
 where the name you typed was meant to be one. Byte-identical to HEAD, never in any delta: §13.3c's
 disease, one layer deeper — not a stale VALUE but a stale STRUCTURE.
 
-`scripts/check-i18n-placeholders.ts` (gate: `check:ci-i18n-placeholders`) compares placeholder SETS
+`scripts/gates/check-i18n-placeholders.ts` (gate: `check:ci-i18n-placeholders`) compares placeholder SETS
 per key, both directions, across every locale. Written BEFORE the fix so the red was real: it found
 exactly those three and nothing else across 22,056 comparisons. **It then caught its own author** —
 two of the English repairs in §13.4 had themselves dropped a `{{machine}}`, which would have
@@ -3444,7 +3444,7 @@ This is §13.3c's rule from the other side. A diff cannot see a string that beca
 being edited; a PRESENCE check cannot see a string that was never translated at all. Both measure
 a proxy (changed / present) for the property that matters (correct / translated).
 
-`scripts/check-i18n-untranslated.ts` (gate: `check:ci-i18n-untranslated`) fails a locale value that
+`scripts/gates/check-i18n-untranslated.ts` (gate: `check:ci-i18n-untranslated`) fails a locale value that
 is byte-identical to English above a length threshold. ★ The threshold was MEASURED, not guessed:
 bucketing every identical value by length showed the shortest real defect at 38 characters
 (`repo.promote.revertHint`) and every legitimate one (`OK`, `ID`, product names) below 30. A
@@ -3592,7 +3592,7 @@ where it works has not been validated.
 ### 13.5 The doc gate
 
 `docs/design/06-cli-reshape.md` §1 is no longer a target tree; it is a transcript, and
-`scripts/check-design-tree.ts` checks it against the shipped CLI **in both directions** — no
+`scripts/gates/check-design-tree.ts` checks it against the shipped CLI **in both directions** — no
 phantom commands, no omitted ones. It found four real omissions the moment it was written
 (`machine infra *` had been unlisted for the whole phase). A design doc that describes a tree the
 code no longer has is worse than no doc: the next reader trusts it, and all five path-keyed

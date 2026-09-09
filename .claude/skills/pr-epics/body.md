@@ -7,7 +7,7 @@ Reads `agent/pr/<branch>.md` and rebuilds the block between
     <!-- worklist-epics:begin -->
     <!-- worklist-epics:end -->
 
-`scripts/check-pr-epic-block.ts` fails when the block is missing or does not
+`scripts/gates/check-pr-epic-block.ts` fails when the block is missing or does not
 match the snapshot, so a stale publish is a red gate by design.
 
 ## Rebuilt, never appended

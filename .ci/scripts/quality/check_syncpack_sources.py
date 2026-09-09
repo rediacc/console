@@ -44,6 +44,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls
+
 ROOT = Path(os.environ.get("SYNCPACK_SOURCES_ROOT") or Path(__file__).resolve().parents[3])
 RC = ROOT / ".syncpackrc.json"
 EXCLUSIONS = ROOT / ".ci" / "config" / "syncpack-source-exclusions.json"
@@ -146,12 +149,8 @@ def selftest() -> int:
 
 
 def main() -> int:
-    print("syncpack sources: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("syncpack sources", selftest):
+        return refusal
 
     try:
         rc = json.loads(RC.read_text(encoding="utf-8"))

@@ -61,7 +61,7 @@ REGISTRY=(
     # the very class it exists to catch (a check that cannot tell absent from
     # present). It also refuses when python3 is missing, because its control
     # listener could not fire.
-    ".ci/scripts/quality/check-account-probes.sh|nothing to check"
+    ".ci/scripts/quality/check_account_probes.py|nothing to check"
     # NOT registered: .ci/scripts/quality/check-drill-verdicts.sh. Its sibling
     # above IS, and the asymmetry is real rather than an oversight. The probe
     # gate's subject is .ci/lib/account.sh, which this harness's fixture does
@@ -89,11 +89,17 @@ REGISTRY=(
     # `go test` over nothing and report that the licence tier map covers the
     # function registry. The CLI now derives its licence-issuance class from
     # that map, so a vacuous green here would launder a console defect too.
-    ".ci/scripts/quality/check-renet-tier-map.sh|required"
+    ".ci/scripts/quality/check_renet_tier_map.py|required"
+    # REPOINTED 2026-09-08 BY THE W7 P4 CUTOVER, both entries above and below.
+    # These pins name a gate BY PATH, and after a cutover the path names the twin
+    # rather than the registered gate. Nothing goes red when that happens: the
+    # harness keeps exercising the .sh, keeps passing, and silently stops covering
+    # the thing CI actually runs. Found by the batch-4 writer for tier-map; the
+    # types entry is the same defect left behind by batch 3 and was swept here.
     # Same shape again: `require_submodule ... || exit 0` becomes a hard fail
     # under CI=true (which this harness sets), so an empty tree is a loud
     # "required in CI but missing" rather than a green diff of nothing.
-    ".ci/scripts/quality/check-renet-types.sh|required"
+    ".ci/scripts/quality/check_renet_types.py|required"
     # Python lint. Against an empty tree `git ls-files` enumerates nothing and
     # `ruff check` with no paths exits 0 -- indistinguishable from a clean repo,
     # which is the exact shape this harness exists to catch. The input floor is
@@ -101,7 +107,7 @@ REGISTRY=(
     # failure is about VACUITY and not about a missing binary: an absent ruff
     # would be an ENVIRONMENT failure wearing a vacuity failure's exit code, and
     # pinning that would assert nothing about the gate.
-    ".ci/scripts/quality/check-python-lint.sh|VACUOUS INPUT"
+    ".ci/scripts/quality/check_python_lint.py|VACUOUS INPUT"
     # Same shape, different subject: against an empty tree `git ls-files` returns
     # no JS/TS at all and the detector would report "no inline Python" over zero
     # files -- indistinguishable from a clean repo. The MIN_FILES floor turns
@@ -129,7 +135,7 @@ REGISTRY=(
     # and the gate would report that every reference is reachable. The
     # MIN_REFERENCES floor turns that into a loud refusal.
     ".ci/scripts/quality/check_actions_allowlist.py|VACUOUS INPUT"
-    ".ci/scripts/quality/check-plan-housekeeping.sh|VACUOUS INPUT"
+    ".ci/scripts/quality/check_plan_housekeeping.py|VACUOUS INPUT"
     ".ci/scripts/quality/check_plan_boxes.py|VACUOUS INPUT"
     ".ci/scripts/quality/check_syncpack_sources.py|VACUOUS INPUT"
     ".ci/scripts/quality/check_secret_reachability.py|VACUOUS INPUT"
@@ -345,7 +351,14 @@ run_against_empty_tree() {
     elif [[ "$script" == *.py ]]; then
         out="$(cd "$TEMP" && CI=true python3 "$script" 2>&1)" || rc=$?
     else
-        out="$(cd "$TEMP" && CI=true npx tsx "scripts/$script" 2>&1)" || rc=$?
+        # Same two homes as test_registry_entries_exist, and for the same reason: after
+        # W9 P2 a .ts validator is under scripts/gates/, and running the OLD path made
+        # every moved gate fail with tsx's own "cannot find module" rather than with the
+        # empty-tree refusal this test is reading for -- a vacuity check that cannot
+        # reach its subject reports the wrong finding rather than none.
+        local rel="scripts/gates/$script"
+        [[ -f "$REPO_ROOT/$rel" ]] || rel="scripts/$script"
+        out="$(cd "$TEMP" && CI=true npx tsx "$rel" 2>&1)" || rc=$?
     fi
     printf '%s\n' "$out"
     return "$rc"
@@ -386,8 +399,13 @@ test_registry_entries_exist() {
         if [[ "$script" == *.sh || "$script" == *.py ]]; then
             [[ -f "$REPO_ROOT/$script" ]] ||
                 log_fail "registry names $script, which does not exist -- the registry has gone stale"
-        elif [[ ! -f "$REPO_ROOT/scripts/$script" ]]; then
-            log_fail "registry names scripts/$script, which does not exist -- the registry has gone stale"
+        # A .ts entry lives in scripts/ OR scripts/gates/. Both homes are tried because
+        # W9 P2 moved 125 gate bodies into scripts/gates/ on 2026-09-09 and this resolver
+        # hard-coded the old one, so every moved validator read as "the registry has gone
+        # stale" -- a staleness check reporting staleness it caused itself. Trying both is
+        # not a weakening: an entry missing from BOTH still fails, which is the finding.
+        elif [[ ! -f "$REPO_ROOT/scripts/gates/$script" && ! -f "$REPO_ROOT/scripts/$script" ]]; then
+            log_fail "registry names $script, absent from BOTH scripts/gates/ and scripts/ -- the registry has gone stale"
         fi
     done
     log_pass "every registered validator exists"

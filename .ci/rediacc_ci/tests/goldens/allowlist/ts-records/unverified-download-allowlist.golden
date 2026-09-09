@@ -5,7 +5,7 @@
 # source: .unverified-download-allowlist
 # corpus: corpus/unverified-download-allowlist.list
 # comment-char: #
-# corpus-sha256: 96f703a7f4b2e0159192190737c8b5193e434abd2d691fec735d50d6a4d0ca3a
+# corpus-sha256: 0137ac19a315d1f7cdb0bb5d02e6a066c527d649e8baaa3904ce96265b62b145
 # ---
 16	awscli.amazonaws.com	AWS publishes no sha256 for the CLI bundle -- the .sha256 URL returns 404 -- only a GPG .sig, which needs their signing key imported first; revisit if a checksum ever appears
 19	raw.githubusercontent.com/nvm-sh/nvm	piped straight into bash, so there is no artifact on disk to hash; only vendoring the installer script into this repo would make it verifiable

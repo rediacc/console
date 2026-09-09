@@ -50,6 +50,8 @@ is reported as `git clean`. That is behaviour, not an accident of layout, so
 the loop below assigns in the same order rather than returning early.
 """
 
+import pathlib
+
 from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
@@ -65,63 +67,30 @@ DEFECT = ("and not hookio.grep_q(DRY_RUN, scan)", "and True")
 # Command position: line start, or after ; & | ( $( or a backtick. Flags between
 # `git` and the verb (-C <path>, -c k=v) stay matched: they change where the
 # command runs, not what it destroys.
-GIT = (
-    r"(^|[;&|(]|\$\(|`)["
-    + hookio.SPACE
-    + r"]*git(["
-    + hookio.SPACE
-    + r"]+-[A-Za-z-]+(["
-    + hookio.SPACE
-    + r"]+[^ ;&|]+)?)*["
-    + hookio.SPACE
-    + r"]+"
-)
+GIT = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")
 
 # `git restore ...` always discards (worktree by default, index with --staged).
-RESTORE = GIT + r"restore([" + hookio.SPACE + r"]|$)"
+RESTORE = GIT + hookio.rx(r"restore([{S}]|$)")
 
 # Bare `git stash` (stashes everything) OR an explicitly mutating subcommand.
 # `list` and `show` must NOT match, so the verb cannot be a bare wildcard: an
 # earlier draft made it optional, which swallowed `git stash list` and the
 # control harness caught it immediately.
-STASH_BARE = GIT + r"stash[" + hookio.SPACE + r"]*($|[;&|])"
-STASH_VERB = (
-    GIT
-    + r"stash["
-    + hookio.SPACE
-    + r"]+(push|save|pop|apply|drop|clear|branch|create|store)(["
-    + hookio.SPACE
-    + r"]|$)"
+STASH_BARE = GIT + hookio.rx(r"stash[{S}]*($|[;&|])")
+STASH_VERB = GIT + hookio.rx(
+    r"stash[{S}]+(push|save|pop|apply|drop|clear|branch|create|store)([{S}]|$)"
 )
 
 # `git clean` deletes UNTRACKED files, which in this repo includes entire
 # packages (pkg/chunkstore is untracked in its entirety). Excluded when -n or
 # --dry-run appears anywhere in the invocation.
-CLEAN = GIT + r"clean([" + hookio.SPACE + r"]|$)"
-DRY_RUN = r"(^|[" + hookio.SPACE + r"])(-n|--dry-run)([" + hookio.SPACE + r"]|$)"
+CLEAN = GIT + hookio.rx(r"clean([{S}]|$)")
+DRY_RUN = hookio.rx(r"(^|[{S}])(-n|--dry-run)([{S}]|$)")
 
 # `git checkout` ONLY when path-scoped: an explicit `--`, or a `.`/`:/` pathspec.
 # Bare `git checkout <branch>` and `-b <new>` are untouched.
-CHECKOUT_DDASH = (
-    GIT
-    + r"checkout(["
-    + hookio.SPACE
-    + r"]+[^;&|]*)?["
-    + hookio.SPACE
-    + r"]+--(["
-    + hookio.SPACE
-    + r"]|$)"
-)
-CHECKOUT_DOT = (
-    GIT
-    + r"checkout(["
-    + hookio.SPACE
-    + r"]+-[A-Za-z-]+)*["
-    + hookio.SPACE
-    + r"]+(\.|:/)(["
-    + hookio.SPACE
-    + r"]|$)"
-)
+CHECKOUT_DDASH = GIT + hookio.rx(r"checkout([{S}]+[^;&|]*)?[{S}]+--([{S}]|$)")
+CHECKOUT_DOT = GIT + hookio.rx(r"checkout([{S}]+-[A-Za-z-]+)*[{S}]+(\.|:/)([{S}]|$)")
 
 MESSAGE = (
     "❌ BLOCKED: `%s` DISCARDS uncommitted work, and this checkout is shared by several live "
@@ -159,12 +128,55 @@ EDGE_CASES = [
 ]
 
 
+def _is_inside(target, root):
+    """Is `target` the project tree or a path beneath it?
+
+    Compared as resolved paths and not as strings, so `/home/x/console-2` is not read
+    as living inside `/home/x/console`. Unresolvable answers True -- keep guarding.
+    """
+    try:
+        t = pathlib.Path(target).resolve()
+        r = pathlib.Path(root).resolve()
+    except OSError:
+        return True
+    return t == r or r in t.parents
+
+
 def run(ev):
     cmd = ev.field("tool_input", "command")
     if cmd == "":
         return hookio.ALLOW
 
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+
+    # THIS GUARD'S ARGUMENT IS ABOUT *THIS* CHECKOUT -- that it is shared, and that a
+    # sweep here reaches another live session's uncommitted work. Neither is true of a
+    # throwaway repo a session builds under its own scratchpad, and firing there spends
+    # the guard's credibility on a command that could not harm anything: measured
+    # 2026-09-09, a writer was refused in a scratch repo by a message naming twelve
+    # files in a checkout it could not reach, and worked around the guard rather than
+    # being protected by it.
+    #
+    # `target_root` AND NOT THE EVENT'S CWD, which was the first fix and was wrong. This
+    # harness RESETS the shell's directory after every call, so `ev.cwd` is the project
+    # directory on every invocation and a cwd test can never fire. The directory that
+    # matters is the one spelled in the COMMAND -- `git -C <dir>` or a leading
+    # `cd <dir> &&` -- which is exactly what `target_root` extracts. Its own comment
+    # records this same defect being found twice before, in block-untagged-commit and
+    # block-unverified-push.
+    #
+    # OUTSIDE THE PROJECT TREE, not merely a different toplevel. A SUBMODULE is a
+    # different toplevel and is emphatically not foreign: private/account is shared,
+    # frozen, and full of other people's work, and a `git -C private/account add -A`
+    # is the exact sweep this guard exists to refuse. Standing down on "different
+    # toplevel" alone allowed it -- caught by asking, before shipping, which repos the
+    # new predicate had just stopped protecting.
+    #
+    # Empty target means "this root, or unresolvable", so the guard keeps guarding by
+    # default; a resolvable target under the project directory keeps guarding too.
+    _target = shellscan.target_root(scan, shellscan.repo_root_env())
+    if _target != "" and not _is_inside(_target, shellscan.repo_root_env()):
+        return hookio.ALLOW
 
     blocked = ""
     if hookio.grep_q(RESTORE, scan):

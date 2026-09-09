@@ -180,6 +180,7 @@ import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.core import allowlist
 
 # The seams the twin exposes so its own controls, and any gate test, can drive
 # it against fixtures instead of the real tree.
@@ -445,80 +446,24 @@ def scan_text(text: str, file: str) -> list[Row]:
     return rows
 
 
-# -- the BLOCKER quality bar, from .ci/scripts/lib/blocker-validator.sh -------
-
-LOW_EFFORT_BLOCKER_PATTERNS = (
-    # npm-audit ack-tier phrases
-    "no fix",
-    "no fix available",
-    "no fix yet",
-    "no upstream fix",
-    "no fix published",
-    "no patch",
-    "no patch yet",
-    "no patch available",
-    "none",
-    "n/a",
-    "na",
-    "empty",
-    "-",
-    # scheduling ack-tier
-    "tbd",
-    "wip",
-    "fixme",
-    "todo",
-    "later",
-    "fix later",
-    "will fix",
-    "pending",
-    "skip",
-    "skipping",
-    "skipped",
-    "ignore",
-    "ignoring",
-    "ignored",
-    "unknown",
-    "unknown reason",
-    "idk",
-    "dunno",
-    "whatever",
-    # review-gate-style ack phrases
-    "ok",
-    "okay",
-    "ack",
-    "acknowledged",
-    "noted",
-    "done",
-    "fixed",
-    "applied",
-    "addressed",
-    "updated",
-    "changed",
-    "understood",
-    # explicit escape-hatch attempts
-    "escape",
-    "escape hatch",
-    "suppressed",
-    "suppress",
-    "bypass",
-    "override",
-    "upstream issue",
-    "transitive",
-    "dev dep",
-    "dev only",
-)
-
-LOW_EFFORT_BLOCKER_SUBSTRINGS = (
-    "deferred to a dedicated dependency-bump pr",
-    "not needed by this change",
-    "not needed in this change",
-    "not needed for this change",
-    "to keep this merge focused",
-    "to keep this change focused",
-    "to keep this pr focused",
-)
-
-BLOCKER_MIN_LENGTH = 30
+# -- the BLOCKER quality bar, from rediacc_ci.core.allowlist -------------------
+#
+# COLLAPSED 2026-09-09. This module used to carry its own copy of both
+# banned-phrase tables, the 30-character floor and all four message bodies, 150
+# lines transcribed from `.ci/scripts/lib/blocker-validator.sh`. Two things had
+# already drifted in that copy and neither was visible from here:
+#
+#   * the messages spelled the separator `--` where the bash twin this module
+#     ports prints U+2014, so the two disagreed byte for byte on every rejection
+#     from line 2 onward. It never reddened anything because `shadow-gate`
+#     classifies only the ci_error line as a FINDING and the rest as chatter.
+#   * the trim was `re.sub(r"^[ \t]*", ...)`, space and tab only, where the twin's
+#     `sed 's/^[[:space:]]*//'` under LC_ALL=C also eats \v \f \r. A reason led by
+#     a carriage return normalised to a different length in the two.
+#
+# Both are gone by construction now: the phrases, the floor and the words are
+# `rediacc_ci.core.allowlist`'s, which is the same module the bash twin and the
+# TypeScript gates read.
 
 
 def ci_error(message: str) -> None:
@@ -532,78 +477,19 @@ def ci_error(message: str) -> None:
 def validate_blocker_quality(entry_id: str, reason: str, file: str) -> bool:
     """True when the waiver reason clears the bar. Prints why when it does not.
 
-    The normalisation is `tr | sed | sed`: lowercase, trim, then strip trailing
-    `.!?,;:`. Note the punctuation class is WIDER here than the one
-    `is_low_effort_reply` uses in the submodule gate, which strips only `.!?`.
-    The two lists were written separately and the difference is real; it is
-    carried rather than unified, because unifying them would change one gate's
-    verdicts to fix nothing.
+    THE RULE IS NOT HERE. `rediacc_ci.core.allowlist.validate_reason` decides and
+    supplies the words; what stays in this module is the STREAM SPLIT, which is
+    the twin's and not the rule's: the first line goes through `ci_error`, so it
+    becomes a `::error::` annotation under CI, and the rest is plain stdout.
     """
-    normalized = reason.lower()
-    normalized = re.sub(r"^[ \t]*", "", normalized)
-    normalized = re.sub(r"[ \t]*$", "", normalized)
-    normalized = re.sub(r"[.!?,;:]*$", "", normalized)
-
-    for pattern in LOW_EFFORT_BLOCKER_PATTERNS:
-        if normalized == pattern:
-            ci_error(
-                'Allowlist %s: BLOCKER for entry %s is a low-effort placeholder ("%s")'
-                % (file, entry_id, reason)
-            )
-            print(
-                '  Rejected because: "%s" matches the banned-phrase list -- this adds no '
-                "information beyond 'we suppressed it'" % normalized
-            )
-            print(
-                "  Action: write a specific reason. Good BLOCKERs cite the upstream pin, "
-                "the package chain, OR why runtime isn't affected."
-            )
-            print(
-                "  Example: 'electron-builder 26.x pins plist > xmldom 0.8.x; build-time "
-                "only, requires major electron migration'"
-            )
-            return False
-
-    for pattern in LOW_EFFORT_BLOCKER_SUBSTRINGS:
-        if pattern in normalized:
-            ci_error(
-                "Allowlist %s: BLOCKER for entry %s defers a routine bump instead of "
-                'justifying a hold ("%s")' % (file, entry_id, reason)
-            )
-            print(
-                '  Rejected because: it contains "%s" -- the upgrade blocklist is for bumps '
-                "that genuinely cannot be taken now (breaking major, pin conflict, native "
-                "rebuild, known regression), not for deferring a routine installable bump."
-                % pattern
-            )
-            print(
-                "  Note: check-deps already auto-defers freshly-published versions (until "
-                "the next UTC day after they age the minimum-release-age window), so there "
-                "is no need to blocklist a fresh release."
-            )
-            print(
-                "  Action: TAKE the bump ('npm run check:deps -- --upgrade'), OR cite the "
-                "concrete technical blocker (which package pins what, what breaks)."
-            )
-            return False
-
-    if len(normalized) < BLOCKER_MIN_LENGTH:
-        ci_error(
-            "Allowlist %s: BLOCKER for entry %s is too short (%d chars, minimum %d)"
-            % (file, entry_id, len(normalized), BLOCKER_MIN_LENGTH)
-        )
-        print('  Current: "%s"' % reason)
-        print(
-            "  Action: a BLOCKER must explain WHO pins what, WHY the fix cannot be taken "
-            "now, and ideally WHEN to revisit."
-        )
-        print(
-            "  Example: 'axios 1.15.0 pins follow-redirects <1.16.0; not runtime-exposed "
-            "in CLI auth path; revisit when axios bumps'"
-        )
-        return False
-
-    return True
+    rejection = allowlist.validate_reason(entry_id, reason, file)
+    if rejection is None:
+        return True
+    lines = rejection.message.split("\n")
+    ci_error(lines[0])
+    for line in lines[1:]:
+        print(line)
+    return False
 
 
 def scan_dirs(env: dict[str, str] | None = None) -> tuple[str, ...]:

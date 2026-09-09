@@ -25,10 +25,10 @@ callers:
     pinned_at: main
     calls: .github/workflows/claude-review-reusable.yml
     passes_inputs: [required_check, pr_number]
-    passes_secrets: [ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN]
+    passes_secrets: []
   - caller: private/renet/.github/workflows/claude-review.yml
     repo: rediacc/renet
     pinned_at: main
     calls: .github/workflows/claude-review-reusable.yml
     passes_inputs: [required_check, pr_number]
-    passes_secrets: [ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN]
+    passes_secrets: []

@@ -59,8 +59,8 @@ MAX = 8
 # elsewhere in the tree does not match.
 WORKFLOW_GLOBS = ("*.github/workflows/*.yml", "*.github/workflows/*.yaml")
 
-BLANK_LINE = r"^[" + hookio.SPACE + r"]*$"
-RUN_BLOCK = r"^[" + hookio.SPACE + r"]*run:[" + hookio.SPACE + r"]*[|>]"
+BLANK_LINE = hookio.rx(r"^[{S}]*$")
+RUN_BLOCK = hookio.rx(r"^[{S}]*run:[{S}]*[|>]")
 
 MESSAGE = (
     "❌ BLOCKED: this edit puts a %s-line inline 'run:' block in %s (limit is %s logic "

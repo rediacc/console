@@ -5,7 +5,7 @@ Both-ways test for `scripts/lib/positional-cli-detector.ts`.
 The detector decides which `rdc ...` examples in docs, help text and locale strings
 teach the WRONG syntax. It backs four consumers: two ESLint rules
 (i18n/no-positional-cli-syntax, custom/no-positional-cli-syntax-source),
-scripts/validate-cli-examples.ts, and
+scripts/gen/validate-cli-examples.ts, and
 packages/www/scripts/validate-docs-cli-usage.js.
 
 It has to be tested in BOTH directions, because it can fail in both:

@@ -537,7 +537,7 @@ INCONCLUSIVE, which is the part that rots silently. It never runs
 `test-worklist-v5.sh`.
 
 Registration is not optional once the file exists:
-`scripts/check-ci-parity.ts:530-542` fails when a `.ci/scripts/test/gates/test-*.sh`
+`scripts/gates/check-ci-parity.ts:530-542` fails when a `.ci/scripts/test/gates/test-*.sh`
 on disk has no `qualityGateTest` manifest entry, and
 `.ci/scripts/quality/check-gate-id-convention.sh` requires the id
 `gate-test:mutrun` rather than a `check:ci-*` alias. So the manifest gains:
@@ -556,7 +556,7 @@ matching the shape of `gate-test:claude-hooks` at `scripts/ci-runner/manifest.ts
 **`scripts/dev/mutrun.py`**, with `"dev:mutation-run": "scripts/dev/mutrun.py"`
 in `package.json`.
 
-The prefix is load-bearing. `scripts/check-ci-parity.ts:398-406` (rule R1) fails
+The prefix is load-bearing. `scripts/gates/check-ci-parity.ts:398-406` (rule R1) fails
 any `check:ci-*` key in `package.json` that is not a manifest entry, and every
 manifest entry with `gate: true` is scheduled by `npm run ci`. Naming this
 `check:ci-mutation-run` would therefore force a four-and-a-half-minute suite,
@@ -565,11 +565,11 @@ thing is.
 
 Two related constraints checked so the choice is not accidental:
 
-- `GATE_SHAPED` at `scripts/check-ci-parity.ts:68-69` matches only
+- `GATE_SHAPED` at `scripts/gates/check-ci-parity.ts:68-69` matches only
   `.ci/scripts/{quality,security}/check-*.sh` and `.ci/scripts/test/test-*.sh`.
   `scripts/dev/mutrun.py` is outside it, so rule R2 does not pull the tool into
   the manifest either.
-- `scripts/check-dead-bash.ts:9-11` reports a `.sh` whose basename no other
+- `scripts/gates/check-dead-bash.ts:9-11` reports a `.sh` whose basename no other
   tracked file mentions. Python is outside that gate entirely, which is a reason
   to give the tool a real caller rather than to rely on the gate's blindness: the
   npm key plus the gate test plus this plan are three, and `--prove-suite` is
@@ -874,7 +874,7 @@ belongs in `docs/agent-reference/TRAPS.md` beside the editing-a-running-script e
 than in `mutrun`. Two notes for whoever writes it there: a `.v5-run-snapshot.sh`
 inside `.claude/hooks/stop/` is a new `.sh` basename that no other tracked file
 mentions, which is a `check-dead-bash.ts` orphan finding unless it is gitignored
-(`scripts/check-dead-bash.ts:9-11`); and leave-it-and-overwrite beats a cleanup
+(`scripts/gates/check-dead-bash.ts:9-11`); and leave-it-and-overwrite beats a cleanup
 step, for the §4.2 reason that cleanup steps are exactly as skippable as the
 timeout is long.
 

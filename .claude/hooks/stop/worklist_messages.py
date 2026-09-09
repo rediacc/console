@@ -1563,7 +1563,7 @@ R_REGGATE_BLOCK = (
     "  judge's blind spot:  %s\n"
     "  judge's instruction: %s\n%s%s\n"
     "Three exits, pick one THIS turn:\n"
-    "  1. WRITE THE GATE control-first: a new scripts/check-*.ts or "
+    "  1. WRITE THE GATE control-first: a new scripts/gates/check-*.ts or "
     ".ci/scripts/quality/check-*.sh, wired as a check:ci-* key REACHABLE "
     "from `npm run ci` (transitively; defined-but-never-run does not "
     "count). The next stop runs it bounded, and a green run IS the "

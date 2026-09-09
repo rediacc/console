@@ -1,66 +1,67 @@
-## SESSION 8f55d4f0 2026-09-07T15:11:07Z
+## SESSION 8f55d4f0 2026-09-07T19:07:26Z
 
-Branch `0906-1`. Driver for the tooling-transformation plan at
-`/home/developer/.claude/plans/let-s-ultrathink-and-make-lazy-pudding.md`.
-Tree is UNCOMMITTED by standing order.
+Branch `0906-1`. **Only THIS session is live.** ONE plan now:
+`agent/PLAN-tooling-transformation.md` (1,175 lines, TRACKED, 140 KB). The two
+predecessors are gone: the round-2 file was folded in and the untracked original at
+`~/.claude/plans/` was deleted, both on the operator's direct instruction.
 
-**There is only THIS session.** Peer-looking modified files (`check_plan_record.py`,
-`wl_planrec.py`, `wl_report.py`) are this session's own earlier work; the operator
-confirmed no other session is live. `#ed6f6ea8` is still TAGGED to a dead session
-`d1589e0b`, so the store refuses my edits to it; its ruling is recorded here.
+## A CORRECTION I OWE, so nobody re-reads the record wrongly
 
-## Operator rulings 2026-09-07 via /ask
+I escalated an agent for "unauthorised commits". **That was wrong.** Its tick evidence
+quotes operator messages sent DIRECTLY to it that never reached my conversation:
+"ourside of repo is dangerous! There is a compaction risk as you had!", "we should
+have continued with the old one", and "sorry mistakenly interrupte[d]" (which LIFTED
+my stop). Operator messages outrank an agent brief, so the five commits
+(`14f5629ba`, `2d90ae6a6`, `9d3c2a112`, `f7ae5f4f5`, `e3f7bea31`) were DIRECTED.
+The lesson: an operator may be talking to an agent on a channel I cannot see.
 
-1. **M0 Bitwarden: let it expire and watch.** Verbatim: "I'll see its failure...
-   our first try to see if failure works properly or if it is silent." I tested the
-   claim a day early with a FABRICATED token, no real credential: absent token gives
-   rc=1 and a named stderr; token PRESENT but rejected (the actual expiry shape)
-   gives rc=1, 0 bytes stdout, stderr naming `.ci/config/bws-token-expiry.json` by
-   path; the CI action has `set -euo pipefail`, zero `continue-on-error`, zero
-   `|| true`. **The failure is loud at both call sites.** If tomorrow is silent or
-   opaque, THAT is the defect to chase.
-2. **Console `private/account` gitlink stays parked**, 3 behind account/main. PR #86
-   is MERGED so only the bump remains, and it would land on console/main, which is
-   the edge release. Do not touch it.
-3. **Finish the region cutover** -- done, below.
+Tracking those plans caught **88 unresolvable citations**, 29 of them in the round-1
+plan that had lived outside the repo its whole life and had never been checked.
 
-## Landed this turn
+## Completion, six axes. Never quote one alone.
 
-**The W2.6 region cutover is COMPLETE and `gate-bind --write` is safe again.** 107
-hand-written duplicates deleted (691 lines), `ci-quality.yml` 2492 -> 2131. Proof
-nothing was lost: **276 unique step names before and 276 after**, 0 duplicates, env
-**26 blocks / 44 vars identical both sides**, yaml parses, 15 gates green. **This
-unblocks W2.3 and W3 P3**, which both run `--write` first.
+| Axis | | |
+|---|---|---|
+| **Bash files DELETED** | **0 of 521** | **0%** |
+| Ported quality gates LIVE in CI | **0 of 77** | 0% |
+| Gate tests ported AND live | 88 of 149 | 59% |
+| Python gates in `.ci/scripts/quality` declaring | 49 of 49 | 100% |
+| Plan boxes | 167 ticked / 205 open | — |
 
-**The trap that ruling paid for:** the binder cannot emit per-step `env:`, so six
-duplicated steps carried env on their HAND-WRITTEN copy only. Deleting them would
-have silently stripped variables `check:ci-pr-task-trailers`, the Docker freshness
-step and four others read. Measured BEFORE deleting, then fixed with the grammar's
-own mechanism: `emit: false` plus a BLOCKER naming the measurement on all six
-headers (e.g. `scripts/check-pr-task-trailers.ts:30`). Opt-outs 21 -> 27.
+**Box counts measure drafting. The honest pair is 0% deleted / 0% live.**
 
-## Completion, measured
+## W7 P3: 27 admissible, only ~20 portable
 
-Quality gates 77/77. **Gate tests 64 of 149**. Headers 391 of 458. Plans compacted
-31 of 86. Plan boxes 81 done / 50 open. **The box percentage flatters:** all 149
-gate tests are ONE box.
+Three STANDING DROPS, recorded in `agent/8f55d4f0/W7P3-batch5-brief.md` so batches
+stop re-deriving them: six `test-breakpoint-*` (invariant 8 forbids the writes
+plant-verification needs), `test-scrub-sentinel-empty.sh` (`aws` absent), and
+`test-run-sh.sh` (needs its own slot; three non-trivial awk programs plus `comm` set
+algebra, where a subtly wrong port agrees with its twin TODAY and diverges later).
 
-## Live state a newcomer would get wrong
+## Two findings that still govern the work
 
-`ghcr.io/rediacc/devcontainer:latest` is **REMOVED here**, deliberately: I retagged a
-local build over it and `docker pull` returns `unauthorized`, so leaving it would
-fake a registry image. `devbox up` falls back to a local build, as designed. The
-devbox KVM fixes live in that image and CI publishes only on push-to-main.
+- **`emit: false` skips ONLY the workflow-region checks.** Registration assertions
+  are at `gate-bind.ts:1669/:1672/:1679`; `if (!emits(b)) continue` at `:1724`. A
+  header ASSERTS registration exists, so **the 78 headers ARE W7 P4** — atomic per
+  gate. Split 59 colliding / 18 not; **`package.json` is the authority, not the lock.**
+- **`needs-not:` is new header grammar**, requiring a `blocker:`. Tightening
+  `inferredNeeds` was rejected on measurement (24 files lose it; one really executes
+  `node_modules/.bin/tsx`).
+
+## Machine state
+
+`private/account` FROZEN by ruling, DETACHED HEAD, uncommitted 512-line
+`package-lock.json` deletion. Its gitlink stays at `65820fd` (3 behind) by operator
+choice, so **main's last nightly red stays red by that choice**, closed
+`door:operator-deferred`. `ghcr.io/rediacc/devcontainer:latest` REMOVED here.
 
 ## Next action
 
-1. **`#86c9202a` batch 6** returned 64 ports on disk. Read the artifact not the
-   summary: both sides red on a real plant, sha256 restore, `BASH_TWIN` declared,
-   149 twins intact. Then run `check:ci-pytest` MYSELF, since an agent's green
-   predates any fix made after it.
-2. Then batch 7 from `agent/8f55d4f0/W7P3-batch5-brief.md`; re-run its derivation
-   script, never select from memory.
-3. Now unblocked: **W2.3's manifest region** and **W3 P3's shard matrix**, both of
-   which needed a safe `--write`.
-4. Open hole, no box: `test-shrink-only-composition.sh` greps only `*.ts`/`*.js`, so
-   a Python gate offering `--write-baseline` is invisible to it.
+1. **`#a7de7582` batch 9 is running** (88 of 149). On return read the artifact, not
+   the summary: both sides red on a real plant, sha256 restore, `BASH_TWIN` declared,
+   149 twins intact. Then run `check:ci-pytest` MYSELF.
+2. **`#b77ba486` `[?]`**: SubagentStop is a CAPTURE hook that can never block
+   (`wl_report.py:1007-1010` suppresses and returns 0), so subagent turn discipline is
+   unenforceable. Default in ~2h: additive recording only, never a blocking
+   SubagentStop.
+3. **W7 P4 is the only thing that moves the two 0% axes.**

@@ -5,6 +5,6 @@
 # source: .ci-parity-exempt
 # corpus: corpus/ci-parity-exempt.list
 # comment-char: #
-# corpus-sha256: 9a8cea61492617c295058f9b2b8116784e2d4e428fc2a2d228d023786536e4e9
+# corpus-sha256: b1a9532ca7ffd92c36cceb19c4ac5c9731afe5e91bf68d11f529dd2c96bfb48e
 # ---
 ci-only	probes the release-state sentinels in the R2 bucket, so it needs CLOUDFLARE_R2_ACCESS_KEY_ID/CLOUDFLARE_R2_SECRET_ACCESS_KEY; a developer without release credentials gets "Required environment variable 'CLOUDFLARE_R2_ACCESS_KEY_ID' is not set" rather than a verdict

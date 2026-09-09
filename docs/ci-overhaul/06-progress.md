@@ -28,7 +28,7 @@ failures the first night Wave A's code was on main. A2b fired too: issue **#544
 **A5 clause 1 (a GREEN scheduled run) is still unmet.** The 2026-07-29 nightly
 failed only `Quality / Code` (plus `CI Complete` as a consequence), on
 `docker/login-action v4.5.1 -> v4.5.2`. That needs no work: main's
-`scripts/check-actions.ts` has **zero** references to `isReleaseDeferred`, while
+`scripts/gates/check-actions.ts` has **zero** references to `isReleaseDeferred`, while
 this branch adds 107 lines including it, so main is running the gate without its
 release-age window. #543 is the fix.
 
@@ -1236,7 +1236,7 @@ PROVE-IT-FIRES, three planted defects against a scratch copy of `private/renet`
 
 ## 2026-08-04 -- `check:ci-locale-de-contamination`
 
-`scripts/check-locale-de-contamination.ts`, chained into
+`scripts/gates/check-locale-de-contamination.ts`, chained into
 `check:ci-i18n-cross-locale` in `package.json` so it inherits that gate's real CI
 home (`ci-quality.yml`, job `quality-i18n`, step "i18n cross-locale"). Its
 manifest entry declares that same step, and the chained parent's `leaves` now
@@ -1249,7 +1249,7 @@ the tree right now: 94-95 German values sitting in each of account-web's `ar`,
 batch, and the operator's own review would still be the only instrument.
 
 WHY IT IS A SECOND GATE AND NOT A WIDENED FIRST ONE.
-`scripts/check-i18n-cross-locale.ts` identifies a string's LANGUAGE from function
+`scripts/gates/check-i18n-cross-locale.ts` identifies a string's LANGUAGE from function
 words, which is the right tool for telling French from German but structurally
 cannot look at a locale it has no word list for (`if (!STOPWORDS[locale])
 continue` -- de/fr/es/it/pt/tr only). Arabic, Japanese, Korean, Russian, Chinese
@@ -2305,7 +2305,7 @@ first harness could fail unnoticed.
 
 **The scripts/ harness rule was too coarse, and it fired for real.** Commit
 `bcc4f1ee1` changed one file — an Apache-2.0 attribution-URL check — and the
-resolved plan recorded `"full_reasons": ["harness:scripts/check-embed-credits.ts"]`,
+resolved plan recorded `"full_reasons": ["harness:scripts/gates/check-embed-credits.ts"]`,
 running the whole E2E/ceph/k8s/OPS matrix. Measured across three runs, dropping
 the infra matrix saves **19-43 min wallclock (28-47%)**, and the new tail is
 `Validate Promotion` at ~47-52 min in all three, so it also converts a 66-93 min
@@ -3885,7 +3885,7 @@ Recorded here because they widen the `quality-packages` job and the manifest, wh
 this program's surface, not because they belong to its waves. Both are UNCOMMITTED at the
 time of writing.
 
-- **`check:ci-guard-mutations`** (`scripts/check-guard-mutations.ts`) runs the CLI unit
+- **`check:ci-guard-mutations`** (`scripts/gates/check-guard-mutations.ts`) runs the CLI unit
   tests against a deliberately broken COPY of the source and requires them to FAIL. It
   exists because `check:test-cli` is blind by construction to whether an assertion pins
   anything: a `wrapProse` test shipped green while the guard it claimed to test was
@@ -5076,7 +5076,7 @@ contains both delimiters because it describes them.
 no commitlint, no husky, no `commit-msg` hook. Local: `block-untagged-commit.sh`,
 line-anchored per the rule `block-commit-meta.sh` states, and it ALLOWS what it
 cannot read (`-F file`, command substitution) rather than refusing a commit it
-cannot judge. CI: `scripts/check-pr-task-trailers.ts`, failing CLOSED on an
+cannot judge. CI: `scripts/gates/check-pr-task-trailers.ts`, failing CLOSED on an
 unreadable API and validating ids against the snapshot rather than their shape,
 because a typo'd id looks tagged and routes to an epic nobody reviews.
 

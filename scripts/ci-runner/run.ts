@@ -33,6 +33,7 @@ import { execGate } from './exec';
 import { GATES, type GateSpec } from './manifest';
 import { buildGraph, type GateResult, runPool } from './pool';
 import { createReporter } from './report';
+import { type ChangeSet, ChangeSetRefusal, selectChanged } from './select';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 // Per-gate process-tree profiling (agent/PLAN-shell-resource-profiling.md). ON by
@@ -316,25 +317,41 @@ function expandGitlinks(named: readonly string[], warn: (text: string) => void):
   return [...out];
 }
 
-function changedFiles(warn: (text: string) => void): string[] {
+/**
+ * The change set, WITH its provenance. It used to return a bare `string[]` and
+ * swallow a git failure into `[]` under a warning that said "selecting every gate"
+ * -- which was false, because `select()` then dropped every path-declaring gate for
+ * want of a match. See scripts/ci-runner/select.ts for the measurement.
+ */
+function changedFiles(): ChangeSet {
   const base = process.env.CI_RUNNER_BASE ?? 'origin/main';
   try {
     const mergeBase = execFileSync('git', ['merge-base', 'HEAD', base], {
       cwd: REPO_ROOT,
       encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
     }).trim();
     const named = execFileSync('git', ['diff', '--name-only', mergeBase], {
       cwd: REPO_ROOT,
       encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
     })
       .split('\n')
       .filter(Boolean);
-    return expandGitlinks(named, warn);
-  } catch {
-    warn(
-      `ci-runner: --changed could not resolve a merge base against ${base}; selecting every gate\n`
-    );
-    return [];
+    // expandGitlinks warns through stderr directly; a submodule it cannot read
+    // widens to a wildcard rather than narrowing, so the set stays inclusive.
+    return {
+      files: expandGitlinks(named, (t) => process.stderr.write(t)),
+      origin: 'resolved',
+      base,
+    };
+  } catch (err) {
+    return {
+      files: [],
+      origin: 'unresolved',
+      base,
+      reason: err instanceof Error ? err.message.split('\n')[0] : String(err),
+    };
   }
 }
 
@@ -355,25 +372,21 @@ function select(
   let chosen = specs.filter((spec) => spec.gate);
 
   if (opts.changed) {
-    const files = changedFiles(warn);
-    // An entry with no declared `paths` is ALWAYS selected. A half-populated
-    // path table would make --changed drop gates silently, which is the
-    // vacuity failure this design exists to prevent.
-    chosen = chosen.filter(
-      (spec) => spec.paths === undefined || files.some((f) => matchesAny(f, spec.paths ?? []))
-    );
-    const base = process.env.CI_RUNNER_BASE ?? 'origin/main';
-    // Say out loud when the flag scoped nothing. The selection above is
-    // deliberately safe, but the note used to read like a narrowed run, and
-    // a reader reasonably concluded --changed was scoping when it was not.
-    // An instrument that reports work it did not do is the same class of
-    // defect as a gate that cannot fail.
-    const scopable = specs.filter((spec) => spec.gate && spec.paths !== undefined).length;
-    notes.push(
-      scopable === 0
-        ? `--changed (${files.length} files vs ${base}) SCOPED NOTHING: no gate declares paths, so all ${chosen.length} gates are selected`
-        : `--changed (${files.length} files vs ${base}; ${scopable} gate(s) path-scoped)`
-    );
+    // BOTH HALVES LIVE IN select.ts. Fail OPEN on scope -- an entry with no declared
+    // `paths` is selected for every non-empty change set, because the overwhelming
+    // majority of gates declare none and a half-populated path table would drop them
+    // silently. REFUSE an unusable change set -- an empty file list is the one input
+    // for which fail-open inverts into fail-closed, and "nothing changed" and "the
+    // differ broke" arrive in exactly that shape.
+    //
+    // THE RATIO IS NOT WRITTEN DOWN HERE ON PURPOSE. It moved twice in one session
+    // (474/46 to 475/46) while this box was being written, and a number quoted in a
+    // comment is a number nobody recomputes. `check:ci-changed-selection` derives it
+    // from the lock and PRINTS it on every run, and asserts both halves against the
+    // real invocation.
+    const result = selectChanged(chosen, changedFiles(), matchesAny);
+    chosen = [...result.chosen];
+    notes.push(result.note);
   }
   if (opts.quick) {
     // THE LANE IS A FIXPOINT, not a filter. A cheap gate whose `needs` closure
@@ -897,7 +910,20 @@ async function main(): Promise<number> {
   // it is how --changed stayed inert without anyone noticing. Measured
   // 2026-08-27 -- a reader (me) concluded from it that --changed scoped
   // nothing, on evidence that could not have shown otherwise.
-  const selection = select(specs, opts, humanOut);
+  let selection: Selection;
+  try {
+    selection = select(specs, opts, humanOut);
+  } catch (err) {
+    // A REFUSAL IS NOT A CRASH, and it must not read as one. `--changed` with a
+    // change set it cannot trust exits 1 with the reason and the fix on stderr,
+    // rather than selecting the 418 gates that happen to declare no `paths` and
+    // reporting a green over the 46 it dropped.
+    if (err instanceof ChangeSetRefusal) {
+      process.stderr.write(`ci-runner: ${err.message}\n`);
+      return 1;
+    }
+    throw err;
+  }
   if (opts.list) {
     for (const spec of specs) {
       if (spec.gate && !selection.ids.has(spec.id)) continue;

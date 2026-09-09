@@ -621,13 +621,13 @@ jobs:
           preset: pr-read
           repositories: console
       - name: Check resolved threads
-        run: .ci/scripts/quality/check-resolved-threads.sh
+        run: .ci/scripts/quality/check_resolved_threads.py
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
       - name: Check unreplied review comments
-        run: .ci/scripts/quality/check-review-comments.sh
+        run: .ci/scripts/quality/check_review_comments.py
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -637,7 +637,7 @@ jobs:
       # would otherwise be ignorable. Requires a substantive reply that
       # references the newest finished report by comment id.
       - name: Check unreplied review reports
-        run: .ci/scripts/quality/check-review-report-replies.sh
+        run: .ci/scripts/quality/check_review_report_replies.py
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -929,7 +929,7 @@ jobs:
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           IN_FLIGHT_VERSION: v${{ needs.initialize.outputs.next_version }}
-        run: .ci/scripts/quality/check-release-state.sh
+        run: .ci/scripts/quality/check_release_state.py
 
   # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN

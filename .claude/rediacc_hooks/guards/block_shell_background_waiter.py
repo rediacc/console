@@ -45,7 +45,7 @@ ORDER = 14
 # not a document -- walks straight through.
 DEFECT = ("if not hookio.grep_q(FEEDS_SHELL, cmd):", "if False:")
 
-FEEDS_SHELL = r"\|[" + hookio.SPACE + r"]*(bash|sh|zsh)\b|\b(bash|sh|zsh)[" + hookio.SPACE + r"]+<<"
+FEEDS_SHELL = hookio.rx(r"\|[{S}]*(bash|sh|zsh)\b|\b(bash|sh|zsh)[{S}]+<<")
 
 # The heredoc opener awk looks for, and the prefix/suffix `gsub` strips off it
 # to recover the delimiter NAME.

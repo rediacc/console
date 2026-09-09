@@ -362,6 +362,6 @@ test_control_the_tag_lookup_can_fail
 
 log_pass "all release-state-consistency cases"
 echo "  Blind spot: rsv_assert_channel_pointer_tagged is PURE. These cases prove"
-echo "  the judgement, not the READS -- whether check-release-state.sh actually"
+echo "  the judgement, not the READS -- whether check_release_state.py actually"
 echo "  fetches latest.json/manifest.json and the git tags is not covered here,"
 echo "  and cannot be locally (aws is unavailable on host and in the devbox)."

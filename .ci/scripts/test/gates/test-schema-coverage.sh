@@ -5,10 +5,10 @@
 # needs: node
 # lane: quality-security
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
-# why: Integration test for scripts/check-schema-coverage.ts (check:ci-schema-coverage)
+# why: Integration test for scripts/gates/check-schema-coverage.ts (check:ci-schema-coverage)
 # ---- end gate ----
 
-# Integration test for scripts/check-schema-coverage.ts (check:ci-schema-coverage).
+# Integration test for scripts/gates/check-schema-coverage.ts (check:ci-schema-coverage).
 #
 # The gate walks RdcConfigSchema's type tree and fails closed on any Zod leaf
 # without a SENSITIVITY_REGISTRY entry, and on any registry template that
@@ -28,7 +28,7 @@ source "$SCRIPT_DIR/../lib/test-helpers.sh"
 test_gate_green_on_real_tree() {
     cd "$REPO_ROOT"
     local out rc=0
-    out=$(npx tsx scripts/check-schema-coverage.ts 2>&1) || rc=$?
+    out=$(npx tsx scripts/gates/check-schema-coverage.ts 2>&1) || rc=$?
     assert_exit_code 0 "$rc" "gate must pass on the current schema+registry"
     assert_contains "$out" "fires as uncovered" "in-run control must have fired before the green"
     assert_contains "$out" "Schema coverage OK" "green summary line present"

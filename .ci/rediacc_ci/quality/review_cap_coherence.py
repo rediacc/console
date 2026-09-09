@@ -91,7 +91,7 @@ import sys
 import tempfile
 
 from rediacc_ci import paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, plant
 
 # The three subjects, relative to the repository root.
 GATE_REL = ".ci/scripts/review/claude-review-gate.sh"
@@ -485,7 +485,7 @@ def selftest() -> int:
         ctl.check(
             "VACUITY: an unplantable control is refused",
             run(
-                _GATE, _STATUS.replace(_MUTANT_FROM, "review_count=$(review_spend_total x y)"), _LIB
+                _GATE, plant(_STATUS, _MUTANT_FROM, "review_count=$(review_spend_total x y)"), _LIB
             ),
             1,
         )
@@ -493,14 +493,15 @@ def selftest() -> int:
         # PLANT 1: the #553 shape itself, in review-status.sh.
         ctl.check(
             "PLANT: the split numerator is caught",
-            run(_GATE, _STATUS.replace(_MUTANT_FROM, _MUTANT_TO), _LIB),
+            run(_GATE, plant(_STATUS, _MUTANT_FROM, _MUTANT_TO), _LIB),
             1,
         )
         # PLANT 2: the same shape in the gate script.
         ctl.check(
             "PLANT: the gate deriving its own numerator is caught",
             run(
-                _GATE.replace(
+                plant(
+                    _GATE,
                     'review_count=$(review_spend_total "$pr" "$ATTEMPT_PREFIX")',
                     'review_count=$(review_report_count "$pr")',
                 ),
@@ -512,14 +513,14 @@ def selftest() -> int:
         # PLANT 3: the denominator drift, the half lib/common.sh already fixed.
         ctl.check(
             "PLANT: a status script not calling review_cap_for is caught",
-            run(_GATE, _STATUS.replace("review_cap_for", "cap_for_local"), _LIB),
+            run(_GATE, plant(_STATUS, "review_cap_for", "cap_for_local"), _LIB),
             1,
         )
         # PLANT 4: a helper missing from the library.
         for fn in SHARED_HELPERS:
             ctl.check(
                 "PLANT: %s() missing from lib/common.sh is caught" % fn,
-                run(_GATE, _STATUS, _LIB.replace("%s() {" % fn, "%s_renamed() {" % fn)),
+                run(_GATE, _STATUS, plant(_LIB, "%s() {" % fn, "%s_renamed() {" % fn)),
                 1,
             )
         # PLANT 5: a local copy shadowing the shared one. This is the shape the
@@ -534,14 +535,14 @@ def selftest() -> int:
         # at the cap instead of a warning, which is #553 exactly.
         ctl.check(
             "PLANT: a deadlock guard that does not fire is caught",
-            run(_GATE, _STATUS.replace("warnings+=(", "failures+=("), _LIB),
+            run(_GATE, plant(_STATUS, "warnings+=(", "failures+=("), _LIB),
             1,
         )
         # PLANT 7: the anchor is gone, so nothing could be extracted. An
         # extraction that found nothing has tested nothing.
         ctl.check(
             "PLANT: an unextractable guard is caught",
-            run(_GATE, _STATUS.replace('if [[ "$currency_ok" == true ]]', "if $ok"), _LIB),
+            run(_GATE, plant(_STATUS, 'if [[ "$currency_ok" == true ]]', "if $ok"), _LIB),
             1,
         )
 
@@ -606,7 +607,7 @@ def selftest() -> int:
     # let it through.
     ctl.check(
         "run_guard: the result carries NO trailing newline, as $( ) does not",
-        run_guard(extract_guard(_STATUS.replace("warnings+=(", "failures+=("))),
+        run_guard(extract_guard(plant(_STATUS, "warnings+=(", "failures+=("))),
         "GUARD_MISSED",
     )
     ctl.check("evaluate: the coherent trio has no findings", evaluate(_GATE, _STATUS, _LIB), [])

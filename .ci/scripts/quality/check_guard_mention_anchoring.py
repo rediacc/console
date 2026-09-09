@@ -47,10 +47,17 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+import _cipath  # noqa: F401
+
+# ALIASED: `proc` is the name this file's own code reaches for when it holds a
+# completed process, and it did until these call sites were routed. Keeping the
+# runner under a distinct name means a future local `proc =` cannot shadow it
+# into a NameError on the timeout path -- the path least likely to be exercised.
+from rediacc_ci import proc as ci_proc
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 # W5 P7 CUTOVER. The guards are Python modules now, run through ONE dispatcher
@@ -269,19 +276,25 @@ def payload_for(kind: str, text: str, file_path: str) -> str:
 
 def fires(guard: Path, command: str, kind: str = "command", file_path: str = "") -> bool:
     payload = payload_for(kind, command, file_path)
+    # THROUGH THE SHARED RUNNER. A guard is a script, and a script can leave a
+    # grandchild holding the read end; `subprocess.run` then blocks in
+    # `communicate()` past its own timeout, which is how check:ci-pytest came to
+    # hang with zero bytes on both streams. `proc.run` kills the group, and it
+    # RETURNS on timeout rather than raising, so the old `except TimeoutExpired`
+    # is gone -- only a missing binary still raises.
     try:
-        proc = subprocess.run(
+        result = ci_proc.run(
             guard_argv(guard),
-            input=payload,
-            capture_output=True,
-            text=True,
+            input_text=payload,
             timeout=30,
             cwd=str(REPO_ROOT),
-            check=False,  # a guard's exit 2 IS the signal; raising would lose it
         )
-    except subprocess.TimeoutExpired:
+    except OSError:
         return False
-    return proc.returncode == 2
+    if result.timed_out:
+        # A guard that will not answer is not a guard that said "no".
+        return False
+    return result.returncode == 2
 
 
 def file_path_for(guard: Path) -> str:
@@ -348,16 +361,13 @@ def controls() -> None:
             rlog = rlog_dir / "pr-babysit-0827-1.md"
             rlog.write_text("## STATUS (round 1)\n")
             edit_payload = payload_for("edit", "irrelevant content", str(rlog))
-            proc = subprocess.run(
+            edit_result = ci_proc.run(
                 guard_argv(edit_guard),
-                input=edit_payload,
-                capture_output=True,
-                text=True,
+                input_text=edit_payload,
                 timeout=30,
                 cwd=str(REPO_ROOT),
-                check=False,
             )
-            if proc.returncode != 2:
+            if edit_result.returncode != 2:
                 fail(
                     "pre-edit payload plumbing: block-roundlog-write.sh did not fire on a "
                     "REAL round-log write -- the edit payload shape cannot be trusted"
@@ -366,16 +376,13 @@ def controls() -> None:
         ask_payload = payload_for("ask", "should i commit this change", "")
         ask_guard = HOOKS / "pre-ask" / "block-settled-questions.sh"
         if ask_guard.exists():
-            proc = subprocess.run(
+            ask_result = ci_proc.run(
                 ["bash", str(ask_guard)],
-                input=ask_payload,
-                capture_output=True,
-                text=True,
+                input_text=ask_payload,
                 timeout=30,
                 cwd=str(REPO_ROOT),
-                check=False,
             )
-            if proc.returncode != 2:
+            if ask_result.returncode != 2:
                 fail(
                     "pre-ask payload plumbing: block-settled-questions.sh did not fire on a "
                     "REAL settled question -- the ask payload shape cannot be trusted"

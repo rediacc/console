@@ -5,5 +5,5 @@
 # source: .ci/config/directive-quotes-allowlist.txt
 # corpus: corpus/ci-config-directive-quotes-allowlist.list
 # comment-char: #
-# corpus-sha256: 427e97e342d0e1573a7e475031bb895beaf8523c6eeab5ed84b689de239e27d0
+# corpus-sha256: 6bc70d0f76e2e6c5e4319789aa9922526926697e934d3095e2514137f7a42f66
 # ---

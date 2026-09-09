@@ -73,26 +73,14 @@ ORDER = 38
 # well-formed id passes, including one that names no epic.
 DEFECT = ("if known and not _grep_qx(found, known):", "if False:")
 
-COMMIT_AT_COMMAND_POS = (
-    r"(^|[;&|(]|\$\(|`)["
-    + hookio.SPACE
-    + r"]*git(["
-    + hookio.SPACE
-    + r"]+-[A-Za-z-]+(["
-    + hookio.SPACE
-    + r"]+[^ ;&|]+)?)*["
-    + hookio.SPACE
-    + r"]+commit(["
-    + hookio.SPACE
-    + r"]|$)"
+COMMIT_AT_COMMAND_POS = hookio.rx(
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
 )
 
-HAS_MESSAGE_FLAG = r"\-m([" + hookio.SPACE + r"]|=)|--message([" + hookio.SPACE + r"]|=)"
-HAS_FILE_DASH = (
-    r"(-F|--file)([" + hookio.SPACE + r"]|=)[" + hookio.SPACE + r"]*-([" + hookio.SPACE + r"]|$)"
-)
-FILE_ARGS = r"(-F|--file)([" + hookio.SPACE + r"]+|=)[^" + hookio.SPACE + r";|&]+"
-SNAPSHOT_ID = r"^`?PR-TASK:[" + hookio.SPACE + r"]*[0-9a-f]{6,32}`?$"
+HAS_MESSAGE_FLAG = hookio.rx(r"\-m([{S}]|=)|--message([{S}]|=)")
+HAS_FILE_DASH = hookio.rx(r"(-F|--file)([{S}]|=)[{S}]*-([{S}]|$)")
+FILE_ARGS = hookio.rx(r"(-F|--file)([{S}]+|=)[^{S};|&]+")
+SNAPSHOT_ID = hookio.rx(r"^`?PR-TASK:[{S}]*[0-9a-f]{6,32}`?$")
 TRAILER = re.compile(r"(?:^|\\n|\n)[ \t\n\v\f\r]*PR-TASK:[ \t\n\v\f\r]*([0-9a-f]{6,32})")
 
 MISSING_TRAILER = """BLOCKED: this commit carries no PR-TASK trailer.
@@ -278,7 +266,7 @@ def run(ev):
 
     # 3. -F <file> / --file=<file>: read it off disk.
     for match in hookio.grep_o(FILE_ARGS, cmd):
-        name = hookio.sed_sub(r"^(-F|--file)([" + hookio.SPACE + r"]+|=)", "", match).rstrip("\n")
+        name = hookio.sed_sub(hookio.rx(r"^(-F|--file)([{S}]+|=)"), "", match).rstrip("\n")
         if name in {"", "-"}:
             continue
         for cand in (name, "%s/%s" % (root, name)):
@@ -310,7 +298,7 @@ def run(ev):
     #
     # `git branch --show-current` prints EMPTY when detached rather than lying, and
     # the CI environment names the branch outright. Same resolution order as
-    # scripts/check-pr-task-trailers.ts, so the gate and the guard agree about which
+    # scripts/gates/check-pr-task-trailers.ts, so the gate and the guard agree about which
     # branch they are judging.
     cwd = root or "."
     branch = (

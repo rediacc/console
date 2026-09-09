@@ -1,13 +1,43 @@
-r"""run-all.sh's tree guard must survive a CLEAN checkout.
+r"""battery.py's tree guard must survive a CLEAN checkout.
 
 Ported from `.ci/scripts/quality/check-battery-clean-tree.sh`, which is NOT
 deleted; see `rediacc_ci.quality.__init__` for why both copies live and for the
 phase-5 decision that retires the twin.
 
-THE TWIN'S OWN HEADER, carried over verbatim because the incident IS the gate
-and a summary of it would be a different gate:
+-----------------------------------------------------------------------------
+RETARGETED 2026-09-09 (W7P3-BAT), FROM `.ci/scripts/test/run-all.sh` ONTO
+`.ci/rediacc_ci/battery.py`.
+-----------------------------------------------------------------------------
 
-  check:ci-battery-clean-tree -- run-all.sh's tree guard must survive a CLEAN
+THE SUBJECT MOVED, SO THE GATE MOVED WITH IT. `battery.py` replaces
+`run-all.sh` as the runner, and this gate exists only to police the runner's
+tracked-tree snapshot. Left pointed at the bash file it would have gone one of
+two ways once that file was deleted, and both are worse than a red: it would
+have REFUSED (`CANNOT VERIFY`, exit 1) and read as a bug in the deletion, or --
+if anyone had "fixed" the refusal by treating an absent subject as clean -- it
+would have passed forever while policing nothing. Retargeting is what keeps the
+control alive across the replacement.
+
+WHAT DID NOT CHANGE, deliberately: the gate still EXTRACTS the live guard by
+name rather than copying it, still refuses when the extraction finds nothing,
+still plants the historical defect first to prove the instrument can fire, and
+still asserts BOTH directions (quiet on a clean tree, loud on a dirty one). The
+extraction language is the only thing that changed, because the subject is now
+Python.
+
+THE PLANT IS THE SAME DEFECT IN THE NEW LANGUAGE. `PREFIX_GUARD` below is a
+`tree_state` that shells the snapshot out to `bash -c 'set -euo pipefail; git
+status --porcelain | grep -v ...'` under `check=True`. That is not a synthetic
+failure: it is the exact pre-fix pipeline, and the realistic way a Python
+rewrite reintroduces it is by handing the whole thing back to bash. On a CLEAN
+tree the grep matches nothing, pipefail carries the 1 out of bash, `check=True`
+raises, and the snapshot aborts -- the 2026-09-03 incident, reproduced.
+
+THE HISTORY BELOW IS THE TWIN'S AND IS CARRIED WHOLE, because the incident IS
+the gate and a summary of it would be a different gate. Read `run-all.sh` in it
+as "the runner", which is now `battery.py`.
+
+  check:ci-battery-clean-tree -- the runner's tree guard must survive a CLEAN
   checkout.
 
   WHY THIS EXISTS, and it is a defect this gate's own subject introduced.
@@ -57,42 +87,51 @@ rather than reporting a clean tree guard that it never saw." That refusal is
 this gate's anti-vacuity rule and it is preserved exactly: an absent or renamed
 `tree_state` exits 1 with `CANNOT VERIFY`, never 0.
 
-THE ONE-LINE CASE IS THE ONE THE FIRST DRAFT GOT WRONG, and the twin records
-it: "a `sed` range from the definition to the next `^}` swallowed everything
-after a ONE-LINE `tree_state() { ...; }`, including run-all.sh's own `cd
-"$GATES_DIR"`, and the harness then failed on an unbound variable rather than on
-the property under test. Take the definition line, and only keep reading if it
-did not close itself." `extract_guard` below is that awk program transliterated
-rule for rule, and the live `run-all.sh:349` is in fact a one-liner, so this is
-the branch that runs every day.
+THE PYTHON TERMINATOR IS `^\S`, AND IT IS THE ANALOGUE OF THE BASH `^}`. A
+Python function ends where the next COLUMN-1 statement begins, so the extractor
+consumes indented lines and blank lines and stops at the first flush-left one --
+including a flush-left `#` comment, which is what actually follows `tree_state`
+in battery.py. Trailing blank lines are dropped so the extracted text ends at
+the last line of the body, which is what makes the `CANNOT VERIFY` comparison
+and the drive result stable.
 
-THE AWK CONDITIONS, spelled out because two of them are subtly narrow:
+THE ONE-LINE CASE IS KEPT, and it is not hypothetical here either: `def
+tree_state(root): return ...` is legal Python and would otherwise swallow the
+whole rest of the file, exactly as the bash draft swallowed everything after a
+one-line `tree_state() { ...; }`. `SELF_CLOSING_RE` is applied to the definition
+line only and tests for code after the colon.
 
-    /^tree_state\(\) \{/     ANCHORED at column 1 and requiring EXACTLY one
-                             space before the brace. An indented definition, or
-                             `tree_state () {`, or `tree_state(){`, is invisible
-                             and the gate refuses. That is the safe direction --
-                             it refuses rather than passing -- but it is a
-                             refusal for a formatting reason, and it is reported.
-    /\}[[:space:]]*$/        the SELF-CLOSING test, applied to the definition
-                             line only. Any line ending in `}` counts, including
-                             one that merely closes a subshell block.
-    /^\}/                    the terminator, anchored at column 1, so an indented
-                             `}` does not end the function.
+THE GIT-STATUS SANITY CHECK HAD TO BE RE-KEYED WITH THE SUBJECT, and this is
+the trap in the retarget. The twin looked for the literal substring `git
+status`, which is right for a shell pipeline and WRONG for an argv list:
+battery.py spells it `["git", "status", "--porcelain"]`, where the two words are
+separated by `", "`. A gate carried over unchanged would have refused on a
+perfectly good guard. `GIT_STATUS_RE` therefore admits up to eight non-word
+characters between the two tokens, which covers both spellings and still refuses
+a `tree_state` that reads something else entirely (`git diff --name-only` has no
+`status` in it at all).
 
-`[[:space:]]` IS NOT `\s`. POSIX space is exactly [ \t\n\v\f\r]; Python's `\s`
-on a str pattern also matches U+00A0 and friends. Written out, as
-`rediacc_ci.quality.npmrc` does, and for the same reason.
+`python3` IS PROBED FOR ON BOTH SIDES, and this is the one place the retarget
+adds a refusal the twin did not have. The subject is now Python, so the drive is
+`python3 <driver>`; without a probe an absent interpreter surfaces as an OSError
+in the port and a `command not found` in the twin, which is a divergence in the
+one case where the two must agree. Both sides now refuse by name with the fix in
+the message.
+
+THE DRIVER CATCHES AND PRINTS `ERR:<type>: <message>`, rather than letting the
+traceback out. A traceback carries the driver's own path, and the driver lives
+in a `mktemp` directory, so the failure detail would differ between two runs of
+the SAME implementation -- and every twin comparison of a red would be noise.
+The marker is deterministic and still names the exception.
 
 `$(...)` STRIPS TRAILING NEWLINES, AND THAT IS LOAD-BEARING TWICE. The extracted
-guard is compared against `-z` and against `*"git status"*`, and the drive
-result is compared against the literal string `"rc=0 out="` -- a comparison that
-a single trailing newline would break. `_capture` therefore rstrips "\n" and
-nothing else, which is exactly what the shell does; stripping whitespace would
-additionally eat the trailing space of a `git status --porcelain` line and make
-two different guards look identical.
+guard is compared against `-z`, and the drive result is compared against the
+literal string `"rc=0 out="` -- a comparison that a single trailing newline would
+break. `_capture` therefore rstrips "\n" and nothing else, which is exactly what
+the shell does; stripping whitespace would additionally eat the trailing space of
+a `git status --porcelain` line and make two different guards look identical.
 
-`out="$(bash "$TMP/drive.sh" 2>&1)"` MERGES THE TWO STREAMS. That is the
+`out="$(python3 "$TMP/drive.py" 2>&1)"` MERGES THE TWO STREAMS. That is the
 `2>&1` anti-pattern this repo warns about, and here it is deliberate and
 correct: the whole POINT is to capture the abort, which prints on stderr when it
 prints at all, next to the guard's stdout. Reproduced with
@@ -124,14 +163,20 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# POSIX [[:space:]], written out. See the port notes for why `\s` is wrong here.
-SPACE = r"[ \t\n\v\f\r]"
+# The three extraction conditions, as three named patterns. Named rather than
+# inlined because each one is a decision with a blast radius; see the port notes.
+DEFN_RE = re.compile(r"^def tree_state\(")
+# Code after the colon, i.e. a one-line def. `[^:]*` stops the scan at the first
+# colon, which for `def tree_state(root: pathlib.Path) -> str:` is the ANNOTATION
+# colon, so the pattern is anchored on the closing paren instead.
+SELF_CLOSING_RE = re.compile(r"^def tree_state\(.*\)[^:]*:[ \t]*[^ \t#]")
+# The Python analogue of the bash `^}`: the next flush-left line ends the body.
+TERMINATOR_RE = re.compile(r"^[^ \t\n]")
 
-# The three awk conditions, as three named patterns. Named rather than inlined
-# because each one is a decision with a blast radius; see the port notes.
-DEFN_RE = re.compile(r"^tree_state\(\) \{")
-SELF_CLOSING_RE = re.compile(r"\}%s*$" % SPACE)
-TERMINATOR_RE = re.compile(r"^\}")
+# `git status` in EITHER spelling: the shell pipeline's two adjacent words, and
+# the argv list's `"git", "status"`. See the port notes for why the twin's plain
+# substring test could not survive the retarget.
+GIT_STATUS_RE = re.compile(r"git[^A-Za-z0-9_]{0,8}status")
 
 # The environment override the twin offers. ONE name, and it is the twin's own,
 # not `REDIACC_CI_ROOT`: a harness pointing this gate at a fixture today sets
@@ -139,30 +184,54 @@ TERMINATOR_RE = re.compile(r"^\}")
 # tree while the operator read a fixture's verdict.
 ROOT_ENV = "BATTERY_CLEAN_TREE_ROOT"
 
-# Where the guard lives, relative to the root.
-RUN_ALL_REL = ".ci/scripts/test/run-all.sh"
+# Where the guard lives, relative to the root. RETARGETED 2026-09-09: this was
+# `.ci/scripts/test/run-all.sh` until battery.py replaced it as the runner.
+BATTERY_REL = ".ci/rediacc_ci/battery.py"
 
-# THE PLANT. The pre-fix form of the guard, which MUST abort on a clean tree.
-# Without it the two assertions that follow could both pass against a guard that
-# cannot fail, and this gate would be the thing it was written to catch.
+# THE DRIVER'S PREAMBLE AND EPILOGUE. Held as constants so the twin can be diffed
+# against them line for line; the two implementations must generate the SAME
+# driver or they are not testing the same thing.
+DRIVER_HEAD = "import pathlib\nimport subprocess\nimport sys\n\n"
+DRIVER_TAIL = (
+    "\n\ntry:\n"
+    "    T = tree_state(pathlib.Path(sys.argv[1]))\n"
+    "except BaseException as exc:\n"
+    '    print("ERR:%s: %s" % (type(exc).__name__, exc))\n'
+    "    raise SystemExit(1)\n"
+    'print("OUT:%s" % T)\n'
+)
+
+# THE PLANT. The pre-fix form of the guard in the subject's new language: the
+# same pipeline, handed back to bash, under `check=True`. It MUST abort on a
+# clean tree. Without it the two assertions that follow could both pass against a
+# guard that cannot fail, and this gate would be the thing it was written to
+# catch.
 PREFIX_GUARD = (
-    'tree_state() { (cd "$BATTERY_REPO_ROOT" && git status --porcelain 2>/dev/null '
-    "| grep -v '^??' | sort); }"
+    "def tree_state(root):\n"
+    "    proc = subprocess.run(\n"
+    '        ["bash", "-c", "set -euo pipefail; '
+    "git status --porcelain | grep -v '^??' | sort\"],\n"
+    "        cwd=str(root),\n"
+    "        capture_output=True,\n"
+    "        text=True,\n"
+    "        check=True,\n"
+    "    )\n"
+    '    return proc.stdout.rstrip("\\n")\n'
 )
 
 
 def extract_guard(text: str) -> str:
-    """The `tree_state` definition, by NAME, out of run-all.sh's source.
+    """The `tree_state` definition, by NAME, out of battery.py's source.
 
-    The awk program transliterated rule for rule:
+    The rules, which are the awk program's rules with `^}` replaced by `^\\S`:
 
-        /^tree_state\\(\\) \\{/ { print; if ($0 ~ /\\}[[:space:]]*$/) exit;
-                                  inside = 1; next }
-        inside                 { print; if ($0 ~ /^\\}/) exit }
+        /^def tree_state\\(/  { print; if (one-liner) exit; inside = 1; next }
+        inside               { if ($0 ~ /^[^ \\t]/) exit; print }
 
     Returns "" when there is no definition, which is what makes the caller's
-    refusal reachable. The result is NOT rstripped here: `$(...)` does that at
-    the call site and doing it twice would hide which one is responsible.
+    refusal reachable. Trailing blank lines are dropped, because a Python body
+    ends at its last statement while the blank lines before the next top-level
+    statement belong to neither.
     """
     out: list[str] = []
     inside = False
@@ -174,9 +243,11 @@ def extract_guard(text: str) -> str:
                     break
                 inside = True
             continue
-        out.append(line)
         if TERMINATOR_RE.search(line):
             break
+        out.append(line)
+    while out and out[-1].strip() == "":
+        out.pop()
     return "\n".join(out)
 
 
@@ -225,23 +296,21 @@ def make_repo(directory: str, dirty: bool) -> None:
 def drive(tmp: str, src: str, repo: str) -> str:
     """drive <guard-source> <repo> -> "rc=<n> out=<value>".
 
-    The heredoc is UNQUOTED in the twin (`<<DRIVE`, not `<<'DRIVE'`), so `$repo`
-    and `$src` are expanded by the OUTER shell while `\\$(tree_state)` and `\\$T`
-    survive into the generated script. That split is reproduced by building the
-    text here with the two values interpolated and the two dollar signs literal.
+    The generated driver is DRIVER_HEAD + the extracted definition + DRIVER_TAIL,
+    and the twin generates the same bytes from the same three pieces. The repo
+    arrives as `sys.argv[1]` rather than as an interpolated literal, so a path
+    holding a quote cannot rewrite the driver.
+
+    `src` IS RSTRIPPED OF NEWLINES HERE, and that is a parity requirement rather
+    than tidiness: on the twin's side `src` arrives through `$(...)`, which has
+    already eaten them, so a port that kept one would generate a driver one byte
+    different from the twin's for the same guard.
     """
-    script = pathlib.Path(tmp) / "drive.sh"
-    script.write_text(
-        "set -euo pipefail\n"
-        'BATTERY_REPO_ROOT="%s"\n'
-        "%s\n"
-        'T="$(tree_state)"\n'
-        'echo "OUT:$T"\n' % (repo, src),
-        encoding="utf-8",
-    )
-    rc, out = _capture(["bash", str(script)], merge=True)
+    script = pathlib.Path(tmp) / "drive.py"
+    script.write_text(DRIVER_HEAD + src.rstrip("\n") + DRIVER_TAIL, encoding="utf-8")
+    rc, out = _capture(["python3", str(script), repo], merge=True)
     # `${out#OUT:}` -- strip ONE leading marker if it is there. A run that
-    # aborted before the echo has no marker and keeps whatever it printed.
+    # aborted before the print has no marker and keeps whatever it printed.
     out = out.removeprefix("OUT:")
     return "rc=%s out=%s" % (rc, out)
 
@@ -258,7 +327,14 @@ def main(argv: list[str] | None = None) -> int:
         return selftest()
 
     root_dir = os.environ.get(ROOT_ENV) or str(paths.repo_root())
-    run_all = os.path.join(root_dir, RUN_ALL_REL)
+    battery = os.path.join(root_dir, BATTERY_REL)
+
+    if shutil.which("python3") is None:
+        print(
+            "✗ CANNOT VERIFY: python3 is not on PATH, and the subject is a Python", file=sys.stderr
+        )
+        print("  function that has to be DRIVEN to judge it. Install python3.", file=sys.stderr)
+        return 1
 
     failures = 0
 
@@ -276,16 +352,16 @@ def main(argv: list[str] | None = None) -> int:
     try:
         # --- the REAL function, extracted by name ------------------------
         try:
-            source = pathlib.Path(run_all).read_text(encoding="utf-8", errors="replace")
+            source = pathlib.Path(battery).read_text(encoding="utf-8", errors="replace")
         except OSError:
-            # `awk ... "$RUN_ALL" 2>/dev/null` prints nothing for a file it
-            # cannot open, so an absent run-all.sh reaches the refusal below
+            # `awk ... "$BATTERY" 2>/dev/null` prints nothing for a file it
+            # cannot open, so an absent battery.py reaches the refusal below
             # rather than raising here.
             source = ""
         guard = extract_guard(source).rstrip("\n")
-        if guard == "" or "git status" not in guard:
+        if guard == "" or not GIT_STATUS_RE.search(guard):
             print(
-                "✗ CANNOT VERIFY: no tree_state() reading git status found in %s." % run_all,
+                "✗ CANNOT VERIFY: no tree_state() reading git status found in %s." % battery,
                 file=sys.stderr,
             )
             print(
@@ -335,19 +411,33 @@ def main(argv: list[str] | None = None) -> int:
         print("✗ battery clean-tree guard: %d failure(s)" % failures, file=sys.stderr)
         return 1
     print(
-        "✓ battery clean-tree guard: run-all.sh's snapshot survives a clean checkout "
+        "✓ battery clean-tree guard: battery.py's snapshot survives a clean checkout "
         "and still sees a real change"
     )
-    print("  Blind spot: this asserts run-all.sh's guard only. The general 'empty grep aborts")
-    print("  under set -e' shape is deliberately not gated -- see this file's header.")
+    print("  Blind spot: this asserts battery.py's guard only. The general 'a filter that")
+    print("  legitimately matches nothing aborts the snapshot' shape is deliberately not")
+    print("  gated -- see this file's header.")
     return 0
 
 
-# The live guard's shape as of run-all.sh:349, which is a ONE-LINER and therefore
-# exercises the self-closing branch of the extractor on every real run.
-_LIVE_ONE_LINER = (
-    'tree_state() { (cd "$BATTERY_REPO_ROOT" && { git status --porcelain 2>/dev/null || true; } '
-    "| { grep -v '^??' || true; } | sort); }"
+# The live guard's shape as of battery.py:313, kept here so the selftest has a
+# CONTROL that must pass. It is a MULTI-LINE def, which is the branch every real
+# run takes; the one-line branch is exercised by its own case below.
+_LIVE_GUARD = (
+    "def tree_state(root):\n"
+    "    try:\n"
+    "        proc = subprocess.run(\n"
+    '            ["git", "status", "--porcelain"],\n'
+    "            cwd=str(root),\n"
+    "            capture_output=True,\n"
+    "            text=True,\n"
+    "            check=False,\n"
+    "            timeout=120,\n"
+    "        )\n"
+    "    except (OSError, subprocess.SubprocessError):\n"
+    '        return ""\n'
+    '    return "\\n".join('
+    'sorted(ln for ln in proc.stdout.splitlines() if not ln.startswith("??")))\n'
 )
 
 
@@ -355,9 +445,9 @@ def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
     BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants would
-    happily refuse a correct run-all.sh, and the mirrors below (the live
-    one-liner, a multi-line definition, a `}` that only closes a subshell) are
-    the half that proves it does not.
+    happily refuse a correct battery.py, and the mirrors below (the live guard, a
+    one-line def, a body whose blank lines run on into a comment) are the half
+    that proves it does not.
     """
     ctl = Controls("battery-clean-tree", floor=24, verbose=True)
 
@@ -366,57 +456,77 @@ def selftest() -> int:
 
         # -- the extractor, on its own -------------------------------------
         ctl.check(
-            "EXTRACT: the live one-liner is taken whole and nothing after it",
-            extract_guard('prelude\n%s\ncd "$GATES_DIR"\n' % _LIVE_ONE_LINER),
-            _LIVE_ONE_LINER,
+            "EXTRACT: a multi-line def stops at the next flush-left line",
+            extract_guard("x = 1\n%s\n# a comment\nclass Report:\n" % _LIVE_GUARD.rstrip("\n")),
+            _LIVE_GUARD.rstrip("\n"),
         )
         ctl.check(
-            "EXTRACT: a multi-line definition stops at a column-1 closing brace",
-            extract_guard("x\ntree_state() {\n  git status --porcelain\n}\nafter\n"),
-            "tree_state() {\n  git status --porcelain\n}",
+            "EXTRACT: a flush-left COMMENT terminates it, which is what follows it live",
+            extract_guard("def tree_state(root):\n    return git_status()\n# next\nx = 1\n"),
+            "def tree_state(root):\n    return git_status()",
         )
         ctl.check(
-            "EXTRACT: an INDENTED closing brace does not terminate it",
-            extract_guard("tree_state() {\n  (\n  )\n}\nafter\n"),
-            "tree_state() {\n  (\n  )\n}",
+            "EXTRACT: BLANK lines inside the body are kept",
+            extract_guard("def tree_state(root):\n    a = 1\n\n    return a\ndef other():\n"),
+            "def tree_state(root):\n    a = 1\n\n    return a",
+        )
+        ctl.check(
+            "EXTRACT: trailing blank lines are dropped, so the text ends at the body",
+            extract_guard("def tree_state(root):\n    return 1\n\n\ndef other():\n"),
+            "def tree_state(root):\n    return 1",
+        )
+        ctl.check(
+            "EXTRACT: a ONE-LINE def takes only its own line and nothing after it",
+            extract_guard('def tree_state(root): return "x"\nmain()\n'),
+            'def tree_state(root): return "x"',
+        )
+        ctl.check(
+            "EXTRACT: an ANNOTATED signature is not mistaken for a one-liner",
+            extract_guard("def tree_state(root: pathlib.Path) -> str:\n    return 1\nx = 2\n"),
+            "def tree_state(root: pathlib.Path) -> str:\n    return 1",
         )
         ctl.check("EXTRACT: no definition yields the empty string", extract_guard("nothing\n"), "")
         ctl.check(
             "EXTRACT: an INDENTED definition is invisible, and the gate then refuses",
-            extract_guard("  tree_state() { git status; }\n"),
+            extract_guard("    def tree_state(root):\n        return 1\n"),
             "",
         )
         ctl.check(
-            "EXTRACT: `tree_state () {` with a space before the parens is invisible",
-            extract_guard("tree_state () { git status; }\n"),
+            "EXTRACT: a differently NAMED function is invisible",
+            extract_guard("def tree_state2(root):\n    return 1\n"),
             "",
-        )
-        ctl.check(
-            "EXTRACT: `tree_state(){` with no space before the brace is invisible",
-            extract_guard("tree_state(){ git status; }\n"),
-            "",
-        )
-        ctl.check(
-            "EXTRACT: a trailing space after the closing brace still self-closes",
-            extract_guard("tree_state() { git status; } \nafter\n"),
-            "tree_state() { git status; } ",
-        )
-        ctl.check(
-            "EXTRACT: a definition that does NOT self-close keeps reading",
-            extract_guard("tree_state() { git status\n  | sort\n}\nafter\n"),
-            "tree_state() { git status\n  | sort\n}",
         )
         ctl.check(
             "EXTRACT: an unterminated definition runs to end of file",
-            extract_guard("tree_state() {\n  git status\n"),
-            "tree_state() {\n  git status\n",
+            extract_guard("def tree_state(root):\n    return 1\n"),
+            "def tree_state(root):\n    return 1",
         )
 
-        # -- the whole gate, against planted run-all.sh files ---------------
+        # -- the git-status sanity check, both spellings --------------------
+        #
+        # THE RE-KEY THE RETARGET TURNED ON. The twin's plain `git status`
+        # substring is FALSE against the argv list battery.py actually writes.
+        ctl.check(
+            'SANITY: the argv spelling `"git", "status"` is recognised',
+            bool(GIT_STATUS_RE.search('["git", "status", "--porcelain"]')),
+            True,
+        )
+        ctl.check(
+            "SANITY: the shell spelling `git status` is recognised",
+            bool(GIT_STATUS_RE.search("git status --porcelain | sort")),
+            True,
+        )
+        ctl.check(
+            "SANITY: a guard reading `git diff --name-only` is NOT recognised",
+            bool(GIT_STATUS_RE.search('["git", "diff", "--name-only"]')),
+            False,
+        )
+
+        # -- the whole gate, against planted battery.py files ---------------
         def run(body: str | None) -> int:
             root = base / "root"
             shutil.rmtree(root, ignore_errors=True)
-            target = root / RUN_ALL_REL
+            target = root / BATTERY_REL
             target.parent.mkdir(parents=True)
             if body is not None:
                 target.write_text(body, encoding="utf-8")
@@ -433,31 +543,40 @@ def selftest() -> int:
         # THE CONTROL. The live guard, verbatim, must PASS -- otherwise every
         # plant below fires against a fixture that was already failing and the
         # suite is green while testing nothing.
-        ctl.check("CONTROL: the live one-liner guard passes", run(_LIVE_ONE_LINER + "\n"), 0)
+        ctl.check("CONTROL: the live guard passes", run(_LIVE_GUARD), 0)
 
         # VACUITY, in the gate's own vocabulary: an absent or unrecognisable
         # subject is a REFUSAL, never a clean verdict.
-        ctl.check("VACUITY: an absent run-all.sh is refused", run(None), 1)
-        ctl.check("VACUITY: an EMPTY run-all.sh is refused", run(""), 1)
-        ctl.check("VACUITY: a run-all.sh with no tree_state is refused", run("echo hi\n"), 1)
+        ctl.check("VACUITY: an absent battery.py is refused", run(None), 1)
+        ctl.check("VACUITY: an EMPTY battery.py is refused", run(""), 1)
+        ctl.check("VACUITY: a battery.py with no tree_state is refused", run("x = 1\n"), 1)
         ctl.check(
             "VACUITY: a tree_state that does not read git status is refused",
-            run('tree_state() { (cd "$BATTERY_REPO_ROOT" && git diff --name-only); }\n'),
+            run(
+                "def tree_state(root):\n"
+                '    return subprocess.run(["git", "diff", "--name-only"], cwd=str(root),'
+                " capture_output=True, text=True).stdout\n"
+            ),
             1,
         )
 
-        # PLANT 1: the pre-fix form itself. This is the historical defect, and
-        # the gate exists to red on it.
-        ctl.check("PLANT: the pre-fix guard is caught", run(PREFIX_GUARD + "\n"), 1)
+        # PLANT 1: the pre-fix form itself, in the new language. This is the
+        # historical defect, and the gate exists to red on it.
+        ctl.check("PLANT: the pre-fix guard is caught", run(PREFIX_GUARD), 1)
 
         # PLANT 2: a guard that survives a clean tree by seeing NOTHING. The
         # blind direction, which a naive fix produces and which the twin's third
         # assertion is there for.
         ctl.check(
             "PLANT: a guard blinded to a real change is caught",
+            # `cwd` AND `capture_output` are both load-bearing in a fixture that
+            # is deliberately broken: without them this plant runs git in the
+            # REAL tree and sprays its status into the selftest transcript, and
+            # the transcript then differs between two runs of the same code.
             run(
-                'tree_state() { (cd "$BATTERY_REPO_ROOT" && git status --porcelain '
-                ">/dev/null 2>&1; true); }\n"
+                "def tree_state(root):\n"
+                '    subprocess.run(["git", "status"], cwd=str(root), capture_output=True)\n'
+                '    return ""\n'
             ),
             1,
         )
@@ -466,7 +585,12 @@ def selftest() -> int:
         # not quiet.
         ctl.check(
             "PLANT: a guard that reports untracked files is caught",
-            run('tree_state() { (cd "$BATTERY_REPO_ROOT" && git status --porcelain | sort); }\n'),
+            run(
+                "def tree_state(root):\n"
+                '    proc = subprocess.run(["git", "status", "--porcelain"], cwd=str(root),'
+                " capture_output=True, text=True)\n"
+                '    return "\\n".join(sorted(proc.stdout.splitlines()))\n'
+            ),
             1,
         )
 
@@ -474,26 +598,26 @@ def selftest() -> int:
         ctl.check(
             "PLANT: a guard printing a constant fails BOTH assertions",
             run(
-                'tree_state() { (cd "$BATTERY_REPO_ROOT" && git status --porcelain '
-                ">/dev/null 2>&1; echo CONST); }\n"
+                "def tree_state(root):\n"
+                '    subprocess.run(["git", "status", "--porcelain"], cwd=str(root),'
+                " capture_output=True)\n"
+                '    return "CONST"\n'
             ),
             1,
         )
 
-        # ITS MIRROR: a multi-line rewrite of the live guard still passes, so the
-        # gate is asserting the BEHAVIOUR and not the one-liner's syntax. This is
-        # the control that would fail if someone re-implemented the extractor as
-        # a string comparison against run-all.sh:349.
+        # ITS MIRROR: a ONE-LINE rewrite of the live guard still passes, so the
+        # gate is asserting the BEHAVIOUR and not the multi-line def's shape.
+        # This is the control that would fail if someone re-implemented the
+        # extractor as a string comparison against battery.py:313.
         ctl.check(
-            "MIRROR: a multi-line rewrite with the same behaviour passes",
+            "MIRROR: a one-line rewrite with the same behaviour passes",
             run(
-                "tree_state() {\n"
-                '  (cd "$BATTERY_REPO_ROOT" \\\n'
-                "    && { git status --porcelain 2>/dev/null || true; } \\\n"
-                "    | { grep -v '^??' || true; } \\\n"
-                "    | sort)\n"
-                "}\n"
-                'cd "$GATES_DIR"\n'
+                "def tree_state(root): return "
+                '"\\n".join(sorted(ln for ln in subprocess.run(["git", "status", "--porcelain"],'
+                " cwd=str(root), capture_output=True, text=True).stdout.splitlines()"
+                ' if not ln.startswith("??")))\n'
+                "x = 1\n"
             ),
             0,
         )
@@ -507,8 +631,8 @@ def selftest() -> int:
         make_repo(dirty, dirty=True)
         ctl.check(
             "PLANT: the pre-fix guard really does abort on a clean tree",
-            drive(str(work), PREFIX_GUARD, clean),
-            "rc=1 out=",
+            drive(str(work), PREFIX_GUARD, clean).startswith("rc=1 out=ERR:CalledProcessError"),
+            True,
         )
         ctl.check(
             "MIRROR: and it does NOT abort on a dirty one, which is why it survived review",
@@ -517,12 +641,12 @@ def selftest() -> int:
         )
         ctl.check(
             "CONTROL: the live guard is quiet on a clean tree",
-            drive(str(work), _LIVE_ONE_LINER, clean),
+            drive(str(work), _LIVE_GUARD, clean),
             "rc=0 out=",
         )
         ctl.check(
             "CONTROL: and still reports the modified tracked file on a dirty one",
-            "tracked.txt" in drive(str(work), _LIVE_ONE_LINER, dirty),
+            "tracked.txt" in drive(str(work), _LIVE_GUARD, dirty),
             True,
         )
 
@@ -543,6 +667,18 @@ def selftest() -> int:
         ctl.check(
             "FIXTURE: and it reports the modification, not just the untracked file",
             " M " in out,
+            True,
+        )
+
+        # THE REAL SUBJECT IS STILL THERE. Every case above runs against a
+        # fixture root; this one asserts the live tree still holds a battery.py
+        # with an extractable guard, so a rename cannot leave the selftest green
+        # while the gate refuses on every real run.
+        live = paths.repo_root() / BATTERY_REL
+        ctl.check("REAL: the subject file exists on this tree", live.is_file(), True)
+        ctl.check(
+            "REAL: and its tree_state extracts and reads git status",
+            bool(GIT_STATUS_RE.search(extract_guard(live.read_text(encoding="utf-8")))),
             True,
         )
 

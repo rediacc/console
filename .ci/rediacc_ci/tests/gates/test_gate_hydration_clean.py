@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-hydration-clean.sh`.
 
-Tests for `scripts/check-hydration-clean.ts`.
+Tests for `scripts/gates/check-hydration-clean.ts`.
 
 The gate is RED on the real tree today: four React islands compute a different
 initial state on the server than in the browser, so React discards their
@@ -26,7 +26,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-hydration-clean.sh"
 
-GATE = paths.from_root("scripts", "check-hydration-clean.ts")
+GATE = paths.from_root("scripts/gates", "check-hydration-clean.ts")
 
 # Blind the one-hop lookup: the indirect control must go red while the direct one
 # stays green.

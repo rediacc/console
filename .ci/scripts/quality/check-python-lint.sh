@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: Python lint + format (ruff)
-# needs: none
-# selftest: true
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-python-lint is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_python_lint.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_python_lint.py" but its header derives ".ci/scripts/quality/check-python-lint.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Lint every tracked Python file with ruff, under the repo's root pyproject.toml.
 #
@@ -258,7 +261,12 @@ rc=0
 $RUFF check --no-cache -- "${PY_FILES[@]}" || rc=$?
 if ((rc != 0)); then
     echo "" >&2
-    echo "${RED}✗${NC} ruff reported findings in tracked Python." >&2
+    # NOT "tracked Python": the enumeration at :88 is `git ls-files --cached --others
+    # --exclude-standard`, which deliberately INCLUDES untracked files, and a control
+    # plants an untracked file to prove it. Saying "tracked" sent a reader hunting in
+    # `git ls-files` output for a finding that was never going to be there. Found
+    # 2026-09-07 by a port agent whose every finding was in an untracked file.
+    echo "${RED}✗${NC} ruff reported findings in Python this gate scans (tracked and untracked)." >&2
     echo "  Fix them. Do NOT add a per-line noqa to get past this gate: if a rule" >&2
     echo "  is genuinely wrong for this repo it is disabled in pyproject.toml with a" >&2
     echo "  stated reason, where it is reviewable." >&2

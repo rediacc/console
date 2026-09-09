@@ -227,6 +227,7 @@ import tempfile
 
 from rediacc_ci import gitx, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.policy_paths import policy_rel
 
 # The environment seams, all of which the gate-test drives.
 ROOT_ENV = "PLAN_HK_ROOT"
@@ -235,7 +236,10 @@ ALLOWLIST_ENV = "PLAN_HK_ALLOWLIST"
 MIN_FILES_ENV = "PLAN_HK_MIN_FILES"
 
 DEFAULT_CONFIG_REL = ".ci/config/plan-lifecycle.json"
-DEFAULT_ALLOWLIST_REL = ".ci/policy/.plan-housekeeping-allowlist"
+# THROUGH THE SEAM (W4 P4a). `.ci/config/` above is configuration and joins
+# normally; the allowlist is POLICY, and every reader of a policy file goes
+# through `rediacc_ci.policy_paths` so that the directory is written down once.
+DEFAULT_ALLOWLIST_REL = policy_rel(".plan-housekeeping-allowlist")
 
 # Floor. Measured 2026-09-03: 70 tracked plans. Well under it on purpose.
 DEFAULT_MIN_PLANS = 30
@@ -291,7 +295,60 @@ def age_days(value: str, now: dt.datetime | None = None) -> int:
 
 
 _BLOB_RE = re.compile(r"^Full-Text-Blob:[ \t]*([0-9a-f]{40})[ \t]*$")
-_STATUS_RE = re.compile(r"^Status:[ \t]*(compacted|parked)[ \t]*$")
+
+# W12 P3.3. THE RECORD-STATUS VOCABULARY IS CONFIG, NOT A LITERAL HERE.
+#
+# It used to be `re.compile(r"^Status:[ \t]*(compacted|parked)[ \t]*$")`, and the
+# bash twin carried the same alternation in a sed program, and the twin test
+# carried a third copy of that sed verbatim. Three copies of one vocabulary:
+# adding a state means finding all three, and missing one makes a plan a RECORD
+# in one reader and an OFFENDER in the other, which is precisely the disagreement
+# `record_status`'s own docstring warns about one screen below.
+#
+# THE CONFIG IS A MIRROR, NOT THE ORIGIN. `wl_planrec.RECORD_STATES`
+# (`.claude/hooks/stop/wl_planrec.py:155`) is canonical, and
+# `.ci/scripts/quality/check_plan_record.py` imports it by name. This gate cannot:
+# it must stay runnable in a checkout with no `.claude/`, which is the whole
+# reason it reads a config file. So the mirror is compared against the origin in
+# BOTH directions by `test_quality_plan_housekeeping.py`; a mirror nobody
+# compares is just a fourth copy.
+DEFAULT_RECORD_STATES = ("compacted", "parked")
+_STATUS_RE_CACHE: dict[tuple[str, ...], re.Pattern[str]] = {}
+
+
+def record_states(config: pathlib.Path | None = None) -> tuple[str, ...]:
+    """The `Status:` words that mark a compaction record, from the config.
+
+    Returns () when the config cannot be read or the key is missing. THAT IS THE
+    SAFE DIRECTION and it is deliberate: with no vocabulary nothing is a record,
+    so nothing is exempt and every aged plan stays ON the clock. The opposite
+    default would exempt plans because a file failed to parse, which is a green
+    that means nothing. `main()` refuses up front rather than relying on it.
+    """
+    path = config or pathlib.Path(
+        os.environ.get(CONFIG_ENV) or (pathlib.Path(os.getcwd()) / DEFAULT_CONFIG_REL)
+    )
+    try:
+        got = json.loads(path.read_text(encoding="utf-8")).get("record_states")
+    except (OSError, ValueError):
+        return ()
+    if not isinstance(got, list):
+        return ()
+    return tuple(str(w) for w in got if isinstance(w, str) and w)
+
+
+def _status_re(states: tuple[str, ...]) -> re.Pattern[str]:
+    """`^Status: <one of them>$`, cached per vocabulary.
+
+    An EMPTY vocabulary gets a pattern that cannot match, rather than the empty
+    alternation `()` a naive join produces: that one matches `Status:` with
+    nothing after it and would report a record whose status is the empty string.
+    """
+    if states not in _STATUS_RE_CACHE:
+        body = "|".join(re.escape(w) for w in states) if states else r"(?!)"
+        _STATUS_RE_CACHE[states] = re.compile(r"^Status:[ \t]*(%s)[ \t]*$" % body)
+    return _STATUS_RE_CACHE[states]
+
 
 # The DISPLAY status, scanned over the WHOLE file on purpose: some plans put
 # their header low, and this value is only ever printed.
@@ -313,15 +370,21 @@ def record_blob(path: pathlib.Path) -> str:
     return ""
 
 
-def record_status(path: pathlib.Path) -> str:
-    """`compacted` / `parked` from the header window, or "".
+def record_status(path: pathlib.Path, states: tuple[str, ...] | None = None) -> str:
+    """A record status from the header window, or "".
 
     The word in PROSE must not exempt anything, and neither must a real header
     below line 10: a pointer no consumer can see is a pointer that exempts
     nothing.
+
+    `states` defaults to reading the config, which keeps every existing one-arg
+    call site working. The hot loop in `main()` passes the vocabulary it already
+    read, so judging 86 plans does not re-open the config 86 times.
     """
+    vocab = record_states() if states is None else states
+    rx = _status_re(vocab)
     for line in _head(path):
-        match = _STATUS_RE.match(line)
+        match = rx.match(line)
         if match:
             return match.group(1)
     return ""
@@ -556,6 +619,24 @@ def main(argv: list[str] | None = None) -> int:
         # verdict. One read here, same exit code.
         return 2
 
+    # W12 P3.3. A MISSING OR EMPTY VOCABULARY IS A SETUP ERROR, not a quiet
+    # "nothing is a record". Without it no plan is a compaction record, every
+    # one of the 31 records loses its exemption at once, and the gate reds on a
+    # tree defect that is really a config that lost a key. Same exit code and
+    # same sentence as the twin, which refuses at `[[ -n "$RECORD_STATES_ALT" ]]`.
+    states = record_states(config)
+    if not states:
+        print(
+            "VACUOUS INPUT: %s carries no record_states, so no plan could ever be read as a"
+            % config,
+            file=sys.stderr,
+        )
+        print(
+            "  compaction record and every compacted plan would lose its exemption at once.",
+            file=sys.stderr,
+        )
+        return 2
+
     failures = inline_controls(delete_days)
     if failures:
         for line in failures:
@@ -665,7 +746,7 @@ def main(argv: list[str] | None = None) -> int:
     for plan, days, red_on in rows:
         path = pathlib.Path(plan)
         status = display_status(path)
-        if record_status(path) == "compacted":
+        if record_status(path, states) == "compacted":
             blob = record_blob(path)
             if blob_is_real(blob, root=root):
                 if exempt_until.get(plan):
@@ -959,7 +1040,13 @@ def selftest() -> int:
             (tree / "agent").mkdir(parents=True, exist_ok=True)
             (tree / ".ci" / "config").mkdir(parents=True, exist_ok=True)
             (tree / ".ci" / "config" / "plan-lifecycle.json").write_text(
-                '{"plan_glob": "agent/PLAN-*.md", "warn_days": 26, "delete_days": 33}\n',
+                # `record_states` IS NOT OPTIONAL HERE. main() refuses a config
+                # without it (return 2), which is the right refusal and is why
+                # this fixture must carry it: a fixture missing the key does not
+                # test the gate, it tests the refusal, and every case below then
+                # reports 2 where it wanted 0 or 1.
+                '{"plan_glob": "agent/PLAN-*.md", "warn_days": 26, "delete_days": 33,'
+                ' "record_states": ["compacted", "parked"]}\n',
                 encoding="utf-8",
             )
             if allow is not None:

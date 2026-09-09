@@ -405,13 +405,23 @@ open(sys.argv[2], "w", encoding="utf-8").write(src.replace(needle, "    return [
 PY
     assert_contains "$(diff "$GATE" "$mutant" || true)" "return []" "the mutation landed"
 
-    # The copy sits outside the tree, so the two things it can no longer derive from
+    # The copy sits outside the tree, so the things it can no longer derive from
     # its own location are handed to it explicitly: the package it imports its control
     # runner from, and the canonical BLOCKER validator. Everything else it must work
     # out for itself, or the control would be testing the environment.
+    #
+    # `.ci/scripts/quality` IS ON THAT LIST AS OF 2026-09-09, and it was not before.
+    # 73bd8f7ec routed 81 gate entry points through `import _cipath`, a
+    # side-effect module that lives BESIDE them and is found only because a
+    # path invocation puts the script's own directory on sys.path[0]. A copy in
+    # a tmpdir has a different sys.path[0], so the mutant died with
+    # `ModuleNotFoundError: No module named '_cipath'` before reaching a single
+    # assertion, and this control reported "COMPOSITION TRAP not in <traceback>"
+    # -- a control failing for a reason that has nothing to do with what it
+    # controls. Handing over the entry-point directory restores the import.
     local rc=0
     LAST_OUT="$(
-        PYTHONPATH="$REPO_ROOT/.ci" \
+        PYTHONPATH="$REPO_ROOT/.ci:$REPO_ROOT/.ci/scripts/quality" \
             LANGUAGE_POLICY_VALIDATOR="$REPO_ROOT/.ci/scripts/lib/blocker-validator.sh" \
             LANGUAGE_POLICY_ROOT="$TEMP" \
             python3 "$mutant" --selftest 2>&1
@@ -421,7 +431,7 @@ PY
 
     rc=0
     LAST_OUT="$(
-        PYTHONPATH="$REPO_ROOT/.ci" \
+        PYTHONPATH="$REPO_ROOT/.ci:$REPO_ROOT/.ci/scripts/quality" \
             LANGUAGE_POLICY_VALIDATOR="$REPO_ROOT/.ci/scripts/lib/blocker-validator.sh" \
             LANGUAGE_POLICY_ROOT="$TEMP" \
             LANGUAGE_POLICY_BASELINE="$TEMP/baseline.json" \

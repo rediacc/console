@@ -1,7 +1,7 @@
 """Port of `.ci/scripts/test/gates/test-actions-release-age.sh`.
 
 Test for the release-age deferral and the anti-vacuity guard in
-`scripts/check-actions.ts`.
+`scripts/gates/check-actions.ts`.
 
 TWO DEFECTS THIS COVERS.
 
@@ -45,7 +45,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-actions-release-age.sh"
 
-GATE = paths.from_root("scripts", "check-actions.ts")
+GATE = paths.from_root("scripts/gates", "check-actions.ts")
 LIB = paths.from_root("scripts", "lib", "release-age.ts")
 NPMRC = paths.from_root(".npmrc")
 
@@ -124,7 +124,7 @@ def test_the_shared_lib_is_what_the_gate_uses(gate):
     src = gate_source(gate)
     gate.assert_contains(
         src,
-        "from './lib/release-age.js'",
+        "from '../lib/release-age.js'",
         "check-actions.ts delegates to the shared release-age lib",
     )
     gate.assert_contains(

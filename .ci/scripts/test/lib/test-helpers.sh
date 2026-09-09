@@ -58,11 +58,35 @@ assert_not_contains() {
     fi
 }
 
+# describe_exit <code> -- "143 (KILLED by SIGTERM)" rather than a bare "143".
+#
+# A BARE NUMBER SENDS THE READER TO THE WRONG PLACE. 143 is 128+15: nothing in the
+# subject chose it, something killed the subject, and a reader who does not do
+# that arithmetic in their head goes looking for the branch that returns 143.
+# There is none. 160 is outside the band on purpose -- 128+32 is past the last
+# real signal, so a genuine exit status of 159 or above is left alone rather than
+# renamed into a signal that does not exist.
+describe_exit() {
+    local code="$1" n name
+    if [[ "$code" -gt 128 && "$code" -lt 160 ]]; then
+        n=$((code - 128))
+        case "$n" in
+            1) name=SIGHUP ;; 2) name=SIGINT ;; 3) name=SIGQUIT ;; 6) name=SIGABRT ;;
+            9) name=SIGKILL ;; 11) name=SIGSEGV ;; 13) name=SIGPIPE ;; 14) name=SIGALRM ;;
+            15) name=SIGTERM ;; 24) name=SIGXCPU ;; 25) name=SIGXFSZ ;;
+            *) name="signal $n" ;;
+        esac
+        printf '%s (KILLED by %s)' "$code" "$name"
+    else
+        printf '%s' "$code"
+    fi
+}
+
 # assert_exit_code <expected> <actual> [<message>]
 assert_exit_code() {
     local expected="$1" actual="$2" msg="${3:-}"
     if [[ "$actual" -ne "$expected" ]]; then
-        log_fail "${msg:-wrong exit code}: expected $expected, got $actual"
+        log_fail "${msg:-wrong exit code}: expected $expected, got $(describe_exit "$actual")"
     fi
 }
 

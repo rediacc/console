@@ -124,7 +124,7 @@ See 3.3.
 | "e.g." and "v1.2." false positives | `Intl.Segmenter` handles both correctly. `"Recovery takes hours, not a minute. e.g. this is v1.2. Done."` segments as `["Recovery takes hours, not a minute. e.g. this is v1.2. ", "Done."]`. It does not split at "e.g." and does not split at "v1.2.". **Do not hand-roll a regex**; a regex gets both of these wrong. |
 | CJK (no spaces, `。` terminator) | Works. `/ja` 12 -> 1, `/zh` 4 -> 1 at 1440x900; `/ja` 20 -> 1 at 390x844. Segmentation examples verified: `本番環境をクローン。` and `集群远不止 YAML。` are segmented as whole sentences. |
 | RTL (Arabic, `؟` terminator) | Works. `/ar` 8 -> 1 at 1440x900, 12 -> 1 at 390x844, 5 -> 1 at 768x1024. `inline-block` is direction-agnostic; no `direction` property is involved, unlike the `PricingTrustSection` alternation bug recorded in `EXPLORE-home.md` section B. `Intl.Segmenter('ar')` splits on `؟` correctly. |
-| `check:ci-dead-css` | Satisfied, with a caveat. Its source glob is `packages/www/src/**/*.{astro,tsx,ts,jsx,js,md,mdx}` (`scripts/check-dead-css.ts:124`). **`.mjs` is not in that list**, so write the rehype plugin as `.ts` (matching `remark-resolve-translations.ts`), not `.mjs` (unlike `rehype-stable-heading-ids.mjs`). With `Sentences.astro` and `Sentences.tsx` both emitting the class it is covered either way, but do not rely on that. |
+| `check:ci-dead-css` | Satisfied, with a caveat. Its source glob is `packages/www/src/**/*.{astro,tsx,ts,jsx,js,md,mdx}` (`scripts/gates/check-dead-css.ts:124`). **`.mjs` is not in that list**, so write the rehype plugin as `.ts` (matching `remark-resolve-translations.ts`), not `.mjs` (unlike `rehype-stable-heading-ids.mjs`). With `Sentences.astro` and `Sentences.tsx` both emitting the class it is covered either way, but do not rely on that. |
 | `check:ci-css-dom-refs` | Satisfied: the class is rendered and has a rule. |
 | `-webkit-line-clamp` | One consumer, `src/styles/docs-browse.css:289-290`. `line-clamp` requires `display: -webkit-box` and inline-block children inside a `-webkit-box` are historically fragile. **Verify this one selector during implementation**; my forced-clamp probe was inconclusive because the element on `/en/docs` is not the clamped one. |
 | `text-align: justify` | Not used anywhere on the site (measured `center` / `start` on all probe targets). No interaction. |
@@ -197,7 +197,7 @@ way at a real viewport.
 
 `packages/www/scripts/measure-sentence-lines.ts`, Playwright + `node:http` static
 server over `packages/www/dist`, copying the skeleton of
-`scripts/check-browser-smoke.ts` (`chromium.launch()` at `:142`, in-process server
+`scripts/gates/check-browser-smoke.ts` (`chromium.launch()` at `:142`, in-process server
 at `:24`). Per candidate block it:
 
 1. flattens the block's text nodes into one string plus an index map;
@@ -271,7 +271,7 @@ the right thing.
 
 ### 5.1 Static gate: `check:ci-sentence-wrapping`
 
-`scripts/check-sentence-wrapping.ts`, source-level, sub-second, runs on every PR.
+`scripts/gates/check-sentence-wrapping.ts`, source-level, sub-second, runs on every PR.
 
 **Asserts:** every text-position render of a catalog value whose English is
 multi-sentence and longer than 25 characters goes through `<Sentences>`.
@@ -306,10 +306,10 @@ named by a test, never actually exercised.
 **Wiring**, per `EXPLORE-chrome.md` 4.1-4.3:
 
 - `package.json`:
-  `"check:ci-sentence-wrapping": "tsx scripts/check-sentence-wrapping.ts --selftest && tsx scripts/check-sentence-wrapping.ts"`
+  `"check:ci-sentence-wrapping": "tsx scripts/gates/check-sentence-wrapping.ts --selftest && tsx scripts/gates/check-sentence-wrapping.ts"`
   (control-first form, matching `check:ci-dead-css` and `check:ci-layout-overflow`).
 - `scripts/ci-runner/manifest.ts`: `GateSpec` with
-  `leaves: ['scripts/check-sentence-wrapping.ts']`, no `needs` (source-level, does
+  `leaves: ['scripts/gates/check-sentence-wrapping.ts']`, no `needs` (source-level, does
   not read `dist`), `ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml',
   job: 'quality-content', step: 'Sentence wrapping' }`.
 - `.github/workflows/ci-quality.yml`, job `quality-content` (`:734`), beside the

@@ -95,7 +95,7 @@ identical bytes, which is what makes the red below attributable to the plant and
 not to the fixture.
 
 The plant is one file, `.ci/scripts/build/__gate_probe_8a.sh`, containing a
-single command-position reference `bash scripts/check-embed-credits.ts`.
+single command-position reference `bash scripts/gates/check-embed-credits.ts`.
 
 THE CONTROL WAS PROVED ON ALL THREE OF ITS PRECONDITIONS BEFORE EITHER SIDE RAN,
 because a plant that missed any one of them would vanish from the scan rather
@@ -109,7 +109,7 @@ target `reduced`, which is not `full`. The third was measured by calling
     (469 bytes, sha256 7613ca5b620c04da...):
 
     ✗ 1 path(s) reachable from a gated job do not force full CI:
-      scripts/check-embed-credits.ts (referenced from .ci/scripts/build)
+      scripts/gates/check-embed-credits.ts (referenced from .ci/scripts/build)
       classifies 'reduced', expected 'full'
 
 THE REAL TREE WAS NEVER WRITTEN TO for this gate; `git status --porcelain`
@@ -123,6 +123,7 @@ step: Scope map, reachable scripts/ paths force full CI
 needs: node
 selftest: true
 lane: quality-security
+its `slow: true
 ---- end gate ----
 """
 

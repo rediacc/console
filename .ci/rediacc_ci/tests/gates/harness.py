@@ -43,6 +43,7 @@ import json
 import os
 import pathlib
 import shutil
+import signal
 import stat
 import subprocess
 import tempfile
@@ -62,6 +63,29 @@ NC = "\033[0m"
 def _colours_on() -> bool:
     """Colour only when a human is reading. CI logs keep the escapes out."""
     return os.environ.get("CI") != "true" and os.environ.get("NO_COLOR") is None
+
+
+def describe_exit(code: int) -> str:
+    """`"143 (KILLED by SIGTERM)"` rather than `"143"`.
+
+    THREE ENCODINGS OF THE SAME EVENT, and a reader should not have to know
+    which one they are holding. `subprocess` reports a signal as a NEGATIVE
+    returncode; a shell reports the same death as 128+n; and an ordinary exit is
+    neither. 160 is outside the band deliberately -- 128+32 is past the last real
+    signal, so a plain exit status of 159 or above is left alone rather than
+    renamed into a signal that does not exist.
+    """
+    if code < 0:
+        number = -code
+    elif 128 < code < 160:
+        number = code - 128
+    else:
+        return str(code)
+    try:
+        name = signal.Signals(number).name
+    except ValueError:
+        name = "signal %d" % number
+    return "%d (KILLED by %s)" % (code, name)
 
 
 class GateAssertionError(AssertionError):
@@ -388,10 +412,20 @@ class Harness:
         """`assert_exit_code <expected> <actual>`. EXPECTED FIRST -- the opposite
         of `assert_eq`, and it is that way in bash. Normalising the two would flip
         the meaning of every existing call site silently, which is worse than the
-        inconsistency."""
+        inconsistency.
+
+        A SIGNAL IS NAMED, NOT LEFT AS A NUMBER. `got 143` reads as a verdict the
+        subject chose and sends the reader looking for the branch that returned
+        it; there is no such branch, because 143 is 128+15 and something killed
+        it. This helper is used across the whole gate-test estate, so the naming
+        belongs here rather than at each call site.
+        """
         self.assertions += 1
         if actual != expected:
-            self.log_fail("%s: expected %d, got %d" % (msg or "wrong exit code", expected, actual))
+            self.log_fail(
+                "%s: expected %d, got %s"
+                % (msg or "wrong exit code", expected, describe_exit(actual))
+            )
 
     def assert_vacuous_tree_fails(self, runner, directory: pathlib.Path, needle: str, label: str):
         """The anti-vacuity case every gate test taking a ROOT override owes.
@@ -448,3 +482,60 @@ class Harness:
         row = {"module": self.module, "test": self.test, "event": event, "label": label}
         with open(self.ledger, "a", encoding="utf-8") as handle:
             handle.write(json.dumps(row, separators=(",", ":")) + "\n")
+
+
+def block_from(text: str, opener: str) -> list[str]:
+    """The lines from the first one STARTING WITH `opener` through the closing `}`.
+
+    SHARED BECAUSE FIVE GATE TESTS CARRIED THE SAME NINE LINES, and unlike an
+    assertion message there is nothing per-case in them. The five are
+    `test_gate_installmethods_container_version.py`, `..._linuxpkg_idiom.py`,
+    `..._manifest.py`, `test_gate_preview_worker_reaping.py` and
+    `test_gate_watchdog_supersession.py`; they pull a bash function body, a bash
+    function body, a bash function body, `cleanup_preview_workers()` and an
+    `async function hasNewerRun` respectively, which is the whole of the variation
+    and it is an ARGUMENT. `check:ci-shape-duplication` reported the loop as four
+    overlapping findings the moment the gate-test family entered its corpus.
+
+    `awk "/^name\\(\\) \\{/,/^\\}/"` in the bash twins. It matches a line-anchored
+    `}` and nothing cleverer, because the subjects are shell and JavaScript files
+    formatted with the closing brace in column 1; a brace counter would be a second
+    thing to be wrong about.
+
+    IT RETURNS EMPTY RATHER THAN REFUSING, and that is deliberate. Every caller has
+    its own refusal sentence naming what it was looking for and why its absence
+    makes that file check nothing -- the per-case content this repo keeps duplicated
+    on purpose. Folding those five sentences into one generic "block not found"
+    would make each red harder to read, which is the opposite of the trade this
+    extraction is for.
+    """
+    body: list[str] = []
+    collecting = False
+    for line in text.splitlines():
+        if not collecting and line.startswith(opener):
+            collecting = True
+        if collecting:
+            body.append(line)
+            if line == "}":
+                break
+    return body
+
+
+def watchdog_subject(gate, watchdog):
+    """The watchdog module path, refusing loudly if it or node is missing.
+
+    SHARED BECAUSE IT WAS BYTE-IDENTICAL IN THREE FILES, not because three files happened
+    to look alike. `test_gate_watchdog_classifier_chain.py`, `..._log_capture.py` and
+    `..._supersession.py` each carried the same four lines with the same message and the
+    same tool hint -- the shape `check:ci-shape-duplication` reports as `148f0bece7dd`
+    once the gate-test family enters its corpus. Unlike an assertion message, which is
+    the per-case content this repo deliberately keeps duplicated, this says nothing
+    specific to any of the three, so there is nothing lost by having one copy.
+
+    It takes `watchdog` rather than reading a module constant, so a caller pointing at a
+    fixture copy still gets the refusal rather than silently checking the real file.
+    """
+    if not watchdog.is_file():
+        gate.log_fail("subject under test is missing: %s" % watchdog)
+    require_tool("node", "install Node.js; the watchdog is a CommonJS module")
+    return watchdog

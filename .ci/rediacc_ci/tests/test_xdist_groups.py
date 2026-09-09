@@ -170,10 +170,12 @@ def test_the_ported_corpus_agrees_with_the_parity_test_about_who_is_unsafe() -> 
     """
     unsafe = xdist_groups.real_tree_twins(REAL_LOCK)
     from_parity = {
-        name for name, _path, twin in test_twin_parity.MODULES if twin.rsplit("/", 1)[-1] in unsafe
+        name
+        for name, _path, twin, _timeout in test_twin_parity.MODULES
+        if twin.rsplit("/", 1)[-1] in unsafe
     }
     from_scheduler = set()
-    for name, _path, twin in test_twin_parity.MODULES:
+    for name, _path, twin, _timeout in test_twin_parity.MODULES:
         module = _Module(BASH_TWIN=twin)
         if xdist_groups.group_for(module, unsafe) == xdist_groups.REAL_TREE_GROUP:
             from_scheduler.add(name)

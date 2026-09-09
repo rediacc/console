@@ -82,7 +82,13 @@ class Verb:
 # place of the empty tuple -- the only way to exercise dispatch while the real
 # table is empty. Keep it on one line, in this spelling; the fixture refuses to
 # run rather than testing nothing if the replacement stops matching.
-VERBS: tuple[Verb, ...] = ()
+VERBS: tuple[Verb, ...] = (
+    Verb(
+        name="setup",
+        summary="prepare this machine and hand back a URL",
+        module="rediacc_ci.setup.machine",
+    ),
+)
 
 
 def names(table: tuple[Verb, ...] | None = None) -> list[str]:

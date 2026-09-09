@@ -195,7 +195,7 @@ cluster is up.
 ### P4: full CLI reshape [BUILT 2026-07-13 — awaiting gate review]
 
 **As-built, measured, not estimated.** The shipped tree is transcribed in `06-cli-reshape.md` §1
-(and `scripts/check-design-tree.ts` holds it there, both directions). The per-wave deltas are
+(and `scripts/gates/check-design-tree.ts` holds it there, both directions). The per-wave deltas are
 `spec/03` §10 (w1, addressing), §11 (w2a, config exodus), §12 (w2b, repo family), §13 (w4,
 surface closure).
 

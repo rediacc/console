@@ -111,6 +111,11 @@ test_null_committer_fails() {
     local rc=0
     run_gate "$(commit_json 3333333aaa mfbayraktar null mfbayraktar@live.com)" || rc=$?
     assert_exit_code 1 "$rc" "an unattributed COMMITTER must fail even when the author is fine"
+    # `rc=1` ALONE IS NOT THIS CASE. The gate exits 1 for an unreadable API, a
+    # missing token and a failed probe too, so without naming the finding this
+    # case passed whenever anything at all went wrong.
+    assert_contains "$LAST_OUT" "does not attribute to any account" \
+        "and it must fail FOR the unattributed commit, not for some other reason"
     log_pass "the committer field is judged, not just the author"
 }
 

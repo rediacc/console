@@ -56,9 +56,9 @@ MESSAGE = (
 # means a doc line, a worklist note or an `echo` explaining the rule is refused
 # as if it were the rule being broken. This NARROWS PROSE ONLY: every control
 # below still blocks the real command, at line start and after a separator.
-SUDO_CP = r"(^|[;&|(])[" + hookio.BLANK + r"]*sudo cp[^;&|]*/usr/local/bin/renet"
+SUDO_CP = hookio.rx(r"(^|[;&|(])[{B}]*sudo cp[^;&|]*/usr/local/bin/renet")
 
-SCP_CLAUSE = r"(^|[" + hookio.BLANK + r"])scp[" + hookio.BLANK + r"]"
+SCP_CLAUSE = hookio.rx(r"(^|[{B}])scp[{B}]")
 
 # A host spec: a hostname (optionally user@) followed by a colon. A local
 # path containing a colon has a slash before it, so it cannot match here.

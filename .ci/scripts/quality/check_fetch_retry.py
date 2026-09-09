@@ -41,6 +41,25 @@ import pathlib
 import re
 import sys
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls
+
+# THIS HOP STAYS HAND-WRITTEN, AND IT IS THE ONE EXCEPTION IN THIS DIRECTORY.
+# Every other `.claude/hooks/stop` and sibling-directory hop under
+# `.ci/scripts/quality` now goes through `rediacc_ci.paths.on_sys_path`. This one
+# cannot, and the reason is a ruff rule rather than a taste: E402 EXEMPTS a
+# `sys.path` mutation that precedes a module-level import, and exempts nothing
+# else. Measured against ruff 0.16.1, the version `check_python_lint.py` pins:
+#
+#     sys.path.insert(0, "/x"); import json      -> All checks passed
+#     paths.on_sys_path("/x");  import json      -> E402
+#     x = 1;                    import json      -> E402
+#
+# The sibling import below is module-level and has to follow the hop, so the
+# resolver form costs a per-line E402 waiver and the bare form costs nothing. Same
+# finding `_cipath.py`'s docstring records for the `.ci` hop, which is why that
+# one is an IMPORT and not a function call. Do not "finish the sweep" here
+# without re-running that probe.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # REUSED, NOT REWRITTEN: `run_blocks` joins backslash continuations so a multi-line RUN
 # reads as one logical line, and `tracked_files` already settled the corpus question
@@ -138,15 +157,7 @@ def offences_in(text, is_dockerfile=True):
 
 def selftest():
     """Controls, both directions. A gate that cannot fail is worse than none."""
-    ok = True
-
-    def check(label, cond):
-        nonlocal ok
-        if cond:
-            print("  PASS  %s" % label)
-        else:
-            ok = False
-            print("  FAIL  %s" % label, file=sys.stderr)
+    check = controls.Checker()
 
     check(
         "SANITY: a bare curl download is an offence",
@@ -218,7 +229,7 @@ def selftest():
         and in_scope(os.path.join(ROOT, "Dockerfile"))
         and not in_scope(os.path.join(ROOT, ".ci/breakpoint/scripts/check-breakpoint-drift.sh")),
     )
-    return ok
+    return check.ok
 
 
 def main():

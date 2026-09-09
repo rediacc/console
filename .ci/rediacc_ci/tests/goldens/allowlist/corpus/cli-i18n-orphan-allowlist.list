@@ -1,5 +1,5 @@
 # Dynamic-key prefix baseline for the ORPHAN direction of
-# scripts/check-cli-i18n-key-usage.ts.
+# scripts/gates/check-cli-i18n-key-usage.ts.
 #
 # The orphan check reports every en/cli.json leaf that no STATIC t('literal')
 # call references. That over-reports: ~17 call sites build their key at runtime

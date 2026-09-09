@@ -32,6 +32,7 @@ import re
 import subprocess
 
 import wl_core as C
+import wl_proc
 import wl_store as S
 import worklist_messages as M
 
@@ -128,7 +129,7 @@ def debt_path(branch, root=None):
 # judge itself had already accepted a suite case (163e) as the gate. A
 # probe narrower than the judge's own ruling is a false-fire generator.
 CHECK_SCRIPT_GLOBS = (
-    "scripts/check-*.ts",
+    "scripts/gates/check-*.ts",
     # Package-local gates. Omitting these made the probe structurally blind to
     # NINE real gates -- check:ci-tutorial-parity, check:ci-locale-tutorial-assets,
     # check:ci-solution-videos, check:ci-command-planes and friends all live here,
@@ -140,7 +141,20 @@ CHECK_SCRIPT_GLOBS = (
     # www gate to the repo root, i.e. to let the probe dictate layout.
     "packages/*/scripts/check-*.ts",
     ".ci/scripts/quality/check-*.sh",
+    ".ci/scripts/quality/check_*.py",
     ".ci/scripts/test/gates/test-*.sh",
+    # THE PYTHON GATE-TEST SURFACE, and its omission was the THIRD instance of
+    # the exact class this header already records twice. Measured 2026-09-07:
+    # 149 bash gate tests here were visible to the probe and 99 Python ones were
+    # not, on the surface W7 is actively migrating all 149 onto -- so the blind
+    # half is the growing half. A session wrote
+    # test_gate_fanout_timeout_declarable.py, proved it against a re-planted
+    # defect, confirmed `check:ci-pytest` collects it and that the full gate went
+    # 9602 -> 9604 passed, and the probe still answered "no NEW or CHANGED check
+    # script this stop". Same shape as the nine www gates above: the only way to
+    # satisfy the old globs was to write the gate somewhere it does not belong,
+    # i.e. to let the probe dictate layout.
+    ".ci/rediacc_ci/tests/gates/test_gate_*.py",
     ".claude/hooks/stop/test-*.sh",
     ".claude/hooks/test-*.sh",
 )
@@ -342,7 +356,7 @@ def tick_touches_code(line):
 # .github/workflows and scripts/data and therefore answered False for
 # 3148399c9, a commit that is nothing BUT gate maintenance.
 GATE_ARTIFACT_PREFIXES = (
-    "scripts/check-",
+    "scripts/gates/check-",
     "scripts/data/",  # gate seeds and baselines
     "scripts/lib/",  # gate-support libraries: verified 2026-09-05 that
     # every consumer is a check script or a test, never
@@ -358,6 +372,10 @@ GATE_ARTIFACT_PREFIXES = (
     ".ci/scripts/quality/",
     ".ci/scripts/security/",
     ".ci/scripts/test/",
+    # The ported half of the same estate. Without it a fix whose regression home
+    # is a Python gate test counts as touching no gate artifact at all, which is
+    # the same blindness CHECK_SCRIPT_GLOBS carried, one list further down.
+    ".ci/rediacc_ci/tests/",
     ".claude/hooks/",
     ".github/workflows/ci-",  # the quality workflows a gate is wired into
 )
@@ -760,20 +778,14 @@ def prove_new_gate(root, scripts, state):
                     "(defined-but-never-run is the check-gate-reachability failure)" % (rel, key)
                 )
                 continue
-            try:
-                pr = subprocess.run(
-                    ["npm", "run", "--silent", key],
-                    cwd=str(root),
-                    capture_output=True,
-                    text=True,
-                    timeout=REGGATE_TIMEOUT_S,
-                    check=False,
-                )
-                code = pr.returncode
-            except subprocess.TimeoutExpired:
-                code = 124
-            except (OSError, subprocess.SubprocessError):
-                code = 127
+            # NO try/except: `wl_proc.run` never raises for a timeout or a failed
+            # spawn, and the codes it returns are the two this site was already
+            # synthesising by hand -- TIMEOUT_RC is 124 and SPAWN_FAILED_RC is 127.
+            code = wl_proc.run(
+                ["npm", "run", "--silent", key],
+                cwd=str(root),
+                timeout=REGGATE_TIMEOUT_S,
+            ).returncode
             state["gate_runs"][rel] = {"hash": digest, "exit": code, "at": stamp}
             notes.append("%s via `npm run %s`: exit %d" % (rel, key, code))
             if code == 0:

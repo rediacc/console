@@ -183,7 +183,7 @@ FAKE
 write_hygiene() {
     local dir="$1" a="$2" b="$3" c="$4"
     mkdir -p "$dir/hygiene"
-    local names=(check-resolved-threads.sh check-review-comments.sh check-review-report-replies.sh)
+    local names=(check_resolved_threads.py check_review_comments.py check_review_report_replies.py)
     local rcs=("$a" "$b" "$c")
     local i
     for i in 0 1 2; do
@@ -454,7 +454,7 @@ test_hygiene_failure_fails() {
     write_hygiene "$t" 0 1 0
     run_status "$t" EVENT_NAME=issue_comment PR_NUMBER=42
     assert_eq "$(posted "$t" '.conclusion')" failure "an unreplied review comment must block"
-    assert_contains "$(posted "$t" '.output.summary')" "check-review-comments.sh" \
+    assert_contains "$(posted "$t" '.output.summary')" "check_review_comments.py" \
         "failure names the script that failed"
     log_pass "PLANTED hygiene failure => FAILURE naming the script"
 }
@@ -473,7 +473,7 @@ test_compare_failure_fails_closed() {
 test_missing_hygiene_dir_hard_fails() {
     local t="$1"
     setup "$t"
-    rm -f "$t/hygiene/check-review-report-replies.sh"
+    rm -f "$t/hygiene/check_review_report_replies.py"
     run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
     if [[ "$LAST_RC" -eq 0 ]]; then
         log_fail "a missing hygiene script must abort, not silently reduce the check to currency only"
@@ -783,6 +783,8 @@ test_workflow_run_with_unhonourable_artifact_is_loud() {
     run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=9003 WR_CONCLUSION=success \
         WR_HTML_URL=https://example.invalid/run/9003
     assert_exit_code 1 "$LAST_RC" "an artifact that cannot be honoured is a REPORTER failure, not silence"
+    assert_contains "$LAST_OUT" "resolving the PR" \
+        "and it must have REACHED the resolve path before failing, not died earlier"
     assert_eq "$(captured_method "$t")" "" "nothing is posted when the handoff is malformed"
     log_pass "CONTROL: the loud path is reachable -- a present-but-empty artifact exits non-zero"
 }
@@ -806,7 +808,7 @@ test_workflow_dispatch_requires_pr_number() {
 test_hygiene_only_failure_title_says_reviewed() {
     local t="$1"
     setup "$t"               # marker already on NEW_SHA (current head) by default
-    write_hygiene "$t" 0 1 0 # check-review-comments.sh fails; currency stays true
+    write_hygiene "$t" 0 1 0 # check_review_comments.py fails; currency stays true
     run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
     assert_eq "$(posted "$t" '.conclusion')" failure "hygiene failure still fails the check"
     assert_eq "$(posted "$t" '.output.title')" "Reviewed, but needs attention (see failures)" \
@@ -845,7 +847,15 @@ test_unreviewed_head_title_unchanged() {
 # body for the inline-comments endpoint.
 # ===========================================================================
 
-REVIEW_COMMENTS_GATE="$REPO_ROOT/.ci/scripts/quality/check-review-comments.sh"
+# TWO POINTERS, NOT ONE, and the split is the W7 P4 pin rule. This variable was
+# used three ways at once: to RUN the gate, to GREP it for a behavioural needle,
+# and to SED a numeric threshold out of it. After the cutover those want
+# different files. A harness that RUNS the gate takes the ENTRY POINT, because
+# that is what CI invokes; one that reads the gate's own text takes the MODULE,
+# because the entry point is a three-line shim carrying no needles and no
+# constants. Pointing all three at either file alone makes one of them vacuous.
+REVIEW_COMMENTS_GATE="$REPO_ROOT/.ci/scripts/quality/check_review_comments.py"
+REVIEW_COMMENTS_SRC="$REPO_ROOT/.ci/rediacc_ci/quality/review_comments.py"
 
 # The needle the gate keys off to recognise a review summary, and the file that
 # must keep emitting it. Asserted below so the two cannot silently drift apart.
@@ -951,7 +961,9 @@ run_comments_gate() {
     local rc=0
     LAST_OUT="$(env PATH="$t/bin:$PATH" GH_FIXTURES="$t/fixtures" GH_TOKEN=fake \
         GITHUB_REPOSITORY=rediacc/console PR_NUMBER=42 NO_COLOR=1 \
-        "$@" bash "$REVIEW_COMMENTS_GATE" 2>&1)" || rc=$?
+        "$@" "$REVIEW_COMMENTS_GATE" 2>&1)" || rc=$?
+    # NO `bash` PREFIX. The entry point is a `.py` with its own shebang, and
+    # `bash` handed a Python file reports a syntax error, not a verdict.
     LAST_RC="$rc"
     return 0
 }
@@ -963,8 +975,8 @@ run_comments_gate() {
 test_findings_fence_key_is_shared_with_the_pipeline() {
     grep -qF -- "$FINDINGS_FENCE_KEY" "$REAL_GATE" ||
         log_fail "claude-review-gate.sh no longer emits/parses '$FINDINGS_FENCE_KEY'; check-review-comments.sh keys off it and just went blind"
-    grep -qF -- "$FINDINGS_FENCE_KEY" "$REVIEW_COMMENTS_GATE" ||
-        log_fail "check-review-comments.sh no longer keys off '$FINDINGS_FENCE_KEY'; it cannot recognise a review summary"
+    grep -qF -- "$FINDINGS_FENCE_KEY" "$REVIEW_COMMENTS_SRC" ||
+        log_fail "review_comments.py no longer keys off '$FINDINGS_FENCE_KEY'; it cannot recognise a review summary"
     grep -qF -- "$FINDINGS_FENCE_KEY" "$REPO_ROOT/.ci/scripts/review/prompts/initial.md" ||
         log_fail "the review prompt no longer mandates the '$FINDINGS_FENCE_KEY' block, so summaries will stop carrying the marker the gate needs"
     log_pass "the review-findings fence is emitted by the prompt, parsed by the review gate, and keyed off by the comment gate"
@@ -1051,6 +1063,11 @@ test_low_effort_answer_does_not_clear_the_summary() {
         "$(chatter_comment 903 2026-08-05T09:00:00Z mfbayraktar "Acknowledged, all addressed.")"
     run_comments_gate "$t"
     assert_exit_code 1 "$LAST_RC" "a stock acknowledgement does not address a multi-finding verdict"
+    # NAME THE FINDING. This gate exits 1 for an unreadable API, a missing token
+    # and a failed probe as well, so a bare code cannot tell "it blocked on the
+    # unanswered summary" from "it could not look".
+    assert_contains "$LAST_OUT" "UNANSWERED REVIEW SUMMARY" \
+        "and it must block ON the unanswered summary, not for another reason"
     log_pass "PLANTED low-effort human answer => still BLOCKS"
 }
 
@@ -1123,7 +1140,9 @@ test_unreadable_issue_comments_fail_closed() {
 # test_one_reply_clears_both_gates below.
 # ===========================================================================
 
-REPORT_REPLIES_GATE="$REPO_ROOT/.ci/scripts/quality/check-review-report-replies.sh"
+# Same split as REVIEW_COMMENTS_GATE above, for the same reason.
+REPORT_REPLIES_GATE="$REPO_ROOT/.ci/scripts/quality/check_review_report_replies.py"
+REPORT_REPLIES_SRC="$REPO_ROOT/.ci/rediacc_ci/quality/review_report_replies.py"
 
 # The header the pipeline writes and this gate matches on.
 REPORT_PREFIX_KEY='**Claude finished'
@@ -1187,7 +1206,7 @@ run_report_gate() {
         GITHUB_REPOSITORY=rediacc/console PR_NUMBER=42 NO_COLOR=1 \
         PR_HEAD_REF="${PR_HEAD_REF_OVERRIDE:-rs-fixture-branch-with-no-snapshot}" \
         WORKLIST_PUBLISH_ROOT="${WORKLIST_PUBLISH_ROOT:-}" \
-        "$@" bash "$REPORT_REPLIES_GATE" 2>&1)" || rc=$?
+        "$@" "$REPORT_REPLIES_GATE" 2>&1)" || rc=$?
     LAST_RC="$rc"
     return 0
 }
@@ -1197,8 +1216,8 @@ run_report_gate() {
 test_report_prefix_is_shared_with_the_pipeline() {
     grep -qF -- "$REPORT_PREFIX_KEY" "$REAL_GATE" ||
         log_fail "claude-review-gate.sh no longer writes '$REPORT_PREFIX_KEY'; check-review-report-replies.sh keys off it and just went blind"
-    grep -qF -- "$REPORT_PREFIX_KEY" "$REPORT_REPLIES_GATE" ||
-        log_fail "check-review-report-replies.sh no longer keys off '$REPORT_PREFIX_KEY'; it cannot recognise a report"
+    grep -qF -- "$REPORT_PREFIX_KEY" "$REPORT_REPLIES_SRC" ||
+        log_fail "review_report_replies.py no longer keys off '$REPORT_PREFIX_KEY'; it cannot recognise a report"
     log_pass "the report header is a constant the pipeline writes and the report gate reads"
 }
 
@@ -1402,8 +1421,12 @@ test_one_reply_clears_both_gates() {
 
     run_comments_gate "$t"
     assert_exit_code 1 "$LAST_RC" "unanswered: the summary gate must block"
+    assert_contains "$LAST_OUT" "UNANSWERED REVIEW SUMMARY" \
+        "and it must name the unanswered summary rather than fail to look"
     run_report_gate "$t"
     assert_exit_code 1 "$LAST_RC" "unanswered: the report gate must block too"
+    assert_contains "$LAST_OUT" "Review Report Requires a Reply" \
+        "and the REPORT gate must block on the report, not on something else"
 
     # ONE reply, posted after all three, by a human. Nothing else changes.
     comments_fixture "$t" "${unanswered[@]}" \
@@ -1425,13 +1448,17 @@ test_one_reply_clears_both_gates() {
 test_reply_thresholds_match_across_both_gates() {
     local name a b
     for name in SUMMARY_MIN_CHARS SUMMARY_LONGFORM_CHARS; do
-        a="$(sed -n "s/^${name}=\([0-9]*\)[[:space:]]*$/\1/p" "$REVIEW_COMMENTS_GATE" | head -n 1)"
-        b="$(sed -n "s/^${name}=\([0-9]*\)[[:space:]]*$/\1/p" "$REPORT_REPLIES_GATE" | head -n 1)"
-        [[ -n "$a" ]] || log_fail "$name is not parseable out of check-review-comments.sh; the two gates can no longer be proven to agree"
-        [[ -n "$b" ]] || log_fail "$name is not parseable out of check-review-report-replies.sh; the two gates can no longer be proven to agree"
+        # PYTHON ASSIGNMENT SYNTAX, `NAME = 30`, not bash's `NAME=30`. The
+        # constants moved into the modules with the port; a pattern left on the
+        # bash spelling matches nothing, and the two `-n` guards below are what
+        # turn that into a failure instead of a silent comparison of "" with "".
+        a="$(sed -n "s/^${name} = \([0-9]*\)[[:space:]]*$/\1/p" "$REVIEW_COMMENTS_SRC" | head -n 1)"
+        b="$(sed -n "s/^${name} = \([0-9]*\)[[:space:]]*$/\1/p" "$REPORT_REPLIES_SRC" | head -n 1)"
+        [[ -n "$a" ]] || log_fail "$name is not parseable out of review_comments.py; the two gates can no longer be proven to agree"
+        [[ -n "$b" ]] || log_fail "$name is not parseable out of review_report_replies.py; the two gates can no longer be proven to agree"
         assert_eq "$b" "$a" "$name must be identical in both gates so one reply clears both"
     done
-    log_pass "both top-level gates carry identical reply thresholds ($(sed -n 's/^SUMMARY_MIN_CHARS=\([0-9]*\)[[:space:]]*$/\1/p' "$REVIEW_COMMENTS_GATE" | head -n 1)/$(sed -n 's/^SUMMARY_LONGFORM_CHARS=\([0-9]*\)[[:space:]]*$/\1/p' "$REVIEW_COMMENTS_GATE" | head -n 1))"
+    log_pass "both top-level gates carry identical reply thresholds ($(sed -n 's/^SUMMARY_MIN_CHARS = \([0-9]*\)[[:space:]]*$/\1/p' "$REVIEW_COMMENTS_SRC" | head -n 1)/$(sed -n 's/^SUMMARY_LONGFORM_CHARS = \([0-9]*\)[[:space:]]*$/\1/p' "$REVIEW_COMMENTS_SRC" | head -n 1))"
 }
 
 test_review_report_count_is_shared_and_unqualified() {

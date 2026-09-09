@@ -96,7 +96,7 @@ automatically.
 2. **`docker run --user $(id -u)`.** Two independent failures. Ownership: 81,881
    files stay at the baked id, so extension installs, `go install` into `/go` and
    the Playwright cache all EACCES (already recorded at
-   `devbox-entrypoint.sh:9-13`). Identity: an id with no `/etc/passwd` entry has
+   `.devcontainer/devbox-entrypoint.sh:9-13`). Identity: an id with no `/etc/passwd` entry has
    no name and no home, breaking `sudo` (used by `start-kvm.sh`), `whoami`,
    `$HOME` and git, and forcing `devbox_exec` back to a numeric `-u`, which
    `check-devbox-exec.sh` assertion B2 exists to forbid.
@@ -119,10 +119,10 @@ automatically.
 - `.devcontainer/Dockerfile.uid` (new, tracked): `ARG BASE_IMAGE`/`FROM`, ids as
   ARGs guarded with the `: "${X:?...}"` idiom already at `Dockerfile:363-369`,
   old ids read from the account itself, the gid-collision branch carried over from
-  `devbox-entrypoint.sh:95-100`, and a chown with NO `2>/dev/null` and NO
+  `.devcontainer/devbox-entrypoint.sh:95-100`, and a chown with NO `2>/dev/null` and NO
   `|| true`. Its comment must record that at build time there are no bind mounts,
   so `usermod -u`'s own recursive home chown is bounded and correct here, and the
-  `mktemp -d` trick at `devbox-entrypoint.sh:101-124` is deliberately NOT needed.
+  `mktemp -d` trick at `.devcontainer/devbox-entrypoint.sh:101-124` is deliberately NOT needed.
 - `.ci/config/constants.sh:131`: `DEVBOX_IMAGE` becomes `DEVBOX_BASE_IMAGE`; add
   `DEVBOX_UID_IMAGE_REPO="rediacc/devbox"`, deliberately not a `ghcr.io/` name so
   a derived tag can never be mistaken for something publishable.
@@ -150,14 +150,14 @@ and the drifting line references in
    `80-95` gains a row for the new build with its guard, plus its constructed
    control. Without it, a `docker build` on the setup path with no presence guard
    is caught by nothing.
-2. A NEW gate `check:ci-devbox-uid`, control-first and hermetic, because nothing
+2. A NEW gate, proposed name check-ci-devbox-uid (written without the colon on purpose: it does not exist yet, and the colon form is what the citation gate reads as a claim that it does), control-first and hermetic, because nothing
    today can see the regression this change prevents: no recursive chown or
    `usermod -u` in the entrypoint; no numeric `usermod -u`/`groupmod -g` literal
    in the Dockerfile; `Dockerfile.uid` takes ids as guarded ARGs and its chown
    does not end `2>/dev/null` or `|| true`; the `docker run` names the derived
    image. Registration is part of the same change: gate header, `package.json`,
    `npm run gen:gates-lock`, `npx tsx scripts/gen-docs.ts --write`.
-3. Comment parity: `check-devbox-exec.sh` and `devbox_exec.py:31-32` state the
+3. Comment parity: `check-devbox-exec.sh` and `.ci/rediacc_ci/quality/devbox_exec.py:31-32` state the
    entrypoint-renumber rationale for B2 and must move together;
    `test_twin_parity.py` drives the pair.
 4. Re-run and re-read (do not edit): `check:ci-devcontainer-scripts`,

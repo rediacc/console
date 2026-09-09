@@ -46,9 +46,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/gates/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GATE="$REPO_ROOT/scripts/check-doc-region-parity.ts"
+GATE="$REPO_ROOT/scripts/gates/check-doc-region-parity.ts"
 GEN="$REPO_ROOT/scripts/gen-docs.ts"
-[[ -f "$GATE" ]] || log_fail "scripts/check-doc-region-parity.ts is missing; the gate is gone"
+[[ -f "$GATE" ]] || log_fail "scripts/gates/check-doc-region-parity.ts is missing; the gate is gone"
 [[ -f "$GEN" ]] || log_fail "scripts/gen-docs.ts is missing; there is nothing to keep faithful"
 
 WORK="$(mktemp -d)"
@@ -63,12 +63,80 @@ mkdir -p "$FIX"
 # carrying `BLOCKER:`, and a `.ci` subtree. Hand-rolled stand-ins would drift from those shapes
 # and the test would then be proving something about the stand-ins.
 copy_tracked() {
+    # `--no-recursion` IS LOAD-BEARING. The derived set below includes the four
+    # `private/*` GITLINKS (mode 160000 in `git ls-files -s`), and `tar -c` recurses a
+    # directory name by default: without this it walks each submodule's on-disk tree,
+    # `.git` included, and the fixture goes from megabytes to gigabytes. Measured 2026-09-09.
+    # DROP THIS REPOSITORY'S OWN GENERATED DOCUMENTS. A pathspec can be a DIRECTORY, and
+    # `git ls-files -- scripts/data` expands it to include scripts/data/doc-registry.md, so
+    # this filter has to sit AFTER the expansion and not on the pathspec list.
+    #
+    # The fixture must carry exactly ONE document, the REGISTRY.md it writes itself with one
+    # region per provider. Every case perturbs that document -- the marker-stripping case
+    # requires the gate to report a provider "used by NO region" -- and a second document
+    # holding a region for the same provider keeps it used, so the control stops firing in
+    # silence. Measured 2026-09-09: a new provider naming `scripts/data` pulled in the real
+    # registry and that case went quiet within the hour.
     (cd "$REPO_ROOT" && git ls-files -z -- "$@") |
-        tar -c -C "$REPO_ROOT" --null --files-from=- -f - |
+        while IFS= read -r -d '' _n; do
+            case "$_n" in
+                *.md)
+                    grep -q -- '>>> gen-docs:' "$REPO_ROOT/$_n" 2>/dev/null && continue
+                    ;;
+            esac
+            printf '%s\0' "$_n"
+        done |
+        tar -c -C "$REPO_ROOT" --null --no-recursion --files-from=- -f - |
         tar -x -C "$FIX"
 }
-copy_tracked .claude .ci/scripts/lib scripts/ci-runner/gates.lock.json \
-    scripts/gen-docs.ts scripts/lib/doc-providers.ts scripts/lib/doc-regions.ts
+
+# DERIVED, NOT ENUMERATED. This was a six-item hand list and it fell behind the providers:
+# each new seam produced either a node ENOENT inside the generator or its anti-vacuity
+# refusal, both of which read as a broken gate rather than a stale fixture. Worse, the port
+# had the SAME list and the same rot, so `test_twin_parity` compared two broken things,
+# found `twin_green == port_green`, and logged "twin and port agree (both red)" -- a green
+# that proved nothing until the port was fixed and the agreement broke.
+#
+# The rule: every quoted literal in the generator and its two libraries that resolves to a
+# tracked path IS the fixture's input set. A provider has to name the seam it opens, so the
+# literal is the declaration. `-P` and not `-E`: this repo's `grep -E` is ugrep, which
+# returns silent false zeros on an alternated anchor next to a negated class.
+derive_pathspecs() {
+    grep -hoP "['\"\`]\K[A-Za-z0-9_.][A-Za-z0-9_./-]*(?=['\"\`])" \
+        "$REPO_ROOT/scripts/gen-docs.ts" \
+        "$REPO_ROOT/scripts/lib/doc-providers.ts" \
+        "$REPO_ROOT/scripts/lib/doc-regions.ts" |
+        sort -u |
+        while IFS= read -r p; do
+            [ "$p" = "." ] && continue
+            [ "$p" = ".." ] && continue
+            (cd "$REPO_ROOT" && git ls-files --error-unmatch -- "$p" >/dev/null 2>&1) &&
+                printf '%s\n' "$p"
+        done
+}
+
+# A `while read` LOOP AND NOT `mapfile`. macOS ships bash 3.2, which has no `mapfile`
+# at all, and a gate in this estate bans the builtin for exactly that reason -- it went
+# red on this line within minutes of my writing it.
+DERIVED=()
+while IFS= read -r _p; do
+    [ -n "$_p" ] && DERIVED+=("$_p")
+done < <(derive_pathspecs)
+# The port refuses a closure of one; the twin's equivalent floor is the pathspec set. A
+# handful means the extractor stopped seeing the sources, and every case below would then
+# be judging an empty fixture.
+if [ "${#DERIVED[@]}" -lt 10 ]; then
+    log_fail "the pathspec deriver returned ${#DERIVED[@]} path(s); it is not seeing the generator's sources"
+fi
+# THE THREE CLOSURE FILES THEMSELVES, because a file is not a literal inside itself: the
+# deriver reads gen-docs.ts and its two libraries for quoted paths, so it can never yield
+# their own names. Dropping them from this line is what "Cannot find module
+# <fixture>/scripts/gen-docs.ts" looks like, which reads as a broken fixture copy rather
+# than a missing input.
+copy_tracked .claude scripts/ci-runner/gates.lock.json \
+    scripts/gen-docs.ts scripts/lib/doc-providers.ts scripts/lib/doc-regions.ts \
+    "${DERIVED[@]}"
+log_info "fixture: ${#DERIVED[@]} derived pathspec(s)"
 
 gate() { (cd "$REPO_ROOT" && npx tsx "$GATE" "$@"); }
 # The COPY of the generator, so `--write` can only ever reach the fixture: gen-docs roots itself

@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: CI-watch recipe has one source
-# emit: false
-# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
-# needs: none
-# id: check:ci-watch-recipe
-# selftest: true
-# lane: quality-code
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-watch-recipe is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_ci_watch_recipe.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_ci_watch_recipe.py" but its header derives ".ci/scripts/quality/check-ci-watch-recipe.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Gate: there is ONE way to read CI, and every surface points at it.
 #
@@ -86,8 +85,8 @@ advice_only() {
 # then a race between grep -q exiting and the upstream finishing, decided by file
 # size and machine load.
 #
-# Measured 2026-08-27 on .claude/hooks/test-hooks.sh (1644 lines, match at line
-# 692 of the filtered stream): 8/8 trips WITHOUT pipefail, 0/8 WITH it. The gate
+# Measured 2026-08-27 on .claude/hooks/test-hooks.sh, 1,644 lines then (match at
+# line 692 of the filtered stream): 8/8 trips WITHOUT pipefail, 0/8 WITH it. The gate
 # had been reporting "no hand-rolled watch in 124 scanned file(s)" over a real
 # offender, and only surfaced under `npm run ci`'s parallel load, where the
 # timing flipped the other way.
@@ -95,6 +94,12 @@ advice_only() {
 # The CONTROLS could not have caught it: they run on 2-line fixtures, where the
 # upstream finishes long before grep -q exits. A control smaller than the thing
 # it models is not a control. There is now a large-file one below.
+#
+# THE SUBJECT IS THE SIZE, NOT THAT FILE. It was 1,644 lines the day this was
+# measured, 2,774 by 2026-09-09, and it is being ported out of bash into
+# .claude/rediacc_hooks/tests/ -- so the citation is dated on purpose and the
+# large-file control below is what keeps the measurement reproducible after the
+# file it names is gone.
 #
 # Command substitution reads the producer to completion, so there is no signal to
 # race.

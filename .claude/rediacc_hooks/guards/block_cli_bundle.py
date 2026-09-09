@@ -49,22 +49,8 @@ ORDER = 8
 # `node scripts/x.mjs --outdir packages/cli/dist/out.js` is refused again.
 DEFECT = (r"]*(cli-bundle[^", r"]*.*(cli-bundle[^")
 
-NODE_BUNDLE = (
-    r"(^|[;&|(]|["
-    + hookio.SPACE
-    + r"])node["
-    + hookio.SPACE
-    + r"]+(-[^"
-    + hookio.SPACE
-    + r";|&]+["
-    + hookio.SPACE
-    + r"]+)*[^"
-    + hookio.SPACE
-    + r";|&]*(cli-bundle[^"
-    + hookio.SPACE
-    + r";|&]*\.[cm]?js|packages/cli/dist/[^"
-    + hookio.SPACE
-    + r";|&]*)"
+NODE_BUNDLE = hookio.rx(
+    r"(^|[;&|(]|[{S}])node[{S}]+(-[^{S};|&]+[{S}]+)*[^{S};|&]*(cli-bundle[^{S};|&]*\.[cm]?js|packages/cli/dist/[^{S};|&]*)"
 )
 
 MESSAGE = "❌ BLOCKED: Do not run the CLI bundle directly via node. Use ./rdc.sh instead."

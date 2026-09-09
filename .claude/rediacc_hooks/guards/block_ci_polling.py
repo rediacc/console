@@ -46,19 +46,9 @@ ORDER = 11
 # either side of it already cannot cross a separator, so making `(&&|;)`
 # optional changes nothing any realistic command can see. The anti-vacuity
 # control said so rather than the defect being taken on trust.
-DEFECT = ('r"]+(view|list)"', 'r"]+"')
+DEFECT = ("run[{B}]+(view|list)", "run[{B}]+")
 
-PATTERN = (
-    r"sleep["
-    + hookio.BLANK
-    + r"]+[0-9]+[^|;&]*(&&|;)["
-    + hookio.BLANK
-    + r"]*[^|;&]*gh["
-    + hookio.BLANK
-    + r"]+run["
-    + hookio.BLANK
-    + r"]+(view|list)"
-)
+PATTERN = hookio.rx(r"sleep[{B}]+[0-9]+[^|;&]*(&&|;)[{B}]*[^|;&]*gh[{B}]+run[{B}]+(view|list)")
 
 MESSAGE = (
     "❌ BLOCKED: CI polling pattern detected (sleep then gh run view/list). Polling "

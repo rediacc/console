@@ -59,17 +59,7 @@ DEFECT = ('if dels == "":\n            continue', "if False:\n            contin
 # `(^|[;&|[:space:]])git[[:space:]]+(-C[[:space:]]+\\S+[[:space:]]+)?commit\\b`
 # -- only interesting just before a commit is created. The optional `-C <path>`
 # arm is what lets a submodule commit typed from the parent match.
-COMMIT = (
-    r"(^|[;&|"
-    + hookio.SPACE
-    + r"])git["
-    + hookio.SPACE
-    + r"]+(-C["
-    + hookio.SPACE
-    + r"]+\S+["
-    + hookio.SPACE
-    + r"]+)?commit\b"
-)
+COMMIT = hookio.rx(r"(^|[;&|{S}])git[{S}]+(-C[{S}]+\S+[{S}]+)?commit\b")
 
 
 def _fixture_git(cwd, *args):

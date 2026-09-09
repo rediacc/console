@@ -191,9 +191,9 @@ SHAPE_CASES = [
         "the assertion closure, 12 files, 8 byte-identical",
         "fire",
         [
-            "scripts/check-anchor-integrity.ts:235",
-            "scripts/check-hydration-clean.ts:200",
-            "scripts/check-layout-overflow.ts:267",
+            "scripts/gates/check-anchor-integrity.ts:235",
+            "scripts/gates/check-hydration-clean.ts:200",
+            "scripts/gates/check-layout-overflow.ts:267",
         ],
     ),
     (
@@ -260,9 +260,9 @@ SHAPE_CASES = [
         "CONTROL: the findings report is ten distinct shapes, not one",
         "silent",
         [
-            "scripts/check-dead-css.ts:353",
-            "scripts/check-landmarks.ts:130",
-            "scripts/check-ssr-locale.ts:121",
+            "scripts/gates/check-dead-css.ts:353",
+            "scripts/gates/check-landmarks.ts:130",
+            "scripts/gates/check-ssr-locale.ts:121",
         ],
     ),
     (

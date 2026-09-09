@@ -333,7 +333,7 @@ USER vscode
 # installs". Only ONE lane installs these -- this image -- and no gate reads
 # them, so they do not meet it. `ARG <NAME>_VERSION=` is also the only shape
 # scripts/lib/dockerfile-versions.ts parses, which is what lets
-# scripts/check-devcontainer-pin-freshness.ts tell us when one goes stale;
+# scripts/gates/check-devcontainer-pin-freshness.ts tell us when one goes stale;
 # see scripts/lib/devcontainer-pin-sources.ts for which of the five it watches
 # and, for the two it cannot, why.
 #
@@ -527,7 +527,7 @@ RUN ARCH=$(dpkg --print-architecture) \
 # with, for version V:
 #   curl -s https://api.github.com/repos/bitwarden/clients/releases/tags/cli-v$V \
 #     | jq -r '.assets[]|select(.name|test("bw-linux(-arm64)?-"))|"\(.name) \(.digest)"'
-# scripts/check-devcontainer-pin-freshness.ts watches this pin and rewrites all
+# scripts/gates/check-devcontainer-pin-freshness.ts watches this pin and rewrites all
 # three ARGs together; the CLI lives in a MONOREPO, so that gate filters tags by
 # the `cli-v` prefix rather than trusting /releases/latest.
 ARG BW_VERSION=2026.8.0

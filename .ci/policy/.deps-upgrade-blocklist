@@ -9,7 +9,7 @@
 # Format: package-name  # BLOCKER: <substantive reason>
 #
 # The BLOCKER convention is enforced by scripts/lib/blocker-validator.ts
-# (invoked from scripts/check-deps.ts): each line needs a 30+ char reason
+# (invoked from scripts/gates/check-deps.ts): each line needs a 30+ char reason
 # that does not match the banned-phrase list. Blank line = end of group.
 #
 # To upgrade a blocked package: remove its line from this file and run

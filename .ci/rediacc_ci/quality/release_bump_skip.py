@@ -82,7 +82,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, plant
 
 SCRIPT_ENV = "RELEASE_DECIDE_SCRIPT"
 DEFAULT_SCRIPT = ".ci/scripts/ci/dispatch-release.sh"
@@ -144,7 +144,18 @@ def drive(work: pathlib.Path, script: pathlib.Path, rows: str) -> tuple[int, str
         text=True,
         check=False,
     )
-    return completed.returncode, completed.stdout
+    # `.rstrip("\n")` MIRRORS `$(...)`, and it is a fix rather than a tidy-up.
+    # The twin captures with `res="$(drive "$rows")"`, and command substitution
+    # strips every trailing newline. Without this the port's `out` keeps the
+    # SUT's final newline, `out.split("\n")` yields a trailing empty element,
+    # and the failure excerpt prints one extra six-space line per driven case
+    # that the twin never prints. Measured 2026-09-07 under W7 P4 by pointing
+    # RELEASE_DECIDE_SCRIPT at a copy that could not source its own lib: both
+    # sides exited 1 with the same findings, and stderr differed by exactly
+    # five blank continuation lines. It only shows on the excerpt path, which
+    # fires when dispatch-release.sh is already broken -- the one moment the
+    # two implementations must still be readable as the same gate.
+    return completed.returncode, completed.stdout.rstrip("\n")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -327,7 +338,8 @@ def selftest() -> int:
         # PLANT 1, the direction that matters most: the skip notice is emitted on
         # every path, so a releasing commit tells its reader the opposite of what
         # happened. Cases 2 to 5 must all fire.
-        always = _FAKE_SUBJECT.replace(
+        always = plant(
+            _FAKE_SUBJECT,
             'else\n    echo "decision: release"',
             'else\n    echo "release SKIPPED: #0 carries \'bump-none\'"\n    echo "decision: release"',
         )
@@ -336,21 +348,23 @@ def selftest() -> int:
         # PLANT 2: the skip path goes silent. The decision is still right, so a
         # gate that only checked `decision:` would pass -- which is the whole
         # reason the needle exists.
-        silent = _FAKE_SUBJECT.replace(
-            "    echo \"release SKIPPED: #${number} carries 'bump-none'\"\n", ""
+        silent = plant(
+            _FAKE_SUBJECT, "    echo \"release SKIPPED: #${number} carries 'bump-none'\"\n", ""
         )
         ctl.check("PLANT: a silent skip path is caught", run_against(silent), 1)
 
         # PLANT 3: the signal is emitted but stops naming the PR, so "no release"
         # loses the reason again.
-        unnamed = _FAKE_SUBJECT.replace(
+        unnamed = plant(
+            _FAKE_SUBJECT,
             "echo \"release SKIPPED: #${number} carries 'bump-none'\"",
             'echo "release SKIPPED"',
         )
         ctl.check("PLANT: a skip signal that names no PR is caught", run_against(unnamed), 1)
 
         # PLANT 4: fails CLOSED instead of open. An unreadable API must release.
-        closed = _FAKE_SUBJECT.replace(
+        closed = plant(
+            _FAKE_SUBJECT,
             'rows="$(gh api whatever 2>/dev/null || true)"',
             'rows="$(gh api whatever 2>/dev/null)" || { echo "decision: skip"; exit 0; }',
         )

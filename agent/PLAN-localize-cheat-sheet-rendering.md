@@ -24,13 +24,13 @@ Measured 2026-09-06.
   shadowed the collection entry is gone, so `[slug].astro` (blob
   ee01bd0b126dae0666e6b8acfd12602346e22958) now serves the page; all 13
   `content/docs/*/rdc-cheat-sheet.md` files are still present.
-- Gate 1 shipped: `scripts/check-docs-render-parity.ts` (blob
+- Gate 1 shipped: `scripts/gates/check-docs-render-parity.ts` (blob
   962bb9e68122b54816427429562398204421543c), wired as `check:ci-docs-render-parity`
   (`package.json:231`), with the control the plan demanded at
   `scripts/__tests__/check-docs-render-parity.control.ts` (blob
   0b05a601554bca6d0d855dba06e688d46271fdb3), chained into `check:i18n`.
 - Gate 2 shipped as its own script rather than a grep rule:
-  `scripts/check-page-locale-imports.ts`, wired as `check:ci-page-locale-imports`
+  `scripts/gates/check-page-locale-imports.ts`, wired as `check:ci-page-locale-imports`
   (`package.json:232`), with `scripts/__tests__/check-page-locale-imports.control.ts`
   (blob a29992b00edf066c69a9bfff3b0615d3edafa864) also chained into `check:i18n`. It is
   now GREEN with zero suppressions: `grep -rn '?raw' packages/www/src/pages

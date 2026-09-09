@@ -1,4 +1,4 @@
-# Path-level allowlist for scripts/check-directive-quotes.ts.
+# Path-level allowlist for scripts/gates/check-directive-quotes.ts.
 #
 # Adding a path here suppresses the NIS2-quote audit for that file. Use
 # sparingly: this is a structural escape hatch (e.g., a doc that quotes

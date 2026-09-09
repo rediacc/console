@@ -326,7 +326,14 @@ if [[ "$PLATFORM" == "$(detect_os | sed 's/macos/mac/; s/windows/win/')" ]] &&
             exit 1
         fi
     else
-        log_error "Doctor command failed unexpectedly (exit code: $DOCTOR_EXIT)"
+        # THIS BRANCH IS WHERE A SIGNAL LANDS. The success arm above gates on
+        # `-le 2`, so 137 and 143 fall through to here and would otherwise be
+        # reported as a doctor verdict rather than as a kill.
+        if [[ $DOCTOR_EXIT -gt 128 && $DOCTOR_EXIT -lt 160 ]]; then
+            log_error "Doctor was KILLED by signal $((DOCTOR_EXIT - 128)) (raw $DOCTOR_EXIT), so it reported no verdict"
+        else
+            log_error "Doctor command failed unexpectedly (exit code: $DOCTOR_EXIT)"
+        fi
         [[ -n "$DOCTOR_OUTPUT" ]] && echo "$DOCTOR_OUTPUT"
         exit 1
     fi

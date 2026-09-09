@@ -62,6 +62,26 @@ export interface GateSpec {
   weight?: number;
   /** Memory-hungry (>=4 GB heap). Bounded by --heavy-limit. */
   heavy?: boolean;
+  /**
+   * Step-level `env:` for the emitted workflow step, declared in the gate header as
+   * `env-<KEY>:` lines. `gen-gates-lock.ts` serialises the whole spec, so this reaches the
+   * lock with no code change there -- which is the point of putting it HERE rather than
+   * teaching a second file about it.
+   *
+   * WHY IT HAS TO BE DECLARED AT ALL: 17 registered steps carry `env:` in `ci-quality.yml`
+   * and no lock entry records one, so a `gate-bind` rewrite that took ownership of such a
+   * step would drop its env and report success. Measured receipt: strip `DOCKERHUB_TOKEN`
+   * from `check:ci-docker-image-freshness` and the whole battery still runs green.
+   */
+  env?: Record<string, string>;
+  /**
+   * An extra condition ANDed onto the standard step guard, never replacing it.
+   * `gate-bind.ts:emitStep` parenthesises it, so a `when` containing `||` cannot bind
+   * looser than the `&&` and run the step on a failed setup. `steps.` is refused in the
+   * header parser: a gate that can see step outcomes can contradict the guard, which is
+   * invariant 11 re-opened through a side door.
+   */
+  when?: string;
   /** Repo-relative globs this gate validates; powers --changed. */
   paths?: string[];
   /**

@@ -53,19 +53,19 @@ that seam, so a grep for `.deps-upgrade-blocklist` will find the name in code th
 |---|---|---|
 | Prod npm audit allowlist | `.ci/policy/.audit-prod-allowlist` | `.ci/scripts/security/audit.sh` |
 | Dev npm audit allowlist | `.ci/policy/.audit-allowlist` | same |
-| npm dep upgrade blocklist | `.ci/policy/.deps-upgrade-blocklist` | `scripts/check-deps.ts` |
+| npm dep upgrade blocklist | `.ci/policy/.deps-upgrade-blocklist` | `scripts/gates/check-deps.ts` |
 | Go dep upgrade blocklist | `.ci/policy/.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check-go-deps.sh` |
-| Embed-asset upgrade blocklist | `.ci/policy/.embed-assets-upgrade-blocklist` | `scripts/check-embed-asset-freshness.ts` |
-| GitHub Actions upgrade blocklist | `.ci/policy/.actions-upgrade-blocklist` | `scripts/check-actions.ts` |
+| Embed-asset upgrade blocklist | `.ci/policy/.embed-assets-upgrade-blocklist` | `scripts/gates/check-embed-asset-freshness.ts` |
+| GitHub Actions upgrade blocklist | `.ci/policy/.actions-upgrade-blocklist` | `scripts/gates/check-actions.ts` |
 | Breakpoint drift acceptance | `.ci/breakpoint/.breakpoint-drift-accept` | `.ci/breakpoint/scripts/check-breakpoint-drift.sh` |
-| Dead-bash discovery allowlist | `.ci/policy/.dead-bash-allowlist` | `scripts/check-dead-bash.ts` |
-| CI parity exemptions (direction-tagged) | `.ci/policy/.ci-parity-exempt` | `scripts/check-ci-parity.ts` |
-| `package.json` overrides | `package.json`: `overrides` + `_overridesReasons` | `scripts/check-overrides-reasons.ts` |
-| knip suppressions (`ignore*` arrays) | `knip.jsonc` (inline `// BLOCKER:` comments) | `scripts/check-knip-blockers.ts` |
+| Dead-bash discovery allowlist | `.ci/policy/.dead-bash-allowlist` | `scripts/gates/check-dead-bash.ts` |
+| CI parity exemptions (direction-tagged) | `.ci/policy/.ci-parity-exempt` | `scripts/gates/check-ci-parity.ts` |
+| `package.json` overrides | `package.json`: `overrides` + `_overridesReasons` | `scripts/gates/check-overrides-reasons.ts` |
+| knip suppressions (`ignore*` arrays) | `knip.jsonc` (inline `// BLOCKER:` comments) | `scripts/gates/check-knip-blockers.ts` |
 | Plan-file housekeeping exemptions | `.ci/policy/.plan-housekeeping-allowlist` | `.ci/scripts/quality/check-plan-housekeeping.sh` |
 | Runner sizing exemptions | `.ci/policy/.runner-advice-allowlist` | `.ci/scripts/quality/check_runner_advice.py`. Liveness is enforced **in-gate** rather than by a `check-suppression-liveness.ts` probe, because the oracle (does this entry still suppress a MOVE_TO_SLIM finding?) *is* the comparison the gate already performs; same arrangement as `.profiler-coverage-allowlist`. Note the gate's own bootstrap rule, which is a suppression of a different kind: while `runner-sizing-baseline.json` is **pristine** (`refreshed_at` null and zero jobs) the gate warns and exits 0, because nothing has been measured yet; every other below-floor shape is a hard refusal, and `--refresh` will not write a baseline below the 5-job floor. Seeded therefore always means enforced, which is the only reason the pristine pass is not a permanent hole. The baseline carries `"format": 1`; an unknown, missing or corrupt version and any malformed job record are refused by name (naming the job and the field), never as a traceback, and `--refresh` refuses to merge into a version it cannot read |
 | syncpack source exclusions | `.ci/config/syncpack-source-exclusions.json` | `.ci/scripts/quality/check_syncpack_sources.py`. A manifest declaring dependencies must be matched by a `source` glob or excluded here with a `BLOCKER:` reason; eight are, deliberately (two tutorial sample apps whose versions are part of the lesson text, four independently deployed Workers, `private/account/e2e`, and `private/account/web`'s own React tree). Liveness is **in-gate** rather than a `check-suppression-liveness.ts` probe, on the `.runner-advice-allowlist` precedent: the oracle (is this path still a tracked manifest that declares dependencies?) *is* the comparison the gate already performs, and it refuses an entry that suppresses nothing. The gate also refuses outright — CANNOT VERIFY, not a pass — when a directory its config names is absent, because it is about a SUBMODULE and an unchecked-out submodule turns a correct exclusion into a "dead entry" finding |
-| Language-policy exemptions | `.ci/policy/.language-policy-allowlist` | `.ci/scripts/quality/check_language_policy.py`. Ruling 7 (`docs/ci-overhaul/04-decisions.md`) makes `.ci` and `.claude` Python; this list is the bash that survives that ruling permanently, and it is NOT the backlog. The 521 files still awaiting the port are frozen in `.ci/config/language-policy-baseline.json`, which is generated, shrink-only and deliberately not in `.ci/policy/` (it fails the README's predicate clauses 1 and 2: it is a measurement, not a decision, and its entries carry no reason). Two entry kinds because the oracle differs: a `tree:<prefix>/` entry is live while the directory still holds bash, a `shim:<path>` entry is live while the file exists AND its effective body is still ONE line -- a shim that grew into a program is refused by name, because "one-line shim" was the whole of its justification. Liveness is enforced **in-gate** on the `.runner-advice-allowlist` precedent: the oracle (does this entry still cover a real bash file?) *is* the comparison the gate already performs, so a probe in `check-suppression-liveness.ts` would be a second implementation of one question. The BLOCKER QUALITY rule is not reimplemented either: the gate shells out to `.ci/scripts/lib/blocker-validator.sh` and prints what it says, because that rule already has three implementations and `test-blocker-golden-corpus.sh` exists to collapse them, not to grow a fourth |
+| Language-policy exemptions | `.ci/policy/.language-policy-allowlist` | `.ci/scripts/quality/check_language_policy.py`. Ruling 7 (`docs/ci-overhaul/04-decisions.md`) makes `.ci` and `.claude` Python; this list is the bash that survives that ruling permanently, and it is NOT the backlog. The 521 files still awaiting the port are frozen in `.ci/config/language-policy-baseline.json`, which is generated, shrink-only and deliberately not in `.ci/policy/` (it fails the README's predicate clauses 1 and 2: it is a measurement, not a decision, and its entries carry no reason). Two entry kinds because the oracle differs: a `tree:<prefix>/` entry is live while the directory still holds bash, a `shim:<path>` entry is live while the file exists AND its effective body is still ONE line -- a shim that grew into a program is refused by name, because "one-line shim" was the whole of its justification. Liveness is enforced **in-gate** on the `.runner-advice-allowlist` precedent: the oracle (does this entry still cover a real bash file?) *is* the comparison the gate already performs, so a probe in `check-suppression-liveness.ts` would be a second implementation of one question. The BLOCKER QUALITY rule is not reimplemented either: the gate shells out to `.ci/scripts/lib/blocker-validator.sh` and prints what it says. Since the 2026-09-09 collapse that file is itself a client of `.ci/rediacc_ci/core/allowlist.py`, so this is a Python -> bash -> Python hop for an answer the first Python could compute directly; it is kept for now because the shell-out is what this gate test's "the validator cannot be consulted" refusal exists to exercise, and removing one without the other would delete a live control. The allowlist PARSE half no longer has a copy here: `parse_allowlist` calls `rediacc_ci.core.allowlist.parse_text` |
 
 ### Format
 
@@ -92,7 +92,7 @@ ci-only  .ci/scripts/quality/check-branch.sh
 tag is load-bearing rather than documentation: a `ci-only` entry is live while
 some workflow still invokes it, and a `local-only` entry is live while the local
 gate set still runs it. The shared parser takes the first whitespace-separated
-token, so `scripts/check-ci-parity.ts` and the liveness probe both split the
+token, so `scripts/gates/check-ci-parity.ts` and the liveness probe both split the
 second column off explicitly.
 
 **JSONC files** (knip.jsonc) use real `// BLOCKER: <reason>` comments with the same
@@ -110,7 +110,7 @@ itself (`--treat-config-hints-as-errors`), not by the BLOCKER validator.
 
 A BLOCKER reason must be at least 30 characters (after normalization) and must not match any phrase in the banned-phrase list (`no fix`, `tbd`, `todo`, `ok`, `ack`, `later`, `will fix`, `dev only`, etc.).
 
-Full banned list + implementation: `.ci/scripts/lib/blocker-validator.sh` (bash) / `scripts/lib/blocker-validator.ts` (TypeScript). Keep the two in sync when modifying.
+Full banned list + implementation: **`.ci/rediacc_ci/core/allowlist.py`, and nowhere else**. `.ci/scripts/lib/blocker-validator.sh` (bash) and `scripts/lib/blocker-validator.ts` (TypeScript) are CLIENTS of it as of 2026-09-09; there is nothing left to keep in sync, and adding a phrase to either of them changes no verdict. The bash file still carries the phrase array as a TEXT MIRROR, because `test-breakpoint-portability.sh:361` parses it out of that file to prove the vendored breakpoint copy is a subset; `.ci/rediacc_ci/tests/test_blocker_implementations.py` asserts the mirror equals the canonical in both directions, and asserts that no other file in the tree carries a table.
 
 ### Liveness: is the entry still needed?
 
@@ -121,7 +121,7 @@ electron dependency chains stayed behind** — the entire `.audit-allowlist` (18
 plus 83 in `.audit-prod-allowlist` — because nothing checked whether the
 suppressed thing still existed.
 
-`npm run check:ci-suppression-liveness` (`scripts/check-suppression-liveness.ts`)
+`npm run check:ci-suppression-liveness` (`scripts/gates/check-suppression-liveness.ts`)
 closes that half. One **probe** per mechanism, each pairing the suppression file
 with the *oracle* that decides whether an entry is load-bearing:
 
@@ -156,7 +156,7 @@ Three rules this gate is built on, all learned the hard way:
 ### Adding / extending
 
 - **New entry to an existing list**: prepend a `# BLOCKER: <reason>` line. The validator tells you exactly what to add when the gate fails.
-- **New suppression mechanism**: (a) parse the list via the shared library's `parse_blockered_list` / `parseBlockeredList`; (b) validate via `verify_all_blockers` / `verifyAllBlockers`; (c) add a gate test under `.ci/scripts/test/gates/test-<mechanism>.sh` modelled on `test-overrides-reasons.sh`; (d) register a liveness probe in `scripts/check-suppression-liveness.ts`, or state explicitly why the mechanism cannot have one (some genuinely cannot — `.cli-i18n-orphan-allowlist` holds runtime-assembled key *prefixes*, so proving one dead needs exactly the static analysis the allowlist exists to escape).
+- **New suppression mechanism**: (a) parse the list via the shared library's `parse_blockered_list` / `parseBlockeredList`; (b) validate via `verify_all_blockers` / `verifyAllBlockers`; (c) add a gate test under `.ci/scripts/test/gates/test-<mechanism>.sh` modelled on `test-overrides-reasons.sh`; (d) register a liveness probe in `scripts/gates/check-suppression-liveness.ts`, or state explicitly why the mechanism cannot have one (some genuinely cannot — `.cli-i18n-orphan-allowlist` holds runtime-assembled key *prefixes*, so proving one dead needs exactly the static analysis the allowlist exists to escape).
 
 ### Age policy (planned, not yet enforced)
 

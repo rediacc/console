@@ -232,7 +232,7 @@ exposure is believed nil -- ASSERTED, not measured. Confirm against the branch r
 Flat, under the existing `agent/archive/` root, and OUTSIDE the non-recursive
 `agent/PLAN-*.md` glob -- so `plan_records`, `plan_drift_rows`, `plans_block` and
 `wl_planfile` all drop it with **zero code change** (verified: `wl_store.agent_plan_dir` ->
-`agent_root`, `d.glob("PLAN-*.md")`). `scripts/validate-cli-examples.ts` globs
+`agent_root`, `d.glob("PLAN-*.md")`). `scripts/gen/validate-cli-examples.ts` globs
 `agent/**/*.md` recursively, so archived plans stay under CLI-example linting; nothing
 breaks. Not `agent/legacy/` (one orphan STATE.md, no convention). Not
 `agent/archive/<branch>/` (that scheme is for session state, and it gives the gate N

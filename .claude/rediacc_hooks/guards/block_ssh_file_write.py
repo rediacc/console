@@ -31,7 +31,7 @@ DEFECT = ("and not hookio.grep_q_line(BRIDGE, cmd)", "and True")
 
 # `sed -E 's/[0-9]?>+[[:space:]]*(&[0-9]|\\/dev\\/null)//g'` -- the read-only
 # plumbing, removed before the write shapes are looked for.
-PLUMBING = r"[0-9]?>+[" + hookio.SPACE + r"]*(&[0-9]|/dev/null)"
+PLUMBING = hookio.rx(r"[0-9]?>+[{S}]*(&[0-9]|/dev/null)")
 
 # ANCHORED TO COMMAND POSITION 2026-08-28, found by
 # check:ci-guard-mention-anchoring. The first branch already required an actual
@@ -44,16 +44,8 @@ PLUMBING = r"[0-9]?>+[" + hookio.SPACE + r"]*(&[0-9]|/dev/null)"
 # while Python's is Unicode-aware and would also match U+00A0. The class is
 # written out rather than carried across as `\s` so the two sides cannot
 # disagree on a non-breaking space.
-SSH_WRITE = (
-    r"(\|["
-    + hookio.SPACE
-    + r"]*\bssh\b["
-    + hookio.SPACE
-    + r"][^|;&]*\btee\b|(^|[;&|(]|&&|\|\|)["
-    + hookio.SPACE
-    + r"]*\bssh\b["
-    + hookio.SPACE
-    + r"][^|;&]*\b(cat|echo|printf)\b[^|;&]*>)"
+SSH_WRITE = hookio.rx(
+    r"(\|[{S}]*\bssh\b[{S}][^|;&]*\btee\b|(^|[;&|(]|&&|\|\|)[{S}]*\bssh\b[{S}][^|;&]*\b(cat|echo|printf)\b[^|;&]*>)"
 )
 
 BRIDGE = r"192\.168\.111\."

@@ -18,7 +18,7 @@ being extended.
 SHIPPED. Header `done` is TRUE. Measured 2026-09-06.
 
 - The three surfaces of section 3 are in `SURFACES` verbatim at
-  `scripts/check-em-dash-surfaces.ts:155-157` (blob
+  `scripts/gates/check-em-dash-surfaces.ts:155-157` (blob
   cab1c05b8163724110a719f09ae5d4937cd1e3ec), with the floors 10 / 8 / 300 as specified,
   including the deliberate 300 that sits above the 295 non-test files so a quiet
   `__tests__` exclusion trips a red floor.
@@ -61,7 +61,7 @@ Compacted-By: 8f55d4f0
 Compacted-At: 2026-09-06T17:30:34Z
 Boxes: 0 attested, 0 open, 0 abandoned
 Epics: none
-Touched: scripts/ci-runner/manifest.ts, package.json, scripts/check-em-dash-surfaces.ts, packages/cli/src/services/config/config-resources-resolve.ts, packages/cli/src/services/cluster/cluster-fork.ts, packages/cli/src/services/cluster/cluster-kube.ts, packages/cli/src/services/cluster/cluster-membership.ts, packages/cli/src/services/cluster/repo-replicate-ops.ts, packages/cli/src/services/repo/prune.ts, packages/cli/src/commands/update.ts, packages/cli/src/services/update/background-updater.ts, packages/cli/src/commands/doctor.ts, packages/cli/src/utils/timeline.ts, packages/cli/src/commands/config/field.ts, packages/cli/src/remote/repository/bashFunctions.ts, packages/cli/src/utils/repo-context-guard.ts, packages/cli/src/utils/process-ancestry.ts, packages/cli/src/services/core/embedded-assets.ts, packages/cli/src/commands/mcp/tools.ts, scripts/sync-translations.ts
+Touched: scripts/ci-runner/manifest.ts, package.json, scripts/gates/check-em-dash-surfaces.ts, packages/cli/src/services/config/config-resources-resolve.ts, packages/cli/src/services/cluster/cluster-fork.ts, packages/cli/src/services/cluster/cluster-kube.ts, packages/cli/src/services/cluster/cluster-membership.ts, packages/cli/src/services/cluster/repo-replicate-ops.ts, packages/cli/src/services/repo/prune.ts, packages/cli/src/commands/update.ts, packages/cli/src/services/update/background-updater.ts, packages/cli/src/commands/doctor.ts, packages/cli/src/utils/timeline.ts, packages/cli/src/commands/config/field.ts, packages/cli/src/remote/repository/bashFunctions.ts, packages/cli/src/utils/repo-context-guard.ts, packages/cli/src/utils/process-ancestry.ts, packages/cli/src/services/core/embedded-assets.ts, packages/cli/src/commands/mcp/tools.ts, scripts/gen/sync-translations.ts
 Gates: check:ci-em-dash-surfaces, check:ci-gate-reachability-coverage, check:ci-i18n-cli-help-render, check:ci-i18n-cli-key-usage, check:ci-i18n-placeholders, check:ci-parity, check:i18n, check:i18n:completeness
 Why-Source: author
 Read-History: `git show 629e12f4662163b2e5b78fecaa292abf7354ae6f` recovers the text; `git log --find-object=629e12f4662163b2e5b78fecaa292abf7354ae6f --all` names the commit

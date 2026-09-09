@@ -31,42 +31,19 @@ import pathlib
 import re
 
 from rediacc_ci import paths
-from rediacc_ci.tests.gates import harness
+from rediacc_ci.tests.gates import harness, shellsubject
 
 BASH_TWIN = ".ci/scripts/test/gates/test-installmethods-linuxpkg-idiom.sh"
 
 TARGET = paths.from_root(".ci", "scripts", "test", "test-linux-packages.sh")
+SUBJECT = shellsubject.Subject(TARGET)
 
 COMMENT_RE = re.compile(r"^[ \t]*#")
 
 
-def source(gate) -> str:
-    if not TARGET.is_file():
-        gate.log_fail("target not found: %s" % TARGET)
-    return TARGET.read_text(encoding="utf-8")
-
-
-def extract_fn(gate, name: str) -> str:
-    body: list[str] = []
-    collecting = False
-    for line in source(gate).splitlines():
-        if not collecting and line.startswith("%s() {" % name):
-            collecting = True
-        if collecting:
-            body.append(line)
-            if line == "}":
-                break
-    if not body:
-        gate.log_fail(
-            "%s() not found in %s -- renamed or removed, so these tests would check nothing"
-            % (name, paths.relative_to_root(TARGET))
-        )
-    return "\n".join(body)
-
-
 def subject_version(gate) -> str:
     """The subject's own TEST_VERSION. A missing one is a REFUSAL, not a default."""
-    for line in source(gate).splitlines():
+    for line in SUBJECT.text(gate).splitlines():
         if line.startswith("TEST_VERSION="):
             parts = line.split('"')
             if len(parts) > 1 and parts[1]:
@@ -78,8 +55,8 @@ def subject_version(gate) -> str:
 def prelude(gate, tmp_path: pathlib.Path) -> pathlib.Path:
     parts = [
         "log_error() { :; }",
-        extract_fn(gate, "version_token_re"),
-        extract_fn(gate, "assert_version_field"),
+        SUBJECT.shell_fn(gate, "version_token_re"),
+        SUBJECT.shell_fn(gate, "assert_version_field"),
         'TEST_VERSION="%s"' % subject_version(gate),
         'TEST_VERSION_RE="$(version_token_re "$TEST_VERSION")"',
         # dpkg-deb --info and rpm -qip lay the same field out differently; both
@@ -225,7 +202,7 @@ def test_the_old_idiom_is_gone_from_the_target(gate):
     of occurrences. Two spellings of that would disagree the day a line carries
     the token twice.
     """
-    code = [ln for ln in source(gate).splitlines() if not COMMENT_RE.match(ln)]
+    code = [ln for ln in SUBJECT.text(gate).splitlines() if not COMMENT_RE.match(ln)]
 
     def count(needle: str) -> int:
         return len([ln for ln in code if needle in ln])

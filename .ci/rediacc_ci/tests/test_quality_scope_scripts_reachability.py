@@ -65,6 +65,7 @@ def build(tmp_path: pathlib.Path, extra: dict[str, str], *, runsh: bool = True) 
         ".ci/rediacc_ci/quality",
         ".github/workflows",
         "scripts/drills",
+        "scripts/gates",
     ):
         (root / rel).mkdir(parents=True, exist_ok=True)
     shutil.copytree(src / ".ci" / "scripts" / "lib", root / ".ci" / "scripts" / "lib")
@@ -81,7 +82,9 @@ def build(tmp_path: pathlib.Path, extra: dict[str, str], *, runsh: bool = True) 
             root / ".ci" / "rediacc_ci" / "quality" / name,
         )
     # The two paths the classifier controls are asserted against.
-    (root / "scripts" / "check-embed-credits.ts").write_text("// gate source\n", encoding="utf-8")
+    (root / "scripts/gates" / "check-embed-credits.ts").write_text(
+        "// gate source\n", encoding="utf-8"
+    )
     (root / "scripts" / "drills" / "lib.sh").write_text("#!/bin/bash\n", encoding="utf-8")
     workflow = "".join("bash .ci/scripts/deploy/step-%02d.sh\n" % i for i in range(1, 13))
     workflow += "./run.sh drill transfer\n"
@@ -130,13 +133,13 @@ CASES = [
     ),
     (
         "a narrowable path referenced from a workflow is a violation",
-        {".github/workflows/ci.yml": "npx tsx scripts/check-embed-credits.ts\n"},
+        {".github/workflows/ci.yml": "npx tsx scripts/gates/check-embed-credits.ts\n"},
         True,
         1,
     ),
     (
         "a narrowable path referenced from a deploy script is a violation",
-        {".ci/scripts/deploy/publish.sh": "npx tsx scripts/check-embed-credits.ts\n"},
+        {".ci/scripts/deploy/publish.sh": "npx tsx scripts/gates/check-embed-credits.ts\n"},
         True,
         1,
     ),
@@ -145,7 +148,7 @@ CASES = [
         {
             "run.sh": RUNSH.replace(
                 "bash scripts/drills/lib.sh",
-                "bash scripts/drills/lib.sh\n            npx tsx scripts/check-embed-credits.ts",
+                "bash scripts/drills/lib.sh\n            npx tsx scripts/gates/check-embed-credits.ts",
             )
         },
         True,
@@ -157,7 +160,7 @@ CASES = [
         "a log_error mention of a narrowable path is not a violation",
         {
             ".ci/scripts/deploy/publish.sh": (
-                'log_error "run scripts/check-embed-credits.ts to fix this"\n'
+                'log_error "run scripts/gates/check-embed-credits.ts to fix this"\n'
             )
         },
         True,

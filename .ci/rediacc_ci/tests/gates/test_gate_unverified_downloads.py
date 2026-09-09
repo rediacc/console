@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-unverified-downloads.sh`.
 
-Integration test for `scripts/check-unverified-downloads.ts`.
+Integration test for `scripts/gates/check-unverified-downloads.ts`.
 
 Both-ways, offline, fixture-driven: proves the gate passes the real tree, that its
 own detector controls run on EVERY invocation, that a bare allowlist entry is
@@ -23,7 +23,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-unverified-downloads.sh"
 
-GATE = paths.from_root("scripts", "check-unverified-downloads.ts")
+GATE = paths.from_root("scripts/gates", "check-unverified-downloads.ts")
 
 
 def run(gate, env: dict[str, str] | None = None) -> harness.RunResult:

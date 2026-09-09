@@ -65,21 +65,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/PLAN-branch-aware-workflows.md": {
-      "status": "partially",
-      "owner": "74de73ca",
-      "open": 2,
-      "done": 3,
-      "open_sigs": [
-        "576a6ee8",
-        "c3a1bd61"
-      ],
-      "done_sigs": [
-        "772f1af5",
-        "bddb1e11",
-        "da244391"
-      ]
-    },
     "agent/PLAN-breakpoint-secret-shape.md": {
       "status": "design",
       "owner": "unowned",
@@ -163,6 +148,31 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/PLAN-ci-vacuity-baseline-registry.md": {
+      "status": "ready",
+      "owner": "f4da5c2e",
+      "open": 1,
+      "done": 14,
+      "open_sigs": [
+        "574bbce7"
+      ],
+      "done_sigs": [
+        "159b0a13",
+        "1d827993",
+        "25d0095b",
+        "3a590fc8",
+        "3cf0920b",
+        "6902a808",
+        "6f5d6c0a",
+        "96d132ef",
+        "b02b8b30",
+        "c72dc392",
+        "d573705b",
+        "e8cdc9c4",
+        "f582e305",
+        "f6819ee3"
+      ]
+    },
     "agent/PLAN-ci-watch-enforcement.md": {
       "status": "draft",
       "owner": "unowned",
@@ -207,6 +217,14 @@
         "dcdc7331",
         "e7ea085e"
       ],
+      "done_sigs": []
+    },
+    "agent/PLAN-completion-strategy.md": {
+      "status": "ready",
+      "owner": "f4da5c2e",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
       "done_sigs": []
     },
     "agent/PLAN-consolidate-test-scaffolding.md": {
@@ -273,36 +291,13 @@
         "ee313a73"
       ]
     },
-    "agent/PLAN-env-to-bitwarden.md": {
-      "status": "draft",
-      "owner": "74de73ca",
-      "open": 20,
-      "done": 1,
-      "open_sigs": [
-        "01d8aba3",
-        "20d278b5",
-        "35a70f40",
-        "3cf8d5f9",
-        "48a228e6",
-        "533a0109",
-        "6b031965",
-        "70919aad",
-        "86851dec",
-        "ab537665",
-        "bafeb5fb",
-        "be6c8140",
-        "bed21978",
-        "c12e9228",
-        "dd1c5be8",
-        "df3abd0c",
-        "e834b5f2",
-        "eb15cba9",
-        "ec58601a",
-        "f705cd4f"
-      ],
-      "done_sigs": [
-        "fab4fdd7"
-      ]
+    "agent/PLAN-extension-shaped-matchers.md": {
+      "status": "executing",
+      "owner": "unowned",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
+      "done_sigs": []
     },
     "agent/PLAN-fix-ci-contention-aware-timeouts.md": {
       "status": "done",
@@ -352,52 +347,12 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/PLAN-github-secrets-removal.md": {
-      "status": "draft",
-      "owner": "74de73ca",
-      "open": 13,
-      "done": 1,
-      "open_sigs": [
-        "0018b952",
-        "15077565",
-        "34c30060",
-        "562622fb",
-        "64dff8bd",
-        "74158141",
-        "7423368e",
-        "8761dfab",
-        "950d024a",
-        "a27654d5",
-        "be07ffe4",
-        "c01f9e58",
-        "cb3ae9a5"
-      ],
-      "done_sigs": [
-        "961e99d0"
-      ]
-    },
     "agent/PLAN-greenlight-verify-at-read.md": {
       "status": "compacted",
       "owner": "unowned",
       "open": 0,
       "done": 0,
       "open_sigs": [],
-      "done_sigs": []
-    },
-    "agent/PLAN-handoff-sequence.md": {
-      "status": "draft",
-      "owner": "74de73ca",
-      "open": 7,
-      "done": 0,
-      "open_sigs": [
-        "14d02406",
-        "33e6bc49",
-        "34132e81",
-        "518107ed",
-        "9530b4f6",
-        "9f3582ad",
-        "e568a081"
-      ],
       "done_sigs": []
     },
     "agent/PLAN-hook-inventory-warn-guards.md": {
@@ -456,26 +411,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/PLAN-migrate-command.md": {
-      "status": "draft",
-      "owner": "d1589e0b",
-      "open": 11,
-      "done": 0,
-      "open_sigs": [
-        "1a4237d8",
-        "495eeef4",
-        "745963a1",
-        "94d62fbf",
-        "a28d2960",
-        "a37cfd9c",
-        "bf76ff0e",
-        "cc23e610",
-        "ce6db9c4",
-        "d42bb50d",
-        "d6bccaeb"
-      ],
-      "done_sigs": []
-    },
     "agent/PLAN-nightly-retry-and-watchdog-noise.md": {
       "status": "done",
       "owner": "854ac1c6",
@@ -525,13 +460,13 @@
         "3c769dac",
         "3d61b5dc",
         "6018aa6e",
-        "6aad636d",
-        "7f013d7c",
         "7f7a85ec",
         "93207293",
+        "9e2f805e",
         "b53ee71d",
         "bce8eeed",
-        "c65d7dea"
+        "c65d7dea",
+        "f7e12115"
       ],
       "done_sigs": []
     },
@@ -546,21 +481,20 @@
     "agent/PLAN-pytest-parallelism.md": {
       "status": "done",
       "owner": "8f55d4f0",
-      "open": 8,
-      "done": 2,
-      "open_sigs": [
-        "0f263e14",
+      "open": 0,
+      "done": 10,
+      "open_sigs": [],
+      "done_sigs": [
         "16119952",
         "1d4a0b97",
         "20f5d32f",
+        "50b9a829",
         "7f769165",
+        "8b7d18d6",
         "90f06a32",
+        "ce053824",
         "f8d3ccc3",
         "f9591a59"
-      ],
-      "done_sigs": [
-        "8b7d18d6",
-        "ce053824"
       ]
     },
     "agent/PLAN-rclone-decommission.md": {
@@ -651,39 +585,19 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/PLAN-secret-names-one-to-one.md": {
-      "status": "design",
-      "owner": "unowned",
-      "open": 9,
-      "done": 3,
-      "open_sigs": [
-        "06589548",
-        "53106f5f",
-        "5df5987f",
-        "60d62f80",
-        "76b8fdf7",
-        "b0a85702",
-        "d008669b",
-        "d99f139f",
-        "f74738f1"
-      ],
-      "done_sigs": [
-        "361d7efa",
-        "3f8ce996",
-        "664f0162"
-      ]
-    },
     "agent/PLAN-secret-namespace-migration.md": {
       "status": "partially",
       "owner": "unowned",
-      "open": 7,
+      "open": 9,
       "done": 21,
       "open_sigs": [
         "02015bc4",
         "04b509d8",
+        "3799ac3c",
         "3a34cc77",
         "3dc0a0b5",
         "59cb6f43",
+        "7423368e",
         "be5ce8f9",
         "cfe6a745"
       ],
@@ -787,18 +701,43 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/PLAN-stop-plan-box-enforcement.md": {
-      "status": "superseded",
-      "owner": "unowned",
-      "open": 6,
+    "agent/PLAN-stop-hook-overhaul.md": {
+      "status": "ready",
+      "owner": "f4da5c2e",
+      "open": 31,
       "done": 0,
       "open_sigs": [
-        "226176d6",
-        "7669c168",
-        "7aef3e9e",
-        "93d1b175",
-        "a22cf626",
-        "e56a697c"
+        "06fcc45a",
+        "071fec08",
+        "0a3321f6",
+        "0f583c13",
+        "12482630",
+        "18dd4873",
+        "1e2bab22",
+        "24a0b107",
+        "27b7c508",
+        "321c902b",
+        "338e072b",
+        "4b9439b7",
+        "4cfdbab9",
+        "5fb3419d",
+        "64c0be87",
+        "6e5642b2",
+        "71c567df",
+        "823d5963",
+        "909cdb2d",
+        "9e32e800",
+        "ab3e3872",
+        "afcec761",
+        "bcc0098f",
+        "bf550485",
+        "c63cd990",
+        "d2374200",
+        "dbdc8bbc",
+        "e97f9440",
+        "ea9dc74a",
+        "eb55a6bd",
+        "edc40d5b"
       ],
       "done_sigs": []
     },
@@ -812,7 +751,7 @@
     },
     "agent/PLAN-subagent-idle-detection.md": {
       "status": "ready",
-      "owner": "unowned",
+      "owner": "0ad063bf",
       "open": 0,
       "done": 0,
       "open_sigs": [],
@@ -855,6 +794,170 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
+    },
+    "agent/PLAN-tooling-transformation.md": {
+      "status": "ready",
+      "owner": "8f55d4f0",
+      "open": 22,
+      "done": 132,
+      "open_sigs": [
+        "03457679",
+        "0be61c26",
+        "27dcac1a",
+        "2b0c6382",
+        "2f19172d",
+        "4314ed50",
+        "501c6171",
+        "6561db69",
+        "788506f9",
+        "850cbc77",
+        "91dcb6a5",
+        "9ac783c3",
+        "a81fb948",
+        "b794700e",
+        "bb3cd984",
+        "c02119ee",
+        "caff9ad3",
+        "d2055bc1",
+        "e736ac7f",
+        "ed0c365d",
+        "f7d225a8",
+        "fce2c5e8"
+      ],
+      "done_sigs": [
+        "03668ab3",
+        "04ef9474",
+        "050c44a6",
+        "0c645f9c",
+        "102a10de",
+        "125b16b6",
+        "170a994b",
+        "174942e8",
+        "1c0af09c",
+        "1ce50031",
+        "1fc8228b",
+        "25213a0a",
+        "2666034b",
+        "273beaed",
+        "2a10add1",
+        "2d0d487b",
+        "2fc0f746",
+        "2ff85445",
+        "30a46a74",
+        "311bcbf5",
+        "31c07684",
+        "3280b448",
+        "345ee5d3",
+        "34e7bc19",
+        "35ad24eb",
+        "3a993218",
+        "3f4c7179",
+        "428fc5e7",
+        "434e1f52",
+        "4b6998c7",
+        "4eedb1b2",
+        "4f27a8e1",
+        "5120018c",
+        "53af18f5",
+        "581e35cd",
+        "58e2ac08",
+        "590a1cd0",
+        "59551906",
+        "597434b4",
+        "5998ffc1",
+        "5a992197",
+        "5e188baa",
+        "5e6c2abe",
+        "5f0ba1e0",
+        "5f51c0f7",
+        "61e8ff0b",
+        "69d3d712",
+        "6a06e06b",
+        "6b02a07e",
+        "6b3342e0",
+        "6d3049e4",
+        "6d5aaf68",
+        "6f1bba32",
+        "70509a14",
+        "71260f60",
+        "713932ac",
+        "73700e3d",
+        "7498c3e4",
+        "74c913fc",
+        "786a2979",
+        "79292621",
+        "799abb65",
+        "7e9368d8",
+        "7fee0898",
+        "85fa6aa1",
+        "871bc16b",
+        "8918d84c",
+        "8a8b0d25",
+        "8a9abc8e",
+        "8aea8043",
+        "8b9437ce",
+        "8c197189",
+        "8c252304",
+        "923360bf",
+        "92d455de",
+        "942a554a",
+        "961059a2",
+        "968cf871",
+        "988bc4c9",
+        "99f8428e",
+        "9ac6d193",
+        "9d0864e8",
+        "a0397b76",
+        "a0562bc4",
+        "a1236f33",
+        "a3b045c3",
+        "a3f959fa",
+        "a48180dc",
+        "a6405128",
+        "aa6827a1",
+        "ab94d06d",
+        "abaa2cc3",
+        "ac1f3467",
+        "ad09feb6",
+        "b1708e7f",
+        "b21ed9bb",
+        "b2b3acf6",
+        "b3761151",
+        "b3e33dca",
+        "b578b594",
+        "b6d860ec",
+        "b7f3e93f",
+        "bb34927f",
+        "bc99ca7f",
+        "c7eaa93c",
+        "c99695d6",
+        "ca6b908d",
+        "ca9ec29d",
+        "cc475eac",
+        "cf6579e4",
+        "d02ccbc2",
+        "d1751ade",
+        "d1980763",
+        "d1b032b8",
+        "d246be2c",
+        "d2b9da78",
+        "d3de479e",
+        "d51a4b24",
+        "d7d0a88d",
+        "db622f2d",
+        "dc939a63",
+        "e177da4e",
+        "e7740277",
+        "eca8314d",
+        "ee0a8c81",
+        "ef6e9b9b",
+        "f07d4967",
+        "f62e4449",
+        "f806fbc8",
+        "f81620de",
+        "fbe4c52b",
+        "fde098b5"
+      ]
     },
     "agent/PLAN-trap-enforcement.md": {
       "status": "w",
@@ -902,30 +1005,6 @@
         "a3c08add",
         "c3ba6973",
         "cd510b2d"
-      ]
-    },
-    "agent/PLAN-worklist-ownership-continuity.md": {
-      "status": "draft",
-      "owner": "74de73ca",
-      "open": 3,
-      "done": 11,
-      "open_sigs": [
-        "1723d977",
-        "9359b9a8",
-        "e51783cd"
-      ],
-      "done_sigs": [
-        "0334d7da",
-        "08882392",
-        "2050cad2",
-        "32b0de11",
-        "3c48feda",
-        "54c9dedd",
-        "cf66e636",
-        "d91f1dfa",
-        "e7de6bab",
-        "f1655deb",
-        "fcad1560"
       ]
     },
     "agent/PLAN-www-bundle-determinism.md": {

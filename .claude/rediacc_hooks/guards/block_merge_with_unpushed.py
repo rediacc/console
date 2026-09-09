@@ -55,17 +55,7 @@ ENVS = [
     ("this-worktree", {}, {}),
 ]
 
-VERB = (
-    r"(^|[|;&"
-    + hookio.SPACE
-    + r"])gh["
-    + hookio.SPACE
-    + r"]+pr["
-    + hookio.SPACE
-    + r"]+merge(["
-    + hookio.SPACE
-    + r"]|$)"
-)
+VERB = hookio.rx(r"(^|[|;&{S}])gh[{S}]+pr[{S}]+merge([{S}]|$)")
 
 EDGE_CASES = [
     ("the verb at a command position", "gh pr merge 42"),

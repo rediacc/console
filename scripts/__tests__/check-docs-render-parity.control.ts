@@ -39,7 +39,7 @@ import { SITE_LOCALES } from '@rediacc/locales';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '../..');
-const GATE = path.join(REPO, 'scripts/check-docs-render-parity.ts');
+const GATE = path.join(REPO, 'scripts/gates/check-docs-render-parity.ts');
 
 const GERMAN = 'Repository-Lebenszyklus';
 const ENGLISH = 'Repository Lifecycle';

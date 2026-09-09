@@ -44,8 +44,17 @@ import sys
 import time
 from pathlib import Path
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls, paths
+
 ROOT = Path(os.environ.get("RESPROFILE_ROOT") or Path(__file__).resolve().parents[3])
-sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))
+# The hop onto the Stop hook's directory, through the package's own resolver.
+# `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not,
+# and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal
+# lives, so the move planned for that program is a one-line change there rather
+# than a sweep of nine call sites. ROOT is passed explicitly: this gate honours
+# its own RESPROFILE_ROOT override, which the resolver's default root does not read.
+paths.on_sys_path(paths.hooks_stop_dir(ROOT))
 import wl_profile as W  # noqa: E402
 
 BASELINE = ROOT / ".ci" / "config" / "resprofile-baseline.json"
@@ -365,12 +374,8 @@ def main(argv: list[str]) -> int:
         rs = {argv[i + 1] for i, a in enumerate(argv) if a == "--reseed-class"}
         return seed(Path(argv[argv.index("--seed") + 1]), rs)
 
-    print("resprofile: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("resprofile", selftest):
+        return refusal
 
     cdir = Path(argv[argv.index("--captures") + 1]) if "--captures" in argv else DEFAULT_CAPTURES
     base = load_baseline()

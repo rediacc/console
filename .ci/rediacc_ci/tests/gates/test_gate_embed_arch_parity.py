@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-embed-arch-parity.sh`.
 
-Both-ways test for `scripts/check-embed-arch-parity.ts`.
+Both-ways test for `scripts/gates/check-embed-arch-parity.ts`.
 
 The gate exists because arm64 criu silently became a different version from amd64
 criu and every existing gate stayed green: nothing carried an architecture
@@ -34,7 +34,7 @@ from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-embed-arch-parity.sh"
 
-GATE = paths.from_root("scripts", "check-embed-arch-parity.ts")
+GATE = paths.from_root("scripts/gates", "check-embed-arch-parity.ts")
 REAL_LOCKFILE = paths.from_root("private", "renet", "embed-assets.lock.json")
 
 SUBMODULE_FIX = (

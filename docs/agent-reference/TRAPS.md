@@ -116,7 +116,7 @@ Trap-Id: version-check-reads-a-different-source
 Enforced-By: JUDGMENT-ONLY
 Residue: node_modules, the lockfile, package.json and the registry are each right about a different question. Which one a given check read is not decidable from outside it.
 
-`scripts/check-deps.ts` runs `npm outdated` **against `node_modules`** at the repo
+`scripts/gates/check-deps.ts` runs `npm outdated` **against `node_modules`** at the repo
 root, but with `--package-lock-only` for submodule directories. So after editing
 `package.json` and regenerating the lockfile, the ROOT check still reports the old
 version until you actually install, while CI — which installs from the lockfile —
@@ -546,7 +546,7 @@ just been run after several `npm install`s.
 Proven in one command:
 
 ```
-npm_config_registry=http://127.0.0.1:9/ npx tsx scripts/check-deps.ts
+npm_config_registry=http://127.0.0.1:9/ npx tsx scripts/gates/check-deps.ts
 → "All dependencies are up-to-date", exit 0
 ```
 
@@ -629,7 +629,7 @@ the acceptance test is the built thing answering its own version, never the
 manifest that requested it.
 
 **This one is now an instrument, not just a lesson.**
-`check:ci-embed-asset-versions` (`scripts/check-embed-asset-versions.ts`,
+`check:ci-embed-asset-versions` (`scripts/gates/check-embed-asset-versions.ts`,
 reachable from `npm run ci`) decompresses every staged asset and asks the binary
 its own version, executing it when the architecture matches the host and reading
 its string table when it does not. It is the only embed gate that opens the box.
@@ -2457,3 +2457,241 @@ broken command. The 22 records already written were audited and none had been fo
 had discovered the trap independently and written it into its own record, and the others
 citing that commit were www plans for which it genuinely IS the landing. The brief was
 wrong; the writers were not.
+
+## `set -e` re-armed inside `if ! fn` is still inert, so the control proves nothing
+Trap-Id: errexit-rearmed-in-a-tested-command
+Enforced-By: file:.ci/scripts/test/run-all.sh:149
+Residue: that control covers ONE function in ONE runner. Nothing decides, in general,
+whether a given assertion about `set -e` is running in a suppressed context -- the
+answer depends on how the enclosing function is called, which is a property of the
+caller, not of the assertion. Reading the call site stays a human step.
+
+Bash suppresses errexit for the whole body of a command whose status is being tested --
+`if ! fn`, `fn || handler`, `fn && next`, `! fn`. That much is documented. What is not
+obvious, and what cost a control here on 2026-09-08, is that **the suppression follows the
+call into subshells that re-arm `set -e` themselves**. Re-running `set -euo pipefail`
+inside a command substitution nested in such a function does not restore it.
+
+The shape that fooled the session, in `.ci/scripts/test/run-all.sh`. The guard it controls
+extracts changed paths with
+
+    { diff <(...) <(...) || true; } | sed ... | sort -u
+
+and the `|| true` is load-bearing: `diff` exits 1 whenever its inputs differ, which at the
+only call site is always, so without it the enclosing assignment aborts the script under
+`set -e` before the summary ever prints. That had already killed this runner silently once.
+The control written to stop it happening again was
+
+    got="$( set -euo pipefail; cp="$(changed_paths_between "$a" "$b")"; echo reached )"
+    _c "survives a differing diff under set -e" "$got" "reached"
+
+inside a `guard_selftest` invoked as `if ! guard_selftest`. Run against a subject with the
+`|| true` **deliberately deleted**, it PASSED. Twice -- once as a plain assignment, once as
+the explicit `set -e` subshell above. A vacuous control reporting a proof it had not made,
+in a file whose entire purpose is catching that.
+
+**The only reliable form is a separate process**, which starts with a clean errexit that
+nothing upstream has suppressed:
+
+    export -f changed_paths_between
+    got="$(bash -c 'set -euo pipefail
+        cp="$(changed_paths_between "$1" "$2")"; printf "reached:%s" "$cp"' _ "$a" "$b")" || true
+    export -n changed_paths_between
+
+With that, deleting the `|| true` fails the control. `export -n` afterwards matters in a
+runner: an exported function rides the environment into every child the battery spawns.
+
+`.ci/scripts/test/gates/test-emit-advisory.sh:78` already had this right -- its
+`emit_advisory` errexit control runs in `bash -c` -- so the correct form was in the tree,
+one directory away, and the wrong one still got written.
+
+**How to notice it without a plant.** Ask what suppressed context the assertion is running
+in before trusting any control over `set -e`, `set -u` or `pipefail`. A sweep of the 20
+indented `set -e` re-arms in tracked shell files found the rest are `set +e` / `set -e`
+restore pairs around a deliberately-tolerated command, which are unaffected. One other
+genuine member: `.ci/scripts/version/inject-env.sh:49` wraps its body in
+`_inject_env_main()` and arms `set -euo pipefail` there, but line 137 calls it as
+`if _inject_env_main "$@"`, so `-e` is inert throughout (`-u` and `pipefail` still apply).
+Behaviour is unaffected today -- every consequential status in that function is checked
+explicitly and it falls back to `0.0.0-dev`, which `--strict` then refuses, so it fails
+closed -- but a future edit that leans on errexit there will not get it.
+
+## A `--suite` path under a symlink makes the mutation runner write to the REAL tree
+Trap-Id: mutate-check-symlink-escapes-the-sandbox
+Enforced-By: JUDGMENT-ONLY
+Residue: nothing decides, from outside, whether a path handed to `--suite` traverses a symlink; `realpath` resolving it is correct behaviour for every other caller. Building the fixture with a real copy rather than a link stays a human step.
+
+`mutate-check.sh` is a mutation runner: it plants a defect in a copy of a suite and
+requires the suite to notice. The copy is what makes it safe, and `:122` is where that
+safety is decided:
+
+    SUITE_REL="$(realpath --relative-to="$REPO_ROOT" "$SUITE_DIR")"
+
+`realpath` RESOLVES SYMLINKS. Hand it a `--suite` whose fixture directory is a symlink
+back at the real tree and the resolved path is the real path, the relative computation
+collapses to `/`, and the runner mutates tracked files in place. On 2026-09-08 a writer
+building a `mutate_check` fixture symlinked `.ci/scripts/test/fixtures` at the real tree
+and the runner rewrote `.ci/scripts/test/fixtures/mutate-check/fixture_mod.py`
+(`GUARD_ENABLED = True` to `False`, `HARMLESS_MARKER = "unmutated"` to
+`"mutated-but-harmless"`). It was repaired forward, not with `git checkout`, and the path
+is clean.
+
+**THE SECOND HALF IS WHY IT MATTERS MORE THAN THE DAMAGE.** That run produced output in
+which twin and port agreed, which is what the writer was there to measure. They agreed
+because both sides had been handed the same corrupted real tree, so the comparison was
+vacuous and looked exactly like a pass. A mutation control that runs against the real
+tree cannot fail for the right reason, and it cannot be told from one that did.
+
+Build the fixture with `cp -r`, not a link. If you must link, verify afterwards that
+`git status --porcelain` on the real suite is empty BEFORE believing any verdict the run
+produced -- the corruption and the false agreement arrive together.
+
+## A planted `pkill -f` matches the SHELL THAT PLANTED IT, and kills the session
+Trap-Id: planted-pattern-kill-reaches-the-planter
+Enforced-By: JUDGMENT-ONLY
+Residue: nothing can decide from outside whether a pattern a plant writes into a subject also occurs in the planting process's own command line; the two are only related at the moment a human writes them on one line.
+
+`test-breakpoint-teardown.sh` exists because a pattern-kill cannot tell "my process" from
+"a process that looks like mine". Plant-verifying its port on 2026-09-08 demonstrated
+that live, on the session doing the verifying.
+
+The plant reinstated the deleted tmate action's line into the real subject:
+
+    pkill -f "tmate.*new-session"
+
+and it was written inline, so the string `tmate.*new-session` was also sitting in the
+argv of the bash process running the plant. `pkill -f` matches the FULL COMMAND LINE of
+every process on the box. When the test then drove teardown, the subject killed the
+shell that had just written it. The visible symptom is an exit code with no output and
+no explanation -- 144 here -- and the plant is left IN THE TREE, because the restore
+step never ran.
+
+**THE DANGEROUS HALF IS THE UNRESTORED SUBJECT, not the dead shell.** A plant-and-restore
+loop assumes the restore always runs; a plant that kills its own runner breaks that
+assumption at exactly the moment the tree is dirty. Check the digest before doing
+anything else, and restore forward -- never with `git checkout`, which would take a
+peer's uncommitted work with it.
+
+Two things make the redo safe, and the first alone is not enough. Anchor the pattern so
+it cannot match a longer command line (`'^__plant_never_matches__$'`), and keep the
+pattern text out of the planting command's own argv. The gate under test asserts on the
+literal `pkill -f`, so an inert anchored pattern still trips it: the plant loses nothing
+by being harmless.
+
+## A title-deriving function fails SILENTLY and at scale
+Trap-Id: derived-title-silent-fallback
+Enforced-By: file:.claude/hooks/stop/test-planrec.py:206
+Residue: The control pins ONE of the three failure modes (H1 vs the `Status:` header block). The fenced-code case and the `Word:`-header-guard case are unpinned, so either could regress and the corpus would look fine.
+
+`title_of()` in `.claude/hooks/stop/wl_planrec.py:1547` derives a plan record's title from
+the plan. It has a FALLBACK, and that is the whole problem: a derivation with a fallback
+never fails, it just quietly produces the wrong answer for a subset it cannot report.
+Three separate defects hid in it, and each one produced titles that looked plausible:
+
+- **The `Word:` header guard was written against the SHAPE, not the key set.** It was
+  `HEAD_FIELD_RE.match(body)`, matching any `Word:` at all -- and **62 of the 83 plans in
+  this tree are titled `# PLAN: <something>`**. So `PLAN:` read as a header field, all 62
+  fell through to the slug fallback, and their records were titled with a slug instead of
+  the name their author gave them. Measured 2026-09-06 during the compaction wave, which
+  was HALTED because of it. Fixed at `65f1aa803` by testing the key against
+  `HEADER_FIELD_KEYS`.
+- **`# ` opens a comment in shell, python, ruby and every config language these plans
+  quote**, so scanning raw lines took the first COMMENT in the first code block as the
+  title. `PLAN-lint-rule-matrix-probe.md` was compacted to a record titled
+  `# edit line 46: 'SFTPClient' -> 'SFTPClientZZZ'`.
+- **The slug fallback itself was off by one**: `slug[4:]` where `len("PLAN-")` is FIVE, so
+  every plan that reached the fallback was titled with a leading hyphen.
+
+**THE GENERAL SHAPE: a fallback converts a parse failure into a wrong value, and a wrong
+value has no exit code.** The blast radius is set by how many rows the derivation runs
+over, so it is discovered by looking at the CORPUS, never at the function. Count how many
+inputs take the fallback path; if the answer is most of them, the primary path is broken,
+not the corpus. A derivation whose fallback is load-bearing should say so out loud.
+
+## A stale `Status:` header is a CLAIM; the tree is EVIDENCE
+Trap-Id: plan-status-header-is-a-claim
+Enforced-By: JUDGMENT-ONLY
+Residue: No parser can know whether a plan's header describes the tree. The header is author-written text that ages silently, and the only refutation is measuring the code it describes -- which is exactly the work a reader skips when the header answers the question for them.
+
+A plan's `Status:` line says what its author believed when they last typed it. It is not a
+measurement, nothing recomputes it, and no gate can: the check would have to re-derive the
+plan's own acceptance from prose.
+
+**This programme found the header wrong in both directions.** Boxes marked open were DONE
+in the tree; a plan carrying `Status: executing` had its executing wave finished. Reading
+the header instead of the tree is how a session re-staffs completed work, and how it
+reports progress it did not make.
+
+The instruments that DO measure are the plan-box ledger
+(`.ci/scripts/quality/check_plan_boxes.py`) and the plan record
+(`.claude/hooks/stop/wl_planrec.py`), and both are DERIVED -- they drift on every plan edit
+and must be regenerated with `--update` rather than believed. Neither reads `Status:`.
+
+So: before acting on a plan's stated status, run the thing the plan claims about. Almost
+every box in `agent/PLAN-tooling-transformation.md` had a stated premise that was wrong
+about something measurable -- a count, a line number, a symbol name that occurs zero times
+in the tree. The header is a hypothesis with a colon in it.
+
+## A manifest id is not an npm script, and the difference looks like a failing gate
+Trap-Id: manifest-id-is-not-an-npm-script
+Enforced-By: JUDGMENT-ONLY
+Residue: Nothing can tell a typo apart from a gate that failed for cause at the moment you run it, because both are `rc=1` with an empty stdout and an empty stderr. The only defence is checking `package.json` before believing a silent red, and no gate can require that of a human at a terminal.
+
+`npm run --silent <name>` for a name `package.json` does not define exits **1 with ZERO
+bytes on both streams**. That is byte-for-byte what a gate failing for cause looks like
+when its output is suppressed, so the reflex it triggers -- "this gate is red, go fix the
+tree" -- sends a session debugging something that never ran.
+
+**The reason this is a trap and not just a typo is that the ids are real.** Most gates are
+both a `package.json` script and a `scripts/ci-runner/manifest.ts` entry, so the two
+namespaces look interchangeable. They are not. Some manifest entries have no npm script at
+all and carry a bare path in `run:` -- `gate-test:trap-registry`, `gate-test:docs-gen` and
+`gate-test:claude-hooks` are three -- and the ci-runner invokes them by that path. Reading
+the id out of the manifest and typing `npm run` in front of it therefore produces a
+plausible-looking red for a gate that is perfectly green.
+
+Measured in one session on 2026-09-09: **four** such reds, on
+`check:ci-plan-lifecycle` (a name that does not exist anywhere; the real gate is
+`check:ci-plan-housekeeping`), on `gate-test:trap-registry`, and on `gate-test:docs-gen`.
+Every one of them was rc=0 when driven by its real invocation. Two earlier sessions lost
+time to the same shape on `check:ci-cli-examples`, whose real name is `check:cli-examples`.
+
+Before believing a silent red:
+
+    grep -c '"<the-id>"' package.json     # 0 means npm never had it
+    grep -n "id: '<the-id>'" -A2 scripts/ci-runner/manifest.ts   # read `run:`
+
+and drive the `run:` value directly. A red that prints NOTHING is the shape to distrust:
+real gates in this repo are loud, and the ones that are not say so in their manifest entry.
+
+## `cmd > file` empties the file BEFORE cmd runs, so a failing restore destroys what it was restoring
+Trap-Id: redirect-truncates-before-the-command-fails
+Enforced-By: JUDGMENT-ONLY
+Residue: The shell opens the target for writing before it forks the command; no gate can see a redirection that was fine on the day it was written and fatal on the day the command started failing. The only defence is not restoring through a redirect.
+
+The ordering is the whole trap: **the shell creates or truncates the redirect target first,
+then execs the command.** If the command then fails, the file is already empty and the
+command's own error is about something else entirely.
+
+Measured 2026-09-09. A session restoring a file it had planted a defect into ran:
+
+    git show HEAD:<path> > <path>
+
+and got `fatal: path ... exists on disk, but not in 'HEAD'` -- **after** the shell had
+truncated `<path>` to zero bytes. The file was UNTRACKED, so `HEAD` never had it and the
+restore could never have worked; what made it destructive rather than merely useless was
+the redirect. The session recovered only because it had taken a copy beforehand.
+
+**This bites hardest exactly where this repo lives.** The working tree routinely holds
+several sessions' uncommitted work, so "not in HEAD" is the normal state of a new file, and
+`git show HEAD:` is the reflex for undoing a plant. Plant-and-restore loops are everywhere
+in this gate estate, and every one of them is one untracked file away from this.
+
+Do it in an order that cannot destroy the target:
+
+    cp <path> <path>.bak                 # before planting, always
+    git show HEAD:<path> > /tmp/restore && mv /tmp/restore <path>
+
+Write to a scratch path and `mv` into place, so a failure leaves the original untouched.
+Verify by digest afterwards, not by eye: a zero-byte file and a correctly restored one look
+identical in a directory listing.

@@ -47,7 +47,7 @@ if [ "${#CONFIGS[@]}" -eq 0 ]; then
 fi
 
 # --list prints the set this script would typecheck, one path per line, and does nothing
-# else. scripts/check-typecheck-scope-coverage.ts calls it so the coverage gate reads the
+# else. scripts/gates/check-typecheck-scope-coverage.ts calls it so the coverage gate reads the
 # REAL set rather than re-implementing this discovery and drifting from it.
 if [ "${1:-}" = "--list" ]; then
     printf '%s\n' "${CONFIGS[@]}"

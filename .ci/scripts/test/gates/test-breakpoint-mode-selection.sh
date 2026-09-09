@@ -226,8 +226,19 @@ test_named_never_falls_back_to_quick() {
 
     # The flag itself must be GONE, not merely defaulted off. A flag that still
     # parses can be passed by a vendored workflow that was not updated.
-    if grep -q 'allow-fallback' "$SELECT" && ! grep -q '# .*allow-fallback' "$SELECT"; then
-        log_fail "select-mode.sh still handles --allow-fallback; the downgrade path is reachable"
+    #
+    # PER LINE, not file-wide, and the file-wide form was VACUOUS. It read
+    #     grep -q 'allow-fallback' && ! grep -q '# .*allow-fallback'
+    # which asks "does the string appear anywhere AND does NO comment mention
+    # it" -- and select-mode.sh:83 has carried a comment explaining why the flag
+    # was removed since the day it was removed. That comment satisfies the second
+    # grep permanently, so the guard could never fire again no matter what code
+    # was added. Measured 2026-09-08 by planting a live handler into the subject:
+    # the guard stayed green. A control that cannot fail is worse than none.
+    local handled
+    handled="$(grep -n 'allow-fallback' "$SELECT" | grep -v ':[[:space:]]*#' || true)"
+    if [[ -n "$handled" ]]; then
+        log_fail "select-mode.sh still handles --allow-fallback; the downgrade path is reachable: $handled"
     fi
 
     # An unconfigured named request fails, and emits NOTHING on stdout. Empty

@@ -80,7 +80,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, plant
 
 RENET_REL = "private/renet"
 MARKER = "go.mod"
@@ -310,7 +310,7 @@ def selftest() -> int:
     )
     ctl.check(
         "PLANT: a RENAMED test is drift",
-        listed_from(_LISTING.replace("TestTierMapCoversRegistry", "TestTierMapCoversTheRegistry"))
+        listed_from(plant(_LISTING, "TestTierMapCoversRegistry", "TestTierMapCoversTheRegistry"))
         == wanted(),
         False,
     )
@@ -321,7 +321,7 @@ def selftest() -> int:
     )
     ctl.check(
         "PLANT: a MISSING test is drift",
-        listed_from(_LISTING.replace("TestTierProbeMatchesTheMap\n", "")) == wanted(),
+        listed_from(plant(_LISTING, "TestTierProbeMatchesTheMap\n", "")) == wanted(),
         False,
     )
     ctl.check(
@@ -340,7 +340,8 @@ def selftest() -> int:
     ctl.check(
         "PLANT: a SKIPPED test never reported PASS",
         missing_passes(
-            _PASSING_RUN.replace(
+            plant(
+                _PASSING_RUN,
                 "--- PASS: TestTierMapGateCanFail (0.00s)",
                 "--- SKIP: TestTierMapGateCanFail (0.00s)",
             )
@@ -350,7 +351,8 @@ def selftest() -> int:
     ctl.check(
         "PLANT: a FAILED test never reported PASS",
         missing_passes(
-            _PASSING_RUN.replace(
+            plant(
+                _PASSING_RUN,
                 "--- PASS: TestTierMapHasNoOrphans (0.00s)",
                 "--- FAIL: TestTierMapHasNoOrphans (0.00s)",
             )
@@ -365,8 +367,10 @@ def selftest() -> int:
     ctl.check(
         "PLANT: the report order is EXPECTED's, not sorted",
         missing_passes(
-            _PASSING_RUN.replace("--- PASS: TestTierMapHasNoOrphans", "x").replace(
-                "--- PASS: TestTierMapCoversRegistry", "y"
+            plant(
+                plant(_PASSING_RUN, "--- PASS: TestTierMapHasNoOrphans", "x"),
+                "--- PASS: TestTierMapCoversRegistry",
+                "y",
             )
         ),
         ["TestTierMapCoversRegistry", "TestTierMapHasNoOrphans"],
@@ -374,7 +378,8 @@ def selftest() -> int:
     ctl.check(
         "MIRROR: a SUBTEST's PASS line still satisfies its parent, as grep does",
         missing_passes(
-            _PASSING_RUN.replace(
+            plant(
+                _PASSING_RUN,
                 "--- PASS: TestTierMapGateCanFail (0.00s)",
                 "    --- PASS: TestTierMapGateCanFail/sub (0.00s)",
             )

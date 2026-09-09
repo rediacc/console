@@ -14,7 +14,7 @@
  *   everything else is literal
  *
  * A bigger glob dialect would be a second thing to be wrong about. The whole
- * partition is 20 rules, and `.ci/scripts/ci/*.cjs` plus `scripts/check-*.ts`
+ * partition is 20 rules, and `.ci/scripts/ci/*.cjs` plus `scripts/gates/check-*.ts`
  * is the entire vocabulary it needs.
  *
  * FIRST MATCH WINS, and order is semantics. That is the same contract

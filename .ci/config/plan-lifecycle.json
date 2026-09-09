@@ -42,10 +42,34 @@
     "warn_days exists because this gate is clock-driven: its verdict can flip",
     "overnight with no commit, which scripts/lib/suppression-liveness.ts normally",
     "bans. The warn band is what makes that exception humane -- a plan announces",
-    "the date it will go red about a week before it does."
+    "the date it will go red about a week before it does.",
+    "",
+    "THE RECORD-STATUS VOCABULARY, added by W12 P3.3 (2026-09-09). `record_states`",
+    "is the set of `Status:` words that mark a plan as a COMPACTION RECORD rather",
+    "than a live plan. It is here and not inlined for one reason: the two",
+    "housekeeping twins each hard-typed the alternation `compacted\\|parked` into",
+    "their own regex (`.ci/scripts/quality/check-plan-housekeeping.sh` and",
+    "`.ci/rediacc_ci/quality/plan_housekeeping.py`), and a third copy sat in",
+    "`.ci/rediacc_ci/tests/test_quality_plan_housekeeping.py`. Three copies of one",
+    "vocabulary is the `254 fast gates` shape: adding a state means finding all",
+    "three, and missing one makes a plan a record in one reader and an offender in",
+    "the other.",
+    "",
+    "IT IS A MIRROR, NOT THE ORIGIN. The canonical vocabulary is",
+    "`wl_planrec.RECORD_STATES` at `.claude/hooks/stop/wl_planrec.py:155`, which",
+    "`.ci/scripts/quality/check_plan_record.py` already imports by name rather than",
+    "re-deriving. The housekeeping pair cannot import it: that gate must stay",
+    "runnable in a checkout where `.claude/` is absent, which is why it reads a",
+    "config file at all. So this key is a mirror, and the mirror is CHECKED in both",
+    "directions by test_quality_plan_housekeeping.py. A mirror nobody compares is",
+    "just a fourth copy."
   ],
   "archive_dir": "agent/archive/plans",
   "plan_glob": "agent/PLAN-*.md",
   "warn_days": 26,
-  "delete_days": 33
+  "delete_days": 33,
+  "record_states": [
+    "compacted",
+    "parked"
+  ]
 }

@@ -1,12 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# step: Shell file size
-# emit: false
-# blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
-# needs: none
-# selftest: true
-# lane: quality-code
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-shell-size is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_shell_size.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_shell_size.py" but its header derives "...check-shell-size.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # A SHELL FILE CAN GROW UNTIL IT KILLS THE LINTER, and nothing noticed.
 #

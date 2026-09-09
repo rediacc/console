@@ -29,7 +29,7 @@
  * where trailing slashes are intentional or controlled elsewhere.
  *
  * ★ ONE DEFINITION, TWO CONSUMERS. This list used to be hand-copied into
- * `scripts/check-seo.ts`, joined only by a "keep in sync" comment on each side.
+ * `scripts/gates/check-seo.ts`, joined only by a "keep in sync" comment on each side.
  * The rule this repo learned the hard way: IF TWO PLACES MUST AGREE AND NEITHER
  * IMPORTS THE OTHER, THEY ALREADY DISAGREE -- you just have not looked yet. A
  * comment cannot fail. The gate now imports this array, exactly the way

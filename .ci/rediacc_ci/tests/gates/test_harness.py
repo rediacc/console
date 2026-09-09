@@ -340,3 +340,42 @@ def test_require_python_module_both_directions(gate):
         str(caught.value), "pip install --user X", "and carries the remedy verbatim"
     )
     gate.log_pass("require_python_module accepts an importable module and refuses a missing one")
+
+
+def test_a_signal_is_named_rather_than_left_as_a_number(gate):
+    """`got 143` sends the reader hunting a branch that does not exist.
+
+    THE ESTATE'S MOST-USED DIAGNOSTIC. `assert_exit_code` is called from gate
+    tests on both sides, so an unnamed signal here is an unnamed signal
+    everywhere. Three encodings must all resolve: `subprocess`'s negative
+    returncode, a shell's 128+n, and an ordinary status that is neither.
+    """
+    gate.assert_eq(harness.describe_exit(0), "0", "a clean exit is left alone")
+    gate.assert_eq(harness.describe_exit(1), "1", "and so is an ordinary failure")
+    gate.ok("a plain status is not dressed up as a signal")
+
+    gate.assert_eq(harness.describe_exit(143), "143 (KILLED by SIGTERM)", "128+15 is named")
+    gate.assert_eq(harness.describe_exit(137), "137 (KILLED by SIGKILL)", "128+9 too")
+    gate.assert_eq(harness.describe_exit(-9), "-9 (KILLED by SIGKILL)", "and subprocess's form")
+    gate.ok("control: all three encodings of a kill resolve to a name")
+
+    # THE BAND'S EDGES. 128 itself is not 128+0, and 160 is past the last real
+    # signal -- a rule without both edges renames ordinary statuses.
+    gate.assert_eq(harness.describe_exit(128), "128", "128 is not a signal")
+    gate.assert_eq(harness.describe_exit(160), "160", "nor is 160")
+    gate.assert_eq(harness.describe_exit(255), "255", "nor an ordinary 255")
+    gate.ok("control: the band excludes its own edges")
+
+    # THE MESSAGE ITSELF, so the naming is proven where a reader meets it.
+    probe = subject()
+    try:
+        probe.assert_exit_code(0, 143, "the subject was killed")
+    except harness.GateAssertionError as caught:
+        text = str(caught)
+    else:
+        text = "no failure raised"
+    gate.assert_eq("KILLED by SIGTERM" in text, True, "assert_exit_code names it in the message")
+    gate.assert_eq("expected 0" in text, True, "and still says what was expected")
+    gate.ok("control: the naming reaches the failure text, not just the helper")
+
+    gate.tally_finish("exit-code naming")

@@ -395,12 +395,12 @@ the ref is required), H11 (`fork.description` step 2 teaches `push --up`; **it a
 
 ## Gate 12 — `validate-cli-examples` cannot see the examples CLAUDE.md is made of
 
-`scripts/validate-cli-examples.ts:293`: `if (!command.startsWith('rdc') …) continue;`. CLAUDE.md's own
+`scripts/gen/validate-cli-examples.ts:293`: `if (!command.startsWith('rdc') …) continue;`. CLAUDE.md's own
 convention **mandates `./rdc.sh`**. So the gate scans the file and **walks past every line the file is made
 of** — and reported zero. `CLAUDE.md:220` teaches the deleted `repo push … --up` and the gate has never
 seen it.
 
-**The damning part: the repo already knew.** `scripts/check-cli-docs.ts:624` carries a comment describing
+**The damning part: the repo already knew.** `scripts/gates/check-cli-docs.ts:624` carries a comment describing
 **this exact bug**, found and fixed *there*: *"failed `startsWith('rdc')`, and WAS SILENTLY DISCARDED. The
 scanner reported zero."* Someone hit it, diagnosed it, fixed one scanner — **and never applied it to its
 sibling ten lines away.** A fix that is not swept across its own class is half a fix.

@@ -40,10 +40,20 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
       canonicalises status, pointer and the box table -- and deliberately NOT the
       prose, so a record stays editable.
   R8  `agent/INDEX.md` EQUALS THE RENDER. `--update` writes it.
+  R9  THE CROSS-REFERENCE HEADERS RESOLVE (W12 P3.4b). `Supersedes:`, `Extends:`
+      and `Related:` were taught to PARSE by P3.4a -- `wl_planrec.HEADER_FIELD_KEYS`
+      lists them so a `# PLAN: ...` heading is not read as a field -- and nothing
+      resolved them to anything. `wl_planrec.parse()` does not even return their
+      values. THE ARITIES DIFFER, which is why it is three plants and not one:
+      `Supersedes` needs at least one pointer, `Extends` exactly one, `Related`
+      any number including none. Every pointer that IS present must resolve,
+      through the sibling gate's extractor rather than a second copy of it.
+      SCOPED TO EVERY PLAN, not to records: both real subjects in this tree carry
+      `Status: draft`, so records-only would be a rule with no subject.
 
-THE ADVISORY CENSUS (W12 P3.5), AND WHY IT REFUSES NOTHING. R1..R8 are the rules
+THE ADVISORY CENSUS (W12 P3.5), AND WHY IT REFUSES NOTHING. R1..R9 are the rules
 this gate ENFORCES; the file's docstring has promised R1..R10 since it was
-written, and the two missing rungs are named in "WHAT IS DELIBERATELY NOT
+written, and the missing rungs are named in "WHAT IS DELIBERATELY NOT
 ASSERTED" below rather than in the list above -- they are rules that were
 considered and declined. Turning one on is a one-way door: the day it blocks, it
 blocks every open branch at once, and nobody knows today how many records it
@@ -129,15 +139,46 @@ import subprocess
 import sys
 import tempfile
 
+import _cipath  # noqa: F401
+from rediacc_ci import paths
+from rediacc_ci.controls import plant
+
 ROOT = pathlib.Path(
     os.environ.get("PLAN_RECORD_ROOT") or pathlib.Path(__file__).resolve().parents[3]
 )
-sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))
+# THREE HAND-WRITTEN HOPS BECAME ZERO HERE, and the `.ci` one is the reason the
+# import block above is now unbroken: this file used to reach the package with
+# `sys.path.insert(0, str(ROOT / ".ci"))` and then pay an `E402` for the import
+# that followed it. `import _cipath` is the same hop written where every other
+# gate in this directory writes it, so `from rediacc_ci.controls import plant`
+# is an ordinary import again. It also fixes a latent divergence nothing was
+# exercising: the old spelling loaded the LIBRARY from `$PLAN_RECORD_ROOT/.ci`,
+# so pointing this gate at a fixture would have judged the fixture with the
+# fixture's own copy of `controls`. `_cipath` resolves from `__file__`, which is
+# the tree the gate was started from either way.
+#
+# The other two hops go through the package's resolver. `paths.on_sys_path` is
+# idempotent where `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is
+# the ONE place the `.claude/hooks/stop` literal lives. ROOT is passed
+# explicitly: this gate honours its own PLAN_RECORD_ROOT override, which the
+# resolver's default root does not read.
+paths.on_sys_path(paths.hooks_stop_dir(ROOT))
+
+# W12 P3.4b. THE CITATION EXTRACTOR IS BORROWED, NOT REBUILT. `citations()` lives
+# in the sibling gate and its path regex carries five separately paid-for
+# extension rounds (dotfiles, .astro, .mdx, .cast, leading dots). A fresh regex
+# here would re-open every one of them, and the two gates would then disagree
+# about what a pointer even is. Same stance check_plan_citations itself takes
+# towards wl_planrec. The sibling is reached from THIS FILE's directory, never
+# from ROOT: a fixture override must not be able to swap the extractor out.
+paths.on_sys_path(pathlib.Path(__file__).resolve().parent)
 
 try:
     import wl_checks as CK
     import wl_planindex as PI
     import wl_planrec as R
+    from check_plan_citations import citations as _citations
+    from check_plan_citations import unresolved as _unresolved
 except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-vacuity.sh
     # A check that cannot see must SAY it cannot see. The record grammar lives in
     # wl_planrec and there is deliberately no second copy of it here: a gate that
@@ -192,6 +233,104 @@ CANDIDATES = {
 def _git(root, *args):
     r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, check=False)
     return r.stdout.strip() if r.returncode == 0 else ""
+
+
+# ---------------------------------------------------------------------------
+# W12 P3.4b. R9: the three cross-reference header keys RESOLVE.
+#
+# P3.4a made `Supersedes`, `Extends` and `Related` PARSE: `wl_planrec.py:203-215`
+# lists them in HEADER_FIELD_KEYS so a `# PLAN: ...` heading is not mistaken for
+# a field. That is the whole of what "parse" bought. NOTHING RESOLVED THEM.
+# Measured 2026-09-09: `wl_planrec.parse()` does not even return their values
+# (`:584-598`), and `git grep Supersedes -- '.ci/scripts/quality/*'` returned
+# nothing at all. A plan could say it supersedes a document that does not exist
+# and no instrument would notice, which is the same failure class as the 37 dead
+# citations `check_plan_citations.py` was written for.
+#
+# THE ARITIES DIFFER, WHICH IS WHY THIS IS THREE RULES AND NOT ONE:
+#
+#   Supersedes  AT LEAST ONE pointer. A supersession is an instruction to a
+#               reader: go read that instead. Naming nothing is unfalsifiable and
+#               unactionable, so it is a finding even though every pointer
+#               present resolves.
+#   Extends     EXACTLY ONE. You extend one document. Two leaves a reader with no
+#               way to know which one carries the base they need, and zero is the
+#               Supersedes case again.
+#   Related     ANY NUMBER, INCLUDING NONE. This is deliberate asymmetry, not an
+#               oversight: `Related:` is a note, and a note whose value is an
+#               issue URL or a sentence carries no in-tree pointer and is still a
+#               true statement. What is checked is that any pointer it DOES carry
+#               resolves.
+#
+# THE VALUE IS A BLOCK, NOT A LINE, and this is load-bearing rather than
+# generous. Both real users in this tree wrap: `agent/PLAN-bws-rotation-on-failure.md:4-5`
+# puts its only resolvable pointer on the SECOND line, and reading the key's own
+# line alone would report that plan as superseding nothing. The block ends at a
+# blank line, at the next header field, or at a markdown heading.
+#
+# SCOPE IS EVERY PLAN, NOT EVERY RECORD. Both subjects in this tree carry
+# `Status: draft`, so a rule scoped to compaction records would have zero
+# subjects and pass forever, which is the shape this repo calls a rule with no
+# subject.
+
+HEADER_XREF_KEYS = ("Supersedes", "Extends", "Related")
+#: (minimum, maximum) pointers. `None` means unbounded.
+HEADER_XREF_ARITY = {"Supersedes": (1, None), "Extends": (1, 1), "Related": (0, None)}
+
+
+def header_xref_block(text, key):
+    """The full value of `<key>:` in the header window, continuation lines and all.
+
+    Returns "" when the key is absent. The block ends at a blank line, at another
+    `Word:` header field, or at a `#` heading -- the three things that reliably
+    end a value in this grammar.
+    """
+    lines = (text or "").splitlines()[: R.HEADER_LINES]
+    out, taking = [], False
+    for raw in lines:
+        if taking:
+            stripped = raw.strip()
+            if not stripped or stripped.startswith("#") or R.HEAD_FIELD_RE.match(raw):
+                break
+            out.append(raw)
+            continue
+        m = R.HEAD_FIELD_RE.match(raw)
+        if m and m.group(1) == key:
+            taking = True
+            out.append(m.group(2))
+    return "\n".join(out) if taking else ""
+
+
+def header_xref_problems(root, rel, text):
+    """R9 over one plan. [] when it says nothing about supersession at all."""
+    problems = []
+    for key in HEADER_XREF_KEYS:
+        block = header_xref_block(text, key)
+        if not block:
+            continue
+        found = [pair for line in block.splitlines() for pair in _citations(line)]
+        low, high = HEADER_XREF_ARITY[key]
+        if len(found) < low:
+            problems.append(
+                f"{rel}: `{key}:` names {len(found)} resolvable pointer(s) and needs at "
+                f"least {low}. Cite the thing it {key.lower()} as a FULL PATH "
+                f"(`agent/PLAN-x.md`, or `path/to/file.ext:123`); a cross-reference a "
+                f"reader cannot follow is a claim, not a pointer."
+            )
+        if high is not None and len(found) > high:
+            names = ", ".join(f"`{t}`" for _k, t in found)
+            problems.append(
+                f"{rel}: `{key}:` names {len(found)} pointers ({names}) and takes exactly "
+                f"{high}. Split the rest into `Related:`, which takes any number."
+            )
+        for kind, token in found:
+            # `unresolved`, not `R.resolve` directly: the `object` kind has TWO
+            # acceptable answers (a blob or a commit) and R.resolve has no such
+            # kind at all, so calling it here would raise on a sha-shaped token.
+            bad, why = _unresolved(root, kind, token)
+            if bad:
+                problems.append(f"{rel}: `{key}:` cites {kind} `{token}` -- {why}")
+    return problems
 
 
 def _git_raw(root, *args):
@@ -974,31 +1113,33 @@ def selftest():
             f"got {[b['done'] for b in (rec['boxes'] if rec else [])]}",
         )
 
-        def plant(label, text, needle):
+        def expect_finding(label, text, needle):
             g = judge(text)
             hit = any(needle in p for p in g)
             ck(label, hit, f"needle {needle!r} not in {g}")
 
         # R1a: a blob that does not exist.
-        plant(
+        expect_finding(
             "R1: an unresolvable Full-Text-Blob is reported",
-            clean.replace("Full-Text-Blob: " + rec["blob"], "Full-Text-Blob: " + "0" * 40),
+            plant(clean, "Full-Text-Blob: " + rec["blob"], "Full-Text-Blob: " + "0" * 40),
             "does not resolve to a blob",
         )
         # R1b: a commit that is not an ancestor of origin/main. An all-zero sha is
         # not a commit at all, which is the same rule's other exit.
-        plant(
+        expect_finding(
             "R1: a Full-Text commit that does not resolve is reported",
-            clean.replace(
+            plant(
+                clean,
                 "Full-Text: %s %s" % (rec["full_text_sha"], rel),
                 "Full-Text: 0123456ab %s" % rel,
             ),
             "Full-Text names commit",
         )
         # R1c: the pointer names someone else's path.
-        plant(
+        expect_finding(
             "R1: a Full-Text path that is not the record's own is reported",
-            clean.replace(
+            plant(
+                clean,
                 "Full-Text: %s %s" % (rec["full_text_sha"], rel),
                 "Full-Text: %s agent/PLAN-elsewhere.md" % rec["full_text_sha"],
             ),
@@ -1008,23 +1149,23 @@ def selftest():
         # pointing Full-Text-Blob at the LEDGER's blob, which resolves (so R1
         # passes) and is not the plan's (so only R2 can fire).
         other = _git(root, "rev-parse", "HEAD:" + R.LEDGER_REL)
-        plant(
+        expect_finding(
             "R2: a real blob that is not the one at <sha>:<path> is reported",
-            clean.replace("Full-Text-Blob: " + rec["blob"], "Full-Text-Blob: " + other),
+            plant(clean, "Full-Text-Blob: " + rec["blob"], "Full-Text-Blob: " + other),
             "One of the two pointers names bytes the other does not",
         )
         # R3 floor: point at a blob smaller than the record. The ledger blob is
         # small, so the same substitution serves -- and its R2 finding is a
         # different string, so the two rules stay separately observable.
-        plant(
+        expect_finding(
             "R3: a blob smaller than the record is reported as nothing compacted",
-            clean.replace("Full-Text-Blob: " + rec["blob"], "Full-Text-Blob: " + other),
+            plant(clean, "Full-Text-Blob: " + rec["blob"], "Full-Text-Blob: " + other),
             "Nothing was compacted",
         )
         # R3 ceiling: an oversized record.
-        plant(
+        expect_finding(
             "R3: a record over its byte budget is reported",
-            clean.replace("## Why\n", "## Why\n" + ("x" * 80 + "\n") * 200, 1),
+            plant(clean, "## Why\n", "## Why\n" + ("x" * 80 + "\n") * 200, 1),
             "against a budget of",
         )
         done_line = next(
@@ -1045,40 +1186,41 @@ def selftest():
         )
         # R4a: done= names a real, landed commit whose ledger does NOT attest the
         # signature -- the commit from before the box was ticked.
-        plant(
+        expect_finding(
             "R4: a done= commit whose ledger does not attest the signature is reported",
-            clean.replace(
+            plant(
+                clean,
                 done_line,
                 "    (record) sig=%s done=%s" % (rec["boxes"][0]["sig"], R.sha9(before)),
             ),
             "does not carry signature",
         )
         # R4b: `abandoned` while the current ledger holds the proof.
-        plant(
+        expect_finding(
             "R4: `abandoned` over a signature the ledger attests NOW is reported",
-            clean.replace(done_line, "    (record) sig=%s done=abandoned" % rec["boxes"][0]["sig"]),
+            plant(clean, done_line, "    (record) sig=%s done=abandoned" % rec["boxes"][0]["sig"]),
             "a proof exists",
         )
         # R4c: the mark and the claim disagree.
-        plant(
+        expect_finding(
             "R4: a ticked box recording done=open is reported",
-            clean.replace(done_line, "    (record) sig=%s done=open" % rec["boxes"][0]["sig"]),
+            plant(clean, done_line, "    (record) sig=%s done=open" % rec["boxes"][0]["sig"]),
             "The mark and the claim disagree",
         )
         # R5: the annotation moved INSIDE the box line.
         box_line = next(ln for ln in clean.splitlines() if ln.startswith("- [x] "))
-        plant(
+        expect_finding(
             "R5: `(record)` inside a box line is reported",
-            clean.replace(box_line, box_line + " (record)"),
+            plant(clean, box_line, box_line + " (record)"),
             "carries `(record)` inside it",
         )
         # R6: a placeholder under `compacted`. The fixture is `parked` (it has an
         # open box), so the status is flipped as part of the plant -- which is
         # also the control for `parked` being EXEMPT, asserted straight after.
-        with_ph = clean.replace("## Why\n", "## Why\n" + R.placeholder("why") + "\n", 1)
-        plant(
+        with_ph = plant(clean, "## Why\n", "## Why\n" + R.placeholder("why") + "\n", 1)
+        expect_finding(
             "R6: an unfilled placeholder under `compacted` is reported",
-            with_ph.replace("Status: parked", "Status: compacted", 1),
+            plant(with_ph, "Status: parked", "Status: compacted", 1),
             "unfilled placeholder",
         )
         g = judge(with_ph)
@@ -1088,14 +1230,14 @@ def selftest():
             f"got {g}",
         )
         # R7: a hand-edited spine.
-        plant(
+        expect_finding(
             "R7: a Record-Sig that does not match the spine is reported",
-            clean.replace("Record-Sig: " + rec["record_sig"], "Record-Sig: 00000000"),
+            plant(clean, "Record-Sig: " + rec["record_sig"], "Record-Sig: 00000000"),
             "hashes to",
         )
         # R7 CONTROL: editing PROSE must NOT move the signature, or the record
         # becomes un-editable and people work around it instead of using it.
-        edited = clean.replace("## Lessons\n", "## Lessons\n- a sharpened lesson\n", 1)
+        edited = plant(clean, "## Lessons\n", "## Lessons\n- a sharpened lesson\n", 1)
         er = R.parse(edited)
         ck(
             "R7 CONTROL: sharpening the prose does not move the signature",
@@ -1218,7 +1360,7 @@ def selftest():
         # revive-and-re-compact replaces the single bullet rather than adding one.
         ck(
             "C9: a `## History` bullet rewritten since the last committed version is flagged",
-            "C9-history-append-only" in cand(clean.replace(hist_line, hist_line + " EDITED", 1)),
+            "C9-history-append-only" in cand(plant(clean, hist_line, hist_line + " EDITED", 1)),
         )
         # C9, the silent direction: a bullet APPENDED under the same first one.
         ck(
@@ -1232,7 +1374,7 @@ def selftest():
             "C9 CONTROL: a record with no committed history is not flagged",
             "C9-history-append-only"
             not in cand(
-                clean.replace(hist_line, hist_line + " EDITED", 1),
+                plant(clean, hist_line, hist_line + " EDITED", 1),
                 at="agent/PLAN-never-committed.md",
             ),
         )
@@ -1253,7 +1395,7 @@ def selftest():
         ck(
             "C10 CONTROL: placeholders under `compacted` belong to R6, which already blocks",
             "C10-parked-placeholder"
-            not in cand(clean.replace("Status: parked", "Status: compacted", 1)),
+            not in cand(plant(clean, "Status: parked", "Status: compacted", 1)),
         )
 
         # C11, both directions.
@@ -1264,7 +1406,7 @@ def selftest():
         )
         ck(
             "C11: a landed blob with no `Full-Text:` line is flagged",
-            "C11-fulltext-upgrade" in cand(clean.replace(ft_line + "\n", "", 1)),
+            "C11-fulltext-upgrade" in cand(plant(clean, ft_line + "\n", "", 1)),
         )
 
         # ---- THE RECORDER, driven through all four floors ------------------
@@ -1346,6 +1488,98 @@ def selftest():
             census_report(root, out=io.StringIO(), err=io.StringIO()) == 1,
         )
 
+        # ---- R9, THREE PLANTS BECAUSE THE ARITIES DIFFER -------------------
+        # One control cannot cover these: `Supersedes` needs at least one
+        # pointer, `Extends` needs exactly one, and `Related` needs none. A
+        # single fixture would prove whichever arity it happened to have.
+        def xref(label, body, needle, want=True):
+            got = header_xref_problems(root, "agent/PLAN-x.md", body)
+            hit = any(needle in g for g in got)
+            ck(label, hit is want, f"needle {needle!r}, want {want}, got {got}")
+
+        real_plan = "agent/PLAN-env-to-bitwarden.md"
+        # A plan that resolves in the FIXTURE root, so the silent cases are silent
+        # for the right reason. build_fixture writes `rel`; use it.
+        here = rel
+
+        # -- Supersedes: at least one -----------------------------------------
+        xref(
+            "R9 Supersedes: naming no pointer at all is a finding",
+            "# t\nSupersedes: the old approach entirely.\n",
+            "at least 1",
+        )
+        xref(
+            "R9 CONTROL: Supersedes naming ONE resolvable plan is silent",
+            "# t\nSupersedes: `%s` Part 1.\n" % here,
+            "Supersedes",
+            want=False,
+        )
+        xref(
+            "R9 CONTROL: Supersedes may name SEVERAL, unlike Extends",
+            "# t\nSupersedes: `%s` and `%s:1`.\n" % (here, here),
+            "takes exactly",
+            want=False,
+        )
+        xref(
+            "R9 Supersedes: a pointer that does not resolve is a finding",
+            "# t\nSupersedes: `agent/PLAN-no-such-plan-zzz.md`.\n",
+            "does not exist",
+        )
+        # THE CONTINUATION LINE, which is not a nicety: the only real
+        # `Supersedes:` user in this tree puts its sole resolvable pointer on the
+        # SECOND line, and a line-at-a-time reader reports it as naming nothing.
+        xref(
+            "R9 CONTROL: a pointer on a CONTINUATION line counts",
+            "# t\nSupersedes: the config and its reader entirely, and the\n`%s:1` row.\n" % here,
+            "at least 1",
+            want=False,
+        )
+
+        # -- Extends: exactly one ---------------------------------------------
+        xref(
+            "R9 Extends: TWO pointers is a finding, because one is the arity",
+            "# t\nExtends: `%s` and `%s:1`.\n" % (here, here),
+            "takes exactly 1",
+        )
+        xref(
+            "R9 CONTROL: Extends naming exactly one is silent",
+            "# t\nExtends: `%s`.\n" % here,
+            "Extends",
+            want=False,
+        )
+
+        # -- Related: any number, including none -------------------------------
+        xref(
+            "R9 CONTROL: Related naming NOTHING is silent, unlike Supersedes",
+            "# t\nRelated: this rhymes with the licence work.\n",
+            "Related",
+            want=False,
+        )
+        xref(
+            "R9 Related: a pointer it DOES carry must resolve",
+            "# t\nRelated: `agent/PLAN-no-such-plan-zzz.md`.\n",
+            "does not exist",
+        )
+
+        # -- the block reader, both directions ---------------------------------
+        ck(
+            "R9: the value stops at the next header field",
+            header_xref_block("# t\nRelated: a\nOwner: b\n", "Related") == "a",
+            header_xref_block("# t\nRelated: a\nOwner: b\n", "Related"),
+        )
+        ck(
+            "R9: the value stops at a blank line",
+            header_xref_block("# t\nRelated: a\n\nb\n", "Related") == "a",
+        )
+        ck(
+            "R9 CONTROL: an absent key yields no block, so the rule stays silent",
+            header_xref_block("# t\nStatus: draft\n", "Extends") == "",
+        )
+        ck(
+            "R9 CONTROL: a key BELOW the header window is not read",
+            header_xref_block("# t\n%sExtends: `%s`\n" % ("f\n" * 12, real_plan), "Extends") == "",
+        )
+
     return bad
 
 
@@ -1403,6 +1637,24 @@ def main(argv):
         n_records += 1
         problems.extend(problems_for(ROOT, rel, text, current))
 
+    # ---- R9, OVER EVERY PLAN AND NOT ONLY THE RECORDS ----------------------
+    # The loop above filters to RECORD_STATES because R1..R8 are statements
+    # about a compaction record. R9 is not: both `Supersedes:` users in this
+    # tree carry `Status: draft`, so scoping R9 to records would give it zero
+    # subjects and a permanent green. The count is printed below, because a rule
+    # whose subject count silently reaches zero is a rule that has stopped
+    # asserting anything.
+    n_xref = 0
+    for rel, _status, _n in recs:
+        try:
+            text = (ROOT / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue  # already reported above for a record; a plain plan is not R9's business
+        if not any(header_xref_block(text, k) for k in HEADER_XREF_KEYS):
+            continue
+        n_xref += 1
+        problems.extend(header_xref_problems(ROOT, rel, text))
+
     rows = R.index_rows(ROOT, recs)
     # THIS DOES OPEN EVERY PLAN, and saying otherwise would be the wrong trade
     # described the wrong way round. `recs` is reused so the directory is not
@@ -1452,7 +1704,8 @@ def main(argv):
         f"`done=` is attested by {R.LEDGER_REL} at the commit it names, and "
         f"{R.INDEX_REL} matches, census section included "
         f"({len(PI.parse_census(census))} plan row(s) SessionStart reads instead of "
-        f"opening the plans)."
+        f"opening the plans). R9: {n_xref} plan(s) carry a "
+        f"{'/'.join(HEADER_XREF_KEYS)} header and every pointer in one resolves."
     )
     if n_records == 0:
         print(

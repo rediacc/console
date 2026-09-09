@@ -78,12 +78,13 @@ declaration that reads as wired and is not. Registration is the root driver's,
 via package.json, scripts/ci-runner/manifest.ts and the workflow.
 """
 
+import ast
 import os
 import pathlib
 import re
-import subprocess
 import sys
 import tempfile
+import time
 import tomllib
 
 # THE HOP, WRITTEN BY HAND EXACTLY ONCE. This file is a script, so it cannot
@@ -91,7 +92,7 @@ import tomllib
 # is on sys.path. Everything after this line goes through rediacc_ci.paths.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from rediacc_ci import paths
+from rediacc_ci import paths, proc
 from rediacc_ci.controls import Controls
 
 # See the module docstring for why this is a constant and floor 2 is not.
@@ -105,7 +106,39 @@ MIN_TESTS = 150
 # number is now sized against a MEASURED floor with real headroom, not against the
 # last run that happened to fit, and it is a module constant so raising it is one
 # visible edit rather than a literal buried in a call.
-RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 2400)
+#
+# 2400 -> 3600 on 2026-09-08, and the CAUSE is named because the number alone
+# would look like drift. `test-claude-hooks.sh` became portable that day
+# (`TWIN_TIMEOUT` in `.ci/rediacc_ci/tests/gates/test_twin_parity.py` replaced a
+# hardcoded 600s that had made any slow twin unportable by construction). It runs
+# 2 229 offline cases in 13m31s and now costs this suite THREE times: the ported
+# module itself, plus `test_twin_parity` driving the bash twin, plus the same
+# parity case driving the port. Measured immediately after: 1879s against a 2400s
+# kill timer -- 78% of it, where the previous baseline was 381s.
+#
+# RAISING THE KILL TIMER IS NOT THE FIX, and must not be mistaken for one. It
+# stops a spurious kill reporting as a gate failure; it does nothing about a
+# 31-minute gate. The real options are to re-tier the claude-hooks parity case
+# into its own lane, or to split that harness so no single subject is billed
+# three times. Both are larger than this line and are tracked as findings.
+#
+# 3600 -> 1080 THE SAME DAY, because 3600 COULD NOT FIRE. This gate runs as the
+# `Python package tests` step of `quality-security` in `ci-quality.yml`, and that
+# job declares `timeout-minutes: 20` -- 1200s. An in-script kill timer above its
+# own job's ceiling is dead code in CI: GitHub cancels the job first, and a
+# cancelled job's only clue is `The operation was canceled.` with no verdict, no
+# KILLED line, and no named cause. That is the exact chain
+# `check_job_timeout_headroom.py` was written for, one level down, where that
+# gate cannot see it -- it reads workflow ceilings, never in-script timers.
+#
+# 1080 = 18 minutes: above the 810.16s the suite measured on 2026-09-07 with real
+# margin, and below the 1200s ceiling with two minutes left for the rest of the
+# job. Under it, a suite that overruns is KILLED by this gate WITH its diagnostic
+# instead of vanishing into an opaque cancel. It does not make the suite faster
+# and is not pretending to: if the run genuinely needs longer than the job allows,
+# the job's `timeout-minutes` is the number to argue about, not this one.
+# `check:ci-inner-timeout-reachable` now enforces the relationship.
+RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 1080)
 
 # HOW MANY WORKERS, and it is not `auto`. `-n auto` takes every core (24 here)
 # and oversubscribes against the ci-runner's own 22-slot pool, which is already
@@ -137,10 +170,17 @@ def jobs() -> int:
 # files are in scope.
 TEST_GLOB = "test_*.py"
 
-# A test FUNCTION at module level. Deliberately not a full parse: this is a floor,
-# and a floor that needs an AST walk to compute is a floor that can fail for its
-# own reasons. Anchored so a `def test_` inside a docstring or a nested helper
-# does not inflate the count.
+# A test FUNCTION at module level. The anchor is the FALLBACK, not the primary,
+# and the comment here used to claim it was enough: "anchored so a `def test_`
+# inside a docstring or a nested helper does not inflate the count". It is not.
+# `re.MULTILINE` anchors to a LINE, and a triple-quoted fixture holding a sample
+# module writes its `def test_one(gate):` at column 0 like any other line, so the
+# regex counts it. Measured 2026-09-08 across all three testpaths: 2228 by regex
+# against 2216 real functions, 12 phantoms in the two gate tests that carry
+# synthetic Python fixtures. Harmless that day only because parametrisation put
+# collection at 3371, far above either number -- the floor is `collected >=
+# corpus`, so an INFLATED corpus is a gate that reds for no reason, and it was 12
+# fixtures away from doing so.
 TEST_DEF_RE = re.compile(r"^def (test_\w+)\s*\(", re.MULTILINE)
 
 # pytest's own report lines. The collection count comes from the header, `N passed`
@@ -204,6 +244,15 @@ def corpus_test_count(tests_dir: pathlib.Path) -> int:
     pytest's answer is checked AGAINST, so deriving it from pytest would make the
     comparison a tautology -- the exact "check that cannot fail" shape
     check-python-lint.sh records having introduced once in a control.
+
+    PARSED WHEN IT PARSES, MATCHED WHEN IT DOES NOT. The old objection to an AST
+    walk was sound -- "a floor that needs an AST walk to compute is a floor that
+    can fail for its own reasons" -- and it is answered by falling back rather
+    than by staying inexact: a file that will not parse is counted by the regex
+    exactly as before, so the floor still cannot fail for its own reasons, while
+    every file that DOES parse is counted exactly. Reading the file is still the
+    point; only the way the text is read has changed, so nothing here asks pytest
+    anything and the comparison stays a real one.
     """
     total = 0
     for path in sorted(tests_dir.glob(TEST_GLOB)):
@@ -211,7 +260,34 @@ def corpus_test_count(tests_dir: pathlib.Path) -> int:
             body = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
-        total += len(TEST_DEF_RE.findall(body))
+        total += count_test_defs(body)
+    return total
+
+
+def count_test_defs(body: str) -> int:
+    """Test functions really DEFINED in `body`; a string literal is not one."""
+    try:
+        tree = ast.parse(body)
+    except SyntaxError:
+        return len(TEST_DEF_RE.findall(body))
+
+    # WHAT PYTEST ACTUALLY COLLECTS, which is neither "every `def test_`" nor
+    # "every line starting with `def test_`": a function at MODULE level, or a
+    # method of a `Test*` class. An `ast.walk` would also find a def nested inside
+    # another function -- pytest never collects that, and counting it inflates the
+    # floor exactly as the string fixtures did. The old regex got this one right
+    # by accident, through the `^` anchor, so the parse must not lose it.
+    def _named(nodes: list[ast.stmt]) -> int:
+        return sum(
+            1
+            for n in nodes
+            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name.startswith("test_")
+        )
+
+    total = _named(tree.body)
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name.startswith("Test"):
+            total += _named(node.body)
     return total
 
 
@@ -273,6 +349,18 @@ def verdict(*, corpus: int, collected: int | None, passed: int | None, returncod
             "reads exactly like a clean run." % (collected, corpus)
         )
     if returncode != EXIT_OK:
+        # THIS GATE IS THE LIKELIEST IN THE ESTATE TO BE KILLED rather than to
+        # fail: it runs ~1900s against a 3600s kill timer, so a signal here means
+        # a deadline fired, not that a test failed. Reporting it as a plain exit
+        # sends the reader hunting a red test that does not exist.
+        sig = -returncode if returncode < 0 else (returncode - 128 if 128 < returncode < 160 else 0)
+        if sig:
+            return (
+                "pytest was KILLED by signal %d (exit %d), so no test verdict was "
+                "reached. Something terminated the run -- usually RUN_TIMEOUT_S "
+                "(%ds) or an outer deadline shorter than it. Do not read this as a "
+                "failing test." % (sig, returncode, RUN_TIMEOUT_S)
+            )
         return "pytest exited %d." % returncode
     if passed != collected:
         return (
@@ -281,6 +369,12 @@ def verdict(*, corpus: int, collected: int | None, passed: int | None, returncod
             "the exit code." % ("no" if passed is None else str(passed), collected)
         )
     return ""
+
+
+# How long `.ci/bootstrap.sh doctor` may take before this gate refuses. Named
+# rather than inline so `check:ci-inner-timeout-reachable` can see it, and sized
+# far below the 20-minute job ceiling this gate sits under.
+DOCTOR_TIMEOUT_S = 120
 
 
 def resolve_pytest(root: pathlib.Path) -> str | None:
@@ -295,18 +389,53 @@ def resolve_pytest(root: pathlib.Path) -> str | None:
     bootstrap = root / ".ci" / "bootstrap.sh"
     if not bootstrap.is_file():
         return None
-    try:
-        proc = subprocess.run(
-            ["bash", str(bootstrap), "doctor"],
-            capture_output=True,
-            text=True,
-            check=False,
-            cwd=str(root),
-            timeout=120,
+    # THE TIMEOUT HAS TO KILL A PROCESS GROUP, NOT A CHILD. This was
+    # `subprocess.run(..., capture_output=True, timeout=120)`, which looks bounded
+    # and is not: on timeout `run` kills the direct child and then blocks in
+    # `communicate()` waiting for the read ends to close, and a GRANDCHILD the
+    # bootstrap spawned still holds them. Measured 2026-09-08:
+    # `timeout 20 .ci/rediacc_ci/check_pytest.py --help </dev/null` exited 124
+    # having written ZERO bytes to stdout AND stderr.
+    #
+    # WHY THAT MATTERS MORE THAN A SLOW GATE. This is `check:ci-pytest`, whose job
+    # ceiling is 20 minutes. A CI run that cannot resolve pytest therefore does not
+    # report "cannot run" -- it produces nothing at all until GitHub cancels the
+    # job, and the only artefact is `The operation was canceled.` That is the same
+    # chain `check_job_timeout_headroom.py` and `check:ci-inner-timeout-reachable`
+    # exist to close, arriving through a third door.
+    #
+    # `start_new_session=True` puts the bootstrap in its own process group so the
+    # kill reaches every descendant; `stdin=DEVNULL` closes the other way this can
+    # hang, a child that decides to read from the terminal.
+    # THROUGH `proc.run`, WHICH ALREADY SOLVES THIS. The first fix here hand-rolled
+    # a process-group kill beside `subprocess.run`; `.ci/rediacc_ci/proc.py` had
+    # carried one since it was written (`_kill(proc, group)` at :199,
+    # `start_new_session=kill_group` at :256), and a second copy is how the two
+    # drift. `proc.run` gives stdin=DEVNULL, a bounded wait, and a group kill that
+    # reaches the grandchild still holding the read end.
+    #
+    # THE BUG IT REPLACES, measured 2026-09-08: `subprocess.run(...,
+    # capture_output=True, timeout=120)` looks bounded and is not. On timeout it
+    # kills the direct child and then blocks in `communicate()` on pipes a
+    # GRANDCHILD holds, so `timeout 20 check_pytest.py --help </dev/null` exited
+    # 124 having written ZERO bytes to stdout AND stderr. Under a 20-minute job
+    # ceiling that surfaces only as `The operation was canceled.`
+    result = proc.run(
+        ["bash", str(bootstrap), "doctor"],
+        cwd=str(root),
+        timeout=DOCTOR_TIMEOUT_S,
+    )
+    if result.timed_out:
+        print(
+            "%s✗%s `.ci/bootstrap.sh doctor` did not answer within %ds, so pytest could\n"
+            "  not be resolved. Its process group was killed. This gate refuses rather\n"
+            "  than hanging to the job ceiling, where the only symptom would be\n"
+            "  `The operation was canceled.` with no output at all." % (RED, NC, DOCTOR_TIMEOUT_S),
+            file=sys.stderr,
         )
-    except (OSError, subprocess.SubprocessError):
         return None
-    for line in ANSI_RE.sub("", proc.stdout).splitlines():
+    stdout = result.stdout
+    for line in ANSI_RE.sub("", stdout).splitlines():
         fields = line.split()
         if len(fields) == 3 and fields[0] == "pytest":
             candidate = fields[2]
@@ -335,20 +464,6 @@ def cannot_run(reason: str) -> int:
     return EXIT_CANNOT_RUN
 
 
-def _as_text(chunk) -> str:
-    """TimeoutExpired.output is bytes, str, or None depending on how far the child got.
-
-    Normalising here rather than at the call site because getting it wrong yields a
-    TypeError raised while REPORTING a timeout, which replaces one uninformative
-    traceback with another.
-    """
-    if chunk is None:
-        return ""
-    if isinstance(chunk, bytes):
-        return chunk.decode("utf-8", "replace")
-    return str(chunk)
-
-
 def run_pytest(pytest_bin: str, cwd: pathlib.Path, args: list[str] | None = None):
     """(returncode, combined output). Args default to none, so `testpaths` applies.
 
@@ -358,16 +473,18 @@ def run_pytest(pytest_bin: str, cwd: pathlib.Path, args: list[str] | None = None
     that never reached the summary was parsed out of the wrong stream and read as
     "no collection line", which is a true statement about the wrong reason.
     """
-    try:
-        proc = subprocess.run(
-            [pytest_bin, *(args or [])],
-            capture_output=True,
-            text=True,
-            check=False,
-            cwd=str(cwd),
-            timeout=RUN_TIMEOUT_S,
-        )
-    except subprocess.TimeoutExpired as exc:
+    # THROUGH THE SHARED RUNNER, and for this call site that is the whole point:
+    # the main invocation passes `-n <jobs>`, so pytest forks xdist workers that
+    # inherit the capture pipes. `subprocess.run(capture_output=True, timeout=...)`
+    # kills the pytest process on timeout and then blocks in communicate() waiting
+    # for a write end the workers still hold -- a gate that hangs instead of
+    # refusing. `proc.run` puts the child in its own session and signals the group.
+    result = proc.run(
+        [pytest_bin, *(args or [])],
+        cwd=cwd,
+        timeout=RUN_TIMEOUT_S,
+    )
+    if result.timed_out:
         # A TIMEOUT IS A VERDICT, NOT A TRACEBACK. Until 2026-09-07 this call had a
         # bare `timeout=900` and `main()` no handler, so `TimeoutExpired` propagated
         # out of the gate as an uncaught exception: no verdict, no exit 77, just a
@@ -378,9 +495,9 @@ def run_pytest(pytest_bin: str, cwd: pathlib.Path, args: list[str] | None = None
         # The partial output is RETURNED rather than discarded, because a suite that
         # ran for RUN_TIMEOUT_S and then hung has usually printed the failing test
         # already, and throwing that away leaves the reader with nothing to act on.
-        # `.output` and `.stderr` are bytes-or-str-or-None depending on how far the
-        # child got, so both are normalised.
-        partial = _as_text(exc.output) + _as_text(exc.stderr)
+        # `proc.run` drains the pipes a SECOND time after the group kill, so the
+        # partial text here is whatever the child managed to write before it died.
+        partial = result.stdout + result.stderr
         return 1, (
             "%s\ncheck_pytest: the suite did not finish within %ds. That is this "
             "gate refusing, not pytest failing: no verdict was reached, so nothing "
@@ -388,7 +505,7 @@ def run_pytest(pytest_bin: str, cwd: pathlib.Path, args: list[str] | None = None
             "this slow now, raise RUN_TIMEOUT_S against a measured floor rather than "
             "guessing.\n" % (partial, RUN_TIMEOUT_S)
         )
-    return proc.returncode, proc.stdout + proc.stderr
+    return result.returncode, result.stdout + result.stderr
 
 
 # ---------------------------------------------------------------------------
@@ -403,13 +520,14 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     the point of having one: the gate that proves the suite runs is itself a
     consumer of the thing the suite tests.
     """
-    # FLOOR RAISED WITH THE SUITE, 16 -> 25. It was 16 against 19 controls; the
+    # FLOOR RAISED WITH THE SUITE, 16 -> 25 -> 29 -> 35 (six corpus-counter
+    # controls, then two more for class methods). It was 16 against 19 controls; the
     # parallel-header work adds nine (six string fixtures and three against a real
     # two-worker run), so 19 -> 28. A floor left at 16 would keep passing with the
     # entire parallel block deleted, which is precisely the "the file is not being
     # executed as written" failure the floor exists for. Slack is kept at three,
     # the same margin the previous pair carried.
-    c = Controls("check_pytest", floor=25, verbose=verbose)
+    c = Controls("check_pytest", floor=44, verbose=verbose)
 
     # A CORPUS SIZE THAT IS COMFORTABLY ABOVE THE FLOOR, DERIVED FROM IT. These
     # controls used to write 65 as a literal, and raising MIN_TESTS from 40 to 120
@@ -490,6 +608,36 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     c.truthy(
         "a non-zero pytest exit is reported",
         verdict(corpus=healthy, collected=healthy, passed=healthy - 1, returncode=1),
+    )
+    # A KILLED RUN IS NOT A FAILING TEST, and this gate is the likeliest in the
+    # estate to be killed: ~1900s against a 3600s RUN_TIMEOUT_S. Reporting a
+    # signal as a plain exit sends the reader hunting a red test that does not
+    # exist. Verified ad-hoc when the fix landed; PERSISTED here because an
+    # ad-hoc check survives nothing and CI never sees it.
+    c.check(
+        "a SIGTERMed run says KILLED, not exited",
+        "KILLED by signal 15"
+        in verdict(corpus=healthy, collected=healthy, passed=healthy, returncode=143),
+        True,
+    )
+    c.check(
+        "...and a negative returncode, which is how subprocess spells it",
+        "KILLED by signal 9"
+        in verdict(corpus=healthy, collected=healthy, passed=healthy, returncode=-9),
+        True,
+    )
+    # THE MIRROR, without which the two above pass for a verdict() that says
+    # KILLED unconditionally. 160 is outside the signal band on purpose: treating
+    # all of 128+ as signals would swallow real exit codes.
+    c.check(
+        "CONTROL: an ordinary exit 1 is NOT reported as killed",
+        "KILLED" in verdict(corpus=healthy, collected=healthy, passed=healthy, returncode=1),
+        False,
+    )
+    c.check(
+        "CONTROL: 160 is outside the signal band",
+        "KILLED" in verdict(corpus=healthy, collected=healthy, passed=healthy, returncode=160),
+        False,
     )
     c.truthy(
         "exit 0 with fewer passes than collected is refused (a skip is not a pass)",
@@ -595,6 +743,103 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
                 "collected 1 item" in out,
             )
 
+    # THE CORPUS COUNTER, whose old regex counted a `def test_` written at column
+    # 0 INSIDE a string fixture. That inflates the floor `collected >= corpus`, so
+    # the failure it produces is a gate red with no defect behind it -- the worst
+    # kind, because the next session goes looking for a broken test. Found by
+    # writing such a fixture: 2228 counted against 2216 real, 12 phantoms.
+    c.check(
+        "CORPUS: a real module-level test function is counted",
+        count_test_defs("def test_real(gate):\n    pass\n"),
+        1,
+    )
+    c.check(
+        "CORPUS: a `def test_` at column 0 INSIDE a string fixture is NOT",
+        count_test_defs('SAMPLE = """\ndef test_phantom(gate):\n    pass\n"""\n'),
+        0,
+    )
+    c.check(
+        "CORPUS: and a fixture beside a real one leaves exactly the real one",
+        count_test_defs(
+            'SAMPLE = """\ndef test_phantom(gate):\n    pass\n"""\n\n'
+            "def test_real(gate):\n    pass\n"
+        ),
+        1,
+    )
+    c.check(
+        "CORPUS: a def NESTED inside another function is not counted, because "
+        "pytest does not collect one and the floor must not claim it does",
+        count_test_defs("def outer():\n    def test_nested():\n        pass\n"),
+        0,
+    )
+    c.check(
+        "CORPUS: a method of a Test* class IS counted, because pytest collects it",
+        count_test_defs("class TestThing:\n    def test_method(self):\n        pass\n"),
+        1,
+    )
+    c.check(
+        "CORPUS: a method of a non-Test class is not, for the same reason",
+        count_test_defs("class Helper:\n    def test_method(self):\n        pass\n"),
+        0,
+    )
+    # THE FALLBACK, which is what makes the parse safe to rely on: a file that
+    # cannot be parsed is counted exactly as it was before, so this floor still
+    # cannot fail for its own reasons.
+    c.check(
+        "CORPUS: an unparseable file falls back to the regex rather than raising, "
+        "so it still counts the one the regex can see",
+        count_test_defs("def test_broken(:\n"),
+        1,
+    )
+    c.check(
+        "CORPUS: and the fallback still counts what the regex can see in one",
+        count_test_defs("def test_seen():\n    pass\ndef test_broken(:\n"),
+        2,
+    )
+
+    # THE HANG THIS GATE SHIPPED WITH, controlled in both directions. Measured
+    # 2026-09-08: `--help` exited 124 after writing ZERO bytes to stdout AND
+    # stderr, because it fell through to `resolve_pytest`, whose `timeout=120`
+    # did not bound it -- `subprocess.run` killed the child and then blocked in
+    # `communicate()` on pipes a GRANDCHILD still held.
+    c.check("HANG: --help is recognised", wants_help(["--help"]), True)
+    c.check("HANG: and -h too, since a reader will try both", wants_help(["-h"]), True)
+    c.check("HANG: an ordinary run is not mistaken for one", wants_help([]), False)
+    c.truthy(
+        "HANG: and the guard is placed BEFORE resolve_pytest, so --help cannot "
+        "fall through into the resolution that hangs",
+        help_precedes_resolution(),
+    )
+    c.truthy("HANG: the usage text names the kill timer", "PYTEST_RUN_TIMEOUT_S" in USAGE)
+
+    # THE KILLER ITSELF, driven against the exact shape that hung: a child whose
+    # GRANDCHILD holds the read end open. Killing only the child blocks forever
+    # here; `proc.run` kills the GROUP, so it returns. Driven through the shared
+    # runner rather than a local copy, because the copy was the first mistake.
+    t0 = time.monotonic()
+    blocked = proc.run(
+        ["bash", "-c", "tail -f /dev/null & echo spawned; tail -f /dev/null"],
+        timeout=3,
+    )
+    elapsed = time.monotonic() - t0
+    # THE THRESHOLD IS MEASURED, NOT ROUND. With the group kill: 3.0s and stdout
+    # 'spawned'. Without it: 13.1s and stdout EMPTY -- the fallback drain times
+    # out and the child's own words are lost. A loose `< 20` passed both, so it
+    # proved nothing; 8 separates them and the stdout check below is sharper
+    # still, because losing the diagnostic is the part that actually hurts.
+    c.truthy(
+        "HANG: proc.run bounds a child whose grandchild holds the pipe "
+        "(returned in %.1fs; without the group kill this is 13s)" % elapsed,
+        elapsed < 8,
+    )
+    c.truthy(
+        "HANG: and the group kill PRESERVES what the child said, which is the "
+        "whole point of a diagnostic (stdout is empty without it)",
+        "spawned" in blocked.stdout,
+    )
+    c.check("HANG: and it reports the timeout rather than pretending", blocked.timed_out, True)
+    c.check("HANG: its stdout is a string, never None", isinstance(blocked.stdout, str), True)
+
     return c.report()
 
 
@@ -618,7 +863,77 @@ def testpath_dirs(root: pathlib.Path) -> list[pathlib.Path]:
     return [paths.from_root(*pathlib.PurePosixPath(p).parts, root=root) for p in listed]
 
 
+USAGE = """\
+check:ci-pytest -- run the Python test corpus and refuse a partial pass.
+
+  check_pytest.py              judge the suite
+  check_pytest.py --selftest   run this gate's own controls and exit
+  check_pytest.py --help       this text
+
+Environment:
+  PYTEST_RUN_TIMEOUT_S   kill timer for the suite (default %d seconds, and it
+                         must stay BELOW the job's timeout-minutes or it can
+                         never fire -- check:ci-inner-timeout-reachable
+                         enforces exactly that)
+  PYTEST_BIN             pytest to use, ahead of the bootstrap ladder
+"""
+
+
+def wants_help(argv: list[str]) -> bool:
+    """Whether the caller asked for usage. A PREDICATE, so it can be controlled.
+
+    The obvious control -- `c.check(main(["--help"]), EXIT_OK)` -- is a trap, and
+    it caught me: with the early return planted away, that call falls through and
+    runs the ENTIRE suite, so the plant produces a thirty-minute hang instead of a
+    red. A control must fail fast or it is not usable as a control.
+    """
+    return "--help" in argv or "-h" in argv
+
+
+def help_precedes_resolution() -> bool:
+    """The help guard must come BEFORE any resolution, checked structurally.
+
+    This is an ORDERING property, and no run can demonstrate it: a `--help` that
+    resolves first still prints usage on a healthy host, and only hangs on the
+    broken one. So it is read off the AST rather than driven.
+    """
+    tree = ast.parse(pathlib.Path(__file__).read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.FunctionDef) and node.name == "main"):
+            continue
+        guard = next(
+            (
+                n.lineno
+                for n in ast.walk(node)
+                if isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Name)
+                and n.func.id == "wants_help"
+            ),
+            None,
+        )
+        resolve = next(
+            (
+                n.lineno
+                for n in ast.walk(node)
+                if isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Name)
+                and n.func.id == "resolve_pytest"
+            ),
+            None,
+        )
+        return guard is not None and resolve is not None and guard < resolve
+    return False
+
+
 def main(argv: list[str]) -> int:
+    # ANSWERED BEFORE ANY RESOLUTION. `--help` used to fall straight through to
+    # `resolve_pytest`, so on a host where the bootstrap hangs, asking this gate
+    # how to use it hung too, with no output on either stream. A usage message
+    # that depends on a subprocess is not a usage message.
+    if wants_help(argv):
+        print(USAGE % RUN_TIMEOUT_S)
+        return EXIT_OK
+
     root = paths.repo_root()
     test_dirs = testpath_dirs(root)
     pytest_bin = resolve_pytest(root)

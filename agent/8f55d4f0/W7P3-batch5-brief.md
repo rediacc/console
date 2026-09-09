@@ -232,6 +232,45 @@ skips when `private/renet` is absent and quality-static gives no submodule
 checkout. That premise is now FALSE: `quality-security` checks submodules out, so
 that subject is admissible again. Re-screen it rather than inheriting the drop.
 
+## Two branches that are UNEXERCISED on this machine (batch 8)
+
+`test_gate_profiler_report.py`'s `test_sampler_reads_a_real_containers_ceiling` takes
+its DOCKER branch here, because `/sys/fs/cgroup/memory.max` is unreadable on this box.
+The NATIVE branch is present and structurally faithful but has never run, and it is
+the one that will be live on ubuntu-slim. The same case's `SKIP`-shaped `log_pass`
+arms (no docker, or the container run failing) are carried verbatim from the twin and
+are likewise unexercised. **If that port ever reds in CI and passes here, this is why**
+-- look at the branch, not at the assertion.
+
+By contrast, one thing batch 8 named as unverified is NOT: it worried the `-n 8`
+interaction was inherited rather than measured for its twelve. `check_pytest.py:671`
+puts `-n <jobs> --dist loadgroup` on argv with `PYTEST_JOBS_CAP = 8`, so the
+`check:ci-pytest` run it drove to exit 0 IS the xdist sweep. No separate run is owed.
+
+## Residues from batch 7 that a later batch must not rediscover
+
+**Six `test-breakpoint-*.sh` subjects are UNPORTABLE by any agent under the standard
+brief, and not on merit.** Plant-verifying them means temporarily writing under
+`.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching and which every
+batch brief lists as must-not-touch. They stay admissible in the derivation, so each
+batch will keep selecting and then dropping them. Either give one batch owner that path
+explicitly, with the vendored-copy drift gate re-run afterwards, or exclude them in the
+derivation with this reason. Do not silently drop them a fourth time.
+
+**`test-scrub-sentinel-empty.sh` stays dropped** while `aws` is absent: the twin takes
+its tool-absent branch, so both real cases are unreachable and no plant can turn either
+side red. A port would be green-but-unproven. Admissible on a machine with `aws`.
+
+**`test_gate_renet_deadcode.py` DELIBERATELY DIVERGES from its twin in one state.** When
+`private/renet` is absent the twin exits 0 with a "skipping" echo; the port refuses
+loudly. The argument, recorded in its module docstring, is that `run-all.sh` already
+scores an exit-0-with-no-`PASS:`-line run as a FAILURE, so under the battery that
+actually runs these files the twin's skip is red too, and only `bash <twin>` driven
+directly reads it as green. **That branch is UNEXERCISED here and in `quality-security`,
+because the submodule is present in both.** If a future lane ever runs without
+submodules, twin and port disagree and the parity driver will say so; that is the
+intended alarm, not a regression to suppress.
+
 ## What a batch 5 writer must do per subject
 
 Unchanged from batches 2 to 4, and none of it is optional:

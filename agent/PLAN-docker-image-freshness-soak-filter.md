@@ -5,7 +5,7 @@ Updated: 2026-08-25
 
 ## The defect
 
-`scripts/check-docker-image-freshness.ts:328-330` decides whether a pin is stale:
+`scripts/gates/check-docker-image-freshness.ts:328-330` decides whether a pin is stale:
 
 ```ts
 const newer = tags
@@ -18,7 +18,7 @@ The second filter implements the `minimum-release-age` soak (1440 minutes, from
 it has baked. Sound intent, wrong clock.
 
 `pushedMs` comes from Docker Hub's `tag_last_pushed`
-(`scripts/check-docker-image-freshness.ts:177-180`, `listHubTags`). For Docker
+(`scripts/gates/check-docker-image-freshness.ts:177-180`, `listHubTags`). For Docker
 Official Images that is a **rebuild** timestamp, not a release date. The Python
 image rebuilds every supported minor on a schedule, so a single rebuild wave
 re-stamps `3.10-slim` through `3.15-rc-slim` within the same minute.
@@ -59,7 +59,7 @@ Soak the **newest available version only**. A rebuild of an established series
 is not a release; the thing the soak exists to protect against is a brand-new
 version appearing minutes ago.
 
-In `scripts/check-docker-image-freshness.ts`, replace the unconditional soak
+In `scripts/gates/check-docker-image-freshness.ts`, replace the unconditional soak
 filter with: sort the newer candidates newest-first (the file already has this
 comparator at :332), drop the single newest if it is inside the window, and
 treat whatever remains as evidence of staleness.

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# ---- gate ----
-# step: Hook integrity
-# emit: false
-# blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
-# needs: none
-# selftest: true
-# lane: quality-code
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-hook-integrity is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_hook_integrity.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_hook_integrity.py" but its header derives ".ci/scripts/quality/check-hook-integrity.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Gate: the enforcement layer cannot quietly disarm itself.
 #

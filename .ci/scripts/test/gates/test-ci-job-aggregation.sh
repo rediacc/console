@@ -288,8 +288,17 @@ test_low_effort_blocker_is_rejected() {
     scaffold "$FIXTURE/b.yml" "$FIXTURE/b.assert.sh"
     local rc=0
     local out
+    # REDIACC_CI_ROOT POINTS THE COPIED LIBS AT THE REAL PACKAGE. Since
+    # 2026-09-09 blocker-validator.sh is a client of rediacc_ci.core.allowlist and
+    # resolves it three directories above itself, which in this mirrored layout is
+    # the fixture root and holds no package. It refused, correctly and loudly
+    # ("cannot find rediacc_ci under .../.ci"), and the assertion below then
+    # reported the refusal instead of the low-effort diagnostic it was written for.
+    # Same override, for the same reason, as test-go-deps-probe-failure.sh:82 uses
+    # on age-check.sh.
     out="$(CI_JOB_AGGREGATION_WORKFLOW="$FIXTURE/b.yml" \
-        CI_JOB_AGGREGATION_ASSERT="$FIXTURE/b.assert.sh" bash "$mutant" 2>&1)" || rc=$?
+        CI_JOB_AGGREGATION_ASSERT="$FIXTURE/b.assert.sh" \
+        REDIACC_CI_ROOT="$REPO_ROOT" bash "$mutant" 2>&1)" || rc=$?
     assert_eq "$rc" "1" "a low-effort BLOCKER must fail the gate: $out"
     assert_contains "$out" "low-effort placeholder" "with the validator's own diagnostic"
     log_pass "a banned-phrase BLOCKER in the exempt set is rejected"

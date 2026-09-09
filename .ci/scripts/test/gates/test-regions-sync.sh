@@ -35,7 +35,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test gate
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-SUT="$REPO_ROOT/.ci/scripts/quality/check-regions-sync.sh"
+# The registered subject is the Python entry point since W7 P4; this harness is
+# this gate's whole CI coverage, so it has to follow or the cutover is vacuous.
+SUT="$REPO_ROOT/.ci/scripts/quality/check_regions_sync.py"
 [[ -f "$SUT" ]] || log_fail "subject under test is missing: $SUT"
 
 WORK="$(mktemp -d)"
@@ -44,7 +46,7 @@ trap 'rm -rf "$WORK"' EXIT
 GOOD='{"regions":[{"id":"eu","label":"Europe","domain":"eu.example"},{"id":"us","label":"US","domain":"us.example"}]}'
 
 run_gate() { # run_gate <root-file> <baked-file>
-    (cd "$REPO_ROOT" && REGIONS_ROOT_FILE="$1" REGIONS_BAKED_FILE="$2" bash "$SUT" >/dev/null 2>&1)
+    (cd "$REPO_ROOT" && REGIONS_ROOT_FILE="$1" REGIONS_BAKED_FILE="$2" python3 "$SUT" >/dev/null 2>&1)
 }
 
 test_identical_files_pass() {
@@ -117,7 +119,7 @@ test_the_live_tree_agrees() {
     log_test "the REAL regions.json and data.json agree right now"
     # Over-fire guard, and the reason the gate is worth running at all: if these
     # two ever drift, CI says so instead of shipping a stale list.
-    (cd "$REPO_ROOT" && bash "$SUT" >/dev/null 2>&1) ||
+    (cd "$REPO_ROOT" && python3 "$SUT" >/dev/null 2>&1) ||
         log_fail "the live tree's two region lists have diverged; reconcile them"
     log_pass "the live tree's two lists agree"
 }

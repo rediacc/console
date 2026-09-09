@@ -1,10 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# kind: test
-# test: .ci/scripts/test/gates/test-label-inventory.sh
-# blocker: BLOCKER: test-label-inventory.sh:191 runs the gate seam-free over the REAL .github/labels.yml inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") with the live list injected, so the real parse, the declared floor and the create-on-demand allowlist verification execute every CI run, and the two controls beside it drop a real label and add an undeclared one to prove both fire directions; the live GitHub read is the one part that cannot run in that lane because it holds no label-read token, and it runs on the local npm invocation
-# needs: none
-# ---- end gate ----
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-label-inventory is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_label_inventory.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_label_inventory.py" but its header derives ".ci/scripts/quality/check-label-inventory.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # .github/labels.yml and the labels that actually exist on the repo must agree,
 # in BOTH directions.

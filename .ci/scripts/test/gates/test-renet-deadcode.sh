@@ -102,10 +102,15 @@ test_fails_on_low_effort_phrase_at_length() {
     # A banned phrase padded to >=30 chars must still fail the exact-match
     # check when it is exactly a banned phrase; a >=30-char phrase like
     # "no fix available" is shorter than 30, so use validate directly.
-    local rc=0
-    validate_blocker_reason "x" "no fix available" >/dev/null 2>&1 || rc=$?
+    local rc=0 out
+    # THE OUTPUT IS CAPTURED, NOT DISCARDED. `rc=1` alone is satisfied by ANY
+    # failure -- a crash in the validator, a missing dependency, a typo in the
+    # call -- so the old `>/dev/null 2>&1` form asserted "something went wrong"
+    # rather than "the banned phrase was rejected".
+    out="$(validate_blocker_reason "x" "no fix available" 2>&1)" || rc=$?
     assert_exit_code 1 "$rc" "banned phrase should fail validation"
-    log_pass "banned phrase is rejected by validator"
+    assert_contains "$out" "no fix available" "and the rejection must NAME the phrase it rejected"
+    log_pass "banned phrase is rejected by validator, for that reason"
 }
 
 test_fails_on_stale_entry() {

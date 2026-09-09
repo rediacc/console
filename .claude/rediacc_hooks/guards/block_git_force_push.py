@@ -58,22 +58,8 @@ DEFECT = (r"]\+[^", r"]\+refs/[^")
 # added above never fired -- the exact bypass class command-scan.sh's own
 # header exists to close, on the one guard this file calls "the whole
 # security story".
-FORCE_PUSH = (
-    r"(^|[;&|(])["
-    + hookio.SPACE
-    + r"]*git push[^|;&]*(--force-with-lease|--force(["
-    + hookio.SPACE
-    + r"]|=|$)|["
-    + hookio.SPACE
-    + r"]-f(["
-    + hookio.SPACE
-    + r"]|$)|--mirror(["
-    + hookio.SPACE
-    + r"]|=|$)|["
-    + hookio.SPACE
-    + r"]\+[^"
-    + hookio.SPACE
-    + r"])"
+FORCE_PUSH = hookio.rx(
+    r"(^|[;&|(])[{S}]*git push[^|;&]*(--force-with-lease|--force([{S}]|=|$)|[{S}]-f([{S}]|$)|--mirror([{S}]|=|$)|[{S}]\+[^{S}])"
 )
 
 MESSAGE = (

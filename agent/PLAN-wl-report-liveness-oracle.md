@@ -10,14 +10,14 @@ transcript's mtime. Every anchor below was re-verified against the tree today:
 
 | anchor | verified content |
 |---|---|
-| `wl_report.py:69` | `SILENT_FLOOR = int(os.environ.get("WORKLIST_REPORT_SILENT_FLOOR", "200"))` |
-| `wl_report.py:75` | `SCAN_IDLE_MIN = float(os.environ.get("WORKLIST_REPORT_SCAN_IDLE_MIN", "5"))` |
-| `wl_report.py:415-417` | `for ev in read_index(store): if str(ev["id"]) == rid: return None` |
-| `wl_report.py:475` | `"silent": sends == 0 and len(body.strip()) < SILENT_FLOOR,` |
-| `wl_report.py:763` | `def scan(store, start, idle_min=None):` |
-| `wl_report.py:795` | `idle = (now.timestamp() - jsonl.stat().st_mtime) / 60.0` |
-| `wl_report.py:798-799` | `if idle < idle_min: continue  # still running: capturing now would record a half-answer` |
-| `wl_store.py:1563` | `LIVE_MIN = int(os.environ.get("WORKLIST_LIVE_MIN", "30"))` |
+| `.claude/hooks/stop/wl_report.py:69` | `SILENT_FLOOR = int(os.environ.get("WORKLIST_REPORT_SILENT_FLOOR", "200"))` |
+| `.claude/hooks/stop/wl_report.py:75` | `SCAN_IDLE_MIN = float(os.environ.get("WORKLIST_REPORT_SCAN_IDLE_MIN", "5"))` |
+| `.claude/hooks/stop/wl_report.py:415-417` | `for ev in read_index(store): if str(ev["id"]) == rid: return None` |
+| `.claude/hooks/stop/wl_report.py:475` | `"silent": sends == 0 and len(body.strip()) < SILENT_FLOOR,` |
+| `.claude/hooks/stop/wl_report.py:763` | `def scan(store, start, idle_min=None):` |
+| `.claude/hooks/stop/wl_report.py:795` | `idle = (now.timestamp() - jsonl.stat().st_mtime) / 60.0` |
+| `.claude/hooks/stop/wl_report.py:798-799` | `if idle < idle_min: continue  # still running: capturing now would record a half-answer` |
+| `.claude/hooks/stop/wl_store.py:1563` | `LIVE_MIN = int(os.environ.get("WORKLIST_LIVE_MIN", "30"))` |
 
 mtime measures whether an agent is WRITING, not whether it is ALIVE. An agent blocked
 in a single Bash call is silent by construction for the whole call.
@@ -44,9 +44,9 @@ The harness's running background task list, read from the `.lastevent-<prefix>.j
 sidecars that `wl_checks.py` writes on every full stop.
 
 **The join key is exact, and it is the one claim everything rests on.** Verified live:
-the sidecar carries `background_tasks[].id == "ad7126a7fed2d4a5e"` for a
+the sidecar carries `background_tasks[].id == "<agent-id>"` for a
 `type: "subagent"` entry, and the transcript `scan()` globs is
-`agent-ad7126a7fed2d4a5e.jsonl`. Byte-identical. No mapping and no heuristic:
+`agent-<agent-id>.jsonl`. Byte-identical. No mapping and no heuristic:
 `jsonl.stem.removeprefix("agent-")` at `:791` already produces exactly the lookup key.
 
 The roster does not over-protect. The live session has 136 subagent transcripts and the
@@ -57,7 +57,7 @@ would freeze `scan()` permanently.
 sibling `wl_report.py` imports. So the stdlib-plus-`wl_core` invariant survives.
 **Do not import `wl_liveness`.**
 
-**Rejected, with reasons.** Process-tree liveness: `wl_liveness.py:14-18` already
+**Rejected, with reasons.** Process-tree liveness: `.claude/hooks/stop/wl_liveness.py:14-18` already
 settled it from measurement, agent tasks have NO OS process. The `.meta.json` sidecar:
 read live, it carries `agentType`, `description`, `toolUseId`, `spawnDepth` and no
 terminal state; it records what an agent IS, never whether it is done.
@@ -97,7 +97,7 @@ than degrading silently.
       blindness string, never an innocent empty set. Per-sidecar try/except so one
       corrupt file cannot blind the whole oracle (the 12b lesson, one level up).
 - [x] 2. Add `SCAN_LIVE_MIN` beside `SCAN_IDLE_MIN`, default 30, citing
-      `wl_store.py:1563` for why a freshness bound is required at all.
+      `.claude/hooks/stop/wl_store.py:1563` for why a freshness bound is required at all.
 - [x] 3. Wire it into `scan()`: compute once above the loop, and skip on
       `agent_id in live_ids` BEFORE the `stat()` so a live agent costs one set lookup.
 - [x] 4. Report the oracle's state in the `--scan` CLI, one bounded line, blindness
@@ -157,7 +157,7 @@ All seven boxes done and driven, 2026-09-07.
 listed RUNNING by the harness, absent from a 314-entry index). After:
 
     liveness oracle: 3 fresh sidecar(s), 0 stale, 0 unreadable, 2 running sub-agent(s);
-      held back a439ef6779b8e70c2 ad7126a7fed2d4a5e
+      held back <agent-id-2> <agent-id>
     nothing to index
 
 and `WORKLIST_REPORT_SCAN_LIVE_MIN=0` restores the pre-fix verdict exactly

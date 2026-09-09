@@ -4,6 +4,7 @@
 # needs: node
 # selftest: true
 # lane: quality-www-build
+# slow: true
 # ---- end gate ----
 
 # Run the page-density gate inside the official Playwright container.
@@ -24,7 +25,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$REPO_ROOT"
 
-GATE_ARGS=("scripts/check-page-density.ts" "--selftest")
+GATE_ARGS=("scripts/gates/check-page-density.ts" "--selftest")
 
 if [ "${REDIACC_SMOKE_NO_DOCKER:-0}" = "1" ] || ! command -v docker >/dev/null 2>&1; then
     if [ "${REDIACC_SMOKE_NO_DOCKER:-0}" != "1" ]; then
