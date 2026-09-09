@@ -36,9 +36,9 @@ Scope: design only. Nothing here was executed against Bitwarden, AWS, Cloudflare
       severity, and these two have opposite intent: a stale rotation is someone else's
       job, a `.env` that has regrown is this developer's.
 - [ ] Truncate `private/account/.env` to `BWS_ACCESS_TOKEN` + `BWS_ACCESS_TOKEN_ROTATE`. This is the only irreversible step; it goes last.
-- [ ] Retarget `scripts/gates/check-env-credential-drift.ts` (`ENV_FILE` at `:53`) at a `bws_export` of its three tracked names, and the probe at `.claude/oracles/pre-bash/block-host-toolchain-run.sh:86-100` at the token + map.
-- [x] Fix two stale citations found on the way: `scripts/gates/check-env-credential-drift.ts:23-24` (set-account-worker-secrets.sh does not read `.env`) and `.ci/scripts/private/license-e2e.sh:180` (the function is at `private/renet/build.sh:409-451`).
-      AUDIT: DONE 2026-09-02 (audit): scripts/gates/check-env-credential-drift.ts:26-29 carries the correction verbatim; .ci/scripts/private/license-e2e.sh:180 now cites private/renet/build.sh:409-451.
+- [ ] Retarget `scripts/check-env-credential-drift.ts` (`ENV_FILE` at `:53`) at a `bws_export` of its three tracked names, and the probe at `.claude/hooks/pre-bash/block-host-toolchain-run.sh:86-100` at the token + map.
+- [x] Fix two stale citations found on the way: `scripts/check-env-credential-drift.ts:23-24` (set-account-worker-secrets.sh does not read `.env`) and `.ci/scripts/private/license-e2e.sh:180` (the function is at `private/renet/build.sh:409-451`).
+      AUDIT: DONE 2026-09-02 (audit): scripts/check-env-credential-drift.ts:26-29 carries the correction verbatim; .ci/scripts/private/license-e2e.sh:180 now cites build.sh:409-451.
 - [ ] Add `private/account/dev.local.env` and `dev.defaults.env` to `scripts/dev/secret-rename.py`'s `EXTRA` (`:105`).
 
 ---
@@ -236,7 +236,7 @@ it and the backup files.
   `AWS_SES_ADMIN_KEY_ID`/`AWS_SES_ADMIN_SECRET`) and `CF_GLOBAL_API_KEY`+`CF_EMAIL`
   (`:86-106`, `resolveCloudflare`, which mints an ephemeral scoped token at `:183-311` and
   self-destructs it at `:112-124`) are *rotated by nothing*. No manifest slug records them
-  and none can — `scripts/gates/check-env-credential-drift.ts:91-105` spells out why. So they can
+  and none can — `scripts/check-env-credential-drift.ts:91-105` spells out why. So they can
   be read from Bitwarden with no chicken-and-egg: the only thing needed to read them is the
   BWS token, which they do not mint and which does not depend on them.
 - **`BWS_ACCESS_TOKEN` is the one true root and it cannot come from Bitwarden.** There is
@@ -289,8 +289,8 @@ Verified read sites, absolute paths. "Whole-file source" means `set -a; source; 
 | `/home/developer/console/.ci/lib/local-common.sh:758-759` | `sed -n 's/^ACCOUNT_ED25519_PUBLIC_KEY=//p'` | same, only as a rebuild-stamp hash input | same |
 | `/home/developer/console/scripts/docker/build-server.sh:41-42` | same `sed` | same, baked into the onprem image | same |
 | `/home/developer/console/rdc.sh:246-248` (`--dev`) | `grep -E '^KEY=' \| tail -1 \| cut -d= -f2-`; deliberately refuses to source (`:241-245`) | `REDIACC_ACCOUNT_SERVER`, `ACCOUNT_X25519_PUBLIC_KEY` | **No Bitwarden and no sourcing.** Repoint the two greps at `dev.local.env`. `rdc.sh` runs on every CLI invocation, so a network fetch there is unacceptable — and `.ci/scripts/test/test-rdc-sh-env.sh:55,61-68` already gates that `rdc.sh` contains no `set -a`, no `source` of the account env, and exports only `PATH`/`REDIACC_CONFIG`/`NODE_COMPILE_CACHE`. That gate staying green is the cheapest proof the CLI path did not grow a secret dependency. |
-| `/home/developer/console/scripts/gates/check-env-credential-drift.ts:53,110` | own line parser; compares IDs only, prints an 8-char prefix | `AWS_SES_ACCESS_KEY_ID`, `R2_ACCESS_KEY_ID`, `R2_MEDIA_ACCESS_KEY_ID` (`TRACKED`, `:58-70`) | Its subject disappears; retarget at Bitwarden (Part 5). |
-| `/home/developer/console/.claude/oracles/pre-bash/block-host-toolchain-run.sh:86-100` | `grep -q "^R2_MEDIA_ACCESS_KEY_ID="` — existence probe, no value read | one name | Retarget the probe: token present in `.env` **and** the name present in `bws-secret-map.json`. |
+| `/home/developer/console/scripts/check-env-credential-drift.ts:53,110` | own line parser; compares IDs only, prints an 8-char prefix | `AWS_SES_ACCESS_KEY_ID`, `R2_ACCESS_KEY_ID`, `R2_MEDIA_ACCESS_KEY_ID` (`TRACKED`, `:58-70`) | Its subject disappears; retarget at Bitwarden (Part 5). |
+| `/home/developer/console/.claude/hooks/pre-bash/block-host-toolchain-run.sh:86-100` | `grep -q "^R2_MEDIA_ACCESS_KEY_ID="` — existence probe, no value read | one name | Retarget the probe: token present in `.env` **and** the name present in `bws-secret-map.json`. |
 
 ### Writers — the half that will silently undo this if missed
 
@@ -314,7 +314,7 @@ a **safety improvement**: today `./run.sh account reset` sed-rewrites
 licence-signing pair*. After the split, reset touches a local file and can no longer
 clobber a production key that also lives in `ci-shared`.
 
-**Two stale citations found on the way.** `scripts/gates/check-env-credential-drift.ts:23-24`
+**Two stale citations found on the way.** `scripts/check-env-credential-drift.ts:23-24`
 claims "`.ci/scripts/deploy/set-account-worker-secrets.sh` reads the same file". It does
 not — that script has zero `.env` references; its only `source` is `../lib/common.sh` at
 `:102`, and it takes secrets from the CI process environment. The gate's argument survives
@@ -504,7 +504,7 @@ can be backed up to 1Password before the process exits" — but it is a separate
 
 ## Retargeting the two gates that lose their subject (Part 5)
 
-**`scripts/gates/check-env-credential-drift.ts`.** Its `TRACKED` list (`:58-70`) compares `.env`
+**`scripts/check-env-credential-drift.ts`.** Its `TRACKED` list (`:58-70`) compares `.env`
 values against manifest version ids for `AWS_SES_ACCESS_KEY_ID`, `R2_ACCESS_KEY_ID`,
 `R2_MEDIA_ACCESS_KEY_ID`. Post-migration those names are not in `.env`. Retarget `ENV_FILE`
 to a `bws_export` of the same three names into the process, keeping everything else
@@ -512,7 +512,7 @@ identical — it already prints only an 8-character prefix and never transmits. 
 skip when the submodule or the token is absent (`:44-46`). The `'absent' | 'retiring'`
 distinction (`:148-160`) is the valuable half and is unaffected.
 
-**`.claude/oracles/pre-bash/block-host-toolchain-run.sh:86-100`.** The existence probe on
+**`.claude/hooks/pre-bash/block-host-toolchain-run.sh:86-100`.** The existence probe on
 `^R2_MEDIA_ACCESS_KEY_ID=` in `.env` becomes: `BWS_ACCESS_TOKEN` present in `.env` **and**
 `CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID` present in `.ci/config/bws-secret-map.json`. Same
 question — could this command actually reach the media credentials — and the same zero value

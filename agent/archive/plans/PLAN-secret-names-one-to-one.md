@@ -24,7 +24,7 @@ operator, and no org-secret change; they are one commit at zero migration risk.
 
 - [x] Delete `SSH_USER: ${{ env.USER }}` at `ct-tests.yml:1774,1787` — the source does not exist, the line is inert (finding 1)
       AUDIT: DONE 2026-09-02 (audit): `git grep -n --recurse-submodules 'SSH_USER: '` finds nothing; both lines removed from ct-tests.yml and both steps survive without them (ct-tests.yml:1769-1786).
-- [ ] Fix the schema extractor in `scripts/gates/check-worker-secret-names.ts:69` so it sees all 85 `env.ts` keys, and derive the count in the refusal message at `:104` instead of hardcoding it (finding 2, assertion 12)
+- [ ] Fix the schema extractor in `scripts/check-worker-secret-names.ts:69` so it sees all 85 `env.ts` keys, and derive the count in the refusal message at `:104` instead of hardcoding it (finding 2, assertion 12)
       AUDIT: PARTIAL: the extractor is fixed -- check-worker-secret-names.ts:76 reads `/^\s{2}([A-Z][A-Z0-9_]*):\s*(?:z\.|z$|boolFromEnv)/gm` and both counts over env.ts agree at 85; floor raised 40->80 at :113. NOT done: the count is still the hand-maintained ratchet EXPECTED_SCHEMA_KEYS = 85 at :74, not derived from the file, so a hand-edit of that constant still lets the extractor drop a key silently.
 - [x] Rename the six gratuitous workflow aliases onto their sources (`SES_FROM`, `REPO_CHANNEL`, `EFFORT_VAR`, `FORCE_FULL_CI`, `WATCHDOG_SKIP_RERUN`), consuming scripts included — 12 lines, table row D
       DONE 2026-09-02, and THREE OF THE FIVE TURNED OUT NOT TO BE ALIASES. Renamed:
@@ -105,7 +105,7 @@ Three parsers, all already in the tree, so no number here depends on a hand coun
 |---|---|---|
 | bws request lines and their aliases | `check_bws_map.py::parse_requests` over `check_bws_map.py::call_sites()` | 197 lines, **0 identity**, 197 renaming |
 | workflow `env:` bindings | regex `^\s*(NAME)\s*:\s*\$\{\{\s*(secrets\|vars\|env)\.(SRC)\s*\}\}\s*$` over `.github/workflows/*.yml` + `.ci/breakpoint/workflow/*.yml` | 394 identity, 197 `GH_`-prefixed, 71 genuine crossings |
-| Worker push keys vs schema | `scripts/gates/check-worker-secret-names.ts::{pushedKeys,schemaKeys}` | 84 of 85 schema keys extracted — see finding 2 |
+| Worker push keys vs schema | `scripts/check-worker-secret-names.ts::{pushedKeys,schemaKeys}` | 84 of 85 schema keys extracted — see finding 2 |
 
 Scope note on the first row: a measurement over `.github/workflows/` alone gives **193**;
 `check_bws_map.py::call_sites()` adds `.ci/breakpoint/workflow/breakpoint.yml` for
@@ -323,7 +323,7 @@ substitution the scan finds must have an entry.
 
 ### Assertion 12 — THE SCHEMA EXTRACTOR SEES EVERY KEY (a live bug; finding 2)
 
-In `scripts/gates/check-worker-secret-names.ts`, require
+In `scripts/check-worker-secret-names.ts`, require
 `schemaKeys(env.ts).size == |{ /^\s{2}[A-Z][A-Z0-9_]*:/ }|`, and derive the number in the
 refusal message at `:104` instead of hardcoding `85`.
 
@@ -355,7 +355,7 @@ becomes `@$VM_IP` with no user. The line does nothing and should be deleted.
 does not exist.*
 
 **2. `check:ci-worker-secret-names` extracts 84 of `env.ts`'s 85 keys.** Its `SCHEMA_KEY`
-regex (`scripts/gates/check-worker-secret-names.ts:69`) requires `z.` on the same line as the
+regex (`scripts/check-worker-secret-names.ts:69`) requires `z.` on the same line as the
 key; `MIN_CLI_VERSION` is wrapped by the formatter across `env.ts:56-59`, so the gate
 never sees it. Proven by running the gate's own regex: 84 matched, 85 two-space keys
 present, `missed: ['MIN_CLI_VERSION']`. The floor check (`schema.size < 40`) cannot catch
