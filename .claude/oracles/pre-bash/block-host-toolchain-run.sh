@@ -111,11 +111,7 @@ Load the file in the same command:
     source scripts/lib/env-file.sh; env_file_load private/account/.env
     <your command>
 
-Not $(
-            set -a
-            . private/account/.env
-            set +a
-        ): that EXECUTES the file (it holds
+Not \`set -a; . private/account/.env; set +a\`: that EXECUTES the file (it holds
 ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_JWT_SECRET, and a \$(\$(...)) in a value would
 run) and lets the file overwrite anything you set on the command line.
 

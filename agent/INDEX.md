@@ -250,7 +250,7 @@ reasoning without knowing the record exists.
 ## Plan census
 
 Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans
-block can be printed from THIS file instead of opening all 83 of them. The
+block can be printed from THIS file instead of opening all 85 of them. The
 hook checks freshness with `stat` alone (path set plus byte size) and falls
 back to reading the plans, loudly, when the two disagree.
 
@@ -272,23 +272,24 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-chunk-store-browse-server.md` | compacted | 69 | 0 | 0 | 4896 |
 | `agent/PLAN-chunkstore-restore.md` | compacted | 72 | 0 | 0 | 4239 |
 | `agent/PLAN-ci-trace-no-pr-branch.md` | done | 171 | 0 | 0 | 9783 |
-| `agent/PLAN-ci-vacuity-baseline-registry.md` | ready | 255 | 1 | 14 | 16274 |
+| `agent/PLAN-ci-vacuity-baseline-registry.md` | ready | 255 | 1 | 14 | 16618 |
 | `agent/PLAN-ci-watch-enforcement.md` | draft | 283 | 0 | 0 | 15625 |
 | `agent/PLAN-cli-em-dash-lint-gate.md` | compacted | 70 | 0 | 0 | 4353 |
 | `agent/PLAN-cold-path.md` | compacted | 74 | 0 | 0 | 4055 |
-| `agent/PLAN-commit-author-identity.md` | draft | 235 | 13 | 0 | 13995 |
-| `agent/PLAN-completion-strategy.md` | ready | 157 | 0 | 0 | 9631 |
+| `agent/PLAN-commit-author-identity.md` | draft | 281 | 3 | 10 | 18031 |
+| `agent/PLAN-completion-strategy.md` | ready | 182 | 0 | 0 | 11532 |
 | `agent/PLAN-consolidate-test-scaffolding.md` | done | 90 | 0 | 4 | 4452 |
 | `agent/PLAN-devbox-uid-derived-image.md` | draft | 198 | 0 | 0 | 11296 |
 | `agent/PLAN-docker-image-freshness-soak-filter.md` | done | 117 | 0 | 0 | 5602 |
 | `agent/PLAN-duplication-angle.md` | implemented | 241 | 0 | 0 | 12504 |
 | `agent/PLAN-durable-reports-and-push-inbox.md` | compacted | 69 | 0 | 0 | 3705 |
 | `agent/PLAN-env-to-bitwarden-v2.md` | draft | 689 | 5 | 4 | 45073 |
-| `agent/PLAN-extension-shaped-matchers.md` | executing | 256 | 0 | 0 | 16127 |
+| `agent/PLAN-extension-shaped-matchers.md` | executing | 321 | 0 | 0 | 20859 |
 | `agent/PLAN-fix-ci-contention-aware-timeouts.md` | done | 354 | 0 | 0 | 20483 |
 | `agent/PLAN-fix-german-translation-artifacts.md` | compacted | 61 | 0 | 0 | 3126 |
 | `agent/PLAN-fix-in-session-rule.md` | compacted | 69 | 0 | 0 | 3594 |
 | `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | done | 305 | 0 | 0 | 19395 |
+| `agent/PLAN-gh-swallow-gates-audit.md` | done | 497 | 0 | 6 | 49920 |
 | `agent/PLAN-git-history-media-rewrite.md` | ready | 321 | 0 | 0 | 15185 |
 | `agent/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 71 | 0 | 0 | 3940 |
 | `agent/PLAN-greenlight-verify-at-read.md` | compacted | 62 | 0 | 0 | 3299 |
@@ -302,7 +303,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-nightly-retry-and-watchdog-noise.md` | done | 172 | 0 | 0 | 8909 |
 | `agent/PLAN-npm-ci-parallel-parity.md` | compacted | 52 | 0 | 0 | 3219 |
 | `agent/PLAN-plan-file-lifecycle.md` | ready | 456 | 3 | 10 | 28872 |
-| `agent/PLAN-plyr-css-on-demand-loading.md` | draft | 138 | 11 | 0 | 7935 |
+| `agent/PLAN-plyr-css-on-demand-loading.md` | draft | 175 | 4 | 7 | 11070 |
 | `agent/PLAN-promote-mutation-runner.md` | done | 923 | 0 | 0 | 51731 |
 | `agent/PLAN-pytest-parallelism.md` | done | 266 | 0 | 10 | 16119 |
 | `agent/PLAN-rclone-decommission.md` | compacted | 56 | 0 | 0 | 3004 |
@@ -318,21 +319,22 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-scope-gates-split.md` | compacted | 50 | 0 | 0 | 2591 |
 | `agent/PLAN-secret-namespace-migration.md` | partially | 2636 | 9 | 21 | 173892 |
 | `agent/PLAN-sentence-aware-wrapping.md` | draft | 439 | 0 | 0 | 27108 |
-| `agent/PLAN-session-onboarding-marker.md` | draft | 208 | 6 | 4 | 11725 |
+| `agent/PLAN-session-onboarding-marker.md` | draft | 211 | 5 | 5 | 11953 |
+| `agent/PLAN-shell-command-gate-regex-fix.md` | draft | 851 | 0 | 0 | 57725 |
 | `agent/PLAN-shell-resource-profiling.md` | landed | 479 | 0 | 0 | 31637 |
 | `agent/PLAN-skip-release-gates-r2-manifest.md` | done | 453 | 0 | 0 | 26375 |
 | `agent/PLAN-ssr-nav-locale.md` | compacted | 44 | 0 | 0 | 1955 |
 | `agent/PLAN-state-md-session-isolation.md` | compacted | 54 | 0 | 0 | 2531 |
 | `agent/PLAN-stop-always-tier.md` | landed | 237 | 0 | 0 | 12453 |
 | `agent/PLAN-stop-hook-cadence.md` | compacted | 54 | 0 | 0 | 2607 |
-| `agent/PLAN-stop-hook-overhaul.md` | ready | 227 | 31 | 0 | 14536 |
+| `agent/PLAN-stop-hook-overhaul.md` | ready | 227 | 31 | 0 | 14555 |
 | `agent/PLAN-stop-report-queue.md` | done | 586 | 0 | 0 | 29536 |
 | `agent/PLAN-subagent-idle-detection.md` | ready | 400 | 0 | 0 | 21517 |
 | `agent/PLAN-subscription-status-error-swallowing.md` | done | 106 | 0 | 5 | 4621 |
 | `agent/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 79 | 0 | 0 | 4194 |
 | `agent/PLAN-test-advisor.md` | done | 132 | 0 | 0 | 6884 |
 | `agent/PLAN-testing-surface-audit.md` | draft | 652 | 0 | 0 | 40322 |
-| `agent/PLAN-tooling-transformation.md` | ready | 3413 | 22 | 132 | 329351 |
+| `agent/PLAN-tooling-transformation.md` | ready | 6480 | 18 | 136 | 592389 |
 | `agent/PLAN-trap-enforcement.md` | w | 820 | 0 | 0 | 49274 |
 | `agent/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 0 | 4529 |
 | `agent/PLAN-unify-trap-corpus.md` | compacted | 54 | 0 | 0 | 2755 |
@@ -340,4 +342,4 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-wl-report-liveness-oracle.md` | done | 199 | 0 | 7 | 11678 |
 | `agent/PLAN-www-bundle-determinism.md` | draft | 212 | 0 | 0 | 11005 |
 
-83 plan(s), 14 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+85 plan(s), 15 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
