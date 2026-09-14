@@ -4091,7 +4091,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `check:ci-actionlint` [0, "clean across 29 workflow file(s)"], `check:actions` [0],
       `check:ci-swallowed-failures` [0], `check:ci-runner-advice` [0],
       `check:ci-profiler-coverage` [0], `check:ci-app-admin-perm` [0],
-      `check:ci-git-history-depth` [0], `check:ci-ci-job-aggregation` [0], plus `python3 -c
+      `check:ci-git-history-depth` [0], `check:ci-job-aggregation` [0], plus `python3 -c
       "yaml.safe_load(...)"` parsing the file and listing eleven jobs with `ci-quick` first.
       THREE STILL RED AND ALL THREE ARE PRE-EXISTING, each checked for my file by name and none
       naming it: `check:ci-workflow-gates` (CHECK 4 refuses because no submodule is checked out
@@ -4102,11 +4102,21 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       **A TRAP THIS WAVE WALKED INTO AND IS RECORDING SO THE NEXT ONE DOES NOT.** Two GUESSED
       gate keys returned rc=1 with ZERO BYTES on both streams, which reads exactly like a gate
       failing for a real reason and is instead npm's response to a key that does not exist. Both
-      guesses were built from the gate's FILENAME: the aggregation gate's real key doubles the
-      `ci-` segment (`check:ci-ci-job-aggregation`, `package.json:110`) where the filename does
-      not, and the admin-permission gate's real key DROPS the `no-` its filename carries
-      (`check:ci-app-admin-perm`, `package.json:35`). Under the real keys both are rc=0. Derive
-      the key from `package.json`, never from the script's name, before diagnosing a silent rc=1.
+      guesses were built from the gate's FILENAME: the aggregation gate's key doubled the
+      `ci-` segment where the filename does not, and the admin-permission gate's real key DROPS
+      the `no-` its filename carries (`check:ci-app-admin-perm`, `package.json:35`). Under the
+      real keys both are rc=0. Derive the key from `package.json`, never from the script's name,
+      before diagnosing a silent rc=1.
+      **RESOLVED 2026-09-14 FOR THE FIRST OF THE TWO, AND THE CAUSE WAS NOT A TYPO.** The
+      doubled segment was `derivedId()` (`scripts/lib/gate-header.ts:326`) working as written:
+      it strips a leading `check_` and prefixes the id with a `ci-` segment, so a file whose
+      subject is genuinely "CI job aggregation" derives one carrying that segment twice.
+      Renaming the package.json key alone would have been regenerated straight back; the fix is
+      an `id:` override in the file's own `---- gate ----` header, which is the mechanism
+      `scripts/gate-bind.ts:705` exists for.
+      The gate is now `check:ci-job-aggregation`. The SECOND was deliberately left alone: its
+      `id:` override is explicit and chosen, the `no_` in the filename names the assertion while
+      the id names the subject, and both read correctly.
       **ONE MEASUREMENT WORTH CARRYING ELSEWHERE:** the slowest gate in the whole quick lane is
       `check:ci-changed-selection` at **154.9s**, which is B4's own first half, and it sits in
       `quality-code`, the lane with 98 steps. Second is `check:ci-guard-mention-anchoring` at
