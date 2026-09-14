@@ -27,7 +27,11 @@ consumes the `greenlight:<run-id>` skip reason that scope-shadow.sh's
 apply_greenlight writes.
 
 ONE CORRECTION TO THE PLAN'S OWN TEXT. Its `## Status` section claimed "DONE
-2026-07-31 (commit 03bac5a89)". That sha still exists as an object in this clone but
+2026-07-31 (commit 03bac5a8)". GIVEN AT 8 CHARACTERS ON PURPOSE, and do not "restore"
+the ninth: `check:ci-plan-citations` judges any 9-or-more hex token as a git object it
+must resolve, and the whole point of this sentence is that this one CANNOT be resolved.
+At 8 it is a name for a thing that is gone, which is what it is. That sha still exists
+as an object in this clone but
 is reachable from no branch and is NOT an ancestor of origin/main: it is the
 pre-rewrite id of the same commit, invalidated by the 2026-08-23 media history
 rewrite that changed every sha in this repository. The live pointer is e64c79032.

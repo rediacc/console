@@ -88,6 +88,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 
 import _cipath  # noqa: F401
 from rediacc_ci import paths
@@ -407,7 +408,56 @@ def unresolved(root, kind, token):
     return True, why
 
 
-def problems_for(root, rows):
+def absent_submodules(root):
+    """Declared submodule paths whose working tree is NOT populated here.
+
+    WHY THIS EXISTS. `quality-branch` -- the lane that runs this gate -- checks out
+    with no `submodules:` key, which is GitHub Actions' default of false. So in CI
+    `private/renet/**` is an empty directory, and every `private/renet/pkg/...:NNN`
+    citation in the corpus resolved to "does not exist": 22 findings on the first
+    real run, every one of them a correct pointer into code the lane had chosen not
+    to fetch.
+
+    That direction of wrongness is the expensive one. A false POSITIVE here asks a
+    reader to DELETE a citation that is perfectly good, and the gate's own advice
+    block tells them how ("a file:line that moved needs re-reading"). Follow it and
+    you lose the pointer permanently.
+
+    SCOPED TO THIS GATE ON PURPOSE, and this is the part not to "simplify" later.
+    The obvious fix is to teach `citation_state()` about submodules, and that would
+    be wrong: it is shared with the stop hook's own claim-verification
+    (`worklist.py`, `wl_planrec.py`, `test-completion-evidence.py`), where a session
+    DOES have the submodule checked out, so "I cannot verify this" must stay a
+    refusal rather than become a skip. Widening the shared resolver would teach the
+    anti-hallucination check to wave through exactly the claims it exists to catch.
+    So the filter lives here, in the caller, and the resolver keeps failing closed.
+    """
+    # `-f <root>/.gitmodules`, NOT the bare relative name. `_git` anchors every
+    # call to the module-level ROOT, so a bare `.gitmodules` reads the real repo's
+    # while the `root / path` below reads the caller's -- the two agree in
+    # production (root IS ROOT) and diverge in any fixture, which is how a control
+    # for this function came back naming three submodules the fixture never had.
+    # A helper whose two halves read different trees is a helper that cannot be
+    # tested, and an untestable filter that excuses a whole directory is the last
+    # thing this gate should carry.
+    out = []
+    manifest = pathlib.Path(root) / ".gitmodules"
+    if not manifest.is_file():
+        return out
+    for line in _git("config", "-f", str(manifest), "--get-regexp", r"\.path$").split("\n"):
+        parts = line.split()
+        if len(parts) != 2:
+            continue
+        path = pathlib.Path(root) / parts[1]
+        # Populated means "has content". An uninitialised submodule is an empty
+        # directory, not a missing one, so `is_dir()` alone answers yes and would
+        # make this filter inert in precisely the case it is written for.
+        if not path.is_dir() or not any(path.iterdir()):
+            out.append(parts[1])
+    return sorted(out)
+
+
+def problems_for(root, rows, skip_prefixes=()):
     """[str] -- one finding per unresolvable citation on an added line."""
     out, fences = [], {}
     for rel, lineno, text in rows:
@@ -416,6 +466,12 @@ def problems_for(root, rows):
         if lineno in fences[rel]:
             continue
         for kind, token in citations(text):
+            # Only a PATH citation can point into a submodule. An object or gate
+            # token that happens to start with those characters is not excused.
+            if kind in ("fileline", "plan") and any(
+                token.startswith(p + "/") for p in skip_prefixes
+            ):
+                continue
             bad, why = unresolved(root, kind, token)
             if bad:
                 out.append(f"{rel}:{lineno}: adds {kind} citation `{token}` -- {why}")
@@ -491,6 +547,62 @@ def selftest(root):
     for kind, token in live:
         got, why = unresolved(root, kind, token)
         ck(f"CONTROL: a real {kind} citation is SILENT ({token[:44]})", not got, why)
+
+    # THE SUBMODULE PRE-FILTER, both directions, because a skip is one typo away
+    # from a suppression and this one excuses an entire directory tree.
+    rows = [("agent/PLAN-zzz.md", 1, "see private/renet/pkg/NOPE/nope.go:99")]
+    ck(
+        "a citation into an ABSENT submodule is skipped, not reported",
+        problems_for(root, rows, ("private/renet",)) == [],
+    )
+    ck(
+        "CONTROL: the same dead citation IS reported when the submodule is present",
+        len(problems_for(root, rows, ())) == 1,
+        problems_for(root, rows, ()),
+    )
+    ck(
+        "CONTROL: the skip is scoped to that submodule, not to every path",
+        len(
+            problems_for(root, [("agent/PLAN-zzz.md", 1, "see nope/nope.go:9")], ("private/renet",))
+        )
+        == 1,
+    )
+    # An OBJECT token is not a path, so a prefix that looks like one must not
+    # excuse it. Without this, "private/renet" in the skip set could be read as
+    # licence to drop any citation whose text begins with those bytes.
+    ck(
+        "CONTROL: a dead OBJECT citation is never excused by the submodule skip",
+        len(
+            problems_for(
+                root, [("agent/PLAN-zzz.md", 1, "at %s" % ("deadbeef" * 5))], ("private/renet",)
+            )
+        )
+        == 1,
+    )
+    # THE DETECTOR ITSELF, on a fixture, because its first version read
+    # `.gitmodules` from the real repo while testing paths under the root it was
+    # handed -- agreeing in production and answering nonsense anywhere else, which
+    # is exactly the shape that cannot be controlled and so never is.
+    with tempfile.TemporaryDirectory() as td:
+        fx = pathlib.Path(td)
+        (fx / ".gitmodules").write_text(
+            '[submodule "private/aaa"]\n\tpath = private/aaa\n\turl = x\n'
+            '[submodule "private/bbb"]\n\tpath = private/bbb\n\turl = y\n',
+            encoding="utf-8",
+        )
+        (fx / "private" / "aaa").mkdir(parents=True)
+        (fx / "private" / "bbb").mkdir(parents=True)
+        (fx / "private" / "bbb" / "f.txt").write_text("x", encoding="utf-8")
+        ck(
+            "an EMPTY submodule directory reads as absent, a populated one does not",
+            absent_submodules(fx) == ["private/aaa"],
+            absent_submodules(fx),
+        )
+    ck(
+        "CONTROL: on the real tree every declared submodule is populated",
+        absent_submodules(root) == [],
+        absent_submodules(root),
+    )
 
     # The EXTRACTOR, separately from the resolvers: a line carrying all four
     # shapes must yield all four. A resolver that works over an extractor that
@@ -588,7 +700,18 @@ def main(argv):
         return 0
 
     rows = added_lines(base)
-    problems = problems_for(root, rows)
+    # PRINTED EVERY RUN, whether or not anything was skipped, so an exclusion can
+    # never become invisible debt: a reader of a green run sees exactly which
+    # citations this process was not in a position to judge.
+    absent = absent_submodules(root)
+    if absent:
+        print(
+            "  not judged, submodule not checked out in this job (%s): citations under %s"
+            % (os.environ.get("GITHUB_JOB", "local"), ", ".join(absent))
+        )
+    else:
+        print("  every declared submodule is populated, so no citation was skipped")
+    problems = problems_for(root, rows, absent)
     if problems:
         print(
             f"✗ plan citations: {len(problems)} unresolvable pointer(s) on lines this "
