@@ -43,7 +43,7 @@ if [[ -n "${CHOWN_PATH:-}" ]]; then
     sudo chown -R "$(whoami)" "$CHOWN_PATH"
 fi
 
-for i in $(seq 1 "$ATTEMPTS"); do
+for ((i = 1; i <= ATTEMPTS; i++)); do
     for target in "$@"; do
         host="$target"
         port=22

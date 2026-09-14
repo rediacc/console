@@ -138,7 +138,7 @@ test_gh_failure_refuses() {
 
 test_page_cap_refuses() {
     local body="" i rc=0
-    for i in $(seq 1 250); do
+    for ((i = 1; i <= 250; i++)); do
         [[ -n "$body" ]] && body+=","
         body+="$(commit_json "$(printf 'c%09d' "$i")" mfbayraktar mfbayraktar ok@example.com)"
     done

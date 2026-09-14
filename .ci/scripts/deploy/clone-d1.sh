@@ -89,7 +89,7 @@ log_step "Exporting D1 database: $SOURCE_DB"
 # attempt count and wrangler's own output. Only the flake is absorbed.
 EXPORT_ATTEMPTS=3
 EXPORT_RC=0
-for attempt in $(seq 1 "$EXPORT_ATTEMPTS"); do
+for ((attempt = 1; attempt <= EXPORT_ATTEMPTS; attempt++)); do
     EXPORT_RC=0
     npx wrangler d1 export "$SOURCE_DB" --remote --output="$TMPDIR/export.sql" \
         >"$TMPDIR/export.log" 2>&1 || EXPORT_RC=$?

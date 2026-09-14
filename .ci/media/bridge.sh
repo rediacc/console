@@ -137,7 +137,7 @@ _ensure_bridge_recording_tooling() {
 
     # Wait for the bridge to be reachable, then fail loudly if it never is.
     local who="" i
-    for i in $(seq 1 15); do
+    for ((i = 1; i <= 15; i++)); do
         who="$(_bridge_ssh 'whoami' 2>/dev/null || true)"
         [[ -n "$who" ]] && break
         sleep 2

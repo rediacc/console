@@ -56,7 +56,7 @@ make_template() {
     git -C "$TEMPLATE" config user.email t@example.com
     git -C "$TEMPLATE" config user.name t
     local i
-    for i in $(seq 1 32); do
+    for ((i = 1; i <= 32; i++)); do
         printf 'Status: draft\n\n# filler %s\n\n- [ ] a task long enough to parse\n' "$i" \
             >"$TEMPLATE/agent/PLAN-filler-$i.md"
     done

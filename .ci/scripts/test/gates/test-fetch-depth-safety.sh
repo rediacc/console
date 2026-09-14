@@ -69,7 +69,7 @@ make_fixture() {
     git -C "$work" config user.email t@example.com
     git -C "$work" config user.name t
     local i
-    for i in $(seq 1 "$FIXTURE_COMMITS"); do
+    for ((i = 1; i <= FIXTURE_COMMITS; i++)); do
         echo "$i" >"$work/f.txt"
         git -C "$work" add f.txt
         git -C "$work" commit --quiet -m "c$i"

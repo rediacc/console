@@ -47,7 +47,7 @@ PY
 # that needs J of roughly 60 before the bound drops under the line (0/24 bounds at
 # ~0.10). The first draft seeded 24 and the gate CORRECTLY kept E6 report-only --
 # the fixture was under-powered, not the gate. "J >= 20" is necessary, not sufficient.
-for i in $(seq 1 80); do
+for ((i = 1; i <= 80; i++)); do
     python3 - "$WORK/caps/quiet$i.jsonl" <<'PY'
 import json, sys
 p = [{"pid": 1, "ppid": 0, "comm": "bash", "state": "R", "wchan": None, "utime": 5, "stime": 0, "hwm_kb": 3000, "wfd": [], "depth": 0}]

@@ -90,7 +90,7 @@ start_stub() {
     rm -f "$WORK/port"
     MODE="$mode" PORT_FILE="$WORK/port" node "$WORK/stub.cjs" &
     STUB_PID=$!
-    for _ in $(seq 1 50); do
+    for ((_i = 1; _i <= 50; _i++)); do
         [[ -s "$WORK/port" ]] && return 0
         sleep 0.1
     done

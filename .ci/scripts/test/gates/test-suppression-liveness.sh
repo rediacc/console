@@ -193,7 +193,7 @@ test_findings_are_capped() {
     t="$(make_fixture)"
     {
         echo "# BLOCKER: bulk planted dead entries to prove the per-probe output cap works"
-        for i in $(seq 1 25); do echo "not-a-real-package-$i"; done
+        for ((i = 1; i <= 25; i++)); do echo "not-a-real-package-$i"; done
     } >"$t/.ci/policy/.deps-upgrade-blocklist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
