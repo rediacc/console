@@ -26,14 +26,18 @@
 #   - every status is one of ok / warn / fail, so a typo cannot pass silently
 #   - every non-ok entry carries a `hint`, because a failing probe with no fix
 #     text is the "stack trace that reads as flake" failure
+#   - and if the one jq program that checks all of that cannot RUN -- a type
+#     error aborts it and it exits 5 -- that is a named finding, never the
+#     empty finding set it used to be read as (fixed 2026-09-10)
 #
 # It does NOT assert that every check is `ok`. A developer box legitimately has
 # no libvirt, and a gate that reds on that would be a host-configuration gate
 # wearing a contract gate's name. The per-status tally is PRINTED instead, so a
 # reader can see the composition and notice when it collapses.
 #
-# --selftest drives the validator over a good fixture and five bad ones, because
-# a validator with only positive controls will happily accept anything.
+# --selftest drives the validator over two good fixtures and eight bad ones,
+# because a validator with only positive controls will happily accept anything,
+# and one with only negative ones will happily flag the whole tree.
 
 set -uo pipefail
 
@@ -74,7 +78,19 @@ validate_report() {
         findings+=".checks is empty; the report enumerated nothing, so its green would mean nothing"$'\n'
     fi
 
-    local bad
+    # THE PER-ENTRY RULES ARE ONE jq PROGRAM, AND ITS FAILURE IS NOW LOUD.
+    # jq aborts the WHOLE program on the FIRST type error -- `.checks` holding
+    # a number or a string, an entry that is not an object -- printing nothing
+    # on stdout and exiting 5. This used to read `2>/dev/null` with the status
+    # unread, so `$bad` came back empty and `:87` scored that as "no per-entry
+    # findings": every rule below evaporated on exactly the malformed input
+    # they exist to catch, and the proxy certified the report. The status is
+    # therefore READ and the diagnostic KEPT. Partial stdout from a program
+    # that then aborted is deliberately DISCARDED rather than reported as if
+    # it were the whole finding set, because a truncated finding set is the
+    # same lie in a smaller font.
+    local bad bad_rc bad_err
+    bad_err="$(mktemp)"
     bad="$(printf '%s' "$json" | jq -r '
         (.checks // []) | to_entries[] |
         . as $e |
@@ -83,8 +99,14 @@ validate_report() {
           (if ($e.value.status // "") == "" then "checks[\($e.key)] (\($e.value.name // "?")) has no status" else empty end),
           (if (($e.value.status // "") | IN("ok","warn","fail","")) | not then "checks[\($e.key)] (\($e.value.name // "?")) has unknown status \"\($e.value.status)\"" else empty end),
           (if (($e.value.status // "") | IN("warn","fail")) and (($e.value.hint // "") == "") then "checks[\($e.key)] (\($e.value.name // "?")) is \($e.value.status) with no hint; a failing probe must name its fix" else empty end)
-        ] | .[]' 2>/dev/null)"
-    [[ -n "$bad" ]] && findings+="$bad"$'\n'
+        ] | .[]' 2>"$bad_err")"
+    bad_rc=$?
+    if [[ $bad_rc -ne 0 ]]; then
+        findings+="VACUOUS: the per-entry contract check could not run -- jq exited $bad_rc on this report, so NOTHING about checks[].{name,value,status,hint} was asserted. jq said: $(head -1 "$bad_err")"$'\n'
+    elif [[ -n "$bad" ]]; then
+        findings+="$bad"$'\n'
+    fi
+    rm -f "$bad_err"
 
     if [[ -n "$findings" ]]; then
         printf '%s' "$findings" | grep -v '^$'
@@ -120,6 +142,9 @@ selftest() {
     _c 1 "an unknown status word is rejected" '{"platform":"linux","backend":"kvm","checks":[{"name":"a","value":"v","status":"okish"}]}'
     _c 1 "a fail entry with no hint is rejected" '{"platform":"linux","backend":"kvm","checks":[{"name":"a","value":"v","status":"fail"}]}'
     _c 1 "an entry with no name is rejected" '{"platform":"linux","backend":"kvm","checks":[{"value":"v","status":"ok"}]}'
+    # The regression control for the jq-abort hole closed on 2026-09-10: this
+    # case used to be ACCEPTED, because the type error emptied the finding set.
+    _c 1 "a checks entry that is not an object is rejected, not silently skipped" '{"platform":"linux","backend":"kvm","checks":[1]}'
 
     if [[ $fails -gt 0 ]]; then
         echo "proxy ops-host-check selftest: $fails of $cases case(s) FAILED" >&2

@@ -91,3 +91,21 @@ file:.ci/docker/run-in-tts.sh
 # that runs on the host instead. Nothing about either is structurally bash, so they
 # stay in the baseline where a drain can reach them. Recorded here because "the five
 # .ci/docker entrypoints" is the phrase a future reader will arrive with.
+
+# BLOCKER: driven by 3 committed Python callers (test_gate_rebase_resolve.py, test_gate_shadow_gate.py, and a hooks trapguard test) whose own docstrings say the fixture library is driven, not reimplemented -- a Python port here would be a second copy of the fixtures and this gate would then certify the wrong one
+file:.ci/scripts/test/lib/git-fixture.sh
+
+# BLOCKER: driven by mutate_check.py, whose own docstring says a Python reimplementation "would be a second instrument and this gate would then certify the wrong one" -- same shape as git-fixture.sh above
+file:.ci/scripts/test/mutate-check.sh
+
+# BLOCKER: no exec bit by design, sourced only by the 9 proxy-*.sh scripts under .ci/scripts/test/proxies/; its shared contract (proxy_init/need_*/preflight/ok/bad/expect_*/finish) is ported instead at .ci/rediacc_ci/core/proxyx.py, driven by the two proxy scripts ported so far and to be driven by the rest as they port
+file:.ci/scripts/test/proxies/proxy-lib.sh
+
+# BLOCKER: sourced by build-cli-executables.sh to export variables into the CALLER's shell, the same contract as the already-exempted .ci/docker/service/env.sh -- a child process cannot mutate its parent's environment in any language
+file:.ci/scripts/version/inject-env.sh
+
+# BLOCKER: sourced only, by ci-start-account.sh and ci-start-elite.sh, to export variables into the CALLER's shell -- same contract as the already-exempted inject-env.sh and .ci/docker/service/env.sh, a child process cannot mutate its parent's environment in any language
+file:.ci/scripts/infra/ci-env.sh
+
+# BLOCKER: a bound fixture, not a standalone tool, doubly tied to bash -- .ci/rediacc_ci/quality/mutate_check.py:105-106 hardcodes SUITE_NAME as this exact basename and mutate-check.sh:162,167 invokes it as `bash "$SUITE"` explicitly; a Python rewrite would need edits to another gate's live contract plus the already-exempted mutate-check.sh, neither owned by this box
+file:.ci/scripts/test/fixtures/mutate-check/fixture-suite.sh

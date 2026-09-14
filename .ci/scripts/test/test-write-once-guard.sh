@@ -137,7 +137,7 @@ test_no_sentinel_proceeds_without_scrub() {
     SENTINEL_EXISTS=false PREFIX_KEYCOUNT=9 run_guard "cli/v0.0.0/" ||
         log_fail "orphan prefix should PROCEED (rc=0), overwriting in place"
     grep -q "s3 rm" "$TEMP/aws.log" &&
-        log_fail "guard must NEVER scrub an orphan — that is the nightly housekeeping job's responsibility"
+        log_fail "guard must NEVER scrub an orphan -- that is the nightly housekeeping job's responsibility"
     log_pass "no sentinel → PROCEED (rc=0), never scrubs"
 }
 

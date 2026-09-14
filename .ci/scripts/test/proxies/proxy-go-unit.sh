@@ -22,16 +22,57 @@
 # So the subset is DERIVED on every run, never typed:
 #
 #   candidates = every ./pkg/... package `go list` reports as having test files
-#   excluded   = those whose _test.go files reference Geteuid, RequireRoot or
-#                the pkg/testutil privileged helpers (btrfs.go, luksext4.go)
+#   excluded   = those whose _test.go files match, as a SUBSTRING anywhere in
+#                the file (comments and string literals included), any of the
+#                five alternatives of
+#
+#                    Geteuid|RequireRoot|requireRoot|testutil\.|Getuid
+#
 #   subset     = candidates minus excluded
 #
 # A package renamed, added or deleted moves the numbers by itself. The excluded
 # set is PRINTED BY NAME every run: it is real debt (those tests run only in CI)
 # and a quiet exemption is how a gate stops meaning what its name says.
 #
+# THE FOURTH ALTERNATIVE IS DELIBERATELY BROADER THAN "PRIVILEGED", and this
+# comment is where that was got wrong. Until 2026-09-10 it described the
+# excluded set as the packages referencing "the pkg/testutil privileged helpers
+# (btrfs.go, luksext4.go)", which reads as a per-SYMBOL distinction the grep
+# does not make. It matches ANY `testutil.` reference, and that is the correct
+# behaviour rather than the bug: pkg/testutil is those two files and exists to
+# host root-only helpers, but not every symbol in it is one (SHA256File,
+# NewSeededRng, MakePatch and FilesIdentical need no privilege at all), so a
+# per-symbol rule could only be a HAND-TYPED allowlist -- the one thing this
+# subset refuses to be -- and it would go stale in the HAZARDOUS direction: add
+# a privileged helper to that package, forget the list, and an unprivileged
+# workstation starts creating loop devices and LUKS containers. So a reference
+# to the package is read as a privilege signal, full stop. Over-exclusion costs
+# local coverage and is PRINTED BY NAME every run; under-exclusion costs a
+# damaged workstation and says nothing. Measured on this tree on 2026-09-10 the
+# fourth alternative removes NOTHING extra: the five files it matches
+# (chunkstore, delta x2, kubecsi, repodiff) are a strict subset of the nine
+# matched by the first three, so all eight excluded directories would be
+# excluded without it. The documentation was corrected, the grep was not
+# touched.
+#
+# THE FIFTH ALTERNATIVE WAS ADDED 2026-09-10, A REAL GAP FOUND BY DRIVING THIS
+# PROXY UNDER A CI-SHAPED ENVIRONMENT. `pkg/storage` gates its root-only tests
+# with plain `os.Getuid() != 0` (directory_test.go, luks_test.go), an idiom the
+# first four alternatives do not catch -- it is neither `Geteuid` (a different,
+# real Go function this pattern also has to ignore) nor `RequireRoot` nor
+# `testutil.`. Locally, with no `CI` env var, those tests just SKIP and this
+# proxy silently reports a clean pass over 11 tests it never really ran. Under
+# `CI=true` (what real CI sets, and what this proxy's own differential drives
+# it under), `pkg/storage`'s tests instead call `t.Fatalf("CI must run as root
+# for LUKS storage tests")`, and the whole package -- including its non-LUKS
+# `TestDirectoryStorage_*` cases, gated by the same idiom -- hard-fails this
+# gate. Measured: `pkg/repository` and `pkg/filesystem` use the identical
+# `os.Getuid() != 0` guard and move into the excluded set too; `pkg/daemon` was
+# already excluded by the first alternative. Net: 68 -> 11 excluded, 57 in the
+# subset (was 8 excluded, 60 in the subset).
+#
 # WHAT THIS PROXY THEREFORE DOES NOT PROVE: no race detector, no root paths, no
-# subscription e2e. It proves that the other 60 packages still compile and pass.
+# subscription e2e. It proves that the other 57 packages still compile and pass.
 
 set -uo pipefail
 
@@ -72,7 +113,7 @@ fi
 CANDIDATES="$(printf '%s\n' "$LIST" | awk '$2+$3>0')"
 CAND_N=$(printf '%s\n' "$CANDIDATES" | grep -c . || true)
 
-EXCLUDED_DIRS="$(grep -rlE 'Geteuid|RequireRoot|requireRoot|testutil\.' pkg/ --include='*_test.go' 2>/dev/null |
+EXCLUDED_DIRS="$(grep -rlE 'Geteuid|RequireRoot|requireRoot|testutil\.|Getuid' pkg/ --include='*_test.go' 2>/dev/null |
     xargs -r -n1 dirname | sort -u)"
 EXCL_N=$(printf '%s\n' "$EXCLUDED_DIRS" | grep -c . || true)
 

@@ -57,6 +57,29 @@ case "\$*" in
         cannot)  echo "HTTP 403: Resource not accessible" >&2; exit 1 ;;
       esac
       ;;
+  *"object.sha"*)
+      # .object.sha is asked twice: once on the ref (always succeeds here,
+      # already jq-filtered to the bare sha), once on the tag object itself
+      # when object.type was "tag" (the deref, which deref-fails breaks).
+      case "\$mode" in
+        deref-fails)
+            case "\$*" in
+              *"git/tags/"*) echo "HTTP 403: Resource not accessible" >&2; exit 1 ;;
+              *)             echo "deadbeef" ;;
+            esac
+            ;;
+        *) echo "deadbeef" ;;
+      esac
+      ;;
+  *"object.type"*)
+      # Already jq-filtered to the bare type string, matching what real
+      # \`gh api --jq '.object.type'\` returns for a string field.
+      case "\$mode" in
+        type-fails)  echo "HTTP 403: Resource not accessible" >&2; exit 1 ;;
+        deref-fails) echo "tag" ;;
+        *)           echo "commit" ;;
+      esac
+      ;;
   *"git/ref/tags/v"*) echo '{"object":{"sha":"deadbeef","type":"commit"}}' ;;
   *"git/refs"*)       echo '{}' ;;
   *"release edit"*)   echo "edited" ;;
@@ -97,6 +120,26 @@ test_could_not_tell_is_a_failure() {
     log_pass "an unreadable probe fails rather than marking production"
 }
 
+test_object_type_lookup_failure_is_a_refusal() {
+    log_test "FIXED 2026-09-10: a failed .object.type lookup must refuse, not proceed as if the tag were a plain commit"
+    local bin
+    bin="$(make_gh type-fails)"
+    if PATH="$bin:$PATH" GITHUB_REPOSITORY="rediacc/console" bash "$SUT" v1.3.1 >/dev/null 2>&1; then
+        log_fail "marked production despite an unreadable .object.type -- a swallowed failure here used to silently skip dereferencing an annotated tag"
+    fi
+    log_pass "an unreadable .object.type lookup refuses rather than silently proceeding"
+}
+
+test_annotated_tag_deref_failure_is_a_refusal() {
+    log_test "FIXED 2026-09-10: a failed annotated-tag dereference must refuse, not move production to the tag object"
+    local bin
+    bin="$(make_gh deref-fails)"
+    if PATH="$bin:$PATH" GITHUB_REPOSITORY="rediacc/console" bash "$SUT" v1.3.1 >/dev/null 2>&1; then
+        log_fail "marked production despite a failed annotated-tag dereference -- production would have been moved to point at a tag object instead of a commit"
+    fi
+    log_pass "a failed annotated-tag dereference refuses rather than moving production to the wrong object"
+}
+
 test_malformed_versions_never_become_tags() {
     log_test "a malformed version must never become the production tag"
     local bad
@@ -133,11 +176,13 @@ PY
 test_a_published_release_is_marked
 test_an_unpublished_version_is_refused
 test_could_not_tell_is_a_failure
+test_object_type_lookup_failure_is_a_refusal
+test_annotated_tag_deref_failure_is_a_refusal
 test_malformed_versions_never_become_tags
 test_control_the_guard_can_be_removed
 
 echo
-log_pass "production marker gate: 5/5"
+log_pass "production marker gate: 7/7"
 echo "  Blind spot: does not prove promote-stable.yml runs this script, nor that"
 echo "  it runs AFTER endpoint verification; the gh shim also means the API field"
 echo "  names are not proven current (a rename surfaces as a refusal, which is safe)."

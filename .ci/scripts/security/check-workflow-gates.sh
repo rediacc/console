@@ -214,7 +214,7 @@ fi
 # --- Check 2 ---------------------------------------------------------------
 log_info "Checking reusable-workflow secret/input contracts"
 
-python3 - "$WORKFLOWS_DIR" "$REAL_WORKFLOW_TREE" "$EXTERNAL_CALLERS_FILE" <<'PYEOF'
+python3 - "$WORKFLOWS_DIR" "$REAL_WORKFLOW_TREE" "$EXTERNAL_CALLERS_FILE" "${WORKFLOW_GATES_EXTRA_EXEMPTIONS:-}" <<'PYEOF'
 import os
 import re
 import sys
@@ -223,6 +223,14 @@ import yaml
 workflows_dir = sys.argv[1]
 real_tree = sys.argv[2] == 'true'
 registry_file = sys.argv[3]
+# TEST-ONLY seam: `_DECLARED_UNUSED_OK` below is drained to empty on the real
+# tree by design (W8 P1b's "declared endgame"), which would otherwise leave the
+# liveness sweep and arm (a3) with no positive case to prove they can fire at
+# all. A fixture injects a synthetic pair here as "file:NAME" entries,
+# comma-separated; production never sets this, so real runs are unaffected.
+_EXTRA_EXEMPTIONS = [
+    tuple(pair.split(':', 1)) for pair in sys.argv[4].split(',') if pair
+]
 
 # `secrets.X`, but not when it is part of a path or filename -- otherwise
 # "set-account-worker-secrets.sh" reads as a reference to a secret named `sh`.
@@ -317,8 +325,8 @@ _DECLARED_UNUSED_OK = [
     # `env.BWS_... || secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`, which restores the
     # read for both callers, and that is what makes this exemption genuinely removable.
 ]
-DECLARED_UNUSED_OK = set(_DECLARED_UNUSED_OK)
-if len(DECLARED_UNUSED_OK) != len(_DECLARED_UNUSED_OK):
+DECLARED_UNUSED_OK = set(_DECLARED_UNUSED_OK) | set(_EXTRA_EXEMPTIONS)
+if len(DECLARED_UNUSED_OK) != len(_DECLARED_UNUSED_OK) + len(_EXTRA_EXEMPTIONS):
     print("DECLARED_UNUSED_OK contains a duplicate entry", file=sys.stderr)
     sys.exit(1)
 for fname, doc in docs.items():
@@ -432,7 +440,14 @@ if real_tree and registry_file:
 
 # (b)/(c) caller <-> callee contract
 for fname, doc in docs.items():
-    jobs = (doc or {}).get('jobs') or {}
+    # FIXED 2026-09-10, same class as CHECK 6's guard below and found while testing
+    # it. `(doc or {})` covers an EMPTY workflow file (safe_load -> None) and nothing
+    # else: a workflow whose YAML parses to a scalar or a list reached `.get` here and
+    # died with `AttributeError: 'str' object has no attribute 'get'`, after which bash
+    # printed "Reusable-workflow contract violations (see above)" about a crash. The
+    # port already carried this isinstance guard (workflow_gates.py:571), so the two
+    # sides disagreed on that input and the differential had no case covering it.
+    jobs = (doc or {}).get('jobs') or {} if isinstance(doc, dict) else {}
     if not isinstance(jobs, dict):
         continue
     for jid, job in jobs.items():
@@ -1047,22 +1062,88 @@ def harmless(step):
     t = step.get("timeout-minutes")
     return isinstance(t, int) and 0 < t <= MAX_TIMEOUT_MINUTES
 
+
+def scalar(value):
+    """A YAML scalar as the string GitHub would render, or None if it is not one.
+
+    YAML hands back whatever was written, so `name: 5` is an int and `name: null`
+    is None. Everything below goes through here rather than assuming str.
+    """
+    if isinstance(value, str):
+        return value or None
+    if isinstance(value, (bool, int, float)):
+        return str(value)
+    return None
+
+
+def step_label(step):
+    """What to call this step in a message, and what to match the monitor on.
+
+    FIXED 2026-09-10. This was inlined as `s.get("name") or str(s.get("uses", ""))`,
+    which returns a non-str for `name: 5` and then died on `"actions/checkout" in
+    name` with `TypeError: argument of type 'int' is not a container or iterable`
+    -- a traceback under which bash printed "move the step after the monitor",
+    a fix for a crash that has nothing to do with ordering.
+    """
+    return scalar(step.get("name")) or scalar(step.get("uses")) or ""
+
+
+def is_checkout(step):
+    """A repository checkout, decided by `uses:` and NEVER by the display name.
+
+    FIXED 2026-09-10. This used to ask `"actions/checkout" in <label>`, and the
+    label only falls back to `uses:` when the step has no `name:`. So the exemption
+    held for the 139 unnamed checkout steps under .github/workflows and was lost for
+    the 5 named ones. One ordinary edit (`name: Checkout` on watchdog-monitor.yml's
+    own checkout, which is unnamed today) would have turned this gate red on the one
+    workflow it exists to guard, with a message telling the author to move the
+    checkout AFTER the monitor and leave the monitor's scripts off disk.
+    """
+    uses = step.get("uses")
+    return isinstance(uses, str) and uses.startswith("actions/checkout")
+
 if not WORKFLOW.exists():
     print(f"error: {WORKFLOW} is missing; CHECK 6 cannot report", file=sys.stderr)
     sys.exit(1)
 
-doc = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+# FIXED 2026-09-10. THREE of the five ways the monitor anchor can go missing used
+# to end in a traceback rather than in this check's own message: an EMPTY document
+# and a NON-MAPPING document both reached `doc.get("jobs")` and raised
+# `AttributeError`, and a SYNTAX ERROR raised `yaml.YAMLError` out of safe_load.
+# Bash printed "move the step after the monitor" on top of each, telling the
+# operator to reorder a step in a file that has no steps. All three are still
+# failures -- the anti-vacuity rule below cannot be satisfied by a file that did
+# not parse -- but each now names its cause.
+try:
+    doc = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+except yaml.YAMLError as exc:
+    print(
+        f"error: {WORKFLOW} is not parseable YAML ({exc}); CHECK 6 cannot report",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+if not isinstance(doc, dict):
+    print(
+        f"error: {WORKFLOW} did not parse as a YAML mapping (got "
+        f"{type(doc).__name__}); CHECK 6 cannot report",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
 offenders = []
 found_monitor = False
-for job_id, job in (doc.get("jobs") or {}).items():
+jobs = doc.get("jobs")
+for job_id, job in (jobs if isinstance(jobs, dict) else {}).items():
+    if not isinstance(job, dict):
+        continue
     steps = [s for s in (job.get("steps") or []) if isinstance(s, dict)]
-    names = [s.get("name") or str(s.get("uses", "")) for s in steps]
+    names = [step_label(s) for s in steps]
     if MONITOR not in names:
         continue
     found_monitor = True
     cut = names.index(MONITOR)
     for name, step in zip(names[:cut], steps[:cut]):
-        if name in PREREQS or "actions/checkout" in name or harmless(step):
+        if name in PREREQS or is_checkout(step) or harmless(step):
             continue
         offenders.append(
             f"watchdog-monitor.yml: job '{job_id}' runs {name!r} BEFORE {MONITOR!r}, "

@@ -919,8 +919,11 @@ def run() -> int:
     if drained:
         print(
             "✗ %d baselined bash file(s) are gone from the tree. Ratchet the baseline\n"
-            "  in the same commit, or the next author inherits a set that no longer\n"
-            "  describes anything:" % len(drained),
+            "  so it stops describing files that are not there. THIS GATE CHECKS STATE,\n"
+            "  NOT COMMIT BOUNDARIES: it reads `git ls-files` and nothing else, so a\n"
+            "  drain landing one commit AFTER the deletion goes green here and CI never\n"
+            "  learns the two were split. Riding the same commit is advice that keeps\n"
+            "  HEAD green between them, not a property anything enforces:" % len(drained),
             file=sys.stderr,
         )
         for rel in drained[:20]:

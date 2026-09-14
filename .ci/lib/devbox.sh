@@ -20,8 +20,25 @@
 readonly DEVBOX_LIB_LOADED=1
 
 DEVBOX_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-source "$DEVBOX_LIB_DIR/find-port.sh"
+
+# Port utilities. `.ci/lib/find-port.sh`, the bash shim that used to wrap
+# rediacc_ci.core.ports, is DELETED (W7P5-b): a shim is a delay, not an exit.
+# `derive_slot` and `find_port_block` below name the module directly.
+#
+# The shim's LOAD-TIME refusal is kept deliberately. This file's slot decides
+# which URL a bookmark resolves to, so a missing interpreter must be a named
+# failure rather than a plausible wrong number. REDIACC_CI_ROOT is the
+# package's single environment override (see .ci/rediacc_ci/paths.py).
+DEVBOX_CI_DIR="${REDIACC_CI_ROOT:+$REDIACC_CI_ROOT/.ci}"
+DEVBOX_CI_DIR="${DEVBOX_CI_DIR:-$(cd "$DEVBOX_LIB_DIR/.." && pwd)}"
+if [[ ! -d "$DEVBOX_CI_DIR/rediacc_ci/core" ]]; then
+    echo "devbox.sh: cannot find rediacc_ci under '$DEVBOX_CI_DIR' (set REDIACC_CI_ROOT)" >&2
+    return 1
+fi
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "devbox.sh: python3 is required; the port logic lives in rediacc_ci.core.ports" >&2
+    return 1
+fi
 
 DEVBOX_LABEL_KEY="com.rediacc.devbox.worktree"
 # The hostname the container was BUILT with, baked in as a label so it can be
@@ -67,7 +84,8 @@ devbox_mount_root() {
 devbox_container_name() {
     local wt slot
     wt="$(devbox_worktree)"
-    slot="$(derive_slot "$wt" 100)"
+    slot="$(PYTHONPATH="$DEVBOX_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports derive-slot "$wt" 100)"
     printf 'rediacc-devbox-%s-%s\n' "$slot" "$(basename "$wt")"
 }
 
@@ -128,7 +146,8 @@ devbox_base_port() {
     fi
 
     # First time: derive from the worktree path.
-    find_port_block "$(devbox_worktree)" \
+    PYTHONPATH="$DEVBOX_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports find-port-block "$(devbox_worktree)" \
         "$DEVBOX_PORT_RANGE_START" "$DEVBOX_PORT_RANGE_END" "$DEVBOX_PORT_BLOCK"
 }
 

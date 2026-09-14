@@ -110,13 +110,31 @@ fi
 # THE ANTI-VACUITY CHECK THAT MATTERS HERE. --dry-run turns some subtests into
 # stubs that print "[DRY-RUN] Would ..." and pass unconditionally. If that set
 # ever grew to cover everything, the run above would still say "21 passed".
+#
+# THE MARKER IS CORROBORATED AGAINST THE SUBJECT'S SOURCE FIRST, and that is
+# the whole reason this block is more than one subtraction. "[DRY-RUN] Would"
+# is a LITERAL matched out of the subject's RUNTIME OUTPUT, and an absent
+# marker has two causes that the output cannot tell apart: nothing was stubbed,
+# or the string was renamed out from under this check. Read only from the
+# output, the second one silently becomes `EXPECTED_TESTS - 0`, and this
+# registered gate prints its STRONGEST claim -- "21 of 21 subtests really
+# executed" -- at the exact moment the evidence for it disappeared, exiting 0.
+# So the two causes are told apart at the SOURCE: the marker must still exist
+# in the subject for a count derived from it to mean anything, which is the
+# same corroboration EXPECTED_TESTS gets from `^run_test "` above.
+DRY_MARKER='[DRY-RUN] Would'
+MARKER_SITES=$(grep -cF -- "$DRY_MARKER" "$SUBJECT" || true)
 STUBBED=$(printf '%s\n' "$BOTH" | grep -cE 'TEST: ' || true)
-DRYSTUB=$(printf '%s\n' "$BOTH" | grep -cE '\[DRY-RUN\] Would' || true)
-REAL=$((EXPECTED_TESTS - $(printf '%s\n' "$BOTH" | grep -B1 '\[DRY-RUN\] Would' | grep -cE 'TEST: ' || true)))
-if [[ "$REAL" -gt 0 ]]; then
-    proxy_pass "$REAL of $EXPECTED_TESTS subtests really executed (nfpm build + repo metadata); $((EXPECTED_TESTS - REAL)) are dry-run stubs, $DRYSTUB stub lines, $STUBBED TEST banners"
+DRYSTUB=$(printf '%s\n' "$BOTH" | grep -cF -- "$DRY_MARKER" || true)
+if [[ "$MARKER_SITES" -eq 0 ]]; then
+    proxy_fail "VACUOUS: the dry-run stub marker '$DRY_MARKER' appears 0 times in ${SUBJECT#"$ROOT_DIR"/}, so the stub count below is derived from nothing. Expected: at least one call site in the subject printing that marker. Found: none, which means it was renamed, and the subtraction would then read all $EXPECTED_TESTS subtests as really executed. Re-derive the marker from the subject's dry-run branch; do not delete this check and do not allowlist the subject."
 else
-    proxy_fail "every subtest was a dry-run stub; this run asserted nothing about packaging"
+    REAL=$((EXPECTED_TESTS - $(printf '%s\n' "$BOTH" | grep -B1 -F -- "$DRY_MARKER" | grep -cE 'TEST: ' || true)))
+    if [[ "$REAL" -gt 0 ]]; then
+        proxy_pass "$REAL of $EXPECTED_TESTS subtests really executed (nfpm build + repo metadata); $((EXPECTED_TESTS - REAL)) are dry-run stubs, $DRYSTUB stub lines, $STUBBED TEST banners, marker corroborated at $MARKER_SITES site(s) in the subject"
+    else
+        proxy_fail "every subtest was a dry-run stub; this run asserted nothing about packaging"
+    fi
 fi
 
 proxy_finish

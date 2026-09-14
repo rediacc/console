@@ -435,13 +435,21 @@ test_ec_fixture_tree_skips_cleanly() {
 # every case in this very file (nightly 34014201256). The cases below are the
 # test that was missing, in both directions.
 
+# EXTRA_EXEMPTION: `DECLARED_UNUSED_OK` is drained to empty on the real tree
+# (W8 P1b's "declared endgame"), which would otherwise leave the liveness
+# sweep and arm (a3) with no positive case to prove they can fire at all. This
+# injects a synthetic pair through the subject's own test-only seam
+# (WORKFLOW_GATES_EXTRA_EXEMPTIONS); production never sets it.
+EXTRA_EXEMPTION="claude-review-reusable.yml:ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN"
+
 # run_check_live: drive the check with the liveness sweep forced ON against a
 # fixture tree. SLIM coverage is pinned off because it defaults from the same
 # flag and this fixture has no slim job to offer -- CHECK 3 has its own test.
 run_check_live() {
     local dir="$1" rc=0
     LAST_OUT="$(CI=true WORKFLOWS_DIR="$dir" REAL_WORKFLOW_TREE=true \
-        SLIM_TIMEOUT_REQUIRE_COVERAGE=false bash "$CHECK" 2>&1)" || rc=$?
+        SLIM_TIMEOUT_REQUIRE_COVERAGE=false \
+        WORKFLOW_GATES_EXTRA_EXEMPTIONS="$EXTRA_EXEMPTION" bash "$CHECK" 2>&1)" || rc=$?
     return "$rc"
 }
 
@@ -613,6 +621,7 @@ run_ec_live() {
         EXTERNAL_CALLERS_ROOT="$EC_ROOT" \
         REAL_WORKFLOW_TREE=true \
         SLIM_TIMEOUT_REQUIRE_COVERAGE=false \
+        WORKFLOW_GATES_EXTRA_EXEMPTIONS="$EXTRA_EXEMPTION" \
         bash "$CHECK" 2>&1)" || rc=$?
     return "$rc"
 }
@@ -706,9 +715,19 @@ test_a3_stands_down_without_a_registry() {
     # CONTROL, and the regression that arm (a2)'s liveness sweep already paid
     # for once: an arm that cannot see the registry must stay SILENT, not
     # condemn a fixture tree for lacking one.
+    #
+    # The a3 arm itself is what must stay silent, not the unrelated per-file
+    # "declares but never reads" check that a3_fixture's callee trips on its
+    # own merit and that runs regardless of real_tree -- the same synthetic
+    # exemption run_ec_live uses keeps that check quiet here too.
     a3_fixture "$1"
     local rc=0
-    run_ec || rc=$?
+    LAST_OUT="$(CI=true \
+        WORKFLOWS_DIR="$EC_ROOT/.github/workflows" \
+        EXTERNAL_CALLERS_FILE="$EC_ROOT/registry.yml" \
+        EXTERNAL_CALLERS_ROOT="$EC_ROOT" \
+        WORKFLOW_GATES_EXTRA_EXEMPTIONS="$EXTRA_EXEMPTION" \
+        bash "$CHECK" 2>&1)" || rc=$?
     assert_exit_code 0 "$rc" "a non-real tree must not be judged against the real exemption list"
     assert_not_contains "$LAST_OUT" "arm (a3)" "the arm stayed silent"
     log_pass "CONTROL: a3 stands down when the tree is not the real one"

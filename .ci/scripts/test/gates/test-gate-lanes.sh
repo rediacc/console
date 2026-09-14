@@ -166,7 +166,7 @@ ck('the plan is DETERMINISTIC: two calls on one lock agree byte for byte',
 // THE REFUSALS, every one of them driven on the real lock. A refusal nobody has
 // watched fire is not a refusal.
 ck('MORE SHARDS THAN GATES REFUSES, and says the ceiling',
-   refusal('quality-branch', 5).includes('Ask for at most 4'), refusal('quality-branch', 5));
+   refusal('quality-branch', 6).includes('Ask for at most 5'), refusal('quality-branch', 6));
 ck('the ceiling is UNITS, not entries: 16 www entries are 4 units',
    refusal('quality-www-build', 5).includes('only 4 indivisible unit(s) (16 entries'),
    refusal('quality-www-build', 5));

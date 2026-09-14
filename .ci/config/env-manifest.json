@@ -42,9 +42,6 @@
     ],
     "packages/cli/src/services/__tests__/account-client.test.ts": [
       "X25519_PUBLIC_KEY"
-    ],
-    "packages/cli/src/cli.ts": [
-      "REDIACC_YES"
     ]
   },
   "_tombstone_proof_sites_comment": [
@@ -62,7 +59,7 @@
     {
       "name": "DEBUG",
       "dead_in": "the rdc CLI",
-      "authority": "packages/cli/src/services/executor/local-executor.ts",
+      "authority": "docs/environment-variables.md",
       "live_in": "packages/e2e-tests/.env.example",
       "shard": "harness",
       "why": "DEBUG is a CLI tombstone (docs/environment-variables.md:107 replaces it with REDIACC_DEBUG scopes) and, separately, the `debug` npm package's own variable, which the e2e suite still sets. Two variables that share a spelling, so a repo-wide ban would be false and it is NOT in the tombstone shard. THE AUTHORITY IS THE DOC AND NOT THE TEST, and that is a finding rather than a preference: packages/cli/src/__tests__/env-tombstones.test.ts bans fourteen retired names and DEBUG is not one of them, so nothing in code enforces the documented deletion. This entry pointed at the test until a plant on the real tree showed the check passing for the wrong reason -- the match was a plain substring and REDIACC_DAEMON_DEBUG contains DEBUG. Both the matcher and the claim were wrong; both are fixed here."
@@ -231,6 +228,7 @@
       "FULL_SUITE",
       "GATE_SKIP_MODE",
       "GENERATION",
+      "GEN_MANIFEST_DEBUG",
       "GH_REPO",
       "GITHUB_ACTIONS",
       "GITHUB_ACTOR",
@@ -422,6 +420,7 @@
       "FAKE_BIN_RECORDS",
       "FORMAT_SCOPE_ROOT",
       "GATE_HARNESS_PROBE",
+      "GATE_PATHS_SCAN_FLOOR",
       "GATE_SKIP_WORKFLOW",
       "GL_CLOSURE_PATHS",
       "GL_ROOT",
@@ -465,7 +464,7 @@
       "PLAYER_CSS_ROOT",
       "POLICY_INVENTORY_ROOT",
       "POOL_SAFETY_GATES_DIR",
-      "POOL_SAFETY_RUNNER",
+      "POOL_SAFETY_LOCK",
       "PROFILER_COVERAGE_ACTION_DIR",
       "PROFILER_COVERAGE_ALLOWLIST",
       "PROFILER_COVERAGE_COVERING_ACTIONS",
@@ -691,6 +690,7 @@
       "GROUP_B_NET",
       "GROUP_B_NET_BASE",
       "GROUP_B_WORKER",
+      "HOOK_LABEL_DIR",
       "K8S_MODE",
       "KEEP_CLUSTER",
       "KEEP_GROUPS",
@@ -715,6 +715,7 @@
       "REDIACC_TEST_API_URL",
       "REDIACC_TEST_EMAIL",
       "REDIACC_TEST_TIMEOUT",
+      "REDIACC_TIMEOUT_BIN",
       "RENET_BINARY_PATH",
       "RENET_DATA_DIR",
       "RENET_DOCKER_IMAGE",
@@ -877,7 +878,6 @@
       "WORKLIST_WAIT_TIMEOUT_MIN",
       "WORKLIST_WHY_MAX_CHARS",
       "WORKLIST_WHY_MAX_RECORDS",
-      "ZZ_GATE_PLANT_NEVER_READ",
       "_WL_SITEPROFILE"
     ],
     "tombstone": [

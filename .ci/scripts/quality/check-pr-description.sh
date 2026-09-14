@@ -57,8 +57,8 @@ LATEST_COMMIT_TIME=$(gh pr view "$PR_NUMBER" --json commits \
     --jq '.commits | sort_by(.committedDate) | last | .committedDate' 2>/dev/null || echo "")
 
 if [[ -z "$LATEST_COMMIT_TIME" ]]; then
-    log_warn "Could not get latest commit time - skipping check"
-    exit 0
+    log_error "Could not fetch the latest commit time for PR #$PR_NUMBER (gh call failed or returned nothing); cannot verify description freshness"
+    exit 1
 fi
 
 # Get the time the PR description was last edited using GraphQL.

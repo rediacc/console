@@ -74,11 +74,18 @@ start_fixture() {
     local port
     # Find a free port in the ephemeral range
     port="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')"
-    (cd "$serve_root" && python3 -m http.server "$port" >/dev/null 2>&1) &
+    # `exec` REPLACES the subshell's own process image with python3 rather than
+    # forking it as a grandchild, so `$!` below is python3's real PID. Without
+    # it, `$!` names the intermediate `(cd && ...)` subshell; killing THAT PID
+    # in stop_fixture does not kill its child (a plain `kill` is not
+    # propagated to children by the shell), and python3 -m http.server is
+    # reparented and orphaned forever. Measured: 254 such orphans on this host
+    # before this fix.
+    (cd "$serve_root" && exec python3 -m http.server "$port" >/dev/null 2>&1) &
     FIXTURE_PID=$!
     FIXTURE_PORT="$port"
     # Wait for readiness
-    for _ in $(seq 1 30); do
+    for ((_i = 1; _i <= 30; _i++)); do
         if curl -fs "http://127.0.0.1:$port/" >/dev/null 2>&1; then
             return 0
         fi

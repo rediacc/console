@@ -8,8 +8,24 @@
 [[ -n "${ACCOUNT_LIB_LOADED:-}" ]] && return 0
 readonly ACCOUNT_LIB_LOADED=1
 
-# Source port utilities
-source "$CI_LIB_DIR/find-port.sh"
+# Port utilities. `.ci/lib/find-port.sh`, the bash shim that used to wrap
+# rediacc_ci.core.ports, is DELETED (W7P5-b): a shim is a delay, not an exit.
+# Every port question below now names the module directly.
+#
+# The shim's LOAD-TIME refusal is kept, and it is not ceremony: without it a
+# missing interpreter turns `is-port-in-use` into "the port is free", i.e. a
+# plausible wrong number instead of a named failure. REDIACC_CI_ROOT is the
+# package's single environment override (see .ci/rediacc_ci/paths.py).
+ACCOUNT_CI_DIR="${REDIACC_CI_ROOT:+$REDIACC_CI_ROOT/.ci}"
+ACCOUNT_CI_DIR="${ACCOUNT_CI_DIR:-$(cd "$CI_LIB_DIR/.." && pwd)}"
+if [[ ! -d "$ACCOUNT_CI_DIR/rediacc_ci/core" ]]; then
+    echo "account.sh: cannot find rediacc_ci under '$ACCOUNT_CI_DIR' (set REDIACC_CI_ROOT)" >&2
+    return 1
+fi
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "account.sh: python3 is required; the port logic lives in rediacc_ci.core.ports" >&2
+    return 1
+fi
 # env_file_load: reads a KEY=value file without executing it, and lets the SHELL
 # win over the file. Both .env loads below use it; see the call sites for why
 # that precedence is the whole point.
@@ -47,7 +63,8 @@ account_allocate_ports() {
         base="$REDIACC_DEV_PORT_BASE"
         local offset
         for offset in 0 1 2; do
-            if is_port_in_use $((base + offset)); then
+            if PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+                python3 -m rediacc_ci.core.ports is-port-in-use $((base + offset)); then
                 log_error "Port $((base + offset)) is already in use inside this environment"
                 log_info "REDIACC_DEV_PORT_BASE pins the ports so the proxy labels stay valid; free it rather than drifting"
                 log_info "Leftovers: pkill -f 'astro dev'; pkill -f 'vite --port'; pkill -f dev-gateway.ts"
@@ -69,7 +86,8 @@ account_allocate_ports() {
     # probe). The answer is identical: a candidate below the first free port
     # cannot start a free run, so scanning from the preferred base reaches the
     # same port the two-stage version did.
-    base=$(find_consecutive_free_ports 3 \
+    base=$(PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports find-consecutive-free 3 \
         "$ACCOUNT_DEV_PORT_PREFERRED" "$ACCOUNT_DEV_PORT_RANGE_END") || {
         log_error "Cannot find 3 consecutive free ports in range ${ACCOUNT_DEV_PORT_PREFERRED}-${ACCOUNT_DEV_PORT_RANGE_END}"
         exit 1
@@ -102,7 +120,8 @@ account_wait_port() {
     local announced=false
 
     while true; do
-        if is_port_in_use "$port"; then
+        if PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+            python3 -m rediacc_ci.core.ports is-port-in-use "$port"; then
             return 0
         fi
 
@@ -592,7 +611,7 @@ account_dev_credentials() {
     local base="http://127.0.0.1:${gateway_port}/account/api/v1"
 
     local i healthy=0
-    for i in $(seq 1 60); do
+    for ((i = 1; i <= 60; i++)); do
         if curl -sf -m 2 "http://127.0.0.1:${gateway_port}/health" >/dev/null 2>&1; then
             healthy=1
             break
@@ -654,7 +673,8 @@ account_dev_credentials() {
     # BYTES, so every content string below stays ASCII-only — a multibyte glyph
     # (arrow / em dash) would shift the closing bar left and break the box.
     local rule
-    rule=$(printf '─%.0s' $(seq 1 65))
+    printf -v rule '%*s' 65 ''
+    rule=${rule// /─}
 
     local recovery_display
     if [[ "$seed_existing" == "1" ]]; then
@@ -820,7 +840,8 @@ account_test_e2e() {
         exit 1
     fi
 
-    if ! is_port_in_use "$gateway_port"; then
+    if ! PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports is-port-in-use "$gateway_port"; then
         log_error "Dev gateway not running on port $gateway_port"
         log_info "Start it first: ./run.sh account dev"
         exit 1
@@ -1043,9 +1064,6 @@ account_db() {
         return 1
     fi
 
-    # shellcheck source=/dev/null
-    source "$CONSOLE_ROOT_DIR/.ci/lib/find-port.sh"
-
     # Prefer this worktree's devbox slot so the URL is stable and two worktrees
     # can browse at once. Then STEP ASIDE if it is taken: when the browser runs
     # on the host while the devbox is up, docker-proxy already holds that port.
@@ -1058,7 +1076,7 @@ account_db() {
         # format with two independent readers is one edit away from them
         # disagreeing.
         #
-        # devbox.sh sources only find-port.sh, which this file already sources,
+        # devbox.sh sources no library at all since find-port.sh was deleted,
         # so pulling it in adds no constants.sh readonly hazard. Guarded so a
         # second source is a no-op, because check-account-probes.sh sources this
         # file standalone under `set +eu` and that path is documented as fragile.
@@ -1074,7 +1092,9 @@ account_db() {
         [[ -n "$base" ]] && preferred=$((base + ${DEVBOX_OFFSET_STUDIO:-3}))
     fi
     local port
-    port="$(find_preferred_port "$preferred" "$((preferred + 1))" "$((preferred + 40))")" || {
+    port="$(PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports find-preferred-port \
+        "$preferred" "$((preferred + 1))" "$((preferred + 40))")" || {
         log_error "No free port near $preferred for the database browser"
         return 1
     }

@@ -141,8 +141,10 @@ desc_over_cap() {
             if (length(d) > cap) printf "%s\t%d\n", name, length(d)
         }'
 }
+printf -v control_desc '%*s' 101 ''
+control_desc=${control_desc// /x}
 CONTROL=$(printf -- '- name: control-label\n  description: "%s"\n' \
-    "$(printf 'x%.0s' $(seq 1 101))" | desc_over_cap)
+    "$control_desc" | desc_over_cap)
 if [ -z "$CONTROL" ]; then
     log_error "description-cap control did not fire on a planted 101-char description; the checker is broken, refusing to certify anything"
     exit 1
@@ -336,15 +338,24 @@ done <<<"$LIVE"
 # picker, and it was the one part of the label nothing checked.
 #
 # LIVE_JSON is a SEPARATE read from LIVE (which is names-only, and whose
-# fixture seam feeds names-only). When it cannot be obtained this section is
-# skipped rather than failing: the name reconciliation above already refuses to
-# pass blind on an unreadable API, so a second hard failure here would only turn
-# fixture-driven runs red.
+# fixture seam feeds names-only). The "a second hard failure here would only
+# turn fixture-driven runs red" reasoning this comment used to give does NOT
+# hold: LIVE_SOURCE is "GitHub API" only when neither LABEL_INVENTORY_LIVE_FILE
+# nor LABEL_INVENTORY_LIVE_JSON_FILE is set, and every fixture-driven test sets
+# one of those -- so this branch is never exercised by any test, and hardening
+# it cannot turn a fixture-driven run red. A failed read here used to be
+# silently treated as "nothing to compare," so the gate reported "names,
+# descriptions and colours all agree" without ever having compared descriptions
+# or colours. Fixed 2026-09-10: refuse instead.
 LIVE_JSON=""
 if [ -n "${LABEL_INVENTORY_LIVE_JSON_FILE:-}" ]; then
     LIVE_JSON="$(cat "$LABEL_INVENTORY_LIVE_JSON_FILE" 2>/dev/null || echo "")"
 elif [ "$LIVE_SOURCE" = "GitHub API" ]; then
-    LIVE_JSON="$(gh api 'repos/{owner}/{repo}/labels' --paginate 2>/dev/null || echo "")"
+    if ! LIVE_JSON="$(gh api 'repos/{owner}/{repo}/labels' --paginate 2>&1)"; then
+        log_error "could not read the live label list (with descriptions/colours) from GitHub: ${LIVE_JSON}"
+        log_error "This gate refuses to pass blind on the drift comparison. Authenticate (gh auth login / GH_TOKEN) and re-run."
+        exit 1
+    fi
 fi
 
 if [ -n "$LIVE_JSON" ] && [ "$LABELS_FILE" = ".github/labels.yml" ]; then

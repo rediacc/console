@@ -158,16 +158,16 @@
       ],
       "done_sigs": [
         "159b0a13",
-        "1d827993",
-        "25d0095b",
+        "1afc2d3e",
         "3a590fc8",
         "3cf0920b",
+        "451951e9",
+        "5762f53a",
         "6902a808",
         "6f5d6c0a",
         "96d132ef",
         "b02b8b30",
         "c72dc392",
-        "d573705b",
         "e8cdc9c4",
         "f582e305",
         "f6819ee3"
@@ -200,24 +200,25 @@
     "agent/PLAN-commit-author-identity.md": {
       "status": "draft",
       "owner": "74de73ca",
-      "open": 13,
-      "done": 0,
+      "open": 3,
+      "done": 10,
       "open_sigs": [
+        "51f6c3d8",
+        "68b1dba0",
+        "76c86d5d"
+      ],
+      "done_sigs": [
         "36c8e346",
         "444ac305",
-        "51f6c3d8",
         "5c05ef83",
-        "68b1dba0",
         "756ce886",
-        "76c86d5d",
         "b5849b3f",
         "ba5ad2fd",
         "cd572f71",
         "d3e3de15",
         "dcdc7331",
         "e7ea085e"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/PLAN-completion-strategy.md": {
       "status": "ready",
@@ -330,6 +331,21 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
+    },
+    "agent/PLAN-gh-swallow-gates-audit.md": {
+      "status": "done",
+      "owner": "f4da5c2e",
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
+      "done_sigs": [
+        "2712c77e",
+        "3a6c51fe",
+        "418da40b",
+        "75434b8e",
+        "8a10c63a",
+        "adca9b9b"
+      ]
     },
     "agent/PLAN-git-history-media-rewrite.md": {
       "status": "ready",
@@ -453,22 +469,23 @@
     "agent/PLAN-plyr-css-on-demand-loading.md": {
       "status": "draft",
       "owner": "74de73ca",
-      "open": 11,
-      "done": 0,
+      "open": 4,
+      "done": 7,
       "open_sigs": [
         "29de6607",
         "3c769dac",
-        "3d61b5dc",
         "6018aa6e",
+        "9e2f805e"
+      ],
+      "done_sigs": [
         "7f7a85ec",
         "93207293",
-        "9e2f805e",
         "b53ee71d",
         "bce8eeed",
+        "c1b2dbf9",
         "c65d7dea",
         "f7e12115"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/PLAN-promote-mutation-runner.md": {
       "status": "done",
@@ -636,12 +653,11 @@
     "agent/PLAN-session-onboarding-marker.md": {
       "status": "draft",
       "owner": "74de73ca",
-      "open": 6,
-      "done": 4,
+      "open": 5,
+      "done": 5,
       "open_sigs": [
         "1cf39aeb",
         "44e0a390",
-        "94b8a59d",
         "ac008cf3",
         "c9c3f81c",
         "fdd528a8"
@@ -649,9 +665,18 @@
       "done_sigs": [
         "37cb2af4",
         "864ba50b",
+        "94b8a59d",
         "9eb50a71",
         "a07d0f8a"
       ]
+    },
+    "agent/PLAN-shell-command-gate-regex-fix.md": {
+      "status": "draft",
+      "owner": "f4da5c2e",
+      "open": 0,
+      "done": 0,
+      "open_sigs": [],
+      "done_sigs": []
     },
     "agent/PLAN-shell-resource-profiling.md": {
       "status": "landed",
@@ -798,19 +823,15 @@
     "agent/PLAN-tooling-transformation.md": {
       "status": "ready",
       "owner": "8f55d4f0",
-      "open": 22,
-      "done": 132,
+      "open": 18,
+      "done": 136,
       "open_sigs": [
-        "03457679",
         "0be61c26",
-        "27dcac1a",
         "2b0c6382",
         "2f19172d",
         "4314ed50",
         "501c6171",
-        "6561db69",
         "788506f9",
-        "850cbc77",
         "91dcb6a5",
         "9ac783c3",
         "a81fb948",
@@ -825,6 +846,7 @@
         "fce2c5e8"
       ],
       "done_sigs": [
+        "03457679",
         "03668ab3",
         "04ef9474",
         "050c44a6",
@@ -839,11 +861,13 @@
         "25213a0a",
         "2666034b",
         "273beaed",
+        "27dcac1a",
         "2a10add1",
         "2d0d487b",
         "2fc0f746",
         "2ff85445",
         "30a46a74",
+        "30dcaaed",
         "311bcbf5",
         "31c07684",
         "3280b448",
@@ -889,6 +913,7 @@
         "799abb65",
         "7e9368d8",
         "7fee0898",
+        "850cbc77",
         "85fa6aa1",
         "871bc16b",
         "8918d84c",

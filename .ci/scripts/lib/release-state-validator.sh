@@ -358,7 +358,7 @@ rsv_assert_bijection() {
     local floor
     floor="$(rsv_pre_contract_floor "$cli_versions")"
     if [[ -z "$floor" ]]; then
-        echo "OK: release-state bijection holds — no cli sentinels yet (contract not in effect)"
+        echo "OK: release-state bijection holds -- no cli sentinels yet (contract not in effect)"
         return 0
     fi
 

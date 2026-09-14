@@ -498,13 +498,28 @@ test_sampler_reads_a_real_containers_ceiling() {
         return 0
     fi
     local out rc=0
-    out="$(timeout 180 docker run --rm --memory=5g --cpus=1 \
+    docker run --rm --memory=5g --cpus=1 \
         -v "$(cd "$(dirname "$SAMPLER")" && pwd):/p:ro" -v "$d:/w" \
         --entrypoint sh alpine:latest -c \
         'apk add --no-cache bash coreutils >/dev/null 2>&1;
          PROFILER_RUNNER_LABEL=ubuntu-slim PROFILER_MAX_SECONDS=3 \
            bash /p/sampler-linux.sh --out /w/c.tsv --interval 1 2>&1;
-         head -1 /w/c.tsv' 2>&1)" || rc=$?
+         head -1 /w/c.tsv' >"$d/docker.out" 2>&1 &
+    local docker_pid=$!
+    (
+        secs=180
+        while [ "$secs" -gt 0 ]; do
+            kill -0 "$docker_pid" 2>/dev/null || exit 0
+            secs=$((secs - 1))
+            command sleep 1
+        done
+        kill "$docker_pid" 2>/dev/null
+    ) &
+    local watchdog_pid=$!
+    wait "$docker_pid" 2>/dev/null || rc=$?
+    kill "$watchdog_pid" 2>/dev/null || true
+    wait "$watchdog_pid" 2>/dev/null || true
+    out="$(cat "$d/docker.out" 2>/dev/null)"
     if [ "$rc" -ne 0 ]; then
         log_pass "SKIP: container run failed (rc=$rc), ceiling unproven here: ${out:0:120}"
         return 0

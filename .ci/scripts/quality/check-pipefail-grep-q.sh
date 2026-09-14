@@ -178,8 +178,9 @@ MECH
     # early exit kills it. Under the buffer, nothing races and the control
     # would silently prove nothing -- which is exactly how the first attempt at
     # a large-file control in check-ci-watch-recipe.sh came out vacuous.
-    pad="$(printf 'x%.0s' $(seq 1 200))"
-    for _i in $(seq 1 1500); do printf '%s\n' "$pad"; done
+    printf -v pad '%*s' 200 ''
+    pad=${pad// /x}
+    for ((_i = 1; _i <= 1500; _i++)); do printf '%s\n' "$pad"; done
 } >"$TMP/big.txt"
 mech_out="$(bash "$TMP/mech.sh" x "$TMP/big.txt" 2>/dev/null)"
 if [ "$mech_out" = "MISSED" ]; then

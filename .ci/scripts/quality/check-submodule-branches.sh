@@ -251,7 +251,7 @@ get_console_pr_body() {
         return 0
     fi
 
-    gh pr view "$pr_number" --json body --jq '.body // empty' 2>/dev/null || echo ""
+    gh_retry "console PR body for #${pr_number}" -- pr view "$pr_number" --json body --jq '.body // empty'
 }
 
 # Check if PR URL is mentioned in text
@@ -395,6 +395,7 @@ main() {
     local errors=0
     local warnings=0
     local console_pr_body=""
+    local console_pr_body_ok=true
 
     log_step "Validating submodule branches (console branch: $current_branch)"
 
@@ -450,7 +451,10 @@ main() {
 
     # Get console PR body for linking check (only in CI with PR context)
     if [[ -n "${PR_NUMBER:-}" ]] && command -v gh &>/dev/null; then
-        console_pr_body="$(get_console_pr_body)"
+        if ! console_pr_body="$(get_console_pr_body)"; then
+            console_pr_body_ok=false
+            log_warn "could not fetch console PR #${PR_NUMBER} description after retries; cannot verify submodule PR links there this run"
+        fi
     fi
 
     # Check each submodule
@@ -499,7 +503,10 @@ main() {
                         submodule_pr_number="${pr_info%%|*}"
                         submodule_pr_url="${pr_info##*|}"
 
-                        if [[ -n "$console_pr_body" ]] && ! pr_is_linked "$submodule_pr_url" "$console_pr_body"; then
+                        if [[ "$console_pr_body_ok" == "false" ]]; then
+                            log_error "✗ $sm_path: could not fetch console PR description; cannot certify $submodule_pr_url is linked there"
+                            errors=$((errors + 1))
+                        elif [[ -n "$console_pr_body" ]] && ! pr_is_linked "$submodule_pr_url" "$console_pr_body"; then
                             log_error "✗ $sm_path: PR $submodule_pr_url not linked in console PR description"
                             log_error "  AI FIX: Edit console PR description to include: $submodule_pr_url"
                             errors=$((errors + 1))

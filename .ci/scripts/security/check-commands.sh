@@ -67,7 +67,7 @@ main() {
         # Search for disallowed commands (as actual commands, not variables)
         # Look for: command at line start, after |, after $( , after `
         local matches
-        matches=$(grep -nE "(^[[:space:]]*|[|&;]\s*|\$\(|^[[:space:]]*if\s+)($pattern)" "$script" 2>/dev/null || true)
+        matches=$(grep -nE "(^[[:space:]]*|[|&;]\s*|\\$\(|^[[:space:]]*if\s+)($pattern)" "$script" 2>/dev/null || true)
 
         if [[ -n "$matches" ]]; then
             while IFS= read -r match; do
@@ -81,7 +81,7 @@ main() {
                     local cmd="${entry%%|*}"
                     local alt="${entry#*|}"
 
-                    if grep -qE "(^[[:space:]]*|[|&;]\s*|\$\()${cmd}\\b" <<<"$line_content"; then
+                    if grep -qE "(^[[:space:]]*|[|&;]\s*|\\$\(|^[[:space:]]*if\s+)${cmd}\\b" <<<"$line_content"; then
                         # Skip if it's a variable assignment like: local timeout=30
                         if grep -qE "^\s*(local\s+|export\s+|readonly\s+)?${cmd}=" <<<"$line_content"; then
                             continue

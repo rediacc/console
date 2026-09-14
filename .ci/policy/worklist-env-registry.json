@@ -263,6 +263,13 @@
         "'10'"
       ]
     },
+    "WORKLIST_FOCUS": {
+      "kind": "flag",
+      "defaults": [
+        "'on'"
+      ],
+      "why": "FAIL-OPEN ON A TYPO: defaults to `on`, and the fail-open direction is OFF, not on. wl_checks.py:5484 checks it only on the path where every violation is about to be rendered (the fail-safe reggate emit); a misspelled name reads as unset, the default `on` applies, and the caller gets the full render it already asked for by default -- a typo here cannot silently suppress output, only fail to suppress it."
+    },
     "WORKLIST_GUIDE_MAX": {
       "kind": "tuning",
       "defaults": [

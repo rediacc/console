@@ -251,10 +251,11 @@ fi
 # MUTATION -- revert hands_out_banned to the `| grep -q` form and this control
 # goes red, which the 32 KB version did not.
 {
-    printf 'padding %d\n' $(seq 1 39)
+    for ((i = 1; i <= 39; i++)); do printf 'padding %d\n' "$i"; done
     printf 'Poll it with `gh run watch 12345 --exit-status` until it finishes.\n'
-    pad="$(printf 'x%.0s' $(seq 1 200))"
-    for _i in $(seq 1 1200); do printf 'padding %s\n' "$pad"; done
+    printf -v pad '%*s' 200 ''
+    pad=${pad// /x}
+    for ((_i = 1; _i <= 1200; _i++)); do printf 'padding %s\n' "$pad"; done
 } >"$TMP/big.md"
 if hands_out_banned "$TMP/big.md"; then
     pass "C control: an early hit in a LARGE file is still detected (no SIGPIPE race)"

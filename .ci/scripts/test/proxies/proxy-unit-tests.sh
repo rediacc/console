@@ -119,11 +119,19 @@ else
     cat "$ERR" >&2
 fi
 
-# vitest prints "Tests  N passed (N)"; zero executed tests is a green that means
-# nothing, so it is a failure here.
-SUMMARY="$(printf '%s\n' "$BOTH" | grep -oE 'Tests +[0-9]+ (passed|failed)' | tail -1)"
-COUNT="$(printf '%s' "$SUMMARY" | grep -oE '[0-9]+' | tail -1)"
-FILES="$(printf '%s\n' "$BOTH" | grep -oE 'Test Files +[0-9]+ ' | grep -oE '[0-9]+' | tail -1)"
+# vitest prints "Tests  N passed (N)" or, on a mixed run, "Tests  F failed |
+# P passed (N)". FIXED 2026-09-10: this used to grep the RAW bytes, so
+# vitest's colour escapes (which sit BETWEEN "Tests" and the number in a
+# coloured run -- every CI-shaped environment, not just a real TTY) made the
+# match fail and turned a passing suite red; and even uncoloured, matching
+# "Tests +[0-9]+ (passed|failed)" took the FIRST token on a mixed line, which
+# is the FAILED count, not the total. Strip ANSI SGR sequences first, then
+# read the trailing "(N)" total off the Tests line, which is right in both
+# the clean and the mixed case and does not care which side of "|" wins.
+CLEAN="$(printf '%s\n' "$BOTH" | sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g')"
+SUMMARY="$(printf '%s\n' "$CLEAN" | grep -E '^[[:space:]]*Tests[[:space:]]' | tail -1)"
+COUNT="$(printf '%s' "$SUMMARY" | grep -oE '\(([0-9]+)\)' | tail -1 | tr -d '()')"
+FILES="$(printf '%s\n' "$CLEAN" | grep -oE 'Test Files +[0-9]+ ' | grep -oE '[0-9]+' | tail -1)"
 if [[ -z "$COUNT" ]]; then
     proxy_fail "no 'Tests N passed' summary in either stream; the runner produced no readable count, so this run proves nothing"
 elif [[ "$COUNT" -eq 0 ]]; then

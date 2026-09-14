@@ -170,7 +170,7 @@ check_b() {
         # Paths named by EITHER snapshot: a file that appeared and one that vanished are
         # both ours to watch. The last field of a porcelain line; `?? p` and ` M p` alike.
         paths="$(delta_paths "$before" "$after")"
-        for i in $(seq 1 15); do
+        for ((i = 1; i <= 15; i++)); do
             sleep 1
             if [ "$(scoped_to "$(tree_snapshot)" "$paths")" = "$(scoped_to "$before" "$paths")" ]; then
                 settled=1
@@ -209,19 +209,20 @@ check_b() {
 # ---------------------------------------------------------------------------
 # shellcheck disable=SC2120  # called with an argument by the control below
 check_c() { # check_c <repo root whose .ci/rediacc_ci supplies the implementation>
-    # The subject moved in W7 phase 1. `.ci/lib/find-port.sh` is now a
-    # delegating shim over rediacc_ci.core.ports, so mutating the shim proves
-    # nothing -- the digest it used to compute is not there any more. What this
-    # takes is a ROOT, handed to the shim through REDIACC_CI_ROOT, so the
-    # control below can point it at a COPY of the package with the digest line
-    # broken. That is a strictly stronger control than the old one: it fails
-    # unless the delegation actually reaches the Python.
+    # The subject moved in W7 phase 1 and moved again in W7P5-b.
+    # `.ci/lib/find-port.sh` was a delegating shim over rediacc_ci.core.ports,
+    # so mutating the shim proved nothing -- the digest it used to compute was
+    # not there any more -- and the shim is now DELETED outright. What this
+    # takes is a ROOT, turned into the PYTHONPATH the subprocess runs under, so
+    # the control below can point it at a COPY of the package with the digest
+    # line broken. That is a strictly stronger control than the original: it
+    # fails unless the derivation actually reaches that copy of the Python.
     local root="${1:-$ROOT}"
-    local fp="$LIB/find-port.sh"
     local a1 b1 i sample
-    # shellcheck source=/dev/null
-    a1="$(REDIACC_CI_ROOT="$root" bash -c "source '$fp'; derive_slot /home/x/console 100")"
-    b1="$(REDIACC_CI_ROOT="$root" bash -c "source '$fp'; derive_slot /home/x/console/.worktrees/0824-1 100")"
+    a1="$(PYTHONPATH="$root/.ci${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports derive-slot /home/x/console 100)"
+    b1="$(PYTHONPATH="$root/.ci${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports derive-slot /home/x/console/.worktrees/0824-1 100)"
 
     if [ -z "$a1" ]; then
         fail "C: derive_slot produced nothing"
@@ -237,7 +238,8 @@ check_c() { # check_c <repo root whose .ci/rediacc_ci supplies the implementatio
     # planted value was `$RANDOM` while the implementation was bash; it is
     # `random.randbytes` now that it is Python. The arithmetic is unchanged.)
     for ((i = 0; i < 4; i++)); do
-        sample="$(REDIACC_CI_ROOT="$root" bash -c "source '$fp'; derive_slot /home/x/console 100")"
+        sample="$(PYTHONPATH="$root/.ci${PYTHONPATH:+:$PYTHONPATH}" \
+            python3 -m rediacc_ci.core.ports derive-slot /home/x/console 100)"
         if [ "$sample" != "$a1" ]; then
             fail "C: derive_slot is not deterministic ($a1 then $sample)"
             return 1
@@ -457,8 +459,9 @@ fi
 # C-control: a random slot must be rejected.
 #
 # The mutation now lands on rediacc_ci.core.ports, which is where the digest
-# actually lives since W7 phase 1; the shim at .ci/lib/find-port.sh is pointed
-# at the broken COPY through REDIACC_CI_ROOT. Copying the package rather than
+# actually lives since W7 phase 1; check_c is pointed at the broken COPY through
+# PYTHONPATH, which is what the deleted find-port.sh shim was setting anyway
+# (W7P5-b). Copying the package rather than
 # editing it in place matters twice over: this gate must never write into the
 # tree it is checking, and other sessions share this checkout.
 mkdir -p "$TMP/broken-root/.ci"

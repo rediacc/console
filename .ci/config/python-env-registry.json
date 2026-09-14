@@ -183,7 +183,7 @@
     ],
     ".ci/rediacc_ci/quality/pool_writer_safety.py": [
       "POOL_SAFETY_GATES_DIR",
-      "POOL_SAFETY_RUNNER"
+      "POOL_SAFETY_LOCK"
     ],
     ".ci/rediacc_ci/quality/pr_description.py": [
       "*name",
@@ -336,6 +336,12 @@
     ".ci/rediacc_ci/tests/gates/media_verify.py": [
       "MEDIA_COVERAGE_FILE"
     ],
+    ".ci/rediacc_ci/tests/gates/media_verify_ext.py": [
+      "MEDIA_COVERAGE_FILE"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_assert_edge_tag_exists.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_backfill_commit_resolve.py": [
       "PATH"
     ],
@@ -348,6 +354,9 @@
     ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_naming.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_teardown.py": [
       "PATH"
     ],
@@ -358,10 +367,25 @@
       "HOME",
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_detect_bump_type.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_gate_skip_announcer.py": [
       "GATE_SKIP_WORKFLOW"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_go_deps_probe_failure.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_greenlight.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_housekeeping_phases.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_installmethods_manifest.py": [
@@ -373,6 +397,9 @@
     ".ci/rediacc_ci/tests/gates/test_gate_nightly_retry_filters.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_paths_exist.py": [
+      "GATE_PATHS_SCAN_FLOOR"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_releaseversion_attestation.py": [
       "PATH"
     ],
@@ -382,7 +409,28 @@
     ".ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_review_labels.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_review_status.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_scope_gate_outputs.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_scrub_sentinel_empty.py": [
+      "CI"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_shell_counter_increment.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_simulate_promotion_serverside.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_skip_release_channel_pointer.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_worktree_devbox_teardown.py": [
@@ -412,6 +460,9 @@
     ],
     ".ci/rediacc_ci/tests/test_quality_release_state.py": [
       "RSV_FLOOR_FILE"
+    ],
+    ".ci/rediacc_ci/tests/test_quality_submodule_branches.py": [
+      "PATH"
     ],
     ".ci/scripts/ci/ci-trace.py": [
       "CI_TRACE_MAX_READ_FAILURES",
@@ -752,10 +803,22 @@
     ".claude/rediacc_hooks/shellscan.py": [
       "CLAUDE_PROJECT_DIR"
     ],
+    ".claude/rediacc_hooks/tests/hooklabels.py": [
+      "HOOK_LABEL_DIR"
+    ],
     ".claude/rediacc_hooks/tests/test_guards_differential.py": [
       "HOME",
       "PATH",
       "REDIACC_GUARD_DIFF_FULL"
+    ],
+    ".claude/rediacc_hooks/tests/test_hooks_fixtures.py": [
+      "CLAUDE_PROJECT_DIR",
+      "GITHUB_HEAD_REF",
+      "PATH",
+      "PR_HEAD_REF"
+    ],
+    ".claude/rediacc_hooks/tests/test_hooks_procs.py": [
+      "REDIACC_TIMEOUT_BIN"
     ],
     ".claude/rediacc_hooks/tests/test_proc.py": [
       "HOME",

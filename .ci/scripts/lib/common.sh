@@ -587,12 +587,20 @@ review_cap_for() {
 # An empty epic argument counts every report, which is the pre-epic behaviour
 # and what a PR with no epics still gets.
 review_report_count() {
-    local pr="$1" epic="${2:-}" needle="**Claude finished"
+    local pr="$1" epic="${2:-}" needle="**Claude finished" out
     [[ -n "$epic" ]] && needle="**Claude finished (epic ${epic})"
-    gh api "repos/${GITHUB_REPOSITORY}/issues/${pr}/comments" --paginate \
+    out="$(gh_retry "review_report_count" -- api "repos/${GITHUB_REPOSITORY}/issues/${pr}/comments" --paginate \
         --jq ".[] | select(.user.login | contains(\"github-actions\"))
                   | select(.body | startswith(\"${needle}\"))
-                  | .id" 2>/dev/null | wc -l || true
+                  | .id")" || return 1
+    # A here-string always appends a trailing newline, so `wc -l <<<""` reads
+    # as one line, not zero -- the same trap this file's own review_budget
+    # counterpart already documents. Guard the truly-empty case explicitly.
+    [[ -z "$out" ]] && {
+        echo 0
+        return 0
+    }
+    wc -l <<<"$out"
 }
 
 # review_epic_ids <branch> -> every epic id the published snapshot declares.
@@ -679,9 +687,10 @@ review_attempt_class_is_infra() {
 # it. A LEGACY marker (written before the count existed) has neither line and
 # reads as one attempt of unknown class, which is the old behaviour exactly.
 review_attempt_states() {
-    gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
-        --jq ".[] | select(.body | startswith(\"${2}\")) | .body, \"---REVIEW-ATTEMPT-EOF---\"" 2>/dev/null |
-        awk '
+    local out
+    out="$(gh_retry "review_attempt_states" -- api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
+        --jq ".[] | select(.body | startswith(\"${2}\")) | .body, \"---REVIEW-ATTEMPT-EOF---\"")" || return 1
+    awk '
             function flush() { if (sha != "") print sha "\t" n "\t" cls; sha = ""; n = 1; cls = "" }
             BEGIN { sha = ""; n = 1; cls = "" }
             /^---REVIEW-ATTEMPT-EOF---$/ { flush(); next }
@@ -699,7 +708,7 @@ review_attempt_states() {
                 cls = line
             }
             END { flush() }
-        ' || true
+        ' <<<"$out"
 }
 
 # review_chargeable_attempts <states> -> how many of them the CAP counts.
@@ -744,7 +753,9 @@ review_head_is_exhausted() {
 
 # review_spent_attempt_count <pr> <attempt-prefix> -> the CHARGEABLE attempt count.
 review_spent_attempt_count() {
-    review_chargeable_attempts "$(review_attempt_states "$1" "$2")"
+    local states
+    states="$(review_attempt_states "$1" "$2")" || return 1
+    review_chargeable_attempts "$states"
 }
 
 # review_spend_total <pr> <attempt-prefix> [posted] [spent]
@@ -755,8 +766,12 @@ review_spent_attempt_count() {
 # the cap counts" here -- which is the whole point -- without the round trips.
 review_spend_total() {
     local posted="${3:-}" spent="${4:-}"
-    [[ -n "$posted" ]] || posted="$(review_report_count "$1")"
-    [[ -n "$spent" ]] || spent="$(review_spent_attempt_count "$1" "$2")"
+    if [[ -z "$posted" ]]; then
+        posted="$(review_report_count "$1")" || return 1
+    fi
+    if [[ -z "$spent" ]]; then
+        spent="$(review_spent_attempt_count "$1" "$2")" || return 1
+    fi
     echo $((${posted//[[:space:]]/} + ${spent//[[:space:]]/}))
 }
 
