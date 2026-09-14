@@ -145,13 +145,29 @@ function declaredPackageNames(root: string): Universe | null {
     } catch {
       continue;
     }
+    // The SCOPED spelling too, `<dir>:<package>`, for the manifests that can
+    // carry one. `.deps-upgrade-blocklist` gained that form because private/account
+    // is under an operator freeze while four of its frozen packages are ALSO
+    // console's own, and a bare entry would have blinded console's freshness check
+    // for them. Without this the liveness probe called every scoped entry DEAD --
+    // correctly, by its own lights: no manifest declared that literal string.
+    //
+    // Adding the scoped name here is STRICTER than stripping the prefix in the
+    // probe would have been. `private/account:vitest` is in the universe only if
+    // private/account's own manifest declares vitest, so a typo in EITHER half is
+    // still a dead entry, where a strip would have accepted any directory name at
+    // all as long as some manifest somewhere had the package.
+    const dirRel = path.relative(root, path.dirname(f)).split(path.sep).join('/');
     for (const field of [
       'dependencies',
       'devDependencies',
       'optionalDependencies',
       'peerDependencies',
     ]) {
-      for (const n of Object.keys((pkg[field] as Record<string, string>) ?? {})) names.add(n);
+      for (const n of Object.keys((pkg[field] as Record<string, string>) ?? {})) {
+        names.add(n);
+        if (dirRel) names.add(`${dirRel}:${n}`);
+      }
     }
   }
   return { names, source: `${names.size} declared names across ${files.length} manifests` };

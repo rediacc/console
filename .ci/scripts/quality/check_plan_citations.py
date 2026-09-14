@@ -562,9 +562,7 @@ def selftest(root):
     )
     ck(
         "CONTROL: the skip is scoped to that submodule, not to every path",
-        len(
-            problems_for(root, [("agent/PLAN-zzz.md", 1, "see nope/nope.go:9")], ("private/zzz",))
-        )
+        len(problems_for(root, [("agent/PLAN-zzz.md", 1, "see nope/nope.go:9")], ("private/zzz",)))
         == 1,
     )
     # An OBJECT token is not a path, so a prefix that looks like one must not

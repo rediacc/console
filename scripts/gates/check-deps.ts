@@ -947,10 +947,23 @@ function selftest(): void {
   const atRoot = categorizePackages(outdatedFixture, probe);
   const inAccount = categorizePackages(outdatedFixture, probe, 'private/account');
   const scopeChecks: Array<[string, boolean]> = [
-    ['a scoped entry blocks inside its own directory', inAccount.blocked.some((p) => p.name === 'typescript')],
-    ['CONTROL: the SAME package is still reported at the root', atRoot.mustUpgrade.some((p) => p.name === 'typescript')],
-    ['CONTROL: a bare entry still blocks everywhere, root included', atRoot.blocked.some((p) => p.name === 'glob') && inAccount.blocked.some((p) => p.name === 'glob')],
-    ['CONTROL: a scope that matches nothing blocks nothing extra', categorizePackages(outdatedFixture, probe, 'private/elite').blocked.length === 1],
+    [
+      'a scoped entry blocks inside its own directory',
+      inAccount.blocked.some((p) => p.name === 'typescript'),
+    ],
+    [
+      'CONTROL: the SAME package is still reported at the root',
+      atRoot.mustUpgrade.some((p) => p.name === 'typescript'),
+    ],
+    [
+      'CONTROL: a bare entry still blocks everywhere, root included',
+      atRoot.blocked.some((p) => p.name === 'glob') &&
+        inAccount.blocked.some((p) => p.name === 'glob'),
+    ],
+    [
+      'CONTROL: a scope that matches nothing blocks nothing extra',
+      categorizePackages(outdatedFixture, probe, 'private/elite').blocked.length === 1,
+    ],
   ];
   for (const [label, ok] of scopeChecks) {
     if (!ok) {
