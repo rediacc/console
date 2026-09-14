@@ -105,21 +105,21 @@ mistake — it is a **deliberate, documented reproduction** of the twin's bug (m
 lines 12-42), written with a bare `$` (`re`'s own end-of-string anchor, same unmatchable-branch
 effect) specifically so it stays behaviorally identical to the twin until the twin is fixed.
 
-**Bug 2 — narrow check missing the `if` branch, bash twin, `check-commands.sh:70` vs `:84`:**
+**Bug 2 — narrow check missing the `if` branch, bash twin, `.ci/scripts/security/check-commands.sh:70` vs `:84`:**
 line 70 (wide filter) has 5 alternatives ending in `^[[:space:]]*if\s+`; line 84 (narrow check)
 has only the first 4. Verified live: a fixture file containing only `if seq 1 10; then` /
 `echo hi` / `fi` passes the wide filter (matches via the 5th branch) and then matches none of
 the narrow per-command checks, so `check-commands.sh` reports "All commands are CI-compatible"
 (exit 0) instead of flagging `seq`.
 
-**Bug 2 — same gap, Python port, `check_commands.py:105` vs `:108-110`:** `_WIDE_RE` carries
+**Bug 2 — same gap, Python port, `.ci/rediacc_ci/security/check_commands.py:105` vs `:108-110`:** `_WIDE_RE` carries
 `^[ \t]*if\s+` as its 4th alternative; `_narrow_re()` carries only the first 3 (no `if`
 alternative at all) — reproduced deliberately, same reasoning as Bug 1.
 
 ## Blast-radius measurement (actual command run + actual count)
 
 The gate's real input corpus, read directly from its own enumeration
-(`check-commands.sh:109-118`): every `*.sh` under `.ci/` (495 files, measured this session)
+(`.ci/scripts/security/check-commands.sh:109-118`): every `*.sh` under `.ci/` (495 files, measured this session)
 and under `scripts/` (20 files, measured this session), plus `./run.sh` and `./rdc.sh` if
 present (both present) — 515 files total, matching the port's own test-file docstring claim
 ("verified independently to also agree on the REAL tree (515 files, both sides clean, exit
@@ -335,7 +335,7 @@ touches exactly four files:
 - `.ci/shadow/w7p6-check-commands.observations.jsonl` (5 rows replaced via the disposable
   scratch-repo technique)
 
-No other file needs to change: `package.json:154` and `ci-quality.yml:351` reference the
+No other file needs to change: `package.json:154` and `.github/workflows/ci-quality.yml:351` reference the
 script by path only and are unaffected; no `.ci/policy/*-allowlist` file is needed since the
 measured blast radius is 0; `dead_python.py`'s `MANUAL_ENTRY_POINTS` is unaffected since this
 port is already registered and named on a ledger's new side, not newly added. The work is
@@ -410,7 +410,7 @@ The registered CI security gate `check:ci-shell-commands` (`package.json:154`, i
 `.ci/scripts/security/check-commands.sh`) is supposed to reject shell scripts under `.ci/` and
 `scripts/` (plus `./run.sh` and `./rdc.sh`) that invoke commands unavailable on minimal CI
 runners (`bc`, `dc`, `seq`, `timeout`, `readarray`, `mapfile`, `column`, `numfmt`, `shuf`, `tac`
--- the `DISALLOWED` table, `check-commands.sh:34-45`). It has two independent, live regex bugs
+-- the `DISALLOWED` table, `.ci/scripts/security/check-commands.sh:34-45`). It has two independent, live regex bugs
 that make two whole classes of disallowed-command usage invisible to it, in both the bash twin
 and its Python port (`.ci/rediacc_ci/security/check_commands.py`), which deliberately
 reproduces the same two dead branches to stay byte-for-byte behaviorally identical to its twin.
@@ -443,7 +443,7 @@ real `for _ in $(seq ...); do` sites in this corpus have loop bodies that run
 `curl`/`sleep`/`git`/`counter_value` -- real commands with arguments -- so a literal-`_`
 rewrite breaks on the very first iteration. Fix renames these six to `_i`.
 
-A third correctness issue: the `timeout` call-site rewrite (`test-profiler-report.sh:501`) sits
+A third correctness issue: the `timeout` call-site rewrite (`.ci/scripts/test/gates/test-profiler-report.sh:501`) sits
 under `set -euo pipefail`. A naive `wait "$pid"; rc=$?` loses the failure to `errexit` before
 `rc=$?` ever runs -- the original code's `|| rc=$?` idiom exists precisely to survive `set -e`.
 Fix uses `wait "$pid" 2>/dev/null || rc=$?`.
@@ -463,7 +463,7 @@ to recognize fewer start-of-command positions than the filter that gates it.
 
 **Explicitly out of scope, unchanged by this plan**: the `elif <disallowed-cmd>` gap (neither
 side has ever covered `elif`); a second, pre-existing `timeout 40 bash "$SAMPLER" ...`
-invocation at `test-profiler-report.sh:479`, which the fixed gate still does not catch because
+invocation at `.ci/scripts/test/gates/test-profiler-report.sh:479`, which the fixed gate still does not catch because
 `timeout` there sits mid-line after other assignments -- none of the five wide-filter branches
 match "a command name preceded by other words with no `|`/`&`/`;`/`if`/`$(` between them," a
 real, narrower, pre-existing gap in the wide filter itself. Both are the same class of gap as
@@ -495,15 +495,15 @@ unmatchable.
 110:    return re.compile(r"(^[ \t]*|[|&;]\s*|$\()" + re.escape(cmd) + r"\b")
 ```
 
-Deliberately reproduced (module docstring, `check_commands.py:10-70`): a bare `$` is Python
+Deliberately reproduced (module docstring, `.ci/rediacc_ci/security/check_commands.py:10-70`): a bare `$` is Python
 `re`'s own end-of-string anchor, same unmatchable-branch effect, written this way on purpose to
 stay behaviorally identical to the still-buggy twin.
 
-**Bug 2 -- narrow check missing the `if` branch, bash twin, `check-commands.sh:70` vs `:84`:**
+**Bug 2 -- narrow check missing the `if` branch, bash twin, `.ci/scripts/security/check-commands.sh:70` vs `:84`:**
 line 70 (wide filter) has 5 alternatives ending in `^[[:space:]]*if\s+`; line 84 (narrow check)
 has only the first 4.
 
-**Bug 2, Python port, `check_commands.py:105` vs `:108-110`:** `_WIDE_RE` carries
+**Bug 2, Python port, `.ci/rediacc_ci/security/check_commands.py:105` vs `:108-110`:** `_WIDE_RE` carries
 `^[ \t]*if\s+` as its 4th alternative; `_narrow_re()` carries only the first 3.
 
 ## Blast-radius measurement (real, independently re-verified twice: by the Plan agent and by the driver, 46 findings)
@@ -616,7 +616,7 @@ Apply the table in Bucket A verbatim. No other lines in these files need to chan
 ### 2. Non-mechanical fixes -- padding idioms (Bucket B, 5 sites, 3 files)
 
 Apply the table in Bucket B verbatim, verified byte-identical as noted above.
-`check-label-inventory.sh:145`'s rewrite additionally requires hoisting the `printf -v
+`.ci/scripts/quality/check-label-inventory.sh:145`'s rewrite additionally requires hoisting the `printf -v
 control_desc ...` / `control_desc=${control_desc// /x}` pair out of the `desc_over_cap`
 argument list to a preceding pair of statements, then referencing `"$control_desc"` in its
 place.
@@ -661,7 +661,7 @@ sleep, so the watchdog itself checks in on the docker process every second inste
 for the full 180 seconds unconditionally -- functionally equivalent to the original's single
 `sleep 180 && kill`, just friendlier to anyone reading the process table mid-run.)
 
-Driver-verified live under `set -euo pipefail` (matching `test-profiler-report.sh:25`):
+Driver-verified live under `set -euo pipefail` (matching `.ci/scripts/test/gates/test-profiler-report.sh:25`):
 `wait "$docker_pid" 2>/dev/null || rc=$?`, not `wait ...; rc=$?` -- under `set -e`, a bare
 `cmd; rc=$?` aborts the whole script on `cmd`'s failure *before* `rc=$?` ever runs (confirmed
 live: bare form aborts with outer rc=7, no further output; guarded form continues, prints
@@ -697,7 +697,7 @@ Mirror the same two fixes at the same two call sites:
 - Lines 108-110: `_narrow_re()` -> `r"(^[ \t]*|[|&;]\s*|\$\(|^[ \t]*if\s+)" + re.escape(cmd) +
   r"\b"`.
 
-Also rewrite the module docstring (`check_commands.py:2-71`, "PORT NOTES") -- its account of
+Also rewrite the module docstring (`.ci/rediacc_ci/security/check_commands.py:2-71`, "PORT NOTES") -- its account of
 the two bugs as deliberately-reproduced is now describing history. The `find`-shells-out-for-
 order rationale and the `[[:space:]]` -> `[ \t]` transliteration note are unaffected.
 
@@ -798,7 +798,10 @@ collateral changes (`git status` shows exactly the 19 intended files, nothing el
 ## COMPLETE 2026-09-10: Writer B's 23 findings + the driver-owned final step, all done inline
 
 Writer B's set was also done inline by the driver (both subagent slots stayed occupied by
-`a1c701e4a9069af2b`/`a4c6c8968f6e1a818` throughout). All 20 files applied per the tables:
+agents `a1c701e4`/`a4c6c896` throughout -- 8-char prefixes on purpose: these are agent ids,
+not git objects, and at full length they are hex-shaped enough that
+`check:ci-plan-citations` reads them as unresolvable object citations). All 20 files
+applied per the tables:
 17 mechanical loop rewrites (6 with the `_`->`_i` rename, verified none collide with an
 existing variable in their file), 4 padding-idiom rewrites (`check-pipefail-grep-q.sh` x1,
 `check-ci-watch-recipe.sh` x2 -- one loop, one padding, `check-label-inventory.sh` x1,
@@ -813,7 +816,7 @@ findings**, confirming both writer sets combined resolve all 46.
 
 **Driver-owned final step, all six parts done:**
 (a) Re-ran the live 0-findings check against the real merged tree -- confirmed clean.
-(b) Landed the 2-line bash fix at `check-commands.sh:70,84` (verified exact bytes:
+(b) Landed the 2-line bash fix at `.ci/scripts/security/check-commands.sh:70,84` (verified exact bytes:
 `\\$\(` in source, resolving to the correct `\$\(` at runtime -- independently confirmed
 via `xxd` byte inspection earlier in this plan's own verification, same technique).
 (c) Landed the matching Python port fix at `check_commands.py`'s `_WIDE_RE`/`_narrow_re`,
