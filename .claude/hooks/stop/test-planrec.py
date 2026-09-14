@@ -293,11 +293,15 @@ blob_edit = R.parse(RECORD.replace("Full-Text-Blob: " + REC["blob"], "Full-Text-
 truthy("changing the blob DOES move the signature", R.record_sig(blob_edit) != R.record_sig(REC))
 
 # ---------------------------------------------------------------------------
-# 4. resolve(), all seven kinds, both directions.
+# 4. resolve(), all eight kinds, both directions.
 # ---------------------------------------------------------------------------
 truthy("resolve blob: a real blob", R.resolve(ROOT, "blob", REC["blob"])[0])
 falsy("resolve blob: forty zeros", R.resolve(ROOT, "blob", "0" * 40)[0])
 falsy("resolve blob: a COMMIT is not a blob", R.resolve(ROOT, "blob", AFTER)[0])
+tree = git_out(ROOT, "rev-parse", AFTER + "^{tree}")
+truthy("resolve tree: a real tree", R.resolve(ROOT, "tree", tree)[0])
+falsy("resolve tree: forty zeros", R.resolve(ROOT, "tree", "0" * 40)[0])
+falsy("resolve tree: a BLOB is not a tree", R.resolve(ROOT, "tree", REC["blob"])[0])
 truthy("resolve commit: a real commit", R.resolve(ROOT, "commit", AFTER)[0])
 falsy("resolve commit: a made-up sha", R.resolve(ROOT, "commit", "0123456")[0])
 truthy("resolve ancestor: a commit on origin/main", R.resolve(ROOT, "ancestor", BEFORE)[0])

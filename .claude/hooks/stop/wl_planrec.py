@@ -314,7 +314,7 @@ def sha9(s: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# resolve(): one function, seven kinds, no second opinion anywhere.
+# resolve(): one function, eight kinds, no second opinion anywhere.
 #
 # Every kind here already had a resolver somewhere in this repo, and the point of
 # collecting them is that a record's pointers must all be checkable by ONE call
@@ -323,7 +323,7 @@ def sha9(s: str) -> str:
 # rounds in its CITE_RE (dotfiles, .astro, .mdx, .cast, leading dots), and a
 # fresh path regex here would re-open every one of them.
 
-RESOLVE_KINDS = ("blob", "commit", "ancestor", "fileline", "gate", "plan", "trap")
+RESOLVE_KINDS = ("blob", "tree", "commit", "ancestor", "fileline", "gate", "plan", "trap")
 
 
 def _package_scripts(root) -> dict:
@@ -350,6 +350,11 @@ def resolve(root, kind, token):
 
       blob      `git cat-file -t` says `blob`. The durable pointer.
       commit    `git rev-parse <t>^{commit}`.
+      tree      `git cat-file -t` says `tree`. Rare: a citation into a
+                `git filter-branch`/rewrite control that names a tree id
+                directly (`git read-tree`, `HEAD^{tree}`) rather than a file
+                or a commit. Neither `blob` nor `commit` resolves a tree, so
+                without this kind a correctly-cited tree object reads as dead.
       ancestor  a commit AND `git merge-base --is-ancestor <t> origin/main`, so a
                 pointer into a branch that was never merged cannot masquerade as
                 a landed one. `origin/main` first, plain `main` as the fallback
@@ -372,6 +377,9 @@ def resolve(root, kind, token):
     if kind == "blob":
         got = _git_out(root, "cat-file", "-t", token)
         return (got == "blob"), (got or "no such object")
+    if kind == "tree":
+        got = _git_out(root, "cat-file", "-t", token)
+        return (got == "tree"), (got or "no such object")
     if kind == "commit":
         got = _git_out(root, "rev-parse", "--verify", "--quiet", token + "^{commit}")
         return bool(got), (got[:40] or "no such commit")
