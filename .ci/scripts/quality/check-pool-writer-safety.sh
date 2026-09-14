@@ -83,6 +83,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # BLOCKER: shared log_* helpers and get_repo_root used by every quality gate
 source "$SCRIPT_DIR/../lib/common.sh"
 
+# DECLARED, because this gate shells out to python3 and `set -euo pipefail` makes a
+# missing binary inside a command substitution exit 127 rather than say what is
+# absent -- the same "a guard that crashes never fired, and 127 is not a verdict"
+# failure the note below records for log_fail. Same one-liner as
+# check-editorconfig.sh:20 and check-regions-sync.sh:38.
+require_cmd python3
+
 # log_fail: log_error plus exit 1, in one call. common.sh defines log_info, log_warn,
 # log_error, log_step and log_debug, and NOT this one, so every `log_fail` below was
 # `command not found` and this gate exited 127 instead of refusing. That mattered more
