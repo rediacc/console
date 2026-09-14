@@ -143,7 +143,7 @@ const value = (raw: string): string => raw.replace(/\s+#\s.*$/, '').trim();
 const KINDS: readonly GateKind[] = ['step', 'battery', 'test', 'local-only'];
 
 /** A present block that does not yield a declaration, and the reason it does not. */
-interface HeaderProblem {
+export interface HeaderProblem {
   error: string;
 }
 
@@ -162,7 +162,7 @@ interface HeaderProblem {
  * script as fields, and a declaration that absorbs its own source is worse than an
  * absent one.
  */
-function analyzeGateHeader(source: string): GateHeader | HeaderProblem | null {
+export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | null {
   const lines = source.split('\n');
   const open = lines.findIndex((l) => OPEN.test(l));
   if (open === -1) return null;

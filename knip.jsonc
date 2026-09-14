@@ -35,6 +35,16 @@
         "scripts/gen/generate-third-party-licenses.ts",
         "scripts/gen/fetch-directive-snapshot.ts"
       ],
+      // AN EXPORT USED INSIDE ITS OWN FILE IS NOT DEAD, and in this repo it is
+      // usually load-bearing. `check-doc-region-parity.ts:297` matches
+      // /^export const (\w+Provider): Provider =/ -- the KEYWORD is part of the
+      // contract it verifies -- and `.ci/scripts/test/gates/test-gate-header.sh:40`
+      // imports `analyzeGateHeader` from a bash gate test, which knip cannot see at
+      // all. Dropping those `export`s to satisfy knip broke both gates.
+      // This setting keeps the finding that matters -- an export used NOWHERE, not
+      // even in its own file, is still reported, which is how the genuinely dead
+      // `rel` helper in scripts/lib/repo-root.ts was found and removed.
+      "ignoreExportsUsedInFile": true,
       "project": [
         "*.{js,ts}",
         "scripts/**/*.ts",

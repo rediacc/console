@@ -59,7 +59,7 @@ import path from 'node:path';
  * @throws If no ancestor carries both markers, which means this file has been
  *   copied out of the repository and silently guessing would be worse.
  */
-function findRepoRoot(from: string): string {
+export function findRepoRoot(from: string): string {
   let dir = path.resolve(from);
   for (;;) {
     if (fs.existsSync(path.join(dir, 'package.json')) && fs.existsSync(path.join(dir, '.ci'))) {
@@ -84,7 +84,7 @@ function findRepoRoot(from: string): string {
 }
 
 /** Absolute path of the repository root. */
-const REPO_ROOT = findRepoRoot(import.meta.dirname);
+export const REPO_ROOT = findRepoRoot(import.meta.dirname);
 
 /**
  * An absolute path under the repository root.

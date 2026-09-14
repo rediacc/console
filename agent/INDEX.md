@@ -250,7 +250,7 @@ reasoning without knowing the record exists.
 ## Plan census
 
 Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans
-block can be printed from THIS file instead of opening all 85 of them. The
+block can be printed from THIS file instead of opening all 87 of them. The
 hook checks freshness with `stat` alone (path set plus byte size) and falls
 back to reading the plans, loudly, when the two disagree.
 
@@ -274,6 +274,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-ci-trace-no-pr-branch.md` | done | 171 | 0 | 0 | 9783 |
 | `agent/PLAN-ci-vacuity-baseline-registry.md` | ready | 255 | 1 | 14 | 16618 |
 | `agent/PLAN-ci-watch-enforcement.md` | draft | 283 | 0 | 0 | 15625 |
+| `agent/PLAN-citation-fragility.md` | done | 355 | 0 | 6 | 22103 |
 | `agent/PLAN-cli-em-dash-lint-gate.md` | compacted | 70 | 0 | 0 | 4353 |
 | `agent/PLAN-cold-path.md` | compacted | 74 | 0 | 0 | 4055 |
 | `agent/PLAN-commit-author-identity.md` | draft | 281 | 3 | 10 | 18031 |
@@ -284,13 +285,13 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-duplication-angle.md` | implemented | 241 | 0 | 0 | 12504 |
 | `agent/PLAN-durable-reports-and-push-inbox.md` | compacted | 69 | 0 | 0 | 3705 |
 | `agent/PLAN-env-to-bitwarden-v2.md` | draft | 689 | 5 | 4 | 45073 |
-| `agent/PLAN-extension-shaped-matchers.md` | executing | 321 | 0 | 0 | 20859 |
+| `agent/PLAN-extension-shaped-matchers.md` | executing | 341 | 0 | 0 | 22265 |
 | `agent/PLAN-fix-ci-contention-aware-timeouts.md` | done | 354 | 0 | 0 | 20483 |
 | `agent/PLAN-fix-german-translation-artifacts.md` | compacted | 61 | 0 | 0 | 3126 |
 | `agent/PLAN-fix-in-session-rule.md` | compacted | 69 | 0 | 0 | 3594 |
-| `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | done | 305 | 0 | 0 | 19395 |
+| `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | done | 309 | 0 | 0 | 19651 |
 | `agent/PLAN-gh-swallow-gates-audit.md` | done | 497 | 0 | 6 | 49920 |
-| `agent/PLAN-git-history-media-rewrite.md` | ready | 321 | 0 | 0 | 15185 |
+| `agent/PLAN-git-history-media-rewrite.md` | ready | 345 | 0 | 0 | 16732 |
 | `agent/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 71 | 0 | 0 | 3940 |
 | `agent/PLAN-greenlight-verify-at-read.md` | compacted | 66 | 0 | 0 | 3593 |
 | `agent/PLAN-hook-inventory-warn-guards.md` | landed | 89 | 0 | 0 | 4112 |
@@ -317,7 +318,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-runtime-caller-identity.md` | compacted | 54 | 0 | 0 | 2527 |
 | `agent/PLAN-scope-gate-sort-collation.md` | draft | 191 | 0 | 0 | 9905 |
 | `agent/PLAN-scope-gates-split.md` | compacted | 50 | 0 | 0 | 2591 |
-| `agent/PLAN-secret-namespace-migration.md` | partially | 2636 | 9 | 21 | 173892 |
+| `agent/PLAN-secret-namespace-migration.md` | partially | 2636 | 9 | 21 | 173929 |
 | `agent/PLAN-sentence-aware-wrapping.md` | draft | 439 | 0 | 0 | 27108 |
 | `agent/PLAN-session-onboarding-marker.md` | draft | 211 | 5 | 5 | 11953 |
 | `agent/PLAN-shell-command-gate-regex-fix.md` | draft | 851 | 0 | 0 | 57725 |
@@ -328,7 +329,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-stop-always-tier.md` | landed | 237 | 0 | 0 | 12453 |
 | `agent/PLAN-stop-hook-cadence.md` | compacted | 54 | 0 | 0 | 2607 |
 | `agent/PLAN-stop-hook-overhaul.md` | ready | 227 | 31 | 0 | 14555 |
-| `agent/PLAN-stop-report-queue.md` | done | 586 | 0 | 0 | 29536 |
+| `agent/PLAN-stop-report-queue.md` | done | 586 | 0 | 0 | 29665 |
 | `agent/PLAN-subagent-idle-detection.md` | ready | 400 | 0 | 0 | 21517 |
 | `agent/PLAN-subscription-status-error-swallowing.md` | done | 106 | 0 | 5 | 4621 |
 | `agent/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 79 | 0 | 0 | 4194 |
@@ -338,8 +339,9 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-trap-enforcement.md` | w | 820 | 0 | 0 | 49274 |
 | `agent/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 0 | 4529 |
 | `agent/PLAN-unify-trap-corpus.md` | compacted | 54 | 0 | 0 | 2755 |
+| `agent/PLAN-w7p4w-docker-cutover.md` | draft | 394 | 12 | 0 | 23087 |
 | `agent/PLAN-wire-account-vitest-ci.md` | compacted | 52 | 0 | 0 | 3048 |
 | `agent/PLAN-wl-report-liveness-oracle.md` | done | 199 | 0 | 7 | 11678 |
 | `agent/PLAN-www-bundle-determinism.md` | draft | 212 | 0 | 0 | 11005 |
 
-85 plan(s), 15 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+87 plan(s), 17 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
