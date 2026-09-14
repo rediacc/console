@@ -342,7 +342,7 @@ USER vscode
 # GOLANGCI_LINT_VERSION would not match at all and the freshness gate would
 # silently watch nothing. Renaming it means widening the shared parser first.
 ARG GOPLS_VERSION=0.23.0
-ARG DLV_VERSION=1.27.1
+ARG DLV_VERSION=1.27.2
 # staticcheck ships TWO names for one build: the GitHub release is tagged
 # 2026.2.1 while the Go module version is v0.8.1. `go install` speaks module
 # versions, so that is what is pinned here; the freshness gate cannot compare
