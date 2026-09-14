@@ -265,6 +265,29 @@ cache_dir = ".ci/cache/pytest"
 #                  the failure surfaces as an empty collection much later.
 addopts = "-ra --strict-markers --strict-config"
 
+# `/tmp` is a tmpfs, and a tmpfs has a HARD INODE CAP independent of its size --
+# 1,048,576 here. On 2026-09-14 that cap was reached with 19G of the 29G still
+# free, which halted every session on this box: creating any file returns ENOSPC,
+# so `df -h` reads healthy and the real number is `df -i`. The consumer was
+# `/tmp/pytest-of-developer/`, holding 780,047 inodes -- pytest's own `tmp_path`
+# trees, which this suite's differential cases build in bulk at roughly 70k
+# inodes per run.
+#
+# pytest's default is `all`, which keeps EVERY test's tmp_path for the last
+# `tmp_path_retention_count` (3) sessions. Three runs of this suite is therefore
+# ~210k inodes, a fifth of the cap, parked permanently and re-exhausted by any
+# busy day. `failed` keeps only the trees belonging to tests that FAILED, which
+# is the half anyone ever opens: measured on an isolated 3-test corpus, `all`
+# retained 3 directories and `failed` retained 1, the failing one.
+#
+# Scope, so this is not mistaken for more than it is: it bounds ACCUMULATION
+# ACROSS runs, which is what caused the outage. Peak usage DURING a single run
+# is unchanged, because the trees still get created and are reaped at session
+# end. `tmp_path_retention_count` is deliberately left at its default of 3 --
+# with the policy narrowed to failures, three sessions of failed-test trees is
+# cheap and is exactly what you want when debugging an intermittent red.
+tmp_path_retention_policy = "failed"
+
 # Default is ["test_*.py", "*_test.py"]. Pinned to one form so the gate's
 # corpus-derived floor (which counts `def test_` in these files) and pytest's
 # own collection cannot disagree about which files are in scope.
