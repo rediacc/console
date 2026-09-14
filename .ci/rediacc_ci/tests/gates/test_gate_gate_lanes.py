@@ -106,7 +106,7 @@ process.stdout.write(JSON.stringify({
     static3: planned('quality-static', 3),
   },
   refusals: {
-    branch5: refusal('quality-branch', 5),
+    branch6: refusal('quality-branch', 6),
     www5: refusal('quality-www-build', 5),
     submodule2: refusal('quality-submodule-branches', 2),
     nowhere2: refusal('quality-nowhere', 2),
@@ -500,9 +500,9 @@ def test_the_plan_is_deterministic(gate):
 def test_more_shards_than_gates_refuses(gate):
     """THE REFUSAL THE BOX CALLS OUT BY NAME."""
     gate.log_test("more shards than gates must REFUSE, not emit an empty shard")
-    message = probe(gate)["refusals"]["branch5"]
+    message = probe(gate)["refusals"]["branch6"]
     gate.assert_contains(
-        message, "Ask for at most 4", "5 shards over quality-branch's 4 gates must refuse"
+        message, "Ask for at most 5", "6 shards over quality-branch's 5 gates must refuse"
     )
     gate.log_pass("more shards than gates refuses, and the message names the ceiling")
 

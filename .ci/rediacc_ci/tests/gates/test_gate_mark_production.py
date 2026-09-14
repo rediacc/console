@@ -42,7 +42,11 @@ MALFORMED = ("", "1.3", "v1.3.1-rc1", "latest", "v1.3.1; rm -rf /")
 
 def make_gh(workdir: pathlib.Path, mode: str) -> pathlib.Path:
     """A `gh` whose RELEASE VIEW behaves per `mode`; everything else succeeds
-    quietly so only the property under test can decide the outcome."""
+    quietly so only the property under test can decide the outcome.
+
+    `.object.sha` is asked twice: once on the ref (always succeeds here,
+    already jq-filtered to the bare sha), once on the tag object itself when
+    `.object.type` was "tag" (the deref, which `deref-fails` breaks)."""
     bindir = workdir / ("bin-" + mode)
     bindir.mkdir(parents=True, exist_ok=True)
     script = bindir / "gh"
@@ -55,6 +59,24 @@ def make_gh(workdir: pathlib.Path, mode: str) -> pathlib.Path:
         '        ok)      echo \'{"tagName":"v1.3.1"}\' ;;\n'
         '        missing) echo "release not found" >&2; exit 1 ;;\n'
         '        cannot)  echo "HTTP 403: Resource not accessible" >&2; exit 1 ;;\n'
+        "      esac\n"
+        "      ;;\n"
+        '  *"object.sha"*)\n'
+        '      case "$mode" in\n'
+        "        deref-fails)\n"
+        '            case "$*" in\n'
+        '              *"git/tags/"*) echo "HTTP 403: Resource not accessible" >&2; exit 1 ;;\n'
+        '              *)             echo "deadbeef" ;;\n'
+        "            esac\n"
+        "            ;;\n"
+        '        *) echo "deadbeef" ;;\n'
+        "      esac\n"
+        "      ;;\n"
+        '  *"object.type"*)\n'
+        '      case "$mode" in\n'
+        '        type-fails)  echo "HTTP 403: Resource not accessible" >&2; exit 1 ;;\n'
+        '        deref-fails) echo "tag" ;;\n'
+        '        *)           echo "commit" ;;\n'
         "      esac\n"
         "      ;;\n"
         '  *"git/ref/tags/v"*) echo \'{"object":{"sha":"deadbeef","type":"commit"}}\' ;;\n'
@@ -107,6 +129,35 @@ def test_could_not_tell_is_a_failure(gate, tmp_path):
             "a 403 was read as permission to mark production; 'could not tell' must never be a pass"
         )
     gate.log_pass("an unreadable probe fails rather than marking production")
+
+
+def test_object_type_lookup_failure_is_a_refusal(gate, tmp_path):
+    gate.log_test(
+        "FIXED 2026-09-10: a failed .object.type lookup must refuse, not proceed as if "
+        "the tag were a plain commit"
+    )
+    if run_sut(tmp_path, "type-fails", "v1.3.1") == 0:
+        gate.log_fail(
+            "marked production despite an unreadable .object.type -- a swallowed failure "
+            "here used to silently skip dereferencing an annotated tag"
+        )
+    gate.log_pass("an unreadable .object.type lookup refuses rather than silently proceeding")
+
+
+def test_annotated_tag_deref_failure_is_a_refusal(gate, tmp_path):
+    gate.log_test(
+        "FIXED 2026-09-10: a failed annotated-tag dereference must refuse, not move "
+        "production to the tag object"
+    )
+    if run_sut(tmp_path, "deref-fails", "v1.3.1") == 0:
+        gate.log_fail(
+            "marked production despite a failed annotated-tag dereference -- production "
+            "would have been moved to point at a tag object instead of a commit"
+        )
+    gate.log_pass(
+        "a failed annotated-tag dereference refuses rather than moving production to the "
+        "wrong object"
+    )
 
 
 def test_malformed_versions_never_become_tags(gate, tmp_path):

@@ -19,15 +19,21 @@ the verdict MEAN something:
 Together those three separate "this gate is red" from "this gate is noise", and
 they hold whether the tree is red or green.
 
-THE MUTANT'S HOME IS NOT AN ACCIDENT, and the twin records two earlier shapes that
-were wrong in opposite directions. A bare copy into a temp directory died on
-`Cannot find module ./lib/shrink-only-baseline.ts` once the gate gained that
-import: the run ended before a single control executed, and the assertion below
-then reported "the mutant must name the failing control" while the gate had never
-started. Writing the mutant BESIDE the gate fixed the imports and made the test a
-real-tree writer, which `check-pool-writer-safety.sh` correctly flagged. Copying
-`scripts/lib/` in beside the mutant satisfies the imports and touches nothing
-tracked, which is what both the bash twin and this port do.
+THE MUTANT'S HOME IS NOT AN ACCIDENT, and the twin records three earlier shapes
+that were wrong, the first two in opposite directions. A bare copy into a temp
+directory died on `Cannot find module ./lib/shrink-only-baseline.ts` once the
+gate gained that import: the run ended before a single control executed, and the
+assertion below then reported "the mutant must name the failing control" while
+the gate had never started. Writing the mutant BESIDE the gate fixed the imports
+and made the test a real-tree writer, which `check-pool-writer-safety.sh`
+correctly flagged. Copying `scripts/lib/` in beside the mutant satisfied the
+imports THEN, and touched nothing tracked, which is what both the bash twin and
+this port do. The gate's own import later moved to `../lib/shrink-only-
+baseline.js` (one level up, `.js` extension, `check-layout-overflow.ts` living
+under `scripts/gates/`), so "beside the mutant" stopped resolving; the mutant
+now lives at `tmp_path/gates/mutant.ts` with `lib/` copied to `tmp_path/lib`,
+mirroring the real tree's own relative depth rather than the gate's absolute
+directory name.
 
 NO `xdist_group`. Every case runs `tsx` in a subprocess and writes only into
 pytest's own `tmp_path`; nothing is bound and no module global is mutated. The
@@ -102,7 +108,8 @@ def test_the_control_can_actually_fail(gate, tmp_path):
             "the mutation did not apply (%r is no longer in the gate), so this control "
             "would be testing the unmutated gate" % DETECTOR
         )
-    mutant = tmp_path / "mutant.ts"
+    mutant = tmp_path / "gates" / "mutant.ts"
+    mutant.parent.mkdir(parents=True, exist_ok=True)
     mutant.write_text(mutated, encoding="utf-8")
     result = run_gate(gate, mutant, "--selftest")
     gate.assert_exit_code(

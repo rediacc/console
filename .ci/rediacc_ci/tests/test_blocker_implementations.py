@@ -153,10 +153,12 @@ def quoted_phrase_hits(text: str) -> int:
     """How many canonical phrases appear in `text` as a QUOTED literal.
 
     QUOTED, not substring. A substring test cannot express a phrase that is a
-    PREFIX of another: `"no fix"` occurs inside `"no fix available"`, `"skip"`
-    inside `"skipping"`, and `"na"` inside almost anything. Requiring the
-    surrounding quote characters makes each hit an element of a list rather than
-    a coincidence of prose.
+    PREFIX of another -- the table itself has real pairs shaped exactly like
+    this, one entry a shorter prefix of a longer sibling -- illustrated here
+    with words that are NOT table entries, so this docstring cannot trip its
+    own detector: `"cat"` occurs inside `"category"`, and `"an"` inside almost
+    anything. Requiring the surrounding quote characters makes each hit an
+    element of a list rather than a coincidence of prose.
     """
     total = 0
     for phrase in allowlist.LOW_EFFORT_PHRASES:

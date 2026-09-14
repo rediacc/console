@@ -1,14 +1,19 @@
 """`rediacc_ci.quality.submodule_branches` against the shell and jq it replaces.
 
-WHAT THIS FILE COVERS AND WHAT IT CANNOT. The gh call sites cannot be exercised
-locally, so the parts that DECIDE a merge -- the low-effort-reply normaliser, the
-PR-link matcher, and the two jq oracles -- are exercised as pure functions
-against the shapes the GitHub API actually returns. The branch/pointer logic is
-covered end to end by `.ci/shadow/w7p2-submodule-branches.observations.jsonl`
-over five distinct trees.
+WHAT THIS FILE COVERS AND WHAT IT MOSTLY CANNOT. Most gh call sites cannot be
+exercised locally, so the parts that DECIDE a merge -- the low-effort-reply
+normaliser, the PR-link matcher, and the two jq oracles -- are exercised as pure
+functions against the shapes the GitHub API actually returns. The branch/pointer
+logic is covered end to end by
+`.ci/shadow/w7p2-submodule-branches.observations.jsonl` over five distinct
+trees. `console_pr_body` is the one exception: it takes a `gh` stub on `PATH`
+directly, added 2026-09-10 alongside the fix that made it distinguish a fetch
+failure from a genuinely empty description (they used to be indistinguishable,
+silently disabling the submodule-PR-link check on a transient API failure).
 """
 
 import json
+import os
 import pathlib
 import subprocess
 
@@ -172,3 +177,38 @@ def test_detached_head_never_reads_as_a_branch(tmp_path: pathlib.Path) -> None:
     subprocess.run(["git", "checkout", "-q", head], cwd=str(tmp_path), check=True)
     assert mod.current_branch(tmp_path, env={}) == "main"
     assert mod.submodule_branch(tmp_path, ".") == "detached"
+
+
+def test_console_pr_body_distinguishes_fetch_failure_from_empty_body(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FIXED 2026-09-10: a failed `gh pr view` fetch must be reported as a
+    failure (ok=False), not silently returned as the same "" an empty-but-real
+    description would produce. Before the fix, both cases were indistinguishable
+    and a transient API failure silently disabled the submodule-PR-link check.
+    """
+    fake_gh = tmp_path / "gh"
+    fake_gh.write_text(
+        "#!/bin/bash\necho 'HTTP 403: Resource not accessible' >&2\nexit 1\n", encoding="utf-8"
+    )
+    fake_gh.chmod(0o755)
+    monkeypatch.setenv("PATH", "%s:%s" % (tmp_path, os.environ.get("PATH", "")))
+
+    ok, body = mod.console_pr_body(env={"PR_NUMBER": "1"})
+    assert ok is False, "a failed gh pr view must report ok=False, not a bare empty string"
+    assert body == ""
+
+
+def test_console_pr_body_reports_a_genuinely_empty_description_as_ok(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The other half of the same distinction: a SUCCESSFUL fetch of a PR with
+    an empty description is ok=True, "" -- not conflated with a fetch failure."""
+    fake_gh = tmp_path / "gh"
+    fake_gh.write_text("#!/bin/bash\nexit 0\n", encoding="utf-8")
+    fake_gh.chmod(0o755)
+    monkeypatch.setenv("PATH", "%s:%s" % (tmp_path, os.environ.get("PATH", "")))
+
+    ok, body = mod.console_pr_body(env={"PR_NUMBER": "1"})
+    assert ok is True
+    assert body == ""

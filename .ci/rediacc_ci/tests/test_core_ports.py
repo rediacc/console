@@ -1,13 +1,14 @@
-"""`rediacc_ci.core.ports` against the bash it replaced, and against its shim.
+"""`rediacc_ci.core.ports` against the bash it replaced, and against its callers.
 
 THE TWIN IS FROZEN IN THIS FILE, and that needs saying out loud because it looks
-like duplication. `.ci/lib/find-port.sh` no longer contains an implementation --
-it delegates -- so running "the bash original" against the port cannot mean
-sourcing that file any more. `FROZEN_DERIVE_SLOT` below is the pre-port body,
-copied verbatim out of the commit that preceded the port, and it is the thing
-the differential runs. A frozen twin keeps working after the shim lands, which a
-live one does not; the cost is that it can rot, and the answer to that is that
-its output is pinned by every case here.
+like duplication. `.ci/lib/find-port.sh` stopped containing an implementation in
+W7 phase 1 and is DELETED outright as of W7P5-b, so running "the bash original"
+against the port cannot mean sourcing that file any more. `FROZEN_DERIVE_SLOT`
+below is the pre-port body, copied verbatim out of the commit that preceded the
+port, and it is the thing the differential runs. A frozen twin keeps working
+after the shim lands AND after it is deleted, which a live one does not; the
+cost is that it can rot, and the answer to that is that its output is pinned by
+every case here.
 
 WHAT THE CASES ACTUALLY GUARD.
 
@@ -23,10 +24,17 @@ WHAT THE CASES ACTUALLY GUARD.
                      on a fixture whose first free port deliberately has no run
                      of three after it -- which is the only branch where the two
                      algorithms could have disagreed.
-  the shim           Proved to FAIL CLOSED. Point REDIACC_CI_ROOT at a directory
-                     with no package and sourcing must refuse, because the
-                     alternative to refusing is answering with a plausible wrong
-                     port.
+  the module's own
+  invocation         Proved to FAIL CLOSED. Point PYTHONPATH at a directory with
+                     no package and the run must refuse with an EMPTY stdout,
+                     because the alternative to refusing is answering with a
+                     plausible wrong port.
+  the CALLER         `.ci/lib/devbox.sh` inherited the deleted shim's job, so it
+                     carries the delegation claim now: break the package COPY it
+                     is pointed at and its slot must move with it, and against
+                     the real package it must land on the slot this module
+                     computes. Both halves, because either alone is passable by
+                     a devbox.sh that has simply stopped working.
 """
 
 import shutil
@@ -91,7 +99,40 @@ FROZEN_IS_PORT_IN_USE = textwrap.dedent("""
     }
 """)
 
-SHIM = ".ci/lib/find-port.sh"
+# `.ci/lib/find-port.sh` USED TO BE HERE, and it is DELETED (W7P5-b): a shim is
+# a delay, not an exit. The four cases below used to source it. None of them was
+# dropped -- each asserted a property that still exists, so each was rehoused
+# where the property now lives:
+#
+#   * "the value survives a FRESH interpreter"      -> the module, run as a child
+#   * "an unreachable package REFUSES"              -> the module, run as a child
+#   * the control for that refusal                  -> likewise
+#   * "the bash really delegates, it is not a
+#      second implementation"                       -> `.ci/lib/devbox.sh`, the
+#                                                      caller that inherited the
+#                                                      shim's job
+#
+# The last one is the load-bearing one and it is why this constant is a CALLER
+# now rather than a shim. Deleting a shim is only safe if its callers reach the
+# module for real, and a caller that quietly grew its own copy of the digest is
+# exactly the regression this file must still be able to see.
+DEVBOX_LIB = ".ci/lib/devbox.sh"
+
+# Running the module as a CHILD, never importing it, is the whole point of the
+# three cases that use this: an in-process call would read THIS interpreter's
+# sys.path and could not observe either the fresh-interpreter property or a
+# broken package copy.
+PORTS_MODULE = ["python3", "-m", "rediacc_ci.core.ports"]
+
+
+def _ports_cmd(*args: str) -> str:
+    """`python3 -m rediacc_ci.core.ports <args>` as a bash command string.
+
+    PYTHONPATH is left to the caller's env (`diff.env_for`), because pointing it
+    at a mutated COPY of the package is the control two cases below depend on.
+    """
+    return " ".join(PORTS_MODULE + [_q(a) for a in args])
+
 
 # A corpus rather than two hand-picked strings. Paths with spaces, a trailing
 # slash, unicode and an empty component are all real worktree names somebody
@@ -129,14 +170,14 @@ def test_derive_slot_is_stable_across_processes() -> None:
     """Five runs, one answer.
 
     Not a tautology about a pure function: the value has to survive being
-    computed in a FRESH interpreter, because that is how the shim computes it,
-    and Python's `hash()` -- the obvious wrong implementation -- is salted per
-    process and would pass an in-process comparison while failing this.
+    computed in a FRESH interpreter, because that is how every caller computes
+    it, and Python's `hash()` -- the obvious wrong implementation -- is salted
+    per process and would pass an in-process comparison while failing this.
     """
     samples = {
         diff.bash_streams(
-            f"source {_q(str(paths.from_root(SHIM)))}; derive_slot /home/x/console 100",
-            env=diff.env_for(),
+            _ports_cmd("derive-slot", "/home/x/console", "100"),
+            env=diff.env_for(PYTHONPATH=str(paths.from_root(".ci"))),
         )[1].strip()
         for _ in range(5)
     }
@@ -250,42 +291,42 @@ def test_find_consecutive_free_matches_the_two_stage_bash() -> None:
             s.close()
 
 
-def test_shim_fails_closed_when_the_package_is_unreachable(tmp_path) -> None:
-    """Sourcing the shim with no package must REFUSE, not fall back.
+def test_the_module_fails_closed_when_the_package_is_unreachable(tmp_path) -> None:
+    """Invoked with no package on the path, this must REFUSE, not fall back.
 
     A bash fallback would be a second implementation of the value that decides
-    which port a bookmark resolves to, and two implementations drift. The
-    contract is that `source` returns non-zero and defines nothing, so a caller
-    gets `derive_slot: command not found` instead of a plausible number.
+    which port a bookmark resolves to, and two implementations drift. There is
+    no bash implementation left anywhere -- `find-port.sh` is deleted -- so the
+    contract is now the interpreter's own: a non-zero exit and an EMPTY stdout,
+    which is what every caller's `port=$(...) || { ... }` reads as failure.
+
+    Empty stdout is the half that matters. A refusal that printed something
+    would be indistinguishable from a plausible wrong number.
     """
-    shim = str(paths.from_root(SHIM))
     rc, out, err = diff.bash_streams(
-        f"source {_q(shim)}; derive_slot /home/x/console 100",
-        env=diff.env_for(REDIACC_CI_ROOT=str(tmp_path)),
+        _ports_cmd("derive-slot", "/home/x/console", "100"),
+        env=diff.env_for(PYTHONPATH=str(tmp_path)),
     )
     assert rc != 0
     assert out.strip() == ""
-    assert "cannot find rediacc_ci" in err
+    assert "rediacc_ci" in err
 
 
-def test_shim_control_the_same_command_works_against_the_real_root() -> None:
+def test_control_the_same_command_works_against_the_real_package() -> None:
     """CONTROL for the case above: without it, a typo in the script would pass."""
-    shim = str(paths.from_root(SHIM))
     rc, out, err = diff.bash_streams(
-        f"source {_q(shim)}; derive_slot /home/x/console 100",
-        env=diff.env_for(),
+        _ports_cmd("derive-slot", "/home/x/console", "100"),
+        env=diff.env_for(PYTHONPATH=str(paths.from_root(".ci"))),
     )
     assert rc == 0, err
     assert out.strip() == str(ports.derive_slot("/home/x/console", 100))
 
 
-def test_shim_delegation_is_real_not_a_reimplementation(tmp_path) -> None:
-    """Break the PYTHON and the bash must break with it.
+def _broken_package_root(tmp_path) -> str:
+    """A COPY of the package whose slot digest is randomised per call.
 
-    This is the assertion that a shim is a shim. `.ci/scripts/quality/
-    check-setup-idempotency.sh` control C makes the same one against the real
-    gate; it is duplicated here so the package's own suite catches a shim that
-    quietly grew a local implementation.
+    Copied rather than edited in place, twice over: this suite must never write
+    into the tree it is checking, and other sessions share this checkout.
     """
     root = tmp_path / "broken-root"
     (root / ".ci").mkdir(parents=True)
@@ -299,16 +340,68 @@ def test_shim_delegation_is_real_not_a_reimplementation(tmp_path) -> None:
             '    digest = __import__("random").randbytes(4).hex()',
         )
     )
+    return str(root)
 
-    shim = str(paths.from_root(SHIM))
-    seen = {
-        diff.bash_streams(
-            f"source {_q(shim)}; derive_slot /home/x/console 100",
-            env=diff.env_for(REDIACC_CI_ROOT=str(root)),
-        )[1].strip()
-        for _ in range(6)
-    }
-    assert len(seen) > 1, "the shim answered stably from a randomised module"
+
+def _devbox_slot(root: str | None) -> tuple[int, str]:
+    """(rc, container name) from `source devbox.sh; devbox_container_name`.
+
+    The name ends in the SLOT, so a devbox that stopped reaching the package
+    shows up here as a name that does not move when the package is broken.
+    """
+    lib = str(paths.from_root(DEVBOX_LIB))
+    env = diff.env_for() if root is None else diff.env_for(REDIACC_CI_ROOT=root)
+    rc, out, _ = diff.bash_streams(f"source {_q(lib)}; devbox_container_name", env=env)
+    return rc, out.strip()
+
+
+def test_devbox_delegation_is_real_not_a_reimplementation(tmp_path) -> None:
+    """Break the PYTHON and `.ci/lib/devbox.sh` must break with it.
+
+    This used to assert that a shim was a shim. `find-port.sh` is gone (W7P5-b),
+    so the same claim now points at the caller that inherited its job, and it is
+    MORE load-bearing there than it was on the shim: deleting a shim is only
+    safe while its callers reach the module for real, and a caller that quietly
+    grew a local copy of the digest is exactly the regression this catches.
+
+    `.ci/rediacc_ci/quality/setup_idempotency.py` check C makes the neighbouring
+    assertion against the gate; this one is here so the package's own suite sees
+    a devbox that stopped delegating.
+    """
+    # Built ONCE. The randomisation is in the planted line, which re-runs on
+    # every invocation; re-copying per sample would only re-plant the same line.
+    broken = _broken_package_root(tmp_path)
+    seen = {_devbox_slot(broken)[1] for _ in range(6)}
+    assert len(seen) > 1, "devbox.sh answered stably from a randomised module"
+
+
+def test_control_devbox_is_stable_against_the_real_package() -> None:
+    """CONTROL for the case above, and it is not a formality.
+
+    `len(seen) > 1` is satisfied by any devbox.sh that varies, INCLUDING one
+    that has stopped working and is emitting a different error each run. This
+    half pins the other direction: against the real package the answer is one
+    value, non-empty, and the slot in it is the one the module computes for the
+    same key. Together they say "it delegates", which neither says alone.
+    """
+    seen = {_devbox_slot(None) for _ in range(6)}
+    assert len(seen) == 1, "devbox.sh is not deterministic against the real package: %r" % seen
+    rc, name = seen.pop()
+    assert rc == 0, "devbox.sh failed against the real package: %r" % name
+
+    # The key devbox.sh itself uses, asked of devbox.sh rather than assumed:
+    # `paths.repo_root()` and `devbox_worktree` differ inside a git worktree,
+    # and hardcoding either would make this control fail for the wrong reason.
+    lib = str(paths.from_root(DEVBOX_LIB))
+    wt_rc, worktree, wt_err = diff.bash_streams(
+        f"source {_q(lib)}; devbox_worktree", env=diff.env_for()
+    )
+    assert wt_rc == 0, wt_err
+    expected = ports.derive_slot(worktree.strip(), 100)
+    assert name.startswith("rediacc-devbox-%d-" % expected), (
+        "devbox.sh derived a slot the module does not agree with: %r (expected slot %d)"
+        % (name, expected)
+    )
 
 
 def _q(value: str) -> str:

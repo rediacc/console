@@ -125,13 +125,25 @@ def write_exempt(d: pathlib.Path, reads: bool) -> None:
     )
 
 
+# `DECLARED_UNUSED_OK` is drained to empty on the real tree (W8 P1b's "declared
+# endgame"), so the differential injects this synthetic pair through the
+# subject's own test-only seam to give the liveness sweep and arm (a3) a
+# positive case at all. `write_exempt` builds the fixture file this pair names.
+EXTRA_EXEMPTION = "claude-review-reusable.yml:ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN"
+
+
 def run_check_live(directory) -> harness.RunResult:
     """CHECK 2 with the exemption liveness sweep forced ON against a fixture tree.
 
     SLIM coverage is pinned off because it defaults from the same flag and this
     fixture has no slim job to offer; CHECK 3 has its own test.
     """
-    return run_check(directory, REAL_WORKFLOW_TREE="true", SLIM_TIMEOUT_REQUIRE_COVERAGE="false")
+    return run_check(
+        directory,
+        REAL_WORKFLOW_TREE="true",
+        SLIM_TIMEOUT_REQUIRE_COVERAGE="false",
+        WORKFLOW_GATES_EXTRA_EXEMPTIONS=EXTRA_EXEMPTION,
+    )
 
 
 def ec_fixture(d: pathlib.Path) -> pathlib.Path:
@@ -626,6 +638,7 @@ def run_ec_live(root: pathlib.Path) -> harness.RunResult:
         EXTERNAL_CALLERS_ROOT=str(root),
         REAL_WORKFLOW_TREE="true",
         SLIM_TIMEOUT_REQUIRE_COVERAGE="false",
+        WORKFLOW_GATES_EXTRA_EXEMPTIONS=EXTRA_EXEMPTION,
     )
 
 
@@ -728,8 +741,17 @@ def test_a3_stands_down_without_a_registry(gate, tmp_path):
     An arm that cannot see the registry must stay SILENT rather than condemn a
     fixture tree for lacking one.
     """
+    # The a3 arm itself is what must stay silent, not the unrelated per-file
+    # "declares but never reads" check that a3_fixture's callee trips on its
+    # own merit and that runs regardless of real_tree -- the same synthetic
+    # exemption run_ec_live uses keeps that check quiet here too.
     root = a3_fixture(tmp_path)
-    result = run_ec(root)
+    result = run_check(
+        root / ".github" / "workflows",
+        EXTERNAL_CALLERS_FILE=str(root / "registry.yml"),
+        EXTERNAL_CALLERS_ROOT=str(root),
+        WORKFLOW_GATES_EXTRA_EXEMPTIONS=EXTRA_EXEMPTION,
+    )
     gate.assert_exit_code(
         0, result.rc, "a non-real tree must not be judged against the real exemption list"
     )

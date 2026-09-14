@@ -92,6 +92,8 @@ def build(tmp_path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
         target = root / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text, encoding="utf-8")
+        if rel.startswith("fxbin/"):
+            target.chmod(0o755)
     return root
 
 
@@ -226,6 +228,29 @@ CASES = [
             "fx/live.json": '[{"name":"alpha","desc',
         },
         REAL_PATH_ENV,
+        1,
+    ),
+    (
+        # FIXED 2026-09-10. Neither LIVE_FILE nor LIVE_JSON_FILE is set, so
+        # LIVE_SOURCE falls to "GitHub API" for BOTH the names-only read (which
+        # succeeds) and the drift-comparison full-object read (which fails).
+        # Before the fix, a failed drift read silently skipped the description/
+        # colour comparison and the gate reported "all agree" anyway.
+        "a failed live-JSON fetch over the real GitHub API path refuses, not skips",
+        {
+            ".github/labels.yml": declarations(
+                "alpha", "bravo", "charlie", "nightly-red", "ci", "bump-none"
+            ),
+            "fxbin/gh": (
+                "#!/bin/bash\n"
+                'for a in "$@"; do [ "$a" = "--jq" ] && '
+                "{ printf 'alpha\\nbravo\\ncharlie\\nnightly-red\\nci\\nbump-none\\n'; exit 0; }; "
+                "done\n"
+                "echo 'HTTP 500: simulated failure' >&2\n"
+                "exit 1\n"
+            ),
+        },
+        'LABEL_INVENTORY_LABELS_FILE=.github/labels.yml PATH="$PWD/fxbin:$PATH"',
         1,
     ),
 ]

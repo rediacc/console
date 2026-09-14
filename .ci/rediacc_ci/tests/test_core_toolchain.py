@@ -39,11 +39,16 @@ npm. A default is what both look like on the day it is wrong, which is why
 `pin()` has none and why these cases assert the raise rather than a fallback.
 """
 
+import hashlib
 import itertools
+import json
+import os
+import pathlib
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
@@ -542,3 +547,930 @@ def test_constants_sh_still_refuses_an_unset_floor() -> None:
     text = paths.from_root(CONSTANTS).read_text(encoding="utf-8")
     assert "${NODE_VERSION_MIN:?" in text
     assert "${NODE_VERSION:?" in text
+
+
+# ===========================================================================
+# THE PROBING AND ACQUISITION HALF (W7P5-b, 2026-09-10)
+#
+# Everything above covers the W6P2 port: the pins file, the table, the
+# refusals, the comparison. Everything below covers what W7P5-b added:
+# `probe_version`, `check`, `lane`, `cache_dir`, `report`, `checksums`,
+# `os_name`, `sha256_of`, the two URL builders and `acquire`.
+#
+# WHAT EACH GROUP GUARDS.
+#
+#   the probes      All EIGHT tools, each against real stub binaries that print
+#                   the real banners, run on BOTH sides. Including the shapes
+#                   that must yield NOTHING, because a normaliser that silently
+#                   returns "" makes a comparison of ""=="" pass.
+#   check           Nine tools x two PATHs, message text and exit code compared
+#                   byte-for-byte, because `.ci/legacy/run-legacy.sh:406` pipes
+#                   those messages straight to the operator.
+#   the environment `lane` and `cache_dir` over every branch of their `:-`
+#                   chains, which are the two places an empty string and an
+#                   unset variable must behave identically.
+#   the defects     Two findings PINNED rather than fixed, because
+#                   `.ci/scripts/lib/` is outside this workstream's write grant.
+#   the planted     A mutated COPY of the module must make the probe
+#                   differential FAIL, on a case the honest module passes.
+# ===========================================================================
+
+# Real `--version` output for every tool the twin has an arm for, plus the
+# shapes that must produce NOTHING. The banners are the ones in the twin's own
+# table at toolchain.sh:59-66, not invented ones.
+PROBE_FIXTURES = {
+    "shfmt": (
+        'printf "v3.13.1\\n"',
+        'printf "3.13.1\\n"',
+        'printf "v3.13.1\\nsecond line\\n"',
+        'echo "no version here"',
+        "exit 3",
+    ),
+    "shellcheck": (
+        (
+            'printf "\\nShellCheck - shell script analysis tool\\nversion: 0.10.0\\n'
+            'license: GPLv3\\n"'
+        ),
+        'printf "version:0.10.0\\n"',
+        'printf "version:   0.9.0\\n"',
+        'printf "version: 0.10.0\\nversion: 0.9.0\\n"',
+        'printf "no banner at all\\n"',
+    ),
+    "ruff": (
+        'printf "ruff 0.16.1\\n"',
+        'printf "ruff 0.16.1 (abcdef 2026-01-01)\\n"',
+        'printf "ruff\\n"',
+        'printf "\\n"',
+    ),
+    "actionlint": ('printf "1.7.12\\n"', 'printf "v1.7.12\\ninstalled by go\\n"', 'printf "\\n"'),
+    "go": (
+        'printf "go version go1.26.6 linux/arm64\\n"',
+        'printf "go version go1.2\\n"',
+        'printf "go1.26.6\\n"',
+        'printf "go version\\n"',
+    ),
+    "node": ('printf "v22.23.2\\n"', 'printf "22\\n"', 'printf "v22\\n"', 'printf "nope\\n"'),
+    "uv": ('printf "uv 0.12.10\\n"', 'printf "uv\\n"'),
+    "pytest": ('printf "pytest 9.1.1\\nrootdir: /x\\n"', 'printf "pytest\\n"'),
+}
+
+# /usr/bin:/bin holds the coreutils the twin needs (dirname, grep, awk) and NONE
+# of the eight pinned tools, verified 2026-09-10. Anything smaller breaks the
+# TWIN rather than the port, which is a control failure dressed as a finding:
+# the first draft of this differential set PATH to the stub directory alone and
+# the twin failed with `dirname: command not found` on every case.
+SYSTEM_PATH = "/usr/bin:/bin"
+
+
+def _stub_dir(tmp_path: pathlib.Path, tool: str, body: str) -> pathlib.Path:
+    binary = tmp_path / "bin" / tool
+    binary.parent.mkdir(parents=True, exist_ok=True)
+    binary.write_text("#!/bin/bash\n%s\n" % body, encoding="utf-8")
+    binary.chmod(0o755)
+    return binary
+
+
+def _probe_cases() -> list[tuple[str, str]]:
+    return [(tool, body) for tool, bodies in PROBE_FIXTURES.items() for body in bodies]
+
+
+PROBE_CASES = _probe_cases()
+
+
+@pytest.mark.parametrize(("tool", "body"), PROBE_CASES)
+def test_probe_version_matches_the_twin(tmp_path: pathlib.Path, tool: str, body: str) -> None:
+    """`toolchain_probe_version` and `probe_version` agree on stdout AND rc.
+
+    Both sides are handed the SAME stub binary by absolute path, so the only
+    thing under comparison is the extract-and-normalise pipeline.
+    """
+    binary = _stub_dir(tmp_path, tool, body)
+    rc, out, _err = _bash(
+        "%s; toolchain_probe_version %s %s" % (SOURCE_SHIM, _q(tool), _q(str(binary)))
+    )
+    answer = toolchain.probe_version(tool, str(binary))
+    assert (out, rc) == ((answer or ""), (0 if answer else 1))
+
+
+def test_the_probe_corpus_reaches_both_outcomes() -> None:
+    """ANTI-VACUITY. Some fixtures must yield a version and some must yield none.
+
+    A corpus in which every case refused would pass the differential above while
+    proving only that both sides can say no.
+    """
+    answers = {"yes": 0, "no": 0}
+    for _tool, body in PROBE_CASES:
+        # Decided from the fixture text rather than by running it, so this case
+        # is independent of the differential it is guarding.
+        silent = "no version" in body or "nope" in body or "exit 3" in body
+        answers["no" if silent else "yes"] += 1
+    assert answers["yes"] >= 20, answers
+    assert answers["no"] >= 3, answers
+    assert len(PROBE_CASES) >= 25
+
+
+def test_probe_version_refuses_a_tool_it_has_no_arm_for() -> None:
+    """`*) return 2 ;;` at toolchain.sh:86, as a raise rather than a code."""
+    rc, out, _err = _bash("%s; toolchain_probe_version cargo /bin/true" % SOURCE_SHIM)
+    assert (rc, out) == (2, "")
+    with pytest.raises(toolchain.ToolError):
+        toolchain.probe_version("cargo", "/bin/true")
+
+
+CHECK_TOOLS = (*tuple(PROBE_FIXTURES), "cargo")
+
+
+@pytest.mark.parametrize("tool", list(CHECK_TOOLS))
+@pytest.mark.parametrize("present", [True, False])
+def test_check_matches_the_twin(tmp_path: pathlib.Path, tool: str, present: bool) -> None:
+    """`toolchain_check` and `check` agree on the binary, the message and the rc.
+
+    The message text is compared VERBATIM, not just the exit code, because
+    `.ci/legacy/run-legacy.sh:406` re-runs this purely to show the operator what
+    it said.
+    """
+    if present and tool in PROBE_FIXTURES:
+        _stub_dir(tmp_path, tool, PROBE_FIXTURES[tool][0])
+    (tmp_path / "bin").mkdir(parents=True, exist_ok=True)
+    path_env = "%s:%s" % (tmp_path / "bin", SYSTEM_PATH)
+    rc, out, err = _bash("%s; PATH=%s toolchain_check %s" % (SOURCE_SHIM, _q(path_env), _q(tool)))
+    result = toolchain.check(tool, path=path_env)
+    assert out == (result.binary or "")
+    assert err == "".join(m + "\n" for m in result.messages)
+    assert rc == result.rc
+
+
+def test_check_reaches_every_one_of_its_five_refusals(tmp_path: pathlib.Path) -> None:
+    """ANTI-VACUITY for the case above: all five refusal texts must be produced.
+
+    Five distinct messages exist in the twin (:131, :135, :139, :143, :149/:153)
+    and a differential that only ever saw one of them would be one case wearing
+    a parametrize decorator.
+    """
+    (tmp_path / "bin").mkdir(parents=True, exist_ok=True)
+    path_env = "%s:%s" % (tmp_path / "bin", SYSTEM_PATH)
+    seen = set()
+
+    seen.add(toolchain.check("cargo", path=path_env).messages[0].split("'")[0])
+    seen.add(toolchain.check("shfmt", path=path_env).messages[0].split("(")[0])
+
+    _stub_dir(tmp_path, "shfmt", 'printf "v0.0.1\\n"')
+    seen.add("mismatch:" + toolchain.check("shfmt", path=path_env).messages[0].split(" ")[1])
+
+    _stub_dir(tmp_path, "shellcheck", 'printf "no banner\\n"')
+    seen.add("unreadable:" + toolchain.check("shellcheck", path=path_env).messages[0][:30])
+
+    _stub_dir(tmp_path, "node", 'printf "v20.1.1\\n"')
+    node = toolchain.check("node", path=path_env)
+    assert node.messages[0].startswith("toolchain: node major 20 != pinned ")
+    seen.add("node-major")
+
+    empty = toolchain.check("shfmt", pins={"SHFMT_VERSION": ""}, path=path_env)
+    assert empty.rc == 2
+    assert empty.messages == ("toolchain: pin for 'shfmt' is empty -- did toolchain_load run?",)
+    seen.add("empty-pin")
+
+    assert len(seen) == 6, sorted(seen)
+
+
+@pytest.mark.parametrize(
+    "env",
+    [
+        {},
+        {"GITHUB_ACTIONS": "true"},
+        {"GITHUB_ACTIONS": ""},
+        {"REDIACC_NPM_RUNTIME": "devbox"},
+        {"REDIACC_NPM_RUNTIME": "host"},
+        {"REDIACC_NPM_RUNTIME": ""},
+        {"GITHUB_ACTIONS": "true", "REDIACC_NPM_RUNTIME": "devbox"},
+    ],
+)
+def test_lane_matches_the_twin(env: dict) -> None:
+    """`toolchain_lane` (:174-182), over every branch including the empty ones.
+
+    An EMPTY `$GITHUB_ACTIONS` is not `ci` and an empty `$REDIACC_NPM_RUNTIME`
+    is not `devbox`; `[[ -n ... ]]` and `${x:-host}` both treat empty as unset,
+    which is the distinction `os.environ.get(...) or ...` reproduces and a
+    `in os.environ` test would not.
+    """
+    overrides = {"GITHUB_ACTIONS": None, "REDIACC_NPM_RUNTIME": None}
+    overrides.update(env)
+    shell_env = diff.env_for(**overrides)
+    _rc, out, _err = diff.bash_streams("%s; toolchain_lane" % SOURCE_SHIM, env=shell_env)
+    assert out == toolchain.lane(shell_env)
+
+
+@pytest.mark.parametrize(
+    "env",
+    [
+        {},
+        {"CI_TEMP": "/a"},
+        {"RUNNER_TEMP": "/b"},
+        {"TMPDIR": "/c"},
+        {"CI_TEMP": "", "RUNNER_TEMP": "/b"},
+        {"CI_TEMP": "/a", "RUNNER_TEMP": "/b", "TMPDIR": "/c"},
+        {"CI_TEMP": "", "RUNNER_TEMP": "", "TMPDIR": ""},
+    ],
+)
+def test_cache_dir_matches_the_twin(env: dict) -> None:
+    """`toolchain_cache_dir` (:257-259): CI_TEMP, then RUNNER_TEMP, then TMPDIR."""
+    overrides = {"CI_TEMP": None, "RUNNER_TEMP": None, "TMPDIR": None}
+    overrides.update(env)
+    shell_env = diff.env_for(**overrides)
+    _rc, out, _err = diff.bash_streams("%s; toolchain_cache_dir" % SOURCE_SHIM, env=shell_env)
+    assert out == str(toolchain.cache_dir(shell_env))
+
+
+@pytest.mark.parametrize("path_env", ["STUBS", "EMPTY", "REAL"])
+def test_report_matches_the_twin(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, path_env: str
+) -> None:
+    """`toolchain_report --verify` and `report(True)` agree on the table AND rc.
+
+    The FUNCTION's rc is correct on both sides. What is broken is the twin's
+    SCRIPT dispatch, which is pinned separately below.
+
+    THE REAL $PATH IS TAKEN FROM `diff.BASE_ENV`, not from `os.environ`, and
+    monkeypatch does the save-and-restore. Both choices are deliberate: reading
+    `os.environ["PATH"]` here would add an undeclared environment input to a
+    test module (`check:ci-python-env-registry` says so, and it is right), and a
+    hand-rolled try/finally restore leaks the value on any exception raised
+    before the finally arms.
+    """
+    (tmp_path / "bin").mkdir(parents=True, exist_ok=True)
+    if path_env == "STUBS":
+        for tool, bodies in PROBE_FIXTURES.items():
+            _stub_dir(tmp_path, tool, bodies[0])
+        value = "%s:%s" % (tmp_path / "bin", SYSTEM_PATH)
+    elif path_env == "EMPTY":
+        value = "%s:%s" % (tmp_path / "bin", SYSTEM_PATH)
+    else:
+        value = diff.BASE_ENV["PATH"]
+    shell_env = diff.env_for(PATH=value)
+    rc, out, _err = diff.bash_streams("%s; toolchain_report --verify" % SOURCE_SHIM, env=shell_env)
+    monkeypatch.setenv("PATH", value)
+    lines, prc = toolchain.report(True)
+    assert out == "".join(line + "\n" for line in lines)
+    assert rc == prc
+
+
+def test_report_without_verify_is_information_and_never_a_verdict(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`[[ "$strict" == "--verify" ]] || return 0` at :207, on both sides."""
+    shell_env = diff.env_for(PATH=SYSTEM_PATH)
+    rc, out, _err = diff.bash_streams("%s; toolchain_report" % SOURCE_SHIM, env=shell_env)
+    monkeypatch.setenv("PATH", SYSTEM_PATH)
+    lines, prc = toolchain.report(False)
+    assert (rc, prc) == (0, 0)
+    assert "MISMATCH" in out, "the control is broken: nothing mismatched, so rc 0 proves nothing"
+    assert out == "".join(line + "\n" for line in lines)
+
+
+# ---------------------------------------------------------------------------
+# Checksums, the OS, and the URLs
+# ---------------------------------------------------------------------------
+
+
+def test_constants_file_is_the_one_the_twin_computes() -> None:
+    """`_toolchain_need_checksums` builds the same path from BASH_SOURCE (:251)."""
+    _rc, out, _err = _bash(
+        '%s; printf "%%s" "$(cd "$(dirname %s)/../../.." && pwd)/.ci/config/constants.sh"'
+        % (SOURCE_SHIM, _q(str(paths.from_root(SHIM))))
+    )
+    assert out == str(toolchain.constants_file())
+
+
+def test_checksums_reads_the_live_constants_file() -> None:
+    """Both SHA families, both operating systems, resolved out of constants.sh.
+
+    ANTI-VACUITY: an empty table would satisfy "every key matches the pattern",
+    so the count and the specific keys are asserted.
+    """
+    table = toolchain.checksums(env={})
+    for key in (
+        "SHFMT_SHA256_LINUX_AMD64",
+        "SHFMT_SHA256_LINUX_ARM64",
+        "SHFMT_SHA256_DARWIN_AMD64",
+        "SHFMT_SHA256_DARWIN_ARM64",
+        "SHELLCHECK_SHA256_LINUX_X86_64",
+        "SHELLCHECK_SHA256_LINUX_AARCH64",
+        "SHELLCHECK_SHA256_DARWIN_X86_64",
+        "SHELLCHECK_SHA256_DARWIN_AARCH64",
+    ):
+        assert re.fullmatch(r"[0-9a-f]{64}", table[key]), key
+    assert len(table) == 8, sorted(table)
+
+
+def test_checksums_agree_with_what_bash_resolves() -> None:
+    """The values, read the other way: source constants.sh and print them.
+
+    Two parsers of one file is the drift this compares away. A regex that
+    quietly stopped matching would give an empty table here and a full one in
+    bash, and the acquisition would then refuse with "no checksum for ..." for a
+    constant that is plainly present.
+    """
+    for key, value in sorted(toolchain.checksums(env={}).items()):
+        rc, out, _err = _bash(
+            'source %s; printf "%%s" "${%s:-}"' % (_q(str(paths.from_root(CONSTANTS))), key)
+        )
+        assert (rc, out) == (0, value), key
+
+
+def test_the_checksum_short_circuit_is_the_twins() -> None:
+    """Exporting either probe key suppresses the constants.sh read ENTIRELY.
+
+    That is `_toolchain_need_checksums:249` and it is odd enough to be worth a
+    case: one family's linux key blocks the file read for BOTH families.
+    """
+    for probe in toolchain.CHECKSUM_PROBE_KEYS:
+        table = toolchain.checksums(env={probe: "f" * 64})
+        assert table == {probe: "f" * 64}, probe
+    # And the control: without either probe key, the file IS read.
+    assert len(toolchain.checksums(env={"SHFMT_SHA256_DARWIN_ARM64": "e" * 64})) == 8
+
+
+@pytest.mark.parametrize(("system", "expected"), [("Linux", "linux"), ("Darwin", "darwin")])
+def test_os_name_matches_the_twin(system: str, expected: str) -> None:
+    rc, out, _err = _bash('%s; uname() { printf "%s\\n"; }; _toolchain_os' % (SOURCE_SHIM, system))
+    assert (rc, out) == (0, expected)
+    assert toolchain.os_name(system) == expected
+
+
+def test_os_name_refuses_an_unsupported_system() -> None:
+    """No pinned build exists for it, so there is nothing to fall back to."""
+    rc, _out, err = _bash('%s; uname() { printf "SunOS\\n"; }; _toolchain_os' % SOURCE_SHIM)
+    assert rc == 1
+    assert "unsupported OS 'SunOS'" in err
+    with pytest.raises(toolchain.ToolError, match="unsupported OS 'SunOS'"):
+        toolchain.os_name("SunOS")
+
+
+def test_sha256_of_agrees_with_the_shell(tmp_path: pathlib.Path) -> None:
+    """`hashlib` against `_toolchain_sha256sum`, on real bytes.
+
+    This is the function whose bash counterpart needed a two-branch portability
+    shim because macOS has no `sha256sum`. Proving the two agree is what lets
+    that shim die rather than be translated.
+    """
+    sample = tmp_path / "blob"
+    sample.write_bytes(b"the quick brown fox\n" * 5000)
+    rc, out, _err = _bash("%s; _toolchain_sha256sum %s" % (SOURCE_SHIM, _q(str(sample))))
+    assert rc == 0
+    assert out.split()[0] == toolchain.sha256_of(sample)
+    assert toolchain.sha256_of(sample) == hashlib.sha256(sample.read_bytes()).hexdigest()
+
+
+def test_the_download_urls_are_the_twins() -> None:
+    """The two asset URLs, built by bash and by Python from the same inputs.
+
+    A URL is the one thing in the acquisition path that cannot be unit-tested by
+    running it, so it is compared against the string the twin interpolates.
+    """
+    for want, os_key, arch in (
+        ("3.13.1", "linux", "amd64"),
+        ("3.13.1", "darwin", "arm64"),
+    ):
+        _rc, out, _err = _bash(
+            "%s; want=%s; os=%s; arch=%s; "
+            'printf "%%s" "https://github.com/mvdan/sh/releases/download/v${want}/'
+            'shfmt_v${want}_${os}_${arch}"' % (SOURCE_SHIM, _q(want), _q(os_key), _q(arch))
+        )
+        assert out == toolchain.shfmt_url(want, os_key, arch)
+    for want, os_key, arch in (
+        ("0.10.0", "linux", "x86_64"),
+        ("0.10.0", "darwin", "aarch64"),
+    ):
+        _rc, out, _err = _bash(
+            "%s; want=%s; os=%s; arch=%s; "
+            'printf "%%s" "https://github.com/koalaman/shellcheck/releases/download/v${want}/'
+            'shellcheck-v${want}.${os}.${arch}.tar.xz"'
+            % (SOURCE_SHIM, _q(want), _q(os_key), _q(arch))
+        )
+        assert out == toolchain.shellcheck_url(want, os_key, arch)
+
+
+def test_the_arch_tables_disagree_because_the_upstreams_do() -> None:
+    """shfmt publishes amd64/arm64; shellcheck publishes x86_64/aarch64.
+
+    Collapsing the two tables would 404 on one of the two projects, and the 404
+    would name GitHub rather than the wrong arch spelling.
+    """
+    assert toolchain.SHFMT_ARCH["x86_64"] == "amd64"
+    assert toolchain.SHELLCHECK_ARCH["x86_64"] == "x86_64"
+    assert toolchain.SHFMT_ARCH["aarch64"] == "arm64"
+    assert toolchain.SHELLCHECK_ARCH["aarch64"] == "aarch64"
+    text = paths.from_root(SHIM).read_text(encoding="utf-8")
+    assert "x86_64 | amd64) arch=amd64 ;;" in text
+    assert "x86_64 | amd64) arch=x86_64 ;;" in text
+
+
+def test_download_shfmt_refuses_rather_than_downloading_unverified(
+    tmp_path: pathlib.Path,
+) -> None:
+    """No checksum for this os/arch means REFUSE, and name the constant to add.
+
+    THE MESSAGE NAMES THE CONSTANT, not the arch, because that is the difference
+    between something a reader can act on and something they have to decode.
+    """
+    binary, messages = toolchain.download_shfmt(
+        "3.13.1",
+        tmp_path / "cache",
+        tmp_path / "cache" / "shfmt",
+        env={"SHFMT_SHA256_LINUX_AMD64": "0" * 64},
+        machine="riscv64",
+        system="Linux",
+    )
+    assert binary is None
+    assert messages == [
+        (
+            "toolchain: no pinned shfmt checksum for riscv64; add one rather than "
+            "downloading unverified"
+        )
+    ]
+    assert not (tmp_path / "cache").exists(), "it created a cache before refusing"
+
+    binary, messages = toolchain.download_shfmt(
+        "3.13.1",
+        tmp_path / "cache",
+        tmp_path / "cache" / "shfmt",
+        env={"SHFMT_SHA256_LINUX_AMD64": "0" * 64},
+        machine="arm64",
+        system="Darwin",
+    )
+    assert binary is None
+    assert messages == [
+        (
+            "toolchain: no shfmt checksum for darwin/arm64 -- define "
+            "SHFMT_SHA256_DARWIN_ARM64 in .ci/config/constants.sh (and source it) "
+            "rather than downloading unverified"
+        )
+    ]
+
+
+def test_download_shfmt_refuses_a_checksum_mismatch(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The MISMATCH branch, with a real digest in the `actual` line.
+
+    DEFECT 2 in the module docstring is exactly that the twin can print this
+    headline with an EMPTY `actual` when there is no hashing tool at all.
+    `hashlib` cannot be absent, so `actual` is always a real digest here, and
+    this case pins that.
+    """
+
+    def fake_curl(_url: str, target: pathlib.Path) -> bool:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(b"not the real binary")
+        return True
+
+    monkeypatch.setattr(toolchain, "_curl", fake_curl)
+    cache = tmp_path / "cache"
+    binary = cache / "shfmt"
+    got, messages = toolchain.download_shfmt(
+        "3.13.1",
+        cache,
+        binary,
+        env={"SHFMT_SHA256_LINUX_AMD64": "0" * 64},
+        machine="x86_64",
+        system="Linux",
+    )
+    assert got is None
+    assert messages[0] == "toolchain: shfmt checksum MISMATCH -- refusing to install"
+    assert messages[1] == "  expected " + "0" * 64
+    assert re.fullmatch(r"  actual   [0-9a-f]{64}", messages[2]), messages[2]
+    assert messages[2].split()[-1] == hashlib.sha256(b"not the real binary").hexdigest()
+    assert not binary.exists()
+    assert not binary.with_name("shfmt.tmp").exists(), "the rejected download was left behind"
+
+
+def test_download_shfmt_installs_a_matching_download(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The CONTROL for the case above: a correct hash must install and chmod +x.
+
+    Without this, a `download_shfmt` that refused unconditionally would pass
+    every refusal case in this file.
+    """
+    payload = b"#!/bin/sh\necho v3.13.1\n"
+
+    def fake_curl(_url: str, target: pathlib.Path) -> bool:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(payload)
+        return True
+
+    monkeypatch.setattr(toolchain, "_curl", fake_curl)
+    cache = tmp_path / "cache"
+    binary = cache / "shfmt"
+    got, messages = toolchain.download_shfmt(
+        "3.13.1",
+        cache,
+        binary,
+        env={"SHFMT_SHA256_LINUX_AMD64": hashlib.sha256(payload).hexdigest()},
+        machine="x86_64",
+        system="Linux",
+    )
+    assert (got, messages) == (str(binary), [])
+    assert os.access(str(binary), os.X_OK)
+    assert binary.read_bytes() == payload
+
+
+def test_acquire_returns_a_path_binary_at_the_pin_without_installing(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A PATH binary AT THE PIN always wins, so nothing is downloaded.
+
+    That is what makes a developer's own install honoured and stops CI
+    re-downloading on every invocation.
+    """
+    binary = _stub_dir(tmp_path, "shfmt", 'printf "v%s\\n"' % toolchain.pin_for("shfmt"))
+    monkeypatch.setenv("PATH", "%s:%s" % (binary.parent, SYSTEM_PATH))
+
+    def explode(*_args: object, **_kwargs: object) -> bool:
+        raise AssertionError("acquire tried to download a tool that was already at the pin")
+
+    monkeypatch.setattr(toolchain, "_curl", explode)
+    got, messages = toolchain.acquire("shfmt")
+    assert (got, messages) == (str(binary), [])
+
+
+def test_acquire_refuses_a_tool_with_no_pin() -> None:
+    """`toolchain_acquire cargo` is rc 2 and silent, on both sides."""
+    rc, out, err = _bash("%s; toolchain_acquire cargo" % SOURCE_SHIM)
+    assert (rc, out, err) == (2, "", "")
+    got, messages = toolchain.acquire("cargo")
+    assert (got, messages) == (None, [])
+
+
+def test_acquire_refuses_an_empty_pin() -> None:
+    """The guard duplicated from `check`; its ABSENCE here was the 404 defect.
+
+    `.ci/scripts/lib/toolchain.sh:451-457` records it: one entry point refused
+    while the other interpolated the empty string into a download URL.
+    """
+    got, messages = toolchain.acquire("shfmt", pins={"SHFMT_VERSION": ""})
+    assert got is None
+    assert messages == ["toolchain: pin for 'shfmt' is empty -- the pins file did not load"]
+
+
+# ---------------------------------------------------------------------------
+# The twin's defects, pinned so they cannot rot
+# ---------------------------------------------------------------------------
+
+
+def test_defect_1_toolchain_sh_verify_cannot_fail() -> None:
+    """DRIVEN, not read: six MISMATCH rows and exit 0. See the module docstring.
+
+    RED WHEN THE TWIN IS FIXED. Adding `exit` to the `--verify` arm (or moving
+    the dispatch block to the end of the file) makes this case fail, which is
+    when the finding closes with evidence rather than being forgotten.
+    """
+    shell_env = diff.env_for(PATH=SYSTEM_PATH)
+    rc, out, _err = diff.bash_streams(
+        "bash %s --verify" % _q(str(paths.from_root(SHIM))), env=shell_env
+    )
+    assert out.count("MISMATCH") == 6, out
+    assert rc == 0, "toolchain.sh --verify now fails on a mismatch; delete this pin"
+    # And the FUNCTION, which is correct, so the finding is localised to the
+    # dispatch rather than smeared over the whole file.
+    frc, _fout, _ferr = diff.bash_streams(
+        "%s; toolchain_report --verify" % SOURCE_SHIM, env=shell_env
+    )
+    assert frc == 1, "the function's rc was already right; re-derive the finding"
+
+
+def test_defect_1_has_a_live_variant_on_env() -> None:
+    """`--env` with no pins file: exit 0 and ZERO bytes, into $GITHUB_ENV.
+
+    Two live call sites, `.github/workflows/ci-quality.yml:171` and `:1897`.
+    Run against a COPY of the library under a fake root, so the real pins file
+    is never touched.
+    """
+    with tempfile.TemporaryDirectory() as scratch:
+        fake = pathlib.Path(scratch, ".ci", "scripts", "lib")
+        fake.mkdir(parents=True)
+        copy = fake / "toolchain.sh"
+        copy.write_bytes(paths.from_root(SHIM).read_bytes())
+        rc, out, err = diff.bash_streams("bash %s --env" % _q(str(copy)))
+        assert rc == 0, "the --env arm now exits non-zero; delete this pin"
+        assert out == "", out
+        assert "No such file or directory" in err
+    # THE CALL SITES, so the finding's blast radius is asserted and not claimed.
+    workflow = paths.from_root(".github/workflows/ci-quality.yml").read_text(encoding="utf-8")
+    assert workflow.count('.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"') == 2
+
+
+def test_defect_1_the_port_does_not_reproduce_the_always_zero_exit() -> None:
+    """`... core.toolchain verify` MUST exit 1 where the twin exits 0.
+
+    The defect is in the twin's SCRIPT DISPATCH, not in the library function,
+    and this module is the library. Reproducing an always-green exit here would
+    be porting a vacuity into the replacement.
+    """
+    proc = subprocess.run(
+        [sys.executable, "-m", "rediacc_ci.core.toolchain", "verify"],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(paths.from_root(".ci")),
+        env={**os.environ, "PATH": SYSTEM_PATH, "PYTHONDONTWRITEBYTECODE": "1"},
+    )
+    assert proc.stdout.count("MISMATCH") == 6, proc.stdout
+    assert proc.returncode == 1
+
+
+def test_defect_2_both_checksum_call_sites_still_swallow_the_helpers_message() -> None:
+    """`| _toolchain_sha256sum -c - >/dev/null 2>&1` at :344 and :429.
+
+    The helper exists so that "a verifier that cannot run must not read as a
+    verifier that failed" (:264-265), and both callers discard the message that
+    would say which of the two it was.
+    """
+    text = paths.from_root(SHIM).read_text(encoding="utf-8")
+    swallowed = re.findall(r"\| _toolchain_sha256sum -c - >/dev/null 2>&1", text)
+    assert len(swallowed) == 2, "the call-site count moved: %d" % len(swallowed)
+    assert "no sha256 tool on PATH" in text, "the helper's message is gone; re-derive"
+
+
+def test_defect_2_the_headline_still_says_mismatch_with_no_verifier(
+    tmp_path: pathlib.Path,
+) -> None:
+    """DRIVEN with neither `sha256sum` nor `shasum` reachable.
+
+    The distinguishing line survives only via the SECOND, unredirected call
+    inside the `actual` line, so it lands out of order and `actual` is empty
+    while the headline still says MISMATCH.
+    """
+    sandbox = tmp_path / "bin"
+    sandbox.mkdir()
+    needed = ("mkdir", "chmod", "mv", "rm", "cut", "tr", "uname", "dirname", "grep", "sed")
+    for name in needed:
+        found = shutil.which(name)
+        if found:
+            (sandbox / name).symlink_to(found)
+    if not all((sandbox / n).exists() for n in ("mkdir", "rm", "tr", "uname", "cut")):
+        pytest.skip("this host does not have the coreutils this control needs")
+    (sandbox / "curl").write_text(
+        '#!/bin/bash\nwhile [ $# -gt 0 ]; do case "$1" in -o) out="$2"; shift 2;; '
+        '*) shift;; esac; done\nprintf "junk" > "$out"\n',
+        encoding="utf-8",
+    )
+    (sandbox / "curl").chmod(0o755)
+    assert shutil.which("sha256sum", path=str(sandbox)) is None
+    assert shutil.which("shasum", path=str(sandbox)) is None
+
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    script = "set -uo pipefail\n%s\nexport PATH=%s\n_toolchain_download_shfmt 3.13.1 %s %s\n" % (
+        SOURCE_SHIM,
+        _q(str(sandbox)),
+        _q(str(cache)),
+        _q(str(cache / "shfmt")),
+    )
+    rc, _out, err = _bash(script)
+    assert rc != 0
+    assert "checksum MISMATCH -- refusing to install" in err
+    assert "no sha256 tool on PATH" in err
+    assert re.search(r"^  actual   *$", err, re.MULTILINE), err
+
+
+def test_defect_3_the_darwin_comments_are_stale() -> None:
+    """Both constants the twin's comments tell a reader to ADD already exist.
+
+    Documentation only: no behaviour is wrong. Pinned so that whoever rewrites
+    the comments can see that this case was the reason.
+    """
+    twin = paths.from_root(SHIM).read_text(encoding="utf-8")
+    assert "Only the LINUX_* pair exists in constants.sh today" in twin
+    assert "adding the two DARWIN_*" in twin
+    constants = paths.from_root(CONSTANTS).read_text(encoding="utf-8")
+    for key in (
+        "SHFMT_SHA256_DARWIN_AMD64",
+        "SHFMT_SHA256_DARWIN_ARM64",
+        "SHELLCHECK_SHA256_DARWIN_X86_64",
+        "SHELLCHECK_SHA256_DARWIN_AARCH64",
+    ):
+        assert "readonly %s=" % key in constants, key
+
+
+# ---------------------------------------------------------------------------
+# The planted defect: this differential must be able to FAIL
+# ---------------------------------------------------------------------------
+
+ACQ_MUTATIONS = (
+    (
+        "the go probe reads the wrong field",
+        '        index = 2 if tool == "go" else 1',
+        "        index = 1",
+    ),
+    (
+        "the version prefixes stop being stripped",
+        "    for prefix in VERSION_PREFIXES:\n        raw = raw.removeprefix(prefix)\n    matched = [",
+        "    for prefix in ():\n        raw = raw.removeprefix(prefix)\n    matched = [",
+    ),
+    (
+        "a node major mismatch becomes a pass",
+        '        major = actual.split(".", 1)[0]\n        if major != pin_value:',
+        '        major = actual.split(".", 1)[0]\n        if major == pin_value and False:',
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    ("name", "find", "replace"), list(ACQ_MUTATIONS), ids=[m[0] for m in ACQ_MUTATIONS]
+)
+def test_a_planted_defect_makes_the_probe_differential_fail(
+    tmp_path: pathlib.Path, name: str, find: str, replace: str
+) -> None:
+    """A MUTATED COPY must disagree with the twin on a case the real one passes.
+
+    THE REAL FILE IS NEVER TOUCHED: the whole package is copied under
+    `tmp_path`, mutated there, run in a child interpreter, and the real file's
+    sha256 is re-asserted at the end.
+    """
+    real = paths.from_root(".ci/rediacc_ci/core/toolchain.py")
+    before = hashlib.sha256(real.read_bytes()).hexdigest()
+
+    package = tmp_path / "pkg" / "rediacc_ci"
+    shutil.copytree(
+        paths.from_root(".ci/rediacc_ci"),
+        package,
+        ignore=shutil.ignore_patterns("__pycache__", "tests"),
+    )
+    (package / "tests").mkdir()
+    (package / "tests" / "__init__.py").write_text("", encoding="utf-8")
+    target = package / "core" / "toolchain.py"
+    text = target.read_text(encoding="utf-8")
+    assert text.count(find) == 1, "the mutation anchor %r moved" % name
+    target.write_text(text.replace(find, replace), encoding="utf-8")
+
+    # One stub per tool, plus a node at the WRONG major so the third mutation
+    # has a case to be wrong about.
+    for tool, bodies in PROBE_FIXTURES.items():
+        _stub_dir(tmp_path, tool, bodies[0])
+    _stub_dir(tmp_path, "node", 'printf "v20.1.1\\n"')
+    path_env = "%s:%s" % (tmp_path / "bin", SYSTEM_PATH)
+
+    probe = tmp_path / "probe.py"
+    probe.write_text(
+        "import json, sys\n"
+        "sys.path.insert(0, %r)\n"
+        "from rediacc_ci.core import toolchain as m\n"
+        "tools, path_env = json.load(sys.stdin)\n"
+        "out = {}\n"
+        "for tool in tools:\n"
+        "    answer = m.probe_version(tool, %r + '/' + tool)\n"
+        "    result = m.check(tool, path=path_env)\n"
+        "    out[tool] = [answer, result.binary, result.rc, list(result.messages)]\n"
+        "json.dump(out, sys.stdout)\n" % (str(tmp_path / "pkg"), str(tmp_path / "bin")),
+        encoding="utf-8",
+    )
+    tools = sorted(PROBE_FIXTURES)
+    proc = subprocess.run(
+        [sys.executable, str(probe)],
+        input=json.dumps([tools, path_env]),
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+    )
+    assert proc.returncode == 0, proc.stderr
+    mutant = json.loads(proc.stdout)
+
+    honest_agrees = 0
+    mutant_disagrees = 0
+    for tool in tools:
+        binary = str(tmp_path / "bin" / tool)
+        brc, bout, _berr = _bash(
+            "%s; toolchain_probe_version %s %s" % (SOURCE_SHIM, _q(tool), _q(binary))
+        )
+        crc, cout, cerr = _bash(
+            "%s; PATH=%s toolchain_check %s" % (SOURCE_SHIM, _q(path_env), _q(tool))
+        )
+        honest = toolchain.probe_version(tool, binary)
+        honest_check = toolchain.check(tool, path=path_env)
+        if (bout, brc) == ((honest or ""), (0 if honest else 1)):
+            honest_agrees += 1
+        assert (cout, cerr, crc) == (
+            honest_check.binary or "",
+            "".join(m + "\n" for m in honest_check.messages),
+            honest_check.rc,
+        ), "the UNMUTATED check already disagrees on %s" % tool
+        got_probe, got_bin, got_rc, got_msgs = mutant[tool]
+        if (bout, brc) != ((got_probe or ""), (0 if got_probe else 1)):
+            mutant_disagrees += 1
+        if (cout, cerr, crc) != (got_bin or "", "".join(m + "\n" for m in got_msgs), got_rc):
+            mutant_disagrees += 1
+
+    assert honest_agrees == len(tools), "the UNMUTATED module already disagrees; fix that first"
+    assert mutant_disagrees > 0, "the mutation %r changed nothing the differential can see" % name
+    assert hashlib.sha256(real.read_bytes()).hexdigest() == before, "the real port was modified"
+    assert real.read_text(encoding="utf-8").count(find) == 1
+
+
+# ---------------------------------------------------------------------------
+# The CLI verbs the acquisition half added
+# ---------------------------------------------------------------------------
+
+
+def _module_cli(args: list[str], **env: str) -> subprocess.CompletedProcess:
+    """`python3 -m rediacc_ci.core.toolchain <args>` with an EXPLICIT environment.
+
+    The environment is replaced rather than extended, for the reason
+    `differential.env_for` gives: a case that inherits the developer's shell
+    passes or fails depending on whether they happen to export $CI_TEMP.
+    """
+    base = {
+        "PATH": SYSTEM_PATH,
+        "HOME": diff.BASE_ENV["HOME"],
+        "LC_ALL": "C",
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
+    base.update(env)
+    return subprocess.run(
+        [sys.executable, "-m", "rediacc_ci.core.toolchain", *args],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(paths.from_root(".ci")),
+        env=base,
+    )
+
+
+def test_cli_lane_and_cache_dir_agree_with_the_functions() -> None:
+    """Both verbs are read with `v="$(...)"`, so stdout must carry only a value."""
+    lane = _module_cli(["lane"])
+    assert (lane.returncode, lane.stderr) == (0, "")
+    assert lane.stdout.strip() in ("ci", "devbox", "host")
+
+    cache = _module_cli(["cache-dir"], CI_TEMP="/fixture-temp")
+    assert (cache.returncode, cache.stderr) == (0, "")
+    assert cache.stdout.strip() == "/fixture-temp/rediacc-toolchain"
+
+
+def test_cli_check_puts_the_path_on_stdout_and_the_refusal_on_stderr() -> None:
+    """`bin="$(... check X)" || die` must never capture a diagnostic as a value."""
+    absent = _module_cli(["check", "shfmt"])
+    assert absent.returncode == 1
+    assert absent.stdout == ""
+    assert absent.stderr.startswith("toolchain: shfmt is not on PATH (pinned at ")
+
+    unknown = _module_cli(["check", "cargo"])
+    assert unknown.returncode == 2
+    assert unknown.stdout == ""
+    assert unknown.stderr == "toolchain: no pin defined for 'cargo'\n"
+
+
+def test_cli_probe_reports_a_tool_with_no_arm_as_2_not_1(tmp_path: pathlib.Path) -> None:
+    """1 is "it would not say a version"; 2 is "I have no probe for that at all"."""
+    binary = _stub_dir(tmp_path, "shfmt", 'printf "v3.13.1\\n"')
+    good = _module_cli(["probe", "shfmt", str(binary)])
+    assert (good.returncode, good.stdout.strip()) == (0, "3.13.1")
+
+    silent = _stub_dir(tmp_path, "actionlint", 'printf "no version\\n"')
+    quiet = _module_cli(["probe", "actionlint", str(silent)])
+    assert (quiet.returncode, quiet.stdout) == (1, "")
+
+    unknown = _module_cli(["probe", "cargo", "/bin/true"])
+    assert unknown.returncode == 2
+    assert "no version probe" in unknown.stderr
+
+
+def test_cli_report_refuses_rather_than_printing_a_table_of_blanks(
+    tmp_path: pathlib.Path,
+) -> None:
+    """A missing pins file is rc 2, matching `toolchain_load || return 2` at :186.
+
+    Driven against a COPY of the package under a fake root, so the real pins
+    file is never moved. `$REDIACC_CI_ROOT` is the same seam `paths` documents
+    for exactly this.
+    """
+    root = tmp_path / "fakeroot"
+    shutil.copytree(
+        paths.from_root(".ci/rediacc_ci"),
+        root / ".ci" / "rediacc_ci",
+        ignore=shutil.ignore_patterns("__pycache__", "tests"),
+    )
+    (root / ".ci" / "rediacc_ci" / "tests").mkdir()
+    (root / ".ci" / "rediacc_ci" / "tests" / "__init__.py").write_text("", encoding="utf-8")
+    proc = subprocess.run(
+        [sys.executable, "-m", "rediacc_ci.core.toolchain", "report"],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(root / ".ci"),
+        env={
+            "PATH": SYSTEM_PATH,
+            "HOME": diff.BASE_ENV["HOME"],
+            "LC_ALL": "C",
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "REDIACC_CI_ROOT": str(root),
+        },
+    )
+    assert proc.returncode == 2, proc.stdout + proc.stderr
+    assert proc.stdout == "", "a refusal printed a table"
+    assert "toolchain" in proc.stderr
+    # AND THE CONTROL: the same invocation against the REAL root prints a table.
+    real = _module_cli(["report"])
+    assert real.returncode == 0
+    assert "lane: " in real.stdout

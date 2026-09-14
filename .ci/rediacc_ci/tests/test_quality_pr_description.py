@@ -158,13 +158,21 @@ CASES = [
     ),
     ("an unfetchable PR is a failure, not a skip", {}, 1),
     (
-        "an empty commit-time read skips rather than guessing",
+        "an empty commit-time read is a failure, not a skip",
         {
             "pr-view.json": pr_view(6),
             "latest-commit.txt": "",
             "graphql.json": graphql("2026-09-06T10:00:00Z"),
         },
-        0,
+        1,
+    ),
+    (
+        "an unfetchable commit-time read is a failure, not a skip",
+        {
+            "pr-view.json": pr_view(6),
+            "graphql.json": graphql("2026-09-06T10:00:00Z"),
+        },
+        1,
     ),
     (
         "an unparseable timestamp skips rather than comparing zero",

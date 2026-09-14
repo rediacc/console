@@ -1,4 +1,4 @@
-"""Differential: `.ci/scripts/infra/ci_stop.py` against its twin `ci-stop.sh`.
+"""Differential: `.ci/rediacc_ci/infra/ci_stop.py` against its twin `ci-stop.sh`.
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new
 code is correct", it is "the new code says what the old code said". Only running
@@ -36,7 +36,7 @@ from rediacc_ci import paths
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-stop.sh"
-PORT = ROOT / ".ci" / "scripts" / "infra" / "ci_stop.py"
+PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "ci_stop.py"
 
 # The recording `docker`. Written as Python, not bash: ruling 7 puts new
 # instruments in Python, and an untracked fixture is not an excuse to write the
