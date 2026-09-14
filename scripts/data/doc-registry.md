@@ -1100,10 +1100,13 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `AGG_BIN` | toolchain | - |
 | `ALLOW_STALE` | ci-runner | - |
 | `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` | secret | - |
+| `APK_RSA_PRIVATE_KEY` | secret | - |
 | `APPDATA` | machine-local | - |
 | `APP_TOKEN` | secret | - |
 | `APP_VERSION` | ci-runner | - |
+| `ARG_BUNDLE` | ci-runner | - |
 | `ARG_CONNECT_TIMEOUT` | ci-runner | - |
+| `ARG_VERIFY` | ci-runner | - |
 | `ATTEMPTS` | ci-runner | - |
 | `AUTOPILOT_ALLOW_PUSH` | ci-runner | - |
 | `AUTOPILOT_ALLOW_STATE` | ci-runner | - |
@@ -1139,6 +1142,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `BACKUP_BUCKET_STABLE` | ci-runner | - |
 | `BACKUP_STORAGE_SUITE` | harness | - |
 | `BATTERY_CLEAN_TREE_ROOT` | gate-seam | - |
+| `BINARY_PATH` | ci-runner | - |
 | `BOT` | ci-runner | - |
 | `BP_ACCESS_EMAILS` | harness | - |
 | `BP_ACTOR` | harness | - |
@@ -1151,27 +1155,36 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `BP_SEND_EMAIL` | harness | - |
 | `BP_SERVICES` | harness | - |
 | `BP_TUNNEL_MODE` | harness | - |
+| `BRANCH_MAX_AGE_DAYS` | ci-runner | - |
 | `BREAKPOINT_DEBUG_SHELL` | harness | - |
 | `BREAKPOINT_DESKTOP` | harness | - |
 | `BRIDGE_TEST_SKIP_RESET` | harness | - |
 | `BRIDGE_TIMEOUT` | harness | - |
+| `BUCKET` | ci-runner | - |
 | `BWS_ACCESS_TOKEN` | secret | - |
+| `BWS_BIN` | toolchain | - |
+| `BWS_ENV_ROOT` | gate-seam | - |
 | `BWS_MAP_ROOT` | gate-seam | - |
 | `BWS_MIN_CALLERS` | gate-seam | - |
 | `BWS_MIN_MAP_ENTRIES` | gate-seam | - |
 | `CAMPAIGN` | ci-runner | - |
+| `CC_MUTABLE` | harness | - |
 | `CEPH_MODE` | harness | - |
 | `CEPH_OSD_MEMORY_TARGET` | harness | - |
 | `CEPH_POOL_PG_NUM` | harness | - |
 | `CHANNEL` | ci-runner | - |
 | `CHECKS_TOKEN` | secret | - |
 | `CHECK_DEPS_FORCE_PROBE_FAILURE` | gate-seam | - |
+| `CHECK_NAME` | gate-seam | - |
 | `CHOWN_PATH` | ci-runner | - |
 | `CI` | ci-runner | - |
+| `CI_ARCH` | ci-runner | - |
+| `CI_DOCKER_DIR` | ci-runner | - |
 | `CI_JOBS` | ci-runner | - |
 | `CI_JOB_AGGREGATION_ASSERT` | gate-seam | - |
 | `CI_JOB_AGGREGATION_WORKFLOW` | gate-seam | - |
 | `CI_MODE` | ci-runner | - |
+| `CI_OS` | ci-runner | - |
 | `CI_PARITY_MANIFEST` | gate-seam | - |
 | `CI_PARITY_ROOT` | gate-seam | - |
 | `CI_PROFILE` | ci-runner | - |
@@ -1182,6 +1195,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `CI_RUNNER_MANIFEST` | ci-runner | - |
 | `CI_RUN_ID` | ci-runner | - |
 | `CI_SHA` | ci-runner | - |
+| `CI_TEMP` | ci-runner | - |
 | `CI_TRACE_MAX_READ_FAILURES` | ci-runner | - |
 | `CI_TRACE_POLL_S` | ci-runner | - |
 | `CI_TRACE_TIMEOUT_S` | ci-runner | - |
@@ -1192,6 +1206,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `CLAUDE_CODE_SESSION_ID` | harness | - |
 | `CLAUDE_CONFIG_DIR` | harness | - |
 | `CLAUDE_PROJECT_DIR` | harness | - |
+| `CLAUDE_REVIEW_GATE_SCRIPT_DIR` | gate-seam | - |
 | `CLAUDE_TRANSCRIPT_PATH` | harness | - |
 | `CLI_SUITE` | harness | - |
 | `CLI_VERSION` | ci-runner | - |
@@ -1213,8 +1228,11 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `COMMIT_IDENTITY_FILE` | gate-seam | - |
 | `COMMIT_SHA` | ci-runner | - |
 | `CONFIRMATION` | ci-runner | - |
+| `CONSOLE_ROOT_DIR` | gate-seam | - |
 | `COPILOT_CLI` | product-runtime | - |
 | `CRIU_EXPECTED` | harness | - |
+| `CSI_SANITY_BASE` | harness | - |
+| `CSI_SANITY_IMG` | harness | - |
 | `CTX_BAND_DUMP` | harness | - |
 | `CTX_BAND_STATE_DIR` | harness | - |
 | `CURSOR_TRACE_ID` | product-runtime | - |
@@ -1230,6 +1248,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `DECISION_IDS_ROOT` | gate-seam | - |
 | `DEPLOY_WORKERS_ONLY` | ci-runner | - |
 | `DESKTOP_RESOLUTION` | harness | - |
+| `DETECT_BUMP_MAX_COMMITS` | ci-runner | - |
 | `DEVCONTAINER_BLOCKLIST_FILE` | gate-seam | - |
 | `DEVCONTAINER_DOCKERFILE` | gate-seam | - |
 | `DEVCONTAINER_FRESHNESS_FIXTURE` | gate-seam | - |
@@ -1239,6 +1258,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `DISPATCH_MODEL` | ci-runner | - |
 | `DISPATCH_PR` | ci-runner | - |
 | `DISPATCH_REF` | ci-runner | - |
+| `DISPATCH_RELEASE_DRY_RUN` | ci-runner | - |
 | `DOCKERHUB_PASSWORD` | secret | - |
 | `DOCKERHUB_TOKEN` | secret | - |
 | `DOCKERHUB_USERNAME` | secret | - |
@@ -1251,6 +1271,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `DOCS_RENDER_PARITY_ROOT` | gate-seam | - |
 | `DRILL_EXPECT_NO_KEYRING` | harness | - |
 | `DRY_RUN` | ci-runner | - |
+| `DST_PREFIX` | ci-runner | - |
 | `DUAL_GROUP` | harness | - |
 | `E2E_ACCOUNT_API_TOKEN` | secret | - |
 | `E2E_CLI_BIN` | harness | - |
@@ -1266,6 +1287,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `E2E_SSH_KEY` | secret | - |
 | `E2E_SSH_USER` | harness | - |
 | `EDGE_DATE` | ci-runner | - |
+| `EDGE_RETRIES` | ci-runner | - |
+| `EDGE_RETRY_SLEEP` | ci-runner | - |
 | `EDGE_VERSION` | ci-runner | - |
 | `EDITOR` | machine-local | - |
 | `EFFORT` | ci-runner | - |
@@ -1275,11 +1298,13 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `EMBED_CREDITS_JSON_FILE` | gate-seam | - |
 | `EMBED_FRESHNESS_FIXTURE` | gate-seam | - |
 | `EMBED_PARITY_LOCKFILE` | gate-seam | - |
+| `ENABLE_HTTPS` | harness | - |
 | `ENUM_VACUITY_MIN` | gate-seam | - |
 | `ENV_NAMES_MIN` | gate-seam | - |
 | `ENV_NAMES_ROOT` | gate-seam | - |
 | `EVENT_NAME` | ci-runner | - |
 | `EXECUTION_FILE` | ci-runner | - |
+| `EXTERNAL_CALLERS_FILE` | gate-seam | - |
 | `EXTERNAL_QUALITY_MODE` | ci-runner | - |
 | `FAKE_BIN_DIR` | gate-seam | - |
 | `FAKE_BIN_RECORDS` | gate-seam | - |
@@ -1309,20 +1334,31 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `GITHUB_AUTOPILOT_APP_ID` | secret | - |
 | `GITHUB_AUTOPILOT_PRIVATE_KEY` | secret | - |
 | `GITHUB_BASE_REF` | ci-runner | - |
+| `GITHUB_ENV` | ci-runner | - |
 | `GITHUB_EVENT_NAME` | ci-runner | - |
+| `GITHUB_EVENT_PATH` | ci-runner | - |
 | `GITHUB_HEAD_REF` | ci-runner | - |
 | `GITHUB_JOB` | ci-runner | - |
+| `GITHUB_OUTPUT` | ci-runner | - |
 | `GITHUB_PAT` | secret | - |
+| `GITHUB_REF` | ci-runner | - |
 | `GITHUB_REF_NAME` | ci-runner | - |
+| `GITHUB_REF_TYPE` | ci-runner | - |
 | `GITHUB_REPOSITORY` | ci-runner | - |
+| `GITHUB_RUN_ATTEMPT` | ci-runner | - |
 | `GITHUB_RUN_ID` | ci-runner | - |
+| `GITHUB_SHA` | ci-runner | - |
 | `GITHUB_STATE` | ci-runner | - |
+| `GITHUB_STEP_SUMMARY` | ci-runner | - |
 | `GITHUB_TOKEN` | secret | - |
+| `GITHUB_WORKSPACE` | ci-runner | - |
 | `GIT_BOT_EMAIL` | ci-runner | - |
 | `GIT_BOT_NAME` | ci-runner | - |
 | `GIT_EDITOR` | machine-local | - |
 | `GL_CLOSURE_PATHS` | gate-seam | - |
 | `GL_ROOT` | gate-seam | - |
+| `GNUPGHOME` | machine-local | - |
+| `GOTOOLCHAIN` | toolchain | - |
 | `GO_VERSION` | toolchain | - |
 | `GROUP_B_BRIDGE` | harness | - |
 | `GROUP_B_NET` | harness | - |
@@ -1335,6 +1371,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `HOME` | machine-local | - |
 | `HOOK_EXEC_COUNTER_DIR` | gate-seam | - |
 | `HOOK_LABEL_DIR` | harness | - |
+| `HTTPS_PORT` | harness | - |
+| `HTTP_PORT` | harness | - |
 | `IMAGE_PATH` | ci-runner | - |
 | `IMAGE_TAG` | ci-runner | - |
 | `INLINE_MAX_LOGIC` | gate-seam | - |
@@ -1363,6 +1401,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `LANGUAGE_POLICY_VALIDATOR` | gate-seam | - |
 | `LC_ALL` | machine-local | - |
 | `LOCALAPPDATA` | machine-local | - |
+| `MACHINE_NAME` | harness | - |
 | `MAP` | ci-runner | - |
 | `MATRIX_DOMAIN` | ci-runner | - |
 | `MATRIX_EDGE_DOMAIN` | ci-runner | - |
@@ -1370,6 +1409,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `MATRIX_ID` | ci-runner | - |
 | `MATRIX_SECRET_SUFFIX` | secret | - |
 | `MATRIX_WORKER_NAME` | ci-runner | - |
+| `MAX_ATTEMPTS` | ci-runner | - |
+| `MAX_DELETES_PER_RUN` | ci-runner | - |
 | `MAX_ROUNDS` | ci-runner | - |
 | `MEDIA_COVERAGE_FILE` | gate-seam | - |
 | `MERGE_SHA` | ci-runner | - |
@@ -1379,6 +1420,12 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `MSYS2_ROOT` | machine-local | - |
 | `MSYSTEM` | machine-local | - |
 | `NEXT_VERSION` | ci-runner | - |
+| `NFPM_APK_KEY_FILE` | secret | - |
+| `NFPM_ARCH` | ci-runner | - |
+| `NFPM_DEB_KEY_FILE` | secret | - |
+| `NFPM_DEB_PASSPHRASE` | secret | - |
+| `NFPM_RPM_KEY_FILE` | secret | - |
+| `NFPM_RPM_PASSPHRASE` | secret | - |
 | `NIGHTLY_CONCLUSION` | ci-runner | - |
 | `NIGHTLY_EVENT` | ci-runner | - |
 | `NIGHTLY_RUN_ID` | ci-runner | - |
@@ -1389,6 +1436,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `NODE_VERSION` | toolchain | - |
 | `NODE_VERSION_MIN` | toolchain | - |
 | `NO_COLOR` | machine-local | - |
+| `NPM_DIR` | ci-runner | - |
 | `OBS_OTLP_CREDENTIALS` | secret | - |
 | `OBS_OTLP_CREDENTIALS_ASIA` | secret | - |
 | `OBS_OTLP_CREDENTIALS_EU` | secret | - |
@@ -1397,12 +1445,22 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `OBS_OTLP_USERNAME` | secret | - |
 | `ONBOARD_NOTICE` | harness | - |
 | `OPS_RESET_TIMEOUT_MS` | product-runtime | - |
+| `OUTPUT_FILE` | ci-runner | - |
+| `OUT_DIR` | ci-runner | - |
 | `PAGE_LOCALE_IMPORTS_ROOT` | gate-seam | - |
 | `PATH` | machine-local | - |
 | `PENDING_RERUN` | ci-runner | - |
 | `PGPASSWORD` | secret | - |
 | `PI_GO_FAIL` | gate-seam | - |
 | `PI_GO_JSON` | gate-seam | - |
+| `PKG_BINARY_NAME` | ci-runner | - |
+| `PKG_DESCRIPTION` | ci-runner | - |
+| `PKG_HOMEPAGE` | ci-runner | - |
+| `PKG_MAINTAINER` | ci-runner | - |
+| `PKG_NAME` | ci-runner | - |
+| `PKG_PRIORITY` | ci-runner | - |
+| `PKG_REPO_MIN_DEBS` | ci-runner | - |
+| `PKG_SECTION` | ci-runner | - |
 | `PLAN_BOXES_BASE` | gate-seam | - |
 | `PLAN_BOXES_MIN_OPEN` | gate-seam | - |
 | `PLAN_BOXES_MIN_PLANS` | gate-seam | - |
@@ -1429,7 +1487,9 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `POSTGRES_USER` | product-runtime | - |
 | `PR` | ci-runner | - |
 | `PREVIEW_URL` | ci-runner | - |
+| `PREVIEW_URL_OVERRIDE` | ci-runner | - |
 | `PRE_SHA` | ci-runner | - |
+| `PROBE_INTERVAL_SECONDS` | ci-runner | - |
 | `PROFILER_COVERAGE_ACTION_DIR` | gate-seam | - |
 | `PROFILER_COVERAGE_ALLOWLIST` | gate-seam | - |
 | `PROFILER_COVERAGE_COVERING_ACTIONS` | gate-seam | - |
@@ -1447,6 +1507,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `PR_NUMBER` | ci-runner | - |
 | `PUBLIC_SITE_URL` | product-runtime | - |
 | `PUBLIC_VIDEO_CDN_BASE_URL` | product-runtime | - |
+| `PUBLISH_DOCKER_REGISTRY` | ci-runner | - |
 | `PWD` | machine-local | - |
 | `PYTEST_BIN` | toolchain | - |
 | `PYTEST_JOBS` | harness | - |
@@ -1456,6 +1517,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `PYTHONPATH` | toolchain | - |
 | `PYYAML_VERSION` | toolchain | - |
 | `PY_CONTROL_PLANTS_ROOT` | gate-seam | - |
+| `QUICK_LANE_FLOOR` | gate-seam | - |
 | `QWEN_TTS_ATTN_IMPL` | harness | - |
 | `QWEN_TTS_BATCH_SIZE` | harness | - |
 | `QWEN_TTS_CLONE_MODEL_ID` | harness | - |
@@ -1477,6 +1539,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `RDC_DEBUG_RENET_PROVISION` | tombstone | - |
 | `RDC_DISABLE_AUTOUPDATE` | tombstone | - |
 | `RDC_PROD` | tombstone | - |
+| `RDC_RENET_LICENSE` | ci-runner | - |
 | `RDC_SKIP_ROUTER_RESTART` | tombstone | - |
 | `RDC_SKIP_SETUP_CHECK` | tombstone | - |
 | `RDC_TIMING_CHART` | tombstone | - |
@@ -1517,6 +1580,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_SKIP_MACHINE_ACTIVATION` | product-runtime | - |
 | `REDIACC_SKIP_ROUTER_RESTART` | product-runtime | - |
 | `REDIACC_SKIP_SETUP_CHECK` | product-runtime | - |
+| `REDIACC_SMOKE_NO_DOCKER` | harness | - |
 | `REDIACC_SSH_LINGER_MS` | product-runtime | - |
 | `REDIACC_SUBSCRIPTION_TOKEN` | tombstone | - |
 | `REDIACC_SUBSCRIPTION_TOKEN_FILE` | tombstone | - |
@@ -1538,14 +1602,17 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_YES` | product-runtime | - |
 | `REGIONS_BAKED_FILE` | gate-seam | - |
 | `REGIONS_ROOT_FILE` | gate-seam | - |
+| `RELEASES_BASE_URL` | ci-runner | - |
 | `RELEASES_BUCKET` | ci-runner | - |
 | `RELEASE_BUILD` | ci-runner | - |
 | `RELEASE_DECIDE_SCRIPT` | gate-seam | - |
 | `RELEASE_GPG_PASSPHRASE` | secret | - |
 | `RELEASE_GPG_PRIVATE_KEY` | secret | - |
+| `RELEASE_GPG_PUBLIC_KEY_FILE` | ci-runner | - |
 | `RELEASE_KEY_ROOT` | gate-seam | - |
 | `RELEASE_MODE` | ci-runner | - |
 | `RELEASE_SIGNING_REQUIRED` | ci-runner | - |
+| `RENET_BINARY` | toolchain | - |
 | `RENET_BINARY_PATH` | harness | - |
 | `RENET_DATA_DIR` | harness | - |
 | `RENET_DIR` | gate-seam | - |
@@ -1553,10 +1620,12 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `RENET_EXPECT_NO_ACCOUNT_SERVER` | harness | - |
 | `RENET_ROOT` | harness | - |
 | `RENET_TAG` | ci-runner | - |
+| `RENET_VERSION` | ci-runner | - |
 | `REPO` | ci-runner | - |
 | `REPO_CHANNEL` | ci-runner | - |
 | `REQUESTED` | ci-runner | - |
 | `REQUIRED_CHECK` | ci-runner | - |
+| `REQUIRED_STREAK` | ci-runner | - |
 | `RERUN_EXECUTED` | ci-runner | - |
 | `RESPROFILE_ROOT` | gate-seam | - |
 | `RESULT_BREAKPOINT_LIFECYCLE` | ci-runner | - |
@@ -1588,10 +1657,13 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `RESULT_WINDOWS_X64` | ci-runner | - |
 | `RETIRE_MIN_WORKFLOWS` | gate-seam | - |
 | `RETIRE_ROOT` | gate-seam | - |
+| `RETRY_REPO` | ci-runner | - |
 | `REVIEW_EPIC` | ci-runner | - |
 | `REVIEW_EPIC_PREFIX` | gate-seam | - |
 | `REVIEW_MODEL` | ci-runner | - |
 | `REVIEW_OUTCOME` | ci-runner | - |
+| `REVIEW_STATUS_GATE_SCRIPT` | gate-seam | - |
+| `REVIEW_STATUS_HYGIENE_DIR` | gate-seam | - |
 | `ROOT_EMAIL` | product-runtime | - |
 | `ROUND` | ci-runner | - |
 | `RSV_FLOOR_FILE` | gate-seam | - |
@@ -1611,6 +1683,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `RUSTFS_ACCESS_KEY` | secret | - |
 | `RUSTFS_SECRET_KEY` | secret | - |
 | `SCOPE_MODE` | ci-runner | - |
+| `SCOPE_SHADOW_OUT` | gate-seam | - |
+| `SCOPE_SHADOW_TIMEOUT` | gate-seam | - |
 | `SECRET_RENAME_MIN_FILES` | gate-seam | - |
 | `SECRET_SCOPE_ROOT` | gate-seam | - |
 | `SELLER_ADDRESS_LINE1` | product-runtime | - |
@@ -1622,8 +1696,10 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `SELLER_POSTAL_CODE` | product-runtime | - |
 | `SELLER_REGISTRATION_NUMBER` | product-runtime | - |
 | `SELLER_VAT_NUMBER` | product-runtime | - |
+| `SERVICE_STATUS_NOW` | gate-seam | - |
 | `SHELLCHECK_VERSION` | toolchain | - |
 | `SHELL_MAX_LINES` | gate-seam | - |
+| `SHFMT_MIN_FILES` | gate-seam | - |
 | `SHFMT_VERSION` | toolchain | - |
 | `SHIM_GOLDEN` | gate-seam | - |
 | `SHIM_NPM_EXIT` | gate-seam | - |
@@ -1641,7 +1717,10 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `SMTP_USER` | secret | - |
 | `SOAK_DAYS` | ci-runner | - |
 | `SOME_ROOT` | gate-seam | note |
+| `SOURCE_DATE_EPOCH` | ci-runner | - |
+| `SRC_PREFIX` | ci-runner | - |
 | `SSH_KEY` | secret | - |
+| `SSH_USER` | harness | - |
 | `STAGING_GUARD_ROOT` | gate-seam | - |
 | `STAGING_GUARD_TARGET` | gate-seam | - |
 | `STATE_isPost` | ci-runner | note |
@@ -1677,6 +1756,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `TARGET` | ci-runner | - |
 | `TARGET_RUN_ID` | ci-runner | - |
 | `TEMPLATE` | ci-runner | - |
+| `TIMEOUT_SECS` | ci-runner | - |
 | `TMPDIR` | machine-local | - |
 | `TOKEN` | secret | - |
 | `TRACE` | gate-seam | - |
@@ -1733,6 +1813,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WATCHDOG_TARGET_RUN_ID` | ci-runner | - |
 | `WATCHDOG_WAIT_PATTERNS` | ci-runner | - |
 | `WEB_TAG` | ci-runner | - |
+| `WFG_PROBE` | gate-seam | - |
 | `WHY_ON_EDIT_CAP` | harness | - |
 | `WHY_ON_EDIT_SEEN_MAX` | harness | - |
 | `WHY_ON_EDIT_SIMILAR` | harness | - |
@@ -1743,6 +1824,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WORKER_IP` | harness | - |
 | `WORKER_NAME` | ci-runner | - |
 | `WORKFLOW_DIR` | gate-seam | - |
+| `WORKFLOW_FILE` | gate-seam | - |
 | `WORKFLOW_INLINE_ONLY` | gate-seam | - |
 | `WORKLIST_AGENTS_DIR` | harness | - |
 | `WORKLIST_AGENT_ADOPT_MAX_MIN` | harness | - |
@@ -1893,6 +1975,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `XDG_STATE_HOME` | machine-local | - |
 | `_WL_SITEPROFILE` | harness | - |
 
-812 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
+894 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
