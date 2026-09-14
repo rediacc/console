@@ -8,7 +8,7 @@ Updated: 2026-09-03
 `scripts/gates/check-client-bundle-budget.ts:62` matches `/\bimport\s+["']/`, but rollup emits
 bare side-effect imports with **no** space (`import"./x.js"`). The homepage's script entry
 is a 129-byte facade whose only three edges are all that form, so the graph walk dead-ends
-and 124,673 B goes unmeasured. Fix the regex. The 082f7aa94 "failure" was the gate telling
+and 124,673 B goes unmeasured. Fix the regex. The 9f52d3bab "failure" was the gate telling
 the truth for the first time; the passing runs are the defect.
 
 ## 1. What was measured

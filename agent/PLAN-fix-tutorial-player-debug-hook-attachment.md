@@ -55,7 +55,11 @@ selectors, and routes -- not a debugging session against the product.
 
 ## Root cause
 
-1. `b1d40b6d4` ("feat(www): ship guided tutorial player...", 2026-03-05) added
+1. `b1d40b6d4` ("feat(www): ship guided tutorial player...", 2026-03-05; not an
+   ancestor of `origin/main`, kept alive only via the stale `gitlab/0227-1`
+   remote-tracking ref rather than a live branch -- noted 2026-09-14 rather
+   than fake-repointed, since no equivalent commit with this subject exists on
+   `origin/main`) added
    `TerminalPlayer.tsx` + `terminal-player-shell.tsx` + `terminal-player-audio.tsx`
    + `terminal-player-utils.ts` and, in the same commit, the release gate script
    this plan is fixing (`443` lines at HEAD then). `window.__tutorialDebug`

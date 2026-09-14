@@ -319,3 +319,23 @@ is itself a candidate hook-tuning issue (this plan's own subject has not moved i
 checks), noted for a future session rather than fixed now -- the operator's standing ask
 this session is completing `PLAN-tooling-transformation.md`, not tuning `worklist.py`.
 
+### Re-checked a fifth time 2026-09-14, PR-babysit wave: still unchanged
+
+`scripts/gates/check-shape-duplication.ts:133-143` re-read again: identical four bash-only
+rows, zero Python rows. `ls .ci/shadow/w7p5a-*.observations.jsonl | wc -l` -> 16, nowhere
+near W7P5-c's 82-ledger precondition. This session's driver activity between the fourth
+check and now (W7P6 closeout, the tier-3 PR-babysit wave, the citation-fragility plan and
+its four derived fixes) touched none of this plan's files or its precondition. Status stays
+`executing`, commit 3 stays not started, for the same reason as every prior check.
+
+### Re-checked a sixth time 2026-09-14, later still: still unchanged
+
+Same two facts, re-verified directly rather than assumed stable: `check-shape-duplication.ts`
+FAMILIES table is still the four bash-only rows at the same line range, and the ledger count
+is still 16. Driver activity since the fifth check (a security-advisory sweep across
+`workers/*`, a gate-test-hazard fix in `worklist_env_registry.py`, plan-doc status-parsing
+fixes) touched none of this plan's files or W7P5-c's precondition either. This file's own
+status line is genuinely unchanged, not merely re-timestamped; the repeated re-checks are the
+worklist-staleness trigger firing on unrelated item movement elsewhere, already named as a
+candidate hook-tuning issue two checks ago and still not this session's to fix tonight.
+

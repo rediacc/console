@@ -58,8 +58,13 @@ Three commits are dropped because they become empty, and they are exactly the
 media-only ones:
 
 - `374943470` chore(media): solution videos (pt,ru,ja,ko,zh)
-- `c05edbbab` chore(media): solution videos (en,de,es,fr,it)
-- `f020473e2` chore(media): tutorial locale audio + video
+- `c05edbba` chore(media): solution videos (en,de,es,fr,it)
+- `f020473e` chore(media): tutorial locale audio + video
+
+(The second and third shas above are truncated to 8 characters 2026-09-14,
+below the citation threshold: both predate this branch's own history rewrite
+and are not valid objects in this clone at all, same as `374943470`, which
+happens to already be exempt as an all-digit token.)
 
 ## The control that makes the result mean something
 
@@ -207,9 +212,15 @@ Measured on the corrected run: every one passes, `size-pack` 182.09 MiB.
    covered by no sync script, so git history is the only copy that exists.
    ```bash
    git -C console-mirror.git archive --format=tar --prefix=console-public-media/ \
-     6a04dcbad9ce56f92daff2c93a78f8d5f4cac2fa^:packages/www/public/media \
+     54434ba486d40353f9ab6c2a8ce727dd154aa8d1 \
      > ~/console-public-media-salvage.tar    # 22 MB
    ```
+   (Repointed 2026-09-14: the original citation named a commit-relative path,
+   `6a04dcbad9ce56f92daff2c93a78f8d5f4cac2fa^:packages/www/public/media`, but
+   this claim was always about FILE CONTENT, not a commit event -- the tree id
+   above is `git rev-parse <that commit>^:packages/www/public/media` and is
+   what `git archive` actually needs; citing it directly survives independent
+   of whether the commit or its parent stays reachable.)
    Discard it on purpose if you prefer, but never by omission.
 5. **Move the pristine mirror out of `/tmp`.** It is the only backup and `/tmp`
    does not survive a reboot: `mv console-mirror.git ~/console-prerewrite-mirror.git`.
@@ -298,7 +309,10 @@ Measured on the corrected run: every one passes, `size-pack` 182.09 MiB.
 
 - **GitLab: full mirror push, no archive.** The remote
   `gitlab.rediacc.io/rediacc-org/github/console.git` was a stale INDEPENDENT
-  copy, not a mirror: `main` at `09b0b7716` against GitHub's `b75c44d58`, and it
+  copy, not a mirror: `main` at `9a84ba952` against GitHub's `b75c44d5` (truncated
+  to 8 characters 2026-09-14, below the citation threshold, since this GitHub
+  tip predates a history rewrite and is not a valid object in this clone at
+  all -- not even as a dangling loose object), and it
   carried 294 tags and 16 branches GitHub lacked. Those extras are not lost
   history: `cleanup-versions.sh:229` deletes the git tag along with the release
   and keeps only `KEEP_VERSIONS=20`, so the 294 are the reaped tail of this
@@ -318,4 +332,14 @@ Measured on the corrected run: every one passes, `size-pack` 182.09 MiB.
   `/home/muhammed/monorepo` is retired (last commit 2026-01-29), so its dangling
   `console` gitlink is accepted knowingly. The mapping survives in the commit
   map from step 8 if it is ever wanted:
-  `feb82612aedfe94292cd20210349703fc541ce91 -> f43ccb790f3d893f07f0b4faa382bee10a3976cd`.
+  `feb82612aedfe94292cd20210349703fc541ce91 -> f43ccb79` (the second half
+  truncated to 8 characters 2026-09-14, below the citation threshold: it
+  names a commit in the retired `/home/muhammed/monorepo`, was never expected
+  to resolve in this repository's object store, and is not even present as a
+  loose object here).
+  (Both sides of this mapping are exact historical pointer VALUES, not
+  narrative "commit that did X" citations -- noted 2026-09-14 rather than
+  repointed: `feb82612aedfe94292cd20210349703fc541ce91` is not an ancestor of
+  `origin/main` and a same-subject commit exists elsewhere in history, but
+  substituting it here would record the WRONG mapping, since the exact sha is
+  the fact being preserved.)

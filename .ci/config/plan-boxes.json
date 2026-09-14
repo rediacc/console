@@ -1023,6 +1023,46 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/PLAN-w7p4w-docker-cutover.md": {
+      "status": "draft",
+      "owner": "unowned",
+      "open": 12,
+      "done": 0,
+      "open_sigs": [
+        "079a9042",
+        "147dd350",
+        "223d6966",
+        "2c7c6761",
+        "6cec8f82",
+        "86e49bb5",
+        "9574cdc2",
+        "9a712c29",
+        "ad18a60c",
+        "c1a60359",
+        "e4461a4c",
+        "ee684f8e"
+      ],
+      "done_sigs": []
+    },
+    "agent/PLAN-w9p2-script-relocation.md": {
+      "status": "draft",
+      "owner": "unowned",
+      "open": 10,
+      "done": 0,
+      "open_sigs": [
+        "39b0cd69",
+        "4c8449fd",
+        "52ccb61e",
+        "799fc249",
+        "8626e1f7",
+        "87925b31",
+        "a5a452ac",
+        "a8bb75db",
+        "d7595f6f",
+        "e833223e"
+      ],
+      "done_sigs": []
+    },
     "agent/PLAN-wire-account-vitest-ci.md": {
       "status": "compacted",
       "owner": "97604f47",
