@@ -28,7 +28,7 @@
 /** `<!-- >>> gen-docs: <provider> -->` opens a region owned by that provider. */
 export const OPEN_RE = /^<!--\s*>>>\s*gen-docs:\s*([a-z0-9-]+)\s*-->\s*$/;
 /** `<!-- <<< gen-docs -->` closes it. */
-export const CLOSE_RE = /^<!--\s*<<<\s*gen-docs\s*-->\s*$/;
+const CLOSE_RE = /^<!--\s*<<<\s*gen-docs\s*-->\s*$/;
 /** A comment line immediately after the opening marker is PROSE and is preserved. */
 const COMMENT_RE = /^<!--/;
 

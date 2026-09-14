@@ -196,7 +196,7 @@ const gateWhere = (g: LockEntry): string => {
   return 'local-only';
 };
 
-export const gatesProvider: Provider = {
+const gatesProvider: Provider = {
   id: 'gates',
   scans: `${GATES_LOCK}, the committed projection of the manifest that \`check:ci-gates-lock\` keeps faithful`,
   columns: ['Gate', 'Runs in CI as', 'Is gate', 'Slow', 'Gate test'],
@@ -230,7 +230,7 @@ export const gatesProvider: Provider = {
  * that no human arithmetic sits between the tree and the sentence. It sorts first because `(`
  * precedes every letter and digit in code-unit order, which is the ordering byCodePoint fixes.
  */
-export const gatesSummaryProvider: Provider = {
+const gatesSummaryProvider: Provider = {
   id: 'gates-summary',
   scans: `${GATES_LOCK}, folded to one row per CI lane`,
   // "IS a gate test", not "has one", and the distinction was got wrong once here before the
@@ -404,7 +404,7 @@ const reachability = (root: string, wired: Set<string>, files: string[]): Map<st
   return reached;
 };
 
-export const hookGuardsProvider: Provider = {
+const hookGuardsProvider: Provider = {
   id: 'hook-guards',
   scans:
     'the `hooks` wiring in .claude/settings.json, closed transitively over the tracked files under .claude/hooks/ and .claude/rediacc_hooks/ (.claude/oracles/ excluded on purpose: those twins are wired to no event by design)',
@@ -477,7 +477,7 @@ export const hookGuardsProvider: Provider = {
  * commands would under-report; `wiredHooks` already splits a command into every path it
  * names, for the same reason.
  */
-export const hookSummaryProvider: Provider = {
+const hookSummaryProvider: Provider = {
   id: 'hook-summary',
   scans:
     'the `hooks` wiring in .claude/settings.json, folded to one row per event, with the unreached residue',
@@ -601,7 +601,7 @@ const commentForm = (rel: string, text: string): string => {
   return 'prose only (no live entry)';
 };
 
-export const suppressionsProvider: Provider = {
+const suppressionsProvider: Provider = {
   id: 'suppressions',
   scans: 'every tracked non-source, non-prose file carrying a `BLOCKER:` line',
   columns: ['Mechanism', 'BLOCKER lines', 'Comment form'],
@@ -639,7 +639,7 @@ export const suppressionsProvider: Provider = {
 
 /* ----------------------------------------------------------------- ci tree */
 
-export const ciTreeProvider: Provider = {
+const ciTreeProvider: Provider = {
   id: 'ci-tree',
   scans: 'every tracked path under .ci/, grouped by directory',
   columns: ['Directory', 'Files', 'Extensions'],
@@ -736,7 +736,7 @@ const POLICY_README = 'README.md';
 const countEntries = (text: string): number =>
   text.split('\n').filter((l) => l.trim() !== '' && !l.trim().startsWith('#')).length;
 
-export const policyProvider: Provider = {
+const policyProvider: Provider = {
   id: 'policy',
   scans:
     'every tracked file in the policy directory, against `POLICY_FILES` in both seams ' +
@@ -841,7 +841,7 @@ const lockStrings = (root: string): Set<string> => {
   return out;
 };
 
-export const testSplitProvider: Provider = {
+const testSplitProvider: Provider = {
   id: 'test-split',
   scans:
     'every tracked `test-*` / `test_*` file under the roots named by ' +
@@ -1019,7 +1019,7 @@ export function portedVerbs(source: string): string[] {
 }
 
 /** `NAME=value` pairs from a shell env file, comments and blanks dropped. */
-export function envPins(source: string): Map<string, string> {
+function envPins(source: string): Map<string, string> {
   const out = new Map<string, string>();
   for (const line of source.split('\n')) {
     const m = /^([A-Z][A-Z0-9_]*)=(.*)$/.exec(line.trim());
@@ -1051,7 +1051,7 @@ export function bootstrapPins(bootstrap: string, toolchain: string): [string, st
   return out;
 }
 
-export const bootstrapProvider: Provider = {
+const bootstrapProvider: Provider = {
   id: 'bootstrap',
   scans:
     '`run.sh`, its `PORTED_VERBS` table, the legacy dispatcher and the pins ' +
@@ -1131,7 +1131,7 @@ export const bootstrapProvider: Provider = {
 
 const WORKFLOW_DIR = '.github/workflows';
 
-export interface WorkflowJob {
+interface WorkflowJob {
   id: string;
   needs: string[];
   /** The reusable workflow this job calls, repo-relative, or '' for a normal job. */
@@ -1250,7 +1250,7 @@ export function jobLevels(wf: WorkflowFile): Map<string, number> {
   return level;
 }
 
-export const jobGraphProvider: Provider = {
+const jobGraphProvider: Provider = {
   id: 'job-graph',
   scans:
     'every `.github/workflows/*.yml` that calls a reusable workflow, folded to one row per ' +
@@ -1346,7 +1346,7 @@ export function ignoredMediaDirs(source: string): string[] {
   return out.sort(byCodePoint);
 }
 
-export const mediaProvider: Provider = {
+const mediaProvider: Provider = {
   id: 'media',
   scans:
     'the two R2 sync scripts and `packages/www/.gitignore`, one row per media directory in ' +
@@ -1451,7 +1451,7 @@ const pyBound = (rhs: string): string => {
   return `\`${dflt}\`, override \`${m[1]}\``;
 };
 
-export const planRecordGrammarProvider: Provider = {
+const planRecordGrammarProvider: Provider = {
   id: 'plan-record-grammar',
   scans: `the record grammar in ${PLANREC_SEAM}: its bounds, header fields, sections, trailer keys and annotation lines`,
   columns: ['Element', 'Kind', 'Rule', 'Read from'],
@@ -1788,7 +1788,7 @@ const jsonTokens = (text: string): RegExp[] => {
   return out;
 };
 
-export const jsonInventoryProvider: Provider = {
+const jsonInventoryProvider: Provider = {
   id: 'json-inventory',
   scans:
     'every tracked `.json`/`.jsonc` file in the four homes the driver contract names (the ' +
@@ -1947,7 +1947,7 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
  * largest, so a total floor would never notice the smallest one disappearing. The same
  * reasoning put a per-home floor in the json inventory above.
  */
-export const readEnvManifest = (root: string): EnvManifest => {
+const readEnvManifest = (root: string): EnvManifest => {
   const text = readSeam(root, ENV_MANIFEST);
   let parsed: unknown;
   try {
@@ -2048,7 +2048,7 @@ export const readEnvManifest = (root: string): EnvManifest => {
   };
 };
 
-export const envManifestProvider: Provider = {
+const envManifestProvider: Provider = {
   id: 'env-manifest',
   scans:
     'the shard classification in `.ci/config/env-manifest.json`, the committed projection ' +

@@ -51,7 +51,7 @@ export interface DomainPartition {
 }
 
 /** Where the partition lives. One constant, so a move is one edit. */
-export const DOMAINS_PATH = repoPath('scripts', 'data', 'domains.json');
+const DOMAINS_PATH = repoPath('scripts', 'data', 'domains.json');
 
 /**
  * Compile one pattern to an anchored regular expression.

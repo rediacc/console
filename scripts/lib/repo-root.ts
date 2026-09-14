@@ -59,7 +59,7 @@ import path from 'node:path';
  * @throws If no ancestor carries both markers, which means this file has been
  *   copied out of the repository and silently guessing would be worse.
  */
-export function findRepoRoot(from: string): string {
+function findRepoRoot(from: string): string {
   let dir = path.resolve(from);
   for (;;) {
     if (fs.existsSync(path.join(dir, 'package.json')) && fs.existsSync(path.join(dir, '.ci'))) {
@@ -84,7 +84,7 @@ export function findRepoRoot(from: string): string {
 }
 
 /** Absolute path of the repository root. */
-export const REPO_ROOT = findRepoRoot(import.meta.dirname);
+const REPO_ROOT = findRepoRoot(import.meta.dirname);
 
 /**
  * An absolute path under the repository root.
@@ -92,16 +92,6 @@ export const REPO_ROOT = findRepoRoot(import.meta.dirname);
  * @param segments Path segments relative to the repository root.
  */
 export const repoPath = (...segments: string[]): string => path.resolve(REPO_ROOT, ...segments);
-
-/**
- * A repository-relative path, for messages a human has to act on.
- *
- * Every gate that prints an absolute path makes its own output un-pasteable
- * into a `git` command, so this is not cosmetic.
- *
- * @param absolute An absolute path.
- */
-export const rel = (absolute: string): string => path.relative(REPO_ROOT, absolute);
 
 /**
  * The root a gate should use, honouring an environment override.

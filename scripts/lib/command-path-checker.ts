@@ -208,7 +208,7 @@ const PY_CONTROL_DEF = /^def (?:selftest|run_controls|controls?)\s*\(/;
 /**
  * Zero-based line indices a Python scan must not read: control-function bodies.
  */
-export function pythonSkippedLines(content: string): Set<number> {
+function pythonSkippedLines(content: string): Set<number> {
   const skip = new Set<number>();
   const lines = content.split(/\r?\n/);
   let inControl = false;

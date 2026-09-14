@@ -111,7 +111,7 @@ function canonical(args: string[], input?: string): string {
 let cachedContract: BlockerContract | null = null;
 
 /** The tables and the message text, fetched once per process. */
-export function blockerContract(): BlockerContract {
+function blockerContract(): BlockerContract {
   if (cachedContract) return cachedContract;
   const parsed = JSON.parse(canonical(['contract'])) as BlockerContract;
   if (parsed.version !== SUPPORTED_CONTRACT_VERSION) {
