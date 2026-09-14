@@ -107,7 +107,17 @@ def run_blocks(text):
     A fallback lives in the SAME block as the rewrite it protects, because that is
     the only place it can run between two attempts of the same loop.
     """
-    joined = re.sub(r"\\\s*\n", " ", text)
+    # COMMENTS ARE STRIPPED BEFORE THE JOIN, because that is the order Docker
+    # itself uses: a comment line inside a continued instruction is REMOVED, and
+    # the continuation closes over it. Joining first instead made a mid-RUN
+    # comment terminate the block, and everything after it -- in .devcontainer/
+    # Dockerfile, the entire fallback arm -- fell outside the block the gate then
+    # judged. The gate reported that file as "pinned to a SINGLE mirror" while
+    # its fallback sat 60 lines further down the SAME RUN, and pointed at that
+    # same file as the example to copy. A parser that ends a block early does not
+    # under-report; it reports the opposite of the truth.
+    decommented = "\n".join(ln for ln in text.split("\n") if not ln.lstrip().startswith("#"))
+    joined = re.sub(r"\\\s*\n", " ", decommented)
     return [ln for ln in joined.split("\n") if ln.lstrip().startswith("RUN ")]
 
 
@@ -430,6 +440,31 @@ def selftest():
         "continuations are joined, so a multi-line block reads as one",
         len(run_blocks(both)) == 1,
         run_blocks(both),
+    )
+    # A COMMENT INSIDE THE RUN, which is the shape that made this gate report the
+    # opposite of the truth. Docker removes such a line and closes the
+    # continuation over it; joining first instead ended the block there, so a
+    # fallback below the comment fell outside the block and a correct Dockerfile
+    # was reported "pinned to a SINGLE mirror". Both directions, because the
+    # repair must not also swallow the finding it exists to make.
+    commented = both.replace(
+        " && for i in 1 2 3", "    # a comment Docker strips\n    && for i in 1 2 3", 1
+    )
+    check(
+        "a comment INSIDE a RUN does not end the block",
+        len(run_blocks(commented)) == 1,
+        run_blocks(commented),
+    )
+    check(
+        "...and the fallback below that comment is still seen",
+        offenders(commented) == [],
+        offenders(commented),
+    )
+    pinned_with_comment = commented.replace("http://archive.ubuntu.com/ubuntu|g", "x|g")
+    check(
+        "CONTROL: a block pinned to one host is STILL reported when it has a comment",
+        offenders(pinned_with_comment) != [],
+        offenders(pinned_with_comment),
     )
     print("  %s" % ("all mirror-resilience controls passed" if ok else "*** FAILURES ***"))
     return ok
