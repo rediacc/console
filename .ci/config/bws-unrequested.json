@@ -109,12 +109,5 @@
       "reason": "an endpoint identifier, not a credential."
     }
   },
-  "no_fetch_jobs": {
-    ".github/workflows/breakpoint.yml#session": {
-      "reason": "BLOCKER: this job's whole purpose is to put a human on a shell inside the runner ('Start debug shell'), and the bws-secrets action exports through GITHUB_ENV, which reaches every later step of the job. Fetching here would hand that human the GitHub App private key -- which mints tokens for any preset and any repository -- where the shell today only has a readonly one-hour token for console and elite, plus the Cloudflare tunnel token and the SES EU pair. Every real consumer in this job keeps its credential in its own step `env:`, which is step-scoped and does not leak that way. Cutting this job over needs a different shape, not a fetch: mint the app token in a job with no shell in it and pass the token down."
-    },
-    ".ci/breakpoint/workflow/breakpoint.yml#session": {
-      "reason": "BLOCKER: the frozen template the .github copy above is vendored from; check-breakpoint-drift.sh requires the two to be byte-identical, so the exemption has to name both. Same reason, same job."
-    }
-  }
+  "no_fetch_jobs": {}
 }

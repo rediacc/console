@@ -221,7 +221,7 @@ function main(): number {
         'SHRINK-ONLY. Workflow reads of secrets that no longer exist: the rediacc org ' +
         'action secrets were all deleted 2026-09-05, so every id here resolves to the ' +
         'EMPTY STRING at run time. Fetch from Bitwarden instead; the name mapping is ' +
-        '.ci/config/bws-secret-map.json and .ci/config/github-secret-preimage.json. ' +
+        '.ci/config/bws-secret-map.json. ' +
         'The goal state is an empty list.',
       current,
       firstSeed: process.argv.includes('--first-seed'),

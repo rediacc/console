@@ -144,9 +144,10 @@ VARS_CTX = re.compile(r"(?<![A-Za-z0-9_.])vars\s*[.\[]\s*['\"]?$", re.IGNORECASE
 # `HTTP 422: Secret names must not start with GITHUB_.` (probed 2026-09-02).
 #
 # Same shape as VARS_CTX one line up, and for the same reason: a name this tool
-# does not own is reported, never rewritten. The surviving old spellings are
-# recorded in .ci/config/github-secret-preimage.json, which check_bws_map.py
-# asserts in both directions.
+# does not own is reported, never rewritten. Surviving old spellings used to be
+# recorded in .ci/config/github-secret-preimage.json; that file was DELETED once
+# the last rename landed, which its own docstring called the end state. There is
+# no dictionary to consult any more because there is nothing left to translate.
 SECRETS_CTX = re.compile(r"(?<![A-Za-z0-9_.])secrets\s*[.\[]\s*['\"]?$", re.IGNORECASE)
 
 INDIRECTION = re.compile(r"\$\{!|key_var=|_VAR=\"|\bSUFFIX\b.*\$\{|\$\{[A-Z_]+_\$\{SUFFIX\}")
