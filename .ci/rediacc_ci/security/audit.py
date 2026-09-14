@@ -203,6 +203,7 @@ import sys
 
 from rediacc_ci import paths
 from rediacc_ci.core import advisory, age, blocker_validator, release_age
+from rediacc_ci.policy_paths import policy_rel
 
 # THE EM DASH IS BUILT, NEVER TYPED. Nine of the twin's messages carry U+2014 and
 # byte equality is the whole claim of this file, but the repo's house rule bans
@@ -223,10 +224,17 @@ PROD_REPORT = "audit-prod.json"
 ALL_REPORT = "audit-report.json"
 
 # The two allowlists, by the paths the twin passes -- which appear verbatim in
-# error messages, so they are constants rather than composed from a policy dir.
-PROD_ALLOWLIST = ".ci/policy/.audit-prod-allowlist"
-DEV_ALLOWLIST = ".ci/policy/.audit-allowlist"
-DEPS_BLOCKLIST = ".ci/policy/.deps-upgrade-blocklist"
+# error messages, so the STRING must not change.
+#
+# `policy_rel`, not `policy_path`: check:ci-policy-inventory refuses a hand-built
+# policy path so the directory is written down once, and the seam satisfies that.
+# But `policy_path` answers an ABSOLUTE path, which would rewrite every message
+# these appear in and diverge from the twin -- the same reason manifest.ts's
+# `paths:` selector is exempt by name. `policy_rel` is the repo-relative form,
+# and it returns these three byte-for-byte (driven, not assumed).
+PROD_ALLOWLIST = policy_rel(".audit-prod-allowlist")
+DEV_ALLOWLIST = policy_rel(".audit-allowlist")
+DEPS_BLOCKLIST = policy_rel(".deps-upgrade-blocklist")
 
 # `npm install -g npm@11.17.0` (audit.sh:387). Pinned in the twin, pinned here;
 # see the BLOCKER above it about npm 10's Sigstore client.

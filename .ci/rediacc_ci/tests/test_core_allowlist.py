@@ -946,7 +946,7 @@ def _record() -> int:
     # `dee3ade8b` moved all fifteen into `.ci/policy/`. The live differential above
     # already resolves by basename through `git ls-files` and kept working; only
     # this recorder was left on the hardcoded path, so `--record` died on its first
-    # file with `FileNotFoundError: .../.actions-upgrade-blocklist` and every golden
+    # file with `FileNotFoundError` on `.ci/policy/.actions-upgrade-blocklist`, and every golden
     # became unrefreshable. That is not a cosmetic outage: eight corpora were
     # legitimately refreshed afterwards and their `corpus-sha256` headers could not
     # follow, which is what `test_ts_records_golden_matches_the_python_records_projection`
