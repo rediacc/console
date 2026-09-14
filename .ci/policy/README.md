@@ -133,7 +133,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.profiler-coverage-allowlist` | name per line | 71 | 4 | both |
 | `.runner-advice-allowlist` | name per line | 0 | 1 | both |
 | `.unverified-download-allowlist` | name per line | 4 | 4 | both |
-| `.w7p5a-real-run-blocklist` | NO FILE ON DISK | - | - | both |
+| `.w7p5a-real-run-blocklist` | name per line | 32 | 24 | both |
 | `hook-exec-baseline.json` | JSON table | - | 1 | both |
 | `worklist-env-registry.json` | JSON table | - | 0 | both |
 

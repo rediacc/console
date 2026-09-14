@@ -3805,6 +3805,168 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       pins the workflow to it in both directions), emit the matrix, teach gate-bind the
       driver-computed `when`, and add the aggregator job. `LaneShards` at `:241` is
       currently unexported with a comment naming B2 as the change that may export it.
+      **WAVE 2026-09-14, READ-ONLY (isolated worktree; the primary tree is owned by a
+      pr-babysit agent, so nothing here was implemented). CLAUSE (c) IS CORRECT AS A
+      REQUIREMENT AND IS ALREADY DISCHARGED IN CODE. The `Remaining for B2` line above is
+      now the stale part.** The driver-computed `when` this box asks for EXISTS:
+      `shardAssignment` at scripts/gate-bind.ts:459 plans the lane through the same
+      `shardPlan` (scripts/ci-runner/lanes.ts:431) that `check:ci-quality-complete` re-runs,
+      the `--write` path builds the per-lane map at scripts/gate-bind.ts:1787, and
+      scripts/gate-bind.ts:624 ANDs `matrix.shard == N` onto any header `when` with the
+      header half parenthesised. Nothing in A1, A2 or C1 supersedes or duplicates it.
+      A1's field is still header-only at scripts/lib/gate-header.ts:103 and
+      scripts/ci-runner/gate-spec.ts:84, and ZERO lock entries declare a `when` today, so the
+      conjunct's "header `when` present" branch has never had a real input.
+      What B2 still owes is therefore NOT "teach gate-bind the driver-computed `when`". It is
+      the five pieces below, three of which this box has never named.
+      **NUMBERS RE-DERIVED AGAINST TODAY'S TREE, and two of the four moved again.** The lock
+      is **483 / 473 / 95 / 46** (entries / `gate: true` / slow / paths-declaring) in the
+      working tree and 481/471/95/46 at the branch tip, against the 465/455/95/46 recorded
+      above and the 477 recorded below. Slow and paths are the two that held. Per-lane lock
+      entries: `quality-security` 166, `quality-code` **100** (was 99), `quality-static` 58,
+      `quality-content` 42, `quality-i18n` 40, `quality-www-build` 16, `quality-go` 16,
+      `quality-packages` 14, `quality-branch` 5, `build-renet` 1, plus 13 `test` and 12
+      `local-only`. Workflow steps per lane: `quality-code` **99** (was 98), `quality-static`
+      **65** (was 60), `quality-content` 42, `quality-go` 22, `quality-security` 19,
+      `quality-packages` 18, `quality-i18n` 15, `quality-www-build` 13. The step ranking's
+      SHAPE is unchanged, so the conclusion drawn from it survives; the figures do not.
+      **FINDING 1, AND IT BLOCKS ANY POPULATION OF `SHARD_COUNTS`: THE PLAN IS OVER LOCK IDS,
+      THE WORKFLOW RUNS STEPS, AND THE TWO ARE NOT THE SAME SET.** `shardPlan` shards every
+      lock entry whose `ci.job` is the lane (scripts/ci-runner/lanes.ts:485 builds its units
+      from exactly that set), while `rewriteRegions` can only attach a conjunct to a step it
+      emits inside the region. Measured on the real tree, three distinct ways that diverges:
+      (i) **Many ids share ONE step.** `quality-code` has 100 entries and 99 steps because
+      `check:lint`, `check:lint:cli`, `check:lint:web`, `check:lint:tooling` and
+      `check:lint:account` all carry `ci.step: Lint` (.github/workflows/ci-quality.yml:896,
+      one `run:` of four npm scripts chained with `&&`). `quality-content` has the same shape
+      on `Dead CSS` (3 ids), `quality-security` on `Quality-gate unit tests` (149 ids). A step
+      can hold ONE `if:`, so a plan that puts `check:lint` on leg 1 and `check:lint:cli` on
+      leg 3 is unrealisable: four of the five silently ride leg 1, and
+      scripts/gate-bind.ts:624 cannot notice, because it looks the leg up by the emitting
+      gate's id alone.
+      (ii) **33 of `quality-code`'s 100 entries have no step inside the region** (the region
+      is .github/workflows/ci-quality.yml:791 to :989). They get a leg from the plan and no
+      conjunct in the file, so they run on EVERY leg while the plan believes they ran once.
+      (iii) **The heavy refusal is computed in the wrong currency.** `quality-code`'s "8 heavy
+      gates, so nothing under x8" is 8 heavy IDS: `check:lint` five times (all ONE step),
+      `lint:unused`, `check:types` and `check:ci-account-layer-isolation`. That is FOUR heavy
+      steps, and two of the four (`check:types`, `check:ci-account-layer-isolation`) sit
+      outside the region and are not shardable at all. Counted as the workflow runs them, the
+      conjunctable heavy count is **2**, so the minimum viable shard count for `quality-code`
+      is 2, not 8. The x8 floor this box has been reasoning against is an artifact of the
+      currency, and with it goes the "eight setups" half of the trade.
+      **FINDING 2, THE VACUITY, AND IT IS THE WORST FAILURE THIS MECHANISM CAN HAVE.** In a
+      job with no `strategy.matrix`, GitHub evaluates `matrix.shard` as null, so
+      `matrix.shard == 1` is FALSE and every conjuncted step SKIPS. A `SHARD_COUNTS` entry
+      written before the matrix block lands therefore turns the whole lane green having run
+      nothing. Nothing catches that today: gate-bind never inspects the job for a `strategy:`
+      block, and `check:ci-quality-complete`'s static half asserts only that the aggregator
+      job exists and `needs:` the sharded lane (scripts/gates/check-quality-complete.ts:324
+      and :390). It never asserts that the lane's matrix values equal 1..N. This is also why
+      the control cannot live inside the sharded lane: that gate declares `lane: quality-code`,
+      so once `quality-code` is sharded the static half is itself conjuncted onto one leg and
+      skips with everything else.
+      **FINDING 3: the box's stated remaining unknown is now MEASURED, from two real CI runs
+      rather than the local duration cache, and it answers the opposite question to the one
+      the box asked.** Run 34811039022 (2026-09-14) and run 34740890431 (2026-09-13), job
+      `Quality / Code`, per-step timings from the Actions API. Wall clock **568 s** and
+      **644 s** against the `timeout-minutes: 15` budget at
+      .github/workflows/ci-quality.yml:604, not the 862 s the local-floor model predicted
+      (that model divided by the in-job pool at scripts/ci-runner/run.ts:941, which does not
+      apply: in this lane each gate is its own WORKFLOW step and steps run sequentially).
+      The split that decides this box: region steps, the conjunctable ones, **307 s / 338 s**;
+      non-region steps **259 s / 303 s**. So **46 to 47 percent of the lane is REPLICATED onto
+      every leg**. Fixed per-leg overhead (`Set up job`, two checkouts, the setup-workspace
+      action and its posts, Bitwarden) is **37 s**, about 6 percent, so the setup cost this
+      box called "the whole question" is NOT the deciding term. The deciding term is that
+      `TypeScript` (100 s / 118 s) and `Dead bash` (78 s / 89 s) are hand-written steps
+      outside the region and carry 178 s of the 259 s. Both are manifest-only entries with no
+      declaring file, so gate-bind has nothing to emit them from.
+      **THE ARITHMETIC, STATED SO IT CAN BE ARGUED WITH (run 34811039022 figures).** Per-leg
+      cost is `259 + makespan(307 across N legs)`, and the region's own floor is its largest
+      single step: `Lint` at 130 s, with `Every source file reaches a linter` next at 90 s.
+      x2 gives about 436 s (**1.30x** for twice the runners), x4 about 389 s (**1.46x**), and
+      x8 is still 389 s because `Lint` bounds it. Amdahl's ceiling at a 46 percent replicated
+      share is 2.17x; the step-granularity ceiling is 1.46x. That is nothing like the
+      "14.4 min to under 3 min" recorded above, which divided the whole lane.
+      **SO THE PREREQUISITE IS REGION COVERAGE, NOT THE MATRIX.** Two changes move the ceiling
+      before a single runner is added: split the composite `Lint` step into its five declared
+      gates (130 s becomes five units of about 26 s), and give `check:types` and
+      `check:ci-dead-bash` declarations so they enter the region (178 s becomes shardable).
+      With both, replicated falls to about 81 s and the region rises to about 485 s, so x4
+      lands near 202 s, a real **2.8x**. Sharding first buys 1.3x and pays 4x of runner for it.
+      **THE DESIGN, CONCRETE ENOUGH TO EXECUTE. Five pieces, in order, all driver-only.**
+      **D1. Shard over EMITTED STEPS, not over lock ids.** Add `step?: string` to `ShardInput`
+      (scripts/ci-runner/lanes.ts:217; `GateSpec` already carries it, so the real lock drives
+      it unchanged). In `shardPlan`, immediately after the mutex merge at
+      scripts/ci-runner/lanes.ts:485 and before the `needs` merge, add the FIFTH merge rule:
+      group the lane's entries by `ci.step` and union each group, recording the reason as
+      `one step "<name>"`. Heavy peak for a shared-step unit is ONE, the same treatment
+      `concurrentHeavy` (scripts/ci-runner/lanes.ts:583) already gives a mutex-only unit and
+      for the same arithmetic: the ids of one step are one `run:` block in one shell. The
+      receipt is `Lint` itself, which runs all five heavies today on one runner in 130 s with
+      CI green, so refusing it would be refusing the status quo. State the exception in the
+      comment: a step that fans out internally (`Quality-gate unit tests` under xdist) peaks
+      higher, its lane is not a shard candidate today, and if one ever is, its unit must be
+      counted at its real peak. Also widen the `overloaded` refusal at
+      scripts/ci-runner/lanes.ts:572 so a shared-step unit is not caught by it.
+      **D2. Refuse the id/step gap instead of emitting it.** `shardAssignment` returns
+      `{ legs, replicated }`, where `replicated` is the lane's lock entries whose step is not
+      one gate-bind emits. `--write` PRINTS them by name with their share of the lane, every
+      run, because a quiet exemption is how a gate stops meaning its name. Add a declared
+      ceiling beside `SHARD_COUNTS` (scripts/ci-runner/lanes.ts:393), e.g.
+      `SHARD_REPLICATED_MAX: Record<string, number>` as a fraction, and REFUSE when the
+      replicated share exceeds it. That turns the `quality-security` mistake this box already
+      made by hand into arithmetic: its share is 153 of 166 entries and about 98 percent of
+      the cost, so any sane ceiling refuses it without a human having to notice.
+      **D3. Emit the `strategy:` block; do not hand-write it.** A new marker pair at the job's
+      four-space indent, between `timeout-minutes:` and `steps:`:
+      `# >>> gate-bind strategy (generated; do not edit inside)` and
+      `# <<< gate-bind strategy`, holding `strategy:` with `fail-fast: false` (never
+      `continue-on-error`) and `matrix: shard: [1, ..., N]` from `SHARD_COUNTS`. Implement it
+      as `rewriteStrategyRegions(workflow, counts)` in scripts/gate-bind.ts, called from the
+      `--write` path just before the `rewriteRegions` call at scripts/gate-bind.ts:1791, and
+      refuse in BOTH directions: a lane in `SHARD_COUNTS` with no strategy region is refused
+      with the exact YAML to paste, and a strategy region for a lane not in `SHARD_COUNTS` is
+      refused as a drain. Leave `name: Code` alone; GitHub renders the leg as
+      `Quality / Code (1)`, which still satisfies `WATCHDOG_NO_RETRY_PATTERNS` matching
+      `Quality` by `String.includes`, and leave `runs-on` and `timeout-minutes` literal so
+      `laneCapabilities` and CHECK 3 (.ci/rediacc_ci/security/workflow_gates.py:631) read what
+      they read today. Branch protection is the one consumer OUTSIDE this tree that keys on
+      the rendered check name: if `Quality / Code` is a required check, the rename to
+      `Quality / Code (1)` is operator-only and must be asked before this lands.
+      **D4. Make the leg's receipt COUNT WHAT RAN, not what was planned.** A driver-emitted
+      literal would report a full leg even when every step skipped, which is exactly Finding 2.
+      So gate-bind gives each conjuncted step an `id:` (`gate_` plus the gate id with `:` and
+      `-` mapped to `_`, one per STEP after the D1 merge) and emits one final UNCONJUNCTED
+      step with `if: always()` that writes the receipt from `toJSON(steps)`, `job.status`,
+      `matrix.shard` and the leg count, counting a step as run when its outcome is not
+      `skipped`. The `gates` field must be in the aggregator's currency, LOCK IDS, because
+      scripts/gates/check-quality-complete.ts:226 compares it against
+      `declaredShard.ids.length`; gate-bind therefore also emits a step-id to lock-id map into
+      that step's `env:`, and the counter sums the ids of the steps that actually ran. Upload
+      as `quality-shard-${{ matrix.shard }}`; the aggregator job downloads the set and runs
+      `check:ci-quality-complete -- --receipts <dir>`. An all-skipped leg then reports
+      `gates: 0` against a plan that says 43 and reds, which is what makes the mechanism
+      defend itself even if D3 regresses.
+      **D5. Two static clauses `check:ci-quality-complete` does not have yet.** First: for
+      each lane in `SHARD_COUNTS`, the job's `matrix.shard` list must equal `[1..N]` exactly,
+      both directions. Second: move that gate's own declaration off any lane that can be
+      sharded (it declares `lane: quality-code` today), or it is conjuncted onto one leg of
+      the very lane it polices.
+      **ONE STALE COMMENT FOUND IN PASSING, for whoever implements this:**
+      scripts/gate-bind.ts:571 says "today only one lane is in `SHARD_COUNTS`" while
+      `SHARD_COUNTS` is empty (scripts/ci-runner/lanes.ts:393). It is a leftover from before
+      the `quality-security` back-out and should read "no lane is". Not fixed here: this wave
+      was read-only in the driver files by instruction.
+      **AND ONE GAP IN THE CONTROLS, which matters more.** `shardAssignment` and the conjunct
+      branch of `rewriteRegions` have NO selftest control in scripts/gate-bind.ts: the file's
+      selftest exercises the no-shard path only, and the comment at scripts/gate-bind.ts:571
+      says as much ("both selftest controls keep emitting exactly the steps they emitted
+      before"). The mechanism is built, inert AND unexercised in both directions. Any wave
+      that populates `SHARD_COUNTS` must first add the two controls a conjunct needs: a lane
+      WITH an assignment emits `matrix.shard == N` on exactly the steps the plan gives that
+      leg, and a lane WITHOUT one emits byte-identically to today.
 - [x] **B3 S** `quality-complete` aggregator. `ci_job_aggregation.py` already enforces four things
       about `ci-complete`, including an equality between tier lists and env vars because "either
       half alone is dead". A matrix job's result is a single roll-up, so shards are invisible

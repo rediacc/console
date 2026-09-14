@@ -1,44 +1,39 @@
-## SESSION f4da5c2e 2026-09-14T12:11:22Z
+## SESSION f4da5c2e 2026-09-14T12:57:53Z
 
 CRITICAL CORRECTION (standing, verbatim): there is NO other session in this tree. Every
-modified/untracked file is THIS session's own accumulated work across a long multi-day
-campaign. Never flag a file as "another session's" without verifying via git diff first.
+modified/untracked file is THIS session's own accumulated work. Never flag a file as
+"another session's" without verifying via git diff first.
 
-W7P6 (the "142 unnamed files" porting box) is CLOSED [x], 53 waves, all .ci/scripts/**
-ported+differentially-tested+K=5-ledgered, twins byte-untouched. check:ci-pytest clean
-except a known xdist-parallelism flake cluster (5 files, 183/183 pass in isolation) --
-not a correctness defect.
+W7P6 (the "142 unnamed files" porting box) is CLOSED [x], 53 waves. Operator returned
+mid-session, asked to prepare for green CI and run /pr-babysit -- DELEGATE (bg) mode: a
+background pr-babysitter (agent a1f1a247df6d36236) owns the PRIMARY working tree. I am
+its LEAD: rule on escalations, do NOT watch CI myself, do NOT edit tracked files it owns
+except a named, announced driver-only touch.
 
-Judge correctly pushed back that W7P6 done != rest of document done. Fork-surveyed all
-other open boxes. Schedulable: W7P5-a, W7P5-b (both staffed), and B4 (line ~3674, "the
-ci-quick job", driver-only remainder, not yet read in depth). Everything else (W7P4-Q/W,
-W7P5-c, W1P6, W11P5c/P6a, W12P2.8/P3.5, U2) is genuinely operator/calendar-gated or
-precondition-blocked -- do not restaff without operator input.
+BRANCH RENAMED 0906-1 -> 0914-1 (approved after independent verification: old name was
+consumed by a merged PR in the account submodule). Babysitter committed 537/539 paths as
+9 commits (HEAD d2865cd5a). NOT pushed yet -- withheld until private/account's submodule
+fix lands (operator approved pushing an already-committed, unpushed commit to a new
+account branch + PR; fixes a live bug on account's own main too).
 
-2 writers dispatched, disjoint files:
-- batch XX (a71a7066b6772f7b0): W7P5-a bookkeeping. DONE, driver-verified, recorded.
-- batch YY (a9a7db5cfdf628697): W7P5-b, leased until ~13:16 UTC. Deleting
-  .ci/lib/age-check.sh + find-port.sh (pure delegating shims already), retargeting real
-  callers. ci-quality.yml is driver-only -- batch YY reports that edit instead of
-  applying it.
-
-~11 pre-existing cross-cutting bugs found+fixed chasing the first clean full-suite run
-(env-manifest corruption, broken embed-credits gate, stale gate-lanes/mark-production/
-date fixtures, workflow-gates exemption seam, dead-python registry gaps, em-dash
-divergence, dead sys.path hop) -- see plan doc's DRIVER FIX blocks, do not re-derive
-from memory. Also fixed 15 check_plan_citations.py findings in my own added prose. Both
-plan gates rc=0 except ONE known citation (find-port.sh:68 in the status table near doc
-top, left for batch YY to settle). 85 plans, 97 open, 239 ticked.
+Landed: batch ZZ (isolated worktree) resolved B2's open CI-sharding design question with
+a concrete D1-D5 spec (driver-computed `when` conjunct via gate-bind.ts, already partly
+built -- clause (c) is DISCHARGED in code, just unpopulated/untested), merged by hand
+into agent/PLAN-tooling-transformation.md. Both plan gates rc=0 for that edit; ~29
+unrelated pre-existing dead citations in OTHER plan docs (PLAN-gh-swallow-gates-audit.md
+etc.) already flagged to the babysitter, not mine.
 
 ## Next action
-1. Read B4 in full (search "B4 S", line ~3674 as of this write) to determine its exact
-   remaining driver-only scope ("the ci-quick job and fail-open scoping") and whether it
-   is genuinely startable now without conflicting with batch YY's ci-quality.yml touch.
-2. Condition: batch YY (worker:a9a7db5cfdf628697) is in flight; on its notification,
-   spot-check directly (git status scope, bash -n every touched file, re-run
-   differentials covering age.py/ports.py, check:ci-language-policy, check:ci-dead-
-   python), apply any ci-quality.yml edit myself (driver-only), fix the find-port.sh:68
-   citation, re-run both plan gates, record the wave in the W7P5-b box.
-3. Re-read W7P5-a/b's current end text before deciding whether either checkbox flips to
-   [x] -- batch XX's work did NOT close W7P5-a (the 32 real-run clauses stay operator-
-   gated forever, correctly, not a reason to tick it done).
+1. Real, disjoint driver-only work available now: B4's "ci-quick" job (create in
+   .github/workflows/ci-quality.yml, wired to the already-done `npm run ci:quick`) and
+   B2's D1-D5 design are BOTH ready to implement, but both touch shared CI machinery the
+   babysitter's tree currently depends on -- do NOT implement in the primary tree while
+   it's mid-flight. Dispatch a worktree-isolated writer (isolation:"worktree") to draft
+   B4's implementation as a ready-to-apply patch (not landed in primary), same pattern as
+   batch ZZ, so it's ready the moment the babysitter reports a natural pause (e.g. after
+   push+PR opens, before it starts iterating on CI failures).
+2. Condition: the babysitter (worker a1f1a247df6d36236) may report at any time via
+   SendMessage (account push/PR done, or local-battery results) -- respond to it as it
+   arrives; this does not block item 1.
+3. On green: verify independently ONCE via `gh`, confirm the 3 sanctioned-left-alone
+   paths are untouched, report PR links to the operator. Do not merge, do not push main.
