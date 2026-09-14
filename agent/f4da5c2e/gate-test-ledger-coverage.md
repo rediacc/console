@@ -48,7 +48,7 @@ c70e241d78ad169f04bffea1e64d9c05e74c810a
 $ (cd /home/developer/console && git rev-parse HEAD^{tree})   # before any of my edits
 c70e241d78ad169f04bffea1e64d9c05e74c810a
 $ npx tsx scripts/lib/shadow-gate.ts --repo <scratch-clone> --pair x --old true --new true --json
-  "tree": { "id": "c70e2...", "head": "b99162b7f...", "branch": "0906-1", "clean": true, ... }
+  "tree": { "id": "c70e2...", "head": "917d1902d...", "branch": "0906-1", "clean": true, ... }
 ```
 
 This technique is real and reusable -- a future session recording gate-test or any other

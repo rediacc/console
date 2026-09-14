@@ -219,7 +219,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       walk: 44 files wrote `sys.path` by hand at box start, 36 now, the ADDED side EMPTY,
       and ZERO under `.ci/rediacc_ci/quality/`.** A strict subset, both clauses.
       **Two premises did not survive.** "The 15 in `.ci/scripts/quality`" is wrong --
-      `73bd8f7ec` had already drained the `.ci` hops onto `_cipath.py`, and the real residue
+      `aaba93b29` had already drained the `.ci` hops onto `_cipath.py`, and the real residue
       was 8 files whose hop was the `.claude/hooks/stop` one, which `PYTHONPATH=.ci` would
       not have fixed. And the canonical form the box names, `PYTHONPATH=.ci python3 -m ...`,
       is unreachable from a writer's file set: it moves the registered command, which is
@@ -494,7 +494,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       three blockers this work uncovered.
 - [ ] **W7P4-Q S batches, 2 writers** The quality-tree cutover -- this is P-A. Six batches of 13.
       **RE-MEASURED 2026-09-08 from the tree and not from a report: LIVE 75 of 77.**
-      **COMMITTED 2026-09-08 as `73bd8f7ec` (81 files, 9268 insertions), operator-authorised
+      **COMMITTED 2026-09-08 as `aaba93b29` (81 files, 9268 insertions), operator-authorised
       when asked directly.** Until then the whole cutover sat STAGED in a shared index, where
       any session's pathspecless `git commit` would have swept it; the index is now empty.
       The same commit routes all 81 entry points through `.ci/scripts/quality/_cipath.py`
@@ -912,7 +912,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       **FOURTH WAVE 2026-09-10: `common.sh` closed out. All 9 of 9 named libs done.**
       Driver-verified directly: both new modules exist, 177/177 new tests pass (86+91),
       both ledgers at K=5, bash twin confirmed byte-untouched, no stray commit (HEAD stayed
-      `b99162b7f` throughout), dead-python/language-policy clean, git status scoped exactly.
+      `917d1902d` throughout), dead-python/language-policy clean, git status scoped exactly.
       **`common.sh` turned out to be seven libraries stacked in one file, five already
       ported under other names** (`log.py`, `paths.py`, `proc.py`, `core/ghx.py`, and
       `core/platform.py` for `detect_os`/`detect_arch` -- DELIBERATELY REFUSED there because
@@ -1019,7 +1019,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `.ci/scripts/lib/age-check.sh`. `git log --all --diff-filter=D -- '*age-check.sh'`
       returns nothing, so this is not a move: the path in this box was always wrong.
       **THE "13 REAL BASH LIBS, 6,840 LINES" IS 14 LIBS AND 6,408 LINES**, measured at
-      `b99162b7f` over every tracked `.sh` in `.ci/lib/` and `.ci/scripts/lib/`: account
+      `917d1902d` over every tracked `.sh` in `.ci/lib/` and `.ci/scripts/lib/`: account
       1119, bws-env 111, devbox 1087, find-port 145, local-common 1008, service 225,
       age-check 127, blocker-validator 356, common 772, emit-advisory 218, gate-controls
       41, release-age 237, release-state-validator 496, toolchain 466. No 13-member subset
@@ -1339,7 +1339,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `check:ci-language-policy` rc=0.
       **THIS BOX WAS ALREADY PARTLY DONE, DISCOVERED RATHER THAN REDONE.**
       `.ci/scripts/infra/ci_stop.py` is a full port of `ci-stop.sh`, committed at
-      `894e9e51a` before this writer started, with a 10/10 differential -- its own docstring
+      `0d582b57a` before this writer started, with a 10/10 differential -- its own docstring
       names this box. `.ci/scripts/test/lib/test-helpers.sh` and `workflow-rule.sh` are
       already ported (`harness.py`, `workflow_rule.py`), each used by 3+ gate-test ports.
       **Two files are DELIBERATELY NOT ported, and now say so in the allowlist rather than
@@ -1436,7 +1436,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       modified and not committed (baseline, plan-boxes, allowlist, `dead_python.py`, the
       w7p5a-real-run-blockers pair); current `git status --porcelain` shows those same paths
       back as unstaged `M`, nothing lost, nothing duplicated, HEAD correctly back at
-      `b99162b7f`.
+      `917d1902d`.
       **Two real, live bugs found in the REGISTERED gate `check:ci-shell-commands`
       (`check-commands.sh`), reproduced faithfully in the port rather than silently
       "fixed" there** (fixing the bash twin's own behavior is out of this box's file
@@ -1691,7 +1691,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `detect-bump-type.sh` -> `version/detect_bump_type.py` (real git fixtures, not
       stubbed), `cleanup-pr-environments.sh` -> `housekeeping/cleanup_pr_environments.py`,
       and `ci-stop.sh` -- correctly identified as ALREADY PORTED (`infra/ci_stop.py`,
-      committed `894e9e51a` earlier this session) rather than duplicated; its missing K=5
+      committed `0d582b57a` earlier this session) rather than duplicated; its missing K=5
       ledger was the one gap and is now closed (`w7p6-ci-stop.observations.jsonl`, 5 rows).
       Writer D: `verify-ssh.sh` -> `infra/verify_ssh.py`, `wait-for-vm-ssh.sh` ->
       `infra/wait_for_vm_ssh.py` (deliberately NOT sharing a helper with its sibling despite
@@ -3477,7 +3477,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       own sequence below, unstarted and untouched by this box on purpose.
 - [x] **W1P4 C, after PRE-A1** The full `sys.path` sweep. **DONE 2026-09-09, and the box's
       number was wrong in both MAGNITUDE and DIRECTION: 36 files / 39 hops, not "68 and
-      rising", and HEAD `73bd8f7ec` carries 45 -- so it FELL.** That commit removed nothing:
+      rising", and HEAD `aaba93b29` carries 45 -- so it FELL.** That commit removed nothing:
       81 files changed, 9268 insertions, **0 deletions**, all new shims already on `_cipath`.
       The deliverable is `.ci/rediacc_ci/tests/test_canonical_sys_path_hop.py`, which already
       existed and **governed 2 of the 39 hops** -- a control scoped to exactly the ground its
@@ -3615,7 +3615,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       and a retired fingerprint resolves against nothing -- `check:ci-plan-citations` judges
       any 9+ hex token as a git object and was right to refuse it. Running the house formatter (biome, NOT prettier
       -- `check:format` is `biome format .`) over `scripts/gates/check-control-in-string.ts`, which I had
-      committed unformatted in `73bd8f7ec`, UNMASKED `aea2bc733552`, a pre-existing tail
+      committed unformatted in `aaba93b29`, UNMASKED `aea2bc733552`, a pre-existing tail
       shared by three unrelated gates; accepted with a BLOCKER naming the divergence, because
       the gate itself says collapsing three specific claims into one generic line makes a red
       harder to read.
@@ -4933,7 +4933,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
 - [x] **W4 P4b S** The inventory gate, four directions: nothing in the directory outside
       `POLICY_FILES`; nothing in `POLICY_FILES` missing from the directory (a deleted list reads
       as "nothing is suppressed"); Python == TypeScript; no literal joins outside the two seams.
-      **The honest control:** run it against `19c45c78e` and assert it reds with exactly
+      **The honest control:** run it against `5dfef7373` and assert it reds with exactly
       `{.language-policy-allowlist}`. A gate that cannot detect the drift that already happened is
       not the gate.
 - [x] **W4 P4c C** The prose sweep gets a PREDICATE, absorbing the stale
@@ -4960,7 +4960,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       **THE HONEST CONTROL RAN, and it needed a technique this box did not anticipate.**
       `git archive` is useless here: `.gitattributes:55` is `* export-ignore`, so an archive
       of any commit is ONE file. A detached index -- `GIT_INDEX_FILE=... git read-tree
-      19c45c78e` then `checkout-index --prefix` -- touches neither worktree nor real index.
+      5dfef7373` then `checkout-index --prefix` -- touches neither worktree nor real index.
       Against that tree the gate reds naming exactly `{.language-policy-allowlist}`, which I
       reproduced independently before accepting it.
       **24 mutants, SIX survived the first pass**, each resolved rather than carried -- one
@@ -5050,7 +5050,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       the anti-vacuity guard fired on the one input it was written for, the finish-line trap
       again. And an unframed-output bug replaced every rejection message, caught by a
       message digest rather than a verdict.
-      **F1, repaired forward and not asked for:** `73bd8f7ec` routed 81 entry points through
+      **F1, repaired forward and not asked for:** `aaba93b29` routed 81 entry points through
       `import _cipath`, found only via `sys.path[0]`, so
       `.ci/scripts/test/gates/test-language-policy.sh:414,424` -- which copies the gate to a
       tmpdir -- died `ModuleNotFoundError` and its COMPOSITION TRAP control was asserting on

@@ -397,7 +397,7 @@ Every green above was checked against a planted red first.
 - **The C2 probe was wrong once and was fixed, not believed.** Its first form looked for
   `.ci/rediacc_ci/quality/<mod>.py` as a `gates.lock` leaf and returned 6/77, which reads
   like a catastrophic finding. The leaf is actually the `check_<snake>.py` entry point
-  beside the twin (the `_cipath` routing landed in `73bd8f7ec`). Corrected: 66/77.
+  beside the twin (the `_cipath` routing landed in `aaba93b29`). Corrected: 66/77.
 - **The C3 probe was wrong twice.** It first counted Python DOCSTRINGS as code (0/77
   clean), then missed `#` comments in `.npmrc`, `Dockerfile`, `.toml` and `//` in `.jsonc`
   (22/77). Final form uses `tokenize` + `ast`, with two controls: the executing call site

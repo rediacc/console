@@ -266,7 +266,7 @@ full `sys.path` hop sweep), which shares ground with this plan's commit-2 "Extra
 step: `harness.watchdog_subject()` is confirmed present at
 `.ci/rediacc_ci/tests/gates/harness.py:524`, and `_cipath` is live (6 direct importers,
 plus the wider `on_sys_path()`-based shim set W1P4 measured at 36 files / 39 hops as of
-`73bd8f7ec`). That overlap is coincidental — W1P4 was driven from the other plan's own
+`aaba93b29`). That overlap is coincidental — W1P4 was driven from the other plan's own
 numbers, not from re-reading this one — but it corroborates rather than contradicts this
 plan's step 2 as done.
 

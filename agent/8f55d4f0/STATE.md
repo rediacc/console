@@ -12,7 +12,7 @@ quotes operator messages sent DIRECTLY to it that never reached my conversation:
 "ourside of repo is dangerous! There is a compaction risk as you had!", "we should
 have continued with the old one", and "sorry mistakenly interrupte[d]" (which LIFTED
 my stop). Operator messages outrank an agent brief, so the five commits
-(`14f5629ba`, `2d90ae6a6`, `9d3c2a112`, `f7ae5f4f5`, `e3f7bea31`) were DIRECTED.
+(`bb8abd8ac`, `4d3e85783`, `f2142d296`, `e5165278b`, `5be6973f8`) were DIRECTED.
 The lesson: an operator may be talking to an agent on a channel I cannot see.
 
 Tracking those plans caught **88 unresolvable citations**, 29 of them in the round-1
