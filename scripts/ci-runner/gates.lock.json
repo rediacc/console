@@ -1834,6 +1834,34 @@
     }
   },
   {
+    "id": "check:ci-gate-test-real-file-plants",
+    "run": "npm run check:ci-gate-test-real-file-plants",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_gate_test_real_file_plants.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Gate-test real-file plants"
+    }
+  },
+  {
+    "id": "check:ci-tmpfs-health",
+    "run": "npm run check:ci-tmpfs-health",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_tmpfs_health.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Tmpfs health"
+    }
+  },
+  {
     "id": "check:ci-rdc-native",
     "run": "npm run check:ci-rdc-native",
     "gate": true,

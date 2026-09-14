@@ -946,6 +946,9 @@ jobs:
       - name: Gate cwd independence
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-gate-cwd-independence
+      - name: Gate-test real-file plants
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_gate_test_real_file_plants.py
       - name: Generated manifest regions
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-gen-manifest
@@ -1027,6 +1030,9 @@ jobs:
       - name: Test suites are CI-reachable
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-test-scripts-reachable
+      - name: Tmpfs health
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_tmpfs_health.py
       - name: Typecheck scope coverage
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-typecheck-scope-coverage

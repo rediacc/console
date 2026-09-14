@@ -197,6 +197,8 @@
     "check:ci-hook-cross-os": ".ci/scripts/quality/check_hook_cross_os.py",
     "check:ci-vendored-blocker-derivation": ".ci/scripts/quality/check_vendored_blocker_derivation.py",
     "check:ci-worklist-env-registry": ".ci/scripts/quality/check_worklist_env_registry.py",
+    "check:ci-gate-test-real-file-plants": ".ci/scripts/quality/check_gate_test_real_file_plants.py",
+    "check:ci-tmpfs-health": ".ci/scripts/quality/check_tmpfs_health.py",
     "check:ci-hooks-resolvable": ".ci/scripts/quality/check_hooks_resolvable.py",
     "check:ci-guard-feature-completeness": ".ci/scripts/quality/check_guard_feature_completeness.py",
     "check:ci-dockerfile-mirror-resilience": ".ci/scripts/quality/check_dockerfile_mirror_resilience.py",

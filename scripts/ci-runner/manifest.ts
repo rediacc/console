@@ -1980,6 +1980,40 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // A gate-test that writes a REAL tracked file and restores it in a `finally`
+    // corrupts that file for real if a kill lands in the write-to-restore window --
+    // it happened twice in one session to worklist-env-registry.json, from two
+    // unrelated causes. AST-scans every gate-test file for a module-level real-path
+    // constant that is also the target of a .write_text/.write_bytes call.
+    id: 'check:ci-gate-test-real-file-plants',
+    run: 'npm run check:ci-gate-test-real-file-plants',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_gate_test_real_file_plants.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Gate-test real-file plants',
+    },
+  },
+  {
+    // /tmp is a tmpfs with a FIXED inode count independent of df -h's block
+    // view -- a tree can show 19G free of 29G and still be totally exhausted.
+    // A real incident this campaign hit exactly that (pytest tmp_path
+    // retention, 1,048,574/1,048,576 inodes used) and every Bash call started
+    // failing with ENOSPC while disk space looked completely healthy.
+    id: 'check:ci-tmpfs-health',
+    run: 'npm run check:ci-tmpfs-health',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_tmpfs_health.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Tmpfs health',
+    },
+  },
+  {
     // E2. rdc.sh's --native SEA build moved to rediacc_ci.native. `plan()` takes system and
     // machine as ARGUMENTS defaulting to the host, so all three platform arms are driven
     // from one Linux box every run -- strictly more than the macOS CI job the box asked
