@@ -73,7 +73,6 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-ceph-image-pin | quality-code / Ceph image pin freshness | yes | no | no |
 | check:ci-changed-selection | quality-code / Changed-file selection contract | yes | no | no |
 | check:ci-checkout-cone | quality-static / Checkout cone covers what steps run | yes | no | no |
-| check:ci-ci-job-aggregation | quality-code / CI job aggregation | yes | no | no |
 | check:ci-cli-contract | quality-packages / CLI contract | yes | yes | no |
 | check:ci-cli-doc-coverage | quality-code / CLI docs stay in sync with their scripts' real flags | yes | no | no |
 | check:ci-client-bundle-budget | quality-www-build / SEO | yes | yes | no |
@@ -185,6 +184,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-inner-timeout-reachable | quality-code / Inner kill timers are reachable | yes | no | no |
 | check:ci-install-sh-config | quality-static / install.sh config tests | yes | no | no |
 | check:ci-install-table | quality-static / Install table | yes | no | no |
+| check:ci-job-aggregation | quality-code / CI job aggregation | yes | no | no |
 | check:ci-jq-boolean-default | quality-code / jq boolean defaults | yes | no | no |
 | check:ci-judged-rule-wiring | quality-code / Judged rule wiring | yes | no | no |
 | check:ci-knip-blockers | quality-code / knip BLOCKER reasons | yes | no | no |

@@ -1118,7 +1118,14 @@ STATIC: list[Case] = [
     case(
         "check 0 guards/block_stale_pr_branch_date.py",
         bash_json(
-            "gh pr create --draft --head %s-9 -t x -b y" % datetime.date.today().strftime("%m%d")
+            # LOCAL today, deliberately, and noqa'd on this line rather than by
+            # disabling DTZ: the guard under test reads the clock with a bare
+            # `datetime.now()` precisely so it honours TZ the way its `date +%m%d`
+            # twin does. A tz-aware `today()` here would disagree with the guard
+            # for the hours either side of local midnight and fail this case on
+            # any host off Greenwich -- which is the exact defect the guard's port
+            # notes record being measured at 00:47 CEST.
+            "gh pr create --draft --head %s-9 -t x -b y" % datetime.date.today().strftime("%m%d")  # noqa: DTZ011
         ),
         "stale-pr-branch: today's MMDD allowed",
     ),

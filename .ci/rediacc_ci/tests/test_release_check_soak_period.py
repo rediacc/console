@@ -39,7 +39,14 @@ def edge_date(days_ago: int) -> str:
     on bash integers), so subtracting exactly `days_ago * 86400` seconds keeps
     the floor at `days_ago` for as long as the test itself takes to run.
     """
-    then = datetime.datetime.now() - datetime.timedelta(days=days_ago)
+    # Suppressed on this LINE only, rather than disabling DTZ in pyproject: the
+    # rule is right everywhere else and wrong here. The twin stamps and reads this in
+    # LOCAL time (`date +%s` against a `%Y-%m-%dT%H:%M:%S` string carrying no
+    # offset), so a tz-aware `now()` would shift the fixture by the machine's
+    # offset and move the floor across a day boundary on any host east or west
+    # of Greenwich -- the same two-clock defect block_stale_pr_branch_date.py
+    # records in its own port notes.
+    then = datetime.datetime.now() - datetime.timedelta(days=days_ago)  # noqa: DTZ005
     return then.strftime("%Y-%m-%dT%H:%M:%S")
 
 
