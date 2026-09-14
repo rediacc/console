@@ -58,6 +58,9 @@ import re
 import subprocess
 import sys
 
+import _cipath  # noqa: F401
+from rediacc_ci.controls import plant
+
 # A sed that rewrites an apt source URL to a specific host. The captured group is
 # the DESTINATION host, which is what has to vary for a fallback to exist.
 REWRITE = re.compile(r"s\|https?://[^|]*?ubuntu[^|]*?\|https?://([a-z0-9.-]+)/", re.IGNORECASE)
@@ -447,8 +450,8 @@ def selftest():
     # fallback below the comment fell outside the block and a correct Dockerfile
     # was reported "pinned to a SINGLE mirror". Both directions, because the
     # repair must not also swallow the finding it exists to make.
-    commented = both.replace(
-        " && for i in 1 2 3", "    # a comment Docker strips\n    && for i in 1 2 3", 1
+    commented = plant(
+        both, " && for i in 1 2 3", "    # a comment Docker strips\n    && for i in 1 2 3", 1
     )
     check(
         "a comment INSIDE a RUN does not end the block",
@@ -460,7 +463,7 @@ def selftest():
         offenders(commented) == [],
         offenders(commented),
     )
-    pinned_with_comment = commented.replace("http://archive.ubuntu.com/ubuntu|g", "x|g")
+    pinned_with_comment = plant(commented, "http://archive.ubuntu.com/ubuntu|g", "x|g")
     check(
         "CONTROL: a block pinned to one host is STILL reported when it has a comment",
         offenders(pinned_with_comment) != [],

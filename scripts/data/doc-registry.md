@@ -719,7 +719,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | Mechanism | BLOCKER lines | Comment form |
 |---|---|---|
 | .ci/breakpoint/.breakpoint-drift-accept | 1 | prose only (no live entry) |
-| .ci/config/bws-unrequested.json | 3 | JSON value |
+| .ci/config/bws-unrequested.json | 2 | JSON value |
 | .ci/config/directive-quotes-allowlist.txt | 2 | prose only (no live entry) |
 | .ci/config/docker-npm-pin-exclusions.json | 3 | JSON value |
 | .ci/config/secret-supply.json | 2 | JSON value |
