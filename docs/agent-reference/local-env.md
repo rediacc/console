@@ -132,7 +132,7 @@ no account-server calls), then repoint the PATH symlink once:
 
 ```bash
 ./rdc.sh --native
-ln -sf ../share/rediacc/bin/rdc ~/.local/bin/rdc
+ln -sf "../share/rediacc/bin/rdc" ~/.local/bin/rdc
 ```
 
 After that, `rdc` from any terminal is the binary, with no dev-wrapper output.
