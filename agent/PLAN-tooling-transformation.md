@@ -4023,6 +4023,113 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `check-ci-changed-selection.ts` derived an id with the `ci-` segment DOUBLED, which
       matched no npm script and no manifest entry, and `check:ci-gate-bind` refused it. Renamed to `scripts/gates/check-changed-selection.ts` to
       follow the convention rather than adding an `id:` override.
+      **THE `ci-quick` JOB HALF, 2026-09-14: WRITTEN AND DRIVEN IN AN ISOLATED WORKTREE, NOT
+      LANDED.** `/pr-babysit` owns the primary tree and `.github/workflows/ci-quality.yml` is
+      exactly the file it depends on, so this half exists as a verified 74-line insertion in
+      isolated agent worktree this wave ran in, for the driver to re-apply by hand. The box stays `[ ]`
+      until it lands in the primary tree.
+      **THE LITERAL READING OF THIS BOX IS NOT EXPENSIVE, IT IS IMPOSSIBLE, and the measurement
+      is what says so rather than a preference.** "One `ci-quick` job that runs `npm run
+      ci:quick`" was the design I set out to write. Driven for real on a bare-node checkout
+      (npm install plus install:natives, no submodules, no `packages/shared/dist`):
+      `383 gates: 327 ok, 54 failed, 0 skipped, 2 BLOCKED, wall 204.1s (serial 2013.5s, 9.9x)`.
+      Joining those 54 ids to `gates.lock.json` by `ci.job` puts them in EIGHT of the ten lanes:
+      quality-code 18, quality-security 9, quality-static 8, quality-go 6, quality-i18n 5,
+      quality-packages 3, quality-content 3, quality-branch 2. So the job would need the UNION of
+      eight lanes' setup, and that union does not exist: `quality-branch` checks out
+      `github.head_ref` at `fetch-depth: 0` (`.github/workflows/ci-quality.yml:505-521`, and its own comment says the
+      default merge ref would make its gate unable to fire), while every other lane takes the
+      depth-1 merge ref. One checkout cannot be both.
+      **A SECOND, INDEPENDENT REASON, and it is the one that decides the aggregator question the
+      box would otherwise leave open.** `.ci/rediacc_ci/quality/ci_job_aggregation.py:1` reads ci.yml's TOP-LEVEL
+      jobs only; every job in ci-quality.yml rolls up into ci.yml's `quality` job
+      (`.github/workflows/ci.yml:495-513`), which `ci-complete` aggregates. So a job added here needs NO aggregator
+      wiring and, more to the point, CANNOT be exempted from it: `ci-quick` blocks whether or not
+      anyone wants it to. A blocking job must be able to be green, which rules out the
+      383-gate form a second time. `check:ci-quality-complete` is the SHARD aggregator over
+      `SHARD_COUNTS` (`scripts/ci-runner/lanes.ts:393`, still `{}`); `ci-quick` is not a shard lane and must not
+      appear there.
+      **`check:ci-parity`'s tautology guard misses this by one character, which is worth
+      recording as a hole rather than as luck.** `scripts/gates/check-ci-parity.ts:471` matches
+      `/npm run (ci|quality)(?=\s|$)/`, so `npm run ci:quick` in a `run:` block is NOT reported,
+      even though it is 383 of the 480 registered gates and collapses the lanes in exactly the
+      way the guard's own message describes. Nothing was changed there: the guard is right about
+      what it names, and widening it belongs to whoever next touches that gate.
+      **WHAT WAS BUILT INSTEAD, and it is the half of `ci:quick` that CI genuinely does not
+      have.** `npm run ci:quick -- --list` appends `--list` to the second invocation, so the key
+      runs `run.ts --selftest` FOR REAL and then PRINTS the quick plan rather than executing it.
+      Measured: **1.389s wall, rc=0, stdout line 1 `ci-runner: selftest ok (28 assertions)`,
+      `grep -c '^gate '` = 383 (the same 383 the executing run selected), stderr 0 bytes.** The
+      new `ci-quick` job is that one command plus a floor, on `ubuntu-latest`,
+      `timeout-minutes: 10`, `permissions: {contents: read}`, `if: inputs.is_bot != 'true'`,
+      checkout plus `./.github/actions/setup-workspace` at its defaults (no account submodule, no
+      natives, no package build).
+      **ANTI-VACUITY IS IN THE JOB, NOT IN MY MEMORY OF HAVING CHECKED.** `QUICK_LANE_FLOOR: 200`
+      against a live 383, deliberately far below it so it never has to be regenerated: what it
+      catches is COLLAPSE, not drift. **Seen firing on the real invocation**, not only in
+      reasoning: driven against a one-entry fixture manifest the step printed
+      `quick lane: 1 gate(s) planned, floor 200` and exited 1 with the `::error::` line; driven
+      against the real tree it printed
+      `quick lane: 383 gate(s) planned, floor 200; ci-runner: selftest ok (28 assertions)` and
+      exited 0. A third control proved the exit path is not swallowed: `--manifest
+      /nonexistent-fixture.json` gives rc=1 with `ENOENT` on stderr. The first line deliberately
+      redirects rather than pipes, because `npm ... | tee` would hand the step tee's status and
+      swallow a failed selftest.
+      **TWO CONTROLS PROVE THE ESTATE'S OWN GATES SEE THE NEW JOB**, because a gate suite that
+      silently ignores a new job would make all seven greens below meaningless.
+      (1) Flipping it to `ubuntu-slim` / `timeout-minutes: 20` made `check:ci-workflow-gates`
+      CHECK 3 print `ci-quality.yml: job 'ci-quick' declares timeout-minutes: 20 on ubuntu-slim,
+      above the 14-minute ceiling`; reverted, CHECK 3 is green again with zero mentions of
+      `ci-quick`. (2) Padding the `run:` block with two no-op lines made `check:ci-workflows`
+      print `.github/workflows/ci-quality.yml:180 (step: Quick lane plan) has 9 logic lines` against the cap of 8;
+      reverted, the real block is 7 and the gate is green. Both plants were removed and both
+      greens re-driven.
+      **GATES DRIVEN AGAINST THE MODIFIED FILE, rc in brackets:** `check:ci-workflow-invariants`
+      [0], `check:ci-gate-bind` [0], `check:ci-parity` [0], `check:ci-workflow-orphan-step-keys`
+      [0], `check:ci-gate-prerequisites` [0], `check:ci-quality-complete` [0],
+      `check:ci-timeout-headroom` [0], `check:ci-workflows` [0], `check:ci-step-env-parity` [0],
+      `check:ci-actionlint` [0, "clean across 29 workflow file(s)"], `check:actions` [0],
+      `check:ci-swallowed-failures` [0], `check:ci-runner-advice` [0],
+      `check:ci-profiler-coverage` [0], `check:ci-app-admin-perm` [0],
+      `check:ci-git-history-depth` [0], `check:ci-ci-job-aggregation` [0], plus `python3 -c
+      "yaml.safe_load(...)"` parsing the file and listing eleven jobs with `ci-quick` first.
+      THREE STILL RED AND ALL THREE ARE PRE-EXISTING, each checked for my file by name and none
+      naming it: `check:ci-workflow-gates` (CHECK 4 refuses because no submodule is checked out
+      here, and says so in its own words), `check:ci-secret-scope` (one migrated read,
+      `watchdog-monitor.yml:CLOUDFLARE_API_TOKEN`), `check:ci-bws-map` (a dead `no_fetch_jobs`
+      entry for watchdog-monitor.yml and a dead `CLAUDE_CODE_OAUTH_TOKEN` preimage row). All
+      three are in the 54 the baseline `ci:quick` run already had before this edit.
+      **A TRAP THIS WAVE WALKED INTO AND IS RECORDING SO THE NEXT ONE DOES NOT.** Two GUESSED
+      gate keys returned rc=1 with ZERO BYTES on both streams, which reads exactly like a gate
+      failing for a real reason and is instead npm's response to a key that does not exist. Both
+      guesses were built from the gate's FILENAME: the aggregation gate's real key doubles the
+      `ci-` segment (`check:ci-ci-job-aggregation`, `package.json:110`) where the filename does
+      not, and the admin-permission gate's real key DROPS the `no-` its filename carries
+      (`check:ci-app-admin-perm`, `package.json:35`). Under the real keys both are rc=0. Derive
+      the key from `package.json`, never from the script's name, before diagnosing a silent rc=1.
+      **ONE MEASUREMENT WORTH CARRYING ELSEWHERE:** the slowest gate in the whole quick lane is
+      `check:ci-changed-selection` at **154.9s**, which is B4's own first half, and it sits in
+      `quality-code`, the lane with 98 steps. Second is `check:ci-guard-mention-anchoring` at
+      37.0s. Nothing was changed about it here; it is recorded because a 155s gate inside the
+      largest lane is a scheduling fact the W3 wall target has to reckon with.
+      **The one open judgment, stated so it can be overruled rather than parked as a question:**
+      whether `ci-quick` is worth a runner slot at all, given that its unique content is 1.4s of
+      work behind roughly 40s of setup. I took the default and built it, because nothing in CI
+      today runs the `ci:quick` key developers are told to run, and the failure it catches (the
+      key not resolving, the manifest not loading, the demotion fixpoint eating the lane) is
+      silent everywhere else. If the driver would rather not spend the slot, the alternative that
+      costs nothing is to move `check:ci-runner-selftest`'s step into a `--list` form inside
+      quality-code, which needs a manifest edit and a lock regeneration and was therefore not
+      done in a tree that has to be re-applied by hand.
+      **APPLIED BY THE DRIVER, same day.** The 74-line job landed at the reported anchor
+      (`jobs:` immediately followed by the `L1 STATIC` banner) in the primary tree's
+      `.github/workflows/ci-quality.yml`. Driver-verified directly: `npm run ci:quick --
+      --list` reproduces exactly "383 gate(s) planned... selftest ok (28 assertions)" against
+      the primary tree; `check:ci-gate-bind` and `check:ci-parity` both rc=0 afterward
+      ("405 declared gate(s)..." / "483 manifest gate(s)... agree in both directions"). The
+      `ci-quick` JOB HALF of this box is now DONE; the box stays open on the
+      **fail-open scoping** half's own unfinished business (see above) until that is
+      separately closed.
 - [x] **B5 S** The timing contract. The three pytest receipts do not actually disagree -- they are
       three statistics of one gate: a single instrumented run (381.41s), a re-measurement (396s),
       and the floor of five (367.9s). `scripts/gates/check-gate-manifest.ts:511-520` already rules that the

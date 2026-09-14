@@ -113,6 +113,80 @@ permissions: {}
 
 jobs:
   # ============================================================================
+  # L0 QUICK -- the quick lane's PLAN, not a second run of the gates.
+  #
+  # WHAT THIS JOB IS NOT, because the obvious reading is the harmful one. It does
+  # NOT execute `npm run ci:quick`'s gate set. Measured on a real bare-node
+  # checkout (node_modules installed, no submodules, no packages/shared build):
+  # `npm run ci:quick` selected 383 gates and reported `327 ok, 54 failed, 2
+  # BLOCKED`. Those 54 failures span EIGHT of the ten lanes below, so a job that
+  # ran them would need the UNION of eight lanes' setup -- and that union does
+  # not exist, because quality-branch checks out `github.head_ref` at
+  # fetch-depth 0 while every other lane takes the depth-1 merge ref. One
+  # checkout cannot be both. So "one job runs the whole quick lane" is not
+  # expensive, it is impossible, and the ten-lane split above is the answer to
+  # the question it was asking.
+  #
+  # WHAT IT IS. The runner's own contract, executed early and cheaply on the
+  # exact npm key developers are told to run. `npm run ci:quick -- --list` runs
+  # `run.ts --selftest` for real (28 assertions) and then PRINTS the quick plan
+  # instead of executing it: 1.4s wall, and the only thing in CI that proves the
+  # key resolves, the manifest loads, and the --quick demotion fixpoint has not
+  # collapsed the lane. `check:ci-runner-selftest` covers the selftest alone,
+  # inside quality-code, which is the largest and slowest lane; this reaches the
+  # same red in under a minute instead of behind 98 steps.
+  #
+  # IT BLOCKS, and there is no way to make it not block: ci.yml's `quality` job
+  # rolls up every job in this file, and `ci-complete` aggregates `quality`.
+  # `check_ci_job_aggregation.py` reads ci.yml's TOP-LEVEL jobs only, so nothing
+  # here needs wiring into it and nothing here can be exempted from it. That is
+  # the second reason this job plans rather than runs: a blocking job must be
+  # able to be green.
+  # ============================================================================
+  ci-quick:
+    name: Quick Lane
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Reads the working tree and nothing else: no API call, no App token, no
+    # Bitwarden secret. `contents: read` is the entire contract, which is why
+    # this job is also the cheapest thing a caller has to grant.
+    permissions:
+      contents: read
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Defaults deliberately: no account submodule, no natives, no package
+      # build. This job runs the RUNNER, never the gates, so node plus the
+      # cached node_modules tree is the whole requirement.
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+
+      - name: Quick lane plan
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        env:
+          # A FLOOR, NOT THE LIVE COUNT, and deliberately far below it. The live
+          # number is 383 today and moves every time a gate is registered or its
+          # `slow:` flips; a floor that tracked it would have to be regenerated,
+          # and a regenerated number is one nobody rechecks. What this catches is
+          # COLLAPSE: a manifest that did not load, a demotion fixpoint that
+          # swallowed the lane, a --quick that silently selected nothing. Seen
+          # firing: driven against a one-entry fixture manifest it printed
+          # `quick lane: 1 gate(s) planned` and exited 1.
+          QUICK_LANE_FLOOR: '200'
+        # No pipe on the first line ON PURPOSE. `npm ... | tee` would hand the
+        # step tee's exit status and swallow a failed selftest, which is the
+        # swallowed-failure class check-swallowed-failures.sh exists for.
+        run: |
+          npm run --silent ci:quick -- --list > "$RUNNER_TEMP/quick-plan.txt"
+          planned=$(grep -c '^gate ' "$RUNNER_TEMP/quick-plan.txt" || :)
+          echo "quick lane: $planned gate(s) planned, floor $QUICK_LANE_FLOOR; $(head -1 "$RUNNER_TEMP/quick-plan.txt")"
+          if [ "$planned" -lt "$QUICK_LANE_FLOOR" ]; then
+            echo "::error::the quick lane planned $planned gate(s), under its floor of $QUICK_LANE_FLOOR. The runner is not seeing the manifest, so a green here would mean nothing."
+            exit 1
+          fi
+
+  # ============================================================================
   # L1 STATIC -- no node, no dependencies, bare checkout.
   # Absorbs: editorconfig, compose-env, audit-coverage, shell, attribution,
   #          pr-description.
