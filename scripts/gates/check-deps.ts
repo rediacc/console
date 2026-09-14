@@ -78,7 +78,8 @@ interface PackageInfo {
  */
 function categorizePackages(
   outdated: Record<string, OutdatedPackageInfo>,
-  blocklist: Map<string, BlocklistEntry>
+  blocklist: Map<string, BlocklistEntry>,
+  scope?: string
 ): { mustUpgrade: PackageInfo[]; blocked: PackageInfo[] } {
   const mustUpgrade: PackageInfo[] = [];
   const blocked: PackageInfo[] = [];
@@ -89,7 +90,20 @@ function categorizePackages(
 
     if (!current || current === 'undefined' || !latest || current === latest) continue;
 
-    const blockEntry = blocklist.get(name);
+    // SCOPED ENTRIES, `<dir>:<package>`, and the reason they had to exist.
+    // private/account is under an operator freeze, so seven of its dependencies
+    // cannot be upgraded here. Blocking them by bare name was the obvious move and
+    // is WRONG: this list is keyed on the package name alone, and FOUR of those
+    // seven -- @biomejs/biome, typescript, vitest, hono -- are also console's own
+    // dependencies. A bare entry would have silently stopped this gate ever
+    // reporting them for the console tree again, which is weakening a live check
+    // to record a constraint in a different repository.
+    //
+    // A scoped key is consulted only when categorising that directory, and the
+    // root pass (which passes no scope) can never see one. `:` is safe as the
+    // separator because an npm package name cannot contain it.
+    const blockEntry =
+      (scope ? blocklist.get(`${scope}:${name}`) : undefined) ?? blocklist.get(name);
     if (blockEntry) {
       blocked.push({ name, current, latest, reason: blockEntry.reason });
     } else {
@@ -715,7 +729,12 @@ async function checkDependencies(): Promise<void> {
   for (const { dir, name, packages } of privateOutdated) {
     const { mustUpgrade: dirMustUpgrade, blocked: dirBlocked } = categorizePackages(
       packages,
-      blocklist
+      blocklist,
+      // `name`, NOT `dir`: `dir` is absolute and would make the scoped key depend
+      // on where the repository happens to be checked out -- working on my machine
+      // and matching nothing in CI. `name` is `path.relative(CONSOLE_ROOT, dir)`,
+      // i.e. exactly the `private/account` that a reader would write in the file.
+      name
     );
     if (dirMustUpgrade.length > 0)
       privateMustUpgradeAll.push({ dir, name, packages: dirMustUpgrade });
@@ -910,9 +929,40 @@ function selftest(): void {
     }
   }
 
+  // SCOPED BLOCKLIST ENTRIES, both directions. The whole reason `<dir>:<pkg>`
+  // exists is that a BARE entry for a package private/account shares with console
+  // would stop this gate reporting it for CONSOLE too. If that ever silently
+  // starts happening, the freeze note in .deps-upgrade-blocklist has quietly
+  // become a hole in console's own freshness checking, and nothing else would say
+  // so. Driven on a synthetic blocklist rather than the real file, so the controls
+  // keep meaning the same thing when that file is edited.
+  const probe = new Map<string, BlocklistEntry>([
+    ['private/account:typescript', { reason: 'BLOCKER: scoped fixture' }],
+    ['glob', { reason: 'BLOCKER: bare fixture' }],
+  ]);
+  const outdatedFixture = {
+    typescript: { current: '6.0.3', latest: '7.0.2', wanted: '7.0.2' },
+    glob: { current: '11.1.0', latest: '13.0.6', wanted: '13.0.6' },
+  } as unknown as Record<string, OutdatedPackageInfo>;
+  const atRoot = categorizePackages(outdatedFixture, probe);
+  const inAccount = categorizePackages(outdatedFixture, probe, 'private/account');
+  const scopeChecks: Array<[string, boolean]> = [
+    ['a scoped entry blocks inside its own directory', inAccount.blocked.some((p) => p.name === 'typescript')],
+    ['CONTROL: the SAME package is still reported at the root', atRoot.mustUpgrade.some((p) => p.name === 'typescript')],
+    ['CONTROL: a bare entry still blocks everywhere, root included', atRoot.blocked.some((p) => p.name === 'glob') && inAccount.blocked.some((p) => p.name === 'glob')],
+    ['CONTROL: a scope that matches nothing blocks nothing extra', categorizePackages(outdatedFixture, probe, 'private/elite').blocked.length === 1],
+  ];
+  for (const [label, ok] of scopeChecks) {
+    if (!ok) {
+      console.error(`${RED}\u2717${NC} scoped-blocklist control failed: ${label}`);
+      process.exit(1);
+    }
+  }
+
   console.log(
     `${GREEN}\u2713${NC} control fired on both shapes: an unrunnable probe and an unreachable ` +
-      'registry each fail the gate instead of passing it'
+      'registry each fail the gate instead of passing it; and a scoped blocklist entry blocks ' +
+      'only its own directory (4 checks)'
   );
   process.exit(0);
 }

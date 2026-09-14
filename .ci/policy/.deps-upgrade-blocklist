@@ -38,3 +38,27 @@ playwright  # BLOCKER: a playwright version bump changes the bundled browser rev
 # ESLint v10 core — same constraint as @eslint/js: plugin ecosystem lacks v10 support
 eslint  # BLOCKER: v10 requires typescript-eslint/import/react plugin majors that have no eslint v10 peer support yet; take together with @eslint/js in a dedicated lint-tooling PR
 
+
+# ---------------------------------------------------------------------------
+# private/account, SCOPED ENTRIES (`<dir>:<package>`).
+#
+# These are console-side policy about ANOTHER repository's dependencies, which
+# reads oddly and is honest: it records a real external constraint rather than
+# inventing one. private/account is under an operator freeze, so nothing here can
+# be upgraded from this wave, and `check:deps --upgrade` has no scope flag and
+# would write straight into that submodule.
+#
+# SCOPED, NOT BARE, and this is the load-bearing part: four of the seven
+# (@biomejs/biome, typescript, vitest, hono) are ALSO console's own dependencies.
+# A bare entry is keyed on the package name alone and would have silently stopped
+# this gate reporting them for the CONSOLE tree ever again -- weakening a live
+# check to record a constraint in a different repo. A `private/account:` prefix is
+# consulted only when categorising that directory.
+# ---------------------------------------------------------------------------
+private/account:vitest  # BLOCKER: private/account is under an operator freeze (see rediacc/account#87); this is also a MAJOR, 4.1.11 -> 5.0.0, so it needs its own upgrade pass with the test suite driven, not a dependency refresh riding a CI-port wave. Waits for the freeze to lift; not a decision this wave is making.
+private/account:typescript  # BLOCKER: private/account is under an operator freeze (see rediacc/account#87); this is also a MAJOR, 6.0.3 -> 7.0.2, which moves the compiler under the account worker and needs its own pass. Waits for the freeze to lift; not a decision this wave is making.
+private/account:@biomejs/biome  # BLOCKER: private/account is under an operator freeze (see rediacc/account#87). Routine 2.5.11 -> 2.5.13 and it would be a one-line bump, but the freeze is an operator ruling about that repository and a lead cannot grant an exception to it while the operator is away. Console's own biome is NOT blocked -- that is why this entry is scoped.
+private/account:hono  # BLOCKER: private/account is under an operator freeze (see rediacc/account#87). Routine 4.13.5 -> 4.13.7. Scoped so console's own hono keeps being checked.
+private/account:stripe  # BLOCKER: private/account is under an operator freeze (see rediacc/account#87). Routine 22.6.1 -> 22.6.2, payment SDK, account-only.
+private/account:@aws-sdk/client-s3  # BLOCKER: private/account is under an operator freeze (see rediacc/account#87). Routine 3.1124.0 -> 3.1131.0, account-only, and it moves in lockstep with the presigner below.
+private/account:@aws-sdk/s3-request-presigner  # BLOCKER: private/account is under an operator freeze (see rediacc/account#87). Routine 3.1121.0 -> 3.1131.0, account-only, and the AWS SDK requires this to match client-s3 exactly.
