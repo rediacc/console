@@ -287,8 +287,11 @@ def main(argv: list[str] | None = None) -> int:
     if code != 0:
         latest_commit_time = ""
     if not latest_commit_time:
-        log.warn("Could not get latest commit time - skipping check")
-        return 0
+        log.error(
+            "Could not fetch the latest commit time for PR #%s (gh call failed or returned "
+            "nothing); cannot verify description freshness" % pr_number
+        )
+        return 1
 
     owner = repository.split("/", 1)[0]
     repo = repository.rsplit("/", 1)[-1]

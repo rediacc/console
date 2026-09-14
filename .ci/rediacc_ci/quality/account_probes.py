@@ -52,8 +52,11 @@ function that carries the flags rather than summarised here:
     writing this. account.sh is not safe to source under the strict flags this
     gate runs with: errexit trips on its re-source guard (account.sh:8,
     `[[ -n "${ACCOUNT_LIB_LOADED:-}" ]] && return 0`, whose && list returns
-    NON-ZERO on a first load), and nounset trips on the unset variables it and
-    find-port.sh reference. Either one aborts the source part-way, leaving every
+    NON-ZERO on a first load), and nounset trips on the unset variables it
+    references (`$CONSOLE_ROOT_DIR`, among others; `find-port.sh` used to
+    contribute its own until W7P5-b deleted it, and account.sh still has
+    enough of its own for the flag to matter). Either one aborts the source
+    part-way, leaving every
     function below undefined, and a probe that cannot be called reads as "not
     alive", i.e. the gate would report a PASS on assertion 1 while testing
     nothing at all. run.sh does not hit this because it does not source the
@@ -482,8 +485,15 @@ ACCOUNT_DIR="$CONSOLE_ROOT_DIR/private/account"
 account_something_else() { return 0; }
 """
 
-# The sibling account.sh sources. Empty is enough: the point is that the source
+# The sibling the FIXTURES source. Empty is enough: the point is that the source
 # succeeds, not what it defines.
+#
+# ARCHAEOLOGY, DELIBERATELY KEPT. The real `.ci/lib/find-port.sh` is DELETED
+# (W7P5-b) and the real account.sh no longer sources it. These fixtures are the
+# 2026-08-04 shape frozen as literals, exactly so that they do NOT track the
+# live file -- see the paragraph above on why substituting into a copy of the
+# real account.sh would silently yield an unmutated control. Removing the line
+# would re-key the fixtures against a shape the incident never had.
 FIXTURE_FIND_PORT = '#!/bin/bash\n: "${FIND_PORT_LOADED:=1}"\n'
 
 

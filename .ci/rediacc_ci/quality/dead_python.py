@@ -177,7 +177,96 @@ GLOB_ROOTS = {
 # reads an environment variable. If that stops being true the file goes DEAD again with no
 # exemption standing, and the answer then is to re-add an entry here with a fresh reason,
 # not to assume the old one still applies.
-MANUAL_ENTRY_POINTS: dict[str, str] = {}
+MANUAL_ENTRY_POINTS: dict[str, str] = {
+    ".ci/rediacc_ci/proxies/cli_manifest.py": (
+        "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
+        "(rediacc_ci.tests.differential), not by a static import, so this scanner's "
+        "import graph cannot see the route -- and it is not a gate either: this is a "
+        "workflow run: target script, and any cutover from the .sh call site is a "
+        "separate, later box. Remove the entry the moment a real route lands."
+    ),
+    ".ci/rediacc_ci/proxies/docker_prepull.py": (
+        "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
+        "(rediacc_ci.tests.differential), not by a static import, so this scanner's "
+        "import graph cannot see the route -- and it is not a gate either: this is a "
+        "workflow run: target script, and any cutover from the .sh call site is a "
+        "separate, later box. Remove the entry the moment a real route lands."
+    ),
+    ".ci/rediacc_ci/version/resolve_version.py": (
+        "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
+        "(rediacc_ci.tests.differential), not by a static import, so this scanner's "
+        "import graph cannot see the route -- and it is not a gate either: this is a "
+        "workflow run: target script, and any cutover from the .sh call site is a "
+        "separate, later box. Remove the entry the moment a real route lands."
+    ),
+    ".ci/rediacc_ci/deploy/resolve_account_deploy_config.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/deploy/resolve_www_deploy_target.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/deploy/upload_media_to_r2.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/release/backfill_write_sentinel.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/release/check_soak_period.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/release/decide_release_mode.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/release/deployment_summary.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/release/resolve_backfill_commit.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/release/validate_stage_artifacts.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/release/check_edge_manifest.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/release/check_stable_manifest.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/release/check_existing_release.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/release/resolve_ci_run.py": (
+        "W7P5-a port. Invoked by MODULE-NAME STRING from its own pytest differential (rediacc_ci.tests.differential), not by a static import, so this scanner's import graph cannot see the route -- and it is not a gate either: these are workflow run: targets, and the cutover from the .sh call site is W7P4-W, a separate later box. Remove the entry the moment W7P4-W lands, since the real route then makes this exemption stop being true."
+    ),
+    ".ci/rediacc_ci/ci_signal/create_complete.py": (
+        "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
+        "(rediacc_ci.tests.differential), not by a static import, so this scanner's "
+        "import graph cannot see the route -- and it is not a gate either: this is a "
+        "workflow run: target script, and any cutover from the .sh call site is a "
+        "separate, later box. Remove the entry the moment a real route lands."
+    ),
+    ".ci/rediacc_ci/quality/announce_gate_skips.py": (
+        "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
+        "(rediacc_ci.tests.differential), not by a static import, so this scanner's "
+        "import graph cannot see the route -- and it is not a gate either: this is a "
+        "workflow run: target script, and any cutover from the .sh call site is a "
+        "separate, later box. Remove the entry the moment a real route lands."
+    ),
+    ".ci/rediacc_ci/quality/run_external_gate.py": (
+        "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
+        "(rediacc_ci.tests.differential), not by a static import, so this scanner's "
+        "import graph cannot see the route -- and it is not a gate either: this is a "
+        "workflow run: target script, and any cutover from the .sh call site is a "
+        "separate, later box. Remove the entry the moment a real route lands."
+    ),
+    ".ci/rediacc_ci/release/assert_artifact_version.py": (
+        "W7P6 port. Invoked by MODULE-NAME STRING from its own pytest differential "
+        "(rediacc_ci.tests.differential), not by a static import, so this scanner's "
+        "import graph cannot see the route -- and it is not a gate either: this is a "
+        "workflow run: target script, and any cutover from the .sh call site is a "
+        "separate, later box. Remove the entry the moment a real route lands."
+    ),
+}
 
 _PY_TOKEN = re.compile(r"[\w.\-/]*[\w\-]\.py")
 _SH_TOKEN = re.compile(r"[\w.\-/]*[\w\-]\.sh")

@@ -18,10 +18,14 @@ arrival.
 THE SHIM CONTRACT, stated once here rather than in each module. For every
 module in this subpackage:
 
-  1. The bash file KEEPS ITS PATH AND ITS FUNCTION NAMES. Roughly 150 scripts
-     source `.ci/scripts/lib/`, and `.ci/lib/find-port.sh` is sourced by
-     `devbox.sh`, `account.sh` and `service.sh` at container-start time. A port
-     that renamed anything would be a flag day.
+  1. The bash file KEEPS ITS PATH AND ITS FUNCTION NAMES *while it exists*.
+     Roughly 150 scripts source `.ci/scripts/lib/`, and `.ci/lib/find-port.sh`
+     was sourced by `devbox.sh`, `account.sh` and `service.sh` at
+     container-start time. A port that renamed anything would be a flag day.
+     THE SHIM STAGE IS NOT THE END STATE: W7P5-b deleted `find-port.sh`
+     outright and retargeted those three callers onto `core.ports` directly,
+     because a shim is a delay, not an exit. Clause 3 below is what governs
+     WHEN that is allowed, not whether.
   2. The bash function BODY becomes one call into this package. Not a
      reimplementation kept in sync -- there is exactly one implementation and
      bash reaches it.

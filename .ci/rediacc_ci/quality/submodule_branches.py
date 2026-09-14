@@ -467,21 +467,22 @@ def branch_has_merged_pr(repo: str, branch: str) -> bool:
     return len(rows) > 0
 
 
-def console_pr_body(env: dict[str, str] | None = None) -> str:
-    """The console PR description, or "" when there is no PR context."""
+def console_pr_body(env: dict[str, str] | None = None) -> tuple[bool, str]:
+    """(ok, body). ok=False means the fetch failed, not that the body is empty."""
     environ = os.environ if env is None else env
     pr_number = environ.get("PR_NUMBER", "")
     if not pr_number:
-        return ""
+        return True, ""
     if not have_gh():
-        return ""
-    proc = _run(["gh", "pr", "view", pr_number, "--json", "body"])
-    if proc.returncode != 0:
-        return ""
-    try:
-        return str(json.loads(proc.stdout or "{}").get("body") or "")
-    except ValueError:
-        return ""
+        return True, ""
+    ok, out = gh_probe(
+        False,
+        "console PR body for #%s" % pr_number,
+        ["pr", "view", pr_number, "--json", "body", "--jq", ".body // empty"],
+    )
+    if not ok:
+        return False, ""
+    return True, out.rstrip("\n")
 
 
 def pr_is_linked(pr_url: str, text: str) -> bool:
@@ -699,8 +700,14 @@ def main(argv: list[str] | None = None) -> int:
     _run(["git", "fetch", "origin", "main", "--quiet"], cwd=str(root))
 
     pr_number = os.environ.get("PR_NUMBER", "")
+    pr_body_ok = True
     if pr_number and have_gh():
-        pr_body = console_pr_body()
+        pr_body_ok, pr_body = console_pr_body()
+        if not pr_body_ok:
+            log.warn(
+                "could not fetch console PR #%s description after retries; cannot verify "
+                "submodule PR links there this run" % pr_number
+            )
 
     for sm_path in SUBMODULE_ORDER:
         if not submodule_initialised(root, sm_path):
@@ -766,7 +773,13 @@ def main(argv: list[str] | None = None) -> int:
         sub_pr_number = pr_info.split("|", 1)[0]
         sub_pr_url = pr_info.rsplit("|", 1)[-1]
 
-        if pr_body and not pr_is_linked(sub_pr_url, pr_body):
+        if not pr_body_ok:
+            log.error(
+                "✗ %s: could not fetch console PR description; cannot certify %s is linked there"
+                % (sm_path, sub_pr_url)
+            )
+            errors += 1
+        elif pr_body and not pr_is_linked(sub_pr_url, pr_body):
             log.error("✗ %s: PR %s not linked in console PR description" % (sm_path, sub_pr_url))
             log.error("  AI FIX: Edit console PR description to include: %s" % sub_pr_url)
             errors += 1

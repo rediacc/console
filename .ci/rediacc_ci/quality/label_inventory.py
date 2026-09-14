@@ -606,7 +606,17 @@ def main(argv: list[str] | None = None) -> int:
             text=True,
             check=False,
         )
-        live_json = proc.stdout if proc.returncode == 0 else ""
+        if proc.returncode != 0:
+            log.error(
+                "could not read the live label list (with descriptions/colours) from GitHub: %s"
+                % (proc.stdout + proc.stderr).rstrip("\n")
+            )
+            log.error(
+                "This gate refuses to pass blind on the drift comparison. Authenticate "
+                "(gh auth login / GH_TOKEN) and re-run."
+            )
+            return 1
+        live_json = proc.stdout
 
     if live_json and labels_file == DEFAULT_LABELS_FILE:
         try:

@@ -110,6 +110,7 @@ POLICY_FILES: tuple[str, ...] = (
     # .ci/rediacc_ci/quality/worklist_env_registry.py and nowhere else. JSON for the
     # same reason as the line above: it holds a table, not a list of entries.
     "worklist-env-registry.json",
+    ".w7p5a-real-run-blocklist",
 )
 
 _VALID = frozenset(POLICY_FILES)

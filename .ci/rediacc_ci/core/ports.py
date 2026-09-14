@@ -1,6 +1,10 @@
 """Port availability and the deterministic per-worktree port block.
 
-PORTED FROM `.ci/lib/find-port.sh`, which still exists and now delegates here.
+PORTED FROM `.ci/lib/find-port.sh`, which delegated here and is now DELETED
+(W7P5-b): a shim is a delay, not an exit. Its three callers -- `.ci/lib/
+devbox.sh`, `.ci/lib/account.sh` and `.ci/lib/service.sh` -- name this module
+directly, and `.ci/rediacc_ci/tests/test_core_ports.py` carries the assertion
+that devbox.sh really reaches it rather than having grown a local copy.
 The original header said what it was for in two lines: find an available port
 for test infrastructure, and avoid the conflicts that appear when several
 worktrees run at once or the conventional port is already taken. Everything
@@ -37,12 +41,14 @@ because bash has no hash function.
 `_sha256sum_portable` also carried a correction worth keeping, because it
 records a comment that was WRONG and was fixed by measurement. It said the
 function must not depend on `local-common.sh` because find-port.sh is sourced
-standalone by `check-account-probes.sh`. It is not. The gate that sources it
-standalone is `.ci/scripts/quality/check-setup-idempotency.sh`, whose control C
-runs `bash -c "source '$fp'; derive_slot ..."`; check-account-probes.sh sources
-`.ci/lib/account.sh`, and account.sh is what pulls find-port.sh in. The
-constraint is real either way -- this module must stay importable on its own --
-and the misattribution is recorded so nobody re-derives it from the wrong gate.
+standalone by `check-account-probes.sh`. It is not. The gate that sourced it
+standalone was `.ci/scripts/quality/check-setup-idempotency.sh`, whose control C
+ran `bash -c "source '$fp'; derive_slot ..."`; check-account-probes.sh sources
+`.ci/lib/account.sh`, and account.sh was what pulled find-port.sh in. Both call
+sites now run this module directly (control C through PYTHONPATH, which is what
+the shim was setting anyway) and the shim is deleted. The constraint is real
+either way -- this module must stay importable on its own -- and the
+misattribution is recorded so nobody re-derives it from the wrong gate.
 
 --------------------------------------------------------------------------
 WHY THE PROBE STILL SHELLS OUT TO ss / lsof / netstat
@@ -248,7 +254,8 @@ def find_port_block(
 
 
 # ---------------------------------------------------------------------------
-# argv dispatch -- the surface the bash shim in .ci/lib/find-port.sh calls
+# argv dispatch -- the surface .ci/lib/{devbox,account,service}.sh call, and
+# what the deleted .ci/lib/find-port.sh shim used to call on their behalf
 # ---------------------------------------------------------------------------
 
 

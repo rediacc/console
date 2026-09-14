@@ -323,7 +323,7 @@ def assert_bijection(
         # this state at all (a fresh dev bucket). Short-circuit to OK rather
         # than false-positive on every old tag in repo history.
         out.append(
-            "OK: release-state bijection holds — no cli sentinels yet (contract not in effect)"
+            "OK: release-state bijection holds -- no cli sentinels yet (contract not in effect)"
         )
         return out, 0
 

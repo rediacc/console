@@ -99,13 +99,14 @@ paragraph above exists to remove, arriving by a second door.
 THE OTHER INLINE NOTES, carried across.
 -----------------------------------------------------------------------------
 
-CHECK C TAKES A ROOT, NOT A FILE. The subject moved in W7 phase 1.
-`.ci/lib/find-port.sh` is now a delegating shim over rediacc_ci.core.ports, so
-mutating the shim proves nothing -- the digest it used to compute is not there
-any more. What this takes is a ROOT, handed to the shim through REDIACC_CI_ROOT,
-so the control can point it at a COPY of the package with the digest line
-broken. That is a strictly stronger control than the old one: it fails unless
-the delegation actually reaches the Python.
+CHECK C TAKES A ROOT, NOT A FILE. The subject moved in W7 phase 1 and moved
+again in W7P5-b. `.ci/lib/find-port.sh` was a delegating shim over
+rediacc_ci.core.ports, so mutating the shim proved nothing -- the digest it used
+to compute was not there any more -- and the shim is now DELETED outright. What
+this takes is a ROOT, turned into the PYTHONPATH the subprocess runs under, so
+the control can point it at a COPY of the package with the digest line broken.
+That is a strictly stronger control than the original: it fails unless the
+derivation actually reaches that copy of the Python.
 
 FIVE SAMPLES, NOT TWO. The control for check C plants a random digest, and a
 random value mod 100 repeats itself about 1% of the time -- so a two-sample
@@ -144,12 +145,15 @@ other sessions share this checkout.
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-EVERY SUBPROCESS THE TWIN RUNS IS STILL RUN. `derive_slot` is sourced out of a
-bash shim, `devbox_route_label` is sourced out of `devbox.sh`, and both are
-invoked through `bash -c` exactly as the twin invokes them. Re-implementing
-either in Python would test this module's idea of what those functions do rather
-than what they do, and check E in particular exists because "OK" and "404" are
-both valid text to a static reader.
+EVERY SUBPROCESS THE TWIN RUNS IS STILL RUN. The slot is derived by running
+`rediacc_ci.core.ports derive-slot` as a CHILD under the control's PYTHONPATH
+(it used to be sourced out of a bash shim, deleted in W7P5-b; importing the
+module in-process instead would read THIS interpreter's copy and the broken-copy
+control would go permanently green). `devbox_route_label` is still sourced out
+of `devbox.sh` through `bash -c`, exactly as the twin invokes it.
+Re-implementing either in Python would test this module's idea of what those
+functions do rather than what they do, and check E in particular exists because
+"OK" and "404" are both valid text to a static reader.
 
 THE `awk` FUNCTION-BODY EXTRACTOR IS TRANSLATED, NOT SHELLED OUT, because it is
 four lines and its exact semantics matter: it starts at a line matching
@@ -453,17 +457,21 @@ def _unified_delta(before: str, after: str) -> list[str]:
     return out
 
 
-def derive_slot(shim: pathlib.Path, root: str, key: str, modulus: str) -> str:
-    """`source find-port.sh; derive_slot <key> <modulus>` under REDIACC_CI_ROOT.
+def derive_slot(root: str, key: str, modulus: str) -> str:
+    """`rediacc_ci.core.ports derive-slot <key> <modulus>` out of `<root>/.ci`.
 
-    Shelled out on purpose; see the port notes. The shim is a delegation over
-    `rediacc_ci.core.ports`, and the whole point of check C's control is that a
-    broken PACKAGE must be visible through the shim.
+    Shelled out on purpose; see the port notes. It used to go through
+    `source find-port.sh; derive_slot ...`, but that shim is DELETED (W7P5-b)
+    and PYTHONPATH is what the shim was setting anyway. Prefixed, never
+    appended, because the whole point of check C's control is that a broken
+    COPY of the package at `<root>` must win over the real one.
     """
     env = dict(os.environ)
-    env["REDIACC_CI_ROOT"] = root
+    ci_dir = str(pathlib.Path(root) / ".ci")
+    existing = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = ci_dir + (os.pathsep + existing if existing else "")
     proc = subprocess.run(
-        ["bash", "-c", "source '%s'; derive_slot %s %s" % (shim, key, modulus)],
+        [sys.executable, "-m", "rediacc_ci.core.ports", "derive-slot", key, modulus],
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
@@ -473,11 +481,10 @@ def derive_slot(shim: pathlib.Path, root: str, key: str, modulus: str) -> str:
     return proc.stdout.strip()
 
 
-def check_c(report: Report, lib: pathlib.Path, root: str) -> bool:
+def check_c(report: Report, root: str) -> bool:
     """C: port derivation is deterministic and per-worktree distinct."""
-    shim = lib / "find-port.sh"
-    a1 = derive_slot(shim, root, "/home/x/console", "100")
-    b1 = derive_slot(shim, root, "/home/x/console/.worktrees/0824-1", "100")
+    a1 = derive_slot(root, "/home/x/console", "100")
+    b1 = derive_slot(root, "/home/x/console/.worktrees/0824-1", "100")
 
     if a1 == "":
         report.fail("C: derive_slot produced nothing")
@@ -485,7 +492,7 @@ def check_c(report: Report, lib: pathlib.Path, root: str) -> bool:
 
     # FIVE samples, not two. See the header for the 1%-flake this removes.
     for _ in range(4):
-        sample = derive_slot(shim, root, "/home/x/console", "100")
+        sample = derive_slot(root, "/home/x/console", "100")
         if sample != a1:
             report.fail("C: derive_slot is not deterministic (%s then %s)" % (a1, sample))
             return False
@@ -780,7 +787,7 @@ def main(argv: list[str] | None = None) -> int:
         report.ok("every mutating setup step is guarded")
     if check_b(report, root):
         report.ok("setup --check reports and mutates nothing")
-    if check_c(report, lib, str(root)):
+    if check_c(report, str(root)):
         report.ok("port derivation is deterministic and per-worktree distinct")
     if check_d(report, lib / "local-common.sh"):
         report.ok("ensure_renet_built checks the build's exit code")
@@ -845,7 +852,7 @@ def main(argv: list[str] | None = None) -> int:
                 "%sCONTROL IS VACUOUS%s: C -- mutation did not apply." % (red, nc), file=sys.stderr
             )
             control_fails = 1
-        elif not run_control("C (deterministic ports)", check_c, lib, str(broken_root)):
+        elif not run_control("C (deterministic ports)", check_c, str(broken_root)):
             print(
                 "%sCONTROL DID NOT FIRE%s: C (deterministic ports) -- the planted defect passed."
                 % (red, nc),
