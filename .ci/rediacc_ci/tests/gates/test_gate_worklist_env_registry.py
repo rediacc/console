@@ -17,8 +17,10 @@ is asked afterwards, so a different instrument confirms the restore.
 """
 
 import json
+import pathlib
 import subprocess
 import sys
+import tempfile
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -26,10 +28,11 @@ from rediacc_ci.tests.gates import harness
 GATE = paths.from_root(".ci", "scripts", "quality", "check_worklist_env_registry.py")
 REGISTRY = paths.from_root(".ci", "policy", "worklist-env-registry.json")
 SOURCE_PLANT = paths.from_root(".claude", "hooks", "stop", "worklist-cases", "21-cadence.sh")
+SOURCE_PLANT_REL = str(SOURCE_PLANT.relative_to(paths.repo_root()))
 
 
-def _run(*args) -> harness.RunResult:
-    return harness.run([sys.executable, str(GATE), *args], cwd=paths.repo_root())
+def _run(*args, env=None) -> harness.RunResult:
+    return harness.run([sys.executable, str(GATE), *args], cwd=paths.repo_root(), env=env)
 
 
 def _rel(path) -> str:
@@ -76,54 +79,68 @@ def test_the_registry_size_matches_the_shape_line(gate):
 
 
 def test_dropping_a_registered_name_reds(gate):
-    gate.log_test("PLANT: remove a name from the REAL registry while the code still reads it")
+    gate.log_test("PLANT: remove a name from a REAL registry copy while the code still reads it")
+    # WORKLIST_REGISTRY_OVERRIDE_FILE (registered, kind=path) points run() at a
+    # tmp copy instead of the tracked file. The comparison is still against the
+    # REAL corpus scan (scan_corpus reads the real tree unchanged) -- only the
+    # registry side is a copy, so a hard kill here corrupts a tmp file, never
+    # `.ci/policy/worklist-env-registry.json`. That file used to be written and
+    # restored in a `finally`, and a kill landing in that window deleted
+    # WORKLIST_FOCUS from it for real, twice in one session.
     original = REGISTRY.read_bytes()
-    try:
+    with tempfile.TemporaryDirectory() as td:
+        mutated = pathlib.Path(td) / "worklist-env-registry-mutated.json"
         obj = json.loads(original.decode("utf-8"))
         del obj["names"]["WORKLIST_FOCUS"]
-        REGISTRY.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
-        result = _run()
-        gate.assert_exit_code(1, result.rc, "an unregistered read must red")
-        gate.assert_contains(result.combined, "UNREGISTERED WORKLIST_FOCUS", "names it")
-        gate.assert_contains(result.combined, "reads as UNSET", "and says which way it fails")
-    finally:
-        REGISTRY.write_bytes(original)
-    gate.assert_eq(REGISTRY.read_bytes(), original, "the registry is restored byte for byte")
-    gate.log_pass("a read the registry does not know about reds")
+        mutated.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
+        result = _run(env={"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
+    gate.assert_exit_code(1, result.rc, "an unregistered read must red")
+    gate.assert_contains(result.combined, "UNREGISTERED WORKLIST_FOCUS", "names it")
+    gate.assert_contains(result.combined, "reads as UNSET", "and says which way it fails")
+    gate.assert_eq(REGISTRY.read_bytes(), original, "never touched on disk, not merely restored")
+    gate.log_pass("a read the registry does not know about reds, with no real file at risk")
 
 
 def test_a_registered_name_nobody_reads_reds(gate):
-    gate.log_test("PLANT: the OTHER direction, a phantom entry in the REAL registry")
+    gate.log_test("PLANT: the OTHER direction, a phantom entry in a REAL registry copy")
     original = REGISTRY.read_bytes()
-    try:
+    with tempfile.TemporaryDirectory() as td:
+        mutated = pathlib.Path(td) / "worklist-env-registry-mutated.json"
         obj = json.loads(original.decode("utf-8"))
         obj["names"]["WORKLIST_ZZZ_PHANTOM"] = {"kind": "tuning", "defaults": ["'1'"]}
-        REGISTRY.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
-        result = _run()
-        gate.assert_exit_code(1, result.rc, "a dead entry must red")
-        gate.assert_contains(result.combined, "DEAD WORKLIST_ZZZ_PHANTOM", "names it")
-    finally:
-        REGISTRY.write_bytes(original)
-    gate.assert_eq(REGISTRY.read_bytes(), original, "restored byte for byte")
-    gate.log_pass("the direction that rots is the one this case covers")
+        mutated.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
+        result = _run(env={"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
+    gate.assert_exit_code(1, result.rc, "a dead entry must red")
+    gate.assert_contains(result.combined, "DEAD WORKLIST_ZZZ_PHANTOM", "names it")
+    gate.assert_eq(REGISTRY.read_bytes(), original, "never touched on disk, not merely restored")
+    gate.log_pass("the direction that rots is the one this case covers, with no real file at risk")
 
 
 def test_a_typo_in_a_real_source_file_reds(gate):
-    gate.log_test("PLANT: a misspelled expansion in a real tracked shell file")
+    gate.log_test("PLANT: a misspelled expansion, scanned in place of a real tracked file")
+    # WORKLIST_SOURCE_OVERRIDE_FILE (registered, kind=path) substitutes CONTENT
+    # for one real corpus entry without ever writing to the tracked file: the
+    # real `git ls-files` list, the real file count and the real everything-else
+    # are unchanged, only SOURCE_PLANT's bytes come from a tmp copy instead of
+    # disk. A hard kill mid-test now leaves a tmp file orphaned, never the
+    # tracked one -- the same class of hazard the WORKLIST_FOCUS registry
+    # corruption was (that half fixed by the registry-path seam above), one
+    # file over.
     original = SOURCE_PLANT.read_bytes()
-    try:
-        SOURCE_PLANT.write_bytes(original + b'\n# gate probe\necho "${WORKLIST_CADENEC:-on}"\n')
-        result = _run()
-        gate.assert_exit_code(1, result.rc, "a typo'd name must red")
-        gate.assert_contains(result.combined, "WORKLIST_CADENEC", "names the misspelling")
-        gate.assert_contains(result.combined, "21-cadence.sh", "and the file it is in")
-    finally:
-        SOURCE_PLANT.write_bytes(original)
-    gate.assert_eq(SOURCE_PLANT.read_bytes(), original, "restored byte for byte")
+    with tempfile.TemporaryDirectory() as td:
+        mutated = pathlib.Path(td) / "21-cadence-mutated.sh"
+        mutated.write_bytes(original + b'\n# gate probe\necho "${WORKLIST_CADENEC:-on}"\n')
+        result = _run(env={"WORKLIST_SOURCE_OVERRIDE_FILE": "%s:%s" % (SOURCE_PLANT_REL, mutated)})
+    gate.assert_exit_code(1, result.rc, "a typo'd name must red")
+    gate.assert_contains(result.combined, "WORKLIST_CADENEC", "names the misspelling")
+    gate.assert_contains(result.combined, "21-cadence.sh", "and the file it is in")
+    gate.assert_eq(
+        SOURCE_PLANT.read_bytes(), original, "never touched on disk, not merely restored"
+    )
     _unmodified(gate, SOURCE_PLANT)
     after = _run()
-    gate.assert_exit_code(0, after.rc, "green again once the plant is gone")
-    gate.log_pass("the scanner sees a real typo in a real file, and the tree recovers")
+    gate.assert_exit_code(0, after.rc, "green with no override set, since nothing was ever mutated")
+    gate.log_pass("the scanner sees a real typo without a real file ever being at risk")
 
 
 def test_prose_under_agent_is_not_a_read(gate):

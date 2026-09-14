@@ -84,6 +84,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -234,6 +235,19 @@ def tracked_files(root):
     return [p for p in proc.stdout.decode("utf-8", "surrogateescape").split("\0") if p]
 
 
+#: A single "rel/path:override/file" pair, test-only. `scan_corpus` walks the
+#: REAL tracked file list (`git ls-files`) unchanged -- the corpus stays real,
+#: which is the whole point of these gate tests plant-driving the live tree --
+#: but when the walk reaches `rel/path`, it reads CONTENT from `override/file`
+#: (a tmp copy the caller mutated) instead of the tracked file on disk. This is
+#: what lets a plant test corrupt a scanned SOURCE file without ever writing to
+#: it: `.claude/hooks/stop/worklist-cases/21-cadence.sh` is real, tracked, and
+#: a hard kill mid-test used to be able to leave it mutated (the same shape as
+#: the WORKLIST_FOCUS registry corruption, one file over). Split on the FIRST
+#: colon only, so a Windows-style drive-letter override path still parses.
+_SOURCE_OVERRIDE = os.environ.get("WORKLIST_SOURCE_OVERRIDE_FILE", "")
+
+
 def scan_corpus(root, exclusions):
     """(reads, scanned_file_count, excluded_file_count) over the tracked tree."""
     root = pathlib.Path(root)
@@ -243,6 +257,7 @@ def scan_corpus(root, exclusions):
             "`git ls-files` returned ZERO paths, so this gate is not seeing the tree; "
             "its green would mean nothing"
         )
+    override_rel, _, override_file = _SOURCE_OVERRIDE.partition(":")
     prefixes = tuple(exclusions)
     reads = []
     scanned = 0
@@ -253,7 +268,7 @@ def scan_corpus(root, exclusions):
             continue
         if not rel.endswith((".py", ".sh")):
             continue
-        path = root / rel
+        path = pathlib.Path(override_file) if (override_rel and rel == override_rel) else root / rel
         try:
             source = path.read_text(encoding="utf-8", errors="surrogateescape")
         except OSError:
@@ -399,9 +414,34 @@ def evaluate(registry, reads):
     return findings, stats
 
 
+#: Test-only override for WHICH FILE `load_registry` reads, matching the
+#: `LABEL_INVENTORY_LIVE_FILE` seam already in this estate
+#: (`check-label-inventory.sh`). The real corpus scan (`scan_corpus`, above)
+#: is untouched by this seam -- only the registry file swaps -- so a plant
+#: that mutates the REGISTRY no longer has to write the tracked
+#: `.ci/policy/worklist-env-registry.json` to exercise the comparison. Two
+#: cases (`test_dropping_a_registered_name_reds`,
+#: `test_a_registered_name_nobody_reads_reds`) used to write-mutate-restore
+#: that tracked file directly; a hard kill in the write window left it
+#: genuinely corrupted twice in one session (`WORKLIST_FOCUS` deleted, then
+#: `WORKLIST_ZZZ_PHANTOM` added), each time from an unrelated process
+#: (a suite timeout, then a concurrent pytest run) landing in the exact
+#: millisecond window between the write and the `finally`.
+REGISTRY_OVERRIDE = os.environ.get("WORKLIST_REGISTRY_OVERRIDE_FILE", "")
+
+
 def run(root=None):
+    # The override applies ONLY to the real invocation (no explicit root, i.e.
+    # `run()` from main()). selftest()'s own controls always pass an explicit
+    # fixture root, and must never be redirected onto a plant test's tmp
+    # registry that happens to be sitting in the same process's environment --
+    # that would make every OTHER control's fixture registry silently wrong.
+    use_override = root is None and REGISTRY_OVERRIDE
     root = pathlib.Path(root or paths.repo_root())
-    registry = load_registry(policy_path(REGISTRY_NAME, root))
+    registry_path = (
+        pathlib.Path(REGISTRY_OVERRIDE) if use_override else policy_path(REGISTRY_NAME, root)
+    )
+    registry = load_registry(registry_path)
     exclusions = sorted(registry["exclusions"])
     reads, scanned, excluded = scan_corpus(root, exclusions)
     if not reads:

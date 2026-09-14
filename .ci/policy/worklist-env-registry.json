@@ -698,6 +698,20 @@
         "'12'"
       ]
     },
+    "WORKLIST_REGISTRY_OVERRIDE_FILE": {
+      "kind": "path",
+      "defaults": [
+        "''"
+      ],
+      "why": "GATE-SEAM, test-only: an absolute path, read by check:ci-worklist-env-registry's own run() in place of the real .ci/policy/worklist-env-registry.json, so a registry plant (test_dropping_a_registered_name_reds, test_a_registered_name_nobody_reads_reds) never writes the tracked file -- that write-mutate-restore shape corrupted it twice in one session when an unrelated kill landed in the write window. Unset means the real registry is read unchanged."
+    },
+    "WORKLIST_SOURCE_OVERRIDE_FILE": {
+      "kind": "path",
+      "defaults": [
+        "''"
+      ],
+      "why": "GATE-SEAM, test-only: `rel/path:override/file`, read by check:ci-worklist-env-registry's own scan_corpus() to substitute one tracked source file's CONTENT with a tmp copy during the plant tests, so a source-file plant (test_a_typo_in_a_real_source_file_reds) never writes the real tracked .claude/hooks/stop/worklist-cases/21-cadence.sh -- the same class of hazard the WORKLIST_FOCUS registry corruption was, one file over. Unset means no substitution: the real corpus is scanned unchanged."
+    },
     "WORKLIST_STORE_DIR": {
       "kind": "path",
       "defaults": [

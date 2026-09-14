@@ -190,6 +190,20 @@ def in_scope(rel):
 #: therefore switched off within a day.
 OBJECT_MIN = int(os.environ.get("PLAN_CITATIONS_OBJECT_MIN", "9"))
 
+#: The trailing 12-hex group of a canonical UUID
+#: (`nnnnnnnn-nnnn-nnnn-nnnn-NNNNNNNNNNNN`) is always pure hex and always
+#: satisfies HEXTOK_RE once it reaches OBJECT_MIN, so a Stripe secret id, a DB
+#: row id or a JWT claim quoted in a plan reads as a dead git object citation
+#: purely by coincidence of shape. Measured 2026-09-14: 9 such tokens across
+#: this corpus, none of them a git object and none of them a typo -- the same
+#: false-positive class `aea2bc733552` was, one docstring up, but for UUIDs
+#: rather than shape-duplication fingerprints. Matched by requiring the four
+#: preceding hex groups immediately before the candidate token, so a bare hex
+#: run with no UUID dashes in front of it is unaffected.
+UUID_TAIL_RE = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-([0-9a-f]{12})", re.IGNORECASE
+)
+
 #: How many findings are printed before the tail is summarised. A wall of
 #: findings is a wall nobody reads to the end of, and the fix for the first is
 #: usually the fix for the rest.
@@ -303,6 +317,7 @@ def citations(text):
     take(CK.CITE_RE, "fileline")
     take(R.PLAN_REF_RE, "plan")
     take(R.GATE_RE, "gate")
+    uuid_tail_spans = [u.span(1) for u in UUID_TAIL_RE.finditer(text or "")]
     for m in R.HEXTOK_RE.finditer(text or ""):
         if any(m.start() < e and s < m.end() for s, e in spans):
             continue
@@ -310,6 +325,9 @@ def citations(text):
         # See the docstring: an all-digit token is a run id, a date or an issue
         # number far more often than it is a git object, and it is never judged.
         if tok.isdigit() or len(tok) < OBJECT_MIN:
+            continue
+        # The trailing group of a UUID, not a git object. See UUID_TAIL_RE.
+        if (m.start(1), m.end(1)) in uuid_tail_spans:
             continue
         # A SHAPE FINGERPRINT IS NOT A GIT OBJECT, and it looks exactly like one: 12 hex
         # characters, which this gate judges as an abbreviated sha and can never resolve.
@@ -370,12 +388,19 @@ def submodule_paths(root):
 def unresolved(root, kind, token):
     """(bad, why) -- False means the pointer lands somewhere real.
 
-    `object` is the one kind with TWO acceptable answers, so it is asked twice.
-    Demanding a blob would flag every legitimate commit and demanding a commit
-    would flag every blob, and a record is entitled to carry either.
+    `object` is the one kind with THREE acceptable answers, so it is asked up
+    to three times. Demanding a blob would flag every legitimate commit,
+    demanding a commit would flag every blob, and a record is entitled to
+    carry any of the three -- a `tree` is rare (a citation into a `git
+    filter-branch`/rewrite control naming a tree id directly) but a real,
+    correctly-cited object that neither `blob` nor `commit` resolves.
     """
     if kind == "object":
-        if R.resolve(root, "blob", token)[0] or R.resolve(root, "commit", token)[0]:
+        if (
+            R.resolve(root, "blob", token)[0]
+            or R.resolve(root, "commit", token)[0]
+            or R.resolve(root, "tree", token)[0]
+        ):
             return False, ""
         return True, (
             "names neither a blob nor a commit in this clone. Three things it could be, "
@@ -647,6 +672,17 @@ def selftest(root):
     ck(
         "CONTROL: a hex-and-letter token IS treated as an object",
         any(k == "object" for k, _t in citations("at c6d3af163 the branch point")),
+    )
+    ck(
+        "the tail of a UUID is NOT treated as an object",
+        not any(
+            k == "object"
+            for k, _t in citations("Stripe secret 8f14e45f-ceea-467e-b7a1-3fda6dabc123 leaked")
+        ),
+    )
+    ck(
+        "CONTROL: the same 12 hex characters WITHOUT the UUID dashes ARE",
+        any(k == "object" for k, _t in citations("Stripe secret 3fda6dabc123 leaked")),
     )
     # THE FLOOR, both directions. An 8-hex session prefix must not be judged and
     # a 9-hex sha must be; a floor that silently drifted to 7 would red on every
