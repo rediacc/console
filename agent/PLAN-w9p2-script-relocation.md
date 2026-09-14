@@ -1,5 +1,6 @@
 # PLAN: W9 P2 script relocation, remaining legs (scripts/gen, scripts/ops)
 Status: draft -- design only, not implemented
+Owner: f4da5c2e
 
 ## Why
 

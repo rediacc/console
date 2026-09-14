@@ -1025,7 +1025,7 @@
     },
     "agent/PLAN-w7p4w-docker-cutover.md": {
       "status": "draft",
-      "owner": "unowned",
+      "owner": "f4da5c2e",
       "open": 12,
       "done": 0,
       "open_sigs": [
@@ -1046,7 +1046,7 @@
     },
     "agent/PLAN-w9p2-script-relocation.md": {
       "status": "draft",
-      "owner": "unowned",
+      "owner": "f4da5c2e",
       "open": 10,
       "done": 0,
       "open_sigs": [
