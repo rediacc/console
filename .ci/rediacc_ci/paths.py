@@ -65,6 +65,7 @@ to ASK; the resolver does not decide for them.
 import os
 import pathlib
 import sys
+from collections.abc import Iterable, Iterator
 
 # The single environment override for the whole package. Named once, here, so a
 # harness pointing the program at a fixture sets one variable rather than
@@ -224,6 +225,102 @@ def on_sys_path(directory: os.PathLike[str] | str) -> str:
     return text
 
 
+# Directory names no corpus walk in this package may descend into, at any depth.
+#
+# `.git` and `node_modules` are here because every gate in this package scans
+# TRACKED SOURCE, and both are invisible to `git ls-files`. A gate that reads
+# them is judging content CI will never see.
+#
+# `.worktrees` is the same argument for a directory that holds whole CHECKOUTS:
+# `scripts/dev/worktree.sh` puts them at `$ROOT_DIR/.worktrees` and `.gitignore:146`
+# excludes them.
+PRUNED_DIR_NAMES = (".git", "node_modules", ".worktrees")
+
+# Pruned as a (parent, name) PAIR rather than by name alone. `worktrees` is far
+# too common a word to prune wherever it appears -- doing so would silently drop
+# a real `docs/worktrees/` or `scripts/worktrees/` from a gate's corpus, which is
+# the same class of invisible-corpus-loss this module exists to prevent. Only
+# `.claude/worktrees` is a checkout holder.
+PRUNED_DIR_PAIRS = ((".claude", "worktrees"),)
+
+
+def walk_tree(
+    root: os.PathLike[str] | str,
+    *,
+    exclude_dirs: Iterable[str] = (),
+    follow_symlinks: bool = False,
+) -> Iterator[tuple[str, list[str], list[str]]]:
+    """`os.walk` with this repository's non-source directories pruned.
+
+    A DROP-IN REPLACEMENT, yielding the same `(dirpath, dirnames, filenames)`
+    triple, so a call site swaps `os.walk(x)` for `paths.walk_tree(x)` and keeps
+    every downstream behaviour it already had. That is deliberate: the callers are
+    PORTS whose finding text, path spelling and sort order are compared against a
+    bash twin, and a helper that returned a tidy `list[Path]` would have forced
+    seventeen behaviour changes to fix one bug.
+
+    THE BUG THIS EXISTS FOR, because it is not the obvious one. `.claude/worktrees/`
+    holds sibling CHECKOUTS OF THIS SAME REPOSITORY, created for isolated sub-agent
+    sessions. It is excluded via `.git/info/exclude`, so `git ls-files` and every CI
+    checkout are blind to it -- but a raw `os.walk` over the filesystem is not. On
+    2026-09-13 a colleague's stale worktree carrying a copy of
+    `.ci/scripts/private/license-mint` turned three gates red
+    (`test_quality_go_module_sync`, `test_security_shfmt`,
+    `test_gate_vacuity_floors::test_shfmt_accepts_the_real_corpus`): the SAME real
+    file, scanned twice, failing only in the copy, whose relative
+    `../../../../private/renet` could not resolve from the nested location. Every
+    local verdict was silently conditional on whether a peer happened to have a
+    worktree open, which does not teach people to fix gates, it teaches them to
+    ignore local reds.
+
+    PRUNED IN PLACE, NOT FILTERED AFTERWARDS. `dirnames[:] = ...` is the documented
+    `os.walk` idiom and it means the subtree is never ENTERED. Filtering results
+    after the fact would still pay to stat a peer checkout of the whole monorepo,
+    and would still be wrong for any caller that inspects `dirnames` itself.
+
+    THE LIST OBJECT IS MUTATED, NOT REPLACED, so a caller that then does
+    `dirnames.sort()` on the yielded list still steers the walk exactly as it did
+    under `os.walk`. Several call sites rely on that for deterministic output.
+
+    A ROOT THAT IS ITSELF INSIDE A PRUNED DIRECTORY STILL WALKS, and this is load
+    bearing rather than an accident of the implementation. Pruning applies only to
+    DESCENDANTS of `root`, so a session whose own repo root is
+    `<main>/.claude/worktrees/agent-xxxx` -- which is how every isolated sub-agent
+    runs -- scans its own tree normally. A prune written as "is this path under a
+    worktrees directory" would instead make every gate in such a session scan
+    nothing and exit 0, replacing a false red with a false green.
+
+    `follow_symlinks` DEFAULTS TO FALSE, matching `grep -r` (as opposed to `-R`)
+    and `find -P`, which is what the twins these callers replace actually do. It is
+    named and passed explicitly rather than left to `os.walk`'s default, because a
+    default that happens to agree is one refactor away from not agreeing.
+
+    NO ANTI-VACUITY FLOOR HERE, ON PURPOSE. A missing or empty `root` yields
+    nothing, because several callers treat that as an empty corpus to match a
+    twin's `2>/dev/null`, and because the meaningful floor is per gate: only the
+    caller knows how many files its corpus must contain before a green means
+    something. Enforcing a count here would either break those callers or install
+    a floor too low to catch anything.
+    """
+    extra = frozenset(exclude_dirs)
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=follow_symlinks):
+        # `normpath` BEFORE `basename`, because `os.path.basename(".claude/")` is
+        # the EMPTY STRING. A caller that passes a root with a trailing separator
+        # would otherwise fail to match the `.claude`/`worktrees` pair at the top
+        # level, which is precisely the level `shfmt`-shaped callers walk from,
+        # and the prune would silently not happen for the one directory it was
+        # written for.
+        parent = os.path.basename(os.path.normpath(dirpath))
+        dirnames[:] = [
+            name
+            for name in dirnames
+            if name not in PRUNED_DIR_NAMES
+            and name not in extra
+            and (parent, name) not in PRUNED_DIR_PAIRS
+        ]
+        yield dirpath, dirnames, filenames
+
+
 def ensure_importable(root: pathlib.Path | None = None) -> str:
     """Make `import rediacc_ci` work from a plain script. Returns the `.ci` path.
 
@@ -240,6 +337,8 @@ def ensure_importable(root: pathlib.Path | None = None) -> str:
 __all__ = [
     "CI_DIR",
     "PACKAGE_DIR",
+    "PRUNED_DIR_NAMES",
+    "PRUNED_DIR_PAIRS",
     "ROOT_ENV",
     "RootError",
     "ci_dir",
@@ -252,4 +351,5 @@ __all__ = [
     "quality_dir",
     "relative_to_root",
     "repo_root",
+    "walk_tree",
 ]

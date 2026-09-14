@@ -255,10 +255,12 @@ def tracked_files(root: pathlib.Path) -> list[str]:
     )
     if out.returncode != 0:
         # A fixture root is not a checkout. Walk it instead, and skip the same
-        # two directories git would have skipped for us.
+        # directories git would have skipped for us. `.git` and `node_modules`
+        # are `paths.walk_tree`'s standing prune (along with `.claude/worktrees`,
+        # a peer's sibling checkout that git also hides); `__pycache__` is this
+        # gate's own, because a `.pyc` is not a Python source file to audit.
         found = []
-        for dirpath, dirnames, filenames in os.walk(root):
-            dirnames[:] = [d for d in dirnames if d not in (".git", "node_modules", "__pycache__")]
+        for dirpath, _dirnames, filenames in paths.walk_tree(root, exclude_dirs=("__pycache__",)):
             found.extend(os.path.relpath(os.path.join(dirpath, name), root) for name in filenames)
         return sorted(found)
     return sorted({line for line in out.stdout.split("\n") if line and (root / line).is_file()})

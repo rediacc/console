@@ -277,7 +277,7 @@ def walk_text(root: pathlib.Path):
         candidates = [root]
     elif root.is_dir():
         candidates = []
-        for dirpath, _dirnames, filenames in os.walk(root, followlinks=False):
+        for dirpath, _dirnames, filenames in paths.walk_tree(root):
             candidates.extend(pathlib.Path(dirpath) / name for name in filenames)
     else:
         return

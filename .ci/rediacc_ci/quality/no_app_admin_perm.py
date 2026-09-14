@@ -107,9 +107,12 @@ def scan(root: pathlib.Path) -> tuple[list[str], int]:
             # silent in the COUNT, which is what makes the silence detectable.
             continue
         prefix = scan_dir.rstrip("/")
-        for dirpath, dirnames, filenames in os.walk(base):
+        for dirpath, dirnames, filenames in paths.walk_tree(base):
             # Sorted, and sorted in place so the walk itself is deterministic.
-            # `followlinks` stays False, which is `grep -r` (not -R) semantics.
+            # `paths.walk_tree` mutates this same list rather than replacing it,
+            # so sorting it here still steers the walk exactly as it did under
+            # `os.walk`. `follow_symlinks` stays False there, which is `grep -r`
+            # (not -R) semantics.
             dirnames.sort()
             for name in sorted(filenames):
                 path = pathlib.Path(dirpath) / name

@@ -561,7 +561,7 @@ def check_a10(report: Report, root: pathlib.Path) -> None:
     found = False
     workflows = root / ".github" / "workflows"
     if workflows.is_dir():
-        for dirpath, _dirnames, filenames in os.walk(workflows):
+        for dirpath, _dirnames, filenames in paths.walk_tree(workflows):
             for name in filenames:
                 path = pathlib.Path(dirpath) / name
                 if any(A10_ENV_RE.search(line) for line in read_lines(path)):

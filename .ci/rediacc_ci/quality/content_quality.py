@@ -418,7 +418,7 @@ def discover(root: pathlib.Path) -> list[pathlib.Path]:
         base = root / name
         if not base.is_dir():
             continue
-        for dirpath, _dirnames, filenames in os.walk(base):
+        for dirpath, _dirnames, filenames in paths.walk_tree(base):
             for filename in filenames:
                 if filename.endswith((".md", ".mdx")):
                     candidate = pathlib.Path(dirpath) / filename

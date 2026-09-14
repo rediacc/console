@@ -94,9 +94,12 @@ THE TWO GREP SWEEPS BECOME `os.walk` PLUS `re`, AND FOUR PROPERTIES OF
 
   * `--include='*.ts'` matches the BASENAME, so `a.ts` is included at any depth
     and a directory called `x.ts` is not a subject.
-  * `grep -r` does NOT follow directory symlinks (that is `-R`). `os.walk`
-    defaults to `followlinks=False`; it is passed explicitly anyway, because a
-    default that happens to agree is one refactor away from not agreeing.
+  * `grep -r` does NOT follow directory symlinks (that is `-R`). The walk goes
+    through `paths.walk_tree`, whose `follow_symlinks` defaults to False and is
+    passed to `os.walk` explicitly there, because a default that happens to agree
+    is one refactor away from not agreeing. That helper additionally prunes
+    `.git`, `node_modules` and `.claude/worktrees`; the last is a peer session's
+    sibling checkout of this repository, which git hides and `os.walk` did not.
   * A file grep cannot read is SKIPPED, not fatal. One unreadable `.ts` must not
     turn a rot detector into a detector that found nothing.
   * grep prints `<file>:<line>:<match>` with the file spelled exactly as it was
@@ -238,7 +241,7 @@ def ts_files(directory: pathlib.Path) -> list[str]:
     oracle itself is floored, which is checked before either sweep runs.
     """
     found: list[str] = []
-    for dirpath, dirnames, filenames in os.walk(directory, followlinks=False):
+    for dirpath, dirnames, filenames in paths.walk_tree(directory):
         dirnames.sort()
         found.extend(
             str(pathlib.Path(dirpath) / name)

@@ -297,7 +297,7 @@ def github_yamls(root: pathlib.Path) -> list[str]:
         base = root / rel
         if not base.is_dir():
             continue
-        for dirpath, _dirnames, filenames in os.walk(base):
+        for dirpath, _dirnames, filenames in paths.walk_tree(base):
             for name in filenames:
                 candidate = pathlib.Path(dirpath) / name
                 if name.endswith(".yml") and candidate.is_file():
@@ -679,7 +679,7 @@ def check_gh_slurp_jq(errors: Errors, root: pathlib.Path, files: list[str]) -> N
     scan_files = list(files)
     ci_scripts = root / ".ci" / "scripts"
     if ci_scripts.is_dir():
-        for dirpath, _dirnames, filenames in os.walk(ci_scripts):
+        for dirpath, _dirnames, filenames in paths.walk_tree(ci_scripts):
             for name in filenames:
                 candidate = pathlib.Path(dirpath) / name
                 # `.py` JOINED `.sh` HERE ON 2026-09-08, and the omission was the

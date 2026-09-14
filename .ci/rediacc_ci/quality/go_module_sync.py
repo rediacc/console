@@ -64,10 +64,23 @@ BEHAVIOUR RATHER THAN INCIDENT:
     `dirname ./go.mod` is `.`. The port joins with "." for the same shape,
     because the path is printed in the finding and a bare `go.mod` versus
     `./go.mod` would read as a finding difference.
-  * `grep -r` does NOT follow directory symlinks (that is `-R`). `os.walk`
-    defaults to `followlinks=False`, which agrees by default; it is passed
-    explicitly anyway, because a default that happens to match is one refactor
-    away from not matching.
+  * `grep -r` does NOT follow directory symlinks (that is `-R`). The walk runs
+    through `paths.walk_tree`, whose `follow_symlinks` defaults to False and is
+    passed down to `os.walk` explicitly, because a default that happens to match
+    is one refactor away from not matching.
+
+THIS GATE IS WHY `paths.walk_tree` EXISTS, so the divergence from the twin is
+deliberate and is the point rather than an oversight. On 2026-09-13 a peer
+session's stale checkout at `.claude/worktrees/agent-afc2194d0118609f2/` carried
+a copy of `.ci/scripts/private/license-mint`, and this discovery returned it as a
+SECOND module. Its `replace ../../../../private/renet` cannot resolve from the
+nested location, so `go mod tidy -diff` failed there and the gate went red over a
+file that is not in the repository: `git ls-files` cannot see `.claude/worktrees`
+(`.git/info/exclude:11`) and neither can any CI checkout. The twin's
+`grep -rln ... .` still has this bug. Fixing it here and not there means the two
+can disagree on a tree that has a peer worktree open, which is exactly the tree
+the shadow ledger refuses to record from (it demands a clean checkout), and is
+worth far less than a gate whose verdict does not depend on who else is working.
   * `grep -v node_modules` is a SUBSTRING test on the whole path, not a path
     component test, so a directory named `my_node_modules_backup` is excluded
     too. Carried as `in`, not as a component check.
@@ -123,7 +136,7 @@ def find_modules(root: pathlib.Path) -> list[str]:
     that a test can assert on the discovery and on the refusal separately.
     """
     found: list[str] = []
-    for dirpath, _dirnames, filenames in os.walk(root, followlinks=False):
+    for dirpath, _dirnames, filenames in paths.walk_tree(root):
         if MODULE_FILENAME not in filenames:
             continue
         absolute = pathlib.Path(dirpath) / MODULE_FILENAME

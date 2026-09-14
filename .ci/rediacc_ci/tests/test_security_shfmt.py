@@ -571,7 +571,7 @@ def test_shell_files_agrees_with_the_ambient_find_as_a_set() -> None:
     """Different ORDER, same SET. The whole divergence in one assertion."""
     for rel in (".ci", ".claude"):
         found = subprocess.run(
-            ["find", rel, "-name", "*.sh", "-type", "f"],
+            ["find", rel, "-name", "*.sh", "-type", "f", "-not", "-path", ".claude/worktrees/*"],
             capture_output=True,
             text=True,
             check=True,

@@ -215,12 +215,19 @@ def discover(root: pathlib.Path) -> list[str]:
     success having opened nothing.
     """
     out: list[str] = []
-    for dirpath, dirnames, filenames in os.walk(root):
-        # Pruned in place, which is what `-not -path '*/node_modules/*'` amounts
-        # to for every path `find` can produce, and is also why a lockfile
-        # sitting directly beside a node_modules is still found.
-        if EXCLUDED_DIR in dirnames:
-            dirnames.remove(EXCLUDED_DIR)
+    # `paths.walk_tree` prunes `node_modules` in place, which is what
+    # `-not -path '*/node_modules/*'` amounts to for every path `find` can
+    # produce, and is also why a lockfile sitting directly beside a node_modules
+    # is still found. It prunes `.claude/worktrees` too: a peer session's sibling
+    # checkout of this repository carries its own `package-lock.json` files, and
+    # this gate was linting them as if they were ours.
+    #
+    # THE PRUNE IS NO LONGER SPELLED BY `EXCLUDED_DIR`. That constant now only
+    # builds the selftest fixture below, so editing it will NOT change what this
+    # walk skips; `paths.PRUNED_DIR_NAMES` is where that lives. Said out loud
+    # because a constant that used to steer the code it sits above is exactly the
+    # kind of thing a later reader edits expecting an effect.
+    for dirpath, _dirnames, filenames in paths.walk_tree(root):
         if LOCK_NAME in filenames:
             out.append(str(pathlib.Path(dirpath).relative_to(root) / LOCK_NAME))
     # `find`'s output starts `./`, which the twin's sed strips; a path directly

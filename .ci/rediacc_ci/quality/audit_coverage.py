@@ -187,13 +187,15 @@ def _walk_files(
     Sorted, unlike the twin's phase 4; see the port notes for the six runs that
     produced six orders. `exclude_dirs` is `--exclude-dir`, which prunes by
     directory NAME at any depth, matching grep rather than matching a path
-    prefix.
+    prefix. `paths.walk_tree` applies it, and adds this package's standing prune
+    of `.git`, `node_modules` and `.claude/worktrees` on top -- the last of which
+    is a peer's sibling checkout of this same repository, invisible to git and
+    not to a raw `os.walk`.
     """
     out: list[pathlib.Path] = []
     if not root.is_dir():
         return out
-    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
-        dirnames[:] = [d for d in dirnames if d not in exclude_dirs]
+    for dirpath, _dirnames, filenames in paths.walk_tree(root, exclude_dirs=exclude_dirs):
         for name in filenames:
             if suffix is not None and not name.endswith(suffix):
                 continue

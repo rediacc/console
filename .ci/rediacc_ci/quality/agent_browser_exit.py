@@ -130,17 +130,24 @@ SPACE = r"[ \t\n\v\f\r]"
 # on a non-zero status. See the port notes for the `set -o errexit` blind spot.
 SET_E_RE = re.compile(r"^%s*set%s+-[a-z]*e" % (SPACE, SPACE))
 
-# The shell corpus: `--include='*.sh'`, with node_modules and .git pruned and the
-# twin itself removed by exact filename.
+# The shell corpus: `--include='*.sh'`, with the twin itself removed by exact
+# filename. node_modules and .git USED TO BE LISTED HERE as the path substrings
+# `/node_modules/` and `/.git/`; they now come from `paths.walk_tree`, which
+# prunes them for every gate in this package rather than for the ones that
+# remembered. Empty rather than deleted, because the JS corpus below still has a
+# prune of its own and one parameter is clearer than two code paths.
 SH_SUFFIXES = (".sh",)
-SH_PRUNE = ("/node_modules/", "/.git/")
+SH_PRUNE: tuple[str, ...] = ()
 SELF_NAME = "check-agent-browser-exit.sh"
 
 # The JS corpus: `--include='*.js' --include='*.mjs' --include='*.cjs'
-# --include='*.ts'`, with node_modules, .git and dist pruned. `dist` is on this
-# list and not on the shell one, exactly as in the twin.
+# --include='*.ts'`, with `dist` pruned. `dist` is on this list and not on the
+# shell one, exactly as in the twin. A directory NAME now, not the path substring
+# `/dist/`, because that is what `walk_tree`'s `exclude_dirs` takes; the two agree
+# on every path (the substring only ever matched a whole component) and the name
+# form is pruned before the subtree is entered rather than after it is read.
 JS_SUFFIXES = (".js", ".mjs", ".cjs", ".ts")
-JS_PRUNE = ("/node_modules/", "/.git/", "/dist/")
+JS_PRUNE = ("dist",)
 
 # The needle both corpora are built from, and the second half of the shell half's
 # line test. `agent-browser` then, later on the same line, `open`.
@@ -184,17 +191,20 @@ def _corpus(root: str, suffixes: tuple[str, ...], prune: tuple[str, ...]) -> lis
     `2>/dev/null` on the grep. That is not a vacuity hole being copied blindly:
     the twin's controls drive `scan` against a directory that does not exist on
     purpose, so the behaviour is load-bearing for its own self-test.
+
+    `prune` IS NOW A TUPLE OF DIRECTORY NAMES handed to `paths.walk_tree`, which
+    also prunes `.git`, `node_modules` and `.claude/worktrees` for every caller.
+    The last of those is why this changed: a peer's sibling checkout under
+    `.claude/worktrees/` is invisible to git and was not invisible to `os.walk`,
+    so this corpus was silently scanning a second copy of the repository.
     """
     out: list[str] = []
-    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+    for dirpath, dirnames, filenames in paths.walk_tree(root, exclude_dirs=prune):
         dirnames.sort()
         for name in sorted(filenames):
             if not name.endswith(suffixes):
                 continue
             full = os.path.join(dirpath, name)
-            marked = "/%s/" % full.strip("/")
-            if any(p in marked for p in prune):
-                continue
             try:
                 text = pathlib.Path(full).read_text(encoding="utf-8", errors="replace")
             except OSError:

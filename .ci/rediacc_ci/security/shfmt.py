@@ -168,26 +168,31 @@ def shell_files(root: pathlib.Path) -> list[str]:
     is not a regular file to `find -P`, and a symlinked directory is not
     descended into. `os.scandir` with `follow_symlinks=False` answers both the
     same way.
+
+    FIXED 2026-09-15: was a hand-rolled `os.scandir` stack that did not exclude
+    `.claude/worktrees/` (sibling CHECKOUTS of this repository for isolated
+    sub-agent sessions, git-excluded via `.git/info/exclude:11` so invisible to
+    git and to CI, but not to a raw directory walk). A peer's worktree turned
+    `test_security_shfmt` and `test_gate_vacuity_floors::test_shfmt_accepts_the_real_corpus`
+    red on 2026-09-13 over files that are not in the repository at all. Landed
+    on both sides at once, as it had to be: `-not -path './.claude/worktrees/*'`
+    on `.ci/scripts/security/shfmt.sh:72` and `:104` (the bash twin
+    `check:ci-shell-format` actually runs), and `paths.walk_tree` here -- a
+    one-sided fix would have made this port's real-tree differential in
+    `test_security_shfmt.py` report the (now intended) difference from the twin
+    as a MISMATCH.
     """
     found: list[str] = []
-    stack = [root]
-    while stack:
-        current = stack.pop()
-        try:
-            entries = list(os.scandir(current))
-        except OSError:
-            # `find` prints to stderr and carries on; every call site in the twin
-            # either redirects that away or is guarded by a `[[ -d ]]` test.
-            continue
-        for entry in entries:
-            path = pathlib.Path(entry.path)
-            try:
-                if entry.is_dir(follow_symlinks=False):
-                    stack.append(path)
-                elif entry.name.endswith(".sh") and entry.is_file(follow_symlinks=False):
-                    found.append(str(path))
-            except OSError:
+    for dirpath, _dirnames, filenames in paths.walk_tree(root):
+        for name in filenames:
+            if not name.endswith(".sh"):
                 continue
+            path = pathlib.Path(dirpath) / name
+            # `find -P -type f`: a symlinked file is NOT type f, and os.walk's
+            # `filenames` does not make that distinction on its own -- it lists
+            # a symlink-to-file exactly like a real file.
+            if not path.is_symlink() and path.is_file():
+                found.append(str(path))
     return sorted(found)
 
 

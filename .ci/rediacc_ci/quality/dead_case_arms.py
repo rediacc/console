@@ -164,18 +164,23 @@ def _walk_files(root: pathlib.Path, exclude_dir: str | None = None):
 
     THREE EXCLUSIONS, EACH MATCHING A grep FLAG OR BEHAVIOUR:
       * directory symlinks are not descended, because `-r` does not follow them
-        (`-R` would), and `os.walk` agrees by default
+        (`-R` would), and `paths.walk_tree` passes `followlinks=False` explicitly
       * file symlinks are skipped, matching `-r` on a symlink found in the tree
       * a file containing a NUL byte is skipped, because ugrep treats it as
         binary and reports nothing at all; see the port notes
+
+    A FOURTH EXCLUSION IS NOT grep's, and is named separately so it is not read as
+    one: `paths.walk_tree` also prunes `.git`, `node_modules` and
+    `.claude/worktrees`. The last is a peer session's sibling checkout of this
+    repository, git-excluded and therefore invisible to CI, which a raw `os.walk`
+    happily descended into and scanned as if it were source.
     """
     if root.is_file():
         candidates = [root]
     elif root.is_dir():
         candidates = []
-        for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
-            if exclude_dir is not None:
-                dirnames[:] = [d for d in dirnames if d != exclude_dir]
+        extra = () if exclude_dir is None else (exclude_dir,)
+        for dirpath, _dirnames, filenames in paths.walk_tree(root, exclude_dirs=extra):
             for name in filenames:
                 candidates.append(pathlib.Path(dirpath) / name)
     else:

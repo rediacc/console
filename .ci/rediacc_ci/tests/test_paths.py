@@ -22,6 +22,7 @@ The two facts pinned here that cost something to learn elsewhere in this tree:
     docstring's warning is a measured fact rather than a caution.
 """
 
+import os
 import pathlib
 import sys
 
@@ -346,7 +347,209 @@ def test_ensure_importable_actually_makes_the_package_importable(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# 8. The exported surface
+# 8. walk_tree: the peer-checkout prune, and what must still be collected
+# ---------------------------------------------------------------------------
+
+
+def collect(root: pathlib.Path, **kwargs) -> set[str]:
+    """Every file `walk_tree` reaches under `root`, as root-relative posix strings."""
+    found: set[str] = set()
+    for dirpath, _dirnames, filenames in paths.walk_tree(root, **kwargs):
+        for name in filenames:
+            found.add((pathlib.Path(dirpath) / name).relative_to(root).as_posix())
+    return found
+
+
+def make_corpus(root: pathlib.Path) -> pathlib.Path:
+    """One real file, and its identical twin inside a fake peer worktree.
+
+    The two files are BYTE-IDENTICAL and differ only in where they sit, which is
+    the whole point: the 2026-09-13 incident was one real file scanned twice, and
+    a fixture whose copies differed would let a gate pass by telling them apart on
+    content rather than on location.
+    """
+    body = "replace github.com/rediacc/renet => ../../private/renet\n"
+    (root / "pkg").mkdir(parents=True, exist_ok=True)
+    (root / "pkg" / "go.mod").write_text(body, encoding="utf-8")
+    peer = root / ".claude" / "worktrees" / "agent-deadbeef" / "pkg"
+    peer.mkdir(parents=True, exist_ok=True)
+    (peer / "go.mod").write_text(body, encoding="utf-8")
+    return root
+
+
+def test_a_file_inside_claude_worktrees_is_not_collected(tmp_path):
+    """THE DEFECT THIS HELPER EXISTS FOR.
+
+    `.claude/worktrees/` holds sibling checkouts of this same repository for
+    isolated sub-agent sessions. `.git/info/exclude:11` hides them from
+    `git ls-files` and from every CI checkout, so a gate that walks the raw
+    filesystem judges a peer's tree and nobody else can reproduce the verdict.
+    """
+    assert "\n".join(sorted(collect(make_corpus(tmp_path)))) == "pkg/go.mod"
+
+
+def test_the_identical_file_outside_that_path_is_collected(tmp_path):
+    """THE OTHER HALF, and without it the test above passes on a helper that
+    returns the empty set for everything.
+
+    Asserted as an equality rather than a membership, so a prune that took the
+    whole tree with it fails here instead of quietly widening.
+    """
+    root = make_corpus(tmp_path)
+    assert collect(root) == {"pkg/go.mod"}
+    assert (root / ".claude" / "worktrees" / "agent-deadbeef" / "pkg" / "go.mod").is_file()
+
+
+def test_a_root_inside_a_worktrees_path_still_walks(tmp_path):
+    """THE CASE A NAIVE PRUNE TURNS INTO A FALSE GREEN.
+
+    Every isolated sub-agent in this repo has a repo root of
+    `<main>/.claude/worktrees/agent-xxxx`, so a prune written as "reject any path
+    containing .claude/worktrees" would make every gate in such a session scan
+    NOTHING and exit 0. Pruning descendants only is what keeps that from
+    happening, and this pins it.
+    """
+    root = tmp_path / ".claude" / "worktrees" / "agent-self"
+    (root / "src").mkdir(parents=True)
+    (root / "src" / "a.py").write_text("", encoding="utf-8")
+    assert collect(root) == {"src/a.py"}
+
+
+def test_a_nested_peer_worktree_is_still_pruned_from_such_a_root(tmp_path):
+    """CONTROL for the test above: walking from inside a worktree must not switch
+    the prune off wholesale. A sub-agent's own tree can hold a peer of its own.
+    """
+    root = tmp_path / ".claude" / "worktrees" / "agent-self"
+    (root / "src").mkdir(parents=True)
+    (root / "src" / "a.py").write_text("", encoding="utf-8")
+    nested = root / ".claude" / "worktrees" / "agent-peer"
+    nested.mkdir(parents=True)
+    (nested / "b.py").write_text("", encoding="utf-8")
+    assert collect(root) == {"src/a.py"}
+
+
+def test_a_root_with_a_trailing_separator_still_prunes(tmp_path):
+    """`os.path.basename(".claude/")` IS THE EMPTY STRING.
+
+    The pair prune matches on the parent directory's NAME, so a root handed in
+    with a trailing separator would miss the match at the top level, which is
+    exactly the level a caller walking `.claude` prunes from. Passed as a raw
+    string rather than a Path because pathlib normalises the separator away and
+    would make this control pass without the fix.
+    """
+    (tmp_path / ".claude" / "worktrees" / "peer").mkdir(parents=True)
+    (tmp_path / ".claude" / "worktrees" / "peer" / "x.sh").write_text("", encoding="utf-8")
+    (tmp_path / ".claude" / "keep.sh").write_text("", encoding="utf-8")
+    root = str(tmp_path / ".claude") + os.sep
+    found = {
+        os.path.relpath(os.path.join(d, n), root)
+        for d, _dirs, files in paths.walk_tree(root)
+        for n in files
+    }
+    assert found == {"keep.sh"}
+
+
+def test_git_and_node_modules_are_pruned_too(tmp_path):
+    (tmp_path / ".git").mkdir()
+    (tmp_path / ".git" / "config").write_text("", encoding="utf-8")
+    (tmp_path / "node_modules" / "dep").mkdir(parents=True)
+    (tmp_path / "node_modules" / "dep" / "index.js").write_text("", encoding="utf-8")
+    (tmp_path / "keep.js").write_text("", encoding="utf-8")
+    assert collect(tmp_path) == {"keep.js"}
+
+
+def test_a_directory_merely_named_worktrees_is_kept(tmp_path):
+    """`worktrees` IS PRUNED ONLY UNDER `.claude`, and that is not pedantry.
+
+    Pruning the bare name at any depth would silently drop a real
+    `docs/worktrees/` from a gate's corpus, which is the same invisible
+    corpus-loss the helper exists to prevent, pointed the other way.
+    """
+    (tmp_path / "docs" / "worktrees").mkdir(parents=True)
+    (tmp_path / "docs" / "worktrees" / "guide.md").write_text("", encoding="utf-8")
+    assert collect(tmp_path) == {"docs/worktrees/guide.md"}
+
+
+def test_a_dot_worktrees_directory_is_pruned(tmp_path):
+    """`scripts/dev/worktree.sh` puts checkouts at `$ROOT_DIR/.worktrees` and
+    `.gitignore:146` excludes them. Same bug, second spelling.
+    """
+    (tmp_path / ".worktrees" / "0824-1").mkdir(parents=True)
+    (tmp_path / ".worktrees" / "0824-1" / "go.mod").write_text("", encoding="utf-8")
+    (tmp_path / "go.mod").write_text("", encoding="utf-8")
+    assert collect(tmp_path) == {"go.mod"}
+
+
+def test_exclude_dirs_adds_to_the_standing_prune_rather_than_replacing_it(tmp_path):
+    """A caller passing its own exclusion must not switch the built-in one off.
+
+    `dead_python` passes `__pycache__` and `agent_browser_exit` passes `dist`;
+    if either replaced the defaults, this whole fix would be off for those two.
+    """
+    make_corpus(tmp_path)
+    (tmp_path / "dist").mkdir()
+    (tmp_path / "dist" / "bundle.js").write_text("", encoding="utf-8")
+    assert collect(tmp_path, exclude_dirs=("dist",)) == {"pkg/go.mod"}
+
+
+def test_the_yielded_dirnames_list_is_mutated_in_place(tmp_path):
+    """CALL SITES SORT `dirnames` TO STEER THE WALK, and that only works because
+    the helper mutates the list `os.walk` still holds rather than handing back a
+    new one. `no_app_admin_perm`, `agent_browser_exit` and `e2e_coverage` all do
+    it for deterministic output.
+    """
+    for name in ("b", "a", "node_modules"):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / "f.txt").write_text("", encoding="utf-8")
+    order: list[str] = []
+    for dirpath, dirnames, _filenames in paths.walk_tree(tmp_path):
+        dirnames.sort()
+        if dirpath != str(tmp_path):
+            order.append(pathlib.Path(dirpath).name)
+    assert order == ["a", "b"]
+
+
+def test_walk_tree_does_not_follow_directory_symlinks(tmp_path):
+    """`grep -r` (not `-R`) and `find -P` semantics, which the ports depend on."""
+    (tmp_path / "real").mkdir()
+    (tmp_path / "real" / "f.txt").write_text("", encoding="utf-8")
+    (tmp_path / "link").symlink_to(tmp_path / "real", target_is_directory=True)
+    assert collect(tmp_path) == {"real/f.txt"}
+
+
+def test_a_missing_root_yields_nothing_rather_than_raising(tmp_path):
+    """Several callers rely on this to match a twin's `2>/dev/null`. It is NOT a
+    vacuity hole being blessed: the anti-vacuity floor is per gate, because only
+    the caller knows how big its corpus has to be. See the helper's docstring.
+    """
+    assert collect(tmp_path / "no-such-dir") == set()
+
+
+def test_the_real_tree_walk_is_not_trivially_empty():
+    """ANTI-VACUITY FOR THIS CONTROL FILE ITSELF.
+
+    Every assertion above runs on a tmp_path fixture, and all of them would pass
+    against a helper that yielded nothing on a real tree. This is the one that
+    would not.
+    """
+    root = paths.repo_root()
+    dirs = [dirpath for dirpath, _d, _f in paths.walk_tree(root)]
+    assert len(dirs) > 100, "walk_tree saw %d directories in the real tree" % len(dirs)
+    # And nothing it reached is inside a peer checkout. Compared on the path
+    # RELATIVE TO ROOT, because this very session's root is itself
+    # `<main>/.claude/worktrees/agent-xxxx`: an absolute-path test would match the
+    # root on every directory and pass for entirely the wrong reason.
+    inside = [
+        d
+        for d in dirs
+        for parts in [pathlib.Path(d).relative_to(root).parts]
+        if any(parts[i : i + 2] == (".claude", "worktrees") for i in range(len(parts)))
+    ]
+    assert inside == []
+
+
+# ---------------------------------------------------------------------------
+# 9. The exported surface
 # ---------------------------------------------------------------------------
 
 

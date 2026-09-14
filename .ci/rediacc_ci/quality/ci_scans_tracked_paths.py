@@ -214,7 +214,7 @@ def grep_lines(root: pathlib.Path, pattern: str) -> list[str]:
         base = root.joinpath(*surface)
         if not base.is_dir():
             continue
-        for dirpath, _dirs, files in os.walk(base):
+        for dirpath, _dirs, files in paths.walk_tree(base):
             for name in sorted(files):
                 if not name.endswith(INCLUDES):
                     continue

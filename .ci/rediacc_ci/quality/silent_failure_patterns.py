@@ -235,7 +235,7 @@ def discover(root: pathlib.Path) -> list[pathlib.Path]:
         base = root / rel
         if not base.is_dir():
             continue
-        for dirpath, _dirnames, filenames in os.walk(base):
+        for dirpath, _dirnames, filenames in paths.walk_tree(base):
             for name in filenames:
                 if name.endswith(".sh"):
                     candidate = pathlib.Path(dirpath) / name
