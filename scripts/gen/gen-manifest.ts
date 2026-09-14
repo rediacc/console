@@ -56,6 +56,7 @@ import process from 'node:process';
 import { GATES } from '../ci-runner/manifest.js';
 import { laneCapabilities, placeGate } from '../ci-runner/lanes.js';
 import { derivedId, inferredNeeds, parseGateHeader } from '../lib/gate-header.js';
+import type { GateHeader } from '../lib/gate-header.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const MANIFEST = path.join(ROOT, 'scripts/ci-runner/manifest.ts');
@@ -86,7 +87,7 @@ type Entry = Record<string, unknown>;
  * not guessed -- an order that differs fails condition (5) and the entry drops out
  * of the set rather than being reformatted.
  */
-function serialise(leaf: string, h: Record<string, any>, workflow: string): string {
+function serialise(leaf: string, h: GateHeader, workflow: string): string {
   const src = fs.readFileSync(path.join(ROOT, leaf), 'utf-8');
   const id = (h.id as string) ?? derivedId(leaf);
   const needs: string[] = h.needs?.length
@@ -238,7 +239,7 @@ function main(argv: string[]): number {
         const p = path.join(ROOT, leaves[0]);
         if (!fs.existsSync(p) || !fs.statSync(p).isFile())
           return drop('leaf is a tool, not a file');
-        const h = parseGateHeader(fs.readFileSync(p, 'utf-8')) as Record<string, any> | null;
+        const h = parseGateHeader(fs.readFileSync(p, 'utf-8'));
         if (!h) return drop('leaf carries no gate header');
         if (h.blocker !== undefined) return drop('header declares a BLOCKER (hand-registered)');
         const [a, b] = sp[i];

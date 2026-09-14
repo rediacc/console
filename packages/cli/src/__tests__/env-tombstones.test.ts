@@ -101,7 +101,7 @@ interface Violation {
  * RETIRED name. Both are the shape where a token happens to be a prefix of its successor.
  */
 function tokenPattern(token: string, envOnly?: boolean): RegExp {
-  const safe = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const safe = token.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
   if (envOnly) {
     // `process.env.X`, `process.env['X']`, and a destructured or aliased `env.X`.
     return new RegExp(
