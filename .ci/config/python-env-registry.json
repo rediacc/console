@@ -1470,6 +1470,7 @@
     ],
     ".ci/scripts/quality/check_plan_citations.py": [
       "GITHUB_BASE_REF",
+      "GITHUB_JOB",
       "PLAN_CITATIONS_BASE",
       "PLAN_CITATIONS_MAX_SHOWN",
       "PLAN_CITATIONS_OBJECT_MIN",

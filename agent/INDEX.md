@@ -292,7 +292,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-gh-swallow-gates-audit.md` | done | 497 | 0 | 6 | 49920 |
 | `agent/PLAN-git-history-media-rewrite.md` | ready | 321 | 0 | 0 | 15185 |
 | `agent/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 71 | 0 | 0 | 3940 |
-| `agent/PLAN-greenlight-verify-at-read.md` | compacted | 62 | 0 | 0 | 3299 |
+| `agent/PLAN-greenlight-verify-at-read.md` | compacted | 66 | 0 | 0 | 3593 |
 | `agent/PLAN-hook-inventory-warn-guards.md` | landed | 89 | 0 | 0 | 4112 |
 | `agent/PLAN-judge-gate-worthiness-and-surface-scope.md` | draft | 548 | 0 | 0 | 30552 |
 | `agent/PLAN-lint-css-ci-wiring.md` | compacted | 74 | 0 | 0 | 4374 |
@@ -334,7 +334,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 79 | 0 | 0 | 4194 |
 | `agent/PLAN-test-advisor.md` | done | 132 | 0 | 0 | 6884 |
 | `agent/PLAN-testing-surface-audit.md` | draft | 652 | 0 | 0 | 40322 |
-| `agent/PLAN-tooling-transformation.md` | ready | 6480 | 18 | 136 | 592389 |
+| `agent/PLAN-tooling-transformation.md` | ready | 6483 | 18 | 136 | 592668 |
 | `agent/PLAN-trap-enforcement.md` | w | 820 | 0 | 0 | 49274 |
 | `agent/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 0 | 4529 |
 | `agent/PLAN-unify-trap-corpus.md` | compacted | 54 | 0 | 0 | 2755 |

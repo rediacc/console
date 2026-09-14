@@ -550,10 +550,10 @@ def selftest(root):
 
     # THE SUBMODULE PRE-FILTER, both directions, because a skip is one typo away
     # from a suppression and this one excuses an entire directory tree.
-    rows = [("agent/PLAN-zzz.md", 1, "see private/renet/pkg/NOPE/nope.go:99")]
+    rows = [("agent/PLAN-zzz.md", 1, "see private/zzz/pkg/NOPE/nope.go:99")]
     ck(
         "a citation into an ABSENT submodule is skipped, not reported",
-        problems_for(root, rows, ("private/renet",)) == [],
+        problems_for(root, rows, ("private/zzz",)) == [],
     )
     ck(
         "CONTROL: the same dead citation IS reported when the submodule is present",
@@ -563,7 +563,7 @@ def selftest(root):
     ck(
         "CONTROL: the skip is scoped to that submodule, not to every path",
         len(
-            problems_for(root, [("agent/PLAN-zzz.md", 1, "see nope/nope.go:9")], ("private/renet",))
+            problems_for(root, [("agent/PLAN-zzz.md", 1, "see nope/nope.go:9")], ("private/zzz",))
         )
         == 1,
     )
@@ -574,7 +574,7 @@ def selftest(root):
         "CONTROL: a dead OBJECT citation is never excused by the submodule skip",
         len(
             problems_for(
-                root, [("agent/PLAN-zzz.md", 1, "at %s" % ("deadbeef" * 5))], ("private/renet",)
+                root, [("agent/PLAN-zzz.md", 1, "at %s" % ("deadbeef" * 5))], ("private/zzz",)
             )
         )
         == 1,
