@@ -89,8 +89,7 @@ def controls() -> None:
     exhausted = Vfs(f_files=1_048_576, f_ffree=2)
     if usage_ratio(exhausted) < THRESHOLD:
         print(
-            "%s✗ CONTROL FAILED%s: a near-total inode exhaustion was not flagged red"
-            % (RED, NC),
+            "%s✗ CONTROL FAILED%s: a near-total inode exhaustion was not flagged red" % (RED, NC),
             file=sys.stderr,
         )
         sys.exit(2)
@@ -99,8 +98,7 @@ def controls() -> None:
     healthy = Vfs(f_files=1_048_576, f_ffree=900_000)
     if usage_ratio(healthy) >= THRESHOLD:
         print(
-            "%s✗ CONTROL FAILED%s: a healthy inode count was misreported as exhausted"
-            % (RED, NC),
+            "%s✗ CONTROL FAILED%s: a healthy inode count was misreported as exhausted" % (RED, NC),
             file=sys.stderr,
         )
         sys.exit(2)
@@ -128,7 +126,10 @@ def main() -> int:
             red = True
             continue
         marker = "%s✗%s" % (RED, NC) if is_red else "%s✓%s" % (GREEN, NC)
-        print("%s %s: %.1f%% of inodes used (threshold %.0f%%)" % (marker, path, ratio * 100, THRESHOLD * 100))
+        print(
+            "%s %s: %.1f%% of inodes used (threshold %.0f%%)"
+            % (marker, path, ratio * 100, THRESHOLD * 100)
+        )
         if is_red:
             red = True
     if red:

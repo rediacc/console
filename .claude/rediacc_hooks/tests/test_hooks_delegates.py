@@ -167,7 +167,7 @@ def bash_suite_problem(relative: str, npm_key, aggregate_source: str, pkg_source
         matching = [ln for ln in pkg_source.splitlines() if '"%s":' % npm_key in ln]
         if not matching:
             return 'FAIL[%s]: package.json has no "%s" script.' % (relative, npm_key)
-        if relative.split("/")[-1] not in "\n".join(matching):
+        if relative.rsplit("/", 1)[-1] not in "\n".join(matching):
             return 'FAIL[%s]: "%s" no longer runs it.' % (relative, npm_key)
     return None
 
@@ -224,9 +224,7 @@ def test_an_orphan_control_suite_runs_and_says_something(relative):
     assert text.strip() != "", "%s printed nothing, which is what a stub returns" % relative
 
 
-@pytest.mark.parametrize(
-    ("relative", "npm_key"), BASH_SUITES, ids=[row[0] for row in BASH_SUITES]
-)
+@pytest.mark.parametrize(("relative", "npm_key"), BASH_SUITES, ids=[row[0] for row in BASH_SUITES])
 def test_a_delegated_bash_suite_is_reachable(relative, npm_key):
     """Reachability is asserted, NOT re-established by running the suite again.
 

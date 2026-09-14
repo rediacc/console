@@ -9,32 +9,49 @@ false-positive controls) previously ran only when someone remembered to run it, 
 hook regression could never turn CI red. Discovery by the battery is what put it
 inside `npm run ci`.
 
-THE TRANSLATION IS THE GATE, and it is the reason this is not just `bash test-hooks.sh`.
-The harness speaks `ok [..]` plus a final `PASS=<n> FAIL=<m>` counter, not the
-`PASS:` lines the battery counts, so trusting its exit code alone would let a harness
-that silently ran ZERO cases report green. The wrapper requires `FAIL=0` AND a nonzero
-case count, and the port keeps both halves plus a third the wrapper had implicitly:
-the summary line must be PRESENT and parseable, because a harness whose output shape
-changed is unchecked rather than fine.
+THIS MODULE NO LONGER RUNS THE HARNESS, and that is the point of it now.
+
+The wrapper's own translation logic -- `FAIL=0`, a nonzero case count, and a summary
+line that is PRESENT and parseable -- still matters, and it still runs: it lives in
+`.ci/scripts/test/gates/test-claude-hooks.sh`, registered as `gate-test:claude-hooks`.
+This module used to reimplement all three assertions and re-execute the harness to
+check them, which bought no coverage and cost 931s.
+
+WHY THAT WAS INTOLERABLE RATHER THAN MERELY WASTEFUL. The harness was executed THREE
+times per CI cycle inside ONE job: by the registered gate, by this module, and by
+`test_hooks_delegates.py` re-running the two sub-suites the harness already runs.
+`quality-security` caps at `timeout-minutes: 20` (1200s) and carries both `Python
+package tests` and `Quality-gate unit tests`, so ~2784s of identical work could never
+fit. That lane had never once reported across four CI runs, which is exactly why the
+overrun stayed invisible: a job that cannot finish hides everything inside it.
+
+WHAT IS KEPT. Delegation is a claim that can rot silently -- a delegate renamed,
+de-gated, or quietly no longer invoking the harness looks IDENTICAL to a harness that
+ran and passed. So the chain is asserted link by link, with two controls that plant
+each break against a doctored copy in `tmp_path`.
 
 A FLAT TWIN. It declares no `test_*()` functions, so `test_twin_parity.py` compares
-against its runtime `PASS:` count (one line) rather than a case set. The port records
-four controls against that floor, each naming a different property of the same run.
+against its runtime `PASS:` count (one line) rather than a case set.
 
-TWIN_TIMEOUT, AND WHY IT IS DECLARED HERE FIRST. This subject was UNPORTABLE by
-construction until the parity driver gained a declarable timeout: 2 229 offline cases
-at roughly 13m31s blow straight through the 600s default, `subprocess.run` RAISES on
-timeout, and the driver produced a `TimeoutExpired` traceback instead of a verdict --
-which reads as a broken harness rather than as a slow subject, and had this subject
-one report away from being recorded as a permanent standing drop. 1000s leaves
-headroom over the measured wall time without approaching the 1800s cap. If this ever
-needs more than the cap, the answer is to SPLIT the harness, not to raise it.
+TWIN_TIMEOUT IS STILL DECLARED, and still load-bearing, but for the PARITY DRIVER
+rather than for anything here. `test_twin_parity` drives this flat twin to count its
+runtime `PASS:` lines, so it is the thing that now pays the harness's wall time. The
+600s default is not enough -- `subprocess.run` RAISES on timeout and the driver
+emitted a `TimeoutExpired` traceback instead of a verdict, which reads as a broken
+harness rather than a slow subject.
+
+The number, re-measured 2026-09-14 rather than inherited: the harness takes 931.14s
+standalone and uncontended (PASS=2269, rc=0), and it is SERIAL -- 478 sub-suites one
+after another, no worker pool -- so more cores cannot help it and CI's slower
+per-core `ubuntu-latest` makes it worse. 1000s therefore leaves 6.9% headroom, which
+is thin. If this ever needs more than the 1800s cap the answer is to SHARD the
+harness, not to raise it; that is tracked as O-3 in
+docs/ci-overhaul/07-tooling-decisions.md with the measurements attached.
 """
 
 import pathlib
 
 from rediacc_ci import paths
-from rediacc_ci.tests.gates import harness
 
 BASH_TWIN = ".ci/scripts/test/gates/test-claude-hooks.sh"
 
@@ -97,8 +114,7 @@ def delegation_problem(manifest: pathlib.Path, wrapper: pathlib.Path) -> str | N
     if not entry:
         return (
             "FAIL: scripts/ci-runner/manifest.ts has no entry with id '%s', so the "
-            "wrapper exists but nothing schedules it and the harness is unreachable."
-            % DELEGATE_ID
+            "wrapper exists but nothing schedules it and the harness is unreachable." % DELEGATE_ID
         )
     if "gate: true" not in entry:
         return (
@@ -178,9 +194,7 @@ def test_the_delegation_assertion_fires_when_the_delegate_is_de_gated(gate, tmp_
     gate.log_pass("a de-gated delegate is caught")
 
 
-def test_the_delegation_assertion_fires_when_the_wrapper_stops_invoking_the_harness(
-    gate, tmp_path
-):
+def test_the_delegation_assertion_fires_when_the_wrapper_stops_invoking_the_harness(gate, tmp_path):
     """CONTROL, the other link. The delegate can stay registered and stop delegating.
 
     A wrapper that is still `gate: true` but no longer invokes `test-hooks.sh` is the
@@ -203,7 +217,5 @@ def test_the_delegation_assertion_fires_when_the_wrapper_stops_invoking_the_harn
             "CONTROL FAILED: the assertion PASSED against a wrapper that no longer "
             "invokes the harness, so the delegation claim is unfalsifiable."
         )
-    gate.assert_contains(
-        problem, "no longer invokes", "CONTROL FAILED: fired for the wrong reason"
-    )
+    gate.assert_contains(problem, "no longer invokes", "CONTROL FAILED: fired for the wrong reason")
     gate.log_pass("a wrapper that stopped invoking the harness is caught")

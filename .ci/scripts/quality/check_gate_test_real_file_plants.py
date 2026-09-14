@@ -48,12 +48,22 @@ selftest: true
 from __future__ import annotations
 
 import ast
+import os
 import pathlib
 import re
 import sys
+import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 SCAN_DIR = ROOT / ".ci" / "rediacc_ci" / "tests" / "gates"
+
+# ANTI-VACUITY FLOOR. This gate reports success by finding NOTHING, so a scan that
+# collapsed -- a moved directory, a broken glob, a rename of the gate-tests package --
+# is indistinguishable from a clean tree: both print a tick. The floor makes the
+# difference observable. 161 files present on 2026-09-14; the floor sits well below
+# that rather than at it, because a floor equal to today's count turns every deleted
+# test into a failure and teaches people to lower the floor.
+MIN_SCANNED = 100
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -106,10 +116,12 @@ def real_path_constants(tree: ast.Module) -> set[str]:
     for node in tree.body:
         if not isinstance(node, ast.Assign):
             continue
-        try:
-            src = ast.unparse(node.value)
-        except Exception:  # pragma: no cover - defensive, ast.unparse is stable here
-            continue
+        # NOT wrapped in try/except. A defensive `continue` here would SILENTLY
+        # skip an assignment this gate might otherwise have caught writing a real
+        # tracked file -- which is the exact vacuity hazard the gate exists to
+        # prevent, reproduced inside the gate. If `ast.unparse` ever fails, the
+        # right outcome is a loud crash, not a quiet pass.
+        src = ast.unparse(node.value)
         if not REAL_PATH_RE.search(src):
             continue
         if TMP_HINT_RE.search(src):
@@ -153,10 +165,8 @@ def scan(scan_dir: pathlib.Path) -> list[tuple[str, str]]:
     return findings
 
 
-def controls(scan_dir: pathlib.Path) -> None:
+def controls() -> None:
     """A planted real-file-write must be caught; a tmp-only write must not."""
-    import tempfile
-
     with tempfile.TemporaryDirectory() as td:
         d = pathlib.Path(td)
         (d / "test_gate_planted_hazard.py").write_text(
@@ -179,7 +189,7 @@ def controls(scan_dir: pathlib.Path) -> None:
             'TARGET = paths.from_root("scripts", "data", "doc-registry.md")\n'
             "def test_x(tmp_path):\n"
             "    original = TARGET.read_bytes()\n"
-            "    mutated = tmp_path / \"mutated.md\"\n"
+            '    mutated = tmp_path / "mutated.md"\n'
             "    mutated.write_bytes(original)\n",
             encoding="utf-8",
         )
@@ -194,7 +204,17 @@ def controls(scan_dir: pathlib.Path) -> None:
 
 
 def main() -> int:
-    controls(pathlib.Path("/nonexistent-selftest-only"))
+    controls()
+    scanned = len(list(SCAN_DIR.glob("*.py")))
+    if scanned < MIN_SCANNED:
+        print(
+            "%s\u2717%s VACUOUS: scanned %d file(s) in %s, below the floor of %d. This gate "
+            "passes by finding nothing, so a corpus this small means the SCAN broke, not "
+            "that the tree is clean. Refusing rather than printing a tick."
+            % (RED, NC, scanned, os.path.relpath(SCAN_DIR, ROOT), MIN_SCANNED),
+            file=sys.stderr,
+        )
+        return 1
     findings = scan(SCAN_DIR)
     unallowed = [(f, n) for f, n in findings if f not in ALLOWLIST]
     if ALLOWLIST:
@@ -217,15 +237,14 @@ def main() -> int:
         return 1
     print(
         "%s✓%s no gate-test file plants into a real tracked file without a declared "
-        "exemption (%d file(s) scanned, %d exempted)"
-        % (GREEN, NC, len(list(SCAN_DIR.glob("*.py"))), len(ALLOWLIST))
+        "exemption (%d file(s) scanned, %d exempted)" % (GREEN, NC, scanned, len(ALLOWLIST))
     )
     return 0
 
 
 if __name__ == "__main__":
     if "--selftest" in sys.argv:
-        controls(pathlib.Path("/nonexistent-selftest-only"))
+        controls()
         print("%s✓%s selftest" % (GREEN, NC))
         sys.exit(0)
     sys.exit(main())
