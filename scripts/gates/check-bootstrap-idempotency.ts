@@ -235,19 +235,46 @@ const main = (): number => {
     console.error(`✗ scanned no files; expected ${SCANNED.join(', ')}.`);
     return 1;
   }
-  // setup() is the entry point this gate was written for; if it stops calling
+  // setup() is the entry point this gate was written for; if it stops reaching
   // the helper the gate has lost its subject.
-  const runSrc = fs.readFileSync(path.join(REPO, ENTRY), 'utf8');
-  const setupFn = shellFunctions(runSrc).find((f) => f.name === 'setup');
-  if (!setupFn) {
-    console.error(`✗ ${ENTRY} no longer defines setup(); this gate has lost its subject.`);
-    return 1;
-  }
-  if (!setupFn.body.some((l) => new RegExp(`\\b${HELPER}\\b`).test(l))) {
-    console.error(`✗ ${ENTRY} setup() does not call ${HELPER}.`);
-    console.error('  Every ./run.sh setup would then re-run npm and recompile native modules');
-    console.error('  even when nothing changed. That is the defect this gate exists for.');
-    return 1;
+  //
+  // THE SUBJECT MOVED A SECOND TIME, and this is the second repoint rather than a
+  // relaxation. The 2026-09-06 router split moved the verb bodies out of run.sh
+  // into .ci/legacy/run-legacy.sh (the note on ENTRY above). Then `setup` was
+  // PORTED OUT OF BASH ENTIRELY -- run.sh now declares `PORTED_VERBS=(setup)` and
+  // the implementation is the rediacc_ci.setup package. There is no `setup()`
+  // shell function left to find anywhere, so the old assertion could only ever
+  // report "lost its subject" from here on: a permanent red that says nothing
+  // about idempotency.
+  //
+  // THE INVARIANT ITSELF IS UNCHANGED AND STILL HOLDS -- setup still installs
+  // THROUGH the stamp rather than shelling out to npm -- so it is re-anchored to
+  // the two places that now carry it, and BOTH must hold. One anchor would let a
+  // rename on the other side pass silently.
+  const SETUP_ANCHORS: Array<[string, RegExp, string]> = [
+    [
+      '.ci/rediacc_ci/setup/phases.py',
+      new RegExp(`Phase\\(\\s*["']${HELPER}["']`),
+      `declares a ${HELPER} phase`,
+    ],
+    [
+      '.ci/rediacc_ci/setup/machine.py',
+      new RegExp(`bridge\\.call\\(\\s*["']${HELPER}["']`),
+      `calls ${HELPER} through the bash bridge`,
+    ],
+  ];
+  for (const [rel, pattern, what] of SETUP_ANCHORS) {
+    const abs = path.join(REPO, rel);
+    if (!fs.existsSync(abs)) {
+      console.error(`✗ ${rel} is missing; this gate has lost its subject.`);
+      return 1;
+    }
+    if (!pattern.test(fs.readFileSync(abs, 'utf8'))) {
+      console.error(`✗ ${rel} no longer ${what}; this gate has lost its subject.`);
+      console.error('  Every ./run.sh setup would then re-run npm and recompile native modules');
+      console.error('  even when nothing changed. That is the defect this gate exists for.');
+      return 1;
+    }
   }
 
   if (findings.length > 0) {
