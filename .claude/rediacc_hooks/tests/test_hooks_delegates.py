@@ -138,10 +138,38 @@ TAILED = [
 # fixtures rather than the single-JSON-on-stdin shape every guard case uses; the
 # report-inbox suite covers the whole cross-session waiter/nudge mechanism and this
 # aggregate runner did NOT run it until a sub-agent found 125 invisible cases in it.
+# relative | the npm key that also reaches it, or None when the harness is its only
+# route. NOT EXECUTED HERE -- see test_a_delegated_bash_suite_is_reachable.
 BASH_SUITES = [
-    ("stop/test-worklist-v5.sh", PASS_COLON, "stop/test-worklist-v5.sh", "case"),
-    ("stop/test-report-inbox.sh", OK_WORD, "stop/test-report-inbox.sh", "case"),
+    ("stop/test-worklist-v5.sh", "check:ci-hook-worklist-suite"),
+    ("stop/test-report-inbox.sh", None),
 ]
+
+# The aggregate that really runs both, itself gated by `gate-test:claude-hooks`.
+AGGREGATE = HOOKS / "test-hooks.sh"
+PACKAGE_JSON = HOOKS.parent.parent / "package.json"
+
+
+def bash_suite_problem(relative: str, npm_key, aggregate_source: str, pkg_source: str):
+    """None when the suite is genuinely reachable, else the ONE link that broke.
+
+    Returns the reason rather than raising so the control can observe a verdict.
+    """
+    if not (HOOKS / relative).is_file():
+        return "FAIL[%s]: the suite file does not exist, so nothing runs it." % relative
+    if relative not in aggregate_source:
+        return (
+            "FAIL[%s]: test-hooks.sh no longer invokes it, so this suite now runs "
+            "NOWHERE -- this module stopped running it on the strength of that "
+            "invocation." % relative
+        )
+    if npm_key is not None:
+        matching = [ln for ln in pkg_source.splitlines() if '"%s":' % npm_key in ln]
+        if not matching:
+            return 'FAIL[%s]: package.json has no "%s" script.' % (relative, npm_key)
+        if relative.split("/")[-1] not in "\n".join(matching):
+            return 'FAIL[%s]: "%s" no longer runs it.' % (relative, npm_key)
+    return None
 
 
 def _run(relative: str, tail: list[str]) -> subprocess.CompletedProcess:
@@ -196,11 +224,49 @@ def test_an_orphan_control_suite_runs_and_says_something(relative):
     assert text.strip() != "", "%s printed nothing, which is what a stub returns" % relative
 
 
-@pytest.mark.xdist_group("hooks-suites")
 @pytest.mark.parametrize(
-    ("relative", "counter", "name", "unit"),
-    BASH_SUITES,
-    ids=[row[2] for row in BASH_SUITES],
+    ("relative", "npm_key"), BASH_SUITES, ids=[row[0] for row in BASH_SUITES]
 )
-def test_a_delegated_bash_suite_reports_its_cases(relative, counter, name, unit):
-    _folded(relative, [], counter, 1, name, unit)
+def test_a_delegated_bash_suite_is_reachable(relative, npm_key):
+    """Reachability is asserted, NOT re-established by running the suite again.
+
+    This module's rationale for executing these was reachability -- "a test nothing
+    invokes is dead code". `test-hooks.sh` invokes both itself (lines 2698 and 2743),
+    and that harness is executed by the registered gate `gate-test:claude-hooks`. So
+    running them here re-did work already done: measured 866.78s and 56.16s, against a
+    harness that is 931.14s in total and was being billed three times inside one
+    1200s-capped job.
+
+    The reachability CLAIM still has to hold, and a broken one is invisible -- a suite
+    the aggregate stopped invoking looks exactly like a suite that ran and passed. So
+    the claim is asserted directly and nothing is executed.
+    """
+    problem = bash_suite_problem(
+        relative,
+        npm_key,
+        AGGREGATE.read_text(encoding="utf-8"),
+        PACKAGE_JSON.read_text(encoding="utf-8"),
+    )
+    hooklabels.record(0, "%s: reachable via test-hooks.sh" % relative, ok=problem is None)
+    assert problem is None, problem
+
+
+def test_the_reachability_assertion_fires_when_the_aggregate_drops_a_suite():
+    """CONTROL. A reachability claim that cannot fail is not a claim.
+
+    Driven against an aggregate source with the suite's invocation stripped. Operates
+    on a STRING, never on the real file, so no tracked file is written (T-12).
+    """
+    relative, npm_key = BASH_SUITES[0]
+    real = AGGREGATE.read_text(encoding="utf-8")
+    assert relative in real, "control could not strip what is not there"
+    doctored = real.replace(relative, "stop/SOME-OTHER-SUITE.sh")
+
+    problem = bash_suite_problem(
+        relative, npm_key, doctored, PACKAGE_JSON.read_text(encoding="utf-8")
+    )
+    assert problem is not None, (
+        "CONTROL FAILED: reachability PASSED against an aggregate that no longer "
+        "invokes %s, so it cannot detect the disappearance it exists to detect." % relative
+    )
+    assert "runs\nNOWHERE" in problem.replace(" ", "\n") or "NOWHERE" in problem, problem
