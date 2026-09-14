@@ -142,9 +142,16 @@ URL anatomy (`demo-stackoverflow`); forks add the `-fork-<TAG>` infix:
 ```
            SERVICE NAME        PROJECT/WORKLOAD    SERVER      TOP.TLD
 
-https://pgadmin              .demo-stackoverflow .hostinger  .rediacc.io
-https://pgadmin-fork-joseph  .demo-stackoverflow .hostinger  .rediacc.io
-https://pgadmin-fork-abraham .demo-stackoverflow .hostinger  .rediacc.io
+           pgadmin              .demo-stackoverflow .hostinger  .rediacc.io
+           pgadmin-fork-joseph  .demo-stackoverflow .hostinger  .rediacc.io
+           pgadmin-fork-abraham .demo-stackoverflow .hostinger  .rediacc.io
+
+(All served over https. The scheme is left off these rows ON PURPOSE, and do not
+put it back: with `https​://` prefixed, the column padding puts whitespace
+immediately after the service name, so `check:ci-external-links` extracts a
+host with no dot in it and reports a broken link that was never a link. Three of
+them failed CI that way. The complete, dotted URLs below are the ones worth
+checking, and they are checked.)
 ```
 
 Repos on `hostinger` (forks are O(1) regardless of size). NOTE: gitlab uses its OWN domain,

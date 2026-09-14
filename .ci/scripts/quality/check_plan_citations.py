@@ -596,11 +596,38 @@ def selftest(root):
             absent_submodules(fx) == ["private/aaa"],
             absent_submodules(fx),
         )
+    # ON THE REAL TREE, and phrased so it holds in BOTH environments -- which the
+    # first version did not. It asserted `absent_submodules(root) == []`, i.e. that
+    # every submodule is populated. That is true on a developer checkout and FALSE
+    # in `quality-branch`, the very lane this filter exists for, so the commit that
+    # added the filter shipped a control that could only pass where the filter was
+    # unnecessary. CI failed it immediately and was right to.
+    #
+    # What is actually invariant is AGREEMENT with the filesystem: whatever the
+    # function returns must be a declared submodule, and must really be missing or
+    # empty. That catches a filter inventing a skip -- the direction that matters --
+    # without asserting anything about which lane is running it.
+    declared = []
+    manifest = pathlib.Path(root) / ".gitmodules"
+    if manifest.is_file():
+        for line in _git("config", "-f", str(manifest), "--get-regexp", r"\.path$").split("\n"):
+            bits = line.split()
+            if len(bits) == 2:
+                declared.append(bits[1])
+    reported = absent_submodules(root)
     ck(
-        "CONTROL: on the real tree every declared submodule is populated",
-        absent_submodules(root) == [],
-        absent_submodules(root),
+        "every path it reports absent is a DECLARED submodule",
+        all(p in declared for p in reported),
+        (reported, declared),
     )
+    # DELIBERATELY ONLY ONE ASSERTION HERE. The two obvious companions -- "everything
+    # reported really is empty on disk" and "every empty one is reported" -- restate
+    # `absent_submodules`'s own definition back at it, so they cannot fail unless the
+    # function contradicts itself line to line. Controls that cannot fail are what
+    # this whole gate estate keeps getting caught by, and adding two of them to look
+    # thorough would be the same mistake in a new place. The independent check is the
+    # SUBSET one above (a path it invents would not be declared) and the tempdir
+    # fixture, whose expectation is built without calling the function at all.
 
     # The EXTRACTOR, separately from the resolvers: a line carrying all four
     # shapes must yield all four. A resolver that works over an extractor that
