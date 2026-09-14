@@ -593,6 +593,8 @@
       "WORKFLOW_DIR",
       "WORKFLOW_FILE",
       "WORKFLOW_INLINE_ONLY",
+      "WORKLIST_REGISTRY_OVERRIDE_FILE",
+      "WORKLIST_SOURCE_OVERRIDE_FILE",
       "X"
     ],
     "toolchain": [

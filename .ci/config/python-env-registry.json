@@ -754,6 +754,10 @@
       "WORKFLOW_DIR",
       "WORKFLOW_INLINE_ONLY"
     ],
+    ".ci/rediacc_ci/quality/worklist_env_registry.py": [
+      "WORKLIST_REGISTRY_OVERRIDE_FILE",
+      "WORKLIST_SOURCE_OVERRIDE_FILE"
+    ],
     ".ci/rediacc_ci/release/advance_contract_floor.py": [
       "*name",
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
@@ -1499,6 +1503,9 @@
     ".ci/scripts/quality/check_syncpack_sources.py": [
       "SYNCPACK_SOURCES_MIN",
       "SYNCPACK_SOURCES_ROOT"
+    ],
+    ".ci/scripts/quality/check_tmpfs_health.py": [
+      "TMPDIR"
     ],
     ".claude/hooks/context/band-notice.py": [
       "CTX_BAND_DUMP"

@@ -181,6 +181,21 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/PLAN-citation-fragility.md": {
+      "status": "done",
+      "owner": "unowned",
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
+      "done_sigs": [
+        "4237ec1e",
+        "46f5fd50",
+        "65c3008d",
+        "6f9c2842",
+        "911d45dd",
+        "c977c684"
+      ]
+    },
     "agent/PLAN-cli-em-dash-lint-gate.md": {
       "status": "compacted",
       "owner": "e6500e92",
