@@ -103,7 +103,7 @@ def selftest() -> int:
             == [("a", 1, False)],
         )
         ck(
-            "CONTROL: ...and is silent once it routes through the helper" " (%r)" % spawn,
+            "CONTROL: ...and is silent once it routes through the helper (%r)" % spawn,
             sites(
                 'def a():\n    argv = ["--json-schema", s]\n    %srun(argv)\n'
                 '    retry_schema_exhaustion("a", p, c)\n' % spawn
