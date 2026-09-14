@@ -87,6 +87,17 @@ PHASES = (
     "cleanup_actions_cache",
 )
 
+# `_EXERCISED` is a module global that the differential helper fills in and the
+# floor test at the bottom of this file reads. That is a cross-test dependency,
+# and the repo-root conftest distributes UNGROUPED tests across xdist workers
+# individually, so the floor test would read only the phases that happened to
+# land in ITS worker. Measured on this file: green at `-n 1` and `-n 2`, RED at
+# `-n 4`, `-n 8` (the gate's `PYTEST_JOBS_CAP`) and `-n 12` -- so the gate's own
+# invocation always failed it, and the pass at low worker counts was luck, not
+# health. Naming a group pins all 121 tests to one worker, which is what makes
+# the accumulator mean anything. Costs ~127s serial on that worker.
+XDIST_GROUP = "housekeeping-cleanup-versions"
+
 _EXERCISED: set[str] = set()
 
 

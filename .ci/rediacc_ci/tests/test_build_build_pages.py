@@ -584,14 +584,23 @@ def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> N
 
 
 def test_defect_2_nothing_in_the_tree_writes_the_manifest_path_this_reads() -> None:
-    """`dist/cli-manifest/` has exactly one mention in the repository, and it is
-    the CONSUMER. The producer (`generate-cli-manifest.sh`) writes
-    `dist/cli/manifest.json`, so the block is dead under every `--output`.
+    """Every mention of `dist/cli-manifest/` in the repository is a CONSUMER.
+    The producer (`generate-cli-manifest.sh`) writes `dist/cli/manifest.json`,
+    so the block is dead under every `--output`.
 
     Asserted against the real tree rather than a fixture, because the claim is
     about the tree. If a producer is ever added this test goes red and the
     docstring's defect 2 has to be rewritten, which is the intent.
+
+    The expected set is THREE files, not one. It was written as `[TWIN_REL]` and
+    was therefore red from the commit that introduced it (`a2e7414ae`): the port
+    reproduces the twin's dead read, as the campaign requires, and this file
+    names the path in its own `git grep` argument, so it matches itself. Counting
+    mentions is a PROXY for "nothing writes this path"; the proxy has to know
+    about the non-producers that the proxy itself created, or it only ever
+    reports its own existence.
     """
+    self_rel = str(pathlib.Path(__file__).resolve().relative_to(ROOT))
     found = subprocess.run(
         ["git", "-C", str(ROOT), "grep", "-l", "dist/cli-manifest"],
         capture_output=True,
@@ -599,7 +608,7 @@ def test_defect_2_nothing_in_the_tree_writes_the_manifest_path_this_reads() -> N
         check=False,
         timeout=120,
     )
-    assert found.stdout.split() == [TWIN_REL], found.stdout
+    assert sorted(found.stdout.split()) == sorted([TWIN_REL, PORT_REL, self_rel]), found.stdout
 
 
 # ---------------------------------------------------------------------------
