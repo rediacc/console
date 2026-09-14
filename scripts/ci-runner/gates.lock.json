@@ -1806,6 +1806,20 @@
     }
   },
   {
+    "id": "check:ci-secret-supply",
+    "run": "npm run check:ci-secret-supply",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_secret_supply.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Secret supply"
+    }
+  },
+  {
     "id": "check:ci-worklist-env-registry",
     "run": "npm run check:ci-worklist-env-registry",
     "gate": true,
@@ -7515,6 +7529,20 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-code",
       "step": "Generated manifest regions"
+    }
+  },
+  {
+    "id": "check:ci-w7p5a-real-run-blockers",
+    "run": "npm run check:ci-w7p5a-real-run-blockers",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_w7p5a_real_run_blockers.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "W7P5-a real-run blocklist"
     }
   }
 ]

@@ -40,6 +40,15 @@ from rediacc_hooks.tests import hookblocks, hookcases, test_guards_differential
 # what the shell suite waited for the process to appear in the table.
 SPAWN_SETTLE_S = 0.3
 
+# GNU `timeout` is the whole point of the two blocks below -- they prove a hang
+# is REALLY bounded by watching for its exit-124 convention, not by trusting a
+# comment -- so it is shelled out to for real rather than reimplemented with
+# `subprocess.run(timeout=...)`, which raises instead of returning 124. That
+# binary does not ship on a bare macOS/BSD userland; `REDIACC_TIMEOUT_BIN` lets
+# a workstation with GNU coreutils installed under a different name (Homebrew's
+# `coreutils` package installs `gtimeout`) point this file at it.
+TIMEOUT_BIN = os.environ.get("REDIACC_TIMEOUT_BIN", "timeout")
+
 
 def path_json(path) -> str:
     return hookcases.path_json(str(path))
@@ -63,7 +72,7 @@ def test_a_self_matching_pgrep_wait_really_does_hang():
     mark = "selfmatch-probe-%d" % os.getpid()
     hung = subprocess.run(
         [
-            "timeout",
+            TIMEOUT_BIN,
             "3",
             "bash",
             "-c",
@@ -83,7 +92,7 @@ def test_a_self_matching_pgrep_wait_really_does_hang():
     )
     remedy = subprocess.run(
         [
-            "timeout",
+            TIMEOUT_BIN,
             "3",
             "bash",
             "-c",

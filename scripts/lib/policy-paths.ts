@@ -101,6 +101,7 @@ const POLICY_FILES = Object.freeze([
   // 183 read sites, with no registry and no schema before this. A typo'd name reads as
   // UNSET, which for a flag defaulting to `on` is the FAIL-OPEN direction.
   'worklist-env-registry.json',
+  '.w7p5a-real-run-blocklist',
 ] as const);
 
 type PolicyFileName = (typeof POLICY_FILES)[number];

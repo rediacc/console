@@ -40,6 +40,7 @@ and the path under `.claude/hooks/` for anything still in bash.
 """
 
 import dataclasses
+import datetime
 import json
 import subprocess
 
@@ -1116,7 +1117,9 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_stale_pr_branch_date.py",
-        bash_json("gh pr create --draft --head 0909-9 -t x -b y"),
+        bash_json(
+            "gh pr create --draft --head %s-9 -t x -b y" % datetime.date.today().strftime("%m%d")
+        ),
         "stale-pr-branch: today's MMDD allowed",
     ),
     case(

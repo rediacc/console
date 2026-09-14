@@ -43,7 +43,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { generatedArtifacts, LOCKFILE, type Lockfile } from '../generate-embed-credits.js';
+import { generatedArtifacts, LOCKFILE, type Lockfile } from '../gen/generate-embed-credits.js';
 import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
 
