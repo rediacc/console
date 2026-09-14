@@ -55,7 +55,14 @@ GREEN = "\033[0;32m"
 NC = "\033[0m"
 
 SCAN_ROOTS = [".ci/scripts", "scripts"]
-EXCLUDE_DIR_PARTS = {"test", "__tests__", "gates", "fixtures"}
+# NOT "gates": `scripts/gates/` is where the real registered TS gates live,
+# including this gate's own two founding motivating cases
+# (check-pr-epic-block.ts, check-pr-task-trailers.ts, named in the module
+# docstring above). Excluding it left this gate blind to both since the day
+# it was written -- "test" and "__tests__" already cover the bash-side test
+# fixtures (`.ci/scripts/test/gates/*.sh`) that "gates" was presumably meant
+# to protect, without also swallowing the production directory.
+EXCLUDE_DIR_PARTS = {"test", "__tests__", "fixtures"}
 
 BASH_PREFERENCE = re.compile(r"\$\{PR_HEAD_REF(?::-|\})")
 TS_PREFERENCE = re.compile(r"process\.env\.PR_HEAD_REF")

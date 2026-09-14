@@ -1,13 +1,15 @@
-## SESSION f4da5c2e 2026-09-14T14:12:48Z
+## SESSION f4da5c2e 2026-09-14T14:54:11Z
 
-LEAD posture over `/pr-babysit bg` on branch `0914-1`. Babysitter (agent id `a1f1a247df6d36236`, task name "Babysit PR for branch 0906-1" is stale — real branch is 0914-1) owns the primary tree; I do not watch CI directly, it messages me for tier-3 escalations and milestone reports.
+LEAD posture over `/pr-babysit bg` on branch `0914-1`. Babysitter (`a1f1a247df6d36236`) owns the primary tree, drains pre-push battery failures, escalates tier-3 to me; I verify claims in code before ruling, never watch CI directly.
 
-Just ruled (approved, verified in code first): rewrite 5 of 141 commit messages via `git filter-branch --msg-filter` (message-only, branch never pushed — confirmed no `origin/0914-1`) adding/fixing `PR-TASK: e87fa3ce` trailers, then a follow-up commit repairing the 16 sha citations in agent/docs the rewrite breaks. Blob-id conversion of those 16 citations was explicitly declined as out of scope for that rewrite and is now tracked separately as worklist `#5baa9c88`.
+Progress: 23+ of 27 original failures fixed and green. Two rulings just resolved: (1) I fixed `check:ci-pr-head-ref-completeness` myself (`EXCLUDE_DIR_PARTS` wrongly excluded `scripts/gates/`, blinding it to its own founding motivating cases since creation) after disproving the babysitter's "needs a twin edit" framing; (2) confirmed `check:ci-workflow-submodule-deps` has no bash twin, cleared it as tier-2 for the babysitter to fix directly. Also removed 2 stale isolated-investigation worktrees earlier (`.claude/worktrees/agent-a44f...`, `agent-a5ef...`) after verifying their uncommitted content was already-landed or superseded — that unblocked 3 more reds (biome nested-config, shfmt, go-module-sync).
 
-Progress: 10 of 27 pre-push local-battery failures fixed and re-verified green (root cause: 208 newly-tracked `.ci/rediacc_ci/**` modules made previously-blind gates see for the first time). check:ci-env-manifest, check:ci-secret-scope (baseline shrank 1->0), check:ci-shell-declared-commands all green.
+Also earlier: approved and verified a 5-of-141-commit `PR-TASK` trailer message rewrite (unpushed branch, safe) plus a 16-citation repoint, both landed and green.
 
-Background job `bcow3ib10` ("Wait for the pytest output to report a result") silent 900+ min but OS-verified alive each check-in — a loop that only prints at the end, not stuck.
+Worklist `#5baa9c88` (convert 16 branch-sha citations to blob ids) stays leased/blocked — real constraint is the babysitter still actively writing `agent/PLAN-tooling-transformation.md`, not any single commit.
+
+`bcow3ib10`: silent pytest wait, 980+ min, OS-verified alive each check-in (print-at-end loop) — not stuck.
 
 ## Next action
-1. Worklist `#5baa9c88`: convert the 16 branch-sha citations to blob ids (`git hash-object`) once the babysitter's tree is at a pause point — driver-only doc edit, do not start while it is mid-rewrite.
-2. Meanwhile, `6d928fdf`'s remaining ~17 of 27 pre-push failures are draining under `a1f1a247df6d36236`; on its next milestone/escalation, verify claims in code before ruling. On its green report: one-time `gh` verification, confirm debugging aids off and the 3 sanctioned-untouched paths untouched, then report PR links (`rediacc/account#87`, `rediacc/renet#111` linked in the draft body) to the operator. Never merge, never push main.
+1. Remaining ~4 of 27: `check:ci-secret-reachability` (deliberate permanent red, door:operator-only), `check:ci-gate-manifest`/`check:actions` (both local-only, environmental), `check:ci-go-deps` (3 real renet bumps, babysitter working it now) — no action from me until babysitter reports these resolved or escalates.
+2. On its next report: verify claims in code before ruling on anything new; on green: one-time `gh` verification, confirm debugging aids off and 3 sanctioned-untouched paths untouched, report PR links (`rediacc/account#87`, `rediacc/renet#111`) to operator. Never merge, never push main.
