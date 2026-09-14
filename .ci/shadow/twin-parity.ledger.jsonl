@@ -229,3 +229,16 @@
 {"at":"2026-09-09T16:03:17Z","subject":"test_gate_client_bundle_budget","twin":".ci/scripts/test/gates/test-client-bundle-budget.sh","twin_sha":"f5d7490581132008","port_sha":"c4f1bed35e7e4670","agreed":true}
 {"at":"2026-09-09T16:03:36Z","subject":"test_gate_devcontainer_pin_freshness","twin":".ci/scripts/test/gates/test-devcontainer-pin-freshness.sh","twin_sha":"2425782806da4d71","port_sha":"87d845ec21c9d741","agreed":true}
 {"at":"2026-09-09T16:03:37Z","subject":"test_gate_doc_region_parity","twin":".ci/scripts/test/gates/test-doc-region-parity.sh","twin_sha":"7b2826d36c1daf3b","port_sha":"e7e08fb31c4be4ac","agreed":true}
+{"at":"2026-09-10T08:39:23Z","subject":"test_gate_preview_readiness","twin":".ci/scripts/test/gates/test-preview-readiness.sh","twin_sha":"e62f30a9b36b1da9","port_sha":"601653be06b1de4d","agreed":true}
+{"at":"2026-09-10T08:39:32Z","subject":"test_gate_fetch_depth_safety","twin":".ci/scripts/test/gates/test-fetch-depth-safety.sh","twin_sha":"2e29978ad32bd340","port_sha":"31c955a0531beee0","agreed":true}
+{"at":"2026-09-10T08:39:46Z","subject":"test_gate_profiler_report","twin":".ci/scripts/test/gates/test-profiler-report.sh","twin_sha":"bde3387455630297","port_sha":"6722bd2c72b7809f","agreed":true}
+{"at":"2026-09-10T08:39:58Z","subject":"test_gate_resprofile","twin":".ci/scripts/test/gates/test-resprofile.sh","twin_sha":"2be30c185fe44d16","port_sha":"1afb12f535c62eef","agreed":true}
+{"at":"2026-09-10T08:40:06Z","subject":"test_gate_suppression_liveness","twin":".ci/scripts/test/gates/test-suppression-liveness.sh","twin_sha":"89ed6b8cf3e5e6fd","port_sha":"70e77f6f34795ac5","agreed":true}
+{"at":"2026-09-14T09:45:09Z","subject":"test_gate_fetch_depth_safety","twin":".ci/scripts/test/gates/test-fetch-depth-safety.sh","twin_sha":"02f6d42945b724c8","port_sha":"31c955a0531beee0","agreed":true}
+{"at":"2026-09-14T09:45:20Z","subject":"test_gate_layout_overflow","twin":".ci/scripts/test/gates/test-layout-overflow.sh","twin_sha":"16adc5c467c55051","port_sha":"bbb6cf44ab9f123a","agreed":true}
+{"at":"2026-09-14T09:45:31Z","subject":"test_gate_preview_readiness","twin":".ci/scripts/test/gates/test-preview-readiness.sh","twin_sha":"99006fa91a3748a2","port_sha":"601653be06b1de4d","agreed":true}
+{"at":"2026-09-14T09:47:28Z","subject":"test_gate_resprofile","twin":".ci/scripts/test/gates/test-resprofile.sh","twin_sha":"ddcea272bef14ef7","port_sha":"1afb12f535c62eef","agreed":true}
+{"at":"2026-09-14T09:48:02Z","subject":"test_gate_suppression_liveness","twin":".ci/scripts/test/gates/test-suppression-liveness.sh","twin_sha":"439c2d17dd021959","port_sha":"70e77f6f34795ac5","agreed":true}
+{"at":"2026-09-14T09:48:42Z","subject":"test_gate_gate_lanes","twin":".ci/scripts/test/gates/test-gate-lanes.sh","twin_sha":"114c03e71e38a556","port_sha":"7b5d22ebb5bc8a30","agreed":true}
+{"at":"2026-09-14T09:50:24Z","subject":"test_gate_mark_production","twin":".ci/scripts/test/gates/test-mark-production.sh","twin_sha":"03831019e1f7a903","port_sha":"2a90cfb29e1f9c15","agreed":true}
+{"at":"2026-09-14T10:28:16Z","subject":"test_gate_workflow_contracts","twin":".ci/scripts/test/gates/test-workflow-contracts.sh","twin_sha":"58c64b3130757791","port_sha":"00cc253d261accb8","agreed":true}
