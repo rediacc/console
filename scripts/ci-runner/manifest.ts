@@ -873,8 +873,8 @@ export const GATES: readonly GateSpec[] = [
     // nothing at all -- no key, no entry, no workflow line -- so CI ran its gate test
     // and never the gate. Added 2026-09-08 with the port, through its header and one
     // `gate:bind --write`.
-    id: 'check:ci-ci-job-aggregation',
-    run: 'npm run check:ci-ci-job-aggregation',
+    id: 'check:ci-job-aggregation',
+    run: 'npm run check:ci-job-aggregation',
     gate: true,
     leaves: ['.ci/scripts/quality/check_ci_job_aggregation.py'],
     ci: {

@@ -834,8 +834,8 @@
     }
   },
   {
-    "id": "check:ci-ci-job-aggregation",
-    "run": "npm run check:ci-ci-job-aggregation",
+    "id": "check:ci-job-aggregation",
+    "run": "npm run check:ci-job-aggregation",
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_ci_job_aggregation.py"

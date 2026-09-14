@@ -467,11 +467,33 @@ function analyze(inp: Inputs): Finding[] {
   // --- 2. Tautology guard -------------------------------------------------
   // `npm run ci` inside the surface would make every assertion below vacuous:
   // it makes the entire gate set "CI-executed" by definition.
+  // THREE WAYS THE OLD PATTERN MISSED, all measured. It was
+  // `/npm run (ci|quality)(?=\s|$)/`, and:
+  //   * `npm run ci:quick` (383 gates) and `npm run ci:serial` (the whole set
+  //     serially) both ran straight past it -- the lookahead sees `:`.
+  //   * ANY npm flag between `run` and the key defeated it outright, so even the
+  //     plain case it was written for slipped through as `npm run --silent ci`.
+  // A guard that the thing it guards against can walk past by adding `--silent`
+  // is not a narrow guard, it is an inert one.
+  //
+  // AND THE OTHER DIRECTION MATTERS JUST AS MUCH, which is why the keys are
+  // ENUMERATED rather than matched as `ci(:\w+)?`: `ci:list` and
+  // `ci:quick -- --list` PLAN the lane and execute nothing, so flagging them
+  // would red the ci-quick job for doing exactly the harmless thing it exists to
+  // do -- and a gate that reds correct work is the shape that gets suppressed.
+  const AGGREGATE_RUN = /npm run\s+(?:--\S+\s+)*(ci|ci:quick|ci:serial|quality)(?=\s|$)/g;
   for (const r of runs) {
-    for (const m of stripQuoted(r.raw).matchAll(/npm run (ci|quality)(?=\s|$)/g)) {
+    const raw = stripQuoted(r.raw);
+    for (const m of raw.matchAll(AGGREGATE_RUN)) {
+      // `--list` turns any of these into a plan. Scoped to the matched LINE so a
+      // `--list` elsewhere in a multi-line script cannot excuse a real run.
+      const lineStart = raw.lastIndexOf('\n', m.index ?? 0) + 1;
+      const lineEnd = raw.indexOf('\n', m.index ?? 0);
+      const line = raw.slice(lineStart, lineEnd === -1 ? undefined : lineEnd);
+      if (line.includes('--list')) continue;
       add(
         'tautology',
-        `${r.file} ${r.job} / "${r.step}" invokes \`npm run ${m[1]}\`. That collapses the ten quality lanes into one serial job AND makes every parity assertion vacuous, because the whole gate set would count as CI-executed. Run the individual gates instead.`
+        `${r.file} ${r.job} / "${r.step}" invokes \`npm run ${m[1]}\`. That collapses the ten quality lanes into one serial job AND makes every parity assertion vacuous, because the whole gate set would count as CI-executed. Run the individual gates instead, or add \`--list\` if you meant to plan the lane rather than execute it.`
       );
     }
   }

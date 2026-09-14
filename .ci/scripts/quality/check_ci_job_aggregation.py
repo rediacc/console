@@ -30,6 +30,7 @@ THE LEDGER CONDITION IS MET. Driven 2026-09-08:
 ---- gate ----
 step: CI job aggregation
 needs: none
+id: check:ci-job-aggregation
 selftest: true
 lane: quality-code
 why: every non-exempt job in ci.yml must be aggregated by ci-complete and tiered, or a

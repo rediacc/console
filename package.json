@@ -107,7 +107,7 @@
     "check:ci-account-probes": ".ci/scripts/quality/check_account_probes.py",
     "check:ci-drill-verdicts": ".ci/scripts/quality/check_drill_verdicts.py",
     "check:ci-probe-parity": ".ci/scripts/quality/check_probe_parity.py",
-    "check:ci-ci-job-aggregation": ".ci/scripts/quality/check_ci_job_aggregation.py",
+    "check:ci-job-aggregation": ".ci/scripts/quality/check_ci_job_aggregation.py",
     "check:ci-swallowed-failures": ".ci/scripts/quality/check_swallowed_failures.py",
     "check:ci-ceph-image-pin": "tsx scripts/gates/check-ceph-image-pin.ts",
     "check:ci-naturalization-model-policy": "tsx scripts/gates/check-naturalization-model-policy.ts",
