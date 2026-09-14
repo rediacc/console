@@ -2723,3 +2723,45 @@ sibling gates were driven the same day and all were rc=0, so no other instance w
 but the wording is shared, and the next author to split one will be told off by a gate
 that could never have stopped them.
 
+## A reachability check that hard-fails on blobs will call the whole corpus dead
+Trap-Id: is-ancestor-hard-fails-on-a-blob
+Enforced-By: JUDGMENT-ONLY
+Residue: nothing can enforce this one, and the disposition says so rather than pointing at
+a gate that would not really be watching. The trap is in the INVESTIGATOR, not in any
+gate: `check:ci-plan-citations` was correct on every run described below, and every wrong
+answer came from a script written to investigate it. The ad-hoc oracle is gone, but
+nothing stops the next session writing the same three-line loop; the durable form is the
+last paragraph.
+
+Measured 2026-09-14, three times in one wave, each time producing a confident number that
+was wrong in a different direction.
+
+`agent/` cites two kinds of object: commit shas and 40-char Full-Text-Blob ids, and the
+gate accepts either ("a real blob OR a real commit"). Asking whether a citation will
+survive in CI is a REACHABILITY question -- `git cat-file -e` answers yes for anything in
+the local object store, including commits kept alive only by `refs/original` after a
+`filter-branch`, which a fresh clone will not have. That much was understood.
+
+The oracle chosen for it was `git merge-base --is-ancestor <token> HEAD`. On a blob that
+does not return false. It exits 128 with "object ... is a blob, not a commit", and a loop
+that treats any non-zero as "unreachable, therefore dead" reports every blob citation in
+the corpus as broken. Naively run it named 65 dead pointers where 12 were dead: 53 healthy
+blobs, and most of the corpus is blobs. Acting on it would have rewritten 53 correct
+citations -- far worse than the red being chased, and it would have looked like diligence.
+
+The two earlier variants of the same wave are worth naming because neither felt like the
+same mistake at the time. First, the finding set was taken from a grep of a CI job LOG,
+which returned 40 of the 61 lines the run reported; the 21 dropped lines became a second
+red round. Second, a hand-written scan reimplemented the gate's loop WITHOUT its
+fenced-block handling, and so reported five citations an earlier author had deliberately
+fenced -- with a comment saying exactly why -- as live findings.
+
+THE COMMON SHAPE: every wrong answer came from re-implementing part of the gate in order
+to investigate the gate. The gate was correct on all three runs.
+
+So: to reproduce what CI will see, build the object set the way a clone gets it --
+`git rev-list --objects HEAD` -- and test each token as a PREFIX of that set, which is
+correct for blobs and commits alike. Then walk the corpus with the gate's OWN
+`added_lines`, `fenced_lines` and `citations` rather than a fresh regex. Done that way the
+local count matched CI's exactly, which is the only agreement worth anything: two
+independent wrong answers agree with each other just as readily.
