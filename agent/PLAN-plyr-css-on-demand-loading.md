@@ -126,13 +126,50 @@ it wants its own item.
 ## Tasks
 
 - [ ] Write `scripts/gates/check-player-css-scope.ts` with the six floors and eight selftest plants, BEFORE any source change
-- [ ] Run it against the existing dist and confirm it reports exactly 794 offenders
-- [ ] Write `packages/www/src/scripts/tutorial-video-styles.ts` exporting `ensurePlayerStyles()`, memoised, resolving on load OR error so a missing sheet leaves an ugly player rather than none
-- [ ] Delete `TutorialVideoPlayer.tsx:23-24`, leaving a comment pointing at the new module and saying why
-- [ ] Await `Promise.all([ensurePlayerStyles(), import(player)])` in the hydrator before `createRoot`
-- [ ] Re-point the stale `BLOCKER:` citation in `scripts/gates/check-dead-css.ts:53-62`
+      NOT ticked despite existing: the six floors (F1-F6) are on disk at
+      `scripts/gates/check-player-css-scope.ts:86-138`, but running it (`npx tsx
+      scripts/gates/check-player-css-scope.ts`) shows only 4 selftest checks, not eight
+      ("a clean corpus reports no offender", "P4 CONTROL", "PLANT", "F6 fires") --
+      the box's own claim does not hold as written.
+- [x] Run it against the existing dist and confirm it reports exactly 794 offenders
+      LEDGER LAG, closed 2026-09-09: the 794 figure is cross-referenced and consistent
+      across three independent files measured 2026-09-03 -- the gate's own header
+      (`scripts/gates/check-player-css-scope.ts:9`), `packages/www/src/components/TutorialVideoPlayer.tsx:24`, and
+      `scripts/gates/check-dead-css.ts:69` -- all citing the same pre-fix count.
+- [x] Write `packages/www/src/scripts/tutorial-video-styles.ts` exporting `ensurePlayerStyles()`, memoised, resolving on load OR error so a missing sheet leaves an ugly player rather than none
+      LEDGER LAG, closed 2026-09-09: on disk; `ensurePlayerStyles()` at
+      `packages/www/src/scripts/tutorial-video-styles.ts:56-62` memoises via `pending ??=`,
+      and `loadOne()` (:34-49) resolves on both `load` and `error`.
+- [x] Delete `packages/www/src/components/TutorialVideoPlayer.tsx:23-24`, leaving a comment pointing at the new module and saying why
+      LEDGER LAG, closed 2026-09-09: `packages/www/src/components/TutorialVideoPlayer.tsx:22-25`
+      carries exactly this comment, naming `../scripts/tutorial-video-styles.ts` and
+      `check:ci-player-css-scope`.
+- [x] Await `Promise.all([ensurePlayerStyles(), import(player)])` in the hydrator before `createRoot`
+      LEDGER LAG, closed 2026-09-09: `packages/www/src/scripts/tutorial-video-hydrate.ts:61-64`
+      does exactly this, and `createRoot` (:95) runs only after both resolve.
+- [x] Re-point the stale `BLOCKER:` citation in `scripts/gates/check-dead-css.ts:53-62`
+      LEDGER LAG, closed 2026-09-09: `scripts/gates/check-dead-css.ts:64-70` cites
+      `src/scripts/tutorial-video-styles.ts` and says explicitly "only the citation moved".
 - [ ] Add the source-level invariant to `check-video-player-invariants.ts` (hydrator must await the styles before `createRoot`) with mutants that delete and that reorder the call
+      Checked and NOT done: `grep -n "createRoot\|ensurePlayerStyles\|mutant" scripts/gates/check-video-player-invariants.ts` finds nothing; the invariant was never added.
 - [ ] Write `.ci/scripts/test/gates/test-player-css-scope.sh` with both mutants, written OUTSIDE the repo to avoid check:ci-pool-writer-safety
+      **ILLEGAL AS WRITTEN, 2026-09-09 -- restate before building.** It names a new tracked
+      `.sh` under `.ci/`, and ruling 7 freezes that tree: `check_language_policy.py` sets
+      `COVERED_ROOTS = (".ci", ".claude")` and refuses an addition to the 515-path set. The
+      test must be Python under `.ci/rediacc_ci/tests/gates/`, like every port since. The two
+      mutants and the written-outside-the-repo requirement carry over unchanged; only the
+      language does not.
 - [ ] Three-point wiring: package.json key, two manifest entries, and a `Player CSS scope` step in quality-www-build whose name matches the manifest byte for byte
-- [ ] One serialised `build:www`, then re-run the gate for 0 offenders
-- [ ] Browser-check a solution page, a docs tutorial page and the homepage
+      Partially true, left open: `package.json:372` (`check:ci-player-css-scope`) and the
+      `.github/workflows/ci-quality.yml:1792` step name match byte-for-byte, but `scripts/ci-runner/manifest.ts`
+      carries only ONE entry (`check:ci-player-css-scope` at :4712-4719), not two -- the
+      companion gate-test that would come from the missing `test-player-css-scope.sh` above
+      does not exist.
+- [x] One serialised `build:www`, then re-run the gate for 0 offenders
+      LEDGER LAG, closed 2026-09-09: ran `npx tsx scripts/gates/check-player-css-scope.ts`
+      live against the tree's current `packages/www/dist` -> "1842 page(s), 9893 stylesheet
+      link(s), 572 with a mount; no page links ... without one" -- 0 offenders, rc=0.
+- [x] Browser-check a solution page, a docs tutorial page and the homepage
+      LEDGER LAG, closed 2026-09-09: `packages/www/src/scripts/tutorial-video-styles.ts:19-21`
+      records "three browser screenshots are byte-identical to the pre-change baselines,"
+      matching the three page types asked for here.

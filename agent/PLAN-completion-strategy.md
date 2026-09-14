@@ -30,6 +30,31 @@ lines of twice-maintained bash and moves the real axis from 1/521 to roughly
 and ledgers accrue per CI run, so it is throughput-limited by the merge rate. That
 is why it must START first and why adding writers to it does nothing.
 
+**REFUTED BY THE CENSUS OF 2026-09-09. The paragraph above is wrong and is kept so the
+correction is legible.** Every ledger that exists already passes K=5 with >=2
+fingerprints, and did before the census ran: **81 of 82 green**, the one red being the
+known `w7p2-stagingtag` carve-out. Driven independently by the driver over all 82 pairs.
+**Zero files wait on accrual.**
+
+**The real constraint is COVERAGE, and coverage is writer work.** Mapping every ledger
+row's `old.cmd` to a bash path gives **77 quality twins with a ledger and 0 of 149 gate
+tests**. The gate-test half is 45,099 lines, **73% of the surface**, and has no ledger to
+accrue FROM -- recording a first row is a writer recording it, not a merge happening. So
+this box DOES parallelise and the schedule below is pessimistic about it.
+
+**AND THE COVERAGE GAP CLOSED THE SAME DAY, by ruling rather than by work.** The
+gate-test half was never unlicensed: `test_twin_parity.py` covers **141 subjects, 231 of
+231 rows agreeing**, continuously and re-keyed on both shas. A shadow-gate ledger is not
+obtainable there at all -- bash halts at the first failure while pytest decorates every
+one, and the comparator has no rule to strip it. Driver ruling: that continuous check IS
+C1 for those twins. **The 73%-of-surface constraint this section reported is therefore
+gone, and W7P5-c's remaining work is C2 and C3, not evidence-gathering.**
+
+**Licensed today: 23 files / 4,068 lines**, 22 strictly -- `check-lockfile.sh` exits 1 on
+`private/account/package-lock.json (npm@10 cannot resolve)` and **its bash twin fails
+identically**, so that is uncommitted submodule state, not a port defect. Batch 1 drains
+the baseline 515 -> 493. Full report: `agent/f4da5c2e/W7P5c-licence-census.md`.
+
 **Rank 2 -- the kill list (section 2).** Retires 72 of 157 open boxes without doing
 them, in one sonnet session, and it is calendar-forced: `.ci/config/plan-lifecycle.json`
 sets `warn_days` 26 and `delete_days` 33, so the first hard
@@ -62,16 +87,16 @@ never been used** -- `agent/archive/plans` does not exist on disk. Archiving dro
 
 | plan | open | retire | reason, verified against the tree |
 |---|---|---|---|
-| `agent/PLAN-stop-plan-box-enforcement.md` | 6 | 6 | `Status: superseded`. Its `--adopt` box SHIPPED (`.claude/hooks/stop/worklist.py:1177`); its parser box is duplicated at `agent/PLAN-plan-file-lifecycle.md:455`. |
-| `agent/PLAN-env-to-bitwarden.md` | 20 | 20 | Subsumed: `agent/PLAN-env-to-bitwarden-v2.md:34` folds v1's list into ONE box, and `.ci/lib/bws-env.sh` already exists. |
-| `agent/PLAN-github-secrets-removal.md` | 13 | 11 | The workflow layer is DONE: 4 distinct `secrets.*` names remain, 75 of 83 refs are `BWS_ACCESS_TOKEN`, `SHADOW_NAMES` occurs zero times, and `MIN_REFERENCES` is already 1 at `.ci/scripts/quality/check_secret_reachability.py:81`. |
-| `agent/PLAN-secret-names-one-to-one.md` | 9 | 9 | No `Owner:`; superseded by `agent/PLAN-github-secrets-removal.md:580`. |
-| `agent/PLAN-migrate-command.md` | 11 | 11 | Shipped: `--migrate` at `.claude/hooks/stop/worklist.py:1058`, `.claude/hooks/stop/wl_store.py:1947`, the skill and case 26 all on disk. |
-| `agent/PLAN-handoff-sequence.md` | 7 | 7 | Waits on a superseded plan. |
-| `agent/PLAN-worklist-ownership-continuity.md` | 3 | 3 | 11 of 14 done; `--adopt` live and documented in `CLAUDE.md:98`. |
+| `agent/archive/plans/PLAN-stop-plan-box-enforcement.md` | 6 | 6 | `Status: superseded`. Its `--adopt` box SHIPPED (`.claude/hooks/stop/worklist.py:1177`); its parser box is duplicated at `agent/PLAN-plan-file-lifecycle.md:455`. |
+| `agent/archive/plans/PLAN-env-to-bitwarden.md` | 20 | 20 | Subsumed: `agent/PLAN-env-to-bitwarden-v2.md:34` folds v1's list into ONE box, and `.ci/lib/bws-env.sh` already exists. |
+| `agent/archive/plans/PLAN-github-secrets-removal.md` | 13 | 11 | The workflow layer is DONE: 4 distinct `secrets.*` names remain, 75 of 83 refs are `BWS_ACCESS_TOKEN`, `SHADOW_NAMES` occurs zero times, and `MIN_REFERENCES` is already 1 at `.ci/scripts/quality/check_secret_reachability.py:81`. |
+| `agent/archive/plans/PLAN-secret-names-one-to-one.md` | 9 | 9 | No `Owner:`; superseded by `agent/archive/plans/PLAN-github-secrets-removal.md:580`. |
+| `agent/archive/plans/PLAN-migrate-command.md` | 11 | 11 | Shipped: `--migrate` at `.claude/hooks/stop/worklist.py:1058`, `.claude/hooks/stop/wl_store.py:1947`, the skill and case 26 all on disk. |
+| `agent/archive/plans/PLAN-handoff-sequence.md` | 7 | 7 | Waits on a superseded plan. |
+| `agent/archive/plans/PLAN-worklist-ownership-continuity.md` | 3 | 3 | 11 of 14 done; `--adopt` live and documented in `CLAUDE.md:98`. |
 | `agent/PLAN-secret-namespace-migration.md` | 7 | 2 | Two boxes name `mc_migrate_claude`, a row replaced on 2026-09-09. |
 | `agent/PLAN-plan-file-lifecycle.md` | 3 | 1 | Its box asks for a wholesale deletion its own gate now REFUSES. |
-| `agent/PLAN-branch-aware-workflows.md` | 2 | 2 | Both operator-gated by their own text. |
+| `agent/archive/plans/PLAN-branch-aware-workflows.md` | 2 | 2 | Both operator-gated by their own text. |
 | **total** | **81** | **72** | **157 open becomes 85** |
 
 Also fix two malformed headers, currently invisible to the census:
@@ -145,8 +170,8 @@ ledgers, which accrue per CI run and cannot be outrun by adding writers.
 **Operator-gated: 12 boxes gating ~20 downstream.** `agent/PLAN-tooling-transformation.md:1826`
 (mint the machine accounts) blocking `:1861`; `agent/PLAN-tooling-transformation.md:2581`
 (settle `private/account`) blocking `:2734`; the `autopilot_no_bypass` organisation
-variable; the `w7p2-stagingtag` human sign-off; `agent/PLAN-github-secrets-removal.md:551`
-and `:578`; `agent/PLAN-branch-aware-workflows.md:149` and `:154`;
+variable; the `w7p2-stagingtag` human sign-off; `agent/archive/plans/PLAN-github-secrets-removal.md:551`
+and `:578`; `agent/archive/plans/PLAN-branch-aware-workflows.md:149` and `:154`;
 `agent/PLAN-bws-rotation-on-failure.md:99`; and two deferrals in
 `agent/PLAN-secret-namespace-migration.md`. **Ask for all of them in one round trip.**
 

@@ -69,6 +69,20 @@ refresh, so a correction recorded there can be dropped by the next rewrite.
   two WRITING agents with disjoint file ownership still holds (`CLAUDE.md` rule 4);
   read-only Plan and Explore agents do not count against it, so there is no excuse for a
   single-threaded session.
+- **BITWARDEN IS ONE PROJECT, AND THAT IS SETTLED.** Ruled 2026-09-09: *"Currently, we only
+  have single project and multiple tokens: dev can R/W and ci is read-only. I'm fine with
+  that. I can think about the dev separation later."* Do not re-propose `dev-shared`, and do
+  not re-derive whether a second project is possible -- it is, but each secret belongs to
+  exactly one project (bitwarden.com/help/projects), so moving them would take CI's access
+  with them. The consequence to state honestly whenever it matters, and NOT to re-litigate:
+  the read-only CI credential can SEE every secret it reaches. Steps are parked at
+  `agent/f4da5c2e/BITWARDEN-dev-shared-prompt.md` if it is ever revisited.
+- **NEVER add `Co-Authored-By` or `Generated with` lines to a commit.** A pre-bash hook
+  refuses them, and it overrides any session-level attribution instruction that says
+  otherwise.
+- **`git commit` needs an explicit pathspec here** (`git commit -F <file> -- <path>...`) and
+  `git add -A` needs one too. Both are hook-enforced because a blanket sweep has twice
+  shipped another session's half-finished work.
 
 
 ## Standing constraints

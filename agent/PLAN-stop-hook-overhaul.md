@@ -104,7 +104,7 @@ ruling a durable HOME. It does not give a check a way to READ it.
       `agent/RULES.md`.
 - [ ] Add `.ci/scripts/quality/check_operator_rulings.py` asserting byte-equality between the
       rendered section and the ledger -- the anti-lying-cache discipline
-      `.claude/hooks/stop/wl_planindex.py:25` already states. Wire `check:ci-operator-rulings`.
+      `.claude/hooks/stop/wl_planindex.py:25` already states. Wire a new gate registered as `ci-operator-rulings`.
 - [ ] Add `.claude/hooks/stop/wl_ruling.py` exposing `settled(root, check_key, subject_sig)`,
       globbing ALL sessions' ledgers. Any error returns `None`, restoring today's behaviour.
 - [ ] CONTROL, new `.claude/hooks/stop/worklist-cases/27-rulings.sh` added to `CASE_FILES` in

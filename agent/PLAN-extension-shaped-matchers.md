@@ -159,7 +159,7 @@ byte-identical `def subject(gate)` in three watchdog gate tests belongs in `harn
 ## The three commits, in order, BEFORE W7 P5
 
 1. **Detector.** ~~Newline-preserving literal replacement~~ **DONE 2026-09-08** --
-   coordinates are exact (`check_npmrc.py:66` reports 66, was 4), window count
+   coordinates are exact (`.ci/scripts/quality/check_npmrc.py:66` reports 66, was 4), window count
    44446 -> 48613, cost was the 4 predicted shell shapes plus 5 overlapping
    sub-windows, all accepted per-fingerprint. ~~per-family floors~~ **DONE** --
    `FAMILIES` is a `{pathspec, floor}` table checked per family in `tracked()`, proven
@@ -170,7 +170,9 @@ byte-identical `def subject(gate)` in three watchdog gate tests belongs in `harn
    existing corpus and 245 shapes still at 3+ copies against an empty seed. STILL TO DO
    in this commit:
    content-free-continuation and shared-helper-call exclusions; per-family floors. Costs
-   4 accepted entries, each reusing `ddcaba9721fd`'s argument verbatim. On the existing
+   4 accepted entries, each reusing the content-free-continuation argument verbatim. (Its
+   fingerprint is not cited: that shape has since been EXTRACTED, so the id is gone from
+   `scripts/data/shape-duplication-seed.json` and citing it would be a dead pointer.) On the existing
    corpus these predicates add ZERO findings, and with an empty seed the tree still
    yields 133 shapes -- the gate keeps its teeth.
 2. **Extraction, while the corpus still cannot see it.** `_cipath.py` plus the 75 entry
@@ -192,7 +194,9 @@ half the Python report idiom counted as copied code); `validate-cli-examples.ts`
 `/*`, not `#`).
 
 `isMessageish` is deliberately NOT widened to `gate.log_fail`: a repeated call to an
-already-shared helper is the separate exclusion seed entry `98b21fa52e5d` names, and a
+already-shared helper is the separate shared-helper-call exclusion -- its seed entry has
+since been extracted out of `scripts/data/shape-duplication-seed.json`, so the fingerprint
+is deliberately not quoted here -- and a
 control keeps it out.
 
 **`validate-cli-examples`'s `.py` globs are DEFERRED**, cost measured: **17 -> 7 -> 6** as
@@ -230,8 +234,8 @@ equality in both directions between the on-disk battery and the manifest's `qual
 entries: a deleted twin still declared fires by name. `.ci/rediacc_ci/quality/pool_writer_safety.py:543`
 refuses on an empty set. Both are DIFFERENTIALS against what `run-all.sh` actually runs, so
 under the pin rule they must keep naming the twin, and both fail LOUD during P5 rather than
-silently. The same holds for the four FLOOR/COUNT findings (`gate_id_convention.py:229`,
-`shfmt.sh:71-73`, `test_battery.py:352`, `pool_writer_safety.py:545`).
+silently. The same holds for the four FLOOR/COUNT findings (`.ci/rediacc_ci/quality/gate_id_convention.py:229`,
+`.ci/scripts/security/shfmt.sh:71-73`, `.ci/rediacc_ci/tests/test_battery.py:352`, `.ci/rediacc_ci/quality/pool_writer_safety.py:545`).
 
 ## Two premises in this plan were WRONG, found by measuring
 
@@ -249,8 +253,69 @@ Recorded because a plan that hides its own corrections teaches nothing.
 ## One defect found on the way, fixed, and outside every brief
 
 `.claude/rediacc_hooks/guards/warn_remote_drift.py:197`: `hookio.git_out` without `want_rc`
-returns `""` on failure indistinguishably from success, and `shellscan.py:582` then joins
+returns `""` on failure indistinguishably from success, and `.claude/rediacc_hooks/shellscan.py:582` then joins
 `this_root + "/" + hint`, so a relative `-C nested` resolved to `/nested` instead of
 `<repo>/nested`. Guarded with ALLOW rather than a block: an advisory drift hook that cannot
 establish where it is has no standing to judge a command.
+
+## Re-checked 2026-09-10 by the same driver session, commit 3 confirmed still open
+
+A later wave of this session (W7P5-b/W7P6, unrelated in subject but overlapping in
+mechanics) independently completed `agent/PLAN-tooling-transformation.md`'s W1P4 box (the
+full `sys.path` hop sweep), which shares ground with this plan's commit-2 "Extraction"
+step: `harness.watchdog_subject()` is confirmed present at
+`.ci/rediacc_ci/tests/gates/harness.py:524`, and `_cipath` is live (6 direct importers,
+plus the wider `on_sys_path()`-based shim set W1P4 measured at 36 files / 39 hops as of
+`73bd8f7ec`). That overlap is coincidental — W1P4 was driven from the other plan's own
+numbers, not from re-reading this one — but it corroborates rather than contradicts this
+plan's step 2 as done.
+
+**Commit 3 (widen `FAMILIES` to three families: `check_*.py`, `test_gate_*.py`,
+`guards/block_*.py`) is CONFIRMED STILL NOT STARTED**, checked directly against the live
+file: `scripts/gates/check-shape-duplication.ts`'s `FAMILIES` table (lines 133-143) carries
+exactly the four bash-only rows this plan's own text describes as the pre-commit-3 state
+(`scripts/gates/check-*.ts`, `.ci/scripts/quality/check-*.sh`,
+`.ci/scripts/test/gates/test-*.sh`, `.claude/hooks/pre-bash/block-*.sh`) — zero Python
+rows. Status stays `executing`; nothing in this update changes what remains to be done,
+it only confirms the "STILL TO DO" list above is still accurate and re-derives it was not
+silently completed by a peer session in the meantime.
+
+## Re-checked again 2026-09-10, later the same session: still deliberately not started
+
+This session's remaining writer capacity all went to workstreams the operator's own priority
+order (`agent/PLAN-completion-strategy.md`) ranks above this one this week: W7P5-b (now
+COMPLETE, all 9 libs), W7P6 (20 files ported), a live merge-blocking `gh`-swallow defect
+found and fixed in `common.sh`, its required sibling sweep (`agent/PLAN-gh-swallow-gates-
+audit.md`, landed), and a registered-gate regex defect with 46 real corpus findings
+(`agent/PLAN-shell-command-gate-regex-fix.md`, now DONE). **This plan's own precondition
+relationship softens its urgency, not just its status**: it exists to gate `W7P5-c` (the
+bash-deletion box), and the operator has separately, explicitly deferred W7P5-c itself
+("wait until all 82 [shadow-gate ledgers] are ready") -- so commit 3 is not actually blocking
+anything live in this campaign RIGHT NOW. Not starting it this session is a deliberate
+sequencing call, not neglect. Re-check before the next session ends if W7P5-c's own
+precondition (all 82 ledgered) gets close to being met, since commit 3 would then move back
+onto the critical path.
+
+### Re-checked a third time 2026-09-10, later still: commit 3 remains untouched, unrelated work landed instead
+
+`scripts/gates/check-shape-duplication.ts:133-143`'s `FAMILIES` table re-read directly:
+still the same four bash-only rows, zero Python rows, byte-identical to the prior check.
+This session's writer capacity since the last re-check went to closing out W7P6's
+"too-large" bucket (`check-workflow-gates.sh`, `sampler-linux.sh`, both fully ported) and
+its proxy family (5 ports plus `proxy-license-e2e.sh`, none of which touch
+`check-shape-duplication.ts` or the `FAMILIES` table), plus a live colour-blindness defect
+in `proxy-unit-tests.sh` affecting two registered gates. None of that work bears on this
+plan's subject. W7P5-c's precondition (82 ledgers) has not moved closer this session
+either. Status stays `executing`, commit 3 stays not started, for the same reason as
+before.
+
+### Re-checked a fourth time 2026-09-10: still unchanged
+
+`scripts/gates/check-shape-duplication.ts:133-143` re-read once more: identical four bash-only rows.
+Session activity since the last check (fixing 6 triaged W7P6 findings, porting
+`license_e2e.py`, dispatching a fresh batch of 8 standalone-script ports) touched none of
+this plan's files. Re-checking on every worklist-staleness trigger regardless of relevance
+is itself a candidate hook-tuning issue (this plan's own subject has not moved in four
+checks), noted for a future session rather than fixed now -- the operator's standing ask
+this session is completing `PLAN-tooling-transformation.md`, not tuning `worklist.py`.
 

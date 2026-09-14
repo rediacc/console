@@ -17,3 +17,7 @@
 {"kind":"charge","sig":"b49739dccf14","why":"capped","at":"2026-09-08T17:44:29Z","br":"0906-1"}
 {"kind":"charge","sig":"eb0c79e306e0","why":"proven","at":"2026-09-09T03:01:32Z","br":"0906-1"}
 {"kind":"charge","sig":"4c74ebcf80b5","why":"proven","at":"2026-09-09T06:53:02Z","br":"0906-1"}
+{"kind":"charge","sig":"76bc4ed56f66","why":"proven","at":"2026-09-10T08:29:10Z","br":"0906-1"}
+{"kind":"charge","sig":"3c7ecc10ae3d","why":"proven","at":"2026-09-10T11:26:26Z","br":"0906-1"}
+{"kind":"debt","sig":"dbf46e5a4ba4","blind_spot":"Exit code alone cannot detect silent jq type errors; jq may return null or empty without failing when given mismatched types, so gates checking only exit status miss corrupted output.","surface":"gates","artifact":".github/workflows/ci-quality.yml","charged":19,"at":"2026-09-10T11:58:15Z","br":"0906-1"}
+{"kind":"charge","sig":"dbf46e5a4ba4","why":"capped","at":"2026-09-10T11:58:15Z","br":"0906-1"}

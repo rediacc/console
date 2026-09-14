@@ -52,7 +52,7 @@ Cite the command, not the number. A box that pins a count is wrong by constructi
 | Gate tests ported / live / deleted | 124 of 149 / 124 / 0 (2026-09-08) | `grep -rh '^BASH_TWIN' .ci/rediacc_ci/tests/gates/*.py \| sort -u \| wc -l` |
 | Workflow-invoked scripts shimmed | 0 of 215 (348 call sites) | `grep -rhoE '\.ci/scripts/[A-Za-z0-9_./-]+\.sh' .github/workflows/` |
 | `deploy/` + `release/` ported | 0 of 48 | -- |
-| Bash libs shimmed | 2 of 15 | `.ci/scripts/lib/age-check.sh:62`, `.ci/lib/find-port.sh:68` |
+| Bash libs shimmed | 1 of 13 (find-port DELETED, W7P5-b; "15" was never right, see that box) | `.ci/scripts/lib/age-check.sh:62` |
 | Lock entries | 458 total, 448 `gate: true`, 149 gate tests, 95 slow, 45 with `paths` | `gates.lock.json` |
 | Workflow steps region-emitted | 150 of 276; **126 hand-written** | walk the `>>> gate-bind` markers |
 | Plan boxes ticked | 81 of 131 | -- |
@@ -610,6 +610,187 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `PYTHONDONTWRITEBYTECODE=1` (`__pycache__` dirties the tree before `treeIdentity`).
       **Acceptance:** every path has either a ledger asserting `equivalence holds` at K=5 or an
       allowlist entry with a BLOCKER. No third state.
+      **STARTED 2026-09-09, 3 of 48 AT THE BAR, AND THE ACCEPTANCE IS HONESTLY NOT MET.**
+      The writer said so rather than manufacturing the third state: 3 done, **6 merely
+      unstarted** (marked in `.ci/shadow/w7p5a-status.json` as "NOT a BLOCKER, do not
+      allowlist this as one"), and 39 whose BLOCKER covers the REAL-RUN clause only -- the
+      dry-run parity port is separate work that stubbed tool binaries could reach without
+      touching production. Fabricating 45 ledgers would have satisfied the letter of "no
+      third state" and destroyed its point.
+      **Done at the bar, each with a K=5 ledger AND a permanent pytest differential** (the
+      ledger is one-time; the differential is what catches a later divergence):
+      `resolve-account-deploy-config`, `upload-media-to-r2`, `decide-release-mode`. Verified
+      by the driver: 5 rows in each `.ci/shadow/w7p5a-*.observations.jsonl`, and 12/12 tests
+      pass. A real defect was planted in each port and watched red, then restored green.
+      **THE BOX'S 46 WORKFLOW CALL SITES IS WRONG: 43.** Four of the 47 raw grep hits are
+      comments. And **5 of the 48 scripts have ZERO direct workflow call sites** -- reached
+      only by sibling scripts or cross-repo callers -- while `deploy-edge.sh` is reachable
+      solely through `.github/workflows/cd-deploy-worker.yml:155`'s `${{ steps.target.outputs.script }}`
+      indirection, which no literal-path grep can see. 48 files / 5,440 lines both confirmed.
+      **A HARNESS BUG, NOT A PORT BUG, FOUND AND FIXED:** `GITHUB_OUTPUT=/dev/stdout` -- the
+      twins' own documented "run locally" usage -- fails with `ENXIO` under `shadow-gate.ts`,
+      pytest's `subprocess.run` and Node's `spawnSync`, because reopening `/dev/stdout` fails
+      when fd 1 is an anonymous pipe rather than a tty. Reproduced minimally. The ledger and
+      test commands now write to a real temp file.
+      **NEXT INCREMENT IS THE 6 PENDING**, which are the same shape as the 3 done and are
+      blocked by nothing: `resolve-www-deploy-target.sh`, `backfill-write-sentinel.sh` (the
+      safest, DRY_RUN-native), `check-soak-period.sh`, `deployment-summary.sh`,
+      `resolve-backfill-commit.sh`, `validate-stage-artifacts.sh`.
+      **ALL SIX DONE 2026-09-09: W7P5-a is now 9 of 48 at the bar, 39 blocked, ZERO pending.**
+      Each of the six has a K=5 ledger (verified: 5 rows apiece) plus a permanent pytest
+      differential, 25 new tests, and a planted defect driven red then restored green.
+      **How the ledgers were produced is the reusable part.** This checkout is never clean
+      and `--record` refuses a dirty tree, so the writer built a DISPOSABLE git repo OUTSIDE
+      the checkout, seeded it with the six twins plus `common.sh`, and made five sequential
+      commits to mint five distinct clean tree ids -- recording into the real
+      `.ci/shadow/` ledgers via `--repo <scratch> --ledger <console>/...`, varying real
+      inputs so each pair carries >=2 distinct fingerprints. That is the technique every
+      remaining W7P5 ledger needs and it was not written down before.
+      **THE BOX STILL DOES NOT MEET ITS ACCEPTANCE, and the gap is PLACEMENT not quality.**
+      It requires "a ledger ... or **an allowlist entry** with a BLOCKER. No third state."
+      The 39 blocked paths carry BLOCKER-shaped reasons that pass the repo's own
+      `allowlist.validate_reason`, but they live in `.ci/shadow/w7p5a-status.json`, which is
+      a STATUS FILE, not an allowlist -- nothing validates it in CI and no liveness gate
+      checks whether those reasons are still true. A reason in an unchecked file is exactly
+      the third state the acceptance forbids, wearing the right clothes.
+      **One tree correction:** `deployment-summary.sh` is under `.ci/scripts/release/`, not
+      `.ci/scripts/deploy/` as the pending list said. The writer trusted the tree.
+      **REGISTERED 2026-09-09: `.ci/policy/.w7p5a-real-run-blocklist`, a genuine
+      BLOCKER-gated allowlist through the canonical validator, checked in BOTH DIRECTIONS
+      against `.ci/shadow/w7p5a-status.json` -- registered as `check:ci-w7p5a-real-run-blockers`
+      in `quality-static`, rc=0: "39 BLOCKER-gated real-run exemption(s) ..., agreeing with
+      .ci/shadow/w7p5a-status.json (39 'blocked', 9 ledgered) -- no third state".
+      **THE ACCEPTANCE IS NOW GENUINELY MET: 9 ledgered + 39 checked-BLOCKER = 48, no third
+      state, and a machine asserts it rather than a status file's prose.** All 39 reasons
+      carried verbatim.
+      **A driver mistake, found and fixed on the way in:** the gate's own header initially
+      sat on the LIBRARY module rather than its entry point, the reverse of every sibling's
+      split. `gate-bind` resolves by header location, so the emitted workflow step ran the
+      wrong file -- `check:ci-parity` caught it immediately (R3, "step resolves to X and none
+      of Y"). Moved, re-verified.
+      **A SECOND CLASS FOUND WHILE LANDING IT: `MANUAL_ENTRY_POINTS` in
+      `.ci/rediacc_ci/quality/dead_python.py`, previously empty since its last exemption
+      graduated, now carries all 9 W7P5-a ports.** Each is invoked by MODULE-NAME STRING from
+      its own pytest differential, not by static import, so the scanner's import graph
+      cannot see the route -- and it is correctly not a gate either, since the cutover from
+      the `.sh` call site is W7P4-W, a separate box. The exemption is CHECKED, not quiet: a
+      planted dangling entry reds it, restored green, byte-identical.
+      **DRY-RUN PARITY: 7 MORE OF THE 39 CLEARED, 2026-09-09. W7P5-a now 16 of 48 ledgered, 32
+      blocked.** `wait-for-preview-worker`, `check-edge-manifest`, `check-stable-manifest`,
+      `check-existing-release`, `verify-release-assets`, `resolve-ci-run`,
+      `verify-artifact-attestation` -- each a K=5 ledger (5 rows, verified) plus a permanent
+      differential, external tool STUBBED (fake `gh`/`curl` on PATH, real `jq`/`git` left
+      reachable) so nothing touches production. Allowlist entries for all 7 REMOVED from
+      `.ci/policy/.w7p5a-real-run-blocklist` (driver action, since it is a registered gate);
+      `check:ci-w7p5a-real-run-blockers` re-verified: "32 BLOCKER-gated real-run
+      exemption(s) ..., agreeing with .ci/shadow/w7p5a-status.json (32 'blocked', 16
+      ledgered) -- no third state".
+      **A path whose dry-run mode still needs real auth to CONSTRUCT a request is correctly
+      left blocked, not stubbed past.** The writer's own rule, honoured: 32 of 39 remain
+      genuinely unportable this way and none were ruled impossible, just not yet attempted.
+      **Two tool traps found and documented, not fixed (outside the writer's grant):**
+      `shadow-gate.ts`'s `reachesOutside` check flags any `://` or `/tmp` token in a
+      `--old`/`--new` command as an escape, worked around with a wrapper committed INSIDE
+      each disposable scratch tree reading its real target from a file rather than the
+      command line. And a script whose own anti-vacuity message says "NOTHING was verified"
+      collides with the tool's own refusal vocabulary and can never score EQUIVALENT --
+      covered by the pytest differential instead.
+      **5 more `dead_python.py` `MANUAL_ENTRY_POINTS` entries, not 7** -- 2 of the 7 already
+      had a real `mentioned` route via a literal path string in their own test file, and
+      adding an exemption there would itself have failed the gate's stale-exemption check.
+      The writer caught its own over-scoping before landing it.
+      **DRY-RUN PARITY RE-AUDITED AND FOUND ALREADY SATISFIED FOR ALL 32 REMAINING
+      BLOCKED PATHS, 2026-09-14.** Not new work: box W7P6 independently ported every one
+      of them as a standalone Python module under `.ci/rediacc_ci/deploy/` or
+      `.ci/rediacc_ci/release/`, each with its own permanent pytest differential and its
+      own K=5 ledger under the `w7p6-<slug>` naming rather than `w7p5a-<slug>`, which is
+      why this box never saw them. This wave VERIFIED that claim rather than inheriting
+      it, and rewrote the 32 `note` fields in `.ci/shadow/w7p5a-status.json` to say what
+      is actually left.
+      **What was verified, all four legs, on the real tree:** (1) the port, the
+      differential and the ledger exist for all 32; (2) `pytest -q` over the 32
+      differential files together -- **748 tests, 748 passed**, 4m05s; (3)
+      `shadow-gate.ts --pair w7p6-<slug> --assert --k 5` rc=0 for all 32, every ledger
+      row EQUIVALENT, 5 distinct clean trees each (`deploy-proxy` has 6) and at least 3
+      distinct fingerprints per pair; (4) every differential's docstring and test bodies
+      READ, not merely run green. The assert tool's own controls were driven too: `--k 6`
+      on a 5-tree pair reds, and a nonexistent pair refuses rather than passing empty.
+      **The coverage is genuine dry-run parity, not a smoke test.** Every one of the 32
+      drives the bash twin and the Python port SIDE BY SIDE through a `run_both`/`drive`
+      helper over real scenarios -- happy path, failure arms, refusals, retry budgets,
+      partial failures -- comparing exit code, stdout and stderr separately and, where
+      the streams are a weak claim, the recorded CALL LOG and the produced ARTIFACT (the
+      generated `import.sql`, the homebrew formula, the uploaded sentinel bytes, the
+      `GITHUB_STEP_SUMMARY` block) as well. Per-file test-function counts run 11 to 48,
+      expanding through parametrisation to the 748 collected. External
+      tooling is a recording fake first on PATH in every case (`curl`, `aws`, `gh`,
+      `npx`, `npm`, `docker`, `sqlite3`, `sleep`, `git`), several of them PROVING the
+      shadowing rather than assuming it. Nothing reaches Cloudflare, GitHub, R2, D1 or
+      GHCR. The three subjects that would mutate a real tree if run naively --
+      `advance-contract-floor`, `tag-submodules`, `update-homebrew-tap` -- each build a
+      throwaway fixture root per side with a LOCAL bare git remote, and
+      `cleanup-channel-docker-tags` drops a recording stub over the GHCR deleter it
+      shells out to. These differentials sit under `.ci/rediacc_ci/tests/`, so
+      `check:ci-pytest` collects them on every sweep: the parity claim is ENFORCED, not
+      one-time.
+      **The 32, by group. ZERO were found inadequate.** deploy (23): `cf-purge-urls`,
+      `clone-d1`, `delete-r2-channel`, `deploy-account`, `deploy-edge`, `deploy-proxy`,
+      `deploy-www`, `promote-docker-to-stable-hotfix`, `promote-r2-to-stable`,
+      `promote-r2-to-stable-hotfix`, `purge-media-cache`, `set-account-worker-secrets`,
+      `set-preview-worker-secrets`, `set-www-worker-secrets`, `simulate-promotion`,
+      `sync-media-from-r2`, `sync-media-to-r2`, `test-d1-migrations`,
+      `upload-repos-to-r2`, `upload-to-r2`, `verify-edge-endpoints`,
+      `verify-stable-endpoints`, `write-release-sentinel`. release (9):
+      `advance-contract-floor`, `assert-artifact-version`, `assert-edge-tag-exists`,
+      `cleanup-channel-docker-tags`, `create-github-release`, `mark-production`,
+      `reprobe-r2-sentinel`, `tag-submodules`, `update-homebrew-tap`.
+      **THE BOUNDARY THIS WAVE DID NOT CROSS, deliberately.** The other half of the
+      acceptance, "one real run each", is UNMET for all 32 and stays unmet. Every one of
+      them acts on real production Cloudflare Workers, GitHub Releases and tags, R2
+      buckets, D1 databases or GHCR, so a real run is an OPERATOR-AUTHORIZATION matter
+      and no session should take it unilaterally. No script in the 32 was executed
+      outside a stubbed fixture during this wave. All 32 keep `"status": "blocked"`, no
+      entry was removed, and `.ci/policy/.w7p5a-real-run-blocklist` was not touched.
+      **What the notes now say, and the one thing they cannot fix.** Each of the 32
+      `note` fields now names its port module, its differential with a test count, its
+      `w7p6-<slug>` ledger with row and tree counts, the isolation mechanism, and the
+      operator-only real-run gap. The `blocker` field was left byte-identical, because it
+      is carried VERBATIM in `.ci/policy/.w7p5a-real-run-blocklist`, a registered-gate
+      file outside this wave's grant -- and it now holds one STALE sentence in all 32
+      entries: "The bash-vs-python golden dry-run parity ledger for this path is a
+      SEPARATE, not-yet-done piece of work". That is false as of this wave.
+      **DRIVER ACTION OWED:** reword that sentence in the allowlist, and mirror the
+      wording into `blocker` here, so the CHECKED source of truth stops claiming work
+      that is done. Until then the status file's `note` is the accurate half and the
+      allowlist's `blocker` is stale prose that still validates.
+      **Gate evidence:** `check:ci-w7p5a-real-run-blockers` rc=0 after the edit ("32
+      BLOCKER-gated real-run exemption(s) ..., agreeing with
+      .ci/shadow/w7p5a-status.json (32 'blocked', 16 ledgered) -- no third state"), its
+      `--selftest` 13/13 PASS, and a REAL-TREE control rather than a fixture one:
+      flipping a single blocked entry to `ledger` in the live status file drove the gate
+      red on the stale-entry finding, after which the file was restored byte-identical
+      (sha256 verified) and re-run green.
+      **DRIVER ACTION TAKEN.** Reworded all 24 BLOCKER comments in `.ci/policy/.w7p5a-
+      real-run-blocklist` (covering all 32 blocked paths -- several share one comment)
+      from "is a SEPARATE, not-yet-done piece of work" to "is DONE (verified 2026-09-14):
+      W7P6 independently ported it... external tools stubbed throughout so nothing
+      touches production", and mirrored the identical wording into `blocker` on all 32
+      entries in `.ci/shadow/w7p5a-status.json`, so `note` and `blocker` now agree
+      verbatim. `check:ci-w7p5a-real-run-blockers` re-verified rc=0 after both edits.
+      **Also fixed, found while re-running `check_plan_citations.py` after this box's own
+      wave landed (12 gate-name line-wraps + 8 fileline citations missing a directory
+      prefix, all in THIS document's own added text, none in this box specifically):**
+      merged every backtick-quoted gate name broken across a line-wrap back onto one
+      line (a real citation, misread as dead only because of where the wrap fell), and
+      added the correct repo-relative prefix to 8 bare-basename fileline citations
+      (`.ci/scripts/deploy/`, `.ci/scripts/ci/`, `.ci/scripts/lib/`, `.github/workflows/`)
+      -- catching one driver mistake on the way in (`promote-r2-to-stable.sh` is under
+      `deploy/`, not `release/` as first typed; caught by the file genuinely not
+      existing at the wrong path, fixed before landing). `check_plan_citations.py` is
+      down to its one remaining, already-known finding: the status TABLE near the top of
+      this document names the find-port shim at its old location and line -- left for
+      the concurrent W7P5-b writer's own deletion to settle, since editing it now would
+      race that writer's file.
 - [ ] **W7P5-b S, the true long pole** The 13 real bash libs, **6,840 lines**. `common.sh` has
       **251 sourcers** -- the highest fan-in file in the programme. Order by fan-in ascending:
       `gate-controls` (41), `bws-env` (111), `emit-advisory` (218), `service` (225),
@@ -618,6 +799,353 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       after W6's quality lane and W8's retarget, per the arbitration table.
       **Note:** `age-check.sh` and `find-port.sh` can never be promoted to `shim:` -- they must be
       DELETED, retargeting their 17 and 14 callers. A shim is a delay, not an exit.
+      **FIRST WAVE 2026-09-09/10: 4 of the 9 named libs ported** (`gate-controls`, `bws-env`,
+      `emit-advisory`, `service`), each as the library itself (or, for `service.sh`, the
+      Docker-free half -- `service_start`/`service_stop` explicitly NOT ported, documented in
+      the docstring). K=5 ledgers each (5 rows, 5 trees, 5 fingerprints), 18/44/22/30
+      differential tests respectively, all restored clean after their planted defects.
+      **The plan's own fan-in column is WRONG -- it is a LINE COUNT, not a sourcer count.**
+      Re-derived directly (`grep -rlP` against real `source .../lib/x.sh` call sites, spaces
+      and all): `gate-controls` has 4 real sourcers (not 41), `bws-env` has **0** (not 111),
+      `emit-advisory` has 4 direct + a transitive set through `blocker-validator.sh` (not
+      218), `service` has 1 (not 225). `common.sh`'s "251" is separately wrong too: 209 files
+      source it, not 251. Nothing downstream should quote the plan's numbers as fan-in;
+      re-derive before relying on them.
+      **`bws-env.sh` doesn't fit the shim pattern at all** -- it resolves secrets by
+      `export`ing into the CALLING shell, which a child process cannot do, and has **zero
+      real sourcers** today, so the port took the free route (no `export` verb, a test pins
+      that it never grows one) rather than forcing an eval-emitter against the twin's own
+      documented rule against exactly that.
+      **Three real bugs found in twins, reproduced not fixed** (outside the writer's file
+      ownership): `bws-env.sh` leaks two full Python tracebacks when `bws` returns
+      non-JSON output instead of the intended one-line refusal; `service.sh`'s
+      `service_status` aborts silently mid-output when the state file is missing either
+      `port=` or `started=` (bare `grep | cut` under `errexit`+`pipefail`); `service.sh`'s
+      data stream is coloured while its log stream isn't (an ungated vs tty-gated `COLOR_*`
+      mismatch), and it calls `check_docker` without defining or sourcing it, so the library
+      cannot run standalone in a fresh shell. All three pinned in tests, none touched.
+      **One `check:ci-python-env-registry` fragment owed to the driver, attempted and
+      currently BLOCKED by peer uncommitted files, not applied.** The 7 name:cred pairs
+      (`advisory.py:CI`, `bws_env.py:{BWS_ACCESS_TOKEN,BWS_BIN,BWS_ENV_ROOT,PATH}`,
+      `service.py:{CONSOLE_ROOT_DIR,SERVICE_STATUS_NOW}`) are real and correct, but
+      `--write-baseline` on this gate refuses unless EVERY currently-new pair in the whole
+      working tree is named on the command line at once (unlike the language-policy
+      baseline's ADDED=0-against-a-snapshot check, this one has no per-file scoping) --
+      driver-verified live: naming only these 7 was refused with 22 more pairs pending,
+      all in other sessions' untracked, unverified files (`.ci/rediacc_ci/tests/gates/
+      test_gate_*.py:PATH`, `.claude/rediacc_hooks/tests/*`, `pool_writer_safety.py`,
+      `media_verify_ext.py`). Naming those blind would bank unverified peer reads into a
+      driver-only file. Re-attempt once the tree is otherwise clean of other sessions'
+      pending new-env-reads, or once each peer's addition is independently verified.
+      **SECOND WAVE 2026-09-10: 2 more libs ported, 6 of 9 named libs done.**
+      `blocker-validator.sh` -> `core/blocker_validator.py` (8 real sourcers, confirmed) and
+      `release-age.sh` -> `core/release_age.py` (**2 real sourcers, not 237** -- another
+      plan-number-was-a-line-count case). Driver-verified directly: both modules exist,
+      123/123 new tests pass (72+51), both ledgers at K=5, dead-python/language-policy clean.
+      **A pre-existing duplicate found, not repointed**: `.ci/rediacc_ci/quality/go_deps.py:300`
+      already carries its own inlined `ReleaseAge` shim, differing from the twin in two
+      documented ways (a dropped `window` parameter, a different probe cwd) -- outside this
+      writer's ownership, named for a later cutover decision.
+      **Two more real bugs found in twins, reproduced not fixed:**
+      `blocker-validator.sh`'s anti-vacuity check is DEAD CODE (a bash here-string always
+      appends a trailing newline, so the "zero frames" branch it guards against is
+      unreachable -- verified live) and `release-age.sh`'s runner-memo comment is wrong: the
+      cache variable is assigned inside a command-substitution subshell and never persists,
+      so every call re-probes the runner (measured: 12 node starts across 5 epochs instead of
+      1, ~1.7x wall-clock cost in `audit.sh`/`check-go-deps.sh`, both hot per-dependency
+      paths). Neither is security-relevant; both pinned in tests rather than fixed (`.ci/scripts/lib/`
+      is invariant 5, outside writer ownership). `release-age.sh` also fails OPEN (not
+      closed, as its own comment claims) on an unvalidated numeric-with-suffix `now` value --
+      currently LATENT since both call sites always pass a clean `date +%s`, pinned rather
+      than exploitable today.
+      **A SECOND, more serious git-tree incident this session, independently driver-verified
+      as fully repaired -- but its claimed root-cause mechanism is REFUTED, correcting the
+      record rather than propagating it.** A scratch-repo script's `cd "$L"` failed (directory
+      never created because an earlier invocation was blocked by the pre-bash commit hook
+      first), and the following `git add -A -- . && git commit` ran in the real repo root,
+      committing **127 files** of the whole shared 0906-1 tree as commit `784e0c1c2` ("seed").
+      The writer attributed this to "`set -e` does not abort after a failed `cd`", demonstrated
+      via three SEPARATE interactive command lines (each its own shell process, so of course
+      `set -e` from line 1 didn't bind line 2) -- **the driver re-ran the identical claim as one
+      real `bash -c '...'` script and `set -e` correctly aborted immediately on the failed
+      `cd`, exit 1, the echo never printed.** So the actual mechanism that let the commit reach
+      the real repo is still UNCONFIRMED (candidates: the failing `cd` was inside a command
+      substitution or `local`/`declare` assignment, whose own exit status can mask an inner
+      failure under `set -e` -- a real, different, well-documented bash trap -- or the script
+      never had `set -e` on that code path at all). Do not cite "`set -e` doesn't abort after
+      `cd`" as a lesson; it is false as stated. Writer caught the actual incident and repaired
+      with `git reset --mixed HEAD~1` (never `checkout/restore/stash/clean`), confirmed
+      nothing pushed. **Driver independently re-verified from scratch, not taken on the
+      writer's word**: `git merge-base --is-ancestor 784e0c1c2... HEAD` correctly fails (not
+      an ancestor); diffed the stray commit's full file list against current
+      `git status` and found zero actual content loss (the apparent "missing" 38 files were
+      only git collapsing untracked directories into one `?? dir/` line, not lost files --
+      every one confirmed present on disk); spot-checked 4 unrelated tracked files
+      byte-for-byte identical between the stray commit and the current working tree. The
+      repair is clean.
+      **THIRD WAVE 2026-09-10: 2 more libs ported, 8 of 9 named libs done.**
+      `toolchain.sh` -> `core/toolchain.py` (**6 real sourcers, not 466** -- extended an
+      existing W6P2 port that only covered load/compare) and `release-state-validator.sh` ->
+      `core/release_state_validator.py` (**11 real sourcers, not 496**, and more than the
+      twin's own header claims 5). Driver-verified directly: both modules exist, 512/512 new
+      tests pass (148+364), both ledgers at K=5, dead-python/language-policy clean, no stray
+      commits, git status scoped exactly to the claimed files.
+      **A consequential, quantified defect (DRIVER TRIAGE): `toolchain.sh --verify` cannot
+      fail.** The dispatch block has no `exit` in the `--report`/`--verify`/`--env` arms, so
+      the script always exits 0 regardless of what the underlying check function returns.
+      `--verify` itself has zero call sites today (harmless), but **`--env` has two LIVE call
+      sites** (`.github/workflows/ci-quality.yml:171,1897`, both `>> "$GITHUB_ENV"`) --
+      verified live: with no pins file, exit 0 and zero bytes appended to `$GITHUB_ENV`,
+      silently green. The underlying function is correct on both sides; only the dispatch
+      wrapper is broken. Port does NOT reproduce it (`core.toolchain verify` exits 1
+      correctly) -- pinned both ways in tests. Two more pre-existing-comment / narrow-
+      blast-radius defects found and pinned, not fixed (twin is invariant 5, outside writer
+      ownership).
+      **One duplicate found in `release-state-validator.sh`'s port, correctly not
+      repointed**: `.ci/rediacc_ci/quality/release_state.py` already carries the assertion
+      half under its own K=5 ledger; the new port adds the four live-probe functions the
+      assertion half never had. **One genuinely dangerous-if-triggered finding**: a probe
+      that fails OPEN (empty vs unreachable conflated) feeds a REGISTERED BLOCKER gate, but
+      is currently saved by a tracked ratchet floor file -- verified live both ways (deleting
+      the floor file flips the gate from a correct red to a false green). Pinned in tests
+      including the ratchet-file-must-exist assertion.
+      **FOURTH WAVE 2026-09-10: `common.sh` closed out. All 9 of 9 named libs done.**
+      Driver-verified directly: both new modules exist, 177/177 new tests pass (86+91),
+      both ledgers at K=5, bash twin confirmed byte-untouched, no stray commit (HEAD stayed
+      `b99162b7f` throughout), dead-python/language-policy clean, git status scoped exactly.
+      **`common.sh` turned out to be seven libraries stacked in one file, five already
+      ported under other names** (`log.py`, `paths.py`, `proc.py`, `core/ghx.py`, and
+      `core/platform.py` for `detect_os`/`detect_arch` -- DELIBERATELY REFUSED there because
+      `common.sh`'s spelling is a third, fail-open variant, so it lives here instead,
+      correctly). Ported this wave: the refuse-early half (`require_*`, `parse_args`,
+      `detect_os`/`arch`, etc., new `core/common.py`) and the review-budget half (new
+      `core/review_budget.py`). Deferred with reasons: `r2_count_objects` (no `aws` binary
+      on this sandbox to differentially prove it against).
+      **A live, merge-blocking-relevant defect, DRIVER RULING NEEDED (not yet fixed,
+      finding recorded in the worklist).** `review_spend_total` -- the numerator of the
+      review-cost cap -- swallows a `gh` API failure (rate-limit, or `GITHUB_REPOSITORY`
+      unset under `set -u`) into a silent `0` at exit 0, verified live with a failing `gh`
+      stub. The file CONTRADICTS ITSELF: 160 lines earlier its own `_gh_probe` docstring
+      names this exact swallow-pattern as unacceptable, and 32 other call sites already
+      route through `gh_json`/`gh_retry` to avoid it -- this is the one cluster that never
+      cut over. Measured, not estimated: 7 live call sites behind
+      `.github/workflows/review-status.yml:115` and `.github/workflows/claude-review-reusable.yml:277`; a
+      transient rate-limit reproduces the exact "green, ready, thread-clean, permanently
+      unmergeable" state the file's own comments already document as having happened once
+      (PR #553). The fix is a small, well-understood change to `.ci/scripts/lib/common.sh`
+      (invariant 5, outside any writer's grant) with a live merge-blocking check downstream
+      -- a decision, not a chore. Also found: two duplicate/orphaned `require_submodule`/
+      `require_cmd`/`require_var` re-implementations elsewhere in `.ci/rediacc_ci/quality/`
+      now have a canonical home in `core/common.py`, not yet cut over.
+      **DEFECT 1 FIXED BY THE DRIVER, INLINE, same session.** Triaged `#0b834676`
+      as INLINE (small, local, uses existing infrastructure). Routed
+      `review_report_count`, `review_attempt_states`, `review_spent_attempt_count`
+      and `review_spend_total` through the file's own `gh_retry` and a real
+      `|| return 1` on every capturing assignment, matching the exact pattern
+      `_gh_probe`'s own 160-line-earlier header already argued for.
+      `pr_diff_loc` deliberately left UNCHANGED (its fail-to-0 is its own
+      documented, intentional safe direction). Caught and fixed a real trap of
+      my own mid-implementation: piping an empty result through a here-string
+      (`wc -l <<<"$out"`) would have counted it as ONE line, not zero -- the
+      same class of bug this session already found in `blocker-validator.sh`
+      -- guarded explicitly before landing. Verified live end to end with a
+      real failing-`gh` stub (both callers run under `set -euo pipefail`, so
+      the fix correctly makes them abort LOUDLY instead of silently
+      proceeding with a wrong number) and with a genuine empty-but-successful
+      result (correctly still answers 0, not 1). The fix incidentally also
+      closed DEFECT 1's second face (an unset `GITHUB_REPOSITORY` used to
+      silently produce a number under `set -u`; now it also fails loudly) as
+      a side effect of the new `|| return 1`, not a separate change.
+      Port (`core/review_budget.py`) already raised `GhError` on this path --
+      it was ahead of the twin, not behind -- so only its docstrings and 3
+      tests needed updating from "pins the divergence" to "pins the
+      agreement"; one test (`test_spend_total_agrees_with_the_twin`) had 2
+      cases that were coincidentally agreeing for the WRONG reason (the
+      port's CLI verb never fetches at all; the twin's fetch used to fail
+      silently to the same number) -- removed those 2 non-comparable cases
+      rather than leave a coincidence looking like a proof.
+      **K=5 ledger re-recorded from scratch** (old rows described pre-fix
+      bytes even though they only exercised the unaffected success path) via
+      the disposable-scratch-git-repo technique, `git -C <scratch>`
+      throughout, one of the 5 trees specifically exercising the fixed
+      failure path. One harness bug caught and fixed before trusting any
+      result: the ledger's own bash driver printed a multi-attempt result
+      across two physical lines while the Python driver joined it onto one,
+      producing a false MISMATCH on the one variant with 2 attempt rows --
+      fixed by flattening embedded newlines in the bash driver, confirmed the
+      real underlying data was identical throughout. 5/5 trees, 5/5
+      fingerprints, `--assert --k 5` passes. All gates re-verified after:
+      `check:ci-language-policy` unaffected (509, 0 added -- no bash file
+      count changed, correctly, since this is an edit not a new file), full
+      differential suite 89/89, `check:ci-python-lint` clean (fixed 3 findings
+      of my own along the way, no `noqa`), `check:ci-dead-python` unaffected.
+      `#0b834676` ticked.
+
+      **The 9-library PORT sub-scope of this box is now COMPLETE. The box itself stays OPEN**
+      -- its own header claims "13 real bash libs", and the 4 beyond the 9 ported are NOT
+      port targets: `age-check.sh`/`find-port.sh` need DELETION (retargeting 17 and 14
+      callers, never a `shim:`), `local-common.sh` deletion is gated on W6's quality lane and
+      W8's retarget per the existing arbitration table, and the box's exact "13" count has
+      not been re-reconciled against the real files on disk this session (candidates found
+      but not verified in scope: `.ci/lib/account.sh`, `.ci/lib/devbox.sh` -- the latter
+      possibly already bridged per this plan's own W8 section, "six live in local-common.sh/
+      devbox.sh and are bridged so the SAME BYTES run"). Next wave on this box: reconcile the
+      13 count for real, then execute the age-check/find-port deletions.
+
+      **FIFTH WAVE 2026-09-14: `.ci/lib/find-port.sh` IS DELETED. The DELETED axis moves
+      1 -> 2, and this is the programme's first deletion of a bash LIBRARY** (E1's
+      `.ci/lib/setup.sh` was the first bash deletion of any kind). Every number this box
+      stated about the work was wrong, in the same direction as every prior wave, and each
+      is corrected below from a re-derivation rather than propagated.
+      **THE "17 AND 14 CALLERS" ARE 8 AND 6, and neither file is where the box says it is
+      for one of them.** Anchored `git grep -nP` for real `source`/`.` sites, not bare
+      string match:
+      * `find-port.sh`: **8 real call sites in 6 files**, not 14. Four `source` sites
+        (`.ci/lib/account.sh:12` and a REDUNDANT second at `:1048` inside a function, made
+        a no-op years ago by the shim's own re-source guard; `.ci/lib/devbox.sh:24`;
+        `.ci/lib/service.sh:49`), the 8 bash function calls behind them, plus two
+        delegation CONTROLS that sourced the shim standalone
+        (`.ci/rediacc_ci/quality/setup_idempotency.py` check C, the LIVE gate, and its
+        invariant-5 bash twin `.ci/scripts/quality/check-setup-idempotency.sh`).
+        A ninth and tenth surface the anchored grep MISSED and the test suite caught:
+        four cases in `.ci/rediacc_ci/tests/test_core_ports.py` build the source line by
+        f-string (`f"source {_q(shim)}; ..."`), which no `source \S*find-port.sh` pattern
+        can see. **A caller list derived only by grep is a hypothesis; the suite is the
+        refutation.** Run the tests before believing the grep is complete.
+      * `age-check.sh`: **2 real production callers, not 17**, namely
+        `.ci/scripts/quality/check-go-deps.sh:40` and `.ci/scripts/security/audit.sh:42`,
+        plus 3 test surfaces whose whole subject is the shim.
+      **AND `.ci/lib/age-check.sh` DOES NOT EXIST AND NEVER DID.** The file is
+      `.ci/scripts/lib/age-check.sh`. `git log --all --diff-filter=D -- '*age-check.sh'`
+      returns nothing, so this is not a move: the path in this box was always wrong.
+      **THE "13 REAL BASH LIBS, 6,840 LINES" IS 14 LIBS AND 6,408 LINES**, measured at
+      `b99162b7f` over every tracked `.sh` in `.ci/lib/` and `.ci/scripts/lib/`: account
+      1119, bws-env 111, devbox 1087, find-port 145, local-common 1008, service 225,
+      age-check 127, blocker-validator 356, common 772, emit-advisory 218, gate-controls
+      41, release-age 237, release-state-validator 496, toolchain 466. No 13-member subset
+      sums to 6,840; 6,408 with the last two digits transposed does. After this wave: **13
+      libs, 6,263 lines.** The box's fan-in column is confirmed a LINE COUNT for a third
+      time, exactly: gate-controls 41 = 41, bws-env 111 = 111, emit-advisory 218 = 218,
+      release-age 237 = 237, toolchain 466 = 466, release-state-validator 496 = 496.
+      **W8's "bridged so the SAME BYTES run" is LOAD-BEARING against this box and reads the
+      opposite way to how it is cited here.** `.ci/rediacc_ci/setup/phases.py:77-109` names
+      six phases whose implementation is `.ci/lib/local-common.sh` and `.ci/lib/devbox.sh`,
+      and E1's setup port is ALREADY FLIPPED against them. So those two files are not
+      "possibly already bridged, therefore maybe out of scope" -- they are PINNED
+      DEPENDENCIES of a shipped port, and deleting either today breaks `./run.sh setup`.
+      They stay, and the reason is stronger than the arbitration table's.
+      **THE RETARGET, file by file.** Every bash function call replaced by the exact verb
+      the shim's own body already delegated to, arguments and defaults preserved:
+      * `.ci/lib/account.sh` -- the `source` at :12 becomes the shim's own load-time
+        refusal (the `.ci/rediacc_ci/core` probe and the `python3` probe, both fail-closed
+        with the fix in the message), and `ACCOUNT_CI_DIR` honours `REDIACC_CI_ROOT`
+        exactly as the shim did. `is_port_in_use` x3 -> `is-port-in-use`,
+        `find_consecutive_free_ports` -> `find-consecutive-free`, `find_preferred_port` ->
+        `find-preferred-port`. The redundant second `source` at :1048 is deleted outright,
+        and the comment at :1062 that justified it ("devbox.sh sources only find-port.sh,
+        which this file already sources") is corrected rather than left to mislead.
+      * `.ci/lib/devbox.sh` -- same guard, `derive_slot` -> `derive-slot`,
+        `find_port_block` -> `find-port-block`.
+      * `.ci/lib/service.sh` -- guard inline at the one conditional call site,
+        `find_preferred_port` -> `find-preferred-port`.
+      * `.ci/rediacc_ci/quality/setup_idempotency.py` check C and its bash twin -- the
+        control used to reach the broken package COPY through `REDIACC_CI_ROOT`, which was
+        only ever the shim's way of computing PYTHONPATH. Both now set PYTHONPATH
+        directly, PREFIXED so the broken copy wins. `check_c`'s now-unused `lib` parameter
+        was dropped, which broke the CONTROL invocation 70 lines below the assertion, at a
+        line the assertion's own green never touches -- the gate caught it with a
+        `TypeError`, rc=1. **A gate whose control lives far from its check is the reason
+        that was a red and not a silent pass.**
+      * `.ci/rediacc_ci/tests/test_core_ports.py` -- **4 cases, NONE DELETED.** Each
+        asserted a property that survives the shim, so each was rehoused where the
+        property now lives: fresh-interpreter stability and the fail-closed refusal onto
+        the module run as a child, and "the delegation is real, not a reimplementation"
+        onto `.ci/lib/devbox.sh`, the caller that inherited the shim's job. That last one
+        is MORE load-bearing on the caller than it was on the shim: deleting a shim is only
+        safe while its callers reach the module for real. A second control was ADDED with
+        it, because `len(seen) > 1` is satisfied by a devbox.sh that has simply stopped
+        working and errors differently each run; the new half pins one stable non-empty
+        answer whose slot equals the module's, asked of `devbox_worktree` rather than
+        hardcoded so it does not fail for the wrong reason inside a git worktree.
+      **THE PLANT, on the real tree, not in a selftest.** Replaced devbox.sh's delegation
+      with `slot="42"`. Both new cases went red
+      (`rediacc-devbox-42-console` vs `expected slot 94`); restored by targeted edit,
+      `diff -u` against the pre-plant copy byte-identical, 53/53 green again. The
+      language-policy drain was checked the same way rather than by size: OLD 509, NEW 508,
+      `REMOVED = ['.ci/lib/find-port.sh']`, **`ADDED = []`** -- the composition claim, not
+      the total.
+      **GATES, every one run on the real tree after the change.** rc=0:
+      `check:ci-language-policy` (508, 0 added), `check:ci-dead-python` (1035 files, every
+      one reached), `check:ci-setup-idempotency` (8 checks + "controls fired"),
+      `check:ci-account-probes`, `check:ci-parity`,
+      `check:ci-gate-reachability-coverage`, `check:ci-dead-bash`,
+      `check:ci-script-exec-bit`, `check:ci-pipefail-grep-q`, `check:ci-tracked-sidecars`,
+      `check:ci-setup-port-parity`, `check:ci-shell-lint`, `check:ci-shell-format`,
+      `check:ci-shell-size`, `check:ci-shell-commands`. pytest 72/72 across
+      `test_core_ports.py`, `test_quality_setup_idempotency.py`,
+      `test_quality_account_probes.py`; ruff clean and formatted on all five touched
+      Python files.
+      **Two reds, both PRE-EXISTING and both proven not mine.** `check:ci-python-lint`
+      rc=1 on exactly 2 findings, identical before and after this wave, in
+      `.ci/rediacc_ci/tests/test_release_check_soak_period.py:42` (DTZ005) and
+      `.claude/rediacc_hooks/tests/hookcases.py:1121` (DTZ011), neither touched here.
+      `check:ci-shell-declared-commands` rc=1 on
+      `.ci/scripts/quality/check-pool-writer-safety.sh executes 'python3' with no
+      require_cmd`; that file is byte-identical to HEAD. **The obvious worry -- that this
+      wave added `python3` to four bash files and the gate did not notice -- was PROBED,
+      not assumed.** Appending a bare `python3 --version` to
+      `check-setup-idempotency.sh` still produced a count of 1, and
+      `scripts/gates/check-shell-declared-commands.ts:120` says why:
+      `if (!src.includes('lib/common.sh')) continue`. `require_cmd` comes from common.sh,
+      so a script that does not source it is deliberately out of scope. Correct scope, not
+      a hole. The one-line fix owed to `check-pool-writer-safety.sh` is `require_cmd
+      python3` near its top; it is outside this writer's grant and is handed over rather
+      than reached for.
+      **THE `age-check.sh` DELETION IS BLOCKED, and the door is `no-write-access`, not
+      judgement.** `.ci/scripts/test/gates/test-age-check.sh` is a REGISTERED gate test
+      (`scripts/ci-runner/manifest.ts:5087`, `scripts/ci-runner/gates.lock.json:4888`,
+      `run` and `leaves` both pointing at it) whose entire subject is the shim -- verified
+      passing today, rc=0, 4 cases. Deleting the shim reds it, and retiring it needs
+      `manifest.ts` and `gates.lock.json`, both explicitly outside this wave's grant.
+      **The ready-to-run brief, so the next wave does not rediscover any of it:** the shim
+      is NOT a pure delegator (`check_entry_age` carries 27 lines of real bash -- a TSV
+      verdict parse, an `emit_advisory` dispatch and an unreadable-verdict guard -- and it
+      `source`s `emit-advisory.sh`), so its two callers each need that block inlined plus
+      a direct `source emit-advisory.sh`. Both callers already have complete Python twins
+      (`.ci/rediacc_ci/security/audit.py:1106`, `.ci/rediacc_ci/quality/go_deps.py:264`),
+      **so the cheaper exit is to delete `audit.sh` and `check-go-deps.sh` in W7P5-c
+      first, at which point age-check.sh has zero production callers and deletes for
+      free.** Full surface: the 2 callers; 3 test surfaces (`test-age-check.sh` and its
+      pytest port `.ci/rediacc_ci/tests/gates/test_gate_age_check.py`, both wholly
+      obsolete; 3 cases at `.ci/rediacc_ci/tests/test_core_age.py:186,198,209` to rehouse
+      the way `test_core_ports.py`'s four were); 2 entries in
+      `.ci/config/language-policy-baseline.json:110,251`; the manifest and lock entries;
+      `docs/agent-reference/suppressions.md:163`; `.ci/shadow/twin-parity.ledger.jsonl`;
+      and **one DRIVER-ONLY edit, `.github/workflows/ci-quality.yml:1872` and `:2034`**,
+      identical comment text in two jobs, which must change
+      `# TOPOLOGY. audit.sh and check-go-deps.sh call entry_age_days (.ci/scripts/` /
+      `# lib/age-check.sh), which asks ...` to name
+      `rediacc_ci.core.age` instead. That comment justifies `fetch-depth: 0` on both
+      checkouts and the DEPTH must not change with it.
+      **Stale prose corrected rather than left to rot**, each because it now asserts
+      something false: `.ci/rediacc_ci/core/ports.py:3,39-43,251`,
+      `.ci/rediacc_ci/core/__init__.py:22` (its shim-contract clause 1 said the bash file
+      keeps its path, full stop; it now says the shim stage is not the end state and
+      clause 3 governs WHEN deletion is allowed, not whether),
+      `.ci/rediacc_ci/quality/account_probes.py:56` and
+      `.ci/scripts/quality/check-account-probes.sh:95`. The `source find-port.sh` lines
+      INSIDE `account_probes.py`'s fixtures at :461 and :483 are deliberately KEPT and now
+      labelled archaeology: those literals are the frozen 2026-08-04 shape, the fixture
+      writes its own stub sibling, and editing them to track the live file is precisely the
+      "unmutated control" failure the comment three lines above already warns about.
+      Two prose references outside this grant are handed over: `scripts/lib/env-file.sh:9`
+      ("the same shape as .ci/lib/find-port.sh") and `.ci/scripts/ci/greenlight.cjs:430`
+      ("the legacy body sources account.sh, which pulls in find-port.sh" -- the listing
+      entry it justifies is still correct, only the reason is stale).
+      **Next wave on this box:** W7P5-c deletes `audit.sh` and `check-go-deps.sh`, then
+      `.ci/scripts/lib/age-check.sh` follows for free. `local-common.sh` and `devbox.sh`
+      cannot move until `.ci/rediacc_ci/setup/phases.py`'s six bridged phases are ported
+      for real.
 - [ ] **W7P5-c S** The deletion box, the only one that removes anything.
       **THREE BLOCKERS ON `run-all.sh` SPECIFICALLY, each verified against the enforcing code
       on 2026-09-09, not inferred.** The wiring is done (W7P3-BAT) and the licence is granted
@@ -653,6 +1181,66 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
         deleted runner, plus its `gate-test:run-all-parallel` manifest and lock entries.
       Also unresolved by the deletion: `.ci/rediacc_ci/tests/test_battery.py` is a
       differential whose `TWIN` constant IS `run-all.sh`.
+      **CENSUS DONE 2026-09-09, nothing deleted. Report:
+      `agent/f4da5c2e/W7P5c-licence-census.md`.** Its headline refutes the brief it was
+      given: this box is NOT throughput-limited by ledger accrual. **81 of 82 ledgers
+      already pass K=5**, verified independently by the driver over every pair, and zero
+      files wait on accrual. The constraint is COVERAGE -- 77 quality twins have a ledger
+      and **0 of 149 gate tests do**, 45,099 lines and 73% of the surface with nothing to
+      accrue FROM -- and recording a first row is writer work, so this box PARALLELISES.
+      **23 licensed today (22 strictly), draining 515 -> 493.** C1 blocks 1, C2 blocks 11,
+      **C3 blocks 53**. `check-lockfile.sh` is the strict exclusion and NOT a port defect:
+      its twin fails identically on `private/account/package-lock.json`.
+      **BLOCKERS, EACH DRIVEN RATHER THAN INHERITED.** `JUDGMENT-ONLY` confirmed through the
+      `TRAP_CORPUS` env seam against a modified COPY, leaving `docs/agent-reference/TRAPS.md`
+      untouched: exit 0 before and after, with two controls firing red -- a dangling pointer,
+      and `JUDGMENT-ONLY` over an emptied Residue. **It must REPLACE the pointer, not join
+      it**; `.ci/rediacc_ci/quality/trap_registry.py:577` refuses a mix.
+      `.ci/scripts/test/gates/test-run-all-parallel.sh` confirmed, and **no `package.json`
+      key exists**, so only two of the three wiring sites apply.
+      **`.ci/rediacc_ci/tests/test_battery.py` is STRONGER than briefed:** its line 198 READS
+      THE TWIN'S SOURCE AT TEST RUNTIME and executes a heredoc extracted from it, so deletion
+      makes the test raise rather than merely mis-point.
+      **AND `run-all.sh` IS NOT LICENSED ON C1 AT ALL** -- no ledger names it in `old.cmd`.
+      W7P3-BAT's `27 == 27` is a real-tree-twin SET EQUALITY, not a K=5 shadow licence; the
+      two must not be confused when the deletion runs.
+      **Figures corrected by measurement:** 61,754 lines not 62,233, **140** gate tests not
+      141, and 18,723 is all 82 quality gates rather than "75 of 77" -- the 77 ledgered twins
+      are 18,366. Magnitude right, attributions off.
+      **DRIVER RULING 2026-09-09: `test_twin_parity.py` IS the C1 evidence for the
+      gate-test half. A shadow-gate ledger is neither required nor obtainable there.**
+      A writer sent to record the missing rows recorded **zero of 149 and was right to.**
+      Its evidence: `shadow-gate.ts --record` refuses a dirty tree, so it worked in a local
+      clone whose `HEAD^{tree}` it verified identical; it then drove the BEST-CASE twin --
+      one where both sides call the same `scripts/lib/release-age.ts`, so their messages are
+      byte-identical by construction -- planted a real defect, and still got
+      `MISMATCH_FINDINGS`. **Bash halts at the first failure while pytest decorates every
+      one as `<path>:<line>: <ExceptionType>: <message>`, and `classify()` has no rule to
+      strip that.** Cardinality matching under `-x` does not help; the decoration alone
+      breaks multiset equality. Five more twins share the same `conftest.py`/`harness.py`,
+      so it generalises to the whole population. This is a comparator incompatibility, not a
+      missing ledger, and no amount of writer time closes it.
+      **The evidence already exists and is STRONGER than K=5.**
+      `.ci/rediacc_ci/tests/gates/test_twin_parity.py::test_port_and_twin_agree` asks exactly
+      this question continuously in CI, and its ledger `.ci/shadow/twin-parity.ledger.jsonl`
+      carries **141 distinct subjects across 231 rows, 231 of them recording agreement** --
+      verified by the driver, and 141 is precisely the gate-test population with a Python
+      twin. A K=5 ledger is five historical observations; twin-parity is keyed on
+      `twin_sha`/`port_sha`, so it RE-VERIFIES whenever either side changes. Both halves run
+      unconditionally in the same `ci-quality.yml` job.
+      **So C1 for a gate-test twin reads: a green `test_port_and_twin_agree` row for that
+      subject.** C2 and C3 are unchanged and still bind -- and C3 is the one that matters
+      here, as the call site below proves.
+
+      **A LIVE BASH CALL SITE THE C3 SCAN WOULD MISS, found by the census and confirmed by
+      the driver.** `.github/workflows/autopilot.yml:252` still runs
+      `.ci/scripts/quality/check-resolved-threads.sh` while `.github/workflows/ci.yml:624`
+      runs the Python `check_resolved_threads.py`. Both exist and both are invoked, so that
+      twin is maintained twice AND executed twice per PR on different paths -- and it HAS a
+      K=5 ledger (`.ci/shadow/w7p2-resolved-threads.observations.jsonl`), so it would
+      otherwise read as licensed. **Deleting it without repointing `.github/workflows/autopilot.yml:252` breaks
+      autopilot**, and the repoint is a driver-only workflow edit. This is the shape C3
+      exists to catch and a reminder that a ledger licences EQUIVALENCE, never reachability.
       **PRECONDITION STATUS 2026-09-08, measured not claimed.** `agent/PLAN-extension-shaped-matchers.md`
       commits 1 and 2 are LANDED: the duplication counter's coordinates, per-family floors and
       four exclusion predicates, plus `_cipath.py` and `harness.watchdog_subject()`. Of the five
@@ -735,8 +1323,2158 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `.ci/scripts/security/shfmt.sh:71-73` whose margin goes 2.8x to 1.7x,
       `.ci/rediacc_ci/tests/test_battery.py:352`,
       `.ci/rediacc_ci/quality/pool_writer_safety.py:545`).
-- [ ] **W7P6 C, 3 writers** The 142 unnamed files (P-C). Port groups above; allowlist the 7-8
+- [x] **W7P6 C, 3 writers** The 142 unnamed files (P-C). Port groups above; allowlist the 7-8
       named. Resolve the missing allowlist kind for `bootstrap.sh` before the strict flip.
+      **STARTED 2026-09-09, 1 of ~37 free files ported, and the box's own numbers all moved.**
+      Baseline is 513 now (515 before this box's own two allowlist entries), not 521/142.
+      Re-derived the residue directly from the baseline: **137 files**, of which **93 block
+      on an unported/in-flight library** and **44 are portable today** by an anchored
+      `source`/`. ` grep against all 14 real bash libs (not just the 9 named). After
+      removing files already done elsewhere (below) and `run-all.sh` (claimed by
+      W7P3-BAT/W7P5-c), the true unstaffed remainder is **37 files, ~7,308 lines**, listed in
+      the writer's scratchpad artifact.
+      **`bootstrap.sh`'s allowlist gap was ALREADY RESOLVED**, by the W7P5-c census work
+      earlier today -- `.ci/policy/.language-policy-allowlist` already carries `file:` entries
+      for `bootstrap.sh` and 4 others. No work owed there; verified with a live run,
+      `check:ci-language-policy` rc=0.
+      **THIS BOX WAS ALREADY PARTLY DONE, DISCOVERED RATHER THAN REDONE.**
+      `.ci/scripts/infra/ci_stop.py` is a full port of `ci-stop.sh`, committed at
+      `894e9e51a` before this writer started, with a 10/10 differential -- its own docstring
+      names this box. `.ci/scripts/test/lib/test-helpers.sh` and `workflow-rule.sh` are
+      already ported (`harness.py`, `workflow_rule.py`), each used by 3+ gate-test ports.
+      **Two files are DELIBERATELY NOT ported, and now say so in the allowlist rather than
+      being silently skipped:** `.ci/scripts/test/lib/git-fixture.sh` and
+      `.ci/scripts/test/mutate-check.sh` are each driven by a committed Python caller whose
+      own docstring says outright that a reimplementation "would be a second instrument and
+      this gate would then certify the wrong one." `file:` entries added, baseline drained
+      513 (515 pre-entries) -> 513, 0 added, verified.
+      **The one file actually ported: `resolve-version.sh` -> `.ci/rediacc_ci/version/`**,
+      chosen because every call site invokes it as a subprocess -- never sourced, unlike its
+      sibling `inject-env.sh` which is sourced into a caller's shell and cannot be ported the
+      same way (same class as the already-exempted `.ci/docker/service/env.sh`). K=5 ledger
+      (5 rows, verified), 13-case differential with a planted defect (a minor bump that
+      forgot to reset patch to 0) driven red then restored byte-identical. Still invoked live
+      from 4+ call sites and one workflow; none repointed.
+      **A `dead_python.py` `MANUAL_ENTRY_POINTS` fragment landed concurrently while the
+      writer verified rather than assumed it** -- it isolated its own files, confirmed the
+      gate still failed with only the fragment present, restored them, and re-verified
+      green, rather than taking credit for an edit it did not make.
+      **A genuine full-suite reconciliation**, not an assumption: of 29 `check:ci-pytest`
+      failures in a run spanning the whole session, 3 were caused by this box's file landing
+      before its exemption did, and are now resolved and reverified; the other 26 sit in
+      files this writer never touched, confirmed one by one against `git status` rather than
+      waved off as a block.
+      **SECOND WAVE 2026-09-09: the proxy family, 2 of 9 ported.** `proxy-lib.sh` (sourced
+      only, no exec bit) is ported as a shared contract at `.ci/rediacc_ci/core/proxyx.py`;
+      `proxy-cli-manifest.sh` and `proxy-docker-prepull.sh` are ported and byte-identical on
+      both streams against the real bash twins. K=5 ledgers (5 rows each), 13/13 differential
+      tests.
+      **7 of 9 correctly left open**, needing toolchains this sandbox lacks (nfpm/dpkg/rpm/
+      createrepo/gpg, a `private/renet` go build, passwordless sudo, a built `rdc` binary) --
+      named rather than faked past.
+      **A poisoned ledger row found and discarded, not left as evidence.** An early attempt
+      produced a `VACUOUS_BOTH_EMPTY` row from a bad `--finding-re`, which permanently
+      disqualifies a shadow-gate tree per invariant 5 ("a tree that ever disagreed stays
+      disagreeing"). Recognised, discarded before assertion, re-recorded clean.
+      **Two more `file:` allowlist entries applied by the driver**: `proxy-lib.sh`
+      (sourced-only) and `.ci/scripts/version/inject-env.sh` (exports into the caller's
+      shell, same class as the already-exempted `.ci/docker/service/env.sh`). Baseline
+      drained 513 -> **511**, 0 added.
+      **Both bash twins confirmed live and reachable** -- `generate-cli-manifest.sh` at
+      `.github/workflows/cd-stage.yml:170`, `docker-prepull.sh` 8 times in `ct-tests.yml` -- neither repointed.
+      **Remainder: 33 of the original 37**, 7 proxy files plus the 26 untouched standalones.
+      **THIRD WAVE 2026-09-10: 3 more standalone files ported, 6 total ports today.**
+      `ci-stop-elite.sh`, `collect-drill-diagnostics.sh`, `epic-context.sh` -- each byte-
+      identical to its twin, K=5 ledger, permanent differential (18/18 tests). Two real bugs
+      caught and fixed while writing the `ci-stop-elite` port: `capture_output=True` was
+      silently swallowing the child docker process's own stdout (the twin lets `docker
+      stop`/`rm`'s echo pass through), and Python's `print()` fully buffers against a pipe
+      while the child writes directly to the inherited fd, so without `flush=True` the
+      port's own text landed out of real order regardless of what was printed when.
+      **A genuine ordering-equivalence argument, not a hand-wave**, for
+      `collect-drill-diagnostics`: measured directly that `pathlib.glob()` is NOT
+      alphabetical on this tmpfs for >2 entries, which is exactly why the twin's own bash
+      loop calls `sort` explicitly and the port matches it with `sorted()` rather than
+      relying on either side's natural order.
+      **A genuine AWK quirk reproduced byte-for-byte rather than "fixed"**, for
+      `epic-context`: a heading with two worklist items both carrying the epic's trailer
+      prints that heading TWICE in the real bash -- confirmed against real `awk` before
+      writing the port, not inferred, then reproduced deliberately and caught by a planted
+      "fix" that both the differential and a pure-helper unit test independently reject.
+      **Two more `file:` allowlist entries applied**: `ci-env.sh` (sourced-only, same class
+      as `inject-env.sh`) and `fixture-suite.sh` (a bound fixture, doubly tied to bash
+      because `.ci/rediacc_ci/quality/mutate_check.py:105-106` hardcodes its exact basename). Baseline drained
+      511 -> **509**, 0 added.
+      **Remainder: ~16 files** -- 7 proxy family needing toolchains this sandbox lacks, and
+      ~9 standalone, several explicitly too large for one pass
+      (`check-workflow-gates.sh` 1108 lines / 5 workflows, `sampler-linux.sh` 627,
+      `scope-shadow.sh` 588).
+      **FOURTH WAVE 2026-09-10: 4 more standalone files ported, 10 total ports today.**
+      `canonicalise-gpg-key.sh` -> `build/canonicalise_gpg_key.py`, `sync-epic-block.sh` ->
+      `pr/sync_epic_block.py`, `check-commands.sh` -> `security/check_commands.py`,
+      `scope-reconcile-shadow.sh` -> `ci/scope_reconcile_shadow.py`. Driver-verified
+      directly (not taken on the writer's word alone): all 4 module files exist and read as
+      claimed, `PYTHONPATH=.ci python -m pytest` on the 4 new test files passes 50/50, all 4
+      ledgers carry exactly 5 rows. `check:ci-dead-python` rc=0 confirms no
+      `MANUAL_ENTRY_POINTS` fragment owed. `check:ci-language-policy` unaffected (509, 0
+      added) -- no bash file touched, correctly, since none of these 4 twins are sourced.
+      One named, deliberately-not-reproduced divergence in `scope_reconcile_shadow.py`: with
+      `GITHUB_STEP_SUMMARY` unset and stdout redirected to a regular file, the twin's
+      `tee -a /dev/stdout` corrupts its own output via a kernel file-offset race between two
+      independent open file descriptions extending the same file -- deterministic but
+      unreachable in production since `.github/workflows/ci.yml:1781` always sets the variable; the port
+      duplicates cleanly instead, and a dedicated test pins the twin's divergence as still
+      real rather than silently fixing it.
+      **A genuine mid-session incident, fully repaired and driver-verified.** A scratch-repo
+      setup script (used for the disposable K=5 ledger technique) got blocked by a pre-bash
+      hook before its own commands ran, but a later `git commit` in the same script fell
+      through its guard and ran against the real console repo at cwd, creating a real stray
+      commit (`f01b05bc6`, message "base") of the session's own pending, uncommitted changes.
+      Caught via `git status`, repaired with `git reset --soft HEAD~1` + `git reset HEAD --
+      .` (index-only, working tree untouched). Driver re-verified independently after the
+      fact: `git show --stat f01b05bc6` lists exactly the files this session had already
+      modified and not committed (baseline, plan-boxes, allowlist, `dead_python.py`, the
+      w7p5a-real-run-blockers pair); current `git status --porcelain` shows those same paths
+      back as unstaged `M`, nothing lost, nothing duplicated, HEAD correctly back at
+      `b99162b7f`.
+      **Two real, live bugs found in the REGISTERED gate `check:ci-shell-commands`
+      (`check-commands.sh`), reproduced faithfully in the port rather than silently
+      "fixed" there** (fixing the bash twin's own behavior is out of this box's file
+      ownership and changes live gate behavior repo-wide): a broken `\$\(` escaping
+      combined with ugrep 7.5.0's mid-alternation anchor handling makes the whole
+      "detect `$(cmd)`" branch permanently dead (verified: `printf 'a$(b\n' | grep -qE
+      '$\('` does not match), and the narrow per-command filter is missing the
+      `^[[:space:]]*if` branch the wide filter has, so `if seq 1 10; then` passes the
+      gate silently (verified against the real gate: exit 0, "All commands are
+      CI-compatible"). Triaged by the driver as `#18906e44`, verdict PLAN+SUBAGENT
+      (fix touches a live security gate's regex + must re-sync the Python port/tests in
+      lockstep, and could surface new real violations repo-wide) -- design going to
+      `agent/PLAN-shell-command-gate-regex-fix.md`, not folded into this box.
+      **FIFTH WAVE 2026-09-10: 2 more standalone files ported, 12 total ports today.**
+      `.ci/scripts/ci/profiler/panel.sh` -> `ci/profiler_panel.py` and
+      `.ci/scripts/test/test-write-once-guard.sh` -> `deploy/write_once_guard_check.py`.
+      Driver-verified directly: both modules exist, 36/36 new tests pass (23+13), both
+      ledgers carry exactly 5 rows, `check:ci-dead-python` and `check:ci-language-policy`
+      both clean, `git status` scoped to exactly the files claimed. No live defect found in
+      either twin this wave (unlike `check-commands.sh` last wave); one named divergence
+      pinned by a test (a non-numeric budget env var makes bash itself print a diagnostic
+      carrying its own path/line, which the port does not forge).
+      **The box's own "~12/~5 standalone" estimate was an undercount, corrected by a live
+      re-derivation**: the free standalone set was actually 15 before this wave, 13 after --
+      7 proxy family (unchanged, toolchain-blocked), 3 too-large (unchanged), 1 claimed by
+      W7P3-BAT (`run-all.sh`), and 13 real standalone remain, each now individually
+      characterized (portable-now vs operator-invoked-only vs credential-blocked vs
+      binary-blocked vs no-byte-differential-obtainable) rather than lumped as one number --
+      see the writer's full per-file breakdown in its report for the next wave to pick up.
+      **Fragments owed to the driver, not yet applied**: 4 `check:ci-python-env-registry`
+      pairs (`profiler_panel.py:*name`, `write_once_guard_check.py:PATH`, plus 2 test files'
+      `HOME`/`PATH`) -- same class of driver-only fragment as W7P5-b's, and the SAME known
+      blocker applies (the gate refuses a partial add while other sessions have unrelated new
+      reads pending in the tree).
+      **SIXTH WAVE 2026-09-10: 3 more standalone files ported, 15 total ports today.**
+      `test-rdc-sh-env.sh` -> `security/rdc_sh_env_check.py`, `test-install-sh-config.sh` ->
+      `release/install_sh_config_check.py`, `test-install-script.sh` ->
+      `release/install_script_check.py`. Driver-verified directly: all 3 modules exist,
+      41/41 new tests pass (14+12+15), all 3 ledgers at K=5, `check:ci-language-policy`
+      clean; a transient `check:ci-dead-python` finding the writer reported (against a
+      still-in-flight PEER file, `core/release_state_validator.py`, mid-write by the other
+      live W7P5-b writer) is confirmed gone on driver re-run (rc=0, 751 reached, 0 findings)
+      -- resolved by the peer finishing, not by this wave.
+      **A real defect found and quantified**, unlike a prior wave's under-quantified one:
+      `.ci/scripts/test/test-rdc-sh-env.sh:93-97`'s "node not found" branch is DEAD CODE (`set -euo pipefail`
+      means a failing `command -v node` substitution kills the script via the ASSIGNMENT's
+      own exit status before the guard checking for that failure ever runs), so this
+      REGISTERED gate exits 1 with zero bytes on either stream on a node-less host --
+      indistinguishable from a genuine secret-leak failure. Narrow blast radius (CI runners
+      always have node) but flagged for driver awareness since fixing it changes the twin's
+      output bytes and needs port+differential resynced in lockstep, same class as the
+      `check-commands.sh` finding two waves back.
+      **A correction to the prior wave's characterization, not taken on faith**: `ensure-
+      nfpm.sh` has NO existing Python bridge (the prior wave's "a bridge already exists"
+      claim was wrong) -- what exists is a bash proxy, one of the 7 already-known toolchain-
+      blocked proxy-family files. Porting it means writing the acquisition path from
+      scratch, not wiring an existing bridge. Also confirmed live: docker IS available
+      (`docker version` -> server 29.7.2), so the `ci-start-elite.sh`/`ci-start-account.sh`
+      real-docker differential is feasible as hypothesized.
+      **SEVENTH WAVE 2026-09-10: 3 more standalone files ported, 18 total ports today.**
+      `ci-start-elite.sh` -> `infra/ci_start_elite.py`, `ci-start-account.sh` ->
+      `infra/ci_start_account.py`, `standing-orders-brief.sh` ->
+      `review/standing_orders_brief.py`. Driver-verified directly: all 3 modules exist,
+      59/59 new tests pass (14+21+24), all 3 ledgers at K=5, `check:ci-language-policy`
+      clean; a `check:ci-dead-python` finding at re-check names `core/review_budget.py`
+      (the still-in-flight `common.sh` writer's file, not this wave's) -- confirmed not
+      this wave's concern.
+      **A live, quantified, margin-of-seconds defect (DRIVER TRIAGE):
+      `.ci/scripts/infra/ci-start-account.sh:106`'s health check is a SUBSTRING test**
+      (`grep -q "healthy"` matches literal `unhealthy`), so a container docker has marked
+      unhealthy is announced healthy and the REGISTERED `.github/workflows/ci.yml:740` step
+      proceeds green. Measured, not estimated: the
+      compose health check's own `start_period`/`interval`/`retries` puts the earliest real
+      "unhealthy" at ~t=200s, the port's probe loop (180s of sleeps, probe wall-time never
+      added to the budget) lands its last check at ~t=191s -- **about 9 seconds of margin**,
+      which a contended runner or a slightly slower `docker inspect` closes with no file
+      change at all. Reproduced and pinned, not fixed (invariant 5, changing the twin changes
+      a live step's pass/fail).
+      **Remainder: 7 standalone files** (corrected down from 10): 1 portable now
+      (`ensure-nfpm.sh`, confirmed no bridge exists, acquisition path needs writing from
+      scratch), 3 operator-invoked-only, 3 genuinely blocked -- plus the 7 proxy family and
+      3 too-large files, unchanged.
+      **EIGHTH WAVE 2026-09-10: ensure-nfpm (both halves) + scope-shadow.sh done in full.**
+      `.ci/scripts/build/ensure-nfpm.sh` -> `build/ensure_nfpm.py` and its registered-gate
+      proxy wrapper `.ci/scripts/test/proxies/proxy-ensure-nfpm.sh` -> `proxies/ensure_nfpm.py`
+      (turned out to be TWO files, not one -- corrects the earlier "no bridge" note's
+      undercount of scope), plus `.ci/scripts/ci/scope-shadow.sh` (588 lines, one of the
+      3 "too large" files, done in full rather than partially: 299 of 588 lines are prose,
+      and the 5 inline `node -e` programs are deliberately carried verbatim rather than
+      translated, to avoid a second reader of the same job-surface contract). Driver-
+      verified directly: all 6 modules exist, 43/43 new tests pass (14+12+17), all 3 ledgers
+      present (5/5/7 rows, K=5 satisfied), `check:ci-dead-python`/`check:ci-language-policy`
+      clean, `check:ci-proxy-ensure-nfpm` reruns green live (9 checks passed), no stray
+      commits, git status scoped exactly, executable bits correct on the 2 path-invoked
+      modules.
+      **A correction to a prior wave's claim**: `check:ci-proxy-ensure-nfpm` is NOT
+      toolchain-blocked as previously assumed -- run live, rc=0, real 4MB download and
+      checksum performed.
+      **Two real, narrow-blast-radius defects found in the twins, reproduced not fixed**: a
+      warm binary cache is never checked against the pin (measured: exactly 2 of 5 live
+      callers are affected, since CI runners never have a warm cache to begin with); a
+      `set +e`/`set -e` pair in the proxy inverts intent (RE-ENABLES errexit rather than
+      restoring a prior disabled state), reachable only if `nfpm --version`'s output format
+      ever changes.
+      **Corrected remainder: standalone 7->6, proxy-family 7->6** (a live preflight
+      simulation found 5 of the 6 remaining proxy files have every declared toolchain
+      requirement already satisfied on this sandbox -- go, dpkg-deb, rpmbuild, createrepo_c,
+      gpg, node/npm/vitest, passwordless sudo, a built `private/renet/bin/renet`, and a built
+      CLI bundle all present; only `proxy-license-e2e.sh` is genuinely blocked, on a missing
+      `private/license-mint`. Deliberately NOT run -- a satisfied preflight means the real
+      subject executes with real side effects on a shared machine, the driver's call to make),
+      **too-large 3->2** (`check-workflow-gates.sh` 1108L, `sampler-linux.sh` 627L remain).
+      **NINTH WAVE 2026-09-10: both remaining "too-large" files done in full, bucket now
+      EMPTY.** `check-workflow-gates.sh` (1108L, registered gate `check:ci-workflow-gates`)
+      -> `security/workflow_gates.py`, and `.ci/scripts/ci/sampler-linux.sh` (627L, invoked
+      from `.github/workflows/profiler-probe.yml`, not itself a `check:` gate) ->
+      `ci/profiler_sampler_linux.py`. Driver-verified directly: both modules exist, 179
+      combined tests pass across this wave's 6 new test files
+      (`test_security_workflow_gates.py`, `test_ci_profiler_sampler_linux.py`, plus the 4
+      proxy-family test files below), ledgers at `w7p6-workflow-gates.observations.jsonl` (5
+      rows) and `w7p6-profiler-sampler.observations.jsonl` (6 rows), K=5 satisfied on both.
+      Neither twin's call site is repointed (same as every other port this box).
+      **The operator authorized running the 5 real-side-effect proxies from the prior wave's
+      preflight** ("run them now"), so the same wave completed the proxy-family alongside the
+      standalone files: **proxy-family 6->1.** `proxy-go-unit.sh` -> `proxies/go_unit.py`
+      (`check:ci-proxy-go-unit`), `proxy-linux-packages.sh` -> `proxies/linux_packages.py`
+      (`check:ci-proxy-linux-packages`), `proxy-ops-host-check.sh` ->
+      `proxies/ops_host_check.py` (`check:ci-proxy-ops-host-check`), `proxy-rdc-update.sh` ->
+      `proxies/rdc_update.py` (`check:ci-proxy-rdc-update`), each run for real against live
+      toolchains (go build, dpkg/rpm tooling, `renet ops host check`, a real `rdc update`
+      drive) rather than merely preflight-checked. Ledgers: `w7p6-proxy-go-unit` (6 rows),
+      `w7p6-proxy-linux-packages` (5), `w7p6-proxy-ops-host-check` (8),
+      `w7p6-proxy-rdc-update` (5); K=5 satisfied on all four.
+      **`proxy-unit-tests.sh` -> `proxies/unit_tests.py` was also ported this wave**
+      (`check:test-provisioning`/`check:test-e2e-unit`), and a real, live bug in BOTH the
+      twin and the port was found and fixed in lockstep by the driver afterward, not left in
+      the port: vitest's ANSI colour escapes sit between "Tests" and the number in any
+      CI-shaped environment (only this sandbox's own `CLAUDECODE=1` accidentally hid it), and
+      the summary reader took the FAILED count on a mixed pass/fail line instead of the
+      trailing total. Fixed by stripping ANSI first and reading the trailing `(N)` total;
+      verified against the real registered gate (rc=0) and 21/21 differential tests; K=5
+      ledger `w7p6-proxy-unit-tests.observations.jsonl` re-recorded (5 rows, including the
+      coloured-green regression case). Worklist `#23dedacb`.
+      **`proxy-license-e2e.sh` was corrected, then ported inline by the driver the same
+      turn**: the prior wave's "genuinely blocked, missing `private/license-mint`" was WRONG
+      -- run live, the real path resolves and the subject runs green in 42.2s, so it was
+      ported to `proxies/license_e2e.py`. **Proxy-family remainder: 0** (bucket now empty --
+      only `proxy-lib.sh`, exempted as sourced-only, is not a standalone port). Driver-
+      verified: 4/4 differential tests pass, including one that drives the REAL subject with
+      real side effects (24 enforcing scenarios, 0 failures; nolicense control fired 16
+      times; wrong-key control fired 22 times -- identical on both sides). K=5 ledger
+      `w7p6-proxy-license-e2e.observations.jsonl` recorded (5 rows, 5 distinct trees, 5
+      distinct finding sets). A real byte-mismatch bug was found and fixed while porting: the
+      twin's `need_file` check for `license-mint` builds its path as
+      `"$PROXY_DIR/../../private/license-mint"`, an UNRESOLVED string carrying a literal
+      `../..`, which the twin prints verbatim in its "does not exist" message; a first pass
+      at the port used a clean `pathlib` join instead and printed a different (correct but
+      non-identical) path, failing the differential. Fixed by reproducing the twin's
+      unresolved path construction exactly, not by "improving" it -- the two sides must
+      agree byte for byte, and only one of them owns changing what the twin prints.
+      check:ci-python-lint/dead-python/language-policy all rc=0 for this file set.
+      **Six real, narrow-blast-radius defects found across this wave's twins and ports,
+      flagged for driver triage rather than silently fixed** (fixing changes a live
+      registered gate's or a live workflow step's behavior, same class as prior waves):
+      `check-workflow-gates.sh` CHECK 6 names checkout steps by NAME rather than `uses:`
+      (139/144 named steps missed) and has no None/isinstance guard on empty YAML;
+      `sampler-linux.sh`'s `--out`/`--interval` as the last CLI arg infinite-loops (0 live
+      callers affected), `--interval 08` crashes via bash octal parsing, and a non-numeric
+      `PROFILER_MAX_SECONDS` silently disables the self-termination guard; `proxy-linux-
+      packages.sh`'s anti-vacuity check fails open on a renamed marker string (0 packages
+      affected today); `.ci/scripts/test/test-rdc-update.sh:77-78` leaks orphan `python3 -m http.server`
+      processes via `$!` capturing the wrong PID (254 orphans measured on the host, 100
+      killed by an earlier writer, 154 pre-existing and left alone); `proxy-go-unit.sh`'s
+      exclusion regex is broader than documented (0 packages affected);
+      `.ci/scripts/test/proxies/proxy-ops-host-check.sh:86`'s single `jq` program silently
+      aborts on type errors (0 live paths, 1 override-reachable path). All six triaged
+      INLINE by the driver
+      (`worklist.py --triage`); fixes tracked as separate worklist items, not folded into
+      this box's own scope.
+      **ALL SIX LANDED THE SAME TURN, two via dispatched writers (disjoint file sets, per
+      standing rule 4) and one found+fixed by the driver mid-verification.** Writer A:
+      `check-workflow-gates.sh` CHECK 6 now reads `uses:` not the display name (0 live
+      findings today, since the one workflow it guards has an unnamed checkout), plus
+      YAML parse/type guards on 3 of 5 crash paths, plus a pre-existing CHECK 2 twin/port
+      divergence found and closed while testing; `sampler-linux.sh`'s three bugs (dangling
+      `--out`/`--interval` no longer spins, octal `--interval 08` no longer crashes and its
+      `PROFILER_DISK_EVERY_S` sibling was swept too, non-numeric `PROFILER_MAX_SECONDS`
+      now refused at startup). Writer B: `proxy-linux-packages.sh`'s anti-vacuity check now
+      corroborates its marker against the subject's SOURCE, not just runtime output, so a
+      rename is a loud refusal instead of a silent false "21 of 21"; `proxy-ops-host-
+      check.sh`'s per-entry `jq` program's exit status is now checked, so a type error is a
+      named finding instead of silent nothing; `proxy-go-unit.sh`'s `testutil.` alternative
+      confirmed zero blast radius (docs corrected, not code). **A seventh, real defect
+      surfaced by the driver while spot-checking Writer B's go-unit fix, not in either
+      writer's brief**: the exclusion regex's four alternatives all miss the plain
+      `os.Getuid() != 0` idiom (no `e`) that `pkg/storage`, `pkg/repository` and
+      `pkg/filesystem` actually use, so those three packages stayed in the "safe" 60-package
+      local subset despite needing root -- invisible locally (tests just skip), but a hard
+      `t.Fatalf` under `CI=true` (what this differential, and real CI, both set). Reproduced
+      live: `check:ci-proxy-go-unit` went exit 1 -> exit 0 after adding a fifth alternative,
+      `Getuid`, widening the excluded set 8 -> 11 packages, 68 -> 57 in the local subset.
+      Every fix driver-verified directly against the real registered gate (not taken on the
+      writer's word): `check:ci-workflow-gates`, `check:ci-proxy-go-unit`,
+      `check:ci-proxy-linux-packages`, `check:ci-proxy-ops-host-check` all rc=0; 132 + 61 +
+      17 tests independently re-run; all 5 ledgers re-recorded or extended (K=5 or more,
+      equivalence holds on each). `check:ci-python-lint`/`dead-python`/`language-policy` all
+      rc=0 across every file touched. Worklist: `#73dca184`, `#076960ce`, `#095596c8`,
+      `#9d021d76`, `#c12f13cd`, `#85c3fc67` (the seventh, driver-found fix).
+      **TENTH WAVE 2026-09-10: 8 more standalone files ported via 2 parallel writers,
+      disjoint file sets.** Writer A: `discover-epics.sh` -> `review/discover_epics.py`
+      (calls the existing `review_budget.epic_ids` rather than re-implementing the parse),
+      `page-density.sh` -> `quality/page_density.py` (registered gate
+      `check:ci-page-density`, `package.json:266`), `tag-submodules.sh` ->
+      `release/tag_submodules.py`, `cleanup-github-deployments.sh` ->
+      `housekeeping/cleanup_github_deployments.py`. Writer B: `create-complete.sh` ->
+      `signal/create_complete.py`, `announce-gate-skips.sh` ->
+      `quality/announce_gate_skips.py`, `assert-artifact-version.sh` ->
+      `release/assert_artifact_version.py`, `run-external-gate.sh` ->
+      `quality/run_external_gate.py`. Driver-verified directly, both batches: 44 + 67 = 111
+      tests independently re-run, exit code 0; all 8 ledgers at K=5, `shadow-gate --assert
+      --k 5` holds on every pair; `check:ci-page-density`'s real Playwright container run
+      byte-identical between twin and port; `check:ci-python-lint`/`dead-python`/
+      `language-policy` all rc=0 across the combined 801-file corpus (found and fixed
+      formatting drift in 5 of writer A's files that contradicted its own report).
+      **A real, live bug found and fixed in `discover-epics.sh`**: both call sites wrote to
+      `"${GITHUB_OUTPUT:-/dev/stdout}"`; opening `/dev/stdout` as a PATH fails with ENXIO
+      when fd 1 is a UNIX SOCKET, which is exactly what Node's `child_process.spawnSync`
+      hands a child -- including this repo's own `shadow-gate.ts` harness. The script then
+      printed its human line, lost the `epics=` output the workflow reads, and exited 1 for
+      a run that had already done its work. `GITHUB_OUTPUT` is always set in real Actions,
+      so the live matrix never hit it; every local and harness run did. Fixed with an
+      `emit()` helper, byte-for-byte no-op on the live path; driver re-reproduced the ENXIO
+      failure with a raw socketpair against the old code and confirmed the fix resolves it.
+      **Two more real defects found, reproduced not fixed** (both are live-CD-behavior
+      changes, out of this box's ownership): `assert-artifact-version.sh` never clears its
+      `/tmp` download directory between invocations, so a second run in one job with no
+      `manifest.json` reads the first run's stale file (0 live paths -- `cd-v2.yml` runs it
+      once per fresh runner); `cleanup-github-deployments.sh` neither checks a failed
+      DELETE's effect on its exit code nor URL-encodes `--environment` into the API query
+      string (both latent, all current callers pass safe values). **Standalone remainder now
+      further reduced** by these 8 (exact new count not yet re-derived; a fresh survey is
+      owed before the next wave picks standalone work again).
+      **A judge's "sweep the class" challenge on the license_e2e docstring, the CHECK6 fix,
+      the sampler-linux fix and the linux-packages fix each drove a real class-sweep this
+      wave**: one genuine sibling found and fixed each for the CHECK6 pattern (zero found,
+      already the only instance) and the sampler-linux pattern (`profiler-control.sh`'s
+      `--interval` had the identical dangling-flag hang, fixed with the same arity-check);
+      zero siblings found for the linux-packages marker-rename pattern and the ops-host-
+      check jq-abort pattern, both swept in depth and reported with reasoning, not asserted.
+      **ELEVENTH WAVE 2026-09-10: 8 more standalone files, 2 more parallel writers,
+      disjoint sets.** Writer C: `mark-production.sh` -> `release/mark_production.py`,
+      `detect-bump-type.sh` -> `version/detect_bump_type.py` (real git fixtures, not
+      stubbed), `cleanup-pr-environments.sh` -> `housekeeping/cleanup_pr_environments.py`,
+      and `ci-stop.sh` -- correctly identified as ALREADY PORTED (`infra/ci_stop.py`,
+      committed `894e9e51a` earlier this session) rather than duplicated; its missing K=5
+      ledger was the one gap and is now closed (`w7p6-ci-stop.observations.jsonl`, 5 rows).
+      Writer D: `verify-ssh.sh` -> `infra/verify_ssh.py`, `wait-for-vm-ssh.sh` ->
+      `infra/wait_for_vm_ssh.py` (deliberately NOT sharing a helper with its sibling despite
+      similar shape -- the twins disagree in six real ways, documented rather than
+      refactored away), `compose-prompt.sh` and `resolve-model-args.sh` ->
+      `autopilot/compose_prompt.py` / `autopilot/resolve_model_args.py` (new `autopilot`
+      package). Driver-verified directly, both batches: 117 tests independently re-run,
+      exit code 0; all 8 ledgers at K=5, `shadow-gate --assert --k 5` holds on every pair;
+      `check:ci-python-lint` exit code 0 across the combined 816-file corpus.
+      **Seven real defects found across the two twins, reproduced not fixed** (all are
+      live-CI-behavior changes, out of this box's ownership, each pinned by a named
+      `test_defect_*`/equivalent case so a future fix turns it red): `cleanup-pr-
+      environments.sh` sources `common.sh`'s `set -e`, which overrides its own `set -uo
+      pipefail`, so an empty `pr-N` listing kills the script silently before its own
+      "none found" message -- driver-reproduced independently with a stub `gh` (exit 1, no
+      output); the same script also lets a failed deletion count as `skipped` while still
+      exiting 0, and interpolates `--repo` unescaped into a query string (constrained-safe
+      today); `verify-ssh.sh` sleeps its full retry delay after the FINAL attempt with
+      nothing left to retry; `wait-for-vm-ssh.sh` dies on an unset `$USER` before printing
+      anything, and its trailing unguarded `ssh-keyscan` under `set -e` can kill the whole
+      run silently after announcing success; `compose-prompt.sh` is missing a
+      `require_file` on one of its four inputs, unlike the other three.
+      **A blind spot in `check:ci-python-env-registry` named, not fixed**: a module that
+      binds `self.env = os.environ` and reads through that indirection hides its
+      environment inputs from the gate's AST walk entirely; `detect_bump_type.py`'s first
+      draft did this and was rewritten to read `os.environ` directly before recording its
+      ledger, closing the gap in that one file rather than leaving it undetectable.
+      **A defect in a file outside this wave's ownership, named not touched**: `.ci/rediacc_ci/tests/test_infra_ci_stop_elite.py:118-122`'s own comment says "REPLACED, not
+      prepended" directly above a line that prepends; caught the hard way when a writer's
+      own first SSH-stub harness silently fell through to a real network `ssh` under the
+      same pattern, fixed in that writer's own two infra tests (PATH replaced, not
+      prepended, with an explicit `shutil.which(...) is None` assertion for the negative
+      case) but the pre-existing sibling file was left alone.
+      **TWELFTH WAVE 2026-09-10: 8 more `autopilot/` scripts, 2 more parallel writers,
+      disjoint sets.** Writer E: `linked-sub-prs.sh` -> `autopilot/linked_sub_prs.py`,
+      `sweep-collect.sh` -> `autopilot/sweep_collect.py`, `finish.sh` -> `autopilot/finish.py`,
+      `restore-trusted-config.sh` -> `autopilot/restore_trusted_config.py`. Writer F:
+      `update-state.sh` -> `autopilot/update_state.py`, `review-payload.sh` (pure, no
+      network/git/env) -> `autopilot/review_payload.py`, `submodule-prs.sh` ->
+      `autopilot/submodule_prs.py`, `sweep-campaigns.sh` -> `autopilot/sweep_campaigns.py`.
+      `linked-sub-prs.sh`/`submodule-prs.sh` form a three-way contract with `check-
+      submodule-branches.sh` (one writes the PR-body links, the other reads them back,
+      the gate enforces them); each writer documented the relationship without touching
+      the other's file. Driver-verified directly, both batches: 55 + 54 = 109 tests
+      independently re-run, exit code 0; all 8 ledgers exceed K=5 (5 to 12 rows each),
+      `shadow-gate --assert --k 5` holds on every pair; found and fixed formatting drift
+      in 6 of writer F's files that the lint gate caught, re-verified 55/55 still pass;
+      full `check:ci-python-lint` across the combined 832-file corpus: exit code 0.
+      **Real defects found in the twins, reproduced not fixed, two independently confirmed
+      by the driver**: `.ci/scripts/autopilot/submodule-prs.sh:83`'s `jq '... | length'` on a non-integer
+      `submodules` count silently wipes the PR-body submodule-links block while exiting 0
+      (driver-verified: `jq -r '(.submodules // []) | length'` on `3.5` returns `3.5`, not
+      an integer; defence-in-depth only, the upstream validator already bounds this field);
+      `restore-trusted-config.sh`'s `snapshot` is not idempotent -- `cp -a SRC DEST` copies
+      SRC *inside* DEST when DEST already exists as a directory, so a second snapshot
+      nests `.claude/.claude` and poisons the drift baseline (driver-reproduced directly:
+      first `cp -a` populates `snapshot/.claude/` cleanly, a second identical `cp -a`
+      creates `snapshot/.claude/.claude`). Five more named and pinned without independent
+      re-verification: `sweep-collect.sh` scans zero PRs and exits 0 on an unindexable
+      `prs.json` (unchecked process-substitution exit status), and separately swallows an
+      unwritable `--out` via a trailing `|| true`; `linked-sub-prs.sh` silently truncates
+      PR numbers past 7 digits, goes silent on a NUL byte in the PR body (GNU grep treats
+      it as binary), and merges `#007`/`#7` via `sort -un` with an input-order-dependent
+      surviving spelling; `finish.sh` passes an unvalidated `--pr` to `gh` as one argument
+      on a value containing a space. A dangling symlink over a protected directory aborts
+      `restore-trusted-config.sh`'s restore with the checkout partly quarantined, reproduced
+      byte-identically on both sides (only the diagnostic differs).
+      **THIRTEENTH WAVE 2026-09-13 (session resumed after a ~3-day gap, prior work verified
+      intact): the LAST 6 files in `.ci/scripts/autopilot/`, 2 more parallel writers,
+      disjoint sets -- this closes the entire directory (16 files ported across waves
+      10-13).** Writer G: `autopilot-gate.sh` (978L port, the pre-model gate) ->
+      `autopilot/autopilot_gate.py`, `fetch-review-threads.sh` -> `autopilot/
+      fetch_review_threads.py`, `review-reply.sh` -> `autopilot/review_reply.py`. Writer H:
+      `autopilot-push.sh` (461L, **the security boundary** -- the model never holds a write
+      token, this script runs after it exits to perform the actual git push) ->
+      `autopilot/autopilot_push.py`, `post-escalation.sh` -> `autopilot/post_escalation.py`,
+      `state-comment.sh` -> `autopilot/state_comment.py`. Driver-verified directly, both
+      batches: 110 + 94 = 204 tests independently re-run, exit code 0; all 6 ledgers K=5,
+      `shadow-gate --assert --k 5` holds on every pair; full `check:ci-python-lint` across
+      the combined 844-file corpus: exit code 0.
+      **`autopilot_push.py` given extra scrutiny given its role**: independently re-ran its
+      3 dedicated sandbox-escape controls (the fake `git`/`gh` win the PATH lookup; the shim
+      refuses a command aimed at THIS repository, exit 97; the shim refuses a push whose
+      remote is a real `github.com` URL, exit 97), and confirmed this repository's own
+      `HEAD` and commit history were genuinely untouched afterward.
+      **A driver-side bookkeeping error caught and fixed before further verification**:
+      writer G recorded all 3 of its ledgers as `w7p8-*` instead of the box's own `w7p6-*`
+      convention; renamed to `w7p6-autopilot-gate`/`w7p6-fetch-review-threads`/
+      `w7p6-review-reply`.observations.jsonl` and the matching docstring citations fixed in
+      all 3 ports and their 3 test files, then every ledger re-verified under the corrected
+      name.
+      **Real defects found across both twins, reproduced not fixed, several independently
+      confirmed by the driver**: `review-reply.sh`'s jq `capture(...; "s")` uses jq's
+      single-line ANCHOR mode, not dotall, so a multi-line model disposition matches nothing
+      and is silently dropped from the reply/resolve plan entirely -- driver-reproduced
+      directly (`jq -c '.decisions[] | capture(...; "s")'` on a two-line string: exit 0, zero
+      output); the same script's bare-array `--threads` spelling is promised in a comment
+      but errors in jq for real (driver-reproduced: exit 5, "Cannot index array with string
+      threads"), latent since the sole live caller never uses that spelling.
+      `autopilot-gate.sh` validates `--state`/`--failed-jobs`/`--watchdog` with `[[ -n && -s
+      ]]` rather than `require_file`, so a mistyped path fails OPEN; its allowlist strips ALL
+      whitespace so `a b` is admitted as `ab`; `AUTOPILOT_MAX_ROUNDS=08` is a bash arithmetic
+      error that reads as false under no `set -e`, so the round cap fails open --
+      driver-reproduced directly (`((10 >= 08))`: bash arithmetic error, exit 1).
+      `fetch-review-threads.sh` calls its accumulator only from `||`/`if !`, disabling `set
+      -e` inside it, so a failing fetch writes a blank `--out` and reports success anyway.
+      `state-comment.sh`'s 400-character line cap is LOCALE-DEPENDENT (`${#line}` counts
+      bytes under `C`, characters under UTF-8) -- driver-reproduced directly (399 `a`s plus
+      one `é`: 400 characters, 401 UTF-8 bytes); its field normalizer strips whitespace
+      globally rather than refusing it, so `--model 'opus 4.5'` is silently accepted as
+      `opus4.5`; a directory passed as `--ruled-out-file` prints the twin's own "is a
+      directory" read error and exits 0 appending nothing; and `inherit_errexit` does not
+      reach into `$( )`, so an unreadable `--body` yields inconsistent fatal-error counts
+      between `render` and `fields`. `post-escalation.sh`'s `${pair#*=}` returns the whole
+      token when a `--steps` entry has no `=`, so a bare `failure` token is fed back into its
+      own message ("The round failed in failure"); its `--verdict` path is likewise
+      `-s`-checked not `require_file`-checked, silently dropping the model's stated reason on
+      a typo.
+      **FOURTEENTH WAVE 2026-09-13: 6 more scripts, 2 more parallel writers, disjoint
+      sets, first outside `autopilot/`.** Writer I: `update-homebrew-tap.sh` ->
+      `release/update_homebrew_tap.py`, `retry-failed-runs.sh` -> `housekeeping/
+      retry_failed_runs.py`, `bump.sh` -> `version/bump.py`. Writer J: `ci-env.sh`
+      (sourced-only, confirmed rather than assumed: exactly two real `source` sites, zero
+      executions) -> `infra/ci_env.py` (ported as a function library, matching how
+      `common.sh` became `core.common`), `docker-prepull.sh` -> `infra/docker_prepull.py`
+      (confirmed genuinely distinct from the already-ported `proxies/docker_prepull.py`,
+      which is the PROXY for a different subject, before writing anything), `review-
+      status.sh` -> `review/review_status.py`. Driver-verified directly, both batches: 83
+      + 89 = 172 tests independently re-run, exit code 0; all 6 ledgers K=5 (correctly
+      using the box's own `w7p6-` ledger prefix this time, after writer G's mis-prefix the
+      wave before), `shadow-gate --assert --k 5` holds on every pair; full `check:ci-
+      python-lint` across the combined 856-file corpus: exit code 0.
+      **Real defects found, two independently confirmed by the driver**: `bump.sh
+      --auto`/`--patch` genuinely crash on this repo today -- driver-reproduced directly
+      (`bash bump.sh --dry-run --auto`: exit 1, `dev: unbound variable`, because every
+      `package.json` carries the `0.0.0-dev` placeholder since version truth moved to git
+      tags, and the patch-increment arithmetic chokes on the non-numeric suffix); `--minor`/
+      `--major` survive by luck (they never touch the patch field) and emit a plausible but
+      never-semver-derived version. `ci-env.sh` silently ships EMPTY secrets on a failing
+      `openssl` -- driver-reproduced directly (`export FOO="$(nonexistent-cmd | tr ... |
+      cut ...)"` under `set -e` alone, no `pipefail`: reaches the next line with `FOO=`
+      empty, exit 0), because the pipeline's own exit status is masked twice over (no
+      `pipefail`, and a bare `export VAR=$(...)` reports `export`'s status, not the
+      substitution's) -- this writes an empty API key and JWT secret into both `.env` and
+      `$GITHUB_ENV` for every later workflow step. Reproduced not fixed, cutover box's
+      call. Five more named and pinned without independent re-verification:
+      `update-homebrew-tap.sh --push` dies mid-way on a bot-identity-less machine after
+      the formula was already rewritten and staged, leaving the submodule dirty with no
+      explanation; `retry-failed-runs.sh` reads TSV with `IFS=$'\t'` (tab is IFS
+      whitespace), so a null field collapses the read and shifts every later column left;
+      `bump.sh` leaves the manifest at mode 0600 (`mktemp` plus `mv`, never restored to
+      0644); `retry-failed-runs.sh` fails CLOSED on branch tips but OPEN on the runs
+      listing itself (`|| echo '[]'`), so an unreadable listing looks identical to a
+      genuinely clean night; `review-status.sh`'s `PR_NUMBER` is emptiness-checked but
+      never shape-checked, so junk reaches a `gh api` URL verbatim. `docker-prepull.sh`
+      counts ARGUMENTS not pulls in its summary line (the same ref twice reads as two).
+      **A driver decision on a class the writer correctly escalated rather than settling
+      unilaterally**: `check:ci-em-dash-surfaces` flagged 8 em dashes across this wave's
+      ports and 5 pre-existing sibling files reproducing their bash twins' own literal
+      byte content (a `.env` header comment, a `DRY RUN` log line, a validator's own OK
+      message) -- the gate's own message forbids seeding the baseline for new breakage and
+      says to restructure the sentence instead. Since the string is a REQUIRED byte-exact
+      match with the twin (not free prose), restructuring the port alone would break
+      equivalence; the driver instead fixed the ROOT CAUSE, editing all 6 affected bash
+      twins (`ci-env.sh`, `ci-start-account.sh`, `ci-start-elite.sh`,
+      `backfill-write-sentinel.sh`, `release-state-validator.sh`,
+      `test-write-once-guard.sh`) and their 8 corresponding Python occurrences in
+      lockstep (including one pre-existing file, `write_once_guard_check.py`, that had
+      deliberately encoded the OLD em dash as a `—` escape specifically to dodge this
+      same source-text scanner while still byte-matching the twin -- exactly the kind of
+      quiet exemption this wave's writer named and refused to repeat, and which the fix
+      now makes unnecessary). Drained 6 now-fixed baseline entries (2971 -> 2965, 0
+      added), re-ran all 445 affected differential tests (exit 0),
+      `check:ci-em-dash-surfaces` and `check:ci-python-lint` both exit 0 afterward. **Known
+      gap, not closed this wave**: the 5 pre-existing files' K=5 ledgers were not
+      re-recorded against the new (text-only, differential-test-verified-equivalent)
+      bytes; their `--assert --k 5` still passes against pre-fix tree ids, which is stale
+      evidence rather than wrong evidence.
+      **FIFTEENTH WAVE 2026-09-13: 3 more scripts, one parallel writer (the second slot's
+      batch was a stale-report bookkeeping catch-up, not new work -- see below).**
+      `ci-pull-images.sh` -> `infra/ci_pull_images.py`, `docker-pull-ghcr.sh` ->
+      `infra/docker_pull_ghcr.py` (confirmed no shared GHCR-auth helper exists to reuse:
+      `common.sh` has zero hits for `ghcr` or `docker login`, so the duplication between the
+      two twins is real and is documented, measured by
+      `test_neither_twin_shares_a_ghcr_helper_because_common_sh_has_none`), `cleanup-
+      stale-d1.sh` -> `housekeeping/cleanup_stale_d1.py` (reused the existing package; both
+      the dry-run and real-delete paths driven in the ledger). Driver-verified directly: 73
+      tests independently re-run, exit 0; all 3 ledgers K=5, `shadow-gate --assert --k 5`
+      holds on every pair (all correctly `w7p6-` prefixed); twins confirmed byte-untouched.
+      **One discrepancy the driver caught that the writer's own report missed**: `check:ci-
+      python-lint` showed 3 of the writer's own 6 files needing `ruff format`
+      (`docker_pull_ghcr.py`, `test_housekeeping_cleanup_stale_d1.py`,
+      `test_infra_ci_pull_images.py`) against the writer's claim of "0 findings in my 6
+      files" -- pure formatting, no logic change; driver ran `ruff format --no-cache` on
+      exactly those 3, re-ran all 73 tests (still exit 0), gate now exits 0 clean. **Real
+      defects found in the twins, reproduced not fixed**: both `ci-pull-images.sh` and
+      `docker-pull-ghcr.sh` leave the GHCR credential on the runner when a login/pull fails
+      partway through -- the cleanup block (`docker logout`, the `jq` auth scrub) is
+      straight-line code with no `trap`, so `set -e` walks past it entirely; driver-
+      reproduced directly (a subshell whose interior command fails under `set -e`: the
+      script exits before any of the cleanup lines execute). `cleanup-stale-d1.sh` treats
+      "could not reach Cloudflare" and "nothing to do" as the same green exit (`|| true`
+      discards both status and stderr from `wrangler d1 list`), so an expired token or a 5xx
+      leaves every scheduled orphan un-reaped; its `--max-age` is never range-checked either.
+      A latency/robustness note surfaced building the fixture: `common.sh`'s
+      `parse_args`/`to_upper` forks `tr` per flag (53 call sites), so a host missing `tr`
+      dies at exit 127 before any validation -- this is what made a correct port briefly
+      look broken. **A second gate blind spot named and stopped, outside this wave's
+      files**: `check:ci-python-env-registry` cannot see an env read behind a one-line
+      alias (`env = os.environ; env.get(...)`) -- not hypothetical, `core/common.py`,
+      `infra/ci_env.py` and `release/mark_production.py` already read env through exactly
+      that alias while being absent from the registry; probed directly against
+      `scan_module` (alias -> `[]`, direct -> the real key).
+      **The second writer slot this wave did not produce new work**: its report was
+      the stale-bookkeeping catch-up for four already-landed waves (13-14) whose read-flag
+      had not been set before the compaction boundary; the driver re-verified one of those
+      four pairs live (still clean) and marked all four read rather than re-recording
+      content already in this document.
+      **SIXTEENTH WAVE 2026-09-13: 3 more scripts, one writer -- the other writer this wave
+      hit the session's weekly rate limit before producing any file and is redispatched
+      separately.** `advance-contract-floor.sh` -> `release/advance_contract_floor.py`,
+      `assert-edge-tag-exists.sh` -> `release/assert_edge_tag_exists.py`, `cleanup-cf-
+      preview.sh` -> `housekeeping/cleanup_cf_preview.py`. **The writer itself also hit the
+      rate limit mid-report** (last visible line: "Now the remaining gates"), after its
+      ports, tests and ledgers were already on disk -- so this wave is driver-verified from
+      the artifacts directly rather than from a written report. 71 tests independently run
+      (exit 0), all 3 ledgers K=5 (`w7p6-` prefixed correctly), `shadow-gate --assert --k 5`
+      holds on every pair, twins confirmed present and byte-untouched,
+      `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-language-policy` all scoped-
+      clean (lint exit 0 outright; dead-python's 5 findings are the same pre-existing
+      backlog from other writers, none in these 3 files; language-policy exit 0). No
+      real-defect narrative survives from the writer (its report never reached that
+      section); none independently sought this wave given the artifacts already carry full
+      test coverage and the box does not require a defect to exist.
+      **SEVENTEENTH WAVE 2026-09-13, first of a re-saturation pair after the weekly rate
+      limit killed both wave-16-successor writers mid-task (confirmed by the operator;
+      recovery narrated above and in worklist evidence).** `cf-purge-urls.sh` ->
+      `deploy/cf_purge_urls.py`, `delete-r2-channel.sh` -> `deploy/delete_r2_channel.py`,
+      `purge-media-cache.sh` -> `deploy/purge_media_cache.py` -- the first three deploy-
+      family scripts ported despite touching real Cloudflare/R2 endpoints, legitimated by
+      `.ci/shadow/w7p5a-status.json`'s own blocker text naming a mocked/stubbed parity
+      ledger as separate, not-yet-done work. Driver-verified directly: 54 tests
+      independently re-run, exit 0; all 3 ledgers K=5, `w7p6-` prefixed correctly,
+      `shadow-gate --assert --k 5` holds on every pair; twins confirmed byte-untouched;
+      `check:ci-python-lint`/`check:ci-dead-python` scoped-clean (dead-python's 5 findings
+      are the same pre-existing backlog, none here).
+      **Real defects found in the twins, reproduced not fixed, one independently confirmed
+      by the driver**: `cf-purge-urls.sh` breaks its own documented "always exits 0"
+      promise -- `RESPONSE=$(curl ...)` and `SUCCESS=$(... | jq ...)` are plain assignments,
+      so a curl transport failure or a non-JSON body ends the run under `set -e` with the
+      substitution's own exit code, not 0; `--zone` as the very last CLI token dies as a
+      bash `unbound variable` rather than the script's own usage message. **`delete-r2-
+      channel.sh` reports a deletion that never happened -- driver-reproduced directly**
+      (every `aws s3 rm` forced to exit 1 with a simulated `AccessDenied`: the script still
+      prints "Channel ... deleted from R2" and exits 0), because `2>/dev/null || true` on
+      all twelve calls plus an unconditional closing line makes an expired credential
+      indistinguishable from a channel that never existed. `purge-media-cache.sh`'s
+      transport failure is silent (`curl -s`, no `-S`, writes nothing on either stream) and
+      its non-JSON-body path prints jq's parse error twice followed by an empty-tailed
+      "Purge failed: " with no reason. All five pinned bidirectionally in the differentials.
+      **Two ledger-technique notes carried forward**: a script whose only output on success
+      is a bare `✓`/`→` needs `--finding-re` scoped to its actual content line, or every row
+      reads `VACUOUS_BOTH_EMPTY`; `delete-r2-channel.sh`'s fake `aws` had to echo the prefix
+      it was handed so the compared finding set is literally the set of targeted prefixes.
+      **EIGHTEENTH WAVE 2026-09-13, second of the re-saturation pair.**
+      `verify-edge-endpoints.sh` -> `deploy/verify_edge_endpoints.py`, `verify-stable-
+      endpoints.sh` -> `deploy/verify_stable_endpoints.py`, `write-release-sentinel.sh` ->
+      `deploy/write_release_sentinel.py`. **`curl`/`aws`/`jq` stayed REAL binaries on a
+      scratch PATH rather than fakes-in-Python, by necessity**: every URL in the two verify-
+      scripts is a hard-coded production hostname with no override knob, so only a
+      same-named binary intercepting the call can drive either side off production; jq's
+      three-way exit-code split and raw stderr are load-bearing for the twin, and the
+      sentinel's uploaded payload literally is jq's output bytes. Driver-verified directly:
+      84 tests independently re-run, exit 0; all 3 ledgers K=5 (recorded three times
+      end-to-end as the port was edited, since a ledger row must describe the code that
+      produced it), twins confirmed byte-untouched, `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-language-policy` all scoped-clean.
+      **One deliberate divergence, asserted rather than hidden**: `verify-edge-
+      endpoints.sh`'s retry-sleep arithmetic is integer-only bash; a fractional
+      `EDGE_RETRY_SLEEP` throws inside the give-up branch and the error aborts the shell
+      function BEFORE its `return 1` runs, so every call site (all six, all `||`/`if !`)
+      reads status 0 and reports OK on a probe that never actually passed -- driver-
+      reproduced directly (`EDGE_RETRY_SLEEP=0.01 EDGE_RETRIES=2`: six arithmetic-syntax-
+      error lines on stderr, "Smoke test passed", exit 0). Transcribing that silent-pass
+      into Python would not be a port, so the port renders the sleep with `float` (byte-
+      identical for every integer value including the production default of 5) and the
+      divergence itself is pinned by name in both directions.
+      **Real defects found across all three twins, reproduced not fixed**: both verify-
+      scripts skip a missing/empty `regions.json` silently (`done < <(jq ...)` is a process
+      substitution whose exit status neither the loop nor `set -e` observes: zero regions
+      checked, "Smoke test passed", exit 0) and report a non-200 region as a concatenated
+      `HTTP 404000` (`$(curl -w '%{http_code}' ... || echo "000")` puts curl's write AND the
+      fallback echo in one substitution -- confirmed against real curl and a local 404
+      server: `HTTP_CODE` is literally the six bytes `404000`). `verify-stable-
+      endpoints.sh`'s probes are bare `set -e` assignments with no retry wrapper, so a
+      transport failure exits with curl's own code (22 or 7) two lines before the script's
+      own annotated error message is reached. `write-release-sentinel.sh`: a flag given with
+      no value (`--version` as the last token) dies via `shift 2`'s non-zero return under
+      `set -e` in total silence, one line above the documented exit-2-with-a-message path;
+      and its own caller collapses `release-state-validator.sh`'s deliberately separated
+      "R2 probe failed" and "sealed but genuinely empty" cases back into the same exit code
+      1, defeating a distinction the validator's own comment says it went to real trouble to
+      make.
+      **A gate-visibility trap found and fixed on the way in, same class as `ci_env.py`'s
+      wave-15 fix**: the edge port originally read four inputs through `env = os.environ;
+      env.get(...)`, invisible to `check:ci-python-env-registry`'s AST scanner; rewritten to
+      read `os.environ` directly at each call site.
+      **NINETEENTH WAVE 2026-09-13, second of the pair.** `set-preview-worker-secrets.sh`
+      -> `deploy/set_preview_worker_secrets.py`, `set-www-worker-secrets.sh` -> `deploy/
+      set_www_worker_secrets.py`, `upload-repos-to-r2.sh` -> `deploy/upload_repos_to_r2.py`.
+      Driver-verified directly: 61 tests independently re-run, exit 0; all 3 ledgers K=5
+      (one, `upload-repos-to-r2`, had to be re-recorded twice -- once because the first
+      `--finding-re` collapsed two different SKIP_RELEASE banners to one fingerprint, once
+      because `ruff format` reflowed the port after the first recording and a ledger row
+      must describe the code that produced it), twins byte-untouched, `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **Real defects found, the headline one independently confirmed by the driver**: an
+      entirely empty `dist/` tree makes `upload-repos-to-r2.sh` report a successful upload
+      -- driver-reproduced directly (empty `dist/repos/`, a recording fake `aws`/`curl`: the
+      script prints "Repos uploaded to R2 channel: edge", exits 0, and the aws call log is
+      empty) -- because every upload loop is directory-driven and the `VACUOUS:` guard's
+      subject is one directory, not the sweep as a whole. Three smaller ones pinned by name:
+      `.ci/scripts/deploy/set-preview-worker-secrets.sh:53` labels its EMPTY-value guard message with
+      `WORKER_NAME`, a variable that script does not have (copy-pasted from the `www`
+      sibling); `:105` hard-codes "Set 15 secrets" as a literal rather than a count of what
+      was actually sent, so a sixteenth key would silently under-report; `set-www-worker-
+      secrets.sh` prints its own script name twice in one `${VAR:?msg}` diagnostic.
+      **Two port-design notes worth keeping**: all three shell out to real `jq` (never
+      `json.dumps`) because `wrangler`'s stdin bytes are the contract and jq/Python disagree
+      on raw UTF-8 vs `\\uXXXX` escaping and on U+007F; `upload_repos_to_r2.py` also shells
+      out to `find`/`sed`/`mktemp` for the same reason (order, unescaped substitution
+      characters, and path shape all leak into observable behaviour). A genuine port-side
+      bug the differential caught before landing: Python block-buffers stdout on a pipe, so
+      the port's own success line originally landed after a downstream script's output with
+      identical bytes and exit codes on both streams -- fixed with an explicit flush before
+      any child inherits the descriptor.
+      **A cross-cutting regression this wave surfaced and the driver fixed on the spot
+      (small, local, no signature change rippling outward)**: `npm run check:ci-pytest`
+      (`.ci/rediacc_ci/check_pytest.py`, run as a script by `package.json`, which puts
+      `.ci/rediacc_ci/` itself at `sys.path[0]`) crashed in its own selftest --
+      `AttributeError: module 'signal' has no attribute 'SIGKILL'` -- because the
+      wave-9-created `.ci/rediacc_ci/signal/` package (holding `create_complete.py`, one of
+      this box's own earlier ports) shadows the stdlib `signal` module for every later
+      `import signal` in the whole tree, `proc.py`'s `_kill` included. Driver-verified the
+      crash directly, confirmed the only other citation was one test file's `MODULE =
+      "rediacc_ci.signal.create_complete"` string constant, renamed the package to
+      `rediacc_ci.ci_signal` (git-untracked, so a plain rename, no history to preserve),
+      fixed the one citation, documented the reason in the package's own docstring, and
+      reran both the selftest (49/49 controls pass, was crashing) and the renamed
+      differential (12/12, unchanged). Cross-checked afterward with the tree's full 13,414-
+      test `pytest` corpus (two independent runs, `-n 8` and serial, one driver-run one
+      writer-run): 39-43 failed depending on run (the range is corpus churn from concurrent
+      writers adding files mid-run, not flakiness in anything this box touched), zero
+      `SIGKILL`/`signal` crashes in either, and the failures fold to 18 pre-existing files
+      unrelated to any wave 15-20 port (dead-python's same 5-file backlog, a stale
+      twin-parity ledger from 2026-09-10, date-sensitive soak-period tests, hook-guard and
+      workflow-contract tests with no citation of any `w7p6-*` ledger or box file).
+      **TWENTIETH WAVE 2026-09-13, first of the next pair.** `deploy-account.sh` -> `deploy/
+      deploy_account.py`, `deploy-edge.sh` -> `deploy/deploy_edge.py`, `deploy-proxy.sh` ->
+      `deploy/deploy_proxy.py`. Driver-verified directly: 60 tests independently re-run,
+      exit 0; all 3 ledgers K=5, twins byte-untouched, `check:ci-python-lint`/`check:ci-
+      dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **A ledger-technique gap named for the next writer, not just this one**:
+      `shadow-gate.ts` classes any line starting with `→ `/`✓ ` as CHATTER before it ever
+      reaches `--finding-re`, so a script family that reports almost everything through
+      `log_step`/`log_info` (all three here) cannot produce a finding via message-text
+      matching no matter how the regex is scoped -- the fix was making the recording fakes
+      echo their own argv and matching on that, which is also strictly better evidence (the
+      compared set becomes the literal set of external calls) than matching banner text
+      would have been.
+      **Real defects found, the headline one independently confirmed by the driver**:
+      `deploy-account.sh`'s database-name extraction is a `sed` substitution, not a match --
+      a `database_name` line that does not fit the quoted pattern (a comment, for instance)
+      passes through UNCHANGED rather than failing the emptiness guard, so `wrangler d1
+      migrations apply` can be handed a full sentence -- driver-reproduced directly (a
+      `# database_name is chosen per environment` comment line ahead of the real one: the
+      extraction returns the comment verbatim). The same `sed` pattern is doubly greedy, so
+      a trailing commented-out `# was "old-db"` on the real line steals the match (blast
+      radius today is zero: every real `wrangler.*.toml` has exactly one canonical-shaped
+      line). `deploy-proxy.sh` runs its entire CLI build before checking the worker
+      directory exists, wasting a full `@rediacc/shared`+`@rediacc/cli` build on a
+      guaranteed-fail path; `CLOUDFLARE_ACCOUNT_ID` is documented as required by both
+      `deploy-proxy.sh` (never read at all) and `deploy-edge.sh` (`require_var`'d then never
+      referenced), so a wrong or absent account id passes every check either script makes
+      and the ambient wrangler config silently decides which account gets the deploy.
+      **TWENTY-FIRST WAVE 2026-09-13, second of the pair.** `promote-docker-to-stable-
+      hotfix.sh` -> `deploy/promote_docker_to_stable_hotfix.py`, `promote-r2-to-stable-
+      hotfix.sh` -> `deploy/promote_r2_to_stable_hotfix.py`, `promote-r2-to-stable.sh` ->
+      `deploy/promote_r2_to_stable.py`. **Shared-logic ruling**: the two R2 twins share four
+      near-identical blocks but no promote-specific bash lib beyond `common.sh`'s
+      `require_cmd`/`sed_in_place` -- documented in both docstrings (the docker-prepull
+      precedent), not factored. Driver-verified directly: 58 tests independently re-run,
+      exit 0; all 3 ledgers K=5 (both R2 ledgers re-recorded twice, once for a `ruff format`
+      reflow and once for the alias fix below), twins byte-untouched, `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **Real defects found across both R2 twins, the headline one independently confirmed by
+      the driver via direct code inspection**: `TMP="/tmp/promote-${dir}"` is a fixed,
+      predictable path, not `mktemp`, and `rm -rf "$TMP"` is the LAST statement of the loop
+      body -- so any early exit (an aws failure, the vacuity floor firing, a cancelled job)
+      leaves it behind, and the next run copies into the same stale directory and promotes
+      the leftovers as if they were fresh, with no warning; `/tmp/config` and `/tmp/script`
+      are never cleaned at all. Latent on a fresh GitHub-hosted runner, live on a
+      self-hosted one. `promote-r2-to-stable.sh` additionally drops files it then still
+      purges: a shared phase-1 exclude list is followed by PER-DIRECTORY phase-2
+      re-includes, and at least two real file shapes (`cli/edge/latest-linux.yml`,
+      `rpm/edge/repodata/comps.xml`) match an exclude with no matching re-include anywhere
+      -- they never leave `edge/` yet still appear in the Cloudflare purge body, and the
+      vacuity floor cannot see it because it counts the local download, not what actually
+      uploaded. `promote-r2-to-stable-hotfix.sh` posts 4 duplicate purge URLs (a `find` loop
+      and a rewrite loop each append the same targets once), measured at 21 posted / 17
+      distinct. Both R2 twins' `VACUOUS:` floor also sits AFTER the upload it is meant to
+      guard, so it can only ever fire on the narrow window defect 1 shows is real (an empty,
+      pre-existing `$TMP`), never on a directory that was never created.
+      **The env-registry alias trap (same class as waves 15 and 18) hit again and fixed in
+      THIS wave's two files, and flagged wider**: both R2 ports originally read via
+      `require_env(dict(os.environ))`, matching 11 already-landed siblings, and the
+      registry's AST scanner derived only ONE input from each instead of four and five;
+      fixed here with an explicit `environment()` function reading one literal
+      `os.environ.get("NAME", "")` per name, each file's own test re-running the gate's real
+      scanner both directions. **Flagged, not fixed, as a class the driver owns**: the same
+      `dict(os.environ)` blind spot is live in 8 other already-landed `deploy/` ports from
+      earlier waves (`delete_r2_channel.py`, `set_www_worker_secrets.py`,
+      `upload_repos_to_r2.py`, `cf_purge_urls.py`, `write_once_guard_check.py`,
+      `set_preview_worker_secrets.py`, `purge_media_cache.py`, `deploy_account.py`) --
+      harmless today only because `check:ci-python-env-registry` scans tracked files and
+      none of these are tracked yet; owed as a pre-tracking cleanup pass, not urgent, noted
+      here so it is not silently rediscovered at cutover.
+      **TWENTY-SECOND WAVE 2026-09-13, a single large file given a solo slot.**
+      `upload-to-r2.sh` (462 lines) -> `deploy/upload_to_r2.py` (877 lines). **`write_once_
+      guard` stays bash, deliberately, matching the precedent `write_once_guard_check.py`
+      already set for this exact function**: the port extracts and shells out to the twin's
+      own `write_once_guard()` via the same `sed -n '/^write_once_guard()/,/^}/p'` range and
+      `bash -c 'source ...; write_once_guard ... || rc=$?; exit $rc'`, never reimplementing
+      its logic -- driver-verified directly (`rsv_sentinel_exists` appears zero times in the
+      port's own code). Driver-verified further: 60 tests independently re-run, exit 0; the
+      K=5 ledger holds (re-recorded three times as the port changed), twin byte-untouched,
+      `check:ci-python-lint`/`check:ci-dead-python` scoped-clean. An independent 36-case
+      scratch differential the writer built separately from the pytest suite reports 34
+      AGREE / 2 DIVERGE, both divergences named and asserted from both sides (a `$0`-vs-`.py`
+      usage line, and bash's own `line N: $2: unbound variable` prefix on a valueless flag).
+      **Four real defects found, the most consequential independently confirmed by the
+      driver via a minimal bash repro**: an empty `dist/cli/` publishes a channel pointer
+      (`latest.json`) unconditionally, with zero binaries behind it, so every installer on
+      that channel starts 404ing; a failed `rsv_binary_count` probe (AccessDenied, a 5xx)
+      is misread as "sealed but genuinely empty" specifically because `write_once_guard ...
+      || guard_rc=$?` suppresses errexit for the WHOLE function body, defeating the one call
+      site `release-state-validator.sh`'s own header names as protected -- the exact
+      library the validator exists to harden is the one place its hardening does not reach;
+      a failed tracker read (`r2_get`'s `|| echo ""`) silently resets the retention window,
+      orphaning every version the empty read dropped; and a malformed tracker is
+      OVERWRITTEN WITH AN EMPTY FILE while the run reports success, because all three `jq`
+      pipelines sit inside `CLI_PRUNED=$(update_versions_tracker ...)` and bash does not
+      apply `errexit` inside a command substitution being assigned -- driver-reproduced
+      directly (`bash -c 'set -e; f(){ false; echo body; }; V=$(f); echo rc=$?'` -> `rc=0`,
+      versus calling `f` bare -> aborts). The last two share the identical root-cause shape
+      as defect 2 (a caller's own syntax silently switching errexit off for a function it
+      calls), a pattern now seen three separate times in this box across three different
+      scripts.
+      **TWENTY-THIRD WAVE 2026-09-13, second of the pair.** `deploy-www.sh` -> `deploy/
+      deploy_www.py`, `test-d1-migrations.sh` -> `deploy/test_d1_migrations.py`,
+      `simulate-promotion.sh` -> `deploy/simulate_promotion.py`. Driver-verified directly:
+      76 tests independently re-run, exit 0; all 3 ledgers K=5, twins byte-untouched,
+      `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all
+      scoped-clean.
+      **Real defects found, the headline one's root mechanism independently confirmed by
+      the driver via a minimal repro**: `test-d1-migrations.sh` reads BOTH its region lists
+      from `< <(jq ... regions.json)` process substitutions, whose exit status neither
+      `set -e` nor `pipefail` can observe -- an unreadable `regions.json` prints jq's error
+      to stderr and the script still reports "All 0 regional migration tests passed" and
+      exits 0, a release-gating test that tested nothing -- driver-reproduced the root
+      mechanism directly (`while read ... done < <(jq ... /nonexistent 2>&1)`: the loop
+      completes and the pipeline's reported status is 0 regardless of jq's real exit code).
+      Same failure family as waves 15's `ci_env.py`/22's `upload_to_r2.py` findings, a
+      fourth occurrence of "a caller's own syntax silently switches errexit off," now also
+      seen with a process substitution rather than only `$(...)`. `simulate-promotion.sh`'s
+      missing-credential message names `CLOUDFLARE_R2_ACCESS_KEY_ID` while the guard above
+      it actually tests `AWS_ACCESS_KEY_ID`, and its header lists `AWS_SECRET_ACCESS_KEY` as
+      required while nothing in the file ever checks it; an unset `CLOUDFLARE_ZONE_ID`
+      aborts (unguarded, unlike the `:-` on `.ci/scripts/deploy/promote-r2-to-stable.sh:180`) only AFTER the
+      full promotion has already happened, so the run dies having moved everything and
+      purged nothing. `deploy-www.sh`: a valueless `--name` flag deploys a preview worker
+      literally named `true` (bash's own `parse_args` stores the string `"true"` for a
+      missing value, and nothing validates the shape); its production-database guard can
+      never fire because `DB_NAME` is built as `account-db-pr-${PR_NUM}` before the
+      comparison, so every input carries `-pr-` including the empty string.
+      **A concurrency hazard the writer found, fixed in its own two files, and flagged
+      (not fixed) as the same exposure in a different wave's already-landed pair**:
+      `simulate-promotion.sh`'s hard-coded `/tmp/config` collided with a second concurrent
+      `pytest -n 8` process from another session, producing a live flake (`HeadObject 404`
+      on a file that vanished mid-test); fixed here with a machine-wide `flock` per test.
+      `test_deploy_promote_r2_to_stable.py` and `test_deploy_promote_r2_to_stable_hotfix.py`
+      (wave 21) share the identical `/tmp/promote-<dir>` exposure with only an
+      `xdist_group`, not a `flock` -- noted for whoever next touches that pair, not fixed
+      here (outside this wave's file ownership).
+      **TWENTY-FOURTH WAVE 2026-09-13, closing the `set-*-worker-secrets.sh` family.**
+      `set-account-worker-secrets.sh` (29 secrets, the largest of the three) -> `deploy/
+      set_account_worker_secrets.py`. Both siblings' known defects were explicitly checked
+      for a third occurrence: the mislabeled-guard-variable defect does NOT recur (this
+      twin genuinely has `WORKER_NAME`); the hard-coded-secret-count defect does NOT recur
+      (this twin has no closing summary line at all); the doubled-script-name `${VAR:?}`
+      defect DOES recur, in triplicate. Driver-verified directly: 33 tests independently
+      re-run, exit 0; the ledger K=5, twin byte-untouched, `check:ci-python-lint`/`check:ci-
+      dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **Real defects found, the headline one confirmed by the driver via direct source
+      inspection**: the header's own claim that "the NAME passed to each call is also the
+      variable name to look up in the secret store" is false for exactly the four REGION
+      FAN-INS the same header lists -- the store holds `<NAME>_<SUFFIX>` but the guard calls
+      (`_require_nonempty AWS_SES_ACCESS_KEY_ID ...` at :205, and three siblings) pass the
+      bare name, so a real deploy failure points an operator at a secret-store key that does
+      not exist -- driver-confirmed directly from source (line 26's documented mapping
+      versus line 205's bare-name guard call). `AWS_SES_FROM`/`AWS_SES_CONFIGURATION_SET`
+      satisfy the guard block's own stated demand-criterion (traced into
+      `private/account/src/types/env.ts` and `email.service.ts`, which throws on every
+      mail-sending request when `AWS_SES_FROM` is empty) yet neither is guarded. A `SUFFIX`
+      that is not a bash identifier surfaces as a raw "invalid variable name" naming a
+      variable that does not exist anywhere in the file.
+      **One divergence changed the port's design after a measurement overturned an
+      assumption**: `SUFFIX=EU[0]` is a bash ARRAY SUBSCRIPT reference, and a scalar answers
+      to subscript 0 -- measured on real bash 5.3.9, not reasoned about -- so the twin
+      actually DEPLOYS SUCCESSFULLY on that malformed input (reading `..._EU[0]` as
+      `..._EU`) where the port correctly refuses; modelling bash's subscript grammar for
+      this one unreachable shape was rejected as a second parser, so the divergence is named
+      in the docstring and pinned, safe-direction-only (port refuses where twin would ship).
+      **TWENTY-FIFTH WAVE 2026-09-13, closing `.ci/scripts/deploy/**` entirely (bar
+      `clone-d1.sh`, owned by a different concurrent session).** `sync-media-from-r2.sh` ->
+      `deploy/sync_media_from_r2.py`, `sync-media-to-r2.sh` -> `deploy/sync_media_to_r2.py`.
+      **Every test runs in a copied tree under pytest's own `tmp_path`, never the checkout**,
+      which sidesteps the fixed-`/tmp`-path concurrency hazard flagged the wave before
+      (nothing here uses a predictable path, so no `flock` is needed). Driver-verified
+      directly (against the repo's own R2-credential pre-bash hook, satisfied per its own
+      instructions by setting the variable to empty rather than sourcing the real secret
+      file): 42 tests independently re-run, exit 0; both ledgers K=5, twins byte-untouched,
+      `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all
+      scoped-clean.
+      **Real defects found, the release-path-relevant one independently confirmed by the
+      driver**: `sync-media-to-r2.sh` uploads NOTHING when every source directory is absent
+      and still prints "Sync complete" at exit 0 -- driver-reproduced directly (all three
+      directories missing, fake `aws` recording zero calls, script exits 0 anyway) --
+      because `sync_dir` answers a missing directory with a bare `return 0` and nothing
+      downstream counts the skips; `sync-media-from-r2.sh --audio-only` is a LIVE step in
+      `.github/workflows/ci-quality.yml:1622`, so the sibling class of bug sits on a real
+      pipeline path today. `common.sh`'s `require_var` (`:131-137`) validates only its FIRST
+      argument despite being called with three names in both twins, so two of three
+      required variables in every such call site are unchecked; an EMPTY (not merely unset)
+      secret or endpoint is never caught by either twin, since `set -u` only catches unset,
+      matching the exact shape this repo's own pre-bash hook was written to warn about;
+      `sync-media-from-r2.sh --dry-run` still calls `mkdir -p` unconditionally, so a flag
+      documented as "download nothing" creates real directories in the working tree.
+      **A hook false-positive the writer hit and worked around rather than routing
+      silently**: `.claude/rediacc_hooks/guards/block_host_toolchain_run.py`'s
+      `_is_invoked` read a `for f in sync-media-from-r2.sh sync-media-to-r2.sh common.sh`
+      word-list as an invocation of the R2 script, triggering the credential-sourcing
+      block on a command that never runs it -- worked around per the hook's own suggested
+      escape (`CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=` on the command line), same trigger the
+      driver's own subsequent spot-check hit verbatim on a bare `git status -- <path>`.
+      Flagged for a future session's attention; the guard's own docstring says false
+      positives are exactly what it exists to avoid.
+      **TWENTY-SIXTH WAVE 2026-09-13/14, moving into `.ci/scripts/release/**` beyond the
+      family already ported.** `cleanup-channel-docker-tags.sh` -> `release/
+      cleanup_channel_docker_tags.py`, `create-github-release.sh` -> `release/
+      create_github_release.py`, `reprobe-r2-sentinel.sh` -> `release/
+      reprobe_r2_sentinel.py`. Driver-verified directly: 58 tests independently re-run,
+      exit 0; all 3 ledgers K=5, twins byte-untouched, `check:ci-python-lint`/`check:ci-
+      dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **A harness-quality note carried forward**: the writer's own control for asset-sort
+      order initially passed for the wrong reason (`dist/cli` and `dist/packages` are
+      disjoint prefixes with `c` < `p`, so per-pattern sort and union-sort necessarily agree
+      on that input) -- caught before landing, a second control added that reverses
+      `ASSET_PATTERNS` (the one arrangement where the two strategies diverge), which then
+      fires correctly. Recorded as a reusable lesson: a green control on disjoint-prefix
+      input proves nothing about sort semantics.
+      **Real defects found, the headline one independently confirmed by the driver via
+      direct source inspection**: `cleanup-channel-docker-tags.sh` cleans up NOTHING on any
+      real release and the twin's own header already calls this a KNOWN GAP that is still
+      live -- driver-confirmed directly (`CHANNEL` is always `edge` or `stable` per the
+      twin's own comment, and the guard at line 63 only proceeds when `CHANNEL` matches
+      `^staging-`, so the branch that would clean up never fires for a real channel; ported
+      byte-for-byte rather than "fixed," since fixing it is a deliberate scope change, not a
+      bug in the port). `reprobe-r2-sentinel.sh` reports an UNANSWERABLE probe as a positive
+      absence: `rsv_sentinel_exists`'s three-way return (exists/absent/COULD-NOT-TELL) is
+      collapsed by a plain `if/else` into two, so a credential failure during the probe
+      prints an `::error::` asserting the sentinel is missing when the probe never actually
+      established that -- the EXIT CODE errs safe, the MESSAGE does not. A stderr divergence
+      traced to the shared library rather than this pair: `core.release_state_validator`'s
+      `_log_error` drops the `✗ ` marker `common.sh:log_error` emits, invisible to that
+      library's own test (which sources it alone, where the real `log_error` doesn't even
+      exist) and only surfaced here because this caller sources `common.sh` first --
+      flagged, not fixed, since `.ci/rediacc_ci/core/` is outside this wave's file
+      ownership.
+      **An environmental gate finding, not a code defect**: `check_pytest.py`'s default
+      `PYTEST_RUN_TIMEOUT_S` (1080s) is now marginal on this tree's growing corpus -- one
+      run refused with no verdict at all ("did not finish within 1080s"); a verdict was only
+      obtained by overriding to `PYTEST_RUN_TIMEOUT_S=2700`. Noted for whoever next tunes
+      that gate's defaults, not acted on here.
+      **TWENTY-SEVENTH WAVE 2026-09-13/14, opening `.ci/scripts/security/**`.**
+      `check-ci-workflow-invariants.sh` -> `security/ci_workflow_invariants.py`,
+      `check-autopilot-workflow-invariants.sh` -> `security/
+      autopilot_workflow_invariants.py` (both following the existing `workflow_gates.py`
+      naming precedent, dropping the `check-` prefix), `dependency-inventory.sh` ->
+      `security/dependency_inventory.py`. **A deliberate stub/real-run split, documented in
+      the port's own docstring**: the two workflow-invariants scripts shell out to nothing
+      but `python3` (one heredoc) and `awk`/`grep`, so their differentials drive fixture
+      YAML through both twins' own `$WORKFLOW_FILE` seam with no fakes at all; `dependency-
+      inventory.sh`'s happy paths run FOR REAL against this repo (1,760 records, 209 Go
+      modules measured) because no fixture reproduces that faithfully, while its failure
+      paths use recording-fake `npm`/`go` -- every real-run case hashes the lockfiles/`go.
+      sum` before and after and refuses any drift. Driver-verified directly: 110 tests
+      independently re-run, exit 0; all 3 ledgers K=5, twins byte-untouched, `check:ci-
+      python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **Real defects found, the SBOM-correctness one independently confirmed by the driver
+      via its root mechanism**: `dependency-inventory.sh` silently DROPS a package from its
+      NIS2/CRA supply-chain artifact when `npm ls` prints nothing for it -- driver-
+      reproduced the exact mechanism directly (`jq empty <<<""`: exit 0, since jq treats
+      genuinely empty input as valid, not an error), so the twin takes its "valid JSON"
+      branch, every downstream `jq` call has nothing to slurp, and the SBOM understates
+      itself in writing with no warning at exit 0. Same script: `require_cmd jq npm go awk`
+      only ever probes `jq` (the fourth recurrence this session of `common.sh`'s
+      single-argument `require_cmd`/`require_var` validation bug); `--help` leaks eight
+      lines of raw shell source because its `sed -n '2,35p'` range outlives the actual
+      header (ends at line 27); an empty `npm ls --omit=dev` result kills the run with a
+      bare jq usage banner naming neither the tool nor the package; a missing `package.json`
+      surfaces as a raw `jq: error: Could not open file`; missing option values are raw bash
+      `$2: unbound variable` diagnostics. `check-autopilot-workflow-invariants.sh`'s END
+      block iterates an associative array with `for (j in array)`, which gawk answers in
+      HASH order, not insertion or sorted order (measured directly, not assumed) --
+      unobservable today only because the real workflow has zero offending jobs.
+      **A genuine bug in the port itself, caught before landing rather than shipped**: GNU
+      `sed` preserves a missing final newline rather than adding one, and the first draft's
+      `_echo_probe` terminated the last line regardless; fixed and pinned by a test that
+      proves the fix by reverting it and watching red.
+      **TWENTY-EIGHTH WAVE 2026-09-13/14, opening `.ci/scripts/docker/**` (a brand-new
+      package, none of its 3 files ported before).** `cleanup-staging.sh` -> `docker/
+      cleanup_staging.py`, `create-manifest.sh` -> `docker/create_manifest.py`, `retag-
+      image.sh` -> `docker/retag_image.py`. A closed-PATH fixture discipline (an explicit
+      symlink list, never a `$PATH` append) was adopted after the writer's first probe using
+      an inherited `PATH` reached the REAL `ghcr.io` over the network before the twin's
+      first log line -- a process finding, not a code one, but worth carrying into future
+      waves. Driver-verified directly: 99 tests independently re-run, exit 0 (plus the
+      writer's own 268-combination argv/env matrix, 0 diverging), all 3 ledgers K=5, twins
+      byte-untouched, `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **Real defects found, the headline one independently confirmed by the driver**:
+      `cleanup-staging.sh` reports full success when `gh` is entirely ABSENT from PATH --
+      driver-reproduced directly (a PATH built with only `dirname`/`uname`/`tr`/`jq`/`bash`,
+      no `gh`: the script prints "Cleanup summary: 2 succeeded", exit 0) -- because `gh api
+      ... 2>&1` captures the shell's own "command not found" into the response body, jq
+      rejects the non-JSON, and the failure is filed under "package may not exist yet", the
+      exact same UNKNOWN-folded-into-fine shape seen in `reprobe-r2-sentinel.sh` (wave 26)
+      and `write-once-guard`/`upload-to-r2.sh` (waves 15/22) -- now a fifth occurrence of a
+      caller collapsing "could not tell" into a definite answer. Two package versions
+      sharing one staging tag build a single malformed, embedded-newline URL (`jq -r`'s
+      multi-line output flows unquoted into a path segment) whose real-`gh` failure would
+      then be swallowed by a `2>/dev/null` with zero diagnostic text. `create-manifest.sh`
+      prints a doubled leading space in both its dry-run command echo and its sources log
+      line (an accumulator seeded from `""`); its post-push verification is advisory-only
+      and never covers `:latest` specifically, so a `:latest` that never became readable
+      passes silently. `retag-image.sh` prints a green `✓` on a fully-failed summary ("0
+      succeeded, 2 failed", exit 1) where the sibling `cleanup-staging.sh` correctly uses
+      `log_error` for the identical shape; a tag containing `"` is swallowed the same way an
+      unescaped value broke a jq program in an earlier wave; and `${REG#ghcr.io/}` only
+      strips that one literal prefix, so a non-GHCR registry produces a garbled API path
+      treating the whole host as an org name.
+      **A documentation correction the writer caught mid-port**: the new package's
+      docstring originally claimed none of these three are live workflow `run:` targets;
+      grepping proved otherwise -- `create-manifest.sh` is called from `ci-build-docker.yml`
+      (three call sites) and `retag-image.sh` from `cd-v2.yml`/`cd-stage.yml` (five call
+      sites total), corrected before landing and the exact call sites recorded for the
+      eventual cutover box.
+      **TWENTY-NINTH WAVE 2026-09-14, closing `.ci/scripts/security/**`'s lint-tool trio.**
+      `actionlint.sh` -> `security/actionlint.py`, `shfmt.sh` -> `security/shfmt.py`,
+      `shellcheck.sh` -> `security/shellcheck.py`. **All three run the REAL pinned tool
+      against this repo's real files for their happy path** (29 real workflows, ~570
+      scripts, 620 tracked-and-untracked scripts respectively, every corpus hashed
+      before/after with zero drift) and only stub for failure paths; shellcheck's own
+      differential compares its main path byte-for-byte with NO normalisation at all.
+      **A named, accepted divergence from real host tooling**: this host's `find` is bfs
+      (breadth-first), not GNU findutils, so traversal order differs from a typical CI
+      runner -- `shfmt.py` enumerates in byte order and the differential attributes the
+      residual stdout-order difference to the ambient `find` by independently deriving its
+      order, rather than papering over it. Driver-verified directly: 73 tests independently
+      re-run, exit 0 (real shellcheck run costs ~200s of that); all 3 ledgers K=5 (one
+      re-recorded after its first attempt used an info-severity plant against a twin that
+      runs `-S warning`, silently vacuous); twins byte-untouched; `check:ci-python-lint`/
+      `check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **Real defects found, the headline one independently confirmed by the driver via a
+      minimal repro of its exact mechanism**: `actionlint.sh`'s anti-vacuity refusal (exit
+      3, "nothing to check") is UNREACHABLE, and an empty corpus instead exits 1 in total
+      silence -- driver-reproduced the mechanism directly (`collect_targets`'s only
+      executable statement is a `for` loop over an unmatched glob, whose exit status is the
+      last failed `[[ -f ]]` test; `targets="$(collect_targets)"` under `set -e` aborts the
+      script right there, before the count or the refusal message is ever reached) -- and
+      exit 1 doubles as this gate's own "actionlint found real problems" code, so CI shows a
+      red step with an empty log for two unrelated reasons. A `--version` probe that exits
+      non-zero kills the gate with THAT exit code silently, and if it happens to be exit 3,
+      a broken shim reads as "nothing to check" -- the inverse confusion of the same two
+      codes. `shellcheck.sh`'s 2026-09-02 deleted-file-skip fix is itself broken when the
+      deleted file sorts LAST in the tracked list (the loop's exit status is `&&`'s on its
+      final iteration, so removing the last-sorted file makes the whole filtering pipeline
+      report failure under `pipefail`, aborting before any linting happens);
+      `echo -e "$BASH4_ISSUES"` re-expands backslash escapes inside matched SOURCE lines
+      from the corpus itself, so a `\c` anywhere in a scanned line truncates the ENTIRE
+      report silently, with every finding after it simply gone. `shfmt.sh` runs its four
+      scopes sequentially with no scope-level error isolation, so the first scope carrying
+      diffs aborts the whole run under `set -e` and the remaining scopes report nothing,
+      giving a false impression that clearing one scope's findings clears the gate.
+      **A shared-library disagreement found and left for its actual owner**: `common.sh`'s
+      `CI_TEMP` (set unconditionally by `get_temp_dir`) silently overrides any caller-set
+      `CI_TEMP` in `actionlint.sh`'s cache path, which also makes it disagree with
+      `toolchain.sh:toolchain_cache_dir`'s own documented precedence order for the same
+      variable -- outside this wave's three files, flagged rather than fixed.
+      **THIRTIETH WAVE 2026-09-14, `audit.sh` (a registered `---- gate ----` gate, `check:
+      ci-security-audit`), a single large file given a solo slot.** `audit.sh` (541 lines)
+      -> `security/audit.py` (1,481 lines). **A hermeticity finding in the writer's own
+      first draft, caught before landing**: appending the caller's inherited `PATH` let the
+      missing-`npm` test case resolve `~/.local/bin/npm` and run a REAL `npm audit
+      signatures`; fixed to a fully closed `PATH` (fakes only) with a control asserting
+      `npm`/`node`/`gh` cannot resolve outside the fakes. Driver-verified directly: 67 tests
+      independently re-run, exit 0; the ledger K=5 (re-recorded once after a scratch-repo
+      state leak duplicated two scenarios' fingerprints), twin and its four sourced
+      libraries all byte-untouched, `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-
+      em-dash-surfaces` all scoped-clean.
+      **Real defects found, the headline one's root mechanism independently confirmed by
+      the driver**: any failed `gh api` call kills the gate with a bare exit 5 and ZERO
+      bytes on either stream -- driver-reproduced the exact mechanism directly (`xargs -I
+      {} bash -c '...' _ {}`: xargs substitutes `{}` everywhere in its argument list,
+      INCLUDING inside the quoted script text handed to `bash -c`, so the intended
+      fallback's literal placeholder becomes the raw slug string written straight to the
+      cache file instead of JSON; `load_advisory_details`'s subsequent `jq -r` on that
+      non-JSON file exits 5 under `set -e` with the message swallowed) -- and this is
+      exactly the failure shape the gate's own header BLOCKER text worries about (`GH_TOKEN`
+      absent -> 60/hr anonymous rate limit), so a rate-limited or transiently-failing GitHub
+      call turns a real security gate into a silent, contentless exit 5. An empty `npm audit
+      --json` is a GREEN run (`jq empty` on zero bytes exits 0, so `prod_total` becomes
+      empty string and every numeric comparison against it is false) -- the fourth
+      "unanswerable folded into fine" defect class this session, now including the case
+      where NOTHING was even attempted. A non-numeric allowlist entry (plausible: GHSA ids
+      are not numeric) kills the gate with a silent exit 5 at the very end of a run that
+      already did both network round trips. `IFS=$'\t' read` collapses an empty field by
+      shifting every later column left, so a GHSA entry with an empty version range prints
+      its DESCRIPTION in the "Patched in" slot and its patched version in the "Affected"
+      slot. A success log line sits outside its own guarding `if`, so "No production
+      vulnerabilities" prints immediately after a warning that there are some. A
+      wrong-shaped-but-valid JSON report fails inside a PROCESS SUBSTITUTION, whose exit
+      status bash cannot see, yielding a green verdict on real jq stderr output.
+      **Two deliberate divergences pinned rather than hidden**: the port's runner-probe
+      result is memoised while the twin re-probes per delegate call (`old_probes ==
+      new_probes + 1`, asserted so the size of the divergence cannot silently grow); `jq`
+      and `grep` are reimplemented in Python but pinned against the REAL host binaries by
+      dedicated cases, because this host's `grep` is ugrep, not GNU grep, and this
+      repository has been bitten by that difference before.
+      **THIRTY-FIRST WAVE 2026-09-14, opening `.ci/scripts/ci/**` with the `assert-*.sh`
+      family.** `assert-channel-for-event.sh` -> `ci/assert_channel_for_event.py`,
+      `assert-ci-complete.sh` -> `ci/assert_ci_complete.py`, `assert-install-methods-
+      complete.sh` -> `ci/assert_install_methods_complete.py`, `assert-job-succeeded.sh` ->
+      `ci/assert_job_succeeded.py`. **No fakes were needed anywhere**: all four twins read
+      only argv, `RESULT_*`/other env vars, and (for install-methods) one output file --
+      they shell out to nothing, so both sides are driven directly. Driver-verified
+      directly: 62 tests independently re-run, exit 0; all 4 ledgers K=5, twins byte-
+      untouched, `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces`
+      all scoped-clean.
+      **Real defects found, the headline one independently confirmed by the driver on BOTH
+      halves of its claim**: `assert-ci-complete.sh`'s `POINTER_BUMP_ONLY=true` fast path
+      REPLACES the hard-required set rather than subtracting from it, so `RUN_SH_TESTS`
+      lands in neither the hard nor the soft tier and a genuine failure there reads as green
+      -- driver-reproduced directly (`POINTER_BUMP_ONLY=true RESULT_RUN_SH_TESTS=failure`
+      plus every soft job `skipped`: "All CI jobs passed successfully!", exit 0) -- AND
+      confirmed this is LIVE, not latent, by reading `.github/workflows/ci.yml:532-538`
+      directly: `run-sh-tests` is gated only on `is_bot != 'true'`, with no pointer-bump
+      exclusion, so it genuinely runs on a pointer-bump PR and a real failure there is
+      forgiven, directly contradicting the twin's own comment that this job "has no
+      legitimate reason to skip or flake on any event." `assert-channel-for-event.sh`'s
+      `case` `*)` arm fails OPEN -- an unrecognized event name (or even a capitalization
+      typo like `Push` vs `push`) accepts ANY channel with exit 0 -- a known-and-carried gap
+      per the twin's own comment and a project doc that already names it for hardening, but
+      still the same "unanswerable question reads as green" class flagged five times
+      already this session.
+      **A harness-only finding, not a code defect**: under `shadow-gate`'s `spawnSync`
+      (Node's socketpair-based stdio), `GITHUB_STEP_SUMMARY=/dev/stderr` fails to open with
+      `ENXIO` on BOTH sides, but bash reports it as a shell diagnostic (chatter) while the
+      port reports it as a `✗` finding -- same underlying behavior, different surface text,
+      which a naive comparator would misread as a mismatch; documented and pinned rather
+      than smoothed away, and `/dev/stderr` is never a real production value for that
+      variable regardless.
+      **A cross-cutting backlog item surfaced and named, not fixed**: several already-
+      landed untracked ports across earlier waves (`.ci/rediacc_ci/autopilot/*.py` named
+      explicitly) carry file mode 644 with a `#!/usr/bin/env python3` shebang, which trips
+      `check-python-lint`'s `EXE001` the moment they are tracked (the gate reads `git
+      ls-files`, invisible to it today); this wave's own four ports were set to 755 on disk
+      specifically to land clean at tracking time. Noted alongside the wave-21/26 env-
+      registry-alias and `/tmp`-concurrency backlog items as a pre-tracking cleanup pass,
+      not urgent, not yet acted on.
+      **THIRTY-SECOND WAVE 2026-09-14, second W7P6 pair (both slots freed after wave 30/31
+      landed).** `cancel-older-runs.sh` -> `ci/cancel_older_runs.py`, `check-rerun-
+      attempt.sh` -> `ci/check_rerun_attempt.py`, `derive-image-tag.sh` -> `ci/
+      derive_image_tag.py`. Driver-verified directly: 88 tests independently re-run, exit
+      0; all 3 ledgers K=5, twins byte-untouched, `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **Real defects found, the release-relevant one independently confirmed by the
+      driver**: `cancel-older-runs.sh` merges `gh api`'s STDERR into its captured body
+      (`2>&1`), so a single deprecation-notice WARNING from `gh` (not even a failure) kills
+      the step with a raw jq parse error and exit 5 -- driver-reproduced the exact
+      mechanism directly (prepending one warning line ahead of valid JSON: `jq: parse
+      error: Invalid numeric literal at line 1, column 3`, exit 5) -- the only script in
+      this batch that otherwise cannot fail, taken down by a message it was never supposed
+      to see as data. The same script also has no `require_cmd`, so a runner missing the
+      GitHub CLI reads as a silent pass; leaks the raw GitHub API response body onto its
+      OWN stdout on every successful cancel (stderr-only redirect on a call whose real
+      payload is on stdout); can only ever fail for two reasons (missing
+      `GITHUB_REPOSITORY`/`GH_TOKEN`) with every other failure mode -- a bad lookup, every
+      cancel call refusing, the poll timing out with runs still active -- exiting 0; and a
+      malformed `--timeout` value is a bash arithmetic syntax error that reads as FALSE, so
+      the poll loop's only exit condition becomes permanently unreachable and the step
+      spins forever. `check-rerun-attempt.sh` exits 1 on ITS OWN documented happy path
+      whenever the optional `GITHUB_ENV` is unset (the write-out line is the script's last
+      statement and its own `&&` status becomes the script's), and fails OPEN rather than
+      refusing on an unreadable/empty attempt count (bash arithmetic silently treats a
+      blank string as satisfying "not yet at the cap"). `derive-image-tag.sh`'s help text
+      and header both describe a "read the version from package.json" branch that no longer
+      exists in the code (every `package.json` here is a fixed `0.0.0-dev` placeholder by
+      design); `--version ''` is silently auto-derived rather than refused, because the
+      guard is presence-only (`${2?...}`) not emptiness-checked -- latent today only because
+      the one live caller (`.ci/scripts/ci/set-image-tags.sh:24`) already guards non-empty before
+      forwarding.
+      **A race the writer found via the shadow-gate comparator itself, then reproduced
+      independently**: `cancel-older-runs.sh`'s elapsed-time check reads the wall clock
+      twice at whole-second granularity (`START_TIME` and the loop's own `$(date +%s)`), so
+      a second boundary falling between the two reads can make the very FIRST loop
+      iteration already read as expired -- harmless at the live 60s default, surfaced only
+      because a `--timeout 1` fixture case produced a `MISMATCH_FINDINGS` row before being
+      understood and pinned.
+      **THIRTY-THIRD WAVE 2026-09-14, second slot of the same pair.** `dispatch-release.sh`
+      -> `ci/dispatch_release.py`, `dispatch-watchdog.sh` -> `ci/dispatch_watchdog.py`,
+      `generate-tag.sh` -> `ci/generate_tag.py`. Driver-verified directly: 137 tests
+      independently re-run, exit 0; all 3 ledgers K=5 (re-recorded once after a post-first-
+      recording env-registry fix), twins byte-untouched, `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean; `check:ci-w7p5a-real-run-blockers`
+      re-run afterward and still exit 0 (32 blocked / 16 ledgered, unchanged).
+      **Real defects found, the headline one's exact mechanism independently confirmed by
+      the driver, and now a SECOND occurrence of a pattern first seen in wave 13**:
+      `dispatch-watchdog.sh`'s generation cap is evaluated with bare `((GENERATION > 22))`,
+      and `^[0-9]+$` admits a zero-padded value, so bash parses it as OCTAL -- a value like
+      `08` throws an arithmetic syntax error rather than comparing, the `if` reads false,
+      and the run proceeds AS IF UNDER THE CAP -- driver-reproduced directly
+      (`GENERATION=08; ((GENERATION > 22))`: "value too great for base", exit 0, "not
+      capped"), the identical failure shape as `autopilot-gate.sh`'s `((10 >= 08))` from
+      wave 13, now confirmed in a second, unrelated script. `dispatch-release.sh` merges a
+      SUCCEEDING `gh api` call's stderr into its parsed body (`2>&1`), so one benign
+      version-warning invents a phantom PR number, flips a real "skip" decision to
+      "release", and prints a GitHub Actions notice naming the phantom PR as if it were
+      real -- the outcome errs in the twin's documented fail-open direction, but the
+      REASONING it publishes is fabricated. `dispatch-watchdog.sh` also folds "the default-
+      branch lookup failed" into "the dispatch was refused" (the lookup sits inside a
+      command substitution inside an `elif`, where `set -e` is suspended) and, on an
+      adjacent line, folds the SAME kind of lookup failure into "proceed anyway" -- two
+      neighboring failure paths disagreeing about what an unreachable GitHub API means; a
+      `--pending-rerun` flag with no following value is a completely silent exit 1, zero
+      bytes on either stream (`${2:-false}` tolerates the missing value, then `shift 2`
+      fails and `set -e` fires with nothing left to say). `generate-tag.sh --github-output`
+      is a silent no-op when `$GITHUB_OUTPUT` is unset (byte-identical output to omitting
+      the flag entirely, so a workflow step silently ships an empty image tag downstream);
+      its fail-loud build-config existence check is CWD-DEPENDENT for three of its six
+      entries and blames the wrong thing when the working directory is the actual fault;
+      and an `else` branch computing a fallback tag from the submodule commit is
+      unreachable dead code, since the branch above it always exits before falling through.
+      **A process finding about the writer's own exploration, reported rather than
+      buried**: probing the "gh is missing" path by pointing `PATH` at bare `/usr/bin:/bin`
+      still resolved a REAL `gh` there, reaching real GitHub for one read-only 404 against
+      a nonexistent repo before the mistake was caught -- no mutation, but a reminder that
+      "point PATH at the system directories" is not the same as "remove a tool," now folded
+      into the differential's own gh-free fixture technique.
+      **THIRTY-FOURTH WAVE 2026-09-14, opening `.ci/scripts/setup/**`.** `install-deps.sh`
+      -> `setup/install_deps.py`, `build-packages.sh` -> `setup/build_packages.py`,
+      `install-cli-global.sh` -> `setup/install_cli_global.py`. Driver-verified directly: 54
+      tests independently re-run, exit 0; all 3 ledgers K=5, twins byte-untouched, the
+      pre-existing tracked `.ci/rediacc_ci/setup/shadow_driver.py` (another session's,
+      staged with a 0-line mode-only change) confirmed genuinely untouched by this wave,
+      `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all
+      scoped-clean.
+      **Real defects found, the headline one independently confirmed by the driver**:
+      `install-cli-global.sh`'s own "no tarball found" error branch is UNREACHABLE dead
+      code -- driver-reproduced directly (`ls rediacc-cli-*.tgz | head -n 1` inside
+      `set -euo pipefail` on an empty directory: the pipeline exits 2 under `pipefail`, the
+      assignment aborts the script under `set -e`, and the intended error message never
+      prints; real behaviour is exit 2 with zero bytes on both streams, not the twin's
+      documented message). The same script installs a STALE tarball when more than one
+      matches: `npm pack`'s own announced filename is discarded in favor of `ls | head -n
+      1`, lexicographic order, so a pre-existing `rediacc-cli-0.0.0-dev.tgz` placeholder
+      beats a freshly packed `rediacc-cli-0.8.3.tgz` (and byte ordering separately puts
+      `0.10.0` ahead of `0.9.0`) -- the fresh tarball is what then gets deleted by the
+      cleanup step while the stale one it installed survives to lose again on every
+      subsequent run. `install-deps.sh` never applies `--ignore-scripts` to any of the
+      three `private/account` npm trees despite the flag existing specifically to avoid
+      native-module rebuild issues, and retries a completely missing `npm` binary three
+      times over 30 seconds with no `require_cmd` guard, reporting the eventual give-up as
+      a generic "failed after retries" rather than naming the real cause. Three more
+      "unknown folded into fine" vacuities in the same family seen repeatedly this session:
+      `install-deps.sh --account-only --skip-account` runs zero subprocesses and still
+      prints a plain success; `build-packages.sh` treats its own pre-build `rm -rf dist`
+      followed by a build that emits nothing as an expected, exit-0 "may be expected"
+      outcome -- the exact silent-no-op the cache-clearing step exists to prevent from going
+      unnoticed; and a CLI not found in PATH after a global install is a warned-but-green
+      exit 0.
+      **THIRTY-FIFTH WAVE 2026-09-14, closing `.ci/scripts/ci/**` (bar `detect-pointer-
+      bump.sh` and `profiler/sampler-linux.sh`, both owned by other concurrent sessions).**
+      `initialize.sh` -> `ci/initialize.py`, `set-image-tags.sh` -> `ci/set_image_tags.py`.
+      A deliberate asymmetry, argued in each port's own docstring rather than applied
+      uniformly: `initialize.py` calls its six bash siblings out-of-process by relative
+      path (one of them, `detect-pointer-bump.sh`, has no port at all, and a six-pair-wide
+      differential could not say which pair diverged), while `set_image_tags.py` calls the
+      already-ported `derive_image_tag` IN PROCESS. Driver-verified directly: 52 tests
+      independently re-run, exit 0; both ledgers K=5 (each re-recorded twice, once for a
+      `ruff format` reflow and once for a docstring edit), twins byte-untouched, `check:ci-
+      python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **Real defects found, the headline one independently confirmed by the driver via
+      direct source inspection**: `initialize.sh` validates `GITHUB_PAT` explicitly at line
+      53 but NEVER validates `GITHUB_REPOSITORY` at all -- it is used bare 166 lines later
+      (line 219, inside a git fetch URL), by which point the script has already rewritten
+      the global git config's URL rewrite rule and emitted eight outputs -- driver-confirmed
+      directly by reading both call sites: `GITHUB_PAT` gets a real `log_error`+exit-1
+      guard, `GITHUB_REPOSITORY` gets none, relying entirely on `set -u`'s incidental
+      "unbound variable" abort if the caller forgot it. The same script: `IFS=', '` in a
+      join only uses IFS's FIRST character, so a log line meant to be comma-and-space
+      separated reads as plain comma-joined; a valueless `--output` flag writes a file
+      literally named `true` into the repo root with no warning, exit 0; and its container-
+      image-exists probe folds "could not ask" (missing docker, a dead daemon, refused
+      credentials) into "does not exist" with identical output confidence -- costs an extra
+      rebuild rather than a wrong artifact, which is why this one is recorded rather than
+      escalated. `set-image-tags.sh` claims full success ("Image tags set...") having
+      silently skipped both of ITS OWN overrides when `$GITHUB_ENV` is unset -- the only
+      warning printed belongs to a downstream sibling script and describes only that
+      sibling's half of the work -- and its own success line reports the INPUT values
+      rather than what was actually written to the file.
+      **A defect found in an EARLIER wave's already-landed port, outside this wave's file
+      ownership, pinned rather than silently worked around**: wave 32's
+      `derive_image_tag.py` does not catch `OSError` on an unwritable output target, so
+      where the bash twin prints one clean error line and exits 1, the Python port raises a
+      10-line traceback -- exit codes agree, stderr does not. A dedicated test
+      (`test_an_unwritable_github_env_dies_in_the_sibling_and_the_port_dies_louder`) asserts
+      the CURRENT (louder, worse) behavior and its own docstring tells whoever eventually
+      fixes `derive_image_tag.py` to delete the pin and assert exact equality instead --
+      the fix belongs to that file's owner, not to this wave, and would otherwise have been
+      silently rediscovered as a fresh "mystery" divergence.
+      **THIRTY-SIXTH WAVE 2026-09-14.** `build-renet.sh` -> `infra/build_renet.py`,
+      `inject-env.sh` -> `version/inject_env.py` (as a library-plus-CLI, matching the
+      `infra/ci_env.py` precedent for a sourced twin). **`ci-stop.sh` was already ported by
+      an earlier wave and was NOT duplicated** -- the writer found it live-and-tracked but
+      at the wrong path (`.ci/scripts/infra/ci_stop.py` rather than the `.ci/rediacc_ci/
+      infra/` every sibling uses), re-ran its existing ledger to confirm it still asserts,
+      and flagged the misplacement as a driver-only relocation decision rather than moving
+      a tracked file unasked. Driver-verified directly: 94 tests independently re-run
+      across the 2 new files, exit 0; all 3 ledgers (2 new + `ci-stop`'s pre-existing one)
+      re-assert K=5; twins byte-untouched; `check:ci-python-lint`/`check:ci-dead-python`/
+      `check:ci-em-dash-surfaces` all scoped-clean.
+      **Real defects found, the headline one's exact mechanism independently confirmed by
+      the driver**: `build-renet.sh` computes its rebuild-trigger "build identity" stamp
+      via a `sha256sum` pipeline sitting INSIDE a `printf` argument's command substitution,
+      so a missing `sha256sum` (stock macOS ships `shasum`, not `sha256sum`, and this script
+      advertises itself as locally runnable) is invisible to `set -e`/`pipefail` and
+      SILENTLY BLANKS the hash half of the stamp -- driver-reproduced the exact mechanism
+      directly (`ACCOUNT_ED25519_PUBLIC_KEY=KEY-A` and `=KEY-B` through a `sha256sum`-free
+      PATH: both produce the identical stamp `default|`) -- meaning two builds signed with
+      completely different keys are judged identical and a rebuild the stamp exists
+      specifically to trigger is silently skipped, exactly the incident class this
+      mechanism was added to prevent. The same script also deletes the existing binary
+      BEFORE checking that `go` is even installed, so a missing toolchain leaves the repo
+      with no renet binary at all where it previously had a working one; and silently drops
+      any unrecognized CLI flag (`--nolicence` for `--nolicense`) rather than refusing,
+      producing a default build with no warning. `inject-env.sh --version` with no
+      following value silently swallows the NEXT argument even when that argument is itself
+      a flag (an unquoted empty expansion drops the token entirely rather than passing an
+      empty string), sailing past the twin's own "empty value" guard and silently disabling
+      `--strict` on exactly the release path that flag exists to protect
+      (`.github/workflows/ci-build-cli.yml:109`, `.github/workflows/ci-build-docker.yml:62,119`); the same script's own header
+      claims `set -euo pipefail` stays scoped inside its function and cannot leak into a
+      sourcing caller's shell, which is false (`set` options are shell-global in bash, not
+      function-scoped) -- latent only because both real callers already set the identical
+      three options themselves.
+      **THIRTY-SEVENTH WAVE 2026-09-14, opening `.ci/scripts/env/**`.** `create-e2e-env.sh`
+      (175 lines) -> `env/create_e2e_env.py`. **Zero stubs needed**: the twin's only
+      shell-out is `mkdir -p`, and `RENET_BINARY`/`--renet-path` are pure string
+      construction with no probe of any kind. Driver-verified directly: 154 tests
+      independently re-run, exit 0; the ledger K=5, twin byte-untouched, no stray `true`
+      file left behind (the writer's own transient artifact from probing defect C, cleaned
+      up and confirmed gone), `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **Real defects found, the headline one independently confirmed by the driver against
+      the REAL twin (not a fixture)**: a zero-padded `--vm-ram-worker` value is parsed as
+      OCTAL by bash arithmetic, and a value like `08192` throws a parse error inside a
+      `local total=$((...))` assignment -- the assignment's own reported status is 0 (the
+      well-known `local`-masks-a-failing-substitution shape), so the entire RAM-budget
+      refusal that should follow is silently abandoned and the script reports success --
+      driver-reproduced directly against `.ci/scripts/env/create-e2e-env.sh` itself
+      (`--vm-ram-worker 08192 --vm-workers "11 12 13 14"`: prints the "value too great for
+      base" parse error to stderr, then still prints "Created E2E test environment", exit
+      0), a THIRD occurrence this session of the zero-padded-octal-arithmetic class (after
+      wave 13's `autopilot-gate.sh` and wave 33's `dispatch-watchdog.sh`). A related vacuity
+      in the same neighbourhood: the worker COUNT itself is computed via an unquoted, glob-
+      unescaped `echo $VM_WORKERS | wc -w` (shellcheck-suppressed for both splitting and
+      globbing at once), so `--vm-workers '*'` counts however many files happen to sit in
+      the CALLER's current working directory instead of the string's own word count, making
+      the RAM-budget verdict depend on an unrelated directory's contents. A bare `--output`
+      flag with no value writes a file literally named `true` into wherever the script was
+      invoked from (the same `parse_args`-turns-a-flag-into-the-string-"true" shape seen in
+      `initialize.sh` in wave 35); every `ARG_*`-named environment variable is an
+      undocumented alternate way to set any flag, confirmed and preserved in the port so the
+      two cannot diverge on a caller's ambient environment.
+      **One named divergence, deliberately not closed**: the port's arithmetic evaluator
+      covers bash integer literals (decimal/octal/hex/`base#`) and the common operators, but
+      not shift/bitwise/comparison/ternary/comma; `--vm-ram-worker '1<<13'` is the shortest
+      input where this changes the EXIT CODE itself (twin computes a real number and
+      refuses; port falls into the octal-defect's own skip path and accepts) -- pinned by a
+      dedicated test asserting both sides so the gap cannot silently rot into an
+      unacknowledged claim of full coverage.
+      **THIRTY-EIGHTH WAVE 2026-09-14, opening `.ci/scripts/review/**` with a single large
+      file given a solo slot.** `claude-review-gate.sh` (898 lines) -> `review/
+      claude_review_gate.py` (1,870 lines), covering all five of the twin's arms (the
+      go/no-go gate, `--post-report`, `--post-findings`, `--apply-labels`, `--mark`).
+      Driver-verified directly: 124 tests independently re-run, exit 0; the ledger K=5
+      (re-recorded from zero after a late one-line port edit), twin byte-untouched,
+      `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all
+      scoped-clean. The raw-argv comparison in this differential is UNEXCLUDED (stricter
+      than the sibling `review_status.py` port), because this port passes the twin's own
+      five `--jq` programs verbatim rather than reusing a shared budget helper's network
+      half -- a dedicated control asserts each jq program is still literally a substring of
+      the twin's own source, so the two cannot drift apart silently.
+      **Real defects found, the most consequential one independently confirmed by the
+      driver via a minimal, exact repro of its awk mechanism**: `--post-findings`'s fence
+      scanner (extracting the `json:review-findings` block from a posted PR comment) NEVER
+      resets its `capturing` flag once the opening fence is seen, so on a report that
+      follows the prompt's own documented shape (a findings fence, then prose, THEN a
+      second `json:pr-labels` fence for `--apply-labels`) the scanner runs all the way to
+      the LAST closing fence anywhere in the whole document, swallowing the prose and the
+      second block into what it then hands to `jq` -- driver-reproduced the exact mechanism
+      directly with a two-fence fixture matching the prompt's format: `jq: parse error:
+      Invalid numeric literal at line 3, column 0`, exit 5, and because the caller reads
+      that failure as "no parseable review-findings block; skipping inline comments" and
+      exits 0, every line-anchored finding from a well-formed report is silently dropped
+      with no visible failure at all. The sibling `json:pr-labels` scanner (two call sites)
+      HAS the missing reset clause the findings scanner lacks, confirming this is an
+      omission in one arm rather than a deliberate design choice. `last_marker_sha`'s
+      dedup-guard read still swallows a `gh` failure exactly as `common.sh`'s own equivalent
+      was fixed to stop doing on 2026-09-10 -- a failed read is indistinguishable from
+      "never reviewed," so a transient API failure re-triggers a full, costed INITIAL review
+      of a head that was already reviewed minutes earlier; the same swallow recurs in
+      `last_marker_id`, turning a failed read into a duplicate POSTed marker instead of a
+      PATCH. `emit_review_turns` feeds an unvalidated diff-size answer straight into bash
+      arithmetic with no numeric guard, where the otherwise-identical `pr_diff_loc` call
+      site nearby DOES have one, so a malformed API response is an `unbound variable` abort
+      with NO `go` decision written at all, rather than a decision either way.
+      `--mark`'s per-head attempt count is read through a NESTED command substitution
+      (`prior=$(f "$(g ...)" ...)`), so `set -e` sees only the outer call's status and a
+      `gh` failure in the inner one is invisible -- a head that has spent its full
+      per-head ceiling records a fresh "first attempt" instead, resetting the ceiling on a
+      transient rate limit.
+      **THIRTY-NINTH WAVE 2026-09-14, opening `.ci/scripts/private/**` (a brand-new
+      package).** `renet-root-tests.sh` -> `private/renet_root_tests.py`, `run-renet.sh`
+      -> `private/run_renet.py` (a registered `check:ci-renet` gate; twin and its
+      `---- gate ----` header untouched, port is a separate unregistered file per
+      convention), `renet-ebpf-e2e.sh` -> `private/renet_ebpf_e2e.py`. **A hypothesis the
+      writer formed, checked, and REFUTED rather than filing as a defect**: suspected the
+      ebpf script's "idempotent mount" comment was false on this host's non-GNU `stat`
+      (uutils coreutils); a first `strings | grep -x` search came up empty and briefly
+      looked like proof, but a wider search showed uutils' `stat` DOES carry `bpf_fs` in
+      its type table same as GNU -- no finding, correctly not reported as one. Driver-
+      verified directly: 79 tests independently re-run, exit 0; all 3 ledgers K=5
+      (re-recorded once after a docstring correction), twins byte-untouched, `check:ci-
+      python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **Real defects found, the headline one independently confirmed by the driver**:
+      `renet-root-tests.sh` guards each root-tagged test by SUBSTRING match
+      (`grep -q -- "--- PASS: $t"`), not exact match, so a test later renamed to
+      `TestLoadState_PreservesDataAndMore` satisfies the guard for the ORIGINAL name
+      `TestLoadState_PreservesData` even though that exact test no longer exists --
+      driver-reproduced directly (a synthetic `--- PASS:` line for the longer name still
+      satisfies a `grep -q` for the shorter one). The guarded test list is also spelled
+      TWICE (once in the `-run` regex, once in the shell loop that checks for `PASS`
+      lines), so adding a test to the run pattern without also adding it to the loop
+      leaves it completely unguarded. `run-renet.sh` exits 0 having run nothing at all on
+      any checkout missing the `private/renet` submodule specifically because `CI` is
+      compared against the STRING `"true"` -- `GITHUB_ACTIONS=true` with `CI` merely unset
+      takes the same silent local-arm exit as a genuinely local dev checkout, a choice
+      `common.sh` itself makes deliberately and which is therefore pinned, not repaired.
+      Both Go test runners in this trio send their full failure transcript and
+      `::error::` annotation to STDOUT rather than stderr, and print nothing at all until
+      `go test` finishes (up to 300 seconds of total silence), because the capture is
+      `out="$(go test ... 2>&1)"` -- correct for a GitHub Actions annotation, surprising
+      for any caller that separates the streams.
+      **FORTIETH WAVE 2026-09-14, closing `.ci/scripts/private/**`'s remaining small
+      files.** `renet-integration.sh` -> `private/renet_integration.py`, `renet-csi-
+      sanity.sh` -> `private/renet_csi_sanity.py`, `run-account.sh` -> `private/
+      run_account.py`. A ledger-technique lesson worth carrying forward: the scratch
+      fixture root must be a FIXED path, not `mktemp -d`, because the ledger's `old`/`new`
+      commands are two SEPARATE invocations of the recorder -- a per-invocation temp dir
+      puts two different absolute paths into a twin's own error message (e.g. `run-
+      account.sh`'s "Account server not available at <dir>"), producing a false
+      `MISMATCH_FINDINGS` on nothing but the path itself. Driver-verified directly: 100
+      tests independently re-run, exit 0; all 3 ledgers K=5, twins byte-untouched,
+      `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all
+      scoped-clean.
+      **Real defects found, the headline one independently confirmed by the driver via a
+      minimal repro of its exact shell mechanism**: `renet-csi-sanity.sh`'s
+      `apt-get update -qq && apt-get install -y -qq btrfs-progs cryptsetup-bin` looks
+      guarded under `set -e` but is not, because `set -e` does not fire on a non-final
+      member of an `&&` list -- a failing `update` is silently swallowed, `install` never
+      runs, and the script still announces "Installing btrfs-progs + cryptsetup..." and
+      later reports full conformance -- driver-reproduced the exact mechanism directly
+      (`set -euo pipefail; if true; then false && echo yes; fi; echo SURVIVED` prints
+      SURVIVED), a variant of the `set -e`-blind-spot class already seen with command
+      substitutions (waves 15, 22, 26) now confirmed for AND-lists too. The same script
+      collapses a failing `go test`'s real exit code (2 for a build failure, 1 for a test
+      failure) to a flat 1 via `|| { echo "$out"; exit 1; }`, making the two
+      indistinguishable to any caller. `renet-integration.sh` hand-rolls its own
+      submodule-presence guard instead of using `common.sh`'s `require_submodule`, and in
+      doing so drops the CI arm both sibling scripts have -- a missing submodule reports a
+      plain warm exit 0 on a real CI runner (`.github/workflows/ct-tests.yml:1762`), not the harder failure
+      the CI arm exists to produce elsewhere; its argument parser also has no
+      unknown-argument arm, so `--nocleanup` (one hyphen short of `--no-cleanup`) is
+      silently accepted and ignored, running the suite WITH cleanup rather than refusing.
+      `run-account.sh` runs a full `npm ci` before its stage-name `case` statement even
+      validates the stage, so an unknown or intentionally-refused stage (e.g. `deploy`,
+      whose entire purpose is to refuse) pays the full install cost first anyway.
+      **FORTY-FIRST WAVE 2026-09-14, the largest single-file port this campaign has done.**
+      `cleanup-versions.sh` (2055 lines) -> `housekeeping/cleanup_versions.py` (3,624
+      lines), covering all 14 phases (the brief under-listed two -- `cleanup_d1_databases`
+      and the six-sub-phase `cleanup_r2`, which reuses the already-ported
+      `core.release_state_validator` -- the writer read `run_all_phases` directly rather
+      than trusting the dispatch prompt's own phase list, and ported both anyway).
+      Driver-verified directly: 121 tests independently re-run, exit 0; the ledger K=5
+      (re-recorded once after a `ruff format` reflow), twin byte-untouched, `check:ci-
+      python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **Two genuine bugs the differential caught in the PORT itself, fixed before
+      landing**: a `jq_sort_by` reimplementation broke ties on the whole element instead
+      of the sort key alone (jq's own sort is stable on the key only -- caught by a tied
+      row in the jq behavioral corpus); the dry-run/real-run summary verb ("freeing" vs
+      "freed") was hard-coded to the wrong one in Phase 12.
+      **Seven real defects found across the 14 phases, catalogued as HAZARD 1-9 in the
+      port's own module docstring, two independently confirmed by the driver via direct
+      mechanism repros**: a zero-padded `BRANCH_MAX_AGE_DAYS` (e.g. `08`) is a bash
+      arithmetic EXPANSION error that unwinds every remaining function frame -- Phases 10
+      through 12, the delete total, and "Housekeeping complete" all silently never run,
+      with no phase named in the failure -- the same zero-padded-octal class confirmed
+      directly four times now this session (waves 13, 33, 37, and this one).
+      **A second defect needing no operator mistake at all, needing only a rate-limited or
+      flaky `gh` call, driver-reproduced via its exact mechanism**: the Actions-cache
+      listing is `caches="$(gh api ... | jq -s 'sort_by(...)' || echo "[]")"` under
+      `pipefail` -- when `gh` fails, the WHOLE PIPELINE's status trips the `||`, but `jq -s`
+      had already emitted its own `[]` for the (now-truncated) stream before the pipe
+      broke, so the variable ends up holding TWO JSON values back to back --
+      driver-reproduced directly (`gh` forced to exit 1: `caches` becomes literally
+      `[]\n[]`, and `jq length` on that reports `0\n0`, matching the twin's own live
+      failure verbatim: `[[: 0\n0: arithmetic syntax error`) -- a transient GitHub API
+      hiccup is enough to kill the whole nightly with a cryptic diagnostic naming no phase
+      and no cause. Phase 5b (worker cleanup) never calls `record_delete`, so its deletions
+      are the only ones in the entire script not charged against
+      `MAX_DELETES_PER_RUN`; Phase 1's dry-run arm never increments its own `deleted`
+      counter, so `--dry-run` always reports "would delete 0 of N" regardless of how many
+      it actually named (nine of the other twelve phases increment correctly); every
+      numeric CLI flag and `MAX_DELETES_PER_RUN` itself are read with raw bash arithmetic
+      and never validated, so a zero-padded `--versions 08` evaluates FALSE for every
+      comparison (treating every item as eligible) while `--versions 010` silently keeps
+      eight; Phase 2's four-call date-fallback is UNREACHABLE by its own documented route,
+      because a tag with no tagger date returns the four characters `null` (not empty), so
+      the `-z` emptiness check never fires and the literal string `"null"` travels on as a
+      date (retains rather than deletes -- the safe direction, still a real gap). NINE of
+      the fourteen phases (1,2,3,4,5,6,7,7b,9,11) fold "the listing call failed" into
+      "nothing here to delete" -- Phase 5b is the only one that fails closed, Phase 10 the
+      only other one that even says it might not have been able to look -- the
+      "unanswerable folded into a clean pass" class, now confirmed at this scale across a
+      whole housekeeping script rather than one call site at a time.
+      **FORTY-SECOND WAVE 2026-09-14: `concurrent-fork-isolation-test.sh`, the file this
+      session had earlier (incorrectly, before the operator's direct correction) treated as
+      belonging to another session -- confirmed a legitimate, fully portable target.** ->
+      `private/concurrent_fork_isolation_test.py`. Proved portable despite reproducing a
+      real renet race condition on a live worker VM: nothing the differential needs to
+      verify depends on the VM except the CONTENT of child-process stdout, which the
+      recording fakes supply. Driver-verified directly: 76 tests independently re-run, exit
+      0 (211s -- the twin's own 30-iteration polling loop, ported faithfully sleeps and
+      all), the ledger K=5, twin's diff still just the pre-existing 1-line fix (untouched
+      by this wave), `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **A harness-quality finding worth carrying forward**: the shadow-gate recording call
+      log's ordering is NOT stable for a pipeline's right-hand member IN THE TWIN ITSELF --
+      12 consecutive twin-only runs put `grep` before `tail` 7 times and the reverse 5
+      times, and running under `pytest -n 8` reordered further. The writer's first fix
+      (swap adjacent declared pairs) passed serially and failed under parallel load; the
+      working rule is to SPLIT rather than reorder: right-hand pipeline members (`sort`/
+      `head`/`tail`/`tee`) are pulled out of the ordered call-log spine and compared as a
+      sorted multiset, while the causally-ordered remainder keeps exact-order comparison. A
+      dedicated test re-derives the instability directly rather than inheriting the claim.
+      **Two genuine bugs the differential caught in the PORT itself, fixed before
+      landing**: a `rdc ... | tee log` port draft with `tee` absent left `rdc`'s own stdout
+      going nowhere (the real pipe reader never appeared); a `grep | tail` port draft with
+      `grep` absent returned early and skipped `tail` entirely, when real bash forks BOTH
+      pipeline members before either execs, so `tail` runs regardless of `grep`'s fate --
+      both fixed with a real `os.pipe()`-based helper matching bash's own fork-both
+      semantics.
+      **Real defects found, two independently confirmed by the driver via direct source
+      inspection**: four separate `log_info "✓ ..."` calls carry a literal `✓` in their own
+      message text on top of the logging helper's own automatic `✓` prefix, producing a
+      double-tick (`✓ ✓ ...`) on every one of four success lines -- driver-confirmed
+      directly by reading all four call sites. The parent-counter poll loop's `sleep 2`
+      sits AFTER its own `[[ ... ]] && break` check inside a 30-iteration `for` loop, so a
+      counter that never reaches the target burns all 30 sleeps including a wasted one on
+      the very last iteration, which sleeps two full seconds after the loop's last possible
+      read -- driver-confirmed directly by reading the loop body. A non-numeric remote
+      payload for the "foreign project count" check kills the run with `unbound variable`
+      naming the WRONG variable under `set -u`, and a two-word payload instead evaluates
+      the arithmetic test as FALSE, silently treating a real cross-project name collision
+      as "no foreign projects present" -- the same "unanswerable folded into a clean pass"
+      class seen throughout this session, now confirmed to fail in the DANGEROUS direction
+      (accepting an isolation violation) rather than the usual safe-refusal shape. A bare
+      empty-array expansion prints a stray indented line ahead of the real error when zero
+      binds are found; `fork_sock` silently takes the LAST non-parent socket rather than a
+      specifically-identified fork's, benign only while exactly two sockets exist.
+      **DRIVER FIX 2026-09-14, after the operator's "no other session" correction**: `ci-
+      stop.sh`'s port (`ci_stop.py`) had been landed by an earlier wave, correctly written
+      and tested, but at the wrong path -- `.ci/scripts/infra/ci_stop.py` (tracked,
+      committed) instead of `.ci/rediacc_ci/infra/` where every sibling port lives. `git mv`
+      to the correct location, fixed the one path reference in its own differential
+      (`test_infra_ci_stop.py`'s `PORT` constant and its own docstring citation), re-ran
+      its 10 tests (still pass), re-asserted its `w7p6-ci-stop` ledger (still holds, K=5),
+      and confirmed no new `check:ci-python-lint`/`check:ci-dead-python` findings from the
+      move. This box's next writer batch also correctly recognized `clone-d1.sh`,
+      `detect-pointer-bump.sh`, and `concurrent-fork-isolation-test.sh` as this session's
+      own earlier direct bash-twin fixes (not another session's) and legitimate porting
+      targets, per the same correction.
+      **FORTY-THIRD WAVE 2026-09-14: `compose-healthcheck-smoke-test.sh`, another VM-
+      dependent integration test confirmed portable by the same reasoning as wave 42.** ->
+      `private/compose_healthcheck_smoke_test.py`. Driver-verified directly: 74 tests
+      independently re-run, exit 0 (128s -- real polling-interval sleeps ported
+      faithfully), the ledger K=5, twin and `package-lock.json` both confirmed untouched,
+      `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all
+      scoped-clean. The writer's own follow-up caught and corrected a vacuity in its OWN
+      verification: a first attempt to confirm its 74 tests ran inside the full suite used
+      `grep -c "test_..." <log>` against `pytest -q`'s xdist output, which only ever prints
+      `FAILED` lines and dots -- a PASSING file never appears by name, so "0 mentions" would
+      have been misread as "0 failures" when it actually meant nothing was checked at all;
+      corrected to `--collect-only` naming all 74 test ids explicitly, the only way to prove
+      the gate's `testpaths` genuinely covers them.
+      **A near-miss during exploration, reported rather than buried**: a PREPENDED
+      (rather than replaced) scratch PATH let a probe resolve the REAL `rdc` symlinked at
+      `~/.local/bin/rdc` to this repo's own `rdc.sh`, which ran `npm install`/`npm rebuild`
+      against the live checkout before failing on `cpu-features`'s `EACCES` -- driver-
+      confirmed `package-lock.json` untouched afterward. Harness now REPLACES PATH
+      unconditionally rather than prepending, and asserts every deliberately-absent tool is
+      genuinely unreachable; the incident is recorded in the differential's own module
+      docstring so it is not rediscovered.
+      **Real defects found, the headline one independently confirmed by the driver**:
+      `TIMEOUT_SECS` reaches bash arithmetic unvalidated, so a zero-padded value like `060`
+      is parsed as OCTAL -- driver-reproduced directly (`TIMEOUT_SECS=060`: the computed
+      window is 48 seconds, not 60), a fifth confirmed occurrence of the zero-padded-octal
+      class this session, while the script's own log line one row above still prints
+      "timeout 060s" as if nothing were wrong. A SEPARATE, file-specific `set -e` gap sits
+      right beside it: an arithmetic EXPANSION error (`TIMEOUT_SECS=12abc`, not merely
+      unset) does NOT abort a `.sh` FILE the way the identical fragment aborts under
+      `bash -c` (driver's own minimal `bash -c` comparison in the report showed the
+      inline form dying immediately while the file form survives to the next line and dies
+      there instead, on a variable -- `deadline` -- the caller never typed). A missing
+      `ssh` binary is silently indistinguishable from a live connection failure during
+      polling, because `2>/dev/null` is applied before the command-not-found diagnostic can
+      even form; `rdc machine add` failing for ANY reason (a malformed IP, a missing `rdc`,
+      an auth failure) is reported as "already registered" regardless of the real cause;
+      and both of the script's own success lines double their `✓` glyph the identical way
+      wave 42's four success lines did, now a second script carrying the exact same
+      logging-helper-plus-manual-prefix duplication.
+      **FORTY-FOURTH WAVE 2026-09-14: the three files confirming the "no other session"
+      correction, all landed successfully.** `clone-d1.sh` -> `deploy/clone_d1.py`,
+      `detect-pointer-bump.sh` -> `ci/detect_pointer_bump.py`, `typecheck-workers.sh` ->
+      `quality/typecheck_workers.py` (a registered `lint:unused` gate; twin's header
+      untouched, port carries none, a dedicated test asserts the asymmetry using the real
+      `gate-header.ts` OPEN pattern rather than a substring check). Driver-verified
+      directly: 85 tests independently re-run, exit 0; all 3 ledgers K=5, both twins'
+      diffs confirmed to be nothing more than their pre-existing 1-line fixes from earlier
+      in this session, `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean. `clone-d1.sh` remains `blocked` in `.ci/shadow/w7p5a-
+      status.json` for the real-run clause only, same standing as several already-ledgered
+      files -- left alone, `check:ci-w7p5a-real-run-blockers` still 32/16 afterward.
+      **A harness technique worth naming**: `detect-pointer-bump.sh`'s differential uses a
+      REAL git repository built from plumbing (`update-index --cacheinfo 160000,...` for
+      gitlinks, `commit-tree` for a genuine two-parent merge commit) rather than a fake
+      `git`, because two of its defects are consequences of the actual `pull_request`
+      merge-commit shape and are invisible in any fixture where HEAD is simply the branch
+      tip -- porcelain `git commit` is hook-blocked even inside a scratch repo, so plumbing
+      commands were required regardless.
+      **Real defects found, the headline one independently confirmed by the driver against
+      both the tree and a live workflow file**: `clone-d1.sh --sanitize` has been silently
+      dead since 2026-04-06, when `sanitize-d1.sql` (the file it redirects into) was deleted
+      in an unrelated commit and nothing recreated it -- yet `.github/workflows/edge-clone-d1.yml:78` is a LIVE caller still passing `--sanitize` on every run -- driver-
+      confirmed both halves directly (the SQL file is genuinely absent from the tree; the
+      workflow line genuinely still passes the flag). The script fails closed (dies on the
+      redirection before the import step), so the practical exposure is an availability
+      failure rather than a silent PII leak, but the comment claiming "the target D1 never
+      sees real PII" is true only because the target sees nothing at all. The same script's
+      foreign-key verification folds "could not run" into "0 violations, passed" -- an empty
+      `FK_RESULT` makes `jq` exit 0 printing nothing, so the intended `|| echo "0"` fallback
+      never fires and the numeric guard is simply never violated, a sixth occurrence of the
+      "unanswerable folded into a clean pass" class this session. `detect-pointer-bump.sh`
+      applies its own documented pointer-bump-only guard fix to the WALK but not to
+      `head_sha` itself, so on every `pull_request` event the guard compares the synthetic
+      merge commit against itself and can never fire, forcing every such PR down the "no
+      baseline within 5 commits" slow path regardless of whether it's pointer-bump-only;
+      the same merge-commit shape also lets Step 3's net-diff calculation pick up the
+      target branch's own unrelated changes on any PR whose target has moved since the
+      merge commit was formed. An empty or missing `.gitmodules` is a hard, silent exit 1 --
+      `git config`'s own no-match status survives `pipefail` all the way through `set -e`
+      before the intended fail-safe message is ever reached. `typecheck-workers.sh` has no
+      `*)` arm in its argument parser, so a one-letter typo like `--isntall` runs the FULL
+      pipeline (install and typecheck) rather than refusing; a partial `find` failure
+      (permission denied on one worker directory) is invisible through a process
+      substitution and reports a smaller, silently-incomplete set as a clean success; and
+      `node_modules` freshness is checked by existence only, never by staleness, which the
+      twin's own comment already names as the thing that breaks knip.
+      **FORTY-FIFTH WAVE 2026-09-14, opening `.ci/scripts/build/**`.** `build-www.sh` ->
+      `build/build_www.py`, `build-json.sh` -> `build/build_json.py`, `buildx-push-
+      web.sh` -> `build/buildx_push_web.py`. **A second occurrence of the "no other
+      session" correction, self-resolved**: the writer's own report flagged the
+      concurrently-appearing `build_cli.py`/`build_linux_packages.py`/`pack_cli_npm.py` in
+      the same package as "a concurrent session" -- these are in fact batch PP, a second
+      writer this driver dispatched into the same wave, not another session; noted here so
+      the pattern is recognized on sight rather than re-investigated. Driver-verified
+      directly: 40 tests independently re-run, exit 0; all 3 ledgers K=5 (re-recorded once
+      after an env-registry alias fix), twins byte-untouched, `check:ci-python-lint`/
+      `check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **The env-registry alias trap caught by measurement rather than memory**: the
+      writer's first `buildx_push_web.py` read its five required names in a loop
+      (`os.environ.get(name, "")`), and running the registry gate's own `scan_module`
+      against it returned `['*name', 'ACCOUNT_ED25519_PUBLIC_KEY']` -- the loop form would
+      have registered only an opaque expression, leaving four of five real inputs
+      undeclared while the gate stayed green. Unrolled to six literal call sites before
+      landing; this is the same class of trap now caught in three separate waves (15, 18,
+      45) purely because writers ran the gate's actual scanner rather than trusting the
+      convention from memory.
+      **Real defects found, the headline one independently confirmed by the driver via
+      direct source comparison against a sibling script**: `buildx-push-web.sh` never
+      `cd`s to the repo root before its docker build, unlike its own sibling `build-
+      www.sh` which does exactly that one line after computing `SCRIPT_DIR` -- driver-
+      confirmed by grepping both twins for `get_repo_root`/`cd "` side by side: `build-
+      www.sh` has it, `buildx-push-web.sh` does not, anywhere -- so the build context and
+      the relative `--file Dockerfile ./` argument are whatever the CALLER's cwd happens
+      to be, unchecked; safe today only because every live GitHub Actions `run:` step
+      starts at the workspace root. The same script never validates `PLATFORM` beyond
+      splitting it on `/`, so `PLATFORM=nonsense` or `PLATFORM=linux/` both push a
+      successfully-tagged image with a garbage or bare-hyphen architecture suffix despite
+      the twin's own refusal message promising only `linux/amd64` or `linux/arm64`; its
+      "optional" build-arg is unconditionally passed even when empty, contradicting the
+      twin's own header, because a Dockerfile cannot distinguish an empty `ARG` from an
+      unset one. `build-www.sh`'s `require_dir`/`require_file` calls both pass a
+      human-readable second argument that `common.sh` silently drops (reads only `$1`), so
+      a real failure message never names what the check was actually verifying -- a live
+      instance of the same first-argument-only class already seen for `require_cmd`/
+      `require_var`. `build-www.sh` and `build-json.sh` report the identical missing-
+      output failure in two different sentences (one via the shared library helper, one
+      hand-rolled), and the hand-rolled one is the more informative of the pair. Both
+      `build-www.sh` and `build-json.sh` flatten npm's real exit code to a bare 1
+      (indistinguishable OOM-kill vs. typecheck failure), while `buildx-push-web.sh` one
+      file over propagates docker's real exit code verbatim -- inconsistent conventions
+      within the same directory, not a single twin's isolated choice.
+      **FORTY-SIXTH WAVE 2026-09-14, second slot of the same pair, continuing `.ci/scripts/
+      build/**`.** `pack-cli-npm.sh` -> `build/pack_cli_npm.py`, `build-linux-packages.sh`
+      -> `build/build_linux_packages.py`, `build-cli.sh` -> `build/build_cli.py`.
+      Driver-verified directly: 67 tests independently re-run, exit 0; all 3 ledgers K=5,
+      twins byte-untouched, `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean. **`build-linux-packages.sh`'s own header makes a
+      falsifiable claim, and the writer checked it rather than believing it**: that adding
+      `-uo pipefail` "cannot change the outcome" of `[[ -f "$musl_binary" ]] && binary=
+      "$musl_binary"`'s glibc fallback -- verified directly on this host's bash 5.3.9
+      (`set -euo pipefail; [[ -f /nope ]] && X=1; echo alive` prints alive, rc 0): the
+      claim holds, correctly recorded as a non-finding rather than assumed.
+      **A ledger-technique addition worth keeping**: a fake `jq` that writes its `call:`
+      recording line to STDOUT rather than stderr corrupts the very JSON manifest the twin
+      redirects that stdout into, silently swallowing the finding; fakes standing in for
+      any tool whose stdout IS the artifact under test must log to stderr only.
+      **Real defects found, the headline one independently confirmed by the driver via a
+      minimal repro of its exact mechanism, and the most consequential defect found this
+      session**: `pack-cli-npm.sh` injects the release version with `jq ... >tmp && mv tmp
+      real`, and when `jq` fails, `set -e` does not fire on a non-final AND-list member --
+      the script prints "Injected version X into package.json" (a fabricated success
+      message) and continues to pack a tarball from the UNTOUCHED, unversioned manifest,
+      exit 0 -- driver-reproduced the exact sequence directly (a failing fake `jq`: the log
+      line prints, "still running" prints, `package.json` is confirmed unchanged, rc=0) --
+      and this sits on a real release path (`.github/workflows/ci-build-docker.yml:91` passes the real next
+      version), so a transient `jq` failure would silently publish a `rediacc-cli-0.0.0-
+      dev.tgz` under a green check. The neighbouring "no tarball found" branch is
+      unreachable dead code for the identical AND-list reason applied to `ls | head`, so the
+      one failure this script's author wrote a message for reports nothing and exits 2
+      instead. The tarball is selected by lexical (not version) sort from a directory
+      nothing cleans, so `0.10.0` sorts before `0.9.0` and a later, lower-numbered rebuild
+      silently re-packs and announces the stale higher-numbered tarball.
+      `build-cli.sh`'s argument parser has no `*)` arm at all: `--help`, `-h`, and any
+      typo of `--no-bundle`/`--no-verify` are all silently accepted and run a FULL build,
+      while the header's own documented flags (`--bundle`, `--verify`) are no-ops since
+      both already default to true; and npm's real exit code (9, 127, 130, ...) is
+      discarded in favor of a flat 1 on every failure. `--verify` itself only checks that
+      two output paths EXIST, so an empty or stale `index.js` from a half-completed build
+      passes verification cleanly.
+      **FORTY-SEVENTH WAVE 2026-09-14, second slot of the same pair.** `build-pages.sh` ->
+      `build/build_pages.py`, `generate-cli-manifest.sh` -> `build/generate_cli_manifest.py`.
+      **The third file in this wave's original scope, `canonicalise-gpg-key.sh`, was
+      already ported by an earlier (Sep 10, pre-session) wave** -- the writer verified the
+      existing port's docstring, tests (10, K=5 ledger) genuinely matched before leaving it
+      untouched, rather than assuming and rather than duplicating. Driver-verified directly:
+      51 new tests independently re-run, exit 0, plus the pre-existing `canonicalise-gpg-
+      key` ledger re-confirmed still holding; all 3 ledgers K=5, twins byte-untouched,
+      `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all
+      scoped-clean. **A small, local finding fixed inline rather than deferred**: another
+      already-landed port's differential (`test_proxies_cli_manifest.py`) carried a
+      docstring claiming `generate-cli-manifest.sh` "stays bash and unported" -- now false
+      as of this wave -- corrected in place (one clause, re-verified compiling and its own
+      3 tests still passing), since a one-line comment fix inside a file this wave already
+      needed to reason about is exactly the "small and local, fix immediately" case rather
+      than an owed-but-not-touched item.
+      **Real defects found, the headline one independently confirmed by the driver on
+      BOTH halves**: `build-pages.sh`'s CLI-manifest packaging block is dead code under the
+      DEFAULT invocation, because `OUTPUT_DIR` defaults to the exact same `dist` the block
+      later checks against a HARDCODED literal (`[[ -f "dist" + "/cli-manifest/manifest.json"
+      ]]` in the twin, joined back together on disk, not built from `$OUTPUT_DIR`), and
+      `rm -rf "$OUTPUT_DIR"` runs first -- driver-confirmed directly (`OUTPUT_DIR="${ARG_OUTPUT:-
+      dist}"` at line 22, `rm -rf "$OUTPUT_DIR"` at line 43, the literal-path check at line
+      58, all reading the identical `dist` by default) -- AND driver-confirmed that nothing
+      in the tracked tree writes to that path at all (a tree-wide search for the joined
+      literal, outside this one file, returns nothing), so the block has never fired in this
+      repository's history; the unconditional summary line claiming the CLI manifest was
+      packaged prints regardless. `cp -r packages/www/dist/*` has no `nullglob`, so an
+      empty or dotfile-only `dist/` is a raw, uninformative `cp` error rather than a named
+      refusal; the argument parser has no `*)` arm, so a one-character flag typo silently
+      falls back to the default output directory and DELETES the repo's real `dist/` via
+      the unconditional `rm -rf` at startup; `workers/www`'s existence is never checked
+      before the final copy step, so a missing directory fails only after the entire rest
+      of the package has already been assembled. `generate-cli-manifest.sh` has no
+      `cd "$(get_repo_root)"` at all -- the third confirmed instance of this exact missing-
+      call class this session -- so an explicit `--input` resolves relative to the CALLER's
+      cwd while the default resolves to an absolute repo-rooted path, working in CI only
+      because both live callers happen to run from the repo root; a manifest built with
+      zero binaries is a clean exit 0; every malformed checksum shape (empty, truncated,
+      multi-line, wrong-length) collapses to the identical warning with no effect on exit
+      status; and the script's own usage block never mentions `--channel`, the one flag a
+      live workflow caller actually passes and the one that decides which URL shape ships.
+      **FORTY-EIGHTH WAVE 2026-09-14, second slot of the same pair.** `build-cli-musl.sh`
+      -> `build/build_cli_musl.py`, `prepare-cli-assets.sh` -> `build/
+      prepare_cli_assets.py`, `extract-renet-from-image.sh` -> `build/
+      extract_renet_from_image.py`. Driver-verified directly: 73 tests independently
+      re-run, exit 0; all 3 ledgers K=5 (each re-recorded once after adding the comment-
+      byte audit omitted from the first pass), twins byte-untouched, `check:ci-python-lint`/`check:ci-dead-python`/`check:ci-em-dash-surfaces` all scoped-clean.
+      **Two measurement corrections the differential forced, named as process evidence
+      rather than smoothed over**: the writer's first draft guessed `set -u` line numbers
+      from reading rather than driving (32/36/30 assumed vs 33/37/31 actual for the two
+      twins) and fixed them against the real output; and a first `criu_versions`
+      implementation called `strings` ONCE and applied both regexes to it, while the twin's
+      own `{ ...; ...; } | sort -u` shape opens `strings` TWICE -- the call log showed the
+      mismatch directly, and "how many times a script executes a program" was corrected as
+      a behavioral fact rather than an implementation detail.
+      **Real defects found, the headline one's exact mechanism independently confirmed by
+      the driver via a nested-vs-flat command-substitution comparison**: `prepare-cli-
+      assets.sh`'s `map_arch` validation runs its `exit 1` refusal two command
+      substitutions deep (`a=$(f)` itself inside a further `$( ... )`), and bash does NOT
+      propagate `errexit` into a command substitution nested inside another one -- driver-
+      reproduced the exact distinction directly (`g` called flatly with the identical
+      failing assignment: dies at rc=1 as expected; the SAME assignment nested one level
+      deeper inside `R=$( ... )`: survives, prints the following line, exits 0) -- so
+      `--arch bogus` prints the refusal message and then completes with a FULL, valid-
+      looking asset set at exit 0 rather than aborting. This is a new, deeper variant of
+      the "set -e blind spot on a command substitution" class (waves 15, 22, 26, 40) --
+      previously seen one level deep, now confirmed two levels deep changes nothing about
+      whether the abort propagates. The same script's asset count is off by one in every
+      case (`printf '%b'` without a trailing newline undercounts separators by exactly
+      one, while the actual file-writing `printf '%b\n'` two lines later is correct), and
+      its `--platform` flag is validated by nothing at all despite the usage text promising
+      `linux|mac|win` -- `--platform banana` is byte-identical to `--platform linux`.
+      `build-cli-musl.sh`'s `--dry-run` preview runs BEFORE the real architecture
+      validation, so it happily previews an architecture the real run would refuse
+      outright, and its output verification is existence-only, so a stale binary left by
+      an earlier build ships silently as if it were the fresh musl build just requested.
+      `extract-renet-from-image.sh`'s CRIU version check is disarmed by a MISSING
+      `strings` binary rather than a present one -- the command-not-found diagnostic is
+      itself swallowed by the same `2>/dev/null` guarding the real check, so "the tool to
+      verify with is absent" silently becomes "cannot verify, proceeding" on the one
+      component the twin's own comment already names as a known drift risk -- the seventh
+      confirmed instance of "unanswerable folded into a clean pass" this session.
+      **FORTY-NINTH WAVE 2026-09-14, freeing the slot batch RR closed.** `build-renet.sh`
+      (256L, "build full renet binaries with embedded CRIU/rsync assets") -> `build/
+      build_renet.py`, distinct from the ALREADY-PORTED `infra/build-renet.sh` -> `infra/
+      build_renet.py` (unrelated file, same basename, different directory -- the
+      collision flagged and disambiguated before dispatch). Ledger id deliberately
+      `w7p6-build-renet-full`, not `w7p6-build-renet`, to avoid overwriting the existing
+      pair's ledger. Driver-verified directly: 37 tests independently re-run, exit 0;
+      `w7p6-build-renet-full` ledger K=5 over 5 distinct trees (`--assert --k 5` exit 0);
+      twin byte-untouched (`git diff` empty); both new files compile; `check:ci-python-lint` and `ruff format --check` clean on both; em-dash grep no match; scoped
+      `check:ci-dead-python` output has zero mentions of `build_renet`; file modes 755/644
+      as expected. Headline defect (#2 below) independently reproduced by the driver, not
+      just re-run from the writer's transcript: `bash .ci/scripts/build/build-renet.sh
+      --version 1.2.3 --skip-embed --output private/absent/deep` -> `rc=1`, BOTH streams
+      empty, `private/absent` never created.
+      **A real bug in the writer's own port, caught by the ledger fixture and fixed before
+      landing**: `grep` is a shell FUNCTION in the sandbox, so a self-referential fixture
+      symlink built via `command -v grep` pointed at itself; fixed with `type -P`. The
+      corrected control then exposed a genuine twin/port divergence -- `! file "$binary" |
+      grep -q "not stripped"` under `pipefail` takes the "stripped" arm when `grep` is
+      ABSENT, while the first Python draft's `in`-test still read the text -- so the port
+      now runs both halves of both pipelines as real subprocesses. Also caught pre-landing:
+      `output / "renet-%s-%s" % (goos, arch)` is a `TypeError` (`/` binds tighter than `%`),
+      13 red tests on first run.
+      **Real defects found, reproduced not fixed:** (1) a missing `file(1)` reports every
+      binary as stripped at exit 0 (`:242`; `file` is never `require_cmd`ed while `jq`/
+      `zstd`/`go` all are) -- the eighth confirmed "unanswerable folded into a clean pass"
+      this session; (2) `--output` with a non-existent parent dies silently at exit 1 with
+      BOTH streams empty (`:64`, GNU `readlink -f` needs every component but the last to
+      exist, `set -e` takes the status one line before the `mkdir -p` that would have fixed
+      it) -- driver-reproduced above; (3) a malformed or empty pnpm lockfile makes the
+      completeness check vacuous and the build pass, because `jq` runs inside a PROCESS
+      SUBSTITUTION at `:132-140` whose exit status `set -e` cannot see -- a new variant of
+      the command-substitution-vs-process-substitution `errexit` blind spot (waves 15, 22,
+      26, 40, 48), this one on the "must break HERE, not later as a cryptic COPY error"
+      check the twin's own comment names as load-bearing; (4) no staged assets at all is a
+      raw, unguarded `ls` glob error at exit 2 with no `✗` line naming the real problem
+      (`:86`); (5) `:107 if [[ -n "$OUTPUT_DIR" ]]` can never be false, so the export block
+      it guards reads as opt-out while being unconditional.
+      **FIFTIETH WAVE 2026-09-14, first of the last three `.ci/scripts/build/**` files;
+      the whole batch hit a real, live `/tmp` inode exhaustion (tmpfs at 100%, `ENOSPC` on
+      every Bash call including `true`) partway through, from accumulated pytest fixture
+      trees across three overlapping full-suite runs -- CORRECTION, recorded here rather
+      than silently overwritten: this was first (wrongly) recorded as having cleared on
+      its own via pytest's own retention; the writer that hit it later reported it
+      cleared it manually, deleting all but the three newest `/tmp/pytest-of-developer/
+      pytest-NNNN` trees (26% used after), which is the real mechanism -- `df -i /tmp`
+      was back to 23% by the time this wave was picked up either way; only 1 of the
+      batch's 3 target files reached a verified
+      state, the other two are separate, later waves.** `build-cli-executables.sh` (344L) ->
+      `build/build_cli_executables.py`. Driver-verified directly: 58 tests independently
+      re-run, exit 0; `w7p6-build-cli-executables` ledger K=5 over 5 distinct trees; twin
+      byte-untouched; both files compile; headline defect (#1 below) independently
+      reproduced by the driver with a real PATH stripped of `node`: `rc=1`, both streams
+      empty. **Two lint findings caught and fixed by the driver before landing, not
+      pre-existing**: an `RUF100` unused `noqa: PLR0912, PLR0915` (the decomposition it
+      excused never happened) and an `ISC004` implicit string concatenation inside a list
+      literal in the test file, genuinely ambiguous with a missing comma -- wrapped in
+      parens, re-verified 58/58 green and ledger still K=5 after. **File mode was 644/644
+      as delivered**; driver `chmod 755` on the port (own housekeeping, not a defect).
+      Real defects found, reproduced not fixed: (1) a missing `node` is a silent exit 1,
+      both streams empty (`:99`, `command -v node` inside an assignment, `set -e`, no
+      `require_cmd node` anywhere in the file) -- driver-reproduced above, ninth confirmed
+      "unanswerable folded into a clean pass" this session; (2) `strip`/`codesign` are
+      never declared either (`:175`/`:167`/`:221`), same class one rung louder since bash
+      at least names the missing command; (3) "no checksum tool" is a warning not a
+      refusal (`:236`), the build ships a binary with no `.sha256` at exit 0; (4) the
+      `--version` smoke test decodes a killing signal as a bare exit code while the
+      `doctor` smoke test twelve lines later does the reverse -- an asymmetry carried, not
+      smoothed; (5) an explicit `--platform banana` is accepted, builds `rdc-banana-x64`,
+      and the one check that would catch it (the smoke-test guard) is the arm the typo
+      disables. **A common-library finding that changes how the remaining two ports must be
+      written**: sourcing `common.sh` runs `uname -s`/`uname -m` and exports
+      `CI_OS`/`CI_ARCH`/`CI_TEMP` before line 22 of ANY caller, including `--help`; a port
+      that skips this launches its downstream tools into a different environment, not
+      merely a different call count -- found from the call log (twin invoking `uname`
+      twice before parsing its first argument), not from reading.
+      **FIFTY-FIRST WAVE 2026-09-14, second of the last three `.ci/scripts/build/**` files,
+      finishing what the disk-full batch had only drafted.** `build-linux-pkg.sh` (345L) ->
+      `build/build_linux_pkg.py`. The draft was UNVERIFIED going in and treated as such: on
+      first real run 23/41 tests failed. Driver-verified directly after the writer's fixes:
+      49 tests independently re-run, exit 0; `w7p6-build-linux-pkg` ledger K=5 over 5
+      distinct trees; twin byte-untouched (worktree blob equals HEAD blob); both files
+      compile; `check:ci-python-lint`/`ruff format --check`/em-dash grep/scoped
+      `check:ci-dead-python` all clean; modes 755/644 as expected. Headline defect (#2
+      below) independently reproduced by the driver with the bare mechanism: `bash -c 'set
+      -euo pipefail; x=$( (exit 2) | awk "{print}" ); echo SURVIVED'` -> `rc=2`, "SURVIVED"
+      never prints.
+      **Draft bugs found and fixed before landing, not pre-existing in the twin**: `mktemp`
+      was missing from the fixture's replaced PATH, so every build-path case died on the
+      OLD (twin) side with a fixture defect, not a twin one -- the PATH-discipline trap from
+      the OTHER direction (replace, don't prepend, but a tool the twin genuinely needs must
+      still be listed); `find`'s exit status was discarded by a shared `_capture` helper
+      where the twin's own `pipefail` would have propagated it (new `_capture_or_die` added,
+      `_capture` re-scoped to sites where the twin ALSO discards status); `Path.mkdir` raised
+      a Python traceback where the twin's real `mkdir -p` prints one `mkdir:` line at exit 1
+      (shelled out at both sites); Python's `value + "\n"` diverged from bash's own `echo`,
+      which parses a value of exactly `-n` as an option rather than data, writing a
+      zero-byte key file (new `_bash_echo` helper); and a disguised always-true assertion
+      (`... or fmt == "rpm"`) had papered over a wrong RPM filename spelling, replaced with
+      an exact per-format artifact-map comparison. One divergence pinned as a DECISION
+      rather than fixed: `common.sh`'s `echo -e` renders a literal tab in `--binary 'a\tb'`
+      while `rediacc_ci.log` treats the message as data -- both directions asserted, with
+      everything else pinned to still match.
+      **Real defects found, reproduced not fixed:** (1) `:225 if [[ -f "$PUBLIC_KEY_FILE"
+      ]]` has no `else`, so the entire "is this the published key" comparison silently does
+      not happen when the file is absent; (2) `:226-227`'s `gpg --show-keys | awk` inside a
+      command substitution is a pipeline-under-pipefail `errexit` blind spot, gpg's exit 2
+      killing the script with BOTH streams empty and making the `${want_fpr:-<unreadable>}`
+      fallback dead code -- driver-reproduced above; (3) the identical shape at `:277-279`
+      (`find | head -1`) is LIVE, not latent as first assumed from reading -- driven directly
+      against a permission-denied subdirectory and confirmed to die silently; (4) `:291-294`
+      is unreachable, the `cp` above it unguarded under `set -e`; (5) `--dry-run` exits 0
+      BEFORE any `require_file`/`require_cmd` validation runs; (6) "package signed with X
+      key" means a key was CONFIGURED, never that a signature exists, and an RSA key on apk
+      is reported as an "APK key"; (7) `echo "$KEY"` at `:187`/`:254` silently produces a
+      zero-byte file for a key value of exactly `-n`, feeding directly into defect 2's dead
+      fallback.
+      **FIFTY-SECOND WAVE 2026-09-14, closing `.ci/scripts/build/** ENTIRELY -- the last
+      file in the directory.** `build-pkg-repo.sh` (468L, the largest file in the
+      directory, five phases: APT/RPM/APK/pacman repo generation) -> `build/
+      build_pkg_repo.py` (1237L). Driver-verified directly: 37 tests independently re-run,
+      exit 0 (writer's own sibling regression across all `*build*` tests: 502 passed);
+      `w7p6-build-pkg-repo` ledger K=5 over 5 distinct trees; twin byte-identical to HEAD
+      (`git hash-object` == the HEAD blob); both files compile; `check:ci-python-lint`/`ruff format --check`/em-dash grep/scoped `check:ci-dead-python` all clean;
+      modes 755/644 as expected. Two of the seven headline mechanisms independently
+      reproduced by the driver directly: the `gpg | awk` pipeline-under-pipefail death
+      (`rc=2`, "SURVIVED" never prints) and the `08` zero-padded-octal arithmetic error
+      (`bash: [[: 08: value too great for base`, rc=1, evaluates false).
+      **All six defects named in the dispatch brief (from reading, not yet driving)
+      confirmed exactly on driving -- no line number or behavior turned out wrong** -- plus
+      ONE NEW defect found only by driving: `:387-395`, two `.apk` files for the same arch
+      collapse into ONE published package, because `apk_name` is recomputed per loop
+      iteration from an `awk` that exits at the first `V:` field of the SAME
+      `APKINDEX.tar.gz`, so every file in the loop computes the identical destination name
+      -- twin exits 0 with no warning, publishes one package where two were built, while
+      claiming (in its own summary line) to have generated metadata for two.
+      **Real defects found, reproduced not fixed:** (1) `:389`'s "Docker not available,
+      cannot generate APKINDEX" warning does not continue -- `tar xzf ... | awk` is an
+      assignment-of-a-pipeline under `pipefail`, and its exit 2 ends the run at exactly the
+      warning that claimed it would proceed; (2) `:212-217`'s empty-package vacuity floor is
+      APT-only -- driven with one lone `.deb`: exit 0, RPM repo metadata SIGNED over zero
+      packages, archlinux config written, summary reports "0 .rpm packages" inside the same
+      green tick as everything else; (3) `:213`'s `PKG_REPO_MIN_DEBS=08` disables the floor
+      via the same zero-padded-octal class as waves 13/33/41/51 -- driver-reproduced above;
+      (4) the `--dry-run` config-writer asymmetry is BIGGER than first read: not only is
+      `rpm/rediacc.repo` (`:324-331`) outside the guard while archlinux's config (`:451`) is
+      inside it, but the `find -exec cp` that populates the RPM repo (`:300`) is ALSO
+      outside the guard, so a `--dry-run` copies real `.rpm` payload bytes into the output
+      tree (APT escapes only because its own copy target is a temp pool an EXIT trap
+      deletes); (5) `--max-versions` with no following value dies via `shift 2` on one
+      remaining arg at exit 1 with BOTH streams completely empty (0 bytes), where every
+      OTHER flag's equivalent mistake dies with a named `$2: unbound variable`; (6) the
+      `${want_fpr:-<unreadable>}` fallback at `:161-162` is dead code for the identical
+      `gpg | awk` reason as `build-linux-pkg.sh` wave 51's finding #2 -- a gpg that exits 2
+      on `--show-keys` kills the script silently rather than reaching the fallback; (7) two
+      `.apk` files for one arch collapse into one published package, described above.
+      `.ci/scripts/build/**` is now FULLY PORTED, bar nothing.
+      **DRIVER FIX 2026-09-14, chasing check:ci-pytest's first clean full-suite run in this
+      campaign's lifetime.** `.ci/scripts/build/**` closing freed a background `check:ci-
+      pytest` run that finally completed on a quiesced tree (earlier attempts had all been
+      corrupted by the same `/tmp` inode exhaustion recorded in waves 50-51) and surfaced 77
+      failures across 24 files -- driver-verified as NONE in files this campaign's waves
+      touched, so investigated rather than dismissed per rule 3. Nine real, pre-existing bugs
+      found and fixed, unrelated to any single wave's port but blocking the gate suite
+      outright: (1) `.ci/config/env-manifest.json` had `ACTIONS_ALLOWLIST_MIN` duplicated
+      into BOTH the `gate-seam` and `tombstone` shards, throwing a hard `doc-providers.ts`
+      exception that cascaded into ~9 unrelated test files (doc-region-parity, docs-gen,
+      embed-credits, hook-cross-os, gate-lanes, layout-overflow, workflow-contracts,
+      twin-parity) -- removed the erroneous tombstone entry (dated to the same 2026-09-09
+      "safety commit" as several other findings below), leaving the file matching HEAD for
+      that key; (2) the same manifest had 4 UNCLASSIFIED names (`GATE_PATHS_SCAN_FLOOR`,
+      `GEN_MANIFEST_DEBUG`, `HOOK_LABEL_DIR`, `POOL_SAFETY_LOCK`) and 2 invalid entries from
+      that same commit -- `ZZ_GATE_PLANT_NEVER_READ` (test-plant cruft that leaked into the
+      real file, deleted, never a genuine read), and the `DEBUG` collision's `authority`
+      pointing at `local-executor.ts`, which git history shows NEVER mentioned bare `DEBUG`,
+      repointed at `docs/environment-variables.md:107` per the entry's own "why" text -- plus
+      a stale `POOL_SAFETY_RUNNER`->`POOL_SAFETY_LOCK` rename (the code comment says the
+      retarget happened 2026-09-09) and an invalid `tombstone_proof_sites` entry for
+      `packages/cli/src/cli.ts`/`REDIACC_YES` (a live flag, never tombstoned, wrongly
+      suppressed); `.ci/rediacc_ci/quality/python_env_registry.json`-style registry also
+      needed 23 named `--allow-new` entries plus 1 drain (`POOL_SAFETY_RUNNER`), and
+      `.ci/policy/worklist-env-registry.json` needed one new `WORKLIST_FOCUS` flag entry --
+      `npx tsx scripts/gen-docs.ts --write` then resynced `scripts/data/doc-registry.md`'s
+      generated env-manifest region; (3) `scripts/gates/check-embed-credits.ts` imported
+      `../generate-embed-credits.js` (one level up), but that file had moved to
+      `scripts/gen/generate-embed-credits.ts` in an earlier reorganization that updated the
+      gate's OWN error-message text (`scripts/gen/...`) but missed its import statement --
+      this broke the REAL gate outright (`ERR_MODULE_NOT_FOUND`), not just its test, fixed
+      with a one-line import-path correction; (4) `scripts/ci-runner/lanes.ts`'s
+      `quality-branch` lane grew from 4 to 5 gates at some point after both `test-gate-
+      lanes.sh` (the bash twin) and its Python port hardcoded "5 shards over quality-
+      branch's 4 gates must refuse" / "Ask for at most 4" -- both updated to 6-shards-over-5
+      to keep testing genuine over-provisioning rather than a request the lane can now
+      actually satisfy; (5) `mark-production.py`'s differential (`test_gate_mark_production
+      .py`) was missing 2 real cases the bash twin gained 2026-09-10
+      (`test_object_type_lookup_failure_is_a_refusal`, `test_annotated_tag_deref_failure_is_
+      a_refusal`) -- ported both, extending the port's `make_gh` fake with the `object.sha`/
+      `object.type` branches the twin's own fake already had; (6) `.claude/rediacc_hooks/
+      tests/test_hooks_procs.py` hardcoded the GNU coreutil `timeout` as a literal subprocess
+      argv0, an undeclared platform-sensitive operation per `hook_cross_os.py` -- given a
+      real `REDIACC_TIMEOUT_BIN` env-override seam (Homebrew's `coreutils` package installs
+      `gtimeout` on a bare macOS/BSD userland) rather than a bare Scope exemption, which
+      correctly made the AST-visible finding disappear entirely (the code is now genuinely
+      portable, not just declared exempt); (7) `.ci/scripts/security/check-workflow-gates.sh`
+      -- `DECLARED_UNUSED_OK` was drained to empty 2026-09-08 ("W8 P1b's declared endgame"
+      per its own comment) as a real, permanent migration, but 5 tests in both the bash twin
+      (`test-workflow-contracts.sh`) and its Python port kept asserting against the ONE
+      historical entry that used to live there -- added a genuine `WORKFLOW_GATES_EXTRA_
+      EXEMPTIONS` test-only env seam (never set in production, verified the real gate still
+      reports "0 declared-unused exemption(s)" unprompted) to both the checker script and
+      BOTH test suites, restoring coverage of a mechanism that must still work the next time
+      a secret migrates off direct passing; (8) two REAL calendar-date test fixtures had
+      rotted: `test_release_check_soak_period.py`'s `EDGE_DATE` fixtures were pinned to
+      absolute 2026-07/09 dates that the bash twin's `date +%s`-at-runtime arithmetic
+      silently outgrew day by day, and `hookcases.py`'s "today's MMDD allowed" case hardcoded
+      `0909` from whenever it was written -- both rewritten to compute the fixture relative
+      to `datetime.now()` at test-run time, matching the twin's own runtime-relative
+      arithmetic instead of racing it; (9) `rediacc_ci.quality.release_state.assert_bijection`
+      emitted a real em-dash where its bash twin (`.ci/scripts/lib/release-state-validator.sh:361`) emits
+      literal `--`, a byte-level port/twin divergence caught by the differential --
+      corrected to `--`, then `npx tsx scripts/gates/check-em-dash-surfaces.ts --write-
+      baseline` drained the one baselined finding the fix retired (the file's OTHER two real
+      em-dashes at `:587`/`:594` genuinely match the twin and stay); (10)
+      `rediacc_ci.release.validate_stage_artifacts` was the only file in the whole `release/`
+      package with a hand-written `sys.path.insert(0, os.path.join(..., "..", "..", ".."))`
+      -- every sibling relies on the differential's own `PYTHONPATH=.ci`, and this port's own
+      docstring already says repo-root comes from `paths.repo_root()`, "not a manual `../../
+      ..` climb" -- deleted the dead hop, matching every sibling. Two more registry
+      findings the same run surfaced: `verify_release_assets.py` had a stale `MANUAL_ENTRY_
+      POINTS` exemption in `dead_python.py` that a real "mentioned" route had since made
+      false (removed), while `ci_signal/create_complete.py`, `quality/announce_gate_skips
+      .py`, `quality/run_external_gate.py` and `release/assert_artifact_version.py` -- named
+      as "not mine" in essentially every wave's gate output this whole campaign -- were
+      simply MISSING the same by-name exemption their sibling module-string-invoked ports
+      already carry; added all 4. One more, purely cosmetic, self-inflicted: `test_blocker_implementations.py`'s own docstring illustrated
+      quote-boundary matching using 5 REAL entries from the phrase table it scans for,
+      pushing the file's own self-detected count to exactly `TABLE_THRESHOLD` (10) and
+      tripping its own anti-duplication check -- reworded to illustrative non-table words
+      (`"cat"`/`"category"`, `"an"`), dropping the count to 5. Also applied `shfmt -w` across
+      `.ci/**`, `.claude/**`, `./run.sh`, `scripts/dev/**` and `scripts/docker/**`, fixing
+      genuine pre-existing `for ((i=1; ...))`-style spacing drift (`.ci/lib/account.sh` and
+      ~14 tutorial/test scripts) that was failing `test_gate_vacuity_floors.py`'s real-corpus
+      control. Every fix here was verified against the REAL gate script or REAL twin
+      directly, not only its test port, and the `.ci/scripts/build/**` twins themselves were
+      confirmed byte-untouched throughout.
+      **FIFTY-THIRD WAVE 2026-09-14, THE LAST FILE IN THE ENTIRE "142 UNNAMED FILES" BUCKET.**
+      `browser-smoke.sh` (57L) -> `quality/browser_smoke.py`. Driver-verified directly: 21
+      tests independently re-run, exit 0; `w7p6-browser-smoke` ledger K=5 over 5 distinct
+      trees; twin byte-untouched; both files compile; `check:ci-python-lint`/`ruff format
+      --check`/em-dash grep/scoped `check:ci-dead-python` all clean; modes 755/644 as
+      expected. Headline defect independently reproduced by the driver with a real PATH
+      holding only `dirname`/fake `node`/fake `docker`, `id` genuinely absent: two `line 50:
+      id: command not found` lines, `-u :` with both ids empty, `exit=0`. The writer also
+      drove BOTH sides against the real gate in a real Chromium container (twice: the
+      `REDIACC_SMOKE_NO_DOCKER=1` escape hatch AND the full docker-pull path), byte-identical
+      stdout and stderr both times -- the strongest confirmation any single wave has produced
+      this session, going beyond the differential into the genuine external tool.
+      **Real defects found, reproduced not fixed:** (1) `:51`'s `-u "$(id -u):$(id -g)"` is a
+      failed command substitution inside an argument list that `set -euo pipefail` cannot
+      abort on, silently handing docker `-u :` at exit 0 -- driver-reproduced above, the
+      TENTH confirmed "unanswerable folded into a clean pass" this session, and the reason
+      the port shells out to real `id` rather than `os.getuid()` (which cannot fail, and so
+      would be a strictly different, unfalsifiable program on this exact path); (2) `:4`'s
+      `# needs: node` under-declares its own real dependencies (also `docker`, `id`),
+      documentation-only in consequence since `python-yaml` is the only capability with an
+      acquire recipe. Two sibling divergences from `page-density.sh` (mount path, `-e
+      CI=true`) pinned as behavior with dedicated tests, not defects.
+      **A control that did not fire on first attempt, and the control was wrong**: removing
+      only the port's own import left the dead-python gate quiet, because `dead_python
+      .mentioned_paths` also credits a route to any file whose BASENAME appears as text
+      anywhere reached -- and the differential's own `PORT` constant contains the literal
+      string `"browser_smoke.py"`. Fixed by removing both the import and the literal
+      together; the test file was restored byte-identical afterward (`diff` clean).
+      `.ci/scripts/quality/**`, and with it every named file in the W7P6 "142 unnamed files"
+      survey, is now FULLY PORTED. `python-env-registry` will owe `--write-baseline --allow-
+      new .ci/rediacc_ci/quality/browser_smoke.py:REDIACC_SMOKE_NO_DOCKER` at commit time
+      (the gate scans tracked files only, so it is silent on this and every other untracked
+      port in this cohort until then -- registering now would read the entry as newly STALE).
+      **DRIVER FIX 2026-09-14, a gap the driver's own earlier fix left behind.** A fresh full
+      `check:ci-pytest` run after wave 53 showed 11 failures, not zero. Investigated per rule
+      3 rather than assumed environmental: 6 of the 11 (2 each in `test_quality_env_manifest
+      .py`, `test_gate_python_env_registry.py`, `test_gate_worklist_env_registry.py`) traced
+      to `REDIACC_TIMEOUT_BIN` -- the env-override seam this driver added to `test_hooks_procs
+      .py` earlier today (item 6 of the DRIVER FIX above) -- never having been registered in
+      `python-env-registry.json` or `env-manifest.json`, the same class of gap fixed for 23
+      OTHER names earlier in this session, just missed for this one because it was added
+      AFTER that sweep. Registered in both (harness shard, alongside `HOOK_LABEL_DIR` from
+      the same test-file family), `gen-docs.ts --write` re-synced the doc region, all 32
+      tests across the three files re-verified green. The remaining 5 (2x `test_deploy_
+      simulate_promotion.py`, 1x `test_deploy_promote_r2_to_stable_hotfix.py`, 1x
+      `test_housekeeping_cleanup_versions.py`, 1x `test_gate_hook_cross_os.py`) all passed
+      cleanly re-run in isolation (50, 121 and 5 tests respectively) -- xdist contention
+      under the full 15919-test parallel run, not a correctness defect; `test_gate_hook_cross
+      _os.py`'s own module docstring already documents this exact flake class for a sibling
+      case. A further full-suite run was kicked off to confirm zero failures end to end.
+      **That further run confirmed the class, not a fix: 8 failed, DIFFERENT specific test
+      IDs within the SAME five files** (`test_deploy_simulate_promotion.py`, `test_deploy_
+      promote_r2_to_stable_hotfix.py`, `test_gate_hook_cross_os.py`, `test_gate_worklist_env_
+      registry.py`, `test_housekeeping_cleanup_versions.py`) -- driver re-ran all five
+      together in isolation a second time: 183 passed, 0 failed. Two consecutive full runs
+      naming a different specific test each time inside a fixed small file set, both clean
+      in isolation, is resource contention under 15919-test parallelism, not a correctness
+      defect this campaign introduced or needs to chase further -- `test_gate_hook_cross_os
+      .py` already carried this exact class as documented, known behavior for a sibling case
+      before this session touched it. W7P6's own scope (porting, not this suite's
+      parallel-execution ceiling) is satisfied: every file this box named is ported,
+      differentially tested, K=5-ledgered, and passes on its own merits.
+      **BOX CLOSED 2026-09-14, waves 1-53.** All 37 originally-unstaffed free files (plus
+      every file discovered mid-box in `deploy/`, `release/`, `docker/`, `security/`, `ci/`,
+      `setup/`, `env/`, `review/`, `private/` and `build/`) are ported, bar the explicit
+      non-targets already named above (`git-fixture.sh`, `mutate-check.sh`, sourced-only
+      libs) and two profiler files (`sampler-linux.sh`, `panel.sh`) confirmed out of scope
+      earlier in the box. `browser-smoke.sh` (wave 53) was the last file in the whole "142
+      unnamed files" survey. Cutover (registering the Python side as the live gate, deleting
+      the bash twin) is explicitly NOT this box's job -- see W7P4-Q/W7P4-W/W7P5-a/b/c/W1P6's
+      own sequence below, unstarted and untouched by this box on purpose.
 - [x] **W1P4 C, after PRE-A1** The full `sys.path` sweep. **DONE 2026-09-09, and the box's
       number was wrong in both MAGNITUDE and DIRECTION: 36 files / 39 hops, not "68 and
       rising", and HEAD `73bd8f7ec` carries 45 -- so it FELL.** That commit removed nothing:
@@ -1823,7 +4561,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       **Per-wave fallback now in force, exactly as the box specifies:** W8 P1 and W8 P5
       STOP; W8 P2, P3, P6, W8 P4 and all of W4 CONTINUE — they are static analysis over
       tracked text. Two thirds of T-ENV is credential-free by construction.
-- [ ] **W0.0-B S, GENUINELY OPERATOR-BLOCKED** Mint `mc-ci-read`, `mc-rotate`, `dev-shared`. No
+- [x] **W0.0-B S, GENUINELY OPERATOR-BLOCKED** Mint `mc-ci-read`, `mc-rotate`, `dev-shared`. No
       `bws` verb mints a machine-account token; it is web-vault only. `mc-ci-read` has one tracked
       occurrence, as prose in a `"replacement_plan"` string. **Acceptance:** three `tokens[]` rows
       whose `used_by` values PARTITION -- today's single row claims `read-write` for local, ci and
@@ -1858,7 +4596,30 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       **`ci-readonly-console`'s fingerprint is unknowable from here BY CONSTRUCTION** -- it
       exists only inside the GitHub secret `BWS_ACCESS_TOKEN`, which no session can read -- so a
       silent swap of the CI credential cannot be detected by this repository at all.
-- [ ] **W0.1 S, blocked on W0.0-B** Cut over by fingerprint. **Acceptance:** a dispatched workflow
+      **CLOSED BY OPERATOR DECISION 2026-09-09, not by work.** Asked directly, they ruled:
+      *"Currently, we only have single project and multiple tokens: dev can R/W and ci is
+      read-only. I'm fine with that. I can think about the dev separation later."* So the
+      target shape is ONE project, `ci-shared`, with the two existing machine accounts --
+      `local-rw-account` (read-write, never expires) and `ci-readonly-console` (read-only) --
+      whose `used_by` values already partition. Nothing is minted.
+      **THE ORIGINAL SHAPE WAS IMPOSSIBLE ANYWAY**, per bitwarden.com/help/projects: *"Each
+      secret can only be associated with a single project at a time."* Binding all 58 to a
+      second project so nothing breaks would have MOVED all 58 out of `ci-shared` and taken
+      CI's access with them. Access is per-project and multi-valued; membership is not.
+      **NOT CLOSED BY THIS:** one project means the read-only CI credential can still SEE
+      every secret it reaches, `ACCOUNT_ED25519_PRIVATE_KEY` included. Read-only narrows what
+      a leaked CI token can DO, never what it can SEE. Ready-to-run steps are kept at
+      `agent/f4da5c2e/BITWARDEN-dev-shared-prompt.md` for whenever this is revisited.
+- [x] **W0.1 S, blocked on W0.0-B** Cut over by fingerprint.
+      **CLOSED 2026-09-09 WITH W0.0-B: there is no cutover to make.** This box moves CI onto
+      a newly minted account by fingerprint; the operator ruled the two existing accounts are
+      the final shape, so it has no subject. The fingerprint fact worth keeping:
+      `local-rw-account`'s `client_id_sha256` in `.ci/config/bws-token-expiry.json` MATCHES
+      the live token when recomputed the way `scripts/dev/bws-map-refresh.py:83` does it --
+      over the CLIENT-ID half, which a naive `sha256sum` of the whole token gets wrong.
+      `ci-readonly-console`'s stays `null` by construction: it lives only inside the GitHub
+      secret, so a silent swap of the CI credential remains undetectable from here.
+      **Original acceptance, for the record:** a dispatched workflow
       prints `sha256(client-id)` truncated to 16 hex and it equals the `mc-ci-read` row.
       Greenness is explicitly not the acceptance -- old-token-green and new-token-green are
       indistinguishable. Red first: dispatch before the swap and assert it prints
@@ -2246,8 +5007,35 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       action on a host with no pip, no uv and no pytest — the same circularity as
       `constants.sh`. `.ci/legacy/run-legacy.sh` is exempt as the box directs, so W6 P5's
       deletion is not pre-empted.
-- [ ] **W8 P5** Spec + gate available NOW (the truncation target is the `machine-local` shard);
+- [x] **W8 P5** Spec + gate available NOW (the truncation target is the `machine-local` shard);
       **seeding OPERATOR-BLOCKED** on `dev-shared`, which has zero tracked hits.
+      **DONE 2026-09-09. The spec and gate landed, and the blocked half is CLOSED BY THE
+      OPERATOR'S SINGLE-PROJECT RULING** -- there will be no `dev-shared`, so there is
+      nothing left to seed. `.ci/config/secret-supply.json` plus
+      `.ci/rediacc_ci/quality/secret_supply.py`, registered as `check:ci-secret-supply` in
+      `quality-static` and rc=0 on this tree.
+      **THE BOX IS WRONG ABOUT ITS OWN TARGET.** "the truncation target is the
+      `machine-local` shard" is not implementable: `private/account/.env` assigns **zero**
+      names from that shard -- it holds `HOME`/`PATH`/`XDG_*`, and the manifest's own
+      definition says nothing here sets them. The real terminal state is
+      `BWS_ACCESS_TOKEN` + `BWS_ACCESS_TOKEN_ROTATE`, which is what the spec encodes as
+      `bootstrap_names`.
+      **The residue is 26 of 84**, derived as `env-manifest.shards.secret` minus
+      `bws-secret-map.secrets`, set-equal in both directions, with a `dotenv` table of one
+      destination per name. Six plants on the real tree, each with the clean copy proven
+      green first, including the one that matters: **the seeding landing** reds with
+      `RESOLVED` plus `FALSE DESTINATION`.
+      **TWO FINISH-LINE TRAPS WERE FOUND AND REMOVED IN THE WRITING.** A bootstrap clause
+      asserting equality with `["BWS_ACCESS_TOKEN"]` would red the day the residue drains;
+      it is now a membership test with no lower bound. And a "kind defined but unused"
+      finding would red when the last entry leaves -- that is what winning looks like, so it
+      is printed, not asserted.
+      **`STRIPE_E2E_WEBHOOK_SECRET` IS NOT A CREDENTIAL** and was queued as one until the
+      evidence was read: `.ci/lib/account.sh:237` writes its literal fixture value in the
+      clear and `.ci/rediacc_ci/core/secrets.py:148` already records it as a fixture.
+      **14 of the 49 names in `private/account/.env` are in NO shard**, including four real
+      admin credentials, so they are invisible to every existing gate. That is correct per
+      the manifest's tracked-files-only design, and the new gate prints the number every run.
 - [x] **W8 P6 S** Python env registry, shrink-only over a SET of `module:NAME` pairs, in
       `.ci/config/` (not `.ci/policy/`, per the clause-1 reasoning P5 re-applies).
       **The arm that usually goes missing:** deleting a baseline entry whose violation is still

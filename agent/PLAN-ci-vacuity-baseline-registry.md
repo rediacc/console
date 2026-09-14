@@ -23,7 +23,7 @@ see §2 for why the instrument changed.
 - [x] Convert `compose_env.py` (2), `npmrc.py` (3), `account_portal.py` (1) — all selftests exit 0
 - [x] Convert `.ci/rediacc_ci/quality/review_turn_capacity.py` (5 sites) and DELETE the identity leg that was at `:480`
 - [x] Adjust the floors this file's conversion moved: its derived floor `+3`→`+2`, and the external `>= 12`→`>= 11` in `.ci/rediacc_ci/tests/test_quality_review_turn_capacity.py:218`, each with its reason recorded in place
-- [x] Rename the LOCAL `plant` helpers to `expect_finding` — `check_plan_record.py` (13 calls)
+- [x] Rename the LOCAL `plant` helpers to `expect_finding` — `.ci/scripts/quality/check_plan_record.py` (13 calls)
       and `cli_doc_coverage.py` (8 calls). A THIRD remains at
       `.ci/rediacc_ci/tests/gates/test_gate_watchdog_monitor_ordering.py:98`, left alone because
       that tree is a live writer's; the gate's resolve-the-import rule covers it regardless
@@ -37,8 +37,8 @@ see §2 for why the instrument changed.
 - [x] Make zero discovered `plant()` sites a RED distinct from an empty directory — both arms driven against real starved trees via `PY_CONTROL_PLANTS_ROOT`, and the helper returns WHICH arm fired so the two cannot cover for each other
 - [ ] Add `.ci/rediacc_ci/tests/gates/test_gate_python_control_plants.py` with the real-tree plant, the historical `max_turns=140` plant, and the unmodified-copy mirror
 - [x] WITHDRAWN, not done: the anti-vacuity harness copies `.ci/rediacc_ci` wholesale, so it feeds this gate its real inputs and cannot starve it. A registry row claiming a diagnostic that cannot fire would be a false entry in a hand-verified list; the coverage lives in the gate's own controls instead
-- [x] Correct the disclosure in BOTH `control_vacuity` twins together — `py_unscanned` is now a delegation naming the owning gate; `test_quality_control_vacuity.py` 11/11
-- [x] Registration applied: `package.json` key, `manifest.ts` entry in `quality-static`, `gate-bind --write` emitted the step at `ci-quality.yml:292`, `gen:gates-lock` → 459 gates. Reachable from `npm run ci`. NOTE: `gate-bind` scans only git-TRACKED files, so a new gate must be `git add`-ed to be discoverable at all
+- [x] Correct the disclosure in BOTH `control_vacuity` twins together — `py_unscanned` is now a delegation naming the owning gate; `.ci/rediacc_ci/tests/test_quality_control_vacuity.py` 11/11
+- [x] Registration applied: `package.json` key, `manifest.ts` entry in `quality-static`, `gate-bind --write` emitted the step at `.github/workflows/ci-quality.yml:292`, `gen:gates-lock` → 459 gates. Reachable from `npm run ci`. NOTE: `gate-bind` scans only git-TRACKED files, so a new gate must be `git add`-ed to be discoverable at all
 
 ## 0. What I got wrong, corrected before anything else
 
@@ -57,7 +57,7 @@ verified the corrections against the tree rather than accepting them:
   construction → `exempt`; only `proves_plant_landed` failing is a finding.
 - The count of `check-*.sh` (77) and `check_*.py` (50) was right, but the surface
   that matters is larger: `.ci/rediacc_ci/quality/` holds 77 ported gate modules
-  that the disclosure at `control_vacuity.py:388` does not count at all, and that is
+  that the disclosure at `.ci/rediacc_ci/quality/control_vacuity.py:388` does not count at all, and that is
   where the debt actually lives.
 
 ## 1. The real finding, and it is sharper than the one I filed
@@ -71,7 +71,7 @@ verified the corrections against the tree rather than accepting them:
 **It changed, and it changed silently.** 21 → 50. The property went from true to
 false. The tripwire its author installed was a number inside a SUCCESS message —
 which `shadow-gate.ts` classifies as chatter, not a finding, as
-`control_vacuity.py:390-395` itself notes. The gate predicted its own failure mode
+`.ci/rediacc_ci/quality/control_vacuity.py:390-395` itself notes. The gate predicted its own failure mode
 and implemented the alarm as something nothing reads.
 
 **The class is: a disclosure is not a control.**
@@ -88,7 +88,7 @@ _FIXTURE_HEALTHY.replace("max_turns=140", "max_turns=140").replace(
 
 `old == new` — provably vacuous. A dead leg chained ahead of a real `.replace`, so
 it moves no verdict today, and it sits in the port of the very gate
-`control_vacuity` uses as its own control (`CONTROL_GATE`, `control_vacuity.py:150`).
+`control_vacuity` uses as its own control (`CONTROL_GATE`, `.ci/rediacc_ci/quality/control_vacuity.py:150`).
 
 ## 2. Why NOT a shrink-only baseline
 
@@ -99,7 +99,7 @@ A baseline is right under three joint conditions, and this meets none:
 2. **Heterogeneous fixes.** Here every GENUINE PLANT is the same three tokens.
    **CORRECTED 2026-09-08 while converting:** the count of 71 is NOT 71 plants.
    It includes `.replace` used for PARSING and for NORMALISING BOTH SIDES OF A
-   COMPARISON, which must NOT be converted — `release_key_canonical.py:651-652`
+   COMPARISON, which must NOT be converted — `.ci/rediacc_ci/quality/release_key_canonical.py:651-652`
    strips newlines off `welded` and `_ARMOR` to compare their content, and
    wrapping either in `plant()` would break a passing test, since `plant()`
    raises when the needle is absent and is a mutant constructor, not a
@@ -135,8 +135,8 @@ where no `ctl` exists. `plant()` prints nothing — it is a constructor, not an
 assertion.
 
 The 12 files convert mechanically. **Watch the derived floors**: removing the now
-redundant proof at `review_turn_capacity.py:499-503` drops a `ctl.check`, so the
-`+3` at `:489` becomes `+2`. `check_plan_record.py` needs the `sys.path` hop spelled
+redundant proof at `.ci/rediacc_ci/quality/review_turn_capacity.py:499-503` drops a `ctl.check`, so the
+`+3` at `:489` becomes `+2`. `.ci/scripts/quality/check_plan_record.py` needs the `sys.path` hop spelled
 as in `.ci/scripts/quality/check_npmrc.py:69`.
 
 The new gate is NOT a widened `control_vacuity`. Three reasons in descending force:
@@ -155,13 +155,13 @@ Measured: with the restriction 12 files, without it 14, and both extras are fals
 positives.
 
 The `control_vacuity` disclosure edit must land in both twins in one commit or
-`test_quality_control_vacuity.py:189` reds — which is the control working.
+`.ci/rediacc_ci/tests/test_quality_control_vacuity.py:189` reds — which is the control working.
 
 ## 4. Controls — fires on a plant, silent when clean, both directions
 
 On `plant()` itself: happy path returns; missing needle raises; **`old == new`
 raises with its own distinct message** (this is what catches
-`review_turn_capacity.py:480`, so it is not hypothetical); empty subject raises;
+`.ci/rediacc_ci/quality/review_turn_capacity.py:480`, so it is not hypothetical); empty subject raises;
 `plant_re` both ways; a multi-occurrence mirror.
 
 On the detector, every rule with its mirror: raw substitution in a control region is
@@ -205,16 +205,16 @@ W7 P4 is actively rewriting. Land as one PR and rebase rather than interleaving.
 
 The gate ran against the real tree and produced 7 findings. Judged one by one:
 
-- **2 were my implementation bug.** `no_otlp_creds.py:437-438` — `SPACE_RE.sub("", " \t\n")`.
+- **2 were my implementation bug.** `.ci/rediacc_ci/quality/no_otlp_creds.py:437-438` — `SPACE_RE.sub("", " \t\n")`.
   For `.sub`/`.subn` the RECEIVER is a compiled regex, not the fixture; that call
   exercises the pattern itself. Fixed by narrowing `SUBSTITUTORS` to `.replace` alone.
-- **1 was a genuine miss, now converted.** `check_plan_record.py:1090`
+- **1 was a genuine miss, now converted.** `.ci/scripts/quality/check_plan_record.py:1090`
   `with_ph.replace("Status: parked", "Status: compacted", 1)` is a real mutant on a
   lowercase local, which the earlier `_UPPER`/`clean` sweeps did not reach.
 - **4 REMAIN AND ARE NOT CONVERTIBLE**, which is the finding:
-  - `release_key_canonical.py:651-652` normalise BOTH SIDES of a comparison
+  - `.ci/rediacc_ci/quality/release_key_canonical.py:651-652` normalise BOTH SIDES of a comparison
     (`welded` vs `_ARMOR`, "one line break gone"). Not mutants.
-  - `check_plan_record.py:1155-1157` is a plant with a DELIBERATE FALLBACK CHAIN:
+  - `.ci/scripts/quality/check_plan_record.py:1155-1157` is a plant with a DELIBERATE FALLBACK CHAIN:
     `drifted = cen.replace(A)`, then `if drifted == cen: drifted = cen.replace(B)`.
     It already handles its own no-op, more cleverly than `plant()` can — `plant()`
     raises on the first miss and would destroy the fallback.
@@ -251,5 +251,5 @@ Shipping the gate at 4 known false positives would produce exactly the outcome
   control region would be flagged. Measured across all 127 files: **zero** today.
   The answer to the first one is a named divergence at the call site, not an
   allowlist file.
-- `check_plan_record.py` has no `---- gate ----` header; converting it must not
+- `.ci/scripts/quality/check_plan_record.py` has no `---- gate ----` header; converting it must not
   drift into a registration change.
