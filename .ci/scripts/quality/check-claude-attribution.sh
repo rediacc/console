@@ -59,14 +59,41 @@ fi
 
 # Check commit messages
 echo "  Checking commit messages..."
+# NOT `pulls/{n}/commits`: that endpoint caps at 250 EVEN WITH --paginate, and it
+# caps SILENTLY -- no error, no marker, just a short list. Measured 2026-09-15 on
+# rediacc/console#589, a 254-commit PR: this gate read 250 and reported
+# "No Claude attribution found - OK" over the four NEWEST commits, which it had
+# never seen. That is the exact shape this gate was repaired for in the first
+# place (see the header): inspect nothing, print a checkmark.
+#
+# The compare endpoint paginates properly, and the PR's own `.commits` count is an
+# INDEPENDENT number to check the read against -- so a short read now refuses
+# instead of passing, at any size rather than at one magic threshold.
+PR_META=$(gh_retry "PR metadata for #${PR_NUMBER}" -- \
+    api "repos/${REPO}/pulls/${PR_NUMBER}" \
+    --jq '"\(.base.sha) \(.head.sha) \(.commits)"') || probe_failed
+read -r BASE_SHA HEAD_SHA TOTAL_COMMITS <<<"$PR_META"
+if [[ -z "$BASE_SHA" || -z "$HEAD_SHA" || ! "$TOTAL_COMMITS" =~ ^[0-9]+$ ]]; then
+    echo "  ERROR: could not read base/head/commit-count for PR #${PR_NUMBER}: '${PR_META}'." >&2
+    probe_failed
+fi
+
 COMMITS=$(gh_retry "commit list for PR #${PR_NUMBER}" -- \
-    api "repos/${REPO}/pulls/${PR_NUMBER}/commits" --paginate --jq '.[].sha') || probe_failed
+    api "repos/${REPO}/compare/${BASE_SHA}...${HEAD_SHA}?per_page=100" --paginate \
+    --jq '.commits[].sha') || probe_failed
 
 # A PR always has at least one commit. An empty list here means the call
 # succeeded but returned nothing usable, which is not a PR this gate can clear.
 if [[ -z "${COMMITS//[[:space:]]/}" ]]; then
     echo "  ERROR: the commit list for PR #${PR_NUMBER} came back empty." >&2
     echo "  Every PR has at least one commit, so this is a failed read, not a clean PR." >&2
+    probe_failed
+fi
+
+READ_COMMITS=$(grep -c . <<<"$COMMITS")
+if [[ "$READ_COMMITS" -ne "$TOTAL_COMMITS" ]]; then
+    echo "  ERROR: read ${READ_COMMITS} commit(s) for PR #${PR_NUMBER}, but the PR reports ${TOTAL_COMMITS}." >&2
+    echo "  An incomplete set cannot be cleared; refusing rather than judging part of it." >&2
     probe_failed
 fi
 

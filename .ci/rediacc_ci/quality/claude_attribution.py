@@ -212,6 +212,18 @@ def is_blank(payload: str) -> bool:
     return payload.strip(" \t\n\v\f\r") == ""
 
 
+def read_count(payload: str) -> int:
+    """`grep -c .`: non-empty LINES, which is what the completeness check reads.
+
+    Separate from `split_commits` deliberately. That one mirrors the twin's word
+    splitting because it feeds the loop; this one mirrors the twin's `grep -c .`
+    because it feeds the refusal. They agree on a list of SHAs and would stop
+    agreeing on anything else, which is the same coupling both implementations
+    have and therefore the same one they would break on.
+    """
+    return len([line for line in payload.split("\n") if line != ""])
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 clean or not a PR, 1 on an attribution or an unreadable PR."""
     args = list(argv or [])
@@ -247,9 +259,50 @@ def main(argv: list[str] | None = None) -> int:
 
     # Check commit messages
     print("  Checking commit messages...")
+    # NOT `pulls/{n}/commits`: that endpoint caps at 250 EVEN WITH --paginate,
+    # and it caps SILENTLY -- no error, no marker, just a short list. Measured
+    # 2026-09-15 on rediacc/console#589, a 254-commit PR: this gate read 250 and
+    # reported "No Claude attribution found - OK" over the four NEWEST commits,
+    # which it had never seen. That is the exact shape this gate was repaired for
+    # in the first place: inspect nothing, print a checkmark.
+    #
+    # The compare endpoint paginates properly, and the PR's own `.commits` count
+    # is an INDEPENDENT number to check the read against -- so a short read now
+    # refuses instead of passing, at any size rather than at one threshold.
+    ok, meta = gh_retry(
+        "PR metadata for #%s" % pr_number,
+        [
+            "api",
+            "repos/%s/pulls/%s" % (repo, pr_number),
+            "--jq",
+            '"\\(.base.sha) \\(.head.sha) \\(.commits)"',
+        ],
+    )
+    if not ok:
+        return probe_failed()
+
+    fields = meta.split()
+    # `read -r base head total` puts the ENTIRE remainder in the last variable,
+    # so a fourth field makes the count non-numeric rather than being dropped.
+    base = fields[0] if len(fields) > 0 else ""
+    head = fields[1] if len(fields) > 1 else ""
+    total = " ".join(fields[2:])
+    if base == "" or head == "" or not re.match(r"^[0-9]+$", total):
+        print(
+            "  ERROR: could not read base/head/commit-count for PR #%s: '%s'." % (pr_number, meta),
+            file=sys.stderr,
+        )
+        return probe_failed()
+
     ok, commits = gh_retry(
         "commit list for PR #%s" % pr_number,
-        ["api", "repos/%s/pulls/%s/commits" % (repo, pr_number), "--paginate", "--jq", ".[].sha"],
+        [
+            "api",
+            "repos/%s/compare/%s...%s?per_page=100" % (repo, base, head),
+            "--paginate",
+            "--jq",
+            ".commits[].sha",
+        ],
     )
     if not ok:
         return probe_failed()
@@ -261,6 +314,19 @@ def main(argv: list[str] | None = None) -> int:
         print("  ERROR: the commit list for PR #%s came back empty." % pr_number, file=sys.stderr)
         print(
             "  Every PR has at least one commit, so this is a failed read, not a clean PR.",
+            file=sys.stderr,
+        )
+        return probe_failed()
+
+    read_commits = read_count(commits)
+    if read_commits != int(total):
+        print(
+            "  ERROR: read %d commit(s) for PR #%s, but the PR reports %s."
+            % (read_commits, pr_number, total),
+            file=sys.stderr,
+        )
+        print(
+            "  An incomplete set cannot be cleared; refusing rather than judging part of it.",
             file=sys.stderr,
         )
         return probe_failed()
@@ -417,6 +483,16 @@ def selftest() -> int:
         is_blank(""),
         True,
     )
+
+    # -- the completeness check, both directions ----------------------------
+    # The defect it closes was SILENT: `pulls/{n}/commits` returned 250 of 254
+    # and the gate cleared the PR over four commits it never read. A control in
+    # one direction only would not have caught that, because the truncated read
+    # was itself a perfectly well-formed list.
+    ctl.check("a complete read counts every line", read_count("a\nb\nc\n"), 3)
+    ctl.check("PLANT: 250 lines is not 254, so the read is short", read_count("x\n" * 250), 250)
+    ctl.check("a blank payload counts zero, never the declared total", read_count(""), 0)
+    ctl.check("blank lines do not invent commits", read_count("a\n\nb\n"), 2)
 
     # -- the two skip / refuse arms, driven for real ------------------------
     saved = {k: os.environ.get(k) for k in ("GITHUB_TOKEN", "PR_NUMBER")}
