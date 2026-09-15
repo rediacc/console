@@ -4066,8 +4066,11 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `readReceipts()` in scripts/gates/check-quality-complete.ts already expects --
       `{lane, index, of, result, gates}`, confirmed by reading that file's own type rather
       than re-deriving the shape), and the `actions/upload-artifact` emission
-      (pinned `@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1`, matching this
-      workflow's existing two uses). This is real GitHub Actions YAML generation with a
+      (pinned to the exact commit sha `.github/workflows/ci-quality.yml`'s existing two
+      `actions/upload-artifact` steps already use, tagged v7.0.1 there -- that sha is on
+      the ACTION's own repository, never this one, so it is described rather than quoted
+      here to avoid exactly the unresolvable-object-citation class this file's own gate
+      catches). This is real GitHub Actions YAML generation with a
       hand-crafted inline script computing a count from a live `toJSON()` expression --
       exactly the kind of thing that deserves careful, tested design rather than a rushed
       pass, and D3's own marker-collision bug is the concrete reason to slow down here.
