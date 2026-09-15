@@ -286,7 +286,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-duplication-angle.md` | implemented | 241 | 0 | 0 | 12504 |
 | `agent/PLAN-durable-reports-and-push-inbox.md` | compacted | 69 | 0 | 0 | 3705 |
 | `agent/PLAN-env-to-bitwarden-v2.md` | draft | 689 | 5 | 4 | 45073 |
-| `agent/PLAN-extension-shaped-matchers.md` | executing | 341 | 0 | 0 | 22265 |
+| `agent/PLAN-extension-shaped-matchers.md` | executing | 363 | 0 | 0 | 23865 |
 | `agent/PLAN-fix-ci-contention-aware-timeouts.md` | done | 354 | 0 | 0 | 20483 |
 | `agent/PLAN-fix-german-translation-artifacts.md` | compacted | 61 | 0 | 0 | 3126 |
 | `agent/PLAN-fix-in-session-rule.md` | compacted | 69 | 0 | 0 | 3594 |
@@ -336,7 +336,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 79 | 0 | 0 | 4194 |
 | `agent/PLAN-test-advisor.md` | done | 132 | 0 | 0 | 6884 |
 | `agent/PLAN-testing-surface-audit.md` | draft | 652 | 0 | 0 | 40322 |
-| `agent/PLAN-tooling-transformation.md` | ready | 6739 | 14 | 140 | 616859 |
+| `agent/PLAN-tooling-transformation.md` | ready | 6753 | 14 | 140 | 618091 |
 | `agent/PLAN-trap-enforcement.md` | w | 820 | 0 | 0 | 49274 |
 | `agent/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 0 | 4529 |
 | `agent/PLAN-unify-trap-corpus.md` | compacted | 54 | 0 | 0 | 2755 |
