@@ -49,7 +49,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.autopilot import state_comment as sc
-from rediacc_ci.core import common
+from rediacc_ci.core import bash_dialect, common
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "autopilot" / "state-comment.sh"
@@ -684,7 +684,18 @@ def test_a_directory_as_an_entries_file_is_the_one_named_divergence() -> None:
     it came from. Exit code and stdout are identical; the port is silent.
 
     Asserted as EXACTLY that difference, so if the twin ever starts refusing here
-    this test goes red rather than the port drifting."""
+    this test goes red rather than the port drifting.
+
+    THE DIAGNOSTIC'S WORD ORDER IS BASH'S, NOT OURS, and 5.3 changed it:
+
+        bash 5.3.9   read: 0: read error: Is a directory
+        bash 5.2.37  read: read error: 0: Is a directory
+
+    The failing file descriptor moved from after the phrase to before it. The
+    literal `read error: Is a directory` that used to be spelled here is the 5.3
+    tail, so this passed on every machine in this tree and failed in CI run
+    34970782616, which is ubuntu-24.04 and therefore bash 5.2. Asked of the
+    running bash now."""
     (twin_code, twin_out, twin_err), (port_code, port_out, port_err) = _sides(
         "entries-dir",
         [*RENDER_BASE, "--ruled-out-file", "olddir"],
@@ -694,7 +705,8 @@ def test_a_directory_as_an_entries_file_is_the_one_named_divergence() -> None:
     assert port_code == twin_code == 0
     assert port_out == twin_out
     assert port_err == b""
-    assert twin_err.endswith(b"read error: Is a directory\n")
+    expected_tail = (bash_dialect.read_error("0", "Is a directory") + "\n").encode()
+    assert twin_err.endswith(expected_tail), twin_err
     assert b"state-comment.sh: line " in twin_err
     assert len(twin_err.splitlines()) == 1, "the twin grew a second diagnostic here"
 

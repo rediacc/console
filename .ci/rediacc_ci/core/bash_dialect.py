@@ -62,7 +62,7 @@ import subprocess
 # host cannot be seen half-5.2 and half-5.3. `[[ ]]` yields the arithmetic shape,
 # `[` the integer one, and `cd ""` the null-directory one; none writes to stdout,
 # and `cd ""` does not move the shell (it is refused on 5.3 and a no-op on 5.2).
-_PROBE = '[[ "1 2" -gt 0 ]]; [ abc -gt 1 ]; cd ""'
+_PROBE = '[[ "1 2" -gt 0 ]]; [ abc -gt 1 ]; cd ""; read -r _bd < /'
 
 _ARITH_53 = "arithmetic syntax error"
 _ARITH_52 = "syntax error"
@@ -72,9 +72,15 @@ _INTEGER_52 = "integer expression expected"
 # empty string rather than a different wording. A caller that appends this to an
 # expected stderr therefore appends nothing on 5.2, which is correct.
 _CD_NULL_53 = "cd: null directory"
+# The `read` builtin names the failing FD, and 5.3 MOVED it:
+#   5.3.9   read: 0: read error: Is a directory
+#   5.2.37  read: read error: 0: Is a directory
+# A word ORDER change, not a rewording, so it cannot be expressed as a
+# swappable noun the way the pairs above can.
+_READ_FD_AFTER_REASON = "read error: 0:"  # the 5.2 shape, as the probe emits it
 
 
-def _probe(env: dict[str, str] | None) -> tuple[str, str, str]:
+def _probe(env: dict[str, str] | None) -> tuple[str, str, str, bool]:
     try:
         proc = subprocess.run(
             ["bash", "-c", _PROBE],
@@ -85,7 +91,7 @@ def _probe(env: dict[str, str] | None) -> tuple[str, str, str]:
             timeout=30,
         )
     except (OSError, subprocess.SubprocessError):
-        return _ARITH_53, _INTEGER_53, _CD_NULL_53
+        return _ARITH_53, _INTEGER_53, _CD_NULL_53, True
     err = proc.stderr
     # SUBSTRING ORDER MATTERS, and only in this direction: `syntax error` is a
     # substring of `arithmetic syntax error`, so asking for the SHORT spelling
@@ -97,16 +103,17 @@ def _probe(env: dict[str, str] | None) -> tuple[str, str, str]:
     # is the longer one -- so the long spelling is again what gets asked first.
     integer = _INTEGER_52 if _INTEGER_52 in err else _INTEGER_53
     cd_null = _CD_NULL_53 if _CD_NULL_53 in err else ""
-    return arith, integer, cd_null
+    read_fd_first = _READ_FD_AFTER_REASON not in err
+    return arith, integer, cd_null, read_fd_first
 
 
 @functools.lru_cache(maxsize=1)
-def _ambient() -> tuple[str, str, str]:
+def _ambient() -> tuple[str, str, str, bool]:
     """The host's own bash, probed once per process."""
     return _probe(None)
 
 
-def _dialect(env: dict[str, str] | None) -> tuple[str, str, str]:
+def _dialect(env: dict[str, str] | None) -> tuple[str, str, str, bool]:
     # A caller that named an env is asking about THAT bash, so it neither reads
     # nor writes the ambient cache.
     return _probe(env) if env is not None else _ambient()
@@ -141,6 +148,21 @@ def cd_null_directory(env: dict[str, str] | None = None) -> str:
     unconditionally and get the right bytes on either.
     """
     return _dialect(env)[2]
+
+
+def read_error(fd: str, reason: str, env: dict[str, str] | None = None) -> str:
+    """The `read` builtin's failure line, in THIS bash's word order.
+
+        bash 5.3.9   read: 0: read error: Is a directory
+        bash 5.2.37  read: read error: 0: Is a directory
+
+    The file descriptor moved from AFTER the phrase to BEFORE it, so unlike
+    the other entries here this one cannot be handled by swapping a noun --
+    the caller has to be handed the whole assembled line.
+    """
+    if _dialect(env)[3]:
+        return "read: %s: read error: %s" % (fd, reason)
+    return "read: read error: %s: %s" % (fd, reason)
 
 
 def reset_cache() -> None:
