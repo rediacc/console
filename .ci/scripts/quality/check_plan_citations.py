@@ -413,6 +413,48 @@ def submodule_paths(root):
     return tuple(out)
 
 
+def commit_is_reachable(root, token) -> bool:
+    """Is `token` a commit REACHABLE FROM HEAD, not merely present in this clone?
+
+    PRESENCE IS THE WRONG QUESTION FOR A COMMIT, and asking it has now cost two CI
+    rounds. A rewrite -- `filter-branch`, a rebase, `gh pr merge --rebase` --
+    leaves the pre-rewrite commits sitting in the object database, reachable from
+    reflogs and `refs/original`. `git cat-file -t` happily answers `commit` for
+    every one of them on the machine that did the rewrite, and a FRESH CLONE has
+    none of them. So a citation to an orphan passes locally and fails in CI,
+    which is the worst of both: green where it is cheap to fix, red where it is
+    expensive.
+
+    Round 43 of this wave recorded exactly this after the operator-authorised
+    history rewrite -- 149 stale shas all resolved locally while not one was an
+    ancestor of HEAD -- and named `git merge-base --is-ancestor` as the honest
+    test. It was written down and not wired in; measured 2026-09-15, six orphaned
+    citations in agent/PLAN-b2-emit-matrix.md passed this gate locally and reddened
+    `Quality / Branch` in CI.
+
+    ONLY COMMITS GET THIS TEST, and the asymmetry is the design rather than an
+    exception. A blob or tree is CONTENT-addressed: it is an ancestor of nothing,
+    `--is-ancestor` is meaningless for it, and demanding reachability would flag
+    every correctly-cited blob. That is also precisely why this gate's own advice
+    for a rewritten commit is "cite the blob id instead" -- a blob survives the
+    rewrite the commit does not.
+
+    SAFE ON THIS REPOSITORY'S CI because `quality-branch` checks out with
+    `fetch-depth: 0` (full COMMIT history) and `filter: blob:none` (blobs lazily
+    fetched). Ancestry needs commits, which are all present; it never needs a
+    blob.
+    """
+    if not R.resolve(root, "commit", token)[0]:
+        return False
+    r = subprocess.run(
+        ["git", "-C", str(root), "merge-base", "--is-ancestor", token, "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return r.returncode == 0
+
+
 def unresolved(root, kind, token):
     """(bad, why) -- False means the pointer lands somewhere real.
 
@@ -422,14 +464,26 @@ def unresolved(root, kind, token):
     carry any of the three -- a `tree` is rare (a citation into a `git
     filter-branch`/rewrite control naming a tree id directly) but a real,
     correctly-cited object that neither `blob` nor `commit` resolves.
+
+    A COMMIT MUST ALSO BE REACHABLE FROM HEAD; a blob or tree need only exist.
+    See `commit_is_reachable` for why the two differ.
     """
     if kind == "object":
         if (
             R.resolve(root, "blob", token)[0]
-            or R.resolve(root, "commit", token)[0]
+            or commit_is_reachable(root, token)
             or R.resolve(root, "tree", token)[0]
         ):
             return False, ""
+        if R.resolve(root, "commit", token)[0]:
+            return True, (
+                "is a commit that EXISTS in this clone but is not an ancestor of HEAD, so "
+                "a fresh checkout will not have it at all. That is what a rewrite leaves "
+                "behind -- `filter-branch`, a rebase, or `gh pr merge --rebase` -- and it "
+                "is why this passes locally and reds in CI. Cite the commit it became, or "
+                "the blob id (`git hash-object <file>`), which is content-addressed and "
+                "survives the rewrite"
+            )
         return True, (
             "names neither a blob nor a commit in this clone. Three things it could be, "
             "and the fix differs: (a) a commit sha on a branch, which `gh pr merge "
@@ -600,6 +654,41 @@ def selftest(root):
     for kind, token in live:
         got, why = unresolved(root, kind, token)
         ck(f"CONTROL: a real {kind} citation is SILENT ({token[:44]})", not got, why)
+
+    # THE ANCESTRY RULE FOR COMMITS, both directions. An ORPHAN IS CONSTRUCTED
+    # rather than borrowed from this clone's reflog: the whole point is that a
+    # fresh CI checkout has no orphans, so a control that relied on finding one
+    # would silently stop testing anything there -- which is the exact failure
+    # mode this rule exists to close.
+    tree = _git("rev-parse", "HEAD^{tree}").strip()
+    orphan = _git("commit-tree", tree, "-m", "plan-citations control: unreachable").strip()
+    if orphan:
+        ck(
+            "an ORPHANED commit is reported even though it EXISTS in this clone "
+            "(the rewrite shape: passes locally, reds in a fresh checkout)",
+            unresolved(root, "object", orphan)[0],
+            unresolved(root, "object", orphan)[1],
+        )
+        ck(
+            "CONTROL: and the orphan really IS present, so the finding is about "
+            "REACHABILITY and not about a missing object",
+            R.resolve(root, "commit", orphan)[0],
+        )
+    else:
+        ck("the ancestry control could build an orphan to test with", False)
+
+    blob = _git("rev-parse", "HEAD:package.json").strip()
+    ck(
+        "CONTROL: a real BLOB citation is untouched by the ancestry rule -- it is "
+        "content-addressed and an ancestor of nothing",
+        blob and not unresolved(root, "object", blob)[0],
+        blob,
+    )
+    ck(
+        "CONTROL: a real TREE citation is untouched for the same reason",
+        tree and not unresolved(root, "object", tree)[0],
+        tree,
+    )
 
     # THE SUBMODULE PRE-FILTER, both directions, because a skip is one typo away
     # from a suppression and this one excuses an entire directory tree.
