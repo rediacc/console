@@ -261,7 +261,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-agent-hints-implementation.md` | compacted | 84 | 0 | 0 | 4638 |
 | `agent/PLAN-agent-hints-in-stop-hook.md` | compacted | 70 | 0 | 0 | 3652 |
 | `agent/PLAN-ask-flow-preemptive-settled-check.md` | draft | 552 | 0 | 0 | 28343 |
-| `agent/PLAN-b2-emit-matrix.md` | draft | 320 | 13 | 0 | 23682 |
+| `agent/PLAN-b2-emit-matrix.md` | draft | 325 | 13 | 0 | 24076 |
 | `agent/PLAN-backup-list-executor-fix.md` | compacted | 81 | 0 | 0 | 5511 |
 | `agent/PLAN-backup-quota-delta-gc.md` | compacted | 86 | 0 | 0 | 5603 |
 | `agent/PLAN-backup-restore-target-license.md` | compacted | 83 | 0 | 0 | 5579 |
@@ -286,7 +286,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-duplication-angle.md` | implemented | 241 | 0 | 0 | 12504 |
 | `agent/PLAN-durable-reports-and-push-inbox.md` | compacted | 69 | 0 | 0 | 3705 |
 | `agent/PLAN-env-to-bitwarden-v2.md` | draft | 689 | 5 | 4 | 45073 |
-| `agent/PLAN-extension-shaped-matchers.md` | executing | 375 | 0 | 0 | 24678 |
+| `agent/PLAN-extension-shaped-matchers.md` | executing | 388 | 0 | 0 | 25634 |
 | `agent/PLAN-fix-ci-contention-aware-timeouts.md` | done | 354 | 0 | 0 | 20483 |
 | `agent/PLAN-fix-german-translation-artifacts.md` | compacted | 61 | 0 | 0 | 3126 |
 | `agent/PLAN-fix-in-session-rule.md` | compacted | 69 | 0 | 0 | 3594 |
@@ -340,7 +340,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-trap-enforcement.md` | w | 820 | 0 | 0 | 49274 |
 | `agent/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 0 | 4529 |
 | `agent/PLAN-unify-trap-corpus.md` | compacted | 54 | 0 | 0 | 2755 |
-| `agent/PLAN-w7p4w-docker-cutover.md` | draft | 394 | 12 | 0 | 23249 |
+| `agent/PLAN-w7p4w-docker-cutover.md` | partially | 566 | 9 | 3 | 35585 |
 | `agent/PLAN-w7p5a-deploy-release-port.md` | draft | 310 | 0 | 8 | 21457 |
 | `agent/PLAN-w9p2-script-relocation.md` | draft | 151 | 10 | 0 | 25987 |
 | `agent/PLAN-wire-account-vitest-ci.md` | compacted | 52 | 0 | 0 | 3048 |
