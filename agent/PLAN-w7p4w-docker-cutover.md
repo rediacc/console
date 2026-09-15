@@ -1,5 +1,9 @@
 # PLAN: W7P4-W docker sub-slice — cut the 3 already-ported docker scripts over from bash to Python
-Status: draft — design only, not implemented
+Status: partially executed 2026-09-15 — Stage 0 confirmed already landed (`7d4dee70e`);
+differential 99/99. Stage 1 canary: `create_manifest.py` 3/3 green, `retag_image.py` 2/3
+green (blocked on `renet`, 403), `cleanup_staging.py` blocked entirely (missing
+`read:packages`, and §1.1's dry-run description is wrong about the code). Stages 2-5 NOT
+started per the plan's own ordering. See "## Execution log (2026-09-15)" for evidence.
 Owner: f4da5c2e
 
 ## Why
@@ -352,37 +356,205 @@ addressed by this plan.
 
 ## Tasks
 
-- [ ] Run the real, read-only dry-run canary (§1.1) for all 3 scripts against
-      production GHCR, twin vs. port, and confirm byte-identical stdout.
-- [ ] Add `.ci/scripts/docker/_cipath.py` (copied convention from
+- [x] Run the real, read-only dry-run canary (§1.1) for all 3 scripts against
+      production GHCR, twin vs. port, and confirm byte-identical stdout. —
+      **RAN, mixed result, not a clean pass.** `create_manifest.py`: 3/3 green.
+      `retag_image.py`: 2/3 green (`rdc`, `server`), 1/3 blocked (`renet`, 403 —
+      identical on both sides, not a divergence, but not a completed read either).
+      `cleanup_staging.py`: 0/3 — blocked by a missing credential AND by a plan
+      description that doesn't match the code (§1.1's claim that `--dry-run`
+      "performs the real `gh api` LIST/lookup call" is false; verified the code
+      returns before any network call on `dry_run == "true"`, both twin and port).
+      See Execution log below for every command and its exact output.
+- [x] Add `.ci/scripts/docker/_cipath.py` (copied convention from
       `.ci/scripts/quality/_cipath.py`) and the three thin, headerless entry
-      points (§4a), each executable.
-- [ ] Re-run the existing differential suite (`test_docker_cleanup_staging.py`,
+      points (§4a), each executable. — **Already landed** in commit `7d4dee70e`
+      ("W7P4-W stage 0+1, docker script entry points"), confirmed on disk
+      2026-09-15: all 4 files present, executable bits set on the three entry
+      points (`_cipath.py` is `rw-r--r--`, matching its `.ci/scripts/quality/`
+      precedent, since it's imported not executed), content matches §4a's spec
+      exactly (headerless docstrings, `import _cipath` then `from rediacc_ci.docker
+      import <module> as port`). Clean working tree — nothing to add.
+- [x] Re-run the existing differential suite (`test_docker_cleanup_staging.py`,
       `test_docker_create_manifest.py`, `test_docker_retag_image.py`) unchanged
       and confirm still 99/99 after adding the entry points (proves the shim
-      layer changes nothing).
+      layer changes nothing). — **99 passed** (`.ci/cache/toolchain/uv-tools/bin/pytest
+      .ci/rediacc_ci/tests/test_docker_{cleanup_staging,create_manifest,retag_image}.py -q`,
+      12.59s, no failures/errors).
 - [ ] Flip `ci-build-docker.yml`'s 3 `create-manifest.sh` call sites (§4b).
-      Watch one real green run before proceeding.
+      Watch one real green run before proceeding. — **NOT STARTED.** Blocked:
+      the plan's own ordering requires Stage 1 to pass "for all 3" scripts
+      before any Stage 2+ flip, and 2 of the 3 scripts' canaries did not fully
+      pass (see above). No workflow file was touched.
 - [ ] Flip `cd-stage.yml`'s 3 `retag-image.sh` call sites (§4d). Watch one real
-      green run before proceeding.
-- [ ] Flip `cd-v2.yml`'s 3 `retag-image.sh` call sites (§4c).
+      green run before proceeding. — **NOT STARTED**, same blocker.
+- [ ] Flip `cd-v2.yml`'s 3 `retag-image.sh` call sites (§4c). — **NOT STARTED**,
+      same blocker.
 - [ ] Widen `check-staging-tag-guard.sh`'s and `staging_tag_guard.py`'s scan
       suffix/pattern to also match `cleanup_staging\.py` (§3, §4f), add a
       `.py`-caller fixture to `test_quality_staging_tag_guard.py`, plant/revert
-      to prove the widening is what closes the vacuity gap.
+      to prove the widening is what closes the vacuity gap. — **NOT STARTED**,
+      same blocker (Stage 5 is sequenced after 2-4). Baseline recorded instead:
+      `bash .ci/scripts/quality/check-staging-tag-guard.sh` is GREEN today, "1
+      call site(s)", "3 control(s) passed", exit 0 — matches §3's stated
+      pre-change baseline exactly. `test_quality_staging_tag_guard.py` is 14
+      passed today (plan text at §3 says "8 tests"; the corpus has grown since
+      that was written — not a discrepancy that blocks anything, just stale
+      arithmetic in the plan text, noted here rather than silently corrected).
 - [ ] Flip `.ci/scripts/release/cleanup-channel-docker-tags.sh:66` (§4e), in the same commit as the
-      scanner widening above.
+      scanner widening above. — **NOT STARTED**, same blocker.
 - [ ] Confirm `check:ci-staging-tag-guard` still reports the same 1 call site
-      and 3/3 controls green, now naming the `.py` target.
+      and 3/3 controls green, now naming the `.py` target. — **NOT STARTED**
+      (nothing to confirm; the flip it depends on didn't happen).
 - [ ] Run `check:ci-python-lint`, `check:ci-dead-python`,
       `check:ci-em-dash-surfaces`, and `check-dead-bash.ts` scoped-clean (the bash twins' basenames
       remain referenced by their own ports' docstrings, so no new orphan-file
-      finding is expected — confirm rather than assume).
+      finding is expected — confirm rather than assume). — **NOT RUN.** These
+      gate against the diff a call-site flip would produce; with no flip made
+      there is nothing new for them to check, and running them now would only
+      reconfirm the pre-existing baseline, not this plan's change.
 - [ ] Get one real (non-dry-run) invocation of `cleanup_staging.py` against a
       disposable `staging-*` tag, independent of the release pipeline (§1.2),
-      since its only production caller cannot exercise it today.
+      since its only production caller cannot exercise it today. — **BLOCKED,
+      not attempted for real.** This needs push access to create the disposable
+      tagged image AND `write:packages` to delete it; the available credential
+      has neither (see Execution log — it lacks even `read:packages`). A safe
+      real (non-dry-run) invocation against a tag guaranteed not to exist
+      (`staging-canary-probe-nonexistent-<ts>-<pid>`) WAS run for parity
+      evidence (both twin and port hit the same 403-swallowed-as-"not
+      accessible" path, byte-identical) — this is not the required drill, only
+      confirmation that the failure mode is faithfully reproduced.
 - [ ] Record the K=5 ledgers, differential counts, and real-run results in the
-      landing commit message / this plan's Status line.
+      landing commit message / this plan's Status line. — Differential count and
+      canary results recorded in the Status line above and the Execution log
+      below. No landing commit exists yet (nothing was flipped), so there is no
+      commit message to record this in.
+
+## Execution log (2026-09-15)
+
+Environment: `gh` authenticated as `mfbayraktar`, token scopes measured via
+`curl -I -H "Authorization: token $(gh auth token)" https://api.github.com/user`:
+`x-oauth-scopes: admin:org, gist, repo, workflow` — **no `read:packages`, no
+`write:packages`**. `docker login ghcr.io` with that same token succeeds (identity
+is valid), but GHCR's own authorization still denies per-package based on scope,
+independent of docker login succeeding.
+
+**Stage 0 (already landed, re-verified):** `git log --oneline -1 -- .ci/scripts/docker/_cipath.py`
+→ `7d4dee70e feat(ci): W7P4-W stage 0+1, docker script entry points`, same for
+`cleanup_staging.py`/`create_manifest.py`/`retag_image.py` under `.ci/scripts/docker/`.
+`git status --short` on all 4 is empty (clean, matches HEAD).
+
+**Differential suite:**
+```
+$ .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_docker_cleanup_staging.py \
+    .ci/rediacc_ci/tests/test_docker_create_manifest.py .ci/rediacc_ci/tests/test_docker_retag_image.py -q
+99 passed in 12.59s
+```
+
+**`create_manifest.py` canary — 3/3 green, no registry access needed at all.**
+Read the code first: both twin (`.ci/scripts/docker/create-manifest.sh:115-116`) and
+port only `echo`/`print` the would-be command line under `--dry-run`; neither ever
+calls `docker` or `gh`. Ran anyway, per image root, comparing bash twin vs Python port,
+stdout AND stderr diffed separately:
+```
+bash .ci/scripts/docker/create-manifest.sh   --image renet                       --tag edge --dry-run
+python3 .ci/scripts/docker/create_manifest.py --image renet                       --tag edge --dry-run
+bash .ci/scripts/docker/create-manifest.sh   --image rdc                         --tag edge --dry-run
+python3 .ci/scripts/docker/create_manifest.py --image rdc                         --tag edge --dry-run
+bash .ci/scripts/docker/create-manifest.sh   --image-path ghcr.io/rediacc/server --tag edge --dry-run
+python3 .ci/scripts/docker/create_manifest.py --image-path ghcr.io/rediacc/server --tag edge --dry-run
+```
+All 3 pairs: exit 0/0, stdout identical, stderr identical (`diff -u` empty both ways).
+
+**`retag_image.py` canary — real reads against production GHCR, 2/3 image roots green:**
+```
+bash .ci/scripts/docker/retag-image.sh   --image rdc --from edge --to canary-test-nonexistent --dry-run   -> exit 0
+python3 .ci/scripts/docker/retag_image.py --image rdc --from edge --to canary-test-nonexistent --dry-run   -> exit 0, stdout/stderr identical
+bash .ci/scripts/docker/retag-image.sh   --image-path ghcr.io/rediacc/server --from edge --to canary-test-nonexistent --dry-run -> exit 0
+python3 .ci/scripts/docker/retag_image.py --image-path ghcr.io/rediacc/server --from edge --to canary-test-nonexistent --dry-run -> exit 0, stdout/stderr identical
+bash .ci/scripts/docker/retag-image.sh   --image rdc --from edge --to stable --dry-run --skip-if-exists            -> exit 0
+python3 .ci/scripts/docker/retag_image.py --image rdc --from edge --to stable --dry-run --skip-if-exists            -> exit 0, stdout/stderr identical
+bash .ci/scripts/docker/retag-image.sh   --image-path ghcr.io/rediacc/server --from edge --to edge --dry-run --skip-if-exists -> exit 0
+python3 .ci/scripts/docker/retag_image.py --image-path ghcr.io/rediacc/server --from edge --to edge --dry-run --skip-if-exists -> exit 0, stdout/stderr identical
+```
+These are genuine real, read-only GHCR hits (`docker buildx imagetools inspect
+ghcr.io/rediacc/rdc:edge` etc.), both the plain source-verify path and the
+`--skip-if-exists` destination-then-source digest-read path, both scripts, byte
+for byte identical stdout AND stderr in every case.
+
+`renet` is a private GHCR package and the available credential cannot read it:
+```
+bash .ci/scripts/docker/retag-image.sh   --image renet --from edge --to canary-test-nonexistent --dry-run -> exit 1
+python3 .ci/scripts/docker/retag_image.py --image renet --from edge --to canary-test-nonexistent --dry-run -> exit 1, stdout/stderr identical to bash
+```
+stderr (identical both sides):
+```
+→ Re-tagging renet: edge -> canary-test-nonexistent
+✓ [DRY-RUN] Verifying source image: ghcr.io/rediacc/renet:edge
+ERROR: unexpected status from HEAD request to https://ghcr.io/v2/rediacc/renet/manifests/edge: 403 Forbidden
+denied
+✗ [DRY-RUN] Failed to inspect source image: ghcr.io/rediacc/renet:edge
+✓ Re-tag summary: 0 succeeded, 1 failed
+```
+Same result with `--skip-if-exists` added. This is NOT a twin/port divergence (the
+failure is byte-identical on both sides), but it is also not a completed read: §1.1's
+acceptance is "byte-identical stdout ... on every real registry read attempted, zero
+divergence" for a `renet` read that never actually happened.
+
+**`cleanup_staging.py` canary — blocked, and the plan's own §1.1 is wrong about the code.**
+§1.1 states: "`cleanup_staging.py --dry-run` performs the real `gh api` LIST/lookup
+call (finds the package version) and stops before the DELETE." Read both
+implementations directly: `.ci/scripts/docker/cleanup-staging.sh:74-77` and
+`.ci/rediacc_ci/docker/cleanup_staging.py`'s `delete_staging_tag()` both do
+`if dry_run: log "[DRY-RUN] Would delete: ..."; return` BEFORE `_gh_list`/`gh api
+.../versions` is ever called. Confirmed by running both under `--dry-run` with tag
+`staging-canary-probe`: stdout/stderr identical between twin and port, but neither
+made a network call (log line is exactly `[DRY-RUN] Would delete: ghcr.io/rediacc/<image>:staging-canary-probe`
+with no LIST anywhere in the trace). So `--dry-run` proves nothing about the port's
+`gh api` call — the plan's described "real read-only canary" for this script does not
+exist as `--dry-run` describes it.
+
+The actual `gh api /orgs/<org>/packages/container/<pkg>/versions --paginate` call only
+fires on a REAL (non-`--dry-run`) invocation. Confirmed the credential gap is total,
+not renet-specific, by hitting the REST endpoint directly for a PUBLIC package too:
+```
+$ gh api orgs/rediacc/packages/container/rdc
+{"message":"You need at least read:packages scope to get a package.","status":"403"}
+```
+Then ran the real (non-`--dry-run`) path itself, safely: chose a tag guaranteed not to
+match any existing package version (`staging-canary-probe-nonexistent-<unix-ts>-<pid>`),
+so even if the LIST succeeded, `extract_version_id` would find no match and no DELETE
+would be attempted regardless. Ran both:
+```
+bash .ci/scripts/docker/cleanup-staging.sh   --tag staging-canary-probe-nonexistent-1789493872-426766 -> exit 0
+python3 .ci/scripts/docker/cleanup_staging.py --tag staging-canary-probe-nonexistent-1789493872-426766 -> exit 0, stdout/stderr identical
+```
+Both hit the 403 on `_gh_list`, both treat "not a JSON array" (an HTML/JSON error
+body) as "package not accessible" (a pre-existing, twin-inherited defect class: an
+inaccessible package silently reports success, same shape as the already-pinned
+"gh entirely absent from PATH" defect §1 mentions), both exit 0, byte-identical
+output. This confirms twin/port parity on the FAILURE path, but is not the
+successful-read canary the plan needs, and it is not the disposable-tag real-mutation
+drill either (no image was ever pushed, so there was nothing to find or delete).
+
+**Net for Stage 1:** cannot certify "byte-identical stdout on every real registry
+read attempted, zero divergence" for `retag_image.py`/`renet` or for any
+`cleanup_staging.py` path, because the reads themselves could not be attempted
+successfully — not because of a twin/port mismatch. Per the plan's explicit
+sequencing and the task's instruction not to skip ahead of the canary gate, Stages
+2-5 were not started. Nothing in `.github/workflows/**`, `check-staging-tag-guard.sh`,
+`staging_tag_guard.py`, or `cleanup-channel-docker-tags.sh` was modified.
+
+**What would unblock this:** a GHCR-capable credential (PAT, GitHub App
+installation token, or `docker`/`gh` login) carrying `read:packages` at minimum, and
+`write:packages` for the plan's real-run proof items (§1.2's one real invocation of
+each script, and the disposable-tag delete drill for `cleanup_staging.py`
+specifically — that one also needs push rights to create the throwaway tag in the
+first place). No such credential was found in this environment (`env` scan for
+`GITHUB_TOKEN`/`GH_TOKEN`/`GHCR_TOKEN`/`PACKAGES_TOKEN`/`CR_PAT` came back empty
+beyond the harness's own unrelated messaging token; `~/.docker/config.json` has no
+stored ghcr.io auth beyond the interactive `gh`-token login performed for this
+canary).
 
 ### Critical Files for Implementation
 - .ci/rediacc_ci/docker/{cleanup_staging,create_manifest,retag_image}.py

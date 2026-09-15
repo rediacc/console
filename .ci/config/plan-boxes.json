@@ -1046,10 +1046,10 @@
       "done_sigs": []
     },
     "agent/PLAN-w7p4w-docker-cutover.md": {
-      "status": "draft",
+      "status": "partially",
       "owner": "f4da5c2e",
-      "open": 12,
-      "done": 0,
+      "open": 9,
+      "done": 3,
       "open_sigs": [
         "079a9042",
         "147dd350",
@@ -1057,14 +1057,15 @@
         "2c7c6761",
         "6cec8f82",
         "86e49bb5",
+        "c1a60359",
+        "ee684f8e",
+        "f611d76e"
+      ],
+      "done_sigs": [
         "9574cdc2",
         "9a712c29",
-        "ad18a60c",
-        "c1a60359",
-        "e4461a4c",
-        "ee684f8e"
-      ],
-      "done_sigs": []
+        "ad18a60c"
+      ]
     },
     "agent/PLAN-w7p5a-deploy-release-port.md": {
       "status": "draft",

@@ -373,3 +373,16 @@ its own small check, appropriately left for whoever next re-examines W7P5-c's ow
 precondition rather than guessed at under this session's own workload tonight. Status stays
 `executing`, commit 3 stays not started.
 
+### Re-checked a ninth time 2026-09-15, session d778be9d (took over from f4da5c2e): still unchanged
+
+Independently re-derived, not assumed from the eighth check: `FAMILIES`
+(`scripts/gates/check-shape-duplication.ts:133-143`) is still the same four bash-only rows,
+same line range. `.ci/shadow/w7p5a-*.observations.jsonl` is still 16; `.ci/shadow/w7p6-*.observations.jsonl`
+is still 153 -- the w7p6-/w7p5a- prefix question the eighth check named is real and still
+open, unresolved here for the same reason: this session's writer capacity went to the
+migrate-tooling fix, the plan-box precondition sweep, and the W7P4-W docker cutover, none of
+which touch this plan's files or its precondition. Status stays `executing`, commit 3 stays
+not started. (This session also independently re-confirmed W7P5-c is still blocked on this
+exact precondition, via a separate read-only investigation -- consistent with, not
+contradicting, this file's own eighth check.)
+

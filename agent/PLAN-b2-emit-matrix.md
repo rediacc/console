@@ -254,14 +254,19 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
   be made *here*.
 - **`.github/workflows/**` is a MUTEX file per the driver contract** (W8 P1, W3 P3, W7 P4, E2 all
   collide on it). Confirm no concurrent writer holds it before starting D3/D4.
-- **Serialization with C2** (`agent/PLAN-tooling-transformation.md:4426`, still `[ ]`, `pathsOrigin`
-  required whenever `paths` is present): both boxes touch `scripts/gate-bind.ts`. Confirm C2 is
-  not in flight before starting; do not run concurrently.
+- **Serialization with C2 -- CLEARED.** C2 (`agent/PLAN-tooling-transformation.md:4638`,
+  `pathsOrigin` required whenever `paths` is present) is now `[x]`, landed at `bfb8630dd`
+  and ticked 2026-09-15T07:53:05Z by f4da5c2e, full green battery recorded in the box. Both
+  boxes touched `scripts/gate-bind.ts`; C2 is done, so this is no longer a live
+  serialization concern -- checked directly against the master plan on 2026-09-15, not
+  assumed from this section's own prior text (the `:4426` line this section used to cite
+  was already stale drift from earlier content added above it, not the box itself).
 
 ## Tasks
 
 - [ ] Confirm no concurrent writer holds `.github/workflows/ci-quality.yml`, `scripts/gate-bind.ts`,
-      or `scripts/ci-runner/lanes.ts` (driver-only mutex files); confirm C2 is not in flight.
+      or `scripts/ci-runner/lanes.ts` (driver-only mutex files). C2 is done (`bfb8630dd`), no
+      longer a serialization concern.
 - [ ] D1: add `step?: string` to `ShardInput` (`scripts/ci-runner/lanes.ts:207-218`); add the
       fifth merge rule (group by `ci.step`, union, heavy-peak-as-one) to `shardPlan`; widen the
       `overloaded` refusal exemption for a shared-step unit.
