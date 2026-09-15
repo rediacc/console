@@ -3998,7 +3998,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       **D1's own commit broke the bash TWIN, `test-gate-lanes.sh`, which the port's own
       test run never exercises -- caught by the babysitter's pre-push receipt, not by
       me.** The twin carries its own copy of the balance/heavy-floor assertions and I
-      had only fixed the Python port. Fixed as a follow-up commit (`e7ed9e583`): same
+      had only fixed the Python port. Fixed as a follow-up commit (`adae3a53c`): same
       move (quality-security's example -> quality-code, negative case named, heavy
       floor measured not hand-typed), plus a genuinely stale hardcoded assertion count
       ("35 assertion(s)") the twin had been carrying, now measured from the real PASS

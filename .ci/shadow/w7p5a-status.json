@@ -28,42 +28,42 @@
       "status": "ledger",
       "pair": "w7p5a-resolve-www-deploy-target",
       "ledger": ".ci/shadow/w7p5a-resolve-www-deploy-target.observations.jsonl",
-      "note": "K=5 EQUIVALENT, recorded against a disposable scratch git clone (outside this checkout) since this shared tree is never clean; the ledger itself lives here via --ledger. Permanent pytest differential: .ci/rediacc_ci/tests/test_deploy_resolve_www_deploy_target.py"
+      "note": "K=5 EQUIVALENT, recorded against a disposable scratch git clone (outside this checkout) since this shared tree is never clean; the ledger itself lives here via --ledger. Permanent pytest differential: .ci/rediacc_ci/tests/test_deploy_resolve_www_deploy_target.py; one real run each done directly against this tree (no fixture needed for the real-run half, since none of these touch external infra)."
     },
     {
       "path": ".ci/scripts/release/backfill-write-sentinel.sh",
       "status": "ledger",
       "pair": "w7p5a-backfill-write-sentinel",
       "ledger": ".ci/shadow/w7p5a-backfill-write-sentinel.observations.jsonl",
-      "note": "K=5 EQUIVALENT, recorded against a disposable scratch git clone (outside this checkout) since this shared tree is never clean; the ledger itself lives here via --ledger. Permanent pytest differential: .ci/rediacc_ci/tests/test_release_backfill_write_sentinel.py"
+      "note": "K=5 EQUIVALENT, recorded against a disposable scratch git clone (outside this checkout) since this shared tree is never clean; the ledger itself lives here via --ledger. Permanent pytest differential: .ci/rediacc_ci/tests/test_release_backfill_write_sentinel.py; one real run each done directly against this tree (no fixture needed for the real-run half, since none of these touch external infra)."
     },
     {
       "path": ".ci/scripts/release/check-soak-period.sh",
       "status": "ledger",
       "pair": "w7p5a-check-soak-period",
       "ledger": ".ci/shadow/w7p5a-check-soak-period.observations.jsonl",
-      "note": "K=5 EQUIVALENT, recorded against a disposable scratch git clone (outside this checkout) since this shared tree is never clean; the ledger itself lives here via --ledger. Permanent pytest differential: .ci/rediacc_ci/tests/test_release_check_soak_period.py"
+      "note": "K=5 EQUIVALENT, recorded against a disposable scratch git clone (outside this checkout) since this shared tree is never clean; the ledger itself lives here via --ledger. Permanent pytest differential: .ci/rediacc_ci/tests/test_release_check_soak_period.py; one real run each done directly against this tree (no fixture needed for the real-run half, since none of these touch external infra)."
     },
     {
       "path": ".ci/scripts/release/deployment-summary.sh",
       "status": "ledger",
       "pair": "w7p5a-deployment-summary",
       "ledger": ".ci/shadow/w7p5a-deployment-summary.observations.jsonl",
-      "note": "K=5 EQUIVALENT, recorded against a disposable scratch git clone (outside this checkout) since this shared tree is never clean; the ledger itself lives here via --ledger. Permanent pytest differential: .ci/rediacc_ci/tests/test_release_deployment_summary.py"
+      "note": "K=5 EQUIVALENT, recorded against a disposable scratch git clone (outside this checkout) since this shared tree is never clean; the ledger itself lives here via --ledger. Permanent pytest differential: .ci/rediacc_ci/tests/test_release_deployment_summary.py; one real run each done directly against this tree (no fixture needed for the real-run half, since none of these touch external infra)."
     },
     {
       "path": ".ci/scripts/release/resolve-backfill-commit.sh",
       "status": "ledger",
       "pair": "w7p5a-resolve-backfill-commit",
       "ledger": ".ci/shadow/w7p5a-resolve-backfill-commit.observations.jsonl",
-      "note": "K=5 EQUIVALENT, recorded against a disposable scratch git clone (outside this checkout) since this shared tree is never clean; the ledger itself lives here via --ledger. Permanent pytest differential: .ci/rediacc_ci/tests/test_release_resolve_backfill_commit.py"
+      "note": "K=5 EQUIVALENT, recorded against a disposable scratch git clone (outside this checkout) since this shared tree is never clean; the ledger itself lives here via --ledger. Permanent pytest differential: .ci/rediacc_ci/tests/test_release_resolve_backfill_commit.py; one real run each done directly against this tree (no fixture needed for the real-run half, since none of these touch external infra)."
     },
     {
       "path": ".ci/scripts/release/validate-stage-artifacts.sh",
       "status": "ledger",
       "pair": "w7p5a-validate-stage-artifacts",
       "ledger": ".ci/shadow/w7p5a-validate-stage-artifacts.observations.jsonl",
-      "note": "K=5 EQUIVALENT, recorded against a disposable scratch git clone (outside this checkout) since this shared tree is never clean; the ledger itself lives here via --ledger. Permanent pytest differential: .ci/rediacc_ci/tests/test_release_validate_stage_artifacts.py"
+      "note": "K=5 EQUIVALENT, recorded against a disposable scratch git clone (outside this checkout) since this shared tree is never clean; the ledger itself lives here via --ledger. Permanent pytest differential: .ci/rediacc_ci/tests/test_release_validate_stage_artifacts.py; one real run each done directly against this tree (no fixture needed for the real-run half, since none of these touch external infra)."
     },
     {
       "path": ".ci/scripts/deploy/cf-purge-urls.sh",

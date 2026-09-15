@@ -250,7 +250,7 @@ reasoning without knowing the record exists.
 ## Plan census
 
 Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans
-block can be printed from THIS file instead of opening all 89 of them. The
+block can be printed from THIS file instead of opening all 90 of them. The
 hook checks freshness with `stat` alone (path set plus byte size) and falls
 back to reading the plans, loudly, when the two disagree.
 
@@ -341,9 +341,10 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 0 | 4529 |
 | `agent/PLAN-unify-trap-corpus.md` | compacted | 54 | 0 | 0 | 2755 |
 | `agent/PLAN-w7p4w-docker-cutover.md` | draft | 394 | 12 | 0 | 23249 |
+| `agent/PLAN-w7p5a-deploy-release-port.md` | draft | 293 | 8 | 0 | 20098 |
 | `agent/PLAN-w9p2-script-relocation.md` | draft | 151 | 10 | 0 | 25987 |
 | `agent/PLAN-wire-account-vitest-ci.md` | compacted | 52 | 0 | 0 | 3048 |
 | `agent/PLAN-wl-report-liveness-oracle.md` | done | 199 | 0 | 7 | 11678 |
 | `agent/PLAN-www-bundle-determinism.md` | draft | 212 | 0 | 0 | 11005 |
 
-89 plan(s), 19 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+90 plan(s), 20 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
