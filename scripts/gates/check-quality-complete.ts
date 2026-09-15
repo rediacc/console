@@ -49,6 +49,21 @@
  * would be a declaration that reads as wired and is not. Registration is the root driver's,
  * via package.json, scripts/ci-runner/manifest.ts and the workflow step.
  *
+ * T-SCHED B2 D5, second clause -- FOUND, NOT YET SAFELY FIXED, recorded rather than
+ * guessed at under low budget. `lane: quality-code` below is exactly the box's own
+ * named concern: once `quality-code` is ever sharded, a gate declaring that lane gets
+ * its OWN step placed inside that job's auto-emitted region, conjuncted onto one leg --
+ * the aggregator would run once instead of once per job, watching a lane it is itself
+ * embedded inside. Tried moving it to `quality-branch` (the home for the other
+ * hand-registered structural gates, `check_plan_boxes.py` / `check_resprofile.py`) and
+ * `check:ci-gate-bind` went from a clean rc=0 to two real findings -- `quality-branch`
+ * does not provide `node` (this gate's own declared need), and the workflow has no
+ * step named "Quality shard aggregation" in that job (one apparently already exists,
+ * coincidentally or by design, in `quality-code`, which is WHY `quality-code` passes
+ * clean today). Reverted rather than land a guess under this session's remaining
+ * budget. Whoever moves this at real registration time must trace why `quality-code`
+ * satisfies `stepInJob` today before picking its replacement, not just its `needs`.
+ *
  * Usage:
  *   npx tsx scripts/gates/check-quality-complete.ts                 the static wiring half
  *   npx tsx scripts/gates/check-quality-complete.ts --receipts DIR  the runtime half
@@ -69,6 +84,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 import { type Shard, SHARD_COUNTS, laneCapabilities, shardPlan } from '../ci-runner/lanes.js';
+import { rewriteStrategyRegions } from '../gate-bind.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { runControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
@@ -405,7 +421,20 @@ function main(argv: readonly string[]): number {
     `${declared.length} declared shard(s), aggregator job ` +
     `${needs.has(AGGREGATOR_JOB) ? 'present' : 'absent'}`;
 
-  const findings = wiringFindings(SHARD_COUNTS, needs);
+  // T-SCHED B2 D5, first clause. `rewriteStrategyRegions` re-asserted from THIS side,
+  // independently of `gate-bind --write`: a `matrix.shard` list that has drifted from
+  // `SHARD_COUNTS` (hand-edited, or left stale after a count change landed without
+  // `gate-bind --write` being re-run) is Finding 2's vacuity all over again -- a job
+  // whose real matrix does not match what this aggregator believes it does.
+  // `gate-bind`'s own check is the first line of defense at write time; this is the
+  // second, independent one at judge time, so a bypass of one cannot silently defeat
+  // the other. Kept separate from `wiringFindings` (job-graph wiring) rather than
+  // merged into it, so that function's own fixtures do not need a real shard-strategy
+  // region added just to keep testing what they already test.
+  const findings = [
+    ...wiringFindings(SHARD_COUNTS, needs),
+    ...rewriteStrategyRegions(workflowText, SHARD_COUNTS),
+  ];
 
   const at = argv.indexOf('--receipts');
   if (at !== -1) {
@@ -466,6 +495,26 @@ const WF_SHARDED = [
   'jobs:',
   '  quality-security:',
   '    runs-on: ubuntu-latest',
+  '  quality-complete:',
+  '    needs: [quality-security]',
+  '    runs-on: ubuntu-slim',
+  '',
+].join('\n');
+
+// T-SCHED B2 D5, first clause: a real shard-strategy region, matching WF_SHARDED's
+// `quality-security` job, for testing the wiring between this file and
+// `rewriteStrategyRegions` rather than that function's own logic (already exhaustively
+// covered by scripts/gate-bind.ts's own selftest).
+const WF_SHARDED_WITH_REGION = [
+  'jobs:',
+  '  quality-security:',
+  '    runs-on: ubuntu-latest',
+  '    # >>> shard-strategy (generated; do not edit inside)',
+  '    strategy:',
+  '      fail-fast: false',
+  '      matrix:',
+  '        shard: [1, 2]',
+  '    # <<< shard-strategy',
   '  quality-complete:',
   '    needs: [quality-security]',
   '    runs-on: ubuntu-slim',
@@ -623,6 +672,26 @@ function selftest(): number {
       name: 'MATCH: a sharded lane the aggregator DOES need is no finding',
       ok: wiringFindings({ 'quality-security': 4 }, parseJobNeeds(WF_SHARDED)).length === 0,
       detail: JSON.stringify(wiringFindings({ 'quality-security': 4 }, parseJobNeeds(WF_SHARDED))),
+    },
+    // --- T-SCHED B2 D5, first clause: the strategy-shape re-assertion ---------
+    {
+      name: 'FIRES (via rewriteStrategyRegions): a sharded lane with no shard-strategy region',
+      ok: rewriteStrategyRegions(WF_SHARDED, { 'quality-security': 2 }).some((f) =>
+        f.includes('no shard-strategy region')
+      ),
+    },
+    {
+      name: 'MATCH: a shard-strategy region agreeing with SHARD_COUNTS is silent',
+      ok: rewriteStrategyRegions(WF_SHARDED_WITH_REGION, { 'quality-security': 2 }).length === 0,
+      detail: JSON.stringify(
+        rewriteStrategyRegions(WF_SHARDED_WITH_REGION, { 'quality-security': 2 })
+      ),
+    },
+    {
+      name: 'FIRES: a shard-strategy region whose count disagrees with SHARD_COUNTS',
+      ok: rewriteStrategyRegions(WF_SHARDED_WITH_REGION, { 'quality-security': 4 }).some((f) =>
+        f.includes('expected [1, 2, 3, 4]')
+      ),
     },
     // --- the receipt reader ---------------------------------------------------
     {
