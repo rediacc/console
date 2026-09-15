@@ -45,12 +45,20 @@ def _git(gate, args: list[str], cwd) -> harness.RunResult:
     return result
 
 
-def source_and_run(gate, snippet: str, cwd, env: dict[str, str] | None = None):
+def source_and_run(
+    gate, snippet: str, cwd, env: dict[str, str] | None = None, env_replace: bool = False
+):
     """`source age-check.sh` then run `snippet`, in a fresh shell, at `cwd`.
 
     A missing subject is a LOUD failure and never a skip: the twin's `source`
     would abort the whole file, and a port that quietly reported nothing would be
     the vacuous green this directory refuses.
+
+    `env_replace` IS FORWARDED because an OVERLAY CANNOT UNSET A VARIABLE.
+    `harness.run` builds `dict(os.environ)` and then `.update(env)`, so handing
+    it a dict with a name left OUT changes nothing at all -- the ambient value
+    survives. That is only invisible on a host where the name was already unset.
+    See the `CI` case in test_age_truncated_history_cannot_verify.
     """
     if not LIB.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(LIB))
@@ -59,6 +67,7 @@ def source_and_run(gate, snippet: str, cwd, env: dict[str, str] | None = None):
         [bash, "-c", 'source "%s"\n%s' % (os.fspath(LIB), snippet)],
         cwd=cwd,
         env=env,
+        env_replace=env_replace,
     )
 
 
@@ -193,14 +202,27 @@ def test_age_truncated_history_cannot_verify(gate, tmp_path):
     gate.log_pass("CI refuses an unverifiable age")
 
     # `env -i` is the WRONG tool for unsetting one name: the subject needs PATH
-    # to find python3 and git. harness.run overlays, so the environment is copied
-    # and CI removed from the copy.
+    # to find python3 and git. So the whole environment is copied and CI dropped
+    # from the copy -- and it is passed with `env_replace=True`, which is the
+    # part this case got wrong for as long as it existed.
+    #
+    # `harness.run`'s default OVERLAYS: `dict(os.environ)` then `.update(env)`.
+    # Leaving a name out of `env` therefore removes nothing, and the ambient
+    # value survives. On a developer machine `CI` is unset anyway, so the case
+    # passed for a reason that had nothing to do with the code. A GitHub runner
+    # exports `CI=true`, the subject saw it (`[[ "${CI:-}" == "true" ]]`, the
+    # literal value and nothing else), refused instead of warning, and this
+    # assertion read `expected '0', got '1'` in run 34970782616.
+    #
+    # env_replace=True is the documented way to hand over a WHOLE environment,
+    # PATH included, which is exactly what local_env is.
     local_env = {k: v for k, v in os.environ.items() if k != "CI"}
     local = source_and_run(
         gate,
         "check_entry_age listfile ENTRY_OLD test-id 'fixture entry' >/dev/null 2>&1",
         tmp_path / "shallow",
         env=local_env,
+        env_replace=True,
     )
     gate.assert_eq(local.rc, 0, "a local shallow clone warns rather than blocking")
     gate.log_pass("a local shallow clone warns rather than blocking")
