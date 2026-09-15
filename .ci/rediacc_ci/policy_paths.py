@@ -111,6 +111,13 @@ POLICY_FILES: tuple[str, ...] = (
     # same reason as the line above: it holds a table, not a list of entries.
     "worklist-env-registry.json",
     ".w7p5a-real-run-blocklist",
+    # T-SCHED W7P5-a Section 4, 2026-09-15. `.w7p5a-real-run-blocklist` BLOCKs an
+    # entire path's port; this one BLOCKs only a `ledger`-status path's REAL-RUN leg,
+    # which the box's acceptance ("dry-run parity plus one real run each") requires
+    # separately. The two must not share a file: the existing gate treats any
+    # allowlist entry whose path has graduated to "ledger" as STALE, so a path that
+    # is genuinely ledgered but real-run-blocked would misreport as a leftover.
+    ".w7p5a-real-run-leg-blocklist",
 )
 
 _VALID = frozenset(POLICY_FILES)

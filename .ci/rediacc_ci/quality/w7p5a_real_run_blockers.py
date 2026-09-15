@@ -45,6 +45,13 @@ from rediacc_ci.core import allowlist
 from rediacc_ci.policy_paths import policy_path
 
 ALLOWLIST_NAME = ".w7p5a-real-run-blocklist"
+# T-SCHED W7P5-a Section 4, 2026-09-15. Blocks a `ledger`-status path's REAL-RUN
+# leg specifically, distinct from ALLOWLIST_NAME above (which blocks a whole
+# path's port). Kept in a separate file because the STALE check below reds any
+# ALLOWLIST_NAME entry whose path has graduated to "ledger" -- correct for that
+# file, wrong for this one, whose entries are ledger-status by definition.
+LEG_ALLOWLIST_NAME = ".w7p5a-real-run-leg-blocklist"
+REAL_RUN_PHRASE = "real run each done directly"
 
 
 class RefusalError(Exception):
@@ -80,6 +87,22 @@ def _load_status_paths(root: pathlib.Path) -> dict[str, str]:
         s = row.get("status")
         if isinstance(p, str) and isinstance(s, str):
             out[p] = s
+    return out
+
+
+def _load_status_notes(root: pathlib.Path) -> dict[str, str]:
+    """path -> note, for `ledger`-status rows only. Reuses the file _load_status_paths
+    already validated; a second, narrower read rather than widening that function's
+    return shape, since every other caller of it wants only the status."""
+    sp = _status_path(root)
+    data = json.loads(sp.read_text())
+    out: dict[str, str] = {}
+    for row in data.get("paths", []):
+        p = row.get("path")
+        s = row.get("status")
+        n = row.get("note")
+        if isinstance(p, str) and s == "ledger":
+            out[p] = n if isinstance(n, str) else ""
     return out
 
 
@@ -157,10 +180,69 @@ def run(root: pathlib.Path) -> tuple[list[str], dict[str, int]]:
         for p in sorted(allow_paths - blocked_in_status - ledgered_in_status)
     )
 
+    # FIFTH CHECK (Section 4). A `ledger`-status path's REAL-RUN leg is a separate
+    # claim from its dry-run parity, which is all the checks above verify. Every
+    # `ledger` row must either confirm the real run in its own `note`, or be
+    # registered in LEG_ALLOWLIST_NAME -- otherwise it is the third state, wearing
+    # the ledger bucket's clothes instead of the blocked bucket's.
+    leg_file = policy_path(LEG_ALLOWLIST_NAME, root)
+    leg_by_path: dict[str, allowlist.Entry] = {}
+    if leg_file.is_file():
+        leg_entries = allowlist.parse_text(leg_file.read_text())
+        for e in leg_entries:
+            if e.entry in leg_by_path:
+                findings.append(
+                    "%s:%d duplicates the entry for %s already declared at line %d"
+                    % (LEG_ALLOWLIST_NAME, e.line, e.entry, leg_by_path[e.entry].line)
+                )
+                continue
+            leg_by_path[e.entry] = e
+        findings.extend(allowlist.verify(leg_entries, LEG_ALLOWLIST_NAME))
+        for p, e in sorted(leg_by_path.items()):
+            if not (root / p).is_file():
+                findings.append(
+                    "%s:%d names %s, which no longer exists in the tree -- delete "
+                    "the entry, do not leave a BLOCKER for a file that is gone"
+                    % (LEG_ALLOWLIST_NAME, e.line, p)
+                )
+
+    ledger_notes = _load_status_notes(root)
+    leg_paths = set(leg_by_path)
+    confirmed = {p for p, note in ledger_notes.items() if REAL_RUN_PHRASE in note}
+
+    # THE THIRD STATE, in the ledger bucket: neither confirmed nor leg-blocked.
+    findings.extend(
+        "%s is ledgered for dry-run parity but its real-run leg is neither "
+        "confirmed in .ci/shadow/w7p5a-status.json's note nor blocked in %s -- "
+        "the third state, in the ledger bucket instead of the blocked one."
+        % (p, LEG_ALLOWLIST_NAME)
+        for p in sorted(ledgered_in_status - confirmed - leg_paths)
+    )
+
+    # STALE (leg): the real run got confirmed but the leg-block was never removed.
+    findings.extend(
+        "%s still carries a real-run-leg BLOCKER for %s, but its "
+        ".ci/shadow/w7p5a-status.json note now confirms the real run. Remove the "
+        "stale entry." % (LEG_ALLOWLIST_NAME, p)
+        for p in sorted(leg_paths & confirmed)
+    )
+
+    # STALE (leg), the other direction: an entry naming a path that is not (or no
+    # longer) `ledger`-status at all -- either it was never ledgered, or it
+    # regressed, and either way this file is the wrong place for it.
+    findings.extend(
+        "%s names %s, which .ci/shadow/w7p5a-status.json does not record as "
+        "'ledger' (a real-run-LEG block only makes sense for a path whose dry-run "
+        "parity is already done)" % (LEG_ALLOWLIST_NAME, p)
+        for p in sorted(leg_paths - ledgered_in_status)
+    )
+
     stats = {
         "entries": len(allow_paths),
         "blocked_in_status": len(blocked_in_status),
         "ledgered_in_status": len(ledgered_in_status),
+        "leg_entries": len(leg_paths),
+        "real_run_confirmed": len(confirmed),
     }
     return findings, stats
 
@@ -170,6 +252,7 @@ def _write_fixture(
     *,
     allow_text: str
     | None = "# BLOCKER: real reason naming curl against a real endpoint, thirty chars easily\n.ci/scripts/deploy/x.sh\n",
+    leg_text: str | None = None,
     status_rows: list[dict] | None = None,
     touch_paths: tuple[str, ...] = (".ci/scripts/deploy/x.sh",),
 ) -> None:
@@ -181,6 +264,8 @@ def _write_fixture(
         f.write_text("#!/usr/bin/env bash\ncurl https://example.invalid\n")
     if allow_text is not None:
         (root / ".ci" / "policy" / ALLOWLIST_NAME).write_text(allow_text)
+    if leg_text is not None:
+        (root / ".ci" / "policy" / LEG_ALLOWLIST_NAME).write_text(leg_text)
     if status_rows is None:
         status_rows = [{"path": ".ci/scripts/deploy/x.sh", "status": "blocked"}]
     (root / ".ci" / "shadow" / "w7p5a-status.json").write_text(
@@ -300,6 +385,105 @@ def selftest() -> bool:
             any("does not track at all" in f for f in findings),
         )
 
+    # T-SCHED W7P5-a Section 4: the fifth check, a ledger row's real-run leg.
+    # The main allowlist must exist and be non-empty regardless (both are their own
+    # VACUITY refusals), so these fixtures give it an unrelated, correctly-'blocked'
+    # entry rather than allow_text=None, keeping it out of x.sh's way.
+    unrelated_allow = (
+        "# BLOCKER: real reason naming curl against a real endpoint, thirty chars easily\n"
+        ".ci/scripts/deploy/other.sh\n"
+    )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        _write_fixture(
+            root,
+            allow_text=unrelated_allow,
+            touch_paths=(".ci/scripts/deploy/x.sh", ".ci/scripts/deploy/other.sh"),
+            status_rows=[
+                {"path": ".ci/scripts/deploy/other.sh", "status": "blocked"},
+                {
+                    "path": ".ci/scripts/deploy/x.sh",
+                    "status": "ledger",
+                    "note": "K=5 EQUIVALENT; one real run each done directly against this tree.",
+                },
+            ],
+        )
+        findings, stats = run(root)
+        check(
+            "CLEAN: a ledger row confirming its real run needs no leg-block entry",
+            findings == [],
+        )
+        check(
+            "CLEAN: real_run_confirmed counts the one confirmed row",
+            stats["real_run_confirmed"] == 1,
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        _write_fixture(
+            root,
+            allow_text=unrelated_allow,
+            leg_text="# BLOCKER: real reason naming gh against the real repo, thirty chars easily\n.ci/scripts/deploy/x.sh\n",
+            touch_paths=(".ci/scripts/deploy/x.sh", ".ci/scripts/deploy/other.sh"),
+            status_rows=[
+                {"path": ".ci/scripts/deploy/other.sh", "status": "blocked"},
+                {"path": ".ci/scripts/deploy/x.sh", "status": "ledger", "note": "K=5 EQUIVALENT."},
+            ],
+        )
+        findings, stats = run(root)
+        check(
+            "CLEAN: a ledger row with an unconfirmed real run but a leg-block entry is quiet",
+            findings == [],
+        )
+        check("CLEAN: leg_entries counts the one leg-block entry", stats["leg_entries"] == 1)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        _write_fixture(
+            root,
+            status_rows=[
+                {"path": ".ci/scripts/deploy/x.sh", "status": "ledger", "note": "K=5 EQUIVALENT."}
+            ],
+        )
+        findings, _ = run(root)
+        check(
+            "PLANT: THE THIRD STATE (ledger bucket) -- neither confirmed nor leg-blocked reds",
+            any("the third state, in the ledger bucket" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        _write_fixture(
+            root,
+            leg_text="# BLOCKER: real reason naming gh against the real repo, thirty chars easily\n.ci/scripts/deploy/x.sh\n",
+            status_rows=[
+                {
+                    "path": ".ci/scripts/deploy/x.sh",
+                    "status": "ledger",
+                    "note": "K=5 EQUIVALENT; one real run each done directly against this tree.",
+                }
+            ],
+        )
+        findings, _ = run(root)
+        check(
+            "PLANT: a leg-block entry whose real run is now confirmed is STALE and reds",
+            any("real-run-leg BLOCKER" in f and "confirms the real run" in f for f in findings),
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        _write_fixture(
+            root,
+            leg_text="# BLOCKER: real reason naming gh against the real repo, thirty chars easily\n.ci/scripts/deploy/x.sh\n",
+            status_rows=[{"path": ".ci/scripts/deploy/x.sh", "status": "blocked"}],
+        )
+        findings, _ = run(root)
+        check(
+            "PLANT: a leg-block entry for a path that is not 'ledger' status reds",
+            any("does not record as" in f and "'ledger'" in f for f in findings),
+        )
+
     return not check.ok
 
 
@@ -327,12 +511,17 @@ def main(argv: list[str]) -> int:
         return 1
     print(
         "✓ %d BLOCKER-gated real-run exemption(s) in %s, agreeing with "
-        ".ci/shadow/w7p5a-status.json (%d 'blocked', %d ledgered) -- no third state"
+        ".ci/shadow/w7p5a-status.json (%d 'blocked', %d ledgered) -- no third state; "
+        "of the ledgered, %d have their real-run leg confirmed and %d are leg-blocked "
+        "in %s"
         % (
             stats["entries"],
             ALLOWLIST_NAME,
             stats["blocked_in_status"],
             stats["ledgered_in_status"],
+            stats["real_run_confirmed"],
+            stats["leg_entries"],
+            LEG_ALLOWLIST_NAME,
         )
     )
     return 0
