@@ -4020,15 +4020,44 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       returns real legs and a correctly-partial `replicated` set. All surrounding gates
       (`ci-gate-bind`, `ci-parity`, `ci-gates-lock`, `ci-quality-complete`,
       `ci-gate-test-real-file-plants`) still rc=0, `tsc --noEmit` clean.
-      **D3-D5 remain**: D3 (emit the `strategy:` block via `rewriteStrategyRegions`),
-      D4 (the leg receipt counting what ran, not what was planned), D5 (the two static
-      `check:ci-quality-complete` clauses this needs). D3 is the natural next slice --
-      it is the piece that actually turns `SHARD_COUNTS` from inert to live for the
-      first time, so it is also the first piece that needs a real CI run (not just
-      local gates) to prove, and should not land in the same wave as populating
-      `SHARD_COUNTS` for a real lane without D4 landing first (Finding 2's vacuity: an
-      unconjuncted step under a real `strategy.matrix` silently skips and reports
-      green having run nothing).
+      **D3 DONE 2026-09-15, and the earlier framing of it as "the first piece needing a
+      real CI run" was wrong -- corrected by re-reading the design rather than trusting
+      my own prior note.** `rewriteStrategyRegions` (like D1/D2) is fully verifiable
+      locally via fixtures, and stays exactly as inert as they were: it is called from
+      `--write` right before `rewriteRegions`, and with `SHARD_COUNTS` empty it finds
+      nothing to check on the real tree (proven, not assumed: ran it against the live
+      `ci-quality.yml` with `{}`, zero findings).
+      **A REFUSAL, NOT A WRITER, by design -- deviating from the literal function name.**
+      The box's own acceptance criteria read as two refusals ("refused with the exact
+      YAML to paste" / "refused as a drain"), not an auto-rewrite, and that is the
+      right call: unlike a step's `run:`/`if:`/`env:`, a `strategy:` block changes what
+      the JOB IS, and the box's own note that a required-check rename is operator-only
+      makes this exactly the kind of structural change this file's other regions never
+      auto-apply either (see `classifyDrops`'s claimed/unclaimed split, same philosophy).
+      Checks a THIRD direction beyond the box's stated two: a region that exists AND
+      agrees on job name but disagrees on the actual shard COUNT also refuses, naming
+      both numbers, rather than passing as long as *a* region merely exists.
+      **A REAL BUG FOUND IN THE BOX'S OWN PROPOSED MARKER TEXT, before landing it.**
+      `# >>> gate-bind strategy` (the literal text the box specifies) matches `OPEN_RE`
+      (`/^\s*# >>> gate-bind\b/`, a bare word boundary with no `$`), while its own close
+      line `# <<< gate-bind strategy` does NOT match `CLOSE_RE` (`/^\s*# <<< gate-bind\s*$/`,
+      which requires nothing after "gate-bind"). Landing that exact text would have made
+      `rewriteRegions` misdetect the strategy-open as an ordinary region open and scan
+      forward for a close line that never matches, silently swallowing the rest of the
+      job block as "region body". Proved with both regexes against the literal strings
+      before choosing `# >>> shard-strategy` / `# <<< shard-strategy` instead -- no
+      shared "gate-bind" prefix, no collision, and the fixture is now selftest control 6.
+      6 new selftest controls, all pass; `check:ci-gate-bind` (407), `check:ci-parity`
+      (485/485), `check:ci-gates-lock`, `check:ci-quality-complete` (22 controls) all
+      still rc=0; `tsc --noEmit` and eslint clean; biome format caught one over-long
+      line the same way it caught one in D2 (fixed with `biome format --write`, the
+      third time in one night that oracle alone caught something eslint+tsc missed).
+      **D4-D5 remain**: D4 (the leg receipt counting what ran, not what was planned) and
+      D5 (the two static `check:ci-quality-complete` clauses) are what's left before
+      `SHARD_COUNTS` could safely be populated for a real lane -- THAT step, not D3 or
+      D4's own mechanics, is the one that genuinely needs a real CI run to prove
+      (Finding 2's vacuity: an unconjuncted step under a live `strategy.matrix` silently
+      skips and reports green having run nothing).
 - [x] **B3 S** `quality-complete` aggregator. `ci_job_aggregation.py` already enforces four things
       about `ci-complete`, including an equality between tier lists and env vars because "either
       half alone is dead". A matrix job's result is a single roll-up, so shards are invisible

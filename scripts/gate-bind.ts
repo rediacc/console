@@ -684,6 +684,94 @@ export function rewriteRegions(
   return { text: out.join('\n'), lanes: touched, dropped };
 }
 
+/**
+ * T-SCHED B2 D3. A `matrix.shard` conjunct means nothing without a real `strategy:`
+ * block on the job -- Finding 2's vacuity: with no `strategy.matrix`, GitHub evaluates
+ * `matrix.shard` as `null`, so `matrix.shard == 1` is FALSE and every conjuncted step
+ * SKIPS, reporting a full leg's worth of green having run nothing.
+ *
+ * NOT `# >>> gate-bind ...`. The plan box that specified this drafted the marker as
+ * `# >>> gate-bind strategy`, which `OPEN_RE` above (`/^\s*# >>> gate-bind\b/`, a bare
+ * word boundary with no `$`) MATCHES, while its own close line, `# <<< gate-bind
+ * strategy`, does NOT match `CLOSE_RE` (`/^\s*# <<< gate-bind\s*$/`, which requires
+ * nothing after "gate-bind"). `rewriteRegions` above would misdetect the strategy
+ * open as an ordinary region open and scan forward for a close line that never
+ * matches -- silently swallowing the rest of the job block into "region body" until
+ * the next real `# <<< gate-bind` from an unrelated region. Proved with the literal
+ * strings against both regexes before choosing this marker instead of that one.
+ *
+ * A CHECK, NOT A WRITER, on purpose -- this is the one place `--write` REFUSES
+ * rather than regenerates. Every other region in this file is safe to auto-rewrite
+ * because it only ever changes a `run:`/`if:`/`env:` line inside a job that already
+ * exists in the shape it exists in. A `strategy:` block changes what the job IS: it
+ * turns one execution into N, and the box's own note names a real external
+ * consequence -- if `Quality / Code` is a required branch-protection check, its
+ * rendered name becomes `Quality / Code (1)`, and that rename is the operator's to
+ * approve, not this function's to make silently. So a lane entering `SHARD_COUNTS`
+ * or leaving it is surfaced as a refusal naming the exact YAML, never applied.
+ */
+export function rewriteStrategyRegions(
+  workflow: string,
+  counts: Readonly<Record<string, number>>
+): string[] {
+  const lines = workflow.split('\n');
+  const findings: string[] = [];
+  const wanted = new Set(Object.keys(counts));
+  const seen = new Set<string>();
+  let job = '';
+  let region: { job: string; shards: number[] } | null = null;
+  for (const raw of lines) {
+    const jm = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(raw);
+    if (jm) job = jm[1] as string;
+    const openM = /^( {4})# >>> shard-strategy\b/.exec(raw);
+    if (openM) region = { job, shards: [] };
+    if (region && /^\s*shard:\s*\[([^\]]*)\]\s*$/.test(raw)) {
+      const nums = /^\s*shard:\s*\[([^\]]*)\]\s*$/.exec(raw)?.[1] ?? '';
+      region.shards = nums
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+        .map(Number);
+    }
+    if (/^ {4}# <<< shard-strategy\s*$/.test(raw) && region) {
+      seen.add(region.job);
+      const want = counts[region.job];
+      if (want === undefined) {
+        findings.push(
+          `job ${region.job} carries a shard-strategy region but is not in SHARD_COUNTS -- ` +
+            'remove the region (a leftover from a lane that stopped sharding is a drain, not a no-op).'
+        );
+      } else {
+        const expected = Array.from({ length: want }, (_, k) => k + 1);
+        if (JSON.stringify(region.shards) !== JSON.stringify(expected)) {
+          findings.push(
+            `job ${region.job}'s shard-strategy region lists [${region.shards.join(', ')}] but ` +
+              `SHARD_COUNTS[${region.job}] is ${want} -- expected [${expected.join(', ')}]. Repaste ` +
+              'the block (this function refuses rather than rewrites a structural job change).'
+          );
+        }
+      }
+      region = null;
+    }
+  }
+  for (const job2 of wanted) {
+    if (seen.has(job2)) continue;
+    const want = counts[job2] as number;
+    const shardList = Array.from({ length: want }, (_, k) => k + 1).join(', ');
+    findings.push(
+      `job ${job2} is in SHARD_COUNTS (${want}) with no shard-strategy region. Paste, at the job's ` +
+        "4-space indent, immediately before 'steps:':\n" +
+        '    # >>> shard-strategy (generated; do not edit inside)\n' +
+        '    strategy:\n' +
+        '      fail-fast: false\n' +
+        '      matrix:\n' +
+        `        shard: [${shardList}]\n` +
+        '    # <<< shard-strategy'
+    );
+  }
+  return findings;
+}
+
 /** What the manifest already says about a hand-registered gate. */
 export interface Registered {
   file: string;
@@ -1534,6 +1622,75 @@ function selftest(): number {
       "if: ${{ !cancelled() && steps.setup.outcome == 'success' }}"
   );
 
+  // T-SCHED B2 D3: rewriteStrategyRegions, previously with no selftest control at all.
+  const SS_JOB = [
+    '  quality-code:',
+    '    name: Code',
+    '    runs-on: ubuntu-latest',
+    '    timeout-minutes: 15',
+    '    steps:',
+    '      - name: x',
+    '        run: echo hi',
+    '',
+  ].join('\n');
+  const SS_JOB_WITH_REGION = (shards: string) =>
+    [
+      '  quality-code:',
+      '    name: Code',
+      '    runs-on: ubuntu-latest',
+      '    timeout-minutes: 15',
+      '    # >>> shard-strategy (generated; do not edit inside)',
+      '    strategy:',
+      '      fail-fast: false',
+      '      matrix:',
+      `        shard: [${shards}]`,
+      '    # <<< shard-strategy',
+      '    steps:',
+      '      - name: x',
+      '        run: echo hi',
+      '',
+    ].join('\n');
+  ck(
+    'CONTROL: no lane in SHARD_COUNTS and no region present is silent',
+    rewriteStrategyRegions(SS_JOB, {}).length === 0
+  );
+  ck(
+    'a lane in SHARD_COUNTS with no region refuses, naming the exact YAML',
+    (() => {
+      const f = rewriteStrategyRegions(SS_JOB, { 'quality-code': 4 });
+      return (
+        f.length === 1 &&
+        f[0]?.includes('no shard-strategy region') &&
+        f[0]?.includes('shard: [1, 2, 3, 4]')
+      );
+    })()
+  );
+  ck(
+    'a region for a lane not in SHARD_COUNTS refuses as a drain',
+    rewriteStrategyRegions(SS_JOB_WITH_REGION('1, 2, 3, 4'), {})[0]?.includes(
+      'is a drain, not a no-op'
+    ) === true
+  );
+  ck(
+    'a region agreeing with SHARD_COUNTS is silent',
+    rewriteStrategyRegions(SS_JOB_WITH_REGION('1, 2, 3, 4'), { 'quality-code': 4 }).length === 0
+  );
+  ck(
+    'a region whose shard list disagrees with SHARD_COUNTS refuses, naming both',
+    (() => {
+      const f = rewriteStrategyRegions(SS_JOB_WITH_REGION('1, 2'), { 'quality-code': 4 });
+      return (
+        f.length === 1 && f[0]?.includes('lists [1, 2]') && f[0]?.includes('expected [1, 2, 3, 4]')
+      );
+    })()
+  );
+  ck(
+    "CONTROL: the plan box's OWN proposed marker (`# >>> gate-bind strategy`) would have " +
+      'collided with OPEN_RE -- proving why shard-strategy uses a different prefix, not gate-bind',
+    OPEN_RE.test('    # >>> gate-bind strategy (generated; do not edit inside)') &&
+      !CLOSE_RE.test('    # <<< gate-bind strategy')
+  );
+
   return bad;
 }
 
@@ -1847,6 +2004,17 @@ function main(argv: string[]): void {
         for (const id of assigned.replicated) console.log(`    ${id}`);
       }
       shardMap.set(job, assigned.legs);
+    }
+    // T-SCHED B2 D3, BEFORE rewriteRegions: a shard conjunct on a job with no real
+    // `strategy:` block is Finding 2's vacuity (GitHub evaluates `matrix.shard` as
+    // `null` with no `strategy.matrix`, so every conjuncted step silently skips).
+    // A REFUSAL, not a rewrite -- see rewriteStrategyRegions's own docstring for why
+    // this one region is never auto-applied.
+    const strategyFindings = rewriteStrategyRegions(workflow, SHARD_COUNTS);
+    if (strategyFindings.length > 0) {
+      console.error(`✗ ${strategyFindings.length} shard-strategy finding(s):`);
+      for (const f of strategyFindings) console.error(`    ${f}`);
+      process.exit(1);
     }
     const { text, lanes, dropped } = rewriteRegions(workflow, scoped, only, shardMap);
     // REFUSE TO SILENTLY DELETE A STEP THE MANIFEST STILL POINTS AT. A step inside the
