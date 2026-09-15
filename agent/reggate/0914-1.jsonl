@@ -10,3 +10,6 @@
 {"kind":"charge","sig":"81dd85d734c5","why":"proven","at":"2026-09-15T03:18:16Z","br":"0914-1"}
 {"kind":"debt","sig":"238160b65d8a","blind_spot":"gate-bind.ts and gate-bind.sh are separate implementations with separate test coverage; changes breaking one are invisible unless a test compares both outputs.","surface":"gates","artifact":".ci/scripts/test/test_twin_parity.py","charged":10,"at":"2026-09-15T03:26:30Z","br":"0914-1"}
 {"kind":"charge","sig":"238160b65d8a","why":"capped","at":"2026-09-15T03:26:30Z","br":"0914-1"}
+{"kind":"charge","sig":"717f8269b178","why":"proven","at":"2026-09-15T04:09:01Z","br":"0914-1"}
+{"kind":"debt","sig":"fa5e706b032e","blind_spot":"Map coordinate assumptions only break when receipt step ordering changes; static location analysis cannot predict runtime interactions.","surface":"gates","artifact":".ci/gate-bind.ts","charged":12,"at":"2026-09-15T05:56:53Z","br":"0914-1"}
+{"kind":"charge","sig":"fa5e706b032e","why":"capped","at":"2026-09-15T05:56:53Z","br":"0914-1"}

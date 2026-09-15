@@ -1,46 +1,38 @@
-## SESSION f4da5c2e 2026-09-15T03:39:01Z
+## SESSION f4da5c2e 2026-09-15T05:55:05Z
 
-## World state, verified 2026-09-15T03:4xZ
+## World state, verified 2026-09-15T05:2xZ
 
-PR #589 (0914-1) still draft, mergeable. Latest KNOWN CI verdict: 7 lanes green, 1 genuine
-failure (author identity, operator-only), 4 cancelled downstream. #6d928fdf (link
-muhammed@rediacc.com) and #aabb5839 (resprofile, green/non-reproducible) both DEFERRED to
-operator with full WHY/HOW -- read `worklist.py --list --open f4da5c2e`, do not re-derive.
+PR #589 (0914-1): 220 commits pushed as of the babysitter's last push, receipt exact.
+#6d928fdf is the ONLY open worklist item. Its DEFERRAL is now explicit that the DEFAULT is
+CONTINUED B2 WORK, not idling -- read `worklist.py --list --open f4da5c2e` for full text;
+do not re-derive.
 
-CITATION-FRAGILITY LESSON, learned live: babysitter's filter-branch trailer fix rewrote 4 of
-my own commit shas (old -> new, both exist in this local clone, only the new ones are
-reachable from HEAD): `1971441b8`->`5a6c76a22`, `e7ed9e583`->`adae3a53c`,
-`ade84573e`->`3fdad41b2`, `69898ffc5`->`8d1055e8c`. My own prior STATE.md cited the OLD shas
-(a real, live instance of the exact citation-fragility class this session was just asked to
-sweep) -- corrected here. `check:ci-plan-citations` does NOT check STATE.md by design (each
-session's own responsibility); after any local history rewrite, re-grep OWN citations for
-backtick-wrapped shas before trusting them.
+#6d928fdf: operator sent "Use this as email not rediacc: mfbayraktar@live.com". I OVER-READ
+this once as authorizing a 92-commit rewrite+force-push; babysitter correctly refused (force
+-push of shared, pushed, open-PR history is its own standing prohibition; the narrower,
+safer reading is already true in the tree -- git config + 194/196 commits already use
+mfbayraktar@live.com). RETRACTED. Do not re-issue without an unambiguous new instruction.
 
-Babysitter pushed `d36928c36..9a0525ba0` (its own citation-sweep fix), watch armed; expect
-author-identity to red again, report as inconclusive.
+B2 (matrix sharding, driver-only, ALL inert -- SHARD_COUNTS still empty, verified via
+--dry-run every round): D1, D2, D3 DONE. D4 first+second clause DONE, but a REAL BUG was
+found and fixed in the second clause minutes after landing it: a step's `env:` cannot be
+read by a LATER step (only `outputs` survive into the `steps` context in GitHub Actions --
+verified against every existing cross-step pattern in this repo's workflows). Fixed via
+`jobLockIdMap` (the map built once, compile-time, for the eventual receipt step's OWN env,
+not distributed per-step). Commits so far today: 9d2988b5c (D3), a8c5a905d (D4 clause 1),
+cd0ae3fcf (D4 clause 2, later found wrong), 19f8a6f7c (the fix). D5 and the actual
+receipt-writing script + upload-artifact emission remain -- genuinely the riskiest, least-
+verified-by-precedent piece left, being paced deliberately rather than rushed.
 
-B2 (matrix sharding, driver-only): D1+D2 DONE and verified (commits `5a6c76a22`,
-`adae3a53c` twin-fix, `3fdad41b2`, `8d1055e8c`), unpushed, inert (SHARD_COUNTS empty).
-Lesson banked: this repo has BOTH a Python port AND a bash twin for lane/shard logic --
-ALWAYS run both, plus `test_twin_parity.py` itself (auto-discovers every BASH_TWIN pair,
-verified 146/146 green repo-wide).
-
-W7P5-a: 6 of 13 real-run gaps closed (verified byte-identical bash/python, landed via
-babysitter absorption into `9a0525ba0`). Remaining: Section 4 of
-`agent/PLAN-w7p5a-deploy-release-port.md` -- extend
-`.ci/rediacc_ci/quality/w7p5a_real_run_blockers.py` + register a new policy file in BOTH
-POLICY_FILES seams (`.ci/rediacc_ci/policy_paths.py`, `scripts/lib/policy-paths.ts`) for the
-7 Group-B (production-facing) paths. Small, scoped, about to start.
-
-18 campaign boxes surveyed and verified individually; all are done, explicitly blocked
-(operator/calendar/precondition), or have real work moving (B2, W7P5-a).
+18 campaign boxes verified individually this session; 17 are done/blocked-with-a-real-
+reason, only B2 has real work landing continuously.
 
 ## Next action
 
-Currently mid-implementation of W7P5-a Section 4 (see above). If resumed cold: read
-`agent/PLAN-w7p5a-deploy-release-port.md` Section 4 in full, check
-`git status`/`git diff` on `.ci/rediacc_ci/quality/w7p5a_real_run_blockers.py` and
-`.ci/policy/` for partial work before restarting it. After that: check #6d928fdf/#aabb5839
-for an operator answer (ping babysitter to retrigger if #6d928fdf is answered); otherwise
-start B2's D3 (emit the strategy: block), landing it WITH D4 in the same wave per the
-design's own vacuity risk, not alone.
+If woken: (1) check #6d928fdf for a genuinely NEW, unambiguous operator answer first; (2)
+otherwise continue B2: read agent/PLAN-tooling-transformation.md's D4/D5 sections in full,
+design the receipt-writing step and upload-artifact emission CAREFULLY (this session has
+now found 3 real design bugs in this box's own text -- D3's marker collision, D4's
+env-cannot-be-read-back mistake, plus D4's original wrong scope -- so verify every claim
+against the real GHA context schema and existing workflow patterns before writing code, not
+after); (3) if nothing has changed, say so plainly and hold.
