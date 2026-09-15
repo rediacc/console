@@ -339,3 +339,25 @@ status line is genuinely unchanged, not merely re-timestamped; the repeated re-c
 worklist-staleness trigger firing on unrelated item movement elsewhere, already named as a
 candidate hook-tuning issue two checks ago and still not this session's to fix tonight.
 
+### Re-checked a seventh time 2026-09-15, PR-babysit wave continued: still unchanged, but the precondition metric itself is now suspect
+
+`FAMILIES` re-read directly once more: identical four bash-only rows, same line range
+(133-143). Driver/babysitter activity in the intervening hours touched
+`check-shape-duplication.ts` twice -- an anti-vacuity floor added by the babysitter, and a
+13th `accepted` entry from a ruling I made -- but neither touches `FAMILIES`, so commit 3
+stays genuinely not started.
+
+**Worth naming rather than silently re-measuring the same way: this plan's own precondition
+proxy (`ls .ci/shadow/w7p5a-*.observations.jsonl`, still 16) may no longer be the right
+instrument.** W7P5-a's own box text records that most of its dry-run-parity ledgers now
+live under a DIFFERENT prefix, `w7p6-<slug>`, not `w7p5a-<slug>` -- `ls
+.ci/shadow/w7p6-*.observations.jsonl | wc -l` is **153** tonight, not 16. This plan has
+checked the w7p5a- count seven times without ever measuring the w7p6- one, which may mean
+W7P5-c's real "82 ledgers" precondition (per that box's own 2026-09-09 census: "81 of 82
+ledgers already pass K=5") is measured differently than this plan assumes, and could be much
+closer to met than 16-of-82 suggests. **Not resolved here** -- re-deriving what W7P5-c's
+census actually counts, and whether this plan's proxy needs to widen to both prefixes, is
+its own small check, appropriately left for whoever next re-examines W7P5-c's own
+precondition rather than guessed at under this session's own workload tonight. Status stays
+`executing`, commit 3 stays not started.
+
