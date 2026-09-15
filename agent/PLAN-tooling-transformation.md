@@ -5712,6 +5712,27 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       Frozen span still byte-identical, headers unmoved.
       **Still open: the `cli-commands` region**, needing a new gen-docs provider, not just
       a doc -- the biggest of the original four and the only one remaining.
+      **SCOPED, not attempted, 2026-09-15 -- measured why it is genuinely the long pole of
+      this box, not the "net 24" the plan assumed.** `packages/cli/src/commands/` is 124
+      `.ts` files: 5 subdirectories (`machine/`, `mcp/`, `ops/`, `cluster/`, `config/`)
+      plus **57 flat files at the top level** (`repo-*.ts` alone is 25 of them). Many flat
+      files are NOT command definitions -- `repo-batch-utils.ts`, `repo-sync-helpers.ts`,
+      `function-params.ts`, `_validate.ts` are helpers `.command()` never appears in, and a
+      provider that cannot tell the difference would emit a table full of non-commands.
+      There is no existing "machine-readable CLI contract" anywhere in the tree to build
+      from -- this box's own plan text is the only place that phrase appears -- so this is
+      new parser work, not wiring: walk 124 files, find real `.command()`/`.description()`
+      registrations (both flat and nested-subcommand shapes, e.g.
+      `packages/cli/src/commands/machine/provider.ts:51,55,105,118` registers FOUR
+      subcommands under one file), and
+      cross-verify the extracted tree against `rdc --help`'s real output rather than trust
+      the parse. **This also is not a simple swap for CLAUDE.md's current Common Commands
+      section**, which is curated example USAGE with explanatory prose (why `-m` is gone
+      from most repo commands, why a repo ref sets `DOCKER_HOST`) -- a generated verb table
+      would be a different, complementary artifact, not a replacement, so cutting the
+      current section to a pointer needs its own design decision about what stays inline.
+      Correctly not started under continued session pressure rather than shipped half-built
+      or guessed at.
 - [x] **W11 P5c BLOCKED ON W8** The `env-manifest` region has no home until W8 P2 exists. Record
     (ticked) 2026-09-15T07:22:49Z by f4da5c2e: Verified live: env-manifest region now has a home, built by W8 P3 (not P5c itself) once W8 P2 unblocked it. check:ci-doc-region-parity rc=0, region 'env-manifest' at scripts/data/doc-registry.md:1076 matches with 904 rows, 14/14 providers used. P5c's entire scope was to record the blocked status until W8 P2 existed; W8 P2 landed 2026-09-09 and W8 P3 built the region the same day, so the blocker this box named is resolved and the box closes on that evidence rather than new work.
       it as blocked so P5 is not ticked at three of four.
