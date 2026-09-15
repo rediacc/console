@@ -100,6 +100,43 @@ def _run(subject: pathlib.Path, fixture: pathlib.Path) -> subprocess.CompletedPr
     return subprocess.run(runner, env=env, capture_output=True, text=True, check=False, timeout=180)
 
 
+def python_shows_caret_ruler() -> bool:
+    """Does the `python3` on PATH draw a caret ruler under a `-c` traceback?
+
+    ASKED, because it is a property of the INTERPRETER and this suite runs on two
+    very different ones. Measured 2026-09-15:
+
+        Python 3.14.4 (this tree's hosts)
+            File "<string>", line 1, in <module>
+              d={"a":1}; d["updateChannel"]
+                         ~^^^^^^^^^^^^^^^^^
+            KeyError: 'updateChannel'
+        Python 3.12.3 (the GitHub runner)
+            File "<string>", line 1, in <module>
+            KeyError: 'updateChannel'
+
+    CPython only began echoing the SOURCE of a `-c` snippet (and so the PEP 657
+    ruler under it) in 3.13; before that there is no source line to underline.
+    An unconditional `"^^^" in stderr` therefore passed on every machine here and
+    failed in CI run 35009582358 -- the fourth toolchain in this wave whose
+    version differs between this tree and the runner, after bash, jq and
+    coreutils.
+
+    THE DIFFERENTIAL IS NOT WEAKENED BY THIS. `assert_same` still compares the
+    twin's and the port's stderr byte for byte, so a port that forged ANY part of
+    the rendering still reds; this predicate only decides which anti-vacuity
+    proof is available on the interpreter at hand.
+    """
+    proc = subprocess.run(
+        ["python3", "-c", 'd={"a":1}; d["updateChannel"]'],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    return "^^^" in proc.stderr
+
+
 def run_both(
     fixture: pathlib.Path, *, port: pathlib.Path | None = None
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
@@ -218,7 +255,13 @@ def test_a_config_missing_a_key_kills_both_sides_the_same_way(
     assert old.returncode == 1
     assert old.stderr.startswith("Traceback (most recent call last):\n")
     assert old.stderr.rstrip("\n").endswith("KeyError: 'updateChannel'")
-    assert "^^^" in old.stderr, "the caret ruler is part of what cannot be forged"
+    # CPython's own rendering, proved without assuming an interpreter version.
+    # The frame line is emitted by every CPython; the caret ruler is not.
+    assert 'File "<string>", line 1, in <module>' in old.stderr, (
+        "the traceback is not CPython's own: %r" % old.stderr
+    )
+    if python_shows_caret_ruler():
+        assert "^^^" in old.stderr, "the caret ruler is part of what cannot be forged"
     assert "Passed:" not in old.stdout, "set -e ends the run before the tally"
     assert_same(old, new)
 
