@@ -113,6 +113,17 @@ EXEMPT: dict[str, str] = {
         "it exists to do; see its own docstring for why the side-effect import "
         "form is the only spelling ruff accepts before the imports that follow it."
     ),
+    ".ci/scripts/docker/_cipath.py": (
+        "BLOCKER: the SECOND canonical `.ci` hop, exempt for the identical reason as "
+        "the quality copy above and not a duplicate of its debt. A path invocation "
+        "puts THE SCRIPT'S OWN DIRECTORY on sys.path[0], so an entry point in "
+        ".ci/scripts/docker/ can only ever resolve `import _cipath` to a file beside "
+        "it; importing the quality copy instead would require `.ci` to be on the path "
+        "already, which is precisely what has not happened yet. The circularity is "
+        "the reason a second copy exists, and the file's own docstring measures it. "
+        "The exemption dies the day `.ci/scripts/docker/` stops holding path-invoked "
+        "entry points."
+    ),
     ".ci/scripts/quality/check_fetch_retry.py": (
         "BLOCKER: ruff's E402 EXEMPTS a `sys.path` mutation that precedes a "
         "module-level import and exempts nothing else. Measured against ruff "

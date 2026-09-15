@@ -58,7 +58,21 @@ if typing.TYPE_CHECKING:
 # BOTH PROMOTE DIFFERENTIALS SHARE THIS GROUP, and the group is the only thing
 # standing between them and each other's `/tmp/promote-cli`. `--dist loadgroup`
 # is on `check_pytest.py`'s argv, so a static marker here is honoured.
-pytestmark = pytest.mark.xdist_group("deploy-promote-fixed-tmp")
+#
+# THE NAME IS NOW SHARED WITH test_deploy_simulate_promotion.py, and the widening
+# is the fix rather than tidying. This module drives `/tmp/config` too -- the
+# docstring above lists it among the twin's fixed paths -- and so does that one,
+# which additionally holds a machine-wide flock for it. A lock ONE of two parties
+# takes is not a lock: under the old split names `--dist loadgroup` put the two
+# modules on different workers BY CONSTRUCTION, so this module's `/tmp/config`
+# writes landed inside the other's critical section. Measured 2026-09-15: 50/50
+# pass serially, 4-5 fail under xdist, and not the same 4-5 on consecutive runs.
+#
+# RESIDUAL, named rather than left to be rediscovered: this module still does not
+# take `FIXED_TMP_LOCK`. The shared group makes the two serial WITHIN a run; the
+# lock is what would also protect against a SECOND pytest run in the same tree,
+# and only the simulate module has it.
+pytestmark = pytest.mark.xdist_group("deploy-fixed-tmp")
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "promote-r2-to-stable-hotfix.sh"

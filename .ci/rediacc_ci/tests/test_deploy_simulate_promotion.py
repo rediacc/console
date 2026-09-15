@@ -57,7 +57,23 @@ if typing.TYPE_CHECKING:
 
 # `/tmp/config` is hard-coded in the twin; the group is what stops a concurrent
 # case in another module writing it.
-pytestmark = pytest.mark.xdist_group("deploy-simulate-promotion-fixed-tmp")
+#
+# AND THE GROUP DID NOT DO THAT, measured 2026-09-15. The claim above is what the
+# group was believed to buy; what `--dist loadgroup` actually buys is that tests
+# SHARING A GROUP NAME land on one worker. A different module with a DIFFERENT
+# name is therefore not merely unprotected, it is actively placed on another
+# worker -- the opposite of the invariant the line above asserts.
+# `test_deploy_promote_r2_to_stable_hotfix.py` drives the same `/tmp/config` (its
+# own docstring lists it as a fixed twin path) under the group name
+# `deploy-promote-fixed-tmp`, so the two modules were scheduled CONCURRENTLY by
+# construction. The failure that exposed it is the one this module's own comment
+# at `FIXED_TMP_LOCK` predicts word for word: `/tmp/config` vanishing between the
+# download that wrote it and the upload that reads it, surfacing as
+# `HeadObject 404` and `exit diverged: 1 vs 0`. Serial in isolation: 50/50 pass.
+# Under `-n <jobs> --dist loadgroup`: 4-5 fail, and NOT THE SAME 4-5 twice.
+#
+# ONE NAME ACROSS BOTH MODULES is the fix, because the name IS the mutex.
+pytestmark = pytest.mark.xdist_group("deploy-fixed-tmp")
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "simulate-promotion.sh"

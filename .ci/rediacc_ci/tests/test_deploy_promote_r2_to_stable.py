@@ -58,7 +58,15 @@ if typing.TYPE_CHECKING:
 
 # SHARED WITH THE HOTFIX DIFFERENTIAL ON PURPOSE. Both drive scripts that
 # hard-code `/tmp/promote-<dir>`; the group is what stops them colliding.
-pytestmark = pytest.mark.xdist_group("deploy-promote-fixed-tmp")
+#
+# WIDENED 2026-09-15 TO `deploy-fixed-tmp`, WHICH NOW ALSO COVERS
+# test_deploy_simulate_promotion.py. Renaming only the other two modules would
+# have split THIS pair and reintroduced, here, the exact collision being fixed
+# there -- the group name is the mutex, so every module sharing a fixed /tmp
+# path has to share one name. The three modules that do are this one, the hotfix
+# differential (`/tmp/promote-<dir>`, `/tmp/config`, `/tmp/script`) and the
+# simulate differential (`/tmp/config`).
+pytestmark = pytest.mark.xdist_group("deploy-fixed-tmp")
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "promote-r2-to-stable.sh"
