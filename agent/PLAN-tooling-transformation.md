@@ -5648,7 +5648,8 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       **To finish this box someone must WRITE the four missing homes first**, which is what
       the operator declined to do in this pass. Until then the remaining 80 lines cannot be
       cut without deleting the only copy of something.
-- [ ] **W11 P5c BLOCKED ON W8** The `env-manifest` region has no home until W8 P2 exists. Record
+- [x] **W11 P5c BLOCKED ON W8** The `env-manifest` region has no home until W8 P2 exists. Record
+    (ticked) 2026-09-15T07:22:49Z by f4da5c2e: Verified live: env-manifest region now has a home, built by W8 P3 (not P5c itself) once W8 P2 unblocked it. check:ci-doc-region-parity rc=0, region 'env-manifest' at scripts/data/doc-registry.md:1076 matches with 904 rows, 14/14 providers used. P5c's entire scope was to record the blocked status until W8 P2 existed; W8 P2 landed 2026-09-09 and W8 P3 built the region the same day, so the blocker this box named is resolved and the box closes on that evidence rather than new work.
       it as blocked so P5 is not ticked at three of four.
 - [x] **W12 P2.7a S, before the wave** `check_plan_boxes.py` rule `G-A5` becomes never-delete. The
       deadlock A5 avoided no longer exists: `.ci/scripts/quality/check-plan-housekeeping.sh:51` states "THE REMEDY IS
