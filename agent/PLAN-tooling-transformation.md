@@ -4154,11 +4154,12 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       is dropping the `---- gate ----` header and hand-registering, a bigger, different
       change than what was attempted. Verified live 2026-09-15: `check:ci-quality-complete`
       still rc=0 with clause 1's re-assertion active.
-      **The "Install worker project deps" unclaimed-drop finding no longer reproduces**,
-      verified live 2026-09-15: `gate-bind --write --dry-run` against the current tree
-      reports zero drops. Not re-diagnosed why -- outside this note's scope -- only that
-      it is not presently blocking a real write, so it should not be read as still open
-      without re-checking.
+      **CORRECTION to my own note, from the babysitter:** the "Install worker project
+      deps" unclaimed-drop finding did not lapse on its own -- I wrongly implied that by
+      saying it "no longer reproduces" with no cause given. The babysitter moved the step
+      out of the gate-bind region in `7d7346b87`. It was a real finding and it is fixed,
+      not spurious; verified live 2026-09-15 that `gate-bind --write --dry-run` reports
+      zero drops after that fix.
 - [x] **B3 S** `quality-complete` aggregator. `ci_job_aggregation.py` already enforces four things
       about `ci-complete`, including an equality between tier lists and env vars because "either
       half alone is dead". A matrix job's result is a single roll-up, so shards are invisible
