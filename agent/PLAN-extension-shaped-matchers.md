@@ -386,3 +386,12 @@ not started. (This session also independently re-confirmed W7P5-c is still block
 exact precondition, via a separate read-only investigation -- consistent with, not
 contradicting, this file's own eighth check.)
 
+### Re-checked a tenth time 2026-09-15, session d778be9d continued: still unchanged
+
+Re-derived again: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`) is the
+identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still 16;
+`.ci/shadow/w7p6-*.observations.jsonl` is still 153. Driver activity since the ninth check
+(the migrate/handover tooling fix, two TRAPS.md entries, the W7P4-W docker cutover landing
+at `696a45bf9`, and ruling on the PR-babysit wave's toolchain fixes) touched none of this
+plan's files or its precondition. Status stays `executing`, commit 3 stays not started.
+
