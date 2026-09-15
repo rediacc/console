@@ -1,40 +1,41 @@
-## SESSION f4da5c2e 2026-09-15T02:57:39Z
+## SESSION f4da5c2e 2026-09-15T03:15:56Z
 
-## World state, verified 2026-09-15T02:5x-03:0xZ
+## World state, verified 2026-09-15T03:1xZ
 
-PR #589 (0914-1) still draft, mergeable. Latest known CI verdict (run 34920913132 @
-18aa18df7, independently gh-verified): 7 lanes green, 1 genuine failure (Quality/Static,
-"Commit author identity" on 2 pre-existing commits by muhammed@rediacc.com, gh_author_login
-null), 4 genuinely cancelled downstream (Code/Packages/Security/Renet-Full -- verified via
-jobs API conclusion field). Worklist #6d928fdf is DEFERRED to the operator: link
-muhammed@rediacc.com as a verified GitHub email. Full WHY/HOW is on the deferral itself
-(`worklist.py --list --open f4da5c2e`) -- do not re-derive. #aabb5839 (resprofile wall-clock
-predicate) is also deferred, separately, green-but-not-reproducible, repro recipe recorded.
+PR #589 (0914-1) still draft, mergeable, still unpushed (babysitter holds a mismatched
+receipt on purpose -- correct behavior). Latest KNOWN CI verdict (run 34920913132 @
+18aa18df7): 7 lanes green, 1 genuine failure (author identity, operator-only), 4 cancelled
+downstream. #6d928fdf (link muhammed@rediacc.com) and #aabb5839 (resprofile, green/
+non-reproducible) both DEFERRED to operator with full WHY/HOW -- do not re-derive, read
+`worklist.py --list --open f4da5c2e`.
 
-NEW since the last STATE.md: implemented and landed T-SCHED B2 D1 (matrix-sharding design,
-driver-only), commit 1971441b8, UNPUSHED on purpose (inert change, SHARD_COUNTS stays empty,
-no reason to spend a CI round). Files: scripts/ci-runner/lanes.ts, scripts/gate-bind.ts,
-.ci/rediacc_ci/tests/gates/test_gate_gate_lanes.py, agent/PLAN-tooling-transformation.md.
-Fully verified: 40/40 lane tests, ci-gate-bind/parity/gates-lock/quality-complete/
-gate-test-real-file-plants all rc=0, tsc clean. Announced to babysitter as a driver-only
-touch; it will fold this into its own next push rather than pushing separately.
+NEW since last STATE.md: T-SCHED B2 (matrix sharding, driver-only) now has D1 AND D2
+landed, verified, committed: 1971441b8 (D1, wrong PR-TASK trailer -- used worklist id not
+epic e87fa3ce), e7ed9e583 (fixed the bash TWIN I'd missed on D1 -- babysitter's pre-push
+receipt caught real twin/port divergence, rc=1), ade84573e (D2, correct trailer, port+twin
+together this time), 69898ffc5 (plan doc). All UNPUSHED, all INERT (SHARD_COUNTS empty).
+**Lesson banked, apply it going forward: this repo has BOTH a Python port
+(.ci/rediacc_ci/tests/gates/test_gate_gate_lanes.py) and a bash twin
+(.ci/scripts/test/gates/test-gate-lanes.sh) for lane/shard logic -- always run BOTH before
+calling a lanes.ts/gate-bind.ts change verified, never just the port.**
 
-Babysitter (agent a1f1a247df6d36236) is holding idle by design -- do not ping it with new
-work before the operator answers the email deferral; it already knows about the B2 commit.
+Babysitter (a1f1a247df6d36236) holding idle by design; knows about all 4 commits above,
+owns the one remaining loose end (confirming 1971441b8's trailer ledger drift is scoped to
+just that commit). Do not ping it with new work before an operator answer lands.
 
-18 campaign plan boxes total remain open; most are operator/calendar-gated or depend on
-other unfinished workstreams (verified individually, not assumed). B2's D2-D5 (populate
-SHARD_COUNTS, teach gate-bind the strategy block, the receipt/aggregator wiring) are the
-correctly-sequenced next slice of driver-only work and do not depend on the operator's
-answer to either deferral.
+18 campaign boxes total remain open, most operator/calendar-gated or blocked on other
+workstreams (verified individually). B2's D3 (emit the strategy: block) is next but is the
+FIRST piece needing a real CI run to prove itself (not just local gates), and per Finding 2's
+vacuity risk should not land without D4 (receipt counting) in the same wave -- an
+unconjuncted step under a live strategy.matrix silently skips and reports green having run
+nothing.
 
 ## Next action
 
-If woken: (1) check whether #6d928fdf or #aabb5839 has an operator answer -- if #6d928fdf
-is answered (email linked), ping the babysitter to push a trivial retrigger and watch for
-the verdict on the 4 remaining lanes; (2) otherwise continue B2: implement D2 (refuse the
-id/step gap -- `shardAssignment` returns `{legs, replicated}`, add `SHARD_REPLICATED_MAX`
-ceiling) per agent/PLAN-tooling-transformation.md's B2 section, verify empirically the same
-way D1 was (run the real probe against the real lock before trusting any number), commit as
-its own driver-only touch; (3) if nothing has changed and B2 is not being worked, say so
-and hold rather than restate old findings as new progress.
+If woken: (1) check #6d928fdf/#aabb5839 for an operator answer first -- if #6d928fdf is
+answered, ping the babysitter to retrigger and watch the verdict; (2) otherwise, D3+D4 of
+B2 are a bigger unit than D1/D2 (they touch the live workflow emission path and need a real
+CI run before either is safe to populate SHARD_COUNTS with), so read
+agent/PLAN-tooling-transformation.md's B2 section in full before starting, verify empirically
+at each step the same way D1/D2 were, and run BOTH the port and the twin before calling
+anything done; (3) if nothing has changed, say so and hold.
