@@ -383,7 +383,7 @@ def test_the_summary_regex_cannot_see_a_coloured_vitest_line() -> None:
         ["bash", str(TWIN), "@rediacc/provisioning", "test"], timeout=600, check=False, **kwargs
     )
     if old.returncode == 77:
-        pytest.skip("the twin reports cannot-run here")
+        pytest.skip(f"the twin reports cannot-run here: {old.stderr.strip()[:200]}")
     new = subprocess.run(  # type: ignore[call-overload]
         ["python3", "-m", PORT_MODULE, "@rediacc/provisioning", "test"],
         timeout=600,
