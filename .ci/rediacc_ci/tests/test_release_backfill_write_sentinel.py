@@ -19,30 +19,51 @@ missing binary the bash twin would stop on.
 
 from __future__ import annotations
 
-import shutil
-from typing import TYPE_CHECKING
+import functools
+import pathlib
+import tempfile
 
 from rediacc_ci.tests import differential as diff
-
-if TYPE_CHECKING:  # pathlib appears only in `tmp_path` annotations, never at runtime.
-    import pathlib
+from rediacc_ci.tests import pathmask
 
 TWIN = ".ci/scripts/release/backfill-write-sentinel.sh"
 MODULE = "backfill_write_sentinel"
 
 
-def test_aws_is_absent_on_this_host() -> None:
-    """The premise every DRY_RUN=false case below depends on."""
-    assert shutil.which("aws") is None, (
-        "aws is installed on this host; the DRY_RUN=false cases below assume it is "
-        "absent so the forward stops before any R2 access. Re-derive them against "
-        "a host without aws, or they are exercising a different path than documented."
-    )
+@functools.lru_cache(maxsize=1)
+def masked_path() -> str:
+    """The differential's PATH with `aws` MADE unreachable, once per session.
+
+    The DRY_RUN=false cases below need the forward to stop at `require_cmd aws`
+    before it can reach R2. This used to be left to the host, and the host
+    obliged on every developer machine and refused on a GitHub runner, which
+    ships the CLI at /usr/local/bin/aws. See pathmask.py for why the mask
+    mirrors a directory rather than guessing at `PATH=/usr/bin:/bin`.
+    """
+    scratch = pathlib.Path(tempfile.mkdtemp(prefix="backfill-pathmask-"))
+    path = pathmask.path_without("aws", scratch, base=diff.BASE_ENV["PATH"])
+    pathmask.assert_absent("aws", path)
+    return path
+
+
+def test_the_subjects_cannot_reach_aws() -> None:
+    """The premise every DRY_RUN=false case below depends on -- MADE, not assumed.
+
+    This was `assert shutil.which("aws") is None`, a claim about the machine
+    that happened to be running the suite. It passed here and failed in CI run
+    34970782616 with `/usr/local/bin/aws`, and the failure was the honest one:
+    on a host WITH aws those cases were never exercising the refusal they
+    document. Now the PATH handed to both subjects is masked, and this asserts
+    the mask rather than the host.
+    """
+    pathmask.assert_absent("aws", masked_path())
 
 
 def run_both(env_extra: dict[str, str]) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
-    old_env = diff.env_for(**env_extra)
-    new_env = diff.env_for(**env_extra, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
+    old_env = diff.env_for(**env_extra, PATH=masked_path())
+    new_env = diff.env_for(
+        **env_extra, PATH=masked_path(), PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1"
+    )
     old = diff.bash_streams("bash %s" % TWIN, env=old_env, timeout=30)
     new = diff.bash_streams("python3 -m rediacc_ci.release.%s" % MODULE, env=new_env, timeout=30)
     return old, new

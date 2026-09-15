@@ -36,6 +36,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import reprobe_r2_sentinel as port
+from rediacc_ci.tests import pathmask
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -285,17 +286,20 @@ def test_missing_aws_refuses_identically(tmp_path: pathlib.Path) -> None:
     An empty PATH does not test `require_cmd`: it kills the twin four lines
     earlier at `$(dirname "${BASH_SOURCE[0]}")` with `dirname: command not
     found`, which is what this case asserted on its first run and is a defect in
-    the HARNESS rather than in either subject. `aws` genuinely is not installed
-    here, which the premise below proves, so the real PATH is already the
-    without-aws case.
+    the HARNESS rather than in either subject.
+
+    AND WITH `aws` MASKED OUT OF IT. This used to read "`aws` genuinely is not
+    installed here, which the premise below proves, so the real PATH is already
+    the without-aws case" -- true of this tree's machines, false of a GitHub
+    runner, which ships the CLI at /usr/local/bin/aws. On such a host the case
+    was not exercising the `require_cmd` refusal it documents; it was running a
+    real aws. Measured in CI run 34970782616. `pathmask` removes exactly that
+    one command and keeps everything else the directory provided, so `dirname`
+    and friends still resolve and the harness defect above stays fixed.
     """
-    assert shutil.which("aws") is None, (
-        "aws is installed on this host, so this case is not exercising the "
-        "require_cmd refusal it claims to; re-derive it on a host without aws."
-    )
-    old, new = run_both(
-        tmp_path, mode="present", VERSION="v1.1.2", PATH=os.environ.get("PATH", "/usr/bin:/bin")
-    )
+    masked = pathmask.path_without("aws", tmp_path, base=os.environ.get("PATH", "/usr/bin:/bin"))
+    pathmask.assert_absent("aws", masked)
+    old, new = run_both(tmp_path, mode="present", VERSION="v1.1.2", PATH=masked)
     assert old[0] == 1
     assert old[2] == "✗ Required command 'aws' is not available\n"
     assert old[1] == ""
