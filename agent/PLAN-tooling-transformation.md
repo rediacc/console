@@ -5747,6 +5747,29 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       current section to a pointer needs its own design decision about what stays inline.
       Correctly not started under continued session pressure rather than shipped half-built
       or guessed at.
+      **THE STATIC-PARSING PROBLEM ABOVE IS AVOIDABLE, found and proven live 2026-09-15
+      while the tree was otherwise busy (a peer's pytest measurement was live; nothing
+      committed here on purpose).** `packages/cli/src/cli.ts` exports `createCli(): Command`,
+      called with zero side effects (it builds and returns the tree; it does not parse
+      `argv` or touch the network). A one-shot script importing it and walking
+      `root.commands` recursively (`.name()`, `.description()`, `.commands` per node) needs
+      no static analysis of the 124 files at all -- it asks the REAL, already-built
+      Commander tree what it has, which cannot confuse a helper file for a command because
+      it never reads the files as text. Driven for real: **212 real command/subcommand rows**,
+      correctly nested (e.g. `machine provider add/remove/list`, `machine infra cert
+      pull/push/status/clear`), with the actual registered descriptions, not inferred ones.
+      This resolves the box's own "cross-verify the extracted tree against `rdc --help`"
+      requirement by construction -- the walked tree AND `rdc --help`'s output both come
+      from the same live `Command` object, so there is nothing left to diverge.
+      **Still not wired, on purpose:** importing `packages/cli/src/cli.ts` from
+      `scripts/lib/doc-providers.ts` pulls in the CLI's full transitive import graph into
+      every `gen:docs` run (all 124 command modules' own dependencies), which needs its own
+      perf and side-effect-safety check before landing in a file every doc-generation run
+      touches -- a design question, not a blocked one anymore. The remaining work is real
+      but now bounded and low-risk: wire the provider (`Provider.rows(root)` calling
+      `createCli()` and walking it), measure `gen:docs`'s wall-clock delta, and make the
+      Common Commands cut-vs-keep call named above. Next session should start from this
+      finding, not from the file-parsing problem.
 - [x] **W11 P5c BLOCKED ON W8** The `env-manifest` region has no home until W8 P2 exists. Record
     (ticked) 2026-09-15T07:22:49Z by f4da5c2e: Verified live: env-manifest region now has a home, built by W8 P3 (not P5c itself) once W8 P2 unblocked it. check:ci-doc-region-parity rc=0, region 'env-manifest' at scripts/data/doc-registry.md:1076 matches with 904 rows, 14/14 providers used. P5c's entire scope was to record the blocked status until W8 P2 existed; W8 P2 landed 2026-09-09 and W8 P3 built the region the same day, so the blocker this box named is resolved and the box closes on that evidence rather than new work.
       it as blocked so P5 is not ticked at three of four.
