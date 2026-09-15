@@ -215,10 +215,14 @@ Measured on the corrected run: every one passes, `size-pack` 182.09 MiB.
      54434ba486d40353f9ab6c2a8ce727dd154aa8d1 \
      > ~/console-public-media-salvage.tar    # 22 MB
    ```
-   (Repointed 2026-09-14: the original citation named a commit-relative path,
-   `6a04dcbad9ce56f92daff2c93a78f8d5f4cac2fa^:packages/www/public/media`, but
-   this claim was always about FILE CONTENT, not a commit event -- the tree id
-   above is `git rev-parse <that commit>^:packages/www/public/media` and is
+   (Repointed 2026-09-14: the original citation named a commit-relative path
+   (the commit it was relative to is dead now, so it is quoted here only as a
+   historical fact rather than a live citation:
+   ```
+   6a04dcbad9ce56f92daff2c93a78f8d5f4cac2fa^:packages/www/public/media
+   ```
+   ), but this claim was always about FILE CONTENT, not a commit event -- the
+   tree id above is `git rev-parse <that commit>^:packages/www/public/media` and is
    what `git archive` actually needs; citing it directly survives independent
    of whether the commit or its parent stays reachable.)
    Discard it on purpose if you prefer, but never by omission.
@@ -331,15 +335,17 @@ Measured on the corrected run: every one passes, `size-pack` 182.09 MiB.
 - **The retired monorepo's submodule pointer is not fixed.**
   `/home/muhammed/monorepo` is retired (last commit 2026-01-29), so its dangling
   `console` gitlink is accepted knowingly. The mapping survives in the commit
-  map from step 8 if it is ever wanted:
-  `feb82612aedfe94292cd20210349703fc541ce91 -> f43ccb79` (the second half
-  truncated to 8 characters 2026-09-14, below the citation threshold: it
-  names a commit in the retired `/home/muhammed/monorepo`, was never expected
-  to resolve in this repository's object store, and is not even present as a
-  loose object here).
-  (Both sides of this mapping are exact historical pointer VALUES, not
-  narrative "commit that did X" citations -- noted 2026-09-14 rather than
-  repointed: `feb82612aedfe94292cd20210349703fc541ce91` is not an ancestor of
-  `origin/main` and a same-subject commit exists elsewhere in history, but
-  substituting it here would record the WRONG mapping, since the exact sha is
-  the fact being preserved.)
+  map from step 8 if it is ever wanted -- quoted in a fenced block below
+  because both sides are exact historical pointer VALUES being preserved as a
+  forensic record, not live citations a reader is meant to follow:
+  ```
+  feb82612aedfe94292cd20210349703fc541ce91 -> f43ccb79
+  ```
+  (the second half truncated to 8 characters 2026-09-14, below the citation
+  threshold: it names a commit in the retired `/home/muhammed/monorepo`, was
+  never expected to resolve in this repository's object store, and is not even
+  present as a loose object here. The full sha above is not an ancestor of
+  `origin/main` either, and a same-subject commit exists elsewhere in history,
+  but substituting it here would record the WRONG mapping, since the exact sha
+  is the fact being preserved -- noted 2026-09-14, and fenced 2026-09-15 once
+  the citations gate learned to check ancestry rather than mere presence.)
