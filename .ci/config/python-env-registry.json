@@ -549,6 +549,9 @@
     ".ci/rediacc_ci/quality/editorconfig.py": [
       "REDIACC_CI_ROOT"
     ],
+    ".ci/rediacc_ci/quality/env_manifest.py": [
+      "ENV_MANIFEST_OVERRIDE_FILE"
+    ],
     ".ci/rediacc_ci/quality/git_op_conditionals.py": [
       "REDIACC_CI_ROOT"
     ],

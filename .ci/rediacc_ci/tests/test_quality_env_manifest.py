@@ -16,23 +16,34 @@ invocation. Three things a control inside the gate cannot do:
      the manifest must produce exactly five UNCLASSIFIED findings, which cannot
      happen unless all five readers really parsed real tracked files.
 
-`xdist_group` IS DECLARED, and it is required rather than tidy. Every plant below
-mutates ONE shared file in the REAL tree, `.ci/config/env-manifest.json`, and
-restores it. Under `-n auto` two of these on different workers would interleave:
-worker A plants a STALE entry, worker B runs the gate expecting green, and the
-failure lands on B with no explanation in it. The group pins them to one worker,
-which serialises them against each other -- and nothing outside this file touches
-that manifest, so the group is sufficient as well as necessary.
+NO PLANT BELOW EVER WRITES THE REAL MANIFEST, and that is the correction this
+file exists in its current form for. `planted()` used to copy
+`.ci/config/env-manifest.json`, write a mutated version OVER the tracked file,
+run the gate, and restore in a `finally`; `test_a_deleted_manifest_...` went
+further and `unlink`ed it. A hard kill anywhere in those windows leaves the
+tracked manifest corrupted or gone, with the only backup in a temp directory
+the same kill orphans. That is not a hypothesis -- the identical shape destroyed
+`.ci/policy/worklist-env-registry.json` twice in one session, once from a
+`check:ci-pytest` timeout and once from a concurrent pytest run in a second
+worktree. Every mutation now happens to a TMP COPY, and
+`ENV_MANIFEST_OVERRIDE_FILE` points the real entry point at it. The corpus side
+is untouched: the five readers still derive names from the real tracked tree,
+so a plant still proves the live gate reads the live repository.
 
-THE PLANTS RESTORE FROM A COPY MADE FIRST, never from `git show > file`: the
-manifest may be untracked when these run, and `cmd > file` truncates the target
-BEFORE cmd runs, which destroys an untracked file outright.
+`xdist_group` IS DECLARED, and its justification changed with the seam. It used
+to be required, because every plant mutated one shared file in the real tree and
+two of them on different workers would interleave: worker A plants a STALE entry,
+worker B runs the gate expecting green, and the failure lands on B with no
+explanation in it. Nothing is shared any more, so the group is no longer load
+bearing for correctness; it is kept because each case forks the whole gate across
+the whole tracked tree, and one worker running them back to back is cheaper than
+several doing it at once.
 """
 
 import contextlib
 import json
+import os
 import pathlib
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -47,32 +58,39 @@ ENTRY = ".ci/scripts/quality/check_env_manifest.py"
 pytestmark = pytest.mark.xdist_group("env-manifest")
 
 
-def _run(root):
+def _run(root, override=None):
+    env = None
+    if override is not None:
+        env = dict(os.environ, ENV_MANIFEST_OVERRIDE_FILE=str(override))
     return subprocess.run(
         [sys.executable, str(root / ENTRY)],
         cwd=root,
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
 
 
 @contextlib.contextmanager
 def planted(mutate):
-    """Copy the manifest, mutate it, yield the run, restore byte-for-byte."""
+    """Mutate a TMP COPY of the manifest, run the gate against it, yield the run.
+
+    The real file is read and never written, so there is no restore to race and
+    no window a kill can land in. The caller gets the same thing it always got:
+    a real subprocess run of the real entry point over the real tracked tree,
+    disagreeing with a manifest that says something wrong.
+    """
     root = paths.repo_root()
     live = root / em.MANIFEST_REL
-    tmp = pathlib.Path(tempfile.mkdtemp())
-    backup = tmp / "manifest.json"
-    shutil.copy2(live, backup)
-    try:
-        data = json.loads(live.read_text(encoding="utf-8"))
+    before = live.read_bytes()
+    with tempfile.TemporaryDirectory() as td:
+        mutated = pathlib.Path(td) / "env-manifest-mutated.json"
+        data = json.loads(before.decode("utf-8"))
         mutate(data)
-        live.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-        yield _run(root)
-    finally:
-        shutil.copy2(backup, live)
-        shutil.rmtree(tmp, ignore_errors=True)
+        mutated.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        yield _run(root, override=mutated)
+    assert live.read_bytes() == before, "the real manifest must never be written at all"
 
 
 def test_entry_point_is_green_on_the_real_tree():
@@ -217,21 +235,25 @@ def test_collision_authority_is_word_bounded_not_a_substring():
 
 
 def test_a_deleted_manifest_is_a_refusal_not_a_pass():
-    """rc 2, not rc 0. An instrument with nothing to compare against has no verdict."""
+    """rc 2, not rc 0. An instrument with nothing to compare against has no verdict.
+
+    This case used to `unlink` the real tracked manifest and copy it back in a
+    `finally` -- the worst member of the plant class, because a kill in that
+    window leaves no truncated file to notice, just an absence. The override
+    points at a path inside a temp directory that is deliberately never created,
+    which is the same input (a manifest that is not there) with nothing real at
+    risk.
+    """
     root = paths.repo_root()
     live = root / em.MANIFEST_REL
-    tmp = pathlib.Path(tempfile.mkdtemp())
-    backup = tmp / "manifest.json"
-    shutil.copy2(live, backup)
-    try:
-        live.unlink()
-        proc = _run(root)
-        assert proc.returncode == 2, proc.stdout + proc.stderr
-        assert "is missing" in proc.stderr, proc.stderr
-    finally:
-        shutil.copy2(backup, live)
-        shutil.rmtree(tmp, ignore_errors=True)
-    assert _run(root).returncode == 0, "the restore did not restore"
+    before = live.read_bytes()
+    with tempfile.TemporaryDirectory() as td:
+        absent = pathlib.Path(td) / "does-not-exist.json"
+        proc = _run(root, override=absent)
+    assert proc.returncode == 2, proc.stdout + proc.stderr
+    assert "is missing" in proc.stderr, proc.stderr
+    assert live.read_bytes() == before, "the real manifest must never be touched at all"
+    assert _run(root).returncode == 0, "the real tree is still green with no override set"
 
 
 def test_the_python_reader_resolves_constant_indirection():

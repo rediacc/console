@@ -103,6 +103,7 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -114,6 +115,23 @@ from rediacc_ci.controls import Controls, controls_first
 
 MANIFEST_REL = ".ci/config/env-manifest.json"
 VAULT_REL = ".ci/config/bws-secret-map.json"
+
+#: Test-only. One file path that REPLACES `.ci/config/env-manifest.json` as the
+#: thing every clause is compared against. The corpus side is untouched -- the
+#: five readers still derive names from the real `git ls-files` tree, which is
+#: the whole point of a plant test driving the live gate -- so only the
+#: MANIFEST side becomes a tmp copy the caller mutated.
+#:
+#: This exists because `test_quality_env_manifest.py`'s `planted()` used to
+#: copy the real manifest, write a mutated version OVER the tracked file, run
+#: the gate, and restore in a `finally`. A hard kill inside that window leaves
+#: `.ci/config/env-manifest.json` genuinely corrupted with no backup. That is
+#: not hypothetical: the same shape destroyed
+#: `.ci/policy/worklist-env-registry.json` twice in one session, once from a
+#: suite timeout and once from a concurrent pytest run in a second worktree,
+#: which is why `WORKLIST_REGISTRY_OVERRIDE_FILE` was added one file over. This
+#: is that seam, for this gate.
+MANIFEST_OVERRIDE = os.environ.get("ENV_MANIFEST_OVERRIDE_FILE", "")
 
 LIVE_SHARDS = (
     "secret",
@@ -436,18 +454,25 @@ def derive_sources(root, files=None, suppress=None):
 # --------------------------------------------------------------------------
 
 
-def load_manifest(root: pathlib.Path) -> dict:
-    path = root / MANIFEST_REL
+def load_manifest(root: pathlib.Path, override: pathlib.Path | None = None) -> dict:
+    """The manifest to compare against: the tracked one, or a test-only override.
+
+    The refusal names the path it actually looked at rather than `MANIFEST_REL`,
+    so an override pointed at the wrong file says so instead of accusing the
+    tracked manifest of being missing.
+    """
+    path = override or root / MANIFEST_REL
+    shown = str(override) if override else MANIFEST_REL
     if not path.is_file():
         raise RefusalError(
             "%s is missing. Every verdict this gate gives is a comparison against "
             "that file; without it there is nothing to compare and a green would "
-            "mean nothing." % MANIFEST_REL
+            "mean nothing." % shown
         )
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise RefusalError("%s is not valid JSON: %s" % (MANIFEST_REL, exc)) from exc
+        raise RefusalError("%s is not valid JSON: %s" % (shown, exc)) from exc
 
 
 def shard_lists(manifest: dict) -> dict[str, list[str]]:
@@ -772,8 +797,14 @@ def _raises_syntax(text: str) -> bool:
 
 
 def run(root=None):
+    # The override applies ONLY to the real invocation (no explicit root, i.e.
+    # `run()` from main()). `selftest()`'s controls always pass an explicit
+    # fixture root, and must never be redirected onto a plant test's tmp manifest
+    # that happens to be sitting in the same process's environment -- that would
+    # make every other control's fixture manifest silently wrong.
+    use_override = root is None and MANIFEST_OVERRIDE
     base = root or paths.repo_root()
-    manifest = load_manifest(base)
+    manifest = load_manifest(base, pathlib.Path(MANIFEST_OVERRIDE) if use_override else None)
     lists = shard_lists(manifest)
     suppress = suppress_map(manifest)
     files = tracked_files(base)
