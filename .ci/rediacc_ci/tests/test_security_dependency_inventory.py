@@ -373,11 +373,18 @@ def test_help_text_constant_still_matches_the_twin() -> None:
 
 
 def test_the_jq_diagnostics_still_match_this_host() -> None:
-    """The two jq error texts the port carries as constants, re-derived from jq.
+    """The two jq error texts the port emits, re-derived from the jq on PATH.
 
-    They belong to jq, not to this gate, so an upgrade could reword them. When
-    it does, this test goes red and names the two constants, rather than the
-    differential drifting somewhere less obvious.
+    THE --argjson BANNER IS NO LONGER A CONSTANT, and this test is why the
+    change was needed rather than optional. jq moved its documentation URL
+    between releases -- 1.7.x says `https://jqlang.github.io/jq`, 1.8.x says
+    `https://jqlang.org` -- so a pinned string is right on one host and wrong on
+    another AT THE SAME TIME. That is not drift a pin can catch up with; both
+    hosts are correct. The port now asks jq, and what this test checks is that
+    asking produces exactly what jq produces, and that the answer is not vacuous.
+
+    `JQ_OPEN_ERROR` stays a constant: it carries no version-dependent text, and
+    it is still asserted below so a future jq rewording it goes red here.
     """
     banner = subprocess.run(
         ["jq", "-c", "--argjson", "p", "", "."],
@@ -387,7 +394,12 @@ def test_the_jq_diagnostics_still_match_this_host() -> None:
         check=False,
         timeout=60,
     )
-    assert banner.stderr == port.JQ_ARGJSON_BANNER
+    port.jq_argjson_banner.cache_clear()
+    assert port.jq_argjson_banner() == banner.stderr
+    # ANTI-VACUITY: a probe that returned "" and fell back would still satisfy
+    # the equality above if jq had also printed nothing. Pin the shape.
+    assert banner.stderr.startswith("jq: invalid JSON text passed to --argjson\n")
+    assert "online docs  at https://" in banner.stderr
     missing = subprocess.run(
         ["jq", "-c", ".", "/nonexistent/package.json"],
         capture_output=True,
@@ -632,7 +644,7 @@ def test_an_empty_prod_tree_dies_on_a_raw_jq_diagnostic(fixture: pathlib.Path) -
     (data_dir(fixture) / "npm.@rediacc_www.prod").write_text("", encoding="utf-8")
     old = assert_agree(fixture)
     assert old[0] == 2
-    assert old[2].endswith(port.JQ_ARGJSON_BANNER)
+    assert old[2].endswith(port.jq_argjson_banner())
     assert "npm" not in old[2].split("Analyzing")[-1], "the banner still says nothing useful"
 
 

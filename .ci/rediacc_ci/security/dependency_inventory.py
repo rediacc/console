@@ -98,6 +98,7 @@ ONE NAMED DIVERGENCE THIS PORT ADDS: `paths.repo_root()` honours
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import shutil
@@ -205,12 +206,52 @@ class JqAbort(Exception):  # noqa: N818 - a control-flow signal carrying jq's ow
 
 
 # `jq -c --argjson p "" '.' <<<'{}'` on jq 1.8, verbatim including the double
-# space before "at". Pinned by a test; see JqAbort.
-JQ_ARGJSON_BANNER = (
+# space before "at". THE FALLBACK ONLY -- `jq_argjson_banner()` asks the real jq.
+JQ_ARGJSON_FALLBACK = (
     "jq: invalid JSON text passed to --argjson\n"
     "Use jq --help for help with command-line options,\n"
     "or see the jq manpage, or online docs  at https://jqlang.org\n"
 )
+
+
+@functools.lru_cache(maxsize=1)
+def jq_argjson_banner() -> str:
+    """jq's own `--argjson` diagnostic, ASKED OF THE jq ON PATH.
+
+    THIS USED TO BE A CONSTANT, and the constant was right on exactly one class
+    of host. The banner's last line carries jq's documentation URL, which moved
+    between releases:
+
+        jq 1.8.1 (this tree's hosts)  ... online docs  at https://jqlang.org
+        jq 1.7.x (ubuntu-24.04 runner) ... online docs  at https://jqlang.github.io/jq
+
+    The twin PRINTS whatever the real jq printed; the port SYNTHESISES the same
+    bytes without running jq. With a constant, the two agree only where the
+    developer's jq matches the constant, so `test_an_empty_prod_tree_dies_on_a_
+    raw_jq_diagnostic` passed here and failed in CI -- measured 2026-09-15, run
+    34970782616, the first run that let `quality-security` finish.
+
+    A pin cannot fix this, because there is no single right answer: two hosts
+    with two jqs are both correct at the same time. Transcribing a tool's
+    message means transcribing THE TOOL THAT IS HERE, so this asks it. The
+    constant survives as the fallback for a host with no jq at all, where
+    nothing can be asked and the previous behaviour is the safe answer.
+    """
+    try:
+        proc = subprocess.run(
+            ["jq", "-c", "--argjson", "p", "", "."],
+            input="{}",
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return JQ_ARGJSON_FALLBACK
+    # An EMPTY stderr would mean this jq did not refuse the argument at all, so
+    # the probe proved nothing and the fallback is the honest answer.
+    return proc.stderr or JQ_ARGJSON_FALLBACK
+
 
 # `jq -c '.' <missing>`, with the path interpolated.
 JQ_OPEN_ERROR = "jq: error: Could not open file %s: No such file or directory\n"
@@ -512,7 +553,7 @@ def build_npm_package(
         types = type_map(json.load(handle))
 
     if prodset is None:
-        raise JqAbort(JQ_ARGJSON_BANNER)
+        raise JqAbort(jq_argjson_banner())
     if parsed_all is _NOVALUE:
         return None  # the package silently vanishes; see the docstring
 
