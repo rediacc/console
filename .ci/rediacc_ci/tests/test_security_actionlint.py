@@ -266,7 +266,40 @@ def _workflow_hashes() -> dict[str, str]:
     return {p: hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest() for p in targets}
 
 
+def _warm_actionlint() -> None:
+    """Put actionlint in the shared cache BEFORE either side runs.
+
+    WITHOUT THIS THE TEST MEASURES RUN ORDER, NOT THE TWO IMPLEMENTATIONS. Both
+    sides fetch actionlint on a miss and both announce it
+    (`actionlint.sh:98`, `actionlint.py:322`), and `_run_real` runs the twin
+    first into a cache they SHARE. So on a host where actionlint is already
+    present neither fetches and the streams match, while on a host where it is
+    absent the twin pays for the download, prints
+    `✓ fetching actionlint 1.7.12 (amd64)`, and the port -- now finding it
+    cached -- prints nothing. One line of difference, produced entirely by which
+    subject went first.
+
+    That is what happened in CI run 34970782616, where
+    `test_the_real_repository_agrees_with_the_real_actionlint` failed on exactly
+    that line while both sides reported `actionlint clean across 29 workflow
+    file(s)`. A developer machine hides it because the cache is always warm.
+
+    Warming explicitly makes the precondition the same on both hosts instead of
+    leaving it to luck. It is NOT a loss of coverage: the fetch path has its own
+    case (`assert "fetching actionlint" in old[2]`), which drives it against a
+    scratch cache on purpose.
+
+    A warm-up that cannot reach the network is left to the subjects, which then
+    BOTH fail to fetch and agree about that too.
+    """
+    try:
+        port.ensure_actionlint(port.actionlint_version(), port.actionlint_checksums())
+    except SystemExit:
+        pass
+
+
 def _run_real(env_extra: dict[str, str] | None = None) -> tuple[tuple, tuple]:
+    _warm_actionlint()
     results = []
     for side, argv in (("old", ["bash", str(TWIN)]), ("new", ["python3", str(PORT)])):
         env = differential.env_for(PYTHONDONTWRITEBYTECODE="1")
