@@ -1,15 +1,40 @@
-## SESSION f4da5c2e 2026-09-15T02:09:32Z
+## SESSION f4da5c2e 2026-09-15T02:57:39Z
 
-LEAD-only role on MAIN-PLAN CAMPAIGN #6d928fdf, branch 0914-1, console PR #589 + submodule PRs rediacc/renet#111, rediacc/account#87. Babysitter `a1f1a247df6d36236` owns the primary tree, pushed through efab3b5ac. Operator briefly came online earlier, fixed a real blocker together, then said "stop asking questions" -- fully autonomous, no more AskUserQuestion this session.
+## World state, verified 2026-09-15T02:5x-03:0xZ
 
-MILESTONE THIS WINDOW: 2 of the 5 historically-silent lanes (quality-static, quality-code) finally COMPLETED for the first time all campaign, immediately proving the wave's whole thesis by surfacing 2 genuine CI-only bugs, both invisible locally and both fixed: (1) lint:unused could never pass in CI -- the workflow inlined the npm scripts body instead of calling `npm run lint:unused`, losing node_modules/.bin from PATH, exit 127 forever; (2) Lint ran 23 steps before the worker-deps install step, degrading @cloudflare/workers-types resolution and causing 4 false lint errors. Both fixed (call the declared command; install-before-lint ordering), verified (parity/gate-bind/gates-lock/gen:docs all rc=0), pushed. Cancellations fell 8->7->5->3.
+PR #589 (0914-1) still draft, mergeable. Latest known CI verdict (run 34920913132 @
+18aa18df7, independently gh-verified): 7 lanes green, 1 genuine failure (Quality/Static,
+"Commit author identity" on 2 pre-existing commits by muhammed@rediacc.com, gh_author_login
+null), 4 genuinely cancelled downstream (Code/Packages/Security/Renet-Full -- verified via
+jobs API conclusion field). Worklist #6d928fdf is DEFERRED to the operator: link
+muhammed@rediacc.com as a verified GitHub email. Full WHY/HOW is on the deferral itself
+(`worklist.py --list --open f4da5c2e`) -- do not re-derive. #aabb5839 (resprofile wall-clock
+predicate) is also deferred, separately, green-but-not-reproducible, repro recipe recorded.
 
-ONE GENUINE OPERATOR-ONLY FINDING: "Commit author identity" gate fails on 2 PRE-SESSION commits (0d582b5, 917d190) authored muhammed@rediacc.com, which is not a verified email on the operators GitHub account (every commit made tonight uses the already-verified mfbayraktar@live.com). Fix is account-settings only (add the verified email) or a forbidden force-push -- correctly not attempted, carrying to the operator report as a named non-blocking item.
+NEW since the last STATE.md: implemented and landed T-SCHED B2 D1 (matrix-sharding design,
+driver-only), commit 1971441b8, UNPUSHED on purpose (inert change, SHARD_COUNTS stays empty,
+no reason to spend a CI round). Files: scripts/ci-runner/lanes.ts, scripts/gate-bind.ts,
+.ci/rediacc_ci/tests/gates/test_gate_gate_lanes.py, agent/PLAN-tooling-transformation.md.
+Fully verified: 40/40 lane tests, ci-gate-bind/parity/gates-lock/quality-complete/
+gate-test-real-file-plants all rc=0, tsc clean. Announced to babysitter as a driver-only
+touch; it will fold this into its own next push rather than pushing separately.
 
-3 lanes still to report on the current push: quality-security, quality-packages, renet-full. This is the closest the campaign has ever gotten to the real acceptance bar.
+Babysitter (agent a1f1a247df6d36236) is holding idle by design -- do not ping it with new
+work before the operator answers the email deferral; it already knows about the B2 commit.
+
+18 campaign plan boxes total remain open; most are operator/calendar-gated or depend on
+other unfinished workstreams (verified individually, not assumed). B2's D2-D5 (populate
+SHARD_COUNTS, teach gate-bind the strategy block, the receipt/aggregator wiring) are the
+correctly-sequenced next slice of driver-only work and do not depend on the operator's
+answer to either deferral.
 
 ## Next action
-1. When this push's CI run reports: verify the lane-completion claims myself (one-time gh check) before accepting "done" -- specifically whether all 5 historically-silent lanes (not just the 2 already confirmed) post real results.
-2. If genuinely green everywhere: compose the operator report now -- this is very likely the actual finish line. Cover: all real fixes as wins (pytest budget, secret migration end-to-end, worktree-contamination, shfmt, plant-detector x5, T-13/T-14, W7P4-W stage 0+1, this windows lint/PATH/ordering fixes), the 2 known external blockers (secret-reachability's org-scope note is now moot/closed; astro CVE still open), the NEW operator-only commit-identity item, check:ci-resprofile as a follow-up. Do NOT merge/push main -- operator's call via /pr-merge.
-3. If still red: verify the babysitter's diagnosis before ruling, same discipline as every round tonight.
-4. Two delivered-but-undispatched plans (W9-P2, B2) and W7P4-W stages 2-5 wait for a confirmed-quiet mutex-file window once this resolves.
+
+If woken: (1) check whether #6d928fdf or #aabb5839 has an operator answer -- if #6d928fdf
+is answered (email linked), ping the babysitter to push a trivial retrigger and watch for
+the verdict on the 4 remaining lanes; (2) otherwise continue B2: implement D2 (refuse the
+id/step gap -- `shardAssignment` returns `{legs, replicated}`, add `SHARD_REPLICATED_MAX`
+ceiling) per agent/PLAN-tooling-transformation.md's B2 section, verify empirically the same
+way D1 was (run the real probe against the real lock before trusting any number), commit as
+its own driver-only touch; (3) if nothing has changed and B2 is not being worked, say so
+and hold rather than restate old findings as new progress.
