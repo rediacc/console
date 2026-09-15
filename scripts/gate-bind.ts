@@ -519,7 +519,18 @@ export function shardAssignment(
   return { legs, replicated };
 }
 
-export function emitStep(b: Emitting, guard = 'setup'): string[] {
+/**
+ * T-SCHED B2 D4, first clause. The deterministic id a conjuncted step needs so its own
+ * receipt step (not yet built -- see the D4 note at this function's call site) can read
+ * `steps.<id>.outcome` and know whether it actually ran. `gate_` prefix because a raw
+ * job/step id cannot start with a digit or contain `:`/`-`, both of which every gate id
+ * in this lock carries (`check:ci-foo`).
+ */
+export function gateStepId(id: string): string {
+  return `gate_${id.replace(/[:-]/g, '_')}`;
+}
+
+export function emitStep(b: Emitting, guard = 'setup', stepId?: string): string[] {
   const cmd = b.run.startsWith('tsx ') ? `npm run ${b.id}` : b.run;
   const acquire = b.needs.flatMap((n) => ACQUIRE[n] ?? []);
   // `when` IS ANDED ON, NEVER SUBSTITUTED. The standard guard is what stops a gate
@@ -529,7 +540,15 @@ export function emitStep(b: Emitting, guard = 'setup'): string[] {
   // `a && b || c` is `(a && b) || c`, which would run the step on a failed setup.
   const cond =
     `!cancelled() && steps.${guard}.outcome == 'success'` + (b.when ? ` && (${b.when})` : '');
-  const head = [`      - name: ${b.step}`, `        if: \${{ ${cond} }}`];
+  // `id:` ONLY when sharded (`stepId` passed), so every unsharded step's YAML stays
+  // byte-identical to before D4 -- an added id on a step nothing reads it from is a
+  // diff with no reader, which is how a generator trains people to stop reading its
+  // diffs at all.
+  const head = [
+    `      - name: ${b.step}`,
+    ...(stepId !== undefined ? [`        id: ${stepId}`] : []),
+    `        if: \${{ ${cond} }}`,
+  ];
   // ENV BEFORE RUN, and sorted, because the map is emitted from an object whose key order
   // is otherwise insertion order -- a generator whose output depends on parse order is a
   // generator that produces spurious diffs and breaks the idempotency control below.
@@ -668,7 +687,7 @@ export function rewriteRegions(
               ...b,
               when: b.when ? `(${b.when}) && matrix.shard == ${leg}` : `matrix.shard == ${leg}`,
             };
-      out.push(...emitStep(step, guard));
+      out.push(...emitStep(step, guard, leg === undefined ? undefined : gateStepId(b.id)));
     }
     while (i < lines.length && !CLOSE_RE.test(lines[i])) {
       const step = /^\s*-\s*name:\s*(.+?)\s*$/.exec(lines[i]);
@@ -1689,6 +1708,22 @@ function selftest(): number {
       'collided with OPEN_RE -- proving why shard-strategy uses a different prefix, not gate-bind',
     OPEN_RE.test('    # >>> gate-bind strategy (generated; do not edit inside)') &&
       !CLOSE_RE.test('    # <<< gate-bind strategy')
+  );
+
+  // T-SCHED B2 D4, first clause: a deterministic id, only when sharded.
+  ck(
+    'gateStepId maps `:`/`-` to `_`, prefixed so it never starts with a digit',
+    gateStepId('check:ci-foo-bar') === 'gate_check_ci_foo_bar'
+  );
+  ck(
+    'CONTROL: an unsharded step gets no id: line at all (byte-identical to pre-D4)',
+    !emitStep(base).some((l) => l.trim().startsWith('id:'))
+  );
+  ck(
+    'a sharded step gets exactly the id gateStepId computes',
+    emitStep(base, 'setup', gateStepId(base.id)).some(
+      (l) => l.trim() === `id: ${gateStepId(base.id)}`
+    )
   );
 
   return bad;

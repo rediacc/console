@@ -4052,12 +4052,38 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       still rc=0; `tsc --noEmit` and eslint clean; biome format caught one over-long
       line the same way it caught one in D2 (fixed with `biome format --write`, the
       third time in one night that oracle alone caught something eslint+tsc missed).
-      **D4-D5 remain**: D4 (the leg receipt counting what ran, not what was planned) and
-      D5 (the two static `check:ci-quality-complete` clauses) are what's left before
-      `SHARD_COUNTS` could safely be populated for a real lane -- THAT step, not D3 or
-      D4's own mechanics, is the one that genuinely needs a real CI run to prove
-      (Finding 2's vacuity: an unconjuncted step under a live `strategy.matrix` silently
-      skips and reports green having run nothing).
+      **D4 STARTED 2026-09-15, its first clause only -- disclosed as a deliberate partial,
+      not a silent downgrade.** Landed: `gateStepId(id)` (deterministic `gate_<sanitized>`,
+      the `:`/`-` mapping the box specifies) and `emitStep` now takes an optional `stepId`
+      that emits an `id:` line ONLY when the step is sharded (`leg !== undefined` in
+      `rewriteRegions`'s loop) -- an unsharded step's YAML stays byte-identical, proven by
+      a selftest control, not asserted. 3 new selftest controls, all pass; same full
+      battery as D3 (`ci-gate-bind`, `ci-parity`, `ci-gates-lock`, tsc, eslint, format)
+      all still green.
+      **NOT done, and deliberately left for a follow-up rather than rushed:** the
+      env step-id-to-lock-ids map, the final `if: always()` receipt-writing step (reading
+      `toJSON(steps)`, computing `gates` from non-skipped outcomes, writing the JSON
+      `readReceipts()` in scripts/gates/check-quality-complete.ts already expects --
+      `{lane, index, of, result, gates}`, confirmed by reading that file's own type rather
+      than re-deriving the shape), and the `actions/upload-artifact` emission
+      (pinned `@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1`, matching this
+      workflow's existing two uses). This is real GitHub Actions YAML generation with a
+      hand-crafted inline script computing a count from a live `toJSON()` expression --
+      exactly the kind of thing that deserves careful, tested design rather than a rushed
+      pass, and D3's own marker-collision bug is the concrete reason to slow down here.
+      **A GENUINELY PRE-EXISTING, UNRELATED FINDING surfaced while testing (not caused by
+      D4): a real `gate-bind --write` against the live tree refuses on "Install worker
+      project deps" (added by the lint-ordering fix, `efab3b5ac`) as an UNCLAIMED drop --
+      a hand-added step inside the auto-emitted `quality-code` region that no declared
+      gate re-emits. `check:ci-gate-bind`'s read-only check does not catch this (its own
+      stated blind spot: hand-registered steps are `check:ci-parity`'s business), so it
+      has been silently un-writable since that commit landed. Flagged, not fixed here --
+      out of scope for B2, and the fix (give that step a header, or `--allow-drop` it
+      deliberately) belongs to whoever owns the install-ordering fix.**
+      **D5 remains untouched.** `SHARD_COUNTS` population for a real lane is still the
+      step that genuinely needs a real CI run to prove (Finding 2's vacuity: an
+      unconjuncted step under a live `strategy.matrix` silently skips and reports green
+      having run nothing) -- D3/D4's own mechanics do not.
 - [x] **B3 S** `quality-complete` aggregator. `ci_job_aggregation.py` already enforces four things
       about `ci-complete`, including an equality between tier lists and env vars because "either
       half alone is dead". A matrix job's result is a single roll-up, so shards are invisible
