@@ -3995,9 +3995,40 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       (407 declared), `check:ci-parity` (485/485), `check:ci-gates-lock`,
       `check:ci-quality-complete` (22 controls) and `check:ci-gate-test-real-file-plants`
       (458 files) all still rc=0; `tsc --noEmit` clean on the touched files.
-      **D2-D5 remain**, and D2 (refuse the id/step gap) is the natural next slice since it
-      reads the SAME merge output D1 just built (`replicated` = lane entries whose step
-      gate-bind never emits).
+      **D1's own commit broke the bash TWIN, `test-gate-lanes.sh`, which the port's own
+      test run never exercises -- caught by the babysitter's pre-push receipt, not by
+      me.** The twin carries its own copy of the balance/heavy-floor assertions and I
+      had only fixed the Python port. Fixed as a follow-up commit (`e7ed9e583`): same
+      move (quality-security's example -> quality-code, negative case named, heavy
+      floor measured not hand-typed), plus a genuinely stale hardcoded assertion count
+      ("35 assertion(s)") the twin had been carrying, now measured from the real PASS
+      count. Lesson recorded for D2 before it repeated the mistake: fix both sides in
+      the SAME commit, or run both before claiming done.
+      **D2 DONE 2026-09-15, both port and twin fixed together this time.**
+      `shardAssignment` returns `{ legs, replicated }` (was a bare `Map`), refuses when
+      a lane's replicated share exceeds a new `SHARD_REPLICATED_MAX[job]` ceiling, and
+      refuses outright if a lane is in `SHARD_COUNTS` with no matching ceiling at all.
+      Verified against the real lock: `quality-security`'s replicated share measures
+      153/166 = 92.2%, matching the historical "153 of 166" figure exactly.
+      **Refactored `shardAssignment` to take `counts`/`ceilings` as PARAMETERS** rather
+      than reading `SHARD_COUNTS`/`SHARD_REPLICATED_MAX` directly -- the same pattern
+      `shardPlan` already uses -- which is what made this testable at all with the real
+      constants still empty; this also closes the box's own earlier-named gap ("NO
+      selftest control ... exercises the no-shard path only"). 9 new controls across
+      port+twin (44 total each) prove all four shapes: not-asked (null), no-ceiling
+      (refuse), over-ceiling (refuse, naming both numbers), and a genuine success that
+      returns real legs and a correctly-partial `replicated` set. All surrounding gates
+      (`ci-gate-bind`, `ci-parity`, `ci-gates-lock`, `ci-quality-complete`,
+      `ci-gate-test-real-file-plants`) still rc=0, `tsc --noEmit` clean.
+      **D3-D5 remain**: D3 (emit the `strategy:` block via `rewriteStrategyRegions`),
+      D4 (the leg receipt counting what ran, not what was planned), D5 (the two static
+      `check:ci-quality-complete` clauses this needs). D3 is the natural next slice --
+      it is the piece that actually turns `SHARD_COUNTS` from inert to live for the
+      first time, so it is also the first piece that needs a real CI run (not just
+      local gates) to prove, and should not land in the same wave as populating
+      `SHARD_COUNTS` for a real lane without D4 landing first (Finding 2's vacuity: an
+      unconjuncted step under a real `strategy.matrix` silently skips and reports
+      green having run nothing).
 - [x] **B3 S** `quality-complete` aggregator. `ci_job_aggregation.py` already enforces four things
       about `ci-complete`, including an equality between tier lists and env vars because "either
       half alone is dead". A matrix job's result is a single roll-up, so shards are invisible
