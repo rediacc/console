@@ -250,7 +250,7 @@ reasoning without knowing the record exists.
 ## Plan census
 
 Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans
-block can be printed from THIS file instead of opening all 88 of them. The
+block can be printed from THIS file instead of opening all 89 of them. The
 hook checks freshness with `stat` alone (path set plus byte size) and falls
 back to reading the plans, loudly, when the two disagree.
 
@@ -261,6 +261,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-agent-hints-implementation.md` | compacted | 84 | 0 | 0 | 4638 |
 | `agent/PLAN-agent-hints-in-stop-hook.md` | compacted | 70 | 0 | 0 | 3652 |
 | `agent/PLAN-ask-flow-preemptive-settled-check.md` | draft | 552 | 0 | 0 | 28343 |
+| `agent/PLAN-b2-emit-matrix.md` | draft | 320 | 13 | 0 | 23682 |
 | `agent/PLAN-backup-list-executor-fix.md` | compacted | 81 | 0 | 0 | 5511 |
 | `agent/PLAN-backup-quota-delta-gc.md` | compacted | 86 | 0 | 0 | 5603 |
 | `agent/PLAN-backup-restore-target-license.md` | compacted | 83 | 0 | 0 | 5579 |
@@ -345,4 +346,4 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-wl-report-liveness-oracle.md` | done | 199 | 0 | 7 | 11678 |
 | `agent/PLAN-www-bundle-determinism.md` | draft | 212 | 0 | 0 | 11005 |
 
-88 plan(s), 18 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+89 plan(s), 19 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.

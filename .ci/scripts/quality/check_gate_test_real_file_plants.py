@@ -23,7 +23,7 @@ a `.write_text(`, `.write_bytes(` or `.unlink(` call, the test mutates the real
 tree -- regardless of whether a `finally` restores it, because the restore only
 helps a run that finishes.
 
-FOUR WAYS THIS SCAN USED TO MISS A LIVE HAZARD, all four found on 2026-09-15 by
+FIVE WAYS THIS SCAN USED TO MISS A LIVE HAZARD, all five found on 2026-09-15 by
 running the detector against the corpus it was never pointed at:
 
   1. `SCAN_DIR` was `.ci/rediacc_ci/tests/gates` alone, so the 281 test modules
@@ -46,6 +46,15 @@ running the detector against the corpus it was never pointed at:
      been detected, because `ROOT / "scripts"` is not `paths.repo_root() /`.
      The exemption was decorative. That is why ALLOWLIST liveness is now
      enforced (see `main`): an entry that names no live finding FAILS.
+  5. The mutation scan only recognised an ATTRIBUTE call on the real name
+     (`X.write_text(...)`), so a plant that WRITES BY COPYING -- `shutil.copy2
+     (mutated, X)`, where `X` is a destination ARGUMENT rather than the
+     receiver -- was invisible even though `reads_existing()` already checked
+     the same `COPY_FUNCS` for a SOURCE argument to spot a backup-then-restore.
+     Found 2026-09-15 while sweeping this gate's own pattern-matching for the
+     class it was just rewritten to catch; no live instance in the corpus, but
+     an untested blind spot in a detector whose whole job is finding blind
+     spots does not get to wait for one.
 
 CLOBBER versus STRAY, the distinction that keeps this gate honest in both
 directions. Two different things write inside the repo tree:
@@ -328,18 +337,30 @@ def local_real_paths(fn: ast.AST, roots: set[str], real: set[str]) -> set[str]:
 
 
 def mutations(scope: ast.AST, names: set[str], own_scope: bool) -> list[tuple[str, str, int]]:
-    """[(name, attr, lineno)] for every real-path name mutated in this scope."""
+    """[(name, attr, lineno)] for every real-path name mutated in this scope.
+
+    TWO SHAPES, because `reads_existing()` already had to know about both to spot
+    a restore, and this side had only learned one of them. `X.write_text(...)` is
+    an ATTRIBUTE call on the real name. `shutil.copy2(mutated, X)` is a FUNCTION
+    call where the real name is the DESTINATION argument, not the receiver -- a
+    plant that copies a doctored file ONTO the real tracked path is invisible to
+    an attribute-only scan. `COPY_FUNCS` (`reads_existing`'s source-argument check)
+    is the same list here on the destination argument, `node.args[1]`.
+    """
     walker = _own_nodes(scope) if own_scope else ast.walk(scope)
     hits = []
     for node in walker:
         if not isinstance(node, ast.Call):
             continue
         func = node.func
-        if not isinstance(func, ast.Attribute) or func.attr not in MUTATE_ATTRS:
-            continue
-        recv = func.value
-        if isinstance(recv, ast.Name) and recv.id in names:
-            hits.append((recv.id, func.attr, node.lineno))
+        if isinstance(func, ast.Attribute) and func.attr in MUTATE_ATTRS:
+            recv = func.value
+            if isinstance(recv, ast.Name) and recv.id in names:
+                hits.append((recv.id, func.attr, node.lineno))
+        elif isinstance(func, ast.Attribute) and func.attr in COPY_FUNCS and len(node.args) >= 2:
+            dst = node.args[1]
+            if isinstance(dst, ast.Name) and dst.id in names:
+                hits.append((dst.id, func.attr, node.lineno))
     return hits
 
 
@@ -577,6 +598,46 @@ def controls() -> None:
         got = {f[0]: f for f in scan([named], {".claude/rediacc_hooks/__plant.py"})}
         if got["test_tracked_probe.py"][3] != "tracked":
             _fail("a never-read probe on a git-TRACKED path must reclassify as a clobber")
+
+        # 8. A FIFTH shape: `shutil.copy2(mutated, X)` plants by COPYING a doctored
+        #    file ONTO the real path, not by calling a write method on it. `X` is
+        #    an argument, not a receiver, so the attribute-call scan above cannot
+        #    see it -- `reads_existing()` already knew to check `COPY_FUNCS` for a
+        #    SOURCE argument; this is the same functions checked as a DESTINATION.
+        copied = _fixture(
+            d,
+            "test_copy_destination_hazard.py",
+            "import shutil\n"
+            "from rediacc_ci import paths\n"
+            'TARGET = paths.from_root("scripts", "data", "doc-registry.md")\n'
+            "def test_x(tmp_path):\n"
+            "    original = TARGET.read_bytes()\n"
+            '    mutated = tmp_path / "mutated.md"\n'
+            '    mutated.write_bytes(b"mutated")\n'
+            "    shutil.copy2(mutated, TARGET)\n"
+            "    shutil.copy2(mutated, TARGET)\n",  # restore, same call shape
+        )
+        got = {f[0]: f for f in scan([copied])}
+        if "test_copy_destination_hazard.py" not in got:
+            _fail("a shutil.copy2(..., TARGET) plant was not caught")
+        if got["test_copy_destination_hazard.py"][3] != "clobber":
+            _fail("a copy-as-destination hazard was not classed as a clobber")
+
+        # 9. NEGATIVE: copying INTO a fixture root, the pattern used throughout
+        #    the real test corpus (`shutil.copy2(TWIN, root / rel)`), must stay
+        #    silent -- the destination is not a tracked real-path name.
+        copy_safe = _fixture(
+            d,
+            "test_copy_into_fixture.py",
+            "import shutil\n"
+            "from rediacc_ci import paths\n"
+            'TARGET = paths.from_root("scripts", "data", "doc-registry.md")\n'
+            "def test_x(tmp_path):\n"
+            "    root = tmp_path\n"
+            '    shutil.copy2(TARGET, root / "doc-registry.md")\n',
+        )
+        if scan([copy_safe]):
+            _fail("copying a real file INTO a fixture root was misreported as a plant")
 
 
 def main() -> int:
