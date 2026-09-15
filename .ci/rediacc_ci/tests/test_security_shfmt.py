@@ -319,6 +319,26 @@ def real_scope_hashes() -> dict[str, str]:
     return out
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _warm_shfmt_once() -> None:
+    """Warm the shared shfmt cache ONCE per worker, before any case in this file.
+
+    IT WAS NOT ENOUGH TO WARM ONLY `_run_real`. The fixture cases share the same
+    on-disk cache (`_env` sets CI_TEMP only for the scratch-cache case), so the
+    ordering artifact is not a property of the real-tree path -- it is a property
+    of whichever case reaches a COLD cache first. Under `--dist loadgroup` that
+    is a different case on a different worker from run to run, which is why
+    `test_a_dirty_file_in_claude_reports_the_same_diff` failed in CI job
+    104583449222 while the real-tree case, already warmed by `_run_real`, passed.
+    Warming inside one code path fixed one case and left its siblings racing.
+
+    Session-scoped and autouse, so it runs before the first case in this module
+    on each worker; the cache is shared on disk, so the first worker pays and the
+    rest are a no-op.
+    """
+    _warm_shfmt()
+
+
 def _warm_shfmt() -> None:
     """Acquire shfmt into the cache the SUBJECTS use, before either is measured.
 
