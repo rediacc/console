@@ -274,7 +274,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-ci-trace-no-pr-branch.md` | done | 171 | 0 | 0 | 9783 |
 | `agent/PLAN-ci-vacuity-baseline-registry.md` | ready | 255 | 1 | 14 | 16618 |
 | `agent/PLAN-ci-watch-enforcement.md` | draft | 283 | 0 | 0 | 15625 |
-| `agent/PLAN-citation-fragility.md` | done | 377 | 0 | 6 | 22694 |
+| `agent/PLAN-citation-fragility.md` | done | 390 | 0 | 6 | 22921 |
 | `agent/PLAN-cli-em-dash-lint-gate.md` | compacted | 70 | 0 | 0 | 4353 |
 | `agent/PLAN-cold-path.md` | compacted | 74 | 0 | 0 | 4055 |
 | `agent/PLAN-commit-author-identity.md` | draft | 281 | 3 | 10 | 18031 |

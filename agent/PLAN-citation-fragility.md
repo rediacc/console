@@ -13,7 +13,14 @@ just against this document.
 
 ## Tasks
 
-- [x] Repoint the 8 already-fragile commit-identity citations. Done: 6 repointed with diff-content verified identical to the original (not just subject-matched), 2 correctly left as-is with an inline note instead of a false repoint (`b1d40b6d4`, only reachable via a stale non-`origin/main` remote; `feb82612aedfe94292cd20210349703fc541ce91`, part of an exact historical pointer-value mapping where substituting a same-subject commit would record the wrong value). One of the 8 (`6a04dcbad9...`) turned out to be a file-content claim, not a commit-identity one, and was repointed to its tree id instead.
+- [x] Repoint the 8 already-fragile commit-identity citations. Done: 6 repointed with diff-content verified identical to the original (not just subject-matched), 2 correctly left as-is with an inline note instead of a false repoint (the first only reachable via a stale non-`origin/main` remote; the second part of an exact historical pointer-value mapping where substituting a same-subject commit would record the wrong value). One of the 8 turned out to be a file-content claim, not a commit-identity one, and was repointed to its tree id instead. The three tokens, quoted outside prose because they are deliberately unresolvable:
+
+  ```
+  b1d40b6d4
+  feb82612aedfe94292cd20210349703fc541ce91
+  6a04dcbad9
+  ```
+
 - [x] Handle the 9 coincidental hex tokens in class (c). Done via the systemic fix this plan recommended rather than 9 individual fences: `UUID_TAIL_RE` exemption landed in `check_plan_citations.py` (constant + `citations()` filter + 2 new selftest controls), verified against 2 real corpus sites directly. The 3 non-UUID-shaped tokens (fingerprint/report-id labeled) are not currently red and were left untouched.
 - [x] Add a `tree` resolution kind. Done: `wl_planrec.resolve` (+`RESOLVE_KINDS`) and `check_plan_citations.py`'s `unresolved()`, verified live against `444e9c09092a80bbb7defa6eea122e0de28a89eb` (now resolves as `tree`; `blob`/`commit` correctly still refuse it).
 - [x] Add inline notes at the dead-on-purpose / cross-repo citations. Done for all 4 plus the 2 stale "see git log" pointers below, plus 2 more found while doing this work (`c05edbba`, `f020473e`) that needed the same treatment.
@@ -51,7 +58,8 @@ not pedantic:
   before this plan's tree-kind addition landed, now eight
   but the citations gate only ever calls it with five of them; `ancestor` and
   `trap` are used elsewhere (stop-hook claim verification, `check-trap-registry`).
-- **The `aea2bc733552` fingerprint example from the brief is already fixed.**
+- **The fingerprint example from the brief is already fixed.** (The token is
+  quoted in the fence at the end of this section; it is not a git object.)
   It is registered in `scripts/data/shape-duplication-seed.json` (checked; the
   entry is there, dated 2026-09-08), so `citations()`'s `shape_fingerprints()`
   check already excludes it before it ever becomes an "object" candidate. It
@@ -66,7 +74,7 @@ not pedantic:
   that called 53 healthy blobs dead") already document from this session's own
   mistakes today. It matters here because a *local* clone can carry orphaned
   objects (dangling commits from an earlier `git filter-branch`/rebase on this
-  very branch, per `77161bfff`/`a6f76f074`'s "trailer rewrite") that still
+  very branch, per the "trailer rewrite" commits fenced below) that still
   answer "yes" to `rev-parse --verify` while a genuinely fresh clone (what CI
   and every new contributor actually get) would not have the object at all.
   Section 4 below gives the correct oracle for "would this survive a rebase or
@@ -230,8 +238,13 @@ a6f698562e73      session-id tail in a /tmp/claude-.../scratchpad path
 fc3f4a0f5447      "(report fc3f4a0f5447)" — a wl_report.py report id
                                   agent/PLAN-subagent-idle-detection.md:111,112
 ```
-These are exactly the shape `aea2bc733552` was: a hex-shaped token that is not
-a git object at all, coincidentally satisfying the regex. `aea2bc733552`'s own
+```
+77161bfff  a6f76f074
+aea2bc733552
+```
+
+These are exactly the shape the fingerprint token above was: a hex-shaped
+token that is not a git object at all, coincidentally satisfying the regex. Its own
 fix (add it to `scripts/data/shape-duplication-seed.json`) is the *wrong
 mechanism* for these — that seed is specifically for `check:ci-shape-duplication`
 fingerprints — but the same idea (a small, explicit, reviewed allowlist rather
