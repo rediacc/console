@@ -4139,6 +4139,26 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       step that genuinely needs a real CI run to prove (Finding 2's vacuity: an
       unconjuncted step under a live `strategy.matrix` silently skips and reports green
       having run nothing) -- D3/D4's own mechanics do not.
+      **CORRECTION 2026-09-15, THIS BOX'S OWN PROSE WAS STALE IN THE OTHER DIRECTION:**
+      "D5 remains untouched" stopped being true the same week and nobody updated this
+      block. **D5 clause 1 IS DONE** (`79800a5df`): `check-quality-complete.ts` now
+      independently re-asserts the strategy shape from the aggregator side via
+      `rewriteStrategyRegions`, combined with `wiringFindings` at the `main()` call site;
+      25 controls pass, all gates rc=0. **D5 clause 2 is DIAGNOSED, not fixed**
+      (`3c3762fc9`): moving `check:ci-quality-complete`'s lane off `quality-code` is not a
+      lane swap -- `quality-code` satisfies `stepInJob` because gate-bind emits "Quality
+      shard aggregation" from that file's own `lane: quality-code` header, and
+      `quality-branch` structurally cannot host a gate-bind region at all (no `- id:
+      setup`, invariant 11), matching its neighbours `check_plan_boxes.py` /
+      `check_resprofile.py`, which carry no gate header for the same reason. The real fix
+      is dropping the `---- gate ----` header and hand-registering, a bigger, different
+      change than what was attempted. Verified live 2026-09-15: `check:ci-quality-complete`
+      still rc=0 with clause 1's re-assertion active.
+      **The "Install worker project deps" unclaimed-drop finding no longer reproduces**,
+      verified live 2026-09-15: `gate-bind --write --dry-run` against the current tree
+      reports zero drops. Not re-diagnosed why -- outside this note's scope -- only that
+      it is not presently blocking a real write, so it should not be read as still open
+      without re-checking.
 - [x] **B3 S** `quality-complete` aggregator. `ci_job_aggregation.py` already enforces four things
       about `ci-complete`, including an equality between tier lists and env vars because "either
       half alone is dead". A matrix job's result is a single roll-up, so shards are invisible
