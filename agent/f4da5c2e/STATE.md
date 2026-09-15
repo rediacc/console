@@ -1,38 +1,12 @@
-## SESSION f4da5c2e 2026-09-15T05:55:05Z
+## SESSION f4da5c2e 2026-09-15T07:56:45Z
 
-## World state, verified 2026-09-15T05:2xZ
+Branch 0914-1, console PR #589. This turn closed 3 real campaign boxes (18 open -> 15): W11P5c and B4 were stale-prose corrections (real work already done, closing note never reflected back); C2 was genuine new implementation -- added `pathsOrigin` to GateSpec, set 'declared' on all 46 pre-existing paths-bearing entries, built check:ci-paths-origin.ts (335 lines, cardinality equality both directions, per-glob dead-glob detection, dormant derived:<tool> reproducibility branch proven only by selftest), wired via gate-bind --write, full 18-gate battery green. Commits: 41b260c2f/1972e7236 (B4), c457deca6/1ead16984/198b2e084 (C2), plus e3f4cafbb/f94b4aab6 (W11P5c, from the prior exchange). All announced to and picked up by the babysitter (task a1f1a247df6d36236), which has independently verified and pushed each.
 
-PR #589 (0914-1): 220 commits pushed as of the babysitter's last push, receipt exact.
-#6d928fdf is the ONLY open worklist item. Its DEFERRAL is now explicit that the DEFAULT is
-CONTINUED B2 WORK, not idling -- read `worklist.py --list --open f4da5c2e` for full text;
-do not re-derive.
+CI state: 9/10 lanes green (Quality/Code newly passing), only Quality/Static red on author-identity; Packages/Security cancelled purely downstream of that one red. A Procwalk(windows-latest) red this session was triaged by the babysitter as transient (cleared on retest, evidence-backed) -- not a real defect.
 
-#6d928fdf: operator sent "Use this as email not rediacc: mfbayraktar@live.com". I OVER-READ
-this once as authorizing a 92-commit rewrite+force-push; babysitter correctly refused (force
--push of shared, pushed, open-PR history is its own standing prohibition; the narrower,
-safer reading is already true in the tree -- git config + 194/196 commits already use
-mfbayraktar@live.com). RETRACTED. Do not re-issue without an unambiguous new instruction.
-
-B2 (matrix sharding, driver-only, ALL inert -- SHARD_COUNTS still empty, verified via
---dry-run every round): D1, D2, D3 DONE. D4 first+second clause DONE, but a REAL BUG was
-found and fixed in the second clause minutes after landing it: a step's `env:` cannot be
-read by a LATER step (only `outputs` survive into the `steps` context in GitHub Actions --
-verified against every existing cross-step pattern in this repo's workflows). Fixed via
-`jobLockIdMap` (the map built once, compile-time, for the eventual receipt step's OWN env,
-not distributed per-step). Commits so far today: 9d2988b5c (D3), a8c5a905d (D4 clause 1),
-cd0ae3fcf (D4 clause 2, later found wrong), 19f8a6f7c (the fix). D5 and the actual
-receipt-writing script + upload-artifact emission remain -- genuinely the riskiest, least-
-verified-by-precedent piece left, being paced deliberately rather than rushed.
-
-18 campaign boxes verified individually this session; 17 are done/blocked-with-a-real-
-reason, only B2 has real work landing continuously.
+Worklist #6d928fdf (author-identity) is still the only open item, still operator-only (2 unlinked commits, unchanged). Found and worked around a real harness bug this turn: worklist.py --update's stale-DEFAULT carry-forward echoed text from BEFORE the last --defer (confirmed via raw jsonl); restated the DEFAULT explicitly as a workaround. Not fixed in code -- worth a look if this recurs.
 
 ## Next action
-
-If woken: (1) check #6d928fdf for a genuinely NEW, unambiguous operator answer first; (2)
-otherwise continue B2: read agent/PLAN-tooling-transformation.md's D4/D5 sections in full,
-design the receipt-writing step and upload-artifact emission CAREFULLY (this session has
-now found 3 real design bugs in this box's own text -- D3's marker collision, D4's
-env-cannot-be-read-back mistake, plus D4's original wrong scope -- so verify every claim
-against the real GHA context schema and existing workflow patterns before writing code, not
-after); (3) if nothing has changed, say so plainly and hold.
+1. Continue the box-by-box sweep of the remaining 15 open boxes for the same two patterns: (a) stale prose masking already-done work (check commits/live gates before trusting a box's own closing note -- this found 2 of the 3 closed this turn), (b) a genuinely small, bounded, undone slice safe to implement directly. Not yet re-examined this session: W7P5-b, W7P5-c, W1P6, W11P5b, W12P2.7c, W12P2.8, W12P3.5, W11P6a, W9P2, U2, B2. Confirmed still genuinely blocked (operator/credential-gated or live-hook-risk): W7P4-Q, W7P5-a, D4, W7P4-W.
+2. If the operator answers #6d928fdf directly: "verify" needs only confirming the next CI run's identity gate passes; explicit force-push re-confirmation means executing the recorded rewrite recipe.
+3. A background CI watch on the current head wakes on completion; don't shadow it with `gh run watch/view`.

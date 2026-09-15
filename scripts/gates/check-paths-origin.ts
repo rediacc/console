@@ -50,6 +50,12 @@ import { globToRegExp } from '../ci-runner/run';
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const LOCK = path.join(REPO_ROOT, 'scripts', 'ci-runner', 'gates.lock.json');
 
+/**
+ * Floor for the anti-vacuity refusal in `main`. 47 paths-bearing entries exist as of
+ * 2026-09-15; 30 leaves room for real removals while still catching a collapsed scan.
+ */
+const MIN_SCOPED_ENTRIES = 30;
+
 interface LockEntry {
   id: string;
   paths?: string[];
@@ -317,6 +323,21 @@ function main(): number {
       .filter(Boolean)
   );
   const scoped = entries.filter((e) => e.paths !== undefined).length;
+
+  // ANTI-VACUITY FLOOR. This gate reports success by finding NOTHING, so a lock that
+  // failed to parse, a renamed `paths` key, or a filter that silently matched zero
+  // entries all print the same tick as a clean tree. 47 paths-bearing entries exist
+  // today; the floor sits well below that rather than at it, because a floor equal to
+  // the current count turns every legitimate removal into a failure and teaches people
+  // to lower floors.
+  if (scoped < MIN_SCOPED_ENTRIES) {
+    console.error(
+      `✗ VACUOUS: only ${scoped} paths-bearing entry(ies) found in ${path.relative(REPO_ROOT, LOCK)}, ` +
+        `below the floor of ${MIN_SCOPED_ENTRIES}. This gate passes by finding nothing, so a corpus ` +
+        `this small means the SCAN broke, not that every origin is sound. Refusing rather than ticking.`
+    );
+    return 1;
+  }
 
   if (findings.length > 0) {
     console.error(
