@@ -649,8 +649,39 @@ export function emitReceiptStep(job: string, of: number, entries: readonly Emitt
   ];
 }
 
+/**
+ * Binaries that live in `node_modules/.bin` and NOWHERE ELSE.
+ *
+ * `npm run` puts that directory on PATH; a workflow `run:` does not. A step
+ * emitted with the raw command therefore dies `command not found`, exit 127,
+ * BEFORE the gate prints anything -- and on a developer machine with a global
+ * install it works, so the defect ships.
+ *
+ * `tsx` was the original member and was special-cased inline. `knip` is the
+ * second, added 2026-09-15 after it cost a real red: `gate-bind --write` in
+ * c457deca6 re-emitted `Unused exports (knip)` from its header's `run:`, which
+ * reverted a fix (efab3b5ac) that had hand-edited the YAML to `npm run
+ * lint:unused`. The hand edit could not survive, because the generator is the
+ * source of truth and the generator did not know. Nothing caught it for two
+ * runs: the watchdog kept cancelling `Quality / Code` for an unrelated failure
+ * in `Quality / Static`, so the step never got far enough to report.
+ *
+ * The HEADER still declares the real command, because `gate-bind` requires a
+ * header's `run:` to equal its package.json script -- that equality is what
+ * makes `npm run <id>` and the raw command the same thing, which is what makes
+ * this substitution safe rather than a second definition of the gate.
+ */
+export const LOCAL_BIN_COMMANDS = ['tsx', 'knip'];
+
+/** True when `run` invokes a node_modules/.bin binary as a bare command word. */
+export function usesLocalBin(run: string): boolean {
+  return LOCAL_BIN_COMMANDS.some((bin) =>
+    new RegExp(`(^|&&\\s*|\\|\\|\\s*|;\\s*|\\|\\s*)${bin}(\\s|$)`).test(run)
+  );
+}
+
 export function emitStep(b: Emitting, guard = 'setup', stepId?: string): string[] {
-  const cmd = b.run.startsWith('tsx ') ? `npm run ${b.id}` : b.run;
+  const cmd = usesLocalBin(b.run) ? `npm run ${b.id}` : b.run;
   const acquire = b.needs.flatMap((n) => ACQUIRE[n] ?? []);
   // `when` IS ANDED ON, NEVER SUBSTITUTED. The standard guard is what stops a gate
   // running after setup failed; a field that could replace it would let a gate opt out
@@ -1380,6 +1411,37 @@ function selftest(): number {
     !laneCanEmit(LANES, 'no-setup')
   );
   ck('CONTROL: a job that is not in the workflow cannot emit', !laneCanEmit(LANES, 'absent'));
+
+  // LOCAL-BIN SUBSTITUTION, both directions. The one-directional version of this
+  // -- "tsx becomes npm run" -- was already true and still let `knip` through,
+  // which is exactly the shape a control that only checks the positive case
+  // cannot see.
+  ck('tsx is a node_modules/.bin command', usesLocalBin('tsx scripts/x.ts'));
+  ck('knip is one too, even mid-command after &&', usesLocalBin('./a.sh --install && knip --x'));
+  ck('knip alone, with no arguments, is still one', usesLocalBin('knip'));
+  ck(
+    'CONTROL: a script PATH is not a local bin, or every step would be rewritten',
+    !usesLocalBin('.ci/scripts/quality/check_x.py')
+  );
+  ck(
+    'CONTROL: a word merely CONTAINING a bin name is not one',
+    !usesLocalBin('npm run check:knipple') && !usesLocalBin('./tsxwrapper.sh')
+  );
+  ck(
+    'CONTROL: `npm run <id>` is left alone -- substituting it again would be a no-op loop',
+    !usesLocalBin('npm run lint:unused')
+  );
+  ck(
+    'a knip-invoking gate emits `npm run <id>`, which is the whole point',
+    emitStep({
+      file: '.ci/scripts/quality/typecheck-workers.sh',
+      id: 'lint:unused',
+      run: './a.sh --install && knip --treat-config-hints-as-errors',
+      kind: 'step',
+      step: 'Unused exports (knip)',
+      needs: [],
+    }).some((l) => l === '        run: npm run lint:unused')
+  );
 
   // The guard step is a PER-LANE fact. quality-www-build's gates hang on
   // `steps.build-www.outcome`, not setup, because they read the dist/ that step

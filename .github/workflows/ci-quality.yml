@@ -1056,7 +1056,7 @@ jobs:
         run: npm run check:ci-typecheck-scope-coverage
       - name: Unused exports (knip)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/typecheck-workers.sh --install && knip --treat-config-hints-as-errors
+        run: npm run lint:unused
       - name: Verify no peer dependency conflicts
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_peer_deps.py
