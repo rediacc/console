@@ -146,7 +146,7 @@ import sys
 from typing import NoReturn
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import bash_dialect, common
 
 # ---------------------------------------------------------------------------
 # The twin's defaults, one constant per `${...:-default}` in the script.
@@ -465,7 +465,9 @@ class _Arith:
         # the token it last consumed (driven: `(` reports `(`).
         offender = self.rest() or self.last
         raise ArithError(
-            self.text, 'arithmetic syntax error: operand expected (error token is "%s")' % offender
+            self.text,
+            '%s: operand expected (error token is "%s")'
+            % (bash_dialect.arith_syntax_error(), offender),
         )
 
     # -- grammar ----------------------------------------------------------
@@ -523,7 +525,8 @@ class _Arith:
             if closing is None or closing != ("op", ")"):
                 raise ArithError(
                     self.text,
-                    'arithmetic syntax error in expression (error token is "%s")' % self.rest(),
+                    '%s in expression (error token is "%s")'
+                    % (bash_dialect.arith_syntax_error(), self.rest()),
                 )
             self.take()
             return value
@@ -551,10 +554,11 @@ def _evaluate(text: str, scope: dict[str, str], depth: int = 0) -> int:
     value = parser.expression()
     leftover = parser.rest()
     if leftover:
+        clause = bash_dialect.arith_syntax_error()
         reason = (
-            'arithmetic syntax error in expression (error token is "%s")'
+            '%s in expression (error token is "%%s")' % clause
             if _TOKEN_START.match(leftover)
-            else 'arithmetic syntax error: invalid arithmetic operator (error token is "%s")'
+            else '%s: invalid arithmetic operator (error token is "%%s")' % clause
         )
         raise ArithError(text, reason % leftover)
     return value

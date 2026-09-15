@@ -72,6 +72,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log
+from rediacc_ci.core import bash_dialect
 
 # `.ci/config/constants.sh:193-195`, verbatim. ONE entry, and the docstring
 # above says why that is not a mistake.
@@ -234,8 +235,8 @@ def bash_arith(expr_text: str, value: str, line: int) -> int:
         match = _TOKEN_RE.match(text, pos)
         if match is None:
             raise BashFatalError(
-                "%s: arithmetic syntax error: invalid arithmetic operator "
-                '(error token is "%s")' % (expr_text, text[pos:]),
+                '%s: %s: invalid arithmetic operator (error token is "%s")'
+                % (expr_text, bash_dialect.arith_syntax_error(), text[pos:]),
                 line,
             )
         piece = match.group(1)
@@ -254,7 +255,8 @@ def bash_arith(expr_text: str, value: str, line: int) -> int:
         sign = 1
     if not seen_operand:
         raise BashFatalError(
-            '%s: arithmetic syntax error: operand expected (error token is "")' % expr_text,
+            '%s: %s: operand expected (error token is "")'
+            % (expr_text, bash_dialect.arith_syntax_error()),
             line,
         )
     return total + 1
@@ -272,8 +274,8 @@ def _literal(piece: str, line: int) -> int:
             )
         return int(piece, 10)
     raise BashFatalError(
-        '%s: arithmetic syntax error: invalid arithmetic operator (error token is "%s")'
-        % (piece, piece),
+        '%s: %s: invalid arithmetic operator (error token is "%s")'
+        % (piece, bash_dialect.arith_syntax_error(), piece),
         line,
     )
 

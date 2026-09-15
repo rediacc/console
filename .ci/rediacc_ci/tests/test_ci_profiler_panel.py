@@ -32,6 +32,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.ci import profiler_panel
+from rediacc_ci.core import bash_dialect
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -437,7 +438,9 @@ def test_non_numeric_budget_is_a_bash_diagnostic_only(tmp_path: pathlib.Path) ->
     assert old.stdout == new.stdout
     assert ob == nb
     assert "**Panel trimmed:**" not in ob
-    assert "integer expected" in old.stderr
+    # Asked of the running bash: 5.3 says "integer expected" where 5.2 says
+    # "integer expression expected", and CI runs 5.2.
+    assert bash_dialect.integer_expected() in old.stderr
     assert new.stderr == ""
 
 

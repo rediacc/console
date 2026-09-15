@@ -105,7 +105,7 @@ import tempfile
 import time
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import bash_dialect, common
 
 SELF = "submodule-prs.py"
 
@@ -296,7 +296,8 @@ def main(argv: list[str]) -> int:
     else:
         iterations = 0
         print(
-            "%s: ((: %s: arithmetic syntax error: invalid arithmetic operator" % (SELF, count_text),
+            "%s: ((: %s: %s: invalid arithmetic operator"
+            % (SELF, count_text, bash_dialect.arith_syntax_error()),
             file=sys.stderr,
             flush=True,
         )

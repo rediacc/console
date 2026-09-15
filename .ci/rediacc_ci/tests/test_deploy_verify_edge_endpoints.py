@@ -53,6 +53,7 @@ import subprocess
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.core import bash_dialect
 from rediacc_ci.deploy import verify_edge_endpoints as port
 from rediacc_ci.tests import differential as diff
 
@@ -572,7 +573,9 @@ def test_a_fractional_retry_sleep_makes_the_twin_pass_without_running(
     assert old.rc == 0, "the twin PASSES a deployment whose /about returned 200"
     assert old.out.endswith("Smoke test passed\n")
     assert "  worker fingerprint (redirect table): OK (/about=410)" in old.out
-    assert "arithmetic syntax error" in old.err
+    # Asked of the running bash: 5.3 says "arithmetic syntax error", 5.2 says
+    # "syntax error", and CI is 5.2 while every host here is 5.3.
+    assert bash_dialect.arith_syntax_error() in old.err
     assert "::error::" not in old.out, "and it never says a word about the failure"
 
     assert new.rc == 1, "the port refuses, which is the whole point of not being faithful"

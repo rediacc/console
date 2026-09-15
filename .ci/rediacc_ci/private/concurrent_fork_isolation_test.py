@@ -144,6 +144,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.core import bash_dialect
 
 # The repo and tag names, verbatim. `FORK_REPO`/`CP_FORK_REPO` are the composed
 # `name:tag` refs the CLI takes as a positional.
@@ -390,7 +391,8 @@ def _literal(text: str, token: str) -> int:
             fatal=False,
         )
     raise _ArithError(
-        '[[: %s: arithmetic syntax error in expression (error token is "%s")' % (text, token),
+        '[[: %s: %s in expression (error token is "%s")'
+        % (text, bash_dialect.arith_syntax_error(), token),
         fatal=False,
     )
 
@@ -408,8 +410,8 @@ def arith(text: str) -> int:
     value = _literal(text, tokens[0])
     if len(tokens) > 1:
         raise _ArithError(
-            '[[: %s: arithmetic syntax error in expression (error token is "%s")'
-            % (text, tokens[1]),
+            '[[: %s: %s in expression (error token is "%s")'
+            % (text, bash_dialect.arith_syntax_error(), tokens[1]),
             fatal=False,
         )
     return value

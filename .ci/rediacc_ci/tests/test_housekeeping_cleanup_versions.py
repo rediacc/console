@@ -52,6 +52,7 @@ import tempfile
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import bash_dialect
 from rediacc_ci.housekeeping import cleanup_versions as cv
 
 ROOT = paths.repo_root()
@@ -2640,7 +2641,7 @@ def test_a_failed_cache_listing_kills_the_run_with_an_arithmetic_error() -> None
         assert "Phase 12: Cleaning up Actions cache (target <= 5 GB)" in text
         assert "No Actions cache entries found" not in text
         assert "Actions cache:" not in text
-    assert "arithmetic syntax error in expression" in old[2].decode()
+    assert "%s in expression" % bash_dialect.arith_syntax_error() in old[2].decode()
     assert "cleanup_versions.py: " in new[2].decode()
 
 

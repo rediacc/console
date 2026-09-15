@@ -28,6 +28,7 @@ import typing
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import bash_dialect
 from rediacc_ci.proxies import ops_host_check
 
 if typing.TYPE_CHECKING:
@@ -392,11 +393,13 @@ def test_a_two_document_stream_is_the_one_named_divergence(tmp_path: pathlib.Pat
     assert old.returncode == 1
     assert new.returncode == 1
     # The twin: bash's own arithmetic diagnostic, carrying its path and line.
-    assert "arithmetic syntax error" in old.stderr
+    # Asked of the running bash rather than spelled: 5.3 says "arithmetic syntax
+    # error" where 5.2 says "syntax error", and CI runs 5.2.
+    assert bash_dialect.arith_syntax_error() in old.stderr
     assert 'is "linux\nlinux" but this host is "linux"' in old.stderr
     # The port: one document or nothing.
     assert "stdout is not parseable JSON" in new.stderr
-    assert "arithmetic syntax error" not in new.stderr
+    assert bash_dialect.arith_syntax_error() not in new.stderr
 
 
 # ---------------------------------------------------------------------------

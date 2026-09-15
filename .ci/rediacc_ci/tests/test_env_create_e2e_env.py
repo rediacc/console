@@ -37,6 +37,7 @@ import subprocess
 
 import pytest
 
+from rediacc_ci.core import bash_dialect
 from rediacc_ci.env import create_e2e_env as port
 from rediacc_ci.tests import differential as diff
 
@@ -445,7 +446,11 @@ def test_the_documented_divergence_on_an_unsupported_operator_is_real(
     assert "= 17408 MB" in old.stderr
     assert old.produced is None
     assert new.code == 0, "the port treats the shift as Defect A's arithmetic error"
-    assert "arithmetic syntax error in expression" in new.stderr
+    # The clause is asked of the running bash, not spelled here: bash 5.3 says
+    # "arithmetic syntax error" where 5.2 says "syntax error", and this tree's
+    # hosts are 5.3 while every CI runner is 5.2. A literal here passes locally
+    # and fails only in the one place nobody could see.
+    assert "%s in expression" % bash_dialect.arith_syntax_error() in new.stderr
     assert new.produced is not None
 
 

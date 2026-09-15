@@ -94,6 +94,7 @@ import subprocess
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import bash_dialect
 from rediacc_ci.private import concurrent_fork_isolation_test as port
 
 ROOT = paths.repo_root()
@@ -1060,7 +1061,7 @@ def test_arith_reports_an_unset_name_as_fatal_and_a_bad_shape_as_not_fatal():
         port.arith("1 2")
     assert two_fields.value.fatal is False
     assert two_fields.value.message == (
-        '[[: 1 2: arithmetic syntax error in expression (error token is "2")'
+        '[[: 1 2: %s in expression (error token is "2")' % bash_dialect.arith_syntax_error()
     )
 
     with pytest.raises(port._ArithError) as bad_base:
