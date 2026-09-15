@@ -5790,7 +5790,8 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `.ci/rediacc_ci/tests/test_quality_trap_registry.py:82-94` (13 passed), because every
       shadow fixture sets `TRAP_FLOOR` explicitly and the DEFAULT is the one value the two
       implementations can disagree about without any recorded row noticing.
-- [ ] **W12 P2.7c S after P5b** "Search first" into CLAUDE.md (`grep -c search CLAUDE.md` = **0**
+- [x] **W12 P2.7c S after P5b** "Search first" into CLAUDE.md (`grep -c search CLAUDE.md` = **0**
+    (ticked) 2026-09-15T08:50:32Z by f4da5c2e: Both clauses verified live: (1) 'Search first' landed as a new ## section in CLAUDE.md right after ## CLI's package table, grep -c search CLAUDE.md now 1 (was 0), frozen span (9-233) and ## Architecture's line (234) both verified unmoved; (2) docs/agent-reference/plan-records.md already carries the plan-record-grammar generated region (34 rows, check:ci-doc-region-parity rc=0) -- found already done, not built this pass, likely landed alongside another provider earlier in the campaign and never credited to this box.
       today) as a 4-line block after `## Architecture`, budgeted into P5b up front. Plus
       `docs/agent-reference/plan-records.md` carrying the record grammar **as a generated region**
       rendered from `wl_planrec.py` -- a hand-typed copy of a grammar that lives in code is the

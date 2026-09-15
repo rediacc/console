@@ -253,6 +253,13 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 | `packages/www/` | Marketing website (Astro) |
 | `packages/shared/` | Shared types, config, services (consumed by cli, www, account) |
 
+## Search first
+
+Before creating a new file, gate, doc, or provider, search the tree for whether it already
+exists — under a different name, built by another session, or documented somewhere a plan
+doesn't point to. Several campaign boxes closed by finding the work already landed and only
+the record was stale, not by doing it again.
+
 ## CLI (`packages/cli/`)
 
 ### Common Commands
