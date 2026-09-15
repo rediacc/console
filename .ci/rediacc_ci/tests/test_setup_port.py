@@ -8,7 +8,7 @@ isolate a helper, and a unit test over a helper cannot notice a phase that
 stopped running. This file covers the first half.
 
 THE BASH IS GONE, AND SO ARE THE CASES THAT RAN IT. `.ci/lib/setup.sh` was
-deleted by `0d582b57a`; six differential cases (17 with their parameters) were
+deleted by `1ae84c3e3`; six differential cases (17 with their parameters) were
 left behind guarded by `skipif(not TWIN.is_file())`, which is permanently true.
 They were removed 2026-09-15 rather than left skipping, and the reasoning is
 worth keeping because the original choice was deliberate and still wrong:

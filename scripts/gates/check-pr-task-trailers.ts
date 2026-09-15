@@ -358,7 +358,7 @@ const selftest = (): number => {
     check('two commits on one history share a merge base', hasBase(a, b));
     check('CONTROL: two unrelated roots do NOT, so the precondition can fire', !hasBase(b, orphan));
 
-    // MERGE-BASE RECOVERY UNDER A GENUINELY SHALLOW FETCH. a15660e0 pulled the
+    // MERGE-BASE RECOVERY UNDER A GENUINELY SHALLOW FETCH. b7cc15b1 pulled the
     // has-merge-base-or-deepen loop out of main() into `mergeBaseAfterDeepen` so
     // this shape is a permanent control rather than the one-off manual repro (a
     // throwaway --depth 50 clone, checked by hand) that shipped with the fix.
@@ -407,7 +407,7 @@ const selftest = (): number => {
 
 // THE DEEPEN LOOP ITSELF, pulled out of main() so `--selftest` can drive it
 // against a real shallow fetch instead of only being exercised by hand once
-// (a15660e0 shipped with a manual repro against a throwaway --depth 50 clone;
+// (b7cc15b1 shipped with a manual repro against a throwaway --depth 50 clone;
 // the repro itself did not persist). `cwd` is a parameter, not `REPO`, purely
 // so the selftest below can point it at a scratch checkout.
 const mergeBaseAfterDeepen = (cwd: string, base: string, tip: string): boolean => {

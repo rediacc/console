@@ -2711,8 +2711,8 @@ not: every `git` call in that file goes through one helper, and the only two use
 `ls-files` for the corpus and `init`/`add` inside the selftest fixture. The gate compares
 TREE STATE against a JSON set and has no idea what a commit is.
 
-The proof is what happened next. The split was repaired in a SECOND commit -- `0d582b57a`
-then `917d1902d` -- and the gate went green. That is the very shape its message tells you
+The proof is what happened next. The split was repaired in a SECOND commit -- `1ae84c3e3`
+then `1a148adeb` -- and the gate went green. That is the very shape its message tells you
 to avoid, now passing, because the end state is all it can see.
 
 This is not a defect in the gate, and the fix was not to make it read commits. A state

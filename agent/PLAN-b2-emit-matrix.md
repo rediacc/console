@@ -8,7 +8,7 @@ Owner: f4da5c2e
 "emit the matrix" for `.github/workflows/ci-quality.yml`'s quality lanes. The box's own text
 went through two design revisions in place (2026-09-08 design note, then a 2026-09-09 refutation
 of part of that note, then a 2026-09-14 read-only re-verification wave). This plan re-measures
-everything against the tree at commit `2335a568f` (2026-09-15) rather than trusting the box's
+everything against the tree at commit `22746ac3e` (2026-09-15) rather than trusting the box's
 prose, and turns the box's own "Five pieces, in order, all driver-only" (D1-D5) into an
 executable task list, plus one gap the box itself never closed: a real completeness check for
 its stated acceptance criterion.
@@ -44,7 +44,7 @@ current design.
 ## 2. Current state of the generator: mechanism partially built, deliverable (D1-D5) not started
 
 Re-verified live, 2026-09-15 (spot-checked by the driver directly: `SHARD_COUNTS` confirmed
-empty, `rewriteStrategyRegions` confirmed absent, `4349e1831` confirmed a real commit, both
+empty, `rewriteStrategyRegions` confirmed absent, `6b1a1b060` confirmed a real commit, both
 named lanes confirmed still without `- id: setup`):
 
 | Piece | Status | Evidence |
@@ -64,7 +64,7 @@ named lanes confirmed still without `- id: setup`):
 | Stale comment `scripts/gate-bind.ts:571` ("today only one lane is in `SHARD_COUNTS`") | **Still stale** (SHARD_COUNTS is empty) | unchanged since 2026-09-09 |
 
 `git log` on `scripts/gate-bind.ts` and `scripts/ci-runner/lanes.ts` shows no commit since
-`0d582b57a` (2026-09-09); the 2026-09-14 wave that re-derived D1-D5 was explicitly read-only
+`1ae84c3e3` (2026-09-09); the 2026-09-14 wave that re-derived D1-D5 was explicitly read-only
 (isolated worktree, primary tree owned by a `pr-babysit` agent). **This is not a stale-box/
 already-done situation like W7P4-W or W9-P2. B2 is genuinely unstarted at the deliverable
 level**; what exists is scaffolding from an earlier, narrower wave (leg lookup + conjunct
@@ -84,7 +84,7 @@ scan of a job's block for a literal `- id: setup` line, and `--write`'s emission
 unchanged and still correct today.
 
 **What has drifted**: the "eight of ten" count. `ci-quick:` landed 2026-09-14 (commit
-`4349e1831`, box B4's job half -- landed for real, not left in an isolated worktree as B4's
+`6b1a1b060`, box B4's job half -- landed for real, not left in an isolated worktree as B4's
 last note implies; worth flagging to whoever owns B4's status). Recount, 2026-09-15, over
 `.github/workflows/ci-quality.yml`'s 11 top-level jobs:
 
@@ -303,7 +303,7 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
 - [ ] Update invariant 11's prose (`agent/PLAN-tooling-transformation.md:6043`, "eight of ten
       lanes") to match the current 9-of-11 count, or reword to not hardcode a count.
 - [ ] Correct B4's status note about `ci-quick` (box `:4029-4033` says it stays `[ ]` "until it
-      lands in the primary tree" -- `git log` shows commit `4349e1831` on 2026-09-14 landed it
+      lands in the primary tree" -- `git log` shows commit `6b1a1b060` on 2026-09-14 landed it
       for real). Flag to whoever owns B4, out of this plan's direct scope but noted since B2's
       lane count depends on it.
 - [ ] Re-run `check:ci-gates-lock`, `check:ci-parity`, `check:ci-gate-bind --write` (dry-run

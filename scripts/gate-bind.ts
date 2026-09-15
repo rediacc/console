@@ -659,8 +659,8 @@ export function emitReceiptStep(job: string, of: number, entries: readonly Emitt
  *
  * `tsx` was the original member and was special-cased inline. `knip` is the
  * second, added 2026-09-15 after it cost a real red: `gate-bind --write` in
- * c457deca6 re-emitted `Unused exports (knip)` from its header's `run:`, which
- * reverted a fix (efab3b5ac) that had hand-edited the YAML to `npm run
+ * bfb8630dd re-emitted `Unused exports (knip)` from its header's `run:`, which
+ * reverted a fix (10b130a82) that had hand-edited the YAML to `npm run
  * lint:unused`. The hand edit could not survive, because the generator is the
  * source of truth and the generator did not know. Nothing caught it for two
  * runs: the watchdog kept cancelling `Quality / Code` for an unrelated failure

@@ -30,7 +30,7 @@ just against this document.
 ## Corrections to the working assumptions this plan started from
 
 Read `.ci/scripts/quality/check_plan_citations.py` and
-`.claude/hooks/stop/wl_planrec.py` at `0914-1`'s tip (`aab884f1d`) before
+`.claude/hooks/stop/wl_planrec.py` at `0914-1`'s tip (`af08c2888`) before
 anything else, because the brief this plan was commissioned from got several
 details of the actual gate wrong. Both scripts self-test their own claims
 (`--selftest`, 24/24 PASS at that commit), so these corrections are load-bearing,
@@ -69,8 +69,8 @@ not pedantic:
 - **`resolve(root, "commit", token)` is existence-only, not
   reachability-checked**, per its own docstring (`git rev-parse --verify --quiet
   <token>^{commit}` — nothing about ancestry). That is the exact
-  reachability-vs-existence gap `1c58fb0f5` ("a control that could only pass
-  where the fix was unnecessary") and `aab884f1d` ("the reachability oracle
+  reachability-vs-existence gap `b816445a1` ("a control that could only pass
+  where the fix was unnecessary") and `af08c2888` ("the reachability oracle
   that called 53 healthy blobs dead") already document from this session's own
   mistakes today. It matters here because a *local* clone can carry orphaned
   objects (dangling commits from an earlier `git filter-branch`/rebase on this
@@ -82,7 +82,7 @@ not pedantic:
 
 ## 1. Measurement
 
-Corpus at `0914-1`@`aab884f1d`, `agent/PLAN-*.md` + `agent/INDEX.md`:
+Corpus at `0914-1`@`af08c2888`, `agent/PLAN-*.md` + `agent/INDEX.md`:
 
 | | count |
 |---|---:|
@@ -103,7 +103,7 @@ Of the 149 distinct object tokens, resolved with the gate's own
 | resolves as **both** | 0 |
 | resolves as **neither** (dead today) | 26 |
 
-Reachability, using the `2886fe585` oracle (`git rev-list --objects aab884f1d`,
+Reachability, using the `c5b727b2e` oracle (`git rev-list --objects af08c2888`,
 prefix-matched — this is what a fresh clone/CI checkout actually contains,
 unlike `merge-base --is-ancestor`, which the same commit found throws exit 128
 on every blob and would have misreported ~53 healthy citations as dead):
@@ -174,7 +174,7 @@ Sub-cases:
     Y had this content", which is a different, weaker fact. Accept the
     rebase-fragility; it's inherent to the claim being made, not a defect.
   - **Already fragile (the 8 tokens above):** repoint using exactly the method
-    `2886fe585` proved out today — map by commit subject against current
+    `c5b727b2e` proved out today — map by commit subject against current
     history (`git log --oneline --all --grep=<subject-fragment>` or `git log -S`
     on the file the plan describes), verify the new sha is in the
     `git rev-list --objects HEAD` reachable set, then edit the citation. Do
@@ -197,7 +197,7 @@ Sub-cases:
     names out loud rather than by declaring intent. these document commits that a rewrite this repo already ran
     intentionally discarded, or are stale "see git log" pointers nobody has
     revisited. Precedent already exists in this same file family
-    (`120e210e2`'s commit message: "given at 8 characters … with a note at each
+    (`614d912a7`'s commit message: "given at 8 characters … with a note at each
     site saying why"). Apply the same pattern: leave the sha, add a one-line
     note explaining it predates a known rewrite and is not expected to resolve.
     (`374943470` is actually all-digits and was never counted as an object
@@ -239,7 +239,7 @@ fc3f4a0f5447      "(report fc3f4a0f5447)" — a wl_report.py report id
                                   agent/PLAN-subagent-idle-detection.md:111,112
 ```
 ```
-77161bfff  a6f76f074
+a56ee58a0  a6f76f074
 aea2bc733552
 ```
 
@@ -260,11 +260,11 @@ than prose surgery) is the right shape of fix. See Recommendation 3.
    - 62 healthy + reachable: no change, accept the fragility as inherent to the
      claim.
    - 8 already-fragile (listed above): repoint now, using the subject-search +
-     `git rev-list --objects HEAD` verification method from `2886fe585`. This
+     `git rev-list --objects HEAD` verification method from `c5b727b2e`. This
      is the highest-priority actionable bucket — these are silently wrong
      *today*, not hypothetically wrong after a future rebase.
    - 3 dead-on-purpose (media rewrite) + 1 cross-repo: add a one-line inline
-     note at each site (pattern already established at `120e210e2`), do not
+     note at each site (pattern already established at `614d912a7`), do not
      "fix" them — fixing would either be impossible (cross-repo) or would
      erase the historical claim the sentence is making (pre-rewrite commits).
    - 2 stale "see git log" pointers in
@@ -346,7 +346,7 @@ above):
   the correct behavior here.
 - **The correct oracle for "will this survive a `merge --rebase`" is NOT
   `resolve()`'s own commit-kind check** (existence-only, as corrected above) and
-  is NOT `merge-base --is-ancestor` (exits 128 on blobs, per `aab884f1d`). It is:
+  is NOT `merge-base --is-ancestor` (exits 128 on blobs, per `af08c2888`). It is:
   ```
   git rev-list --objects <ref-you-are-about-to-merge-into> | cut -d' ' -f1 > /tmp/reachable.txt
   grep -qf <(echo "$TOKEN") /tmp/reachable.txt   # prefix match needed for abbreviated tokens
@@ -356,7 +356,7 @@ above):
   after the rewrite", which local HEAD cannot answer once the rewrite has
   already happened locally. Read `.ci/config/carried-reds.json` before this
   work starts — `check:ci-plan-citations` is not currently carried there
-  (confirmed by reading the file at `aab884f1d`), i.e. it is expected green
+  (confirmed by reading the file at `af08c2888`), i.e. it is expected green
   right now; a batch that reds it should be treated as a real regression, not
   pre-existing debt.
 

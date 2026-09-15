@@ -4,7 +4,7 @@ Owner: f4da5c2e
 
 ## Why
 
-`agent/PLAN-tooling-transformation.md:5730` (box "W9 P2 S, ALONE IN ITS WAVE") is HALF DONE as of its last edit, 2026-09-09 (`0d582b57a`). The `scripts/gates/` leg (125 `check-*.ts` files) and 8 of 10 generators are done and verified. What remains, measured directly against the live tree on 2026-09-14, is smaller and more precisely scoped than the box's original text implies:
+`agent/PLAN-tooling-transformation.md:5730` (box "W9 P2 S, ALONE IN ITS WAVE") is HALF DONE as of its last edit, 2026-09-09 (`1ae84c3e3`). The `scripts/gates/` leg (125 `check-*.ts` files) and 8 of 10 generators are done and verified. What remains, measured directly against the live tree on 2026-09-14, is smaller and more precisely scoped than the box's original text implies:
 
 - **`scripts/gen/` leg, remaining subject: 2 files.** `scripts/gen-docs.ts` and `scripts/gen-gates-lock.ts` are still at `scripts/` root. `scripts/data/domains.json:143` (`generators` rule) blocks them explicitly: "Same merge queue as `gates`. scripts/gen-docs.ts, scripts/gen-gates-lock.ts, scripts/lib/doc-providers.ts and scripts/lib/doc-regions.ts are W11 and W2 files under active concurrent edit; they move only once those workstreams have handed over."
 - **`scripts/ops/` leg, remaining subject: 15 files.** 13 under `scripts/dev/`, 1 under `scripts/docker/` (`build-server.sh`), and `scripts/backup-cutover-preflight.sh` at root. `scripts/data/domains.json:94` (`operator-bash` rule) blocks this on "Driver contract section 2, the `scripts/dev` ownership row: W8 deletes its dead script, W0 and W8 make their edits at the current path, THEN W9 moves the directory. Not before."

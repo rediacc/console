@@ -8,7 +8,7 @@ Owner: f4da5c2e
 `.ci/scripts/deploy/` (27) and `.ci/scripts/release/` (21), 5,440 lines. The box's own text,
 read in full through line 793 (the line before W7P5-b opens), documents a long, honest history
 of incremental work through 2026-09-14. This plan re-measures every load-bearing claim against
-the live tree (commit `d36928c36`, 2026-09-15, branch `0914-1`) rather than trusting the box's
+the live tree (commit `e1c1a420c`, 2026-09-15, branch `0914-1`) rather than trusting the box's
 prose, per the campaign's own recurring finding that numbers "move" between waves.
 
 **Headline re-verification result: the box's most recent status (2026-09-14) is accurate.**
@@ -25,12 +25,12 @@ partitions `ledger` vs `blocked`, not whether a `ledger` row's real-run leg is a
   not worth chasing).
 - `.ci/rediacc_ci/deploy/*.py` and `.ci/rediacc_ci/release/*.py` (excluding `__pycache__`) show
   **every one of the 48 twins already has a Python port on disk** — this is `W7P6`'s 208-file
-  package (commit `4b7823a6a`, "the rediacc_ci package — every bash gate driver ported to
+  package (commit `b2f98691c`, "the rediacc_ci package — every bash gate driver ported to
   Python, beside its twin"), not W7P5-a's own work, landed 2026-09-14. W7P5-a never had to
   write these ports; it inherited full dry-run-parity coverage for its scope from a sibling box.
 - `.ci/shadow/w7p5a-status.json`: `schema: w7p5a-status/v1`, 48 `paths` entries, **16 `ledger` /
   32 `blocked`**, matches the box's 2026-09-14 text exactly (`git log -1` on this file =
-  `34de023b5`, "the K=5 shadow ledgers — the port's equivalence, recorded as evidence").
+  `85e65ae27`, "the K=5 shadow ledgers — the port's equivalence, recorded as evidence").
 - `.ci/policy/.w7p5a-real-run-blocklist`: 32 BLOCKER-gated entries, one per `blocked` path
   (several share a comment), each carrying the corrected 2026-09-14 wording ("is DONE (verified
   2026-09-14): W7P6 independently ported it... external tools stubbed throughout").
@@ -269,7 +269,7 @@ matching the box's own precedent instead of leaving a silent gap:
       real tag and a missing-tag error path).
 - [x] Update each of the six paths' `note` field in `.ci/shadow/w7p5a-status.json` to append the
       real-run confirmation sentence, byte-identical wording to the 3 already-done entries.
-      DONE 2026-09-15, landed via `9a0525ba0` (absorbed into a babysitter commit; content
+      DONE 2026-09-15, landed via `f6c8936c6` (absorbed into a babysitter commit; content
       verified intact via `git show`).
 - [x] Re-run `npm run check:ci-w7p5a-real-run-blockers` after the status-file edit; confirm rc=0
       and the stats line still reads "16 ledgered" (status bucket unchanged, only `note` grew).
@@ -277,7 +277,7 @@ matching the box's own precedent instead of leaving a silent gap:
 - [x] Extend `.ci/rediacc_ci/quality/w7p5a_real_run_blockers.py`'s `run()` with the fifth check
       from Section 4: every `status == "ledger"` path's `note` must carry either the real-run
       confirmation phrase or a validated real-run BLOCKER; add the corresponding PLANT/CLEAN
-      selftest cases before relying on it. DONE 2026-09-15, commit `157695f6e`: 6 new selftest
+      selftest cases before relying on it. DONE 2026-09-15, commit `5f51acb59`: 6 new selftest
       controls (2 CLEAN, 3 PLANT, plus the two count assertions), all pass.
 - [x] Add real-run BLOCKER entries for the 7 Group-B paths (`wait-for-preview-worker`,
       `check-edge-manifest`, `check-stable-manifest`, `check-existing-release`, `resolve-ci-run`,

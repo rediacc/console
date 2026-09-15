@@ -593,7 +593,7 @@ def test_defect_2_nothing_in_the_tree_writes_the_manifest_path_this_reads() -> N
     docstring's defect 2 has to be rewritten, which is the intent.
 
     The expected set is THREE files, not one. It was written as `[TWIN_REL]` and
-    was therefore red from the commit that introduced it (`a2e7414ae`): the port
+    was therefore red from the commit that introduced it (`7c926bd63`): the port
     reproduces the twin's dead read, as the campaign requires, and this file
     names the path in its own `git grep` argument, so it matches itself. Counting
     mentions is a PROXY for "nothing writes this path"; the proxy has to know

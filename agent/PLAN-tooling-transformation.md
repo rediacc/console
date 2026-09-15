@@ -919,7 +919,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       **FOURTH WAVE 2026-09-10: `common.sh` closed out. All 9 of 9 named libs done.**
       Driver-verified directly: both new modules exist, 177/177 new tests pass (86+91),
       both ledgers at K=5, bash twin confirmed byte-untouched, no stray commit (HEAD stayed
-      `917d1902d` throughout), dead-python/language-policy clean, git status scoped exactly.
+      `1a148adeb` throughout), dead-python/language-policy clean, git status scoped exactly.
       **`common.sh` turned out to be seven libraries stacked in one file, five already
       ported under other names** (`log.py`, `paths.py`, `proc.py`, `core/ghx.py`, and
       `core/platform.py` for `detect_os`/`detect_arch` -- DELIBERATELY REFUSED there because
@@ -1026,7 +1026,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `.ci/scripts/lib/age-check.sh`. `git log --all --diff-filter=D -- '*age-check.sh'`
       returns nothing, so this is not a move: the path in this box was always wrong.
       **THE "13 REAL BASH LIBS, 6,840 LINES" IS 14 LIBS AND 6,408 LINES**, measured at
-      `917d1902d` over every tracked `.sh` in `.ci/lib/` and `.ci/scripts/lib/`: account
+      `1a148adeb` over every tracked `.sh` in `.ci/lib/` and `.ci/scripts/lib/`: account
       1119, bws-env 111, devbox 1087, find-port 145, local-common 1008, service 225,
       age-check 127, blocker-validator 356, common 772, emit-advisory 218, gate-controls
       41, release-age 237, release-state-validator 496, toolchain 466. No 13-member subset
@@ -1360,7 +1360,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `check:ci-language-policy` rc=0.
       **THIS BOX WAS ALREADY PARTLY DONE, DISCOVERED RATHER THAN REDONE.**
       `.ci/scripts/infra/ci_stop.py` is a full port of `ci-stop.sh`, committed at
-      `0d582b57a` before this writer started, with a 10/10 differential -- its own docstring
+      `1ae84c3e3` before this writer started, with a 10/10 differential -- its own docstring
       names this box. `.ci/scripts/test/lib/test-helpers.sh` and `workflow-rule.sh` are
       already ported (`harness.py`, `workflow_rule.py`), each used by 3+ gate-test ports.
       **Two files are DELIBERATELY NOT ported, and now say so in the allowlist rather than
@@ -1460,7 +1460,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       modified and not committed (baseline, plan-boxes, allowlist, `dead_python.py`, the
       w7p5a-real-run-blockers pair); current `git status --porcelain` shows those same paths
       back as unstaged `M`, nothing lost, nothing duplicated, HEAD correctly back at
-      `917d1902d`.
+      `1a148adeb`.
       **Two real, live bugs found in the REGISTERED gate `check:ci-shell-commands`
       (`check-commands.sh`), reproduced faithfully in the port rather than silently
       "fixed" there** (fixing the bash twin's own behavior is out of this box's file
@@ -1715,7 +1715,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `detect-bump-type.sh` -> `version/detect_bump_type.py` (real git fixtures, not
       stubbed), `cleanup-pr-environments.sh` -> `housekeeping/cleanup_pr_environments.py`,
       and `ci-stop.sh` -- correctly identified as ALREADY PORTED (`infra/ci_stop.py`,
-      committed `0d582b57a` earlier this session) rather than duplicated; its missing K=5
+      committed `1ae84c3e3` earlier this session) rather than duplicated; its missing K=5
       ledger was the one gap and is now closed (`w7p6-ci-stop.observations.jsonl`, 5 rows).
       Writer D: `verify-ssh.sh` -> `infra/verify_ssh.py`, `wait-for-vm-ssh.sh` ->
       `infra/wait_for_vm_ssh.py` (deliberately NOT sharing a helper with its sibling despite
@@ -4019,7 +4019,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       **D1's own commit broke the bash TWIN, `test-gate-lanes.sh`, which the port's own
       test run never exercises -- caught by the babysitter's pre-push receipt, not by
       me.** The twin carries its own copy of the balance/heavy-floor assertions and I
-      had only fixed the Python port. Fixed as a follow-up commit (`adae3a53c`): same
+      had only fixed the Python port. Fixed as a follow-up commit (`117d6438f`): same
       move (quality-security's example -> quality-code, negative case named, heavy
       floor measured not hand-typed), plus a genuinely stale hardcoded assertion count
       ("35 assertion(s)") the twin had been carrying, now measured from the real PASS
@@ -4149,7 +4149,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       3 new selftest controls on top of the earlier ones. This closes D4 in full.
       **A GENUINELY PRE-EXISTING, UNRELATED FINDING surfaced while testing (not caused by
       D4): a real `gate-bind --write` against the live tree refuses on "Install worker
-      project deps" (added by the lint-ordering fix, `efab3b5ac`) as an UNCLAIMED drop --
+      project deps" (added by the lint-ordering fix, `10b130a82`) as an UNCLAIMED drop --
       a hand-added step inside the auto-emitted `quality-code` region that no declared
       gate re-emits. `check:ci-gate-bind`'s read-only check does not catch this (its own
       stated blind spot: hand-registered steps are `check:ci-parity`'s business), so it
@@ -4162,11 +4162,11 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       having run nothing) -- D3/D4's own mechanics do not.
       **CORRECTION 2026-09-15, THIS BOX'S OWN PROSE WAS STALE IN THE OTHER DIRECTION:**
       "D5 remains untouched" stopped being true the same week and nobody updated this
-      block. **D5 clause 1 IS DONE** (`79800a5df`): `check-quality-complete.ts` now
+      block. **D5 clause 1 IS DONE** (`b7d139ce0`): `check-quality-complete.ts` now
       independently re-asserts the strategy shape from the aggregator side via
       `rewriteStrategyRegions`, combined with `wiringFindings` at the `main()` call site;
       25 controls pass, all gates rc=0. **D5 clause 2 is DIAGNOSED, not fixed**
-      (`3c3762fc9`): moving `check:ci-quality-complete`'s lane off `quality-code` is not a
+      (`060c752a0`): moving `check:ci-quality-complete`'s lane off `quality-code` is not a
       lane swap -- `quality-code` satisfies `stepInJob` because gate-bind emits "Quality
       shard aggregation" from that file's own `lane: quality-code` header, and
       `quality-branch` structurally cannot host a gate-bind region at all (no `- id:
@@ -4178,7 +4178,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       **CORRECTION to my own note, from the babysitter:** the "Install worker project
       deps" unclaimed-drop finding did not lapse on its own -- I wrongly implied that by
       saying it "no longer reproduces" with no cause given. The babysitter moved the step
-      out of the gate-bind region in `7d7346b87`. It was a real finding and it is fixed,
+      out of the gate-bind region in `67f9fbf32`. It was a real finding and it is fixed,
       not spurious; verified live 2026-09-15 that `gate-bind --write --dry-run` reports
       zero drops after that fix.
 - [x] **B3 S** `quality-complete` aggregator. `ci_job_aggregation.py` already enforces four things
@@ -4203,7 +4203,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       naming a step no workflow had. The header has to arrive WITH the entry, not before and
       not after.
 - [x] **B4 S** The `ci-quick` job and **fail-open** scoping. Only 45 of 458 entries declare
-    (ticked) 2026-09-15T07:33:54Z by f4da5c2e: Verified live, all three pieces: (1) scoping -- check:ci-changed-selection rc=0, 475 gates (46 path-scoped, 429 always-selected), empty-set refusal control passes; (2) ci-quick job -- live in .github/workflows/ci-quality.yml:146, npm run ci:quick -- --list reproduces '383 gate(s) planned...selftest ok'; (3) the tautology-guard hole the box's own prose said was left for 'whoever next touches that gate' (AGGREGATE_RUN missing ci:quick/ci:serial and the --flag bypass) -- already fixed same-day in commit 3e9d402fb ('a gate id that said ci twice, and a tautology guard --silent walked past'), confirmed live in scripts/gates/check-ci-parity.ts:484 and check:ci-parity rc=0. The box's own closing note was stale on this one point (said scoping's 'unfinished business' was still open); the code already closed it, just never reflected back into the prose. All three legs verified, no third state, box closes.
+    (ticked) 2026-09-15T07:33:54Z by f4da5c2e: Verified live, all three pieces: (1) scoping -- check:ci-changed-selection rc=0, 475 gates (46 path-scoped, 429 always-selected), empty-set refusal control passes; (2) ci-quick job -- live in .github/workflows/ci-quality.yml:146, npm run ci:quick -- --list reproduces '383 gate(s) planned...selftest ok'; (3) the tautology-guard hole the box's own prose said was left for 'whoever next touches that gate' (AGGREGATE_RUN missing ci:quick/ci:serial and the --flag bypass) -- already fixed same-day in commit 0a5593050 ('a gate id that said ci twice, and a tautology guard --silent walked past'), confirmed live in scripts/gates/check-ci-parity.ts:484 and check:ci-parity rc=0. The box's own closing note was stale on this one point (said scoping's 'unfinished business' was still open); the code already closed it, just never reflected back into the prose. All three legs verified, no third state, box closes.
       `paths`, so scoping by `paths` fails OPEN for the other 413. **Acceptance:** a gate with no
       `paths` is selected for every non-empty change set; an empty change set must REFUSE rather
       than select nothing ("nothing changed" and "the differ broke" are the same shape).
@@ -4636,7 +4636,7 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       the rule's `why:` so it is not tidied back out. **`scripts/ops` will need the identical
       line** when the operator-script leg lands, and `operator-bash` is the rule to widen.
 - [x] **C2 C** W2.5 tier 1: `pathsOrigin` required whenever `paths` is present.
-    (ticked) 2026-09-15T07:53:05Z by f4da5c2e: Implemented and verified live: pathsOrigin added to GateSpec (scripts/ci-runner/gate-spec.ts), set to 'declared' on all 46 pre-existing paths-bearing entries in manifest.ts, plus a new check:ci-paths-origin (scripts/gates/check-paths-origin.ts) enforcing cardinality equality both directions, per-glob zero-match detection for 'declared' origins, and re-run reproducibility for 'derived:<tool>' origins (dormant, proven only by --selftest since no entry uses it yet -- same shape as B2's SHARD_COUNTS). check:ci-paths-origin rc=0 (15 selftest controls, 47 real entries, 0 findings against 6123 tracked files). Full battery green: tsc, check:lint:tooling, check:format, check:ci-gate-bind, check:ci-parity, check:ci-gates-lock, check:ci-gate-reachability-coverage, check:ci-gate-prerequisites, check:ci-actionlint, check:ci-workflows, check:ci-workflow-invariants, check:ci-step-env-parity, check:ci-doc-region-parity, check:ci-workflow-orphan-step-keys, check:ci-timeout-headroom, check:ci-swallowed-failures, check:ci-job-aggregation, check:ci-quality-complete. Landed at c457deca6. Its own note ('C2 need not raise 45 to any target') held: no new target was invented, and B4 (done this session) is what made this safe to land without racing that box's own fail-open work.
+    (ticked) 2026-09-15T07:53:05Z by f4da5c2e: Implemented and verified live: pathsOrigin added to GateSpec (scripts/ci-runner/gate-spec.ts), set to 'declared' on all 46 pre-existing paths-bearing entries in manifest.ts, plus a new check:ci-paths-origin (scripts/gates/check-paths-origin.ts) enforcing cardinality equality both directions, per-glob zero-match detection for 'declared' origins, and re-run reproducibility for 'derived:<tool>' origins (dormant, proven only by --selftest since no entry uses it yet -- same shape as B2's SHARD_COUNTS). check:ci-paths-origin rc=0 (15 selftest controls, 47 real entries, 0 findings against 6123 tracked files). Full battery green: tsc, check:lint:tooling, check:format, check:ci-gate-bind, check:ci-parity, check:ci-gates-lock, check:ci-gate-reachability-coverage, check:ci-gate-prerequisites, check:ci-actionlint, check:ci-workflows, check:ci-workflow-invariants, check:ci-step-env-parity, check:ci-doc-region-parity, check:ci-workflow-orphan-step-keys, check:ci-timeout-headroom, check:ci-swallowed-failures, check:ci-job-aggregation, check:ci-quality-complete. Landed at bfb8630dd. Its own note ('C2 need not raise 45 to any target') held: no new target was invented, and B4 (done this session) is what made this safe to land without racing that box's own fail-open work.
       **Acceptance:** cardinality equality both directions; a `declared` origin whose glob matches
       zero tracked files REDS (such a gate is silently excluded from every `--changed` run); a
       `derived:<tool>` origin must reproduce under re-running. Interlocks with B4: the fail-open
