@@ -13,3 +13,4 @@
 {"kind":"charge","sig":"717f8269b178","why":"proven","at":"2026-09-15T04:09:01Z","br":"0914-1"}
 {"kind":"debt","sig":"fa5e706b032e","blind_spot":"Map coordinate assumptions only break when receipt step ordering changes; static location analysis cannot predict runtime interactions.","surface":"gates","artifact":".ci/gate-bind.ts","charged":12,"at":"2026-09-15T05:56:53Z","br":"0914-1"}
 {"kind":"charge","sig":"fa5e706b032e","why":"capped","at":"2026-09-15T05:56:53Z","br":"0914-1"}
+{"kind":"charge","sig":"b700be953174","why":"proven","at":"2026-09-15T07:19:45Z","br":"0914-1"}
