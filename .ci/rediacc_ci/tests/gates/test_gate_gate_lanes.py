@@ -68,6 +68,7 @@ GONE_YAML = "jobs:\n  quality-static:\n    runs-on: ubuntu-slim\n"
 PROBE = """
 import fs from 'node:fs';
 import { laneCapabilities, placeGate, satisfies, shardPlan } from './scripts/ci-runner/lanes.js';
+import { shardAssignment } from './scripts/gate-bind.js';
 
 const capsOf = (m) => Object.fromEntries(m);
 const real = laneCapabilities(fs.readFileSync('.github/workflows/ci-quality.yml', 'utf-8'));
@@ -96,6 +97,14 @@ const stepIds = (lane, step) =>
   lock
     .filter((e) => e.ci && e.ci.kind === 'step' && e.ci.job === lane && e.ci.step === step)
     .map((e) => e.id);
+
+// T-SCHED B2 D2. `shardAssignment` takes `counts`/`ceilings` as PARAMETERS (not the
+// real SHARD_COUNTS/SHARD_REPLICATED_MAX, which are empty today), so these fixtures can
+// exercise all four shapes -- not-asked, refused-for-no-ceiling, refused-for-exceeding-
+// it, and succeeds -- against the REAL lock without waiting for a lane to actually be
+// declared sharded.
+const assign = (job, counts, ceilings, emitting) =>
+  shardAssignment(job, lock, real, emitting ?? [], counts, ceilings);
 
 process.stdout.write(JSON.stringify({
   real: capsOf(real),
@@ -139,6 +148,29 @@ process.stdout.write(JSON.stringify({
     JSON.stringify(plan('quality-security', 4)) === JSON.stringify(plan('quality-security', 4)),
   heavyFloors: { 'quality-code': heavyFloor('quality-code') },
   lintStepIds: stepIds('quality-code', 'Lint'),
+  // Map does not survive JSON.stringify (it serialises to `{}`), so pull out plain
+  // values before this whole object is stringified once at the end.
+  d2: (() => {
+    const notAsked = assign('quality-static', {}, {});
+    const noCeiling = assign('quality-code', { 'quality-code': 4 }, {});
+    // quality-code's real Lint step (5 ids) is "emitted" here, everything else is not --
+    // a deliberately partial emitting list so `replicated` is neither 0 nor everything,
+    // proving the computation actually reads `emitting` rather than a constant.
+    const partial = assign('quality-code', { 'quality-code': 4 }, { 'quality-code': 1 }, [
+      { step: 'Lint' },
+    ]);
+    const tooTight = assign('quality-code', { 'quality-code': 4 }, { 'quality-code': 0.01 }, [
+      { step: 'Lint' },
+    ]);
+    return {
+      notAsked,
+      noCeilingError: 'error' in noCeiling ? noCeiling.error : null,
+      partialError: 'error' in partial ? partial.error : null,
+      partialReplicated: 'replicated' in partial ? partial.replicated : null,
+      partialLegCount: 'legs' in partial ? partial.legs.size : null,
+      tooTightError: 'error' in tooTight ? tooTight.error : null,
+    };
+  })(),
 }));
 """
 
@@ -701,3 +733,74 @@ def test_a_shardable_lane_still_plans(gate):
     gate.assert_eq(len(plan["shards"]), 3, "quality-static splits into three shards")
     gate.assert_eq(plan["units"], plan["entries"], "quality-static has no mutex or needs merging")
     gate.log_pass("CONTROL: quality-static plans into 3 shards over %d entries" % plan["entries"])
+
+
+def test_a_lane_absent_from_shard_counts_is_not_asked(gate):
+    """T-SCHED B2 D2. `shardAssignment` returning `null` means "nobody asked to shard
+    this lane", which must stay silent (SHARD_COUNTS is empty in the real tree today,
+    and every lane must fall through this path for the mechanism to be inert)."""
+    gate.log_test("a lane absent from counts returns null, not a refusal")
+    gate.assert_eq(
+        probe(gate)["d2"]["notAsked"], None, "an unsharded lane must be null, not an error"
+    )
+    gate.log_pass("a lane absent from SHARD_COUNTS is null (not asked), never a refusal")
+
+
+def test_a_sharded_lane_with_no_ceiling_refuses(gate):
+    """The mandatory declaration. A lane in SHARD_COUNTS with nothing in
+    SHARD_REPLICATED_MAX would ship with no floor on how much of it can run
+    replicated on every leg -- exactly the silent state that let the
+    quality-security mistake happen by hand."""
+    gate.log_test("a lane asked to shard with no declared ceiling refuses")
+    message = probe(gate)["d2"]["noCeilingError"]
+    gate.assert_contains(
+        message, "no matching SHARD_REPLICATED_MAX entry", "a missing ceiling must refuse loudly"
+    )
+    gate.log_pass("a sharded lane with no declared ceiling refuses")
+
+
+def test_replicated_is_computed_from_emitting_not_hardcoded(gate):
+    """THE POINT OF D2. Feed a deliberately PARTIAL `emitting` list (only the Lint
+    step) and prove `replicated` names exactly the ids that step does not cover --
+    not zero, not everything, which is what a stub or a hardcoded answer would give
+    either way."""
+    gate.log_test("replicated is computed from the real emitting set, both directions")
+    d2 = probe(gate)["d2"]
+    lint_ids = set(probe(gate)["lintStepIds"])
+    replicated = set(d2["partialReplicated"])
+    if replicated & lint_ids:
+        gate.log_fail(
+            "replicated %s overlaps the emitted Lint ids %s; those ARE covered by "
+            "`emitting` and must not be flagged" % (sorted(replicated & lint_ids), sorted(lint_ids))
+        )
+    gate.assertions += 1
+    if len(replicated) == 0:
+        gate.log_fail(
+            "replicated is empty; a partial `emitting` list must leave something uncovered"
+        )
+    gate.assertions += 1
+    gate.log_pass(
+        "replicated names %d id(s), none of them the %d Lint id(s) `emitting` covers"
+        % (len(replicated), len(lint_ids))
+    )
+    gate.log_test("a lane that clears its ceiling still returns real legs")
+    if d2["partialLegCount"] is None or d2["partialLegCount"] == 0:
+        gate.log_fail(
+            "partial's leg count is %r; a successful assignment must place every id"
+            % d2["partialLegCount"]
+        )
+    gate.assertions += 1
+    gate.log_pass("a lane clearing its ceiling returns %d assigned leg(s)" % d2["partialLegCount"])
+
+
+def test_exceeding_the_replicated_ceiling_refuses(gate):
+    """The refusal D2 exists for. A near-zero ceiling against quality-code's real
+    (non-trivial) replicated share must refuse, naming the share and the ceiling so
+    the fix is legible without re-deriving the arithmetic."""
+    gate.log_test("a replicated share over its declared ceiling refuses")
+    message = probe(gate)["d2"]["tooTightError"]
+    gate.assert_contains(message, "run OUTSIDE any emitted region", "must name the hazard")
+    gate.assert_contains(
+        message, "Ceiling for quality-code is 1%", "must name the declared ceiling"
+    )
+    gate.log_pass("exceeding the declared replicated ceiling refuses, naming both numbers")

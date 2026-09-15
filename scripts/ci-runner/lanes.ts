@@ -393,6 +393,25 @@ function orderUnit(
 export const SHARD_COUNTS: Readonly<Record<string, number>> = {};
 
 /**
+ * T-SCHED B2 D2. The ceiling on a sharded lane's REPLICATED share -- lock entries whose
+ * `ci.step` gate-bind does not emit inside the lane's region, so no conjunct can ever
+ * reach them and they run on EVERY leg. A fraction in (0, 1], one entry per key in
+ * `SHARD_COUNTS` (`shardAssignment` refuses a lane present in one and absent from the
+ * other, the same both-directions discipline `SHARD_COUNTS` itself is held to).
+ *
+ * WHY THIS HAS TO BE ARITHMETIC AND NOT A HUMAN NOTICING. `quality-security` was hand-
+ * picked as B2's first target on the strength of holding 166 of the lock's then-477
+ * entries, then backed out once `SHARD_COUNTS` populated it and `gate-bind --write` ran:
+ * 149 of those 166 are `Quality-gate unit tests`, one hand-written step outside any
+ * region, so the matrix would have multiplied the lane's single most expensive step by
+ * every leg -- slower than no matrix, and nothing short of running it caught it. A
+ * declared ceiling turns that into a refusal at `--write` time, before a single runner
+ * is added: quality-security's replicated share is ~153/166, about 92%, so any ceiling
+ * under that refuses it without a human having to re-derive the arithmetic by hand.
+ */
+export const SHARD_REPLICATED_MAX: Readonly<Record<string, number>> = {};
+
+/**
  * Shard each named lane, or REFUSE and say why.
  *
  * THE REFUSALS ARE THE POINT, and each of the five exists because its silent

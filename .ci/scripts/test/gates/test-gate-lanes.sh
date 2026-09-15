@@ -35,6 +35,7 @@ OUT="$(
     cd "$REPO_ROOT" && npx tsx - <<'TS' 2>&1
 import fs from 'node:fs';
 import { laneCapabilities, placeGate, satisfies, shardPlan } from './scripts/ci-runner/lanes.js';
+import { shardAssignment } from './scripts/gate-bind.js';
 
 let bad = 0;
 const ck = (label: string, ok: boolean, detail?: unknown): void => {
@@ -99,6 +100,10 @@ ck('satisfies() is a superset test, not equality',
 const lock = JSON.parse(fs.readFileSync('scripts/ci-runner/gates.lock.json', 'utf-8'));
 const laneEntries = (lane: string): string[] =>
   lock.filter((e: any) => e.ci?.kind === 'step' && e.ci.job === lane).map((e: any) => e.id);
+const stepIds = (lane: string, step: string): string[] =>
+  lock
+    .filter((e: any) => e.ci?.kind === 'step' && e.ci.job === lane && e.ci.step === step)
+    .map((e: any) => e.id);
 const planned = (lane: string, n: number) => {
   const r = shardPlan(lock, caps, { [lane]: n });
   return 'error' in r ? null : r.lanes[0];
@@ -261,6 +266,44 @@ ck('CONTROL: a shardable lane still PLANS (quality-static x3)',
      const st = planned('quality-static', 3);
      return st !== null && st.shards.length === 3 && st.units === st.entries;
    })(), refusal('quality-static', 3));
+
+// T-SCHED B2 D2. shardAssignment takes counts/ceilings as PARAMETERS (not the real
+// SHARD_COUNTS/SHARD_REPLICATED_MAX, which are empty today), so fixtures exercise all
+// four shapes against the REAL lock without waiting for a lane to be declared sharded.
+const assign = (job: string, counts: Record<string, number>, ceilings: Record<string, number>, emitting?: unknown[]) =>
+  shardAssignment(job, lock as any, caps, (emitting ?? []) as any, counts, ceilings);
+
+ck('a lane absent from counts returns null, not a refusal',
+   assign('quality-static', {}, {}) === null);
+
+ck('a lane asked to shard with no declared ceiling refuses',
+   (() => {
+     const r = assign('quality-code', { 'quality-code': 4 }, {});
+     return r !== null && 'error' in r && r.error.includes('no matching SHARD_REPLICATED_MAX entry');
+   })());
+
+// A deliberately PARTIAL emitting list (only Lint) so replicated is neither 0 nor
+// everything, proving the computation reads `emitting` rather than a constant.
+const partial = assign('quality-code', { 'quality-code': 4 }, { 'quality-code': 1 }, [{ step: 'Lint' }]);
+ck('replicated names ids the partial emitting set does not cover, never the ones it does',
+   (() => {
+     if (partial === null || 'error' in partial) return false;
+     const lintIds = new Set(stepIds('quality-code', 'Lint'));
+     const overlap = partial.replicated.filter((id: string) => lintIds.has(id));
+     return overlap.length === 0 && partial.replicated.length > 0;
+   })(), partial && !('error' in partial) ? partial.replicated : partial);
+ck('a lane clearing its ceiling still returns real legs',
+   partial !== null && !('error' in partial) && partial.legs.size > 0,
+   partial && !('error' in partial) ? partial.legs.size : partial);
+
+ck('a replicated share over its declared ceiling refuses, naming both numbers',
+   (() => {
+     const r = assign('quality-code', { 'quality-code': 4 }, { 'quality-code': 0.01 }, [{ step: 'Lint' }]);
+     return r !== null && 'error' in r &&
+       r.error.includes('run OUTSIDE any emitted region') &&
+       r.error.includes('Ceiling for quality-code is 1%');
+   })());
+
 console.log(`TOTAL\t${bad}`);
 TS
 )"
@@ -279,4 +322,7 @@ fi
     log_fail "lane derivation: $FAILURES failure(s)"
     exit 1
 }
-log_pass "lane derivation and sharding: 35 assertion(s), including the comment case both ways and nine sharding refusals"
+# MEASURED, not hand-typed: a hardcoded "35" here already went stale once, silently,
+# when T-SCHED B2 added assertions without anyone updating this line.
+ASSERTION_COUNT="$(echo "$OUT" | grep -cE '^PASS')"
+log_pass "lane derivation and sharding: ${ASSERTION_COUNT} assertion(s), including the comment case both ways, nine sharding refusals, and T-SCHED B2's shard-assignment controls"

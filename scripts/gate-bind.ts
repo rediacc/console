@@ -33,6 +33,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   SHARD_COUNTS,
+  SHARD_REPLICATED_MAX,
   laneCapabilities,
   placeGate,
   satisfies,
@@ -455,23 +456,69 @@ export function regionGuard(markerLine: string): string {
  * about which leg holds what. A lane whose plan is REFUSED yields null rather than a
  * partial assignment: emitting some steps with a conjunct and some without would leave the
  * unconjuncted ones running on every leg, which is the failure this exists to prevent.
+ *
+ * T-SCHED B2 D2. `legs` alone hid the `quality-security` mistake: a lock entry whose
+ * `ci.step` is not one of `emitting`'s steps gets a leg from the plan and NO conjunct in
+ * the file, so it runs on every leg while the plan believes it ran once. `replicated`
+ * names exactly those ids, and the caller both prints them (so a quiet exemption cannot
+ * become the norm) and refuses the lane outright once their share of the lane exceeds
+ * `ceilings[job]` -- a null return here means "not asked to shard this lane at all" (job
+ * absent from `counts`); `{ error }` means "asked, and refused".
+ *
+ * `counts`/`ceilings` are PARAMETERS, not `SHARD_COUNTS`/`SHARD_REPLICATED_MAX` read
+ * directly, so this function is a pure function of its arguments the way `shardPlan`
+ * already is -- the one real call site passes the real constants, and a control can pass
+ * fixture data instead. Closing over the module consts was exactly why this function had
+ * "NO selftest control ... exercises the no-shard path only", per this box's own note.
  */
 export function shardAssignment(
   job: string,
   lock: readonly Parameters<typeof shardPlan>[0][number][],
-  caps: Parameters<typeof shardPlan>[1]
-): Map<string, number> | null {
-  const want = SHARD_COUNTS[job];
+  caps: Parameters<typeof shardPlan>[1],
+  emitting: readonly Emitting[],
+  counts: Readonly<Record<string, number>> = SHARD_COUNTS,
+  ceilings: Readonly<Record<string, number>> = SHARD_REPLICATED_MAX
+): { legs: Map<string, number>; replicated: string[] } | { error: string } | null {
+  const want = counts[job];
   if (want === undefined) return null;
   const plan = shardPlan(lock, caps, { [job]: want });
-  if ('error' in plan) return null;
-  const out = new Map<string, number>();
+  if ('error' in plan) return { error: plan.error };
+  const legs = new Map<string, number>();
   for (const lane of plan.lanes) {
     for (const shard of lane.shards) {
-      for (const id of shard.ids) out.set(id, shard.index);
+      for (const id of shard.ids) legs.set(id, shard.index);
     }
   }
-  return out;
+  const emittedSteps = new Set(emitting.map((e) => e.step));
+  const laneEntries = lock.filter((e) => e.ci.kind === 'step' && e.ci.job === job);
+  // `?? ''` for a step-less "step kind" entry: the type does not forbid it structurally
+  // (`ShardInput.ci.step` is optional), and an empty string never matches a real emitted
+  // step name, so such an entry correctly counts as replicated rather than type-erroring.
+  const replicated = laneEntries
+    .filter((e) => !emittedSteps.has(e.ci.step ?? ''))
+    .map((e) => e.id);
+  const ceiling = ceilings[job];
+  if (ceiling === undefined) {
+    return {
+      error:
+        `lane ${job} is in SHARD_COUNTS with no matching SHARD_REPLICATED_MAX entry. ` +
+        'A sharded lane needs a declared ceiling on how much of it can run replicated on ' +
+        'every leg, or nothing catches the next quality-security-shaped mistake.',
+    };
+  }
+  const share = laneEntries.length === 0 ? 0 : replicated.length / laneEntries.length;
+  if (share > ceiling) {
+    return {
+      error:
+        `lane ${job}: ${replicated.length} of ${laneEntries.length} entries ` +
+        `(${(share * 100).toFixed(0)}%) run OUTSIDE any emitted region, so no conjunct can ` +
+        `reach them and they would run on every leg -- a matrix that multiplies the ` +
+        `dominant work is slower than no matrix. Ceiling for ${job} is ` +
+        `${(ceiling * 100).toFixed(0)}%. Give the replicated steps a declaration so ` +
+        'gate-bind can emit them, or drop the lane from SHARD_COUNTS.',
+    };
+  }
+  return { legs, replicated };
 }
 
 export function emitStep(b: Emitting, guard = 'setup'): string[] {
@@ -1785,8 +1832,23 @@ function main(argv: string[]): void {
     // as before, which is what keeps this change inert for the nine unsharded lanes.
     const shardMap = new Map<string, ReadonlyMap<string, number>>();
     for (const job of Object.keys(SHARD_COUNTS)) {
-      const assigned = shardAssignment(job, lockEntries, caps);
-      if (assigned !== null) shardMap.set(job, assigned);
+      const assigned = shardAssignment(job, lockEntries, caps, byLane.get(job) ?? []);
+      if (assigned === null) continue;
+      if ('error' in assigned) {
+        console.error(`✗ ${job}: ${assigned.error}`);
+        process.exit(1);
+      }
+      // PRINTED EVERY RUN a lane is sharded, never only on refusal: a quiet exemption is
+      // how a gate stops meaning its name, and D2 exists because the quality-security
+      // mistake was silent right up until someone ran the numbers by hand.
+      if (assigned.replicated.length > 0) {
+        console.log(
+          `note: ${job} shards with ${assigned.replicated.length} entr${assigned.replicated.length === 1 ? 'y' : 'ies'} ` +
+            'running replicated on every leg (no emitted step to conjunct):'
+        );
+        for (const id of assigned.replicated) console.log(`    ${id}`);
+      }
+      shardMap.set(job, assigned.legs);
     }
     const { text, lanes, dropped } = rewriteRegions(workflow, scoped, only, shardMap);
     // REFUSE TO SILENTLY DELETE A STEP THE MANIFEST STILL POINTS AT. A step inside the
