@@ -5691,8 +5691,16 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       Verified: frozen span (lines 9-233) byte-identical to HEAD, `## Session Defaults`
       still at 9, `## Architecture` still at 234 -- clause 3 still holds.
       Clauses 1 and 2 still do NOT hold: 519 > 440 and 31961 > 30720.
-      **Still open: Versioning, Release Channels, and the `cli-commands` region** (the
-      last needs a new gen-docs provider, not just a doc -- bigger than the other three).
+      **A SECOND HOME WRITTEN, 2026-09-15: Versioning.** New
+      `docs/agent-reference/versioning.md`, verified against the four real injection sites
+      (`packages/cli/bundle.mjs:94`, `packages/www/astro.config.mjs:5-8,184`,
+      `.ci/scripts/build/build-renet.sh:215,224`) rather than copied from CLAUDE.md's prior
+      table, plus `bump.sh`'s two real call sites (`ci-build-docker.yml`, `ci-quality.yml`,
+      both push-to-main-gated -- CLAUDE.md's "CLI... npm pack tarball name" claim confirmed
+      accurate for the first). **519 -> 512 lines, 31961 -> 31682 bytes.** Frozen span
+      still byte-identical, headers unmoved.
+      **Still open: Release Channels and the `cli-commands` region** (the
+      last needs a new gen-docs provider, not just a doc -- bigger than the other two).
 - [x] **W11 P5c BLOCKED ON W8** The `env-manifest` region has no home until W8 P2 exists. Record
     (ticked) 2026-09-15T07:22:49Z by f4da5c2e: Verified live: env-manifest region now has a home, built by W8 P3 (not P5c itself) once W8 P2 unblocked it. check:ci-doc-region-parity rc=0, region 'env-manifest' at scripts/data/doc-registry.md:1076 matches with 904 rows, 14/14 providers used. P5c's entire scope was to record the blocked status until W8 P2 existed; W8 P2 landed 2026-09-09 and W8 P3 built the region the same day, so the blocker this box named is resolved and the box closes on that evidence rather than new work.
       it as blocked so P5 is not ticked at three of four.

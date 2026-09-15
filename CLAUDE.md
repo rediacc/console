@@ -390,20 +390,13 @@ cd packages/www && npm run dev
 
 ## Versioning
 
-Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits.
+Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits; injected
+at build time only, never stored in source, so every `package.json` carries the
+`0.0.0-dev` placeholder and none is published to npm.
 
-`resolve-version.sh --current` reads the latest tag and `--bump-type patch|minor|major`
-calculates the next. The version is injected at build time and never stored in source, so
-every `package.json` carries the `0.0.0-dev` placeholder and none is published to npm.
-
-| Component | Injection method |
-|-----------|-----------------|
-| CLI binary | `CLI_VERSION` env -> esbuild `--define:__CLI_VERSION__` |
-| CLI Docker | Same as CLI binary (bundle built with env) |
-| www footer | `APP_VERSION` env / git tag fallback |
-| renet (Go) | `-ldflags "-X main.Version=..."` |
-
-`bump.sh` is still used by the CLI for the npm pack tarball name, on push-to-main only.
+**[docs/agent-reference/versioning.md](docs/agent-reference/versioning.md)** carries
+`resolve-version.sh`'s mechanics, the per-component injection table (CLI, CLI Docker, www,
+renet), and `bump.sh`'s two push-to-main-only call sites.
 
 ## Release Channels
 
