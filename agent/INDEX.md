@@ -274,7 +274,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-ci-trace-no-pr-branch.md` | done | 171 | 0 | 0 | 9783 |
 | `agent/PLAN-ci-vacuity-baseline-registry.md` | ready | 255 | 1 | 14 | 16618 |
 | `agent/PLAN-ci-watch-enforcement.md` | draft | 283 | 0 | 0 | 15625 |
-| `agent/PLAN-citation-fragility.md` | done | 355 | 0 | 6 | 22103 |
+| `agent/PLAN-citation-fragility.md` | done | 377 | 0 | 6 | 22694 |
 | `agent/PLAN-cli-em-dash-lint-gate.md` | compacted | 70 | 0 | 0 | 4353 |
 | `agent/PLAN-cold-path.md` | compacted | 74 | 0 | 0 | 4055 |
 | `agent/PLAN-commit-author-identity.md` | draft | 281 | 3 | 10 | 18031 |
@@ -289,7 +289,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-fix-ci-contention-aware-timeouts.md` | done | 354 | 0 | 0 | 20483 |
 | `agent/PLAN-fix-german-translation-artifacts.md` | compacted | 61 | 0 | 0 | 3126 |
 | `agent/PLAN-fix-in-session-rule.md` | compacted | 69 | 0 | 0 | 3594 |
-| `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | done | 309 | 0 | 0 | 19651 |
+| `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | done | 319 | 0 | 0 | 19963 |
 | `agent/PLAN-gh-swallow-gates-audit.md` | done | 497 | 0 | 6 | 49920 |
 | `agent/PLAN-git-history-media-rewrite.md` | ready | 345 | 0 | 0 | 16732 |
 | `agent/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 71 | 0 | 0 | 3940 |
