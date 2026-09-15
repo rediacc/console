@@ -340,7 +340,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-trap-enforcement.md` | w | 820 | 0 | 0 | 49274 |
 | `agent/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 0 | 4529 |
 | `agent/PLAN-unify-trap-corpus.md` | compacted | 54 | 0 | 0 | 2755 |
-| `agent/PLAN-w7p4w-docker-cutover.md` | partially | 566 | 9 | 3 | 35585 |
+| `agent/PLAN-w7p4w-docker-cutover.md` | stages | 845 | 0 | 12 | 53170 |
 | `agent/PLAN-w7p5a-deploy-release-port.md` | draft | 310 | 0 | 8 | 21457 |
 | `agent/PLAN-w9p2-script-relocation.md` | draft | 151 | 10 | 0 | 25987 |
 | `agent/PLAN-wire-account-vitest-ci.md` | compacted | 52 | 0 | 0 | 3048 |
