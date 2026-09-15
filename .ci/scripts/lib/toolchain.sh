@@ -371,9 +371,21 @@ _toolchain_acquire_shfmt() {
     mkdir -p "$cache"
     # GOTOOLCHAIN=local: without it a tool's own go directive can drag in a
     # different toolchain and 404 on a runner without network to fetch it.
+    # A FAILED `go install` FALLS BACK TO THE DOWNLOAD, it does not end the
+    # attempt. The branch above chooses this path on `command -v go`, i.e. on
+    # go being PRESENT -- but the pin check asks whether go is the RIGHT
+    # version, and those are different questions. Measured 2026-09-15 in the CI
+    # `quality-security` lane: its toolchain report said `go 1.26.6 absent
+    # MISMATCH` while `command -v go` still found a go, so acquisition took this
+    # branch, `go install` failed, and shfmt came back unacquirable -- exit 77,
+    # eight differential cases comparing 77 against 0. The `quality-static` lane
+    # in the same run has NO go at all, took the download path, and had shfmt at
+    # v3.13.1 in 0.6s. The download was always the answer for that lane; it just
+    # was not reachable from this one.
     GOTOOLCHAIN=local GOBIN="$cache" go install "mvdan.cc/sh/v3/cmd/shfmt@v${want}" >/dev/null 2>&1 || {
         echo "toolchain: go install shfmt@v$want failed" >&2
-        return 1
+        _toolchain_download_shfmt "$want" "$cache" "$bin"
+        return $?
     }
     [[ -x "$bin" ]] || return 1
     printf '%s' "$bin"

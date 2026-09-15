@@ -952,7 +952,12 @@ def check(tool: str, *, pins: dict[str, str] | None = None, path: str | None = N
     return CheckResult(tool, binary, 0)
 
 
-def report(verify: bool = False, *, pins: dict[str, str] | None = None) -> tuple[list[str], int]:
+def report(
+    verify: bool = False,
+    *,
+    pins: dict[str, str] | None = None,
+    env: dict[str, str] | None = None,
+) -> tuple[list[str], int]:
     """(the lines to print, the rc). `toolchain_report` (:184-209).
 
     `verify=False` ALWAYS returns 0, matching the twin's `[[ "$strict" ==
@@ -964,9 +969,19 @@ def report(verify: bool = False, *, pins: dict[str, str] | None = None) -> tuple
     of this section. The port keeps the function honest and makes its CLI honour
     it, so `python3 -m rediacc_ci.core.toolchain verify` exits 1 where
     `toolchain.sh --verify` exits 0.
+
+    `env` IS THREADED THROUGH TO `lane()`, and the omission was a real CI-only
+    divergence. `lane()` and `cache_dir()` have always taken an env; this one
+    read `os.environ` unconditionally, so the differential handed the TWIN a
+    controlled `diff.env_for()` (no `GITHUB_ACTIONS`, hence `lane: host`) while
+    the port read the ambient environment. On a developer machine both say
+    `host` and the test passes; the first time it ran inside real GitHub Actions
+    -- 2026-09-15, the first run in this wave that let `quality-security` finish
+    -- the twin said `host`, the port said `ci`, and four cases failed on a
+    one-line diff. Reproducible anywhere with `GITHUB_ACTIONS=true pytest`.
     """
     table = load_pins() if pins is None else pins
-    out = ["lane: %s" % lane(), ""]
+    out = ["lane: %s" % lane(env), ""]
     out.append("  %-11s %-9s %-15s %s" % ("tool", "pinned", "actual", "status"))
     rc = 0
     for tool in REPORT_TOOLS:
@@ -1122,7 +1137,15 @@ def acquire_shfmt(want: str, *, env: dict[str, str] | None = None) -> tuple[str 
         env=child,
     )
     if proc.returncode != 0:
-        return None, ["toolchain: go install shfmt@v%s failed" % want]
+        # FALLS BACK TO THE DOWNLOAD, matching the twin. `command -v go` asks
+        # whether go is PRESENT; the pin check asks whether it is the RIGHT
+        # version. CI's quality-security lane answered yes and no respectively,
+        # so this branch ran, failed, and made shfmt unacquirable while the
+        # static lane -- with no go at all -- downloaded it in 0.6s. The message
+        # is emitted BEFORE the fallback's own, because the twin echoes then
+        # calls, and the differential compares the stream in order.
+        found, messages = download_shfmt(want, cache, binary, env=env)
+        return found, ["toolchain: go install shfmt@v%s failed" % want, *messages]
     if not os.access(str(binary), os.X_OK):
         # The twin's `[[ -x "$bin" ]] || return 1` at :378 is SILENT, and that
         # is reproduced: a message here would be a line the differential sees on

@@ -809,7 +809,7 @@ def test_report_matches_the_twin(
     shell_env = diff.env_for(PATH=value)
     rc, out, _err = diff.bash_streams("%s; toolchain_report --verify" % SOURCE_SHIM, env=shell_env)
     monkeypatch.setenv("PATH", value)
-    lines, prc = toolchain.report(True)
+    lines, prc = toolchain.report(True, env=shell_env)
     assert out == "".join(line + "\n" for line in lines)
     assert rc == prc
 
@@ -821,7 +821,7 @@ def test_report_without_verify_is_information_and_never_a_verdict(
     shell_env = diff.env_for(PATH=SYSTEM_PATH)
     rc, out, _err = diff.bash_streams("%s; toolchain_report" % SOURCE_SHIM, env=shell_env)
     monkeypatch.setenv("PATH", SYSTEM_PATH)
-    lines, prc = toolchain.report(False)
+    lines, prc = toolchain.report(False, env=shell_env)
     assert (rc, prc) == (0, 0)
     assert "MISMATCH" in out, "the control is broken: nothing mismatched, so rc 0 proves nothing"
     assert out == "".join(line + "\n" for line in lines)
