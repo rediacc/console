@@ -5678,6 +5678,21 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       **To finish this box someone must WRITE the four missing homes first**, which is what
       the operator declined to do in this pass. Until then the remaining 80 lines cannot be
       cut without deleting the only copy of something.
+      **ONE OF THE FOUR HOMES WRITTEN, 2026-09-15: CI/CD Pipeline.** New
+      `docs/agent-reference/release-process.md`, verified against the two release workflows
+      directly (`.github/workflows/cd-v2.yml`, `.github/workflows/promote-stable.yml`), not
+      copied from CLAUDE.md's prior wording -- and it found three dispatch inputs
+      (`publish_stable`, `deploy_workers_only`, `allow_stale_ci_run_id`) that were never in
+      CLAUDE.md at all. Cut CLAUDE.md's CI/CD Pipeline section to the diagram plus a
+      pointer, keeping the same shape as the other cut sections (a few load-bearing lines,
+      then the home). **520 -> 519 lines, 32243 -> 31961 bytes.** Small: the diagram itself
+      (6 lines) was judged worth keeping inline rather than moved, so this section shrank
+      by less than its own "CI/CD Pipeline (6)" budget line assumed.
+      Verified: frozen span (lines 9-233) byte-identical to HEAD, `## Session Defaults`
+      still at 9, `## Architecture` still at 234 -- clause 3 still holds.
+      Clauses 1 and 2 still do NOT hold: 519 > 440 and 31961 > 30720.
+      **Still open: Versioning, Release Channels, and the `cli-commands` region** (the
+      last needs a new gen-docs provider, not just a doc -- bigger than the other three).
 - [x] **W11 P5c BLOCKED ON W8** The `env-manifest` region has no home until W8 P2 exists. Record
     (ticked) 2026-09-15T07:22:49Z by f4da5c2e: Verified live: env-manifest region now has a home, built by W8 P3 (not P5c itself) once W8 P2 unblocked it. check:ci-doc-region-parity rc=0, region 'env-manifest' at scripts/data/doc-registry.md:1076 matches with 904 rows, 14/14 providers used. P5c's entire scope was to record the blocked status until W8 P2 existed; W8 P2 landed 2026-09-09 and W8 P3 built the region the same day, so the blocker this box named is resolved and the box closes on that evidence rather than new work.
       it as blocked so P5 is not ticked at three of four.

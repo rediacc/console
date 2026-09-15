@@ -427,19 +427,18 @@ audio-cache exception to the Cache Rule, the sync scripts, and both consequences
 
 ## CI/CD Pipeline
 
-Single pipeline: CI validates everything BEFORE publish. CD is a thin promote step.
+Single pipeline: CI validates everything BEFORE publish. CD is a thin promote step, and
+if CI fails, CD never triggers.
 
 ```
 CI: quality -> build -> dry-run -> validate install (6 platforms) -> ci-complete
 CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 -> deploy edge
 ```
 
-Install validation runs pre-publish against R2 staging artifacts. Docker is validated on push-to-main only (PR images are dry-run). If CI fails, CD never triggers.
-
-Release dispatch (EDGE): `gh workflow run "Release to Edge" -f ci_run_id=<id> -f release_mode=patch|retry`
-(the workflow declares only `patch` and `retry`; `minor`/`major` are rejected by GitHub)
-Hotfix (edge + stable): `gh workflow run "Release to Edge" -f ci_run_id=<id> -f release_mode=patch -f publish_stable=true`
-Production (eu/us/asia): `Release to Production` — daily cron after the 7-day soak, or dispatch with `-f force=true`.
+**[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries
+`release_mode`'s semantics (GitHub itself rejects anything but `patch`/`retry`), the hotfix
+and workers-only dispatch inputs, and the 7-day soak / `force` behavior on the production
+promote.
 
 ## Quality Gates and the BLOCKER convention
 
