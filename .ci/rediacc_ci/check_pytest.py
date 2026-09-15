@@ -138,7 +138,29 @@ MIN_TESTS = 150
 # and is not pretending to: if the run genuinely needs longer than the job allows,
 # the job's `timeout-minutes` is the number to argue about, not this one.
 # `check:ci-inner-timeout-reachable` now enforces the relationship.
-RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 1080)
+#
+# 1080 -> 1800 on 2026-09-15, and this is the case the paragraph above predicted:
+# "if the run genuinely needs longer than the job allows, the job's
+# `timeout-minutes` is the number to argue about, not this one." It was argued
+# and raised, 20 -> 45 minutes, so this timer moves with it and stays reachable.
+#
+#     2026-09-07    810.16s   what 1080 was sized against
+#     2026-09-15   1039.93s   run 34970782616 -- 96% of 1080, still passing
+#     2026-09-15    >1080s    run 35000491823 -- KILLED at 92% of the corpus,
+#                             40 failures seen and no verdict reached
+#
+# THE SUITE REALLY DID GET SLOWER, and for a good reason rather than a bad one:
+# in `quality-security` shfmt acquisition used to fail fast with exit 77, so
+# eight differentials returned without running shfmt at all. They now acquire it
+# and do the work. That is more coverage per run, and it costs seconds.
+#
+# 1800 = 30 minutes, under the job's 2700s ceiling with fifteen minutes left for
+# the twenty-two steps around it -- including `Quality-gate unit tests`, which
+# runs AFTER this one and has been cancelled on every run of this wave, so its
+# cost is still unknown. As before: this does not make the suite faster and does
+# not pretend to. It buys a VERDICT where there was an opaque kill, and the real
+# fix is still to split what this gate is billed for.
+RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 1800)
 
 # HOW MANY WORKERS, and it is not `auto`. `-n auto` takes every core (24 here)
 # and oversubscribes against the ci-runner's own 22-slot pool, which is already

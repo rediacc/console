@@ -1931,7 +1931,33 @@ jobs:
     # tests + submodule checkout + upstream freshness queries) is a separate
     # follow-up; the capped runner just makes it a coin flip.
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 20 -> 45 on 2026-09-15, and the number is a MEASUREMENT BUDGET rather than
+    # a claim that the job is healthy. Its `Python package tests` step is
+    # `check:ci-pytest`, whose own kill timer must sit below this ceiling
+    # (`check:ci-inner-timeout-reachable`), and the suite has walked into it:
+    #
+    #     2026-09-07   810.16s   what RUN_TIMEOUT_S=1080 was sized against
+    #     2026-09-15   1039.93s  run 34970782616 -- 96% of the timer, still passing
+    #     2026-09-15   >1080s    run 35000491823 -- KILLED at 92% of the corpus
+    #
+    # The last step up is partly this wave's own doing and is the RIGHT kind of
+    # slowdown: shfmt acquisition used to fail fast with exit 77 (CANNOT_RUN) in
+    # this lane, so eight differentials returned instantly without running shfmt
+    # at all. They now acquire it and do the work they always should have, and
+    # the "Install ruff" step added above will do the same for seven more.
+    #
+    # TWO THINGS ARE STILL UNMEASURED, which is why the headroom is wide rather
+    # than tight. The suite's true wall time is unknown -- 1080s only proves it
+    # is MORE than that -- and the `Quality-gate unit tests` step after it has
+    # been cancelled on every run of this wave, so it has never reported a
+    # duration at all. A tight ceiling here would only move the opaque cancel one
+    # step to the right. Tighten both once they have numbers.
+    #
+    # `check:ci-timeout-headroom` is unaffected: its baseline
+    # (.ci/scripts/quality/job-timeout-baseline.json) tracks only
+    # `Validate Promotion` and `Stage Artifacts`, and enforces a MINIMUM headroom
+    # of 1.5x with no upper bound.
+    timeout-minutes: 45
     # Checkout plus local gates; the private submodules come in on the
     # readonly-preset App token. The github.token uses left in this job are
     # public or global endpoints (release freshness, /advisories, external
