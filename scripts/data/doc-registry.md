@@ -823,7 +823,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/ci | 25 | .sh 15, .cjs 9, .py 1 |
 | .ci/scripts/ci/profiler | 3 | .sh 2, .awk 1 |
 | .ci/scripts/deploy | 27 | .sh 27 |
-| .ci/scripts/docker | 3 | .sh 3 |
+| .ci/scripts/docker | 7 | .py 4, .sh 3 |
 | .ci/scripts/docs | 2 | .mjs 2 |
 | .ci/scripts/env | 1 | .sh 1 |
 | .ci/scripts/housekeeping | 7 | .sh 6, .py 1 |
