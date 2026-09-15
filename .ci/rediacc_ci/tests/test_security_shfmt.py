@@ -319,7 +319,43 @@ def real_scope_hashes() -> dict[str, str]:
     return out
 
 
+def _warm_shfmt() -> None:
+    """Acquire shfmt into the cache the SUBJECTS use, before either is measured.
+
+    WITHOUT THIS THE REAL-TREE CASE MEASURES RUN ORDER. `_run_real` runs the twin
+    first and the port second into a cache they SHARE
+    (`${CI_TEMP:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}}/rediacc-toolchain/shfmt-<v>`,
+    toolchain.sh:258). Whoever runs first pays for acquisition and says so on
+    stderr; the second finds it cached and is silent.
+
+    That stayed invisible while acquisition simply FAILED in this lane -- both
+    sides returned exit 77 and agreed about it. `b3a53cb06` made a failed
+    `go install` fall back to the download, so acquisition now SUCCEEDS, and the
+    twin started emitting `toolchain: go install shfmt@v3.13.1 failed` (its
+    first, honest attempt) where the port, running second into a warm cache,
+    emitted nothing. Measured in run 35009582358: `assert '' == 'toolchain: g...
+    13.1 failed\n'`. Fixing acquisition PROMOTED an ordering artifact that had
+    been hidden behind a shared failure -- errors stack.
+
+    Warmed by running a SUBJECT under the same env rather than by calling the
+    library in-process, because the cache path depends on the environment and an
+    in-process call would resolve it against pytest's rather than the subjects'.
+    """
+    env = differential.env_for(PYTHONDONTWRITEBYTECODE="1")
+    env["PYTHONPATH"] = str(ROOT / ".ci")
+    subprocess.run(
+        ["python3", str(PORT)],
+        env=env,
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=600,
+    )
+
+
 def _run_real() -> tuple[tuple, tuple]:
+    _warm_shfmt()
     results = []
     for side, argv in (("old", ["bash", str(TWIN)]), ("new", ["python3", str(PORT)])):
         env = differential.env_for(PYTHONDONTWRITEBYTECODE="1")

@@ -46,7 +46,6 @@ K=5 LEDGER: `.ci/shadow/w7p6-actionlint.observations.jsonl`.
 
 from __future__ import annotations
 
-import contextlib
 import hashlib
 import os
 import pathlib
@@ -267,7 +266,7 @@ def _workflow_hashes() -> dict[str, str]:
     return {p: hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest() for p in targets}
 
 
-def _warm_actionlint() -> None:
+def _warm_actionlint(env_extra: dict[str, str] | None = None) -> None:
     """Put actionlint in the shared cache BEFORE either side runs.
 
     WITHOUT THIS THE TEST MEASURES RUN ORDER, NOT THE TWO IMPLEMENTATIONS. Both
@@ -290,15 +289,44 @@ def _warm_actionlint() -> None:
     case (`assert "fetching actionlint" in old[2]`), which drives it against a
     scratch cache on purpose.
 
+    IT WARMS BY RUNNING A SUBJECT, NOT BY CALLING ensure_actionlint() IN-PROCESS,
+    and the difference is the whole fix. The cache is
+    `${CI_TEMP:-${RUNNER_TEMP:-/tmp}}/actionlint-<version>` (actionlint.sh:55,
+    and common.sh exports CI_TEMP from RUNNER_TEMP at source time). An in-process
+    warm-up resolves that against PYTEST's environment, while the subjects get
+    `differential.env_for`, which carries only PATH/HOME/LC_ALL/LANG. On a
+    developer machine RUNNER_TEMP is unset in both, so the two agree by accident
+    and the warm-up worked; on a GitHub runner RUNNER_TEMP is set for pytest and
+    absent from env_for, so the warm-up filled one cache and the subjects read
+    another. That is exactly how this case still failed in run 35009582358 after
+    a first attempt at fixing it -- the fix had the right idea and the wrong
+    environment, which is the same mistake this file is full of.
+
+    Running the port as a subprocess under the SAME env cannot get that wrong:
+    the cache is resolved by the code under test, from the environment the
+    measured runs will use, rather than recomputed here from a path this file
+    would have to guess.
+
     A warm-up that cannot reach the network is left to the subjects, which then
     BOTH fail to fetch and agree about that too.
     """
-    with contextlib.suppress(SystemExit):
-        port.ensure_actionlint(port.actionlint_version(), port.actionlint_checksums())
+    env = differential.env_for(PYTHONDONTWRITEBYTECODE="1")
+    env["PYTHONPATH"] = str(ROOT / ".ci")
+    if env_extra:
+        env.update(env_extra)
+    subprocess.run(
+        ["python3", str(PORT)],
+        env=env,
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=600,
+    )
 
 
 def _run_real(env_extra: dict[str, str] | None = None) -> tuple[tuple, tuple]:
-    _warm_actionlint()
+    _warm_actionlint(env_extra)
     results = []
     for side, argv in (("old", ["bash", str(TWIN)]), ("new", ["python3", str(PORT)])):
         env = differential.env_for(PYTHONDONTWRITEBYTECODE="1")
