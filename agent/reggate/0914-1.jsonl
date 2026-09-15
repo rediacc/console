@@ -14,3 +14,6 @@
 {"kind":"debt","sig":"fa5e706b032e","blind_spot":"Map coordinate assumptions only break when receipt step ordering changes; static location analysis cannot predict runtime interactions.","surface":"gates","artifact":".ci/gate-bind.ts","charged":12,"at":"2026-09-15T05:56:53Z","br":"0914-1"}
 {"kind":"charge","sig":"fa5e706b032e","why":"capped","at":"2026-09-15T05:56:53Z","br":"0914-1"}
 {"kind":"charge","sig":"b700be953174","why":"proven","at":"2026-09-15T07:19:45Z","br":"0914-1"}
+{"kind":"charge","sig":"499ad48ca641","why":"proven","at":"2026-09-15T10:36:24Z","br":"0914-1"}
+{"kind":"debt","sig":"5fbcbc0a4a34","blind_spot":"No instrumentation detected redundant GitHub API calls in claude-attribution. Module was not verified to avoid requesting data already present in payload arguments.","surface":"gates","artifact":"","charged":15,"at":"2026-09-15T10:41:21Z","br":"0914-1"}
+{"kind":"charge","sig":"5fbcbc0a4a34","why":"capped","at":"2026-09-15T10:41:21Z","br":"0914-1"}
