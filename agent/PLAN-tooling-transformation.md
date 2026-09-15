@@ -4160,7 +4160,8 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       true -- `gate-bind --write` said "already matches" and `check:ci-parity` went rc=1
       naming a step no workflow had. The header has to arrive WITH the entry, not before and
       not after.
-- [ ] **B4 S** The `ci-quick` job and **fail-open** scoping. Only 45 of 458 entries declare
+- [x] **B4 S** The `ci-quick` job and **fail-open** scoping. Only 45 of 458 entries declare
+    (ticked) 2026-09-15T07:33:54Z by f4da5c2e: Verified live, all three pieces: (1) scoping -- check:ci-changed-selection rc=0, 475 gates (46 path-scoped, 429 always-selected), empty-set refusal control passes; (2) ci-quick job -- live in .github/workflows/ci-quality.yml:146, npm run ci:quick -- --list reproduces '383 gate(s) planned...selftest ok'; (3) the tautology-guard hole the box's own prose said was left for 'whoever next touches that gate' (AGGREGATE_RUN missing ci:quick/ci:serial and the --flag bypass) -- already fixed same-day in commit 3e9d402fb ('a gate id that said ci twice, and a tautology guard --silent walked past'), confirmed live in scripts/gates/check-ci-parity.ts:484 and check:ci-parity rc=0. The box's own closing note was stale on this one point (said scoping's 'unfinished business' was still open); the code already closed it, just never reflected back into the prose. All three legs verified, no third state, box closes.
       `paths`, so scoping by `paths` fails OPEN for the other 413. **Acceptance:** a gate with no
       `paths` is selected for every non-empty change set; an empty change set must REFUSE rather
       than select nothing ("nothing changed" and "the differ broke" are the same shape).
