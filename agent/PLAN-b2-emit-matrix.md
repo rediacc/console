@@ -293,7 +293,7 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
       just before `rewriteRegions` (`scripts/gate-bind.ts:1791`); refuse in both directions;
       leave `name:`/`runs-on:`/`timeout-minutes:` literal. Ask the operator before this lands
       against any real lane, per the box's branch-protection caveat.
-      (ticked) 2026-09-15 by d778be9d: landed `9d2988b5c` ("T-SCHED B2 D3, refuse a shard conjunct
+      (ticked) 2026-09-15 by d778be9d: landed `c8c5932f5` ("T-SCHED B2 D3, refuse a shard conjunct
       with no strategy block"). `rewriteStrategyRegions` exists at `scripts/gate-bind.ts:904`, with its
       own selftest block explicitly tagged `T-SCHED B2 D3`. Landing against a REAL lane (not just
       the mechanism) still needs the operator ask per the box's caveat -- not done, and not this
@@ -305,14 +305,14 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
       `check:ci-quality-complete -- --receipts <dir>` (the `--receipts` consumer already exists,
       `scripts/gates/check-quality-complete.ts:410-419`, verify the receipt shape matches
       `ShardReceipt` at `:96-106` exactly).
-      (ticked) 2026-09-15 by d778be9d: landed across `a8c5a905d`/`cd0ae3fcf`/`08c65a1d6`/`19f8a6f7c`/
-      `f95d7f9eb` ("T-SCHED B2 D4 ... closing D4 in full"). `jobLockIdMap` exists at
+      (ticked) 2026-09-15 by d778be9d: landed across `0a101dc66`/`b1468eba1`/`08c65a1d6`/
+      `ac61c8f68` ("T-SCHED B2 D4 ... closing D4 in full"). `jobLockIdMap` exists at
       `scripts/gate-bind.ts:574`, with a documented, explicitly-scoped-narrower gap (one entry per GATE
       not per step, recorded as non-live today since no header-declared gate currently shares a
       step) -- not a defect, a stated boundary.
 - [ ] D5a: add the static clause asserting, for each `SHARD_COUNTS` lane, the job's
       `matrix.shard` list equals `[1..N]` exactly, both directions.
-      PARTIAL 2026-09-15 by d778be9d: D5's FIRST clause landed (`79800a5df`/`b7d139ce0`,
+      PARTIAL 2026-09-15 by d778be9d: D5's FIRST clause landed (`b7d139ce0`,
       "re-assert the strategy shape from the aggregator side" -- `check:ci-quality-complete` now
       independently re-runs `rewriteStrategyRegions` against the live workflow, 3 new selftest
       controls, 25 total). The exact `[1..N]` static-clause wording this task describes was not
@@ -323,7 +323,7 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
       `scripts/ci-runner/manifest.ts:4966`) onto a lane that can never be sharded (e.g.
       `quality-branch`); this is a driver-only `package.json`/`manifest.ts`/workflow-step edit,
       one writer, landed in the same commit per invariant 13.
-      ATTEMPTED AND REVERTED 2026-09-15, same session as D5's first clause (`79800a5df`'s own
+      ATTEMPTED AND REVERTED 2026-09-15, same session as D5's first clause (`b7d139ce0`'s own
       message): moving `lane: quality-code` to `quality-branch` took `check:ci-gate-bind` from
       clean to two real findings (quality-branch lacks node; no matching workflow step there,
       one exists in quality-code "by coincidence or design"). Reverted rather than guessed under
