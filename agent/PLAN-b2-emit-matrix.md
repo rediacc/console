@@ -285,7 +285,7 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
       by name and lane share; add `SHARD_REPLICATED_MAX` beside `SHARD_COUNTS`; refuse when the
       replicated share exceeds the declared ceiling.
       (ticked) 2026-09-15 by d778be9d: landed `3fdad41b2` ("T-SCHED B2 D2, refuse the id/step gap
-      instead of emitting it"). `SHARD_REPLICATED_MAX` exists at `lanes.ts:412`; `shardAssignment`
+      instead of emitting it"). `SHARD_REPLICATED_MAX` exists at `scripts/ci-runner/lanes.ts:412`; `shardAssignment`
       is parameterized on `counts`/`ceilings` rather than closing over the module consts, exactly
       so a control can drive it with fixture data (see its own docstring).
 - [x] D3: implement `rewriteStrategyRegions(workflow, counts)` in `scripts/gate-bind.ts`; new
@@ -294,7 +294,7 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
       leave `name:`/`runs-on:`/`timeout-minutes:` literal. Ask the operator before this lands
       against any real lane, per the box's branch-protection caveat.
       (ticked) 2026-09-15 by d778be9d: landed `9d2988b5c` ("T-SCHED B2 D3, refuse a shard conjunct
-      with no strategy block"). `rewriteStrategyRegions` exists at `gate-bind.ts:904`, with its
+      with no strategy block"). `rewriteStrategyRegions` exists at `scripts/gate-bind.ts:904`, with its
       own selftest block explicitly tagged `T-SCHED B2 D3`. Landing against a REAL lane (not just
       the mechanism) still needs the operator ask per the box's caveat -- not done, and not this
       checklist item's job either (SHARD_COUNTS stays empty, see the box's own note above).
@@ -307,7 +307,7 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
       `ShardReceipt` at `:96-106` exactly).
       (ticked) 2026-09-15 by d778be9d: landed across `a8c5a905d`/`cd0ae3fcf`/`08c65a1d6`/`19f8a6f7c`/
       `f95d7f9eb` ("T-SCHED B2 D4 ... closing D4 in full"). `jobLockIdMap` exists at
-      `gate-bind.ts:574`, with a documented, explicitly-scoped-narrower gap (one entry per GATE
+      `scripts/gate-bind.ts:574`, with a documented, explicitly-scoped-narrower gap (one entry per GATE
       not per step, recorded as non-live today since no header-declared gate currently shares a
       step) -- not a defect, a stated boundary.
 - [ ] D5a: add the static clause asserting, for each `SHARD_COUNTS` lane, the job's
@@ -330,7 +330,7 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
       that session's remaining budget. STILL OPEN: trace why `quality-code` satisfies `stepInJob`
       today before choosing a real replacement lane -- this is real, non-trivial remaining work,
       not a one-line retarget as the task text implies. Re-verified live 2026-09-15 by d778be9d:
-      manifest.ts:5024-5028 still reads `job: 'quality-code'`, unchanged since that revert.
+      scripts/ci-runner/manifest.ts:5024-5028 still reads `job: 'quality-code'`, unchanged since that revert.
 - [ ] Add the two missing selftest controls to `scripts/gate-bind.ts`'s `selftest()`: a lane
       WITH an assignment emits `matrix.shard == N` on exactly the steps the plan gives that leg;
       a lane WITHOUT one emits byte-identically to today. Required before any `SHARD_COUNTS`
@@ -342,7 +342,7 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
       assume either way before starting.
 - [x] Fix the stale comment at `scripts/gate-bind.ts:571` ("today only one lane is in
       `SHARD_COUNTS`" -> "no lane is").
-      (ticked) 2026-09-15 by d778be9d: verified live at `gate-bind.ts:785` (line number drifted
+      (ticked) 2026-09-15 by d778be9d: verified live at `scripts/gate-bind.ts:785` (line number drifted
       with the D1-D5 insertions) -- reads "...and no lane is in `SHARD_COUNTS` today", the exact
       corrected wording.
 - [ ] New completeness gate (or new static clause in `check-quality-complete.ts`): define
