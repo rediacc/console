@@ -244,3 +244,4 @@
 {"at":"2026-09-14T10:28:16Z","subject":"test_gate_workflow_contracts","twin":".ci/scripts/test/gates/test-workflow-contracts.sh","twin_sha":"58c64b3130757791","port_sha":"00cc253d261accb8","agreed":true}
 {"at":"2026-09-14T20:12:16Z","subject":"test_gate_claude_hooks","twin":".ci/scripts/test/gates/test-claude-hooks.sh","twin_sha":"0b0e8cac8150d06f","port_sha":"0050ae4570e708d9","agreed":true}
 {"at":"2026-09-15T03:19:05Z","subject":"test_gate_gate_lanes","twin":".ci/scripts/test/gates/test-gate-lanes.sh","twin_sha":"17ab72f47fd96f28","port_sha":"b7e9a7dcabc35908","agreed":true}
+{"at":"2026-09-15T03:34:38Z","subject":"test_gate_claude_hooks","twin":".ci/scripts/test/gates/test-claude-hooks.sh","twin_sha":"0b0e8cac8150d06f","port_sha":"5972b0529138ef86","agreed":true}
