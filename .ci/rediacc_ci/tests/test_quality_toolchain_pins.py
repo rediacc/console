@@ -11,6 +11,7 @@ The whole gate is covered by `.ci/shadow/w7p2-toolchain-pins.observations.jsonl`
 over five distinct trees.
 """
 
+import os
 import pathlib
 
 import pytest
@@ -103,13 +104,28 @@ def test_pin_line_and_unparseable_match_grep(tmp_path: pathlib.Path, line: str) 
     assert bool(mod.UNPARSEABLE_PIN_RE.match(line)) is (bad_code == 0)
 
 
-def test_a9_executes_the_pin_rather_than_reading_it(tmp_path: pathlib.Path) -> None:
+def test_a9_executes_the_pin_rather_than_reading_it(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """A1-A8 were all green while `toolchain_pin_for` returned "" with status 0.
 
     The empty value travelled into a download URL and produced a curl 404 naming
     GitHub, which is the wrong problem to go debugging. A9 exists because no
     textual assertion could have caught it.
+
+    THE `*_VERSION` NAMES ARE CLEARED FIRST, and without that the mutant half of
+    this test measures the ENVIRONMENT instead of the library. `pin_from_bare_
+    source` shells out and inherits `os.environ`; a CI lane runs
+    `.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"`, which exports
+    `SHELLCHECK_VERSION=0.10.0` into every later step. So the mutant -- a copy of
+    the library with `toolchain_load` stubbed to a no-op, whose whole purpose is
+    to resolve EMPTY -- happily resolved `0.10.0` from the ambient environment,
+    and this assertion read `assert '0.10.0' == ''` in run 34970782616. On a
+    developer shell nothing exports those names, so it passed for a reason that
+    had nothing to do with the code under test.
     """
+    for name in [key for key in os.environ if key.endswith("_VERSION")]:
+        monkeypatch.delenv(name, raising=False)
     library = pathlib.Path(".ci/scripts/lib/toolchain.sh").resolve()
     assert mod.pin_from_bare_source(library, "shellcheck") != ""
     mutant = tmp_path / "toolchain.sh"
