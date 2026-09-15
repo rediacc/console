@@ -1069,9 +1069,10 @@
     "agent/PLAN-w7p5a-deploy-release-port.md": {
       "status": "draft",
       "owner": "f4da5c2e",
-      "open": 8,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
         "02848e2f",
         "3167ed51",
         "9f3394a2",
@@ -1080,8 +1081,7 @@
         "d9f1066e",
         "e42e4162",
         "e8822a18"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/PLAN-w9p2-script-relocation.md": {
       "status": "draft",

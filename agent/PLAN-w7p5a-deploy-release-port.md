@@ -256,33 +256,50 @@ matching the box's own precedent instead of leaving a silent gap:
 
 ## Tasks
 
-- [ ] Confirm no concurrent writer holds `.ci/shadow/w7p5a-status.json`,
+- [x] Confirm no concurrent writer holds `.ci/shadow/w7p5a-status.json`,
       `.ci/policy/.w7p5a-real-run-blocklist`, or
-      `.ci/rediacc_ci/quality/w7p5a_real_run_blockers.py`.
-- [ ] Group A, six real runs (Section 3): `resolve-www-deploy-target`,
+      `.ci/rediacc_ci/quality/w7p5a_real_run_blockers.py`. DONE 2026-09-15: clean before start.
+- [x] Group A, six real runs (Section 3): `resolve-www-deploy-target`,
       `backfill-write-sentinel`, `check-soak-period`, `deployment-summary`,
       `resolve-backfill-commit`, `validate-stage-artifacts` — run bash twin and Python port
       directly against this checkout with the documented env vars, `GITHUB_OUTPUT`/
       `GITHUB_STEP_SUMMARY` pointed at a real temp file (not `/dev/stdout`), diff the outputs,
-      confirm byte-identical.
-- [ ] Update each of the six paths' `note` field in `.ci/shadow/w7p5a-status.json` to append the
+      confirm byte-identical. DONE 2026-09-15: all 6 confirmed byte-identical (deployment-summary
+      also matched exit codes and error-path text; resolve-backfill-commit verified on both a
+      real tag and a missing-tag error path).
+- [x] Update each of the six paths' `note` field in `.ci/shadow/w7p5a-status.json` to append the
       real-run confirmation sentence, byte-identical wording to the 3 already-done entries.
-- [ ] Re-run `npm run check:ci-w7p5a-real-run-blockers` after the status-file edit; confirm rc=0
+      DONE 2026-09-15, landed via `9a0525ba0` (absorbed into a babysitter commit; content
+      verified intact via `git show`).
+- [x] Re-run `npm run check:ci-w7p5a-real-run-blockers` after the status-file edit; confirm rc=0
       and the stats line still reads "16 ledgered" (status bucket unchanged, only `note` grew).
-- [ ] Extend `.ci/rediacc_ci/quality/w7p5a_real_run_blockers.py`'s `run()` with the fifth check
+      DONE: rc=0 throughout.
+- [x] Extend `.ci/rediacc_ci/quality/w7p5a_real_run_blockers.py`'s `run()` with the fifth check
       from Section 4: every `status == "ledger"` path's `note` must carry either the real-run
       confirmation phrase or a validated real-run BLOCKER; add the corresponding PLANT/CLEAN
-      selftest cases before relying on it.
-- [ ] Add real-run BLOCKER entries for the 7 Group-B paths (`wait-for-preview-worker`,
+      selftest cases before relying on it. DONE 2026-09-15, commit `157695f6e`: 6 new selftest
+      controls (2 CLEAN, 3 PLANT, plus the two count assertions), all pass.
+- [x] Add real-run BLOCKER entries for the 7 Group-B paths (`wait-for-preview-worker`,
       `check-edge-manifest`, `check-stable-manifest`, `check-existing-release`, `resolve-ci-run`,
       `verify-artifact-attestation`, `verify-release-assets`) through the canonical
       `rediacc_ci.core.allowlist` validator, naming the specific external system each one's
       real-run branch reaches (`releases.rediacc.com`, live Worker preview URL, or the real
-      GitHub repo via `gh`).
-- [ ] Re-run `check:ci-w7p5a-real-run-blockers --selftest` and the gate itself; confirm the new
+      GitHub repo via `gh`). DONE 2026-09-15: new file `.ci/policy/.w7p5a-real-run-leg-blocklist`
+      (kept SEPARATE from `.w7p5a-real-run-blocklist`, not merged into it — see Section 4's own
+      reasoning about the STALE check), registered in both POLICY_FILES seams,
+      `check:ci-policy-inventory` confirms 20/20/20.
+- [x] Re-run `check:ci-w7p5a-real-run-blockers --selftest` and the gate itself; confirm the new
       check fires on a planted violation and stays quiet on the real, now-fully-annotated tree.
-- [ ] Leave all 32 fully-`blocked` paths untouched — no real run, no status change, matching the
-      box's own explicit operator-authorization boundary.
+      DONE: rc=0, "32 blocked, 16 ledgered ... 9 confirmed, 7 leg-blocked".
+- [x] Leave all 32 fully-`blocked` paths untouched — no real run, no status change, matching the
+      box's own explicit operator-authorization boundary. Confirmed: `blocked_in_status` stayed
+      32 throughout.
+
+**Section 4 CLOSED 2026-09-15. This box's own scope (the real-run-leg gap this plan found and
+the gate extension to catch it going forward) is fully done.** Remaining W7P5-a work outside
+this plan's scope: the 39 (32 whole-port + 7 leg-only) production-facing real runs still need
+explicit operator authorization before they can happen at all — that boundary was never this
+plan's to cross.
 
 ### Critical Files for Implementation
 
