@@ -121,17 +121,31 @@ ck('shards are pairwise disjoint', new Set(secIds).size === secIds.length,
    { ids: secIds.length, distinct: new Set(secIds).size });
 ck('no shard is empty', sec !== null && sec.shards.every((s: { ids: string[] }) => s.ids.length > 0),
    sec?.shards.map((s: { ids: string[] }) => s.ids.length));
-ck('the shard weights are BALANCED, not first-fit',
+
+// T-SCHED B2 D1 MOVED THIS EXAMPLE OFF quality-security. Before the step-merge,
+// quality-security's 149-id `Quality-gate unit tests` step was NOT one unit, so the
+// packer could spread its ids across shards for an even weight -- a plan real CI could
+// never run, since gate-bind attaches one conjunct per STEP, not per id. After the
+// merge the 149 ids are correctly one unit and quality-security is (correctly)
+// unbalanceable. quality-code divides on real step boundaries and balances for real;
+// it is D1/D2's own worked example of a lane the mechanism suits.
+const code = planned('quality-code', 8);
+ck('the shard weights are BALANCED, not first-fit (quality-code, which genuinely divides)',
+   (() => {
+     if (!code) return false;
+     const w = code.shards.map((s: { weight: number }) => s.weight);
+     return Math.max(...w) - Math.min(...w) <= 2;
+   })(), code?.shards.map((s: { weight: number }) => s.weight));
+ck('quality-security correctly stays LOPSIDED: its dominant 149-id step is one unit',
    (() => {
      if (!sec) return false;
      const w = sec.shards.map((s: { weight: number }) => s.weight);
-     return Math.max(...w) - Math.min(...w) <= 2;
+     return Math.max(...w) - Math.min(...w) > 2;
    })(), sec?.shards.map((s: { weight: number }) => s.weight));
 
 // A MUTEX GROUP NEVER SPLITS. build-artifacts holds check:types and
 // check:ci-command-tree in quality-code; ignoring the union puts them in
 // different shards, which is how this control was proved to fire.
-const code = planned('quality-code', 8);
 const homeOf = (lane: { shards: { index: number; ids: string[] }[] }, id: string): number =>
   lane.shards.find((s) => s.ids.includes(id))?.index ?? -1;
 ck('a mutex group never splits across shards (quality-code build-artifacts)',
@@ -175,8 +189,41 @@ ck('a lane with ZERO lock entries refuses (quality-submodule-branches is real)',
    refusal('quality-submodule-branches', 2));
 ck('a lane the workflow does not define refuses',
    refusal('quality-nowhere', 2).includes('not a job in the workflow'), refusal('quality-nowhere', 2));
-ck('more heavy gates than shards refuses, naming the minimum',
-   refusal('quality-code', 4).includes('Ask for at least 8 shards'), refusal('quality-code', 4));
+// T-SCHED B2 D1 MOVED THIS NUMBER. Before the step-merge, quality-code counted 8 heavy
+// IDS -- check:lint five times over (all one step) plus three more -- and refused any
+// count under 8. After it, the five check:lint* ids are one unit with one heavy peak,
+// so the real floor is the number of heavy UNITS, measured here rather than hand-typed
+// so a future lock change cannot make this assertion stale silently.
+const heavyFloor = (lane: string): number => {
+  const total = laneEntries(lane).length;
+  for (let n = 1; n <= total; n += 1) {
+    if (!refusal(lane, n).includes('heavy is capped at one per shard')) return n;
+  }
+  return -1;
+};
+const codeHeavyFloor = heavyFloor('quality-code');
+ck('more heavy gates than shards refuses, naming the corrected minimum',
+   refusal('quality-code', codeHeavyFloor - 1).includes(`Ask for at least ${codeHeavyFloor} shards`),
+   { floor: codeHeavyFloor, refusal: refusal('quality-code', codeHeavyFloor - 1) });
+// THE POINT OF D1. Before the step-merge this exact count refused outright -- 8 heavy
+// ids could not fit in 4 shards -- which was the wrong answer: the five check:lint* ids
+// are one process, one runner, one heavy peak. This proves the fix, not just its
+// arithmetic.
+const code4 = planned('quality-code', 4);
+ck('quality-code now shards at 4 (was an unconditional refusal before D1)',
+   code4 !== null && code4.shards.every((s: { heavy: number }) => s.heavy <= 1),
+   code4?.shards.map((s: { heavy: number }) => s.heavy));
+// check:lint and its four siblings all ride ONE emitted step, so a plan cannot split
+// them across legs: gate-bind attaches exactly one conjunct to that one `run:` block.
+ck('ids sharing one emitted step (Lint) land in the same shard',
+   (() => {
+     if (!code) return false;
+     const lintIds = lock
+       .filter((e: any) => e.ci?.kind === 'step' && e.ci.job === 'quality-code' && e.ci.step === 'Lint')
+       .map((e: any) => e.id);
+     const homes = new Set(lintIds.map((id: string) => homeOf(code, id)));
+     return homes.size === 1;
+   })());
 // CORRECTED 2026-09-09: this asserted the OPPOSITE and was encoding a bug as a rule.
 // quality-go's account-vitest mutex group holds two heavy gates, and refusing the lane
 // at every shard count was refusing arithmetic: gate-spec.ts:44 defines mutex as "no two
