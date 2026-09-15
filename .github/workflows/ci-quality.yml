@@ -2007,6 +2007,32 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
       - id: setup
         uses: ./.github/actions/setup-workspace
+        # BOTH INPUTS ARE LOAD-BEARING, and their absence produced two of the 56
+        # pytest failures in run 34970782616 -- the first run in this wave that
+        # let this lane finish. This job runs the whole pytest suite, which
+        # drives the real tree, and a bare setup gave it neither.
+        #
+        # account: the dependency-inventory differential analyses all four real
+        # packages. Without it the twin dies with
+        # `✗ @rediacc/account: .../private/account/node_modules missing`, so
+        # test_the_real_repository_agrees_in_table_format and its json twin fail
+        # on the inventory never being built rather than on any disagreement.
+        #
+        # build-packages: runs .ci/scripts/setup/build-packages.sh, whose line 20
+        # is `npm run build:packages` = `npm run build -w @rediacc/shared &&
+        # npm run build -w @rediacc/provisioning`. test_proxies_unit_tests drives
+        # `npm run test:unit -w @rediacc/e2e-tests`, which imports
+        # `@rediacc/provisioning/renet`; unbuilt, vitest reports
+        # `Error: Cannot find package '@rediacc/provisioning/renet'` and two
+        # suites fail to load. That is a gate CRASHING rather than failing -- it
+        # reports no finding because it never got far enough to have one -- and
+        # it is invisible on any developer machine, where dist/ is always warm.
+        #
+        # Not a new pattern: quality-packages, quality-i18n and quality-www-build
+        # already pass exactly these two (lines 1462, 1697, 1845).
+        with:
+          account: 'true'
+          build-packages: 'true'
 
       - name: Load gate toolchain pins
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
