@@ -555,11 +555,42 @@ const main = (): number => {
   // would report main's own untagged history as this PR's fault. Ask for the
   // merge base explicitly so the failure is the missing depth, named, rather
   // than two hundred invented findings.
-  try {
-    execFileSync('git', ['merge-base', base, tip], { cwd: REPO, stdio: 'ignore' });
-  } catch {
+  const hasMergeBase = (): boolean => {
+    try {
+      execFileSync('git', ['merge-base', base, tip], { cwd: REPO, stdio: 'ignore' });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // DEEPEN RATHER THAN GUESS A BIGGER NUMBER. The depth above was 200 and this
+  // branch reached 227 commits, so the merge base fell outside the window and the
+  // gate failed closed -- correctly, and for a reason that will recur on any branch
+  // that outlives the constant. Raising 200 to 500 only moves the cliff.
+  //
+  // So: ask whether the merge base is reachable, and if it is not, deepen and ask
+  // again, ending at --unshallow. Each step is bounded and the loop is driven by the
+  // QUESTION rather than by a guess about history size. A repository that is already
+  // complete makes `--deepen` a no-op, so the common case costs one merge-base call.
+  if (!hasMergeBase()) {
+    for (const widen of [['--deepen=500'], ['--deepen=2000'], ['--unshallow']]) {
+      try {
+        execFileSync('git', ['fetch', '--no-tags', ...widen, 'origin'], {
+          cwd: REPO,
+          stdio: 'ignore',
+        });
+      } catch {
+        // --unshallow refuses on a complete repository; that is not a failure here,
+        // it means the history we need is already present and the next check decides.
+      }
+      if (hasMergeBase()) break;
+    }
+  }
+
+  if (!hasMergeBase()) {
     console.error(`✗ ${base} and ${tip} have no common ancestor in this checkout.`);
-    console.error('  Both are fetched shallow (depth 200); their merge base is deeper than that.');
+    console.error('  Deepening the shallow fetch to --unshallow did not reveal one.');
     console.error('  The range would list unrelated history, so no verdict here would be true.');
     return 1;
   }
