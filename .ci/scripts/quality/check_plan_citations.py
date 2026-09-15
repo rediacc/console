@@ -204,6 +204,30 @@ UUID_TAIL_RE = re.compile(
     r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-([0-9a-f]{12})", re.IGNORECASE
 )
 
+#: A REGISTRY DIGEST IS NEVER A GIT OBJECT, and it is the same false-positive
+#: class as the UUID tail above: a long hex run that satisfies HEXTOK_RE purely
+#: by coincidence of shape, sitting behind an unambiguous marker that says what
+#: it really is. `sha256:` is that marker, and nothing in this repository's
+#: history is addressed that way.
+#:
+#: Measured 2026-09-15, on `agent/PLAN-w7p4w-docker-cutover.md` as committed by
+#: 696a45bf9: four findings, all of them container image digests cited as the
+#: EVIDENCE that a canary image shared no layers with `:edge`/`:stable` --
+#: `sha256:27bb0e6e2c...b7f2d` (x3) and `sha256:a77e698892cc...`. None resolves
+#: in this clone or in any of the four submodules, correctly, because none is a
+#: git object. The gate was asking a plan to prove a registry digest is a commit.
+#:
+#: The alternative was rewording the plan to break the hex run, which would have
+#: contorted correct content to satisfy a check AND destroyed the digests that
+#: were the point of the sentence.
+#:
+#: Matched by requiring the `sha256:` immediately before the candidate, so a bare
+#: hex run without it is unaffected -- the same narrowing UUID_TAIL_RE uses, and
+#: for the same reason: this must not become a general amnesty for long tokens.
+#: An ellipsised digest (`sha256:27bb0e6e2c...b7f2d`) is matched on its leading
+#: run, which is the part HEXTOK_RE would otherwise have judged.
+DIGEST_RE = re.compile(r"sha256:([0-9a-f]{7,64})", re.IGNORECASE)
+
 #: How many findings are printed before the tail is summarised. A wall of
 #: findings is a wall nobody reads to the end of, and the fix for the first is
 #: usually the fix for the rest.
@@ -318,6 +342,7 @@ def citations(text):
     take(R.PLAN_REF_RE, "plan")
     take(R.GATE_RE, "gate")
     uuid_tail_spans = [u.span(1) for u in UUID_TAIL_RE.finditer(text or "")]
+    digest_spans = [d.span(1) for d in DIGEST_RE.finditer(text or "")]
     for m in R.HEXTOK_RE.finditer(text or ""):
         if any(m.start() < e and s < m.end() for s, e in spans):
             continue
@@ -328,6 +353,9 @@ def citations(text):
             continue
         # The trailing group of a UUID, not a git object. See UUID_TAIL_RE.
         if (m.start(1), m.end(1)) in uuid_tail_spans:
+            continue
+        # A container image digest, not a git object. See DIGEST_RE.
+        if (m.start(1), m.end(1)) in digest_spans:
             continue
         # A SHAPE FINGERPRINT IS NOT A GIT OBJECT, and it looks exactly like one: 12 hex
         # characters, which this gate judges as an abbreviated sha and can never resolve.
