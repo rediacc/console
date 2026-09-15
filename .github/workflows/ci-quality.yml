@@ -2047,6 +2047,38 @@ jobs:
           .ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"
           .ci/scripts/lib/toolchain.sh --report
 
+      - name: Packaging toolchain for the linux-packages differential
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # SIXTEEN OF THIS SUITE'S EIGHTEEN SKIPS, and skips are not free here:
+        # `check:ci-pytest` refuses `passed != collected` outright, so a skipped
+        # test keeps this lane red exactly as a failing one does.
+        #
+        # `test_proxies_linux_packages.py` skips every case with "packaging
+        # toolchain absent (createrepo_c); both sides would report 77, proving
+        # nothing" -- an honest skip, and a real hole: the rpm-repository half of
+        # that differential has never been exercised in CI.
+        #
+        # `apt-get update` first, for the reason the clang/libbpf step below
+        # gives: a runner image ships stale apt metadata and a bare install can
+        # 404 against a rotated pool.
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq createrepo-c
+
+      - name: CLI bundle for the rdc-update differential
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # ONE MORE SKIP, and it costs about five seconds to retire.
+        # `proxy-rdc-update.sh` falls back to `packages/cli/dist/cli-bundle.cjs`
+        # when no RDC_BINARY is exported, and without it the proxy reports
+        # CANNOT RUN (1 of 5 requirement(s) missing) and the differential skips.
+        #
+        # This is the BUNDLE, not the SEA executable: `node bundle.mjs` is an
+        # esbuild step measured at under a second here, on top of the ~4s `tsc`.
+        # The real `Build (CLI)` job takes ~58s because it also does SEA
+        # packaging and embeds the renet binaries, none of which this proxy's
+        # fallback path needs.
+        run: |
+          npm run build:cli
+          cd packages/cli && node bundle.mjs
+
       - name: Install ruff
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         # THE SAME OMISSION AS THE STEP ABOVE, one tool later, and it hid for the
