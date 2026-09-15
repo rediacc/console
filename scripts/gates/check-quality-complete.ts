@@ -64,6 +64,26 @@
  * budget. Whoever moves this at real registration time must trace why `quality-code`
  * satisfies `stepInJob` today before picking its replacement, not just its `needs`.
  *
+ * TRACED 2026-09-15, answering the question above so the next reader inherits the
+ * answer rather than the question. It is NOT a coincidence. "Quality shard
+ * aggregation" sits at ci-quality.yml:1009, INSIDE the `>>> gate-bind` region that
+ * opens at :880 -- so gate-bind EMITS it, from this file's own header declaring
+ * `lane: quality-code`. The step exists in that job precisely BECAUSE the header
+ * names that lane; `stepInJob` is satisfied by the emitter, not by luck.
+ *
+ * Which makes the `quality-branch` attempt impossible for a deeper reason than the
+ * missing `node`. `quality-branch` has no `- id: setup`, so per invariant 11 it hosts
+ * no gate-bind region AT ALL -- ci-quality.yml:553 and :563 say so and call the lane
+ * HAND-WRITTEN, "and it must stay that way", because emitted steps there would guard
+ * on an empty `steps.setup.outcome` and every one would SKIP while the job reported
+ * green. That is why its structural neighbours, check_plan_boxes.py and
+ * check_resprofile.py, carry NO gate header at all.
+ *
+ * So the move is not a lane swap. It requires dropping this file's `---- gate ----`
+ * header and hand-registering the step, exactly as those two neighbours are -- and it
+ * still has to answer the independent `node` problem. Two blockers, not one, and the
+ * first is a design invariant rather than something to trace.
+ *
  * Usage:
  *   npx tsx scripts/gates/check-quality-complete.ts                 the static wiring half
  *   npx tsx scripts/gates/check-quality-complete.ts --receipts DIR  the runtime half

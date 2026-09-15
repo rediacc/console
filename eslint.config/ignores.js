@@ -31,6 +31,15 @@ export default [
       // sibling gate has already removed. ESLint does not read .gitignore, so the
       // `*.tmp` rule there does not cover it.
       '**/*.tmp/',
+      // Same argument, different directory: `.ci/cache/` is gitignored
+      // (.gitignore:143) and holds throwaway artifacts -- the pre-push receipt, the
+      // gate duration cache, and whatever probe a session leaves behind. ESLint does
+      // not read .gitignore, so it lints them. A one-line scratch file containing the
+      // word `placeholder`, left over from a B2 probe, failed check:ci-lint:tooling
+      // with "'placeholder' is not defined" -- a red that CI can never see, because
+      // CI's checkout has no such file. A gate whose verdict depends on local litter
+      // in an ignored directory teaches people to ignore the gate.
+      '.ci/cache/',
       '*.config.js',
       '*.config.ts',
       '*.config.cjs',
