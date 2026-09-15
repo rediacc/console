@@ -10,8 +10,17 @@
 #
 # NO REDUCTION. Unlike the other proxies here, this one runs the subject exactly
 # as CI does, with no flag and no subset. It needs no VM, no btrfs, no LUKS and
-# no docker (the license gate fires before any storage work), and it measured
-# 15.8 s on this host. There is nothing to trim.
+# no docker (the license gate fires before any storage work). There is nothing
+# to trim.
+#
+# COST: ~33 s, measured 2026-09-15 on an idle developer machine. This line used
+# to say 15.8 s, and the stale figure was not harmless: it is the number a reader
+# sizes a timeout against, and the differential's real-tree budget had been set
+# at 120 s -- which looks like 7.6x headroom against 15.8 s and is only ~3.6x
+# against the truth. That budget then expired twice in CI once the suite grew
+# busier (runs 35009582358 and 35015545136), and the first instinct on reading
+# those was to suspect a hang. Re-measure before quoting this, and update it
+# here: a performance claim in a comment is a defect on a delay.
 #
 # WHAT THIS PROXY ADDS ON TOP OF THE SUBJECT'S OWN EXIT CODE.
 # The subject is a three-run battery: an enforcing binary that must pass every
