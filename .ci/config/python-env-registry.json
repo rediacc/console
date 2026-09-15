@@ -1031,6 +1031,9 @@
     ".ci/rediacc_ci/tests/gates/test_twin_parity.py": [
       "TWIN_PARITY_ALWAYS_DRIVE"
     ],
+    ".ci/rediacc_ci/tests/pathmask.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_autopilot_compose_prompt.py": [
       "HOME",
       "PATH"

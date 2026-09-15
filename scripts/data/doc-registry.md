@@ -811,7 +811,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/review | 6 | .py 6 |
 | .ci/rediacc_ci/security | 11 | .py 11 |
 | .ci/rediacc_ci/setup | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 281 | .py 281 |
+| .ci/rediacc_ci/tests | 282 | .py 282 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/gates | 162 | .py 161, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
