@@ -9,8 +9,8 @@
 # account#85 7 of 9, renet#110 2 of 2, elite#16 1 of 1. Fixing it cost a history
 # rewrite across four repositories plus a force push.
 #
-# THE ORACLE IS NOT AN EMAIL ALLOWLIST. `repos/{r}/pulls/{n}/commits` returns, per
-# commit, the account GitHub RESOLVED the author email to -- `.author`, null when it
+# THE ORACLE IS NOT AN EMAIL ALLOWLIST. The commit list returns, per commit, the
+# account GitHub RESOLVED the author email to -- `.author`, null when it
 # resolves to nobody. Measured on #585: 30 null, 11 `.author.login = mfbayraktar`.
 # So the rule is `.author` and `.committer` must both be non-null, which is the same
 # question GitHub answers on the commit page. No hardcoded address, nothing to edit
@@ -38,6 +38,27 @@
 # The 30 matched the count measured independently from git, so the gate and the
 # history agreed about the size of the defect before it was repaired.
 #
+# WHICH ENDPOINT LISTS THE COMMITS, and why it is not the obvious one. This gate
+# read `repos/{r}/pulls/{n}/commits`, which GitHub caps at 250 EVEN WITH
+# `--paginate`, and refused outright at the cap rather than judge a set it might
+# not have read whole. That refusal was right and the endpoint was wrong:
+# measured 2026-09-15 on rediacc/console#589, a 254-commit PR, the gate stopped
+# being able to report AT ALL -- "Cannot certify", every run, with two genuinely
+# unattributed commits sitting behind the refusal, unnamed. A gate that cannot
+# reach a verdict on a large PR is not strict, it is absent.
+#
+# So the list comes from `repos/{r}/compare/{base}...{head}`, which GitHub's own
+# docs name for ranges over 250, which `--paginate` walks properly (measured:
+# 254 of 254 in 2.2s, against 250 from the pulls endpoint), and which carries the
+# SAME `.author`/`.committer` resolution -- the oracle is unchanged.
+#
+# COMPLETENESS IS NOW CHECKED, NOT ASSUMED. The old guard was a magic 250: it
+# could only notice truncation at one number, and it fired on PRs that were
+# merely large. The new guard compares what we read against `.commits` on the PR
+# object -- a count from a DIFFERENT endpoint -- and refuses on any mismatch. It
+# is strictly stronger: it catches a short read at 3 commits as well as at 250,
+# and it stops refusing PRs whose only sin is size.
+#
 # Usage:
 #   GITHUB_TOKEN=xxx PR_NUMBER=123 ./check-commit-identity.sh
 #   ./check-commit-identity.sh --refresh      # regenerate the local identity cache
@@ -54,9 +75,6 @@ require_cmd gh
 require_cmd jq
 
 IDENTITY_FILE="${COMMIT_IDENTITY_FILE:-$ROOT/.ci/config/commit-identity.json}"
-# GitHub's commit-list endpoint caps at 250 even with --paginate. Judging a truncated
-# set would report a clean PR over commits never read.
-MAX_COMMITS=250
 
 probe_failed() {
     echo "" >&2
@@ -142,10 +160,22 @@ fi
 REPO="${GITHUB_REPOSITORY:-rediacc/console}"
 
 judge_pr() { # judge_pr <repo> <pr-number> <label> -> prints offenders, returns 1 if any
-    local repo="$1" pr="$2" label="$3" payload count bad
+    local repo="$1" pr="$2" label="$3" meta base head total payload count bad
+
+    # The base and head SHAs, plus `.commits` -- the PR's own commit count, which
+    # is the independent number the completeness check below is measured against.
+    meta="$(gh_retry "PR metadata for ${label}#${pr}" -- \
+        api "repos/${repo}/pulls/${pr}" \
+        --jq '"\(.base.sha) \(.head.sha) \(.commits)"')" || probe_failed
+    read -r base head total <<<"$meta"
+    if [[ -z "$base" || -z "$head" || ! "$total" =~ ^[0-9]+$ ]]; then
+        echo "  ERROR: could not read base/head/commit-count for ${label}#${pr}: '${meta}'." >&2
+        probe_failed
+    fi
+
     payload="$(gh_retry "commit list for ${label}#${pr}" -- \
-        api "repos/${repo}/pulls/${pr}/commits" --paginate \
-        --jq '.[] | {sha: .sha, author: .author.login, committer: .committer.login, email: .commit.author.email, name: .commit.author.name}')" || probe_failed
+        api "repos/${repo}/compare/${base}...${head}?per_page=100" --paginate \
+        --jq '.commits[] | {sha: .sha, author: .author.login, committer: .committer.login, email: .commit.author.email, name: .commit.author.name}')" || probe_failed
 
     # A PR always has at least one commit, so an empty list is a failed read.
     if [[ -z "${payload//[[:space:]]/}" ]]; then
@@ -155,9 +185,9 @@ judge_pr() { # judge_pr <repo> <pr-number> <label> -> prints offenders, returns 
     fi
 
     count="$(grep -c . <<<"$payload")"
-    if [[ "$count" -ge "$MAX_COMMITS" ]]; then
-        echo "  ERROR: ${label}#${pr} returned ${count} commits, at or over the ${MAX_COMMITS} page cap." >&2
-        echo "  A truncated set cannot be cleared; refusing rather than judging part of it." >&2
+    if [[ "$count" -ne "$total" ]]; then
+        echo "  ERROR: read ${count} commit(s) for ${label}#${pr}, but the PR reports ${total}." >&2
+        echo "  An incomplete set cannot be cleared; refusing rather than judging part of it." >&2
         probe_failed
     fi
 

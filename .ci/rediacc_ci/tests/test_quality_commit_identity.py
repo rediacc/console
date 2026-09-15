@@ -4,6 +4,9 @@ WHAT IS WORTH TESTING HERE. The shadow ledger
 `.ci/shadow/w7p2-commit-identity.observations.jsonl` drives the whole gate over
 five distinct trees: one unattributed commit, three from two addresses, an empty
 list, a list at the 250 page cap, and a null committer with a resolved author.
+(Those rows were recorded 2026-09-06, before the 250 cap was replaced by a
+completeness check against the PR's own commit count; the row named for the cap
+records what the pair did THEN, and is history rather than a live assertion.)
 What a ledger row cannot isolate is the four small readings the verdict rests on,
 and each of them is a place where jq and Python disagree if nobody looks:
 
@@ -11,7 +14,7 @@ and each of them is a place where jq and Python disagree if nobody looks:
     finding, so a port that raised there would turn every offending PR into a
     crash and every crash into "the gate is flaky".
   * `grep -c .` counts LINES, which is only the commit count while gh emits one
-    compact object per line. That coupling is what the page-cap refusal reads.
+    compact object per line. That coupling is what the completeness check reads.
   * `sort -u` on the offender list deduplicates; `sort -rn` on the tally is
     descending by count.
   * the address shape filter is the only thing between a 404 error BODY and two
@@ -151,7 +154,7 @@ def test_the_address_tally_matches_sort_uniq_c_sort_rn() -> None:
 
 
 def test_count_lines_matches_grep_c_dot() -> None:
-    """`grep -c .` counts non-empty lines, which is the page-cap oracle."""
+    """`grep -c .` counts non-empty lines, which is the completeness oracle."""
     for payload in (_rows(), "", "a\n\nb\n", "one"):
         proc = subprocess.run(
             ["bash", "-c", "grep -c . || true"],
@@ -181,15 +184,47 @@ def test_the_shape_filter_matches_the_twins_grep() -> None:
         assert ci.valid_emails(text) == want, text[:30]
 
 
-def test_the_page_cap_and_the_projection_still_match_the_twin() -> None:
-    """Two constants that are only correct while the twin agrees with them.
+def test_the_endpoints_and_the_projection_still_match_the_twin() -> None:
+    """The three strings that decide WHAT this gate reads, checked against the twin.
 
-    Read from the twin's source rather than remembered, because a change to
-    either silently re-scopes what this gate reads.
+    Read from the twin's source rather than remembered, because a change to any
+    of them silently re-scopes the gate. The compare endpoint is here by name:
+    reverting it to `pulls/{n}/commits` would reintroduce the 250 cap that made
+    this gate unable to report on a 254-commit PR, and that regression would
+    otherwise be invisible to every other test in this file.
     """
     body = TWIN.read_text(encoding="utf-8")
-    assert "MAX_COMMITS=%d" % ci.MAX_COMMITS in body
+    assert 'api "repos/${repo}/compare/${base}...${head}?per_page=100" --paginate' in body
+    assert "pulls/${pr}/commits" not in body
     assert "{sha: .sha, author: .author.login, committer: .committer.login," in body
+    assert ci.PROJECTION.startswith(".commits[] | {sha: .sha,")
+
+
+def test_the_metadata_line_is_read_the_way_bash_reads_it() -> None:
+    """`read -r base head total` against `parse_meta`, run through real bash.
+
+    The interesting case is a FOURTH field: `read` hands the whole remainder to
+    the last variable, so `1 2` is not the number 1. A port that split on
+    whitespace and took `fields[2]` would accept it and judge a PR against the
+    wrong total.
+    """
+    for line in ("b h 254", "b h many", "b h", "b h 1 2", "", "   "):
+        proc = subprocess.run(
+            [
+                "bash",
+                "-c",
+                'read -r base head total <<<"$1"; printf "%s|%s|%s" "$base" "$head" "$total"',
+                "driver",
+                line,
+            ],
+            capture_output=True,
+            check=True,
+        )
+        base, head, total = proc.stdout.decode("utf-8").split("|")
+        bash_ok = base != "" and head != "" and total.isdigit()
+        assert (ci.parse_meta(line) is not None) == bash_ok, line
+        if bash_ok:
+            assert ci.parse_meta(line) == (base, head, int(total))
 
 
 def test_selftest_runs_and_meets_its_floor() -> None:

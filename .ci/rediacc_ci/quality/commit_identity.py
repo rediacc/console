@@ -15,8 +15,8 @@ and the rejected alternative are each load-bearing:
     1. Fixing it cost a history rewrite across four repositories plus a force
     push.
 
-    THE ORACLE IS NOT AN EMAIL ALLOWLIST. `repos/{r}/pulls/{n}/commits` returns,
-    per commit, the account GitHub RESOLVED the author email to -- `.author`,
+    THE ORACLE IS NOT AN EMAIL ALLOWLIST. The commit list returns, per commit,
+    the account GitHub RESOLVED the author email to -- `.author`,
     null when it resolves to nobody. Measured on #585: 30 null, 11
     `.author.login = mfbayraktar`. So the rule is `.author` and `.committer` must
     both be non-null, which is the same question GitHub answers on the commit
@@ -46,12 +46,31 @@ and the rejected alternative are each load-bearing:
     The 30 matched the count measured independently from git, so the gate and the
     history agreed about the size of the defect before it was repaired.
 
+    WHICH ENDPOINT LISTS THE COMMITS, and why it is not the obvious one. This
+    gate read `repos/{r}/pulls/{n}/commits`, which GitHub caps at 250 EVEN WITH
+    `--paginate`, and refused outright at the cap rather than judge a set it
+    might not have read whole. That refusal was right and the endpoint was
+    wrong: measured 2026-09-15 on rediacc/console#589, a 254-commit PR, the gate
+    stopped being able to report AT ALL -- "Cannot certify", every run, with two
+    genuinely unattributed commits sitting behind the refusal, unnamed. A gate
+    that cannot reach a verdict on a large PR is not strict, it is absent.
+
+    So the list comes from `repos/{r}/compare/{base}...{head}`, which GitHub's
+    own docs name for ranges over 250, which `--paginate` walks properly
+    (measured: 254 of 254 in 2.2s, against 250 from the pulls endpoint), and
+    which carries the SAME `.author`/`.committer` resolution -- the oracle is
+    unchanged.
+
+    COMPLETENESS IS NOW CHECKED, NOT ASSUMED. The old guard was a magic 250: it
+    could only notice truncation at one number, and it fired on PRs that were
+    merely large. The new guard compares what we read against `.commits` on the
+    PR object -- a count from a DIFFERENT endpoint -- and refuses on any
+    mismatch. It is strictly stronger: it catches a short read at 3 commits as
+    well as at 250, and it stops refusing PRs whose only sin is size.
+
     Usage:
       GITHUB_TOKEN=xxx PR_NUMBER=123 ./check-commit-identity.sh
       ./check-commit-identity.sh --refresh      # regenerate the local identity cache
-
-    GitHub's commit-list endpoint caps at 250 even with --paginate. Judging a
-    truncated set would report a clean PR over commits never read.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -61,7 +80,7 @@ THE PAYLOAD IS ONE COMPACT JSON OBJECT PER LINE, and both the count and the
 verdict depend on that. The twin counts commits with `grep -c .`, which counts
 LINES, and then feeds the same text to `jq` as a stream of values. Those two
 readings only agree while gh emits one object per line, which it does; a pretty
-printed payload would make the page-cap refusal fire at 42 commits. The port
+printed payload would make the completeness refusal fire on every PR. The port
 parses line by line for the same reason, so the two implementations disagree in
 the same way if that ever changes rather than one of them silently coping.
 
@@ -112,10 +131,6 @@ from rediacc_ci.controls import Controls
 # The default repository, matching `${GITHUB_REPOSITORY:-rediacc/console}`.
 DEFAULT_REPO = "rediacc/console"
 
-# GitHub's commit-list endpoint caps at 250 even with --paginate. Judging a
-# truncated set would report a clean PR over commits never read.
-MAX_COMMITS = 250
-
 # The commands both implementations require on PATH. See the port notes for why
 # `jq` is here when nothing below calls it.
 REQUIRED_COMMANDS = ("gh", "jq")
@@ -131,9 +146,14 @@ EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 # decides which fields exist is not buried in an argument list, and so a test can
 # assert it still matches the twin's.
 PROJECTION = (
-    ".[] | {sha: .sha, author: .author.login, committer: .committer.login, "
+    ".commits[] | {sha: .sha, author: .author.login, committer: .committer.login, "
     "email: .commit.author.email, name: .commit.author.name}"
 )
+
+# The PR metadata read: the compare range's two ends, plus the PR's own commit
+# count. Three values in one line because the twin reads them with `read -r`,
+# and one call rather than three keeps the two implementations comparable.
+PR_META_JQ = '"\\(.base.sha) \\(.head.sha) \\(.commits)"'
 
 # The retry schedule from `common.sh`'s `_gh_probe`: three attempts, 3 then 6
 # seconds apart.
@@ -242,8 +262,28 @@ def parse_payload(payload: str) -> list[dict]:
 
 
 def count_lines(payload: str) -> int:
-    """`grep -c .`: non-empty LINES, which is what the page-cap refusal reads."""
+    """`grep -c .`: non-empty LINES, which is what the completeness check reads."""
     return len([line for line in payload.split("\n") if line != ""])
+
+
+def parse_meta(meta: str) -> tuple[str, str, int] | None:
+    """`read -r base head total`, with the twin's own validity test.
+
+    None means the line was not three usable fields, which the caller turns into
+    a refusal. The twin's guard is `-z "$base" || -z "$head" || ! "$total" =~
+    ^[0-9]+$`, so a missing field and a non-numeric count are the same outcome
+    on both sides -- and NEITHER is allowed to become a count of zero, which
+    would make the completeness check pass over an empty read.
+    """
+    fields = meta.split()
+    if len(fields) < 3:
+        return None
+    # `read -r base head total` puts the ENTIRE remainder in the last variable,
+    # so a fourth field makes the count non-numeric rather than being dropped.
+    base, head, total = fields[0], fields[1], " ".join(fields[2:])
+    if base == "" or head == "" or not re.match(r"^[0-9]+$", total):
+        return None
+    return base, head, int(total)
 
 
 def unattributed(rows: list[dict]) -> list[str]:
@@ -298,11 +338,27 @@ def judge_pr(repo: str, pr: str, label: str) -> int:
     Three outcomes rather than two, because "could not read" must never be
     folded into either verdict.
     """
+    ok, meta = gh_retry(
+        "PR metadata for %s#%s" % (label, pr),
+        ["api", "repos/%s/pulls/%s" % (repo, pr), "--jq", PR_META_JQ],
+    )
+    if not ok:
+        return 2
+
+    parsed = parse_meta(meta)
+    if parsed is None:
+        print(
+            "  ERROR: could not read base/head/commit-count for %s#%s: '%s'." % (label, pr, meta),
+            file=sys.stderr,
+        )
+        return 2
+    base, head, total = parsed
+
     ok, payload = gh_retry(
         "commit list for %s#%s" % (label, pr),
         [
             "api",
-            "repos/%s/pulls/%s/commits" % (repo, pr),
+            "repos/%s/compare/%s...%s?per_page=100" % (repo, base, head),
             "--paginate",
             "--jq",
             PROJECTION,
@@ -321,14 +377,14 @@ def judge_pr(repo: str, pr: str, label: str) -> int:
         return 2
 
     count = count_lines(payload)
-    if count >= MAX_COMMITS:
+    if count != total:
         print(
-            "  ERROR: %s#%s returned %d commits, at or over the %d page cap."
-            % (label, pr, count, MAX_COMMITS),
+            "  ERROR: read %d commit(s) for %s#%s, but the PR reports %d."
+            % (count, label, pr, total),
             file=sys.stderr,
         )
         print(
-            "  A truncated set cannot be cleared; refusing rather than judging part of it.",
+            "  An incomplete set cannot be cleared; refusing rather than judging part of it.",
             file=sys.stderr,
         )
         return 2
@@ -586,10 +642,33 @@ def selftest() -> int:
     # -- the two floors -----------------------------------------------------
     ctl.check("an empty payload counts zero lines", count_lines(""), 0)
     ctl.check("blank lines are not counted", count_lines("a\n\nb\n"), 2)
+    # -- the completeness check, which replaced the 250 page cap -------------
+    # Both directions, because the whole point of the replacement is that it
+    # ACCEPTS a large complete read and REFUSES a short one at any size. A
+    # one-directional control here would have re-admitted the defect: the old
+    # cap also "passed its test" while refusing every PR over 250 commits.
     ctl.check(
-        "the page cap is the twin's 250, not a rounder number",
-        MAX_COMMITS,
-        250,
+        "PLANT: a short read is refused -- 250 of 254 is not the PR",
+        count_lines("x\n" * 250) != 254,
+        True,
+    )
+    ctl.check(
+        "MIRROR: a complete read of a 254-commit PR is accepted",
+        count_lines("x\n" * 254) != 254,
+        False,
+    )
+    ctl.check(
+        "PLANT: a short read at THREE commits is refused too, not just at 250",
+        count_lines("x\ny\n") != 3,
+        True,
+    )
+    ctl.check(
+        "the metadata line parses to base, head and an int", parse_meta("b h 254"), ("b", "h", 254)
+    )
+    ctl.check("a non-numeric count refuses rather than becoming zero", parse_meta("b h many"), None)
+    ctl.check("a missing field refuses", parse_meta("b h"), None)
+    ctl.check(
+        "a fourth field makes the count unreadable, as `read -r` does", parse_meta("b h 1 2"), None
     )
 
     # -- the shape filter, both directions ----------------------------------

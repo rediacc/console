@@ -32,10 +32,14 @@ source "$SCRIPT_DIR/../lib/test-helpers.sh"
 GATE="$REPO_ROOT/.ci/scripts/quality/check-commit-identity.sh"
 [[ -x "$GATE" ]] || log_fail "gate not found at $GATE; this file would assert nothing"
 
-# A fake `gh` that prints $FIXTURE for `api …/commits` and applies the caller's --jq.
+# A fake `gh` that ROUTES BY URL and applies the caller's --jq to the matching
+# fixture. Two shapes now, because the gate reads the PR object for the compare
+# range and its commit count, then the compare endpoint for the commits. A
+# single-fixture fake would feed the commit list to the metadata read and the
+# gate would refuse every case for the wrong reason.
 # `exit_rc` lets a case simulate a rate limit or a network failure.
-write_fake_gh() { # write_fake_gh <dir> <fixture-file> [exit_rc]
-    local dir="$1" fixture="$2" rc="${3:-0}"
+write_fake_gh() { # write_fake_gh <dir> <meta-file> <compare-file> [exit_rc]
+    local dir="$1" meta="$2" compare="$3" rc="${4:-0}"
     mkdir -p "$dir/bin"
     cat >"$dir/bin/gh" <<FAKE
 #!/bin/bash
@@ -43,11 +47,21 @@ set -uo pipefail
 [ "$rc" -ne 0 ] && { echo "simulated gh failure" >&2; exit $rc; }
 jqexpr=""
 prev=""
+url=""
 for a in "\$@"; do
   [ "\$prev" = "--jq" ] && jqexpr="\$a"
+  case "\$a" in repos/*) [ -z "\$url" ] && url="\$a" ;; esac
   prev="\$a"
 done
-if [ -n "\$jqexpr" ]; then jq -r "\$jqexpr" <"$fixture"; else cat "$fixture"; fi
+case "\$url" in
+  */compare/*) fixture="$compare" ;;
+  *)           fixture="$meta" ;;
+esac
+# -c MATTERS: real \`gh --jq\` emits ONE COMPACT OBJECT PER LINE, and the gate's
+# commit count is \`grep -c .\` over exactly that. A bare \`jq -r\` pretty-prints,
+# which made this fake report 7 "commits" for a single commit -- invisible while
+# the only consumer was a 250 cap, fatal to a count that must be exact.
+if [ -n "\$jqexpr" ]; then jq -r -c "\$jqexpr" <"\$fixture"; else cat "\$fixture"; fi
 FAKE
     chmod +x "$dir/bin/gh"
 }
@@ -63,11 +77,17 @@ commit_json() { # commit_json <sha> <author-login|null> <committer-login|null> <
         "$a" "$au" "$clu" "$email"
 }
 
-run_gate() { # run_gate <fixture-json> [gh_exit_rc] -> LAST_OUT, returns rc
-    local body="$1" ghrc="${2:-0}" d rc=0
+# <declared-count> defaults to the number of commits in the body, so every case
+# except the short-read one states a PR whose count MATCHES what it serves.
+run_gate() { # run_gate <fixture-json> [gh_exit_rc] [declared-count] -> LAST_OUT, returns rc
+    local body="$1" ghrc="${2:-0}" declared="${3:-}" d rc=0 n
     d="$(mktemp -d)"
-    printf '[%s]' "$body" >"$d/fixture.json"
-    write_fake_gh "$d" "$d/fixture.json" "$ghrc"
+    printf '{"commits":[%s]}' "$body" >"$d/compare.json"
+    n="$(jq '.commits | length' <"$d/compare.json")"
+    [[ -z "$declared" ]] && declared="$n"
+    printf '{"base":{"sha":"base0000"},"head":{"sha":"head0000"},"commits":%s}' \
+        "$declared" >"$d/meta.json"
+    write_fake_gh "$d" "$d/meta.json" "$d/compare.json" "$ghrc"
     LAST_OUT="$(PATH="$d/bin:$PATH" GITHUB_TOKEN=x PR_NUMBER=1 \
         GITHUB_REPOSITORY=rediacc/console bash "$GATE" 2>&1)" || rc=$?
     rm -rf "$d"
@@ -136,16 +156,47 @@ test_gh_failure_refuses() {
     log_pass "an unreadable API refuses rather than clearing the PR"
 }
 
-test_page_cap_refuses() {
+# A SHORT READ is refused -- the shape that replaced the old 250 page cap. The
+# cap could only notice truncation at one number; this notices it at any.
+test_short_read_refuses() {
+    local rc=0
+    run_gate "$(commit_json 6666666aaa mfbayraktar mfbayraktar ok@example.com)" 0 3 || rc=$?
+    assert_exit_code 1 "$rc" "reading 1 of a declared 3 commits cannot clear the PR"
+    assert_contains "$LAST_OUT" "read 1 commit(s)" "naming what it actually read"
+    assert_contains "$LAST_OUT" "the PR reports 3" "and what the PR says it should have"
+    log_pass "an incomplete commit list is refused, not judged in part"
+}
+
+# MIRROR, and the regression this whole endpoint change exists to prevent: a PR
+# LARGER than the old 250 cap must now be judged, not refused. Before the change
+# this exact fixture produced "Cannot certify" on every run, which is how a
+# 254-commit PR came to have two unattributed commits nobody could see.
+test_over_the_old_cap_is_judged() {
     local body="" i rc=0
-    for ((i = 1; i <= 250; i++)); do
+    for ((i = 1; i <= 254; i++)); do
         [[ -n "$body" ]] && body+=","
         body+="$(commit_json "$(printf 'c%09d' "$i")" mfbayraktar mfbayraktar ok@example.com)"
     done
     run_gate "$body" || rc=$?
-    assert_exit_code 1 "$rc" "at the 250 page cap the set may be truncated and cannot be cleared"
-    assert_contains "$LAST_OUT" "page cap" "naming the cap"
-    log_pass "a possibly-truncated commit list is refused, not judged in part"
+    assert_exit_code 0 "$rc" "254 complete commits must be JUDGED; refusing on size is the bug"
+    assert_contains "$LAST_OUT" "254 commit(s), all attributed" "and say how many it cleared"
+    log_pass "a PR over the retired 250 cap is judged rather than refused"
+}
+
+# And the plant inside that same over-cap set: one bad commit among 254 must
+# still be named. A completeness check that passed the set through without
+# judging it would look identical to the case above.
+test_over_the_old_cap_still_finds_the_offender() {
+    local body="" i rc=0
+    for ((i = 1; i <= 253; i++)); do
+        body+="$(commit_json "$(printf 'c%09d' "$i")" mfbayraktar mfbayraktar ok@example.com),"
+    done
+    body+="$(commit_json 917d1902dd null null muhammed@rediacc.com)"
+    run_gate "$body" || rc=$?
+    assert_exit_code 1 "$rc" "one unattributed commit among 254 must still fail"
+    assert_contains "$LAST_OUT" "917d190" "naming the sha"
+    assert_contains "$LAST_OUT" "muhammed@rediacc.com" "and the address"
+    log_pass "PLANT: an offender hidden in a 254-commit PR is found"
 }
 
 # ── 8. CONTROL over the whole file: the fake must be what decides ─────────
@@ -167,7 +218,9 @@ test_bot_passes
 test_null_committer_fails
 test_empty_list_refuses
 test_gh_failure_refuses
-test_page_cap_refuses
+test_short_read_refuses
+test_over_the_old_cap_is_judged
+test_over_the_old_cap_still_finds_the_offender
 test_control_fixture_decides
 
 echo ""
