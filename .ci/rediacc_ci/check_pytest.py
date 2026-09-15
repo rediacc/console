@@ -239,6 +239,38 @@ COLLECTED_RE = re.compile(
 )
 PASSED_RE = re.compile(r"(\d+) passed")
 
+#: A SKIP THIS GATE WILL TOLERATE, and the ONLY one. `-ra` (this repo's
+#: `addopts`) prints one line per distinct skip reason, prefixed with the COUNT
+#: of tests sharing it, so the counts are summed rather than the lines:
+#:
+#:     SKIPPED [1] .../test_proxies_ops_host_check.py:208: the twin reports
+#:         cannot-run here: proxy ops-host-check: CANNOT RUN (1 of 2
+#:         requirement(s) missing)
+#:
+#: `CANNOT RUN (N of M requirement(s) missing)` is the proxies' DECLARED
+#: contract, emitted by `proxy_preflight` after `proxy_need_*` finds a tool
+#: absent. It says, in the run's own output, which subject could not run and how
+#: many of its stated requirements were missing.
+#:
+#: WHY ANY ALLOWANCE AT ALL, given this gate's whole stance is that a skip is not
+#: a pass. Because the stance was aimed at ROT and this is not rot. It was
+#: written after 17 tests sat permanently skipped behind `skipif(not
+#: TWIN.is_file())` on a twin that had been deleted -- invisible, unowned, and
+#: passing for months. A proxy that announces "I need a renet binary and there
+#: isn't one" is the opposite: it names the subject, names the shortfall, and
+#: reappears in every run until somebody provisions it.
+#:
+#: WHAT IT DELIBERATELY DOES NOT COVER, which is the part that keeps it honest:
+#: a bare `pytest.skip()`, a `skipif` on a missing file, an `xfail`, or any other
+#: reason text is still refused. The 16 `test_proxies_linux_packages` skips
+#: ("packaging toolchain absent (createrepo_c)") do NOT match this pattern and
+#: were fixed by PROVISIONING createrepo-c instead -- so if that provisioning
+#: ever regresses, they refuse again rather than being quietly forgiven here.
+CONTRACT_SKIP_RE = re.compile(
+    r"^SKIPPED \[(\d+)\].*CANNOT RUN \(\d+ of \d+ requirement\(s\) missing\)",
+    re.MULTILINE,
+)
+
 # The `pytest` row of `.ci/bootstrap.sh doctor`: name, pinned version, resolved
 # path. ANSI is stripped before matching, because doctor colours the ABSENT
 # marker and a colour code inside the field would be captured as part of a path.
@@ -343,7 +375,24 @@ def parse_counts(text: str) -> tuple[int | None, int | None]:
     )
 
 
-def verdict(*, corpus: int, collected: int | None, passed: int | None, returncode: int) -> str:
+def parse_contract_skips(text: str) -> int:
+    """How many tests skipped under the proxies' declared cannot-run contract.
+
+    The COUNTS are summed, not the lines: `-ra` groups tests by reason and
+    prefixes each with `[N]`, so two subjects that cannot run produce two lines
+    while five tests behind one subject produce one line reading `[5]`.
+    """
+    return sum(int(m.group(1)) for m in CONTRACT_SKIP_RE.finditer(text or ""))
+
+
+def verdict(
+    *,
+    corpus: int,
+    collected: int | None,
+    passed: int | None,
+    returncode: int,
+    contract_skips: int = 0,
+) -> str:
     """The whole decision, as a pure function of four numbers. "" means green.
 
     PURE ON PURPOSE. Every refusal this gate can make is decided here, so the
@@ -384,11 +433,14 @@ def verdict(*, corpus: int, collected: int | None, passed: int | None, returncod
                 "failing test." % (sig, returncode, RUN_TIMEOUT_S)
             )
         return "pytest exited %d." % returncode
-    if passed != collected:
+    if (passed or 0) + contract_skips != collected:
         return (
-            "pytest exited 0 but reports %s passed out of %d collected. A skipped or "
-            "deselected test is not a passing one, and the difference is invisible in "
-            "the exit code." % ("no" if passed is None else str(passed), collected)
+            "pytest exited 0 but reports %s passed (+%d declared cannot-run) out of %d "
+            "collected. A skipped or deselected test is not a passing one, and the "
+            "difference is invisible in the exit code. Only a skip whose reason carries "
+            "a proxy's `CANNOT RUN (N of M requirement(s) missing)` contract is counted; "
+            "any other skip has to be fixed or provisioned."
+            % ("no" if passed is None else str(passed), contract_skips, collected)
         )
     return ""
 
@@ -607,6 +659,71 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
         "inside a failure message yields no count",
         parse_counts("E   AssertionError: expected 3 workers [7 items]")[0],
         None,
+    )
+
+    # -- the declared cannot-run allowance, and what it must NOT forgive
+    contract_line = (
+        "SKIPPED [1] .ci/rediacc_ci/tests/test_proxies_ops_host_check.py:208: the twin "
+        "reports cannot-run here: proxy ops-host-check: CANNOT RUN (1 of 2 requirement(s) "
+        "missing)"
+    )
+    rot_line = "SKIPPED [17] .ci/rediacc_ci/tests/test_setup_port.py:41: the bash twin is absent"
+    c.check(
+        "the proxies' declared contract is counted, and the COUNT is read, not the line",
+        parse_contract_skips(
+            contract_line
+            + "\nSKIPPED [5] x.py:1: proxy q: CANNOT RUN (2 of 3 requirement(s) missing)"
+        ),
+        6,
+    )
+    c.check(
+        "CONTROL: a skip with NO declared contract counts for nothing -- this is the "
+        "17-dead-tests shape the refusal was written for",
+        parse_contract_skips(rot_line),
+        0,
+    )
+    c.check(
+        "CONTROL: 'CANNOT RUN' without the requirement tally is not the contract",
+        parse_contract_skips("SKIPPED [3] x.py:1: CANNOT RUN because I said so"),
+        0,
+    )
+    c.check(
+        "CONTROL: the pattern is ANCHORED at SKIPPED, so the phrase quoted inside a "
+        "failure message forgives nothing",
+        parse_contract_skips("E  AssertionError: CANNOT RUN (1 of 2 requirement(s) missing)"),
+        0,
+    )
+    c.check(
+        "a declared cannot-run skip lets an otherwise-complete run pass",
+        verdict(
+            corpus=healthy, collected=healthy, passed=healthy - 1, returncode=0, contract_skips=1
+        ),
+        "",
+    )
+    c.check(
+        "CONTROL: THE SAME SHORTFALL WITHOUT THE CONTRACT IS STILL REFUSED -- this is the "
+        "one that proves the allowance did not become a blanket skip amnesty",
+        "passed (+0 declared cannot-run) out of"
+        in verdict(
+            corpus=healthy, collected=healthy, passed=healthy - 1, returncode=0, contract_skips=0
+        ),
+        True,
+    )
+    c.check(
+        "CONTROL: a contract skip cannot paper over a SECOND, undeclared one",
+        "out of"
+        in verdict(
+            corpus=healthy, collected=healthy, passed=healthy - 2, returncode=0, contract_skips=1
+        ),
+        True,
+    )
+    c.check(
+        "CONTROL: the allowance does not rescue a non-zero exit",
+        "pytest exited 1."
+        in verdict(
+            corpus=healthy, collected=healthy, passed=healthy - 1, returncode=1, contract_skips=1
+        ),
+        True,
     )
 
     # -- verdict, the whole matrix
@@ -1009,7 +1126,18 @@ def main(argv: list[str]) -> int:
     collected, passed = parse_counts(out)
     # pytest exit 4 is a USAGE error: this repo's own ini table is wrong. That is
     # a defect in the tree, not an absent tool, so it is a 1 and never a 77.
-    problem = verdict(corpus=corpus, collected=collected, passed=passed, returncode=returncode)
+    contract_skips = parse_contract_skips(out)
+    if contract_skips:
+        print(
+            "info: %d test(s) skipped under a proxy's declared cannot-run contract" % contract_skips
+        )
+    problem = verdict(
+        corpus=corpus,
+        collected=collected,
+        passed=passed,
+        returncode=returncode,
+        contract_skips=contract_skips,
+    )
     if problem:
         print(out, file=sys.stderr)
         print("\n%s✗%s %s" % (RED, NC, problem), file=sys.stderr)
