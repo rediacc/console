@@ -261,7 +261,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-agent-hints-implementation.md` | compacted | 84 | 0 | 0 | 4638 |
 | `agent/PLAN-agent-hints-in-stop-hook.md` | compacted | 70 | 0 | 0 | 3652 |
 | `agent/PLAN-ask-flow-preemptive-settled-check.md` | draft | 552 | 0 | 0 | 28343 |
-| `agent/PLAN-b2-emit-matrix.md` | partially | 372 | 7 | 6 | 28364 |
+| `agent/PLAN-b2-emit-matrix.md` | partially | 372 | 7 | 6 | 28340 |
 | `agent/PLAN-backup-list-executor-fix.md` | compacted | 81 | 0 | 0 | 5511 |
 | `agent/PLAN-backup-quota-delta-gc.md` | compacted | 86 | 0 | 0 | 5603 |
 | `agent/PLAN-backup-restore-target-license.md` | compacted | 83 | 0 | 0 | 5579 |
@@ -292,7 +292,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-fix-in-session-rule.md` | compacted | 69 | 0 | 0 | 3594 |
 | `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | done | 319 | 0 | 0 | 19963 |
 | `agent/PLAN-gh-swallow-gates-audit.md` | done | 497 | 0 | 6 | 49920 |
-| `agent/PLAN-git-history-media-rewrite.md` | ready | 345 | 0 | 0 | 16732 |
+| `agent/PLAN-git-history-media-rewrite.md` | ready | 351 | 0 | 0 | 17005 |
 | `agent/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 71 | 0 | 0 | 3940 |
 | `agent/PLAN-greenlight-verify-at-read.md` | compacted | 66 | 0 | 0 | 3593 |
 | `agent/PLAN-hook-inventory-warn-guards.md` | landed | 89 | 0 | 0 | 4112 |
