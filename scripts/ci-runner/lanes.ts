@@ -214,7 +214,7 @@ export interface ShardInput {
   weight?: number;
   heavy?: boolean;
   slow?: boolean;
-  ci: { kind: string; job?: string };
+  ci: { kind: string; job?: string; step?: string };
 }
 
 /** One matrix leg: the gates one runner will execute, in order. */
@@ -482,7 +482,7 @@ export function shardPlan(
     entries.forEach((e, i) => rank.set(e.id, i));
     const laneIds = new Set(entries.map((e) => e.id));
 
-    // MERGE. Mutex groups first, then within-lane `needs`.
+    // MERGE. Mutex groups, then step-sharing, then within-lane `needs`.
     const merge = new Merge();
     for (const e of entries) merge.find(e.id);
     const groups = new Map<string, string[]>();
@@ -500,6 +500,33 @@ export function shardPlan(
         const root = merge.find(members[0] as string);
         const list = reasonFor.get(root) ?? [];
         list.push(`mutex ${group}`);
+        reasonFor.set(root, list);
+      }
+    }
+    // STEP-SHARING (T-SCHED B2 D1). Several ids can ride ONE emitted workflow step
+    // (`check:lint`, `check:lint:cli`, ... all inside `ci-quality.yml`'s single `Lint`
+    // step) -- the ids are one `run:` block in one shell, so a shard boundary between
+    // them is unrealisable: gate-bind attaches exactly one conjunct per STEP, never per
+    // id. Union them before `needs`, so a needs edge landing on a step-sharing id still
+    // walks to the right unit. A shared-step unit's heavy peak is ONE, the same
+    // treatment `concurrentHeavy` below already gives a mutex-only unit and for the
+    // same reason: today they genuinely run together in one process, one runner,
+    // never concurrently with themselves. `mergedByNeeds` (below) only marks a unit
+    // that also carries a needs edge, so a pure step-shared unit is untouched by the
+    // `overloaded` refusal without a separate exemption.
+    const stepGroups = new Map<string, string[]>();
+    for (const e of entries) {
+      if (e.ci.kind !== 'step' || !e.ci.step) continue;
+      const members = stepGroups.get(e.ci.step) ?? [];
+      members.push(e.id);
+      stepGroups.set(e.ci.step, members);
+    }
+    for (const [step, members] of stepGroups) {
+      for (const id of members.slice(1)) merge.union(members[0] as string, id);
+      if (members.length > 1) {
+        const root = merge.find(members[0] as string);
+        const list = reasonFor.get(root) ?? [];
+        list.push(`one step "${step}"`);
         reasonFor.set(root, list);
       }
     }
@@ -606,9 +633,16 @@ export function shardPlan(
     const binWeight = new Array<number>(want).fill(0);
     const binHeavy = new Array<number>(want).fill(0);
     for (const unit of ordered) {
+      // PEAK, NOT RAW COUNT. A mutex- or step-merged unit's `heavy` field is a sum
+      // over ids that never run at once (one mutex group, one `run:` block), so
+      // packing and the shard's own receipt must use `concurrentHeavy(unit)` here,
+      // the same peak the refusal above is computed against -- using the raw sum
+      // would both refuse a bin for a unit that only ever holds one heavy process
+      // and report a shard's `heavy` count higher than what can ever be resident.
+      const peak = concurrentHeavy(unit);
       let pick = -1;
       for (let i = 0; i < want; i += 1) {
-        if (unit.heavy > 0 && binHeavy[i] > 0) continue;
+        if (peak > 0 && binHeavy[i] > 0) continue;
         if (pick === -1 || (binWeight[i] as number) < (binWeight[pick] as number)) pick = i;
       }
       if (pick === -1) {
@@ -621,7 +655,7 @@ export function shardPlan(
       }
       (bins[pick] as Unit[]).push(unit);
       binWeight[pick] = (binWeight[pick] as number) + unit.weight;
-      binHeavy[pick] = (binHeavy[pick] as number) + unit.heavy;
+      binHeavy[pick] = (binHeavy[pick] as number) + peak;
     }
 
     const shardList: Shard[] = [];

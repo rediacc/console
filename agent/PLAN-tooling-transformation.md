@@ -3970,6 +3970,34 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       that populates `SHARD_COUNTS` must first add the two controls a conjunct needs: a lane
       WITH an assignment emits `matrix.shard == N` on exactly the steps the plan gives that
       leg, and a lane WITHOUT one emits byte-identically to today.
+      **D1 DONE 2026-09-15, driver-only, inert on landing (SHARD_COUNTS stays empty).**
+      `ShardInput.ci` gained `step?: string` (`scripts/ci-runner/lanes.ts:217`); `shardPlan`
+      gained the fifth merge rule between the mutex merge and `needs` -- entries sharing one
+      `ci.step` union into one unit, reason `one step "<name>"` -- verified against the real
+      lock: `quality-code`'s five `check:lint*` ids (all one `Lint` step) now merge, dropping
+      its heavy-UNIT floor from 8 to 4 (measured via the plan itself at every n from 1, not
+      asserted), and `quality-code` shards cleanly at 4 for the first time (was an
+      unconditional refusal). **A second, un-named bug found and fixed while verifying D1
+      empirically rather than by inspection:** `Shard.heavy` and the bin-packer's own
+      one-heavy-per-shard check summed the merged unit's RAW `heavy` count (5 for the Lint
+      unit) instead of `concurrentHeavy(unit)` (which the refusal arithmetic above already
+      used correctly), so a real emission would have reported a shard as holding 5 heavy
+      processes it can never hold 5 of at once. Both sites now read `concurrentHeavy`.
+      **The stale comment at `scripts/gate-bind.ts:571` this box named is fixed in the same
+      change** ("today only one lane is in SHARD_COUNTS" -> "no lane is").
+      `test_gate_gate_lanes.py` gained 4 controls and fixed one that was passing on an
+      UNREALISABLE plan: `test_the_shards_are_balanced_on_weight` used `quality-security`
+      at 4, whose dominant 149-id `Quality-gate unit tests` step was NOT one unit before D1,
+      so the packer could spread ids across shards for an even weight that real CI could
+      never run (gate-bind attaches one conjunct per step). Moved the balance example to
+      `quality-code` (which genuinely divides on step boundaries) and added a named control
+      that `quality-security` now CORRECTLY stays lopsided. 40/40 pass; `check:ci-gate-bind`
+      (407 declared), `check:ci-parity` (485/485), `check:ci-gates-lock`,
+      `check:ci-quality-complete` (22 controls) and `check:ci-gate-test-real-file-plants`
+      (458 files) all still rc=0; `tsc --noEmit` clean on the touched files.
+      **D2-D5 remain**, and D2 (refuse the id/step gap) is the natural next slice since it
+      reads the SAME merge output D1 just built (`replicated` = lane entries whose step
+      gate-bind never emits).
 - [x] **B3 S** `quality-complete` aggregator. `ci_job_aggregation.py` already enforces four things
       about `ci-complete`, including an equality between tier lists and env vars because "either
       half alone is dead". A matrix job's result is a single roll-up, so shards are invisible

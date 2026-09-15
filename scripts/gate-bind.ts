@@ -568,8 +568,8 @@ export function rewriteRegions(
   /**
    * Per-lane gate -> shard-leg assignment, from `shardAssignment`. OPTIONAL and defaulting
    * to none, so every existing caller and both selftest controls keep emitting exactly the
-   * steps they emitted before: an unsharded lane must not gain a conjunct, and today only
-   * one lane is in `SHARD_COUNTS`.
+   * steps they emitted before: an unsharded lane must not gain a conjunct, and no lane is
+   * in `SHARD_COUNTS` today.
    */
   shards?: ReadonlyMap<string, ReadonlyMap<string, number>>
 ): { text: string; lanes: string[]; dropped: string[] } {

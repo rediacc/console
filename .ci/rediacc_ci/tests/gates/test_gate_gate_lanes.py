@@ -79,6 +79,23 @@ const laneEntries = (lane) =>
 const plan = (lane, n) => shardPlan(lock, real, { [lane]: n });
 const planned = (lane, n) => { const r = plan(lane, n); return 'error' in r ? null : r.lanes[0]; };
 const refusal = (lane, n) => { const r = plan(lane, n); return 'error' in r ? r.error : ''; };
+// MEASURED, not hand-typed: the smallest n at which the lane's heavy-unit count no
+// longer refuses it. T-SCHED B2 D1 merges step-sharing ids into one unit before this
+// count is taken, so a lock change that adds or removes a heavy id inside an existing
+// step (e.g. a sixth `check:lint:*`) moves this floor with it instead of silently
+// going stale the way a literal would.
+const heavyFloor = (lane) => {
+  const total = laneEntries(lane).length;
+  for (let n = 1; n <= total; n++) {
+    const r = plan(lane, n);
+    if (!('error' in r) || !r.error.includes('heavy is capped at one per shard')) return n;
+  }
+  return null;
+};
+const stepIds = (lane, step) =>
+  lock
+    .filter((e) => e.ci && e.ci.kind === 'step' && e.ci.job === lane && e.ci.step === step)
+    .map((e) => e.id);
 
 process.stdout.write(JSON.stringify({
   real: capsOf(real),
@@ -102,6 +119,7 @@ process.stdout.write(JSON.stringify({
   plans: {
     security4: planned('quality-security', 4),
     code8: planned('quality-code', 8),
+    code4: planned('quality-code', 4),
     www3: planned('quality-www-build', 3),
     static3: planned('quality-static', 3),
   },
@@ -110,7 +128,7 @@ process.stdout.write(JSON.stringify({
     www5: refusal('quality-www-build', 5),
     submodule2: refusal('quality-submodule-branches', 2),
     nowhere2: refusal('quality-nowhere', 2),
-    code4: refusal('quality-code', 4),
+    code2: refusal('quality-code', 2),
     go2: refusal('quality-go', 2),
     go8: refusal('quality-go', 8),
     static0: JSON.stringify(shardPlan(lock, real, { 'quality-static': 0 })),
@@ -119,6 +137,8 @@ process.stdout.write(JSON.stringify({
   },
   deterministic:
     JSON.stringify(plan('quality-security', 4)) === JSON.stringify(plan('quality-security', 4)),
+  heavyFloors: { 'quality-code': heavyFloor('quality-code') },
+  lintStepIds: stepIds('quality-code', 'Lint'),
 }));
 """
 
@@ -414,8 +434,16 @@ def test_no_shard_is_empty(gate):
 
 
 def test_the_shards_are_balanced_on_weight(gate):
+    """T-SCHED B2 D1 moved this fixture off `security4`. Before the step-merge,
+    `quality-security`'s 149-id `Quality-gate unit tests` step was NOT one unit, so
+    the packer could spread its ids across shards for an even weight -- a plan real
+    CI could never run, since gate-bind can attach one conjunct to that one step.
+    After the merge the 149 ids are correctly ONE unit and `security4` is
+    (correctly) unbalanceable: 150 of 166 entries sit in a single indivisible
+    block. `quality-code` divides on real step boundaries and balances for real;
+    it is the box's own worked example (D1/D2) of a lane the mechanism suits."""
     gate.log_test("balance on `weight`, which is the rule the box states")
-    plan = probe(gate)["plans"]["security4"]
+    plan = probe(gate)["plans"]["code8"]
     weights = [s["weight"] for s in plan["shards"]]
     if max(weights) - min(weights) > 2:
         gate.log_fail(
@@ -424,6 +452,25 @@ def test_the_shards_are_balanced_on_weight(gate):
         )
     gate.assertions += 1
     gate.log_pass("shard weights %s are balanced" % weights)
+
+
+def test_a_dominant_single_step_lane_is_correctly_unbalanceable(gate):
+    """The negative space of the test above, named rather than left implicit.
+    `quality-security` is NOT a planner bug: 149 of its 166 entries are one
+    hand-written step (`Quality-gate unit tests`), so no packer can spread that
+    unit without proposing a plan gate-bind cannot realize. This is exactly the
+    shape T-SCHED B2's own later measurement used to prefer `quality-code`."""
+    gate.log_test("quality-security's dominant step correctly resists balance")
+    plan = probe(gate)["plans"]["security4"]
+    weights = [s["weight"] for s in plan["shards"]]
+    if max(weights) - min(weights) <= 2:
+        gate.log_fail(
+            "shard weights %s are balanced; quality-security's 149-id battery step "
+            "should make that impossible, so either the lock or the merge changed "
+            "underneath this control" % weights
+        )
+    gate.assertions += 1
+    gate.log_pass("quality-security stays lopsided (%s), as its structure demands" % weights)
 
 
 def test_a_mutex_group_never_splits(gate):
@@ -539,14 +586,61 @@ def test_a_lane_the_workflow_does_not_define_refuses(gate):
 
 
 def test_more_heavy_gates_than_shards_refuses(gate):
-    gate.log_test("the aggregate half of the heavy rule")
-    message = probe(gate)["refusals"]["code4"]
+    """T-SCHED B2 D1 moved this number. Before the step-merge, `quality-code` counted
+    8 heavy IDS -- `check:lint` five times over (all one step) plus three more -- and
+    refused any count under 8. After it, the five `check:lint*` ids are one unit with
+    one heavy peak, so the real floor is the number of heavy UNITS, measured here
+    rather than hand-typed so a future lock change cannot make this assertion stale
+    silently."""
+    gate.log_test("the aggregate half of the heavy rule, in the corrected currency")
+    floor = probe(gate)["heavyFloors"]["quality-code"]
+    if floor < 2:
+        gate.log_fail("quality-code's heavy-unit floor measured %d, expected >= 2" % floor)
+    gate.assertions += 1
+    message = probe(gate)["refusals"]["code2"]
     gate.assert_contains(
         message,
-        "Ask for at least 8 shards",
-        "8 heavy gates cannot fit 4 shards at one heavy each, and the message must say so",
+        "Ask for at least %d shards" % floor,
+        "fewer shards than heavy units must refuse and name the real (unit) minimum",
     )
-    gate.log_pass("more heavy gates than shards refuses, naming the minimum")
+    gate.log_pass("more heavy gates than shards refuses, naming the corrected minimum (%d)" % floor)
+
+
+def test_step_merge_lowered_the_floor_enough_to_shard_code_at_four(gate):
+    """THE POINT OF D1. Before the step-merge this exact count (`quality-code`, 4
+    shards) refused outright -- 8 heavy ids could not fit in 4 shards -- which is
+    the wrong answer: the five `check:lint*` ids are one process, one runner, one
+    heavy peak. Refusing to shard a lane over ids that never run concurrently is
+    the bug D1 exists to fix; this proves the fix, not just its arithmetic."""
+    gate.log_test("quality-code now shards at 4 (was an unconditional refusal before D1)")
+    plan = probe(gate)["plans"]["code4"]
+    if plan is None:
+        gate.log_fail(
+            "quality-code refused at 4 shards; the step-merge should have made this viable"
+        )
+    gate.assertions += 1
+    counts = [s["heavy"] for s in plan["shards"]]
+    if max(counts) > 1:
+        gate.log_fail(
+            "heavy per shard %s exceeds the cap of one, even at the corrected floor" % counts
+        )
+    gate.assertions += 1
+    gate.log_pass("quality-code shards at 4, heavy still capped at one per shard (%s)" % counts)
+
+
+def test_a_step_shared_group_never_splits(gate):
+    """`check:lint`, `check:lint:cli`, `check:lint:web`, `check:lint:tooling` and
+    `check:lint:account` all carry `ci.step: 'Lint'` -- one `run:` of four npm
+    scripts chained with `&&` in one shell. A plan that put two of them on
+    different legs would be unrealisable: gate-bind can attach exactly one
+    conjunct to that one step."""
+    gate.log_test("ids sharing one emitted step land in the same shard")
+    plan = probe(gate)["plans"]["code8"]
+    homes = {_home_of(plan, gid) for gid in probe(gate)["lintStepIds"]}
+    if len(homes) != 1:
+        gate.log_fail("the Lint step's ids span shards %s; one `run:` cannot honour that" % homes)
+    gate.assertions += 1
+    gate.log_pass("every id riding the Lint step lands in the same shard")
 
 
 def test_two_heavies_in_one_mutex_group_shard_because_they_never_coexist(gate):
