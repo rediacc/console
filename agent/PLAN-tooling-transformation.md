@@ -1198,6 +1198,20 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       **23 licensed today (22 strictly), draining 515 -> 493.** C1 blocks 1, C2 blocks 11,
       **C3 blocks 53**. `check-lockfile.sh` is the strict exclusion and NOT a port defect:
       its twin fails identically on `private/account/package-lock.json`.
+      **RE-CHECKED 2026-09-15, NOT RE-DERIVED IN FULL -- two concrete signals worth
+      recording rather than a new headline number guessed from them.** (1) Both boxes this
+      census named as blockers are now done: C1 was already `[x]`, and C2 (`pathsOrigin`
+      required + verified) landed and ticked earlier tonight -- together the census's own
+      text says they blocked 12 paths, so this precondition may have moved without anyone
+      re-running the sweep that measures it. (2) The ledger count this box's own precondition
+      rests on has grown far past its own baseline: `ls .ci/shadow/*.observations.jsonl` is
+      **258** today (77 w7p2, 16 w7p5a, 10 w7p5b, 153 w7p6, plus 2 singletons), not the "82"
+      this census and `agent/PLAN-extension-shaped-matchers.md`'s repeated re-checks assume --
+      consistent with that plan's own newly-flagged w7p5a-/w7p6- prefix ambiguity. Neither
+      number is re-derived here: the actual COVERAGE claim ("0 of 149 gate tests have a
+      ledger") needs the real census tool re-run against the current tree, not a raw ledger
+      count, and that re-run is real work for whoever next picks up this box -- not
+      attempted under this session's own workload tonight.
       **BLOCKERS, EACH DRIVEN RATHER THAN INHERITED.** `JUDGMENT-ONLY` confirmed through the
       `TRAP_CORPUS` env seam against a modified COPY, leaving `docs/agent-reference/TRAPS.md`
       untouched: exit 0 before and after, with two controls firing red -- a dangling pointer,
