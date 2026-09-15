@@ -1,8 +1,8 @@
-"""What THIS bash says when arithmetic goes wrong, asked rather than assumed.
+"""What THIS bash says when it complains, asked rather than assumed.
 
-WHY THIS EXISTS. Bash 5.3 reworded two diagnostics that eleven ported modules
-reproduce as string literals. Measured 2026-09-15 by running both, not by
-reading a changelog:
+WHY THIS EXISTS. Bash 5.3 reworded several diagnostics that ported modules and
+their tests reproduce as string literals. Measured 2026-09-15 by running both
+bashes, not by reading a changelog:
 
     bash 5.3.9(1)   [[: 1 2: arithmetic syntax error in expression (error token is "2")
     bash 5.2.21(1)  [[: 1 2: syntax error in expression (error token is "2")
@@ -16,8 +16,14 @@ reading a changelog:
     bash 5.3.9(1)   [: abc: integer expected
     bash 5.2.21(1)  [: abc: integer expression expected
 
-Two independent changes: a uniform `arithmetic ` prefix on all three arithmetic
-shapes, and `[`'s integer complaint losing the word `expression`.
+    bash 5.3.9(1)   cd "" -> cd: null directory
+    bash 5.2.37(1)  cd "" -> (silence; the empty argument is simply accepted)
+
+THREE independent changes: a uniform `arithmetic ` prefix on all three
+arithmetic shapes, `[`'s integer complaint losing the word `expression`, and
+`cd ""` going from silent to refused. The third is the odd one out and the
+reason this module returns a STRING rather than a flag -- on 5.2 the honest
+answer is the empty string, so a caller can append it unconditionally.
 
 HOW IT HID FOR 53 WAVES. Every port here is verified against its bash twin by a
 differential test asserting the two produce the same bytes. Both sides run on
@@ -52,18 +58,23 @@ from __future__ import annotations
 import functools
 import subprocess
 
-# Both diagnostics from ONE bash, so a single probe answers both questions and a
-# host cannot be seen half-5.2 and half-5.3. `[[ ]]` yields the arithmetic shape
-# and `[` the integer one; neither writes to stdout and both are pure.
-_PROBE = '[[ "1 2" -gt 0 ]]; [ abc -gt 1 ]'
+# Every diagnostic from ONE bash, so a single probe answers all of them and a
+# host cannot be seen half-5.2 and half-5.3. `[[ ]]` yields the arithmetic shape,
+# `[` the integer one, and `cd ""` the null-directory one; none writes to stdout,
+# and `cd ""` does not move the shell (it is refused on 5.3 and a no-op on 5.2).
+_PROBE = '[[ "1 2" -gt 0 ]]; [ abc -gt 1 ]; cd ""'
 
 _ARITH_53 = "arithmetic syntax error"
 _ARITH_52 = "syntax error"
 _INTEGER_53 = "integer expected"
 _INTEGER_52 = "integer expression expected"
+# 5.3 REFUSES `cd ""` OUT LOUD; 5.2 says nothing at all, so the 5.2 answer is the
+# empty string rather than a different wording. A caller that appends this to an
+# expected stderr therefore appends nothing on 5.2, which is correct.
+_CD_NULL_53 = "cd: null directory"
 
 
-def _probe(env: dict[str, str] | None) -> tuple[str, str]:
+def _probe(env: dict[str, str] | None) -> tuple[str, str, str]:
     try:
         proc = subprocess.run(
             ["bash", "-c", _PROBE],
@@ -74,7 +85,7 @@ def _probe(env: dict[str, str] | None) -> tuple[str, str]:
             timeout=30,
         )
     except (OSError, subprocess.SubprocessError):
-        return _ARITH_53, _INTEGER_53
+        return _ARITH_53, _INTEGER_53, _CD_NULL_53
     err = proc.stderr
     # SUBSTRING ORDER MATTERS, and only in this direction: `syntax error` is a
     # substring of `arithmetic syntax error`, so asking for the SHORT spelling
@@ -85,16 +96,17 @@ def _probe(env: dict[str, str] | None) -> tuple[str, str]:
     # The integer pair has the trap the other way round -- here the 5.2 spelling
     # is the longer one -- so the long spelling is again what gets asked first.
     integer = _INTEGER_52 if _INTEGER_52 in err else _INTEGER_53
-    return arith, integer
+    cd_null = _CD_NULL_53 if _CD_NULL_53 in err else ""
+    return arith, integer, cd_null
 
 
 @functools.lru_cache(maxsize=1)
-def _ambient() -> tuple[str, str]:
+def _ambient() -> tuple[str, str, str]:
     """The host's own bash, probed once per process."""
     return _probe(None)
 
 
-def _dialect(env: dict[str, str] | None) -> tuple[str, str]:
+def _dialect(env: dict[str, str] | None) -> tuple[str, str, str]:
     # A caller that named an env is asking about THAT bash, so it neither reads
     # nor writes the ambient cache.
     return _probe(env) if env is not None else _ambient()
@@ -119,6 +131,16 @@ def integer_expected(env: dict[str, str] | None = None) -> str:
     What `[ abc -gt 1 ]` prints after `[: abc: `.
     """
     return _dialect(env)[1]
+
+
+def cd_null_directory(env: dict[str, str] | None = None) -> str:
+    """What bash says about `cd ""` -- `cd: null directory` on 5.3+, NOTHING before.
+
+    The empty string is the real 5.2 answer, not a placeholder: that bash accepts
+    `cd ""` silently. A caller building an expected stderr can append this
+    unconditionally and get the right bytes on either.
+    """
+    return _dialect(env)[2]
 
 
 def reset_cache() -> None:

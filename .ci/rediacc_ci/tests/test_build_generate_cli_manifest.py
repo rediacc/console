@@ -42,6 +42,7 @@ import sys
 
 from rediacc_ci import paths
 from rediacc_ci.build import generate_cli_manifest as port
+from rediacc_ci.core import bash_dialect
 
 ROOT = paths.repo_root()
 
@@ -822,14 +823,31 @@ def test_the_twin_cannot_start_without_dirname_and_the_port_can(tmp_path) -> Non
 
     The twin resolves its own `SCRIPT_DIR` at `:16` with
     `cd "$(dirname "${BASH_SOURCE[0]}")"`, so a PATH without `dirname` kills it
-    before line 17 with `cd: null directory` and exit 1. The port resolves its
-    own path in-process and gets all the way to `:136`, where its one real
-    `dirname` call is missing and `mkdir -p ''` then fails -- exit 1 as well,
-    but for a different reason and after doing all the work.
+    before line 17 and exit 1. The port resolves its own path in-process and gets
+    all the way to `:136`, where its one real `dirname` call is missing and
+    `mkdir -p ''` then fails -- exit 1 as well, but for a different reason and
+    after doing all the work.
 
     This is shell plumbing, not ported logic, which is why `dirname` is a plain
     unrecorded symlink in the fixture. Recorded here so nobody discovers it as a
     surprise.
+
+    HOW FAR THE TWIN GETS IS BASH-VERSION-DEPENDENT, and this case used to
+    hard-code the 5.3 answer (`ends with "line 16: cd: null directory"`). The
+    difference is BEHAVIOURAL, not just wording, and it was worth measuring
+    rather than guessing:
+
+        bash 5.3  `cd ""` FAILS and says `cd: null directory`, so `set -e` kills
+                  the script AT line 16 and line 17 never runs.
+        bash 5.2  `cd ""` SUCCEEDS, silently, leaving the shell where it was --
+                  so the script survives line 16 and dies one line later, unable
+                  to source `../lib/common.sh` from the wrong directory.
+
+    Both versions still die in the twin's own plumbing before any manifest work
+    happens, which is the property this case actually exists to pin, so that is
+    asserted unconditionally and only the tail is asked of the running bash.
+    Hard-coding the 5.3 tail made this pass on every machine in this tree and
+    fail in CI run 34970782616.
     """
     root = default_fixture(tmp_path)
     args = ("--version", "1.2.3", "--input", "in", "--output", "out/manifest.json")
@@ -837,7 +855,15 @@ def test_the_twin_cannot_start_without_dirname_and_the_port_can(tmp_path) -> Non
     _restore(root)
     new, _c2, _s2 = _run(root, "new", args=args, drop=("dirname",))
     assert old.returncode == 1, old.stderr
-    assert old.stderr.endswith("line 16: cd: null directory\n"), old.stderr
+    # Version-independent, and the real point of the case: the missing `dirname`
+    # is reported from inside the command substitution, and no manifest work
+    # happens on either bash.
+    assert "line 16: dirname: command not found" in old.stderr, old.stderr
+    cd_null = bash_dialect.cd_null_directory()
+    if cd_null:
+        assert old.stderr.endswith("line 16: %s\n" % cd_null), old.stderr
+    else:
+        assert old.stderr.rstrip().endswith("lib/common.sh: No such file or directory"), old.stderr
     assert "Generating CLI manifest" not in old.stderr
     assert new.returncode == 1, new.stderr
     assert "✓   Added linux-x64" in new.stderr
