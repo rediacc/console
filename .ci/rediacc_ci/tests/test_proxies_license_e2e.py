@@ -62,15 +62,44 @@ def test_selftest_is_byte_identical() -> None:
     assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
 
 
+#: The real-tree battery's budget. 120 -> 600 on 2026-09-15, on two consecutive
+#: CI timeouts and a measurement, not on one red and a shrug.
+#:
+#: WHAT THE SUBJECT ACTUALLY DOES: three full runs of the renet licensing battery
+#: -- an enforcing binary plus two deliberately broken controls that must fail.
+#: That is real work, not a poll, so a timeout here is a budget question rather
+#: than evidence of a wedge.
+#:
+#: THE EVIDENCE IT IS CONTENTION AND NOT A HANG, which is the distinction that
+#: decides whether widening is a fix or a cover-up:
+#:   - it PASSED in run 34970782616, when the suite took 1039.93s;
+#:   - it timed out in 35009582358 AND 35015545136, after the suite grew to
+#:     ~1250s because tests that used to fail fast now do real work;
+#:   - the captured stdout shows it PROGRESSING, not stalled at startup --
+#:     `toolchain complete, 6 requirement(s) satisfied` before the kill;
+#:   - measured here on an idle machine: **33s**, not the 15.8s this proxy's own
+#:     header still claims. So 120s was only ~3.6x the real cost, which is thin
+#:     for a runner executing a 20-minute parallel suite across xdist workers.
+#:
+#: 600 is ~18x the measured cost: generous enough that contention cannot reach
+#: it, bounded enough that a genuine hang -- which runs forever -- still dies
+#: here with a named timeout rather than taking the job's own ceiling and
+#: reporting nothing. If this EVER fires again, that is a wedge, not load.
+#:
+#: The `--selftest` budget above is deliberately left at 180s: it has never
+#: fired, and widening a timer that is not failing buys nothing.
+REAL_TREE_TIMEOUT_S = 600
+
+
 def test_real_tree_agrees_byte_for_byte() -> None:
     kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
     old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN)], timeout=120, check=False, **kwargs
+        ["bash", str(TWIN)], timeout=REAL_TREE_TIMEOUT_S, check=False, **kwargs
     )
     if old.returncode == 77:
         pytest.skip(f"the twin reports cannot-run here: {old.stderr.strip()[:200]}")
     new = subprocess.run(  # type: ignore[call-overload]
-        ["python3", "-m", PORT_MODULE], timeout=120, check=False, **kwargs
+        ["python3", "-m", PORT_MODULE], timeout=REAL_TREE_TIMEOUT_S, check=False, **kwargs
     )
     assert old.returncode == 0, old.stderr
     assert "5 check(s) passed, 6 requirement(s) present" in old.stdout
