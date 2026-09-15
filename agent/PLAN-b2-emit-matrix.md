@@ -277,14 +277,14 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
 - [x] D1: add `step?: string` to `ShardInput` (`scripts/ci-runner/lanes.ts:207-218`); add the
       fifth merge rule (group by `ci.step`, union, heavy-peak-as-one) to `shardPlan`; widen the
       `overloaded` refusal exemption for a shared-step unit.
-      (ticked) 2026-09-15 by d778be9d: landed `5a6c76a22`/`adae3a53c` ("T-SCHED B2 D1, shard over
+      (ticked) 2026-09-15 by d778be9d: landed `3c8775b30`/`117d6438f` ("T-SCHED B2 D1, shard over
       emitted steps not lock ids" + bash-twin parity). Verified live: `lanes.ts`'s `shardPlan` has
       a STEP-SHARING block explicitly labeled `T-SCHED B2 D1`, unioning ids sharing one `ci.step`
       before the `needs` merge, with the heavy-peak-as-one treatment the task describes.
 - [x] D2: `shardAssignment` returns `{ legs, replicated }`; `--write` prints replicated entries
       by name and lane share; add `SHARD_REPLICATED_MAX` beside `SHARD_COUNTS`; refuse when the
       replicated share exceeds the declared ceiling.
-      (ticked) 2026-09-15 by d778be9d: landed `3fdad41b2` ("T-SCHED B2 D2, refuse the id/step gap
+      (ticked) 2026-09-15 by d778be9d: landed `d76f805a2` ("T-SCHED B2 D2, refuse the id/step gap
       instead of emitting it"). `SHARD_REPLICATED_MAX` exists at `scripts/ci-runner/lanes.ts:412`; `shardAssignment`
       is parameterized on `counts`/`ceilings` rather than closing over the module consts, exactly
       so a control can drive it with fixture data (see its own docstring).
