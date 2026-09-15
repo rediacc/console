@@ -339,6 +339,18 @@ status line is genuinely unchanged, not merely re-timestamped; the repeated re-c
 worklist-staleness trigger firing on unrelated item movement elsewhere, already named as a
 candidate hook-tuning issue two checks ago and still not this session's to fix tonight.
 
+### Re-checked an eighth time 2026-09-15, later still: still unchanged
+
+`FAMILIES` re-read directly once more: identical four bash-only rows, same line range.
+Driver/babysitter activity since the seventh check (17 dead `@needs_bash` tests deleted
+from `test_setup_port.py`, a real xdist race fixed in `test_gate_hook_cross_os.py`, a
+history rewrite + force-push on the two unattributed commits, ongoing `quality-security`
+toolchain investigation) touched none of this file or its FAMILIES table. Status stays
+`executing`, commit 3 stays not started, for the same reason as every prior check --
+this session's writer capacity has gone to higher-priority work (the identity gate, the
+first-ever real CI data from previously-cancelled lanes) that the operator's own
+instructions this session ranked above this box.
+
 ### Re-checked a seventh time 2026-09-15, PR-babysit wave continued: still unchanged, but the precondition metric itself is now suspect
 
 `FAMILIES` re-read directly once more: identical four bash-only rows, same line range
