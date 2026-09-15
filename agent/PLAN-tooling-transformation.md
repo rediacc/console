@@ -4090,20 +4090,41 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       2 new selftest controls plus the earlier 4, all pass; same full battery green,
       `--dry-run` against the live tree still 0 refusals (fully inert, confirmed not
       assumed).
-      **NOT done, and STILL deliberately left for a follow-up rather than rushed:** the
-      final `if: always()` receipt-writing step (reading
-      `toJSON(steps)`, computing `gates` from non-skipped outcomes, writing the JSON
-      `readReceipts()` in scripts/gates/check-quality-complete.ts already expects --
-      `{lane, index, of, result, gates}`, confirmed by reading that file's own type rather
-      than re-deriving the shape), and the `actions/upload-artifact` emission
-      (pinned to the exact commit sha `.github/workflows/ci-quality.yml`'s existing two
-      `actions/upload-artifact` steps already use, tagged v7.0.1 there -- that sha is on
-      the ACTION's own repository, never this one, so it is described rather than quoted
-      here to avoid exactly the unresolvable-object-citation class this file's own gate
-      catches). This is real GitHub Actions YAML generation with a
-      hand-crafted inline script computing a count from a live `toJSON()` expression --
-      exactly the kind of thing that deserves careful, tested design rather than a rushed
-      pass, and D3's own marker-collision bug is the concrete reason to slow down here.
+      **D4 DONE, final clause: `emitReceiptStep`, the `if: always()` receipt-writing step
+      plus the `actions/upload-artifact` emission.** Correction en route: the babysitter
+      caught that the prior clause's evidence ("no cross-step env: pass exists in this
+      repo") was itself imprecise -- `$GITHUB_ENV` genuinely exists and is used
+      cross-step in `quality-code` (`ci-quality.yml:230`'s toolchain pins), distinct from
+      a step-level `env:` block (process-local, the real bug). Verified the correction
+      myself before accepting it. The design (compile-time map, not runtime plumbing)
+      still stands on its own merits regardless: 60+ conjuncted steps cannot share one
+      `$GITHUB_ENV` key without clobbering, and using it would mean editing every gate's
+      own `run:` command, versus a compile-time map needing zero changes to any gate
+      script.
+      Writes `{lane, index, of, result, gates}`, the exact shape
+      `readReceipts()` in scripts/gates/check-quality-complete.ts already expects
+      (confirmed by reading that file's own type, not re-derived), pinned to the exact
+      `actions/upload-artifact` commit sha `.github/workflows/ci-quality.yml`'s existing
+      two uses already carry (tagged v7.0.1 there -- described rather than quoted here,
+      since that sha is on the ACTION's own repository and would be an unresolvable
+      object citation in this one).
+      **THE SCRIPT ITSELF IS A HEREDOC TO A REAL FILE, NOT A `node -e "..."` ONE-LINER**,
+      specifically because GHA does its OWN `${{ }}` substitution as a text replacement
+      over the ENTIRE `run:` block before any shell sees it -- a JS template literal
+      containing that exact four-character sequence would collide with GHA's own
+      grammar. The script uses plain `process.env.X` reads and string concatenation
+      only; a selftest control asserts the literal string `${{` never appears anywhere
+      inside the script body.
+      **VERIFIED FOUR WAYS, not just by selftest:** (1) the generated YAML parses as
+      real YAML (PyYAML, embedded in a full job block); (2) the extracted `run:` script
+      was ACTUALLY EXECUTED with realistic env values simulating what GHA substitutes,
+      producing `{"lane":"quality-code","index":1,"of":4,"result":"success","gates":1}`
+      for a fixture with one running step (1 lock id) and one skipped step (2 lock ids,
+      correctly excluded); (3) `actionlint` -- the same linter `check:ci-actionlint`
+      runs in CI -- passes with ZERO findings against a full scratch workflow carrying
+      the real generated output under a real `strategy.matrix`; (4) `--dry-run` against
+      the live tree still 0 refusals (fully inert, SHARD_COUNTS still empty).
+      3 new selftest controls on top of the earlier ones. This closes D4 in full.
       **A GENUINELY PRE-EXISTING, UNRELATED FINDING surfaced while testing (not caused by
       D4): a real `gate-bind --write` against the live tree refuses on "Install worker
       project deps" (added by the lint-ordering fix, `efab3b5ac`) as an UNCLAIMED drop --

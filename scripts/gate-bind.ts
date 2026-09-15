@@ -578,6 +578,77 @@ export function jobLockIdMap(entries: readonly Emitting[]): Record<string, strin
   return map;
 }
 
+/** Same YAML-single-quote-scalar shape as `lockIdsEnvValue`, generalised to any JSON value. */
+function jsonEnvValue(value: unknown): string {
+  return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
+}
+
+/**
+ * T-SCHED B2 D4, final clause. The step every sharded job's region ends with.
+ * `if: always()` because Finding 2's whole point is catching an ALL-SKIPPED leg, which
+ * needs a receipt written even then -- a driver-emitted literal would report a full leg
+ * regardless, which is the exact vacuity this mechanism exists to defend against.
+ *
+ * The script is a heredoc to a real file, not a `node -e "..."` one-liner: GHA does its
+ * OWN `${{ }}` substitution as a text replacement over the entire `run:` block BEFORE a
+ * shell ever sees it, so any JS in the script must never contain that literal substring
+ * (this one uses plain `process.env.X` reads and string concatenation, never a template
+ * literal, specifically to keep the two `${` grammars from colliding). The heredoc
+ * delimiter is single-quoted (`<<'GATERECEIPT'`) so bash does not interpolate the
+ * script body either -- only GHA's own substitution touches this text, and only where
+ * `${{ }}` literally appears in the `env:` values below, never inside the heredoc.
+ *
+ * Counts in the aggregator's currency, LOCK IDS
+ * (`scripts/gates/check-quality-complete.ts:226` compares `gates` against
+ * `declaredShard.ids.length`), crossing `jobLockIdMap` (built at compile time, since
+ * gate-bind already knows every conjuncted gate's id when it writes the region) against
+ * `steps.<id>.outcome` (native to the `steps` context, read via `toJSON(steps)` --
+ * the only thing this script needs at runtime; see `lockIdsEnvValue`'s docstring for why
+ * a step's OWN `env:` cannot serve this instead).
+ */
+export function emitReceiptStep(job: string, of: number, entries: readonly Emitting[]): string[] {
+  const receiptFile = `/tmp/gate-receipt-${job}.json`;
+  return [
+    '      - name: Write shard receipt',
+    '        if: always()',
+    '        env:',
+    `          GATE_STEP_LOCK_MAP: ${jsonEnvValue(jobLockIdMap(entries))}`,
+    '          STEPS_JSON: ${{ toJSON(steps) }}',
+    '          SHARD_INDEX: ${{ matrix.shard }}',
+    `          SHARD_OF: '${of}'`,
+    '          JOB_STATUS: ${{ job.status }}',
+    `          RECEIPT_LANE: '${job}'`,
+    `          RECEIPT_PATH: '${receiptFile}'`,
+    '        run: |',
+    "          cat > /tmp/gate-receipt.js <<'GATERECEIPT'",
+    '          const stepsCtx = JSON.parse(process.env.STEPS_JSON);',
+    '          const map = JSON.parse(process.env.GATE_STEP_LOCK_MAP);',
+    '          let gates = 0;',
+    '          for (const stepId of Object.keys(map)) {',
+    '            const s = stepsCtx[stepId];',
+    "            if (s && s.outcome !== 'skipped') gates += map[stepId].length;",
+    '          }',
+    '          const receipt = {',
+    '            lane: process.env.RECEIPT_LANE,',
+    '            index: Number(process.env.SHARD_INDEX),',
+    '            of: Number(process.env.SHARD_OF),',
+    '            result: process.env.JOB_STATUS,',
+    '            gates: gates,',
+    '          };',
+    "          require('fs').writeFileSync(process.env.RECEIPT_PATH, JSON.stringify(receipt));",
+    '          GATERECEIPT',
+    '          node /tmp/gate-receipt.js',
+    '      - name: Upload shard receipt',
+    '        if: always()',
+    '        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1',
+    '        with:',
+    `          name: quality-shard-\${{ matrix.shard }}`,
+    `          path: ${receiptFile}`,
+    '          retention-days: 7',
+    '          if-no-files-found: error',
+  ];
+}
+
 export function emitStep(b: Emitting, guard = 'setup', stepId?: string): string[] {
   const cmd = b.run.startsWith('tsx ') ? `npm run ${b.id}` : b.run;
   const acquire = b.needs.flatMap((n) => ACQUIRE[n] ?? []);
@@ -726,6 +797,7 @@ export function rewriteRegions(
     // header half is parenthesised for the reason `emitStep` documents: `a || b && c` binds
     // the wrong way and would put a gate on every leg.
     const shardOf = shards?.get(job) ?? null;
+    const shardedEntries: Emitting[] = [];
     for (const b of (byLane.get(job) ?? []).slice().sort((a, z) => a.step.localeCompare(z.step))) {
       const leg = shardOf?.get(b.id);
       const step =
@@ -746,7 +818,17 @@ export function rewriteRegions(
               // to know which case it is in.
               env: { ...b.env, GATE_LOCK_IDS: lockIdsEnvValue([b.id]) },
             };
+      if (leg !== undefined) shardedEntries.push(b);
       out.push(...emitStep(step, guard, leg === undefined ? undefined : gateStepId(b.id)));
+    }
+    // T-SCHED B2 D4, final clause. One receipt step per sharded job, emitted from the
+    // SAME `shardOf` this region already used to conjunct every gate above it -- `of`
+    // is the highest leg number `shardPlan` assigned, which is correct because
+    // `shardPlan`'s bin-packer always fills legs 1..N with none left empty (its own
+    // acceptance clause 3, "no shard is empty").
+    if (shardOf !== null && shardOf.size > 0) {
+      const of = Math.max(...shardOf.values());
+      out.push(...emitReceiptStep(job, of, shardedEntries));
     }
     while (i < lines.length && !CLOSE_RE.test(lines[i])) {
       const step = /^\s*-\s*name:\s*(.+?)\s*$/.exec(lines[i]);
@@ -1817,6 +1899,51 @@ function selftest(): number {
       return (
         rw.text.includes(`id: ${gateStepId(base.id)}`) &&
         rw.text.includes(`GATE_LOCK_IDS: ${lockIdsEnvValue([base.id])}`)
+      );
+    })()
+  );
+
+  // T-SCHED B2 D4, final clause: emitReceiptStep and its wiring.
+  ck(
+    'emitReceiptStep: always() guard, both steps present, the map matches jobLockIdMap',
+    (() => {
+      const out = emitReceiptStep('quality-code', 4, [base]);
+      const text = out.join('\n');
+      return (
+        line(out, 'if:') === '        if: always()' &&
+        text.includes('Write shard receipt') &&
+        text.includes('Upload shard receipt') &&
+        text.includes(`GATE_STEP_LOCK_MAP: ${jsonEnvValue(jobLockIdMap([base]))}`) &&
+        text.includes("SHARD_OF: '4'") &&
+        text.includes('actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a') &&
+        text.includes('name: quality-shard-${{ matrix.shard }}')
+      );
+    })()
+  );
+  ck(
+    'CONTROL: the receipt script never contains a literal `${{`, so GHA cannot mis-substitute inside it',
+    !emitReceiptStep('quality-code', 4, [base]).some(
+      (l) => l.includes('${{') && l.includes('process.env')
+    )
+  );
+  ck(
+    'rewriteRegions: a sharded job gets the receipt step, an unsharded one does not',
+    (() => {
+      const region = [
+        '  quality-static:',
+        '    # >>> gate-bind (generated; do not edit inside)',
+        '    # <<< gate-bind',
+      ].join('\n');
+      const sharded = rewriteRegions(
+        region,
+        new Map([['quality-static', [base]]]),
+        undefined,
+        new Map([['quality-static', new Map([[base.id, 1]])]])
+      );
+      const unsharded = rewriteRegions(region, new Map([['quality-static', [base]]]));
+      return (
+        sharded.text.includes('Write shard receipt') &&
+        !unsharded.text.includes('Write shard receipt')
       );
     })()
   );
