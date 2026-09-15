@@ -73,6 +73,7 @@ it cannot be written from a shell at all. The parts are named once, next to each
 other, so the pattern is still readable as one thing.
 """
 
+import json
 import os
 import re
 import subprocess
@@ -212,6 +213,41 @@ def is_blank(payload: str) -> bool:
     return payload.strip(" \t\n\v\f\r") == ""
 
 
+# ONE READ, NOT 3N. The compare payload already carries the message and the
+# author name and address, so the `repos/{r}/commits/{sha}` calls the loops used
+# to make were re-fetching data already in hand: THREE per commit, 762 of them on
+# a 254-commit PR, ~3.5 minutes of a 12-minute job. Every one of them was also a
+# chance for a rate limit to refuse a PR that is fine.
+COMMIT_PROJECTION = (
+    ".commits[] | {sha: .sha, message: .commit.message, "
+    "name: .commit.author.name, email: .commit.author.email}"
+)
+
+
+def parse_rows(payload: str) -> list[dict]:
+    """One compact JSON object per line. Unparseable lines are DROPPED, not raised.
+
+    Dropping matches the twin, whose `jq -r '.sha' <<<"$ROW"` fails on a
+    malformed row and leaves the fields empty rather than aborting the loop. Both
+    implementations therefore under-report identically instead of one crashing,
+    which is the property the differential needs.
+    """
+    out: list[dict] = []
+    for line in payload.split("\n"):
+        if line.strip() == "":
+            continue
+        try:
+            value = json.loads(line)
+        except ValueError:
+            continue
+        # `.sha // empty` then `[[ -z "$SHA" ]] && continue`: a row with no
+        # usable sha is skipped on both sides rather than reported as commit
+        # "".
+        if isinstance(value, dict) and str(value.get("sha") or "") != "":
+            out.append(value)
+    return out
+
+
 def read_count(payload: str) -> int:
     """`grep -c .`: non-empty LINES, which is what the completeness check reads.
 
@@ -301,7 +337,7 @@ def main(argv: list[str] | None = None) -> int:
             "repos/%s/compare/%s...%s?per_page=100" % (repo, base, head),
             "--paginate",
             "--jq",
-            ".commits[].sha",
+            COMMIT_PROJECTION,
         ],
     )
     if not ok:
@@ -331,34 +367,23 @@ def main(argv: list[str] | None = None) -> int:
         )
         return probe_failed()
 
-    shas = split_commits(commits)
+    rows = parse_rows(commits)
 
-    for sha in shas:
-        ok, message = gh_retry(
-            "commit message for %s" % sha,
-            ["api", "repos/%s/commits/%s" % (repo, sha), "--jq", ".commit.message"],
-        )
-        if not ok:
-            return probe_failed()
+    # TWO PASSES, NOT ONE, and the order is load-bearing: every message finding
+    # is reported before every author finding, which is the order the old
+    # two-loop shape produced.
+    for row in rows:
+        sha = str(row.get("sha") or "")
+        message = str(row.get("message") or "")
         if CLAUDE_PATTERN.search(message):
             issues.append('Commit %s contains: "%s"' % (sha[0:7], first_match(message)))
 
     # Check commit authors
     print("  Checking commit authors...")
-    for sha in shas:
-        ok, name = gh_retry(
-            "commit author name for %s" % sha,
-            ["api", "repos/%s/commits/%s" % (repo, sha), "--jq", ".commit.author.name"],
-        )
-        if not ok:
-            return probe_failed()
-        ok, email = gh_retry(
-            "commit author email for %s" % sha,
-            ["api", "repos/%s/commits/%s" % (repo, sha), "--jq", ".commit.author.email"],
-        )
-        if not ok:
-            return probe_failed()
-
+    for row in rows:
+        sha = str(row.get("sha") or "")
+        name = str(row.get("name") or "")
+        email = str(row.get("email") or "")
         if AUTHOR_PATTERN.search("%s %s" % (name, email)):
             issues.append("Commit %s authored by: %s <%s>" % (sha[0:7], name, email))
 
@@ -493,6 +518,37 @@ def selftest() -> int:
     ctl.check("PLANT: 250 lines is not 254, so the read is short", read_count("x\n" * 250), 250)
     ctl.check("a blank payload counts zero, never the declared total", read_count(""), 0)
     ctl.check("blank lines do not invent commits", read_count("a\n\nb\n"), 2)
+
+    # -- the row parser, which replaced 3 API calls per commit ---------------
+    _row = '{"sha":"abc1234","message":"m","name":"N","email":"e@x.invalid"}'
+    ctl.check("one object per line is parsed", len(parse_rows(_row + "\n" + _row)), 2)
+    ctl.check("a blank payload parses to nothing", parse_rows("\n\n"), [])
+    ctl.check(
+        "an unparseable line is DROPPED, matching the twin's `|| continue`",
+        len(parse_rows(_row + "\nnot json\n" + _row)),
+        2,
+    )
+    ctl.check(
+        'a row with no sha is skipped, not reported as commit ""',
+        parse_rows('{"message":"m"}'),
+        [],
+    )
+    ctl.check(
+        "a JSON value that is not an object is dropped, not indexed",
+        parse_rows('"just a string"\n42\n'),
+        [],
+    )
+    ctl.check(
+        "PLANT: the message field carries through, so the pattern has something to match",
+        bool(
+            CLAUDE_PATTERN.search(
+                parse_rows('{"sha":"a","message":"%s: Claude"}' % ("Co-" + "Authored-By"))[0][
+                    "message"
+                ]
+            )
+        ),
+        True,
+    )
 
     # -- the two skip / refuse arms, driven for real ------------------------
     saved = {k: os.environ.get(k) for k in ("GITHUB_TOKEN", "PR_NUMBER")}

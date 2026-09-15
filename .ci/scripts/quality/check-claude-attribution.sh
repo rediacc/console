@@ -14,6 +14,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # BLOCKER: gh_retry is needed so a failed API call cannot be mistaken for a PR that carries no attribution
 source "$SCRIPT_DIR/../lib/common.sh"
 
+# NEW SINCE THE 3N REWRITE: the commit loops now read fields out of the compare
+# payload with jq instead of asking the API for each one, so jq is executed
+# directly here and must be declared. Under `set -euo pipefail` a missing binary
+# inside a command substitution exits 127 with no message at all.
+require_cmd jq
+
 # Validate required environment variables
 if [[ -z "${GITHUB_TOKEN:-}" ]]; then
     echo "GITHUB_TOKEN is required"
@@ -78,49 +84,75 @@ if [[ -z "$BASE_SHA" || -z "$HEAD_SHA" || ! "$TOTAL_COMMITS" =~ ^[0-9]+$ ]]; the
     probe_failed
 fi
 
-COMMITS=$(gh_retry "commit list for PR #${PR_NUMBER}" -- \
+# ONE READ, NOT 3N. The compare payload already carries the message and the
+# author name and address, so the `repos/{r}/commits/{sha}` calls this loop used
+# to make were re-fetching data already in hand: THREE per commit, 762 of them on
+# a 254-commit PR, ~3.5 minutes of a 12-minute job. Every one of them was also a
+# chance for a rate limit to refuse a PR that is fine.
+PAYLOAD=$(gh_retry "commit list for PR #${PR_NUMBER}" -- \
     api "repos/${REPO}/compare/${BASE_SHA}...${HEAD_SHA}?per_page=100" --paginate \
-    --jq '.commits[].sha') || probe_failed
+    --jq '.commits[] | {sha: .sha, message: .commit.message, name: .commit.author.name, email: .commit.author.email}') || probe_failed
 
 # A PR always has at least one commit. An empty list here means the call
 # succeeded but returned nothing usable, which is not a PR this gate can clear.
-if [[ -z "${COMMITS//[[:space:]]/}" ]]; then
+#
+# `grep -q` AND NOT `[[ -z "${PAYLOAD//[[:space:]]/}" ]]`, WHICH IS QUADRATIC.
+# The old test ran on a list of SHAs (~10 KB) and was instant; this payload
+# carries every commit MESSAGE (~420 KB on #589) and bash's pattern substitution
+# over it took 254 SECONDS, measured -- more than the entire gate had cost
+# before. The whole point of this rewrite was to stop wasting the job's budget,
+# and the first version of it spent four minutes deciding whether a string was
+# blank.
+if ! grep -q '[^[:space:]]' <<<"$PAYLOAD"; then
     echo "  ERROR: the commit list for PR #${PR_NUMBER} came back empty." >&2
     echo "  Every PR has at least one commit, so this is a failed read, not a clean PR." >&2
     probe_failed
 fi
 
-READ_COMMITS=$(grep -c . <<<"$COMMITS")
+READ_COMMITS=$(grep -c . <<<"$PAYLOAD")
 if [[ "$READ_COMMITS" -ne "$TOTAL_COMMITS" ]]; then
     echo "  ERROR: read ${READ_COMMITS} commit(s) for PR #${PR_NUMBER}, but the PR reports ${TOTAL_COMMITS}." >&2
     echo "  An incomplete set cannot be cleared; refusing rather than judging part of it." >&2
     probe_failed
 fi
 
-for SHA in $COMMITS; do
-    COMMIT_MSG=$(gh_retry "commit message for ${SHA}" -- \
-        api "repos/${REPO}/commits/${SHA}" --jq '.commit.message') || probe_failed
+# TWO PASSES, NOT ONE, and the order is load-bearing: every message finding is
+# reported before every author finding, which is the order the old two-loop shape
+# produced and which the expected-output fixtures encode.
+while IFS= read -r ROW; do
+    [[ -z "$ROW" ]] && continue
+    # A MALFORMED ROW IS DROPPED, NOT FATAL. Under `set -e` a bare
+    # `SHA=$(jq ...)` would kill the whole gate on one bad line, turning a
+    # corrupt byte into "the gate is flaky"; the port drops the line for the
+    # same reason, so both under-report identically instead of one crashing.
+    SHA=$(jq -r '.sha // empty' <<<"$ROW" 2>/dev/null) || continue
+    [[ -z "$SHA" ]] && continue
+    # `jq -r .message` and not @tsv: a commit message is MULTI-LINE, and @tsv
+    # would fold it to a literal `\n`, which changes both whether grep matches
+    # and which line `head -1` prints.
+    COMMIT_MSG=$(jq -r '.message // ""' <<<"$ROW")
 
     if grep -qiE "$CLAUDE_PATTERN" <<<"$COMMIT_MSG"; then
         SHORT_SHA="${SHA:0:7}"
         MATCH=$(echo "$COMMIT_MSG" | grep -iE "$CLAUDE_PATTERN" | head -1 || true)
         ISSUES+=("Commit ${SHORT_SHA} contains: \"${MATCH}\"")
     fi
-done
+done <<<"$PAYLOAD"
 
 # Check commit authors
 echo "  Checking commit authors..."
-for SHA in $COMMITS; do
-    AUTHOR_NAME=$(gh_retry "commit author name for ${SHA}" -- \
-        api "repos/${REPO}/commits/${SHA}" --jq '.commit.author.name') || probe_failed
-    AUTHOR_EMAIL=$(gh_retry "commit author email for ${SHA}" -- \
-        api "repos/${REPO}/commits/${SHA}" --jq '.commit.author.email') || probe_failed
+while IFS= read -r ROW; do
+    [[ -z "$ROW" ]] && continue
+    SHA=$(jq -r '.sha // empty' <<<"$ROW" 2>/dev/null) || continue
+    [[ -z "$SHA" ]] && continue
+    AUTHOR_NAME=$(jq -r '.name // ""' <<<"$ROW")
+    AUTHOR_EMAIL=$(jq -r '.email // ""' <<<"$ROW")
 
     if grep -qiE "(claude|anthropic)" <<<"$AUTHOR_NAME $AUTHOR_EMAIL"; then
         SHORT_SHA="${SHA:0:7}"
         ISSUES+=("Commit ${SHORT_SHA} authored by: ${AUTHOR_NAME} <${AUTHOR_EMAIL}>")
     fi
-done
+done <<<"$PAYLOAD"
 
 if [[ ${#ISSUES[@]} -eq 0 ]]; then
     echo "No Claude attribution found - OK"
