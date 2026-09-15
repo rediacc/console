@@ -83,6 +83,13 @@ MIN_TOOLS = (
 )
 
 FAKE_GIT = """#!/bin/bash
+# SIGPIPE IGNORED, BELT AND BRACES. The twin no longer pipes `git tag` into
+# `head -1`, which is what used to kill this fake mid-write and surface as the
+# SCRIPT exiting 141 -- three cases in CI run 34970782616. Ignoring PIPE here
+# means a future caller that reintroduces a short-reading pipe gets a real
+# verdict from this fixture instead of a racy 141 that looks like a code
+# failure, and it costs nothing: every write below is tiny.
+trap '' PIPE
 printf 'git %s\\n' "$*" >>"$FAKE_LOG"
 case "${1:-}" in
     config) exit "${FAKE_GIT_CONFIG_EXIT:-0}" ;;

@@ -182,12 +182,16 @@ FETCH_URL_LINE = 219
 #: `if git fetch --tags --force --no-recurse-submodules "$FETCH_URL" ...`
 GIT_FETCH_LINE = 234
 
-#: `LATEST_TAG="$(git tag -l 'v*' --sort=-v:refname | head -1)"`
-GIT_TAG_LINE = 255
+#: `LATEST_TAG_LIST="$(git tag -l 'v*' --sort=-v:refname)"`. The twin used to
+#: pipe that into `head -1`; the pipe was removed because `head` closing the read
+#: end SIGPIPEs git and, under `pipefail`, kills the script -- a race masked by
+#: the 64 KB pipe buffer until the tag list outgrows it. The twin now takes the
+#: first line in-shell, which is what this port has always done.
+GIT_TAG_LINE = 280
 
 #: The two `resolve-version.sh` substitutions.
-RESOLVE_VERSION_NEXT_LINE = 262
-RESOLVE_VERSION_CURRENT_LINE = 264
+RESOLVE_VERSION_NEXT_LINE = 288
+RESOLVE_VERSION_CURRENT_LINE = 290
 
 # ---------------------------------------------------------------------------
 # The five sibling scripts, spelled exactly as the twin spells them: RELATIVE to
@@ -630,8 +634,13 @@ def run(check_only: str, output_file: str) -> int:
 
     status, tag_list = run_capture(["git", "tag", "-l", "v*", "--sort=-v:refname"], GIT_TAG_LINE)
     if status != 0:
-        # `pipefail`: `head -1` succeeds, git does not, and the assignment carries
-        # git's status into `set -e`. No message of the script's own.
+        # A FAILED READ IS NOT AN EMPTY ONE. git's own status leaves the
+        # assignment and `set -e` carries it out, with no message of the
+        # script's own -- `test_a_failing_tag_read_dies_silently_under_pipefail`
+        # pins exactly that. It is also why the twin's pipe could not simply
+        # become `mapfile -t < <(git tag ...)`: a process substitution's status
+        # is not checked, so a failing git would arrive here as an empty tag
+        # list and be reported as "no v* tag exists".
         return status
     latest_tag = tag_list.split("\n", 1)[0]
     if not latest_tag:
