@@ -4094,7 +4094,8 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       plus the `actions/upload-artifact` emission.** Correction en route: the babysitter
       caught that the prior clause's evidence ("no cross-step env: pass exists in this
       repo") was itself imprecise -- `$GITHUB_ENV` genuinely exists and is used
-      cross-step in `quality-code` (`ci-quality.yml:230`'s toolchain pins), distinct from
+      cross-step in `quality-code` (`.github/workflows/ci-quality.yml:230`'s toolchain
+      pins), distinct from
       a step-level `env:` block (process-local, the real bug). Verified the correction
       myself before accepting it. The design (compile-time map, not runtime plumbing)
       still stands on its own merits regardless: 60+ conjuncted steps cannot share one
