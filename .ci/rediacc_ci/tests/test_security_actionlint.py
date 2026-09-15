@@ -46,6 +46,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-actionlint.observations.jsonl`.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import os
 import pathlib
@@ -292,10 +293,8 @@ def _warm_actionlint() -> None:
     A warm-up that cannot reach the network is left to the subjects, which then
     BOTH fail to fetch and agree about that too.
     """
-    try:
+    with contextlib.suppress(SystemExit):
         port.ensure_actionlint(port.actionlint_version(), port.actionlint_checksums())
-    except SystemExit:
-        pass
 
 
 def _run_real(env_extra: dict[str, str] | None = None) -> tuple[tuple, tuple]:
