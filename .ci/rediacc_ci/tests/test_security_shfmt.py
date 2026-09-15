@@ -385,7 +385,24 @@ def test_the_twins_order_is_the_ambient_finds_and_the_ports_is_sorted() -> None:
     _pro, old_blocks = diff_blocks(old[1])
     _pro, new_blocks = diff_blocks(new[1])
     if not old_blocks:
-        pytest.skip("the tree is shfmt-clean right now; there is no order to attribute")
+        # A CLEAN TREE IS A RESULT, NOT AN ABSENCE, and this used to `pytest.skip`
+        # here. That made the gate above this file RED WHENEVER THE TREE WAS
+        # CLEAN: `check:ci-pytest` refuses `passed != collected` on purpose,
+        # because a skipped test is not a passing one, so the healthiest possible
+        # state of the tree was the one state in which this case stopped counting.
+        # The attribution claim genuinely has nothing to bite on with no diff
+        # blocks -- but the DIFFERENTIAL still does, and it is the stronger half:
+        # the two implementations must agree that there is nothing to report.
+        # This arm fails if either side invents a finding the other does not see.
+        assert new_blocks == [], (
+            "the tree is shfmt-clean for the twin and NOT for the port; the port "
+            "invented %d diff block(s):\n%s" % (len(new_blocks), new[1])
+        )
+        assert old[0] == 0, "clean tree, twin exited %s:\n%s" % (old[0], old[1])
+        assert new[0] == 0, "clean tree, port exited %s:\n%s" % (new[0], new[1])
+        assert "success: Shell script formatting passed" in old[1]
+        assert "success: Shell script formatting passed" in new[1]
+        return
 
     found = subprocess.run(
         ["find", ".ci", "-name", "*.sh", "-type", "f"],

@@ -7,19 +7,28 @@ over five distinct clean trees and was recorded by
 isolate a helper, and a unit test over a helper cannot notice a phase that
 stopped running. This file covers the first half.
 
-WHY THE BASH IS RUN RATHER THAN DESCRIBED. Every case below that could be
-written as "the port returns X" is instead written as "the port and the bash
-return the same thing", for the reason `test_quality_npmrc.py` gives: a table of
-expected strings is a table of what the port does, asserted against itself. The
-awkward inputs here are decided by `sort -V`, by `cut -d'v' -f2`, by
-`${suggested%% <*}` and by two `python3 -c` heredocs with a shell variable
-interpolated INTO them, and none of those is inferable by reading.
+THE BASH IS GONE, AND SO ARE THE CASES THAT RAN IT. `.ci/lib/setup.sh` was
+deleted by `0d582b57a`; six differential cases (17 with their parameters) were
+left behind guarded by `skipif(not TWIN.is_file())`, which is permanently true.
+They were removed 2026-09-15 rather than left skipping, and the reasoning is
+worth keeping because the original choice was deliberate and still wrong:
 
-THE ONE PLACE A LITERAL IS RIGHT is the phase table, because there is no bash
-expression to compare it against: the order lives in `setup()`'s control flow.
-`test_phase_order_matches_the_bash` reads it out of the bash and compares, which
-is the same comparison `check:ci-setup-port-parity` makes on every run and is
-repeated here so a `pytest -k setup_port` run says so too.
+    skipping was chosen so that "a red here would be the migration succeeding"
+
+That is a good instinct about pytest's exit code and a bad one about the gate
+above it. `check:ci-pytest` refuses `passed != collected` on purpose -- a skipped
+test is not a passing one, and the difference is invisible in the exit code -- so
+17 permanent skips did not read as "migration succeeded", they read as a gate
+that could never go green again. It stayed invisible for six days because that
+gate is slow (deferred from every `--quick` receipt) and its lane was cancelled
+in every CI run of the wave. A test kept alive as a permanent skip is dead code
+with a heartbeat monitor attached.
+
+WHAT STILL COVERS THE DELETED CASES. `check:ci-setup-port-parity`, which reports
+`FLIPPED (bash gone)` and `5 EQUIVALENT tree(s) in the ledger` -- verified
+passing before the deletion, not assumed -- plus
+`.ci/shadow/e1-setup.observations.jsonl` itself. The ledger is the surviving
+evidence, which is exactly what the skip reason said it would be.
 """
 
 from __future__ import annotations
@@ -38,47 +47,11 @@ if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation her
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "lib" / "setup.sh"
 BODY = ROOT.joinpath(*phases.SETUP_BODY_FILE)
-
-# Skipped rather than failed when the bash is gone: after the flip these cases
-# have no second implementation to compare against, and a red here would be the
-# migration succeeding. `check:ci-setup-port-parity` A5 is what still holds then.
-needs_bash = pytest.mark.skipif(
-    not TWIN.is_file() or not BODY.is_file(),
-    reason="the bash twin has been deleted; the ledger is the surviving evidence",
-)
-
-
-def bash(body: str) -> tuple[int, str]:
-    """One `bash -c` with `.ci/lib/setup.sh` in scope. `(rc, stdout)`."""
-    script = 'ROOT_DIR=%s\nset -euo pipefail\nsource "$ROOT_DIR/.ci/lib/setup.sh"\n%s' % (
-        _quote(str(ROOT)),
-        body,
-    )
-    proc = subprocess.run(
-        ["bash", "-c", script],
-        cwd=str(ROOT),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return proc.returncode, proc.stdout
-
-
-def _quote(value: str) -> str:
-    return "'" + value.replace("'", "'\\''") + "'"
-
 
 # ---------------------------------------------------------------------------
 # the phase order
 # ---------------------------------------------------------------------------
-
-
-@needs_bash
-def test_phase_order_matches_the_bash() -> None:
-    """`phases.PHASE_KEYS` and the bash `setup()` agree, in order and both ways."""
-    assert phases.from_source(ROOT) == list(phases.PHASE_KEYS)
 
 
 def test_phase_order_matches_run_setup() -> None:
@@ -119,31 +92,6 @@ def test_docker_probe_is_ported_but_not_a_phase() -> None:
 
 # Each row is a property, not a sample. A row with no property is a row that
 # will be deleted the first time someone tidies this file.
-NODE_INDEX = json.dumps(
-    [
-        {"version": "v23.1.0", "lts": False},  # newer major, no LTS flag
-        {"version": "v22.20.0", "lts": False},  # newest on 22, but NOT lts
-        {"version": "v22.13.0", "lts": "Jod"},  # the LTS the fallback must skip past
-        {"version": "v22.9.0", "lts": "Jod"},  # an older LTS on the same major
-        {"version": "v20.18.0", "lts": "Iron"},
-        {"version": "v19.9.0", "lts": False},  # a major with LTS-less releases only
-    ]
-)
-
-
-@needs_bash
-@pytest.mark.parametrize("major", ["22", "20", "23", "19", "18", "2"])
-def test_node_pick_lts_agrees_with_bash(major: str) -> None:
-    """The Python and the `python3 -c` heredoc pick the same release.
-
-    `"2"` is in the list on purpose: the bash builds its prefix as `v${major}.`,
-    so `2` must NOT match `v22.13.0`. A port that compared on `startswith("v2")`
-    would pass every other row here.
-    """
-    rc, out = bash("printf '%%s' %s | node_pick_lts %s" % (_quote(NODE_INDEX), major))
-    mine = host.node_pick_lts(NODE_INDEX, major)
-    assert (out.strip() or None) == mine
-    assert (rc == 0) == (mine is not None)
 
 
 def test_node_pick_lts_survives_garbage() -> None:
@@ -163,88 +111,10 @@ def test_node_pick_lts_survives_garbage() -> None:
 # go_pick_sha
 # ---------------------------------------------------------------------------
 
-GO_INDEX = json.dumps(
-    [
-        {
-            "version": "go1.26.6",
-            "files": [
-                {"filename": "go1.26.6.linux-amd64.tar.gz", "sha256": "a" * 64},
-                # An EMPTY sha256 must not be returned: the bash's condition is
-                # `and f.get('sha256')`, so a published-but-unhashed row is a
-                # miss and not an empty answer that reaches a comparison.
-                {"filename": "go1.26.6.src.tar.gz", "sha256": ""},
-            ],
-        },
-        {"version": "go1.25.0", "files": [{"filename": "x.tar.gz", "sha256": "c" * 64}]},
-    ]
-)
-
-
-@needs_bash
-@pytest.mark.parametrize(
-    "filename",
-    ["go1.26.6.linux-amd64.tar.gz", "go1.26.6.src.tar.gz", "x.tar.gz", "absent.tar.gz"],
-)
-def test_go_pick_sha_agrees_with_bash(filename: str) -> None:
-    rc, out = bash("printf '%%s' %s | go_pick_sha %s" % (_quote(GO_INDEX), filename))
-    mine = host.go_pick_sha(GO_INDEX, filename)
-    assert (out.strip() or None) == mine
-    assert (rc == 0) == (mine is not None)
-
 
 # ---------------------------------------------------------------------------
 # the identity helpers
 # ---------------------------------------------------------------------------
-
-
-@needs_bash
-@pytest.mark.parametrize(
-    "suggested",
-    [
-        "Ada Lovelace <ada@example.com>",
-        "Two <Angle> Brackets <t@example.com>",  # `%% <*` cuts at the FIRST " <"
-        "NoAngles",  # neither strip has anything to do
-        "<only@example.com>",  # an empty name
-    ],
-)
-def test_split_identity_agrees_with_bash(suggested: str) -> None:
-    """`${suggested%% <*}` and `sed 's/.*<//; s/>.*//'`, as one Python call.
-
-    The second bash expression is a GREEDY `.*<`, so the LAST `<` wins for the
-    email while the FIRST " <" wins for the name. Those two disagree on the
-    bracket case above, which is exactly why it is here.
-    """
-    rc, out = bash(
-        "SUG=%s\nprintf '%%s|%%s' \"${SUG%%%% <*}\" "
-        "\"$(printf '%%s' \"$SUG\" | sed 's/.*<//; s/>.*//')\"" % _quote(suggested)
-    )
-    assert rc == 0
-    want_name, want_email = out.split("|", 1)
-    assert host.split_identity(suggested) == (want_name, want_email)
-
-
-@needs_bash
-def test_dominant_author_agrees_with_bash() -> None:
-    """The most frequent non-bot author of the last 200 commits.
-
-    RUN AGAINST THE REAL LOG, because the tie-break is unspecified on both sides
-    (`sort -rn` is not stable) and a synthetic corpus with a tie would compare
-    two arbitrary choices. The real history has a clear winner, which is the
-    only case either implementation is asked about in anger.
-    """
-    log = subprocess.run(
-        ["git", "log", "-200", "--format=%an <%ae>"],
-        cwd=str(ROOT),
-        capture_output=True,
-        text=True,
-        check=False,
-    ).stdout
-    rc, out = bash(
-        "printf '%%s' %s | grep -v '\\[bot\\]' | sort | uniq -c | sort -rn | head -1 "
-        "| sed 's/^ *[0-9]* //'" % _quote(log)
-    )
-    assert rc == 0
-    assert host.dominant_author(log) == out.strip()
 
 
 def test_dominant_author_excludes_bots() -> None:
@@ -278,19 +148,6 @@ def test_dominant_author_excludes_bots() -> None:
 )
 def test_parse_args(argv: list[str], want: machine.Options) -> None:
     assert machine.parse_args(argv) == want
-
-
-@needs_bash
-def test_help_text_is_byte_identical() -> None:
-    """`machine.HELP` and the heredoc in `setup()` are the same bytes.
-
-    Not "equivalent": a person who has memorised the old output should see no
-    diff, and this is the cheapest place to keep that true while both exist.
-    """
-    body = phases.function_body(BODY.read_text(encoding="utf-8"), "setup")
-    start = body.index("Usage: ./run.sh setup [OPTIONS]")
-    end = body.index("EOF", start)
-    assert body[start:end].rstrip("\n") == machine.HELP
 
 
 # ---------------------------------------------------------------------------
