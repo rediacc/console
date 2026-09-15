@@ -11,6 +11,24 @@ CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 -> de
 Install validation runs pre-publish against R2 staging artifacts. Docker is validated on
 push-to-main only (PR images are dry-run on a PR).
 
+## Release channels
+
+Two channels, both production-quality:
+
+- **edge** -- tagged and released on every merge to main, downloaded from
+  `releases.rediacc.com/cli/edge/` (R2 bucket `rediacc-releases`), serving
+  `edge.rediacc.com`.
+- **stable** -- the default, promoted from edge (see Release to Production below),
+  downloaded from `releases.rediacc.com/cli/stable/`, serving `www.rediacc.com`.
+
+R2 layout: `rediacc-releases/cli/{edge,stable}/{manifest.json,latest.json,rdc-*}`.
+
+**CORRECTION to a claim that was in CLAUDE.md: edge's D1 is NOT cloned from production
+daily.** `.github/workflows/edge-clone-d1.yml`'s own header says otherwise: *"Edge D1
+databases are now persistent for the beta channel. Daily cloning from production is
+disabled; use workflow_dispatch for manual runs."* The workflow still exists for a manual,
+on-demand clone -- it is not scheduled.
+
 The mechanical job topology (every workflow, folded to one row per stage of its `needs:`
 graph) is generated, not hand-maintained: the `job-graph` region in
 [scripts/data/doc-registry.md](../../scripts/data/doc-registry.md). This file explains the

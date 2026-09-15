@@ -400,11 +400,11 @@ renet), and `bump.sh`'s two push-to-main-only call sites.
 
 ## Release Channels
 
-Two channels, both production-quality. **edge** is continuously deployed: tagged and released
-on every merge to main, downloaded from `cli/edge/`, serving `edge.rediacc.com` whose D1 is
-cloned from production daily. **stable** is the default, promoted from edge after a 7-day soak,
-downloaded from `cli/stable/`, serving `www.rediacc.com`. R2 layout:
-`rediacc-releases/cli/{edge,stable}/{manifest.json,latest.json,rdc-*}`
+Two channels, both production-quality: **edge** (continuously deployed on every merge to
+main) and **stable** (the default, promoted from edge after a 7-day soak).
+
+**[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)**
+carries the channel URLs, the R2 layout, and the dispatch commands.
 
 ## Media Assets (tutorial/solution videos + tutorial-narration audio)
 

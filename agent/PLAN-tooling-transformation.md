@@ -5699,8 +5699,19 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       both push-to-main-gated -- CLAUDE.md's "CLI... npm pack tarball name" claim confirmed
       accurate for the first). **519 -> 512 lines, 31961 -> 31682 bytes.** Frozen span
       still byte-identical, headers unmoved.
-      **Still open: Release Channels and the `cli-commands` region** (the
-      last needs a new gen-docs provider, not just a doc -- bigger than the other two).
+      **A THIRD HOME WRITTEN, 2026-09-15: Release Channels**, folded into
+      `docs/agent-reference/release-process.md` (not a fourth file -- thematically
+      continuous with its existing Release to Production section) rather than copied from
+      CLAUDE.md's prior wording. **Found a real stale claim in the process: CLAUDE.md said
+      edge's D1 "is cloned from production daily"; `.github/workflows/edge-clone-d1.yml`'s
+      own header says the opposite -- "Edge D1 databases are now persistent... Daily
+      cloning from production is disabled; use workflow_dispatch for manual runs."**
+      Recorded the correction rather than propagating the stale claim into the new home.
+      CLAUDE.md's Release Channels section cut to a pointer. **512 -> 512 lines (net zero
+      -- the pointer is longer than the old section was short), 31682 -> 31580 bytes.**
+      Frozen span still byte-identical, headers unmoved.
+      **Still open: the `cli-commands` region**, needing a new gen-docs provider, not just
+      a doc -- the biggest of the original four and the only one remaining.
 - [x] **W11 P5c BLOCKED ON W8** The `env-manifest` region has no home until W8 P2 exists. Record
     (ticked) 2026-09-15T07:22:49Z by f4da5c2e: Verified live: env-manifest region now has a home, built by W8 P3 (not P5c itself) once W8 P2 unblocked it. check:ci-doc-region-parity rc=0, region 'env-manifest' at scripts/data/doc-registry.md:1076 matches with 904 rows, 14/14 providers used. P5c's entire scope was to record the blocked status until W8 P2 existed; W8 P2 landed 2026-09-09 and W8 P3 built the region the same day, so the blocker this box named is resolved and the box closes on that evidence rather than new work.
       it as blocked so P5 is not ticked at three of four.
