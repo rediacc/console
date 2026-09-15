@@ -295,9 +295,18 @@ def run(ev):
         origins = hookio.git_out(
             ["-C", target, "config", "--show-origin", "--get-all", "user.email"]
         )
-        ev.warn_raw(
-            hookio.sed_sub(r"^", "    ", hookio._printf_line(origins)) if origins else "    \n"
-        )
+        # NO ORIGINS MEANS NO LINE AT ALL, and the `else "    \n"` that used to be
+        # here emitted an indented blank one. The twin is a PIPELINE --
+        # `git ... | sed 's/^/    /'` (block-unlinked-commit-author.sh:152) -- and
+        # sed given no input writes no output, so bash prints nothing whatsoever.
+        #
+        # It took a CI runner to see it. `git config --get-all user.email` is empty
+        # only where no identity is configured at any scope; every developer machine
+        # here has a global one, so the two sides agreed locally and diverged by one
+        # blank line in run 34970782616, taking three `block_unlinked_commit_author`
+        # cases of test_guards_differential.py with it.
+        if origins:
+            ev.warn_raw(hookio.sed_sub(r"^", "    ", hookio._printf_line(origins)))
         if cflags:
             ev.warn("    -c on your command line: %s" % " ".join("-c %s" % kv for kv in cflags))
         if env_overrides:
