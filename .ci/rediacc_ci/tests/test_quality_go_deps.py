@@ -240,12 +240,23 @@ def test_go_dirs_on_a_tree_with_no_private_directory(tmp_path: pathlib.Path) -> 
 # ---------------------------------------------------------------------------
 
 
-def test_emit_advisory_header_is_id_then_name_in_parens(capsys) -> None:
+def test_emit_advisory_header_is_id_then_name_in_parens(capsys, monkeypatch) -> None:
     # RESET INSIDE THE TEST, not in the autouse fixture. `capsys` installs its
     # replacement streams AFTER fixture setup, so a logger bound during setup
     # writes to pytest's outer capture and `capsys.readouterr().err` comes back
     # empty -- a test that reads as "the gate printed nothing" when the gate
     # printed exactly the right thing somewhere else.
+    #
+    # BOTH RENDERINGS ARE PINNED, and the environment is SET rather than
+    # inherited. `ci_error` is `::error::` on STDOUT when CI=true and
+    # `log_error` on STDERR otherwise (go_deps.py:222-232) -- "THE PREFIX IS THE
+    # ENVIRONMENT'S DECISION, NOT THE GATE'S". This test used to assert
+    # `captured.err` unconditionally, which is true only off CI: it passed on
+    # every developer machine and failed in run 34970782616, the first in this
+    # wave to let quality-security finish, with the header sitting in `out`.
+    # Asserting one rendering while the code documents two is how a gate gets
+    # exercised in only half the world it runs in.
+    monkeypatch.delenv("CI", raising=False)
     log.reset()
     go_deps.emit_advisory("error", "github.com/a/b", "go-deps-blocklist entry", "do the thing")
     captured = capsys.readouterr()
@@ -253,6 +264,17 @@ def test_emit_advisory_header_is_id_then_name_in_parens(capsys) -> None:
     # The hints go to STDOUT while the header goes to STDERR. That split is
     # emit-advisory.sh's, and it is what the shadow comparator sees.
     assert captured.out == "  Fix: do the thing\n"
+
+    monkeypatch.setenv("CI", "true")
+    log.reset()
+    go_deps.emit_advisory("error", "github.com/a/b", "go-deps-blocklist entry", "do the thing")
+    captured = capsys.readouterr()
+    # Under CI the annotation and the hint share STDOUT, because a GitHub
+    # workflow command is only read there.
+    assert captured.out == (
+        "::error::github.com/a/b (go-deps-blocklist entry)\n  Fix: do the thing\n"
+    )
+    assert captured.err == ""
 
 
 def test_emit_advisory_omits_an_absent_action_line(capsys) -> None:
