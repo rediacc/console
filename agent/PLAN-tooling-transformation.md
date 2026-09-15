@@ -6099,6 +6099,11 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `.gitmodules` lists four and `.gitignore:85` ignores it. That clause cannot be executed as
       written; split it into a decision box (documented clone-and-remote procedure, or promotion
       to a real submodule). Name an owner and record the merge order the `pr-merge` skill encodes.
+      **SEQUENCING CLEARED 2026-09-15: P6a is ticked (private/account settled).** This box's own
+      remaining gate is unrelated to P6a's subject -- it is a real, separate product decision
+      (clone-and-remote vs. promote `private/growth` to a submodule) with structural,
+      hard-to-reverse consequences, not something to infer from the tree. Still genuinely
+      operator-gated on its own merits; not attempted here.
 - [x] **U3 C, DONE 2026-09-08** Widen `.ci/scripts/test/gates/test-shrink-only-composition.sh:97-102`. It greps `--include=*.ts
       --include=*.js` over `scripts/` and `packages/www/scripts/` -- **two** blind spots: it
       excludes `.py` AND its roots exclude the entire `.ci/` tree. Live subjects today: exactly
