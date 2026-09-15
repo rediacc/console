@@ -494,9 +494,7 @@ export function shardAssignment(
   // `?? ''` for a step-less "step kind" entry: the type does not forbid it structurally
   // (`ShardInput.ci.step` is optional), and an empty string never matches a real emitted
   // step name, so such an entry correctly counts as replicated rather than type-erroring.
-  const replicated = laneEntries
-    .filter((e) => !emittedSteps.has(e.ci.step ?? ''))
-    .map((e) => e.id);
+  const replicated = laneEntries.filter((e) => !emittedSteps.has(e.ci.step ?? '')).map((e) => e.id);
   const ceiling = ceilings[job];
   if (ceiling === undefined) {
     return {
