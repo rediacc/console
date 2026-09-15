@@ -777,6 +777,7 @@
       "packages/locales/**",
       "package.json"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       "packages/www/scripts/test-tutorial-player-release-gate.js"
     ],
@@ -927,6 +928,7 @@
       ".ci/legacy/**",
       ".ci/scripts/quality/check_setup_idempotency.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_setup_idempotency.py"
     ],
@@ -1051,6 +1053,7 @@
     "paths": [
       ".ci/scripts/quality/**"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_control_vacuity.py"
     ],
@@ -1069,6 +1072,7 @@
       ".devcontainer/**",
       ".ci/scripts/quality/check_devcontainer_scripts.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_devcontainer_scripts.py"
     ],
@@ -1087,6 +1091,7 @@
       "**/*.sh",
       ".ci/scripts/quality/check_shell_size.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_shell_size.py"
     ],
@@ -1105,6 +1110,7 @@
       ".ci/lib/devbox.sh",
       ".ci/scripts/quality/check_devbox_exec.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_devbox_exec.py"
     ],
@@ -1128,6 +1134,7 @@
       ".ci/config/constants.sh",
       "run.sh"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_toolchain_pins.py"
     ],
@@ -1147,6 +1154,7 @@
       ".devcontainer/Dockerfile",
       ".ci/scripts/quality/check_toolchain_env_dockerfile_sync.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_toolchain_env_dockerfile_sync.py"
     ],
@@ -1166,6 +1174,7 @@
       ".claude/rediacc_hooks/guards/block_host_toolchain_run.py",
       ".ci/scripts/quality/check_host_toolchain_coverage.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_host_toolchain_coverage.py"
     ],
@@ -1186,6 +1195,7 @@
       ".ci/scripts/quality/*.py",
       ".ci/rediacc_ci/quality/git_op_conditionals.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_git_op_conditionals.py"
     ],
@@ -1204,6 +1214,7 @@
       ".ci/**",
       "scripts/**"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_go_tool_path.py"
     ],
@@ -1225,6 +1236,7 @@
       "workers/*/package.json",
       ".ci/scripts/quality/**"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_ci_gate_prerequisites.py"
     ],
@@ -1245,6 +1257,7 @@
       ".ci/scripts/**",
       "scripts/**"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_pr_head_ref_completeness.py"
     ],
@@ -1265,6 +1278,7 @@
       ".claude/rediacc_hooks/dispatch.py",
       ".ci/scripts/quality/check_guard_mention_anchoring.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_guard_mention_anchoring.py"
     ],
@@ -1283,6 +1297,7 @@
       "scripts/ci-runner/**",
       "scripts/gates/check-gate-manifest.ts"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       "scripts/gates/check-gate-manifest.ts"
     ],
@@ -1314,6 +1329,7 @@
     "paths": [
       "scripts/ci-runner/**"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       "scripts/ci-runner/run.ts"
     ],
@@ -1335,6 +1351,7 @@
       ".ci/scripts/quality/check_hook_integrity.py",
       "scripts/data/hook-audit-scope.json"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_hook_integrity.py"
     ],
@@ -1355,6 +1372,7 @@
       "scripts/**",
       ".claude/hooks/**"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_pipefail_grep_q.py"
     ],
@@ -1377,6 +1395,7 @@
       "docs/agent-reference/**",
       ".ci/scripts/quality/check_ci_watch_recipe.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_ci_watch_recipe.py"
     ],
@@ -1399,6 +1418,7 @@
       ".ci/scripts/quality/check_cli_doc_coverage.py",
       ".ci/scripts/quality/check-cli-doc-coverage.sh"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_cli_doc_coverage.py"
     ],
@@ -1464,6 +1484,7 @@
       ".ci/scripts/quality/check_lockfile.py",
       ".ci/scripts/lib/common.sh"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_lockfile.py"
     ],
@@ -1543,6 +1564,7 @@
     "paths": [
       ".claude/hooks/stop/**"
     ],
+    "pathsOrigin": "declared",
     "weight": 2,
     "heavy": true,
     "leaves": [
@@ -1564,6 +1586,7 @@
       "**/*.sh",
       ".devcontainer/toolchain.env"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/security/shellcheck.sh"
     ],
@@ -1610,6 +1633,7 @@
       ".ci/rediacc_ci/**",
       ".ci/scripts/quality/**"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_python_control_plants.py"
     ],
@@ -1645,6 +1669,7 @@
       ".ci/config/actions-allowlist.json",
       ".ci/scripts/quality/check_actions_allowlist.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_actions_allowlist.py"
     ],
@@ -1665,6 +1690,7 @@
       ".ci/policy/.plan-housekeeping-allowlist",
       ".ci/scripts/quality/check_plan_housekeeping.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_plan_housekeeping.py"
     ],
@@ -1929,6 +1955,7 @@
       ".ci/config/plan-boxes.json",
       ".ci/scripts/quality/check_plan_boxes.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_plan_boxes.py"
     ],
@@ -1968,6 +1995,7 @@
       "agent/INDEX.md",
       ".ci/scripts/quality/check_plan_citations.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_plan_citations.py"
     ],
@@ -1992,6 +2020,7 @@
       ".claude/hooks/stop/wl_planrec.py",
       ".claude/hooks/stop/wl_planindex.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_plan_record.py"
     ],
@@ -2010,6 +2039,7 @@
       "eslint-rules/**",
       "scripts/gates/check-lint-rule-units.ts"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       "scripts/gates/check-lint-rule-units.ts"
     ],
@@ -2029,6 +2059,7 @@
       "scripts/ci-runner/gates.lock.json",
       "scripts/gen-gates-lock.ts"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       "scripts/gen-gates-lock.ts"
     ],
@@ -2103,6 +2134,7 @@
       ".ci/scripts/quality/check_syncpack_sources.py",
       "**/package.json"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_syncpack_sources.py"
     ],
@@ -2233,6 +2265,7 @@
       ".claude/hooks/**",
       ".ci/scripts/quality/check_guard_feature_completeness.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_guard_feature_completeness.py"
     ],
@@ -2582,6 +2615,7 @@
       "biome.json",
       ".ci/scripts/quality/check_lint_scope_coverage.py"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_lint_scope_coverage.py"
     ],
@@ -3428,6 +3462,7 @@
       "packages/locales/**",
       "package.json"
     ],
+    "pathsOrigin": "declared",
     "heavy": true,
     "leaves": [
       ".ci/scripts/quality/check_account_portal.py"
@@ -3567,6 +3602,7 @@
       ".ci/scripts/private/run-renet.sh",
       ".ci/scripts/lib/common.sh"
     ],
+    "pathsOrigin": "declared",
     "slow": true,
     "mutex": [
       "renet-bin"
@@ -4107,6 +4143,7 @@
       ".ci/scripts/quality/job-timeout-baseline.json",
       ".ci/scripts/quality/runner-sizing-baseline.json"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       "scripts/gates/check-baseline-key-semantics.ts"
     ],
@@ -4126,6 +4163,7 @@
       "scripts/ci-runner/manifest.ts",
       "scripts/gates/check-test-gate-wiring.ts"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       "scripts/gates/check-test-gate-wiring.ts"
     ],
@@ -4691,6 +4729,7 @@
       ".ci/**",
       ".claude/**"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_language_policy.py"
     ],
@@ -4752,6 +4791,27 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-code",
       "step": "Changed-file selection contract"
+    }
+  },
+  {
+    "id": "check:ci-paths-origin",
+    "run": "npm run check:ci-paths-origin",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-paths-origin.ts"
+    ],
+    "paths": [
+      "scripts/ci-runner/manifest.ts",
+      "scripts/ci-runner/gate-spec.ts",
+      "scripts/gates/check-paths-origin.ts",
+      "scripts/ci-runner/gates.lock.json"
+    ],
+    "pathsOrigin": "declared",
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Paths-origin provenance"
     }
   },
   {
@@ -5557,6 +5617,7 @@
       ".ci/scripts/quality/check_inline_python.py",
       ".ci/scripts/test/gates/test-claude-hooks.sh"
     ],
+    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/test/gates/test-claude-hooks.sh"
     ],
@@ -5949,6 +6010,7 @@
       ".ci/config/**",
       ".ci/rediacc_ci/**"
     ],
+    "pathsOrigin": "declared",
     "qualityGateTest": true,
     "leaves": [
       ".ci/scripts/test/gates/test-gate-anti-vacuity.sh"
@@ -6193,6 +6255,7 @@
       ".ci/scripts/test/gates/**",
       "pyproject.toml"
     ],
+    "pathsOrigin": "declared",
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
@@ -6227,6 +6290,7 @@
       "scripts/ci-runner/manifest.ts",
       "scripts/data/package-key-budget-baseline.json"
     ],
+    "pathsOrigin": "declared",
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
@@ -6327,6 +6391,7 @@
       ".ci/rediacc_ci/core/allowlist.py",
       ".ci/scripts/test/gates/test-blocker-golden-corpus.sh"
     ],
+    "pathsOrigin": "declared",
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
@@ -6584,6 +6649,7 @@
       ".ci/scripts/test/gates/test-rebase-resolve.sh",
       ".ci/scripts/test/lib/git-fixture.sh"
     ],
+    "pathsOrigin": "declared",
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
@@ -6603,6 +6669,7 @@
       ".claude/rediacc_hooks/guards/block_untagged_commit.py",
       ".ci/scripts/test/gates/test-untagged-commit-branch.sh"
     ],
+    "pathsOrigin": "declared",
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",

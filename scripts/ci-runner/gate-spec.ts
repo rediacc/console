@@ -85,6 +85,20 @@ export interface GateSpec {
   /** Repo-relative globs this gate validates; powers --changed. */
   paths?: string[];
   /**
+   * Required whenever `paths` is present; refused otherwise (cardinality
+   * equality, both directions -- `check:ci-paths-origin`). `'declared'` means a
+   * human enumerated the globs by hand, and each one is asserted to match at
+   * least one tracked file -- a glob matching nothing is exactly as wrong as a
+   * `paths` array with none, and just as invisible without this check.
+   * `` `derived:${tool}` `` names an id (an npm script key, or another gate id)
+   * that PRINTS the paths list, one per line, on a re-run; the check re-runs it
+   * and asserts the output still equals the declared array, so a derivation
+   * that has drifted from what it once produced is caught rather than trusted.
+   * No entry uses `derived:` yet -- W2.5's tier 2 (traced paths) is separate,
+   * later work -- so that branch is proven only by `--selftest`'s fixture.
+   */
+  pathsOrigin?: string;
+  /**
    * Too expensive for the pre-push lane. ABSENT MEANS FAST, deliberately: a
    * new gate is enforced before a push until someone takes it out on purpose,
    * which is the fail-safe direction. Opting out is the one mechanism -- there

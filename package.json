@@ -280,6 +280,7 @@
     "check:cli-examples": "tsx scripts/gen/validate-cli-examples.ts",
     "check:ci-account-onboarding": "tsx scripts/gates/check-account-onboarding.ts",
     "check:ci-changed-selection": "tsx scripts/gates/check-changed-selection.ts --selftest && tsx scripts/gates/check-changed-selection.ts",
+    "check:ci-paths-origin": "tsx scripts/gates/check-paths-origin.ts --selftest && tsx scripts/gates/check-paths-origin.ts",
     "check:ci-setup-port-parity": ".ci/rediacc_ci/setup/port_parity.py",
     "check:ci-parity": "tsx scripts/gates/check-ci-parity.ts",
     "check:ci-jq-boolean-default": "tsx scripts/gates/check-jq-boolean-default.ts",

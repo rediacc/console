@@ -235,7 +235,7 @@ async function loadManifest(source: string | undefined): Promise<readonly GateSp
  * `**\/` -> `(?:.*\/)?` form is handled before the bare `**` so the optional
  * separator is part of the token rather than left behind.
  */
-function globToRegExp(glob: string): RegExp {
+export function globToRegExp(glob: string): RegExp {
   const body = glob.replace(/\*\*\/|\*\*|[*?.+^${}()|[\]\\]/g, (token) => {
     if (token === '**/') return '(?:.*/)?';
     if (token === '**') return '.*';
