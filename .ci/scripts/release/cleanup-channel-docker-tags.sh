@@ -63,7 +63,7 @@ echo "" >>"$GITHUB_STEP_SUMMARY"
 if [[ ! "$CHANNEL" =~ ^staging- ]]; then
     echo "**Channel tag NOT cleaned up:** $CHANNEL" >>"$GITHUB_STEP_SUMMARY"
     echo "cleanup-staging.sh only deletes \`staging-*\` tags by design, so a channel tag can never be removed through it. This is a KNOWN GAP, not a token-scope problem, and it is non-critical: a channel tag left in GHCR is harmless." >>"$GITHUB_STEP_SUMMARY"
-elif "$SCRIPT_DIR/../docker/cleanup-staging.sh" --tag "$CHANNEL"; then
+elif "$SCRIPT_DIR/../docker/cleanup_staging.py" --tag "$CHANNEL"; then
     echo "**Channel tag cleaned up:** $CHANNEL" >>"$GITHUB_STEP_SUMMARY"
 else
     echo "**Failed to clean up channel tag:** $CHANNEL" >>"$GITHUB_STEP_SUMMARY"

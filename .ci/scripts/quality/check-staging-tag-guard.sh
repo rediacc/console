@@ -50,8 +50,23 @@ while IFS= read -r hit; do
     [[ "$f" == "$TARGET" ]] && continue
     n_calls=$((n_calls + 1))
     case " $call_files " in *" $f "*) ;; *) call_files="$call_files $f" ;; esac
-done < <(grep -rn 'cleanup-staging\.sh' "$ROOT/.ci" "$ROOT/.github" --include='*.sh' --include='*.yml' 2>/dev/null |
-    grep -vE ':[0-9]+:[[:space:]]*#' | grep -E 'cleanup-staging\.sh["'"'"']?[[:space:]]+(--tag|"\$)' || true)
+done < <(
+    {
+        # .sh/.yml: real callers live anywhere under .ci and .github, as before.
+        grep -rnE 'cleanup[-_]staging\.(sh|py)' "$ROOT/.ci" "$ROOT/.github" --include='*.sh' --include='*.yml' 2>/dev/null
+        # .py: scoped to .ci/scripts only, NOT .ci/rediacc_ci. .ci/scripts holds
+        # actual entry points and release forwarders (like .sh does); .ci/rediacc_ci
+        # is the Python package's own implementation, tests and regex constants,
+        # which is FULL of self-referential mentions of this very name (the guard's
+        # own NEEDLE_RE, synthetic caller fixtures in test_quality_staging_tag_guard.py,
+        # the cleanup_channel_docker_tags.py port's own docstring). Scanning it turned
+        # 1 real call site into 18 -- the exact "extension-shaped matcher" bug this
+        # file's own header names, just for .py instead of .sh. Verified empty of
+        # false positives at widening time: only cleanup_staging.py's own docstring
+        # mentions the bash twin's name, and it fails the --tag/"$ suffix filter below.
+        grep -rnE 'cleanup[-_]staging\.(sh|py)' "$ROOT/.ci/scripts" --include='*.py' 2>/dev/null
+    } | grep -vE ':[0-9]+:[[:space:]]*#' | grep -E 'cleanup[-_]staging\.(sh|py)["'"'"']?[[:space:]]+(--tag|"\$)' || true
+)
 
 # ANTI-VACUITY. A rename or a moved tree would find zero call sites and this gate
 # would pass having checked nothing at all.

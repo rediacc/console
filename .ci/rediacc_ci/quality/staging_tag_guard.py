@@ -129,6 +129,23 @@ DEFAULT_TARGET_REL = ".ci/scripts/docker/cleanup-staging.sh"
 SCAN_DIRS = (".ci", ".github")
 SCAN_SUFFIXES = (".sh", ".yml")
 
+# `.py` callers are scoped to `.ci/scripts` ONLY, not all of SCAN_DIRS, and this
+# is NOT what agent/PLAN-w7p4w-docker-cutover.md §3 literally says ("widen the
+# `grep --include` list to add `--include='*.py'`"). Doing that literally --
+# scanning ALL of `.ci` for `.py` -- was tried first and turned 1 real call site
+# into 18: `.ci/rediacc_ci` is this package's OWN implementation, tests and
+# regex constants, and it is FULL of self-referential mentions of this exact
+# needle (this module's own NEEDLE_RE/CALL_RE source, the synthetic caller
+# fixtures in test_quality_staging_tag_guard.py, the `cleanup-staging.sh`
+# mention in `cleanup_staging.py`'s own docstring, the cleanup_channel_docker_tags.py
+# port's prose). That is the SAME "extension-shaped matcher" class of bug this
+# gate's own header warns about, just for `.py` instead of `.sh`. `.ci/scripts`
+# is the directory that actually holds executable entry points and release
+# forwarders (mirroring what `.sh` already is for the twin), so `.py` scanning
+# is scoped there and nowhere else in `.ci`.
+PY_SCAN_DIR = ".ci/scripts"
+PY_SUFFIX = ".py"
+
 # The safety rail itself, as it appears in the subject: an escaped caret in ERE,
 # so a LITERAL "^staging-" anywhere in the line.
 RAIL_RE = re.compile(r"\^staging-")
@@ -137,17 +154,18 @@ RAIL_RE = re.compile(r"\^staging-")
 # comment. Unanchored, exactly as the twin's is.
 COMMENT_HIT_RE = re.compile(r":[0-9]+:[ \t\n\r\f\v]*#")
 
-# `grep -E 'cleanup-staging\.sh["\']?[[:space:]]+(--tag|"\$)'` -- an EXECUTING
-# call, not a mention in prose.
-CALL_RE = re.compile(r"cleanup-staging\.sh[\"']?[ \t\n\r\f\v]+(--tag|\"\$)")
+# `grep -E 'cleanup[-_]staging\.(sh|py)["\']?[[:space:]]+(--tag|"\$)'` -- an
+# EXECUTING call, not a mention in prose. Widened to match either the bash
+# twin's name or the Python port's, per agent/PLAN-w7p4w-docker-cutover.md §3.
+CALL_RE = re.compile(r"cleanup[-_]staging\.(sh|py)[\"']?[ \t\n\r\f\v]+(--tag|\"\$)")
 
 # `grep -qE '\^staging-|--tag[[:space:]]+["\']?staging-'` -- a caller proves it
 # cannot pass a tag the guard rejects, either by testing the prefix itself or by
 # passing a literal.
 GUARDED_RE = re.compile(r"\^staging-|--tag[ \t\n\r\f\v]+[\"']?staging-")
 
-# The needle the recursive scan looks for, `grep -rn 'cleanup-staging\.sh'`.
-NEEDLE_RE = re.compile(r"cleanup-staging\.sh")
+# The needle the recursive scan looks for, `grep -rn 'cleanup[-_]staging\.(sh|py)'`.
+NEEDLE_RE = re.compile(r"cleanup[-_]staging\.(sh|py)")
 
 # `gate_finish 3` in the twin: the rail, the call-site floor, and at least one
 # caller. A battery that did not run is not a green one.
@@ -223,12 +241,24 @@ def grep_hits(root: pathlib.Path) -> tuple[list[str], int]:
     """
     hits: list[str] = []
     files_read = 0
+    py_scan_base = root / PY_SCAN_DIR
     for scan_dir in SCAN_DIRS:
         base = root / scan_dir
         if not base.is_dir():
             continue  # `2>/dev/null`: a missing directory is silent to the twin
         for path in sorted(base.rglob("*")):
-            if not path.is_file() or path.suffix not in SCAN_SUFFIXES:
+            if not path.is_file():
+                continue
+            if path.suffix in SCAN_SUFFIXES:
+                pass
+            elif path.suffix == PY_SUFFIX:
+                # Scoped to PY_SCAN_DIR regardless of which SCAN_DIRS entry this
+                # walk is under -- see PY_SCAN_DIR's own comment for why.
+                try:
+                    path.relative_to(py_scan_base)
+                except ValueError:
+                    continue
+            else:
                 continue
             try:
                 text = path.read_text(encoding="utf-8", errors="replace")

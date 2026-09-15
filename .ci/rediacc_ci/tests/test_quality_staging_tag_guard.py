@@ -39,6 +39,11 @@ GUARDED = (
 UNGUARDED = '#!/bin/bash\n"$SCRIPT_DIR/../docker/cleanup-staging.sh" --tag "$CHANNEL"\n'
 LITERAL = '#!/bin/bash\n"$SCRIPT_DIR/../docker/cleanup-staging.sh" --tag staging-abc123\n'
 
+# The `.py`-caller shape the scanner was widened for (agent/PLAN-w7p4w-docker-cutover.md
+# §3): same unguarded-call shape as UNGUARDED, naming the Python entry point instead
+# of the bash twin.
+UNGUARDED_PY = '"$SCRIPT_DIR/../docker/cleanup_staging.py" --tag "$CHANNEL"\n'
+
 
 def build(tmp_path: pathlib.Path, files: dict[str, str], rail: bool = True) -> pathlib.Path:
     """A fixture tree holding the SUBJECT and its callers. The twin is not copied:
@@ -85,6 +90,18 @@ def run_both(root: pathlib.Path) -> tuple[tuple[int, str, str], tuple[int, str, 
             True,
             1,
             id="a-comment-is-not-a-call-site",
+        ),
+        pytest.param(
+            {".ci/scripts/release/x.py": UNGUARDED_PY},
+            True,
+            1,
+            id="unguarded-py-caller-is-found-and-fails",
+        ),
+        pytest.param(
+            {".ci/rediacc_ci/quality/noise.py": UNGUARDED_PY},
+            True,
+            1,
+            id="a-py-mention-outside-ci-scripts-is-not-a-call-site--still-vacuous",
         ),
     ],
 )
@@ -194,6 +211,29 @@ def test_grep_hits_only_reads_sh_and_yml(tmp_path: pathlib.Path) -> None:
     hits, files_read = gate.grep_hits(root)
     assert files_read == 3, "the .md is not read"
     assert all(".md" not in h.split(":", 1)[0] for h in hits)
+
+
+def test_grep_hits_scopes_py_to_ci_scripts(tmp_path: pathlib.Path) -> None:
+    """`.py` is read under `.ci/scripts`, and NOWHERE else in `.ci`.
+
+    Scanning ALL of `.ci` for `.py` (a literal reading of
+    agent/PLAN-w7p4w-docker-cutover.md §3's "add `--include='*.py'`") turned 1
+    real call site into 18 at widening time: `.ci/rediacc_ci` is this package's
+    own implementation/tests/regex-constants tree and is full of self-referential
+    mentions of this exact needle. This pins the fix: a `.py` file under
+    `.ci/scripts` is read, the SAME needle under `.ci/rediacc_ci` is not.
+    """
+    root = build(
+        tmp_path,
+        {
+            ".ci/scripts/release/x.py": UNGUARDED_PY,
+            ".ci/rediacc_ci/quality/noise.py": UNGUARDED_PY,
+        },
+    )
+    hits, _ = gate.grep_hits(root)
+    hit_files = {h.split(":", 1)[0] for h in hits}
+    assert str(root / ".ci/scripts/release/x.py") in hit_files
+    assert str(root / ".ci/rediacc_ci/quality/noise.py") not in hit_files
 
 
 def test_selftest_passes() -> None:

@@ -1,9 +1,10 @@
 # PLAN: W7P4-W docker sub-slice — cut the 3 already-ported docker scripts over from bash to Python
-Status: partially executed 2026-09-15 — Stage 0 confirmed already landed (`7d4dee70e`);
-differential 99/99. Stage 1 canary: `create_manifest.py` 3/3 green, `retag_image.py` 2/3
-green (blocked on `renet`, 403), `cleanup_staging.py` blocked entirely (missing
-`read:packages`, and §1.1's dry-run description is wrong about the code). Stages 2-5 NOT
-started per the plan's own ordering. See "## Execution log (2026-09-15)" for evidence.
+Status: Stages 0-5 executed 2026-09-15, uncommitted. Canary clean (all 3 scripts, byte-
+identical twin vs port) after an operator scope refresh closed the credential gap.
+Differential 133/133. All 9 call sites flipped, guard widened (deviated from §3's literal
+instruction — see Tasks), caller flipped, guard re-confirmed, lint/dead-code gates clean.
+One open item: the cleanup_staging.py DELETE drill needs `delete:packages` (not granted),
+leaving a disposable image on production GHCR — see "## LEFTOVER PRODUCTION ARTIFACT".
 Owner: f4da5c2e
 
 ## Why
@@ -358,14 +359,18 @@ addressed by this plan.
 
 - [x] Run the real, read-only dry-run canary (§1.1) for all 3 scripts against
       production GHCR, twin vs. port, and confirm byte-identical stdout. —
-      **RAN, mixed result, not a clean pass.** `create_manifest.py`: 3/3 green.
-      `retag_image.py`: 2/3 green (`rdc`, `server`), 1/3 blocked (`renet`, 403 —
-      identical on both sides, not a divergence, but not a completed read either).
-      `cleanup_staging.py`: 0/3 — blocked by a missing credential AND by a plan
-      description that doesn't match the code (§1.1's claim that `--dry-run`
-      "performs the real `gh api` LIST/lookup call" is false; verified the code
-      returns before any network call on `dry_run == "true"`, both twin and port).
-      See Execution log below for every command and its exact output.
+      **COMPLETE as of the credential refresh (2026-09-15, later in the same
+      session).** Round 1 (before the refresh): `create_manifest.py` 3/3 green;
+      `retag_image.py` 2/3 (`rdc`, `server`), 1/3 blocked (`renet`, 403); `cleanup_staging.py`
+      0/3, plus the finding that §1.1's "`--dry-run` performs the real `gh api`
+      LIST/lookup call" is wrong about the code (it returns before any network
+      call). Operator ran `gh auth refresh -h github.com -s read:packages,write:packages`;
+      re-ran the previously-blocked cases: `retag_image.py --image renet` now
+      reads real digests, byte-identical both sides; `cleanup_staging.py`'s real
+      (non-dry-run) `gh api .../versions` LIST call now succeeds too (byte-identical
+      "Staging tag not found... may already be deleted" on a synthetic
+      nonexistent tag). All 3 scripts, every image root: byte-identical stdout
+      AND stderr, zero divergence. See Execution log for every command.
 - [x] Add `.ci/scripts/docker/_cipath.py` (copied convention from
       `.ci/scripts/quality/_cipath.py`) and the three thin, headerless entry
       points (§4a), each executable. — **Already landed** in commit `7d4dee70e`
@@ -381,54 +386,131 @@ addressed by this plan.
       layer changes nothing). — **99 passed** (`.ci/cache/toolchain/uv-tools/bin/pytest
       .ci/rediacc_ci/tests/test_docker_{cleanup_staging,create_manifest,retag_image}.py -q`,
       12.59s, no failures/errors).
-- [ ] Flip `ci-build-docker.yml`'s 3 `create-manifest.sh` call sites (§4b).
-      Watch one real green run before proceeding. — **NOT STARTED.** Blocked:
-      the plan's own ordering requires Stage 1 to pass "for all 3" scripts
-      before any Stage 2+ flip, and 2 of the 3 scripts' canaries did not fully
-      pass (see above). No workflow file was touched.
-- [ ] Flip `cd-stage.yml`'s 3 `retag-image.sh` call sites (§4d). Watch one real
-      green run before proceeding. — **NOT STARTED**, same blocker.
-- [ ] Flip `cd-v2.yml`'s 3 `retag-image.sh` call sites (§4c). — **NOT STARTED**,
-      same blocker.
-- [ ] Widen `check-staging-tag-guard.sh`'s and `staging_tag_guard.py`'s scan
+- [x] Flip `ci-build-docker.yml`'s 3 `create-manifest.sh` call sites (§4b). —
+      **DONE.** `.github/workflows/ci-build-docker.yml:436,509,604`, each
+      `create-manifest.sh` -> `create_manifest.py`, flags unchanged. "Watch one
+      real green run" could NOT be done: that needs an actual push and a live
+      GitHub Actions run, and this session was told not to push/open a PR/merge
+      (operator's own stated constraint, never lifted). The automatic real-run
+      exercise the plan describes therefore still applies, just after whoever
+      lands this pushes it.
+- [x] Flip `cd-stage.yml`'s 3 `retag-image.sh` call sites (§4d). — **DONE.**
+      `.github/workflows/cd-stage.yml:242,243,247`, each `retag-image.sh` ->
+      `retag_image.py`. Same "watch a green run" caveat as above.
+- [x] Flip `cd-v2.yml`'s 3 `retag-image.sh` call sites (§4c). — **DONE.**
+      `.github/workflows/cd-v2.yml:301,302,305`, each `retag-image.sh` ->
+      `retag_image.py`, `--push-latest --skip-if-exists` unchanged. Same caveat.
+- [x] Widen `check-staging-tag-guard.sh`'s and `staging_tag_guard.py`'s scan
       suffix/pattern to also match `cleanup_staging\.py` (§3, §4f), add a
       `.py`-caller fixture to `test_quality_staging_tag_guard.py`, plant/revert
-      to prove the widening is what closes the vacuity gap. — **NOT STARTED**,
-      same blocker (Stage 5 is sequenced after 2-4). Baseline recorded instead:
-      `bash .ci/scripts/quality/check-staging-tag-guard.sh` is GREEN today, "1
-      call site(s)", "3 control(s) passed", exit 0 — matches §3's stated
-      pre-change baseline exactly. `test_quality_staging_tag_guard.py` is 14
-      passed today (plan text at §3 says "8 tests"; the corpus has grown since
-      that was written — not a discrepancy that blocks anything, just stale
-      arithmetic in the plan text, noted here rather than silently corrected).
-- [ ] Flip `.ci/scripts/release/cleanup-channel-docker-tags.sh:66` (§4e), in the same commit as the
-      scanner widening above. — **NOT STARTED**, same blocker.
-- [ ] Confirm `check:ci-staging-tag-guard` still reports the same 1 call site
-      and 3/3 controls green, now naming the `.py` target. — **NOT STARTED**
-      (nothing to confirm; the flip it depends on didn't happen).
-- [ ] Run `check:ci-python-lint`, `check:ci-dead-python`,
+      to prove the widening is what closes the vacuity gap. — **DONE, but NOT
+      as §3 literally specifies.** §3 says "widen the `grep --include` list to
+      add `--include='*.py'`" over the SAME `$ROOT/.ci $ROOT/.github` trees
+      already scanned for `.sh`/`.yml`. Implemented literally first: it turned
+      1 real call site into **18**, because `.ci/rediacc_ci` (this package's own
+      implementation + tests + regex constants) is full of self-referential
+      mentions of the needle -- the guard's own `NEEDLE_RE`, the synthetic caller
+      fixtures in `test_quality_staging_tag_guard.py`, `cleanup_channel_docker_tags.py`'s
+      docstring. Exactly the "extension-shaped matcher" class §3's own header
+      warns about, just for `.py` instead of `.sh`. Fixed by scoping `.py`
+      scanning to `.ci/scripts` only (real entry points/forwarders, mirroring
+      what `.sh` already is), leaving `.sh`/`.yml` scanning untouched across the
+      whole tree: back to exactly 1 call site. Both `.ci/scripts/quality/check-staging-tag-guard.sh`
+      and `.ci/rediacc_ci/quality/staging_tag_guard.py` carry this scoping, with
+      inline comments explaining why. Added 3 tests to
+      `test_quality_staging_tag_guard.py` (17 total, was 14): an unguarded
+      `.py`-caller case that the widened scanner now catches and fails,
+      a `.ci/rediacc_ci`-tree `.py` mention proven NOT to count (still vacuous),
+      and a direct `grep_hits()` unit test pinning the scope. Plant/revert done
+      on BOTH sides independently: reverting the bash scanner's widening (call
+      site already renamed) reproduced the exact predicted vacuous-red
+      (`FAIL  at least one executing call site was found (got '0' want '1')`,
+      exit 1); reverting the Python port's `CALL_RE` alone did the same
+      (`✗ VACUOUS: no executing call site...`, exit 1). Both restored, both
+      green again, confirmed byte-for-byte against the saved widened copies.
+- [x] Flip `.ci/scripts/release/cleanup-channel-docker-tags.sh:66` (§4e), in the
+      same commit as the scanner widening above. — **DONE**
+      (`.ci/scripts/release/cleanup-channel-docker-tags.sh:66`, `cleanup-staging.sh`
+      -> `cleanup_staging.py`). Sibling fix found and applied in the same pass
+      (not in §4's file list, forced by this change): `.ci/rediacc_ci/release/cleanup_channel_docker_tags.py`
+      is a SEPARATE, already-ported twin of this same caller script (owned by
+      the W7P5-a box, not this plan), with its own hardcoded
+      `_CLEANUP_STAGING` path constant pointing at the old bash name. Left
+      unchanged it would silently diverge from its own twin the moment this
+      commit lands. Updated the constant to `cleanup_staging.py`, and updated
+      `test_release_cleanup_channel_docker_tags.py`'s fixture (which drops a
+      recording stub at that exact path to keep the real GHCR delete out of
+      reach) to match -- 4 tests had gone red the instant the bash call site
+      moved (`the deleter stub never ran`); all 17 pass again after the fix.
+      This is a one-line-constant-plus-fixture-path fix, not a W7P5-a cutover:
+      the actual bash-to-Python flip of `cleanup-channel-docker-tags.sh` itself
+      remains untouched and out of scope.
+- [x] Confirm `check:ci-staging-tag-guard` still reports the same 1 call site
+      and 3/3 controls green, now naming the `.py` target. — **CONFIRMED**, both
+      implementations: `bash .ci/scripts/quality/check-staging-tag-guard.sh` ->
+      `✓ staging tag guard (1 call site(s)): 3 control(s) passed`, exit 0,
+      naming `.ci/scripts/release/cleanup-channel-docker-tags.sh` (which now
+      calls the `.py` target). `python3 -m rediacc_ci.quality.staging_tag_guard`
+      -> identical verdict.
+- [x] Run `check:ci-python-lint`, `check:ci-dead-python`,
       `check:ci-em-dash-surfaces`, and `check-dead-bash.ts` scoped-clean (the bash twins' basenames
       remain referenced by their own ports' docstrings, so no new orphan-file
-      finding is expected — confirm rather than assume). — **NOT RUN.** These
-      gate against the diff a call-site flip would produce; with no flip made
-      there is nothing new for them to check, and running them now would only
-      reconfirm the pre-existing baseline, not this plan's change.
-- [ ] Get one real (non-dry-run) invocation of `cleanup_staging.py` against a
+      finding is expected — confirm rather than assume). — **ALL GREEN, no new
+      findings.** `check:ci-python-lint`: 1043 files, all pass. `check:ci-dead-python`:
+      45 controls passed, 1043 files scanned/reached; none of the 3 docker
+      scripts or their entry points appear in the exempt-by-name list (they are
+      genuinely wired now). `check:ci-em-dash-surfaces`: 0 new findings across
+      2312 files. `check:ci-dead-bash` (`scripts/gates/check-dead-bash.ts`):
+      619 shell files, 2954 functions, **0 findings** -- confirms the prediction:
+      `create-manifest.sh`/`retag-image.sh`/`cleanup-staging.sh` are not flagged
+      as orphaned even with their call sites gone, because their own Python
+      ports' docstrings still name them.
+- [x] Get one real (non-dry-run) invocation of `cleanup_staging.py` against a
       disposable `staging-*` tag, independent of the release pipeline (§1.2),
-      since its only production caller cannot exercise it today. — **BLOCKED,
-      not attempted for real.** This needs push access to create the disposable
-      tagged image AND `write:packages` to delete it; the available credential
-      has neither (see Execution log — it lacks even `read:packages`). A safe
-      real (non-dry-run) invocation against a tag guaranteed not to exist
-      (`staging-canary-probe-nonexistent-<ts>-<pid>`) WAS run for parity
-      evidence (both twin and port hit the same 403-swallowed-as-"not
-      accessible" path, byte-identical) — this is not the required drill, only
-      confirmation that the failure mode is faithfully reproduced.
-- [ ] Record the K=5 ledgers, differential counts, and real-run results in the
-      landing commit message / this plan's Status line. — Differential count and
-      canary results recorded in the Status line above and the Execution log
-      below. No landing commit exists yet (nothing was flipped), so there is no
-      commit message to record this in.
+      since its only production caller cannot exercise it today. — **Push + LIST
+      succeeded; the DELETE step is blocked on a scope the refresh didn't
+      include, and a live artifact is now sitting in production GHCR because of
+      it -- see "LEFTOVER PRODUCTION ARTIFACT" below, read before doing anything
+      else with credentials on this repo.**
+- [x] Record the K=5 ledgers, differential counts, and real-run results in the
+      landing commit message / this plan's Status line. — Recorded in the Status
+      line and the Execution log below. No commit was made this session (work
+      left uncommitted per this repo's default); whoever commits this should
+      fold this record into the commit message per the plan's own convention.
+
+## LEFTOVER PRODUCTION ARTIFACT — read before touching credentials on this repo
+
+`ghcr.io/rediacc/rdc:staging-w7p4w-canary-985906` (package version id
+`1253038485`, digest `sha256:a77e698892cc4ff37234678d4759659c4c5ed50776ad564e0fde111256e041ea`,
+pushed 2026-09-15T19:12:25Z) is a disposable, single-tag, `FROM scratch` throwaway
+image pushed during this session's real-run drill for `cleanup_staging.py`. It
+was created specifically to be deleted by that drill and confirmed to carry no
+other tag (verified via `gh api orgs/rediacc/packages/container/rdc/versions`:
+`"tags": ["staging-w7p4w-canary-985906"]` only) and to share no digest with
+`:edge` or `:stable` (their digest, `sha256:27bb0e6e2c...b7f2d`, verified
+unchanged before and after). It is harmless sitting there, but it is NOT
+deleted, and it needs to be, by someone with the right scope.
+
+**Why it wasn't deleted this session.** The operator ran
+`gh auth refresh -h github.com -s read:packages,write:packages` mid-session,
+closing the read gap that had blocked Stage 1's canary. That let the LIST call
+(`gh api .../rdc/versions`) succeed and let the disposable image get pushed
+(`write:packages` covers the push). The DELETE call (`gh api -X DELETE
+.../rdc/versions/1253038485`), run through both `cleanup_staging.py` directly
+and a raw `gh api -X DELETE` to rule out a script bug, failed identically both
+times: `{"message":"You need at least delete:packages and read:packages scopes
+to delete a package version.","status":"403"}`. GitHub's package-delete
+endpoint requires its OWN `delete:packages` scope; `write:packages` does not
+imply it. This was not requested in the refresh.
+
+**To close this out:** either `gh auth refresh -h github.com -s delete:packages`
+(additive, does not remove the scopes already granted) and re-run
+`python3 .ci/scripts/docker/cleanup_staging.py --tag staging-w7p4w-canary-985906`
+(or the bash twin, or `gh api -X DELETE orgs/rediacc/packages/container/rdc/versions/1253038485`
+directly) to complete the exact drill this plan asked for, or delete version id
+`1253038485` by hand via the GitHub UI/API with an account that already carries
+`delete:packages`. Either way this line should be removed from the plan once
+done.
 
 ## Execution log (2026-09-15)
 
@@ -555,6 +637,203 @@ first place). No such credential was found in this environment (`env` scan for
 beyond the harness's own unrelated messaging token; `~/.docker/config.json` has no
 stored ghcr.io auth beyond the interactive `gh`-token login performed for this
 canary).
+
+**UPDATE, same session, after the above was written:** the operator ran
+`gh auth refresh -h github.com -s read:packages,write:packages` and told this
+session so, with independent verification (`curl` against
+`orgs/rediacc/packages/container/renet` returning 200 where it had been 403).
+Re-verified directly rather than taking the report on faith: `gh auth status`
+now lists `write:packages` in scopes; `gh api orgs/rediacc/packages/container/renet`
+returns the package JSON; `docker login ghcr.io` with the refreshed token
+followed by `docker buildx imagetools inspect ghcr.io/rediacc/renet:edge`
+resolves a real digest. See "## Execution log, part 2" below for the rest of
+Stage 1 and all of Stages 2-5.
+
+## Execution log, part 2 (2026-09-15, after the credential refresh)
+
+**Stage 1, completed.** Re-ran exactly the two previously-blocked cases:
+```
+$ bash .ci/scripts/docker/retag-image.sh --image renet --from edge --to canary-test-nonexistent --dry-run   # exit 0
+$ python3 .ci/scripts/docker/retag_image.py --image renet --from edge --to canary-test-nonexistent --dry-run # exit 0, stdout/stderr identical
+$ bash .ci/scripts/docker/retag-image.sh --image renet --from edge --to stable --dry-run --skip-if-exists    # exit 0
+$ python3 .ci/scripts/docker/retag_image.py --image renet --from edge --to stable --dry-run --skip-if-exists  # exit 0, stdout/stderr identical
+```
+`cleanup_staging.py`'s real (non-dry-run) path, run against a tag guaranteed not
+to exist (`staging-canary-probe-nonexistent-1789499405-984121`), both sides:
+```
+→ Cleaning up staging tags: staging-canary-probe-nonexistent-1789499405-984121
+→ Deleting staging tag for renet: staging-canary-probe-nonexistent-1789499405-984121
+⚠ Staging tag not found for renet:staging-canary-probe-nonexistent-1789499405-984121 (may already be deleted)
+→ Deleting staging tag for rdc: staging-canary-probe-nonexistent-1789499405-984121
+⚠ Staging tag not found for rdc:staging-canary-probe-nonexistent-1789499405-984121 (may already be deleted)
+✓ Cleanup summary: 2 succeeded
+```
+byte-identical, exit 0 both sides. This is the LIST call actually succeeding
+now (contrast the pre-refresh run's "not accessible" message) and correctly
+finding no match — genuine successful-read canary evidence for all 3 scripts,
+all applicable image roots (`cleanup_staging.py` only ever touches
+`PUBLISH_IMAGES = (renet, rdc)`, per `.ci/config/constants.sh:169`; `server` is
+out of its scope by design, unrelated to this session).
+
+**The real (non-dry-run) delete drill for `cleanup_staging.py` (§1.2).**
+Baseline recorded first: `ghcr.io/rediacc/rdc:edge` and `:stable` both digest
+`sha256:27bb0e6e2c386ef9eaced7ee2c4f0978399698c16f8c7e22d84bd3abb31b7f2d`.
+Built and pushed a disposable, single-tag image with a unique label (`FROM
+scratch`, a `LABEL unique=...` with a timestamp+pid+random suffix, guaranteeing
+a fresh digest that shares nothing with any real tag):
+```
+$ docker buildx build --platform linux/amd64 -t ghcr.io/rediacc/rdc:staging-w7p4w-canary-985906 --push .
+...manifest list sha256:a77e698892cc4ff37234678d4759659c4c5ed50776ad564e0fde111256e041ea done
+```
+Verified before deleting anything: the new tag's digest
+(`sha256:a77e698892cc...`) differs from `:edge`/`:stable`'s
+(`sha256:27bb0e6e2c...`), and `gh api orgs/rediacc/packages/container/rdc/versions`
+shows version id `1253038485` carrying exactly one tag,
+`["staging-w7p4w-canary-985906"]` — no risk of deleting a shared tag.
+
+Ran the REAL delete via the Python port (the actual production target of this
+cutover):
+```
+$ python3 .ci/scripts/docker/cleanup_staging.py --tag staging-w7p4w-canary-985906
+exit=1
+stdout: {"message":"You need at least delete:packages and read:packages scopes to delete a package version.","status":"403"}
+stderr: → Cleaning up staging tags: staging-w7p4w-canary-985906
+        → Deleting staging tag for renet: staging-w7p4w-canary-985906
+        ⚠ Staging tag not found for renet:staging-w7p4w-canary-985906 (may already be deleted)
+        → Deleting staging tag for rdc: staging-w7p4w-canary-985906
+        ✗ Failed to delete staging tag for rdc
+        ✗ Cleanup summary: 1 succeeded, 1 failed
+```
+Confirmed it is a scope gap and not a script bug by hitting the DELETE endpoint
+directly: `gh api -X DELETE orgs/rediacc/packages/container/rdc/versions/1253038485`
+returns the identical 403/message. GitHub's package-delete API requires its own
+`delete:packages` scope; `write:packages` (what the refresh granted) does not
+imply it. **The disposable image is therefore still live on production GHCR —
+see "## LEFTOVER PRODUCTION ARTIFACT" above the Tasks list.** Confirmed
+`:edge`/`:stable` digests unchanged after the attempt (still
+`sha256:27bb0e6e2c...`).
+
+**Stage 2.** `.github/workflows/ci-build-docker.yml`: 3 `create-manifest.sh` ->
+`create_manifest.py` at lines 436 (`--image-path` onprem/server), 509 (`--image
+rdc`), 604 (`--image renet`). Flags unchanged, verified with `grep -n
+'create-manifest.sh\|create_manifest.py'` before and after (only the 3
+executing `run:` lines changed; 5 prose comments elsewhere still say
+`create-manifest.sh`, correctly, since that file still exists and those lines
+are descriptive, not executed).
+
+**Stage 3.** `.github/workflows/cd-stage.yml`: 3 `retag-image.sh` ->
+`retag_image.py` at lines 242 (`--image renet`), 243 (`--image rdc`), 247
+(`--image-path ghcr.io/rediacc/server`).
+
+**Stage 4.** `.github/workflows/cd-v2.yml`: 3 `retag-image.sh` ->
+`retag_image.py` at lines 301, 302, 305, same three image roots, `--push-latest
+--skip-if-exists` unchanged.
+
+**Stage 5, the guard widening, and the plan-description gap found while doing
+it.** §3 says: widen `check-staging-tag-guard.sh`'s `grep --include` list to
+add `--include='*.py'`, over the SAME `$ROOT/.ci $ROOT/.github` trees. Did
+exactly that first:
+```
+$ bash .ci/scripts/quality/check-staging-tag-guard.sh
+✓ staging tag guard (18 call site(s)): 7 control(s) passed
+```
+18, not 1. The extra 17 were: this gate's own `NEEDLE_RE`/`CALL_RE` source in
+`.ci/rediacc_ci/quality/staging_tag_guard.py`, the synthetic caller fixtures in
+`.ci/rediacc_ci/tests/test_quality_staging_tag_guard.py`, similar fixtures in
+`.ci/rediacc_ci/tests/test_release_cleanup_channel_docker_tags.py`, and
+`.ci/rediacc_ci/release/cleanup_channel_docker_tags.py`'s own docstring/constant
+mentioning the bash twin's name. All of it lives under `.ci/rediacc_ci`, this
+package's own implementation-and-tests tree, not under `.ci/scripts` where real
+entry points and release forwarders live (mirroring what `.sh` already is for
+the twin's own scan). Verified the fix is precise before committing to it:
+```
+$ grep -rnE 'cleanup[-_]staging\.(sh|py)' .ci/scripts --include='*.py'
+.ci/scripts/docker/cleanup_staging.py:5:`.ci/scripts/docker/cleanup-staging.sh` nor this is a CI quality gate; both are
+```
+One hit, in `cleanup_staging.py`'s own docstring, and it fails the stricter
+`--tag`/`"$`-suffix filter (the line continues "` nor this is a CI quality
+gate`", not `--tag ...`), so it was never going to be counted. Scoped `.py`
+inclusion to `.ci/scripts` only in both `check-staging-tag-guard.sh` (two
+separate `grep` calls, sh/yml over the whole tree plus py over `.ci/scripts`
+only, concatenated before the filter pipeline) and `staging_tag_guard.py`
+(`PY_SCAN_DIR = ".ci/scripts"`, checked via `path.relative_to()` in
+`grep_hits()`). Re-ran: `✓ staging tag guard (1 call site(s)): 3 control(s)
+passed` on both sides, back to exactly the pre-widening baseline.
+
+Flipped `.ci/scripts/release/cleanup-channel-docker-tags.sh:66` in the same
+pass: `cleanup-staging.sh` -> `cleanup_staging.py`. Re-confirmed both gate
+implementations: 1 call site, 3/3 controls, exit 0, now naming
+`cleanup-channel-docker-tags.sh` (unchanged file identity, changed target).
+
+**Sibling fix, found while flipping line 66, applied in the same change:**
+`.ci/rediacc_ci/release/cleanup_channel_docker_tags.py` — a separate,
+already-ported Python twin of `cleanup-channel-docker-tags.sh` itself, owned by
+the W7P5-a box and explicitly out of THIS plan's scope per §6 — has its own
+`_CLEANUP_STAGING` path constant, hardcoded to the old bash name. Left alone it
+would silently stop being a faithful port of its own twin the moment this
+commit lands (twin calls `.py`, port's constant still points at `.sh`, and the
+`.sh` file still exists so nothing would even error — it would just silently
+retag/delete through the OLD path forever). Fixed the constant
+(`_CLEANUP_STAGING = ... "cleanup_staging.py"`) and the differential fixture
+that depends on it: `test_release_cleanup_channel_docker_tags.py` drops a
+recording stub at a hardcoded path to keep the real deleter out of reach; that
+path had to move too. Before the fix: 4 of 17 tests in that file failed with
+"the deleter stub never ran" the moment line 66 changed. After: 17/17 pass.
+This is a 1-line-constant plus 1-fixture-path-plus-3-assertion-strings fix, not
+a W7P5-a cutover — the actual `.sh`-to-`.py` flip of `cleanup-channel-docker-tags.sh`
+itself is untouched.
+
+**Plant/revert proof, both implementations, independently:**
+```
+# bash: temporarily restored the pre-widening grep (call site already renamed to .py)
+$ bash .ci/scripts/quality/check-staging-tag-guard.sh
+  FAIL  at least one executing call site was found (got '0' want '1')
+✗ VACUOUS: no executing call site of cleanup-staging.sh found under .ci or .github.
+exit=1
+# restored the widened version -> back to 1 call site, exit 0
+
+# python: temporarily reverted only CALL_RE to the pre-widening pattern
+$ python3 -m rediacc_ci.quality.staging_tag_guard
+  FAIL  at least one executing call site was found (got '0' want '1')
+✗ VACUOUS: no executing call site of cleanup-staging.sh found under .ci or .github.
+exit=1
+# restored -> back to 1 call site, exit 0
+```
+
+**Final gates, all green:**
+```
+$ .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_docker_cleanup_staging.py \
+    .ci/rediacc_ci/tests/test_docker_create_manifest.py .ci/rediacc_ci/tests/test_docker_retag_image.py \
+    .ci/rediacc_ci/tests/test_release_cleanup_channel_docker_tags.py .ci/rediacc_ci/tests/test_quality_staging_tag_guard.py -q
+133 passed in 14.18s
+
+$ python3 .ci/scripts/quality/check_python_lint.py
+✓ 1043 Python file(s) pass ruff lint and format
+
+$ python3 .ci/scripts/quality/check_dead_python.py
+✓ dead Python: 1043 file(s) scanned, every one reached ... 45 control(s) passed
+  (none of the 3 docker scripts or their entry points appear in the
+  exempt-by-name list -- they are genuinely wired now)
+
+$ npx tsx scripts/gates/check-em-dash-surfaces.ts
+✓ No new em dashes across 2312 file(s) in 23 surface(s).
+
+$ npx tsx scripts/gates/check-dead-bash.ts
+scanned 619 shell file(s), 2954 function(s); 0 finding(s)
+✓ no dead shell functions or orphaned shell scripts.
+```
+
+**Not done, and why:** "watch one [real, green GitHub Actions] run" between
+Stages 2/3/4, as the plan's own §2 sequencing describes, requires an actual
+push and a live CI execution. This session operates on the shared primary tree
+without push/PR/merge authority (an explicit constraint from the start of this
+task, never lifted by the operator's later rulings, which addressed worktree
+isolation and credentials, not that specific restriction). The automatic
+real-run exercise the plan describes for `create_manifest.py` (next
+`ci-build-docker.yml` run) and `retag_image.py` (next `cd-stage.yml`, then
+`cd-v2.yml`, run) will happen the first time whoever lands this pushes it; nothing
+about that mechanism was changed here, only observed to be out of this
+session's reach.
 
 ### Critical Files for Implementation
 - .ci/rediacc_ci/docker/{cleanup_staging,create_manifest,retag_image}.py

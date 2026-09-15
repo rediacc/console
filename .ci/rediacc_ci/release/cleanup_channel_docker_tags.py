@@ -41,11 +41,18 @@ import sys
 SELF = "cleanup-channel-docker-tags.py"
 
 # `.ci/rediacc_ci/release/cleanup_channel_docker_tags.py` -> `.ci` -> repo root.
-# The twin resolves the same file as `$SCRIPT_DIR/../docker/cleanup-staging.sh`
+# The twin resolves the same file as `$SCRIPT_DIR/../docker/cleanup_staging.py`
 # from `.ci/scripts/release`; both spellings are three levels up plus the same
 # tail, even though the two files sit in different directories.
+#
+# NAMED cleanup_staging.py, NOT cleanup-staging.sh, as of
+# agent/PLAN-w7p4w-docker-cutover.md Stage 5: that plan cut the twin's own call
+# site over to the Python entry point, and this port forwards to whatever the
+# twin forwards to (see the module docstring's "FORWARDED TO RATHER THAN
+# REIMPLEMENTED" -- this constant is the one place that forwarding target is
+# named, and it must track the twin's, not stay pinned to the pre-cutover name).
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-_CLEANUP_STAGING = os.path.join(_ROOT, ".ci", "scripts", "docker", "cleanup-staging.sh")
+_CLEANUP_STAGING = os.path.join(_ROOT, ".ci", "scripts", "docker", "cleanup_staging.py")
 
 _HEADING = "## Cleanup Channel Tags"
 

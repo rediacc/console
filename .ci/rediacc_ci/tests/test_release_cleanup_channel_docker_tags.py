@@ -2,11 +2,14 @@
 twin `.ci/scripts/release/cleanup-channel-docker-tags.sh`.
 
 NEITHER SIDE RUNS IN THIS CHECKOUT. The twin resolves the deleter as
-`$SCRIPT_DIR/../docker/cleanup-staging.sh`, with no override hook, and that
-script talks to GHCR through `gh api --method DELETE`. So every case builds a
-throwaway console tree per side at the real relative depths, drops a RECORDING
-STUB at `.ci/scripts/docker/cleanup-staging.sh`, and runs the subject out of
-that tree. The real deleter is never on any path either side can reach.
+`$SCRIPT_DIR/../docker/cleanup_staging.py` (agent/PLAN-w7p4w-docker-cutover.md
+Stage 5 cut the twin's own call site from `cleanup-staging.sh` over to this
+Python entry point; the fixture below tracks that, not the pre-cutover name),
+with no override hook, and that script talks to GHCR through `gh api --method
+DELETE`. So every case builds a throwaway console tree per side at the real
+relative depths, drops a RECORDING STUB at `.ci/scripts/docker/cleanup_staging.py`,
+and runs the subject out of that tree. The real deleter is never on any path
+either side can reach.
 
 THE STEP SUMMARY IS THE OBSERVABLE, not stdout. This script's whole product is
 a markdown block appended to `$GITHUB_STEP_SUMMARY`; stdout and stderr carry
@@ -51,7 +54,7 @@ import os
 import sys
 
 with open(os.environ["FAKE_LOG"], "a") as fh:
-    fh.write("call: cleanup-staging.sh " + " ".join(sys.argv[1:]) + "\\n")
+    fh.write("call: cleanup_staging.py " + " ".join(sys.argv[1:]) + "\\n")
 
 rc = int(os.environ.get("FAKE_CLEANUP_RC", "0"))
 if rc == 0:
@@ -84,7 +87,7 @@ def _fixture(tmp_path: pathlib.Path, side: str, *, with_deleter: bool = True) ->
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "release" / PORT.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     if with_deleter:
-        deleter = root / ".ci" / "scripts" / "docker" / "cleanup-staging.sh"
+        deleter = root / ".ci" / "scripts" / "docker" / "cleanup_staging.py"
         deleter.write_text(FAKE_CLEANUP_STAGING, encoding="utf-8")
         deleter.chmod(0o755)
     return root
@@ -185,12 +188,12 @@ def _block(*lines: str) -> str:
 def test_the_fixture_carries_a_stub_deleter_not_the_real_one(tmp_path: pathlib.Path) -> None:
     """The control on the control: prove the real deleter is out of reach."""
     root = _fixture(tmp_path, "control")
-    deleter = root / ".ci" / "scripts" / "docker" / "cleanup-staging.sh"
+    deleter = root / ".ci" / "scripts" / "docker" / "cleanup_staging.py"
     assert deleter.is_file()
     text = deleter.read_text(encoding="utf-8")
     assert "FAKE_LOG" in text, "the fixture deleter is not the stub"
     assert "gh api" not in text, "the real deleter reached the fixture tree"
-    real = ROOT / ".ci" / "scripts" / "docker" / "cleanup-staging.sh"
+    real = ROOT / ".ci" / "scripts" / "docker" / "cleanup_staging.py"
     assert real.is_file(), "the real deleter moved; the port's path constant needs re-deriving"
 
 
@@ -248,7 +251,7 @@ def test_a_staging_tag_is_deleted_and_reported(tmp_path: pathlib.Path) -> None:
     old, new = run_both(tmp_path, CHANNEL="staging-abc123", FAKE_CLEANUP_RC="0")
     assert old[0] == 0
     assert old[4] == _block("**Channel tag cleaned up:** staging-abc123")
-    assert old[3] == ["call: cleanup-staging.sh --tag staging-abc123"]
+    assert old[3] == ["call: cleanup_staging.py --tag staging-abc123"]
     assert old[1] == "deleted 3 image tags\n", "the deleter's stdout is inherited, not swallowed"
     assert_agree(old, new, "staging-ok")
 
@@ -258,7 +261,7 @@ def test_a_failed_delete_is_reported_and_still_exits_zero(tmp_path: pathlib.Path
     old, new = run_both(tmp_path, CHANNEL="staging-abc123", FAKE_CLEANUP_RC="1")
     assert old[0] == 0
     assert old[4] == _block("**Failed to clean up channel tag:** staging-abc123", FAILED_WHY)
-    assert old[3] == ["call: cleanup-staging.sh --tag staging-abc123"]
+    assert old[3] == ["call: cleanup_staging.py --tag staging-abc123"]
     assert old[2] == "gh: HTTP 403 (missing delete:packages)\n"
     assert_agree(old, new, "staging-failed")
 
