@@ -661,7 +661,23 @@ def selftest(root):
     # would silently stop testing anything there -- which is the exact failure
     # mode this rule exists to close.
     tree = _git("rev-parse", "HEAD^{tree}").strip()
-    orphan = _git("commit-tree", tree, "-m", "plan-citations control: unreachable").strip()
+    # THE IDENTITY IS SUPPLIED, because `commit-tree` refuses without one:
+    # "Author identity unknown -- Please tell me who you are". A GitHub runner
+    # configures no git identity at any scope, so this control built its orphan
+    # fine on every developer machine and FAILED on the runner -- the exact
+    # environment-dependence it exists to catch, in the control itself.
+    # `-c` rather than env vars: it is scoped to this one command and cannot
+    # leak into anything else the gate runs.
+    orphan = _git(
+        "-c",
+        "user.name=plan-citations control",
+        "-c",
+        "user.email=control@invalid",
+        "commit-tree",
+        tree,
+        "-m",
+        "plan-citations control: unreachable",
+    ).strip()
     if orphan:
         ck(
             "an ORPHANED commit is reported even though it EXISTS in this clone "
