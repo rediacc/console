@@ -213,6 +213,25 @@ const KNOWN_BROKEN = new Map<string, string>([
     'https://www.rediacc.com/api/public/account-key',
     'route does not exist on any host (404 on www/edge/eu/us/asia); both docs now cite it only to warn against it, never as a command',
   ],
+  // MEASURED FROM TWO INDEPENDENT VANTAGE POINTS, 2026-09-15, because "the link
+  // is dead" and "this runner cannot reach it" look identical from one machine.
+  // The GitHub runner reported `BROKEN [fetch failed]`, and a dev box on a
+  // different network got HTTP 000 with a connect time of 0.000000s -- no TCP
+  // connection at all, rather than a 404 or a redirect. The control matters as
+  // much as the result: github.com and www.debian.org both answered 200 from
+  // that same box in the same loop, so egress works and the failure is specific
+  // to this host.
+  //
+  // The link is a citation, not an instruction: docs/code-signing-guide.md:309
+  // cites it for the claim that users reported unexpected charges once the
+  // eSigner signature count exceeds its included quota. The claim is still worth
+  // making and the attribution is still worth keeping, so the URL stays in prose
+  // and the breakage is recorded here rather than the sentence being quietly
+  // stripped of its source.
+  [
+    'https://billauer.co.il/blog/2021/11/esigner-cloud-signing-ssl-com-certificate/',
+    'host unreachable (no TCP connect) from a GitHub runner and a separate dev network on 2026-09-15; cited in docs/code-signing-guide.md as attribution for the eSigner overage claim, not as a command',
+  ],
   // NOTE: a comment block for a gnupg.org entry used to sit here, describing
   // the domain as unreachable from two networks on 2026-07-30. Its ENTRY is
   // gone -- removed when the host came back -- and the prose outlived it,
