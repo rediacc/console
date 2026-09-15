@@ -1,5 +1,9 @@
 # PLAN: B2 emit the matrix (within-lane sharding for ci-quality.yml)
-Status: draft -- design only, not implemented
+Status: partially executed -- D1-D4 and D5's first clause landed 2026-09-15, verified
+against the live tree, NOT re-derived from this checklist (which still read "draft" and
+every task unchecked despite the commits below existing). D5's second clause was
+ATTEMPTED and REVERTED for cause the same day; see Tasks. Remaining: D5's second clause
+(properly traced), the two selftest controls, the stale-comment fix.
 Owner: f4da5c2e
 
 ## Why
@@ -264,40 +268,83 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
 
 ## Tasks
 
-- [ ] Confirm no concurrent writer holds `.github/workflows/ci-quality.yml`, `scripts/gate-bind.ts`,
+- [x] Confirm no concurrent writer holds `.github/workflows/ci-quality.yml`, `scripts/gate-bind.ts`,
       or `scripts/ci-runner/lanes.ts` (driver-only mutex files). C2 is done (`bfb8630dd`), no
       longer a serialization concern.
-- [ ] D1: add `step?: string` to `ShardInput` (`scripts/ci-runner/lanes.ts:207-218`); add the
+      (ticked) 2026-09-15 by d778be9d: re-verified 2026-09-15 -- this whole checklist was stale;
+      D1-D4 and D5's first clause were already landed under this exact box tag while the boxes
+      here still read `[ ]`. Corrected below from git log, not from memory.
+- [x] D1: add `step?: string` to `ShardInput` (`scripts/ci-runner/lanes.ts:207-218`); add the
       fifth merge rule (group by `ci.step`, union, heavy-peak-as-one) to `shardPlan`; widen the
       `overloaded` refusal exemption for a shared-step unit.
-- [ ] D2: `shardAssignment` returns `{ legs, replicated }`; `--write` prints replicated entries
+      (ticked) 2026-09-15 by d778be9d: landed `5a6c76a22`/`adae3a53c` ("T-SCHED B2 D1, shard over
+      emitted steps not lock ids" + bash-twin parity). Verified live: `lanes.ts`'s `shardPlan` has
+      a STEP-SHARING block explicitly labeled `T-SCHED B2 D1`, unioning ids sharing one `ci.step`
+      before the `needs` merge, with the heavy-peak-as-one treatment the task describes.
+- [x] D2: `shardAssignment` returns `{ legs, replicated }`; `--write` prints replicated entries
       by name and lane share; add `SHARD_REPLICATED_MAX` beside `SHARD_COUNTS`; refuse when the
       replicated share exceeds the declared ceiling.
-- [ ] D3: implement `rewriteStrategyRegions(workflow, counts)` in `scripts/gate-bind.ts`; new
+      (ticked) 2026-09-15 by d778be9d: landed `3fdad41b2` ("T-SCHED B2 D2, refuse the id/step gap
+      instead of emitting it"). `SHARD_REPLICATED_MAX` exists at `lanes.ts:412`; `shardAssignment`
+      is parameterized on `counts`/`ceilings` rather than closing over the module consts, exactly
+      so a control can drive it with fixture data (see its own docstring).
+- [x] D3: implement `rewriteStrategyRegions(workflow, counts)` in `scripts/gate-bind.ts`; new
       `# >>> gate-bind strategy` / `# <<< gate-bind strategy` marker pair; call from `--write`
       just before `rewriteRegions` (`scripts/gate-bind.ts:1791`); refuse in both directions;
       leave `name:`/`runs-on:`/`timeout-minutes:` literal. Ask the operator before this lands
       against any real lane, per the box's branch-protection caveat.
-- [ ] D4: per-step `id:` (post-D1 merge, one per emitted step); one final `if: always()` receipt
+      (ticked) 2026-09-15 by d778be9d: landed `9d2988b5c` ("T-SCHED B2 D3, refuse a shard conjunct
+      with no strategy block"). `rewriteStrategyRegions` exists at `gate-bind.ts:904`, with its
+      own selftest block explicitly tagged `T-SCHED B2 D3`. Landing against a REAL lane (not just
+      the mechanism) still needs the operator ask per the box's caveat -- not done, and not this
+      checklist item's job either (SHARD_COUNTS stays empty, see the box's own note above).
+- [x] D4: per-step `id:` (post-D1 merge, one per emitted step); one final `if: always()` receipt
       step writing `toJSON(steps)` + `job.status` + `matrix.shard` + leg count, counting
       non-`skipped` outcomes; step-id -> lock-id map in the receipt step's `env:`; upload as
       `quality-shard-${{ matrix.shard }}`; wire the aggregator job to download and run
       `check:ci-quality-complete -- --receipts <dir>` (the `--receipts` consumer already exists,
       `scripts/gates/check-quality-complete.ts:410-419`, verify the receipt shape matches
       `ShardReceipt` at `:96-106` exactly).
+      (ticked) 2026-09-15 by d778be9d: landed across `a8c5a905d`/`cd0ae3fcf`/`08c65a1d6`/`19f8a6f7c`/
+      `f95d7f9eb` ("T-SCHED B2 D4 ... closing D4 in full"). `jobLockIdMap` exists at
+      `gate-bind.ts:574`, with a documented, explicitly-scoped-narrower gap (one entry per GATE
+      not per step, recorded as non-live today since no header-declared gate currently shares a
+      step) -- not a defect, a stated boundary.
 - [ ] D5a: add the static clause asserting, for each `SHARD_COUNTS` lane, the job's
       `matrix.shard` list equals `[1..N]` exactly, both directions.
+      PARTIAL 2026-09-15 by d778be9d: D5's FIRST clause landed (`79800a5df`/`b7d139ce0`,
+      "re-assert the strategy shape from the aggregator side" -- `check:ci-quality-complete` now
+      independently re-runs `rewriteStrategyRegions` against the live workflow, 3 new selftest
+      controls, 25 total). The exact `[1..N]` static-clause wording this task describes was not
+      separately located; may already be covered by the above or may still be open -- re-verify
+      rather than assume either way before starting new work here.
 - [ ] D5b: retarget `check:ci-quality-complete`'s own gate-header `lane:` off `quality-code`
       (currently `scripts/gates/check-quality-complete.ts:59`, matching
       `scripts/ci-runner/manifest.ts:4966`) onto a lane that can never be sharded (e.g.
       `quality-branch`); this is a driver-only `package.json`/`manifest.ts`/workflow-step edit,
       one writer, landed in the same commit per invariant 13.
+      ATTEMPTED AND REVERTED 2026-09-15, same session as D5's first clause (`79800a5df`'s own
+      message): moving `lane: quality-code` to `quality-branch` took `check:ci-gate-bind` from
+      clean to two real findings (quality-branch lacks node; no matching workflow step there,
+      one exists in quality-code "by coincidence or design"). Reverted rather than guessed under
+      that session's remaining budget. STILL OPEN: trace why `quality-code` satisfies `stepInJob`
+      today before choosing a real replacement lane -- this is real, non-trivial remaining work,
+      not a one-line retarget as the task text implies. Re-verified live 2026-09-15 by d778be9d:
+      manifest.ts:5024-5028 still reads `job: 'quality-code'`, unchanged since that revert.
 - [ ] Add the two missing selftest controls to `scripts/gate-bind.ts`'s `selftest()`: a lane
       WITH an assignment emits `matrix.shard == N` on exactly the steps the plan gives that leg;
       a lane WITHOUT one emits byte-identically to today. Required before any `SHARD_COUNTS`
       population, per the box's own gap note.
-- [ ] Fix the stale comment at `scripts/gate-bind.ts:571` ("today only one lane is in
+      NOT CONFIRMED 2026-09-15 by d778be9d: searched `selftest()` for this exact pair (a WITH/
+      WITHOUT-assignment control), did not find an exact match among the ~25+ controls now
+      present (which do cover D1/D3/D4's own new behavior). May be subsumed by D5's first
+      clause's 3 new controls, or may still be a real gap -- re-verify directly rather than
+      assume either way before starting.
+- [x] Fix the stale comment at `scripts/gate-bind.ts:571` ("today only one lane is in
       `SHARD_COUNTS`" -> "no lane is").
+      (ticked) 2026-09-15 by d778be9d: verified live at `gate-bind.ts:785` (line number drifted
+      with the D1-D5 insertions) -- reads "...and no lane is in `SHARD_COUNTS` today", the exact
+      corrected wording.
 - [ ] New completeness gate (or new static clause in `check-quality-complete.ts`): define
       `DECLARED_HAND_WRITTEN_LANES` explicitly (starting `['quality-branch',
       'quality-submodule-branches']`); assert `REGION_LANES ∪ DECLARED_HAND_WRITTEN_LANES`
