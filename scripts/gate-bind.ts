@@ -538,9 +538,44 @@ export function gateStepId(id: string): string {
  * sequence rather than the JSON text a later `JSON.parse` needs literally. YAML's own
  * escape for an embedded `'` inside a single-quoted scalar is doubling it, so ids are
  * defensively escaped that way even though no lock id in this repo contains one today.
+ *
+ * CORRECTION, found while designing the receipt step this was meant to feed: a step's
+ * `env:` is process-local to that step and is NOT part of the `steps` context --
+ * `toJSON(steps)` and every `steps.<id>.X` reference in this whole repository (checked:
+ * every existing cross-step data pass in .github/workflows/*.yml uses `outputs`, via
+ * `$GITHUB_OUTPUT`, never `env`) exposes only `outputs`, `outcome` and `conclusion`. A
+ * later receipt step CANNOT read an earlier step's `GATE_LOCK_IDS` this way, so this
+ * value is NOT what the eventual receipt step's counter reads -- see `jobLockIdMap`
+ * below for the map that actually is. `GATE_LOCK_IDS` is kept for its own, narrower
+ * value: a human reading the emitted YAML can see which lock id(s) a given step
+ * represents without cross-referencing the lock, the same reason `id:` itself is
+ * useful to a reader even before any receipt step exists to consume it.
  */
 export function lockIdsEnvValue(ids: readonly string[]): string {
   return `'${JSON.stringify(ids).replace(/'/g, "''")}'`;
+}
+
+/**
+ * T-SCHED B2 D4, corrected. What the eventual receipt step actually needs: the WHOLE
+ * job's step-id -> lock-ids map, known entirely at COMPILE TIME (gate-bind already has
+ * every conjuncted gate's id when it writes the region), so it can be embedded ONCE on
+ * the receipt step's own `env:` rather than distributed across steps a later step
+ * cannot read. `steps.<id>.outcome` (native to the `steps` context, unlike `env`) is
+ * then the only RUNTIME fact the receipt script needs per step.
+ *
+ * ONE ENTRY PER GATE, NOT PER STEP, and that is a known, narrower scope than "one per
+ * STEP after the D1 merge" this box's own text asks for. `rewriteRegions` itself does
+ * not collapse two auto-emitted gates sharing one `.step` name into one emitted block
+ * today -- keying `gateStepId` on `b.id` here matches what it actually emits, one block
+ * per gate. That collapse is a separate, currently non-live gap (no header-declared
+ * gate shares a step with another today; the live example, `Lint`, is hand-registered
+ * via the manifest and never reaches `byLane` at all) and is not this function's or
+ * D4's to fix -- recorded here rather than silently assumed away.
+ */
+export function jobLockIdMap(entries: readonly Emitting[]): Record<string, string[]> {
+  const map: Record<string, string[]> = {};
+  for (const b of entries) map[gateStepId(b.id)] = [b.id];
+  return map;
 }
 
 export function emitStep(b: Emitting, guard = 'setup', stepId?: string): string[] {
@@ -1757,6 +1792,13 @@ function selftest(): number {
   ck(
     "CONTROL: an unsharded step's env is untouched by D4 (no GATE_LOCK_IDS key at all)",
     !emitStep(base).some((l) => l.includes('GATE_LOCK_IDS'))
+  );
+  ck(
+    'jobLockIdMap: one gate id maps to itself, keyed by its own step id',
+    (() => {
+      const m = jobLockIdMap([base]);
+      return Object.keys(m).length === 1 && m[gateStepId(base.id)]?.[0] === base.id;
+    })()
   );
   ck(
     'rewriteRegions end to end: a sharded gate carries both id: and env: GATE_LOCK_IDS',

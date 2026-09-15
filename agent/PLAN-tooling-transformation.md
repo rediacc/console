@@ -4060,17 +4060,36 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       a selftest control, not asserted. 3 new selftest controls, all pass; same full
       battery as D3 (`ci-gate-bind`, `ci-parity`, `ci-gates-lock`, tsc, eslint, format)
       all still green.
-      **D4 SECOND CLAUSE DONE, same session.** The env step-id-to-lock-ids map:
-      `lockIdsEnvValue(ids)` emits a single-quoted YAML scalar holding the JSON array
-      (single-quoted because a bare `[...]` would parse as a YAML flow sequence rather
-      than the JSON text a later `JSON.parse` needs literally), merged into a sharded
-      step's `env:` as `GATE_LOCK_IDS`. Correct today (always exactly `[b.id]`, since no
-      auto-emitted gate currently shares a step with another) and correct if that ever
-      changes, without the eventual receipt script needing to know which case it is in.
-      4 new selftest controls including an END-TO-END proof through `rewriteRegions`
-      itself (not just `emitStep` in isolation) that a sharded gate carries both `id:`
-      and the `GATE_LOCK_IDS` env line together; same full battery green, `--dry-run`
-      against the live tree still 0 refusals (fully inert, confirmed not assumed).
+      **D4 SECOND CLAUSE DONE, same session** -- `lockIdsEnvValue`/`GATE_LOCK_IDS`, as
+      described above.
+      **A REAL DESIGN BUG FOUND IN THAT SAME CLAUSE, MINUTES LATER, in the box's own
+      text this time (not mine): "gate-bind emits a step-id to lock-id map into that
+      step's env:, and the counter sums the ids of the steps that actually ran" CANNOT
+      WORK AS WRITTEN.** A step's `env:` is process-local to that step; it is not part
+      of the `steps` context, so a later receipt step reading `toJSON(steps)` can never
+      see an earlier step's `GATE_LOCK_IDS`. Checked every existing cross-step data pass
+      in `.github/workflows/*.yml` for a counter-example before concluding this: every
+      one uses `outputs` (`$GITHUB_OUTPUT`), none uses `env`, because GitHub Actions
+      genuinely does not expose it. Same shape as D3's marker-collision bug -- a plan
+      clause that reads as concrete and is wrong in a way only running (or in this case,
+      reasoning precisely about the actual GHA context schema) surfaces.
+      **THE FIX: the map does not need to travel step-to-step at all.** Every conjuncted
+      gate's id is known at COMPILE TIME, so `jobLockIdMap(entries)` builds the WHOLE
+      job's step-id -> lock-ids map once, to be embedded on the receipt step's OWN `env:`
+      -- `steps.<id>.outcome` (native to the `steps` context, unlike `env`) is then the
+      only runtime fact the receipt script needs per step. `GATE_LOCK_IDS` on each
+      individual step is kept anyway, downgraded to documentation value only (a human
+      reading the emitted YAML can see which lock id(s) a step represents), and its
+      docstring corrected to say so plainly rather than silently leaving the wrong claim
+      standing.
+      `jobLockIdMap` is scoped honestly too: one entry per GATE, not per STEP, because
+      `rewriteRegions` itself does not collapse two auto-emitted gates sharing one
+      `.step` name into one block today -- a separate, currently non-live gap (the one
+      real example, `Lint`, is hand-registered via the manifest and never reaches
+      `byLane`), recorded rather than silently assumed away.
+      2 new selftest controls plus the earlier 4, all pass; same full battery green,
+      `--dry-run` against the live tree still 0 refusals (fully inert, confirmed not
+      assumed).
       **NOT done, and STILL deliberately left for a follow-up rather than rushed:** the
       final `if: always()` receipt-writing step (reading
       `toJSON(steps)`, computing `gates` from non-skipped outcomes, writing the JSON
