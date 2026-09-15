@@ -248,8 +248,28 @@ def main(argv: list[str] | None = None) -> int:
 
     log.step("Checking PR description freshness...")
 
-    # `gh pr view ... 2>/dev/null || echo "{}"`.
-    code, pr_data = _run(["gh", "pr", "view", pr_number, "--json", "commits,body,title"])
+    # `gh api repos/{R}/pulls/{n} --jq '{...}' 2>/dev/null || echo "{}"`.
+    #
+    # NOT `gh pr view --json commits`, WHICH SILENTLY CAPS AT 100. Measured
+    # 2026-09-15 on rediacc/console#589, a 254-commit PR: it returned 100
+    # commits, and `sort_by(.committedDate) | last` over that truncated slice
+    # reported a "latest commit" of 2026-09-07 while the real head was dated
+    # 2026-09-15. The staleness arithmetic below then computed an age of MINUS
+    # 11112 minutes and printed "within 30m - OK" on every single run. This gate
+    # had stopped being able to fail, which is worse than failing: it was
+    # reporting.
+    #
+    # The REST PR object carries `.commits` as a true integer count and
+    # `.head.sha` as the actual tip, neither of which is paginated at all.
+    code, pr_data = _run(
+        [
+            "gh",
+            "api",
+            "repos/%s/pulls/%s" % (repository, pr_number),
+            "--jq",
+            "{commits: .commits, head: .head.sha, body: .body, title: .title}",
+        ]
+    )
     if code != 0:
         pr_data = "{}"
 
@@ -257,13 +277,15 @@ def main(argv: list[str] | None = None) -> int:
         log.error("Could not fetch PR data")
         return 1
 
-    # `jq '.commits | length'`. An unparseable body is the divergence named in the
-    # port notes: jq exits 5 and pipefail kills the script, so the status is
+    # `jq '.commits'` -- now an INTEGER from the REST object, not the length of a
+    # capped array. An unparseable body is the divergence named in the port
+    # notes: jq exits 5 and pipefail kills the script, so the status is
     # reproduced and jq's wording is not.
     try:
         parsed = json.loads(pr_data)
-        commit_count = len(parsed.get("commits") or [])
-    except (ValueError, AttributeError):
+        commit_count = int(parsed.get("commits") or 0)
+        head_sha = str(parsed.get("head") or "")
+    except (ValueError, AttributeError, TypeError):
         return 5
 
     log.info("PR has %d commit(s)" % commit_count)
@@ -272,16 +294,15 @@ def main(argv: list[str] | None = None) -> int:
         log.info("Less than %d commits - skipping description check" % MIN_COMMITS)
         return 0
 
+    # The PR's HEAD is its latest commit by construction, so this needs no sort
+    # over a list that might not be whole.
     code, latest_commit_time = _run(
         [
             "gh",
-            "pr",
-            "view",
-            pr_number,
-            "--json",
-            "commits",
+            "api",
+            "repos/%s/commits/%s" % (repository, head_sha),
             "--jq",
-            ".commits | sort_by(.committedDate) | last | .committedDate",
+            ".commit.committer.date",
         ]
     )
     if code != 0:

@@ -39,30 +39,35 @@ from rediacc_ci.tests import differential as diff
 TWIN = ".ci/scripts/quality/check-pr-description.sh"
 MODULE = "pr_description"
 
+# ROUTED BY URL, because the gate no longer makes the same call twice with a
+# different --jq. It reads the REST PR object for the count and the head SHA,
+# then that head commit for its date. A stub that still answered `pr view` would
+# make both sides fail identically and this file would agree about nothing.
 GH_STUB = """#!/bin/bash
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/fxdata"
-case "$1 $2" in
-  "pr view")
-    for a in "$@"; do [ "$a" = "--jq" ] && { cat "$D/latest-commit.txt" 2>/dev/null || exit 1; exit 0; }; done
-    cat "$D/pr-view.json" 2>/dev/null || exit 1
-    exit 0 ;;
-  "api graphql")
-    cat "$D/graphql.json" 2>/dev/null || exit 1
-    exit 0 ;;
-esac
+if [ "$1" = "api" ]; then
+  case "$2" in
+    graphql)      cat "$D/graphql.json" 2>/dev/null || exit 1; exit 0 ;;
+    */pulls/*)    cat "$D/pr-view.json" 2>/dev/null || exit 1; exit 0 ;;
+    */commits/*)  cat "$D/latest-commit.txt" 2>/dev/null || exit 1; exit 0 ;;
+  esac
+fi
 exit 1
 """
 
+# The fixture is the POST-`--jq` shape, as it was before: these files stand in
+# for what `gh` writes to stdout, not for the raw API body.
+HEAD_SHA = "dead0beef0dead0beef0dead0beef0dead0beef0"
+
 
 def pr_view(commits: int) -> str:
-    """A `gh pr view --json commits,body,title` body with `commits` entries."""
-    return json.dumps(
-        {
-            "commits": [{"committedDate": "2026-09-06T10:00:00Z"} for _ in range(commits)],
-            "body": "b",
-            "title": "t",
-        }
-    )
+    """`gh api repos/{R}/pulls/{n} --jq '{commits, head, body, title}'`.
+
+    `commits` is an INTEGER here, which is the whole point of the change: it is
+    the PR's true commit count from the REST object rather than the length of a
+    `gh pr view` array that silently stops at 100.
+    """
+    return json.dumps({"commits": commits, "head": HEAD_SHA, "body": "b", "title": "t"})
 
 
 def graphql(last_edited: str | None, created: str = "2026-09-06T09:00:00Z") -> str:
@@ -238,6 +243,38 @@ def test_the_advice_block_still_protects_the_generated_sections():
     assert "sync-epic-block.sh 553" in text
     assert '--body "new body"' not in text
     assert "pr edit --body" not in text
+
+
+def test_neither_side_reads_the_commit_list_through_gh_pr_view():
+    """The regression guard for the 100-commit cap, asserted on BOTH sources.
+
+    `gh pr view --json commits` stops at 100 and says nothing about it. Measured
+    2026-09-15 on rediacc/console#589 (254 commits): the "latest commit" it
+    reported was 2026-09-07, eight days stale, so the age came out NEGATIVE and
+    the gate printed "within 30m - OK" forever. Nothing in the cases above can
+    see that, because a stub serves whatever shape the test author chose -- only
+    the call itself distinguishes a gate that can fail from one that cannot.
+
+    `gh pr view ... --json body` in the ADVICE text is fine and is why this
+    asserts the `commits` field specifically rather than the command.
+    """
+    root = pathlib.Path(diff.repo())
+    twin = (root / TWIN).read_text(encoding="utf-8")
+    port = (root / ".ci" / "rediacc_ci" / "quality" / ("%s.py" % MODULE)).read_text(
+        encoding="utf-8"
+    )
+
+    # COMMENTS ARE STRIPPED FIRST. Both files EXPLAIN the retired call by name,
+    # and a check that could not tell an explanation from a call would force the
+    # next reader to delete the record of why the call was retired.
+    def code_only(text: str) -> str:
+        return "\n".join(line for line in text.split("\n") if not line.lstrip().startswith("#"))
+
+    for name, text in (("twin", code_only(twin)), ("port", code_only(port))):
+        assert "--json commits" not in text, "%s reads the capped commit list again" % name
+        assert "sort_by(.committedDate)" not in text, "%s sorts a list it may not have whole" % name
+        assert "pulls/" in text, "%s no longer reads the PR object" % name
+        assert "/commits/" in text, "%s no longer reads the head commit's date" % name
 
 
 def test_the_thresholds_are_the_twins():
