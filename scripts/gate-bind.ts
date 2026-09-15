@@ -530,6 +530,19 @@ export function gateStepId(id: string): string {
   return `gate_${id.replace(/[:-]/g, '_')}`;
 }
 
+/**
+ * T-SCHED B2 D4, second clause. A YAML single-quoted scalar holding the JSON array,
+ * emitted RAW into `env:` the way every other env value already is (`emitStep` does no
+ * quoting of its own) -- single quotes because GitHub Actions env values are read as
+ * plain strings regardless, and a bare `[...]` would otherwise parse as a YAML flow
+ * sequence rather than the JSON text a later `JSON.parse` needs literally. YAML's own
+ * escape for an embedded `'` inside a single-quoted scalar is doubling it, so ids are
+ * defensively escaped that way even though no lock id in this repo contains one today.
+ */
+export function lockIdsEnvValue(ids: readonly string[]): string {
+  return `'${JSON.stringify(ids).replace(/'/g, "''")}'`;
+}
+
 export function emitStep(b: Emitting, guard = 'setup', stepId?: string): string[] {
   const cmd = b.run.startsWith('tsx ') ? `npm run ${b.id}` : b.run;
   const acquire = b.needs.flatMap((n) => ACQUIRE[n] ?? []);
@@ -686,6 +699,17 @@ export function rewriteRegions(
           : {
               ...b,
               when: b.when ? `(${b.when}) && matrix.shard == ${leg}` : `matrix.shard == ${leg}`,
+              // T-SCHED B2 D4, second clause. The eventual receipt step counts in LOCK
+              // IDS (`check-quality-complete.ts:226` compares against
+              // `declaredShard.ids.length`), but it can only see `steps.<id>.outcome`,
+              // one outcome per EMITTED STEP -- which is coarser than one per lock id
+              // the moment two ids ever share a step (D1's whole reason for merging
+              // them). This map is what lets the receipt step translate "this step ran"
+              // back into "these lock ids ran", correct today (always exactly `[b.id]`,
+              // since no auto-emitted gate currently shares a step with another) and
+              // correct if that ever changes, without the receipt script itself needing
+              // to know which case it is in.
+              env: { ...b.env, GATE_LOCK_IDS: lockIdsEnvValue([b.id]) },
             };
       out.push(...emitStep(step, guard, leg === undefined ? undefined : gateStepId(b.id)));
     }
@@ -1724,6 +1748,35 @@ function selftest(): number {
     emitStep(base, 'setup', gateStepId(base.id)).some(
       (l) => l.trim() === `id: ${gateStepId(base.id)}`
     )
+  );
+  ck(
+    'lockIdsEnvValue is a single-quoted YAML scalar holding the JSON array',
+    lockIdsEnvValue(['check:ci-foo']) === `'["check:ci-foo"]'` &&
+      JSON.parse(lockIdsEnvValue(['a', 'b']).slice(1, -1))[1] === 'b'
+  );
+  ck(
+    "CONTROL: an unsharded step's env is untouched by D4 (no GATE_LOCK_IDS key at all)",
+    !emitStep(base).some((l) => l.includes('GATE_LOCK_IDS'))
+  );
+  ck(
+    'rewriteRegions end to end: a sharded gate carries both id: and env: GATE_LOCK_IDS',
+    (() => {
+      const region = [
+        '  quality-static:',
+        '    # >>> gate-bind (generated; do not edit inside)',
+        '    # <<< gate-bind',
+      ].join('\n');
+      const rw = rewriteRegions(
+        region,
+        new Map([['quality-static', [base]]]),
+        undefined,
+        new Map([['quality-static', new Map([[base.id, 1]])]])
+      );
+      return (
+        rw.text.includes(`id: ${gateStepId(base.id)}`) &&
+        rw.text.includes(`GATE_LOCK_IDS: ${lockIdsEnvValue([base.id])}`)
+      );
+    })()
   );
 
   return bad;

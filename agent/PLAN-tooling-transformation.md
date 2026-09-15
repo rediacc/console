@@ -4060,8 +4060,19 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       a selftest control, not asserted. 3 new selftest controls, all pass; same full
       battery as D3 (`ci-gate-bind`, `ci-parity`, `ci-gates-lock`, tsc, eslint, format)
       all still green.
-      **NOT done, and deliberately left for a follow-up rather than rushed:** the
-      env step-id-to-lock-ids map, the final `if: always()` receipt-writing step (reading
+      **D4 SECOND CLAUSE DONE, same session.** The env step-id-to-lock-ids map:
+      `lockIdsEnvValue(ids)` emits a single-quoted YAML scalar holding the JSON array
+      (single-quoted because a bare `[...]` would parse as a YAML flow sequence rather
+      than the JSON text a later `JSON.parse` needs literally), merged into a sharded
+      step's `env:` as `GATE_LOCK_IDS`. Correct today (always exactly `[b.id]`, since no
+      auto-emitted gate currently shares a step with another) and correct if that ever
+      changes, without the eventual receipt script needing to know which case it is in.
+      4 new selftest controls including an END-TO-END proof through `rewriteRegions`
+      itself (not just `emitStep` in isolation) that a sharded gate carries both `id:`
+      and the `GATE_LOCK_IDS` env line together; same full battery green, `--dry-run`
+      against the live tree still 0 refusals (fully inert, confirmed not assumed).
+      **NOT done, and STILL deliberately left for a follow-up rather than rushed:** the
+      final `if: always()` receipt-writing step (reading
       `toJSON(steps)`, computing `gates` from non-skipped outcomes, writing the JSON
       `readReceipts()` in scripts/gates/check-quality-complete.ts already expects --
       `{lane, index, of, result, gates}`, confirmed by reading that file's own type rather
