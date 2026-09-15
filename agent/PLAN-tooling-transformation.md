@@ -837,6 +837,13 @@ a third kind. Naming it now avoids an unresolvable red at the strict flip.
       `media_verify_ext.py`). Naming those blind would bank unverified peer reads into a
       driver-only file. Re-attempt once the tree is otherwise clean of other sessions'
       pending new-env-reads, or once each peer's addition is independently verified.
+      **APPLIED, verified live 2026-09-15 -- not attempted in this pass, found already
+      done.** `check:ci-python-env-registry` is rc=0 today and `.ci/config/python-env-registry.json`
+      already carries exactly the 7 pairs this fragment named (`advisory.py: CI`;
+      `bws_env.py: BWS_ACCESS_TOKEN, BWS_BIN, BWS_ENV_ROOT, PATH`; `service.py:
+      CONSOLE_ROOT_DIR, SERVICE_STATUS_NOW`), byte-for-byte. Someone (another session or
+      the babysitter) landed it since; this note closes the loop rather than leaving the
+      box's own text implying it is still blocked.
       **SECOND WAVE 2026-09-10: 2 more libs ported, 6 of 9 named libs done.**
       `blocker-validator.sh` -> `core/blocker_validator.py` (8 real sourcers, confirmed) and
       `release-age.sh` -> `core/release_age.py` (**2 real sourcers, not 237** -- another
