@@ -357,11 +357,79 @@ const selftest = (): number => {
 
     check('two commits on one history share a merge base', hasBase(a, b));
     check('CONTROL: two unrelated roots do NOT, so the precondition can fire', !hasBase(b, orphan));
+
+    // MERGE-BASE RECOVERY UNDER A GENUINELY SHALLOW FETCH. a15660e0 pulled the
+    // has-merge-base-or-deepen loop out of main() into `mergeBaseAfterDeepen` so
+    // this shape is a permanent control rather than the one-off manual repro (a
+    // throwaway --depth 50 clone, checked by hand) that shipped with the fix.
+    // Real git, a real shallow fetch, both directions.
+    const disjoint = g('commit-tree', empty, '-m', 'disjoint root');
+    g('branch', '-f', 'disjoint', disjoint);
+    const shallow = fs.mkdtempSync(path.join(os.tmpdir(), 'prtask-shallow-'));
+    try {
+      execFileSync('git', ['init', '-q', '-b', 'work', shallow], { stdio: 'ignore' });
+      const s = (...args: string[]): void => {
+        execFileSync('git', ['-C', shallow, ...args], { stdio: 'ignore' });
+      };
+      const hasBaseIn = (x: string, y: string): boolean => {
+        try {
+          execFileSync('git', ['merge-base', x, y], { cwd: shallow, stdio: 'ignore' });
+          return true;
+        } catch {
+          return false;
+        }
+      };
+      s('remote', 'add', 'origin', scratch);
+      s('fetch', '--no-tags', '--depth=1', 'origin', '+refs/heads/main:refs/remotes/origin/main');
+      s('fetch', '--no-tags', 'origin', '+refs/heads/disjoint:refs/remotes/origin/disjoint');
+      check(
+        'CONTROL: a --depth=1 fetch truncates the merge base away, so recovery can be observed',
+        !hasBaseIn('origin/main', a)
+      );
+      check(
+        'mergeBaseAfterDeepen recovers a merge base a shallow fetch truncated away',
+        mergeBaseAfterDeepen(shallow, 'origin/main', a)
+      );
+      check(
+        'CONTROL: mergeBaseAfterDeepen reports false for genuinely unrelated history, ' +
+          'even after --unshallow',
+        !mergeBaseAfterDeepen(shallow, 'origin/main', 'origin/disjoint')
+      );
+    } finally {
+      fs.rmSync(shallow, { recursive: true, force: true });
+    }
   } finally {
     fs.rmSync(scratch, { recursive: true, force: true });
   }
 
   return fail === 0 ? 0 : 1;
+};
+
+// THE DEEPEN LOOP ITSELF, pulled out of main() so `--selftest` can drive it
+// against a real shallow fetch instead of only being exercised by hand once
+// (a15660e0 shipped with a manual repro against a throwaway --depth 50 clone;
+// the repro itself did not persist). `cwd` is a parameter, not `REPO`, purely
+// so the selftest below can point it at a scratch checkout.
+const mergeBaseAfterDeepen = (cwd: string, base: string, tip: string): boolean => {
+  const hasMergeBase = (): boolean => {
+    try {
+      execFileSync('git', ['merge-base', base, tip], { cwd, stdio: 'ignore' });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  if (hasMergeBase()) return true;
+  for (const widen of [['--deepen=500'], ['--deepen=2000'], ['--unshallow']]) {
+    try {
+      execFileSync('git', ['fetch', '--no-tags', ...widen, 'origin'], { cwd, stdio: 'ignore' });
+    } catch {
+      // --unshallow refuses on a complete repository; that is not a failure here,
+      // it means the history we need is already present and the next check decides.
+    }
+    if (hasMergeBase()) return true;
+  }
+  return false;
 };
 
 const main = (): number => {
@@ -555,40 +623,16 @@ const main = (): number => {
   // would report main's own untagged history as this PR's fault. Ask for the
   // merge base explicitly so the failure is the missing depth, named, rather
   // than two hundred invented findings.
-  const hasMergeBase = (): boolean => {
-    try {
-      execFileSync('git', ['merge-base', base, tip], { cwd: REPO, stdio: 'ignore' });
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  // DEEPEN RATHER THAN GUESS A BIGGER NUMBER. The depth above was 200 and this
-  // branch reached 227 commits, so the merge base fell outside the window and the
-  // gate failed closed -- correctly, and for a reason that will recur on any branch
-  // that outlives the constant. Raising 200 to 500 only moves the cliff.
   //
-  // So: ask whether the merge base is reachable, and if it is not, deepen and ask
-  // again, ending at --unshallow. Each step is bounded and the loop is driven by the
-  // QUESTION rather than by a guess about history size. A repository that is already
+  // DEEPEN RATHER THAN GUESS A BIGGER NUMBER, in `mergeBaseAfterDeepen` below. The
+  // depth above was 200 and this branch reached 227 commits, so the merge base fell
+  // outside the window and the gate failed closed -- correctly, and for a reason
+  // that will recur on any branch that outlives the constant. Raising 200 to 500
+  // only moves the cliff. So the loop asks whether the merge base is reachable, and
+  // if not, deepens and asks again, ending at --unshallow -- driven by the QUESTION
+  // rather than by a guess about history size. A repository that is already
   // complete makes `--deepen` a no-op, so the common case costs one merge-base call.
-  if (!hasMergeBase()) {
-    for (const widen of [['--deepen=500'], ['--deepen=2000'], ['--unshallow']]) {
-      try {
-        execFileSync('git', ['fetch', '--no-tags', ...widen, 'origin'], {
-          cwd: REPO,
-          stdio: 'ignore',
-        });
-      } catch {
-        // --unshallow refuses on a complete repository; that is not a failure here,
-        // it means the history we need is already present and the next check decides.
-      }
-      if (hasMergeBase()) break;
-    }
-  }
-
-  if (!hasMergeBase()) {
+  if (!mergeBaseAfterDeepen(REPO, base, tip)) {
     console.error(`✗ ${base} and ${tip} have no common ancestor in this checkout.`);
     console.error('  Deepening the shallow fetch to --unshallow did not reveal one.');
     console.error('  The range would list unrelated history, so no verdict here would be true.');
