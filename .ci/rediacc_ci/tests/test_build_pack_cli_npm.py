@@ -497,13 +497,44 @@ def test_a_missing_packages_cli_names_the_program_that_could_not_proceed(tmp_pat
     assert new["calls"] == [], "the port ran something after the cd failed"
 
 
-def test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text(tmp_path):
-    """DIVERGENCE 2, pinned rather than asserted away.
+def mkdir_is_gnu() -> bool:
+    """Is the `mkdir` on PATH GNU coreutils, or a reimplementation?
 
-    `mkdir -p` on an unwritable parent: the exit code is the script's and agrees;
-    the diagnostic belongs to coreutils and does not. Asserting equality here
-    would be a lie, and skipping the case would leave the difference undiscovered
-    until a cutover.
+    ASKED, because the answer decides what the case below may assert and it is
+    NOT the same on every machine that runs this suite:
+
+        GNU coreutils 9.7 (the CI runner)
+            mkdir: cannot create directory 'denied/out': Permission denied
+        uutils coreutils 0.8.0 (this tree's hosts)
+            mkdir: Permission denied
+    """
+    try:
+        proc = subprocess.run(
+            ["mkdir", "--version"], capture_output=True, text=True, check=False, timeout=30
+        )
+    except (OSError, subprocess.SubprocessError):
+        return True
+    return "GNU coreutils" in proc.stdout
+
+
+def test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text(tmp_path):
+    """DIVERGENCE 2, pinned rather than asserted away -- and it depends on WHICH
+    coreutils is installed, which is the part this case used to get wrong.
+
+    `mkdir -p` on an unwritable parent: the exit code is the script's and agrees.
+    The diagnostic belongs to coreutils, and the port SYNTHESISES GNU's wording,
+    so whether the two texts differ is a property of the host's mkdir:
+
+        GNU coreutils 9.7 (the CI runner)  -> identical; the divergence is CLOSED
+        uutils coreutils 0.8.0 (here)      -> different; the divergence is REAL
+
+    An unconditional `!=` therefore passed on every machine in this tree and
+    failed in CI run 34970782616 with its own message -- "the coreutils
+    diagnostic and the port's now match, so this divergence is closed" -- which
+    was true where it ran and false where it was written.
+
+    The port's own text is asserted EXACTLY either way, so a port that drifted
+    from GNU's wording still reds here on any host.
     """
     outs = {}
     for subject in (TWIN_REL, PORT_REL):
@@ -522,10 +553,21 @@ def test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text(tmp_path):
     assert old["calls"] == new["calls"] == [], "npm ran despite the mkdir failure"
     assert "mkdir" in old["stderr"], old["stderr"]
     assert "mkdir" in new["stderr"], new["stderr"]
-    assert old["stderr"] != new["stderr"], (
-        "the coreutils diagnostic and the port's now match, so this divergence is "
-        "closed and the docstring in pack_cli_npm.py is stale"
-    )
+    # The PORT is pinned absolutely: it promises GNU's wording on every host.
+    assert new["stderr"] == "mkdir: cannot create directory 'denied/out': Permission denied\n", new[
+        "stderr"
+    ]
+    if mkdir_is_gnu():
+        assert old["stderr"] == new["stderr"], (
+            "GNU coreutils and the port disagree, so the port no longer reproduces "
+            "the diagnostic it was written to reproduce: %r vs %r" % (old["stderr"], new["stderr"])
+        )
+    else:
+        assert old["stderr"] != new["stderr"], (
+            "this host's non-GNU mkdir now matches the port's GNU wording, so the "
+            "divergence this case documents is closed here too and the docstring "
+            "in pack_cli_npm.py is stale"
+        )
 
 
 def test_select_tarball_is_the_twins_ordering():
