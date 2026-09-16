@@ -434,3 +434,16 @@ gh-auth-token fallback landing at `f01d244e39`, the `latest-release.ts` fix at `
 the printf/echo Plan agent's design committed at `27e7eddec`, and its implementation still
 running) touched none of this plan's files or its precondition. Status stays `executing`,
 commit 3 stays not started.
+
+### Re-checked a fourteenth time 2026-09-16, session d778be9d: still unchanged
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still
+16; `.ci/shadow/w7p6-*.observations.jsonl` is still 153. Activity since the thirteenth check
+(the account zod pin fix, a Dockerfile-class sweep finding zero real siblings, the
+docs/ci-overhaul T-20/T-21/T-22 additions, the printf/echo plan's Owner fill-in and full
+ticking, and dispatching a Plan agent for the private/renet gate-mirror follow-on) touched
+none of this plan's files or its precondition. Status stays `executing`, commit 3 stays not
+started. Landing this now as a single, deliberate exception to a concurrent plan-doc write
+freeze (agreed with the pr-babysit teammate mid-push), because three consecutive identical
+stop-hook stalls waiting on that freeze became the worse failure.
