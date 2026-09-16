@@ -250,3 +250,6 @@
 {"at":"2026-09-16T05:08:38Z","subject":"test_gate_run_sh","twin":".ci/scripts/test/gates/test-run-sh.sh","twin_sha":"ba6b010d5ffc8956","port_sha":"ec721254970574f8","agreed":true}
 {"at":"2026-09-16T05:08:47Z","subject":"test_gate_greenlight","twin":".ci/scripts/test/gates/test-greenlight.sh","twin_sha":"2a1f10a339a92637","port_sha":"98b77ca5bc25e902","agreed":true}
 {"at":"2026-09-16T05:09:08Z","subject":"test_gate_housekeeping_phases","twin":".ci/scripts/test/gates/test-housekeeping-phases.sh","twin_sha":"5f5132951243ba11","port_sha":"a588657ea7ded0fb","agreed":true}
+{"at":"2026-09-16T08:08:58Z","subject":"test_gate_installmethods_linuxpkg_idiom","twin":".ci/scripts/test/gates/test-installmethods-linuxpkg-idiom.sh","twin_sha":"cb97621454c4cee1","port_sha":"81861ae4d2fe807f","agreed":true}
+{"at":"2026-09-16T08:08:59Z","subject":"test_gate_media_shims","twin":".ci/scripts/test/gates/test-media-shims.sh","twin_sha":"1a1d185691b62259","port_sha":"66f0a9ddab41fc8f","agreed":true}
+{"at":"2026-09-16T08:09:58Z","subject":"test_gate_shadow_gate","twin":".ci/scripts/test/gates/test-shadow-gate.sh","twin_sha":"8889695c2fa2768e","port_sha":"bec775ec28e4bd8b","agreed":true}
