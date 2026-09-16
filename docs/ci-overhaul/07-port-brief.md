@@ -140,7 +140,7 @@ Scans: every tracked `test-*` / `test_*` file under the roots named by `.ci/scri
 |---|---|---|---|---|
 | `.ci/rediacc_ci/tests` | orphan gate + pytest | 279 | 0 | 279 |
 | `.ci/rediacc_ci/tests/gates` | pytest testpaths | 154 | 0 | 154 |
-| `.ci/scripts/test/gates` | orphan gate | 149 | 149 | 0 |
+| `.ci/scripts/test/gates` | orphan gate | 150 | 150 | 0 |
 | `.claude/hooks` | orphan gate | 14 | 1 | 0 |
 | `.claude/rediacc_hooks/tests` | orphan gate + pytest | 10 | 0 | 10 |
 | (unregistered) `.claude/hooks/context/test-context-bands.py` | - | 1 | 0 | 0 |

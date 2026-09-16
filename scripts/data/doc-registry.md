@@ -846,7 +846,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/signal | 1 | .sh 1 |
 | .ci/scripts/test | 18 | .sh 17, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
-| .ci/scripts/test/gates | 149 | .sh 149 |
+| .ci/scripts/test/gates | 150 | .sh 150 |
 | .ci/scripts/test/lib | 3 | .sh 3 |
 | .ci/scripts/test/manual | 1 | .sh 1 |
 | .ci/scripts/test/proxies | 10 | .sh 10 |
