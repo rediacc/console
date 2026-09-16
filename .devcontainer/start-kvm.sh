@@ -213,7 +213,11 @@ start_libvirtd() {
 	# what the host already models.
 	kvm_gid="$(stat -c '%g' /dev/kvm 2>/dev/null || true)"
 	if [ -n "$kvm_gid" ] && id libvirt-qemu >/dev/null 2>&1; then
-		if ! id -G libvirt-qemu 2>/dev/null | tr ' ' '\n' | grep -qx "$kvm_gid"; then
+		# `[ -z "$(...)" ]`, not `! ... | grep -qx`: under this file's pipefail,
+		# grep -q exits at its first match and SIGPIPEs `tr`, so a gid that IS
+		# present can report absent and this re-runs groupadd/usermod every boot.
+		# `-Fx` keeps the whole-line exact match the `-x` was there for.
+		if [ -z "$(id -G libvirt-qemu 2>/dev/null | tr ' ' '\n' | grep -Fx "$kvm_gid")" ]; then
 			log_info "Adding libvirt-qemu to the host kvm group (gid $kvm_gid)"
 			getent group "$kvm_gid" >/dev/null 2>&1 ||
 				sudo groupadd -g "$kvm_gid" kvm-host

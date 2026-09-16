@@ -116,9 +116,14 @@ test_the_old_paths_are_exec_shims_and_nothing_more() {
         lines="$(printf '%s\n' "$code" | wc -l)"
         [ "$lines" -le 4 ] ||
             log_fail "$rel has $lines lines of code; a forwarding shim is a shebang, set -e, a root, and an exec"
-        printf '%s\n' "$code" | grep -qE '^exec "' ||
+        # `[ -n "$(...)" ]` rather than `| grep -q`. $code is capped at four lines by
+        # the log_fail above (log_fail EXITS, so control cannot reach here with more),
+        # so this is defensive rather than a live race -- but the SECOND of the two is
+        # a detector hunting for a match, and losing that race is a SILENT MISS: the
+        # "a shim that reads argv" check would stop detecting and still report a pass.
+        [ -n "$(printf '%s\n' "$code" | grep -E '^exec "')" ] ||
             log_fail "$rel does not exec -- a call would fork, and the exit status, signals and terminal would belong to the shim"
-        printf '%s\n' "$code" | grep -qE '\bshift\b|\bcase\b|\bwhile\b|\bif\b' &&
+        [ -n "$(printf '%s\n' "$code" | grep -E '\bshift\b|\bcase\b|\bwhile\b|\bif\b')" ] &&
             log_fail "$rel handles arguments; a shim that reads argv is a second implementation of a contract that already has one"
     done
     log_pass "both old paths are exec shims: no argument handling, no branching, exec on the last line"

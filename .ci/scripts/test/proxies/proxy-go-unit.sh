@@ -121,7 +121,12 @@ SUBSET=()
 while read -r ip _nt _nx dir; do
     [[ -z "$ip" ]] && continue
     rel="${dir#"$PWD"/}"
-    if [[ -n "$EXCLUDED_DIRS" ]] && printf '%s\n' "$EXCLUDED_DIRS" | grep -qx "$rel"; then
+    # `grep -qx` became `[ -n "$(... | grep -Fx ...)" ]`: $EXCLUDED_DIRS scales with
+    # pkg/ and is re-emitted on every trip round this loop, so grep -q's early exit
+    # could SIGPIPE the printf and leave a root-only package in the subset. `-F` is
+    # not cosmetic either -- $rel is a path, and without it a `.` in a package name
+    # matches any character.
+    if [[ -n "$EXCLUDED_DIRS" ]] && [ -n "$(printf '%s\n' "$EXCLUDED_DIRS" | grep -Fx "$rel")" ]; then
         continue
     fi
     SUBSET+=("$ip")

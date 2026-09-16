@@ -102,7 +102,13 @@ test_the_token_regex_matches_whole_versions_only() {
 
     # Control: the old container idiom accepts the first two negatives.
     local old
-    printf 'rdc version %s1\n' "$TEST_VERSION" | grep -q "$TEST_VERSION" && old=0 || old=1
+    # The CONTROL is the bare `grep "$TEST_VERSION"` -- an unanchored substring
+    # match is exactly what the old container idiom did, and that is what must still
+    # accept a longer version here, or this test proves nothing. Only the RACE is
+    # removed: `| grep -q` let grep's early exit EPIPE the printf, and under this
+    # file's pipefail that would have set old=1 and turned a passing control into a
+    # red about the wrong thing.
+    [ -n "$(printf 'rdc version %s1\n' "$TEST_VERSION" | grep "$TEST_VERSION")" ] && old=0 || old=1
     assert_eq "0" "$old" "the OLD container idiom must accept a longer version, or this test proves nothing"
     log_pass "the exact-token regex refuses what the old grep accepted"
 }

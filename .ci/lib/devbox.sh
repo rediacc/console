@@ -1079,7 +1079,13 @@ devbox_mount_ok() {
 devbox_identity_ok() {
     local out
     out="$(devbox_exec "git -C '$(devbox_worktree)' status --porcelain" 2>&1)" || true
-    if printf '%s' "$out" | grep -q 'dubious ownership'; then
+    # `[ -n "$(...)" ]`, not `| grep -q`. $out is `git status --porcelain` over the
+    # whole worktree, so it is UNBOUNDED, and this file sets no pipefail of its own
+    # but INHERITS it from every sourcer (scripts/dev/worktree.sh:12, and
+    # .ci/lib/local-common.sh:937,983 via rdc.sh:11). Losing grep -q's race here is
+    # silent in the worst direction: the detector stops seeing "dubious ownership"
+    # and devbox_identity_ok returns SUCCESS on a broken exec identity.
+    if [ -n "$(printf '%s' "$out" | grep 'dubious ownership')" ]; then
         log_error "devbox exec identity is wrong: git refuses the worktree as another user's"
         log_info "Exec as 'vscode' (the entrypoint renumbers it to your uid), never as root."
         return 1

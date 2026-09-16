@@ -214,7 +214,11 @@ assert_mutation_is_caught() {
     cmp -s "$LIB" "$copy" && log_fail "the $label mutation changed nothing; the sed no longer matches"
     SG_SUBJECT="$copy" sg --selftest
     ((SG_RC != 0)) || log_fail "the $label mutation was NOT caught: a broken comparator's selftest passed"
-    printf '%s\n' "$SG_ERR" | grep -q "$must_fail" ||
+    # `[ -n "$(...)" ]` rather than `| grep -q`: $SG_ERR is a mutated comparator's
+    # WHOLE stderr, and grep -q exiting at its first match hands the producer EPIPE,
+    # which pipefail then makes the verdict. Losing that race turns a caught
+    # mutation into a red on the wrong message.
+    [ -n "$(printf '%s\n' "$SG_ERR" | grep "$must_fail")" ] ||
         log_fail "the $label mutation went red, but not on '$must_fail'; got: $SG_ERR"
     log_pass "MUTATION CONTROL: breaking $label turns the selftest red on '$must_fail'"
 }
@@ -354,7 +358,7 @@ test_comment_ratio_is_recorded() {
         --old-file "$REPO_ROOT/.ci/scripts/lib/blocker-validator.sh" \
         --new-file "$REPO_ROOT/scripts/lib/blocker-validator.ts"
     assert_contains "$SG_OUT" 'comments  old=' 'the comment audit line'
-    printf '%s\n' "$SG_OUT" | grep -q 'ratio=0\.[0-8]' ||
+    [ -n "$(printf '%s\n' "$SG_OUT" | grep 'ratio=0\.[0-8]')" ] ||
         log_fail "expected the recorded sub-0.90 ratio for this pair; got: $SG_OUT"
     assert_contains "$SG_OUT" 'below the 0.90 floor' 'the floor is named when it is missed'
     log_pass "the differential carries the comment-byte ratio and flags the 0.90 floor"

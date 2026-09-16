@@ -1126,7 +1126,16 @@ test_quick_install() {
         # the channel under test. Catches regressions where channel rewriting
         # (worker or R2 upload) silently falls back to 'stable'.
         script=\$(curl -fsSL ${REPO_URL}/cli${REPO_CHANNEL_SUFFIX}/install.sh)
-        if ! echo \"\$script\" | grep -q 'REDIACC_CHANNEL:-${expected_channel}'; then
+        # DEFENSIVE, NOT A BUG FIX -- record the reason in place, because a reader
+        # diffing this file will otherwise conclude check:ci-pipefail-grep-q proved
+        # something it did not. That gate's pipefail test is per-FILE: it sees the
+        # \`set -euo pipefail\` at the top of THIS script and flags the line. But the
+        # line runs in the INNER shell of the docker \`bash -c\` above, which sets
+        # \`set -e\` ONLY (and so do the ones at 800, 886, 925, 965, 1010, 1097).
+        # Without pipefail the pipeline reports grep's status and the match stands,
+        # so there is no live race at this line. Converted anyway: an allowlist entry
+        # would be a suppression, and this is correct the day anyone adds -o pipefail.
+        if [ -z \"\$(echo \"\$script\" | grep 'REDIACC_CHANNEL:-${expected_channel}')\" ]; then
             echo 'FAIL: install.sh default channel is not ${expected_channel}' >&2
             echo \"\$script\" | grep -E 'REDIACC_CHANNEL' >&2 || true
             exit 1
