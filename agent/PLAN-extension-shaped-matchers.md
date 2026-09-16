@@ -395,3 +395,18 @@ identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still 
 at `696a45bf9`, and ruling on the PR-babysit wave's toolchain fixes) touched none of this
 plan's files or its precondition. Status stays `executing`, commit 3 stays not started.
 
+### Re-checked an eleventh time 2026-09-16, session d778be9d, PR-babysit wave continued: still unchanged
+
+Re-derived directly, not assumed: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still
+16; `.ci/shadow/w7p6-*.observations.jsonl` is still 153 -- the prefix question named at the
+eighth check is still real and still open. Driver/babysitter activity since the tenth check
+(the toolchain-acquisition-race fix at `6c323e921` and its confirmed sibling in
+`.ci/scripts/security/actionlint.sh`/`actionlint.py`, the pipefail/grep-q gate widening and
+21-site sweep at `3a7c1bcda`, a ruff-format follow-up at `e6d207a5c`) touched
+`.ci/scripts/lib/toolchain.sh` and `.ci/scripts/quality/check-pipefail-grep-q.sh`, neither of
+which is this plan's `FAMILIES` table or either ledger prefix. Status stays `executing`,
+commit 3 stays not started, for the same reason as every prior check: this session's writer
+capacity is on the PR #589 CI-green campaign, which the operator's own standing instruction
+("I'll not be around... don't ask") keeps as the active priority over this box.
+
