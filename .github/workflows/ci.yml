@@ -595,6 +595,29 @@ jobs:
         with:
           sparse-checkout: |
             .ci/scripts
+            # .ci/rediacc_ci, because all THREE checks below are thin shims whose
+            # logic was ported out of them. check_resolved_threads.py says so in
+            # its own header -- "The logic lives in
+            # rediacc_ci.quality.resolved_threads; this file exists so the
+            # registry can invoke the port BY PATH" -- and each imports _cipath,
+            # which REFUSES to load when `.ci/rediacc_ci/__init__.py` is absent.
+            # A cone that stops at .ci/scripts therefore gets the shim and not
+            # the code, and the job dies with `RuntimeError: _cipath computed
+            # .../.ci as the .ci directory, but there is no rediacc_ci package in
+            # it` before any thread is read (job 104639221260).
+            #
+            # THAT CRASH IS NOT A VERDICT. It reports no unresolved threads
+            # because it never got far enough to look, while presenting as a
+            # Review Gate failure -- the shape check:ci-checkout-cone was written
+            # for, one level deeper than it reaches: it corroborates INVOKED
+            # paths, and says so deliberately, so a transitive import is outside
+            # what it can see.
+            #
+            # Swept before fixing: 116 files under .ci/scripts import _cipath,
+            # and this is the ONLY job that both invokes one and stops its cone
+            # short. All three of its checks share the fault and this one line
+            # fixes all three.
+            .ci/rediacc_ci
             .github/actions
             .ci/config
 
