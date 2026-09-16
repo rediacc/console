@@ -6,10 +6,10 @@ Updated: 2026-09-16
 
 ## Tasks
 
-- [x] Add gitx to the rediacc_ci import at prose_style.py:81; add import tempfile.
-- [x] Replace prose_style.py:696-723 with tracked_files(), under_excluded_dir() and the git-driven discover() (section 4b).
-- [x] Wrap the discover() call at prose_style.py:962 in try/except RuleError -> log.error + return 1 (section 4c).
-- [x] Same wrap at prose_style.py:1164 in run_reflow (section 4d).
+- [x] Add gitx to the rediacc_ci import at .ci/rediacc_ci/quality/prose_style.py:81; add import tempfile.
+- [x] Replace .ci/rediacc_ci/quality/prose_style.py:696-723 with tracked_files(), under_excluded_dir() and the git-driven discover() (section 4b).
+- [x] Wrap the discover() call at .ci/rediacc_ci/quality/prose_style.py:962 in try/except RuleError -> log.error + return 1 (section 4c).
+- [x] Same wrap at .ci/rediacc_ci/quality/prose_style.py:1164 in run_reflow (section 4d).
 - [x] Delete ".claude/hooks/context/state" from exclude_dirs, .ci/config/prose-style-rules.json:85; optionally add the exclude_why paragraph (section 4e).
 - [x] Add the six --selftest controls (section 6c).
 - [x] Add _repo() and tests T1-T5, T7, T8 to .ci/rediacc_ci/tests/test_quality_prose_style.py; amend T6 (test_zero_files_is_a_failure) to git-init its fixture.
@@ -28,7 +28,7 @@ That corpus is what --write-baseline freezes into
 file that happens to sit on the writing developer's disk -- gitignored, untracked,
 a stale peer worktree, a .pytest_cache -- gets its findings baked into a file that
 CI must later satisfy from a fresh checkout that does not contain those files. The
-second half of the shrink-only guard (prose_style.py:1081-1091, "N baselined
+second half of the shrink-only guard (.ci/rediacc_ci/quality/prose_style.py:1081-1091, "N baselined
 finding(s) no longer fire") then reds CI for a drain nobody can perform, attributed
 to whoever pushed next.
 
@@ -50,8 +50,8 @@ reopens it.
 
 This is the second time this class has bitten the repo. The first was 2026-09-13:
 stale .claude/worktrees/ sibling checkouts reddened three gates, patched by
-creating paths.walk_tree(). That helper prunes a hardcoded list only -- paths.py:237
-PRUNED_DIR_NAMES = (".git", "node_modules", ".worktrees") and paths.py:244
+creating paths.walk_tree(). That helper prunes a hardcoded list only -- .ci/rediacc_ci/paths.py:237
+PRUNED_DIR_NAMES = (".git", "node_modules", ".worktrees") and .ci/rediacc_ci/paths.py:244
 PRUNED_DIR_PAIRS = ((".claude", "worktrees"),). It would not have caught
 .claude/hooks/context/state. So switching discover() to paths.walk_tree() is not
 the fix and must not be mistaken for one; only asking git is general.
@@ -64,17 +64,17 @@ cannot answer. prose_style.py is the only one that reinvented a filesystem walk.
 
 | Gate | Corpus function | Spelling | Behaviour when git cannot answer |
 |---|---|---|---|
-| plant_proofs.py:860-878 | tracked_files(root) | git -C ROOT ls-files -z | raises RefusalError on FileNotFoundError and on non-zero exit; scan() at :885-890 additionally refuses a ZERO-path corpus |
-| python_env_registry.py:332-352 | tracked_python(root) | git -C ROOT ls-files -z -- '*.py' | same two refusals |
-| check_language_policy.py:224-242 | tracked_files(root) | git ls-files -z -- ROOTS | raises CannotRun |
-| prose_style.py:696 | discover() | os.walk | -- (the defect) |
+| .ci/rediacc_ci/quality/plant_proofs.py:860-878 | tracked_files(root) | git -C ROOT ls-files -z | raises RefusalError on FileNotFoundError and on non-zero exit; scan() at :885-890 additionally refuses a ZERO-path corpus |
+| .ci/rediacc_ci/quality/python_env_registry.py:332-352 | tracked_python(root) | git -C ROOT ls-files -z -- '*.py' | same two refusals |
+| .ci/scripts/quality/check_language_policy.py:224-242 | tracked_files(root) | git ls-files -z -- ROOTS | raises CannotRun |
+| .ci/rediacc_ci/quality/prose_style.py:696 | discover() | os.walk | -- (the defect) |
 
 Two more data points on which spelling to write:
 
 - .ci/rediacc_ci/gitx.py exists precisely to consolidate this. Its header counts
   23 git ls-files call sites measured across .ci, scripts and .claude, of which
   exactly one passes --cached --others --exclude-standard and exactly two guard for
-  the deleted case (gitx.py:11-28, TRAP 1). gitx.ls_files() (gitx.py:412-460) takes
+  the deleted case (.ci/rediacc_ci/gitx.py:11-28, TRAP 1). gitx.ls_files() (.ci/rediacc_ci/gitx.py:412-460) takes
   existing= for the deleted case and returns a sorted, de-duplicated list.
 - .ci/rediacc_ci/quality/plan_housekeeping.py is a quality gate in the same package
   that already uses the consolidated spelling throughout: gitx.ls_files(plan_glob,
@@ -84,7 +84,7 @@ Two more data points on which spelling to write:
 So: the fix follows the three baseline gates' semantics (git-tracked corpus,
 refuse when git cannot answer) using rediacc_ci.gitx's spelling, which is the
 in-package consolidation of exactly those three raw call sites. gitx.is_work_tree()
-is the documented way to ask the refusal question (gitx.py:207) -- verified
+is the documented way to ask the refusal question (.ci/rediacc_ci/gitx.py:207) -- verified
 present, matching signature is_work_tree(root: os.PathLike[str] | str | None =
 None) -> bool.
 
@@ -92,8 +92,8 @@ None) -> bool.
 
 The distinction already exists structurally and must be preserved, not invented:
 
-- prose_style.py:962 -- files = targets or discover(root, globals_)
-- prose_style.py:1164 -- same, in run_reflow
+- .ci/rediacc_ci/quality/prose_style.py:962 -- files = targets or discover(root, globals_)
+- .ci/rediacc_ci/quality/prose_style.py:1164 -- same, in run_reflow
 
 An explicit CLI target bypasses discover() entirely. That is the correct behaviour
 and the change must not touch it: the caller named the file, and a brand-new file
@@ -107,10 +107,10 @@ explicitly-named target is scanned regardless.
 ### Tracked, not "not-ignored"
 
 Plain git ls-files (index only) is used, not --others --exclude-standard.
-dead_python.py:240-249 adds --others because it is a whole-tree reachability scan
+.ci/rediacc_ci/quality/dead_python.py:240-249 adds --others because it is a whole-tree reachability scan
 where a new module must not read as dead. This gate is the opposite case: it
 writes a committed artifact that CI must satisfy from a checkout. An
-untracked-but-not-ignored file (a fresh agent/PLAN-foo.md never git add-ed) is the
+untracked-but-not-ignored file (a fresh plan file never `git add`-ed) is the
 same contamination class as a gitignored one. Tracked-only is the only rule under
 which the baseline can never reference a path a fresh checkout lacks.
 
@@ -123,21 +123,21 @@ deletes the walk.
 
 existing=True is passed (TRAP 1's second half). A file removed with rm rather
 than git rm is still in the index; without it read_text raises, run_check
-appends an UNCHECKED note, and prose_style.py:1068-1074 turns that into rc = 1.
+appends an UNCHECKED note, and .ci/rediacc_ci/quality/prose_style.py:1068-1074 turns that into rc = 1.
 A developer with one stray deletion would red the gate.
 
 ## 4. The exact code change
 
-### 4a. prose_style.py:81 -- import
+### 4a. .ci/rediacc_ci/quality/prose_style.py:81 -- import
 
     from rediacc_ci import gitx, log, paths
 
 (currently `from rediacc_ci import log, paths`)
 
-### 4b. prose_style.py:696-723 -- replace discover() and add two helpers
+### 4b. .ci/rediacc_ci/quality/prose_style.py:696-723 -- replace discover() and add two helpers
 
 Replace the whole body of lines 696-723 with the following. RuleError is already
-defined at prose_style.py:165 and is already the module's refusal type (raised at
+defined at .ci/rediacc_ci/quality/prose_style.py:165 and is already the module's refusal type (raised at
 :174-221 and :743, caught in main() at :1284).
 
 ```python
@@ -153,7 +153,7 @@ def tracked_files(root):
     six `.claude/hooks/context/state/*-precompact-facts.md` entries, ignored by
     a `.gitignore` of `*`, reded CI with "6 baselined finding(s) no longer fire".
 
-    TRACKED, NOT MERELY NOT-IGNORED. `dead_python.py:249` adds
+    TRACKED, NOT MERELY NOT-IGNORED. `.ci/rediacc_ci/quality/dead_python.py:249` adds
     `--others --exclude-standard` and is right to: a reachability scan that
     could not see a brand-new module would call it dead. Here the claim is
     about what the repository SHIPS, and an untracked-but-unignored file is the
@@ -161,8 +161,8 @@ def tracked_files(root):
     checkout.
 
     REFUSES RATHER THAN RETURNING NOTHING, which is what
-    `plant_proofs.py:867-877`, `python_env_registry.py:345-355` and
-    `check_language_policy.py:235-241` all do at this exact call. An empty
+    `.ci/rediacc_ci/quality/plant_proofs.py:867-877`, `.ci/rediacc_ci/quality/python_env_registry.py:345-355` and
+    `.ci/scripts/quality/check_language_policy.py:235-241` all do at this exact call. An empty
     corpus and a clean tree are indistinguishable by exit code, and only one is
     good news.
 
@@ -246,7 +246,7 @@ Notes for the implementer:
 - The new comments are themselves linted by this gate under scope comment: no
   second person, and no line over 384 characters.
 
-### 4c. prose_style.py:962 -- run_check, surface the refusal as an exit code
+### 4c. .ci/rediacc_ci/quality/prose_style.py:962 -- run_check, surface the refusal as an exit code
 
 ```python
     # TARGETS BYPASS DISCOVERY DELIBERATELY. A path named on the command line
@@ -259,7 +259,7 @@ Notes for the implementer:
         return 1
 ```
 
-### 4d. prose_style.py:1164 -- run_reflow, the same three lines
+### 4d. .ci/rediacc_ci/quality/prose_style.py:1164 -- run_reflow, the same three lines
 
 ```python
     try:
@@ -287,7 +287,7 @@ therefore matches no entry in include.
 Every other exclude_dirs entry stays untouched -- several are load-bearing over
 tracked files (private, packages/www, build) and the rest cost nothing.
 
-Optionally append to exclude_why (prose-style-rules.json:114) one paragraph, in
+Optionally append to exclude_why (.ci/config/prose-style-rules.json:114) one paragraph, in
 the file's own voice:
 
 ```
@@ -330,7 +330,7 @@ MIRROR, so a discover() that returned nothing at all could not pass.
 
 Add beside _tree (currently at :361). A real checkout needs only git init +
 git add; no commit, therefore no author identity and no signing -- git
-ls-files reads the INDEX. Isolate ambient config the way test_gitx.py:36-44
+ls-files reads the INDEX. Isolate ambient config the way .ci/rediacc_ci/tests/test_gitx.py:36-44
 does.
 
 ```python
@@ -360,7 +360,7 @@ def _repo(tmp_path, tracked, *, ignore=(), untracked=()):
 ```
 
 DIRTY = "Did you run the tests?\n" (R1's own bad example, <!-- style-ok -->
-prose-style-rules.json:147) and CLEAN = "The tests were run.\n" as the two
+.ci/config/prose-style-rules.json:147) and CLEAN = "The tests were run.\n" as the two
 payloads.
 
 ### 6b. Cases
@@ -433,7 +433,7 @@ The gate's own controls must go red too, since check_prose_style.py's
 docstring makes --selftest the gate's primary evidence. Add a section after
 "# ---- the baseline's composition guard ----" (:1603). `import tempfile` at
 the top; tempfile.TemporaryDirectory() inside a selftest is established
-(editorconfig.py:402, ci_scans_tracked_paths.py:451), and
+(.ci/rediacc_ci/quality/editorconfig.py:402, .ci/rediacc_ci/quality/ci_scans_tracked_paths.py:451), and
 ci_scans_tracked_paths.build_control_tree (:313-328) is the precedent for git
 init inside one. The _MINI globals (include: ["*.md"], exclude_dirs: []) are
 exactly the right shape.
@@ -472,7 +472,7 @@ check, not a permanent gate.
 ## 9. Rejected alternatives, with the reason
 
 paths.walk_tree() instead of os.walk was rejected because it prunes a
-hardcoded list only (paths.py:237,244); it would not have caught
+hardcoded list only (.ci/rediacc_ci/paths.py:237,244); it would not have caught
 .claude/hooks/context/state and will not catch the next one. It is the
 2026-09-13 patch for a narrower symptom of this same class.
 
@@ -482,8 +482,8 @@ untracked-but-unignored contamination class open.
 
 gitx.ls_files(untracked=True), which adds --others --exclude-standard, was
 rejected because it fixes the gitignored half and leaves the untracked half --
-a never-added agent/PLAN-foo.md would still enter a committed baseline. That
-spelling is correct for dead_python.py:240 and wrong for a baseline writer.
+a never-added plan file would still enter a committed baseline. That
+spelling is correct for .ci/rediacc_ci/quality/dead_python.py:240 and wrong for a baseline writer.
 
 Falling back to a walk outside a checkout, the accommodation dead_python.py's
 own fixture makes at :249-260, was rejected because all three sibling

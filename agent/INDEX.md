@@ -250,7 +250,7 @@ reasoning without knowing the record exists.
 ## Plan census
 
 Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans
-block can be printed from THIS file instead of opening all 93 of them. The
+block can be printed from THIS file instead of opening all 94 of them. The
 hook checks freshness with `stat` alone (path set plus byte size) and falls
 back to reading the plans, loudly, when the two disagree.
 
@@ -287,13 +287,14 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-duplication-angle.md` | implemented | 241 | 0 | 0 | 12504 |
 | `agent/PLAN-durable-reports-and-push-inbox.md` | compacted | 69 | 0 | 0 | 3705 |
 | `agent/PLAN-env-to-bitwarden-v2.md` | draft | 689 | 5 | 4 | 45073 |
-| `agent/PLAN-extension-shaped-matchers.md` | executing | 554 | 0 | 0 | 37484 |
+| `agent/PLAN-extension-shaped-matchers.md` | executing | 565 | 0 | 0 | 38251 |
 | `agent/PLAN-fix-ci-contention-aware-timeouts.md` | done | 354 | 0 | 0 | 20483 |
 | `agent/PLAN-fix-german-translation-artifacts.md` | compacted | 61 | 0 | 0 | 3126 |
 | `agent/PLAN-fix-in-session-rule.md` | compacted | 69 | 0 | 0 | 3594 |
 | `agent/PLAN-fix-tutorial-player-debug-hook-attachment.md` | done | 319 | 0 | 0 | 19963 |
 | `agent/PLAN-gh-swallow-gates-audit.md` | done | 497 | 0 | 6 | 49920 |
 | `agent/PLAN-git-history-media-rewrite.md` | ready | 351 | 0 | 0 | 17005 |
+| `agent/PLAN-git-ignore-aware-discover.md` | done | 502 | 0 | 10 | 25981 |
 | `agent/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 71 | 0 | 0 | 3940 |
 | `agent/PLAN-greenlight-verify-at-read.md` | compacted | 66 | 0 | 0 | 3593 |
 | `agent/PLAN-hook-inventory-warn-guards.md` | landed | 89 | 0 | 0 | 4112 |
@@ -350,4 +351,4 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-wl-report-liveness-oracle.md` | done | 199 | 0 | 7 | 11678 |
 | `agent/PLAN-www-bundle-determinism.md` | draft | 212 | 0 | 0 | 11005 |
 
-93 plan(s), 23 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+94 plan(s), 24 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.

@@ -417,6 +417,25 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/PLAN-git-ignore-aware-discover.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "open": 0,
+      "done": 10,
+      "open_sigs": [],
+      "done_sigs": [
+        "269de465",
+        "48c5e37f",
+        "700ea983",
+        "9bcdb969",
+        "b6dda857",
+        "bee9dcb8",
+        "c170ccd9",
+        "d6222669",
+        "e91547d1",
+        "eed39eb9"
+      ]
+    },
     "agent/PLAN-github-actions-workflow-run-trigger-fix.md": {
       "status": "compacted",
       "owner": "unowned",
