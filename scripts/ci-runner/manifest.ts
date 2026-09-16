@@ -4627,7 +4627,11 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-label-inventory.sh',
       blocker:
-        'BLOCKER: test-label-inventory.sh:191 runs the gate seam-free over the REAL .github/labels.yml inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") with the live list injected, so the real parse, the declared floor and the create-on-demand allowlist verification execute every CI run, and the two controls beside it drop a real label and add an undeclared one to prove both fire directions; the live GitHub read is the one part that cannot run in that lane because it holds no label-read token, and it runs on the local npm invocation',
+        'BLOCKER: test-label-inventory.sh:191 runs the gate seam-free over the REAL .github/labels.yml inside run-all.sh ' +
+        '(ci-quality.yml quality-security, "Quality-gate unit tests") with the live list injected, so the real parse, the ' +
+        'declared floor and the create-on-demand allowlist verification execute every CI run, and the two controls beside it drop ' +
+        'a real label and add an undeclared one to prove both fire directions; the live GitHub read is the one part that cannot ' +
+        'run in that lane because it holds no label-read token, and it runs on the local npm invocation',
     },
   },
   {
@@ -4639,7 +4643,11 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-profiler-coverage.sh',
       blocker:
-        'BLOCKER: test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") -- real .github/workflows, real .profiler-coverage-allowlist, real .github/actions/profiler/action.yml, real floors -- so the full 121-job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree-only case can never exercise',
+        'BLOCKER: test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml ' +
+        'quality-security, "Quality-gate unit tests") -- real .github/workflows, real .profiler-coverage-allowlist, real ' +
+        '.github/actions/profiler/action.yml, real floors -- so the full 121-job parse and both relations execute every CI run; ' +
+        'the 22 fixture cases around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, ' +
+        'zero jobs, three floors, missing action.yml) that a real-tree-only case can never exercise',
     },
   },
   {
@@ -4871,7 +4879,11 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-layout-overflow.sh',
       blocker:
-        'BLOCKER: no quality lane owns CSS overflow, and the two shapes this gate detects are invisible to a browser scan because querySelectorAll returns no pseudo-elements; test-layout-overflow.sh:66 runs the gate seam-free against the real stylesheets inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real parse of every declaration block executes every CI run, and the mutant case beside it strips the nowrap detector and requires the gate\'s own controls to go red',
+        'BLOCKER: no quality lane owns CSS overflow, and the two shapes this gate detects are invisible to a browser scan because ' +
+        'querySelectorAll returns no pseudo-elements; test-layout-overflow.sh:66 runs the gate seam-free against the real ' +
+        'stylesheets inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real parse of every ' +
+        'declaration block executes every CI run, and the mutant case beside it strips the nowrap detector and requires the ' +
+        'gate\'s own controls to go red',
     },
   },
   {
@@ -4883,7 +4895,10 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-hydration-clean.sh',
       blocker:
-        'BLOCKER: no quality lane reads React state initializers, and the defect is decidable only from the source pair (server render, client render); test-hydration-clean.sh:60 runs the gate seam-free against the real packages/www components inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real scan executes every CI run, and the mutant case beside it blinds the one-hop lookup and requires the indirect control to go red',
+        'BLOCKER: no quality lane reads React state initializers, and the defect is decidable only from the source pair (server ' +
+        'render, client render); test-hydration-clean.sh:60 runs the gate seam-free against the real packages/www components ' +
+        'inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real scan executes every CI run, ' +
+        'and the mutant case beside it blinds the one-hop lookup and requires the indirect control to go red',
     },
   },
   {
@@ -4895,7 +4910,10 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-form-validation.sh',
       blocker:
-        'BLOCKER: no quality lane inspects form submit handlers, and the defect is a MISSING guard rather than a present one, so nothing else can express it; test-form-validation.sh:59 runs the gate seam-free against the real components inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real scan of all six forms executes every CI run, and the mutant case beside it accepts a captcha guard as validation and requires the control to go red',
+        'BLOCKER: no quality lane inspects form submit handlers, and the defect is a MISSING guard rather than a present one, so ' +
+        'nothing else can express it; test-form-validation.sh:59 runs the gate seam-free against the real components inside ' +
+        'run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real scan of all six forms executes ' +
+        'every CI run, and the mutant case beside it accepts a captcha guard as validation and requires the control to go red',
     },
   },
 
@@ -5551,7 +5569,11 @@ export const GATES: readonly GateSpec[] = [
       kind: 'test',
       test: '.ci/scripts/test/gates/test-regions-sync.sh',
       blocker:
-        'BLOCKER: test-regions-sync.sh drives the REAL gate over the REAL regions.json and packages/shared/src/regions/data.json inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), and its controls plant a divergence, an empty file and invalid JSON to prove all three refusals fire; the two files are held together by hand (no build step syncs them, despite what index.ts used to claim) and data.json is the ONLY region list users get because ${SITE_URL}/regions.json returns 404, so silent drift would ship to every install',
+        'BLOCKER: test-regions-sync.sh drives the REAL gate over the REAL regions.json and packages/shared/src/regions/data.json ' +
+        'inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), and its controls plant a divergence, an ' +
+        'empty file and invalid JSON to prove all three refusals fire; the two files are held together by hand (no build step ' +
+        'syncs them, despite what index.ts used to claim) and data.json is the ONLY region list users get because ' +
+        '${SITE_URL}/regions.json returns 404, so silent drift would ship to every install',
     },
   },
   {
