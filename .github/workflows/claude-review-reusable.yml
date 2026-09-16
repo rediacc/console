@@ -120,7 +120,23 @@ jobs:
       - name: Read the published snapshot
         id: find
         env:
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.event.workflow_run.head_branch }}
+          # THE THIRD CLAUSE IS THE ESCAPE HATCH'S OWN PATH, and without it the
+          # escape hatch does not work. `claude-review.yml` carries a
+          # `workflow_dispatch` trigger documented as the remedy for
+          # `workflow_run` silently not firing -- and on a dispatch BOTH of the
+          # first two expressions are empty, so `discover-epics.sh` refused with
+          # "PR_HEAD_REF is unset; refusing to guess a branch and silently report
+          # no epics" and the whole review died at its first job. Measured
+          # 2026-09-16, run 35092700533, dispatched exactly as that trigger's own
+          # comment instructs.
+          #
+          # `github.ref_name` is right here and needs no token: the dispatch is
+          # required to carry `--ref <branch>`, so on that path it IS the branch
+          # under review. It cannot shadow the other two, because each fires only
+          # on its own event. This job is pinned to `contents: read` with no gh
+          # and no API by design, so resolving the branch from `pr_number` via
+          # `gh pr view` was not available and is not needed.
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.event.workflow_run.head_branch || github.ref_name }}
         run: |
           set -euo pipefail
           if [ -x .ci/scripts/review/discover-epics.sh ]; then
