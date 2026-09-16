@@ -56,9 +56,7 @@ from rediacc_ci import paths
 from rediacc_ci.quality.pipefail_grep_q import SCALING_PRODUCERS as CONSOLE_PRODUCERS
 from rediacc_ci.tests.gates import harness
 
-RENET_GATE = paths.from_root(
-    "private", "renet", ".ci", "scripts", "quality", "pipefail-grep-q.sh"
-)
+RENET_GATE = paths.from_root("private", "renet", ".ci", "scripts", "quality", "pipefail-grep-q.sh")
 
 # Assembled, never written contiguously. See the module docstring.
 GQ = "grep -q"
@@ -359,9 +357,7 @@ def test_every_declared_extra_is_really_in_the_list(gate):
     gate.log_test("every name renet declares as an extra is really in its live list")
     extras = renet_list(gate, "RENET_EXTRA_PRODUCERS")
     if not extras:
-        gate.log_fail(
-            "renet's $RENET_EXTRA_PRODUCERS is EMPTY, so this assertion would be vacuous"
-        )
+        gate.log_fail("renet's $RENET_EXTRA_PRODUCERS is EMPTY, so this assertion would be vacuous")
     live = set(renet_list(gate, "SCALING_PRODUCERS"))
     bad = sorted(name for name in extras if name not in live)
     if bad:
@@ -369,4 +365,6 @@ def test_every_declared_extra_is_really_in_the_list(gate):
             "RENET_EXTRA_PRODUCERS declares %s but SCALING_PRODUCERS does not contain them"
             % " ".join(bad)
         )
-    gate.log_pass("every name in RENET_EXTRA_PRODUCERS (%s) is really in the list" % " ".join(extras))
+    gate.log_pass(
+        "every name in RENET_EXTRA_PRODUCERS (%s) is really in the list" % " ".join(extras)
+    )
