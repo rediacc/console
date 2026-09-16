@@ -529,3 +529,15 @@ retry cycle proven transient, `f1ce6911f` proven against the exact failure it ta
 batching decision to land `#21096609`'s gate-widening together with a concurrent prose-style
 build in one push rather than paying two review cycles) touched none of this plan's files or
 its precondition. Status stays `executing`, commit 3 stays not started.
+
+### Re-checked a twenty-third time 2026-09-16, session d778be9d: still unchanged
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still
+16 files; `.ci/shadow/w7p6-*.observations.jsonl` is still 153 files. Activity since the
+twenty-second check (the prose-style adoption task landing -- engine, rules file, two
+TWIN-less hook guards, a CLAUDE.md/Standing-Orders voice pass -- batched with the
+ask-blocker widening and `#21096609`'s gate-widening into one push at `805c9f41d`, plus five
+real defects found and fixed in the delivered prose-style engine before that push) touched
+none of this plan's files or its precondition. Status stays `executing`, commit 3 stays not
+started.
