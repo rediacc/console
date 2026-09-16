@@ -317,7 +317,7 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
       `scripts/gate-bind.ts:574`, with a documented, explicitly-scoped-narrower gap (one entry per GATE
       not per step, recorded as non-live today since no header-declared gate currently shares a
       step) -- not a defect, a stated boundary.
-- [ ] D5a: add the static clause asserting, for each `SHARD_COUNTS` lane, the job's
+- [x] D5a: add the static clause asserting, for each `SHARD_COUNTS` lane, the job's
       `matrix.shard` list equals `[1..N]` exactly, both directions.
       PARTIAL 2026-09-15 by d778be9d: D5's FIRST clause landed (`b7d139ce0`,
       "re-assert the strategy shape from the aggregator side" -- `check:ci-quality-complete` now
@@ -325,6 +325,15 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
       controls, 25 total). The exact `[1..N]` static-clause wording this task describes was not
       separately located; may already be covered by the above or may still be open -- re-verify
       rather than assume either way before starting new work here.
+      CONFIRMED 2026-09-16 by d778be9d (read-only re-verification, no code touched): it is
+      covered, definitively. `scripts/gates/check-quality-complete.ts:444-456` is explicitly
+      commented `T-SCHED B2 D5, first clause` and calls
+      `rewriteStrategyRegions(workflowText, SHARD_COUNTS)` -- the exact function D3 built to
+      REGENERATE the `matrix.shard: [1..N]` block and refuse in both directions (a lane with no
+      strategy region, or a strategy region for a lane not in `SHARD_COUNTS`). Diffing the
+      regenerated block against the live workflow text necessarily catches drift either way by
+      construction; there is no separate "[1..N]" literal to write because the comparison is
+      structural, not textual. D5a is DONE. Only D5b remains open in this box.
 - [ ] D5b: retarget `check:ci-quality-complete`'s own gate-header `lane:` off `quality-code`
       (currently `scripts/gates/check-quality-complete.ts:59`, matching
       `scripts/ci-runner/manifest.ts:4966`) onto a lane that can never be sharded (e.g.
