@@ -163,6 +163,30 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/PLAN-ci-pr-head-ref-trigger-resolution.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "open": 15,
+      "done": 0,
+      "open_sigs": [
+        "170d524b",
+        "3c9efd68",
+        "422cf471",
+        "6e1459f2",
+        "7390d2d4",
+        "7c793aa5",
+        "8d48a1ae",
+        "92d73799",
+        "9b7fa0e0",
+        "a816ba7f",
+        "b6200432",
+        "b8435075",
+        "cc8061fa",
+        "cee03814",
+        "d644a19c"
+      ],
+      "done_sigs": []
+    },
     "agent/PLAN-ci-trace-no-pr-branch.md": {
       "status": "done",
       "owner": "854ac1c6",
