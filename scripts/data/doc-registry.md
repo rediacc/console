@@ -729,7 +729,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/breakpoint/.breakpoint-drift-accept | 1 | prose only (no live entry) |
 | .ci/config/directive-quotes-allowlist.txt | 2 | prose only (no live entry) |
 | .ci/config/docker-npm-pin-exclusions.json | 3 | JSON value |
-| .ci/config/prose-style-rules.json | 3 | JSON value |
+| .ci/config/prose-style-rules.json | 4 | JSON value |
 | .ci/config/secret-supply.json | 2 | JSON value |
 | .ci/config/syncpack-source-exclusions.json | 8 | JSON value |
 | .ci/policy/.audit-allowlist | 1 | prose only (no live entry) |
