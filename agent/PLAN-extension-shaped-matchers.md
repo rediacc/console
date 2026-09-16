@@ -517,3 +517,15 @@ account-stage npm-404 retry cycle on PR #589, a CLAUDE.md/Standing Orders voice 
 its onboard.py sibling, and a repo-wide you/your/yours count for the prose-style rollout's
 already-scoped boundary) touched none of this plan's files or its precondition. Status stays
 `executing`, commit 3 stays not started.
+
+### Re-checked a twenty-second time 2026-09-16, session d778be9d: still unchanged
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still
+16 files; `.ci/shadow/w7p6-*.observations.jsonl` is still 153 files. Activity since the
+twenty-first check (PR #589 reaching a confirmed-green finish line at `0cf330ecf` on both
+independent properties -- CI/review checks and thread/reply cleanliness -- a live npm-404
+retry cycle proven transient, `f1ce6911f` proven against the exact failure it targets, and a
+batching decision to land `#21096609`'s gate-widening together with a concurrent prose-style
+build in one push rather than paying two review cycles) touched none of this plan's files or
+its precondition. Status stays `executing`, commit 3 stays not started.
