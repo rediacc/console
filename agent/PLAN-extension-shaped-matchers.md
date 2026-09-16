@@ -476,3 +476,12 @@ is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jso
 widened with tee/docker, 4 more console sites converted, a twin-parity ledger cleanup commit)
 touched none of this plan's files or its precondition. Status stays `executing`, commit 3
 stays not started.
+
+### Re-checked an eighteenth time 2026-09-16, session d778be9d: still unchanged, PR #589 pushed and green
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still
+16; `.ci/shadow/w7p6-*.observations.jsonl` is still 153. Activity since the seventeenth check
+(the renet pipefail-grep-q gate's Ruling 7 fix, a ruff-format fix, PR #589 pushed to
+f590238c6 and verified) touched none of this plan's files or its precondition. Status stays
+`executing`, commit 3 stays not started.
