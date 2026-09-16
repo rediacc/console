@@ -541,3 +541,14 @@ ask-blocker widening and `#21096609`'s gate-widening into one push at `805c9f41d
 real defects found and fixed in the delivered prose-style engine before that push) touched
 none of this plan's files or its precondition. Status stays `executing`, commit 3 stays not
 started.
+
+### Re-checked a twenty-fourth time 2026-09-16, session d778be9d: still unchanged
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still
+16 files; `.ci/shadow/w7p6-*.observations.jsonl` is still 153 files. Activity since the
+twenty-third check (two follow-up prose-style fixes pushed to `5f3e2090b` -- a generated-artifact
+exemption for `agent/pr/*.md` and its regenerated doc-region/plan-record tables -- plus a real
+`discover()` gitignore-blindness defect found live in CI, worked around narrowly, and its general
+fix triaged PLAN+SUBAGENT and dispatched) touched none of this plan's files or its precondition.
+Status stays `executing`, commit 3 stays not started.
