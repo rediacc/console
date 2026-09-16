@@ -352,13 +352,20 @@ def branch_of(lines: list[Logical], j: int) -> str:
     body = lines[j].line
     depth = 0
     for k in range(j, n):
-        if IF_RE.search(lines[k].line):
+        opened = bool(IF_RE.search(lines[k].line))
+        closed = bool(FI_RE.search(lines[k].line))
+        if opened:
             depth += 1
-        if FI_RE.search(lines[k].line):
+        if closed:
             depth -= 1
         if k > j:
             body = body + " " + lines[k].line
-        if depth <= 0 and k > j:
+        # `k > j` alone misses the ONE-LINE `if ...; then ...; fi` shape: it
+        # opens and closes depth in the SAME iteration (k == j), so the guard
+        # never fires there, and the loop absorbs the NEXT, unrelated logical
+        # line into body before its k > j check finally sees depth <= 0.
+        # `opened and closed` catches exactly that same-line close.
+        if depth <= 0 and (k > j or (opened and closed)):
             break
         if depth == 1 and k > j and ELSE_RE.search(lines[k].line):
             break
