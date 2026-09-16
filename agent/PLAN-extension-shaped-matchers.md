@@ -494,3 +494,15 @@ is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jso
 (the swallowed-failures branch_of fix, the review-dispatch escape-hatch fix, PR #589's
 finish-line cycle repeating through a second CI+review round) touched none of this plan's
 files or its precondition. Status stays `executing`, commit 3 stays not started.
+
+### Re-checked a twentieth time 2026-09-16, session d778be9d: still unchanged
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still
+16 files; `.ci/shadow/w7p6-*.observations.jsonl` is still 153 files. Activity since the
+nineteenth check (widening `.claude/rediacc_hooks/guards/block_settled_questions.py` plus its
+bash oracle twin to refuse worktree/branch-routing questions, two stale CLAUDE.md hook-path
+citations fixed, `#21096609`'s gate-widening committed locally at `b7610de50` and independently
+re-verified against `check:ci-gates-lock`, and dispatching two parallel agents for an unrelated
+prose-style-adoption task) touched none of this plan's files or its precondition. Status stays
+`executing`, commit 3 stays not started.
