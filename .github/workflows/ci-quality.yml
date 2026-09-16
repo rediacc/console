@@ -1257,6 +1257,9 @@ jobs:
       - name: Check content for AI slop patterns
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_content_quality.py
+      - name: Check prose style (the work, not the person)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-prose-style
       - name: Check E2E skip hygiene (no collected-then-skipped suites)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-e2e-skip-hygiene

@@ -1,0 +1,7245 @@
+{
+ "why": [
+  "Frozen prose-style debt. SHRINK-ONLY: a new finding fails the gate and does NOT",
+  "belong here. Drain with `check_prose_style.py check --write-baseline` after",
+  "fixing something, never to make a red go away.",
+  "",
+  "Ids are a hash of (path, rule, finding text). NOT the line number: a line number",
+  "churns when a paragraph moves above it, and a baseline that churns gets",
+  "regenerated wholesale, which re-absorbs every fresh finding made that hour. The",
+  "price is that a REWRITE re-keys an entry, and that is the right price: a rewrite",
+  "is exactly when a human should look at the line again. When a re-key happens,",
+  "hand-edit the one line rather than regenerating, which would rewrite every entry",
+  "and absorb any other writer's fresh findings.",
+  "",
+  "`--write-baseline` REFUSES a drain whose ADDED side is non-empty, because a total",
+  "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
+  "the same claim as diffing the sets."
+ ],
+ "count": 3563,
+ "files": 727,
+ "by_rule": {
+  "R1": 1564,
+  "R11": 146,
+  "R18": 496,
+  "R2": 843,
+  "R7": 524
+ },
+ "findings": {
+  ".ci/breakpoint/README.md": {
+   "R1": [
+    "09085dbc31c78091",
+    "1b9da7c7d4f234b6",
+    "2a97f16b2e207d66",
+    "3645c97adc62227b",
+    "44d764d1d8700137",
+    "a5c336c6d4cbdd65",
+    "cb3b291169c8b316",
+    "de4ce7b6ba1e56e6",
+    "ed773ae1eff7b3ec",
+    "f17baf9326afbf82",
+    "fa77bf519a723abe"
+   ],
+   "R7": [
+    "27337132b5acc6c4"
+   ]
+  },
+  ".ci/docs/r2-media-setup.md": {
+   "R1": [
+    "146330d66d0d0568",
+    "d8ec74e27a5b1004"
+   ]
+  },
+  ".ci/docs/r2-setup.md": {
+   "R18": [
+    "3c6afbc2acd10933"
+   ]
+  },
+  ".ci/prompts/ci-failure-classifier.md": {
+   "R1": [
+    "0a647172083ca6dc",
+    "be853cd5f3e9eb46"
+   ],
+   "R11": [
+    "28eddb7399be05c9"
+   ],
+   "R18": [
+    "0daa098de6f21d28",
+    "c62aca69156257aa"
+   ]
+  },
+  ".ci/rediacc_ci/autopilot/autopilot_gate.py": {
+   "R2": [
+    "85e4adc8de6d0b24"
+   ]
+  },
+  ".ci/rediacc_ci/autopilot/compose_prompt.py": {
+   "R7": [
+    "6b375f4dd3a948d5"
+   ]
+  },
+  ".ci/rediacc_ci/autopilot/state_comment.py": {
+   "R7": [
+    "2c37b1ba9ad8b398"
+   ]
+  },
+  ".ci/rediacc_ci/battery.py": {
+   "R1": [
+    "1a898dfadde23b12"
+   ]
+  },
+  ".ci/rediacc_ci/check_pytest.py": {
+   "R2": [
+    "5fa9a4003011ab4c",
+    "7f4e28233319f954"
+   ]
+  },
+  ".ci/rediacc_ci/ci/check_rerun_attempt.py": {
+   "R2": [
+    "b6f723c8f5c1d30e"
+   ]
+  },
+  ".ci/rediacc_ci/ci/detect_pointer_bump.py": {
+   "R7": [
+    "13bd2546dfd5eb0f"
+   ]
+  },
+  ".ci/rediacc_ci/ci/dispatch_release.py": {
+   "R7": [
+    "dda9c476965fe8e1"
+   ]
+  },
+  ".ci/rediacc_ci/ci/generate_tag.py": {
+   "R2": [
+    "611524122013f86b",
+    "ca0c47ed96a1375a"
+   ],
+   "R7": [
+    "65ff190cd584d4dc"
+   ]
+  },
+  ".ci/rediacc_ci/ci/profiler_sampler_linux.py": {
+   "R7": [
+    "5ea837af2f56bcfc"
+   ]
+  },
+  ".ci/rediacc_ci/controls.py": {
+   "R7": [
+    "6d4b1cedb0ff2509"
+   ]
+  },
+  ".ci/rediacc_ci/core/__init__.py": {
+   "R2": [
+    "458f3c1e3ed3af46"
+   ]
+  },
+  ".ci/rediacc_ci/core/age.py": {
+   "R7": [
+    "03ef48904ebb6c22"
+   ]
+  },
+  ".ci/rediacc_ci/core/allowlist.py": {
+   "R1": [
+    "35bdf9c499122f00",
+    "77bcb7864887c48f"
+   ],
+   "R2": [
+    "65309291d708f8cf"
+   ]
+  },
+  ".ci/rediacc_ci/core/dockerx.py": {
+   "R1": [
+    "06dc252b44bd0128",
+    "2b95be816e769b4a",
+    "9111aa7f60f7033c",
+    "ff5066a46f166b07"
+   ],
+   "R2": [
+    "3ac86d0fb7e9013a",
+    "5b730412ad3a6a93",
+    "e57815d6825e42b1"
+   ]
+  },
+  ".ci/rediacc_ci/core/ghx.py": {
+   "R1": [
+    "0bc769df59e0e594",
+    "17d90fa554d0b3d6",
+    "4f3807ccc9471322",
+    "72aea4260d29439d"
+   ],
+   "R2": [
+    "111fce9633fda17b"
+   ],
+   "R7": [
+    "e62c256428b55478"
+   ]
+  },
+  ".ci/rediacc_ci/core/platform.py": {
+   "R1": [
+    "50039f67b09c44a0"
+   ]
+  },
+  ".ci/rediacc_ci/core/ports.py": {
+   "R2": [
+    "6147f40552fdca1e"
+   ]
+  },
+  ".ci/rediacc_ci/core/proxyx.py": {
+   "R1": [
+    "88fb321a80bcdc5d"
+   ],
+   "R7": [
+    "e8358e8bd4ac3fb9"
+   ]
+  },
+  ".ci/rediacc_ci/core/release_state_validator.py": {
+   "R2": [
+    "f265562ac8b019c1"
+   ],
+   "R7": [
+    "243d458c7d101cba",
+    "3462a548986be1a7"
+   ]
+  },
+  ".ci/rediacc_ci/core/secrets.py": {
+   "R7": [
+    "b5839d12246c10e6"
+   ]
+  },
+  ".ci/rediacc_ci/core/toolchain.py": {
+   "R1": [
+    "02995429915c3c81",
+    "07fe78eae1118f02",
+    "407c1f811cc4b7d9",
+    "a9f54682b810c1b8"
+   ],
+   "R2": [
+    "1b8adf4a8ee416b0",
+    "9481c5171f492ec8",
+    "a33420e5697fcd08",
+    "ae18e096b6890f03",
+    "d480060f7402ddfa",
+    "f82f70637d244a87"
+   ],
+   "R7": [
+    "075497a3bbb98895",
+    "729d6ccbc4963f64"
+   ]
+  },
+  ".ci/rediacc_ci/deploy/promote_r2_to_stable.py": {
+   "R7": [
+    "a7ac1df89c1faf96"
+   ]
+  },
+  ".ci/rediacc_ci/deploy/verify_edge_endpoints.py": {
+   "R7": [
+    "f011d7852cd37a97"
+   ]
+  },
+  ".ci/rediacc_ci/docker/create_manifest.py": {
+   "R1": [
+    "73dbc0e969e5aa18"
+   ]
+  },
+  ".ci/rediacc_ci/gitx.py": {
+   "R1": [
+    "034a8d2685744e7c",
+    "5101e5a0c3298eb3"
+   ],
+   "R2": [
+    "49c4bbcfdb79c9af",
+    "f1562f13fb664500"
+   ]
+  },
+  ".ci/rediacc_ci/infra/build_renet.py": {
+   "R2": [
+    "a3e9a136b87c1bd2"
+   ]
+  },
+  ".ci/rediacc_ci/paths.py": {
+   "R1": [
+    "2cffe8d8e0be0613",
+    "6249e9973dd426ae",
+    "6937a2b6fbccca1f",
+    "b40ce68957ba7e46",
+    "fd82e00bcc8edd75"
+   ],
+   "R2": [
+    "0c6d2ab53a437cb0",
+    "63579b1414944b1c"
+   ],
+   "R7": [
+    "062f2165f4166175"
+   ]
+  },
+  ".ci/rediacc_ci/proxies/ensure_nfpm.py": {
+   "R7": [
+    "2d9537fb73e87e2f"
+   ]
+  },
+  ".ci/rediacc_ci/quality/account_portal.py": {
+   "R7": [
+    "e20486c52e4b49b3"
+   ]
+  },
+  ".ci/rediacc_ci/quality/account_probes.py": {
+   "R7": [
+    "4b199d279bed887f",
+    "aeadf7639f6c7127"
+   ]
+  },
+  ".ci/rediacc_ci/quality/audit_coverage.py": {
+   "R7": [
+    "9a20cc11b9493cdb"
+   ]
+  },
+  ".ci/rediacc_ci/quality/ci_scans_tracked_paths.py": {
+   "R7": [
+    "25e5c12e726a9ffb"
+   ]
+  },
+  ".ci/rediacc_ci/quality/cli_contract.py": {
+   "R1": [
+    "77d00aee867fb43e"
+   ],
+   "R7": [
+    "689c5fe15d613550"
+   ]
+  },
+  ".ci/rediacc_ci/quality/compose_env.py": {
+   "R7": [
+    "e35f7575e34b2fab"
+   ]
+  },
+  ".ci/rediacc_ci/quality/config_migrations.py": {
+   "R7": [
+    "57099df50f65ef82"
+   ]
+  },
+  ".ci/rediacc_ci/quality/dead_python.py": {
+   "R18": [
+    "03b1ae97aa403416"
+   ],
+   "R2": [
+    "7b197f50899a5182"
+   ]
+  },
+  ".ci/rediacc_ci/quality/drill_verdicts.py": {
+   "R7": [
+    "3348ef891eab9f8a"
+   ]
+  },
+  ".ci/rediacc_ci/quality/editorconfig.py": {
+   "R7": [
+    "e506eccee96571b2"
+   ]
+  },
+  ".ci/rediacc_ci/quality/env_manifest.py": {
+   "R1": [
+    "cccb7ff7d8eb9eda"
+   ]
+  },
+  ".ci/rediacc_ci/quality/git_op_conditionals.py": {
+   "R7": [
+    "91a5ad5f07ace6e9"
+   ]
+  },
+  ".ci/rediacc_ci/quality/go_tool_path.py": {
+   "R7": [
+    "3c48d573db5b1cea"
+   ]
+  },
+  ".ci/rediacc_ci/quality/label_references.py": {
+   "R7": [
+    "1f3ca2d1cd7347ad",
+    "789ff0c8eb26dbab"
+   ]
+  },
+  ".ci/rediacc_ci/quality/lockfile.py": {
+   "R7": [
+    "5ac51dd69255a7f3"
+   ]
+  },
+  ".ci/rediacc_ci/quality/mutate_check.py": {
+   "R7": [
+    "636b10992fb32185"
+   ]
+  },
+  ".ci/rediacc_ci/quality/pipefail_grep_q.py": {
+   "R1": [
+    "2dab79d5ae3093ab"
+   ],
+   "R7": [
+    "3d6c62354f5cef17"
+   ]
+  },
+  ".ci/rediacc_ci/quality/plan_housekeeping.py": {
+   "R1": [
+    "259b5f96dc307a80"
+   ]
+  },
+  ".ci/rediacc_ci/quality/plant_proofs.py": {
+   "R1": [
+    "136275d449e8980b"
+   ],
+   "R7": [
+    "a85e1f4e118fe03f"
+   ]
+  },
+  ".ci/rediacc_ci/quality/profiler_coverage.py": {
+   "R7": [
+    "cb51115386477b12"
+   ]
+  },
+  ".ci/rediacc_ci/quality/prose_style.py": {
+   "R1": [
+    "8cc6a6dcf252136d"
+   ],
+   "R2": [
+    "23841cae5cc2ffd9",
+    "b6f43ff327c7968e"
+   ]
+  },
+  ".ci/rediacc_ci/quality/python_env_registry.py": {
+   "R1": [
+    "cba3b2c409c246c3"
+   ],
+   "R7": [
+    "0dd38f168835468b",
+    "bf092e0b8d9aa26b"
+   ]
+  },
+  ".ci/rediacc_ci/quality/review_cap_coherence.py": {
+   "R7": [
+    "858e92b6fb61757a",
+    "b0e039d0020408dd"
+   ]
+  },
+  ".ci/rediacc_ci/quality/review_turn_capacity.py": {
+   "R7": [
+    "3b98e254921d10af",
+    "4e3709e564163a79"
+   ]
+  },
+  ".ci/rediacc_ci/quality/rubric_calibration.py": {
+   "R7": [
+    "bf2faebf2dc878ec"
+   ]
+  },
+  ".ci/rediacc_ci/quality/run_external_gate.py": {
+   "R1": [
+    "0904b360a5e4949a"
+   ]
+  },
+  ".ci/rediacc_ci/quality/secret_supply.py": {
+   "R1": [
+    "6c90085d9edd0999",
+    "cef57b8d380a6e28",
+    "fb010a76a04bd91b"
+   ]
+  },
+  ".ci/rediacc_ci/quality/shell_size.py": {
+   "R2": [
+    "d97d581e873350aa"
+   ]
+  },
+  ".ci/rediacc_ci/quality/submodule_branches.py": {
+   "R1": [
+    "9bb234a014eb2fe8"
+   ]
+  },
+  ".ci/rediacc_ci/quality/swallowed_failures.py": {
+   "R1": [
+    "4bd0a072e73578e0"
+   ]
+  },
+  ".ci/rediacc_ci/quality/toolchain_env_dockerfile_sync.py": {
+   "R7": [
+    "1195dbcb85a13695"
+   ]
+  },
+  ".ci/rediacc_ci/quality/toolchain_pins.py": {
+   "R1": [
+    "138a315bb0387133",
+    "b2dedd4f8f0075bd"
+   ],
+   "R7": [
+    "eef30736d0bf33e7"
+   ]
+  },
+  ".ci/rediacc_ci/quality/workflows.py": {
+   "R2": [
+    "08b2eb246b15729e"
+   ]
+  },
+  ".ci/rediacc_ci/quality/www_build_token.py": {
+   "R7": [
+    "7178e6ef2b3c85e7"
+   ]
+  },
+  ".ci/rediacc_ci/release/cleanup_channel_docker_tags.py": {
+   "R7": [
+    "431173be51658b71"
+   ]
+  },
+  ".ci/rediacc_ci/review/claude_review_gate.py": {
+   "R1": [
+    "c750a83cf6f32b93"
+   ]
+  },
+  ".ci/rediacc_ci/review/review_status.py": {
+   "R7": [
+    "59290d327d2269a9",
+    "baf29b9601e99820",
+    "d4119950baac159d"
+   ]
+  },
+  ".ci/rediacc_ci/review/standing_orders_brief.py": {
+   "R2": [
+    "30ab89193a93d3b1",
+    "5783b8e9df90d2be",
+    "a5d291ea095e834b",
+    "a6508e43f8bd187f",
+    "df280194ec07473d",
+    "eface97b2c96a368"
+   ],
+   "R7": [
+    "380c962ada248d91"
+   ]
+  },
+  ".ci/rediacc_ci/security/actionlint.py": {
+   "R7": [
+    "1393bae9b9679abb"
+   ]
+  },
+  ".ci/rediacc_ci/setup/host.py": {
+   "R7": [
+    "9bab67a4966f4d8c"
+   ]
+  },
+  ".ci/rediacc_ci/setup/install_cli_global.py": {
+   "R7": [
+    "01a6ccb7b391d2b2"
+   ]
+  },
+  ".ci/rediacc_ci/setup/tools.py": {
+   "R7": [
+    "a92aa0ee1dc759aa",
+    "c2588a1ef23e68de"
+   ]
+  },
+  ".ci/rediacc_ci/tests/differential.py": {
+   "R7": [
+    "4b06a558fd32769b"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_actions_release_age.py": {
+   "R1": [
+    "32162eb3aeef40db"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_autopilot_harness.py": {
+   "R7": [
+    "4223ede32cda32a9",
+    "7b87ea051eaeebb7"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_drift.py": {
+   "R7": [
+    "3f38bee633669371",
+    "670e4e3a470db20a",
+    "f4546b36ab767418"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_pins.py": {
+   "R1": [
+    "05b3355579aba9c0",
+    "60aff9770a8e3c21",
+    "84fcea592b69823a",
+    "8b678f973b9340cd",
+    "dd2763142fba2adb"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py": {
+   "R7": [
+    "213be1875ac759f8"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_teardown.py": {
+   "R2": [
+    "1f66a5295bc8337c",
+    "431b33c15da11bc7"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_channel_for_event.py": {
+   "R1": [
+    "764673f382a60427"
+   ],
+   "R2": [
+    "80c73469be39529a"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_claude_hooks.py": {
+   "R7": [
+    "01e7e424520d7ce4",
+    "14efb1850748152f",
+    "63e5d398fe100437"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py": {
+   "R7": [
+    "57dbd5d25a80d348"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_devbox_slug.py": {
+   "R2": [
+    "426cd825fedb7883"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py": {
+   "R7": [
+    "fa47e02a3d171e76"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_doc_region_parity.py": {
+   "R2": [
+    "1762ac0cb4932ff3",
+    "3fd449048872cf05",
+    "4f3eb24400ace401",
+    "99b6fb6d2d98c159",
+    "a5ffaefbc6cea8fe"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_fetch_depth_safety.py": {
+   "R1": [
+    "5d53181b88ec2fed"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py": {
+   "R7": [
+    "9d4d7622d0d57882",
+    "9e2ed90722a5e171",
+    "cf40ddc3343f0014"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_gate_lanes.py": {
+   "R7": [
+    "3d7a6f216507c6f2",
+    "7ad54aeb0efed280",
+    "9fe3d324221c8cf3"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_greenlight.py": {
+   "R7": [
+    "36318e7842aef026"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_hook_cross_os.py": {
+   "R7": [
+    "f8ac5cabf09901ff"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_label_guide_comment.py": {
+   "R1": [
+    "ebf69391ee2ee122"
+   ],
+   "R7": [
+    "53acad6fb7fd7aee"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_language_policy.py": {
+   "R7": [
+    "0e19deb78417c708"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_media_docs.py": {
+   "R2": [
+    "62259f68a284eebd"
+   ],
+   "R7": [
+    "227ce472a4c95189"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_media_shims.py": {
+   "R2": [
+    "52d8aa934a32c8bd"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_policy_liveness_floors.py": {
+   "R7": [
+    "3b907234feca3c88"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_profiler_report.py": {
+   "R7": [
+    "af41350edff7f408"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_renet_deadcode.py": {
+   "R7": [
+    "93f91f99a9666b90"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_resprofile.py": {
+   "R7": [
+    "230d2cb960913c8f"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_review_labels.py": {
+   "R7": [
+    "0a3cace34fa31a94"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_review_status.py": {
+   "R2": [
+    "20fbcb4b5851133c",
+    "4bb52fd3417dd686"
+   ],
+   "R7": [
+    "26e7d3c6332aa61e"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_run_all_parallel.py": {
+   "R7": [
+    "3242aef84384834c"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_run_sh.py": {
+   "R7": [
+    "db3e26fc6d1d85f2"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py": {
+   "R7": [
+    "3f6962d41c64ed88",
+    "40ca8ec173858f76",
+    "6deff24ea1c2c3c5",
+    "beab8c6f386e6c9c"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_scrub_sentinel_empty.py": {
+   "R7": [
+    "77585acbb362d35b"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_shell_counter_increment.py": {
+   "R7": [
+    "a9e5dc6d20ea0e04"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_shrink_only_composition.py": {
+   "R7": [
+    "4b3e072965d4024c"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_skip_plan_reconcile.py": {
+   "R7": [
+    "a1c550297eb32bb3"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_verdict_placement.py": {
+   "R1": [
+    "3d801c023c8f6c28"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_watchdog_designed_failure.py": {
+   "R7": [
+    "dfe967ce2b78651e"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_watchdog_schedule_exemption.py": {
+   "R2": [
+    "930ebd41ec378310"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_watchdog_supersession.py": {
+   "R2": [
+    "81778a8295f0ecf1"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_workflow_pr_environment.py": {
+   "R7": [
+    "25191c99a86eef7b"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_gate_worklist_hooks.py": {
+   "R7": [
+    "487ba5170eac580e",
+    "7c418bdcff34f035",
+    "c2801c43044dd8ef"
+   ]
+  },
+  ".ci/rediacc_ci/tests/gates/test_twin_parity.py": {
+   "R2": [
+    "7c1e4a04b711734d"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_autopilot_compose_prompt.py": {
+   "R7": [
+    "fba824ffdb6ae19b"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_autopilot_submodule_prs.py": {
+   "R2": [
+    "0848e861ab129026"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_build_build_pages.py": {
+   "R7": [
+    "2646da47f4b810d2",
+    "b5a205ac10eaee98"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_build_cli_musl.py": {
+   "R7": [
+    "7a390411c9bb3f57"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_build_linux_pkg.py": {
+   "R7": [
+    "8e062abf598c6c36"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_canonical_sys_path_hop.py": {
+   "R1": [
+    "9365acb644b2c0d1"
+   ],
+   "R7": [
+    "388339d345ff3110"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_core_age.py": {
+   "R7": [
+    "8afb97452fe39e59"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_core_allowlist.py": {
+   "R1": [
+    "0fb246badef63af3"
+   ],
+   "R2": [
+    "5699fcc99a96a78c"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_core_dockerx.py": {
+   "R1": [
+    "980e6300d49e9e44"
+   ],
+   "R7": [
+    "e0d13cb040e0995b"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_core_ghx.py": {
+   "R1": [
+    "4af9106c79e24f0b",
+    "8cb00c429a79615a"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_core_platform.py": {
+   "R7": [
+    "91b7f1d0503400c2"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_core_release_age.py": {
+   "R7": [
+    "1d13fdb8d15e6961"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_core_release_state_validator.py": {
+   "R2": [
+    "f6648b9bc455da36"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_core_review_budget.py": {
+   "R7": [
+    "7747c116777cef68",
+    "9476c726ed69b108"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_core_toolchain.py": {
+   "R2": [
+    "00dd20f7b6b2f87d"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_deploy_clone_d1.py": {
+   "R7": [
+    "0fc0273faaebc48a"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_deploy_simulate_promotion.py": {
+   "R1": [
+    "d43dc5749eb5e905"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_housekeeping_retry_failed_runs.py": {
+   "R7": [
+    "28913e204dfc74ab"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_infra_ci_start_elite.py": {
+   "R7": [
+    "30a2dfb92b401b0a",
+    "89ffcfc218a5a51a"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_paths.py": {
+   "R1": [
+    "e78086cf41b4ca20"
+   ],
+   "R2": [
+    "cd5a90107b7d89e8"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py": {
+   "R7": [
+    "99614a4b587a0155"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py": {
+   "R7": [
+    "0035cfd485565601"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_private_renet_csi_sanity.py": {
+   "R7": [
+    "2f18e93b0cd9f031"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py": {
+   "R7": [
+    "54954691158726b1"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_private_renet_integration.py": {
+   "R7": [
+    "c7066e41c1321412"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_private_renet_root_tests.py": {
+   "R7": [
+    "fb1163d3bf31a554"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_private_run_account.py": {
+   "R7": [
+    "83a42a9ca79091ac"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_private_run_renet.py": {
+   "R7": [
+    "980808b2496b2331"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_proc.py": {
+   "R7": [
+    "969ea683ae88f3fd"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_account_portal.py": {
+   "R1": [
+    "a5a44871a9f9c282"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_agent_browser_exit.py": {
+   "R1": [
+    "3420368ae050b523"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_browser_smoke.py": {
+   "R7": [
+    "6cc2fbb1661052cf"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_ci_job_aggregation.py": {
+   "R7": [
+    "4ece4d67fa8cdeff"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_control_vacuity.py": {
+   "R2": [
+    "6207a857ee5fbf10"
+   ],
+   "R7": [
+    "53a3b35e38924ccd"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_label_references.py": {
+   "R2": [
+    "7a20ad3b74fb5f73"
+   ],
+   "R7": [
+    "7fa9b36ae2c2a283"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_lockfile.py": {
+   "R2": [
+    "73721020e245bc66"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_plan_housekeeping.py": {
+   "R7": [
+    "ab32ad33a7f92321"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_resolved_threads.py": {
+   "R7": [
+    "e89a941c039114eb"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_review_report_replies.py": {
+   "R2": [
+    "f15a428043ae843b"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_review_turn_capacity.py": {
+   "R2": [
+    "43428b1dfc85db6b"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_run_external_gate.py": {
+   "R1": [
+    "9b1876da544ddfc1"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_swallowed_failures.py": {
+   "R2": [
+    "2ec34418cb7338ab",
+    "61e653e4b4ad8d90",
+    "daf22b3696a3b4ad"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_quality_typecheck_workers.py": {
+   "R7": [
+    "e8bc719e0d1d0227"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_release_cleanup_channel_docker_tags.py": {
+   "R7": [
+    "134bf2fd1480f444"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_release_reprobe_r2_sentinel.py": {
+   "R7": [
+    "654e3195fca00be6"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_release_verify_release_assets.py": {
+   "R7": [
+    "bce945804dcb4748"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_review_claude_review_gate.py": {
+   "R2": [
+    "715347b99df0092d"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_review_review_status.py": {
+   "R7": [
+    "5f30ba62da2609ba",
+    "7f5dbe553a2aeea4",
+    "df0b7d7fa5cbb3eb"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_review_standing_orders_brief.py": {
+   "R1": [
+    "a005bf4657f744c4"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_security_actionlint.py": {
+   "R7": [
+    "6b825ac5f6c67eb7"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_setup_port.py": {
+   "R7": [
+    "2b2a1c1d56fae8e9"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_shapedup_corpus_sig.py": {
+   "R7": [
+    "f2b560623c952b43"
+   ]
+  },
+  ".ci/rediacc_ci/tests/test_worklist_state_stdin.py": {
+   "R7": [
+    "34126c4ef6c55107"
+   ]
+  },
+  ".ci/rediacc_ci/workflows.py": {
+   "R2": [
+    "72db9f81ebf9d3b1"
+   ]
+  },
+  ".ci/scripts/autopilot/prompts/fix-round.md": {
+   "R1": [
+    "13d13e6c5ad600e0",
+    "27631ac9bd8a0a80",
+    "2a071738fd17ba80",
+    "44da6fb91d4ecff1",
+    "4f83e5c7e1c53f67",
+    "606251d49efdbdf6",
+    "6c3bb4857598a31a",
+    "71b887c49c6c8cd3",
+    "820a547c834f83c4",
+    "8367b8e2c239e457",
+    "89871e5ba8d8801f",
+    "a129f25403e4976e",
+    "a5185bee97dcb2b9",
+    "b7a95807573d2461",
+    "c24602a2c0ec1557"
+   ],
+   "R11": [
+    "09dfbdc446922141"
+   ]
+  },
+  ".ci/scripts/autopilot/prompts/review-response.md": {
+   "R1": [
+    "026555f764347c77",
+    "11866a2ba9bcaccf",
+    "3b9018c1e440fa31",
+    "533aa500ec0c290b",
+    "5795f8543e3300ec",
+    "6d9762b8674670b5",
+    "78f63880033b97db",
+    "93ebe5ea69a79798",
+    "b2eba86c3aa90faa",
+    "b50fbf12f09429bc",
+    "cc0fdf1ef965715e",
+    "f5fc101f5152f86f",
+    "fb58acded622470a"
+   ],
+   "R11": [
+    "ea65757f1c6bc85a"
+   ]
+  },
+  ".ci/scripts/autopilot/validate-handoff.cjs": {
+   "R2": [
+    "e5ba58777a61d744"
+   ],
+   "R7": [
+    "8623ac1a49386cde"
+   ]
+  },
+  ".ci/scripts/ci/ci-trace.py": {
+   "R1": [
+    "2dabdde2bbee3625"
+   ],
+   "R7": [
+    "95ef846decf599e6",
+    "c7179a59f091e6dc",
+    "f4ea771d6b2bb121"
+   ]
+  },
+  ".ci/scripts/ci/greenlight.cjs": {
+   "R7": [
+    "9637d3fee88ff790"
+   ]
+  },
+  ".ci/scripts/ci/label-guide-comment.cjs": {
+   "R1": [
+    "bb676bb7791d3f34"
+   ]
+  },
+  ".ci/scripts/ci/report-nightly-status.cjs": {
+   "R2": [
+    "d57af5cfb7e307d0"
+   ],
+   "R7": [
+    "c87e2d184cbc0509"
+   ]
+  },
+  ".ci/scripts/ci/scope-engine.cjs": {
+   "R7": [
+    "23275585a910f7ec",
+    "be5fef787bcdd343"
+   ]
+  },
+  ".ci/scripts/ci/scope-map.cjs": {
+   "R7": [
+    "737242833b11de98"
+   ]
+  },
+  ".ci/scripts/ci/skip-plan-reconcile.cjs": {
+   "R7": [
+    "0ddd00fa5c986570",
+    "68d336b909bc22bd",
+    "9fc8b77d36a0b58a",
+    "a3c9b290ffb108dc",
+    "e4286f97bb318242"
+   ]
+  },
+  ".ci/scripts/ci/validate-pr.cjs": {
+   "R1": [
+    "65a899dfa04f9172",
+    "f1faa92a6f6b5a57"
+   ]
+  },
+  ".ci/scripts/ci/watchdog-monitor.cjs": {
+   "R1": [
+    "135fee91179aad61",
+    "dee2b7cdd4050b15"
+   ],
+   "R2": [
+    "63f212c332c0681b",
+    "a336c3be9bbe3186"
+   ],
+   "R7": [
+    "088d8b65e979d347",
+    "56583225ec326b8f"
+   ]
+  },
+  ".ci/scripts/housekeeping/retire-shadowed-secrets.py": {
+   "R2": [
+    "90fbe3ca0afeb269",
+    "fbeca5360524e5df"
+   ]
+  },
+  ".ci/scripts/quality/check_agent_hint_liveness.py": {
+   "R1": [
+    "42b096153aceb847",
+    "49e7199c6459d441"
+   ]
+  },
+  ".ci/scripts/quality/check_bws_map.py": {
+   "R7": [
+    "57bfe3ab15d51a35",
+    "f910af8a51034860"
+   ]
+  },
+  ".ci/scripts/quality/check_ci_watch_recipe.py": {
+   "R7": [
+    "13f46dbf94e07e16"
+   ]
+  },
+  ".ci/scripts/quality/check_decision_ids.py": {
+   "R7": [
+    "ff13623e3bfa3751"
+   ]
+  },
+  ".ci/scripts/quality/check_docker_npm_pins.py": {
+   "R1": [
+    "491bfa27f7df16c6"
+   ]
+  },
+  ".ci/scripts/quality/check_dockerfile_mirror_resilience.py": {
+   "R2": [
+    "a7846522bb5770ca"
+   ]
+  },
+  ".ci/scripts/quality/check_e2e_case_blind_assertions.py": {
+   "R7": [
+    "7b96a52a9ad28322",
+    "af7ee98f6334ea7c"
+   ]
+  },
+  ".ci/scripts/quality/check_guard_feature_completeness.py": {
+   "R1": [
+    "2b61938ef9c13844"
+   ]
+  },
+  ".ci/scripts/quality/check_guard_mention_anchoring.py": {
+   "R7": [
+    "1dd1b3254a227d19"
+   ]
+  },
+  ".ci/scripts/quality/check_i18n_value_types.py": {
+   "R7": [
+    "ba4885dfc31a7ca5"
+   ]
+  },
+  ".ci/scripts/quality/check_inner_timeout_reachable.py": {
+   "R7": [
+    "69f0323df887158e"
+   ]
+  },
+  ".ci/scripts/quality/check_label_inventory.py": {
+   "R18": [
+    "355430e097b0e55b"
+   ]
+  },
+  ".ci/scripts/quality/check_plan_boxes.py": {
+   "R1": [
+    "11d84d6d0be43a9e"
+   ],
+   "R2": [
+    "6c8afde607d431f0"
+   ],
+   "R7": [
+    "9a2bf466e9728885"
+   ]
+  },
+  ".ci/scripts/quality/check_plan_citations.py": {
+   "R1": [
+    "6514d933b41570e8",
+    "c5635e702a711abc",
+    "c79e177b4ff9c323"
+   ],
+   "R2": [
+    "786e28b7addb84f9",
+    "b0588afaa5441d07"
+   ],
+   "R7": [
+    "228d90ad4e3cd027"
+   ]
+  },
+  ".ci/scripts/quality/check_plan_record.py": {
+   "R1": [
+    "6faab4e6f361b6ff"
+   ]
+  },
+  ".ci/scripts/quality/check_policy_inventory.py": {
+   "R7": [
+    "51506eaafe282312"
+   ]
+  },
+  ".ci/scripts/quality/check_profiler_coverage.py": {
+   "R18": [
+    "59901789cc3d4759"
+   ],
+   "R7": [
+    "5fd8f15c0d27512a"
+   ]
+  },
+  ".ci/scripts/quality/check_python_control_plants.py": {
+   "R1": [
+    "46cd0fd238561acb"
+   ]
+  },
+  ".ci/scripts/quality/check_python_gate_deps.py": {
+   "R1": [
+    "e61d6d86934c35b2"
+   ]
+  },
+  ".ci/scripts/quality/check_regions_sync.py": {
+   "R18": [
+    "efd552b013ae8ae8"
+   ]
+  },
+  ".ci/scripts/quality/check_resprofile.py": {
+   "R2": [
+    "562504b34fefa180"
+   ],
+   "R7": [
+    "42848040ad281eca",
+    "c863ee7cbc3ab377"
+   ]
+  },
+  ".ci/scripts/quality/check_review_prompt_render.py": {
+   "R7": [
+    "8dd6f7753dffd49c"
+   ]
+  },
+  ".ci/scripts/quality/check_runner_advice.py": {
+   "R7": [
+    "03726e0e85d64a0f"
+   ]
+  },
+  ".ci/scripts/quality/check_secret_reachability.py": {
+   "R1": [
+    "8a3867d697c93dc5",
+    "ecaeb8a644348a31"
+   ],
+   "R2": [
+    "ca524fdac08e7267"
+   ],
+   "R7": [
+    "00a820fdbf053b98",
+    "df3ae81080f2edc3"
+   ]
+  },
+  ".ci/scripts/quality/check_syncpack_sources.py": {
+   "R1": [
+    "63ed314726a1f7dd"
+   ]
+  },
+  ".ci/scripts/quality/check_test_file_orphans.py": {
+   "R1": [
+    "2602d11b1f93bb84",
+    "26ee9c61d6c11421"
+   ]
+  },
+  ".ci/scripts/quality/check_tutorial_cli_validity.py": {
+   "R2": [
+    "bb64b5d5b64b9ab0"
+   ]
+  },
+  ".ci/scripts/quality/check_tutorial_no_skips.py": {
+   "R7": [
+    "a4407711027549ee"
+   ]
+  },
+  ".ci/scripts/review/prompts/followup.md": {
+   "R1": [
+    "187464e8144d36b8",
+    "2cadaca9c824ec28",
+    "57d5132776e4ea02",
+    "eaf4230f4e32f314",
+    "fec36e7b267be9b6"
+   ]
+  },
+  ".ci/scripts/review/prompts/initial.md": {
+   "R1": [
+    "00bdd66b91f8ef62",
+    "23d7cd5235232313",
+    "2f148a78bc931b95",
+    "306687f15cc51450",
+    "53f3b7cf634c6873",
+    "6bdd2c3f5d8ef573",
+    "e9ffda223928c3ab"
+   ]
+  },
+  ".ci/tutorials/tutorial-topics-investigation.md": {
+   "R1": [
+    "0a87e53a76457ce3",
+    "1e65052cf3df41bf",
+    "26dab3e31fa75f61",
+    "27425fdeb4ee87b0",
+    "3d1e905b7a28343f",
+    "4ba0663f1a7c9af0",
+    "532ffd7755317dd3",
+    "97ae2d1884d91911",
+    "a47d84463802f896",
+    "a93471aef2091b12",
+    "a9b6c1e290e858c2",
+    "cdbcf6be66f873ca",
+    "e296f239e2fb06a4"
+   ],
+   "R18": [
+    "0ca4ac07ef11d593",
+    "102864ede0ecf2ac",
+    "20ebe7cc0de0e4b0",
+    "2c06ed9657526d74",
+    "586533e96e596b45",
+    "756b5d6718e0ca40",
+    "99ebfd96812a0271",
+    "9fad08eb301be570",
+    "a071cae16628c5df",
+    "bbf6ef91a598f50e",
+    "c3e25e8da7994af3",
+    "c6508d181e7207b7",
+    "e026c1c27c613d14",
+    "f88fe5163e46203b"
+   ],
+   "R2": [
+    "045f5b91c57161c2",
+    "0fda67aa6357978c",
+    "126e88c4ddda1f55",
+    "2011a28679cf3e72",
+    "5888a18f255171b5",
+    "5a56323dd82138ea",
+    "69efc86e2038be4b",
+    "9fd3476d1affab5e",
+    "b253c134eb251c00",
+    "c9704a0104af8113",
+    "d258c3f63fe6245a",
+    "d281f1e1ba5489f9",
+    "d3c5692b413a2308",
+    "fa3face57df00983",
+    "ff8225a19554c560"
+   ]
+  },
+  ".claude/agents/account-dev.md": {
+   "R1": [
+    "060424a52181e50e",
+    "2e13949fef5ba0df",
+    "6c764e896ba35960",
+    "7d3711c26104c3b4",
+    "ad5f45d26e29df85"
+   ]
+  },
+  ".claude/agents/backup-storage.md": {
+   "R1": [
+    "901b067a8fc799f4",
+    "aa157e340b9502a4"
+   ],
+   "R7": [
+    "652828c0beb7ee0a"
+   ]
+  },
+  ".claude/agents/browser-probe.md": {
+   "R1": [
+    "04e3d3ff5b086c2e",
+    "1125515f467834d2",
+    "210eb3f90540ee48",
+    "2b301e2713152657",
+    "2d83d868d710251a",
+    "30ca71469eb5d78b",
+    "3b722adbe0c40349",
+    "597e925a11a04361",
+    "6a23edee0f3c5f3f",
+    "6d777ea8641c1b35",
+    "70ee7dbdcc8110d0",
+    "7c902e68ddb70da4",
+    "8236e31ef44d649d",
+    "8ef73b22731fd2b1",
+    "badc5db7f575ed07",
+    "bf3205a1454668fa",
+    "c7c65f0908feaf1f",
+    "c80b4c01441b97aa",
+    "d4078dc644c5a335",
+    "d57fa50dca727c48",
+    "e6f8b14f04e96b76",
+    "e6f946ec81a15093",
+    "ec5dc72bb8faf58b",
+    "f401211d7789b389",
+    "f7aeddea2ddc0557"
+   ],
+   "R11": [
+    "fd53240670b63c73"
+   ]
+  },
+  ".claude/agents/config-universe.md": {
+   "R1": [
+    "b696dd28d6fbf847",
+    "fbf070bc5a9e5c17"
+   ]
+  },
+  ".claude/agents/e2e-local.md": {
+   "R1": [
+    "06d36776f4054468",
+    "6d57e3237f7c3a0b",
+    "7cd2fbed3b08f83e",
+    "b33185dfacb46439",
+    "bfae9bc2554b0505"
+   ],
+   "R7": [
+    "605c7b315cfcd6f0"
+   ]
+  },
+  ".claude/agents/gate-author.md": {
+   "R1": [
+    "1554448d14c6e1d5",
+    "507e2841a78c912e",
+    "6198f2f781a352c6",
+    "9f3155ade942086a",
+    "b5353c9026015ff0",
+    "c37c448b6662ac14",
+    "d2139b3d3439ed4a",
+    "d8b5fe5f7c311efe",
+    "ef9bb9f794dc31ee",
+    "f5b7c4bd9ea29a4a",
+    "fc00499f6ec748a3"
+   ],
+   "R11": [
+    "7c7630dbae7932e2"
+   ]
+  },
+  ".claude/agents/i18n-guardian.md": {
+   "R1": [
+    "2dbab3666438849e",
+    "4b45508c8d3c2448",
+    "6b3df75e310f68dc",
+    "8402bcce32120044",
+    "898da22382e8a50f",
+    "91aa4353135ff279",
+    "9f28cdd5baf934f8",
+    "a244c84f355ba538",
+    "a779f07a915a1730",
+    "cb4e93021974aa5b",
+    "d757ffe6b68b1f46"
+   ],
+   "R2": [
+    "a14cf2ff838a2639"
+   ]
+  },
+  ".claude/agents/licensing-ops.md": {
+   "R1": [
+    "066eceffe99578d2",
+    "797cf234568e404d"
+   ],
+   "R7": [
+    "943174fdd7f405a2"
+   ]
+  },
+  ".claude/agents/media-pipeline.md": {
+   "R1": [
+    "0d147fd1af1143fa",
+    "2a9df92d0b297688",
+    "512c2c4ce0a07d78",
+    "70c60263da309ae2",
+    "953e93110f403b3e",
+    "f6532e643804c322",
+    "f72eb0093bd3028d"
+   ],
+   "R18": [
+    "6fe8a89225e176ea",
+    "d089fce75f85027e"
+   ],
+   "R2": [
+    "f4c9db4260521043"
+   ]
+  },
+  ".claude/agents/ops-vms.md": {
+   "R1": [
+    "3b5b08367a7b82ec",
+    "3d517b082b9fb9d3",
+    "58f5a546feb4bd55",
+    "ef1ba580099144b0"
+   ],
+   "R11": [
+    "91657b853d59d684"
+   ]
+  },
+  ".claude/agents/pr-babysitter.md": {
+   "R1": [
+    "00dcb15d64343764",
+    "07d6d189e993ce6b",
+    "096705f63777d6c8",
+    "0affd2f61926bb0f",
+    "0c40d269f98e14be",
+    "1d04460b279372d2",
+    "20f815c938e12eaa",
+    "28da600a228e81b9",
+    "2b1ccf1ed6fca539",
+    "30ca4ce38244e5bc",
+    "36b3f3377bf84270",
+    "3ebad631f84c97fa",
+    "40408cf1b31599d6",
+    "40d8faa18dca3eb4",
+    "42ff21c83765283a",
+    "43633242ac942cef",
+    "4477e8e6082aaa86",
+    "493801fdc2223b51",
+    "51212759c19c7602",
+    "574f1ec183e21969",
+    "63cc92d4ce2eafd6",
+    "6960380d5ec37038",
+    "76469a7c2691a163",
+    "79e354006fb12854",
+    "7cd3df0ba7591e12",
+    "84781f869f498559",
+    "8bccb55ba8682d47",
+    "8d4f735187adbc8e",
+    "8faae96d8c27f0d4",
+    "8ff21a02d6a273f3",
+    "919e12e5f3827e96",
+    "9980cca646a6ba7a",
+    "9b821a74c20f5b05",
+    "9cd71d0be3026dfd",
+    "a396dfbedbfdaf45",
+    "a8d732c4253836f9",
+    "b19250416dcb6347",
+    "b1b6a782e65b0aab",
+    "b2d1bc11e9f86448",
+    "b3c7aa64d7e44f10",
+    "b71e5fdc20767e06",
+    "b752c8f530703574",
+    "b857c337920c2272",
+    "be9dd21e6977a7b6",
+    "c1efd3732d1e2c72",
+    "cbac3dfe38d20936",
+    "cbb12e7188885f75",
+    "cc4cb954cdc851e1",
+    "dad0da6936510cd7",
+    "dd3508002d26e5a4",
+    "e1bf4f00a58ef7fe",
+    "e485dc5f5b334683",
+    "e712aabe14f2d067",
+    "e9333ca06876ff74",
+    "eb1b425e1b148805",
+    "fcc2082cc9800793"
+   ],
+   "R11": [
+    "2131e55c85b105ed"
+   ],
+   "R18": [
+    "084c427e192db116",
+    "09ba47b5fdacdfc6",
+    "0b2aca2d5b0e1456",
+    "0d88abe7699b9fb7",
+    "137d13f8b0b0bb0b",
+    "23c270b045f2d1c9",
+    "47adef3b7adf709c",
+    "489a4e39f8bd7119",
+    "4edc2d8f25d9a389",
+    "55f7d9640c3013b9",
+    "56c0c6ef73622120",
+    "56d3dffd47cedd71",
+    "6fcd0fb13911e0ce",
+    "76cffb3520f0ec5b",
+    "7a2384b3b1463567",
+    "7a354dd02a97a01d",
+    "986ec4918c6c8256",
+    "9e0b096a56297440",
+    "a1889602c982934e",
+    "ace64e833608ffa2",
+    "ad9b5c62c926b66b",
+    "b07d2e30b3a53ea3",
+    "b7d33fb71a5e3d84",
+    "c83ea2d272b44522",
+    "cab4713b8b8293a2",
+    "cdd5e1f72c53461f",
+    "cff8b18ed24333aa",
+    "d23127bfdb46a565",
+    "d96c4a40b7569111",
+    "ecbf1ea3e800ab00",
+    "f076aacd3378eb7c",
+    "f67ac27ce5f38836",
+    "fdc104a7a5d64baf",
+    "fedd353cba8370c9"
+   ],
+   "R2": [
+    "127a1e0b851b32f6",
+    "562b3557d2b95e02",
+    "e0cdadc108a612d2"
+   ]
+  },
+  ".claude/agents/test-advisor.md": {
+   "R1": [
+    "0b8b4be866ef7ab1",
+    "429439e3b1d7bbef",
+    "51f7123fd23afd85",
+    "562ae0a12c87cae5",
+    "696a57f67e2987da",
+    "6b9ec93b06f6bce0",
+    "86798eb96fd41235"
+   ]
+  },
+  ".claude/agents/www-site.md": {
+   "R1": [
+    "2b87b46b206b616f",
+    "4fad6ffb55bcefc2",
+    "78d90e92d64fca56",
+    "8d48654ac4bff24d",
+    "a50385b63b039f19",
+    "c0a0311794263f5a",
+    "ec1e33d4e72a400d",
+    "f432495850d20a47",
+    "fcbd1d9f094710bc"
+   ]
+  },
+  ".claude/commands/ask.md": {
+   "R1": [
+    "19d149654d1d12f2",
+    "21144a466597a8eb",
+    "586c22890503f75c",
+    "ab441273c2795ee7"
+   ]
+  },
+  ".claude/commands/branch-rebase.md": {
+   "R1": [
+    "07e0860c05e0901f",
+    "14a11335ebc9c1ac",
+    "198ce9c2fa0fd3d0",
+    "8dc1ef3bfff81348",
+    "9bc57fe505929016",
+    "9ca1f019336804a0",
+    "a02fceb63408e01b",
+    "a572fbea15b4a10c",
+    "c0aae161cf224e51",
+    "ca1236a3ae0a00b2",
+    "e1ff047ac34246c6",
+    "fc934ba980c420a1"
+   ],
+   "R11": [
+    "b14444b433d245f1",
+    "b230678023e6f48d"
+   ]
+  },
+  ".claude/commands/handoff.md": {
+   "R1": [
+    "18135ea960885bf5",
+    "2e39f631ad220947",
+    "37f8445cebc6ae74",
+    "7b38e5613bfb6f58"
+   ]
+  },
+  ".claude/commands/pr-babysit.md": {
+   "R1": [
+    "12b7ac609acf5e23",
+    "194f4f3e13d1d0f0",
+    "28c31ce76672ced7",
+    "33bc0e7271527723",
+    "3658916a9f2cee5f",
+    "4f59ace9338d6a00",
+    "5bf357a88a12c5e3",
+    "5e6bda587c07e910",
+    "6b52de562b9b9225",
+    "7aa697a5dd5b2f3d",
+    "8b90ffc5dbc3bef7",
+    "99edc574de5348fe",
+    "a4c3f424a307fb0e",
+    "ad0ef73e0ec83f52",
+    "b91f4eb1ee705a4a",
+    "bfd2ae88c3780acd",
+    "cb9b416f5f278e7f",
+    "dae8110df37c4969",
+    "ec33029790d0ed19",
+    "ef97818e99ee649d",
+    "f85781195413ef1e"
+   ],
+   "R11": [
+    "5fd3a4a6da9a96da"
+   ],
+   "R18": [
+    "13de76e998fc3c8d",
+    "1e4e0eb833801098",
+    "2da72f8de513dfaa",
+    "36667cd0d768391d",
+    "75d81cede5e2960b",
+    "9d5f73c1fc958eb9",
+    "ac544dea667e159f",
+    "daa7c7e51d22d650",
+    "e873d3680d3bffdf",
+    "ea508a56bd36bbcd"
+   ],
+   "R2": [
+    "0c0d1a2798714acb"
+   ]
+  },
+  ".claude/commands/pr-merge.md": {
+   "R1": [
+    "17a9b6e8ccf089cf",
+    "217eed0cd915b498",
+    "4bbf1c6ab82c2e7b",
+    "639057b055c3a28e",
+    "7c4b7314ddbac657",
+    "899f82d77c675d9f",
+    "b3b3cd9ab6f6ce4a",
+    "b806e7176bf7daff",
+    "bb320f72811d7d88",
+    "bec23196c6afbef7",
+    "d33c006c9d0b1781"
+   ],
+   "R11": [
+    "e210840965c172c6",
+    "f6cf16d1c49ecd9a"
+   ],
+   "R18": [
+    "0125656f46c7d2c1",
+    "022d06ad597e8617",
+    "098bd7a033ddaacd",
+    "0c988d0ebb35cb6b",
+    "31c0f7ddb4cbdecf",
+    "3c152bfc4e23b0ac",
+    "3d72d84966910493",
+    "5a1c55471f70de0c",
+    "7d1b894aca298a58",
+    "8223d7f9eff8deff",
+    "825aaddb15480d5d",
+    "8bd1b33581323106",
+    "98d167709996749c",
+    "c19680f03bbc5b9f",
+    "c9309adf62c8ff0e",
+    "ce013c9f419535b8",
+    "e2631256f7de98f0",
+    "fa8d498aba62969a"
+   ],
+   "R2": [
+    "4c3ecd4fae5e593d"
+   ],
+   "R7": [
+    "0dc9f4831e1c0b88"
+   ]
+  },
+  ".claude/commands/standing-orders.md": {
+   "R1": [
+    "31b40539954d75ab",
+    "45d73672da42ad64",
+    "51e1e579789bbac1",
+    "7816e07dfd587115",
+    "af035306eb02854f",
+    "bb26bd2971ec41b7",
+    "caaa42a8ca367c21",
+    "ccdae4bb50e06fda",
+    "f8fd609d49d50cad"
+   ],
+   "R11": [
+    "d514a78a7bd8dae4"
+   ]
+  },
+  ".claude/hooks/context/band-notice.py": {
+   "R7": [
+    "e018c49770543a8c"
+   ]
+  },
+  ".claude/hooks/context/ctx_budget.py": {
+   "R1": [
+    "4e96aaa80172d2f7"
+   ],
+   "R7": [
+    "ccb46624be772a6b"
+   ]
+  },
+  ".claude/hooks/context/onboard.py": {
+   "R7": [
+    "1f8f9986ac58b89e"
+   ]
+  },
+  ".claude/hooks/context/state/74de73ca-precompact-facts.md": {
+   "R1": [
+    "4de29e4aabfe967e"
+   ]
+  },
+  ".claude/hooks/context/state/8f55d4f0-precompact-facts.md": {
+   "R1": [
+    "1e3390193873d629"
+   ]
+  },
+  ".claude/hooks/context/state/a276391d-precompact-facts.md": {
+   "R1": [
+    "d7db925f53502893"
+   ]
+  },
+  ".claude/hooks/context/state/b7baf3ee-precompact-facts.md": {
+   "R1": [
+    "56ce9ef1034ab63e"
+   ]
+  },
+  ".claude/hooks/context/state/d778be9d-precompact-facts.md": {
+   "R1": [
+    "17545cc55fa6c19c"
+   ]
+  },
+  ".claude/hooks/context/state/f88f9be7-precompact-facts.md": {
+   "R1": [
+    "f845184592a3be9c"
+   ]
+  },
+  ".claude/hooks/lib/sanctioned.py": {
+   "R1": [
+    "0ab075c554c73eab",
+    "af12ff2ebf35e795"
+   ]
+  },
+  ".claude/hooks/stop/calibrate-judge-rules.py": {
+   "R1": [
+    "2e4439ef89c00b7c",
+    "a7fe30528eb78924"
+   ],
+   "R2": [
+    "0d47060359c479b0",
+    "5f72c3c0098cb8d3",
+    "68a0087ac5d7bceb"
+   ]
+  },
+  ".claude/hooks/stop/test-completion-evidence.py": {
+   "R2": [
+    "253640b3da53e023"
+   ],
+   "R7": [
+    "79381f70f0ef23fa"
+   ]
+  },
+  ".claude/hooks/stop/test-judge-schema.py": {
+   "R1": [
+    "1eb01b569cd7a360",
+    "48ed20beb2aa1e39"
+   ],
+   "R2": [
+    "3844a557be0530cc",
+    "b63754042c9959c1"
+   ],
+   "R7": [
+    "1f3cb1607bffced0"
+   ]
+  },
+  ".claude/hooks/stop/test-planindex.py": {
+   "R7": [
+    "21960a2bd11e12ff"
+   ]
+  },
+  ".claude/hooks/stop/wl_admit.py": {
+   "R1": [
+    "17cd1f4eaa69ae67",
+    "3bc459faec9ac860",
+    "48f63133bee07dd5",
+    "651caf0ca70ea570",
+    "7d3396e8a0ba9735",
+    "9b32c2cc1fde5ead",
+    "ac3a8ff4db9d3787",
+    "bbeeaaa97560de47",
+    "d81a5c01a7e52628",
+    "d83ec13bee4c71c9",
+    "e487fea0148220f0",
+    "e8937b0d16c80fe2",
+    "e8acdc35e4b08625",
+    "ff845e6126e9b9d7"
+   ],
+   "R2": [
+    "06ca2f162e1acd50",
+    "14cb785f5f442547",
+    "15b2001a1606f512",
+    "15d1e5af75b1b0e2",
+    "173c5487ec32b0bd",
+    "1f06cf42b159a2e0",
+    "1ff1d1edeaf400b6",
+    "24f72662f3b4cced",
+    "28112280ff7478ec",
+    "2b685bcb0231c381",
+    "35a4f47b60d54a17",
+    "3a91910f90e1d115",
+    "3b58a5bd3f80d782",
+    "45385c3811a646e8",
+    "53d36f3bdb40f155",
+    "5da08ad6a73043de",
+    "71acf86a83d556be",
+    "79a897ab495e5503",
+    "7e4add1a4a92e848",
+    "813f6700c447710f",
+    "a7b5242366b1e3bc",
+    "aaf3bec0f3e7110f",
+    "b0e77516383ef323",
+    "b688cde01dc56566",
+    "bd90e7ead7a2ff29",
+    "c1abbf8c674889ff",
+    "c978124a851627b6",
+    "cdc6f1552a5ce77b",
+    "d396ba3ac75b587f",
+    "dc4561b10799cb44",
+    "eeb62417cc9a3aa7",
+    "f71548c2f68dfbf9",
+    "ff93270f9a7d1b41"
+   ]
+  },
+  ".claude/hooks/stop/wl_agents.py": {
+   "R1": [
+    "2c2e1c65260b7b73",
+    "6cc4aaadb3b4feb1",
+    "85a221adb5d0dd5b"
+   ],
+   "R2": [
+    "399ad7082ef0ef15",
+    "4959ab597d69683d",
+    "62ee060042126cb1",
+    "c5a01bc3ff7718f5"
+   ],
+   "R7": [
+    "39c98c97fa0c92af",
+    "404176f6d9ede768",
+    "8367344a07e4fcf7",
+    "be671ac12d7a9469",
+    "e4cef99e9dbd9e79"
+   ]
+  },
+  ".claude/hooks/stop/wl_bravedefault.py": {
+   "R1": [
+    "2c752d916253fd76",
+    "30c7e2c58707c80e",
+    "8ed5948884b13f51",
+    "cdb11a05050872d8"
+   ],
+   "R2": [
+    "ad2d3f3d592589f9"
+   ]
+  },
+  ".claude/hooks/stop/wl_checklist.py": {
+   "R1": [
+    "d5d3eee5ab093580"
+   ],
+   "R2": [
+    "a49d4ad6f233d7dd"
+   ]
+  },
+  ".claude/hooks/stop/wl_checks.py": {
+   "R1": [
+    "08d458dce1c078b5",
+    "0c889712ad07078c",
+    "0f6b42086d7256e5",
+    "1e665f7ef05ae7b9",
+    "1fc9c32a225eadff",
+    "35ed03c94a61e241",
+    "36095f7e5111dea1",
+    "36d2bdfa384da9ea",
+    "38a975e38400231e",
+    "642c90889ec98fb2",
+    "6b9de0951ecb3b7c",
+    "6be2882c65223405",
+    "7e3b2e280d72e794",
+    "a0b92036e53c3008",
+    "a1ca29c19e316924",
+    "d3ae40e4454f9090",
+    "d71442db6019ee4d",
+    "dc9d7c212f9ffaf1",
+    "dd81f1d7a2b98084",
+    "df32e02015605b66",
+    "e6bd9c59e2fb0d63",
+    "e88ce0792ab2f267",
+    "ebdd6231bacb735b",
+    "ec49423372c4d73a"
+   ],
+   "R2": [
+    "086a75afd634b33d",
+    "0a567ffa6245ab5f",
+    "0dc087378c9d8ea0",
+    "0f04ad46ba1e0ad2",
+    "1297f3714ba7d986",
+    "21e81a3013a90769",
+    "2baf370975ae1b3a",
+    "31bb6c82f6a924a2",
+    "38fc840754fd98b3",
+    "44b50c318c7c8be9",
+    "4d1d998132db4ba1",
+    "5d585c3d354c6aef",
+    "602ff1bc261f27b2",
+    "66f8253952babdb7",
+    "73839988a3cbf6f4",
+    "78a2a4e6ba20dcc4",
+    "83968b3f5230faad",
+    "925f40c39a17cbfb",
+    "a02851a61fbbde38",
+    "adf9b39f205a715c",
+    "b9d323d895a89760",
+    "c2ac9d12f984a9a8",
+    "c572997b4465c2a2",
+    "c6a43670661bc271",
+    "c85e31cd24840c84",
+    "cbde948eef0ec891",
+    "e0c256f1e7ee338a",
+    "e4a9109bf935d945",
+    "eaf9d3d13aaf7b19",
+    "ebc9c37cc88ed19c",
+    "ee4f70fe4ea7f8bb",
+    "ef435c3835c2df4b",
+    "f20a74f9b8fccaf6",
+    "fb7f7f549532c51f"
+   ],
+   "R7": [
+    "05f471470860b1ea",
+    "073640828dd5f0d5",
+    "14d666df96a47a66",
+    "1b0db9f604b421a3",
+    "1b97eb97817af663",
+    "2a5dffb4d246a7a5",
+    "3d4a2e62fdec6647",
+    "4be2842db357288a",
+    "54e91c3a1a48ce89",
+    "5fb3d81296705c48",
+    "617d15a9e68183e4",
+    "696b793dba3fb5f3",
+    "7a99d09f2d6a94bf",
+    "9e3469c0fa5de048",
+    "b19af56c4bf64c89",
+    "c991b962b33355e8",
+    "fedad525b588ee57"
+   ]
+  },
+  ".claude/hooks/stop/wl_classsweep.py": {
+   "R1": [
+    "7be51a0b93cb9c25",
+    "ca3038aaf3070eb4"
+   ],
+   "R2": [
+    "5ec2edccbcecb84a",
+    "87c048163b0bee2e"
+   ]
+  },
+  ".claude/hooks/stop/wl_core.py": {
+   "R1": [
+    "2b201e2694e56c44",
+    "38e2f3f6d50d4dad",
+    "4933dd57d3067e70",
+    "50214411b872252e",
+    "60e4fcb336328ea5",
+    "cc2b804f1c74085b",
+    "db5084f34aaffc1c"
+   ],
+   "R2": [
+    "0667ef45b906cd67",
+    "1274784f24407778",
+    "1423d79616cd3666",
+    "57eb046eb4387fb2",
+    "9fe60105f8d248dd",
+    "a509761b1b63a778",
+    "af47e7c388250393"
+   ]
+  },
+  ".claude/hooks/stop/wl_git.py": {
+   "R1": [
+    "4eda2c092bdf7595",
+    "562c2e970123c9fc",
+    "85a32cd2014dc57b",
+    "c3c0348ba0a2c1d0",
+    "e7c307eb085fa832"
+   ],
+   "R2": [
+    "04d4a89c753c33e1",
+    "3fb3325e8284466a"
+   ],
+   "R7": [
+    "265e70e74d7de13a",
+    "6ac3ad2f4b9f9f8d",
+    "77a7be47ccdc2333"
+   ]
+  },
+  ".claude/hooks/stop/wl_histfirst.py": {
+   "R1": [
+    "4868598afe186e1d"
+   ],
+   "R7": [
+    "0199e16b7a4573ad"
+   ]
+  },
+  ".claude/hooks/stop/wl_judge.py": {
+   "R1": [
+    "85cdfb1d92ad4944"
+   ],
+   "R2": [
+    "56598ea8644bcb27"
+   ]
+  },
+  ".claude/hooks/stop/wl_lineage.py": {
+   "R2": [
+    "22f673e42520af09",
+    "350d77f9c9eac825",
+    "ce137fcb049da28d",
+    "d59c92316ed15883"
+   ]
+  },
+  ".claude/hooks/stop/wl_liveness.py": {
+   "R1": [
+    "400937ba73645df8",
+    "cd34aaf42a0f23a6"
+   ],
+   "R2": [
+    "80911fca1a67bf47",
+    "af94e14abed701c5"
+   ],
+   "R7": [
+    "a0d9cb71bd189eae"
+   ]
+  },
+  ".claude/hooks/stop/wl_planfid.py": {
+   "R1": [
+    "8eb3a46b78ab7a8c"
+   ],
+   "R2": [
+    "0ff253d29fd36008",
+    "a34539c09a900e8e"
+   ],
+   "R7": [
+    "2160e920d56d4fe9",
+    "d42999402d9a9b19"
+   ]
+  },
+  ".claude/hooks/stop/wl_planfile.py": {
+   "R1": [
+    "40d5f6b3217dba2a",
+    "667a71452e23469f",
+    "6adbefb68677d624",
+    "8206aaafa71aebea",
+    "ea52207a7670a4be"
+   ]
+  },
+  ".claude/hooks/stop/wl_planindex.py": {
+   "R7": [
+    "be0e17593e897f01"
+   ]
+  },
+  ".claude/hooks/stop/wl_planrec.py": {
+   "R2": [
+    "fd3999a74091c8e9"
+   ],
+   "R7": [
+    "d117ab51791fc4b4"
+   ]
+  },
+  ".claude/hooks/stop/wl_profile.py": {
+   "R1": [
+    "a9a154fde0548f5c"
+   ],
+   "R2": [
+    "0235658446018a6f",
+    "43fa70ced59ef3ea"
+   ],
+   "R7": [
+    "22848688c821c5ea"
+   ]
+  },
+  ".claude/hooks/stop/wl_reggate.py": {
+   "R1": [
+    "1a12ceddcbc5d4bd",
+    "2929df6e04174194",
+    "5605c62c44930e4e",
+    "cb8b36664736c21b"
+   ]
+  },
+  ".claude/hooks/stop/wl_report.py": {
+   "R1": [
+    "d5f008dd03356ad7"
+   ],
+   "R2": [
+    "9e616c6607634d17"
+   ],
+   "R7": [
+    "14a37cd0f480bfa8"
+   ]
+  },
+  ".claude/hooks/stop/wl_requests.py": {
+   "R1": [
+    "051be98195b3cb70",
+    "0a4ecb4ff202efe3",
+    "22211ed95b799ad2",
+    "382b46571d0035b7",
+    "3a21caee3b04fea9"
+   ],
+   "R2": [
+    "fe78275585cf832d"
+   ]
+  },
+  ".claude/hooks/stop/wl_rules.py": {
+   "R1": [
+    "19f67bf297c0028e",
+    "9a01aeffa8e1e359"
+   ],
+   "R7": [
+    "998f03033ebc5a01",
+    "f4459ba4b677d8e9"
+   ]
+  },
+  ".claude/hooks/stop/wl_shapedup.py": {
+   "R1": [
+    "3f95d7c67c6d3e41",
+    "a220a905473358b2",
+    "bb4401a2ac93efd9"
+   ],
+   "R7": [
+    "0d124a8dcba7e913",
+    "5c5bc085d4061bce"
+   ]
+  },
+  ".claude/hooks/stop/wl_store.py": {
+   "R1": [
+    "33e0c7f9af7e6537",
+    "6454f12460ee0e15",
+    "ba1218f498c1e943",
+    "c537fdfa2f4b9559",
+    "d6f9c7af2c798ba9",
+    "ed7c2e9024c015b4",
+    "fa691fc3af8df8c4"
+   ],
+   "R2": [
+    "01ca0171b74e546a",
+    "1c439f48ec4930e7",
+    "260c541d9231454a",
+    "2e978f47ea74be65",
+    "5530de4099805a40",
+    "59a2f749d40b6d2e",
+    "75c1ae6fed1dad5a",
+    "9e9de236a48059ae",
+    "a7992094bcb18259",
+    "cf880fb371c313fb",
+    "d013b5282e0c5deb",
+    "d5def0684efb029c",
+    "fb96233f68225145",
+    "fce1cae92fd5a581"
+   ],
+   "R7": [
+    "665581034317b17e",
+    "774f9bc4b77fd277",
+    "7a6db450c0a11cfb",
+    "9b7bbbfa3af31478",
+    "9c9aa13e807c5929"
+   ]
+  },
+  ".claude/hooks/stop/wl_wait.py": {
+   "R1": [
+    "1532567730eb4b12",
+    "f14476b4c3d73812",
+    "fafbf4baa5444362"
+   ],
+   "R2": [
+    "4060e2f5f4127207",
+    "99ffbbf8cf087718",
+    "bf5f4b100f7d2514"
+   ]
+  },
+  ".claude/hooks/stop/worklist.py": {
+   "R1": [
+    "13d030fda8b7e2ce",
+    "461f15e281854ca8",
+    "4d386fdc3b61edeb",
+    "9ea1843e0ce7a6fd",
+    "da096e4473371335",
+    "e5f53d5a8e6a97bb",
+    "f844d56173591678"
+   ],
+   "R2": [
+    "4e0c10affbca4a42",
+    "86b390a438e9aff7",
+    "89fbe1b80edf13ea",
+    "ae804b8bab7fba1c",
+    "b3762ff3e948133a",
+    "cba126bf13311584",
+    "dd220d6a4d8019b2",
+    "e52ac3dded379a86"
+   ],
+   "R7": [
+    "1689bbe2bca0dddf",
+    "237333439663a156",
+    "9f71ffbac86bdba8"
+   ]
+  },
+  ".claude/hooks/stop/worklist_messages.py": {
+   "R1": [
+    "004ecb8398fa0edf",
+    "009e365623abc44d",
+    "00b5eac3282006f6",
+    "010be0f06e9eb1b2",
+    "016688408316027f",
+    "07188b7cf04726d7",
+    "07a96728cb6dcc32",
+    "07ebdb88c9a9e7c9",
+    "08e8a38ed95db615",
+    "090a22292cefbf15",
+    "09955870ab96e6c6",
+    "0b0863a76ea3b817",
+    "0cbf7e4c80322622",
+    "1024e4230cf56d24",
+    "10a252f812855731",
+    "1158b4c41f8492e0",
+    "11ba80c392401a6b",
+    "1362c38c57a8d89d",
+    "14de8462ef6c71b5",
+    "1797d559056e1d26",
+    "1beddd852627403a",
+    "1c7c53d4bd742563",
+    "1ceafcd1619cc409",
+    "1e3a00d899cfb688",
+    "1effeb023cc5b63e",
+    "1f0384568992f10f",
+    "1f15e517879c0fc8",
+    "1f49595519c9cbd9",
+    "21a145e74a40e60f",
+    "22442581c471f3ef",
+    "225521ef12f6ff27",
+    "2351ba8e369caecf",
+    "23844d80086d873b",
+    "24d7ea16b896f10b",
+    "2826415a26ed5d7c",
+    "29d960fcd8666ac7",
+    "29ddaa2771dbf00f",
+    "2bf425771b4912cb",
+    "2efc226b43183481",
+    "2f74018a90c0a9df",
+    "2f847bd138019352",
+    "2f966f885fb90454",
+    "30662331cf755823",
+    "31e337d83d8d4ede",
+    "36e7e3b3731dce3b",
+    "3a414c85254d13d0",
+    "3b46fe2c4f40a523",
+    "3de27e544970309c",
+    "3f28600b9fd7392f",
+    "405736fa084bf2bf",
+    "406b1818f305c06b",
+    "438d8105635288b6",
+    "43c8c1b05a887143",
+    "43ee470dd1522d34",
+    "4454e05294ca5dfd",
+    "4466a3795dc530a0",
+    "45157816f70fce50",
+    "453d637b3d26fb86",
+    "46c949190cc5120b",
+    "47e934393f031ba2",
+    "483e588b05d40742",
+    "4a308a02f27d1f3a",
+    "4b23fcfc96208fe7",
+    "50b527eb39ef6097",
+    "5196133d63080fb0",
+    "539f15e71bdcebf3",
+    "54b8a9054c97e70f",
+    "55c132b3e7ecc595",
+    "5679b0d1cd090810",
+    "56d3a01cf4a2f6c6",
+    "56da5fa5668e8946",
+    "575d8f967c5bfe5e",
+    "5774fc1a45bdf7cd",
+    "58e015cbbce39e00",
+    "592843f8ac58eabf",
+    "5950b0b89950c196",
+    "5a23136d2b105479",
+    "5b8d6d6e08e2f0b3",
+    "5c30fab8ace57884",
+    "5cd5542ac57aaa6d",
+    "600c7afd20d62b78",
+    "60813398d1210448",
+    "610c6712d7ed9ac5",
+    "6218b263d913d771",
+    "627e8ea1d834aeef",
+    "6467e82e0eb3850f",
+    "64cb4b34cee21e08",
+    "6577a9c00ff055b4",
+    "664fbd9524357511",
+    "665a14c6e4bea1d0",
+    "685fd91a1738230b",
+    "68f40faef67e8350",
+    "6b12fb99dcc6470f",
+    "6b341881ad0a7cda",
+    "6c07e868794a48a5",
+    "6d7cc77c1d5137a5",
+    "6e14960b63d287af",
+    "6e94b96ee682f195",
+    "71ca0fa167509801",
+    "733bf2e740345a98",
+    "75401d0e92abcb39",
+    "754e3f3b9431c913",
+    "76abcdc19c64e8b3",
+    "77bb75aad2a4eb71",
+    "786704f2d9297879",
+    "7ab241cb7e1c60a4",
+    "7ae614403caf0c9c",
+    "7c0a8a441e0b62e2",
+    "7f335539101897f0",
+    "802eef7171b0ad48",
+    "80bb3ea61c2ae949",
+    "8222344c02f7e974",
+    "82a725f196adcf70",
+    "8444d997c1c8ebac",
+    "847384dc7ed7b4a4",
+    "84dc9ec782a0bcc5",
+    "84e1bd0dfc738ddf",
+    "84ff75d4bb675c41",
+    "88d340b1f6259c60",
+    "88d60f559e1b3e26",
+    "898092be83a1a329",
+    "8a04f52e4786e33d",
+    "8a72d49c5107f51c",
+    "8b307d408e45f350",
+    "8b3bbfb5fd648571",
+    "8bd1781126bab2da",
+    "8d8c310110d7b125",
+    "8f73e28e5688165a",
+    "90e1d7f898ff935b",
+    "9194d348ad99c79b",
+    "92cd92146f9bd74d",
+    "95a76dac1c7ee31b",
+    "96030d7d9b66a6a2",
+    "960378383353149d",
+    "99c2e126d0333330",
+    "9a61e1663b1a7c6f",
+    "9c52f9d061fe15cf",
+    "9d34f7801c9a2e41",
+    "9d4fd1ef3c1ebbda",
+    "9f4fd463e467ed60",
+    "9fa3fa6fe5780be3",
+    "9fac9a3a449a9dfa",
+    "a0650bb87e5ea4d9",
+    "a17301baee99098a",
+    "a29b1c9f83cd6856",
+    "a5591401e1803c0b",
+    "a5ab24605430e6e0",
+    "a5fe095710ff3c4d",
+    "a6aafb5be01f3c59",
+    "a7daaf07ee3e10e9",
+    "a8ded83195befd1b",
+    "a928c3b3e0658822",
+    "a958decc71d33780",
+    "abbe403f8a097208",
+    "ac2e3a1752e3fbb2",
+    "ac3fb52562941a46",
+    "addf22fa4a35d7e8",
+    "ae9b5a20a30ecd6a",
+    "af190fc8d2de8a3a",
+    "af7232548e09af5f",
+    "b042c74798e85c2e",
+    "b2f095434f0c6eaa",
+    "b58c885c31123081",
+    "b5cfb0a9870d3252",
+    "b75f111b026d4c23",
+    "bc5a042c848d7cc5",
+    "bd2b5883adbce434",
+    "be4b052513ac2ec4",
+    "be8dbdb627c02311",
+    "becb704d27f8fc1a",
+    "bf02154aefa99531",
+    "c328561c1fd43879",
+    "c47d976313dde5a3",
+    "c4866862eacb30d2",
+    "c4a2b02a371ce96d",
+    "c4cb4de333aca5f3",
+    "c8f68cb48e07bb71",
+    "cb279818c2891e5f",
+    "cdabfcabc6551d95",
+    "cdd91661d626c3e2",
+    "cfb0a850494b5084",
+    "d0701812cf5d447d",
+    "d0af705077508640",
+    "d1588e7063b05d61",
+    "d68b6a149463403f",
+    "d7c8236db3ad835a",
+    "d7d91c37032c27ad",
+    "d944b18127a3abf4",
+    "da52cc65efcd84e7",
+    "db6de51c21eb5f8b",
+    "ddc7ebea122acf88",
+    "e49876602b85b5c1",
+    "e98d73b1b3f921f2",
+    "eac7a8429a3acf76",
+    "eb82a61a4ce6b81f",
+    "eb92e33916ea1044",
+    "ecaaf9c5f8d58c8a",
+    "ed2865cbe2c49cb1",
+    "ed90c0d518b905d3",
+    "f3d588dd4fd3ab74",
+    "f4b45c598a627d8f",
+    "f5fcdeb6cce04a9e",
+    "f6006db7b89cdb12",
+    "f66de55ecd11a0e2",
+    "f6829cb56e1cdd93",
+    "f80f4b265dab0052",
+    "f87502216605ee10",
+    "f952655d81f2ee50",
+    "faade674a2fceaf6",
+    "fd961f715854d036",
+    "fdd5679189aab732",
+    "fdde227c2f6c0607",
+    "fdeae4ab29854227",
+    "fe1c8f3be1dc1980"
+   ],
+   "R2": [
+    "0126e03b04fb0d63",
+    "0c20782e0f370339",
+    "149e62c633912d21",
+    "48bda34543b6169e",
+    "7955347e63277fbd",
+    "974b36d76fb63259",
+    "9ccbd5b8cdbc34e7",
+    "9e22fffcbf780ccb",
+    "d208613f9ac17f44",
+    "f6fd5fa37420fff5"
+   ],
+   "R7": [
+    "0e28aeb199a7ec94",
+    "4a23f0f2c518166f",
+    "8fec5d1d807ff611",
+    "ca6372730782bfb7"
+   ]
+  },
+  ".claude/hooks/trapguard/dispatch.py": {
+   "R1": [
+    "10e874324b03dde5",
+    "a3f4dc99550bf002",
+    "a6bf371bfe500230",
+    "d5433a4e6feff724",
+    "d78cac14e5eb5272"
+   ],
+   "R2": [
+    "f898c5f66531efa7"
+   ],
+   "R7": [
+    "22e2d4f8fc4600d6",
+    "ff48d6383ca34781"
+   ]
+  },
+  ".claude/hooks/why-on-edit.py": {
+   "R1": [
+    "3d95dd76c1c0577d",
+    "537046c7243f8f6d"
+   ],
+   "R2": [
+    "67cc357e8c8162a8"
+   ]
+  },
+  ".claude/output-styles/standing-orders.md": {
+   "R11": [
+    "6ee25e0b0e881b49"
+   ]
+  },
+  ".claude/rediacc_hooks/dispatch.py": {
+   "R7": [
+    "766cdbcb984d9f11"
+   ]
+  },
+  ".claude/rediacc_hooks/execcount.py": {
+   "R7": [
+    "1bfbeb4cbb710cfc",
+    "eec51b331755adc8"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_agent_browser_repo_output.py": {
+   "R1": [
+    "bb6970a172ba2b59"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_agent_state_shape.py": {
+   "R1": [
+    "2e69fe499b08c5fe"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_bash_write_to_running_script.py": {
+   "R1": [
+    "b57e7c63f27bf8b7",
+    "e157b885e4746626"
+   ],
+   "R2": [
+    "d844984c0ff07508",
+    "f4cb9a4cfc4ed4aa"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_blanket_git_add.py": {
+   "R1": [
+    "1a192d10f314de64",
+    "d201b5b329784cd5"
+   ],
+   "R2": [
+    "8b62e1dac26afc4c"
+   ],
+   "R7": [
+    "57a100a4967d11dd"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_ci_polling.py": {
+   "R1": [
+    "c81bab111c6945e0"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_commit_meta.py": {
+   "R1": [
+    "85b20e9223bdb1f2"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_compacted_plan_edit.py": {
+   "R1": [
+    "a6824645b48da0be",
+    "f9244b91e5eed257"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_destructive_git_restore.py": {
+   "R1": [
+    "2484bcc1b123b610",
+    "32dc273a3c29cbea",
+    "4113163b00fbcaa9",
+    "45d738dd9b25e125",
+    "6c18843a00fa0fe3",
+    "9aa00644e7b45748",
+    "9b951be1f34413cf",
+    "c36669b1709a79b9",
+    "c4e5d609d93572e1"
+   ],
+   "R2": [
+    "4b5374888a6a1fa2",
+    "4fbd6ae0f841eb7d"
+   ],
+   "R7": [
+    "58211a3c5c19632e"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_edit_of_running_script.py": {
+   "R1": [
+    "0f413dd3cd7fe7ab",
+    "e2028b1d7beb73b0"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_git_amend.py": {
+   "R1": [
+    "4523adc89ff19a91",
+    "4963f1b09e51a915"
+   ],
+   "R7": [
+    "96db678a1a0944db"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_git_empty_commit.py": {
+   "R1": [
+    "076e645a40aa5363",
+    "08989ec7c5a6c346"
+   ],
+   "R2": [
+    "00d171f884eb5096",
+    "01b4c7fbe589f435",
+    "9899a49c419d424b"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_git_force_push.py": {
+   "R1": [
+    "59426f25536a17e5",
+    "9cd3980bdb268243"
+   ],
+   "R7": [
+    "a932a0fd59076bb9"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_host_toolchain_run.py": {
+   "R1": [
+    "068d8662da6f4fad",
+    "07bdf4cee0c1f5ed",
+    "3327d48c23ce96b0",
+    "38c30f8a90f97e6b",
+    "3fb77eb30dae4424",
+    "491da5d9fc20780a",
+    "5393ec7d8202a3a9",
+    "95f3578ad1539536",
+    "9d167996ca079edf",
+    "b29db70357dd896a",
+    "bfeb71c041c17cc0",
+    "d75e0063ca9e07e1",
+    "f81a551f0725a79d"
+   ],
+   "R2": [
+    "82855094f475ae6e"
+   ],
+   "R7": [
+    "84f19782eb23fff5"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_long_sleep.py": {
+   "R1": [
+    "09bfaf19d798e127"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_nondraft_pr_create.py": {
+   "R1": [
+    "c9f5dfb919562906"
+   ],
+   "R7": [
+    "753cfbd1e7ceb881"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_nonstandard_branch_name.py": {
+   "R1": [
+    "146d2e29de28f411"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_plan_without_tasks.py": {
+   "R1": [
+    "26c25054d2c3c3cd",
+    "e097b39e2b2056e9"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_premature_ready.py": {
+   "R7": [
+    "9b9001cb8a02f49f"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_raw_pr_body_edit.py": {
+   "R1": [
+    "a2a5b0429bef70c7"
+   ],
+   "R2": [
+    "96765eaf09f11f7b"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_roundlog_write.py": {
+   "R7": [
+    "819cac6b848ad3c8"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_second_open_pr.py": {
+   "R1": [
+    "8763cfd29a6ef719",
+    "90f4256e62a87cfb",
+    "9458e1233112ea01",
+    "c201e11ef15fbf09"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_self_matching_pgrep.py": {
+   "R1": [
+    "1a16c6882dc3c8fa"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_settled_questions.py": {
+   "R1": [
+    "0345263a1692ff09",
+    "44386a683bddfe40",
+    "7f7542c7ef1b588b",
+    "902f320c701fe0d5",
+    "bcb64724518006dd",
+    "fad34a39e7403b04"
+   ],
+   "R2": [
+    "0c88d2535574fe75",
+    "12d327e4d6cff9c1",
+    "68a80f53f24e7496",
+    "829c738788cc43e2",
+    "8d172201dbecf781",
+    "91c607bb868754cc",
+    "dc2a080b1ec1097b",
+    "fcd4c861b8ae0446"
+   ],
+   "R7": [
+    "453d9190a246c411"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_shell_background_waiter.py": {
+   "R1": [
+    "960a2e5dd0a3a558",
+    "ac14a888d59e0cfb",
+    "ae5d02a3841204fb"
+   ],
+   "R7": [
+    "60c7c045fc6fc097"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_stale_pr_branch_date.py": {
+   "R1": [
+    "e9162250b2718b46",
+    "f045a4ca452a7f69",
+    "f3d4c32929876c38"
+   ],
+   "R7": [
+    "5b3299e785be7429",
+    "9281ae56ab09c7ae"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_suppressions.py": {
+   "R1": [
+    "fe8ccf95257cb4dc"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_unverified_push.py": {
+   "R1": [
+    "a0c3cebed891d050"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/block_worktree_add.py": {
+   "R1": [
+    "2850b5f8f75ab112",
+    "78f46e1a737005f7",
+    "c67ce8e70c58094d"
+   ],
+   "R2": [
+    "faee8db55013dda8"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/test-block_destructive_git_restore.py": {
+   "R7": [
+    "2928698e981b5577"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/warn_remote_drift.py": {
+   "R1": [
+    "a6cf0086038d1a14",
+    "eb5e47d87f498d09",
+    "ebb4f571d7a28731"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/warn_stale_index.py": {
+   "R1": [
+    "3ccf0cee6ab0f7b7"
+   ]
+  },
+  ".claude/rediacc_hooks/guards/warn_submodule_deletions.py": {
+   "R1": [
+    "3d6886e3e15c3b2f",
+    "806e7f7bc911e0cb",
+    "98352a72938153d3"
+   ],
+   "R7": [
+    "877707e323f7b774"
+   ]
+  },
+  ".claude/rediacc_hooks/hookio.py": {
+   "R7": [
+    "2f3e2ca29e8a7dd4",
+    "8d0198434839d04d"
+   ]
+  },
+  ".claude/rediacc_hooks/proc.py": {
+   "R1": [
+    "d306ab13ae242f70"
+   ]
+  },
+  ".claude/rediacc_hooks/shellscan.py": {
+   "R7": [
+    "42be92521dc01f42",
+    "b9f4163a124910c4"
+   ]
+  },
+  ".claude/rediacc_hooks/tests/guardcorpus.py": {
+   "R7": [
+    "63576a930f652a85"
+   ]
+  },
+  ".claude/rediacc_hooks/tests/hookcases.py": {
+   "R1": [
+    "50873bb7d606dec1",
+    "f21bd183d863b61d"
+   ],
+   "R2": [
+    "38b7842e746a099f",
+    "711b072184d0ad4d"
+   ],
+   "R7": [
+    "ac2542da9852223d",
+    "c42acaffbf50baae"
+   ]
+  },
+  ".claude/rediacc_hooks/tests/test_dispatch.py": {
+   "R1": [
+    "e360cbf9ff2b8b86"
+   ]
+  },
+  ".claude/rediacc_hooks/tests/test_hooks_delegates.py": {
+   "R1": [
+    "d18c19a7eaa23c35"
+   ]
+  },
+  ".claude/rediacc_hooks/tests/test_hooks_fixtures.py": {
+   "R1": [
+    "58de2950215bf986"
+   ],
+   "R2": [
+    "22095a0b42c0715d"
+   ],
+   "R7": [
+    "7d08365137f0d8e9"
+   ]
+  },
+  ".claude/rediacc_hooks/tests/test_hooks_procs.py": {
+   "R1": [
+    "e51691c12f156fb1"
+   ]
+  },
+  ".claude/rediacc_hooks/tests/test_hooks_trapguard.py": {
+   "R1": [
+    "6b31c1b0974dd969",
+    "721dfd203a81511a",
+    "898e543edfeb616c"
+   ]
+  },
+  ".claude/skills/ci-watch/SKILL.md": {
+   "R1": [
+    "4ae4933ea538f1b5"
+   ]
+  },
+  ".claude/skills/ci-watch/incidents.md": {
+   "R1": [
+    "b5d4416660e46ada"
+   ]
+  },
+  ".claude/skills/migrate/SKILL.md": {
+   "R1": [
+    "081065d6320a74a2",
+    "afd7d4dec4501d4c",
+    "c97eeb0fcd0136aa",
+    "fcea7278a0aa04c9"
+   ]
+  },
+  ".claude/skills/pr-epics/SKILL.md": {
+   "R1": [
+    "171d92edf84a61ab",
+    "501e0c50e80fdda3"
+   ]
+  },
+  ".claude/skills/pr-epics/epics.md": {
+   "R1": [
+    "4811ae1ab13e7ab9"
+   ],
+   "R7": [
+    "7fb8a6053bf2ac29"
+   ]
+  },
+  ".claude/skills/pr-epics/trailers.md": {
+   "R1": [
+    "93961188fe889f40"
+   ]
+  },
+  ".claude/skills/rdc/SKILL.md": {
+   "R1": [
+    "cd7dc0f9131e69a4",
+    "e5f1236977e0e2a3"
+   ],
+   "R18": [
+    "227d02d7efac0c12",
+    "eb019e79c1f448b0"
+   ]
+  },
+  ".claude/skills/rdc/backup.md": {
+   "R1": [
+    "35489beecbaa52cf"
+   ],
+   "R18": [
+    "6424e77a15a69910",
+    "b32f041034a57556"
+   ]
+  },
+  ".claude/skills/rdc/datastore.md": {
+   "R1": [
+    "8ff83b5c14bb64c1"
+   ],
+   "R11": [
+    "ceceabb660a6c746"
+   ]
+  },
+  ".claude/skills/rdc/machines.md": {
+   "R18": [
+    "18b2782af48059ba",
+    "47c52fbd96b79ccc"
+   ]
+  },
+  ".claude/skills/rdc/ops.md": {
+   "R1": [
+    "2146c01812a09f80"
+   ]
+  },
+  ".claude/skills/rdc/reference.md": {
+   "R1": [
+    "132255f118bc59d1",
+    "1c4da19c974e5026",
+    "2c458aba3b8f45c7",
+    "4969aaaa41701de5",
+    "4c50a25929008886",
+    "50df563606e6d16f",
+    "54606c3df247bd61",
+    "914b0ff6146638b4",
+    "9bba1b69f52c348a",
+    "9bdd694614531526",
+    "ab9c43b025075c80",
+    "b003a1c04cf8df41",
+    "daa3697d25fd3829"
+   ],
+   "R11": [
+    "00b1ea3f79677893",
+    "025edde8589b2b4b",
+    "2240654d087beb10",
+    "279c74d892f0f391",
+    "2ee3efefb7311675",
+    "300623f876f80c38",
+    "3a41b7c6c7380263",
+    "3f8bf66b833ea9d2",
+    "4b0fc9b2501b9b56",
+    "4edd7b703c22d91a",
+    "51ee0fcbc409659e",
+    "56a9fe0440ad7f3f",
+    "5d37831216e2771c",
+    "67a3d3bceb658e4d",
+    "690842c8acb6fbbc",
+    "6f3d0ebf9d04f82e",
+    "75bb3797ff815010",
+    "7aff2206cb08fe78",
+    "7b8068f3d6446938",
+    "8b4b4e4eb66af579",
+    "8d0be04baab04202",
+    "8d97aac4b270d1aa",
+    "8f25ac08386f594c",
+    "950d281778a3fcde",
+    "952ca1f7e4a1917b",
+    "96fe737e032e14b2",
+    "999456085c613cac",
+    "a2ffed24aa5bfeab",
+    "a5909b721eddb3ac",
+    "a8ec82774ab44bc2",
+    "a9c696d727d7d408",
+    "aa546029b3ad30f3",
+    "aea290e9bee22263",
+    "b4ee01deaa150675",
+    "b51118c082cffc77",
+    "bb67dd2b7865a5ae",
+    "befb72c7ae5b1e70",
+    "bfd8d8040be9bef0",
+    "c4a4c3f94ba7333a",
+    "cb35befeff2b6693",
+    "cc44593c797d6d14",
+    "d1ad8a96d34a81ee",
+    "d8d2fa700157029b",
+    "e5023d9a0a0f6d0e",
+    "e81fef185f241334",
+    "eb2c62109d30af69",
+    "ecd2d62636dffb18",
+    "fe203f8d2916e431"
+   ],
+   "R18": [
+    "14540aead908b77b",
+    "21fe879bcd7c3d3a",
+    "4c10a47652ddb6e4",
+    "509c99ac9d3a18ef",
+    "7094a8fd3687f9d5",
+    "77dcad0ec00b6d5c",
+    "8ee5589b8c2519eb",
+    "bf0b5ae7ebef7c4d",
+    "c383fea0ef5651da",
+    "e018fd05280f364d",
+    "f54a3e91697f10ff"
+   ]
+  },
+  ".claude/skills/rdc/repositories.md": {
+   "R1": [
+    "92cf935ddaf75fc5"
+   ],
+   "R18": [
+    "c0612de2a04d5aff"
+   ]
+  },
+  ".claude/skills/rdc/sync.md": {
+   "R1": [
+    "3ea99986809c5612"
+   ]
+  },
+  ".claude/skills/testing/e2e.md": {
+   "R1": [
+    "ea0bd2086878a58a"
+   ]
+  },
+  ".claude/skills/testing/install.md": {
+   "R1": [
+    "9d82001bdab8e636",
+    "cd0e6dad8f7831bd"
+   ],
+   "R11": [
+    "590f8caa2aa613a8",
+    "f1587ff6e1589181"
+   ]
+  },
+  ".claude/skills/testing/unit.md": {
+   "R1": [
+    "0fc40d7ebb661a00",
+    "c2936ee8c8d194d8"
+   ],
+   "R11": [
+    "220083056014f180"
+   ]
+  },
+  ".claude/skills/tutorials/SKILL.md": {
+   "R1": [
+    "2e8569e8ab58989b",
+    "493ea07c49213108",
+    "769d6ba99a276288",
+    "d45d13d1b0987be6"
+   ]
+  },
+  ".github/CONTRIBUTING.md": {
+   "R1": [
+    "27214905be741019",
+    "3af9eaff46e215a1",
+    "4133c3bf2e809351",
+    "521234553b6e70aa",
+    "acb08546612b6c30",
+    "bd810fd989a959b6",
+    "cbf797578c92f636",
+    "d3ec62c325eb1c32"
+   ]
+  },
+  ".github/actions/profiler/index.js": {
+   "R1": [
+    "8047a82325d7df70"
+   ]
+  },
+  ".github/pull_request_template.md": {
+   "R2": [
+    "0595584fbd65663f",
+    "58345704120854a4",
+    "5ae9f1232bf04e50",
+    "7dcb7765a7e80cdd",
+    "8bfe37b8d69009d4"
+   ]
+  },
+  "CLAUDE.md": {
+   "R18": [
+    "be7b89dbaa6cff21",
+    "c4e515273230bef7",
+    "e8cdf717e5c2e3d8",
+    "ed3d966149c20439",
+    "ed7af9377534a860"
+   ],
+   "R7": [
+    "93fde4ac8d94b88c"
+   ]
+  },
+  "CONTRIBUTING.md": {
+   "R1": [
+    "1ba20bc81d65af2b",
+    "1f735d36e0300bd4",
+    "fe4ca2edf06ffd2e"
+   ]
+  },
+  "agent/8f55d4f0/W7P3-batch5-brief.md": {
+   "R1": [
+    "ec5849d9c197f09f"
+   ],
+   "R11": [
+    "83482aa46cb89caf"
+   ]
+  },
+  "agent/9d92d9b6/NOTE-to-e580532b-guard-anchoring.md": {
+   "R1": [
+    "1208822209a0f1b7"
+   ]
+  },
+  "agent/9d92d9b6/NOTE-to-e580532b-judge.md": {
+   "R1": [
+    "50b61a13c63a85da",
+    "865aa3af4a6d6aab",
+    "a2bc84c02a3b637f",
+    "a45e9a8d3de6c481",
+    "c011491571abd95f",
+    "e92265d01cf27328"
+   ],
+   "R2": [
+    "5d409f05e2095d5d",
+    "980d79cd8391c426",
+    "a6777502ce9354df"
+   ]
+  },
+  "agent/9d92d9b6/NOTE-to-e580532b.md": {
+   "R1": [
+    "38087874ccc43b96",
+    "58bd5772d8b193c3",
+    "67e180cf010f1f68",
+    "6fc9a2ff69eab72d",
+    "a67ec4bd0181a0f1",
+    "b27568c2b486af58",
+    "e668163224c3401b",
+    "fad2187d1c922bc1"
+   ],
+   "R2": [
+    "2cbfc20b3fd02548",
+    "372cb925368ad5ac",
+    "7f9dd2bde942a571",
+    "804ca3d2cbd8b40b",
+    "89884935f679f209",
+    "aae4837703328332",
+    "c5e91bc153bb28ca",
+    "e74856a20d7acdf7",
+    "f9ee111310cad78a"
+   ]
+  },
+  "agent/DECISIONS.md": {
+   "R1": [
+    "20c13abceabc64a4"
+   ],
+   "R11": [
+    "ec59e19db5484492"
+   ]
+  },
+  "agent/PLAN-add-chunkstore-backup-verb.md": {
+   "R18": [
+    "207f7bca200cf6ca"
+   ]
+  },
+  "agent/PLAN-add-js-extensions-shared.md": {
+   "R18": [
+    "50db8ff51a606f7b"
+   ]
+  },
+  "agent/PLAN-ask-flow-preemptive-settled-check.md": {
+   "R1": [
+    "efbc22fdfb259dbb"
+   ],
+   "R11": [
+    "389c9bed948a0725"
+   ],
+   "R2": [
+    "86d39614c13ab1c0",
+    "b895bfb5fd117680",
+    "f8892c00c66a3c3f"
+   ],
+   "R7": [
+    "04a72f1fcb3db150",
+    "e84a4b1420421285"
+   ]
+  },
+  "agent/PLAN-b2-emit-matrix.md": {
+   "R7": [
+    "1541e36d9a739f25",
+    "c099c8bab7aef51d"
+   ]
+  },
+  "agent/PLAN-backup-list-executor-fix.md": {
+   "R18": [
+    "ccdebc791241c719"
+   ]
+  },
+  "agent/PLAN-backup-quota-delta-gc.md": {
+   "R18": [
+    "21edd155313ca81f"
+   ]
+  },
+  "agent/PLAN-backup-restore-target-license.md": {
+   "R18": [
+    "278ecabd7beb1cba"
+   ]
+  },
+  "agent/PLAN-bump-k3s-upstream-1-36-4.md": {
+   "R11": [
+    "5223b0a53a82e56f"
+   ],
+   "R7": [
+    "11276603ecd1135b"
+   ]
+  },
+  "agent/PLAN-bws-rotation-on-failure.md": {
+   "R18": [
+    "d28f690d333a3e57",
+    "dc86b31899c0a848",
+    "f2fef3c8bc18dd45"
+   ]
+  },
+  "agent/PLAN-chunk-store-browse-DECISION.md": {
+   "R2": [
+    "35d24c8ed0c1bac3",
+    "361d247ac33d437b",
+    "805004cf44c76036",
+    "9b6ce3bcd53f9675",
+    "b7bada96b04e626b",
+    "ba41988358f34349"
+   ]
+  },
+  "agent/PLAN-chunk-store-browse-engine.md": {
+   "R18": [
+    "9261ce15b01b2af7"
+   ]
+  },
+  "agent/PLAN-chunk-store-browse-server.md": {
+   "R18": [
+    "14a43dc4975dee94"
+   ],
+   "R2": [
+    "61391d0107b60018"
+   ]
+  },
+  "agent/PLAN-ci-pr-head-ref-trigger-resolution.md": {
+   "R7": [
+    "80fea5fc2fdd920a"
+   ]
+  },
+  "agent/PLAN-ci-trace-no-pr-branch.md": {
+   "R1": [
+    "14978e5079a79228"
+   ],
+   "R11": [
+    "48b36fac2cc43e13"
+   ],
+   "R7": [
+    "95b2ee81ac1c98f0"
+   ]
+  },
+  "agent/PLAN-ci-vacuity-baseline-registry.md": {
+   "R1": [
+    "32eeb8bc9c1c665f"
+   ],
+   "R2": [
+    "3225ac5813224b37",
+    "59971368ef7d44e1",
+    "6b7d523084acca8d"
+   ],
+   "R7": [
+    "44344feb0d547400"
+   ]
+  },
+  "agent/PLAN-ci-watch-enforcement.md": {
+   "R1": [
+    "3c20068dd0875414",
+    "44a4f4f460576457",
+    "7e98144c6638edae"
+   ],
+   "R11": [
+    "c5486dff4656321f"
+   ],
+   "R2": [
+    "931bba2cf954f636",
+    "9723b90a58a4283c",
+    "d0664a93b3353137"
+   ]
+  },
+  "agent/PLAN-citation-fragility.md": {
+   "R1": [
+    "494e9b15b0b1e662"
+   ],
+   "R18": [
+    "0e93f2592b184a8c",
+    "d8bfd0bbe9ad075a"
+   ]
+  },
+  "agent/PLAN-cli-em-dash-lint-gate.md": {
+   "R18": [
+    "4c1c00aec820f902"
+   ]
+  },
+  "agent/PLAN-cold-path.md": {
+   "R1": [
+    "22ea80e7062a3c17"
+   ]
+  },
+  "agent/PLAN-commit-author-identity.md": {
+   "R7": [
+    "40f75f89999e88b0"
+   ]
+  },
+  "agent/PLAN-devbox-uid-derived-image.md": {
+   "R2": [
+    "51ab76526f215566"
+   ],
+   "R7": [
+    "1a55b86a6d4e5d47"
+   ]
+  },
+  "agent/PLAN-env-to-bitwarden-v2.md": {
+   "R1": [
+    "faa88af3846158e1"
+   ],
+   "R18": [
+    "6ddb6426c61482e2",
+    "c6fbb6bd077b084c"
+   ],
+   "R7": [
+    "24b9c4fc21d46311",
+    "9fd735540dcc710b"
+   ]
+  },
+  "agent/PLAN-extension-shaped-matchers.md": {
+   "R1": [
+    "cf09fe392b53f51d"
+   ],
+   "R2": [
+    "17dcf443566e9b99",
+    "23938974d116e0cb",
+    "25c18849eb50c97a"
+   ]
+  },
+  "agent/PLAN-fix-ci-contention-aware-timeouts.md": {
+   "R11": [
+    "6cc0736b7c5f1a2b"
+   ],
+   "R2": [
+    "755c15e2dba1be6b"
+   ]
+  },
+  "agent/PLAN-gh-swallow-gates-audit.md": {
+   "R11": [
+    "531ee34e68e653ec"
+   ],
+   "R18": [
+    "032aa3792dc45bfb",
+    "0784dde5208058fa",
+    "19ff872d0764b119",
+    "1ca3ea757a35e1cd",
+    "1e50d0b8243d34ad",
+    "273ce4ab54687523",
+    "2906bfbc0b09eb31",
+    "3a646787cfdd6cee",
+    "48b1bbc81277d6dd",
+    "4b793789f3a895da",
+    "4cbe5605c4e1c4e5",
+    "564c87770c02b6cb",
+    "614cf780c5bc9fa4",
+    "62ae51cf7eabefa6",
+    "67211308546f6ef4",
+    "7bdbe7cd5ef4f6c9",
+    "7f71e2effecc06f0",
+    "8f5d9f3dae684288",
+    "95a8d54863dae3e6",
+    "a4614d2e9e636f0a",
+    "b9fc4b1b56b1846a",
+    "bbf4a9ca0d99d85c",
+    "c0791da2f7f04f27",
+    "cb11bcd51200a609",
+    "d93d750e194773cb",
+    "d9b1bc935d512ac4",
+    "dfcab8c63899a3d5",
+    "e21bdfc2076e717f",
+    "e789926469f1755a",
+    "fa6b27cd5231edcb"
+   ],
+   "R2": [
+    "8fd91923ef925863",
+    "a49efd2d361137ae",
+    "fc1c340f443e1f3f"
+   ],
+   "R7": [
+    "33de7466e5f3c440",
+    "6a691641346f7227"
+   ]
+  },
+  "agent/PLAN-git-history-media-rewrite.md": {
+   "R1": [
+    "7c75cc33cd429e37"
+   ],
+   "R11": [
+    "fbe487f442aef6ce",
+    "fec1bfec1d157d8c"
+   ]
+  },
+  "agent/PLAN-hook-inventory-warn-guards.md": {
+   "R11": [
+    "a0b8123c90d087d6"
+   ]
+  },
+  "agent/PLAN-judge-gate-worthiness-and-surface-scope.md": {
+   "R1": [
+    "05b9be2704b154aa",
+    "50983327e4d71639"
+   ],
+   "R11": [
+    "65119e99c23ca0f7"
+   ]
+  },
+  "agent/PLAN-localize-cheat-sheet-rendering.md": {
+   "R18": [
+    "e4fa1f6ee96ee136"
+   ]
+  },
+  "agent/PLAN-nightly-retry-and-watchdog-noise.md": {
+   "R1": [
+    "7a3647bc1d12cc69"
+   ]
+  },
+  "agent/PLAN-npm-ci-parallel-parity.md": {
+   "R18": [
+    "01b943bc949ca9ae"
+   ]
+  },
+  "agent/PLAN-pipefail-grep-q-renet-gate.md": {
+   "R11": [
+    "37d6d31d99559ee1",
+    "4f75b8b9afa75f50"
+   ]
+  },
+  "agent/PLAN-plan-file-lifecycle.md": {
+   "R1": [
+    "92391f2fc471d39e",
+    "bf8ae6a290e7fa3b"
+   ],
+   "R11": [
+    "ab0d0e64f8a132f1"
+   ]
+  },
+  "agent/PLAN-printf-echo-pipefail-sweep.md": {
+   "R18": [
+    "95369cf74043108d"
+   ]
+  },
+  "agent/PLAN-promote-mutation-runner.md": {
+   "R18": [
+    "aec186cd10e77875"
+   ],
+   "R2": [
+    "26e0a104d8cef42d",
+    "75d048fed4ca06d3",
+    "a2697501a8cf3de3",
+    "ab2cd07b2cd1ec93"
+   ],
+   "R7": [
+    "33315eba0944cf7d",
+    "4670d30b89e7fcfe",
+    "61f0a5ec535e995c",
+    "86786dbdaa0ca775",
+    "c0096214d1892acf"
+   ]
+  },
+  "agent/PLAN-pytest-parallelism.md": {
+   "R18": [
+    "f53f060292289ad7"
+   ],
+   "R2": [
+    "2410c415d9183045",
+    "3be6719c6e60b8a4",
+    "a632608a776b1173",
+    "a98d430e0de849f1",
+    "aaf314063ae90094",
+    "bb6542b19b940293",
+    "e1c5b57c3ea1ff99"
+   ]
+  },
+  "agent/PLAN-reggate-effort-cap.md": {
+   "R1": [
+    "d12a9de6a42ca800",
+    "e2d2473c158aff46"
+   ]
+  },
+  "agent/PLAN-resprofile-wave2.md": {
+   "R2": [
+    "63a9311a01ecd4a5"
+   ]
+  },
+  "agent/PLAN-resumable-rebase-executor.md": {
+   "R2": [
+    "5695f01b8165e33e",
+    "7c4406003e55499a",
+    "9d14e05a1c2478f1",
+    "cde8f5bddc593598",
+    "e0d7a48f076449df"
+   ]
+  },
+  "agent/PLAN-review-red-stop-hook-check.md": {
+   "R1": [
+    "99dd0999b0be9454"
+   ],
+   "R7": [
+    "614f21c4358b3e0d",
+    "d3957a41bb10f114"
+   ]
+  },
+  "agent/PLAN-runtime-caller-identity.md": {
+   "R2": [
+    "f659ada628c81412"
+   ]
+  },
+  "agent/PLAN-scope-gate-sort-collation.md": {
+   "R1": [
+    "58ed2819319c6ce5"
+   ],
+   "R11": [
+    "0aa8999d616b4464",
+    "1158ab156295aeb8"
+   ]
+  },
+  "agent/PLAN-secret-namespace-migration.md": {
+   "R1": [
+    "0fff7ce9e447eed6",
+    "22108df9559a0a31",
+    "39dc79f495daa19c",
+    "6bc54867d5bb2d26",
+    "71dd4f6cb6077a72",
+    "78e96b66e2f54a2d",
+    "a0b3b166e4e8ec46",
+    "e0fe8e7208b460d3"
+   ],
+   "R11": [
+    "1a714536cfb01329",
+    "acfe80671aeed52f",
+    "de7d1aa9254d7a35"
+   ],
+   "R18": [
+    "14f2bdfa3e1a7ae5",
+    "163bc27fba027ab0",
+    "17aa9be3c80833b0",
+    "34588d12bb8047bf",
+    "c52d76c577d69b09"
+   ],
+   "R2": [
+    "100a1ea844d50851",
+    "143fbe7fe2810cf8",
+    "5b9b09e0d4e15b43",
+    "687c00acd6f3ca5a",
+    "88c7cc0cd1d1a5e7",
+    "b205d499ec830e28",
+    "d2eae1435aed4ddf",
+    "ffe6ac21c1b5e55f"
+   ],
+   "R7": [
+    "0d94f270aac66f70",
+    "5ce84948857c0a1c",
+    "869d531d790e40fe",
+    "999461e9602b2195",
+    "c4a969a795794fa2",
+    "cca8fbcd5e1e8933",
+    "d1b9472f645a7ec4",
+    "d326c984dd3b62e5",
+    "d4899f7ea47cc319",
+    "e6597a0089d20813"
+   ]
+  },
+  "agent/PLAN-sentence-aware-wrapping.md": {
+   "R1": [
+    "b836485f365f0d9b"
+   ],
+   "R18": [
+    "352eac82f57b0ad6",
+    "496b3b12ee37d8c9",
+    "ef8443600696093e"
+   ],
+   "R2": [
+    "5aaff585f51c16f5",
+    "f99cf23eb7286054"
+   ]
+  },
+  "agent/PLAN-session-onboarding-marker.md": {
+   "R1": [
+    "13f84532e4500179"
+   ],
+   "R2": [
+    "374068a03b3802fc",
+    "ed3357c374ba9083"
+   ],
+   "R7": [
+    "64a17e0fb812571d"
+   ]
+  },
+  "agent/PLAN-shell-command-gate-regex-fix.md": {
+   "R11": [
+    "f57ad2ba28b41c98"
+   ],
+   "R7": [
+    "93992ca170dd561e"
+   ]
+  },
+  "agent/PLAN-shell-resource-profiling.md": {
+   "R1": [
+    "25e451af23fc91a2"
+   ],
+   "R11": [
+    "dca3605dbfb402f9"
+   ],
+   "R2": [
+    "136315dee841ccf4",
+    "47fb967a916b5278",
+    "58f1ff0da83c7556",
+    "64e88f5ee9bd5fd8",
+    "79c79e2d76e291f9",
+    "d1966578e035bed7"
+   ],
+   "R7": [
+    "20f9e6a78b11fd55",
+    "6c225d4753fe466e"
+   ]
+  },
+  "agent/PLAN-skip-release-gates-r2-manifest.md": {
+   "R7": [
+    "b24f3d8619c3f385",
+    "d931509807062347"
+   ]
+  },
+  "agent/PLAN-state-md-session-isolation.md": {
+   "R2": [
+    "5c43319009e2c702"
+   ],
+   "R7": [
+    "7ad87604b7092919"
+   ]
+  },
+  "agent/PLAN-stop-always-tier.md": {
+   "R1": [
+    "4ef1242adece3644",
+    "6d6ec2a3eeb06507",
+    "aceb820207cf47dd"
+   ],
+   "R2": [
+    "ce99e9c3e9324bd3"
+   ],
+   "R7": [
+    "d71fa09f0e9e8fbe"
+   ]
+  },
+  "agent/PLAN-stop-hook-overhaul.md": {
+   "R2": [
+    "0426e4c733f99502"
+   ]
+  },
+  "agent/PLAN-stop-report-queue.md": {
+   "R1": [
+    "6ce0ee4ddafdafcf",
+    "6dca89e5988109ce",
+    "89ceef7785bc2a46",
+    "aa6e50bc6f65eac9",
+    "bb4e9a12b16a0e09",
+    "d8a3b0edcf589e55",
+    "df27eb199c1b3790"
+   ],
+   "R11": [
+    "1c0eed17fa34a83c",
+    "40872f595ff1a2bc",
+    "cc1dd3ae14a6e01a"
+   ]
+  },
+  "agent/PLAN-sync-docker-latest-tag-with-releases.md": {
+   "R7": [
+    "9f203fcf06efb650"
+   ]
+  },
+  "agent/PLAN-test-advisor.md": {
+   "R2": [
+    "32add0c7b10ca1fd",
+    "8e655cbf2bcf0c69"
+   ]
+  },
+  "agent/PLAN-tooling-transformation.md": {
+   "R11": [
+    "2fd5c00b47dde545"
+   ],
+   "R18": [
+    "0968a387822ad562",
+    "0e02c7c8a3ef1d4b",
+    "1ad561f7e18725e5",
+    "2342ee80ffde6669",
+    "29102024a40ae9b9",
+    "2b254f6d89a95748",
+    "3563d3c9fe6b8415",
+    "39faed4eebfc7d07",
+    "3b4bc6402d2b039f",
+    "3ca7c41c3d1ef5bf",
+    "41e2b52afd5b7d10",
+    "45c2f7c6cc0dc378",
+    "488eac8d789bac1e",
+    "4a93e8dedbceb74b",
+    "4ca1d8696a146367",
+    "4f7a2f719bd32f88",
+    "51d5ba99f81186d8",
+    "5203ad52045579fe",
+    "57cc33981045514f",
+    "5dc0b88ca1f5d9ce",
+    "66fe84e3a9861e5e",
+    "6778cb5ad269c7b5",
+    "6f0f930d890a3969",
+    "701e3bbfef773f1d",
+    "72c9b5568471de25",
+    "735d282e4a8cb4de",
+    "81c082a512e6da01",
+    "822763be34cc9019",
+    "83537fe567f48b21",
+    "83dcdadb8762b912",
+    "88c154d1a9e6d0fe",
+    "8c8ecc2e5c56b64b",
+    "9170f04b4a669d43",
+    "927ed05d89fa427f",
+    "9a39e60584c1a0d0",
+    "9bb856f738913ad2",
+    "a364ccef9ec98597",
+    "a98ecbeb58896a7e",
+    "b8396bb178623a89",
+    "c2886cd4b5a2bde2",
+    "cbb4755e0042a1a9",
+    "cd1543ef91aba61b",
+    "d0aad58d1be2f228",
+    "d82f8627f93b61a0",
+    "d9b4cf376ec82e45",
+    "d9f22166484e259d",
+    "dc3a280641c2aaa2",
+    "dd3c23fbc93b9d31",
+    "e7f1018531aa6c28",
+    "ebe37c1b557b3c11",
+    "ed41d4e7568b7188",
+    "fd954d3a388e1803"
+   ],
+   "R2": [
+    "2e992f0091928a2c",
+    "7dda9fa659237537",
+    "984bb2a6854517e3",
+    "a41c711f09e5d458",
+    "cb46f85ebdc58754",
+    "d1253cf2a0543e93",
+    "f9595addb2ca6563"
+   ],
+   "R7": [
+    "71c0c72ea47281c1"
+   ]
+  },
+  "agent/PLAN-trap-enforcement.md": {
+   "R1": [
+    "1e95ce362c26e3df",
+    "208075bb3fc667d2",
+    "ec75f4ea8368f04e"
+   ],
+   "R11": [
+    "ea857c4ad603329a"
+   ],
+   "R2": [
+    "f121d49fddcc001b"
+   ],
+   "R7": [
+    "657a2b080f742220"
+   ]
+  },
+  "agent/PLAN-w7p4w-docker-cutover.md": {
+   "R1": [
+    "05a038f0b987d46d",
+    "a767320502a2cb3c"
+   ]
+  },
+  "agent/PLAN-w9p2-script-relocation.md": {
+   "R18": [
+    "009f9d832739fb05",
+    "03543fc3c05bcc61",
+    "08288260c777d141",
+    "373ec6dbab9eefa5",
+    "41f7bec55f45dc43",
+    "51532e5640083d2e",
+    "5216b0a362a4e1c7",
+    "6e0b141f6cd43784",
+    "7f9661a20def97dd",
+    "a794a6a744768b0a",
+    "a9009d9919798c17",
+    "b533f08a9a39d692",
+    "b9053e77a66f073c",
+    "bdc6daf37d870e59",
+    "d084fdc8a2919aea",
+    "d3c1be666af13121",
+    "d46f130cde91322d",
+    "d8d186348f248e53",
+    "ddfe5872de8d4cef",
+    "e75dd846656c4d10",
+    "eb21352db234f6ac",
+    "f6eea83f147ae25c",
+    "f950bec807367673"
+   ]
+  },
+  "agent/PLAN-wl-report-liveness-oracle.md": {
+   "R2": [
+    "393fdb6566b4838e",
+    "6ca86fce82677f75",
+    "8660c60dae84afc7",
+    "bca1a78a0c045255",
+    "c8a1c84b6074bbf3"
+   ],
+   "R7": [
+    "e4cb5464304324d2"
+   ]
+  },
+  "agent/README.md": {
+   "R1": [
+    "322cf78740bb7739",
+    "494325276abbe820",
+    "4a9b4d2168065c22",
+    "75dc18b60f341a56",
+    "7c8966c8b1166a20",
+    "aee96982a72a32dc",
+    "bb56343287b3b5d8",
+    "e53f0d260bf076f2",
+    "f09a7a2efeb9a0af",
+    "fda7f97408d0c6c5"
+   ],
+   "R7": [
+    "e1c15b599ce4b86a"
+   ]
+  },
+  "agent/REPORT-licensing-bigbang-2026-08-04.md": {
+   "R1": [
+    "2713d5e36daed3ee",
+    "3bb945fe30049c93",
+    "85180bc332dec7a7"
+   ],
+   "R2": [
+    "2941a62f998883b8"
+   ],
+   "R7": [
+    "654da41a562e77d4",
+    "dfaa6463f571b82b"
+   ]
+  },
+  "agent/RULES.md": {
+   "R1": [
+    "1705481eecf8f826"
+   ],
+   "R2": [
+    "5b44fa86ae2aa134",
+    "c58d94e79c6a2c28",
+    "c590f37d938843df",
+    "e29a1d1976c87080"
+   ],
+   "R7": [
+    "3110addc3390976e"
+   ]
+  },
+  "agent/archive/0730-2/PLAN-stop-hook-migration.md": {
+   "R1": [
+    "8d17a8319e0ce6f4"
+   ],
+   "R7": [
+    "749286110a88c325"
+   ]
+  },
+  "agent/archive/0730-2/RULES.md": {
+   "R7": [
+    "80339ab4afb8c197"
+   ]
+  },
+  "agent/archive/0731-2/RULES.md": {
+   "R7": [
+    "9847c2adca21babc"
+   ]
+  },
+  "agent/archive/0804-1/ANSWER-2fd369e0-to-4c3e095a.md": {
+   "R1": [
+    "205bb661301b7b93",
+    "364bf872e2005d15",
+    "41484285dadb0b6e",
+    "867dccdee8c46482",
+    "d889207f8c919562"
+   ],
+   "R2": [
+    "1a2af701587cff39",
+    "1cc6ad6143e64b31",
+    "344a187ef5b65a1e",
+    "3eb2c4a4e0974a3b",
+    "3f85689badeca8ee",
+    "80d8edf4c55f424d",
+    "b196d40960d73ab5",
+    "d973b31ec2487663",
+    "dd4a342cb3bb7a02",
+    "eee25e2eeaa6786d"
+   ]
+  },
+  "agent/archive/0804-1/HANDOFF-from-4c3e095a.md": {
+   "R1": [
+    "083a82397b2e4fbc",
+    "1622c4738455bf34",
+    "16f8dd6a675d3172",
+    "17c3ece1774f7bf3",
+    "17d5372d4f91afc1",
+    "1d2e9abdd82051f0",
+    "40e65950641fce77",
+    "45bf6c9d3bab8540",
+    "66836e42f8370f74",
+    "75036cad4d293a69",
+    "80a088d8472d0a9a",
+    "bdb36c890e61a738",
+    "c61ac7716e74b925",
+    "cbc9217f32640ceb",
+    "dea3e735d7bcfdfb",
+    "e38cbb6c11c92730",
+    "ea54348b5f8e53c7",
+    "f6f117602d6122b6"
+   ],
+   "R11": [
+    "877e9214cfdfe32b"
+   ],
+   "R2": [
+    "0aff5283801c62a7",
+    "22ece4def263dcd5",
+    "32d94f1ecb7f984e",
+    "3c93a74f58f26ddf",
+    "3e29024ce42d34bd",
+    "4433d7d40a0855fa",
+    "7b597fa17f7a1568",
+    "7cbdf9260d57ccf9",
+    "7ee90e103646d706",
+    "91b85c3ed5980086",
+    "96c7a175428a472a",
+    "a9f17277f1f386d8",
+    "c2839141d542d808",
+    "f044ee0f550af576"
+   ]
+  },
+  "agent/archive/0807-1/RULES.md": {
+   "R2": [
+    "47189ecf4b7df777"
+   ]
+  },
+  "agent/archive/0807-5/RULES.md": {
+   "R1": [
+    "f832e008313306a1"
+   ],
+   "R2": [
+    "73efd65be31d8b3f"
+   ]
+  },
+  "agent/archive/0808-2/RULES.md": {
+   "R2": [
+    "ace0831985665c9b"
+   ]
+  },
+  "agent/archive/0808-3/RULES.md": {
+   "R1": [
+    "a3f4c60673db35ee",
+    "ea7b2c2c8237bb30"
+   ]
+  },
+  "agent/archive/0808-4/RULES.md": {
+   "R1": [
+    "086042ec5ce6a4bd",
+    "3407b92990316159"
+   ]
+  },
+  "agent/archive/0809-1/RULES.md": {
+   "R2": [
+    "09fad719c4f418a3"
+   ]
+  },
+  "agent/archive/0815-1/RULES.md": {
+   "R1": [
+    "140469cee9ee83ab",
+    "278742e465369475",
+    "4801aa91d2ac386c",
+    "861c1349849ca733",
+    "8c0fb1506c774839",
+    "9a305e354ebec8a6",
+    "ff36b5a6700b1bca"
+   ],
+   "R11": [
+    "570d5b5f63ab7b5a"
+   ],
+   "R2": [
+    "4d80adf2235e0e18"
+   ],
+   "R7": [
+    "107290648fe72527"
+   ]
+  },
+  "agent/archive/backup-storage/RULES.md": {
+   "R1": [
+    "084b2ade216748c1",
+    "1cdc9b886740526a",
+    "5a14d2a3b8dfeb6e",
+    "66970737e855c811",
+    "b18e70ac84838305",
+    "d62f4d73db24f006"
+   ],
+   "R11": [
+    "9fcbb6a86e59ec5b"
+   ],
+   "R7": [
+    "879573f84ba70f43"
+   ]
+  },
+  "agent/archive/plans/PLAN-branch-aware-workflows.md": {
+   "R1": [
+    "5587cf5524ef2dd5",
+    "b952cc3a1d60984d"
+   ],
+   "R7": [
+    "330b35a4541d3079"
+   ]
+  },
+  "agent/archive/plans/PLAN-env-to-bitwarden.md": {
+   "R11": [
+    "b098a57ec15c37f5"
+   ],
+   "R18": [
+    "4efe7fae528a1965",
+    "536dbec09012d191",
+    "542fb41b8b3c737b",
+    "72765462efc320d2",
+    "82240b7190b7e1c2",
+    "b3e3e25019d269db",
+    "d90d4153e1383f7c"
+   ],
+   "R7": [
+    "7ede8aabd3d7beb9",
+    "8dbe0ac8d76bcbff"
+   ]
+  },
+  "agent/archive/plans/PLAN-github-secrets-removal.md": {
+   "R1": [
+    "ffefcfcb981c2506"
+   ],
+   "R18": [
+    "0414b3c840be9c8d",
+    "3614d52aab2103ec",
+    "37834e4212e62204",
+    "3a616dae877da6ae",
+    "63fbafdccd9224c3",
+    "654f387225f2e6cc",
+    "6a0ec6b3f30a0c7b",
+    "7484d336fe85f045",
+    "92a2046232509328",
+    "96484bca28973616",
+    "9ddbb28937ffd959",
+    "d581892540f1d710",
+    "d7b7e31626b65d53",
+    "f0acf188251025c7",
+    "ffb0806544e52e5e"
+   ],
+   "R2": [
+    "594c3790c2c12d24",
+    "7d8866bea9b43b91",
+    "8211c06469785302",
+    "856d5f1f5470fbe2",
+    "9e64e9aa22c120c6",
+    "f60adf6566798bec"
+   ]
+  },
+  "agent/archive/plans/PLAN-migrate-command.md": {
+   "R1": [
+    "0d5acdea58c4696d",
+    "31bee1d6722cc044",
+    "49684b080013a4af",
+    "6dbe2b2ed85349bd"
+   ],
+   "R18": [
+    "0aee8f1f9a0a57b0",
+    "1b07d3eb3d6465c7",
+    "24a799c62e145e76",
+    "24f5f4e9cfd1f523",
+    "26655720296ea362",
+    "27018c3b17960779",
+    "31e5f1daac99a340",
+    "32f9f274c2f2bd2a",
+    "4a2cfc8196b78081",
+    "55222d22c4110759",
+    "58590fbcbf80d7b9",
+    "5aeff3f1184f8574",
+    "69ae13425931d401",
+    "7c77c868242de625",
+    "7e19781a58aef2ef",
+    "8eaa5bbc9e177e9d",
+    "921c35faeaf3de4c",
+    "96a30b96ea5cfb30",
+    "96c23de9391b7a65",
+    "9c0d262f9ca34803",
+    "a6766c996e706276",
+    "aa1d1f97f3384413",
+    "abc5f5ea27058d88",
+    "b077e4facb66cb61",
+    "b7d8edf2d61307f1",
+    "be02cf313ff202ff",
+    "c11aa8066309818a",
+    "d2ff122cbb4cf4bd",
+    "da01cb64d32d21ec",
+    "db3884def4417fb0",
+    "dc11d22e4107d2a7",
+    "f10edd49c867c372",
+    "f9a7b60c3aa5f95d"
+   ],
+   "R2": [
+    "26a7e4a5c1da7c20",
+    "507faf722249c6e7",
+    "8a5e86a02d0f1d69",
+    "8f3394ee9d5c3161",
+    "9db69c60f671b17a",
+    "a58d227b5c2d5b16",
+    "b7f9fdfdbb44f5c7",
+    "b952e8d828464643",
+    "d036b6509cb03f50"
+   ]
+  },
+  "agent/archive/plans/PLAN-secret-names-one-to-one.md": {
+   "R1": [
+    "f55a115e22312d03"
+   ],
+   "R18": [
+    "6a91e867a5273bcf"
+   ]
+  },
+  "agent/archive/plans/PLAN-stop-plan-box-enforcement.md": {
+   "R1": [
+    "c1b20cab82ddcfe4"
+   ],
+   "R7": [
+    "701304e515e533d4"
+   ]
+  },
+  "agent/archive/plans/PLAN-worklist-ownership-continuity.md": {
+   "R2": [
+    "0d4d66d5a5cd26cf",
+    "25ef48ccef931fc9",
+    "d6472a348e5ecba3",
+    "e9e835cac8c8d80e",
+    "efd57f32312a0e84",
+    "f95c970f3b33cd9e"
+   ],
+   "R7": [
+    "c50ce1faa0c89928"
+   ]
+  },
+  "agent/e580532b/NOTE-to-9d92d9b6.md": {
+   "R1": [
+    "376219fd2c8153ed",
+    "5fc0627c62b9f0e0",
+    "785601840fa0a6f9",
+    "a3be51379cb7c5ce",
+    "a7c4309f6f9093b7",
+    "ab927ed8bd7f3bdb",
+    "c305e7b25e747c42",
+    "f651431096713476"
+   ],
+   "R2": [
+    "2e5e6f4dae28b8e3",
+    "37fe56944a0f0e33",
+    "57d9ca95b4af27de",
+    "63f28c181b0bfc7a",
+    "870dbe2702065021",
+    "876356ae509f3682",
+    "8f71b15f0110d0fc",
+    "a977054a76334ae0",
+    "cf22849c44379c7b",
+    "d027bb0445921bce",
+    "d49d54f0d8e72cd3",
+    "e6c187211cdfe00d"
+   ]
+  },
+  "agent/f4da5c2e/BITWARDEN-dev-shared-prompt.md": {
+   "R1": [
+    "1591da3e8171a0fc"
+   ],
+   "R2": [
+    "ca601011db10e201",
+    "ce86fded4376fcc5"
+   ]
+  },
+  "agent/f4da5c2e/W7P5c-licence-census.md": {
+   "R2": [
+    "ae857eddd6c7e750"
+   ]
+  },
+  "agent/f4da5c2e/gate-test-ledger-coverage.md": {
+   "R2": [
+    "1a3e1db3105b536b",
+    "2ced6a7d03ef3682",
+    "408985da4e3cc6fb",
+    "53b0383cc7fdeabf",
+    "6795fc7fc1820315",
+    "7ea36ee2150cfe4d",
+    "9a22c69b74434fe9",
+    "9ab97aa5da462f49",
+    "a55e5ac99810fb58",
+    "d9ea4936727d02f3",
+    "f7990d13365cf1e8"
+   ]
+  },
+  "agent/pr/0827-1.md": {
+   "R2": [
+    "0bd930456c5d9f94",
+    "a413220cfb906117"
+   ]
+  },
+  "agent/pr/0903-1.md": {
+   "R2": [
+    "0a20123911890199"
+   ]
+  },
+  "agent/pr/0906-1.md": {
+   "R2": [
+    "7840e6c4343e2aa1",
+    "8d6c2b2287994718",
+    "9c37e37287d7b826",
+    "e7a10f1b02a18f29",
+    "eac1816ed3da3abf",
+    "efa8d19550e52f6f"
+   ]
+  },
+  "agent/pr/0914-1.md": {
+   "R2": [
+    "83ed34ef932885f1"
+   ]
+  },
+  "agent/pr/tooling-transformation-w0.md": {
+   "R2": [
+    "1cbc9831659c3eb5",
+    "3afa2dfa250dfe76",
+    "58ebee35ef850ed4",
+    "68ddc1c459f65133",
+    "886820517ad36647"
+   ]
+  },
+  "agent/programs/clarity-round6/01-verified-context.md": {
+   "R1": [
+    "8ffb3c819fdd7c79"
+   ]
+  },
+  "agent/programs/clarity-round6/02-inherited-decisions.md": {
+   "R1": [
+    "300348b203d706df",
+    "c4f8c7ea2d79c580"
+   ]
+  },
+  "agent/programs/clarity-round6/03-solution-page-density.md": {
+   "R1": [
+    "309f59a98d40178b"
+   ]
+  },
+  "agent/programs/clarity-round6/04-video-fleet.md": {
+   "R1": [
+    "73a45304d0cf6181",
+    "dcd07b01d3a4b8f5"
+   ]
+  },
+  "agent/programs/clarity-round6/06-execution-guide.md": {
+   "R1": [
+    "08f2e744e8ad638a",
+    "569c6d5223445855",
+    "95afd8f4c564aacd",
+    "ab0be367f5b8bf1f",
+    "d3a5f8da8871c5b8"
+   ]
+  },
+  "agent/programs/clarity-round6/PROMPT.md": {
+   "R1": [
+    "4440baa2c3903d45",
+    "dce2a7e4fbf6bf5e",
+    "fe4027050d7b1083"
+   ],
+   "R11": [
+    "f4c012944b948f02"
+   ]
+  },
+  "agent/programs/clarity-round6/README.md": {
+   "R1": [
+    "83546901770b7dc5",
+    "cf063f24721ebe48"
+   ]
+  },
+  "agent/programs/www-round5/01-verified-context.md": {
+   "R1": [
+    "6fb5250885127a9b",
+    "965077b5b5bb13a3"
+   ],
+   "R11": [
+    "5ba46daf7a31bdec"
+   ]
+  },
+  "agent/programs/www-round5/02-marketing-comprehension.md": {
+   "R1": [
+    "4762c6e148f07824",
+    "72351c28071b87d1",
+    "7cc47c825b298aa4",
+    "f1eeebd76a44a71d"
+   ],
+   "R2": [
+    "503a378e10a949ba",
+    "69c4652a3dd11c35"
+   ]
+  },
+  "agent/programs/www-round5/03-chrome-and-surfaces.md": {
+   "R1": [
+    "29f6551dccc5014b",
+    "80d08180d4265c03",
+    "9abf7db4c9884f4d"
+   ],
+   "R11": [
+    "b5898e801ffad459"
+   ]
+  },
+  "agent/programs/www-round5/04-docs-surface.md": {
+   "R1": [
+    "203ca1c639666a74",
+    "d3810845b6832e72"
+   ]
+  },
+  "agent/programs/www-round5/05-gates.md": {
+   "R1": [
+    "3f8b5a1bcc0eec3d",
+    "fcb6a6008852f41d"
+   ],
+   "R2": [
+    "98537aae82e1654d",
+    "98ff8cbed2aea81f"
+   ]
+  },
+  "agent/programs/www-round5/06-execution-guide.md": {
+   "R1": [
+    "2566a0a18f2073cd",
+    "27cb7bab4750b3b0",
+    "4b7120435956ea53",
+    "5bf08852bd14938f",
+    "e81d07007df0ff2f"
+   ]
+  },
+  "agent/programs/www-round5/CHECKLIST.md": {
+   "R2": [
+    "2a8c9d7aeb4ddb9a",
+    "f4802deff73cfd2a"
+   ]
+  },
+  "agent/programs/www-round5/PROMPT.md": {
+   "R1": [
+    "682995173268e4e6",
+    "96441900dd196f95",
+    "ec8baaca0375c565"
+   ]
+  },
+  "agent/programs/www-round5/README.md": {
+   "R1": [
+    "1314bbf1fac3fe5d",
+    "55cddc913003ae6e",
+    "787e3f23327b3a7d",
+    "e258405512f9b7b8"
+   ]
+  },
+  "agent/programs/www-round5/evidence/00-session-plan.md": {
+   "R1": [
+    "4b03707fc7465fb1",
+    "a012f3a1854ef69c"
+   ],
+   "R11": [
+    "77fb01681e428a6e",
+    "898c848d04e5a61d"
+   ],
+   "R2": [
+    "43b00a47e2b1c6ee",
+    "5333054580fb9567",
+    "6b3b1632abcd99f6",
+    "a540d4c4a7c12090",
+    "d0241bd35a2ed88b",
+    "e225a74fcd33d6ae",
+    "f311578b7d170b18"
+   ]
+  },
+  "agent/programs/www-round5/evidence/EXPLORE-chrome.md": {
+   "R1": [
+    "44e600902d32fccf",
+    "4d9a61f143eff945",
+    "6b4c6b119cd590f1"
+   ],
+   "R11": [
+    "1b8808efd563337b",
+    "20f34125214f368b",
+    "5ae1dd5bffe17a3e",
+    "fb7607eb2d173e82",
+    "fe49c5eaa0967e51"
+   ],
+   "R7": [
+    "50f9d3bbda80f849"
+   ]
+  },
+  "agent/programs/www-round5/evidence/EXPLORE-docs.md": {
+   "R1": [
+    "f91557785bc5dc11"
+   ],
+   "R2": [
+    "eab2f8f9de583aff"
+   ],
+   "R7": [
+    "bf82cbca2407bb14"
+   ]
+  },
+  "agent/programs/www-round5/evidence/EXPLORE-home.md": {
+   "R1": [
+    "0da05a47902b232c",
+    "15d7f6abf72e54f7",
+    "2f7357e9be131a41",
+    "3862538487b2f797",
+    "3c914e627e15ea00",
+    "ba1adfc179caa10f",
+    "d18fc8568c806036",
+    "d9274a5087ba9b4e",
+    "ed483bb457d0aca7",
+    "f9eaf1470089e078"
+   ],
+   "R11": [
+    "b42c6ae6009c7bd2"
+   ],
+   "R2": [
+    "05d953efc04f4b17",
+    "103e81f841d26365",
+    "115ef09ae7059f60",
+    "5aaa8983cb4d00db",
+    "5f0c1970bb6236a0",
+    "887939236af94fcc",
+    "97878afc6c0ae990",
+    "9fd649ccf210cdc8",
+    "f1773d3bd6253449"
+   ]
+  },
+  "agent/programs/www-round5/evidence/RESEARCH-ai-deeplinks.md": {
+   "R1": [
+    "7191deb41dc02559"
+   ],
+   "R11": [
+    "f189ab869d4202e5"
+   ],
+   "R2": [
+    "9730ec38ed498cfc",
+    "9c55b031cfb89aa9"
+   ]
+  },
+  "agent/programs/www-simplification/01-verified-context.md": {
+   "R1": [
+    "4471c67f072adcc1",
+    "455e2ece4b3da8cb",
+    "d90828811e4b018a",
+    "f25c3e7f852a19a8"
+   ],
+   "R2": [
+    "436b552a05e6b3de"
+   ]
+  },
+  "agent/programs/www-simplification/02-locked-decisions.md": {
+   "R1": [
+    "27b69a115387061e",
+    "459c95fc80613b67"
+   ],
+   "R11": [
+    "5771705e0bad695b"
+   ],
+   "R2": [
+    "98cf30b9e91451e7"
+   ]
+  },
+  "agent/programs/www-simplification/03-bugs-and-gates.md": {
+   "R18": [
+    "56f4bbdb346564c1"
+   ],
+   "R2": [
+    "147f604b0fa6be7f",
+    "40d93a93ca05a1c4",
+    "5843c56b1dbe334b",
+    "7240e8eba2bdf5d9"
+   ]
+  },
+  "agent/programs/www-simplification/04-execution-guide.md": {
+   "R1": [
+    "2280b771481f2c01",
+    "42222dea269a274c",
+    "5103078cd8e594b2",
+    "5f3d70df430afad1",
+    "63fda28e45cd89f9",
+    "700003a59ea2f1bd",
+    "72863eb126dc7761",
+    "730adeedcbc113e7",
+    "7b2fc6126d83f598",
+    "7c44f745340319cd",
+    "86eec143ccf031f6",
+    "89529969e72ab2cb",
+    "8e91546ba586a9f6",
+    "9b959dca5682be06",
+    "b27b2753b6d1610a",
+    "c376e1aed67b6f12",
+    "cda4bcba0a765a89",
+    "e10bf49677c553ab",
+    "e77d8820d37747fc"
+   ],
+   "R11": [
+    "9c752bfd2060bcdb"
+   ],
+   "R2": [
+    "205914e3ff7d02b7",
+    "7034fb312b80ccad"
+   ]
+  },
+  "agent/programs/www-simplification/PROMPT.md": {
+   "R1": [
+    "dbea182ae784db01"
+   ]
+  },
+  "agent/programs/www-simplification/README.md": {
+   "R1": [
+    "0894ae9a640cb781",
+    "4e4ebc0c7526ec40",
+    "5b1de3d4fd35fef6"
+   ]
+  },
+  "agent/programs/www-simplification/research/00-BRIEF.md": {
+   "R1": [
+    "05d39b8f57238e3a",
+    "069ed73c72ae2fbd",
+    "0b15a421abc429a7",
+    "137de11e90e62367",
+    "165f929e96e2b3f4",
+    "2f5a111dfac6a30b",
+    "437eeb79810a663a",
+    "52e0da1e02ddd41c",
+    "5c39466f6289b979",
+    "5e9b90c2a7586ff4",
+    "61758eacd68a718c",
+    "633b162aa1591a63",
+    "681b888116b3138b",
+    "6d58bf7abd2de7cd",
+    "70d1558dfb06b9f2",
+    "794c155d55736e5d",
+    "84e760cc37cf1884",
+    "8c195c201498b8a0",
+    "97aefef08839b7cf",
+    "a33ce6602316f238",
+    "aad76b9e83ffe334",
+    "ab1a44cafeb57f77",
+    "b570a71feaf22505",
+    "bad3d4926e52654f",
+    "bfb5af3195c33712",
+    "c0068676e5c10e68",
+    "c7cc1757ab3c4611",
+    "e722ad4cbbec32f8",
+    "ee39bedbb1fb2a6c",
+    "f68a9248158aec7a"
+   ],
+   "R11": [
+    "1bea411adc7909a0"
+   ],
+   "R2": [
+    "efb2c833d3b4a989"
+   ]
+  },
+  "agent/programs/www-simplification/research/01-SYNTHESIS.md": {
+   "R1": [
+    "cbe940a1b4534857",
+    "d6ebd30fc1e0a39f"
+   ],
+   "R18": [
+    "d491a02d6cd55ae7"
+   ],
+   "R2": [
+    "0a944de632b33e2d",
+    "247a74ca4d20b836",
+    "2e5d98240c022ff9"
+   ]
+  },
+  "agent/programs/www-simplification/research/02-EXECUTION-SYSTEM.md": {
+   "R1": [
+    "0db9a3e74d6023cd",
+    "86a8e27fbaf2e534",
+    "8c616eef87fbc424",
+    "b529992a9eadc59d"
+   ],
+   "R18": [
+    "278f924912b16680",
+    "50ef8e9830474121",
+    "64aabc17374579a2",
+    "6df5f650f3c78a7b"
+   ],
+   "R2": [
+    "5bb809a15dd6d57d",
+    "6a8759c0f9d29ff4",
+    "7456c989a31a71fa",
+    "ab2efe69e33418ec",
+    "e6227352b2ca1840",
+    "ff6dd9b30e1ab633"
+   ],
+   "R7": [
+    "372cc231fb7fd6f6"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-bugs.md": {
+   "R1": [
+    "9410612a08885457",
+    "96144aeef7a49b98",
+    "ebbe0f33b8b95de8"
+   ],
+   "R2": [
+    "0c44ea6b843025cd",
+    "23f883922f2a66f4",
+    "2789bc5ae0e1e60e",
+    "374b98cb89ffdcf8",
+    "46ea16a4009e4a12",
+    "4a8bc6e5178f747a",
+    "5759ca850b9d0601",
+    "7844e04718873bf9",
+    "7f1d86188782d540",
+    "860a1c050690c5a7",
+    "a1ff1546496c270c",
+    "b5db9530c0d586e5",
+    "ba3a329f0c6d392e",
+    "bb7280b985b34576",
+    "c524cf6876637eba"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-chrome.md": {
+   "R1": [
+    "2911b32aefabde27",
+    "4c2fefb526b2a5ee",
+    "5013b81bcef2d78b",
+    "7d0f5e7f25099dcc",
+    "83eb523db6ec32e7",
+    "acdc72ae434ef7d6",
+    "c03418342dc7f9cc",
+    "efdfb71ea501cd9e"
+   ],
+   "R2": [
+    "14fd4d106c3b5c61",
+    "6215b9839c434ea8",
+    "74e1ec5b0926011f",
+    "7cc2122da27aba1f",
+    "96596b7a2e0f09a2",
+    "a0419709959a52cc",
+    "a53a64224d0378f4",
+    "a98a68b1c400ada9",
+    "afa02a8dd972e792",
+    "d45470b048e4f521",
+    "d79cf2a886477b76",
+    "d87d79b6c28f180f",
+    "e2b7412301265b09",
+    "eb185877921ce5c1",
+    "f19531475220c365",
+    "fdff9d79a163d784"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-docs.md": {
+   "R1": [
+    "577dfae693200e67",
+    "8b9dec9c9ba48555",
+    "8ca023c912f4d0ac",
+    "b18ba3ff974c930a"
+   ],
+   "R2": [
+    "10cb0376880f93f8",
+    "1179daed64d79f0b",
+    "2d4ac53291b9292b",
+    "3e4ae855e6f0e90d",
+    "3f4f593eaab97324",
+    "6b4cca0ca5901f0c",
+    "73fdca06a7e09a5b",
+    "7408b8c20182e33f",
+    "9233d3aed59f291d",
+    "97425b004a18b7f0",
+    "adfdc3f13dee3b2d",
+    "b0aee76fa8dafe91",
+    "c0924b7d3667e287",
+    "c6c0071510ec9ed7",
+    "d495eab6047540d9",
+    "f0342db5b066ad0c"
+   ],
+   "R7": [
+    "5c6ac014f54265f9",
+    "6c4e2f55fefed3a8"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-hero.md": {
+   "R1": [
+    "42932983de708ad7",
+    "543eb29f2f053b26",
+    "8da3e8c431b18f76",
+    "957226c3897a09ba",
+    "d5a509fe6b293359"
+   ],
+   "R2": [
+    "142a589975e24469",
+    "29c691bc4b777bf4",
+    "2a0bfec6bc3fa3cd",
+    "327212967b00cff6",
+    "43cb3a72ce3248dd",
+    "4e09d5c0cdfe7658",
+    "4fd6a4eed0fe8748",
+    "52ac0cd6b3a707ff",
+    "8a96aa4afc1baab2",
+    "985dac8e4ce3552c",
+    "9a11594856cd8c9c",
+    "a27fe7d75acea4f1",
+    "ef7d015a5d083e84"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-homepage.md": {
+   "R1": [
+    "1b607bd87f4576cd",
+    "21c84618ab90f0cd",
+    "434fb2a71761bf81",
+    "63c384e427cfa1d3",
+    "762bf229b9875560",
+    "8e6082f9ad82a289",
+    "973c95bad4455048",
+    "9ec70db6b1c8f317",
+    "a4443ff97538ced9",
+    "b79f57784654fc8e"
+   ],
+   "R2": [
+    "265a19bf30d61f9b",
+    "2dee0f2c7758c902",
+    "6fc3c4b9f8ee9652",
+    "8a40e6e13866ecee",
+    "a31ede801ddd9181"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-i18n-ci.md": {
+   "R1": [
+    "0354e569ebf6efe6",
+    "d37aaf3f5f02607b"
+   ],
+   "R11": [
+    "bb69dbabc73dca27"
+   ],
+   "R2": [
+    "290d21179ec9e8c7",
+    "293ed997d5c4fa64",
+    "4287a50baaaa3db3",
+    "4b7fc17eea693b2d",
+    "4ec177d3969b9822",
+    "7a8d685ce1e7c05f",
+    "c7e4209329d099af",
+    "cbafa7052c3ece58",
+    "d93bba4669e9c33d",
+    "dc4936dcc7966545",
+    "e650e0c179635f0f",
+    "ef759efa8dafe952",
+    "f958306292c20500",
+    "fa12fd3312d9eebf",
+    "fcb5986ce4933d23"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-metrics.md": {
+   "R1": [
+    "145bf8d4796e0996",
+    "a0fcb63fe282c2bb",
+    "bdfa88dbef4b82c3",
+    "d95391195b13d524"
+   ],
+   "R11": [
+    "f59169ce06fed5e3"
+   ],
+   "R2": [
+    "00a9e15e3b6a3c72",
+    "235819a2535c24f3",
+    "359e32f23b068240",
+    "443f3211e42e27f8",
+    "5306ba581527cb8a",
+    "544df7fc364b2d72",
+    "546cba7708221871",
+    "615a021feffc6533",
+    "69f5e1ec7fec5eec",
+    "75877865dcb8a863",
+    "85c029457416617c",
+    "d2b8fd2b31387cb0",
+    "e1672f173944387e",
+    "e48712a880ed1ada",
+    "ed58ee233f131500",
+    "f5193e1de4247dc6",
+    "f5ec07d70cd7239f"
+   ],
+   "R7": [
+    "ed72827da8760811"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-motion.md": {
+   "R1": [
+    "1702a8db81d39780"
+   ],
+   "R18": [
+    "7af9405b31fcc348"
+   ],
+   "R2": [
+    "0d9134e57b82c1c7",
+    "0f693f0f05d201ac",
+    "1e056726f1c184da",
+    "36c91d45cbee5870",
+    "387c746dc80f14f3",
+    "3d618ed18222af3d",
+    "43295d7640abe107",
+    "5cc346d19ec1ded2",
+    "692c91207865ba2c",
+    "7078530e95db080e",
+    "7509b732c49574d7",
+    "7a4f7e54895e4402",
+    "de76139f294b6129",
+    "ff956921cc8ba88b"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-navigator.md": {
+   "R1": [
+    "029c6d1cb87ea69a",
+    "1b6dd555af419298",
+    "47e1459cc2daa5e3",
+    "6379964a2faba610",
+    "8f67d333936275c8",
+    "9c43f32ca375f6e4",
+    "a9403644d3ac7b91",
+    "c6d3823e8d5020a4",
+    "e6747c73fe500707",
+    "f2e162639703ad02",
+    "f7a874e7a15eae16"
+   ],
+   "R2": [
+    "1f242f41c449ca82",
+    "779288c50a16ac77"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-pricing.md": {
+   "R1": [
+    "030f56283db88659",
+    "cc9a105111843764",
+    "d5e1a9d5f2f8e2d4"
+   ],
+   "R2": [
+    "1036bc396e154839",
+    "17693e0dfa73e201",
+    "21b1611217df1e5f",
+    "229e67a74cbb3d42",
+    "265c0806d70bd9e0",
+    "28aa37e751351063",
+    "2e914f9f9f430851",
+    "3091c9f04cda69be",
+    "4094e8dd0154cc72",
+    "480296847b599c52",
+    "5b3983ac1a2ce53b",
+    "80a61322b7a427c6",
+    "978b4576fada2245",
+    "9b830fc73bde830e",
+    "b0c7af72cb2f65f0",
+    "b8b607b5246b1bad",
+    "b993b3db79ca3e25",
+    "dccde847af4a595d",
+    "eb71ab0110416a96",
+    "f37cde1587230473",
+    "fb9d821fff1500fa"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-primitives.md": {
+   "R1": [
+    "055847b1663c9593",
+    "7c73775996d4c9b4",
+    "ec4adf77cb71b542"
+   ],
+   "R11": [
+    "53cbee8a7cae071f",
+    "c0afdb215759e21e",
+    "d6d62fcc594710a2"
+   ],
+   "R2": [
+    "1d4ad99f4ef4cdb9",
+    "252a298ce0c9d118",
+    "30b39fb3d6debbdc",
+    "3c51e9362be86bf5",
+    "4c881d70453b7efc",
+    "4fd01a31307836f6",
+    "5075c5335c5f09c0",
+    "52719f220a4ff9c2",
+    "55476ef5b1a0f3f1",
+    "5dba0f4e0563536c",
+    "7e80a2e6ced92ef8",
+    "90df7ab2fc93388f",
+    "a1be2d81a8f0e8fc",
+    "d80d818a2d63dbef",
+    "ed3ef262ee62adf5"
+   ],
+   "R7": [
+    "34f90e31241186eb",
+    "587e1a52dd2c252c"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-rtl-anchors.md": {
+   "R1": [
+    "2d94fa4f0d554c87",
+    "58b09b7f9e3330b1",
+    "d089bde91ddb4f5b",
+    "ffe0406409c38bb8"
+   ],
+   "R2": [
+    "a209efbbd14a2273"
+   ],
+   "R7": [
+    "067f874530e922b7"
+   ]
+  },
+  "agent/programs/www-simplification/research/RESEARCH-tokens.md": {
+   "R1": [
+    "05ff625cc5e02444",
+    "f05eba13fc8f4734"
+   ],
+   "R2": [
+    "05605afffb6562c1",
+    "302b8cce4635537f",
+    "3d0f5d70a1328fdb",
+    "4e033ca658cafbde",
+    "6de685d9831dc9a3",
+    "6edbcd42a767c023",
+    "a09e6d12e5b746aa",
+    "c2879b76595e53c1",
+    "c581c906815c7ca9",
+    "e372ec796cb1c400",
+    "e6394155c5ec6285",
+    "ef4a83f7e9b9289b",
+    "f25c1c18dc38b8e1",
+    "fba126c514f94e11"
+   ]
+  },
+  "agent/worklist/README.md": {
+   "R1": [
+    "7381582c4c6894a9"
+   ]
+  },
+  "compose/otel-collector/README.md": {
+   "R1": [
+    "2d5706fcdb94b13f",
+    "4025e0782337cf80"
+   ]
+  },
+  "docs/DESIGN-CONFIG-STORAGE.md": {
+   "R1": [
+    "ffa680e545e5cceb"
+   ],
+   "R18": [
+    "021b53a3731dcfc1",
+    "1b4deabb7bea6935",
+    "2902f4764f3a9823",
+    "61a467624861fec6",
+    "7677eca938b243d2",
+    "77ef98a50fd8dec7",
+    "b62513961c65e9d2",
+    "ec510e2385830cc0"
+   ]
+  },
+  "docs/PLAN-ebpf-network-isolation.md": {
+   "R1": [
+    "149c9c56d4dd2360"
+   ],
+   "R11": [
+    "625035a617231870",
+    "c4fb710970f5c0f0",
+    "d97f61611fd1fae5",
+    "fab2023f32498db1"
+   ],
+   "R18": [
+    "26ed6f4292e59aa3",
+    "7ebda7f7a797cc31"
+   ]
+  },
+  "docs/PLAN-multi-region.md": {
+   "R1": [
+    "c99a8953dfbbdf30",
+    "d6d090e32da94305"
+   ]
+  },
+  "docs/agent-reference/TRAPS.md": {
+   "R1": [
+    "06950bafe7709cf7",
+    "0de5d51e886bca44",
+    "150ebc1cd1831b20",
+    "15f09e4ab6610dba",
+    "1b0e95b47598afd6",
+    "1b6d22bb8d6ca848",
+    "1c9a0bb6e3fffc1c",
+    "1cc1b34f8adfa9b7",
+    "21dddea8540be656",
+    "222e7c23ff865b4d",
+    "24a2e02116b4284a",
+    "24dc3016ca89a551",
+    "261f4dd37eaacc9a",
+    "290d0ace331826c2",
+    "299bc85254dcaa18",
+    "2e2dccab9c656597",
+    "303cebd0432da886",
+    "316ac2a835b2ffa0",
+    "37f5bcc9f2e611fd",
+    "4e316657689fca3d",
+    "4e8d3e7b3c04d572",
+    "521ea19437763f3a",
+    "53cb594aa2b18872",
+    "54ce48f3e939badd",
+    "58e2928f06658eb0",
+    "629b44889f35d437",
+    "66b3acd07ac1bf45",
+    "713b7cdb556a47ae",
+    "7830a75e5c83d59e",
+    "785d1562aee7fc29",
+    "800af24ec6065392",
+    "80bf0401b704b5fb",
+    "8140687038bb0d67",
+    "81408457f0079450",
+    "852ce7070c0eb59a",
+    "8a936405098b4b9e",
+    "8a9d32938ae14cd7",
+    "8c05867e0e7156de",
+    "92942884b6a64a5a",
+    "97945ea3011f9545",
+    "981b00560d134ee3",
+    "99bddbf23a2c05a2",
+    "9a8ee6bf92c59237",
+    "9ec0f46c8b168978",
+    "a02f11e541fcc048",
+    "a409aff3701d07d7",
+    "a495d88b24b49027",
+    "a7e6caf76cf418c9",
+    "a89f53920eb37946",
+    "a93815d967f6d380",
+    "abfd14d5d227ae85",
+    "adc94c7c7b225e71",
+    "ae741e1e62a30a92",
+    "b07a962019533a1d",
+    "b34ebe62b4aae8f1",
+    "b882dd9c4aea56c2",
+    "bb74da825181f17f",
+    "bf04a8cc2ab17fd1",
+    "bf631614f2f69f2b",
+    "c0f9a66ed173f163",
+    "c3856e860f870cf2",
+    "c55ed19395798037",
+    "c63b01ea8273f370",
+    "c6c90c77dc14a97e",
+    "cabf55b68f969085",
+    "cde93c30d3f3a1fb",
+    "d0fd9232ce0c7167",
+    "d1f55a0f0f790dca",
+    "d6403827fb3ec187",
+    "d7040f5e4a6d68dd",
+    "da3b4dc6e53ca0d9",
+    "dd847e0903e04d56",
+    "e3c1033b3d2e8ef2",
+    "e87726f7fa1ee2e1",
+    "eb43d654cebac205",
+    "ee4c1de29e89cab9",
+    "ee8e69b002eeb846",
+    "f1b7b4eb2d57c6a5",
+    "f6bbe9a174a9df76",
+    "f799b4520273abc1",
+    "fef6cbdfaf629afc"
+   ],
+   "R11": [
+    "3421bb67b7fb6956",
+    "51bc8b2b38e4cf11",
+    "61d1853cb210a6cb",
+    "d0447d1c6da63e77"
+   ],
+   "R18": [
+    "30e9be22de2b812b",
+    "4471962f97678f98"
+   ],
+   "R2": [
+    "18917cd68d054fb7",
+    "2e49cceae2d21a13",
+    "3a0f3a993e295a5b",
+    "485c40c1da06bc09",
+    "4a7be5ee77095254",
+    "5e16c639458de9bc",
+    "63a1078ffb55567f",
+    "6efc27b0cd8d7682",
+    "8a7fd314e085fdd9",
+    "b6e30b5a66bca37d",
+    "d7640150b6fdaba2",
+    "df2fd8c285d46264",
+    "f988aefc3033791d"
+   ],
+   "R7": [
+    "12caaca72d6ea320",
+    "17f81c4822efd9cd",
+    "3ecf4dd36569aa2b",
+    "62abc23c461bdacb",
+    "7672917a6f68c012",
+    "8806d3dd5b01602a",
+    "a15b778b2e2bc31c",
+    "a7e39036a76bd0fd",
+    "e3735634a7a79792",
+    "e4810595a80a9ee6",
+    "ea05af87d1b666e2",
+    "fc26455aedba82d5"
+   ]
+  },
+  "docs/agent-reference/ci-gates.md": {
+   "R1": [
+    "027203936b872230",
+    "082c37e907c5f057",
+    "11ae1f7889aeae0d",
+    "1a95c76066114132",
+    "24e3605f6b79e0b8",
+    "4896cf7594d2f632",
+    "4f08be5e40af8b37",
+    "6c35a2fbb48cbf12",
+    "88319e3407f90d09",
+    "8e4c9e1db2f0e52c",
+    "a45d014f2e23edd5",
+    "a5500ece764bcd72",
+    "d7c099a2f21b7a3b",
+    "e393294b4a883993",
+    "f0cbb60338d91247",
+    "f2fa15e5c6e7835d"
+   ],
+   "R11": [
+    "3fa4aa942b72cb87"
+   ],
+   "R18": [
+    "0474d1d7bf3b9f29",
+    "175c3ffbd875af27",
+    "25934f87fec64c71",
+    "3a1a970d5fcac275",
+    "3d53c9cd7d12158e",
+    "3e9bbf8994647c4e",
+    "417ee2a1e79cdb0d",
+    "44a1973b6283f6dc",
+    "45426dd8a51c0483",
+    "4bc42f92cc45edf0",
+    "4fe2645574646262",
+    "60e2173949ea95bd",
+    "714a5b7ef66fe288",
+    "792c881439894964",
+    "7f7fae332d761b7d",
+    "80e66b1185c3e586",
+    "93eb5e0620824fd5",
+    "a2652e2b238f3862",
+    "b218354d54a91ae2",
+    "b45ff17d4282097c",
+    "c70137ed9ec63eb5",
+    "c864eab7d84c648e",
+    "da8e8348f74a4dfd",
+    "e0fcb35af135bb41"
+   ],
+   "R2": [
+    "18442ac87807cd36",
+    "26a5b842b47e6959"
+   ]
+  },
+  "docs/agent-reference/local-env.md": {
+   "R1": [
+    "03102202f0e0d5ca",
+    "03aa712176184b30",
+    "41dce3fac6ed7894",
+    "503e632a3ab754a3",
+    "ac64938c069d6528",
+    "b9f4fbb8d9db8a7c",
+    "dda3345e5ef10b2d",
+    "ef406b438fbc92e5"
+   ],
+   "R11": [
+    "12305a010df20fb7"
+   ],
+   "R18": [
+    "08f8c3c0c6a5303a",
+    "09d1fbef4e4fec85",
+    "1b298f4d92a2b804",
+    "4103eeacc72b01db",
+    "68c530786cf16393",
+    "9f44eeca44f85c0b"
+   ]
+  },
+  "docs/agent-reference/loop-prompt.md": {
+   "R1": [
+    "0a290243d760b717",
+    "6869bbff62cdd75b"
+   ]
+  },
+  "docs/agent-reference/media-assets.md": {
+   "R1": [
+    "2af0902782f531e7",
+    "b3e65248574c118f",
+    "d4055a4bc0297028"
+   ],
+   "R18": [
+    "f7b41b56a27b1a46"
+   ]
+  },
+  "docs/agent-reference/plan-records.md": {
+   "R1": [
+    "ff7188dfd2853742"
+   ]
+  },
+  "docs/agent-reference/release-process.md": {
+   "R11": [
+    "15f18bc07bea891c"
+   ]
+  },
+  "docs/agent-reference/suppressions.md": {
+   "R1": [
+    "146833a5f06b9671",
+    "4957b796118e127e",
+    "4d9e4588e81f8efd",
+    "bde2215c5bbb4cac"
+   ],
+   "R18": [
+    "2b267cc233a46d5e",
+    "98fb84373409f42c",
+    "b5ffbe068ab16241",
+    "e161f06230ca1f61",
+    "e9c344c9ceb8e779"
+   ]
+  },
+  "docs/agent-reference/worklist-v10-brief.md": {
+   "R1": [
+    "3afc937f8ced5fe9"
+   ],
+   "R7": [
+    "c6a6ce584607cc70"
+   ]
+  },
+  "docs/backup-storage/01-verified-context.md": {
+   "R1": [
+    "67b0cedd6206a51a"
+   ]
+  },
+  "docs/backup-storage/06-execution-guide.md": {
+   "R1": [
+    "f823a2157ef2ed85"
+   ]
+  },
+  "docs/backup-storage/07-execution-record.md": {
+   "R1": [
+    "c81089ffc6d319c0",
+    "d031b6871e18e894"
+   ],
+   "R11": [
+    "47d0fa0052cf1ad4",
+    "f667e71336d16d02"
+   ],
+   "R2": [
+    "20555388c0a4d0f2",
+    "6d454390a5cb5ce8"
+   ],
+   "R7": [
+    "18d12a6b7c35f9ff",
+    "726c2e0a3a0a0b74"
+   ]
+  },
+  "docs/backup-storage/08-cutover-runbook.md": {
+   "R1": [
+    "1f7042b82d58ef5e",
+    "2505e4d773a78658",
+    "295caa08a38f9ae0",
+    "3158e443c8176b9a",
+    "54ce8c10d57f296e",
+    "58ca774f081cc79d",
+    "7f1148c70316672b",
+    "dcfc4a11e048a46d"
+   ],
+   "R2": [
+    "ee53c93ed609c1ec"
+   ],
+   "R7": [
+    "e9c7f577473d55bc"
+   ]
+  },
+  "docs/backup-storage/09-local-roundtrip-proof.md": {
+   "R1": [
+    "8743e45a620bc194"
+   ],
+   "R11": [
+    "818bd52e148e6b36"
+   ],
+   "R7": [
+    "bab86e36479f2ab4"
+   ]
+  },
+  "docs/backup-storage/CHECKLIST.md": {
+   "R2": [
+    "e90bedc5b3209114"
+   ]
+  },
+  "docs/backup-storage/PROMPT.md": {
+   "R1": [
+    "9865bc9be56eb0df",
+    "c5c5352c75d5ef6e"
+   ]
+  },
+  "docs/caption-sync-flat-cues.md": {
+   "R1": [
+    "d27103f23308e7ad",
+    "e8d48e59eb04f90a"
+   ],
+   "R2": [
+    "5e10f26b3e996537",
+    "da42e7d2ff63edb7"
+   ]
+  },
+  "docs/ci-overhaul/01-verified-context.md": {
+   "R1": [
+    "19ff820dde117235",
+    "9022b2b6154d7c68",
+    "a1939f3fc5109b23",
+    "a264ac478706c551",
+    "a8f076db30e62d67"
+   ],
+   "R18": [
+    "1fb643093c2b9923",
+    "2ab55616a665094e",
+    "4f1391fd1892872b",
+    "5b9d6722b929bfde",
+    "9c744df9d8e530b1"
+   ],
+   "R2": [
+    "a49eafcd43fac792",
+    "bfee7677aad95f35"
+   ]
+  },
+  "docs/ci-overhaul/02-v1-economics.md": {
+   "R1": [
+    "402e1801e8882aae",
+    "de6c92d131d7230a"
+   ],
+   "R7": [
+    "772b66daeda047e0",
+    "78dafa43816a8179",
+    "addaa4fa6d1d242e"
+   ]
+  },
+  "docs/ci-overhaul/03-v2-autonomy.md": {
+   "R1": [
+    "5f428f2d769b6c6d",
+    "826305f92ce1997b",
+    "8db0f99562cf64fe",
+    "9219766d7b6e8495",
+    "9bf4ba40d823e2e2"
+   ],
+   "R7": [
+    "5aa65d5a568ff4fb"
+   ]
+  },
+  "docs/ci-overhaul/04-decisions.md": {
+   "R1": [
+    "857af46db4720815"
+   ],
+   "R2": [
+    "74bb9b47c85d963f",
+    "ba0684a8d069d9bc",
+    "bae9d05af189aaaf",
+    "c3541e75883cea99",
+    "d0179a0826dc9c85"
+   ],
+   "R7": [
+    "9124bd00c6e74633"
+   ]
+  },
+  "docs/ci-overhaul/05-execution-guide.md": {
+   "R1": [
+    "369c97388c5fa726",
+    "4a5f13706d10dafb",
+    "56a6a1f5a870c848",
+    "573854ef68bbaefa",
+    "5a0196340177a0f3",
+    "6f1cfcc0c36d2fb4",
+    "7d4b990ecd0796f0",
+    "a6deef789c0db1ea",
+    "b3b94338ec6775b7",
+    "c223c1a9291be782",
+    "c397c9d4d91e4b5c",
+    "d67c4006cab7baa9",
+    "edac02d2bec2771b"
+   ],
+   "R11": [
+    "9d3c2a8ef9961757"
+   ]
+  },
+  "docs/ci-overhaul/06-progress.md": {
+   "R1": [
+    "09a91ddd78ec4174",
+    "0d2bc44c07676690",
+    "117774a54533f775",
+    "2420681dea5d5df1",
+    "374684ce9c37c9d4",
+    "381edb9a404dad6f",
+    "41c07fe23179dcbb",
+    "42cd68b227ec5659",
+    "46657d71c4c2c737",
+    "54a06d1cf5d34453",
+    "6f30f5e959e2c62a",
+    "747b0e2931aaf373",
+    "792cda47823e06f8",
+    "7dfa97990d8aa336",
+    "8bf567e508a3339e",
+    "9afa5533d8aceee2",
+    "b236b90c758d97f7",
+    "b554522bcf1d4e1d",
+    "ba72693165801c5e",
+    "f14e1b859aa2b31b",
+    "f7094a2e97dd76f8"
+   ],
+   "R11": [
+    "0f4751e117bb0343",
+    "65593cd9aee9eb68",
+    "badff20f357dee75",
+    "bb1e87e8a76cc4f1",
+    "bfa762ee70f7742f",
+    "de9e6b081ea590bc"
+   ],
+   "R18": [
+    "15bc6fe0c5ffa5e0"
+   ],
+   "R2": [
+    "0379c1c0b3cea527",
+    "05a3cdab15fe020c",
+    "0c60835b2c35eaf7",
+    "13aec3691ff8fc9c",
+    "440af9a88750d0f6",
+    "453c995decc3ea13",
+    "593d5763b5c67fbe",
+    "59ae9c7b86971afa",
+    "608916e5845f0a4b",
+    "7bce415371ce7ae6",
+    "80166e10187ed7d7",
+    "90fa8ce380adc506",
+    "96720827b2a5f034",
+    "9d555c3b2220463c",
+    "a3d2a3838d2bf33d",
+    "aea69133827b76d0",
+    "b3a583541fa976e7",
+    "bd3d1f5a7a057bc2",
+    "d387832821ae47f5",
+    "e711fda628fd52b2"
+   ],
+   "R7": [
+    "10d30a71df217c99",
+    "1ce4c7bf72a68160",
+    "3de0dea78f90764b",
+    "3e8f4db6ff0dd19b",
+    "420668502c299e4f",
+    "485272011de3c282",
+    "4acb459cbf8609de",
+    "5c3dbb6581ca161b",
+    "66ac0335113b4e9f",
+    "68bc94c537c9a3cb",
+    "6bdf68993c290902",
+    "7c815da3c7ba372f",
+    "85a3bc48ff834de4",
+    "908a265940592cd8",
+    "9903cbbc0b2f7a44",
+    "a133cf37c36f9d24",
+    "c1e28dcfe6a5c302",
+    "c50e6327af0ce9d1",
+    "c566f524ce278e61",
+    "cf1b71bfc2d39dce",
+    "da58468e0e03b024",
+    "dd76f6a8bfe57fb1",
+    "e2fc259be30d3e5e",
+    "e868c67617390379",
+    "fb711fe069d23058"
+   ]
+  },
+  "docs/ci-overhaul/07-master-checklist.md": {
+   "R1": [
+    "0755432c4211a3ee",
+    "10ac15f783c43690",
+    "2a34358d3b5e634d",
+    "5ff5c25f2694a374",
+    "8cca0d2e1f60dfe5"
+   ]
+  },
+  "docs/ci-overhaul/07-port-brief.md": {
+   "R1": [
+    "078c979ba821def1",
+    "f5c0a774c68fec83",
+    "f67481ae5f1d7e22"
+   ]
+  },
+  "docs/ci-overhaul/07-tooling-decisions.md": {
+   "R18": [
+    "03308a136e3eba1f",
+    "1022470c282db01e",
+    "11e89c3aeaac60d9",
+    "1ebaefc84b8cf8a6",
+    "368ae691ebddc60b",
+    "38dd646f25384ff9",
+    "39704d76063dddb7",
+    "4f7e0246d256d31d",
+    "5df7df1f16c15e94",
+    "6377cc293e18c1f7",
+    "6787674c489dfbc7",
+    "72818836fb4eb296",
+    "734ef3c350a12fd8",
+    "8482dd28ecb9c1e3",
+    "911838d2ea61af33",
+    "9362fd6f5d4c4aea",
+    "94a75631afa91a13",
+    "a89018a4f2fa9e8e",
+    "b91d1ba83bf1a071",
+    "c101a2ad35af1a66",
+    "d0a038cc2299126f",
+    "dbc2db3e62067bc1",
+    "e0681db5c2e4be35",
+    "e0889bae1ebe49d2",
+    "ea531edc1a569025",
+    "f5be7fc4b478c00c"
+   ],
+   "R2": [
+    "71dad5744ead5563"
+   ]
+  },
+  "docs/ci-overhaul/08-driver-contract.md": {
+   "R1": [
+    "841be1bce3d86261",
+    "aebc51e76e3b79be",
+    "cd63585ee42a0fa9"
+   ]
+  },
+  "docs/ci-overhaul/09-env-residue.md": {
+   "R2": [
+    "af687766f27c41a9"
+   ]
+  },
+  "docs/ci-overhaul/10-ci-port-baseline.md": {
+   "R1": [
+    "316e150dd163624b"
+   ]
+  },
+  "docs/ci-overhaul/11-timing-baseline.md": {
+   "R11": [
+    "a5bcda0feddc52e4"
+   ],
+   "R2": [
+    "fcb86c4f96edf8ec"
+   ]
+  },
+  "docs/ci-overhaul/12-remaining-work.md": {
+   "R1": [
+    "be6880b06b22978f",
+    "e42d9d3768a3d3ef"
+   ],
+   "R7": [
+    "0800857ee36b41fd",
+    "a7178a6b48a0ef26"
+   ]
+  },
+  "docs/ci-overhaul/12-w3-timing-contract.md": {
+   "R1": [
+    "4f11d3c04b402b5f",
+    "e03c23f4ec45484d"
+   ]
+  },
+  "docs/ci-overhaul/PROMPT.md": {
+   "R1": [
+    "0e08f6c91f1c17e2",
+    "351583c7ba065b7b",
+    "3d030060d287ba24",
+    "4a21c3f66bdc6962",
+    "4d6bd9960a759c9d",
+    "98342145f4dafc0a",
+    "e2c291eb68a6a4c1"
+   ]
+  },
+  "docs/ci-overhaul/README.md": {
+   "R1": [
+    "2238c6c9c315e15c",
+    "28bee2d80a55cac3",
+    "2a17342daf02c217",
+    "38ddc36501418de5",
+    "556e62e12b458f7c",
+    "bae093966e15f179",
+    "e224db47c93aa513"
+   ]
+  },
+  "docs/ci-overhaul/spike-s1-s2.md": {
+   "R2": [
+    "02d8136f3ada7e20",
+    "8ae62efeaaa1c304",
+    "ed2421650f966170"
+   ]
+  },
+  "docs/code-signing-guide.md": {
+   "R1": [
+    "0b67a8075e27e8fd",
+    "116cde737808da94",
+    "49f168af0a374618",
+    "6a96afb2456278e4",
+    "9f678c477d266bde",
+    "aa50e4d37b67333a",
+    "bd15e6eea03ee3b8",
+    "c6eb6e0bbdea1702"
+   ]
+  },
+  "docs/config-universe-follow-up/02-licensing-design.md": {
+   "R11": [
+    "0733de61cd111fac"
+   ]
+  },
+  "docs/config-universe-follow-up/03-testing-pillar.md": {
+   "R1": [
+    "5b904b41d0dc2156"
+   ],
+   "R11": [
+    "b9934853c0159158"
+   ]
+  },
+  "docs/config-universe-follow-up/04-integration-contracts.md": {
+   "R7": [
+    "375da4402ea85dde"
+   ]
+  },
+  "docs/config-universe-follow-up/06-tier-proposal.md": {
+   "R1": [
+    "159c7add7b718830",
+    "37f8f1da4b74a421",
+    "69a46433e1dc1971"
+   ],
+   "R18": [
+    "8739d96ec3e4e92b"
+   ],
+   "R2": [
+    "bbd3bbce31c68596"
+   ]
+  },
+  "docs/config-universe-follow-up/README.md": {
+   "R1": [
+    "96c3faf08a4d7b7c"
+   ]
+  },
+  "docs/design/01-current-architecture.md": {
+   "R18": [
+    "9865d67beea97337"
+   ]
+  },
+  "docs/design/02-target-architecture.md": {
+   "R7": [
+    "f548bd7437ef22f9"
+   ]
+  },
+  "docs/design/03-fork-attach-snapshots.md": {
+   "R1": [
+    "580c4bb5877077e3"
+   ]
+  },
+  "docs/design/04-cluster-fork-migrate.md": {
+   "R7": [
+    "b7fd4142f3dd2b4c"
+   ]
+  },
+  "docs/design/05-feature-layer.md": {
+   "R1": [
+    "346f0297e2fa5b67"
+   ],
+   "R7": [
+    "f525cfa70dfad583"
+   ]
+  },
+  "docs/design/06-cli-reshape.md": {
+   "R1": [
+    "34fdb2cd8d30d094",
+    "d07c2e9f841ee213",
+    "d49abf016ae07ae2"
+   ],
+   "R18": [
+    "2f069301b0105117",
+    "561a2e74fe2e7d21",
+    "832d5e7ee4cc3ad8",
+    "b7972ab4b25d0c51"
+   ],
+   "R2": [
+    "c8ccfbba1d7d246c"
+   ],
+   "R7": [
+    "82f6a79dccdcbc35",
+    "b32fb750747bc0b1"
+   ]
+  },
+  "docs/design/07-examples-and-ci.md": {
+   "R18": [
+    "f934601e6f6846b9"
+   ],
+   "R7": [
+    "d160f64355578d6f"
+   ]
+  },
+  "docs/design/09-implementation-phases.md": {
+   "R1": [
+    "07f55ba42379eff7"
+   ],
+   "R18": [
+    "df76c4b13ec8cc49"
+   ],
+   "R7": [
+    "0b2d2db809816b6a",
+    "5e1b0e8fd5a12bf8"
+   ]
+  },
+  "docs/design/README.md": {
+   "R1": [
+    "76b439185c33ffc4"
+   ],
+   "R18": [
+    "368514344b7cf992",
+    "69bbd4d2599ed4eb"
+   ]
+  },
+  "docs/design/spec/00-gate-review.md": {
+   "R11": [
+    "91d81790a2aebe74"
+   ]
+  },
+  "docs/design/spec/01-renet-packages.md": {
+   "R1": [
+    "426943ec379f3cf2"
+   ],
+   "R18": [
+    "02a877229c83d3cd",
+    "0663b02a9f5a171b",
+    "0ac061c2955e2eab",
+    "4e5280b1164d912c",
+    "5846738f659c6bd7",
+    "7f762967cc713a78",
+    "89fafb6b4f0b861a",
+    "baf2edb6723f4c1e",
+    "d2c387dc7386e06a",
+    "f2ede02e5d73d5ce",
+    "fbbc1bac10d6156c"
+   ],
+   "R7": [
+    "51a4ef401857186c"
+   ]
+  },
+  "docs/design/spec/02-reporuntime-contract.md": {
+   "R18": [
+    "00005bd5fcda5e92",
+    "18bcb6450390b446",
+    "2ba786baa428e4fb",
+    "364075617d976b7d",
+    "52fa47ca2ef5a855",
+    "6932f1cd7292969d",
+    "83e8ba2a44cc5986",
+    "898e258201308098",
+    "8a1966b6fc024959",
+    "a1c51d4a9c3cad5c",
+    "ac68c0f398f8dbea",
+    "b1c6e2325739624d",
+    "c538287f90b4eb49",
+    "d3642f793ec53aae",
+    "df6e51a95987ef53",
+    "df9b106917d7b88f"
+   ],
+   "R7": [
+    "07adb6a95103c1ba",
+    "39656321f12d9668"
+   ]
+  },
+  "docs/design/spec/03-cli-contracts.md": {
+   "R1": [
+    "043ceb1949782cf4",
+    "19f7cae07215a098",
+    "475b8313e3f26b0f",
+    "4b7f338122f3c30e",
+    "73ef9bf740914f30",
+    "87e9a9163ee051d7",
+    "8b911d4d4aed2bdb",
+    "8f3cbe39731b9a09",
+    "95d47b162b28cb29",
+    "bb19438a2aa79fd7",
+    "c9108b91372e6dbc",
+    "c914d40508074b03",
+    "e5df6d29d8560d84",
+    "eb137609f47a2a0a",
+    "f0acd216f5d944b4",
+    "fb45e58af39bf7dc"
+   ],
+   "R18": [
+    "023bd798aaee326a",
+    "1414f71aa86cbf0b",
+    "1a68a2c46cdca96a",
+    "4fbcfceafb9b0e37",
+    "5919d6e56fba5819",
+    "70660e826cc764b1",
+    "82d496b1d53dd82a",
+    "912c8aea2ef91252",
+    "a86c1e91725f902a",
+    "b0d82e633139a02e",
+    "bb2c5bc1d01508d0",
+    "c403838d914bd153",
+    "f1d21541013380f5",
+    "f6c9eaf288b0eff4"
+   ],
+   "R7": [
+    "08415fc46ad80a0f",
+    "1a3dcd4b39727414",
+    "2fb898fb5b1b173f",
+    "9a9b2d3c192de059",
+    "a9d05233a22e2742",
+    "bd72781ae675f2d8",
+    "dbe4ec8949d5751a"
+   ]
+  },
+  "docs/design/spec/04-config-schema-v3.md": {
+   "R11": [
+    "c0f74a69cc267728"
+   ],
+   "R7": [
+    "ab5217b7579807f4"
+   ]
+  },
+  "docs/design/spec/05-k8s-templates-and-fork-hygiene.md": {
+   "R7": [
+    "c5a21746ef9bd899"
+   ]
+  },
+  "docs/design/spec/07-p1-gate-review.md": {
+   "R18": [
+    "3387def68265ef09",
+    "50984910235625f5",
+    "65147bbf7ed5dbff",
+    "65e6121b073fca1f",
+    "7cafc4d4892a65e1",
+    "92b8218778dec643",
+    "9e769fb5a981462e",
+    "c13aab2cfa1113da",
+    "c716cb3cb51c13e8",
+    "e1ef7d7b208f1964",
+    "e9c713abab47560c"
+   ],
+   "R2": [
+    "139171288c00125d",
+    "836fad720bd11b3e",
+    "dd75e6d1a4459b0e",
+    "f879102059b7df51"
+   ]
+  },
+  "docs/design/spec/08-p2-gate-review.md": {
+   "R18": [
+    "01f359c5f0cd613a",
+    "0f2313495d307f4d",
+    "1d5ae8724f0993c1",
+    "316b3a825398df26",
+    "35a5e872749446a6",
+    "56c05787864c7e83",
+    "66026435f061b2f6",
+    "b8ca0cb51221b622",
+    "fc266bcdd0b2421c"
+   ],
+   "R2": [
+    "0515465ce6e352f8",
+    "15ca8bb8dc70037d",
+    "5a1a671b03b5e197",
+    "7820e48531b0109c",
+    "af1804cff6c62cba",
+    "bda91bf7cc9091c9",
+    "cc99ae362af97fa0",
+    "cdf322be892c5a9e",
+    "fe0da8c37f2a2dbb"
+   ],
+   "R7": [
+    "fc1d21a3571bc90e"
+   ]
+  },
+  "docs/design/spec/10-p3-gate-review.md": {
+   "R18": [
+    "00ca656bbd1fe27f",
+    "1702ff3eb0a3c702",
+    "22d92f8163929564",
+    "260cf6e612e856b4",
+    "3a120725dd7f447c",
+    "4f9d68509dac3399",
+    "52c0a52a24e8d0a8",
+    "5f2f1bcfd054529d",
+    "71a62befc8b4b45a",
+    "755da1e7620b4e94",
+    "a62bdf833d50c92c",
+    "a87e35adbbccbf67",
+    "b2f2f62c7c82ed94",
+    "c03eda1d73d34fab",
+    "c2084bfb488a4582",
+    "c2c3a4a46301e2b8",
+    "c64b6b467a6ec0db",
+    "f9f6d4f5a5b3d549",
+    "fe33ea149bcce3d4"
+   ],
+   "R2": [
+    "0b58bf350a68e805",
+    "1f283b6a9da77ca6",
+    "2ab34055713f3428",
+    "3943379010f06a15",
+    "4de71e6cafa06c1e",
+    "644e98adb978e779",
+    "65bf14b28045b02b",
+    "70de2cae243022ca",
+    "7272f8100f2af645",
+    "766de96139886826",
+    "9048049e914031c0",
+    "b4b0b1ca0beeeaa5",
+    "b6523107b19a0864",
+    "e3fbfcf50e87f5c8",
+    "f083f7a1a60e2540"
+   ],
+   "R7": [
+    "a531b10a29a509f9",
+    "e5e6ca5b02a67d1d"
+   ]
+  },
+  "docs/design/spec/11-p4-gate-review.md": {
+   "R1": [
+    "c083b04eaf0df494",
+    "dabf5053d041e274",
+    "f5795ae4d8326d86"
+   ],
+   "R2": [
+    "07362085c5972cd3",
+    "08ab375e0f6d6d3d",
+    "12f55a53a917f0fc",
+    "1401092587a6ad44",
+    "173535a0d7b57bd0",
+    "2b49a5cefd4d173c",
+    "32fe6051d8156135",
+    "3861c779b58d9484",
+    "3a9bfcec4da9193a",
+    "4c6ca61c0dcd8e1c",
+    "525a5d5f7636697e",
+    "5748b412f3f5c081",
+    "5bac42208fa03e45",
+    "5c3d7945c319e227",
+    "642f236bbe4b971e",
+    "6656d5c2306c207e",
+    "710052f8cec394df",
+    "7133d09d9452f163",
+    "8141ead188796d60",
+    "8178d93ccc3f28f1",
+    "8d624692ef1c98ff",
+    "94455260d320ad07",
+    "95898e6a9572fc70",
+    "be804e48056dfc7e",
+    "c5d921b4ec031fa9",
+    "c7ba7ae8ce50e7e8",
+    "cc2d1ca6299c826c",
+    "ccabb3f7fa36628f",
+    "df92776483a660a5",
+    "e138e87f0a24102a",
+    "e66b0d43b6e6f9a0",
+    "e691b8ab4ea6ee31",
+    "ea291ac12a755e94",
+    "f11706d4484494a9",
+    "f1efe395371db709"
+   ]
+  },
+  "docs/design/spec/12-carried-debt.md": {
+   "R1": [
+    "3fb3e9cbe224db0b",
+    "529a7c840b791ea7",
+    "7abad7a356bb36a4",
+    "7f675beb8e99f63f",
+    "8a021b4bfdd0e667",
+    "c846d8492b8c3bd7",
+    "c9ece7f65870c3bf",
+    "cc3dc09552662494",
+    "ceb1102e250d2817",
+    "d38006273c7c25f9",
+    "dfb5297de27f159d",
+    "e66bde9c63a3c4d8",
+    "ea733870f221b5ba"
+   ],
+   "R11": [
+    "e60b7c8401da3be0"
+   ],
+   "R18": [
+    "0aa626acc0e8714c",
+    "1461ed1887a2ba1c",
+    "241b1438f2879d69",
+    "358445e93f54668f",
+    "38e7de4ed053aa70",
+    "3a0ca6c73a4847aa",
+    "48788a0fed2c632b",
+    "8fb1e36318f4afdd",
+    "9ec6dca89cbcc2b1",
+    "a6192561d2f83518",
+    "bab0509923b0a586",
+    "c73c0d99376bc4c4",
+    "e2f717a39d73d708"
+   ],
+   "R2": [
+    "2303ce24ad9acdaf",
+    "4abec8667ecb813b",
+    "5241b3627419a185",
+    "8f44507d01d318e8",
+    "c05f59b3bfaa6ccb",
+    "cdd55b6b6a493942"
+   ],
+   "R7": [
+    "29efab966522d4ab",
+    "94404d521d6dda97",
+    "b9864019ceb97436",
+    "c99f6dbc0e61da15"
+   ]
+  },
+  "docs/design/spec/13-wave2-ledger.md": {
+   "R1": [
+    "ae9a1e6b783a5173"
+   ],
+   "R18": [
+    "50f29599c5fc00fe",
+    "c2d311881007d374"
+   ]
+  },
+  "docs/dev-environments.md": {
+   "R1": [
+    "90658f05fd71902d",
+    "ae848df0a5c47e81",
+    "d5de5db472fad944"
+   ],
+   "R2": [
+    "39f05e1f2ba080fa",
+    "5803664dc401fbab",
+    "73d84b6916ae8a6c"
+   ]
+  },
+  "docs/environment-variables.md": {
+   "R1": [
+    "f3fcab4f252155a9"
+   ]
+  },
+  "docs/i18n/CONVENTIONS.md": {
+   "R1": [
+    "0be58c55c999121b",
+    "4b3f547525106eda"
+   ]
+  },
+  "docs/media-pipeline-parallelism.md": {
+   "R1": [
+    "fb80c1c5af2c5fb2"
+   ],
+   "R7": [
+    "34550d5e6ea9cd73"
+   ]
+  },
+  "docs/observability/architecture.md": {
+   "R18": [
+    "284f650488eaa82f",
+    "af6064e1fd292bc3"
+   ]
+  },
+  "docs/observability/dashboards/platform-overview.md": {
+   "R1": [
+    "cb3673c24c2050f9"
+   ]
+  },
+  "docs/observability/reference/endpoints.md": {
+   "R18": [
+    "fd721410694ee26d"
+   ]
+  },
+  "docs/observability/runbooks/adding-new-signals.md": {
+   "R1": [
+    "04fa4cb1343a5b76",
+    "1477e2421f097136",
+    "1c079cf0d168f39f",
+    "2b2de8a41d40ed02",
+    "2b7b627e8de3829f",
+    "5120368dfa1e52ce",
+    "8e25fc5e7eedc605",
+    "99ab77a4a1b9bdf6",
+    "a0d191a440723552",
+    "ad4e9a94434fc8d0",
+    "d5b6eeaf6b5966c6",
+    "e031c799f82d83ec",
+    "ebd35d8fd3cddf7e",
+    "f410a66a6797fe9b"
+   ]
+  },
+  "docs/observability/runbooks/failed-payments.md": {
+   "R1": [
+    "0e8ee3d590ba817c",
+    "16d6bca654e86ea0",
+    "66efddd13281789a",
+    "6b75311b37833f8b",
+    "b2978a8d3aa90c06",
+    "b2a79461d6583f6c"
+   ]
+  },
+  "docs/observability/runbooks/investigating-errors.md": {
+   "R1": [
+    "09d39170bbc35651",
+    "274be7e44722c5e8",
+    "4404ccd6826e1f8d",
+    "5505f76abd81145f",
+    "78ce6484549fafa1",
+    "9d322b3587c9b82a",
+    "b2191d44772e8765",
+    "ef52f833fe70890d"
+   ],
+   "R18": [
+    "fdc2c5c2f1598bb2"
+   ]
+  },
+  "docs/observability/runbooks/slow-requests.md": {
+   "R1": [
+    "3f4f6f66e195ead0",
+    "5c32050dee901f78",
+    "65153d85c46cc3f0",
+    "7e65f8cccda64842",
+    "9080b52e1e950a25",
+    "c9ba6facdb0bc6b2",
+    "e05daa3679cdc2cf",
+    "ecb5ed5c2a4d39bf",
+    "f3d0a614fb5321ce"
+   ]
+  },
+  "docs/tutorial-render-watch.md": {
+   "R1": [
+    "48685f417d6a2b30"
+   ],
+   "R2": [
+    "b5111f238eb118f4"
+   ]
+  },
+  "eslint-rules/__tests__/config-resolution-differential.mjs": {
+   "R2": [
+    "e657f5095a925142"
+   ]
+  },
+  "eslint-rules/__tests__/no-empty-translations.spec.js": {
+   "R7": [
+    "35fa20fe960cdd21"
+   ]
+  },
+  "eslint-rules/__tests__/sorted-keys.spec.js": {
+   "R7": [
+    "23b231859e58ba3d"
+   ]
+  },
+  "eslint-rules/i18n/no-positional-cli-syntax.js": {
+   "R1": [
+    "c13a3320052312de"
+   ],
+   "R7": [
+    "78ffcef8a20ff117"
+   ]
+  },
+  "eslint-rules/lib/cli-exempt-lists.js": {
+   "R1": [
+    "a19deae06e181750"
+   ]
+  },
+  "eslint-rules/no-positional-cli-syntax-source.js": {
+   "R1": [
+    "fadf3f618efab2b1"
+   ]
+  },
+  "eslint-rules/require-translation-key-arg.js": {
+   "R1": [
+    "4fd3886dddbaa7bc"
+   ]
+  },
+  "eslint-rules/seo-no-trailing-slash-internal-link.js": {
+   "R1": [
+    "51465c129f7706b1"
+   ]
+  },
+  "eslint.config.js": {
+   "R1": [
+    "8563492631c7bfe9"
+   ]
+  },
+  "eslint.config/ignores.js": {
+   "R7": [
+    "9c58b61ca46cd593"
+   ]
+  },
+  "packages/cli/scripts/lib/option-classification.ts": {
+   "R7": [
+    "10340f828f17f8ef",
+    "7cd913fee4f518e5",
+    "e71c3ca7cdb26c6a"
+   ]
+  },
+  "packages/cli/src/adapters/config-field-crypto.ts": {
+   "R7": [
+    "4aae6d3bd4582ebe"
+   ]
+  },
+  "packages/cli/src/commands/__tests__/backup-strategy.test.ts": {
+   "R7": [
+    "af848ab9f02d0aa1",
+    "b30e56a225344864"
+   ]
+  },
+  "packages/cli/src/commands/__tests__/datastore-relocate.test.ts": {
+   "R7": [
+    "27ef234cbe4a9991"
+   ]
+  },
+  "packages/cli/src/commands/__tests__/machine-status-storage.test.ts": {
+   "R1": [
+    "4c8ffedeb1fd8b53"
+   ]
+  },
+  "packages/cli/src/commands/__tests__/repo-maintenance-datastore.test.ts": {
+   "R7": [
+    "a943082e9831dbdf"
+   ]
+  },
+  "packages/cli/src/commands/backup-strategy.ts": {
+   "R1": [
+    "5c5d0c8d1f1f2bf9",
+    "5f9c130f3eff68ef",
+    "7ec8bfff0d77872c"
+   ]
+  },
+  "packages/cli/src/commands/datastore.ts": {
+   "R1": [
+    "c40bf0be819c009b",
+    "e1c2a8ca99bb65a5"
+   ],
+   "R7": [
+    "586028193ea86787"
+   ]
+  },
+  "packages/cli/src/commands/job.ts": {
+   "R1": [
+    "21053aea466fc1a6",
+    "a3ae17c0bf1d4678"
+   ]
+  },
+  "packages/cli/src/commands/repo-backup-list.ts": {
+   "R1": [
+    "731fd14be83010a0"
+   ]
+  },
+  "packages/cli/src/commands/repo-container.ts": {
+   "R1": [
+    "cfd44b41cb4463f3"
+   ]
+  },
+  "packages/cli/src/commands/repo-maintenance.ts": {
+   "R7": [
+    "5b31ce9ad73fc7c2"
+   ]
+  },
+  "packages/cli/src/commands/repo-push-stats.ts": {
+   "R2": [
+    "9ba1680b85a4ef95",
+    "add7c9b32188fd2e"
+   ]
+  },
+  "packages/cli/src/commands/repo-secret.ts": {
+   "R1": [
+    "4391b719076c76a2"
+   ],
+   "R2": [
+    "1e62ce223bbe4a3c"
+   ]
+  },
+  "packages/cli/src/commands/repo.ts": {
+   "R7": [
+    "b37ad1f778465d76"
+   ]
+  },
+  "packages/cli/src/config/__tests__/plane-coverage.test.ts": {
+   "R1": [
+    "b25a6b75b3513a09"
+   ]
+  },
+  "packages/cli/src/config/command-metadata.ts": {
+   "R2": [
+    "01f57ae4d3f6017d",
+    "14b02ea17cc2d3fa",
+    "4ce2ccaec2ff05c6",
+    "773557041c3363fd",
+    "d427acc068b7da4e"
+   ]
+  },
+  "packages/cli/src/remote/vscode/executable.ts": {
+   "R1": [
+    "018e3b2880e039b8",
+    "58071419018f4258"
+   ]
+  },
+  "packages/cli/src/services/__tests__/config-prune-orphan-repos.test.ts": {
+   "R2": [
+    "8839434498b817c2"
+   ]
+  },
+  "packages/cli/src/services/__tests__/config-strategy-binding.test.ts": {
+   "R7": [
+    "c852687fff40f93c"
+   ]
+  },
+  "packages/cli/src/services/__tests__/local-executor.test.ts": {
+   "R7": [
+    "78b39ce9c6414208"
+   ]
+  },
+  "packages/cli/src/services/account/account-client.ts": {
+   "R1": [
+    "39b8d892ec3a5780"
+   ]
+  },
+  "packages/cli/src/services/account/license.ts": {
+   "R7": [
+    "7370d5043deecc1e"
+   ]
+  },
+  "packages/cli/src/services/backup/backup-schedule-reconcile.ts": {
+   "R7": [
+    "8062906c7d2767bd"
+   ]
+  },
+  "packages/cli/src/services/backup/backup-schedule-unit-generator.ts": {
+   "R7": [
+    "f5a9726a71818801"
+   ]
+  },
+  "packages/cli/src/services/backup/backup-schedule.ts": {
+   "R7": [
+    "4b26b74817b94f77"
+   ]
+  },
+  "packages/cli/src/services/cluster/__tests__/repo-replicate.test.ts": {
+   "R7": [
+    "75d37828c0ca4528"
+   ]
+  },
+  "packages/cli/src/services/cluster/cluster-fork.ts": {
+   "R1": [
+    "c40a6c20139d7000"
+   ],
+   "R7": [
+    "e816402a8f228f88"
+   ]
+  },
+  "packages/cli/src/services/cluster/kvm-topology.ts": {
+   "R7": [
+    "beed67c023ced492"
+   ]
+  },
+  "packages/cli/src/services/cluster/repo-replicate.ts": {
+   "R1": [
+    "9624da4b31c541a8"
+   ],
+   "R7": [
+    "1624677262351de6"
+   ]
+  },
+  "packages/cli/src/services/config/config-datastores.ts": {
+   "R1": [
+    "ba9b7cc57dccd58f"
+   ]
+  },
+  "packages/cli/src/services/config/resource-state.ts": {
+   "R7": [
+    "f9de764e9849171f"
+   ]
+  },
+  "packages/cli/src/services/core/audit.ts": {
+   "R7": [
+    "cdbaea5f99e307ae"
+   ]
+  },
+  "packages/cli/src/services/core/mutation-gate.ts": {
+   "R2": [
+    "7bc01db9543641cb"
+   ]
+  },
+  "packages/cli/src/services/executor/__tests__/background-flag.test.ts": {
+   "R7": [
+    "9ce99d1da824b91e"
+   ]
+  },
+  "packages/cli/src/services/executor/daemon/lifecycle.ts": {
+   "R7": [
+    "69978b1f3e166a88"
+   ]
+  },
+  "packages/cli/src/services/executor/job-client.ts": {
+   "R2": [
+    "0bd32f00091e63c9",
+    "4edfd766056e5cee",
+    "cf44ec06d725b5c5"
+   ],
+   "R7": [
+    "b56b8b47fa0aef93"
+   ]
+  },
+  "packages/cli/src/services/executor/job-remote.ts": {
+   "R1": [
+    "905437b2dc8f4e86"
+   ]
+  },
+  "packages/cli/src/services/executor/local-executor.ts": {
+   "R1": [
+    "c34140d39932bab7"
+   ],
+   "R2": [
+    "c1c79ecf40261934",
+    "f844d21d694b640d"
+   ],
+   "R7": [
+    "03c66343696e4d9e",
+    "7578e5b9cf21e839",
+    "7e6fe8ea63d8f815"
+   ]
+  },
+  "packages/cli/src/services/executor/output-lines.ts": {
+   "R7": [
+    "2e396ec65e6abe2a"
+   ]
+  },
+  "packages/cli/src/services/executor/proxy-command.ts": {
+   "R1": [
+    "6c59cc4cbf766fef"
+   ]
+  },
+  "packages/cli/src/services/executor/types.ts": {
+   "R7": [
+    "18293bc2abf32d7b"
+   ]
+  },
+  "packages/cli/src/services/renet/provision-state.ts": {
+   "R1": [
+    "047aa4eebfc2290a"
+   ]
+  },
+  "packages/cli/src/services/renet/renet-license-contract.ts": {
+   "R1": [
+    "33579ed036306f9b"
+   ]
+  },
+  "packages/cli/src/services/serve/policy.ts": {
+   "R2": [
+    "c74fcc61789fe6cd"
+   ]
+  },
+  "packages/cli/src/services/serve/sessions.ts": {
+   "R1": [
+    "e769004d70eb6e4d"
+   ]
+  },
+  "packages/cli/src/services/tofu/provider-resolver.ts": {
+   "R7": [
+    "6c117826b55c6366"
+   ]
+  },
+  "packages/cli/src/utils/errors.ts": {
+   "R1": [
+    "6650b5964ae2371b"
+   ]
+  },
+  "packages/cli/src/utils/platform.ts": {
+   "R7": [
+    "acade7384b14166f"
+   ]
+  },
+  "packages/cli/src/utils/secure-storage.ts": {
+   "R2": [
+    "42a9a2e79f1b3a93",
+    "d9608c68d6377bfa"
+   ],
+   "R7": [
+    "7821f036ce23f82f"
+   ]
+  },
+  "packages/e2e-tests/README.md": {
+   "R11": [
+    "df5e34f5baf4ca9b"
+   ],
+   "R7": [
+    "9098f5c182220664"
+   ]
+  },
+  "packages/e2e-tests/playwright.ceph-workers.config.ts": {
+   "R1": [
+    "660e9d460aed8992"
+   ]
+  },
+  "packages/e2e-tests/playwright.ceph.config.ts": {
+   "R1": [
+    "ea5577c519a5d28c"
+   ]
+  },
+  "packages/e2e-tests/playwright.config.ts": {
+   "R1": [
+    "bb5dff42e1d296fb"
+   ],
+   "R7": [
+    "d525eab40aee4382"
+   ]
+  },
+  "packages/e2e-tests/playwright.image.config.ts": {
+   "R1": [
+    "289339c1811cd330"
+   ]
+  },
+  "packages/e2e-tests/src/utils/backupStorage.ts": {
+   "R7": [
+    "587a822182f6bff6",
+    "e1222eea7420b578"
+   ]
+  },
+  "packages/e2e-tests/src/utils/bridge/BridgeTestRunner.ts": {
+   "R2": [
+    "66b2f4e18d830042"
+   ]
+  },
+  "packages/e2e-tests/src/utils/bridge/__tests__/describeExecFailure.test.ts": {
+   "R7": [
+    "d7f0fcad90f6b471"
+   ]
+  },
+  "packages/e2e-tests/tests/03-datastore-lifecycle.test.ts": {
+   "R1": [
+    "394a66f71e030baa",
+    "90da2bd2a0e89dcd"
+   ],
+   "R2": [
+    "a2f92767e2c4ba7a"
+   ]
+  },
+  "packages/e2e-tests/tests/18-ops-workflow.test.ts": {
+   "R2": [
+    "2299c0656d25a2b7"
+   ]
+  },
+  "packages/e2e-tests/tests/25-backup-chunk-store.test.ts": {
+   "R2": [
+    "5b803b8ddf11bfe6"
+   ],
+   "R7": [
+    "fcfc1e95a57b188c"
+   ]
+  },
+  "packages/e2e-tests/tests/kube/15-k8s-repo.test.ts": {
+   "R7": [
+    "0bc16a2775f51fe2",
+    "0ff22b830233b76b"
+   ]
+  },
+  "packages/e2e-tests/tests/kube/16-datastore-cluster.test.ts": {
+   "R7": [
+    "1fac0f358b513d7f",
+    "49707151b5c4e398"
+   ]
+  },
+  "packages/e2e-tests/tests/migrate/18-dual-group-migrate.test.ts": {
+   "R1": [
+    "161278485b677b7f"
+   ]
+  },
+  "packages/json/templates/analytics/plausible/README.md": {
+   "R1": [
+    "0a2bd9f8dd2d01f4",
+    "0f138cc93823e898",
+    "1df359f0c3ae086a",
+    "4b2d46471977a80b",
+    "4bfd6c883ae3cd13",
+    "a8d0e296772b8994",
+    "f90ce093039faea3"
+   ]
+  },
+  "packages/json/templates/automation/n8n/README.md": {
+   "R2": [
+    "a822ff853387b679"
+   ]
+  },
+  "packages/json/templates/messaging/docker-mailserver/README.md": {
+   "R1": [
+    "72d41e0e16e21e73",
+    "866e0cf825a25451",
+    "a9cb8a289bfaa85b"
+   ]
+  },
+  "packages/json/templates/messaging/listmonk/README.md": {
+   "R1": [
+    "187c73a8b1ce8a15",
+    "3d7e8e12448673d0",
+    "d6944ded820e2f53"
+   ]
+  },
+  "packages/json/templates/monitoring/heartbeat/README.md": {
+   "R1": [
+    "4357f877cb937b21",
+    "94c64c637c22cccc"
+   ]
+  },
+  "packages/json/templates/platforms/wordpress/README.md": {
+   "R1": [
+    "3f23cb674ab657f4"
+   ]
+  },
+  "packages/provisioning/src/ops/OpsManager.ts": {
+   "R1": [
+    "5a9aadd420db5d88"
+   ]
+  },
+  "packages/provisioning/src/ops/OpsVMLifecycle.ts": {
+   "R7": [
+    "72b8e69f0e0c0827"
+   ]
+  },
+  "packages/provisioning/src/renet/RenetResolver.ts": {
+   "R1": [
+    "651ae6b3494c7d84"
+   ]
+  },
+  "packages/provisioning/src/renet/renetPath.ts": {
+   "R1": [
+    "67764caac6eeff24"
+   ]
+  },
+  "packages/provisioning/src/ssh/SSHExecutor.ts": {
+   "R1": [
+    "36913cd7741905a0"
+   ]
+  },
+  "packages/provisioning/src/ssh/sshConfig.ts": {
+   "R1": [
+    "ed4fbbf9b29b4575"
+   ]
+  },
+  "packages/shared/src/audit/event-schema.ts": {
+   "R7": [
+    "f7c190fcad9f7079"
+   ]
+  },
+  "packages/shared/src/cli-contract/__tests__/contract.test.ts": {
+   "R7": [
+    "281c68322542cdff",
+    "7f6554af9e735e8b"
+   ]
+  },
+  "packages/shared/src/cli-contract/types.ts": {
+   "R7": [
+    "dc2be1de1b8cb030"
+   ]
+  },
+  "packages/shared/src/cli-contract/validation.ts": {
+   "R7": [
+    "10bc4a170c6fb9d0",
+    "10f65d1bd85ed450"
+   ]
+  },
+  "packages/shared/src/config-crypto/__tests__/golden.test.ts": {
+   "R2": [
+    "baf014dddaa970d9"
+   ]
+  },
+  "packages/shared/src/config-crypto/__tests__/slots.test.ts": {
+   "R2": [
+    "267407672bf22fa6"
+   ]
+  },
+  "packages/shared/src/config-crypto/constants.ts": {
+   "R7": [
+    "1ca17a1dbe8b5c2b"
+   ]
+  },
+  "packages/shared/src/config-crypto/slots.ts": {
+   "R2": [
+    "2e47d174159f81ab",
+    "a802e543ce971a63"
+   ]
+  },
+  "packages/shared/src/config-schema/__tests__/undefined-keys.test.ts": {
+   "R1": [
+    "ecd57ce3ee4c85fa"
+   ]
+  },
+  "packages/shared/src/config-schema/coverage.ts": {
+   "R7": [
+    "16c3abe1e0c1ae38"
+   ]
+  },
+  "packages/shared/src/config-schema/schemas.ts": {
+   "R7": [
+    "49d2141c92213b6b"
+   ]
+  },
+  "packages/shared/src/config-schema/state-schema.ts": {
+   "R1": [
+    "d159a4353ed08eed"
+   ]
+  },
+  "packages/shared/src/config/defaults.ts": {
+   "R7": [
+    "33f8e18a3777ed02",
+    "966830a15d2d2f85"
+   ]
+  },
+  "packages/shared/src/services/machine/__tests__/parsing-health.test.ts": {
+   "R7": [
+    "9842a68e0bdbc0dc"
+   ]
+  },
+  "packages/shared/src/storage-browser/parsers.ts": {
+   "R2": [
+    "6c13da2218ae159d"
+   ]
+  },
+  "packages/shared/src/subscription/delegation-cert-policy.ts": {
+   "R1": [
+    "c99ba52fe58bf478"
+   ],
+   "R7": [
+    "138bbe73787cd4f9"
+   ]
+  },
+  "packages/shared/src/subscription/renewal-manifest.ts": {
+   "R1": [
+    "d03e450844f15e48"
+   ]
+  },
+  "packages/shared/src/utils/version.ts": {
+   "R2": [
+    "4467927f96cfd5d5"
+   ]
+  },
+  "scripts/ci-runner/lanes.ts": {
+   "R2": [
+    "35b6cee4c1dc30ca"
+   ],
+   "R7": [
+    "ecf81b779d980d13"
+   ]
+  },
+  "scripts/ci-runner/manifest.ts": {
+   "R2": [
+    "404d301e78ec1dac"
+   ],
+   "R7": [
+    "3e5ddd5f65ca2574",
+    "8feaa5e236eea4ce"
+   ]
+  },
+  "scripts/ci-runner/pool.ts": {
+   "R2": [
+    "34193fa253d068d0"
+   ],
+   "R7": [
+    "96f7eb7279f6298e"
+   ]
+  },
+  "scripts/ci-runner/report.ts": {
+   "R1": [
+    "6f5915f241b0fa12"
+   ]
+  },
+  "scripts/ci-runner/run.ts": {
+   "R1": [
+    "34625d3d5615a8b8"
+   ],
+   "R2": [
+    "3f7b97f2a7ba5edc"
+   ],
+   "R7": [
+    "4c57d7ad8724b1b1"
+   ]
+  },
+  "scripts/ci-runner/select.ts": {
+   "R2": [
+    "b2b56628e6287f10"
+   ]
+  },
+  "scripts/dev/SECURITY-HARDENING-SETUP.md": {
+   "R1": [
+    "10e971631838b398",
+    "11fffbd3f41ab079",
+    "c2f4af8f18f33b70"
+   ]
+  },
+  "scripts/dev/secret-rename.py": {
+   "R1": [
+    "3ff3bc81e1d41c47"
+   ],
+   "R7": [
+    "f646b4dd4d374f0e"
+   ]
+  },
+  "scripts/gate-bind.ts": {
+   "R1": [
+    "c7cbab1b79abb331"
+   ],
+   "R2": [
+    "387a94bcbc6c952b",
+    "3f20a3931e47115c"
+   ]
+  },
+  "scripts/gates/check-actions.ts": {
+   "R1": [
+    "e7bfd0ae894bc9f7"
+   ]
+  },
+  "scripts/gates/check-backup-protocol-conformance.ts": {
+   "R7": [
+    "6f16b24149557568"
+   ]
+  },
+  "scripts/gates/check-browser-smoke.ts": {
+   "R7": [
+    "eb7b02e050e41e03"
+   ]
+  },
+  "scripts/gates/check-changed-selection.ts": {
+   "R2": [
+    "859ccb31c685ed76"
+   ]
+  },
+  "scripts/gates/check-ci-fetch-integrity.ts": {
+   "R1": [
+    "7c784259c80cd4b1",
+    "9417de93649038c0"
+   ]
+  },
+  "scripts/gates/check-ci-parity.ts": {
+   "R7": [
+    "5e13104b57780d53",
+    "91946eebd9c170fc"
+   ]
+  },
+  "scripts/gates/check-ci-step-env-parity.ts": {
+   "R1": [
+    "63275611286d1952"
+   ]
+  },
+  "scripts/gates/check-cli-docs.ts": {
+   "R7": [
+    "33ae86e3c7845f19",
+    "6172301bb49e816a",
+    "aa21cd43ed60c0f7"
+   ]
+  },
+  "scripts/gates/check-dead-service-methods.ts": {
+   "R1": [
+    "1366122738e2e017"
+   ]
+  },
+  "scripts/gates/check-deps.ts": {
+   "R2": [
+    "6ddf7535fe4a4c0b"
+   ],
+   "R7": [
+    "fba1627ee135bc31"
+   ]
+  },
+  "scripts/gates/check-doc-region-parity.ts": {
+   "R2": [
+    "1f822ce54714d9de"
+   ]
+  },
+  "scripts/gates/check-docs-structure-parity.ts": {
+   "R7": [
+    "b55c99dd435fe754"
+   ]
+  },
+  "scripts/gates/check-e2e-coverage.ts": {
+   "R7": [
+    "2e97b4f754b4fbee"
+   ]
+  },
+  "scripts/gates/check-e2e-skip-hygiene.ts": {
+   "R7": [
+    "7d8fd775ead3045d"
+   ]
+  },
+  "scripts/gates/check-em-dash-surfaces.ts": {
+   "R7": [
+    "55a09194e3b980d7"
+   ]
+  },
+  "scripts/gates/check-embed-asset-versions.ts": {
+   "R7": [
+    "13519309e243999b"
+   ]
+  },
+  "scripts/gates/check-env-credential-drift.ts": {
+   "R1": [
+    "bd832b027b941561"
+   ],
+   "R7": [
+    "45dd7f4dd095b2ef"
+   ]
+  },
+  "scripts/gates/check-external-links.ts": {
+   "R1": [
+    "3d81c7dd459670f0",
+    "905ec5de0b3530e4",
+    "ee68f1cc0facc2b0"
+   ],
+   "R2": [
+    "fbe7974d6c2349bc"
+   ]
+  },
+  "scripts/gates/check-form-validation.ts": {
+   "R18": [
+    "58043741ad58ad47"
+   ]
+  },
+  "scripts/gates/check-gate-manifest.ts": {
+   "R7": [
+    "f37d6a29aaa71d69",
+    "f47d290673e129c6"
+   ]
+  },
+  "scripts/gates/check-hydration-clean.ts": {
+   "R18": [
+    "ad55b7c1a17fe3e7"
+   ]
+  },
+  "scripts/gates/check-i18n-cross-locale.ts": {
+   "R2": [
+    "2ca23c9ed835d8d1"
+   ],
+   "R7": [
+    "53a069dfce41ef76"
+   ]
+  },
+  "scripts/gates/check-i18n-placeholders.ts": {
+   "R1": [
+    "0b753c56e1336680"
+   ]
+  },
+  "scripts/gates/check-i18n-untranslated.ts": {
+   "R1": [
+    "4a370d4bc3660989"
+   ]
+  },
+  "scripts/gates/check-jq-boolean-default.ts": {
+   "R7": [
+    "f3de94bbdd76eb56"
+   ]
+  },
+  "scripts/gates/check-landmarks.ts": {
+   "R7": [
+    "391c213182930702",
+    "566271994b77bafa"
+   ]
+  },
+  "scripts/gates/check-layout-overflow.ts": {
+   "R18": [
+    "49ad180327b6a956"
+   ]
+  },
+  "scripts/gates/check-locale-de-contamination.ts": {
+   "R7": [
+    "fbc0f8574f6f7b18"
+   ]
+  },
+  "scripts/gates/check-merge-method-prose.ts": {
+   "R7": [
+    "f9e187bc41e32c1c"
+   ]
+  },
+  "scripts/gates/check-native-rebuild.ts": {
+   "R2": [
+    "00f5a0c0b36ad8a5"
+   ],
+   "R7": [
+    "11b0cb72d2b90ba3"
+   ]
+  },
+  "scripts/gates/check-package-key-budget.ts": {
+   "R1": [
+    "ebfdc5cc037d8dfe"
+   ]
+  },
+  "scripts/gates/check-pr-epic-block.ts": {
+   "R7": [
+    "d92bae906c9beb0d"
+   ]
+  },
+  "scripts/gates/check-pr-task-trailers.ts": {
+   "R7": [
+    "256541be64d549eb",
+    "27760c75f975a90c"
+   ]
+  },
+  "scripts/gates/check-pricing-consistency.ts": {
+   "R7": [
+    "c4262c06f76501e7"
+   ]
+  },
+  "scripts/gates/check-quality-complete.ts": {
+   "R7": [
+    "301cd0a4be4720fd"
+   ]
+  },
+  "scripts/gates/check-recovery-context.ts": {
+   "R7": [
+    "ad5afb11923c64fd"
+   ]
+  },
+  "scripts/gates/check-search-index-freshness.ts": {
+   "R7": [
+    "f7130f70f4312ec8"
+   ]
+  },
+  "scripts/gates/check-shape-duplication.ts": {
+   "R1": [
+    "22c15227fae4d82d",
+    "e7cfbfbccb6395af"
+   ]
+  },
+  "scripts/gates/check-shared-constant-duplication.ts": {
+   "R7": [
+    "d67bdf13ce9dbc8b"
+   ]
+  },
+  "scripts/gates/check-skill-size.ts": {
+   "R7": [
+    "132d6e474eaa8a1b"
+   ]
+  },
+  "scripts/gates/check-svg-theme-reach.ts": {
+   "R7": [
+    "5cb7381940306e92",
+    "c1b1392849014e08"
+   ]
+  },
+  "scripts/gates/check-tracked-credentials.ts": {
+   "R2": [
+    "22fd1d1d7f5a25d7"
+   ]
+  },
+  "scripts/gates/check-tutorial-noninteractive.ts": {
+   "R1": [
+    "b1ae4fb9cb05d5d9"
+   ],
+   "R2": [
+    "9a9fedc9a86236c7"
+   ],
+   "R7": [
+    "9f6098be1cc15d8b"
+   ]
+  },
+  "scripts/gen-docs.ts": {
+   "R2": [
+    "78fb6a5bd9aa5cf1"
+   ],
+   "R7": [
+    "d591a107c19d1f01"
+   ]
+  },
+  "scripts/gen/gen-manifest.ts": {
+   "R7": [
+    "b91e0027778b0e17"
+   ]
+  },
+  "scripts/gen/i18n-backfill-commits.ts": {
+   "R7": [
+    "e2e94528b133b881"
+   ]
+  },
+  "scripts/gen/validate-cli-examples.ts": {
+   "R2": [
+    "fabcb2ee6f3269ca"
+   ]
+  },
+  "scripts/lib/controls.ts": {
+   "R1": [
+    "01b45395c2098f01"
+   ]
+  },
+  "scripts/lib/doc-providers.ts": {
+   "R7": [
+    "7047874cece18e6f",
+    "7dda09fcaf4f5ed2",
+    "f4ad397f6163c7a4"
+   ]
+  },
+  "scripts/lib/language-detect.ts": {
+   "R7": [
+    "cdf96b53b8af9a7c"
+   ]
+  },
+  "scripts/lib/positional-cli-detector.ts": {
+   "R7": [
+    "d385e43d4f2b73d0"
+   ]
+  },
+  "scripts/lib/shadow-gate.ts": {
+   "R1": [
+    "100441ebf3211d95",
+    "3e95ec924f213068",
+    "62715206f3a26549",
+    "d72b75988d18c0ad"
+   ]
+  }
+ }
+}

@@ -33,6 +33,8 @@
   ".claude/rediacc_hooks/guards/block_nonstandard_branch_name.py",
   ".claude/rediacc_hooks/guards/block_plan_without_tasks.py",
   ".claude/rediacc_hooks/guards/block_premature_ready.py",
+  ".claude/rediacc_hooks/guards/block_prose_style_commit.py",
+  ".claude/rediacc_hooks/guards/block_prose_style_edit.py",
   ".claude/rediacc_hooks/guards/block_protected_files.py",
   ".claude/rediacc_hooks/guards/block_raw_pr_body_edit.py",
   ".claude/rediacc_hooks/guards/block_roundlog_truncate.py",

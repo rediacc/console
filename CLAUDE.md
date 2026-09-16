@@ -2,9 +2,9 @@
 
 ## Worktree Warning
 
-**CRITICAL: This repo uses git worktrees.** Your working directory (from `pwd`) is the ONLY correct project root. NEVER use paths from other CLAUDE.md files that may appear in the system context — those belong to the main worktree and are a different checkout. All commands (`./run.sh`, `npx tsx`, file paths) MUST use the current working directory, not `/home/muhammed/monorepo/console/`.
+**CRITICAL: This repo uses git worktrees.** The working directory (from `pwd`) is the ONLY correct project root. NEVER use paths from other CLAUDE.md files that may appear in the system context — those belong to the main worktree and are a different checkout. All commands (`./run.sh`, `npx tsx`, file paths) MUST use the current working directory, not `/home/muhammed/monorepo/console/`.
 
-**`git worktree add` is hook-blocked from the assistant's own Bash tool** (`.claude/hooks/pre-bash/block-worktree-add.sh`), unconditionally — the operator runs it themselves via the `!` prefix when they want one created. On top of that hard block: **if a new task starts and no worktree exists yet for its branch, ASK the operator first** (AskUserQuestion) whether to create one, rather than silently working in whatever checkout you're already in. Reserve the ask for genuinely new work; do not re-ask mid-task or for a task that already has an obvious home (e.g. continuing in the checkout you were invoked in). Do not decide either way on your own — this has gone wrong both directions: sessions have created throwaway worktrees the operator didn't want, and sessions have run for a long time directly on `main` in the shared checkout when a dedicated worktree would have kept concurrent sessions' work from colliding.
+**`git worktree add` is hook-blocked from the assistant's own Bash tool** (`.claude/rediacc_hooks/guards/block_worktree_add.py`, chain `pre-bash`), unconditionally — the operator runs it themselves via the `!` prefix when they want one created. **Settled default (2026-09-16): do not ask which checkout new work should happen in.** Continue in whatever checkout the session is already in. A worktree only ever comes from the operator's own `! git worktree add ...`; there is nothing to gain from asking permission for a decision the assistant cannot execute either way. `.claude/rediacc_hooks/guards/block_settled_questions.py` (chain `pre-ask`) refuses a worktree/branch-routing question the same way it refuses a commit-permission question — if the genuine cross-session collision risk needs raising, park it as a worklist `[?]` naming the conflict, with a DEFAULT of "continue here", rather than blocking the turn on a question.
 
 ## Session Defaults
 
@@ -20,7 +20,7 @@ is not approval to commit. (`main` and releases carry stricter rules; see *Never
 
 **And when a PR is asked for: ONE open PR at a time.** New work goes onto the branch of
 the PR that is already open, not into a second one. This is enforced by
-`.claude/hooks/pre-bash/block-second-open-pr.sh` rather than left to memory, because it
+`.claude/rediacc_hooks/guards/block_second_open_pr.py` (chain `pre-bash`) rather than left to memory, because it
 was left to memory once and a single night produced four stacked PRs: each new one was
 individually reasonable, and the pile arrived on the operator, who then had to review and
 merge them in a fixed order. A second PR does not get work finished sooner, it splits one
@@ -30,11 +30,12 @@ say why the work cannot ride the open one.
 This means there is **no safety net**, and the tree usually holds work from other sessions
 and agents:
 
-- Never `git checkout` / `restore` / `stash` / `clean` to undo your own mistake. It
-  deletes uncommitted work, including work that is not yours. Repair forward instead.
-- Prefer targeted edits over scripted bulk rewrites. If you must script one, re-verify the
-  WHOLE file afterward, not just the part you aimed at. A find-and-replace scoped wider
-  than you intended lands in a neighbouring key, function, or file, and your own
+- Never `git checkout` / `restore` / `stash` / `clean` to undo a mistake of this session's
+  own making. It deletes uncommitted work, including work belonging to others. Repair
+  forward instead.
+- Prefer targeted edits over scripted bulk rewrites. When one must be scripted, re-verify
+  the WHOLE file afterward, not just the part it aimed at. A find-and-replace scoped wider
+  than intended lands in a neighbouring key, function, or file, and the session's own
   verification will miss it if it only re-checks the target.
 
 ### 2. Findings are part of the deliverable
@@ -42,19 +43,19 @@ and agents:
 A session is scoped to one ask, but it walks past real defects on the way. Walking past
 them silently is the failure this rule exists to prevent.
 
-- **A workaround is a bug report.** If you route around something (a command that prints
-  nothing, a flag that misbehaves, an error that explains nothing), you have found a
-  defect. Say so, with the exact command and the exact output. Do not quietly take the
+- **A workaround is a bug report.** Routing around something (a command that prints
+  nothing, a flag that misbehaves, an error that explains nothing) means a defect has been
+  found. Say so, with the exact command and the exact output. Do not quietly take the
   long way and leave the bug for the next session to rediscover.
 - **Discovery is always in scope, and so is the fix.** A finding is fixed in the
   session that finds it. Filing an issue never closes a finding. Small and local
   (no new abstraction, no signature change rippling outward): fix it inline
-  immediately and say you did. Bigger than that: ask the machinery
+  immediately and say so. Bigger than that: ask the machinery
   (`worklist.py --triage <me> <finding...>` answers INLINE, PLAN+SUBAGENT, or
   OPERATOR-ONLY with the exact next command), have a Plan agent write the design
   to `agent/PLAN-<slug>.md` (committed, survives compaction), then
   implement it THIS session: via a writer sub-agent when the fix's file set is
-  disjoint from your current work or your context is heavy (disjoint ownership,
+  disjoint from the work in hand or the context is heavy (disjoint ownership,
   max 2, rule 4), inline otherwise. The fix rides the current PR when
   risk-compatible, otherwise its own branch cut the same session.
 - **Issues are a last resort with exactly three doors:** the fix needs
@@ -77,7 +78,7 @@ them silently is the failure this rule exists to prevent.
   findings cluster, do not ask about them one at a time and do not propose the minimal
   patch: put the whole cluster into a single plan (root cause, siblings, tests,
   regenerated artifacts, submodules included) and ask to run it. Ask as soon as the
-  cluster is visible, not after you have spent the session working around it.
+  cluster is visible, not after the session has been spent working around it.
   The ask decides PACKAGING (one comprehensive change versus riding the current
   PR), never WHETHER the findings get fixed: park the ask as a [?] whose
   DEFAULT is "fix the cluster this session", and keep working anything that is
@@ -88,13 +89,13 @@ them silently is the failure this rule exists to prevent.
 - **Once a big-bang is approved, do not descope it unilaterally.** Fan out subagents if it
   is large (rule 4). Never quietly downgrade a piece to a stub, a TODO, or a "follow-up
   issue". If something genuinely cannot be done, say which piece and why, out loud.
-- **Track findings in the worklist, not in your head.** The Stop hook
+- **Track findings in the worklist, not in memory.** The Stop hook
   (`.claude/hooks/stop/worklist.py`) refuses to end a turn while any open item
   remains. It is per-REPO, not per-session, so open items survive a restart and a
   fresh session inherits them.
 - **Use the VERBS, not the file.** Since v10 the store is an append-only JSONL
   event log, and the hook prints a `WORKLIST GUIDE` on every full stop naming the
-  exact next command per item. Base your `## Remaining` section on that guide, not
+  exact next command per item. Base the `## Remaining` section on that guide, not
   on memory: it exists because hand-written status silently ignored the tracked
   ages, and on its first stop it caught a watch still reported as "ongoing" that
   had finished 51 minutes earlier.
@@ -118,26 +119,26 @@ them silently is the failure this rule exists to prevent.
   safe. The legacy markdown file is still synced for compatibility, but writing to
   it directly is not the interface any more.
 - **Tag every item `(<session-id-prefix>)`. The tag is load-bearing, not a label.**
-  The hook blocks only on items tagged with YOUR session (an untagged item counts as
-  yours, so forgetting the tag is safe but claims it). Other sessions' open items are
-  REPORTED to the operator, never blocked on. Without ownership a second session
-  deadlocks: it cannot do those items without racing live work in the same tree, and
-  it must not tick or delete another session's tracking. Never tick or remove an item
-  that is not yours.
-- **A COMPACTION is the one case where a peer is really you, and `--adopt` is how you
-  say so.** A compaction can hand one continuous conversation a new session id, and the
-  rule above then fires against the session's own work. On 2026-09-02 that left four
-  settled decisions open all night, reported to the operator every stop as a peer's,
-  while the session reasoned about a peer that did not exist. If open items are
-  attributed to a prefix you believe was you before a compaction, run
-  `worklist.py --adopt <me> <prev>`. It records the edge only on harness evidence -- a
-  `compact_boundary` your transcript opens with, plus conversational record uuids both
-  transcripts share -- and there is deliberately no `--force`: two genuinely concurrent
-  sessions share zero such records, which is what makes the check a refutation rather
-  than a formality. Nothing is rewritten, so the `(<prefix>)` tag keeps naming whoever
-  really wrote the item. **Do not guess.** Same cwd, same branch and adjacent times are
+  The hook blocks only on items tagged with THIS session (an untagged item counts as
+  this session's, so forgetting the tag is safe but claims it). Other sessions' open
+  items are REPORTED to the operator, never blocked on. Without ownership a second
+  session deadlocks: it cannot do those items without racing live work in the same tree,
+  and it must not tick or delete another session's tracking. Never tick or remove an item
+  belonging to another session.
+- **A COMPACTION is the one case where a peer is really this same session, and `--adopt`
+  is how that gets said.** A compaction can hand one continuous conversation a new
+  session id, and the rule above then fires against the session's own work. On
+  2026-09-02 that left four settled decisions open all night, reported to the operator
+  every stop as a peer's, while the session reasoned about a peer that did not exist.
+  If open items are attributed to a prefix that plausibly WAS this session before a
+  compaction, run `worklist.py --adopt <me> <prev>`. It records the edge only on
+  harness evidence -- a `compact_boundary` the transcript opens with, plus
+  conversational record uuids both transcripts share -- and there is deliberately no
+  `--force`: two genuinely concurrent sessions share zero such records, which is what
+  makes the check a refutation rather than a formality. Nothing is rewritten, so the
+  `(<prefix>)` tag keeps naming whoever really wrote the item. **Do not guess.** Same cwd, same branch and adjacent times are
   ROUTINE for concurrent sessions in this tree, so they prove nothing; if `--adopt`
-  refuses, the items are not yours.
+  refuses, the items belong to another session.
 - **Defer as a QUESTION, not a note.** Four states, and only four: `- [ ]` open,
   `- [x]` done, `- [?]` needs an operator decision, and `- [>]` in-flight on
   BACKGROUND work. A `- [>]` lease carries a UTC expiry (max 120 min ahead) AND a
@@ -149,22 +150,21 @@ them silently is the failure this rule exists to prevent.
 - **A `- [?]` must carry `DEFAULT:`, and the default EXECUTES.** Autonomy is
   time-boxed, not indefinite: an unanswered deferral whose window closes becomes an
   order to do the default and tick it with evidence, draining a few per stop.
-  Reserve `- [?]` for decisions that are genuinely the operator's: anything you can
-  settle from the code, the request, or a sensible default is yours to do, and
-  parking it as "blocked on you" wastes a round trip. Thirty open deferrals is a
+  Reserve `- [?]` for decisions that are genuinely the operator's: anything settleable
+  from the code, the request, or a sensible default belongs to this session, and
+  parking it as "blocked on the operator" wastes a round trip. Thirty open deferrals is a
   symptom of over-asking, not a queue.
 - **End with what remains**, which under this rule is short: operator-deferred
   `[?]` items and last-resort issues with their doors named. A "found, not
   fixed" entry that fits neither category means the fix-in-session rule was
   not followed; go back and fix it.
-- **`## Remaining` is a list of things you CANNOT do right now, not a to-do
+- **`## Remaining` is a list of things that CANNOT be done right now, not a to-do
   list.** An item belongs there only if it is (a) `[?]` awaiting an operator
   answer, (b) `[>]` leased to a verifiably live worker, (c) waiting on a
   specific external run, or (d) a last-resort issue with its door named.
-  **Nothing else may appear.** If you catch yourself writing "blocked on:
-  nothing" — or "next up", or "ready to start" — that is not a status, it is a
-  confession that you are stopping with work in hand. Delete the line and do
-  the work.
+  **Nothing else may appear.** A line like "blocked on: nothing" — or "next up",
+  or "ready to start" — is not a status, it is a confession that the session is
+  stopping with work in hand. Delete the line and do the work.
 
   **This is the failure this section exists to prevent, and it has happened.**
   Over roughly ten consecutive stops in one session, the loop was: hook pushes
@@ -189,23 +189,24 @@ them silently is the failure this rule exists to prevent.
   the operator to pick a branch" does not block the code that would go on
   either branch — write it under the default and let the answer choose where it
   lands. And a turn that ends is a turn that costs a round trip: the bar for
-  stopping is "there is genuinely nothing I can advance", not "I have produced
-  a defensible report".
+  stopping is "there is genuinely nothing left to advance", not "a defensible
+  report has been produced".
 
-### 3. Verify before you claim
+### 3. Verification comes before the claim
 
 - **Run the real thing.** Output, exit-code, and error-path defects are invisible to code
   reading and to mocked tests. Drive the actual command and read stdout and stderr
   SEPARATELY: a wrapper that swallows output, or progress text landing on stdout, only
   shows up in the raw bytes.
-- **A plan's claim about code you have not read is a hypothesis.** Verify the load-bearing
+- **A plan's claim about unread code is a hypothesis.** Verify the load-bearing
   ones before relying on them. Approved plans are wrong about real code often enough that
   the first live run is part of the implementation, not a formality.
-- **Do not trust a report you have not spot-checked**, including a subagent's and your own
-  from earlier in the session. Check the artifact, not the summary of it.
-- **Name the gates you ran, and the ones you skipped.** Before calling a failure
-  pre-existing or environmental, show that none of its findings are in files you touched.
-- **"Cannot be done here" is a claim, so probe it before you make it.** Closing an item
+- **Do not trust a report that has not been spot-checked**, including a subagent's and
+  this session's own from earlier. Check the artifact, not the summary of it.
+- **Name the gates that ran, and the ones that were skipped.** Before calling a failure
+  pre-existing or environmental, show that none of its findings are in files this session
+  touched.
+- **"Cannot be done here" is a claim, so probe it before making it.** Closing an item
   as impossible without running the command that proves it is how work gets abandoned
   while sounding diligent. A CRIU pin bump was reported as needing infrastructure this
   session did not have; `docker version` answered in one second, and it did.
@@ -216,11 +217,11 @@ Reading and thinking parallelize well here; writing does not. Use them according
 
 - **Investigate with them by default.** Any question that means sweeping several files,
   packages, or naming conventions goes to `Explore` or `general-purpose` agents rather
-  than into your own context. Read-only fan-out is cheap: run several at once. Ask each
-  for conclusions with `file:line` evidence, never file dumps.
+  than into this session's own context. Read-only fan-out is cheap: run several at once.
+  Ask each for conclusions with `file:line` evidence, never file dumps.
 - **Plan with them on anything non-trivial.** For a design with real trade-offs, run
   `Plan` agents (up to 3, different angles) and synthesize. Their plans are proposals, not
-  findings: check the load-bearing claims yourself before acting (see rule 3).
+  findings: check the load-bearing claims directly before acting (see rule 3).
 - **Writing agents: at most 2 at a time, with disjoint file ownership.** State the exact
   files each one owns and forbid it from touching any other. Two agents editing one file,
   or one agent running a repo-wide regenerate script, corrupts the tree. Also forbid
@@ -331,6 +332,9 @@ When writing documentation, help text, error messages, or code comments, follow 
 - **One adapter**: `local` is the only adapter. The experimental cloud adapter (middleware-backed) was removed; do not reintroduce cloud/middleware terminology.
 - **Config auto-creation**: Default config is created automatically on first use. Don't tell users to run `rdc config init` for the default config. `config init <name>` is for named configs only.
 - **Keep docs concise**: No verbose explanations or workarounds for error messages. Document what the command does, not how to work around issues.
+- **The work is the subject, not the person**: the second person and the first person stay out of prose, commit messages and PR bodies, and praise goes to the work.
+  R1-R18, and the single file they live in, are in [docs/agent-reference/prose-style.md](docs/agent-reference/prose-style.md), enforced by `check:ci-prose-style` and two hook guards.
+  That gate is shrink-only, so a green means no NEW finding rather than a clean tree, and nine of the eighteen rules are advisory by declaration rather than enforced.
 
 ## i18n / Translations
 
@@ -457,8 +461,8 @@ they are lookup material, not standing rules:
 - **[docs/agent-reference/TRAPS.md](docs/agent-reference/TRAPS.md)** — ways a session gets FOOLED rather
   than blocked: a check that cannot fail, a ruling taken on faith, a comment that
   invites the deletion of the line it guards, an error that was only ever hiding
-  the next one. **Read it when a result looks clean and you have not yet asked what
-  it would look like if the check had not run.**
+  the next one. **Read it when a result looks clean and the question of what it
+  would look like if the check had not run is still unasked.**
 
 ### The shape of the gate estate
 
@@ -475,12 +479,12 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 
 | Where it runs | Registered | `gate: true` | Slow | Is a gate test |
 |---|---|---|---|---|
-| (all lanes) | 486 | 476 | 95 | 149 |
+| (all lanes) | 487 | 477 | 96 | 149 |
 | local-only (CI never runs it) | 12 | 9 | 3 | 0 |
 | step / build-renet | 1 | 1 | 1 | 0 |
 | step / quality-branch | 5 | 5 | 0 | 0 |
 | step / quality-code | 103 | 102 | 19 | 0 |
-| step / quality-content | 42 | 42 | 4 | 0 |
+| step / quality-content | 43 | 43 | 5 | 0 |
 | step / quality-go | 16 | 16 | 3 | 0 |
 | step / quality-i18n | 40 | 38 | 3 | 0 |
 | step / quality-packages | 14 | 14 | 7 | 0 |

@@ -44,11 +44,16 @@ def test_the_registry_is_not_empty():
 def test_every_module_declares_the_contract(stem):
     module = guards.load(stem)
     assert module.CHAIN in guards.CHAINS, "%s declares chain %r" % (stem, module.CHAIN)
-    assert isinstance(module.TWIN, str)
-    assert module.TWIN.startswith(module.CHAIN + "/"), (
-        "%s's TWIN (%r) must be chain-qualified relative to .claude/hooks, so that it is "
-        "the same key check-hook-integrity.sh and the suite use" % (stem, module.TWIN)
-    )
+    # TWIN = None IS ADMITTED, for a guard that was never bash. See
+    # `guards.twin_of` for why the sentinel exists and what replaces the oracle.
+    # A STRING TWIN is still held to the chain-qualification rule: the looseness
+    # is about whether an oracle exists, never about how one is spelled.
+    assert module.TWIN is None or isinstance(module.TWIN, str)
+    if module.TWIN is not None:
+        assert module.TWIN.startswith(module.CHAIN + "/"), (
+            "%s's TWIN (%r) must be chain-qualified relative to .claude/hooks, so that it is "
+            "the same key check-hook-integrity.sh and the suite use" % (stem, module.TWIN)
+        )
     assert isinstance(module.ORDER, int)
     assert module.ORDER > 0
     assert callable(module.run)
@@ -65,6 +70,10 @@ def test_no_two_modules_share_a_twin():
     seen = {}
     for stem in guards.stems():
         twin = guards.load(stem).TWIN
+        # None is not a claim on anything, so several guards may carry it. The
+        # assertion is about two ports of ONE bash file, and there is no file.
+        if twin is None:
+            continue
         assert twin not in seen, "%s and %s both claim %s as their twin" % (
             seen[twin],
             stem,

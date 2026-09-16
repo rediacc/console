@@ -636,6 +636,9 @@
       "PROFILER_COVERAGE_WORKFLOW_DIR",
       "PROFILER_COVERAGE_WRAPPER_DIRS"
     ],
+    ".ci/rediacc_ci/quality/prose_style.py": [
+      "*off"
+    ],
     ".ci/rediacc_ci/quality/python_lint.py": [
       "CI",
       "PATH",

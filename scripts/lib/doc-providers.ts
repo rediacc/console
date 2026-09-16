@@ -2082,9 +2082,73 @@ export const envManifestProvider: Provider = {
   },
 };
 
+const PROSE_RULES = '.ci/config/prose-style-rules.json';
+
+interface ProseRule {
+  id: string;
+  title: string;
+  severity: string;
+  scopes?: string[];
+  patterns?: string[];
+  detection?: string;
+  examples?: { expect?: string }[];
+}
+
+/**
+ * R1-R18, one row per rule, read from the rules file rather than typed.
+ *
+ * THE COLUMN THAT MATTERS IS `Detection`, AND IT EXISTS TO STOP A LIE. Nine of the eighteen
+ * rules are ADVISORY: written down, agreed, and not mechanically detected, because the pattern
+ * that would catch them also catches their own counter-examples. R12's bad example "The project
+ * failed." and R3's good example "The build failed after the last change." are the same surface
+ * shape, and separating them needs to know what kind of noun the subject is.
+ *
+ * A table listing eighteen rules with no such column would tell every reader that eighteen rules
+ * are enforced. That is the sentence this whole generator exists to abolish -- the same shape as
+ * ci-gates.md telling readers there were "254 fast gates" against a live 312 -- so the count of
+ * patterns per rule is rendered, and an advisory rule says `advisory` in its own row.
+ *
+ * `Undetected examples` is the second half of the same honesty. A rule may ship a bad example
+ * that nothing catches; the rules file declares those explicitly and this column counts them,
+ * so the gap is a number in the document instead of a paragraph in a config file.
+ */
+export const proseStyleProvider: Provider = {
+  id: 'prose-style',
+  scans: `${PROSE_RULES}, one row per rule`,
+  columns: ['Rule', 'Title', 'Severity', 'Scopes', 'Detection', 'Undetected examples'],
+  rows: (root) => {
+    const file = path.join(root, PROSE_RULES);
+    if (!fs.existsSync(file)) return [];
+    const doc = JSON.parse(fs.readFileSync(file, 'utf-8')) as { rules?: ProseRule[] };
+    return (doc.rules ?? []).map((r) => {
+      const patterns = r.patterns ?? [];
+      const detection =
+        r.detection === 'measured'
+          ? 'measured'
+          : patterns.length === 0
+            ? 'advisory'
+            : `${patterns.length} pattern(s)`;
+      const undetected = (r.examples ?? []).filter((e) => e.expect === 'undetected').length;
+      return {
+        key: r.id,
+        cells: [
+          r.id,
+          r.title,
+          r.severity,
+          (r.scopes ?? ['all']).join(', '),
+          detection,
+          String(undetected),
+        ],
+      };
+    });
+  },
+  missing: (root) => (fs.existsSync(path.join(root, PROSE_RULES)) ? [] : [PROSE_RULES]),
+};
+
 export const PROVIDERS: readonly Provider[] = [
   gatesProvider,
   gatesSummaryProvider,
+  proseStyleProvider,
   hookGuardsProvider,
   hookSummaryProvider,
   suppressionsProvider,

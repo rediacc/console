@@ -4324,6 +4324,28 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check content for AI slop patterns',
     },
   },
+  {
+    // R1-R18, "the work, not the person". Shrink-only against
+    // .ci/config/prose-style-baseline.json: a green means NO NEW finding, never a clean
+    // tree, and the baselined count is printed on the success line so nobody reads it as
+    // more than that.
+    //
+    // NO `paths:`, DELIBERATELY. An entry without one is ALWAYS selected, which is what
+    // this gate needs: its corpus is every markdown file and every comment in the tree, so
+    // a half-populated path table would make `--changed` drop it silently on exactly the
+    // commits that introduced new prose.
+    id: 'check:ci-prose-style',
+    run: 'npm run check:ci-prose-style',
+    slow: true, // 2503 files, 265k prose lines; 19.4s measured 2026-09-16
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_prose_style.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Check prose style (the work, not the person)',
+    },
+  },
   // >>> gen-manifest: region 36
   {
     id: 'check:ci-nis2-quotes',
@@ -5757,8 +5779,17 @@ export const GATES: readonly GateSpec[] = [
     // harness reads live git state (`git rev-parse HEAD`) and writes a phantom file into
     // the repo root during its run, so working-tree and branch state can move the verdict
     // without any file in this list changing.
+    // WIDENED 2026-09-16, and this is a gap that predates the prose-style guards rather
+    // than one they created. The `for mod in ...` loop in test-hooks.sh runs SIX per-guard
+    // harnesses that live at `.claude/rediacc_hooks/guards/test-block_*.py`, and
+    // `.claude/hooks/**` does not match `.claude/rediacc_hooks/**` -- the two directories
+    // are siblings, not parent and child. So editing any of those harnesses did not select
+    // the only gate that runs them, and `--changed` dropped it silently on exactly the
+    // commits that changed what it asserts. The guards themselves are in the same position,
+    // since the dispatcher loads them by directory scan.
     paths: [
       '.claude/hooks/**',
+      '.claude/rediacc_hooks/**',
       '.claude/settings.json',
       '.ci/scripts/test/lib/git-fixture.sh',
       '.ci/scripts/quality/check_inline_python.py',

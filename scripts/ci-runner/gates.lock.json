@@ -4225,6 +4225,21 @@
     }
   },
   {
+    "id": "check:ci-prose-style",
+    "run": "npm run check:ci-prose-style",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_prose_style.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Check prose style (the work, not the person)"
+    }
+  },
+  {
     "id": "check:ci-nis2-quotes",
     "run": "npm run check:ci-nis2-quotes",
     "gate": true,
@@ -5612,6 +5627,7 @@
     "qualityGateTest": true,
     "paths": [
       ".claude/hooks/**",
+      ".claude/rediacc_hooks/**",
       ".claude/settings.json",
       ".ci/scripts/test/lib/git-fixture.sh",
       ".ci/scripts/quality/check_inline_python.py",

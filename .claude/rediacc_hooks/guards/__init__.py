@@ -20,7 +20,8 @@ WHAT A GUARD MODULE DECLARES, and why each one is needed rather than derivable:
              one word. It is also the key `check-hook-integrity.sh` uses, which
              chain-qualifies names precisely so "two chains can never collide
              on one basename".
-    TWIN     the bash original, CHAIN-QUALIFIED (`pre-bash/block-git-amend.sh`).
+    TWIN     the bash original, CHAIN-QUALIFIED (`pre-bash/block-git-amend.sh`),
+             or `None` for a guard that was never bash. See TWIN = None below.
              It was a path under `.claude/hooks` until the P7 cutover and is now
              a key into `.claude/oracles/`, where those files were
              moved; the STRING is unchanged, so the differential and the comment
@@ -115,5 +116,45 @@ def by_chain(chain):
 
 
 def twin_of(module):
-    """The bash original this module was ported from, repo-relative."""
+    """The bash original this module was ported from, repo-relative, or None.
+
+    TWIN = None IS A SENTINEL AND NOT AN OVERSIGHT, added 2026-09-16 for
+    `block_prose_style_edit` and `block_prose_style_commit`, the first two guards
+    in this package that were never bash.
+
+    WHY THE FIELD COULD NOT SIMPLY BE FILLED IN. All 46 guards that existed
+    before them landed on ONE day, 2026-09-06, the P7 cutover, because every one
+    of them is a PORT. The harness encoded that as an invariant -- `test_dispatch`
+    asserted `isinstance(module.TWIN, str)`, and the differential read
+    `ORACLES / module.TWIN` in four places -- so a genuinely new guard could not
+    be added at all without either this sentinel or a fake bash file. The fake was
+    not available either: `.ci/scripts/quality/check_language_policy.py` freezes
+    the SET of shell files under `.ci` and `.claude` and refuses a new one, "the
+    surface may shrink and may never grow". Inventing one to satisfy an assertion
+    would also have been a lie to the assertion, whose whole point is that "the
+    port is judged against the file it was made from".
+
+    SKIPPING THE ORACLE IS NOT A FREE PASS OUT OF HAVING EVIDENCE, and the
+    harness now says so in one place rather than leaving it to authors:
+    `test_every_port_has_a_present_twin` REQUIRES a guard declaring `TWIN = None`
+    to carry a dedicated `test-<stem>.py` beside it. A twinned guard is judged
+    against bash; an untwinned one is judged against a suite written for it. Both
+    are still judged.
+    """
     return module.TWIN
+
+
+def twinned():
+    """Guard modules that HAVE a bash oracle: the differential's subject."""
+    return [m for m in modules() if m.TWIN is not None]
+
+
+def untwinned():
+    """Guard modules with no oracle, which are tested against their own suites.
+
+    Counted and named rather than silently excluded. A helper that filtered them
+    out of `modules()` would make this set invisible, which is exactly the shape
+    `check-hook-integrity.sh` records rotting once already: "five `gh_case` cases
+    sitting in a gap list they had not been in for months".
+    """
+    return [m for m in modules() if m.TWIN is None]

@@ -353,13 +353,27 @@ def divergence_cases():
     return out
 
 
-def build_cases():
+def build_cases(twinned=True):
     """Every (guard, label, payload, env-variant) the differential will run.
 
     Only guards that have BEEN PORTED are included. That is not a way of
     excusing the rest: a port that does not exist has no twin to compare, and
     `test_every_ported_guard_is_registered` is what stops a module being
     written and then quietly left out of this list.
+
+    `twinned=False` BUILDS THE COMPLEMENT: the cases for guards that were never
+    bash and therefore have no oracle. They are built by the SAME function
+    against the SAME corpus, and the split is only about which side the bash
+    driver can run. Keeping one builder means an untwinned guard is still
+    cross-fed every other guard's payloads and every degenerate shape, which is
+    where over-blocking shows up; the only thing it loses is the comparison to
+    bash, and `TWIN = None` is what declares that loss out loud.
+
+    THE INDEX ALIGNMENT IS WHY THIS IS A SPLIT AND NOT A FILTER AT USE TIME. The
+    bash driver writes one case file per element of `CASES` and the comparison
+    reads `bash_results["records"][i]`, so a single untwinned entry anywhere in
+    that list would shift every record after it by one and the differential would
+    compare each guard against its neighbour while reporting agreement.
     """
     harvested, stats = guardcorpus.harvest_cases()
     pool = sorted({payload for _, payload, _, _ in harvested})
@@ -370,6 +384,8 @@ def build_cases():
     cases = []
     for stem in guards.stems():
         module = guards.load(stem)
+        if (module.TWIN is not None) != twinned:
+            continue
         # THE SUITE'S KEY, which since the P7 cutover is the MODULE and not the
         # twin: a case reads `check 2 guards/block_x.py`, because that is the key
         # `check-hook-integrity.sh` inventories the live guard under and one
@@ -405,6 +421,10 @@ def build_cases():
 
 
 CASES, HARVEST_STATS, POOL = build_cases()
+# The untwinned guards' cases, built the same way and run against the PYTHON side
+# only. A separate list rather than a flag on each row, for the index-alignment
+# reason `build_cases` states.
+NATIVE_CASES, _NATIVE_STATS, _NATIVE_POOL = build_cases(twinned=False)
 
 
 # ---------------------------------------------------------------------------
@@ -618,13 +638,33 @@ def test_every_ported_guard_is_registered():
     the absence".
     """
     exercised = {stem for stem, _, _, _, _, _ in CASES}
+    exercised |= {stem for stem, _, _, _, _, _ in NATIVE_CASES}
     missing = sorted(set(guards.stems()) - exercised)
     assert not missing, "these guard modules exist but no case runs them: %s" % missing
 
 
 def test_every_port_has_a_present_twin():
+    """A twinned guard's oracle must exist. An UNTWINNED one must have a suite.
+
+    THE SECOND HALF IS THE POINT, and it is what stops `TWIN = None` becoming the
+    cheap way out of this whole file. A guard with no oracle is not judged
+    against less evidence, it is judged against DIFFERENT evidence: a dedicated
+    `test-<stem>.py` beside it, which `check-hook-integrity.sh` already treats as
+    covering both directions. Without this arm, deleting a twin declaration would
+    silently remove a guard from the differential AND from every other control,
+    and the suite would go green faster than before.
+    """
     for stem in guards.stems():
         module = guards.load(stem)
+        if module.TWIN is None:
+            suite = pathlib.Path(module.__file__).with_name("test-%s.py" % stem)
+            assert suite.is_file(), (
+                "%s declares TWIN = None, so this differential has no oracle for it. That is "
+                "admitted -- see guards.twin_of -- but only in exchange for a dedicated suite "
+                "at %s, which does not exist. A guard with neither an oracle nor its own "
+                "suite has no evidence at all." % (stem, suite.relative_to(ROOT))
+            )
+            continue
         twin = ORACLES / module.TWIN
         assert twin.is_file(), (
             "%s names %s as its twin and that file is not in the oracle tree. The bash "
@@ -675,6 +715,40 @@ def test_every_guard_discriminates(bash_results):
     )
 
 
+def test_every_untwinned_guard_discriminates(bash_results):
+    """The same anti-vacuity control as above, for the guards with no oracle.
+
+    `test_every_guard_discriminates` reads the BASH side's records, so it cannot
+    see a guard the bash driver never ran. Without this, an untwinned guard that
+    returned 0 on all 400-odd of its cases -- a broken match, a raised-and-caught
+    import, a chain it is not in -- would be invisible to every control in this
+    file, and the file would go green faster for having it.
+
+    THE PREDICATE IS "SOMETHING VARIES", not "some case exits 2", for the reason
+    the twinned version gives: the `warn_*` guards exit 0 by design and speak on
+    stderr, so an exit-code-only test would be wrong about them.
+    """
+    if not NATIVE_CASES:
+        # An EMPTY set is a pass, not a skip: `check:ci-pytest` refuses a skip,
+        # and a repository with no untwinned guards is an honest state rather
+        # than an unrun test. See the NO_DIVERGENCE sentinel below, same lesson.
+        assert not guards.untwinned(), (
+            "%d guard(s) declare TWIN = None but NATIVE_CASES is empty, so none of them was "
+            "exercised here" % len(guards.untwinned())
+        )
+        return
+    work = bash_results["work"]
+    seen = {}
+    for stem, _, payload, _, extra, stubs in NATIVE_CASES:
+        fields = python_fields(stem, payload, extra, stubs, work)
+        seen.setdefault(stem, set()).add((fields["rc"], fields["out"], fields["err"]))
+    flat = sorted(stem for stem, values in seen.items() if len(values) < 2)
+    assert not flat, (
+        "these untwinned guards answered identically on every case, so nothing here proves "
+        "they do anything: %s" % flat
+    )
+
+
 def test_the_differential_can_fail(tmp_path, bash_results):
     """Every port declares one defect, and the comparison must catch it.
 
@@ -685,6 +759,12 @@ def test_the_differential_can_fail(tmp_path, bash_results):
     """
     work = bash_results["work"]
     unproven = []
+    # BOTH LISTS. This control compares the port against ITSELF-WITH-A-BUG and
+    # never touches the bash side, so it works identically for an untwinned
+    # guard -- and an untwinned guard needs it MORE, being the one with no
+    # oracle. Leaving NATIVE_CASES out here would have made `TWIN = None` skip
+    # the one anti-vacuity control that does not depend on an oracle at all.
+    all_cases = list(CASES) + list(NATIVE_CASES)
     for stem in guards.stems():
         module = guards.load(stem)
         defect = getattr(module, "DEFECT", None)
@@ -700,7 +780,7 @@ def test_the_differential_can_fail(tmp_path, bash_results):
         exec(compile(broken_src, str(broken_path), "exec"), namespace)  # noqa: S102
         broken_run = namespace["run"]
         changed = False
-        for cstem, _, payload, _, extra, stubs in CASES:
+        for cstem, _, payload, _, extra, stubs in all_cases:
             if cstem != stem:
                 continue
             good = python_fields(stem, payload, extra, stubs, work)
@@ -863,6 +943,15 @@ def test_comment_ratio_and_archaeology(bash_results):
     failures = []
     for stem in guards.stems():
         module = guards.load(stem)
+        if module.TWIN is None:
+            # NO ORACLE MEANS NO RATIO, because the ratio is `port bytes / twin
+            # bytes` and the denominator does not exist. Stated as a skip with a
+            # reason rather than a `bash_bytes or 1` fallback, which would have
+            # scored every untwinned guard at a ratio of `py_bytes` and passed
+            # for a reason nobody intended. The archaeology sweep is the twin's
+            # dated evidence surviving into the port; there is no twin, so there
+            # is nothing to have survived.
+            continue
         twin = ORACLES / module.TWIN
         port = pathlib.Path(module.__file__)
         bash_bytes, bash_lines = bash_comment_bytes(twin)

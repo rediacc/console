@@ -43,6 +43,7 @@
     "check:ci-greenlight-closures": ".ci/scripts/quality/check_greenlight_closures.py",
     "check:ci-workflow-gates": ".ci/scripts/security/check-workflow-gates.sh",
     "check:ci-content-quality": ".ci/scripts/quality/check_content_quality.py",
+    "check:ci-prose-style": ".ci/scripts/quality/check_prose_style.py",
     "check:ci-nis2-quotes": "tsx scripts/gates/check-directive-quotes.ts",
     "check:ci-editorconfig": ".ci/scripts/quality/check_editorconfig.py",
     "check:ci-audit-coverage": ".ci/scripts/quality/check_audit_coverage.py",
