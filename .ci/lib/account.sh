@@ -789,7 +789,11 @@ account_stop() {
 
     local containers=(account-server)
     for container in "${containers[@]}"; do
-        if docker ps -a --format "{{.Names}}" 2>/dev/null | grep -q "^${container}$"; then
+        # `[ -n "$(...)" ]` rather than `| grep -q`. This file sets no pipefail of
+        # its own but INHERITS it from every sourcer, so grep -q's early exit can
+        # SIGPIPE docker and make that 141 the pipeline's verdict -- which SKIPS
+        # the teardown of a container that IS there.
+        if [ -n "$(docker ps -a --format "{{.Names}}" 2>/dev/null | grep "^${container}$")" ]; then
             docker stop "$container" 2>/dev/null || true
             docker rm "$container" 2>/dev/null || true
         fi

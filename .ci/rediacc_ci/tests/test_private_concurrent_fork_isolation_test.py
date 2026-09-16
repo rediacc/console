@@ -209,8 +209,12 @@ HEALTHY_RULES: dict[str, list[dict]] = {
     "ssh": [
         {"match": "ss -Hltnp4", "responses": [{"out": "127.0.1.1:5432\n127.0.2.1:5432\n"}]},
         {"match": "com.docker.compose.project", "responses": [{"out": "0\n"}]},
+        # MATCHED ON `grep counter`, not `grep -q counter`: counter_sockets was
+        # converted to the `[ -n "$(... | grep ...)" ]` form on 2026-09-16 when
+        # `docker` joined SCALING_PRODUCERS. Still unique -- the only other remote
+        # payload using grep is counter_value, whose pattern is `count=[0-9]*`.
         {
-            "match": "grep -q counter",
+            "match": "grep counter",
             "responses": [
                 {"out": "/var/run/rediacc/docker-aaa.sock\n"},
                 {"out": "/var/run/rediacc/docker-aaa.sock\n/var/run/rediacc/docker-bbb.sock\n"},
@@ -550,7 +554,7 @@ CASES = [
     ),
     # -- phase 5: console#440 -----------------------------------------------
     pytest.param(
-        {"rules": _ssh_rule("grep -q counter", {"out": ""})},
+        {"rules": _ssh_rule("grep counter", {"out": ""})},
         {},
         id="the-parent-has-no-counter-container-at-all",
     ),
@@ -593,7 +597,7 @@ CASES = [
         id="the-checkpoint-forks-up-failed-outright",
     ),
     pytest.param(
-        {"rules": _ssh_rule("grep -q counter", {"out": "/var/run/rediacc/docker-aaa.sock\n"})},
+        {"rules": _ssh_rule("grep counter", {"out": "/var/run/rediacc/docker-aaa.sock\n"})},
         {},
         id="no-second-socket-means-no-counter-in-the-forks-daemon",
     ),

@@ -293,4 +293,7 @@ def test_selftest_passes_and_is_not_vacuous(capsys) -> None:
     assert gate.selftest() == 0
     out = capsys.readouterr().out
     assert "control(s) passed" in out
-    assert int(out.strip().split("\n")[-1].split()[0]) >= 26
+    # RATCHETED 26 -> 28 on 2026-09-16 when `tee` and `docker` joined
+    # SCALING_PRODUCERS and each got its own selftest control. A floor that is not
+    # raised with the controls it counts stops pinning the ones added after it.
+    assert int(out.strip().split("\n")[-1].split()[0]) >= 28

@@ -149,7 +149,11 @@ service_stop() {
         rediacc-service-rustfs-volume-init
     )
     for container in "${containers[@]}"; do
-        if docker ps -a --format "{{.Names}}" 2>/dev/null | grep -q "^${container}$"; then
+        # `[ -n "$(...)" ]` rather than `| grep -q`. This file sets no pipefail of
+        # its own but INHERITS it from every sourcer, so grep -q's early exit can
+        # SIGPIPE docker and make that 141 the pipeline's verdict -- which SKIPS
+        # the teardown of a container that IS there.
+        if [ -n "$(docker ps -a --format "{{.Names}}" 2>/dev/null | grep "^${container}$")" ]; then
             docker stop "$container" 2>/dev/null || true
             docker rm "$container" 2>/dev/null || true
         fi
@@ -174,7 +178,9 @@ service_status() {
     local containers=(rediacc-service-web rediacc-service-rustfs)
 
     for container in "${containers[@]}"; do
-        if docker ps --format "{{.Names}}" | grep -q "^${container}$"; then
+        # Same conversion, same inherited pipefail: losing the race here reports a
+        # RUNNING container as "not running" in `service status`.
+        if [ -n "$(docker ps --format "{{.Names}}" | grep "^${container}$")" ]; then
             local status health
             status=$(docker inspect -f '{{.State.Status}}' "$container")
             health=$(docker inspect -f '{{.State.Health.Status}}' "$container" 2>/dev/null || echo "N/A")

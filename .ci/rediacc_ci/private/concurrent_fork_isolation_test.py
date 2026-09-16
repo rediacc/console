@@ -232,10 +232,15 @@ echo 0
 """
 
 # Phase 5. Every per-network socket that runs a counter container.
+#
+# The `[ -n "$(... | grep ...)" ]` is the twin's pipefail/`grep -q` conversion,
+# carried here VERBATIM because the differential compares the exact string both
+# sides hand to ssh. See the twin's comment above `counter_sockets()` for why the
+# site was converted even though the remote shell sets no pipefail.
 COUNTER_SOCKETS_CMD = """sudo bash -c '
       for sock in /var/run/rediacc/docker-*.sock; do
         [ -S "$sock" ] || continue
-        if docker -H unix://$sock ps --filter name=counter --format "{{.Names}}" 2>/dev/null | grep -q counter; then
+        if [ -n "$(docker -H unix://$sock ps --filter name=counter --format "{{.Names}}" 2>/dev/null | grep counter)" ]; then
           echo "$sock"
         fi
       done

@@ -188,7 +188,48 @@ trap 'rm -rf "$TMP"' EXIT
 # and the knee is between 32 KB and 48 KB. They are here for the same reason as the
 # commands -- their output scales with what is interpolated into them, which is
 # routinely a captured command's whole stdout -- not because "printf" is dangerous.
-SCALING_PRODUCERS="awk cat comm cut diff echo find git grep jq ls printf sed sort tail tr uniq xargs"
+#
+# `tee`/`docker` JOINED ON 2026-09-16 TOO, and they came from the SUBMODULE. The
+# work that gave private/renet its own copy of this detector had to measure which
+# producers renet needed, and the same two names turned out to be missing HERE:
+#
+#   tee    -- a PURE PASS-THROUGH. Its output scales exactly with its input, and
+#             it is the stage `grep -q` SIGPIPEs. Zero sites in console today; it
+#             is in the list because the next `cmd | tee log | grep -q` written
+#             here should be caught rather than measured afterwards, and because
+#             renet's copy must stay a superset of this one. Its renet site
+#             (`.ci/scripts/quality/i18n.sh`) lost the race 5/5 at 300 KB AND
+#             truncated the tee'd log to 32 bytes -- the very log its failure
+#             branch cats.
+#
+#   docker -- `docker ps --format ...` / `docker version -f ...` output scales
+#             with the daemon's state, not with a constant. THREE live console
+#             sites, all of the same shape and all under `.ci/lib/`'s INHERITED
+#             pipefail (neither file sets it itself), so all three were invisible
+#             twice over -- once for the missing producer name and once for the
+#             per-file test:
+#               .ci/lib/account.sh:796   teardown of `account-server`
+#               .ci/lib/service.sh:156   teardown of four rediacc-service-* containers
+#               .ci/lib/service.sh:183   `service status` reporting running/not
+#             Losing the race SKIPS a container teardown, or reports a running
+#             container as absent. A fourth site,
+#             `.ci/scripts/private/concurrent-fork-isolation-test.sh:266`, is the
+#             known FALSE-POSITIVE direction -- it lives inside an
+#             `_ssh "sudo bash -c '...'"` body whose remote shell sets no pipefail
+#             (its neighbour at :278 says exactly that in a comment) -- and was
+#             converted anyway, for the same reason test-install-methods.sh:1129
+#             was: an allowlist entry would be a suppression, and the conversion is
+#             defensively correct the day that remote body gains `-o pipefail`.
+#             TWO MORE SITES CARRY THE IDENTICAL SHAPE AND ARE NOT THE CLASS:
+#             `.ci/scripts/infra/ci-stop.sh:44` and
+#             `.ci/scripts/infra/ci-stop-elite.sh:35` are byte-for-byte the same
+#             `docker ps -a --format ... | grep -q "^${container}$"`, but both set
+#             `set -e` ONLY (line 8 of each) and both are EXECUTED as subprocesses,
+#             never sourced -- so no sourcer's pipefail reaches them and the
+#             pipeline reports grep's status. Checked 2026-09-16 and left alone
+#             deliberately; the gate is silent on them by its own rule, and this
+#             note exists so the next sweep does not re-derive the answer.
+SCALING_PRODUCERS="awk cat comm cut diff docker echo find git grep jq ls printf sed sort tail tee tr uniq xargs"
 
 # A SOURCED LIBRARY INHERITS ITS SOURCER'S OPTIONS, and the per-file pipefail test
 # cannot see that. These repo-relative prefixes are treated as pipefail-bearing
@@ -471,6 +512,30 @@ else
     fail "CONTROL DID NOT FIRE: a multi-line racing pipeline went undetected"
 fi
 
+# THE `tee` AND `docker` CASES, FROM THE SAME 2026-09-16 WIDENING, and here for
+# the same reason as the pair above: a widening whose revert is silent is a
+# widening that will be reverted. `docker` had THREE live offenders in this
+# repo, all under `.ci/lib/`'s inherited pipefail; `tee` had none here and one
+# in private/renet, whose copy of this gate must stay a SUPERSET of this list,
+# so losing `tee` here would also un-pin it there.
+printf '%s\n' \
+    'set -o pipefail' \
+    'if cmd 2>&1 | tee "$LOG" | grep -q ok; then :; fi' >"$TMP/teeprod.sh"
+if [ -n "$(offenders "$TMP/teeprod.sh")" ]; then
+    pass "control: a \`tee\` pass-through piped into grep -q is detected"
+else
+    fail "CONTROL DID NOT FIRE: \`tee\` has fallen out of SCALING_PRODUCERS, and a pure pass-through producer is invisible again"
+fi
+
+printf '%s\n' \
+    'set -o pipefail' \
+    'if docker ps -a --format "{{.Names}}" | grep -q "^x$"; then :; fi' >"$TMP/dockerprod.sh"
+if [ -n "$(offenders "$TMP/dockerprod.sh")" ]; then
+    pass "control: a \`docker\` producer piped into grep -q is detected"
+else
+    fail "CONTROL DID NOT FIRE: \`docker\` has fallen out of SCALING_PRODUCERS, and .ci/lib/account.sh:796 plus both .ci/lib/service.sh sites are invisible again"
+fi
+
 printf '%s\n' \
     'body() { cat "$1"; }' \
     'if body "$1" | grep -q x; then :; fi' >"$TMP/nopipefail.sh"
@@ -526,9 +591,9 @@ if [ "$fails" -eq 0 ]; then
     echo "  Blind spot, stated so the green is not read as more than it is: this sees"
     echo "  producers that SCALE with their input -- this file's own functions, and"
     echo "  the commands and builtins in SCALING_PRODUCERS, which since 2026-09-16"
-    echo "  includes printf and echo. What it still cannot see is an INNER shell's"
-    echo "  options: the pipefail test is per-FILE, so a docker/ssh heredoc that sets"
-    echo "  only 'set -e' reads as pipefail-bearing, and a sourced library reads as"
+    echo "  includes printf, echo, tee and docker. What it still cannot see is an INNER"
+    echo "  shell's options: the pipefail test is per-FILE, so a docker/ssh heredoc that"
+    echo "  sets only 'set -e' reads as pipefail-bearing, and a sourced library reads as"
     echo "  clean unless its prefix is in INHERITS_PIPEFAIL_PREFIXES."
     exit 0
 fi

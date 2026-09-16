@@ -251,11 +251,19 @@ log_info "✓ each per-network daemon hosts at most one compose project"
 
 # counter_sockets prints every per-network docker socket that runs a counter
 # container. Before the checkpoint fork exists, that is exactly the parent's.
+#
+# The `[ -n "$(... | grep ...)" ]` below is the pipefail/`grep -q` conversion, and
+# it is the FALSE-POSITIVE direction of check:ci-pipefail-grep-q: the line lives
+# inside the quoted remote command string, and that remote shell sets no pipefail
+# (counter_value's own comment below says so), so there was no live bug here.
+# Converted regardless, exactly as `.ci/scripts/test/test-install-methods.sh:1129`
+# was: an allowlist entry would be a suppression, which this repo forbids, and the
+# conversion is defensively correct the day that remote body gains `-o pipefail`.
 counter_sockets() {
     _ssh "sudo bash -c '
       for sock in /var/run/rediacc/docker-*.sock; do
         [ -S \"\$sock\" ] || continue
-        if docker -H unix://\$sock ps --filter name=counter --format \"{{.Names}}\" 2>/dev/null | grep -q counter; then
+        if [ -n \"\$(docker -H unix://\$sock ps --filter name=counter --format \"{{.Names}}\" 2>/dev/null | grep counter)\" ]; then
           echo \"\$sock\"
         fi
       done
