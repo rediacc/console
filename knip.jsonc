@@ -3,17 +3,62 @@
   // Fully strict: files, exports, types, duplicates, dependencies all enforced.
   // Every entry in an ignore* array below needs a `// BLOCKER:` comment per the
   // repo convention (CLAUDE.md); one BLOCKER covers the entries after it until a
-  // blank line. Gate: scripts/check-knip-blockers.ts (+ knip's own
+  // blank line. Gate: scripts/gates/check-knip-blockers.ts (+ knip's own
   // --treat-config-hints-as-errors catches ignores that stop matching anything).
   // In-code exceptions use `/** @public BLOCKER: <reason> */` JSDoc tags.
   "workspaces": {
     ".": {
       "entry": [
-        "scripts/*.ts"
+        "scripts/*.ts",
+        // W9 P2: the 125 check-*.ts gates moved to scripts/gates/. They are entry
+        // points (npm scripts run them directly), not imported by anything, so
+        // without this glob knip reports every one of them as an unused file.
+        "scripts/gates/*.ts",
+        // SAME REASON, one level out: these three are executed BY PATH from bash,
+        // from Python, or by hand, and knip only follows TypeScript imports. It
+        // reported all three as unused files, and acting on that would have been
+        // destructive rather than tidy:
+        //   shadow-gate.ts            <- .ci/scripts/test/gates/test-shadow-gate.sh:56
+        //     runs it as `LIB`. It is the comparator that proves the W7P6 bash->Python
+        //     ports equivalent, so deleting it removes the instrument the port
+        //     campaign is measured with.
+        //   generate-third-party-licenses.ts <- GENERATOR_REL in
+        //     .ci/rediacc_ci/build/prepare_cli_assets.py:123, and named again in
+        //     .ci/rediacc_ci/ci/generate_tag.py:176.
+        //   fetch-directive-snapshot.ts is a documented hand-run maintenance tool
+        //     (`--check` compares the vendored NIS2 snapshots against EUR-Lex); the
+        //     snapshots it writes are the source of truth for
+        //     scripts/gates/check-directive-quotes.ts.
+        // Listed as explicit files rather than a `scripts/gen/*.ts` glob, so a
+        // genuinely dead file appearing next to them is still reported.
+        "scripts/lib/shadow-gate.ts",
+        "scripts/gen/generate-third-party-licenses.ts",
+        "scripts/gen/fetch-directive-snapshot.ts"
       ],
+      // AN EXPORT USED INSIDE ITS OWN FILE IS NOT DEAD, and in this repo it is
+      // usually load-bearing. `check-doc-region-parity.ts:297` matches
+      // /^export const (\w+Provider): Provider =/ -- the KEYWORD is part of the
+      // contract it verifies -- and `.ci/scripts/test/gates/test-gate-header.sh:40`
+      // imports `analyzeGateHeader` from a bash gate test, which knip cannot see at
+      // all. Dropping those `export`s to satisfy knip broke both gates.
+      // This setting keeps the finding that matters -- an export used NOWHERE, not
+      // even in its own file, is still reported, which is how the genuinely dead
+      // `rel` helper in scripts/lib/repo-root.ts was found and removed.
+      "ignoreExportsUsedInFile": true,
       "project": [
         "*.{js,ts}",
-        "scripts/**/*.ts"
+        "scripts/**/*.ts",
+        // THE FLAT CONFIG IS SPLIT, and this glob is what lets knip see it.
+        // `eslint.config.js` is a 50-line root that splices six modules from
+        // `eslint.config/`. `*.{js,ts}` matches the root only, so every plugin
+        // imported by those modules was invisible and knip reported all ten as
+        // unused devDependencies: @eslint/js, @eslint/json, globals, and the
+        // jsx-a11y / playwright / react / react-hooks / regexp / sonarjs /
+        // unicorn plugins. Removing them on that advice would have broken
+        // linting outright -- `unicorn/prefer-string-replace-all` is a rule this
+        // repo actively enforces. Widening the project glob makes the analysis
+        // MORE complete rather than suppressing the finding.
+        "eslint.config/**/*.js"
       ]
     },
     "packages/locales": {
@@ -195,7 +240,7 @@
     // BLOCKER: declared in packages/www to carry the 5.9.3 security override pin for the @astrojs/rss transitive chain (see _overridesReasons.fast-xml-parser); www code never imports it directly
     "fast-xml-parser",
 
-    // BLOCKER: declared in packages/www, which owns browser testing, and imported from the hoisted tree by scripts/check-browser-smoke.ts at the root. Declaring it a second time at root would create a second range to hold in sync with a package check:deps deliberately blocks from upgrading (a playwright bump changes the pinned browser revisions and needs E2E revalidation), so one declaration in one workspace is the correct shape
+    // BLOCKER: declared in packages/www, which owns browser testing, and imported from the hoisted tree by scripts/gates/check-browser-smoke.ts at the root. Declaring it a second time at root would create a second range to hold in sync with a package check:deps deliberately blocks from upgrading (a playwright bump changes the pinned browser revisions and needs E2E revalidation), so one declaration in one workspace is the correct shape
     "playwright"
   ],
   "ignoreBinaries": [
@@ -231,7 +276,7 @@
     "pdftotext",
     "rclone",
 
-    // BLOCKER: go toolchain spawned by scripts/generate-third-party-licenses.ts to run go-licenses for the renet Go-dependency section of THIRD_PARTY_LICENSES; host toolchain, not an npm dependency
+    // BLOCKER: go toolchain spawned by scripts/gen/generate-third-party-licenses.ts to run go-licenses for the renet Go-dependency section of THIRD_PARTY_LICENSES; host toolchain, not an npm dependency
     "go"
   ]
 }

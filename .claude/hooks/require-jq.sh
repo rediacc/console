@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
-# FAIL CLOSED when jq is missing. Registered FIRST in every PreToolUse chain.
+# FAIL CLOSED when jq is missing. Registered FIRST in every PreToolUse and
+# PostToolUse Bash hook chain.
+#
+# WIDENED to PostToolUse 2026-09-06. It was PreToolUse-only, which left the two
+# post-bash hooks (cancel-old-ci.sh, refresh-pr-body.sh) in exactly the state
+# described below: both read stdin with `jq -r ... 2>/dev/null`, so with no jq
+# they get an empty string and do nothing, quietly. On PostToolUse the tool has
+# ALREADY run, so a non-zero exit here prevents nothing -- it exists purely to
+# SURFACE the broken toolchain to the session, which is the difference between a
+# post-hook that is inert and a post-hook that says so.
 #
 # THE DEFECT THIS CLOSES, measured on a bare machine 2026-08-26. Every one of the
 # 22 pre-bash and 5 pre-edit hooks parses its stdin with
@@ -55,7 +64,26 @@ if command -v jq >/dev/null 2>&1; then
     exit 0
 fi
 
-INPUT=$(cat)
+# BOUNDED, because `INPUT=$(cat)` is not. `cat` on a stdin that stays open and
+# silent blocks forever, and this guard runs as a PreToolUse hook: a hang here
+# is not a slow check, it is a tool call that never returns. Measured
+# 2026-09-08 with the interpreter hidden from PATH so this arm is actually
+# reached and stdin held open by a writer that never writes -- exit 124, killed
+# by an external timeout, against exit 2 in 0s once stdin is closed.
+#
+# `read -t` RATHER THAN `timeout cat`, because this arm exists precisely when
+# the environment is degraded and a bash builtin cannot itself be missing.
+# `-d ''` reads to NUL, i.e. to EOF, so the normal path returns non-zero with
+# INPUT set; only a status above 128 is the deadline firing.
+#
+# AND IT REFUSES ON TIMEOUT, matching what this file already does with a
+# payload it cannot understand: the fallback here is to block, never to allow.
+INPUT=""
+IFS= read -r -d "" -t 10 INPUT
+if [ "$?" -gt 128 ]; then
+    printf 'no payload arrived on stdin within 10s; refusing rather than hanging the tool call.\n' >&2
+    exit 2
+fi
 
 # Any chaining/substitution metacharacter: refuse without further thought.
 case "$INPUT" in
@@ -77,10 +105,14 @@ if [ "$allow" = maybe ]; then
 fi
 
 cat >&2 <<'MSG'
-BLOCKED: jq is not installed, and every PreToolUse hook in this repo parses its
-input with jq. Without it they all exit 0, which means ALLOW, so the entire guard
-set (force-push, blanket git add, destructive restore, worktree add, admin merge,
-amend, and 21 more) is silently inert.
+BLOCKED: jq is not installed, and every PreToolUse and PostToolUse Bash hook in
+this repo parses its input with jq. Without it they all exit 0, which means ALLOW,
+so the entire guard set (force-push, blanket git add, destructive restore,
+worktree add, admin merge, amend, and 21 more) is silently inert.
+
+On PostToolUse the tool has ALREADY run, so this exit prevents nothing: it is
+there to surface the broken toolchain to the session instead of letting
+cancel-old-ci.sh and refresh-pr-body.sh quietly do nothing.
 
 This hook fails closed rather than let that pass unnoticed.
 

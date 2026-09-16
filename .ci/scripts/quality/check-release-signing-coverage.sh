@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-release-signing-coverage is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_release_signing_coverage.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_release_signing_coverage.py" but its header derives "...check-release-signing-coverage.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # EVERY RELEASE PACKAGE FORMAT MUST BE SIGNED, OR BE DECLARED UNSIGNED ON PURPOSE.
 #
 # WHY THIS EXISTS. On 2026-09-05 a deb shipped UNSIGNED and green: the signing
@@ -57,15 +66,10 @@ declare -A UNSIGNED_ON_PURPOSE=(
 
 MIN_FORMATS=4
 
-fails=0
-n=0
-_c() {
-    n=$((n + 1))
-    if [[ "$2" == "$3" ]]; then echo "  ok    $1"; else
-        fails=$((fails + 1))
-        echo "  FAIL  $1 (got '$2' want '$3')" >&2
-    fi
-}
+# One copy of the tally, shared -- see check-release-key-canonical.sh for why this
+# was still duplicated after the library existed.
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/gate-controls.sh"
+_c() { gate_check "$@"; }
 
 # The formats the builder ACCEPTS, read from its own validation case rather than
 # duplicated here -- a list that can drift is a list that will.
@@ -136,13 +140,8 @@ for f in "${!UNSIGNED_ON_PURPOSE[@]}"; do
     _c "exemption '$f' carries a reason" "$([[ ${#UNSIGNED_ON_PURPOSE[$f]} -gt 30 ]] && echo yes || echo no)" "yes"
 done
 
-if ((n < 6)); then
-    echo "FAIL  only $n control(s) ran; the battery is not being executed as written" >&2
-    fails=$((fails + 1))
-fi
-if ((fails)); then
-    echo "✗ release signing coverage: $fails of $n control(s) failed" >&2
+if ! gate_finish 6 "release signing coverage"; then
     echo "  A format that neither refuses nor is declared unsigned ships unverified." >&2
     exit 1
 fi
-echo "✓ release signing coverage: ${#FORMATS[@]} format(s), $n control(s) passed (${#UNSIGNED_ON_PURPOSE[@]} declared unsigned)"
+echo "  (${#FORMATS[@]} format(s), ${#UNSIGNED_ON_PURPOSE[@]} declared unsigned)"

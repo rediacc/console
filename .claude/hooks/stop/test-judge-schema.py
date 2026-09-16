@@ -29,7 +29,6 @@ import json
 import os
 import pathlib
 import shutil
-import subprocess
 import sys
 import tempfile
 import types
@@ -39,6 +38,7 @@ import wl_bravedefault
 import wl_classsweep
 import wl_core
 import wl_judge
+import wl_proc
 import wl_rules
 
 
@@ -491,6 +491,10 @@ CAPTURED = {}
 class FakeProc:
     returncode = 0
     stderr = ""
+    # `timed_out` is what `wl_proc.Result` carries and what the routed call sites
+    # branch on before anything else. A fake without it raises AttributeError from
+    # inside the code under test, which reads as a defect in the subject.
+    timed_out = False
 
     def __init__(self, stdout):
         self.stdout = stdout
@@ -503,10 +507,19 @@ def fake_run(cmd, **_kw):
     return FakeProc(json.dumps({"is_error": False, "structured_output": CAPTURED["answer"]}))
 
 
-wl_judge.subprocess = types.SimpleNamespace(
+# THE SEAM MOVED FROM `subprocess` TO `wl_proc`. `wl_judge` was routed onto the
+# shared bounded runner on 2026-09-08, because `claude -p` forks and a plain
+# `subprocess.run` timeout kills only the direct child and then blocks in
+# communicate() on pipes a grandchild holds -- inside the Stop hook, which means
+# no session in the worktree can stop. A stub left on the old name would
+# intercept nothing and let every control below drive the REAL CLI.
+#
+# `TIMEOUT_RC`/`SPAWN_FAILED_RC` are carried over verbatim rather than invented,
+# because the routed call sites branch on them by name.
+wl_judge.wl_proc = types.SimpleNamespace(
     run=fake_run,
-    TimeoutExpired=subprocess.TimeoutExpired,
-    DEVNULL=subprocess.DEVNULL,
+    TIMEOUT_RC=wl_proc.TIMEOUT_RC,
+    SPAWN_FAILED_RC=wl_proc.SPAWN_FAILED_RC,
 )
 wl_judge.resolve_claude = lambda: "/bin/sh"
 
@@ -546,11 +559,16 @@ def _retry_probe(payloads):
         calls["n"] += 1
         return FakeProc(payloads[min(calls["n"] - 1, len(payloads) - 1)])
 
-    real, wl_judge.subprocess.run = wl_judge.subprocess.run, scripted
+    # STUBBING `wl_proc.run`, NOT `subprocess.run`. The judge was routed onto the
+    # shared bounded runner on 2026-09-08 because `claude -p` forks and a plain
+    # `subprocess.run` timeout cannot bound it inside the Stop hook. A stub left on
+    # the old name intercepts NOTHING: the real CLI is invoked, the verdict comes
+    # back None, and this file dies on `v["verdict"]` rather than reporting.
+    real, wl_judge.wl_proc.run = wl_judge.wl_proc.run, scripted
     try:
         verdict, err = wl_judge.run_judge(["- [ ] x"], 0, "msg", 0, "(none)")
     finally:
-        wl_judge.subprocess.run = real
+        wl_judge.wl_proc.run = real
     return calls["n"], verdict, err
 
 
@@ -1476,6 +1494,7 @@ class _FakeProc:
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = ""
+        self.timed_out = False
 
 
 def _envelope(subtype, cost, **extra):
@@ -1586,11 +1605,11 @@ _GOOD_ENV = json.dumps(
 )
 _INST = [{"file": "a.py", "line": 1}]
 
-_real_run = _shapedup.subprocess.run
+_real_run = _shapedup.wl_proc.run
 try:
     # 1. An exhausted first sample is retried, and the good second one is used.
     _run, _calls = _script(_FakeProc(1, _EXHAUST_ENV), _FakeProc(0, _GOOD_ENV))
-    _shapedup.subprocess.run = _run
+    _shapedup.wl_proc.run = _run
     _out, _why = _shapedup.ask(_INST)
     # ask() returns the whole structured_output, not the inner shape_dup value.
     control(
@@ -1603,12 +1622,12 @@ try:
     # 2. CONTROL: a different non-zero exit stays final and is NOT retried. Without
     #    this, a helper that retried everything would pass control 1.
     _run, _calls = _script(_FakeProc(1, _envelope("error_during_execution", 0.01)))
-    _shapedup.subprocess.run = _run
+    _shapedup.wl_proc.run = _run
     _out, _why = _shapedup.ask(_INST)
     control("CONTROL: another failure subtype is not retried", (_out, len(_calls)), (None, 1))
     control("CONTROL: and it is still reported", "shape_dup model call" in _why, True)
 finally:
-    _shapedup.subprocess.run = _real_run
+    _shapedup.wl_proc.run = _real_run
 
 
 # ---------------------------------------------------------------------------
@@ -1765,6 +1784,53 @@ control("CONTROL: a planted inline literal IS caught", len(_literal_schema_paylo
 control("CONTROL: a named payload is accepted", _literal_schema_payloads(_tmp), [])
 shutil.rmtree(_tmp, ignore_errors=True)
 
+# ---- a KILLED child is not an unreachable model -------------------------------
+#
+# THE FAILURE THIS PINS, paid for on 2026-09-08. `_explain_failed_exit` opened
+# with "judge exited 143" and the surrounding narrative read as an unreachable
+# model, whose offered remedy is `WORKLIST_JUDGE=off` -- disabling a HEALTHY gate.
+# The child had been SIGTERMed because the outer Stop-hook deadline was shorter
+# than JUDGE_TIMEOUT_S; the model answered fine minutes later for $0.0165. A
+# monitor that infers CAUSE from a non-zero exit without asking whether a signal
+# killed the process will misdirect every reader who trusts it, and this one
+# misdirects them toward switching the gate off.
+
+
+class _Killed:
+    """A finished child, as `_explain_failed_exit` sees one."""
+
+    def __init__(self, rc):
+        self.returncode = rc
+        self.stdout = ""
+        self.stderr = ""
+
+
+def _says_killed(rc):
+    return "KILLED by signal" in " ".join(wl_judge._explain_failed_exit("judge", _Killed(rc)))
+
+
+# BOTH SPELLINGS OF A SIGNAL. `subprocess` reports a signalled child as a
+# NEGATIVE returncode, while a shell between us and it reports 128+N -- and the
+# live failure arrived as 143, the shell form, so testing only the negative form
+# would have missed the case that actually happened.
+control("a negative returncode is reported as KILLED", _says_killed(-15), True)
+control("128+15 (SIGTERM through a shell) is reported as KILLED", _says_killed(143), True)
+control("128+9 (SIGKILL through a shell) is reported as KILLED", _says_killed(137), True)
+# THE MIRROR, and without it the three above are satisfied by a function that
+# says KILLED unconditionally.
+control("CONTROL: an ordinary failure is NOT reported as killed", _says_killed(1), False)
+control("CONTROL: a usage error is NOT reported as killed", _says_killed(2), False)
+# 160 is outside the signal band: 128+32 is not a signal any child sends here,
+# and treating the whole 128+ range as signals would swallow real exit codes.
+control("CONTROL: 160 is outside the signal band", _says_killed(160), False)
+# The message must point at the DEADLINE, not the model -- that is the whole
+# reason the previous wording cost a turn.
+control(
+    "the killed message names the outer deadline rather than the model",
+    "deadline" in " ".join(wl_judge._explain_failed_exit("judge", _Killed(143))),
+    True,
+)
+
 # EVERYTHING ABOVE THIS LINE IS COUNTED AND CAN FAIL THE SCRIPT. Blocks appended
 # BELOW the verdict at `if Tally.fails:` and the summary print are decorative: they
 # still run and still print "  FAIL", but nothing reads Tally.fails again, so the
@@ -1772,9 +1838,6 @@ shutil.rmtree(_tmp, ignore_errors=True)
 # appended there on 2026-09-04 and were silently unfalsifiable until the control
 # COUNT failed to move. Add new parts ABOVE the verdict.
 
-if Tally.fails:
-    print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)
-    sys.exit(1)
 # --------------------------------------------------------------------------
 # THE JUDGE LOG and the streak it exists to make honest.
 # --------------------------------------------------------------------------
@@ -1816,4 +1879,7 @@ control(
 )
 control("CONTROL: an empty extra is not a fix stop", wl_judge.is_fix_stop(""), False)
 
+if Tally.fails:
+    print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)
+    sys.exit(1)
 print(f"{Tally.count} control(s) passed")

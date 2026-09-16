@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Unit test for .ci/scripts/quality/check-autopilot-no-bypass.sh.
 #
 # WHY THIS TEST EXISTS AT ALL, and it is not "because every gate should have one".

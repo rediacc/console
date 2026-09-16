@@ -1563,7 +1563,7 @@ R_REGGATE_BLOCK = (
     "  judge's blind spot:  %s\n"
     "  judge's instruction: %s\n%s%s\n"
     "Three exits, pick one THIS turn:\n"
-    "  1. WRITE THE GATE control-first: a new scripts/check-*.ts or "
+    "  1. WRITE THE GATE control-first: a new scripts/gates/check-*.ts or "
     ".ci/scripts/quality/check-*.sh, wired as a check:ci-* key REACHABLE "
     "from `npm run ci` (transitively; defined-but-never-run does not "
     "count). The next stop runs it bounded, and a green run IS the "
@@ -2127,6 +2127,25 @@ Session state:
   --state <me>                  rewrite agent/<me>/STATE.md (body on stdin)
   --loop <me> <next> <count> <what...>   declare a scheduled loop
 
+Plan records (W12):
+  --plan-compact <me>           LIST what can be compacted and what each one
+                                would refuse (oldest first). No path, no write.
+  --plan-revive <me>            LIST the records on disk and whether each
+                                one's blob still resolves
+  --plan-compact <me> <agent/PLAN-x.md> [--write] [--park]
+                 [--why author|auto|model]
+                                turn a FINISHED plan into an attested record
+                                that keeps its own path. The full text stays
+                                recoverable from a git BLOB (content-addressed,
+                                so `gh pr merge --rebase` cannot break it) and
+                                every box keeps its `done=` proof from the
+                                committed ledger. Prints the record; --write
+                                puts it on disk. --park records a plan whose
+                                work is unfinished: its text shrinks, its
+                                housekeeping clock does not stop.
+  --plan-revive <me> <agent/PLAN-x.md> [--write]
+                                restore a record's full text from its blob
+
 Maintenance:
   --compact                     drop tombstones and fold the event log
   --reassign <me> <phantom>     take over the OPEN items and requests of an
@@ -2429,3 +2448,144 @@ sound. Being wrong in the "unfaithful" direction walls in a session that did the
 right thing and teaches everyone to route around this check, so when the item
 list plausibly covers the plan, say so.
 """
+
+
+# ---- W12: plan records -------------------------------------------------------
+# The verbs that compact a finished plan into an attested record. Prose here,
+# reasons beside the code in worklist.py, per this file's contract.
+
+CLI_PLANREC_USAGE = (
+    "usage: worklist.py --plan-compact <me>            list the candidates\n"
+    "       worklist.py --plan-revive  <me>            list the records\n"
+    "       worklist.py --plan-compact <me> <agent/PLAN-x.md> [--write] [--park]\n"
+    "                   [--why author|auto|model]\n"
+    "       worklist.py --plan-revive  <me> <agent/PLAN-x.md> [--write]\n"
+    "\n"
+    "A plan file that nobody has touched for delete_days goes RED in\n"
+    "check:ci-plan-housekeeping, and the operator's rule is that nothing is\n"
+    "deleted. Compaction is the third door: the file keeps its path, so every\n"
+    "citation of it still resolves, and its full text moves into a git blob.\n"
+    "\n"
+    "Without --write nothing is written; the record goes to stdout so you can\n"
+    "read it first. --why picks where the prose comes from:\n"
+    "  author  placeholders you fill in (the default). A `compacted` record\n"
+    "          with an unfilled placeholder is RED in check:ci-plan-record.\n"
+    "  auto    the plan's own Why/Problem/Status/Outcome sections, verbatim.\n"
+    "  model   one bounded haiku call, with every unresolvable pointer it\n"
+    "          writes replaced by [unresolved] before anything is saved.\n"
+)
+
+CLI_PLANREC_REFUSED = "%s\n\nNothing was written."
+
+CLI_PLANREC_WROTE = (
+    "wrote %(rel)s as a %(status)s record (%(bytes)d bytes, was %(was)d)\n"
+    "  Full-Text-Blob: %(blob)s\n"
+    "  recover the full text with:  git show %(blob)s\n"
+    "  find its commit with:        git log --find-object=%(blob)s --all\n"
+    "  undo this:                   worklist.py --plan-revive %(me)s %(rel)s --write\n"
+    "\n"
+    "NOT COMMITTED, and that is deliberate. The text is recoverable RIGHT NOW\n"
+    "anyway: the blob is already in the object store because this path was\n"
+    "committed before it was compacted -- which is exactly why a dirty path is\n"
+    "refused. Committing the record is the operator's call. Two things must\n"
+    "land in the SAME commit as this file, or two gates disagree with each\n"
+    "other:\n"
+    "  npm run check:ci-plan-boxes -- --update      # the box ledger\n"
+    "  npm run check:ci-plan-record -- --update     # agent/INDEX.md\n"
+)
+
+CLI_PLANREC_DRY = "%s\n---- the record above is NOT on disk. Re-run with --write to save it. ----\n"
+
+CLI_PLANWHY_USAGE = (
+    "usage: worklist.py --plan-why [<me>] <path>\n"
+    "\n"
+    "What the COMPACTED history says about one file. A finished plan keeps its\n"
+    "path and shrinks to a record whose full text is a git blob; the record's\n"
+    "`Touched:` trailer names the files its plan cited, and agent/INDEX.md carries\n"
+    "the reverse map. This verb reads that map.\n"
+    "\n"
+    "It writes nothing, so it takes no session prefix -- one is accepted and\n"
+    "ignored, because the sibling verbs need it and the habit is worth honouring.\n"
+)
+
+CLI_PLANWHY_HIT = (
+    "%(path)s appears in the compacted history:\n\n%(body)s\n\n"
+    "Those records are the reading copy. `git show <blob>` recovers the plan in\n"
+    "full; `worklist.py --plan-revive <me> <record> --write` puts it back on disk\n"
+    "as a live plan, which also puts it back on the housekeeping clock.\n"
+)
+
+# THE EMPTY ANSWER, said out loud. A verb that printed nothing here would be
+# read as broken, and the next session would stop asking -- so the two ways of
+# finding nothing get two different sentences, and each says what was searched.
+CLI_PLANWHY_NO_EDGE = (
+    "nothing is recorded about %(path)s.\n"
+    "\n"
+    "That is an answer, not a silence: %(index)s was read and the %(n)d compacted\n"
+    "record(s) it indexes name no path matching this one. Either no finished plan\n"
+    "ever cited this file, or the plans that did are still live plans -- this verb\n"
+    "reads the RECORDS, so a live plan's reasoning is not in scope for it.\n"
+    "\n"
+    "  git log --oneline -- %(path)s        the commits, which are not indexed here\n"
+)
+
+CLI_PLANWHY_NO_INDEX = (
+    "nothing is recorded about %(path)s, because there is no edge table to read.\n"
+    "\n"
+    "%(index)s carries no record edges -- either the file is absent, or (since W12\n"
+    "P1.7) it exists carrying only the `## Plan census` SessionStart reads. Both are\n"
+    "the CORRECT state until the first plan is compacted -- an empty generated table\n"
+    "would be a document that says nothing -- so this is not a fault to fix. It\n"
+    "becomes an answer as soon as a record exists:\n"
+    "\n"
+    "  worklist.py --plan-compact <me>              what can be compacted today\n"
+    "  npm run check:ci-plan-record -- --update     writes the index\n"
+)
+
+CLI_PLANTICK_USAGE = (
+    "usage: worklist.py --plan-tick <me> <agent/PLAN-x.md> <box> <evidence...> [--write]\n"
+    "\n"
+    "Tick ONE box in a plan and update the committed box ledger in the same run.\n"
+    "\n"
+    "<box>       an 8-hex box signature, or any text that matches exactly one open\n"
+    "            box. Ambiguity is refused rather than resolved by picking the\n"
+    "            first -- the wrong box ticked is worse than a second command.\n"
+    "<evidence>  mandatory, and it goes into the plan on its own indented line\n"
+    "            beneath the box. Name the command, the file:line or the run id.\n"
+    "\n"
+    "WHY BOTH FILES. .ci/config/plan-boxes.json is a COMMITTED second reading of\n"
+    "the same boxes, and check:ci-plan-boxes compares the two for equality. A box\n"
+    "ticked by hand with the ledger left alone is a red tree whose remedy is a\n"
+    "regenerate nobody remembers to run.\n"
+    "\n"
+    "Without --write nothing is written.\n"
+)
+
+CLI_PLANTICK_DRY = (
+    "would tick one box in %(rel)s and update the ledger:\n"
+    "  %(note)s\n"
+    "\n---- NOTHING was written. Re-run with --write. ----\n"
+)
+
+CLI_PLANTICK_WROTE = (
+    "ticked one box in %(rel)s and updated %(ledger)s\n"
+    "  %(note)s\n"
+    "\n"
+    "NOT COMMITTED. The two files must land in the SAME commit: the ledger is a\n"
+    "reading OF the plan, so a commit carrying one without the other is read by\n"
+    "check:ci-plan-boxes as a box that vanished rather than one that was ticked.\n"
+    "\n"
+    "  git add %(rel)s %(ledger)s\n"
+)
+
+CLI_PLANREC_REVIVED = (
+    "restored %(rel)s from blob %(blob)s (%(bytes)d bytes)\n"
+    "  The record is gone and the plan is a live plan again, which means it is\n"
+    "  back on the housekeeping clock.\n"
+    "\n"
+    "  COMMIT BEFORE YOU COMPACT IT AGAIN. --plan-compact refuses a dirty path,\n"
+    "  and the path is dirty right now because this verb just rewrote it. That\n"
+    "  refusal is not bureaucracy: the record's pointer is the hash of the bytes\n"
+    "  on disk and the record then OVERWRITES those bytes, so compacting an\n"
+    "  uncommitted file would leave its text in no commit and no working tree."
+)

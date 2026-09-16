@@ -20,7 +20,7 @@ prewarm_vscode() {
     out="$(mktemp)"
     rdc vscode connect "$repo" --browser --url-only >"$out" 2>/dev/null &
     pid=$!
-    for i in $(seq 1 120); do
+    for ((i = 1; i <= 120; i++)); do
         grep -q '^http' "$out" 2>/dev/null && break
         kill -0 "$pid" 2>/dev/null || break
         sleep 1

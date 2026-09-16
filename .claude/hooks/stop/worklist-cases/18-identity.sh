@@ -346,6 +346,20 @@ L1_TABLE=(
     "--reassign|--reassign @ME@ phantom1|reassigned phantom1 -> deadbeef"
     # Evidence-gated, so CONTROL A only passes against the chain planted above.
     "--adopt|--adopt @ME@ adopt111|adopted"
+    # W12 plan records. Driven in their LISTING mode (a <me> and no path), which
+    # is the only mode whose effect is a printed line rather than a written file.
+    # The write modes need a git repository with a committed plan AND a committed
+    # box ledger to reach rc=0, and planting one per verb here would prove the
+    # identity rule against a fixture rather than against the verb. The listing
+    # runs the same argv parse, the same PREFIX_RE and the same
+    # _identity_or_die, which is the whole surface this table is about.
+    "--plan-compact|--plan-compact @ME@|plan record candidates"
+    "--plan-revive|--plan-revive @ME@|plan records on disk"
+    # Same listing rule, same reason. --plan-tick's write mode needs a plan AND a
+    # committed box ledger; its listing mode is where a caller gets the box
+    # SIGNATURE the write mode wants, so the read is a prerequisite of the write
+    # rather than a convenience, and it runs the identical argv parse.
+    "--plan-tick|--plan-tick @ME@|open boxes that --plan-tick can flip"
 )
 COVERED="$BASE/l1covered"
 : >"$COVERED"
@@ -503,6 +517,21 @@ NO_ME = {
                               # explicitly as `--reports --read` and
                               # `--reports --list --as`, and it is recorded
                               # covered by both.
+    "--plan-why",             # a pure READ of agent/INDEX.md's edge table: what
+                              # the compacted plan history says about one path.
+                              # It writes nothing and touches no item, so there
+                              # is no identity to mismatch -- it ACCEPTS a
+                              # leading prefix and ignores it, purely so a
+                              # session that has just typed
+                              # `--plan-compact <me> ...` is not answered with a
+                              # usage error for typing it again. An L1_TABLE row
+                              # would assert that a foreign <me> is REFUSED,
+                              # which for a read verb would be the wrong
+                              # behaviour to pin. Its risk is a wrong ANSWER,
+                              # not a wrong writer, and that is covered where it
+                              # lives: the both-direction why_lines controls in
+                              # stop/test-planrec.py.
+                              # IF IT EVER WRITES ANYTHING, delete this line.
     "--roundlog",             # takes a BRANCH, not an identity: it splices the
                               # STATUS block of reports/pr-babysit-<branch>.md,
                               # a single-owner document with no per-session

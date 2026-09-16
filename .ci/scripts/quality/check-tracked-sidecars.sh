@@ -1,4 +1,13 @@
 #!/bin/bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-tracked-sidecars is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_tracked_sidecars.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_tracked_sidecars.py" but its header derives "...check-tracked-sidecars.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # No stop-hook RUNTIME sidecar may be tracked by git.
 #
 # WHY THIS EXISTS. On 2026-08-05 a `git add -A` swept two runtime files into a

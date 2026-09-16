@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Assert that no OTLP/Pyroscope credentials leak in built artifacts.
 #
 # Credentials are resolved at runtime from env vars (renet) or from the

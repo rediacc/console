@@ -1,0 +1,13 @@
+# rediacc_ci allowlist golden
+# reader: ts:scripts/lib/blocker-validator.ts::parseBlockeredList
+# command: parseBlockeredList(<corpus>, '#'); printf '%s\t%s\t%s\n' line entry blocker
+# projection: records
+# source: .unverified-download-allowlist
+# corpus: corpus/unverified-download-allowlist.list
+# comment-char: #
+# corpus-sha256: 0137ac19a315d1f7cdb0bb5d02e6a066c527d649e8baaa3904ce96265b62b145
+# ---
+16	awscli.amazonaws.com	AWS publishes no sha256 for the CLI bundle -- the .sha256 URL returns 404 -- only a GPG .sig, which needs their signing key imported first; revisit if a checksum ever appears
+19	raw.githubusercontent.com/nvm-sh/nvm	piped straight into bash, so there is no artifact on disk to hash; only vendoring the installer script into this repo would make it verifiable
+22	claude.ai/install.sh	piped straight into bash, same shape as the nvm installer above; the vendor publishes no pinned, checksummed release artifact to use instead
+25	download.docker.com/linux/ubuntu/gpg	this is an apt KEYRING, and apt itself verifies every package installed from that repo against it via signed-by, so the packages are covered even though this fetch is not

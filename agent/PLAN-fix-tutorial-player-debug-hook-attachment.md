@@ -55,7 +55,21 @@ selectors, and routes -- not a debugging session against the product.
 
 ## Root cause
 
-1. `b1d40b6d4` ("feat(www): ship guided tutorial player...", 2026-03-05) added
+1. The commit below ("feat(www): ship guided tutorial player...", 2026-03-05)
+   added
+
+   It is NOT an ancestor of `origin/main`, and is kept alive only by the stale
+   `gitlab/0227-1` remote-tracking ref rather than by a live branch. Recorded
+   rather than fake-repointed, because no equivalent commit with this subject
+   exists on `origin/main`. Quoted inside a fence deliberately: it is a
+   deliberately-dead pointer, and `check:ci-plan-citations` resolves any bare
+   9-character object token elsewhere on the line -- in CI the object does not
+   exist at all, since a fresh clone has no `gitlab` remote-tracking refs.
+
+```
+b1d40b6d4
+```
+
    `TerminalPlayer.tsx` + `terminal-player-shell.tsx` + `terminal-player-audio.tsx`
    + `terminal-player-utils.ts` and, in the same commit, the release gate script
    this plan is fixing (`443` lines at HEAD then). `window.__tutorialDebug`

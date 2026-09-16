@@ -1,4 +1,13 @@
 #!/bin/bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-label-inventory is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_label_inventory.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_label_inventory.py" but its header derives ".ci/scripts/quality/check-label-inventory.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # .github/labels.yml and the labels that actually exist on the repo must agree,
 # in BOTH directions.
 #
@@ -97,7 +106,13 @@ CREATE_ON_DEMAND=(
     exit 1
 }
 
-DECLARED="$(grep -E '^- name:' "$LABELS_FILE" | sed -E 's/^- name:[[:space:]]*//' | sed -E 's/^"(.*)"$/\1/' | sed -E "s/^'(.*)'$/\1/" | sed -E 's/[[:space:]]+$//')"
+# `|| true` IS LOAD-BEARING, and its absence disarmed the floor below. grep
+# exits 1 when the file declares no labels, `set -e` killed the script HERE, and
+# the MIN_DECLARED control -- whose own message reads "this reader is broken, not
+# the file" -- could never fire in the one case it was written for. Reproduced
+# 2026-09-06 with LABEL_INVENTORY_LABELS_FILE pointed at an empty file: exit 1,
+# zero bytes on both streams.
+DECLARED="$(grep -E '^- name:' "$LABELS_FILE" | sed -E 's/^- name:[[:space:]]*//' | sed -E 's/^"(.*)"$/\1/' | sed -E "s/^'(.*)'$/\1/" | sed -E 's/[[:space:]]+$//' || true)"
 DECLARED_COUNT=$(printf '%s\n' "$DECLARED" | sed '/^$/d' | wc -l)
 
 if [ "$DECLARED_COUNT" -lt "$MIN_DECLARED" ]; then
@@ -126,8 +141,10 @@ desc_over_cap() {
             if (length(d) > cap) printf "%s\t%d\n", name, length(d)
         }'
 }
+printf -v control_desc '%*s' 101 ''
+control_desc=${control_desc// /x}
 CONTROL=$(printf -- '- name: control-label\n  description: "%s"\n' \
-    "$(printf 'x%.0s' $(seq 1 101))" | desc_over_cap)
+    "$control_desc" | desc_over_cap)
 if [ -z "$CONTROL" ]; then
     log_error "description-cap control did not fire on a planted 101-char description; the checker is broken, refusing to certify anything"
     exit 1
@@ -321,15 +338,24 @@ done <<<"$LIVE"
 # picker, and it was the one part of the label nothing checked.
 #
 # LIVE_JSON is a SEPARATE read from LIVE (which is names-only, and whose
-# fixture seam feeds names-only). When it cannot be obtained this section is
-# skipped rather than failing: the name reconciliation above already refuses to
-# pass blind on an unreadable API, so a second hard failure here would only turn
-# fixture-driven runs red.
+# fixture seam feeds names-only). The "a second hard failure here would only
+# turn fixture-driven runs red" reasoning this comment used to give does NOT
+# hold: LIVE_SOURCE is "GitHub API" only when neither LABEL_INVENTORY_LIVE_FILE
+# nor LABEL_INVENTORY_LIVE_JSON_FILE is set, and every fixture-driven test sets
+# one of those -- so this branch is never exercised by any test, and hardening
+# it cannot turn a fixture-driven run red. A failed read here used to be
+# silently treated as "nothing to compare," so the gate reported "names,
+# descriptions and colours all agree" without ever having compared descriptions
+# or colours. Fixed 2026-09-10: refuse instead.
 LIVE_JSON=""
 if [ -n "${LABEL_INVENTORY_LIVE_JSON_FILE:-}" ]; then
     LIVE_JSON="$(cat "$LABEL_INVENTORY_LIVE_JSON_FILE" 2>/dev/null || echo "")"
 elif [ "$LIVE_SOURCE" = "GitHub API" ]; then
-    LIVE_JSON="$(gh api 'repos/{owner}/{repo}/labels' --paginate 2>/dev/null || echo "")"
+    if ! LIVE_JSON="$(gh api 'repos/{owner}/{repo}/labels' --paginate 2>&1)"; then
+        log_error "could not read the live label list (with descriptions/colours) from GitHub: ${LIVE_JSON}"
+        log_error "This gate refuses to pass blind on the drift comparison. Authenticate (gh auth login / GH_TOKEN) and re-run."
+        exit 1
+    fi
 fi
 
 if [ -n "$LIVE_JSON" ] && [ "$LABELS_FILE" = ".github/labels.yml" ]; then

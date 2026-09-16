@@ -28,6 +28,12 @@ and reported nothing, which is the failure mode this repo keeps paying for.
 WHAT IT DOES NOT DO. It does not check that a submodule checkout is NEEDED --
 an unnecessary one costs fetch time, not correctness, and pruning those is a
 performance question with a different owner.
+
+---- gate ----
+step: Workflow submodule deps
+needs: python-yaml
+selftest: true
+---- end gate ----
 """
 
 import json
@@ -156,9 +162,27 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
         # A step and the script it runs are within two hops; a manifest reached
         # through another script is further out and is a catalogue, not a call.
         if depth <= NPM_RESOLVE_DEPTH:
-            # An npm script IS executed, so its text is scannable.
+            # An npm script IS executed, so its text is scannable -- BUT ONLY IF
+            # THE THING THAT NAMED IT WAS. `scannable`, not `True`, and the
+            # literal `True` here re-opened the exact hole the queue's own
+            # scannable flag was added to close.
+            #
+            # A referenced FILE body is queued non-scannable because naming a
+            # path is not reading one. It then arrived here and promoted every
+            # `npm run` inside it back to scannable, so a job that merely NAMES a
+            # script which happens to mention `npm run test:unit` was treated as
+            # running the tests. That triggered the whole-package test sweep and
+            # attributed packages/cli/src/commands/__tests__/datastore-prune-parser.test.ts
+            # -- which really does read private/renet/pkg/prune/datastore.go -- to
+            # `quality-static`, a job that runs no tests at all. The test's own
+            # header names the lane it belongs to: L6 PACKAGES, which does check
+            # out submodules.
+            #
+            # The intended hop still works, because it starts scannable: a STEP
+            # running `npm run test:unit` reaches `vitest` with the flag True the
+            # whole way down.
             queue.extend(
-                (scripts[key], depth + 1, True)
+                (scripts[key], depth + 1, scannable)
                 for key in re.findall(r"npm run ([\w:.-]+)", cmd)
                 if key in scripts
             )

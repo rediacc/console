@@ -64,7 +64,14 @@ asciinema rec \
 if [[ -f "$EXIT_CODE_FILE" ]]; then
     SCRIPT_EXIT=$(cat "$EXIT_CODE_FILE")
     if [[ "$SCRIPT_EXIT" != "0" ]]; then
-        echo "Error: tutorial script exited with code $SCRIPT_EXIT" >&2
+        # A SIGNAL IS NOT A VERDICT THE SCRIPT REACHED. Under a CI step timeout
+        # or an OOM kill this file holds 128+n, and reporting it as "exited with
+        # code 137" sends the reader hunting a failure branch that does not exist.
+        if [[ "$SCRIPT_EXIT" -gt 128 && "$SCRIPT_EXIT" -lt 160 ]]; then
+            echo "Error: tutorial script was KILLED by signal $((SCRIPT_EXIT - 128)) (raw $SCRIPT_EXIT) -- it did not choose this status" >&2
+        else
+            echo "Error: tutorial script exited with code $SCRIPT_EXIT" >&2
+        fi
         echo "Script: $TUTORIAL_SCRIPT" >&2
         # PRESERVE the recording. Deleting it here destroyed the only artifact that
         # explains the failure: the tutorial silences its own setup with

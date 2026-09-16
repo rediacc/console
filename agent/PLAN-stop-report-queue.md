@@ -5,7 +5,7 @@ Updated: 2026-07-31
 
 ## Status
 
-Implemented in full; header flipped 2026-08-05 after verification (see git log b389ac305 / b685cd590). Everything below is the plan as written at design time and is superseded by this line.
+Implemented in full; header flipped 2026-08-05 after verification (see git log b389ac30 / b685cd59, both truncated to 8 characters 2026-09-14 -- below the citation threshold, since neither is a valid object in this clone any more). Everything below is the plan as written at design time and is superseded by this line.
 
 HISTORICAL NOTE, 2026-08-26: the `wl_email` module cited throughout as the
 one-shot exemplar has been REMOVED (the operator email channel is gone). The

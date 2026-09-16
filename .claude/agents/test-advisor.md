@@ -49,6 +49,6 @@ you do, say which claim you are rejecting and why.
 ## Improving the skill
 
 When you find the skill wrong, missing, or misleading, say so as a concrete
-diff: the file, the line, what it should say. The `skill-test-iterate` skill is
-how those land. Files are capped at 60 lines by `check:ci-skill-size`, so an
-addition at the cap means tightening something else. Sharpen, do not accrete.
+diff: the file, the line, what it should say. Files are capped at 60 lines by
+`check:ci-skill-size`, so an addition at the cap means tightening something
+else. Sharpen, do not accrete.

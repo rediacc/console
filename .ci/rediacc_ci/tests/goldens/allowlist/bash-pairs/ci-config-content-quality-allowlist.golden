@@ -1,0 +1,22 @@
+# rediacc_ci allowlist golden
+# reader: bash:.ci/scripts/lib/blocker-validator.sh::parse_blockered_list
+# command: parse_blockered_list <corpus> A B '#'; for k in ${!B[@]}; printf '%s\t%s\n'; LC_ALL=C sort
+# projection: pairs
+# source: .ci/config/content-quality-allowlist.txt
+# corpus: corpus/ci-config-content-quality-allowlist.list
+# comment-char: #
+# corpus-sha256: 0ab00d825852ec420c1a17c68f7d039508a01a2eedd355013b921b78d2aa6434
+# ---
+packages/www/src/content/docs/ar/cli-application.md	
+packages/www/src/content/docs/de/cli-application.md	
+packages/www/src/content/docs/en/cli-application.md	
+packages/www/src/content/docs/es/cli-application.md	
+packages/www/src/content/docs/et/cli-application.md	
+packages/www/src/content/docs/fr/cli-application.md	
+packages/www/src/content/docs/it/cli-application.md	
+packages/www/src/content/docs/ja/cli-application.md	
+packages/www/src/content/docs/ko/cli-application.md	
+packages/www/src/content/docs/pt/cli-application.md	
+packages/www/src/content/docs/ru/cli-application.md	
+packages/www/src/content/docs/tr/cli-application.md	
+packages/www/src/content/docs/zh/cli-application.md	

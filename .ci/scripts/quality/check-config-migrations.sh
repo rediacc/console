@@ -1,4 +1,13 @@
 #!/bin/bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-config-migrations is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_config_migrations.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_config_migrations.py" but its header derives "...check-config-migrations.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Verify the config-migration runner round-trips every committed fixture
 # through runMigrations() + RdcConfigSchema.parse() without error, and
 # that every version gap in [1..CURRENT_SCHEMA_VERSION-1] has a
@@ -35,7 +44,12 @@ if [[ ! -f "$RUNNER" ]]; then
 fi
 
 # Extract CURRENT_SCHEMA_VERSION from the runner
-CURRENT=$(grep -oE 'CURRENT_SCHEMA_VERSION = [0-9]+' "$RUNNER" | grep -oE '[0-9]+$')
+# `|| true` IS LOAD-BEARING. grep exits 1 on no match, and under `set -e` that
+# aborted the script AT THIS LINE -- so the `if [[ -z "$CURRENT" ]]` handler
+# written for exactly that case was unreachable, and the gate exited 1 having
+# printed nothing at all. Reproduced 2026-09-06 against a runner with the token
+# removed: exit 1, empty stdout, empty stderr past the log_step.
+CURRENT=$(grep -oE 'CURRENT_SCHEMA_VERSION = [0-9]+' "$RUNNER" | grep -oE '[0-9]+$' || true)
 if [[ -z "$CURRENT" ]]; then
     log_error "Could not parse CURRENT_SCHEMA_VERSION from $RUNNER"
     exit 1

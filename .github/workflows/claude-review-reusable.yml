@@ -39,17 +39,12 @@ on:
         # secret they cannot supply fails their run, not ours. The shadow
         # steps below are repo-guarded for the same reason.
         required: false
-      ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN:
-        # DECLARED BUT NO LONGER USED, on purpose. This job now fetches the token
-        # from Bitwarden (see the bws-secrets step below), so the value a caller
-        # passes here goes nowhere. The declaration stays because private/account
-        # and private/renet still PASS it: dropping it here does not break this
-        # repo, it breaks their next run, and those callers live in repositories
-        # this PR cannot change. Remove this only in the same change that updates
-        # both callers and .github/external-callers.yml.
-        required: false
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
 
 jobs:
   # Which epics does this PR declare? One review pass runs per epic, so that a
@@ -66,6 +61,11 @@ jobs:
     name: Discover epics
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # Checkout plus a local discover-epics.sh. No gh, no API, no GH_TOKEN in
+    # this job. Pinned so the cross-repo caller contract is explicit: this job
+    # needs nothing beyond checkout.
+    permissions:
+      contents: read
     outputs:
       epics: ${{ steps.find.outputs.epics }}
     steps:
@@ -223,10 +223,28 @@ jobs:
           persist-credentials: false
 
       - name: Fetch secrets from Bitwarden
-        if: ${{ github.repository == 'rediacc/console' }}
-        # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
-        # live secrets.* reads below are untouched until the cutover flips them.
-        uses: ./.github/actions/bws-secrets
+        # NO LONGER A SHADOW: `7343ae9dc` flipped the consumer at the `claude_code_oauth_token:`
+        # line below to read these BWS_ copies. This comment said `nothing consumes` them for
+        # three days after that stopped being true.
+        #
+        # THE GUARD IS GONE AND THE PATH IS WHY, fixed 2026-09-09. This step used to carry
+        # `if: github.repository == 'rediacc/console'` because `./` in a reusable workflow
+        # resolves against the CALLER's tree, and account/renet/elite do not vendor this
+        # action -- without the guard their runs died on "Can't find 'action.yml'". But with
+        # the guard they skipped the fetch entirely and reviewed with a BLANK credential.
+        # Both halves of that were wrong at once.
+        #
+        # `.review-scripts` is console@main, already checked out above for exactly this
+        # class of problem ("one copy, no drift"), so the action is on disk for EVERY
+        # caller and the guard is unnecessary. No new secret, no allowlist entry, and the
+        # same pattern the review tooling itself already uses.
+        #
+        # A PREVIOUS ATTEMPT AT THIS WAS INERT AND SHIPPED LOOKING LIKE A FIX: adding
+        # `|| secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` as a fallback. Measured
+        # 2026-09-09 with `gh api`: no repo in the org defines that secret and there is no
+        # org-level secret, so the fallback resolved to the empty string in all three
+        # callers. `check:ci-secret-scope` is what caught it.
+        uses: ./.review-scripts/.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
@@ -331,6 +349,14 @@ jobs:
         if: steps.gate.outputs.go == 'true'
         uses: anthropics/claude-code-action@fa7e2f0a29a126f0b81cdcf360561b36e44cf608 # v1.0.180
         with:
+          # NO FALLBACK, DELIBERATELY. `7343ae9dc` (2026-09-05) flipped this line from
+          # `secrets.` to `env.` and left a `github.repository` guard on the fetch behind,
+          # so rediacc/account and rediacc/renet reviewed with a BLANK credential. The fix
+          # is the fetch above running for every caller, not a second source here: the
+          # `|| secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` that stood here briefly was
+          # INERT -- `gh api` shows no repo and no org defines that name -- and an empty
+          # fallback behind a working one is indistinguishable from a working fallback
+          # right up until the first one breaks.
           claude_code_oauth_token: ${{ env.BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
           # The prompt is what makes this a REVIEW rather than an @claude

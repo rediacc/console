@@ -50,11 +50,13 @@ fcntl-free). Portable to linux, macOS and Windows on amd64 and arm64.
 
 import contextlib
 import datetime
+import hashlib
 import json
 import os
 import pathlib
 import re
 import sys
+import time
 
 import wl_core as C
 
@@ -72,7 +74,25 @@ TITLE_MAX = 120
 SURFACE_MAX_LINES = int(os.environ.get("WORKLIST_REPORT_SURFACE_MAX", "25"))
 # `--scan` only indexes an agent whose transcript has stopped growing, so a
 # still-running agent is never captured mid-flight with a partial answer.
+#
+# THIS IS A PRE-FILTER, NOT THE VERDICT, and the distinction is the whole of
+# `running_agent_ids` below. mtime is evidence about whether an agent is
+# WRITING; the sentence above needs evidence about whether it is ALIVE. An
+# agent blocked in one Bash call is silent by construction for the length of
+# that call, so on 2026-09-07 two live agents -- one waiting on
+# `check:ci-pytest` (661 s in this repo's own receipt), one on the bash gate
+# battery (606 s) -- sailed past this check and were captured mid-thought.
+# Raising the number cannot fix it: a full local run here is 785 s, so any
+# threshold that survives a real gate makes the self-heal useless.
 SCAN_IDLE_MIN = float(os.environ.get("WORKLIST_REPORT_SCAN_IDLE_MIN", "5"))
+# How fresh a `.lastevent-<prefix>.json` sidecar must be for its roster to be
+# believed. A DEAD session's sidecar freezes with its tasks still "running", so
+# without this bound those ids would be protected forever and the self-heal
+# `scan()` exists for would starve permanently and silently. 30 is not a fresh
+# hand-picked number: `wl_store.py:1563` already answers "is this session live?"
+# with `LIVE_MIN = 30` against the same file, and two answers to one question
+# are how a codebase starts disagreeing with itself.
+SCAN_LIVE_MIN = float(os.environ.get("WORKLIST_REPORT_SCAN_LIVE_MIN", "30"))
 # `--scan` walks EVERY session's subagents dir under this project, and reads each
 # candidate transcript whole (they run to 1.4 MB). Unbounded, the first run on a
 # long-lived project would read gigabytes and resurrect months of finished agents
@@ -387,6 +407,64 @@ def resolve(store, ident):
 
 # ---- capture ----------------------------------------------------------------
 
+# The four states of `docs`/CLAUDE.md's worklist convention, as they appear in a
+# report's own `## Remaining` section. `[x]` is done and `[~]` is a tombstone;
+# everything else is an item the agent is handing back UNFINISHED.
+OPEN_BOX_STATES = frozenset(" ?>")
+# Bounded so a pathological body cannot make the index line grow: the marker is
+# "did it hand work back, and roughly how much", not an exact census.
+OPEN_BOX_CAP = 99
+
+
+def open_boxes(body):
+    """How many UNFINISHED worklist boxes the sub-agent's own report declares.
+
+    WHY THIS IS THE SIGNAL, and why nothing better exists at SubagentStop. Every
+    rule the Stop hook enforces on the main loop -- drain the queue, end with
+    `## Remaining`, do not stop with work in hand -- is structurally
+    unenforceable for a sub-agent, because `SubagentStop` is a CAPTURE hook that
+    can never refuse a turn (dispatch wraps this whole path in
+    `contextlib.suppress` and returns 0, deliberately; see
+    `handle_subagent_stop`). Making it blocking would be the wrong fix: a wedged
+    sub-agent costs more than a lost report. So the middle path is to RECORD the
+    condition where it is visible and let the PARENT's blocking Stop surface it.
+
+    THE STORE CANNOT ANSWER THIS. Worklist items are owned per session
+    (`agent/worklist/<owner>.jsonl`), and a sub-agent has no owner file -- it
+    reports to its principal instead of tracking its own items. So the only
+    honest source is what the agent itself wrote, and the repo already has one
+    machine-readable convention for that: the same box syntax `wl_core.ITEM`
+    parses. This counts it and claims nothing more than "the report declares N
+    unfinished boxes", which is exactly what a reader needs to know before
+    assuming the delegated work landed.
+
+    Counted over the WHOLE body rather than under a `## Remaining` heading:
+    agents write that heading a dozen ways ("Remaining", "## Remaining work",
+    "Still open"), and a heading matcher that misses is a marker that silently
+    reads zero -- the vacuous-check class. Over-counting a quoted box is visible
+    and harmless; under-counting is the failure this exists to prevent.
+    """
+    n = 0
+    for line in (body or "").splitlines():
+        m = C.ITEM_ANY.match(line)
+        if m and m.group("state") in OPEN_BOX_STATES:
+            n += 1
+            if n >= OPEN_BOX_CAP:
+                break
+    return n
+
+
+def _body_key(body):
+    """A short content key for one report body.
+
+    Not the whole body and not its length: length collides trivially across an
+    agent's own sign-offs ("Done." twice is two different stops), and the whole
+    body cannot live on a 1024-byte index line. 16 hex characters of sha256 is
+    64 bits, which is not a security claim -- it only has to separate one
+    agent's successive reports from a re-scan of the same one.
+    """
+    return hashlib.sha256((body or "").encode("utf-8")).hexdigest()[:16]
+
 
 def capture(
     store,
@@ -405,13 +483,52 @@ def capture(
     tx="ok",
 ):
     """Write the body whole, then append one index line. Returns the entry, or
-    None when the id is already indexed (so the hook and `--scan` can both run
-    over the same agent without producing a duplicate)."""
+    None when this exact report is already indexed, so the hook and `--scan` can
+    both run over the same agent without producing a duplicate.
+
+    DEDUP IS ON (agent, BODY), NOT ON AGENT ALONE, and the difference is a whole
+    class of lost report. An agent stops MANY times here: `SendMessage` resumes
+    it, and every resume ends in another `SubagentStop`. Keying on the id alone
+    meant only an agent's FIRST stop was ever recorded and every later one hit
+    `return None`. Measured live 2026-09-07 on `a41545ec804647d3b`: the store
+    holds its 75-byte SILENT sign-off from 20:06Z, and DISCARDED both substantive
+    reports that followed -- the full batch-9 delivery and the stand-down -- from
+    a transcript that had meanwhile grown to 2.1 MB. That is this module's own
+    stated purpose running backwards: it exists so that "reported substantively"
+    and "went idle saying nothing" stop being indistinguishable, and it was
+    keeping the silence and dropping the substance.
+
+    A LATER STOP THEREFORE GETS ITS OWN ID, `<rid>-2`, `<rid>-3`. It cannot share
+    the base id: `unread()` suppresses by id, so a second capture under a
+    read id would be born already-read and never surface -- the same bug wearing
+    a different hat. `resolve()` still answers the bare `rid` exactly, because it
+    checks exact matches before prefixes.
+    """
     rid = short_id(agent_id)
     if not rid:
         return None
     if is_phantom(agent_type, transcript):
         return None  # a main-loop turn, not a sub-agent report; see is_phantom
+    body_key = _body_key(body)
+    kin = 0
+    for ev in read_index(store):
+        ident = str(ev["id"])
+        if ident == rid or ident.startswith(rid + "-"):
+            kin += 1
+            prior = str(ev.get("bkey", ""))
+            if not prior:
+                # A LEGACY ENTRY, written before bodies were keyed. It cannot be
+                # compared, so it keeps the OLD id-only dedup. Without this the
+                # first `--scan` after this change would re-capture every one of
+                # the 349 reports already indexed, as `-2` duplicates.
+                return None
+            # THE SAME REPORT ARRIVING TWICE is what dedup is for: the hook
+            # captures at the stop, `--scan` self-heals over the same agent
+            # later, and both produce byte-identical bodies.
+            if prior == body_key:
+                return None
+    if kin:
+        rid = "%s-%d" % (rid, kin + 1)
     for ev in read_index(store):
         if str(ev["id"]) == rid:
             return None
@@ -425,10 +542,14 @@ def capture(
     )
     rel = "%s/%s" % (branch, fname)
     target = store / branch / fname
+    # DERIVED HERE, NOT PASSED IN, so every capture path records it: the
+    # `SubagentStop` hook and `--scan`'s self-healing pass both land in this one
+    # function, and a kwarg would have left the scanned half of the store blind.
+    opens = open_boxes(body)
     front = (
         "---\n"
         "agent_id: %s\nagent_type: %s\nagent_name: %s\nsession: %s\nbranch: %s\n"
-        "at: %s\nsource: %s\nsends: %d\ntranscript: %s%s\nbytes: %d\n"
+        "at: %s\nsource: %s\nsends: %d\nopen_boxes: %d\ntranscript: %s%s\nbytes: %d\n"
         "---\n\n"
         % (
             agent_id,
@@ -439,6 +560,7 @@ def capture(
             stamp,
             source,
             sends,
+            opens,
             transcript or "(none)",
             "" if tx == "ok" else "   <- DID NOT EXIST AT CAPTURE TIME",
             len(body.encode("utf-8")),
@@ -474,6 +596,16 @@ def capture(
             # nothing -- inverting the exact distinction this field exists to draw.
             "silent": sends == 0 and len(body.strip()) < SILENT_FLOOR,
             "sends": sends,
+            # THE SUB-AGENT'S OWN TURN DISCIPLINE, recorded because it cannot be
+            # enforced. See `open_boxes`. Zero is a real answer ("handed nothing
+            # back"), which is why this is always written rather than only when
+            # non-zero: an absent key would be indistinguishable from a capture
+            # taken before this field existed.
+            "opens": opens,
+            # The content key this capture deduped against. Present from the
+            # moment bodies were keyed; ABSENT on every line written before,
+            # which is exactly how `capture` tells a legacy entry apart.
+            "bkey": body_key,
             # WHETHER THE TRANSCRIPT PATH ACTUALLY RESOLVED, checked at capture. A
             # stored path that silently does not exist is worse than a null: every
             # reader treats it as readable and quietly gets nothing, which is the
@@ -579,15 +711,36 @@ def surface_block(store, branch, hook_path, reader):
             "  (%d older not shown; %s --list --unread for all)"
             % (len(items) - len(shown), hook_path)
         )
+    handed_back = 0
     for e in shown:
         age = C.stamp_age_min(e.get("at"))
         age_s = "%dm" % age if age is not None else "?"
-        flag = "SILENT " if e.get("silent") else ""
+        # SILENT WINS THE COLUMN when both could apply, and they barely can: a
+        # silent capture has no body, so it declares no boxes. Both flags are
+        # exactly 7 characters so the id column stays aligned either way.
+        opens = int(e.get("opens") or 0)
+        if e.get("silent"):
+            flag = "SILENT "
+        elif opens:
+            flag = "OPEN:%-2d" % min(opens, OPEN_BOX_CAP)
+            handed_back += 1
+        else:
+            flag = ""
         title = e.get("title") or (
             "(no body: this agent stopped without reporting)" if e.get("silent") else "(untitled)"
         )
         lines.append(
             "  %s%-12s %5s  %-22s %s" % (flag, e["id"], age_s, str(e.get("agent"))[:22], title)
+        )
+    if handed_back:
+        # A LEGEND, not a per-report row: the collapse above bounds rows, and
+        # this line does not scale with the set. Without it the marker is a bare
+        # number whose meaning the reader has to guess, and a marker nobody acts
+        # on is the same as no marker.
+        lines.append(
+            "  OPEN:n = the agent ENDED ITS TURN declaring n unfinished item(s). "
+            "SubagentStop cannot refuse a turn, so this is the only place that "
+            "surfaces; read those %d before assuming the work landed." % handed_back
         )
     lines.append("  read one:  %s --show <id>" % hook_path)
     # The prefix is BAKED IN rather than left as a placeholder: read marks are
@@ -620,6 +773,73 @@ def handle_surface(event, hook_event, hook_path):
 
 
 # ---- scan (self-healing capture) --------------------------------------------
+
+
+def running_agent_ids(start):
+    """(ids, evidence) -- the sub-agents the HARNESS says are running right now.
+
+    THE ORACLE `scan()` WAS MISSING. mtime answers "is it writing?"; this answers
+    "is it alive?", and only the second one licenses the word "finished". The
+    harness records the answer already: `wl_checks.py` dumps the whole Stop event
+    to `<worklist>.lastevent-<prefix>.json` on every full stop, and its
+    `background_tasks` array carries one entry per task with `type`, `status` and
+    `id`.
+
+    THE JOIN IS THE WHOLE CLAIM, and it is exact rather than heuristic: for a
+    `type: "subagent"` entry the harness's `id` is byte-identical to the stem of
+    the transcript `scan()` globs. Verified live 2026-09-07 --
+    `background_tasks[].id == "ad7126a7fed2d4a5e"` beside
+    `agent-ad7126a7fed2d4a5e.jsonl` -- so `jsonl.stem.removeprefix("agent-")`
+    already produces the lookup key with no mapping in between. Case 13b in
+    test-report-inbox.sh pins that, so if the convention ever changes CI goes red
+    instead of quietly restoring the defect.
+
+    EVERY SESSION, NOT JUST THIS ONE. `scan()` walks all sessions' `subagents/`
+    dirs, so one session's roster is not enough; all sessions of a repo write
+    their sidecar beside the same worklist, which is why this globs.
+
+    FAIL-OPEN, AND THE DIRECTION MATTERS. The roster may only ever add a reason
+    to SKIP, never a reason to CAPTURE. An id in no roster, a stale roster, or no
+    readable sidecar at all all fall through to the mtime rule -- i.e. to exactly
+    today's behaviour. Refusing to capture when the oracle cannot see would be
+    fail-OFF, not fail-open, and would turn `scan()` into a permanent no-op.
+    Blindness is therefore RETURNED IN WORDS rather than as an innocent empty
+    set, because a check that cannot fail must say so.
+    """
+    try:
+        wl = C.worklist_for(start)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return set(), "BLIND: no worklist path for this project"
+    try:
+        sidecars = sorted(wl.parent.glob(wl.stem + ".lastevent-*.json"))
+    except OSError as exc:
+        return set(), "BLIND: cannot list %s (%s)" % (wl.parent, exc)
+    if not sidecars:
+        return set(), "BLIND: no .lastevent-*.json beside %s" % wl
+    ids, fresh, stale, bad = set(), 0, 0, 0
+    now = time.time()
+    for p in sidecars:
+        # ONE CORRUPT SIDECAR MUST NOT BLIND THE WHOLE ORACLE. This is case 12b's
+        # lesson applied a level up: there, one unreadable transcript used to kill
+        # the loop before everything sorted after it.
+        try:
+            if (now - p.stat().st_mtime) / 60.0 > SCAN_LIVE_MIN:
+                stale += 1
+                continue
+            doc = json.loads(p.read_text(encoding="utf-8"))
+            fresh += 1
+            for b in doc.get("background_tasks") or []:
+                if b.get("type") == "subagent" and b.get("status") == "running":
+                    ids.add(str(b.get("id") or ""))
+        except (OSError, ValueError, TypeError, AttributeError):
+            bad += 1
+    ids.discard("")
+    return ids, "%d fresh sidecar(s), %d stale, %d unreadable, %d running sub-agent(s)" % (
+        fresh,
+        stale,
+        bad,
+        len(ids),
+    )
 
 
 def _projects_dir():
@@ -783,6 +1003,9 @@ def scan(store, start, idle_min=None):
     known = {str(e["id"]) for e in read_index(store)}
     now = C.utcnow()
     added = []
+    # ONCE PER SCAN, not once per agent: one glob and a few small reads, against a
+    # loop that already reads whole transcripts up to TRANSCRIPT_MAX_BYTES.
+    live_ids, _live_evidence = running_agent_ids(start)
     if proj.is_dir():
         for meta in sorted(proj.glob("*/subagents/*.meta.json")):
             jsonl = meta.with_name(meta.name[: -len(".meta.json")] + ".jsonl")
@@ -790,6 +1013,13 @@ def scan(store, start, idle_min=None):
                 continue
             agent_id = jsonl.stem.removeprefix("agent-")
             if short_id(agent_id) in known:
+                continue
+            # THE HARNESS OUTRANKS THE CLOCK. Before the stat(), so a live agent
+            # costs one set lookup rather than a syscall. Capturing here does not
+            # merely record early: capture() returns None once an id is indexed,
+            # so a mid-flight row PERMANENTLY shadows the real report that arrives
+            # at SubagentStop. The half-answer becomes the only artifact.
+            if agent_id in live_ids:
                 continue
             try:
                 idle = (now.timestamp() - jsonl.stat().st_mtime) / 60.0
@@ -945,14 +1175,24 @@ def main(argv):
         who = reader_id(explicit)
         marks = read_marks(store, who)
         if "--unread" in rest:
+            before = len(entries)
             entries = [e for e in entries if str(e["id"]) not in marks]
         if not entries:
-            print("no reports indexed (%s)" % index_path(store))
+            # TWO DIFFERENT FACTS, and one sentence used to state both. "no
+            # reports indexed" was printed for an index holding 349 entries all
+            # of which this reader had read, which reads as "the capture
+            # mechanism is broken" when the truth is "you are up to date" --
+            # exactly the wrong direction to be wrong in for a mechanism whose
+            # whole job is to prove an agent said something.
+            if "--unread" in rest and before:
+                print("no UNREAD reports for %s (%d indexed, all read)" % (who or "<me>", before))
+            else:
+                print("no reports indexed (%s)" % index_path(store))
             return 0
         for e in entries:
             age = C.stamp_age_min(e.get("at"))
             print(
-                "%-12s %s (%s) %-18s %-10s %s%s%s"
+                "%-12s %s (%s) %-18s %-10s %s%s%s%s"
                 % (
                     e["id"],
                     e.get("at", "?"),
@@ -961,6 +1201,7 @@ def main(argv):
                     e.get("branch", "?"),
                     "[read] " if str(e["id"]) in marks else "",
                     "[SILENT] " if e.get("silent") else "",
+                    "[OPEN:%d] " % int(e["opens"]) if int(e.get("opens") or 0) else "",
                     e.get("title") or "",
                 )
             )
@@ -1079,16 +1320,29 @@ def main(argv):
         added, pruned = scan(store, start)
         for e in added:
             print(
-                "indexed %s %s %s%s"
+                "indexed %s %s %s%s%s"
                 % (
                     e["id"],
                     e.get("agent"),
                     "[SILENT] " if e.get("silent") else "",
+                    "[OPEN:%d] " % int(e["opens"]) if int(e.get("opens") or 0) else "",
                     e.get("title") or "",
                 )
             )
         if pruned:
             print("pruned %d body file(s) past %d days" % (len(pruned), int(RETENTION_DAYS)))
+        # THE ORACLE REPORTS ITS OWN STATE, always, including when it is blind.
+        # Without this line a blind scan and a working one are indistinguishable
+        # from the outside -- the check-that-cannot-fail class -- and "why was
+        # this agent captured?" has no answer anywhere. One bounded line.
+        live_ids, live_evidence = running_agent_ids(start)
+        print(
+            "liveness oracle: %s%s"
+            % (
+                live_evidence,
+                "" if not live_ids else "; held back " + " ".join(sorted(live_ids)),
+            )
+        )
         if not added and not pruned:
             print("nothing to index (%s)" % index_path(store))
         return 0

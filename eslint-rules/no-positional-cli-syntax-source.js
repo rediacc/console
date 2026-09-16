@@ -17,15 +17,11 @@
  */
 
 import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { COMMAND_TREE_PATH } from './lib/paths.js';
 import {
   EXEMPT_COMMAND_PREFIXES as SHARED_EXEMPT_PREFIXES,
   FREEFORM_ARG_COMMAND_PATHS as SHARED_FREEFORM,
 } from './lib/cli-exempt-lists.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const COMMAND_TREE_PATH = path.resolve(__dirname, '../packages/cli/scripts/command-tree.json');
 
 const FREEFORM_ARG_COMMAND_PATHS = new Set(SHARED_FREEFORM);
 

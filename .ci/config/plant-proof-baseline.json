@@ -1,0 +1,155 @@
+{
+  "note": "SHRINK-ONLY, AND GENERATED -- do not hand-edit except to re-key a single row. Every entry is a control that PLANTS a defect by in-place mutation (bash) or by `.replace()` (TypeScript) and does NOT prove the plant landed. A plant whose needle has gone mutates nothing, so the control asserts the opposite verdict about identical input and passes for free. This list may only lose members: a NEW id is refused by .ci/scripts/quality/check_plant_proofs.py even when the total shrinks, because composition is the claim and a total is not. Drain it by ADDING THE PROOF and then running `--write-baseline`, never to make a red go away.",
+  "plants": [
+    {
+      "id": "c327db0b2868151d",
+      "lang": "bash",
+      "file": ".ci/docker/web/entrypoint.sh",
+      "text": "sed -i \"s|set \\$account_backend \\\"127.0.0.1:3000\\\"|set \\$account_backend \\\"${ACCOUNT_BACKEND}\\\"|\" /etc/nginx/http.d/default.conf"
+    },
+    {
+      "id": "92015c18d1775a60",
+      "lang": "bash",
+      "file": ".ci/scripts/quality/check-devcontainer-scripts.sh",
+      "text": "for e in \"$@\"; do sed -i \"$e\" \"$dst\"; done"
+    },
+    {
+      "id": "8a981a8d3b8db626",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh",
+      "text": "perl -pi -e \"s/, '300'\\]/]/ if /^ options: \\['5', '10'/\" \"$WORK/drift/bp.yml\""
+    },
+    {
+      "id": "eeeb1c0778e529cc",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh",
+      "text": "perl -pi -e \"s/^ hold-duration:/ renamed-duration:/\" \"$WORK/noblock/ap.yml\""
+    },
+    {
+      "id": "3ede18e166c26077",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh",
+      "text": "perl -pi -e \"s/^ options: \\['5', '10'.*/ options: ['5', '10']/\" \"$WORK/floor/bp.yml\""
+    },
+    {
+      "id": "70a4e47bd4673790",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-autopilot-breakpoint-alignment.sh",
+      "text": "perl -pi -e \"s/^ options: \\['5', '10'.*/ options: ['5', '10']/\" \"$WORK/floor/ap.yml\""
+    },
+    {
+      "id": "a88dfca3fde37e15",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-ci-parity.sh",
+      "text": "sed -i 's/^ quality:$/ quality-renamed:/' \"$d/.github/workflows/ci.yml\""
+    },
+    {
+      "id": "f396bf208f2c1d6d",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-installmethods-args.sh",
+      "text": "sed -i \"s|^SCRIPT_DIR=.*|SCRIPT_DIR=\\\"$TARGET_DIR\\\"|\" \"$dest\""
+    },
+    {
+      "id": "e7ccbd334b334c0a",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-installmethods-args.sh",
+      "text": "sed -i \"$expr\" \"$dest\""
+    },
+    {
+      "id": "ca437fb312532c58",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-releaseversion-attestation.sh",
+      "text": "sed -i 's|FAILED_COUNT=$((FAILED_COUNT + 1))|FAILED_COUNT=$((FAILED_COUNT + 0))|' \"$root/.ci/scripts/release/verify-artifact-attestation.sh\""
+    },
+    {
+      "id": "77ea7e06c795a59d",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-releaseversion-closure-untagged.sh",
+      "text": "sed -i 's|^ CLOSURE_VERSION=\"untagged-.*| CLOSURE_VERSION=\"\"|' \"$root/.ci/scripts/ci/generate-tag.sh\""
+    },
+    {
+      "id": "8218bb8936f383ab",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-runner-advice.sh",
+      "text": "sed -i \"s/__RUNNER__/$runner/\" \"$dir/fixture.yml\""
+    },
+    {
+      "id": "fc6229ec5f080cc3",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-runner-advice.sh",
+      "text": "sed -i 's/\"format\": 1,/\"format\": 2,/' \"$d/base.json\""
+    },
+    {
+      "id": "cce1b37d16b2346c",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-runner-advice.sh",
+      "text": "sed -i '/\"format\": 1,/d' \"$d/base.json\""
+    },
+    {
+      "id": "b86b963ed52febe3",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-runner-advice.sh",
+      "text": "sed -i 's/\"format\": 1,/\"format\": 2,/' \"$d/base.json\""
+    },
+    {
+      "id": "cec9638803eaa601",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-workflow-contracts.sh",
+      "text": "sed -i 's/passes_inputs: \\[target\\]/passes_inputs: [target, ghost]/' \"$EC_ROOT/registry.yml\""
+    },
+    {
+      "id": "b1cd38b896104357",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-workflow-contracts.sh",
+      "text": "sed -i 's/passes_secrets: \\[TOKEN\\]/passes_secrets: []/' \"$EC_ROOT/registry.yml\""
+    },
+    {
+      "id": "f5a447a9c0d79775",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-workflow-contracts.sh",
+      "text": "sed -i 's/^ target: x$/ target: x\\n opt: y/' \"$EC_ROOT/private/acct/.github/workflows/review.yml\""
+    },
+    {
+      "id": "adcc6a832ceecbd2",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-workflow-contracts.sh",
+      "text": "sed -i 's/callee.yml@main/callee.yml@v1/' \"$EC_ROOT/private/acct/.github/workflows/review.yml\""
+    },
+    {
+      "id": "57eb26e1c95b9700",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-workflow-contracts.sh",
+      "text": "sed -i 's/passes_secrets: \\[ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN\\]/passes_secrets: []/' \"$EC_ROOT/registry.yml\""
+    },
+    {
+      "id": "4b76a011c5191564",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-workflow-contracts.sh",
+      "text": "sed -i '/ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: /d;/^ secrets:$/d' \"$EC_ROOT/private/acct/.github/workflows/review.yml\""
+    },
+    {
+      "id": "1c025df11e0be11a",
+      "lang": "bash",
+      "file": ".claude/hooks/stop/worklist-cases/10-event-store.sh",
+      "text": "sed -i 's/^- \\[ \\] (deadbeef) fix the parser/- [x] (deadbeef) fix the parser/' \"$WL\""
+    },
+    {
+      "id": "3e6a44b45d889750",
+      "lang": "bash",
+      "file": ".claude/hooks/stop/worklist-cases/21-cadence.sh",
+      "text": "sed -i \"s|^- \\[ \\] (deadbeef) first thing|- [x] (deadbeef) first thing proof $(git -C \"$BASE/proj\" rev-parse --short HEAD)|\" \"$WL\""
+    },
+    {
+      "id": "8de76cbd7319372e",
+      "lang": "bash",
+      "file": ".claude/hooks/stop/worklist-cases/21-cadence.sh",
+      "text": "sed -i 's|^- \\[ \\] (deadbeef) do the thing|- [?] (deadbeef) do the thing DEFAULT: do it on Monday|' \"$WL\""
+    },
+    {
+      "id": "69802c1d711d917d",
+      "lang": "bash",
+      "file": ".claude/hooks/stop/worklist-cases/21-cadence.sh",
+      "text": "sed -i 's|^def idle_stall(|def idle_stall(*_a, **_k):\\n raise RuntimeError(\"planted idle_stall crash\")\\n\\n\\ndef _idle_stall_unused(|' \"$CRASHDIR/wl_checks.py\""
+    }
+  ]
+}

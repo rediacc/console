@@ -27,6 +27,22 @@ on is write-only data, and this hook directory already holds one (wl_admit.py:59
 
 ANTI-VACUITY. A captures dir with zero judgeable captures is UNJUDGEABLE, never clean:
 warn while pristine, fail once seeded. Exit 1 on an enforced finding, 2 on a failed control.
+
+KNOWN OPEN, 2026-09-15 (docs/ci-overhaul/07-tooling-decisions.md O-4). The dilation
+control fired for real, standalone, twice: "a predicate is reading wall-clock", after a
+heavily-serialized battery (`npx tsx scripts/ci-runner/run.ts --jobs 4 --heavy-limit 1`,
+3354s wall, k=2.3). It went green again on the next run because the triggering captures
+live outside the tree (`~/.claude/resprofile/<repo>/<day>/<run>/` via
+`.ci/cache/profiles.prev`) and regenerate every run -- the data that exposed the
+divergence was already gone by the time anyone looked. NOT fixed: whoever reproduces the
+triggering run config and diffs `W.derive(caps)` against `W.derive([W.dilate(c, 2.3) for
+c in caps])` will name the offending predicate; nobody has spent the ~56 minutes yet.
+
+---- gate ----
+step: Resource profile (previous run's captures)
+needs: none
+lane: quality-branch
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -38,8 +54,17 @@ import sys
 import time
 from pathlib import Path
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls, paths
+
 ROOT = Path(os.environ.get("RESPROFILE_ROOT") or Path(__file__).resolve().parents[3])
-sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))
+# The hop onto the Stop hook's directory, through the package's own resolver.
+# `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not,
+# and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal
+# lives, so the move planned for that program is a one-line change there rather
+# than a sweep of nine call sites. ROOT is passed explicitly: this gate honours
+# its own RESPROFILE_ROOT override, which the resolver's default root does not read.
+paths.on_sys_path(paths.hooks_stop_dir(ROOT))
 import wl_profile as W  # noqa: E402
 
 BASELINE = ROOT / ".ci" / "config" / "resprofile-baseline.json"
@@ -359,12 +384,8 @@ def main(argv: list[str]) -> int:
         rs = {argv[i + 1] for i, a in enumerate(argv) if a == "--reseed-class"}
         return seed(Path(argv[argv.index("--seed") + 1]), rs)
 
-    print("resprofile: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("resprofile", selftest):
+        return refusal
 
     cdir = Path(argv[argv.index("--captures") + 1]) if "--captures" in argv else DEFAULT_CAPTURES
     base = load_baseline()

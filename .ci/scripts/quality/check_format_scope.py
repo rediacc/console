@@ -27,6 +27,13 @@ check:ci-shell-lint and check:ci-python-lint enumerate from git rather than from
 list.
 
 Exit 1 on a narrowing command, 2 on a failed control.
+
+---- gate ----
+step: Format command covers its config's scope
+needs: none
+lane: quality-code
+slow: true
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -37,6 +44,9 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+import _cipath  # noqa: F401
+from rediacc_ci import controls
 
 ROOT = Path(os.environ.get("FORMAT_SCOPE_ROOT") or Path(__file__).resolve().parents[3])
 # A floor: biome reporting zero files means the instrument is broken, not the tree clean.
@@ -140,12 +150,8 @@ def main(argv: list[str]) -> int:
         n = selftest()
         print("%s format-scope selftest: %d failure(s)" % ("✓" if n == 0 else "✗", n))
         return 1 if n else 0
-    print("format scope: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("format scope", selftest):
+        return refusal
 
     args = declared_args()
     if args is None:

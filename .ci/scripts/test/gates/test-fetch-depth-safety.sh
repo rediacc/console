@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node
+# slow: true
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # gate-test:fetch-depth-safety -- no git operation may quietly reshape the repository
 # a later step measures, and no fixture may be built in a shape that measures nothing.
 #
@@ -61,7 +69,7 @@ make_fixture() {
     git -C "$work" config user.email t@example.com
     git -C "$work" config user.name t
     local i
-    for i in $(seq 1 "$FIXTURE_COMMITS"); do
+    for ((i = 1; i <= FIXTURE_COMMITS; i++)); do
         echo "$i" >"$work/f.txt"
         git -C "$work" add f.txt
         git -C "$work" commit --quiet -m "c$i"

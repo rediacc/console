@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Gate: on a `bump-none` merge the R2 uploaders must write NOTHING on a release channel -- and must keep writing everything the moment the signal is absent
+# ---- end gate ----
+
 # Gate: on a `bump-none` merge the R2 uploaders must write NOTHING on a release
 # channel -- and must keep writing everything the moment the signal is absent.
 #

@@ -33,6 +33,12 @@ ASSERTIONS
 CONTROL-FIRST. Simulates the pre-fix probe (manifest awareness removed) and
 requires assertion 2 to FAIL against it. If the planted defect passes, this gate
 declares itself broken and exits non-zero.
+
+---- gate ----
+step: Gate-reachability probe agrees with registrations
+needs: none
+selftest: true
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -40,6 +46,9 @@ from __future__ import annotations
 import json
 import os
 import sys
+
+import _cipath  # noqa: F401
+from rediacc_ci import paths
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 HOOK_DIR = os.path.join(REPO_ROOT, ".claude", "hooks", "stop")
@@ -63,7 +72,12 @@ def load_probe():
         die(
             f"check-gate-reachability-coverage: {HOOK_DIR} not found; cannot judge a probe that is not there"
         )
-    sys.path.insert(0, HOOK_DIR)
+    # Through the package's resolver, not a bare insert: `paths.on_sys_path` is
+    # idempotent, and this hop runs inside a FUNCTION that a caller may call more
+    # than once, which is the case a hand-written insert leaves duplicate copies
+    # behind for. HOOK_DIR is passed rather than recomputed so the die() messages
+    # above and the directory actually added stay the same string.
+    paths.on_sys_path(HOOK_DIR)
     try:
         # Deferred deliberately: HOOK_DIR must be on sys.path first, and a
         # top-level import would make this gate uncollectable outside the repo.

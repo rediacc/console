@@ -1,5 +1,15 @@
 #!/bin/bash
-# Drives the REAL .ci/scripts/quality/check-plan-housekeeping.sh against fixture
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: Drives the REAL .ci/scripts/quality/check_plan_housekeeping.py against fixture git repositories with BACKDATED commits
+# ---- end gate ----
+
+# Drives the REAL .ci/scripts/quality/check_plan_housekeeping.py against fixture
 # git repositories with BACKDATED commits.
 #
 # THIS FILE IS THE ENTIRE JUSTIFICATION FOR LANDING THAT GATE. Measured over all
@@ -26,7 +36,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test gate
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GATE="$REPO_ROOT/.ci/scripts/quality/check-plan-housekeeping.sh"
+GATE="$REPO_ROOT/.ci/scripts/quality/check_plan_housekeeping.py"
 CFG="$REPO_ROOT/.ci/config/plan-lifecycle.json"
 
 # A fixture repo with N plans committed `days` ago, plus enough filler plans to
@@ -46,7 +56,7 @@ make_template() {
     git -C "$TEMPLATE" config user.email t@example.com
     git -C "$TEMPLATE" config user.name t
     local i
-    for i in $(seq 1 32); do
+    for ((i = 1; i <= 32; i++)); do
         printf 'Status: draft\n\n# filler %s\n\n- [ ] a task long enough to parse\n' "$i" \
             >"$TEMPLATE/agent/PLAN-filler-$i.md"
     done
@@ -77,7 +87,7 @@ run_gate() { # <root> [env...] -> sets LAST_OUT, returns the gate's rc
     local root="$1"
     shift
     local rc=0
-    LAST_OUT=$(env PLAN_HK_ROOT="$root" PLAN_HK_CONFIG="$CFG" "$@" bash "$GATE" 2>&1) || rc=$?
+    LAST_OUT=$(env PLAN_HK_ROOT="$root" PLAN_HK_CONFIG="$CFG" "$@" "$GATE" 2>&1) || rc=$?
     return "$rc"
 }
 
@@ -175,6 +185,11 @@ test_allowlist_low_effort_blocker() {
     local rc=0
     run_gate "$d" PLAN_HK_ALLOWLIST="$d/.plan-housekeeping-allowlist" || rc=$?
     assert_exit_code 1 "$rc" "a one-word BLOCKER buys no silence"
+    # NAME THE FINDING. This gate exits 1 for stale plans and dangling allowlist
+    # rows as well, so the bare code cannot tell "the BLOCKER was too thin" from
+    # "the fixture was wrong".
+    assert_contains "$LAST_OUT" "allowlist problem" \
+        "and the refusal must be an ALLOWLIST problem, not some other red"
     log_pass "the BLOCKER must be substantive, not a word"
 }
 

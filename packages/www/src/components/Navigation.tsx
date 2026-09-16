@@ -252,8 +252,8 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
 
   // Listen for global search hotkey event
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const eventName = (window as any).SEARCH_HOTKEY_EVENT ?? 'search:open';
+    const eventName =
+      (window as unknown as { SEARCH_HOTKEY_EVENT?: string }).SEARCH_HOTKEY_EVENT ?? 'search:open';
     const handleSearchHotkey = () => {
       setIsSearchOpen(true);
     };

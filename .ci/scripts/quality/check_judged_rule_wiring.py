@@ -34,6 +34,9 @@ import re
 import sys
 import tempfile
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls
+
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 STOP = os.path.join(ROOT, ".claude", "hooks", "stop")
 # The modules that DRIVE a stop. A rule is wired iff one of these calls it.
@@ -124,15 +127,7 @@ def judge(rules, drivers):
 
 def selftest():
     """Controls, both directions. A gate that cannot fail is worse than none."""
-    ok = True
-
-    def check(label, cond):
-        nonlocal ok
-        if cond:
-            print("  PASS  %s" % label)
-        else:
-            ok = False
-            print("  FAIL  %s" % label, file=sys.stderr)
+    check = controls.Checker()
 
     wired = {"wl_checks.py": "import wl_rule\nx = wl_rule.run(a, b)\n", "wl_judge.py": ""}
     imported_only = {
@@ -177,7 +172,7 @@ def selftest():
         check("CONTROL: a marker alone is not a judged rule", "wl_marker_only" not in got)
         check("CONTROL: apply_verdict alone is not a judged rule", "wl_verdict_only" not in got)
         check("CONTROL: a non-wl_ module is out of scope", "notwl" not in got)
-    return ok
+    return check.ok
 
 
 def main():

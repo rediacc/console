@@ -1,5 +1,14 @@
 #!/bin/bash
-# Integration test for scripts/check-overrides-reasons.ts.
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Integration test for scripts/gates/check-overrides-reasons.ts
+# ---- end gate ----
+
+# Integration test for scripts/gates/check-overrides-reasons.ts.
 #
 # Creates a temp package.json with known overrides + _overridesReasons combinations
 # and verifies the validator accepts good reasons and rejects bogus ones.
@@ -27,7 +36,14 @@ run_validator_with_pkg() {
     cp -r "$REPO_ROOT/scripts" "$TEMP/scripts"
     cd "$TEMP"
     local out rc=0
-    out=$(npx tsx scripts/check-overrides-reasons.ts 2>&1) || rc=$?
+    # REDIACC_CI_ROOT POINTS THE COPIED VALIDATOR AT THE REAL PACKAGE. Since
+    # 2026-09-09 scripts/lib/blocker-validator.ts is a client of
+    # rediacc_ci.core.allowlist and resolves that package two directories above
+    # its own file, which here is $TEMP. It refused loudly, which is the designed
+    # behaviour and exactly wrong for a fixture: the low-effort case then asserted
+    # on a "canonical validator could not be run" traceback instead of on the
+    # verdict. Same override, same reason, as test-ci-job-aggregation.sh uses.
+    out=$(REDIACC_CI_ROOT="$REPO_ROOT" npx tsx scripts/gates/check-overrides-reasons.ts 2>&1) || rc=$?
     cd - >/dev/null
     echo "$out"
     return "$rc"
@@ -36,7 +52,7 @@ run_validator_with_pkg() {
 test_accepts_real_package_json() {
     # The actual repo package.json should pass.
     cd "$REPO_ROOT"
-    if ! npx tsx scripts/check-overrides-reasons.ts >/dev/null 2>&1; then
+    if ! npx tsx scripts/gates/check-overrides-reasons.ts >/dev/null 2>&1; then
         log_fail "real package.json should pass overrides-reasons validation"
     fi
     log_pass "real package.json passes validation"

@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Unit test for the channel gating of the APT/RPM metadata assertions in .ci/scripts/release/validate-stage-artifacts.sh
+# ---- end gate ----
+
 # Unit test for the channel gating of the APT/RPM metadata assertions in
 # .ci/scripts/release/validate-stage-artifacts.sh.
 #

@@ -16,7 +16,7 @@
   //     demanded explicit `.js` extensions and reported every import in
   //     scripts/ci-runner/ as an error (TS2835) for code that runs fine.
   //
-  //   rootDir: "." -> removed. scripts/check-schema-coverage.ts imports
+  //   rootDir: "." -> removed. scripts/gates/check-schema-coverage.ts imports
   //     packages/shared/src/config-schema/coverage.ts, which is outside
   //     scripts/. With rootDir pinned here that single import dragged the whole
   //     shared tree in as a rootDir violation and produced 295 of the 512

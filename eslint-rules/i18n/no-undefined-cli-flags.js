@@ -39,12 +39,8 @@
  */
 
 import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { COMMAND_TREE_PATH } from '../lib/paths.js';
 import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const COMMAND_TREE_PATH = path.resolve(__dirname, '../../packages/cli/scripts/command-tree.json');
 
 // Root/global options the program registers (these are filtered out of per-command
 // nodes in command-tree.json, so they must be added explicitly) plus Commander

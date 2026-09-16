@@ -1,0 +1,10 @@
+# rediacc_ci allowlist golden
+# reader: bash:.ci/scripts/lib/blocker-validator.sh::parse_blockered_list
+# command: parse_blockered_list <corpus> A B '#'; for k in ${!B[@]}; printf '%s\t%s\n'; LC_ALL=C sort
+# projection: pairs
+# source: .ci-parity-exempt
+# corpus: corpus/ci-parity-exempt.list
+# comment-char: #
+# corpus-sha256: b1a9532ca7ffd92c36cceb19c4ac5c9731afe5e91bf68d11f529dd2c96bfb48e
+# ---
+ci-only	probes the release-state sentinels in the R2 bucket, so it needs CLOUDFLARE_R2_ACCESS_KEY_ID/CLOUDFLARE_R2_SECRET_ACCESS_KEY; a developer without release credentials gets "Required environment variable 'CLOUDFLARE_R2_ACCESS_KEY_ID' is not set" rather than a verdict

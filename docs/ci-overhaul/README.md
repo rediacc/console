@@ -38,6 +38,22 @@ run, and only then hand the keys to an agent.
 4. **[04-decisions.md](04-decisions.md)** for what is locked, what is open, and the scored
    ledger. Ask the open decision points early, in one round.
 5. **[05-execution-guide.md](05-execution-guide.md)** last, when you are ready to move.
+6. **[08-driver-contract.md](08-driver-contract.md)** if you are working on the tooling
+   transformation (the twelve-workstream port of `.ci` and `.claude` to Python). It is the
+   authority for that program: the workstream key map, the arbitrations between workstreams
+   that planned incompatible things, the single-writer lock table, and the machine mutex.
+   Read it BEFORE launching any sub-driver.
+7. **[07-tooling-decisions.md](07-tooling-decisions.md)** alongside it. 08 records the
+   conflicts found before that program started; 07 records what has been decided since, so a
+   later agent disagrees with a decision rather than silently reversing a code comment.
+   [07-master-checklist.md](07-master-checklist.md) is the per-box acceptance list every
+   workstream carries, and [07-port-brief.md](07-port-brief.md) is the extra obligation on any
+   box that MOVES code.
+8. **[09-env-residue.md](09-env-residue.md)** if your box touches environment variables,
+   `.env` files, `workflow_call` passthroughs or Bitwarden.
+9. **[10-ci-port-baseline.md](10-ci-port-baseline.md)** if your box touches `.ci`. It is the
+   measurement every W7 box is judged against, written to cite the command rather than the
+   number.
 
 ---
 

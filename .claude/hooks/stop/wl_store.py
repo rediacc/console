@@ -1798,6 +1798,26 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
     for ev in payload:
         ev.setdefault("h", host_hash())
     target = writer_path(me8, root)
+    # W12 P2.6: POINTER STAMPS for every file about to be replaced or unlinked.
+    # These files are TRACKED, so a committed one's blob is already in the object
+    # database and survives the unlink -- but only if somebody wrote the id down
+    # first, and until now nobody did. Computed BEFORE the rewrite, printed after
+    # it, and each line says whether the pointer actually resolves: an id over
+    # bytes that were never committed is not a promise of recovery, and saying
+    # `git show` about it would be a recovery recipe that returns nothing.
+    stamps = []
+    with contextlib.suppress(Exception):
+        import wl_planrec as _R  # noqa: PLC0415 -- optional; a stamp never gates a compaction
+
+        # dict.fromkeys, not a set: the compactor's OWN file is in `clear` and is
+        # also the target, and printing it twice reads as two different files.
+        for f in dict.fromkeys([*clear, target]):
+            # PER FILE, so one store file living outside the repo (the
+            # WORKLIST_STORE_DIR override a test fixture uses) costs its own
+            # stamp and not every other file's.
+            with contextlib.suppress(Exception):
+                if f.exists():
+                    stamps.append(_R.pointer_stamp(root, str(f.relative_to(root)))[2])
     with open(events_lock_path(worklist), "w") as lock:
         _flock(lock, LOCK_EX)
         fd, tmp = tempfile.mkstemp(dir=str(d), prefix="compact")
@@ -1814,6 +1834,8 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
         "event log: compacted %d file(s) into %s (%d event(s) for %d item(s))"
         % (len(clear), target.name, len(payload), len(fold.items))
     )
+    for line in stamps:
+        print("  pointer: %s" % line)
     for f, verdict, why in keep:
         print("  kept %s: writer is %s (%s)" % (f.name, verdict, why))
 

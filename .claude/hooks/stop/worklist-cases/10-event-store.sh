@@ -425,12 +425,33 @@ else
 fi
 
 echo "== 143. the dead-code gate: every top-level def is referenced somewhere =="
+# THE REFERENCE HAYSTACK IS WIDER THAN THE DEF CORPUS, and it has to be. The
+# defs still come only from the shipped stop-hook modules -- that is what is
+# being policed -- but a legitimate CONSUMER of this directory lives outside it:
+# .ci/scripts/quality/check_plan_boxes.py and check_plan_record.py both import
+# these modules by design (a gate that re-implemented the plan parser would
+# drift from the Stop hook, which is exactly what importing prevents). Measured
+# 2026-09-06: wl_planrec.ledger_at, render_index and index_rows are called ONLY
+# from check_plan_record.py, and this gate reported all three as dead code. A
+# gate that calls live code dead teaches the next session to DELETE it, which is
+# more expensive than the shipped orphan it exists to catch.
+#
+# The haystack path is passed as argv[2] by BOTH call sites, always pointing at
+# the real tree, so the planted-orphan control below is unaffected: a def named
+# nowhere is named nowhere in either directory.
 DEADCODE_PY='
 import ast, pathlib, re, sys
 d = pathlib.Path(sys.argv[1])
 srcs = {p.name: p.read_text() for p in sorted(d.glob("wl_*.py"))}
 srcs["worklist.py"] = (d / "worklist.py").read_text()
-allsrc = "\n".join(srcs.values())
+extra = []
+if len(sys.argv) > 2:
+    for q in sorted(pathlib.Path(sys.argv[2]).glob("check_*.py")):
+        try:
+            extra.append(q.read_text())
+        except OSError:
+            pass
+allsrc = "\n".join(list(srcs.values()) + extra)
 orphans = []
 for name, src in srcs.items():
     for node in ast.parse(src).body:
@@ -441,7 +462,8 @@ for name, src in srcs.items():
 print("orphans=%s" % ",".join(orphans) if orphans else "orphans=none")
 sys.exit(1 if orphans else 0)
 '
-if OUT=$(python3 -c "$DEADCODE_PY" "$(dirname "$HOOK")"); then
+DEADCODE_REFS="$(cd "$(dirname "$HOOK")/../../.." && pwd)/.ci/scripts/quality"
+if OUT=$(python3 -c "$DEADCODE_PY" "$(dirname "$HOOK")" "$DEADCODE_REFS"); then
     pass "no unreferenced top-level function in the shipped modules ($OUT)"
 else
     fail "dead code shipped: $OUT"
@@ -450,7 +472,7 @@ fi
 mkdir -p "$BASE/deadcode"
 cp "$(dirname "$HOOK")"/wl_*.py "$(dirname "$HOOK")/worklist.py" "$BASE/deadcode/"
 printf '\n\ndef orphan_zombie_fn():\n    return 1\n' >>"$BASE/deadcode/wl_core.py"
-if OUT=$(python3 -c "$DEADCODE_PY" "$BASE/deadcode"); then
+if OUT=$(python3 -c "$DEADCODE_PY" "$BASE/deadcode" "$DEADCODE_REFS"); then
     fail "the dead-code gate cannot fire (planted orphan passed): $OUT"
 else
     if grep -qF "orphan_zombie_fn" <<<"$OUT"; then

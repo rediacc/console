@@ -28,9 +28,12 @@ on:
         required: false
         type: string
         default: ''
-permissions:
-  contents: read
-  packages: read    # GHCR pull for install tests
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
 
 jobs:
   # ===========================================================================
@@ -40,6 +43,11 @@ jobs:
     name: Linux (x64)
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # The docker install method pulls ghcr.io/rediacc/rdc through a
+    # github.token ghcr login. Pull only.
+    permissions:
+      contents: read
+      packages: read
     env:
       DOCKER_TAG: ${{ inputs.docker_tag }}
       REPO_CHANNEL: ${{ inputs.repo_channel }}
@@ -100,6 +108,11 @@ jobs:
     name: Linux (arm64)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
+    # The docker install method pulls ghcr.io/rediacc/rdc through a
+    # github.token ghcr login. Pull only.
+    permissions:
+      contents: read
+      packages: read
     env:
       DOCKER_TAG: ${{ inputs.docker_tag }}
       REPO_CHANNEL: ${{ inputs.repo_channel }}
@@ -135,6 +148,10 @@ jobs:
     name: macOS (ARM64)
     runs-on: macos-latest
     timeout-minutes: 30
+    # Binary-download install tests only: no ghcr login on this platform, so
+    # no packages scope.
+    permissions:
+      contents: read
     env:
       REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
@@ -152,6 +169,10 @@ jobs:
     name: macOS (x64)
     runs-on: macos-15-intel
     timeout-minutes: 30
+    # Binary-download install tests only: no ghcr login on this platform, so
+    # no packages scope.
+    permissions:
+      contents: read
     env:
       REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
@@ -171,6 +192,10 @@ jobs:
     # 30 min (was 15) to match macOS/Linux: the SEA binary is ~800 MB, and 15 min
     # was too tight to download it on the Windows runner (job hit the cap mid-download).
     timeout-minutes: 30
+    # Binary-download install tests only: no ghcr login on this platform, so
+    # no packages scope.
+    permissions:
+      contents: read
     env:
       REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
@@ -190,6 +215,10 @@ jobs:
     runs-on: windows-11-arm
     # 30 min (was 15): same ~800 MB SEA-binary download as Windows x64.
     timeout-minutes: 30
+    # Binary-download install tests only: no ghcr login on this platform, so
+    # no packages scope.
+    permissions:
+      contents: read
     env:
       REPO_CHANNEL: ${{ inputs.repo_channel }}
     steps:
@@ -208,6 +237,9 @@ jobs:
     name: Install Methods Complete
     runs-on: ubuntu-slim
     timeout-minutes: 5
+    # Sparse checkout plus a local assert over needs.*.result.
+    permissions:
+      contents: read
     needs:
       - test-linux-x64
       - test-linux-arm64

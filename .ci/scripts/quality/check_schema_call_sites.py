@@ -34,7 +34,20 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 HELPER = "retry_schema_exhaustion"
 MARKER = "--json-schema"
-SPAWN = "subprocess."
+
+# WHAT "SPAWNS" MEANS, and why it is a tuple. It was the single string
+# `subprocess.`, and the hooks then moved their model calls behind `wl_proc.run`
+# -- a helper that adds the timeout and the spawn-failure sentinel. The marker
+# went stale silently: the walk fell from five sites to ONE, and only
+# MIN_SITES stood between that and a tick over a corpus the gate could no longer
+# see. Measured 2026-09-14: `subprocess.` alone finds 1 site, `subprocess.` or
+# `wl_proc.run` finds 6, and all 6 route through the helper -- so the invariant
+# had held the whole time and only the detector had rotted.
+#
+# ADD to this tuple when a new spawn path appears; do NOT lower MIN_SITES to
+# match a shrinking walk. The floor is what caught this, and a floor edited to
+# fit the finding is a floor that cannot catch the next one.
+SPAWNS = ("subprocess.", "wl_proc.run")
 
 # A walk that finds nothing prints a tick indistinguishable from a clean tree.
 # Measured 2026-09-05: five sites across wl_judge.py and wl_shapedup.py.
@@ -61,7 +74,7 @@ def sites(src: str) -> list[tuple[str, int, bool]]:
         # `--json-schema` in a stub that returns a canned object. A name-based exclusion
         # (test-*.py) would be the same proxy-for-a-role mistake this repo has paid for
         # three times in one session; spawning is the property that distinguishes them.
-        if MARKER in body and SPAWN in body:
+        if MARKER in body and any(s in body for s in SPAWNS):
             out.append((node.name, node.lineno, HELPER in body))
     return out
 
@@ -79,6 +92,24 @@ def selftest() -> int:
     bare = 'def a():\n    argv = ["--json-schema", s]\n    return subprocess.run(argv)\n'
     ck("THE MISSED SHAPE is found: a schema call with no retry", sites(bare) == [("a", 1, False)])
     ck("CONTROL: the same call WITH the retry is silent", sites(routed)[0][2] is True)
+    # EVERY SPAWN PATH, driven rather than assumed. The walk collapsed from five
+    # sites to one when the hooks moved behind `wl_proc.run` and nothing here
+    # noticed, because both fixtures above spelled `subprocess.`. A tuple whose
+    # second entry is never exercised is the same hole one name later.
+    for spawn in SPAWNS:
+        ck(
+            "a schema call spawning via %r with no retry is found" % spawn,
+            sites('def a():\n    argv = ["--json-schema", s]\n    return %srun(argv)\n' % spawn)
+            == [("a", 1, False)],
+        )
+        ck(
+            "CONTROL: ...and is silent once it routes through the helper (%r)" % spawn,
+            sites(
+                'def a():\n    argv = ["--json-schema", s]\n    %srun(argv)\n'
+                '    retry_schema_exhaustion("a", p, c)\n' % spawn
+            )[0][2]
+            is True,
+        )
     ck(
         "CONTROL: a function with no schema call is out of scope",
         sites("def a():\n    return 1\n") == [],

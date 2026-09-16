@@ -1,10 +1,19 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Both-ways test for scripts/lib/positional-cli-detector.ts
+# ---- end gate ----
+
 # Both-ways test for scripts/lib/positional-cli-detector.ts.
 #
 # The detector decides which `rdc ...` examples in docs, help text and locale
 # strings teach the WRONG syntax. It backs four consumers: two ESLint rules
 # (i18n/no-positional-cli-syntax, custom/no-positional-cli-syntax-source),
-# scripts/validate-cli-examples.ts, and packages/www/scripts/validate-docs-cli-usage.js.
+# scripts/gen/validate-cli-examples.ts, and packages/www/scripts/validate-docs-cli-usage.js.
 #
 # It has to be tested in BOTH directions, because it can fail in both:
 #

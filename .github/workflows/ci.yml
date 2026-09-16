@@ -33,14 +33,15 @@ on:
   # workflow_dispatch arm asserting exactly that.
   workflow_dispatch:
 
-# Minimal default permissions — jobs that need more declare their own.
+# No default permissions: every job declares its own, below.
 # NOTE: `statuses: write` was removed. Nothing here ever wrote a commit status,
 # and the required check ("CI Complete") is bound to the github-actions app —
 # the same app that issues every job's GITHUB_TOKEN — so granting it repo-wide
 # handed PR-controlled code a plausible way to post that context itself.
-permissions:
-  contents: read
-  packages: read    # Most jobs pull from GHCR
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 # Supersede-cancellation, which was previously absent rather than disabled.
 #
@@ -96,6 +97,12 @@ jobs:
       contents: read
       packages: read
       checks: read
+      # validate-pr.cjs calls pulls.get AND pulls.listFiles on github.token.
+      # listFiles is NOT wrapped in a try/catch the way pulls.get is, so it is
+      # the endpoint's documented scope or a hard failure. This worked without
+      # the grant only because console is public; public-ness is not a
+      # permission, so declare it.
+      pull-requests: read
       # For the scope-engine shadow step only: it calls `gh run list` and
       # `gh run download` to look for an attested skip-plan on an ancestor
       # commit. Read-only, and the step cannot fail the job.
@@ -487,6 +494,13 @@ jobs:
   # ============================================================================
   quality:
     name: Quality
+    # ci-quality.yml's quality-static and quality-code declare
+    # pull-requests: read for the pulls endpoints they hit on github.token.
+    # A called workflow can never exceed its caller, so the caller must carry
+    # it too or GitHub fails the run at startup with no job and no log.
+    permissions:
+      contents: read
+      pull-requests: read
     needs: [initialize]
     if: needs.initialize.outputs.is_bot != 'true' && needs.initialize.outputs.full_suite == 'true'
     uses: ./.github/workflows/ci-quality.yml
@@ -517,6 +531,9 @@ jobs:
   # ============================================================================
   run-sh-tests:
     name: Entry Point (run.sh)
+    # Checkout plus the local profiler action. No GitHub API.
+    permissions:
+      contents: read
     needs: [initialize]
     if: needs.initialize.outputs.is_bot != 'true'
     runs-on: ubuntu-slim
@@ -564,6 +581,11 @@ jobs:
   # ============================================================================
   review-gate:
     name: Review Gate
+    # Reads review threads, review comments and report replies - but every one
+    # of those runs on the pr-read-preset App token, NOT github.token. This job
+    # looks like it needs pull-requests: read and does not.
+    permissions:
+      contents: read
     needs: [initialize, quality]
     runs-on: ubuntu-slim
     timeout-minutes: 14
@@ -599,13 +621,13 @@ jobs:
           preset: pr-read
           repositories: console
       - name: Check resolved threads
-        run: .ci/scripts/quality/check-resolved-threads.sh
+        run: .ci/scripts/quality/check_resolved_threads.py
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
       - name: Check unreplied review comments
-        run: .ci/scripts/quality/check-review-comments.sh
+        run: .ci/scripts/quality/check_review_comments.py
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -615,7 +637,7 @@ jobs:
       # would otherwise be ignorable. Requires a substantive reply that
       # references the newest finished report by comment id.
       - name: Check unreplied review reports
-        run: .ci/scripts/quality/check-review-report-replies.sh
+        run: .ci/scripts/quality/check_review_report_replies.py
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -634,6 +656,10 @@ jobs:
   # ============================================================================
   stripe-sandbox:
     name: Stripe Sandbox
+    # First checkout on GITHUB_TOKEN; the private/account submodule comes in on
+    # the readonly-preset App token.
+    permissions:
+      contents: read
     needs: [initialize, quality, review-gate]
     runs-on: ubuntu-latest  # Needs Docker for account server
     timeout-minutes: 30
@@ -738,9 +764,13 @@ jobs:
   build-renet:
     name: Build (Renet)
     needs: [initialize]
+    # packages: READ, not write. No job in ci-build-renet.yml pushes: its one
+    # registry step is extract-renet, which does `docker create` against a ghcr
+    # image to copy the binary out of it. The write grant this replaces was
+    # never reachable by any step in the callee.
     permissions:
       contents: read
-      packages: write   # GHCR push
+      packages: read
     # pointer_bump_only gates the whole expensive pipeline here: build-cli,
     # build-docker(-fast) and everything needing them skip transitively when
     # this job skips (their ifs check needs.<build>.result == 'success').
@@ -798,9 +828,11 @@ jobs:
   build-cli:
     name: Build (CLI)
     needs: [initialize, build-renet]
+    # No packages: write. Unlike build-docker/build-renet, the callee
+    # (ci-build-cli.yml) declares contents: read and its one job touches no
+    # registry at all, so a packages grant here could never reach a step.
     permissions:
       contents: read
-      packages: write   # GHCR push
     if: always() && needs.initialize.result == 'success' && needs.build-renet.result == 'success'
     uses: ./.github/workflows/ci-build-cli.yml
     with:
@@ -815,6 +847,9 @@ jobs:
   # ============================================================================
   update-flow-test:
     name: Tests + Infra / Update Flow
+    # The callee declares contents: read and makes no API call.
+    permissions:
+      contents: read
     needs: [initialize, build-cli]
     if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-cli.result == 'success' && needs.initialize.outputs.run_update_flow != 'false'
     uses: ./.github/workflows/ct-update-flow.yml
@@ -829,6 +864,9 @@ jobs:
   # ============================================================================
   package-tests:
     name: Tests + Infra / Linux Packages
+    # Checkout, then apt/nfpm locally. No GitHub API.
+    permissions:
+      contents: read
     needs: [initialize, quality]
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -855,6 +893,10 @@ jobs:
   # ============================================================================
   check-release-state:
     name: Check Release State
+    # Checkout with full history; the release-state bijection is checked
+    # against local git tags and R2. No GitHub API.
+    permissions:
+      contents: read
     needs: [initialize]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -887,7 +929,7 @@ jobs:
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           IN_FLIGHT_VERSION: v${{ needs.initialize.outputs.next_version }}
-        run: .ci/scripts/quality/check-release-state.sh
+        run: .ci/scripts/quality/check_release_state.py
 
   # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
@@ -935,6 +977,12 @@ jobs:
   # ============================================================================
   tests:
     name: Tests + Infra
+    # packages: read is REQUIRED: ct-tests.yml logs into ghcr with github.token
+    # and PULLS. It was previously inherited from the workflow default, and a
+    # reusable callee cannot add a scope its caller did not pass.
+    permissions:
+      contents: read
+      packages: read
     needs: [initialize, build-docker-fast]
     # full_suite moved from this `if:` into an INPUT so the workflow is still
     # CALLED on push-to-main: its migration-test job has to run there (it
@@ -973,6 +1021,12 @@ jobs:
   # ============================================================================
   ops-tests:
     name: OPS Tests
+    # packages: read is REQUIRED and, until now, came from nothing local at
+    # all: ci-ops-test.yml declared no permissions of its own, so its ghcr PULL
+    # (github.token) was protected only by this workflow default.
+    permissions:
+      contents: read
+      packages: read
     needs: [initialize, quality, review-gate, build-renet]
     # The explicit pointer_bump_only clause is load-bearing: this if never
     # references its build-renet need, so under always() the job would RUN on
@@ -997,6 +1051,12 @@ jobs:
   # ============================================================================
   elite-run-test:
     name: Elite Run
+    # packages: read for ci-pull-images.sh, which logs into ghcr with
+    # secrets.GITHUB_TOKEN and pulls. The recursive submodule checkout uses
+    # the readonly-preset App token.
+    permissions:
+      contents: read
+      packages: read
     needs: [initialize, build-docker-fast]
     if: >-
       always() &&
@@ -1092,6 +1152,10 @@ jobs:
   # ============================================================================
   breakpoint-lifecycle:
     name: Breakpoint Lifecycle
+    # Sparse checkout, then a Cloudflare quick tunnel that holds no credential
+    # by design. No GitHub API.
+    permissions:
+      contents: read
     needs: [initialize]
     runs-on: ubuntu-slim
     timeout-minutes: 8 # CHECK 3: slim jobs must declare <= 14
@@ -1143,6 +1207,13 @@ jobs:
   # ============================================================================
   deploy-preview:
     name: Deploy Preview
+    # Checkout on GITHUB_TOKEN, private submodules on the readonly-preset App
+    # token, and a Cloudflare API-token deploy - not OIDC, so no id-token.
+    # This job deliberately has no environment: block, so it creates no
+    # deployment record and needs no deployments: write; see the comment below
+    # on the 25 orphaned pr-* environments that were deleted by hand.
+    permissions:
+      contents: read
     # `tests` was in `needs` and gated in the `if:`, and this job consumes
     # NOTHING from it. Its only artifact is `preview-pages-<sha>`, uploaded by
     # cd-stage.yml:223 through the `stage-artifacts` job, which is still
@@ -1360,6 +1431,10 @@ jobs:
   # ============================================================================
   smoke-test-preview:
     name: Smoke Test Preview
+    # Sparse checkout, then D1 seeding on a Cloudflare API token. The app-token
+    # step here was deliberately removed; no GitHub API remains.
+    permissions:
+      contents: read
     needs: [initialize, deploy-preview]
     runs-on: ubuntu-latest
     timeout-minutes: 14
@@ -1435,6 +1510,10 @@ jobs:
   # ============================================================================
   validate-install:
     name: Validate Install Methods
+    # Matches the callee: checkout plus a ghcr PULL.
+    permissions:
+      contents: read
+      packages: read
     needs: [initialize, stage-artifacts]
     # THE CHANNEL CONDITION IS LOAD-BEARING, and its absence was a standing red.
     #
@@ -1476,6 +1555,9 @@ jobs:
   # ============================================================================
   validate-promote:
     name: Validate Promotion
+    # Checkout, then aws s3api against R2 and the Cloudflare API. No GitHub API.
+    permissions:
+      contents: read
     needs: [initialize, stage-artifacts]
     runs-on: ubuntu-latest
     # 60, not 30, because on `main` this job has been running within MINUTES of
@@ -1839,6 +1921,9 @@ jobs:
   pipeline-sentinel:
     name: Pipeline Sentinel
     runs-on: ubuntu-slim
+    # Sparse checkout, then string arithmetic over needs.*.result. No API.
+    permissions:
+      contents: read
     needs: [initialize, finalize-release-sentinel]
     timeout-minutes: 5
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'

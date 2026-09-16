@@ -1,4 +1,13 @@
 #!/bin/bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-profiler-coverage is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_profiler_coverage.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_profiler_coverage.py" but its header derives ".ci/scripts/quality/check-profiler-coverage.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Every job that runs on a Linux runner must be profiled, and every job that is
 # profiled must be configured correctly.
 #
@@ -79,7 +88,7 @@ REPO_ROOT="$(get_repo_root)"
 cd "$REPO_ROOT"
 
 WORKFLOW_DIR="${PROFILER_COVERAGE_WORKFLOW_DIR:-.github/workflows}"
-ALLOWLIST="${PROFILER_COVERAGE_ALLOWLIST:-.profiler-coverage-allowlist}"
+ALLOWLIST="${PROFILER_COVERAGE_ALLOWLIST:-.ci/policy/.profiler-coverage-allowlist}"
 ACTION_DIR="${PROFILER_COVERAGE_ACTION_DIR:-.github/actions/profiler}"
 
 # Composite actions that carry the profiler on behalf of every job calling them.

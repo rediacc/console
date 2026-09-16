@@ -115,7 +115,7 @@ The fourth shape is already mechanized four times over
 (`.ci/scripts/quality/check_lint_rule_liveness.py`,
 `.ci/scripts/quality/check_gate_reachability_coverage.py`,
 `.ci/scripts/quality/check-dead-case-arms.sh:106-132`,
-`scripts/check-suppression-liveness.ts`). The third shape is entirely unexploited:
+`scripts/gates/check-suppression-liveness.ts`). The third shape is entirely unexploited:
 **no hook in this repository reads `tool_response`** (single repo-wide occurrence is
 a docstring at `wl_wait.py:141`). That is the largest unclaimed surface and it maps
 onto the two most expensive misread-outcome traps.

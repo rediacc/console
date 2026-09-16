@@ -1,4 +1,13 @@
 #!/bin/bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-probe-parity is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_probe_parity.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_probe_parity.py" but its header derives "...check-probe-parity.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Parity gate: a capability probe must exercise the operations its CONSUMER
 # depends on — not a convenient subset of them.
 #
@@ -45,17 +54,18 @@ EXEMPT_VERBS=("unlink" "purge" "revoke")
 
 log_step "Checking capability-probe parity ($PROBE vs $CONSUMER)..."
 
-for f in "$CONSUMER" "$PROBE"; do
-    if [[ ! -f "$f" ]]; then
-        log_error "$f not found — this gate has nothing to check, which is a failure,"
-        log_error "not a pass: parity cannot be asserted against a file that is gone."
-        exit 1
-    fi
-done
+require_input -f '{} not found — this gate has nothing to check, which is a failure,' \
+    'not a pass: parity cannot be asserted against a file that is gone.' \
+    "$CONSUMER" "$PROBE"
 
 # Consumer: execFileSync('keyctl', ['<verb>', ...])
+# `|| true` IS LOAD-BEARING on BOTH extractions. grep exits 1 on no match and
+# pipefail promotes that to the pipeline, so `set -e` killed the script at the
+# assignment -- taking out the two "CONTROL FAILED: ... empty set" branches
+# below, which exist for precisely the extraction-broke case. Reproduced
+# 2026-09-06 against an empty consumer file: exit 1 with no control message.
 consumer_verbs=$(grep -oE "execFileSync\('keyctl', \['[a-z]+" "$CONSUMER" |
-    grep -oE "'[a-z]+$" | tr -d "'" | sort -u)
+    grep -oE "'[a-z]+$" | tr -d "'" | sort -u || true)
 
 # Probe: bare `keyctl <verb>` invocations in the shell preflight.
 #
@@ -68,7 +78,7 @@ consumer_verbs=$(grep -oE "execFileSync\('keyctl', \['[a-z]+" "$CONSUMER" |
 # there.
 probe_verbs=$(sed 's/[[:space:]]*#.*$//' "$PROBE" |
     grep -oE '(^|[^-[:alnum:]_])keyctl [a-z]+' |
-    awk '{print $NF}' | sort -u)
+    awk '{print $NF}' | sort -u || true)
 
 # CONTROL: an empty side makes the comparison vacuous.
 if [[ -z "$consumer_verbs" ]]; then

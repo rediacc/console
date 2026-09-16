@@ -30,7 +30,7 @@ rdc config init --ssh-key "$TUTORIAL_SSH_KEY"
 rdc machine add "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
 rdc machine add "$M2" --ip "$M2_IP" --user "$M2_USER"
 for ip in "$TUTORIAL_MACHINE_IP" "$M2_IP"; do
-    for i in $(seq 1 30); do
+    for ((i = 1; i <= 30; i++)); do
         ssh -i "$TUTORIAL_SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 \
             "$TUTORIAL_MACHINE_USER@$ip" true 2>/dev/null && break
         sleep 2
@@ -51,7 +51,7 @@ rdc repo up pulse
 # Wait until the heartbeat app is actually beating (postgres healthy +
 # npm install done + first beats written) so the opening shot shows a
 # live counter.
-for i in $(seq 1 60); do
+for ((i = 1; i <= 60; i++)); do
     rdc term connect pulse \
         -c 'docker logs heartbeat_app 2>&1 | grep -q "memory counter=3"' 2>/dev/null && break
     sleep 3

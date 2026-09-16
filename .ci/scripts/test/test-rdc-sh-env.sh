@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 #
 # Leak test for rdc.sh's dev path. Two layers:
 #

@@ -74,7 +74,7 @@ if grep -qE "i18n/(locales|translations)/.*\.json$" <<<"$STAGED_FILES"; then
         # Stage every manifest fix:i18n regenerates in THIS repo. Staging only a
         # subset left a www or account regeneration unstaged, so the commit
         # landed with a stale committed manifest.
-        # Source of truth: LOCALE_CONFIGS in scripts/generate-translation-hashes.ts
+        # Source of truth: LOCALE_CONFIGS in scripts/gen/generate-translation-hashes.ts
         for manifest in \
             packages/cli/src/i18n/locales/.translation-hashes.json \
             packages/www/src/i18n/translations/.translation-hashes.json; do
@@ -82,7 +82,7 @@ if grep -qE "i18n/(locales|translations)/.*\.json$" <<<"$STAGED_FILES"; then
                 git add "$manifest"
             else
                 echo "⚠️  Expected manifest missing: $manifest"
-                echo "   LOCALE_CONFIGS in scripts/generate-translation-hashes.ts is out of sync."
+                echo "   LOCALE_CONFIGS in scripts/gen/generate-translation-hashes.ts is out of sync."
             fi
         done
 

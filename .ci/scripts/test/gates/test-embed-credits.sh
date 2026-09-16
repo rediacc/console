@@ -1,5 +1,12 @@
 #!/bin/bash
-# Integration test for scripts/check-embed-credits.ts.
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node, submodules
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
+# Integration test for scripts/gates/check-embed-credits.ts.
 #
 # Verifies the gate accepts the real in-tree inventories and rejects a
 # version mismatch and a missing embedded-component entry, using the gate's
@@ -13,7 +20,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-VALIDATOR="$REPO_ROOT/scripts/check-embed-credits.ts"
+VALIDATOR="$REPO_ROOT/scripts/gates/check-embed-credits.ts"
 
 # Every assertion (including the fixture-override ones) reads the real
 # Dockerfile + embed.go from the submodule; without it there is nothing to
@@ -74,7 +81,7 @@ test_rejects_dockerfile_pin_drift() {
     sed 's/^ARG CRIU_VERSION=.*/ARG CRIU_VERSION=9.9.9/' \
         "$REPO_ROOT/private/renet/Dockerfile" >"$TEMP/Dockerfile"
     out=$(cd "$REPO_ROOT" && EMBED_CREDITS_DOCKERFILE="$TEMP/Dockerfile" \
-        npx tsx scripts/check-embed-credits.ts 2>&1) || rc=$?
+        npx tsx scripts/gates/check-embed-credits.ts 2>&1) || rc=$?
     assert_exit_code 1 "$rc" "a Dockerfile pin drifting from the lockfile should fail"
     assert_contains "$out" "CRIU_VERSION" "error names the drifted ARG"
     log_pass "a Dockerfile pin that drifts from the lockfile is rejected"
@@ -91,7 +98,7 @@ test_rejects_stale_generated_artifact() {
     cp "$REPO_ROOT/private/renet/pkg/embed/credits_data.go" "$TEMP/credits_data.go"
     printf '\n// hand-edited\n' >>"$TEMP/credits_data.go"
     out=$(cd "$REPO_ROOT" && EMBED_CREDITS_GO_FILE="$TEMP/credits_data.go" \
-        npx tsx scripts/check-embed-credits.ts 2>&1) || rc=$?
+        npx tsx scripts/gates/check-embed-credits.ts 2>&1) || rc=$?
     assert_exit_code 1 "$rc" "a stale generated artifact should fail"
     assert_contains "$out" "stale" "error says the artifact is stale"
     log_pass "a stale generated attribution artifact is rejected"

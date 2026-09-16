@@ -52,6 +52,15 @@ registry. A fully general "infer any tool any script might need" scanner is
 not this gate's job; toolchain.sh and check-toolchain-pins.sh already own the
 pinned-binary half of that problem (ruff/go/shfmt/shellcheck/actionlint), and
 this owns the "job never set the resource up at all" half for anything else.
+
+---- gate ----
+id: check:ci-gate-prerequisites
+step: Gate prerequisites
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+lane: quality-code
+---- end gate ----
 """
 
 from __future__ import annotations

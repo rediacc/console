@@ -1,0 +1,1 @@
+{"ev":"state","id":"2a0b9c33","at":"2026-09-08T03:21:54Z","by":"judge","s":" ","note":"REOPENED by the stop-gate judge: Wire (twin_sha, port_sha) to observations.jsonl, add control proving changed hash forces re-drive and unchanged skips, document trade-off in code.","h":"29c1bbae","br":"0906-1","ns":1788837714485598048}

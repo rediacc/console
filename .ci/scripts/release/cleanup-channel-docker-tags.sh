@@ -6,9 +6,17 @@
 # its purpose. Removing it keeps GHCR from accumulating one dangling tag per
 # release.
 #
-# Non-critical by design: leftover channel tags are harmless, and the delete
-# needs the `delete:packages` scope which is not always granted. A failure is
-# recorded in the step summary and the script still exits 0.
+# Non-critical by design: leftover channel tags are harmless. A failure is recorded
+# in the step summary and the script still exits 0.
+#
+# AND IT ALWAYS FAILS TODAY, for a reason that is NOT the token. This header used to
+# say the delete "needs the `delete:packages` scope which is not always granted",
+# and that sent readers to check a token. The real cause is a design guard:
+# cleanup-staging.sh only accepts `staging-*` tags, deliberately, so a stray call
+# cannot delete a real one -- and CHANNEL is `edge` or `stable`. The two are
+# INDEPENDENT requirements and conflating them cost every release a wrong
+# diagnosis. The scope genuinely matters only once a `staging-` tag gets that far,
+# which is why that message still exists on the branch where it is true.
 #
 # Usage:
 #   .ci/scripts/release/cleanup-channel-docker-tags.sh
@@ -39,9 +47,25 @@ echo "" >>"$GITHUB_STEP_SUMMARY"
 
 # Cleanup is non-critical (channel tags are harmless if they remain),
 # so we log failures to the step summary but don't fail the job.
-if "$SCRIPT_DIR/../docker/cleanup-staging.sh" --tag "$CHANNEL"; then
+#
+# THIS CANNOT SUCCEED TODAY, and saying so beats reporting a scope problem that is
+# not the cause. cleanup-staging.sh exists to delete STAGING tags and guards itself
+# with `[[ "$TAG" =~ ^staging- ]] || exit 1` -- deliberately, so a stray call cannot
+# delete a real tag. CHANNEL is `edge` or `stable`, so the guard rejects it every
+# time and this step has logged a failure on EVERY release since it was written.
+#
+# The old message blamed a missing `delete:packages` scope. That is a misdiagnosis:
+# it sends the reader to fix a token when the truth is that the wrong tool is being
+# called, and a wrong diagnosis repeated every release is worse than none. Widening
+# the guard is NOT the fix -- it is a safety rail around deleting non-staging tags.
+# Channel-tag deletion needs its own path, which is a deliberate change nobody has
+# made.
+if [[ ! "$CHANNEL" =~ ^staging- ]]; then
+    echo "**Channel tag NOT cleaned up:** $CHANNEL" >>"$GITHUB_STEP_SUMMARY"
+    echo "cleanup-staging.sh only deletes \`staging-*\` tags by design, so a channel tag can never be removed through it. This is a KNOWN GAP, not a token-scope problem, and it is non-critical: a channel tag left in GHCR is harmless." >>"$GITHUB_STEP_SUMMARY"
+elif "$SCRIPT_DIR/../docker/cleanup_staging.py" --tag "$CHANNEL"; then
     echo "**Channel tag cleaned up:** $CHANNEL" >>"$GITHUB_STEP_SUMMARY"
 else
     echo "**Failed to clean up channel tag:** $CHANNEL" >>"$GITHUB_STEP_SUMMARY"
-    echo "Channel tag cleanup requires \`delete:packages\` scope (non-critical)." >>"$GITHUB_STEP_SUMMARY"
+    echo "The delete call failed; check that GH_TOKEN carries \`delete:packages\`." >>"$GITHUB_STEP_SUMMARY"
 fi

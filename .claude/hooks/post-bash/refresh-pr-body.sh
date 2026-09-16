@@ -21,7 +21,14 @@
 # this tells them something.
 set -uo pipefail
 
-CMD=$(jq -r '.tool_input.command' 2>/dev/null)
+# BOUNDED. A bare `jq` here reads stdin, and a stdin that stays open and silent
+# blocks it forever -- see hook_read_payload in pre-bash/lib/command-scan.sh for
+# the measurement. This hook is advisory only, so the deadline exits 0: it never
+# had standing to block anything, and a hook that hangs blocks everything.
+HOOK_PAYLOAD=""
+IFS= read -r -d "" -t 10 HOOK_PAYLOAD
+[ "$?" -gt 128 ] && exit 0
+CMD=$(printf '%s' "$HOOK_PAYLOAD" | jq -r '.tool_input.command' 2>/dev/null)
 # Word-boundary, or `echo git pushed` matches. It only stayed harmless above
 # because no PR happened to exist for that branch, which is luck, not a guard.
 grep -qE 'git +push([[:space:]]|$)' <<<"$CMD" || exit 0

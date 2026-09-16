@@ -428,7 +428,7 @@ const MATRIX = {
     // violating filename exists on disk -- the repo's files all conform, which
     // is the rule doing its job -- and a virtual .ts path is rejected outright
     // by the typed-linting projectService (allowDefaultProject covers only
-    // scripts/*.ts, scripts/utils/*.ts, packages/locales/*.js), which returns a
+    // scripts/*.ts and packages/locales/*.js), which returns a
     // FATAL parse error and runs zero rules. So the firing half runs in an
     // isolated instance carrying only this rule and a plain TS parser, and the
     // enabled half is proven separately with calculateConfigForFile against a

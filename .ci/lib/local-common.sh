@@ -235,16 +235,43 @@ ensure_deps() {
         return 0
     fi
 
-    # Install with npm 10, which is what CI pins (.ci/scripts/quality/check-lockfile.sh)
-    # and what the lockfile's nested layout describes.
+    # Install with npm 10. THE REASON IS THE HOIST BELOW, NOT THE LOCKFILE FORM.
     #
-    # This is not cosmetic like the 27-line "dev": true flip. npm 11 HOISTS
-    # differently: it flattens zod to the 3.25.76 copy that transitives drag in,
-    # ignoring the workspace-local zod@4.4.3 the lockfile pins, and then
-    # `npm ls zod` reports `invalid: "^4.3.6" from packages/shared`. The visible
-    # symptom is packages/shared failing to compile with "Property 'uuid' does
-    # not exist" (v4 API against a v3 copy), which takes `./run.sh account dev`
-    # down with it. Reproduced on npm 11.9.0; npm@10 fixes it in one run.
+    # This comment used to justify the pin as "what CI pins and what the lockfile's
+    # nested layout describes". Half of that went stale on 2026-09-06 (issue #587):
+    # check-lockfile.sh now carries CANONICAL_NPM="npm@11", so npm 11's output is the
+    # canonical lockfile form and npm 10 is no longer the writer this should be
+    # matching. CI does still INSTALL with npm 10 (setup-node/Node 22 bundles it),
+    # which is why check-lockfile.sh checks both majors.
+    #
+    # THE ZOD HOIST NO LONGER REPRODUCES, MEASURED 2026-09-06, so the downgrade
+    # this comment used to justify is gone. It said: "npm 11 HOISTS differently:
+    # it flattens zod to the 3.25.76 copy that transitives drag in, ignoring the
+    # workspace-local zod@4.4.3 the lockfile pins", with packages/shared then
+    # failing to compile ("Property 'uuid' does not exist", a v4 API against a v3
+    # copy) and taking `./run.sh account dev` down with it. Reproduced on 11.9.0.
+    #
+    # HOW IT WAS RE-TESTED, because a hoist is invisible to --package-lock-only
+    # and to --dry-run (neither writes a tree, and the tree is the whole question):
+    # the root package.json, package-lock.json, .npmrc and all seven workspace
+    # manifests were copied to a scratch directory and `npx -y npm@11 install
+    # --ignore-scripts` was run there, leaving this checkout's node_modules
+    # untouched. Every one of the eleven zod copies landed in the SAME place as in
+    # the npm 10 tree, packages/shared/node_modules/zod at 4.5.4 among them; the
+    # only differences were the three private/* submodule trees, which the probe
+    # deliberately did not copy.
+    #
+    # WHY IT STOPPED REPRODUCING, most likely: package.json now carries an explicit
+    # `overrides` entry forcing zod ^4.4.3 tree-wide, with its own BLOCKER reason
+    # about @modelcontextprotocol/sdk otherwise satisfying its `^3.25 || ^4.0`
+    # range with the older copy. That override makes the placement deterministic
+    # regardless of npm major, which is exactly what the downgrade was doing by
+    # hand.
+    #
+    # WHAT REMOVING IT BUYS (issue 587): the downgrade rewrote the root lockfile
+    # into npm 10's form on every local loop, which is the one path that could
+    # still re-trigger the flip issue 587 exists to stop. The residue note below
+    # is kept because a developer on npm 10 still produces it.
     #
     # THERE WAS A SECOND, PLAIN `npm install` ABOVE THIS ONE until 2026-08-27,
     # left by a rebase that kept both sides of a conflict where one superseded
@@ -252,13 +279,15 @@ ensure_deps() {
     # comment exists to prevent -- and logged "Installing dependencies..." a
     # second time. check:ci-native-rebuild found it by noticing that the install
     # at that line had no native rebuild within its window.
+    # WHATEVER npm IS ON PATH. No major-version downgrade: see the measurement above.
     local npm_cmd=(npm)
-    local npm_major
-    npm_major="$(npm --version 2>/dev/null | cut -d. -f1)"
-    if [[ -n "$npm_major" ]] && [[ "$npm_major" != "10" ]]; then
-        log_warn "npm $npm_major detected; installing with npm@10 to match the lockfile layout"
-        npm_cmd=(npx -y npm@10)
-    fi
+
+    # KNOWN RESIDUE, recorded rather than hidden: this install writes the root
+    # package-lock.json in npm 10's form, which since #587 is the NON-canonical one.
+    # It shows up as 27 added `"dev": true` lines under node_modules/tsx/**. It is
+    # cosmetic (CLAUDE.md explains why) but it is diff noise on every local loop, so
+    # reconcile before committing:
+    #     npx -y npm@11 install --package-lock-only --ignore-scripts
 
     log_step "Installing dependencies..."
     (cd "$LOCAL_ROOT_DIR" && "${npm_cmd[@]}" install)
@@ -778,7 +807,14 @@ ensure_renet_built() {
     # rebuild even though this function no longer passes a flag.
     local stamp_file="$LOCAL_ROOT_DIR/.ci/cache/build-renet.stamp"
     local _license_mode="nolicense"
-    if [[ "${RDC_RENET_LICENSE:-0}" == "1" || "${RDC_BENCH:-0}" == "1" ]]; then
+    # `RDC_BENCH` WAS THE SECOND ARM HERE AND IT IS DEAD. `rdc.sh` contains the string
+    # ZERO times, `.ci/scripts/test/test-rdc-sh-env.sh:81` lists it among the dead names it
+    # enforces the absence of, and `docs/environment-variables.md:104`,
+    # `docs/agent-reference/local-env.md:106` and CLAUDE.md all say so. Bench is a CONFIG
+    # now -- `./rdc.sh --config bench` -- so the arm could only ever be taken by someone
+    # exporting a variable nothing else reads. Removed 2026-09-09; found by the W8 P2 env
+    # manifest, which is the first instrument in this repo that looks at bash reads at all.
+    if [[ "${RDC_RENET_LICENSE:-0}" == "1" ]]; then
         _license_mode="enforce"
     fi
     local _account_key="${ACCOUNT_ED25519_PUBLIC_KEY:-}"

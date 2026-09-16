@@ -50,8 +50,10 @@ on:
         type: string
         default: ''
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 concurrency:
   group: backfill-release-sentinel-${{ inputs.version }}
@@ -62,6 +64,10 @@ jobs:
     name: Backfill ${{ inputs.version }}
     runs-on: ubuntu-slim
     timeout-minutes: 10
+    # The first sparse checkout uses the default token; every GitHub read
+    # after it (gh release view) runs on the readonly-preset App token.
+    permissions:
+      contents: read
     steps:
       # Sparse-checkout the action source first; the local app-token action
       # cannot resolve until it exists on disk.

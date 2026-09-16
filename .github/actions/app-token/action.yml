@@ -70,6 +70,23 @@ runs:
             echo "perm-contents=write" >> "$GITHUB_OUTPUT"
             echo "perm-pull-requests=write" >> "$GITHUB_OUTPUT"
             echo "perm-actions=write" >> "$GITHUB_OUTPUT"
+            # workflows:write, added 2026-09-06, ONLY on cd and only after the
+            # App installation was granted it. Without it the 'Tag & GitHub
+            # Release' step's `git push origin v<X>` is rejected outright:
+            #   refusing to allow a GitHub App to create or update workflow
+            #   <file> without workflows permission
+            # whenever the tagged commit range touches .github/workflows. The
+            # release then half-completes: edge deploys and the R2 artifacts
+            # publish, but no git tag and no GitHub Release exist. Seen twice,
+            # runs 34019022671 (v1.3.11) and 34003183456 (v1.3.8); v1.3.11 went
+            # untagged for a day because of it.
+            #
+            # ORDER MATTERS AND IS NOT REVERSIBLE HERE: create-github-app-token
+            # FAILS the mint when asked for a permission the installation does
+            # not hold, so this line breaks every CD run if the grant is ever
+            # withdrawn. It is deliberately not on `housekeeping`, which never
+            # pushes a tag.
+            echo "perm-workflows=write" >> "$GITHUB_OUTPUT"
             ;;
           housekeeping)
             echo "perm-contents=write" >> "$GITHUB_OUTPUT"
@@ -96,6 +113,7 @@ runs:
         permission-actions: ${{ steps.perms.outputs.perm-actions }}
         permission-packages: ${{ steps.perms.outputs.perm-packages }}
         permission-deployments: ${{ steps.perms.outputs.perm-deployments }}
+        permission-workflows: ${{ steps.perms.outputs.perm-workflows }}
 
     # Configure global git credentials so submodule fetches can authenticate.
     # actions/checkout uses includeIf.gitdir (local scope) which doesn't apply

@@ -1,5 +1,5 @@
 {
-  "_comment": "Third-party attribution inventory for rdc. Mirrors private/renet/pkg/embed/credits.go for the embedded-binary entries (asset/name/version MUST match; enforced by scripts/check-embed-credits.ts against private/renet/Dockerfile ARGs) and additionally records the SEA-bundled Node.js runtime and the bundled npm dependencies. Source of truth read in dev; embedded as a SEA asset for release builds.",
+  "_comment": "Third-party attribution inventory for rdc. Mirrors private/renet/pkg/embed/credits.go for the embedded-binary entries (asset/name/version MUST match; enforced by scripts/gates/check-embed-credits.ts against private/renet/Dockerfile ARGs) and additionally records the SEA-bundled Node.js runtime and the bundled npm dependencies. Source of truth read in dev; embedded as a SEA asset for release builds.",
   "gplWrittenOffer": "This distribution conveys GPL-licensed binaries (CRIU, rsync). The exact corresponding source for each is retrievable at the source URL listed for that component. Rediacc will additionally mirror each exact-version source archive at the recorded releases.rediacc.com path. Written requests for source may be sent to legal@rediacc.com.",
   "components": [
     {
@@ -69,11 +69,11 @@
       "kind": "embedded-binary",
       "asset": "zot",
       "name": "zot",
-      "version": "2.1.20",
+      "version": "2.1.21",
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The Zot Authors); conveyed as an unmodified upstream binary (full build, with the sync extension), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
-      "upstreamSourceUrl": "https://github.com/project-zot/zot/archive/v2.1.20/zot-2.1.20.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/zot-2.1.20.tar.gz",
+      "upstreamSourceUrl": "https://github.com/project-zot/zot/archive/v2.1.21/zot-2.1.21.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/zot-2.1.21.tar.gz",
       "notes": "This is the FULL zot build (zot-linux-<arch>), NOT the -minimal variant. Do not 'optimize' to the minimal build: the pull-through cache depends on the sync extension (sync.onDemand), and zot compiles extensions ONLY into the full binary. The minimal build is distribution-spec-only and cannot mirror upstreams, which defeats the entire purpose (D8)."
     },
     {

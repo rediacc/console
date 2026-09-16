@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-control-vacuity is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_control_vacuity.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_control_vacuity.py" but its header derives "...check-control-vacuity.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Gate: a control-first gate that PLANTS its defect by pattern substitution must
 # prove the plant landed before trusting the control.
 #
@@ -187,4 +196,4 @@ for _pf in "$GATE_DIR"/check_*.py; do
     [ -f "$_pf" ] && py_unscanned=$((py_unscanned + 1))
 done
 
-echo "${GREEN}✓${NC} $checked pattern-substitution control(s) prove their plant landed; $exempt built by construction (exempt); $py_unscanned python gate(s) NOT scanned (this check parses bash)"
+echo "${GREEN}✓${NC} $checked pattern-substitution control(s) prove their plant landed; $exempt built by construction (exempt); $py_unscanned python gate(s) NOT scanned here -- check:ci-python-control-plants owns them"

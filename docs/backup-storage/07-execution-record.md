@@ -635,7 +635,7 @@ a gate into a no-op, so it does not get accepted on a green run alone.
 ### 9.11 When one gate's control is another gate's dead path
 
 `gate-test:gate-paths-exist` reported `packages/__ghost__` as a dead path
-constant in `scripts/check-test-scripts-reachable.ts`. It is not dead, it is a
+constant in `scripts/gates/check-test-scripts-reachable.ts`. It is not dead, it is a
 **control**: a package that must NOT exist, used to prove the reachability
 detector fires. A control pointed at a real package proves nothing, so the two
 gates would deadlock over it forever.
@@ -707,7 +707,7 @@ word, and the word was covering a real defect.
 it:
 
 ```
-npm_config_registry=http://127.0.0.1:9/ npx tsx scripts/check-deps.ts
+npm_config_registry=http://127.0.0.1:9/ npx tsx scripts/gates/check-deps.ts
 → "All dependencies are up-to-date", exit 0
 ```
 
@@ -721,7 +721,7 @@ object whose only key is `error`:
 
 That parses. It lists no outdated packages. So the gate concluded there was no
 work and emitted the strongest claim available to it, from zero information. On
-top of that, `scripts/check-deps.ts` had **three separate `return {}` branches**
+top of that, `scripts/gates/check-deps.ts` had **three separate `return {}` branches**
 (no stdout, unparseable stdout, a throw carrying an empty payload) and a
 log-and-continue in the private-package loop, each turning a different failure
 into the same false green. The batch run had followed several `npm install`s,

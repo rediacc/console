@@ -252,7 +252,19 @@ _STOPWORD_TEXT = (
     # specimen back to 2.0 while the false positive stays silent; restoring
     # `suite` instead brings the false positive back. So `instead` stays a term.
     "already exist exists genuinely says said ways once several "
-    "number numbers true paid next produce comparable"
+    "number numbers true paid next produce comparable "
+    # `verb` is the third of the `while`/`total` shape, and the most repo-wide of
+    # the three. It sits in exactly ONE description -- backup-storage's "the rdc
+    # backup and rdc datastore CLI verbs" -- so `discriminative()` hands it to
+    # that agent at full weight, while the word itself is house vocabulary
+    # everywhere else: CLAUDE.md says "Use the VERBS, not the file", TRAPS.md and
+    # ci-gates.md use it, and worklist_messages.py prints it back at the session
+    # every stop. It fired live on 2026-09-08: "the verb that writes the
+    # compaction-recovery document therefore had no way to fail", a sentence
+    # about a stdin hang in this very file, was pushed back as a backup-storage
+    # claim -- `no way to` supplying the impossibility half and `verb` the whole
+    # of the domain half.
+    "verb verbs"
 )
 STOPWORDS = frozenset(_STOPWORD_TEXT.split())
 

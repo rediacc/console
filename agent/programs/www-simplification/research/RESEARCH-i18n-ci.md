@@ -491,7 +491,7 @@ system, not to the translation gates.
 
 ### 5.1 There is no deletion tooling. `i18n:sync` only adds.
 
-`npm run i18n:sync` (`scripts/sync-translations.ts`) fills missing keys; the pipeline at
+`npm run i18n:sync` (`scripts/gen/sync-translations.ts`) fills missing keys; the pipeline at
 `private/growth/i18n_pipeline` translates. **Deletion is a manual, thirteen-file edit**,
 and the gates are what make it safe.
 

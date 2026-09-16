@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-hook-integrity is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_hook_integrity.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_hook_integrity.py" but its header derives ".ci/scripts/quality/check-hook-integrity.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Gate: the enforcement layer cannot quietly disarm itself.
 #
 # WHY. Everything this repo relies on to stop an agent doing the wrong thing is a
@@ -47,15 +56,44 @@
 
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-HOOKS="$ROOT/.claude/hooks"
 # post-bash was MISSING until 2026-08-28. It is a real, registered chain --
 # settings.json wires cancel-old-ci.sh and refresh-pr-body.sh into it -- and
 # because it was absent from this list, both were outside the inventory and
 # could be deleted with no gate noticing. Found by sweeping the class after the
 # warn-* gap: that was a filename prefix escaping the net, this was a whole
-# chain. B/C are unaffected: they glob block-*.sh, and post-bash has none.
-CHAINS=(pre-bash pre-edit pre-ask post-bash)
-SUITE="$HOOKS/test-hooks.sh"
+# chain. B/C are unaffected: they glob block-*, and post-bash has none.
+#
+# THE LIST ITSELF NOW LIVES IN $SCOPE, not in this file, and the move is a
+# widened seam rather than a tidy-up. The .claude hook port renames and adds
+# chain directories; while this was a bash array inside the enforcement script,
+# every such move was an edit to the enforcement script, made by whoever was
+# moving files. Reading it from declared data means the port re-keys DATA and
+# this gate's logic is never opened. $SCOPE carries the admission rule and the
+# reason neither list can be derived.
+#
+# THERE IS NO HARDCODED HOOKS ROOT ANY MORE, and that is the second half of the
+# same widening. `HOOKS="$ROOT/.claude/hooks"` and `SUITE="$HOOKS/test-hooks.sh"`
+# made the whole gate a function of ONE directory: chains were names inside it,
+# guard keys were fragments relative to it, and cases were read from exactly one
+# file inside it. A guard that moves OUT of that directory does not fail this
+# gate, it leaves it -- the corpus silently shrinks and every assertion below
+# still passes over what remains. That is not hypothetical: 47 ported guards are
+# tracked at .claude/rediacc_hooks/guards/ today and this gate cannot see one of
+# them, because they are outside the root the seam was keyed on.
+#
+# So both seams are now REPO-RELATIVE FILE LISTS in $SCOPE:
+#
+#   guard_dirs            the directories whose files are guards (section A/B's
+#                         subject). Keys are the repo-relative PATH, so the
+#                         inventory baseline is a list of files rather than a
+#                         list of fragments waiting for a root to be prepended.
+#   guards_outside_chains individual guard files that no directory sweep finds.
+#   case_sources          the files whose contents count as coverage cases
+#                         (section B/C's subject).
+#
+# A move re-keys one list in one place. Nothing below knows where .claude/hooks
+# is, so nothing below narrows when it stops being where the guards live.
+SCOPE="$ROOT/scripts/data/hook-audit-scope.json"
 INV="$ROOT/scripts/data/hook-inventory-baseline.json"
 COV="$ROOT/scripts/data/hook-coverage-baseline.json"
 
@@ -74,26 +112,156 @@ fail() {
 }
 pass() { echo "${GREEN}ok${NC}   $*"; }
 
+# ---- scope, read from data --------------------------------------------------
+#
+# REFUSING AN EMPTY LIST IS THE POINT. A missing or malformed scope file that
+# yielded two empty arrays would make every loop below iterate zero times: A
+# would find zero guards, B would check zero directions, and the gate would exit
+# 0 having audited nothing. That is precisely the vacuous green this file's own
+# section C exists to abolish, so the load refuses instead of degrading.
+scope_list() { # scope_list <key> -> one entry per line, or nothing on any error
+    python3 - "$SCOPE" "$1" <<'PY' 2>/dev/null
+import json, sys
+try:
+    data = json.load(open(sys.argv[1], encoding="utf-8"))
+except (OSError, ValueError):
+    sys.exit(1)
+v = data.get(sys.argv[2])
+if not isinstance(v, list) or not v or not all(isinstance(x, str) and x for x in v):
+    sys.exit(1)
+for x in v:
+    print(x)
+PY
+}
+# `while read` RATHER THAN `mapfile`, and it is not a style choice. `mapfile` is
+# bash 4+ and `check:ci-shell-commands` rejects it as unavailable in the minimal
+# CI image; these three lines were the last three findings that gate had.
+# Behaviour is identical for this input: scope_list emits one entry per line and
+# an entry can never contain a newline, since it is a JSON string this file's own
+# reader has already rejected unless every element is a non-empty string.
+#
+# The trailing `|| true` on each is REQUIRED and is not defensive noise. `read`
+# returns non-zero at end of input, which under `set -e` would kill the script at
+# the last line of the loop and take the emptiness refusal below with it. That
+# refusal is the only thing standing between an unreadable scope file and a gate
+# that exits 0 having audited nothing.
+GUARD_DIRS=()
+while IFS= read -r _line; do GUARD_DIRS+=("$_line"); done < <(scope_list guard_dirs || true)
+EXTRA_GUARDS=()
+while IFS= read -r _line; do EXTRA_GUARDS+=("$_line"); done < <(scope_list guards_outside_chains || true)
+CASE_SOURCES=()
+while IFS= read -r _line; do CASE_SOURCES+=("$_line"); done < <(scope_list case_sources || true)
+if [ ${#GUARD_DIRS[@]} -eq 0 ] || [ ${#EXTRA_GUARDS[@]} -eq 0 ] || [ ${#CASE_SOURCES[@]} -eq 0 ]; then
+    echo "${RED}✗${NC} hook integrity: scope file unreadable or empty: $SCOPE" >&2
+    echo "     guard_dirs=${#GUARD_DIRS[@]} guards_outside_chains=${#EXTRA_GUARDS[@]} case_sources=${#CASE_SOURCES[@]}" >&2
+    echo "     Refusing to run: with an empty scope every assertion below audits nothing" >&2
+    echo "     and this gate would exit 0 having checked no guard at all." >&2
+    exit 1
+fi
+# A DECLARED DIRECTORY THAT DOES NOT EXIST is the failure mode a file list adds,
+# and it is exactly the one a move produces: rename the directory, forget the
+# list, and the sweep below iterates nothing while every assertion still passes
+# over the directories that are left. Silent narrowing by typo. Refuse instead.
+missing_dirs=()
+for _d in "${GUARD_DIRS[@]}"; do
+    [ -d "$ROOT/$_d" ] || missing_dirs+=("$_d")
+done
+for _s in "${CASE_SOURCES[@]}"; do
+    [ -f "$ROOT/$_s" ] || missing_dirs+=("$_s")
+done
+if [ ${#missing_dirs[@]} -gt 0 ]; then
+    echo "${RED}✗${NC} hook integrity: declared in $SCOPE but ABSENT from the tree: ${missing_dirs[*]}" >&2
+    echo "     Refusing to run: a declared path that is not there audits nothing, and the" >&2
+    echo "     assertions below would still pass over whatever is left." >&2
+    exit 1
+fi
+# THE SUITE SPELLS A GUARD BY ITS DIRECTORY'S LAST SEGMENT plus its filename
+# ("pre-bash/block-x.sh"), because that is how it joins $DIR. Two declared
+# directories sharing a last segment would therefore be indistinguishable to the
+# coverage reader, and one guard's cases would be credited to another's. Cheap
+# to refuse, impossible to notice once it happens.
+# Parameter expansion, not sed: check-control-vacuity.sh reads any `sed s///`
+# in a gate that has controls as a control mutant built by substitution and
+# demands a proof-of-plant this line has no plant for. Measured: adding the sed
+# spelling turned that gate red on this file, which was clean at HEAD.
+dupe_seg="$(
+    for _dd in "${GUARD_DIRS[@]}"; do
+        _dd="${_dd%/}"
+        printf '%s\n' "${_dd##*/}"
+    done | sort | uniq -d
+)"
+if [ -n "$dupe_seg" ]; then
+    echo "${RED}✗${NC} hook integrity: two guard_dirs share a final path segment: $(tr '\n' ' ' <<<"$dupe_seg")" >&2
+    echo "     The coverage reader matches cases on that segment, so their guards would be" >&2
+    echo "     credited to each other. Rename one, or the seam lies about coverage." >&2
+    exit 1
+fi
+
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-# covmap <suite-file> <hooks-root> -> lines of "<chain>/<name> <block> <allow>"
+# mkspec <out-file> <root> <newline-separated case sources> <newline-separated guard dirs>
+#
+# The seam, serialised. Every path the reader below touches arrives through this
+# file, so the reader has no opinion about where guards live: callers hand it a
+# root plus two lists, and the fixture controls hand it a throwaway tree the same
+# way the real run hands it the checkout. An absolute entry passes through
+# unchanged (os.path.join ignores the root when the tail is absolute).
+mkspec() {
+    SPEC_OUT="$1" SPEC_ROOT="$2" SPEC_SOURCES="$3" SPEC_DIRS="$4" python3 - <<'PY'
+import json, os
+root = os.environ["SPEC_ROOT"]
+srcs = [s for s in os.environ["SPEC_SOURCES"].split("\n") if s]
+dirs = [d for d in os.environ["SPEC_DIRS"].split("\n") if d]
+spec = {
+    "sources": [os.path.join(root, s) for s in srcs],
+    # KEY -> absolute directory. The key is whatever the caller declared, so the
+    # real run keys by repo-relative path and the fixtures key by chain name.
+    "dirs": {d: os.path.join(root, d) for d in dirs},
+}
+with open(os.environ["SPEC_OUT"], "w", encoding="utf-8") as fh:
+    json.dump(spec, fh)
+PY
+}
+
+# covmap <spec-file> -> lines of "<key>/<name> <block> <allow>"
 #
 # Counts, per guard, cases asserting exit 2 and cases asserting exit 0, from
 # three sources: direct `check`/`check_out` calls, calls to a helper function
 # that wraps exactly one guard, and a dedicated test-<stem>.py|.sh beside the
 # guard (which exists to assert both directions, so it counts as both).
+#
+# CASES COME FROM A LIST OF SOURCES, not from one suite file. While it was one
+# file, moving a guard's cases into a second suite made that guard read as
+# newly uncovered -- and the cheapest way to make that red go away is to
+# baseline the guard, which retires the assertion permanently. Reading every
+# declared source means a case that MOVED still counts, and only a case that
+# was DELETED goes red.
 covmap() {
-    python3 - "$1" "$2" "${CHAINS[@]}" <<'PY'
-import os, re, sys
-suite_path, hooks_root = sys.argv[1], sys.argv[2]
-chains = sys.argv[3:]
-try:
-    src = open(suite_path, encoding="utf-8", errors="replace").read()
-except OSError:
-    src = ""
-chain_re = "|".join(re.escape(c) for c in chains)
-guard_re = r"(?:%s)/[A-Za-z0-9_.-]+\.sh" % chain_re
+    python3 - "$1" <<'PY'
+import json, os, re, sys
+with open(sys.argv[1], encoding="utf-8") as fh:
+    spec = json.load(fh)
+sources, dirs = spec["sources"], spec["dirs"]
+src = ""
+for path in sources:
+    try:
+        src += open(path, encoding="utf-8", errors="replace").read() + "\n"
+    except OSError:
+        pass
+# The suite names a guard by its directory's LAST SEGMENT plus its filename,
+# because that is how it joins $DIR. The key is the caller's declared path, and
+# the two are related here rather than by any assumption about a root. A
+# duplicate segment is refused before this runs.
+segs = sorted({os.path.basename(k.rstrip("/")) for k in dirs})
+chain_re = "|".join(re.escape(c) for c in segs)
+# EXTENSION-AGNOSTIC for the same reason the disk globs are: after the hook
+# port a case in the suite names `pre-bash/block_x.py`, and a reader anchored to
+# `.sh` would count zero cases for it. B would then report a fully covered guard
+# as newly uncovered -- loud rather than silent, but wrong, and a gate that is
+# wrong is a gate that gets suppressed. Measured a no-op on the suite it was
+# widened against: 81 direct case matches before and after, identical set.
+guard_re = r"(?:%s)/[A-Za-z0-9_.-]+\.(?:sh|py)" % chain_re
 
 counts = {}
 def bump(guard, rc):
@@ -119,19 +287,22 @@ for m in re.finditer(r"^([A-Za-z_][A-Za-z0-9_]*)\(\)\s*\{(.*?)^\}", src, re.M | 
         bump(guard, rc)
 
 # 3. A dedicated test file covers both directions by definition.
-for chain in chains:
-    d = os.path.join(hooks_root, chain)
+for key, d in sorted(dirs.items()):
     if not os.path.isdir(d):
         continue
+    seg = os.path.basename(key.rstrip("/"))
     for name in sorted(os.listdir(d)):
-        if not (name.startswith("block-") and name.endswith(".sh")):
+        # Same prefix and extension rule as the on-disk glob below, including the
+        # underscore spelling a Python port produces. splitext rather than
+        # name[:-3], which only happens to be right while every extension is
+        # three characters long.
+        if not (name.startswith(("block-", "block_")) and name.endswith((".sh", ".py"))):
             continue
-        guard = "%s/%s" % (chain, name)
-        b, a = counts.get(guard, (0, 0))
-        stem = name[:-3]
+        b, a = counts.get("%s/%s" % (seg, name), (0, 0))
+        stem = os.path.splitext(name)[0]
         if any(os.path.exists(os.path.join(d, "test-%s%s" % (stem, ext))) for ext in (".py", ".sh")):
             b, a = b + 1, a + 1
-        print(guard, b, a)
+        print("%s/%s" % (key, name), b, a)
 PY
 }
 
@@ -156,9 +327,9 @@ PY
 # warn-submodule-deletions.sh were outside the inventory entirely -- and A's own
 # failure text, "each of these can be deleted with no gate noticing", was true of
 # them with nothing saying so.
-# GUARDS OUTSIDE ANY CHAIN DIRECTORY, listed explicitly because a glob cannot
-# find them. The admission rule is WHETHER ABSENCE IS SILENT, not what the file
-# is named or where it sits:
+# GUARDS OUTSIDE ANY CHAIN DIRECTORY are declared in $SCOPE under
+# `guards_outside_chains`, because a glob cannot find them. The admission rule is
+# WHETHER ABSENCE IS SILENT, not what the file is named or where it sits:
 #
 #   * a missing pre-bash/post-bash guard just stops blocking -- nothing says so,
 #     which is the entire reason this inventory exists
@@ -170,27 +341,61 @@ PY
 # not guards, and their absence is LOUD -- a missing stop hook errors on every
 # single stop rather than quietly permitting something. A gate that cannot tell
 # those apart would be inventorying files that already announce their own death.
-EXTRA_GUARDS=(trapguard/dispatch.py require-jq.sh)
 
 on_disk=()
 all_guards=()
-for _c in "${CHAINS[@]}"; do
-    for _f in "$HOOKS/$_c"/block-*.sh; do
-        [ -e "$_f" ] && on_disk+=("$_c/$(basename "$_f")")
+for _c in "${GUARD_DIRS[@]}"; do
+    # EXTENSION-AGNOSTIC, and that is the second half of this seam widening. The
+    # patterns were `block-*.sh` and `*.sh`, so the moment a guard is ported to
+    # Python it leaves BOTH sets: A's baseline arm still names the vanished .sh
+    # loudly, but the new .py file enters no list at all, so A's unlisted arm
+    # never mentions it and B stops asking it for either direction. That is a
+    # silent hole opened by a correct port, which is the exact class this gate
+    # was built for. Matching on the NAME PREFIX instead means a ported guard
+    # stays audited under its new extension.
+    #
+    # THE SEPARATOR IS PART OF THE PREFIX, found by planting the file a port
+    # actually produces. A first pass matched `block-*`, and a fixture named
+    # `block_ported.py` -- hyphen to underscore, which is what a Python port does
+    # to a module name -- still missed section B entirely while landing in the
+    # all-guards list, so it would have been inventoried as un-deletable and
+    # never asked for a block or an allow case. `block[-_]*` covers both
+    # spellings.
+    #
+    # Proven a no-op on the tree it was widened against: 42 block-* and 50 total,
+    # identical sets before and after, because no chain holds a .py guard yet.
+    for _f in "$ROOT/$_c"/block[-_]*; do
+        _b="$(basename "$_f")"
+        [ -f "$_f" ] || continue
+        case "$_b" in *.pyc) continue ;; esac
+        on_disk+=("$_c/$_b")
     done
-    # EVERY .sh in the chain, not a name pattern. Verified equal to the old
+    # EVERY file in the chain, not a name pattern. Verified equal to the old
     # block-*+warn-* set for the three original chains (42 files, 42 listed),
     # so this widens the net without reclassifying anything.
-    for _f in "$HOOKS/$_c"/*.sh; do
-        [ -e "$_f" ] && all_guards+=("$_c/$(basename "$_f")")
+    #
+    # Two exclusions, both of them non-guards that a bare `*` would otherwise
+    # inventory: `test-*` files are the per-guard case suites this gate READS
+    # (section B resolves them at line-level), so listing them as guards would
+    # demand coverage of the coverage; `*.pyc` and directories are build litter
+    # and package roots (`pre-bash/lib`, `__pycache__`) rather than files that
+    # can silently stop enforcing anything.
+    for _f in "$ROOT/$_c"/*; do
+        _b="$(basename "$_f")"
+        [ -f "$_f" ] || continue
+        case "$_b" in test-* | *.pyc) continue ;; esac
+        all_guards+=("$_c/$_b")
     done
 done
 for _g in "${EXTRA_GUARDS[@]}"; do
-    [ -e "$HOOKS/$_g" ] && all_guards+=("$_g")
+    [ -e "$ROOT/$_g" ] && all_guards+=("$_g")
 done
 
 MAP="$TMP/covmap.txt"
-covmap "$SUITE" "$HOOKS" >"$MAP"
+mkspec "$TMP/spec.json" "$ROOT" \
+    "$(printf '%s\n' "${CASE_SOURCES[@]}")" \
+    "$(printf '%s\n' "${GUARD_DIRS[@]}")"
+covmap "$TMP/spec.json" >"$MAP"
 
 lookup() { # lookup <chain/name> -> "block allow"
     awk -v g="$1" '$1 == g { print $2, $3; found = 1 } END { if (!found) print 0, 0 }' "$MAP"
@@ -205,10 +410,10 @@ else
     missing=()
     while IFS= read -r want; do
         [ -n "$want" ] || continue
-        [ -f "$HOOKS/$want" ] || missing+=("$want")
+        [ -f "$ROOT/$want" ] || missing+=("$want")
     done < <(python3 -c 'import json,sys;[print(x) for x in json.load(open(sys.argv[1]))]' "$INV")
     if [ ${#missing[@]} -eq 0 ]; then
-        pass "A. all $(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1]))))' "$INV") baselined guard(s) still present (${#all_guards[@]} on disk across ${#CHAINS[@]} chain(s))"
+        pass "A. all $(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1]))))' "$INV") baselined guard(s) still present (${#all_guards[@]} on disk across ${#GUARD_DIRS[@]} chain(s))"
     else
         fail "A. guard(s) in the baseline but GONE from the tree: ${missing[*]}"
         echo "     Removing a guard is a deliberate act: drain the baseline in the same commit and say why." >&2
@@ -252,7 +457,7 @@ else
     drained=()
     while IFS= read -r g; do
         [ -n "$g" ] || continue
-        [ -f "$HOOKS/$g" ] || continue
+        [ -f "$ROOT/$g" ] || continue
         read -r b a <<<"$(lookup "$g")"
         [ "$b" -gt 0 ] && [ "$a" -gt 0 ] && drained+=("$g")
     done <<<"$known"
@@ -281,7 +486,9 @@ fx_case() {
 fx_case 2 "wrapped block"
 fx_case 0 "wrapped allow"
 FIXTURE
-covmap "$TMP/suite.sh" "$TMP/hooks" >"$TMP/fixture-map.txt"
+mkspec "$TMP/fixture-spec.json" "$TMP/hooks" "$TMP/suite.sh" "pre-bash
+pre-edit"
+covmap "$TMP/fixture-spec.json" >"$TMP/fixture-map.txt"
 fxlook() { awk -v g="$1" '$1 == g { print $2, $3; f = 1 } END { if (!f) print 0, 0 }' "$TMP/fixture-map.txt"; }
 
 read -r b a <<<"$(fxlook pre-bash/block-fixture-both.sh)"
@@ -315,7 +522,9 @@ fi
 # NEGATIVE control: a guard with no case anywhere must read 0/0, or the three
 # controls above would pass over a reader that simply says yes to everything.
 printf '#!/usr/bin/env bash\nexit 0\n' >"$TMP/hooks/pre-bash/block-fixture-uncovered.sh"
-covmap "$TMP/suite.sh" "$TMP/hooks" >"$TMP/fixture-map.txt"
+mkspec "$TMP/fixture-spec.json" "$TMP/hooks" "$TMP/suite.sh" "pre-bash
+pre-edit"
+covmap "$TMP/fixture-spec.json" >"$TMP/fixture-map.txt"
 read -r b a <<<"$(fxlook pre-bash/block-fixture-uncovered.sh)"
 if [ "$b" -eq 0 ] && [ "$a" -eq 0 ]; then
     pass "control: a guard with no cases reads 0/0 (the reader is not saying yes to everything)"
@@ -323,7 +532,9 @@ else
     fail "CONTROL DID NOT FIRE: an uncovered fixture reported coverage (block=$b allow=$a)"
 fi
 printf '' >"$TMP/hooks/pre-bash/test-block-fixture-blockonly.py"
-covmap "$TMP/suite.sh" "$TMP/hooks" >"$TMP/fixture-map.txt"
+mkspec "$TMP/fixture-spec.json" "$TMP/hooks" "$TMP/suite.sh" "pre-bash
+pre-edit"
+covmap "$TMP/fixture-spec.json" >"$TMP/fixture-map.txt"
 read -r b a <<<"$(fxlook pre-bash/block-fixture-blockonly.sh)"
 if [ "$a" -gt 0 ]; then
     pass "control: a dedicated test file counts as covering both directions"
@@ -399,14 +610,29 @@ fi
 # itself is enforcement, and this file's whole premise is that enforcement
 # cannot quietly disarm itself. Deleting the floor is a one-line edit that turns
 # every orphaned control back into a silent green.
-HARNESS="$SUITE"
-if [ ! -f "$HARNESS" ]; then
-    fail "test-hooks.sh is missing; the selftest floor cannot be checked"
-elif ! grep -q 'lt "\$floor"' "$HARNESS"; then
-    fail "test-hooks.sh lost its selftest minimum-count FLOOR. Without it a module whose --selftest prints nothing and exits 0 counts as a passing suite, which is how 36 orphaned controls hid for months."
-else
-    pass "the selftest loop enforces a minimum control count"
+# THE HARNESS IS DERIVED FROM $CASE_SOURCES, not named. While this read
+# `HARNESS="$SUITE"`, section C was an assertion about one hardcoded file, and a
+# suite that MOVED took its floor out of the gate's sight without failing
+# anything -- the same silent narrowing the seam widening above is about. A
+# declared case source qualifies as a folding harness by CONTAINING a fold of an
+# external count, which is the only thing a floor is ever about, so a source
+# with no folds is correctly silent rather than wrongly red.
+HARNESSES=()
+for _s in "${CASE_SOURCES[@]}"; do
+    grep -qE 'PASS=\$\(\(PASS \+ [A-Za-z_]' "$ROOT/$_s" && HARNESSES+=("$ROOT/$_s")
+done
+# ZERO folding harnesses is not "nothing to check", it is section C auditing
+# nothing, which is the vacuous green this whole section exists to abolish.
+if [ ${#HARNESSES[@]} -eq 0 ]; then
+    fail "C. no declared case source folds an external PASS count, so the floor rule audits NOTHING. Either the folding suite left \$SCOPE's case_sources or it stopped folding; both need saying out loud."
 fi
+for HARNESS in ${HARNESSES[@]+"${HARNESSES[@]}"}; do
+    if ! grep -q 'lt "\$floor"' "$HARNESS"; then
+        fail "$(basename "$HARNESS") lost its selftest minimum-count FLOOR. Without it a module whose --selftest prints nothing and exits 0 counts as a passing suite, which is how 36 orphaned controls hid for months."
+    else
+        pass "the selftest loop enforces a minimum control count"
+    fi
+done
 
 # EVERY selftest fold needs a floor, not just one, and counting is not enough to
 # know that. A single `lt "$floor"` anywhere satisfied the check above while two
@@ -435,28 +661,48 @@ fold = re.compile(r"PASS=\$\(\(PASS \+ ([A-Za-z_][A-Za-z0-9_]*)\)\)")
 # correctly floored folds as defects the first time this ran. A zero-count
 # refusal (`-gt 0`, `-eq 0`) is a floor of one and catches the same failure.
 guard = re.compile(r"-lt[ \t]+(\"?\$?\{?floor|[0-9])|-gt[ \t]+0|-eq[ \t]+0|-le[ \t]+0")
+# THE WINDOW INCLUDES THE FOLD LINE ITSELF. It used to stop one line short, so a
+# fold whose refusal sits on the SAME line -- `if [ "$n" -lt "$floor" ]; then
+# FAIL=...; else PASS=$((PASS + n)); fi` -- was reported as unfloored. A
+# correctly floored fold named as a defect is the cry-wolf failure the comment
+# above is about, and it is the reason a floorcheck fixture written that way
+# went red while asserting nothing. Found by planting it. No effect on the
+# current harness, whose folds are all multi-line.
 for i, line in enumerate(lines):
     if not fold.search(line):
         continue
-    window = lines[max(0, i - 12):i]
+    window = lines[max(0, i - 12):i + 1]
     if not any(guard.search(w) for w in window):
         print(i + 1)
 FLOORPY
 }
 
-unfloored="$(floorcheck "$HARNESS")"
-if [ -n "$unfloored" ]; then
-    fail "test-hooks.sh folds an external PASS count with NO minimum at line(s): $(tr '\n' ' ' <<<"$unfloored")"
-    echo "     A fold with no floor counts a selftest that printed nothing as a passing" >&2
-    echo "     suite. That is how 36 orphaned controls hid for months." >&2
-else
-    pass "every external PASS fold refuses a count too low to be real"
-fi
+for HARNESS in ${HARNESSES[@]+"${HARNESSES[@]}"}; do
+    unfloored="$(floorcheck "$HARNESS")"
+    if [ -n "$unfloored" ]; then
+        fail "$(basename "$HARNESS") folds an external PASS count with NO minimum at line(s): $(tr '\n' ' ' <<<"$unfloored")"
+        echo "     A fold with no floor counts a selftest that printed nothing as a passing" >&2
+        echo "     suite. That is how 36 orphaned controls hid for months." >&2
+    else
+        pass "every external PASS fold refuses a count too low to be real"
+    fi
+done
 
 # CONTROL, both directions, by construction: a floored fold must read clean and
 # an unfloored one must be named. Without the second arm this passes on a reader
 # that finds nothing because its regex quietly stopped matching.
+# THE FIRST fold is the SAME-LINE spelling, folded into this fixture rather than
+# given its own control so the check gains coverage without gaining an output
+# line. It was reported as unfloored until the window included the fold line
+# itself; if that regresses, this control goes red.
+#
+# IT HAS TO COME FIRST. Placed after the multi-line fold it proved nothing: the
+# 12-line lookbehind reached that fold's `-lt "$floor"` and passed the same-line
+# fold on someone else's floor. Caught by reverting the fix and watching the
+# control stay green.
 cat >"$TMP/floored.sh" <<'FIXTURE'
+m=$(count)
+if [[ "$m" -lt "$floor" ]]; then FAIL=$((FAIL + 1)); else PASS=$((PASS + m)); fi
 n=$(count)
 if [[ "$n" -lt "$floor" ]]; then
     FAIL=$((FAIL + 1))
@@ -510,18 +756,20 @@ fi
 # notice. Built by DELETION of a line that is present, not by pattern
 # substitution, so it cannot silently produce an identical copy -- the vacuous-
 # plant hole check-control-vacuity.sh exists for.
-HARNESS_COPY="$(mktemp)"
-grep -v 'lt "\$floor"' "$HARNESS" >"$HARNESS_COPY"
-if grep -q 'lt "\$floor"' "$HARNESS_COPY"; then
-    fail "CONTROL IS VACUOUS: the floor line survived its own removal"
-else
-    pass "CONTROL: the floor line is detectable, so its absence would be caught"
-fi
-rm -f "$HARNESS_COPY"
+for HARNESS in ${HARNESSES[@]+"${HARNESSES[@]}"}; do
+    HARNESS_COPY="$(mktemp)"
+    grep -v 'lt "\$floor"' "$HARNESS" >"$HARNESS_COPY"
+    if grep -q 'lt "\$floor"' "$HARNESS_COPY"; then
+        fail "CONTROL IS VACUOUS: the floor line survived its own removal"
+    else
+        pass "CONTROL: the floor line is detectable, so its absence would be caught"
+    fi
+    rm -f "$HARNESS_COPY"
+done
 
 echo
 if [ "$fails" -eq 0 ]; then
-    echo "${GREEN}✓${NC} hook integrity: ${#on_disk[@]} guard(s) present across ${#CHAINS[@]} chain(s), none newly uncovered."
+    echo "${GREEN}✓${NC} hook integrity: ${#on_disk[@]} guard(s) present across ${#GUARD_DIRS[@]} chain(s), none newly uncovered."
     echo "  Blind spot, stated so a green is not read as more than it is: this counts"
     echo "  CASES, not their quality. A guard whose two cases are both trivial passes"
     echo "  here; only reading them catches that."

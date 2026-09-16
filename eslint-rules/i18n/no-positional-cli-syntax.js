@@ -42,8 +42,7 @@
  */
 
 import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { COMMAND_TREE_PATH } from '../lib/paths.js';
 import { FREEFORM_ARG_COMMAND_PATHS as SHARED_FREEFORM } from '../lib/cli-exempt-lists.js';
 import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
 
@@ -58,9 +57,6 @@ const USAGE_PLACEHOLDER_RES = [
 ];
 
 const isUsagePlaceholder = (afterPath) => USAGE_PLACEHOLDER_RES.some((re) => re.test(afterPath));
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const COMMAND_TREE_PATH = path.resolve(__dirname, '../../packages/cli/scripts/command-tree.json');
 
 const FREEFORM_ARG_COMMAND_PATHS = new Set(SHARED_FREEFORM);
 

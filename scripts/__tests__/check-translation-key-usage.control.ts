@@ -26,7 +26,7 @@ import { globSync } from 'glob';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '../..');
 const WWW_SRC = path.join(REPO, 'packages/www/src');
-const GATE = path.join(REPO, 'scripts/check-translation-key-usage.ts');
+const GATE = path.join(REPO, 'scripts/gates/check-translation-key-usage.ts');
 const EN = path.join(WWW_SRC, 'i18n/translations/en.json');
 
 interface Case {

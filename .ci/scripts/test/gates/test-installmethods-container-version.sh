@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Tests for the container version fence in .ci/scripts/test/test-install-methods.sh.
 #
 # WHY THIS EXISTS. On 2026-08-07 a release published CLI binaries built as

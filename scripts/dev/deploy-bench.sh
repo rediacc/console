@@ -131,21 +131,26 @@ log_step "Loading private/account/.env (with .env.bench overrides)"
 # credentials are required" and this script reported "rotation drift detected"
 # -- a verdict about credentials it had never compared.
 
-# Source the .env in a subshell to populate the variables we care about.
-# `set -a` exports everything sourced inside the block.
+# env_file_load PARSES these files and exports what the environment does not
+# already carry; it never executes them. private/account/.env holds four private
+# keys and an admin API key, and `source` would run any `$(...)` a hand edit left
+# in one of them.
+#
+# THE LOAD ORDER IS REVERSED FROM THE `source` VERSION, and it has to be. Under
+# `set -a; source` the LAST file read wins, so .env.bench was layered on top of
+# .env. env_file_load gives the FIRST value to reach the environment the win, so
+# the file that must override goes first. Same precedence, opposite order: get
+# this backwards and bench silently ships the production AWS_SES_* credentials.
 set +u
-set -a
-# shellcheck disable=SC1090,SC1091
-source "$ROOT_DIR/private/account/.env"
-# Layer .env.bench on top so its bench-specific keys (currently the
-# dedicated AWS_SES_* for rediacc-ses-bench) override the prod values.
-# This file is gitignored and managed by the rotation tool.
+source "$ROOT_DIR/scripts/lib/env-file.sh"
+# This file is gitignored and managed by the rotation tool. Its bench-specific
+# keys (currently the dedicated AWS_SES_* for rediacc-ses-bench) must beat the
+# prod values, so it is loaded FIRST.
 if [[ -f "$ROOT_DIR/private/account/.env.bench" ]]; then
-    # shellcheck disable=SC1090,SC1091
-    source "$ROOT_DIR/private/account/.env.bench"
+    env_file_load "$ROOT_DIR/private/account/.env.bench"
     log_info "Loaded private/account/.env.bench (bench-specific overrides)"
 fi
-set +a
+env_file_load "$ROOT_DIR/private/account/.env"
 set -u
 
 # Drift preflight: refuse to push stale credentials. The rotation tool
@@ -278,5 +283,8 @@ echo "  R2:     rediacc-configs-bench"
 echo "  Worker: $WORKER_NAME"
 echo
 echo "Test it:"
-echo "  RDC_BENCH=1 ./rdc.sh subscription login"
-echo "  RDC_BENCH=1 ./rdc.sh repo create --name my-app -m my-server --size 2G"
+# `--config bench`, NOT `RDC_BENCH=1`: the wrapper stopped reading that variable and this
+# advice had outlived it. Printing a command the tool ignores is worse than printing none,
+# because it fails as a no-op that looks like it worked.
+echo "  ./rdc.sh --config bench subscription login"
+echo "  ./rdc.sh --config bench repo create --name my-app -m my-server --size 2G"

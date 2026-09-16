@@ -46,6 +46,45 @@ below it.
 - The docker cache-key defect **folds into the D5 tag work**, not a separate fix.
 - **Rebase-merge only** across all five repos.
 
+### Branch 0906-1, the tooling-transformation campaign (added 2026-09-09)
+
+These are RULINGS, not notes. The operator has had to repeat several of them, which is
+why they live here and not in `STATE.md`: that file is rewritten wholesale on every
+refresh, so a correction recorded there can be dropped by the next rewrite.
+
+- **THERE IS ONE DRIVER, AND IT IS WHOEVER IS READING THIS.** Never write "plans I'm not
+  driving", "other workstreams", or anything implying a second owner. Measured 2026-09-09:
+  **157 open boxes across 21 plans**, and the `Owner:` fields name SESSIONS THAT HAVE
+  ENDED -- `74de73ca` (last active 09-04) alone owns 11 plans and 84 open boxes, still
+  marked `draft`. Two plans have no owner at all. Nobody else is coming.
+- **FINISH THE BIG PIECES FIRST, explicitly at the cost of the small ones.** A box count
+  flatters and this repo knows it: all 149 gate tests were ONE box, while the axis that
+  measures the real bash->Python transformation is DELETED, still **1 of 521**.
+- **THE DENOMINATOR IS THE PROBLEM, not the rate.** Measured over the week from the
+  committed history: 112 -> 179 -> 372 total boxes; ~206 closed and ~275 ADDED, so open
+  rose from 88 to 157. Reporting "% done" hides this because `done` grows too. Report the
+  OPEN COUNT and its direction, never a bare percentage.
+- **Every session employs a planning agent at least once per context, after a compaction.**
+- **Run sub-agents in parallel, sonnet where the work is mechanical.** The repo limit of
+  two WRITING agents with disjoint file ownership still holds (`CLAUDE.md` rule 4);
+  read-only Plan and Explore agents do not count against it, so there is no excuse for a
+  single-threaded session.
+- **BITWARDEN IS ONE PROJECT, AND THAT IS SETTLED.** Ruled 2026-09-09: *"Currently, we only
+  have single project and multiple tokens: dev can R/W and ci is read-only. I'm fine with
+  that. I can think about the dev separation later."* Do not re-propose `dev-shared`, and do
+  not re-derive whether a second project is possible -- it is, but each secret belongs to
+  exactly one project (bitwarden.com/help/projects), so moving them would take CI's access
+  with them. The consequence to state honestly whenever it matters, and NOT to re-litigate:
+  the read-only CI credential can SEE every secret it reaches. Steps are parked at
+  `agent/f4da5c2e/BITWARDEN-dev-shared-prompt.md` if it is ever revisited.
+- **NEVER add `Co-Authored-By` or `Generated with` lines to a commit.** A pre-bash hook
+  refuses them, and it overrides any session-level attribution instruction that says
+  otherwise.
+- **`git commit` needs an explicit pathspec here** (`git commit -F <file> -- <path>...`) and
+  `git add -A` needs one too. Both are hook-enforced because a blanket sweep has twice
+  shipped another session's half-finished work.
+
+
 ## Standing constraints
 
 - Never push `main`, never merge, never force-push, never suppress a gate.

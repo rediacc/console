@@ -175,6 +175,14 @@ FINISHED_STATES = frozenset(
         "withdrawn",
         "archived",
         "historical",
+        # W12: a COMPACTED plan is finished by construction. `--plan-compact`
+        # refuses open boxes without `--park`, so every box in a `compacted`
+        # record carries a `done=` the ledger attests -- which is a stronger
+        # claim than any other word in this set makes. It belongs here for the
+        # ordinary reason too: the record's boxes are history, and demanding
+        # that history stay in step with a live worklist is how a check earns
+        # its way into being ignored. See wl_planrec.py.
+        "compacted",
     }
 )
 # NOT STARTED -- a proposal. Its boxes are a sketch of work nobody has taken
@@ -193,6 +201,14 @@ NOT_STARTED_STATES = frozenset(
         "exploratory",
         "deferred",
         "rejected",
+        # W12: `parked` is a plan whose TEXT is compacted while its work is not
+        # finished. Not-started rather than finished, and the difference is
+        # load-bearing in three places: the census tier counts its open boxes
+        # instead of hiding them, check_plan_boxes.py's A3 (a finished Status
+        # may not sit over open boxes) does not fire on it, and
+        # check-plan-housekeeping.sh keeps it ON the clock. A parked record buys
+        # a smaller file, never an exemption. See wl_planrec.py.
+        "parked",
     }
 )
 

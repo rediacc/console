@@ -1,0 +1,27 @@
+# rediacc_ci allowlist golden
+# reader: ts:scripts/lib/blocker-validator.ts::validateBlockerQuality
+# command: validateBlockerQuality(id, reason, file).message, verbatim
+# projection: messages
+# source: the first case of each rejection kind in verdicts.golden's corpus
+# file: .deps-upgrade-blocklist
+# ---
+{
+  "deferral": {
+    "entry": "defer-000",
+    "reason": "astro 6 is a major m not needed by this change",
+    "file": ".deps-upgrade-blocklist",
+    "message": "Allowlist .deps-upgrade-blocklist: BLOCKER for entry defer-000 defers a routine bump instead of justifying a hold (\"astro 6 is a major m not needed by this change\")\n  Rejected because: it contains \"not needed by this change\" — the upgrade blocklist is for bumps that genuinely cannot be taken now (breaking major, pin conflict, native rebuild, known regression), not for deferring a routine installable bump.\n  Note: check-deps already auto-defers freshly-published versions (until the next UTC day after they age the minimum-release-age window), so there is no need to blocklist a fresh release.\n  Action: TAKE the bump ('npm run check:deps -- --upgrade'), OR cite the concrete technical blocker (which package pins what, what breaks)."
+  },
+  "low-effort": {
+    "entry": "phrase-000",
+    "reason": "no fix",
+    "file": ".deps-upgrade-blocklist",
+    "message": "Allowlist .deps-upgrade-blocklist: BLOCKER for entry phrase-000 is a low-effort placeholder (\"no fix\")\n  Rejected because: \"no fix\" matches the banned-phrase list — this adds no information beyond 'we suppressed it'\n  Action: write a specific reason. Good BLOCKERs cite the upstream pin, the package chain, OR why runtime isn't affected.\n  Example: 'electron-builder 26.x pins plist > xmldom 0.8.x; build-time only, requires major electron migration'"
+  },
+  "too-short": {
+    "entry": "short-000",
+    "reason": "astro 6 is a",
+    "file": ".deps-upgrade-blocklist",
+    "message": "Allowlist .deps-upgrade-blocklist: BLOCKER for entry short-000 is too short (12 chars, minimum 30)\n  Current: \"astro 6 is a\"\n  Action: a BLOCKER must explain WHO pins what, WHY the fix cannot be taken now, and ideally WHEN to revisit.\n  Example: 'axios 1.15.0 pins follow-redirects <1.16.0; not runtime-exposed in CLI auth path; revisit when axios bumps'"
+  }
+}

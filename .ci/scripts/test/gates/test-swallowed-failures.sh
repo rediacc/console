@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Both-ways test for .ci/scripts/quality/check-swallowed-failures.sh
+# ---- end gate ----
+
 # Both-ways test for .ci/scripts/quality/check-swallowed-failures.sh.
 #
 # THE DEFECT IT POLICES. A gate captures a probe, throws away the probe's exit
@@ -32,7 +41,10 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
 GATE="$REPO_ROOT/.ci/scripts/quality/check-swallowed-failures.sh"
-GO_DEPS="$REPO_ROOT/.ci/scripts/quality/check-go-deps.sh"
+# REPOINTED 2026-09-08 BY THE W7 P4 CUTOVER, at the MODULE and not the entry point:
+# line ~126 GREPS this file for __PROBE_FAILED__, and the registered `.py` is a
+# three-line shim that imports the port. The needle lives in the module.
+GO_DEPS="$REPO_ROOT/.ci/rediacc_ci/quality/go_deps.py"
 
 FIXTURE="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE"' EXIT
@@ -407,7 +419,12 @@ test_the_repaired_sites_stay_repaired() {
         "$q/check-resolved-threads.sh|Failing closed|the resolved-threads gate fails closed on an unreadable API"
         "$q/check-claude-attribution.sh|probe_failed|the attribution gate fails closed on an unreadable API"
         "$q/check-branch.sh|must not be reported as up-to-date|check-branch refuses to guess when rev-list fails"
-        "$q/check-no-otlp-creds.sh|cannot inspect for baked credentials|the OTLP gate errors when it cannot read a binary"
+        # AFTER A CUTOVER THIS PIN MUST NAME THE MODULE, NOT THE ENTRY POINT. The
+        # registered `.py` is a three-line shim that imports the port; the behaviour
+        # this row asserts lives in the module. Repointing it at the entry point (the
+        # obvious move, and the one recommended when the cutover landed) made this row
+        # grep a shim and fail with "lost its fix" against a fix that was never there.
+        "$REPO_ROOT/.ci/rediacc_ci/quality/no_otlp_creds.py|cannot inspect for baked credentials|the OTLP gate errors when it cannot read a binary"
         "$q/check-submodule-branches.sh|refusing to report zero unreplied|the submodule gate refuses to fabricate a zero"
         "$REPO_ROOT/.ci/scripts/security/dependency-inventory.sh|refusing to emit an empty dependency graph|the SBOM refuses to ship an empty graph"
         "$l/common.sh|r2_count_objects: list-objects-v2 failed|r2_count_objects reports an unreachable bucket"

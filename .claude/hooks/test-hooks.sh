@@ -15,13 +15,66 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # the guard CORRECTLY allowed the command, so the tests failed while the code
 # was right. Measured: run 33133377611, PASS=1557 FAIL=2.
 TEST_REPO_ROOT="$(cd "$DIR/../.." && pwd)"
+
+# THE DISPATCHER, and why a case names a guard the way it does.
+#
+# Every case below names its guard by the key `check-hook-integrity.sh`
+# inventories it under. For the 46 guards ported in W5 that key is now
+# `guards/<module>.py` -- the file really is at
+# .claude/rediacc_hooks/guards/<module>.py -- and the way to RUN one is the
+# dispatcher, which is also how `.claude/settings.json` runs the whole chain
+# since the P7 cutover. For anything still in bash the key is its path under
+# $DIR and it is still run as a file.
+#
+# THE KEY IS THE POINT, not a spelling detail. `check-hook-integrity.sh` reads
+# these very lines to decide whether each guard has a BLOCK case and an ALLOW
+# case, and it keys on the guard's on-disk name. When the guards were bash and
+# lived in the chain directories the key was `pre-bash/block-x.sh`; they are
+# Python modules now, so a case that kept the old spelling would be crediting
+# coverage to a file that no longer exists while the live guard read as
+# uncovered. The gate anticipated exactly this: "after the hook port a case in
+# the suite names `pre-bash/block_x.py`, and a reader anchored to `.sh` would
+# count zero cases for it".
+#
+# WHAT THIS DOES NOT CHANGE. The cases themselves. Every payload, every expected
+# exit code and every message needle below is the one that was written against
+# the bash guard, and it is now asserted against the port. That is the whole
+# proof this file offers at the cutover: a guard still refuses what it refused.
+GUARD_DISPATCH="$DIR/../rediacc_hooks/dispatch.py"
+GUARD_MODULES="$DIR/../rediacc_hooks/guards"
+GUARD_CMD=()
+# guard_cmd <key> -- fills GUARD_CMD with the argv that runs that guard.
+guard_cmd() {
+    local key="$1" stem
+    case "$key" in
+        guards/*.py)
+            stem="${key#guards/}"
+            stem="${stem%.py}"
+            # A KEY THAT RESOLVES TO NOTHING MUST BE LOUD. `python3 dispatch.py
+            # <typo>` raises ModuleNotFoundError and exits 1, which a case
+            # expecting 2 would report as a plain miss and a case expecting 0
+            # would report as a failure -- both wrong about the reason. Naming
+            # the missing module here says which of the two it is.
+            if [[ ! -f "$GUARD_MODULES/$stem.py" ]]; then
+                printf 'FAIL [-] guard key %s names no module (%s/%s.py absent)\n' \
+                    "$key" "$GUARD_MODULES" "$stem"
+                FAIL=$((FAIL + 1))
+            fi
+            GUARD_CMD=(python3 "$GUARD_DISPATCH" "$stem")
+            ;;
+        *)
+            GUARD_CMD=(bash "$DIR/$key")
+            ;;
+    esac
+}
 PASS=0
 FAIL=0
 
 # check <expected-exit> <script-relative-path> <json-stdin> <label>
 check() {
     local expected="$1" script="$2" json="$3" label="$4" rc
-    echo "$json" | bash "$DIR/$script" >/dev/null 2>&1
+    guard_cmd "$script"
+    echo "$json" | "${GUARD_CMD[@]}" >/dev/null 2>&1
     rc=$?
     if [[ "$rc" == "$expected" ]]; then
         PASS=$((PASS + 1))
@@ -39,7 +92,8 @@ check() {
 # cannot tell "blocked, here is the correct command" from "blocked, good luck".
 check_out() {
     local expected="$1" script="$2" json="$3" label="$4" needle="$5" rc out
-    out="$(echo "$json" | bash "$DIR/$script" 2>&1 >/dev/null)"
+    guard_cmd "$script"
+    out="$(echo "$json" | "${GUARD_CMD[@]}" 2>&1 >/dev/null)"
     rc=$?
     if [[ "$rc" == "$expected" ]] && grep -qF -- "$needle" <<<"$out"; then
         PASS=$((PASS + 1))
@@ -48,6 +102,64 @@ check_out() {
         FAIL=$((FAIL + 1))
         printf 'FAIL [%s] %s (got exit %s, needle %s)\n' "$expected" "$label" "$rc" \
             "$(grep -qF -- "$needle" <<<"$out" && echo present || echo MISSING)"
+    fi
+}
+
+# check_nojq <expected-exit> <script> <json-stdin> <label> <must-contain> [<bin-dir>]
+#
+# check_out(), but run against a HAND-BUILT PATH instead of this machine's. That
+# is the one condition require-jq.sh exists for, and it is the one condition no
+# other case in this file can express: every one of them runs with a healthy
+# toolchain, where require-jq.sh exits 0 on its first line and proves nothing.
+# Until 2026-09-06 the only trace of that condition anywhere in this suite was
+# the prose comment above hook_files().
+#
+# THE SANDBOX HOLDS EXACTLY WHAT require-jq.sh USES, no more: `cat` to slurp
+# stdin and `grep -qE` for the two carve-out matches. `command -v` and `printf`
+# are bash builtins and need no binary on disk. jq is absent by construction,
+# which is the entire point -- and bash itself is invoked by ABSOLUTE path
+# rather than symlinked in, so the sandbox stays an honest statement of that set.
+#
+# BUILD THE PAYLOAD FIRST, with bash_json/inject_json, BEFORE handing it here:
+# bash_json shells out to jq itself, so composing a payload under the restricted
+# PATH would break the harness rather than test the hook.
+#
+# The optional 6th argument names the sandbox, which is what makes the control
+# direction real: the SAME code path, the same payload, the same hook, differing
+# only in whether jq is on the PATH. An exit-2-when-absent case alone cannot
+# tell a working guard from one that refuses everything.
+NOJQ_BASH="$(command -v bash)"
+NOJQ_BIN=""
+WITHJQ_BIN=""
+nojq_sandboxes() {
+    local b
+    NOJQ_BIN="$(mktemp -d)"
+    WITHJQ_BIN="$(mktemp -d)"
+    for b in cat grep; do
+        ln -s "$(command -v "$b")" "$NOJQ_BIN/$b"
+        ln -s "$(command -v "$b")" "$WITHJQ_BIN/$b"
+    done
+    ln -s "$(command -v jq)" "$WITHJQ_BIN/jq"
+}
+check_nojq() {
+    local expected="$1" script="$2" json="$3" label="$4" needle="$5" bin="${6:-$NOJQ_BIN}" rc out
+    out="$(printf '%s' "$json" | PATH="$bin" "$NOJQ_BASH" "$DIR/$script" 2>&1 >/dev/null)"
+    rc=$?
+    # An empty needle asserts SILENCE, not "no assertion": the jq-present arm's
+    # whole claim is that the guard says nothing at all.
+    local ok=yes
+    [[ "$rc" == "$expected" ]] || ok=no
+    if [[ -n "$needle" ]]; then
+        grep -qF -- "$needle" <<<"$out" || ok=no
+    elif [[ -n "$out" ]]; then
+        ok=no
+    fi
+    if [[ "$ok" == yes ]]; then
+        PASS=$((PASS + 1))
+        printf 'ok   [%s] %s (exit %s)\n' "$expected" "$label" "$rc"
+    else
+        FAIL=$((FAIL + 1))
+        printf 'FAIL [%s] %s (got exit %s, said: %s)\n' "$expected" "$label" "$rc" "${out:-<nothing>}"
     fi
 }
 
@@ -147,11 +259,30 @@ wiring_case 0 "$DIR/../settings.json" "$DIR" "wiring: every hook on disk is regi
 # CONTROL, so the green above is agreement and not a check that cannot fire:
 # one fixture drops a real registration, the other invents one. Each must fail
 # AND name the offender -- a bare non-zero would pass either fixture.
+#
+# THE SUBJECT OF THE DROP CONTROL HAD TO MOVE at the W5 P7 cutover, and the
+# reason is worth stating because it is how a control quietly stops firing.
+# It dropped block-worktree-add.sh's registration; that guard is a Python module
+# now and settings.json does not name it, so the jq filter would have matched
+# nothing, the fixture would have been identical to the real file, and the
+# control would have reported the tree's own green as its own. A control that
+# plants nothing proves nothing. block-pathspecless-git-commit.sh is the pre-bash
+# guard still registered as a file, so it is the one that can be dropped.
 WIRE_TMP="$(mktemp -d)"
-jq '(.hooks[]?[]?.hooks) |= map(select((.command // "") | contains("block-worktree-add.sh") | not))' \
+jq '(.hooks[]?[]?.hooks) |= map(select((.command // "") | contains("block-pathspecless-git-commit.sh") | not))' \
     "$DIR/../settings.json" >"$WIRE_TMP/unwired.json"
+# THE PLANT MUST BE PROVEN TO HAVE LANDED. Comparing the fixture to the original
+# is one line and it is the difference between "the control fired" and "the jq
+# filter matched nothing and the fixture is the tree".
+if cmp -s "$WIRE_TMP/unwired.json" "$DIR/../settings.json"; then
+    FAIL=$((FAIL + 1))
+    printf 'FAIL [1] wiring CONTROL: the unwired fixture is IDENTICAL to settings.json, so nothing was planted\n'
+else
+    PASS=$((PASS + 1))
+    printf 'ok   [0] wiring CONTROL: the unwired fixture really differs from settings.json\n'
+fi
 wiring_case 1 "$WIRE_TMP/unwired.json" "$DIR" "wiring CONTROL: a dropped registration is caught as UNWIRED" \
-    "UNWIRED (on disk, not in settings): pre-bash/block-worktree-add.sh"
+    "UNWIRED (on disk, not in settings): pre-bash/block-pathspecless-git-commit.sh"
 jq '(.hooks[]?[]?.hooks) |= . + [{"type":"command","command":"bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-nonexistent-ghost.sh\""}]' \
     "$DIR/../settings.json" >"$WIRE_TMP/dangling.json"
 wiring_case 1 "$WIRE_TMP/dangling.json" "$DIR" "wiring CONTROL: a registration with no file is caught as DANGLING" \
@@ -161,8 +292,8 @@ rm -rf "$WIRE_TMP"
 # --- should BLOCK (exit 2) ---
 # The PR body is generated, so a hand-written whole-body write silently drops
 # the worklist-epics block and CI fails minutes later naming nothing useful.
-check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body-file b.md')" "raw-pr-body(blocked)"
-check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json '.ci/scripts/pr/sync-epic-block.sh 42 0826-1')" "raw-pr-body(tool passes)"
+check 2 guards/block_raw_pr_body_edit.py "$(bash_json 'gh pr edit 42 --body-file b.md')" "raw-pr-body(blocked)"
+check 0 guards/block_raw_pr_body_edit.py "$(bash_json '.ci/scripts/pr/sync-epic-block.sh 42 0826-1')" "raw-pr-body(tool passes)"
 # The edit arm requires EVERY generated marker, not just the epic one. This case
 # asserted the opposite for a few hours on 2026-09-03 and was WRONG: the edit form
 # writes the WHOLE body, and these PR bodies carry a second machine-written section,
@@ -172,10 +303,10 @@ check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json '.ci/scripts/pr/sync-epi
 #
 # So: carrying ONE marker is refused, carrying BOTH passes. The pair below is the
 # whole rule, and the first half is the one that was briefly inverted.
-check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body "prose <!-- worklist-epics:begin --> x <!-- worklist-epics:end -->"')" "raw-pr-body: an edit carrying ONLY the epic block still drops pushed-head"
-check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body "prose <!-- worklist-epics:begin --> x <!-- worklist-epics:end --> <!-- pushed-head:begin --> y <!-- pushed-head:end -->"')" "raw-pr-body CONTROL: an edit carrying EVERY generated marker passes"
-check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body "prose with no block at all"')" "raw-pr-body(edit dropping the block blocked)"
-check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body-file /nonexistent-body.md')" "raw-pr-body(edit with an unreadable body still blocked)"
+check 2 guards/block_raw_pr_body_edit.py "$(bash_json 'gh pr edit 42 --body "prose <!-- worklist-epics:begin --> x <!-- worklist-epics:end -->"')" "raw-pr-body: an edit carrying ONLY the epic block still drops pushed-head"
+check 0 guards/block_raw_pr_body_edit.py "$(bash_json 'gh pr edit 42 --body "prose <!-- worklist-epics:begin --> x <!-- worklist-epics:end --> <!-- pushed-head:begin --> y <!-- pushed-head:end -->"')" "raw-pr-body CONTROL: an edit carrying EVERY generated marker passes"
+check 2 guards/block_raw_pr_body_edit.py "$(bash_json 'gh pr edit 42 --body "prose with no block at all"')" "raw-pr-body(edit dropping the block blocked)"
+check 2 guards/block_raw_pr_body_edit.py "$(bash_json 'gh pr edit 42 --body-file /nonexistent-body.md')" "raw-pr-body(edit with an unreadable body still blocked)"
 # THE PRE-PUSH RECEIPT GUARD. A CI round costs ~15 minutes; three of the five
 # reds on PR #579 were sub-2-second gates -- check:format 1.72s,
 # check:ci-python-lint 0.59s, check:ci-parity 1.29s -- which cost roughly 45
@@ -187,18 +318,18 @@ check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body-fi
 # instead. What these four pin is the half that decides whether the guard is
 # tolerable: a guard that refuses things it has no business refusing is a guard
 # that gets bypassed, and every one of these ran green before the guard existed.
-check 0 pre-bash/block-unverified-push.sh "$(bash_json 'git status')" \
+check 0 guards/block_unverified_push.py "$(bash_json 'git status')" \
     "unverified-push CONTROL: a non-push is out of scope"
-check 0 pre-bash/block-unverified-push.sh "$(bash_json 'git push --dry-run origin 0827-1')" \
+check 0 guards/block_unverified_push.py "$(bash_json 'git push --dry-run origin 0827-1')" \
     "unverified-push CONTROL: a dry run publishes nothing, so it buys no CI round"
-check 0 pre-bash/block-unverified-push.sh "$(bash_json "echo 'remember to git push once green'")" \
+check 0 guards/block_unverified_push.py "$(bash_json "echo 'remember to git push once green'")" \
     "unverified-push CONTROL: prose about pushing is not a push"
-check 0 pre-bash/block-unverified-push.sh "$(bash_json 'cd private/account && git push origin 0827-1')" \
+check 0 guards/block_unverified_push.py "$(bash_json 'cd private/account && git push origin 0827-1')" \
     "unverified-push CONTROL: a submodule push advances no console branch"
-check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --add-label ci')" "raw-pr-body(non-body passes)"
+check 0 guards/block_raw_pr_body_edit.py "$(bash_json 'gh pr edit 42 --add-label ci')" "raw-pr-body(non-body passes)"
 # CONTROL: prose ABOUT the rule is not a violation of it. The first version
 # blocked this, which is the false-positive class block-commit-meta.sh warns of.
-check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'echo "never use gh pr edit --body by hand"')" "raw-pr-body(prose passes)"
+check 0 guards/block_raw_pr_body_edit.py "$(bash_json 'echo "never use gh pr edit --body by hand"')" "raw-pr-body(prose passes)"
 # THE CREATE SIDE WAS OPEN, and it is the door the symptom came through:
 # measured 2026-08-27, every `gh pr create --body` shape returned rc=0 while the
 # matching `edit` ones returned rc=2. create is judged on WHAT IT PRODUCES, not
@@ -208,28 +339,28 @@ PB_M='<!-- worklist-epics:begin -->'
 PB_DIR="$(mktemp -d)"
 printf 'prose\n\n%s\n- epic\n<!-- worklist-epics:end -->\n' "$PB_M" >"$PB_DIR/with.md"
 printf 'prose only\n' >"$PB_DIR/without.md"
-check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr create --draft --body "x"')" \
+check 2 guards/block_raw_pr_body_edit.py "$(bash_json 'gh pr create --draft --body "x"')" \
     "raw-pr-body: CREATE --body with no epic block is refused (was allowed)"
-check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh pr create --draft --body-file $PB_DIR/without.md")" \
+check 2 guards/block_raw_pr_body_edit.py "$(bash_json "gh pr create --draft --body-file $PB_DIR/without.md")" \
     "raw-pr-body: CREATE --body-file with no epic block is refused (was allowed)"
-check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh pr create --draft --body \"x $PB_M y\"")" \
+check 0 guards/block_raw_pr_body_edit.py "$(bash_json "gh pr create --draft --body \"x $PB_M y\"")" \
     "raw-pr-body CONTROL: CREATE --body that ALREADY carries the block passes"
-check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh pr create --draft --body-file $PB_DIR/with.md")" \
+check 0 guards/block_raw_pr_body_edit.py "$(bash_json "gh pr create --draft --body-file $PB_DIR/with.md")" \
     "raw-pr-body CONTROL: CREATE --body-file that ALREADY carries the block passes"
-check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr create --draft --title t --fill')" \
+check 0 guards/block_raw_pr_body_edit.py "$(bash_json 'gh pr create --draft --title t --fill')" \
     "raw-pr-body CONTROL: CREATE with no body flag is out of scope"
-check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh pr create --draft --body-file $PB_DIR/absent.md")" \
+check 0 guards/block_raw_pr_body_edit.py "$(bash_json "gh pr create --draft --body-file $PB_DIR/absent.md")" \
     "raw-pr-body CONTROL: an unreadable --body-file is ALLOWED, not refused blind"
-check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh pr edit 42 --body-file $PB_DIR/with.md")" \
+check 2 guards/block_raw_pr_body_edit.py "$(bash_json "gh pr edit 42 --body-file $PB_DIR/with.md")" \
     "raw-pr-body: EDIT is refused even WITH the block -- it rewrites the whole body"
 # ONE COMMAND CAN DO BOTH, and reading the flags line-wide gets the scope wrong
 # in both directions. hook_gh_pr_segment exists for exactly this; the first
 # draft of the create arm did not use it, so a legal `create --body <with the
 # block> && edit --add-label x` was refused for the edit's sake.
-check 2 pre-bash/block-raw-pr-body-edit.sh \
+check 2 guards/block_raw_pr_body_edit.py \
     "$(bash_json "gh pr create --draft --fill && gh pr edit 42 --body-file $PB_DIR/with.md")" \
     "raw-pr-body: a create beside it does not let a raw EDIT through"
-check 0 pre-bash/block-raw-pr-body-edit.sh \
+check 0 guards/block_raw_pr_body_edit.py \
     "$(bash_json "gh pr create --draft --body \"x $PB_M y\" && gh pr edit 42 --add-label a")" \
     "raw-pr-body CONTROL: the edit's --add-label is not the create's --body"
 # THE SANCTIONED FORM IS A WHOLE-BODY WRITE TOO. Found 2026-09-04 while
@@ -238,33 +369,33 @@ check 0 pre-bash/block-raw-pr-body-edit.sh \
 # -F body=@file` form, and that form had no marker check at all. Same rule as
 # the edit arm, both directions.
 printf 'prose\n\n%s\n- epic\n<!-- worklist-epics:end -->\n<!-- pushed-head:begin -->\nhead\n<!-- pushed-head:end -->\n' "$PB_M" >"$PB_DIR/both.md"
-check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh api repos/o/r/pulls/42 -X PATCH -F body=@$PB_DIR/without.md")" \
+check 2 guards/block_raw_pr_body_edit.py "$(bash_json "gh api repos/o/r/pulls/42 -X PATCH -F body=@$PB_DIR/without.md")" \
     "raw-pr-body: PATCH -F body=@file with no block is refused (was allowed)"
-check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh api repos/o/r/pulls/42 -X PATCH -F body=@$PB_DIR/with.md")" \
+check 2 guards/block_raw_pr_body_edit.py "$(bash_json "gh api repos/o/r/pulls/42 -X PATCH -F body=@$PB_DIR/with.md")" \
     "raw-pr-body: PATCH carrying ONLY the epic block still drops pushed-head"
-check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh api repos/o/r/pulls/42 -X PATCH -F body=@$PB_DIR/both.md")" \
+check 0 guards/block_raw_pr_body_edit.py "$(bash_json "gh api repos/o/r/pulls/42 -X PATCH -F body=@$PB_DIR/both.md")" \
     "raw-pr-body CONTROL: PATCH whose file carries EVERY generated marker passes"
-check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh api repos/o/r/pulls/42 -X PATCH -F body=@$PB_DIR/absent.md")" \
+check 2 guards/block_raw_pr_body_edit.py "$(bash_json "gh api repos/o/r/pulls/42 -X PATCH -F body=@$PB_DIR/absent.md")" \
     "raw-pr-body: PATCH with an unreadable body file is refused, not trusted"
-check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh api repos/o/r/pulls/42 -X PATCH -F body=@$S/body.md')" \
+check 2 guards/block_raw_pr_body_edit.py "$(bash_json 'gh api repos/o/r/pulls/42 -X PATCH -F body=@$S/body.md')" \
     "raw-pr-body: PATCH with a path behind a shell variable is unreadable, refused"
-check 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh api repos/o/r/pulls/42 -X PATCH -f body="prose only"')" \
+check 2 guards/block_raw_pr_body_edit.py "$(bash_json 'gh api repos/o/r/pulls/42 -X PATCH -f body="prose only"')" \
     "raw-pr-body: PATCH with an inline body and no block is refused"
-check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json "gh api repos/o/r/pulls/42 --method PATCH -f body=\"x $PB_M y <!-- pushed-head:begin --> z\"")" \
+check 0 guards/block_raw_pr_body_edit.py "$(bash_json "gh api repos/o/r/pulls/42 --method PATCH -f body=\"x $PB_M y <!-- pushed-head:begin --> z\"")" \
     "raw-pr-body CONTROL: PATCH inline body carrying every marker passes"
-check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh api repos/o/r/pulls/42 -X PATCH -F title=t')" \
+check 0 guards/block_raw_pr_body_edit.py "$(bash_json 'gh api repos/o/r/pulls/42 -X PATCH -F title=t')" \
     "raw-pr-body CONTROL: PATCH that touches no body is out of scope"
-check 0 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh api repos/o/r/pulls/42 --jq .body')" \
+check 0 guards/block_raw_pr_body_edit.py "$(bash_json 'gh api repos/o/r/pulls/42 --jq .body')" \
     "raw-pr-body CONTROL: a GET of the body is not a write"
-check_out 2 pre-bash/block-raw-pr-body-edit.sh "$(bash_json 'gh pr edit 42 --body "prose"')" \
+check_out 2 guards/block_raw_pr_body_edit.py "$(bash_json 'gh pr edit 42 --body "prose"')" \
     "raw-pr-body: the refusal prescribes the PATCH form the sanctioned guard accepts" "-X PATCH -F body=@"
 rm -rf "$PB_DIR"
 unset PB_M PB_DIR
 
-check 2 pre-bash/block-protected-files.sh "$(bash_json 'git checkout .claude/settings.json')" "protected-files"
-check 2 pre-bash/block-commit-meta.sh "$(bash_json 'git commit -m msg Co-Authored-By: bot')" "commit-meta"
-check 2 pre-bash/block-binary-deploy.sh "$(bash_json 'scp renet host:/tmp')" "binary-deploy"
-check 2 pre-bash/block-cli-bundle.sh "$(bash_json 'node packages/cli/dist/x.js')" "cli-bundle"
+check 2 guards/block_protected_files.py "$(bash_json 'git checkout .claude/settings.json')" "protected-files"
+check 2 guards/block_commit_meta.py "$(bash_json 'git commit -m msg Co-Authored-By: bot')" "commit-meta"
+check 2 guards/block_binary_deploy.py "$(bash_json 'scp renet host:/tmp')" "binary-deploy"
+check 2 guards/block_cli_bundle.py "$(bash_json 'node packages/cli/dist/x.js')" "cli-bundle"
 
 # ALLOW CASES FOR THE FOUR GUARDS ABOVE, and they are not a formality. Until
 # 2026-08-27 each of these had exactly one block case and NOTHING asserting it
@@ -285,10 +416,10 @@ check 2 pre-bash/block-cli-bundle.sh "$(bash_json 'node packages/cli/dist/x.js')
 # is one bug in four places, and it is the same bug the guards written to catch
 # it kept committing: twelve mention-as-execution false positives in one
 # session, including one where a guard blocked its own repair.
-check 0 pre-bash/block-cli-bundle.sh "$(bash_json 'node packages/cli/bundle.mjs')" "cli-bundle CONTROL: the repo's own build entry is not the bundle"
-check 0 pre-bash/block-cli-bundle.sh "$(bash_json 'node scripts/x.mjs --outdir packages/cli/dist')" "cli-bundle CONTROL: the path is an output flag, not the program"
-check 0 pre-bash/block-commit-meta.sh "$(bash_json "grep -rn 'co-authored-by' docs/")" "commit-meta CONTROL: GREPPING for the banned trailer is how you audit it"
-check 0 pre-bash/block-commit-meta.sh "$(bash_json 'echo "the rule bans Co-Authored-By lines"')" "commit-meta CONTROL: prose naming the rule is not a violation of it"
+check 0 guards/block_cli_bundle.py "$(bash_json 'node packages/cli/bundle.mjs')" "cli-bundle CONTROL: the repo's own build entry is not the bundle"
+check 0 guards/block_cli_bundle.py "$(bash_json 'node scripts/x.mjs --outdir packages/cli/dist')" "cli-bundle CONTROL: the path is an output flag, not the program"
+check 0 guards/block_commit_meta.py "$(bash_json "grep -rn 'co-authored-by' docs/")" "commit-meta CONTROL: GREPPING for the banned trailer is how you audit it"
+check 0 guards/block_commit_meta.py "$(bash_json 'echo "the rule bans Co-Authored-By lines"')" "commit-meta CONTROL: prose naming the rule is not a violation of it"
 
 # ── block-unlinked-commit-author ────────────────────────────────────────────
 # 30 of 42 commits on 0903-1 carried an email GitHub does not link to the account:
@@ -332,29 +463,29 @@ UCA_GITCFG="$(mktemp -d)/gitconfig"
 printf '[user]\n\tname = ctl\n\temail = good@example.com\n' >"$UCA_GITCFG"
 export GIT_CONFIG_GLOBAL="$UCA_GITCFG"
 
-check 2 pre-bash/block-unlinked-commit-author.sh \
+check 2 guards/block_unlinked_commit_author.py \
     "$(bash_json 'git -c user.email=bad@example.com commit -m x')" \
     "unlinked-author: -c user.email override is refused"
-check 2 pre-bash/block-unlinked-commit-author.sh \
+check 2 guards/block_unlinked_commit_author.py \
     "$(bash_json 'GIT_AUTHOR_EMAIL=bad@example.com git commit -m x')" \
     "unlinked-author: GIT_AUTHOR_EMAIL override is refused"
 # --author= must be read from the RAW command: git's own form is
 # `--author="Name <a@b>"`, and the scan strips quoted spans, so reading it from there
 # found an empty `--author=` and permitted the very override this guard exists for.
-check 2 pre-bash/block-unlinked-commit-author.sh \
+check 2 guards/block_unlinked_commit_author.py \
     "$(bash_json 'git commit --author="N <bad@example.com>" -m x')" \
     "unlinked-author: --author= override is refused (quoted value survives the scan)"
 
 # The ALLOW half. Without it, over-blocking is invisible -- and this guard's whole
 # claim is that it CANNOT repeat block-commit-meta.sh's false-positive history,
 # because an author email is never in the command text to begin with.
-check 0 pre-bash/block-unlinked-commit-author.sh \
+check 0 guards/block_unlinked_commit_author.py \
     "$(bash_json 'git commit -m "fix: drop bad@example.com from the docs"')" \
     "unlinked-author CONTROL: prose naming a bad address is not a bad author"
-check 0 pre-bash/block-unlinked-commit-author.sh \
+check 0 guards/block_unlinked_commit_author.py \
     "$(bash_json 'grep -rn bad@example.com docs/')" \
     "unlinked-author CONTROL: grepping for an address is not a commit at all"
-check 0 pre-bash/block-unlinked-commit-author.sh \
+check 0 guards/block_unlinked_commit_author.py \
     "$(bash_json 'git tag -m "bad@example.com" v1')" \
     "unlinked-author CONTROL: a tag writes a tagger, not a commit author"
 unset COMMIT_IDENTITY_FILE GIT_CONFIG_GLOBAL
@@ -363,17 +494,17 @@ unset COMMIT_IDENTITY_FILE GIT_CONFIG_GLOBAL
 # subcommand, but a gap of "any non-space token" spans `|` and `&&` too, so a
 # `git log` in one clause and the word `commit` in another read as a commit
 # carrying a trailer. Same defect, same day, same fix as block-protected-files.
-check 0 pre-bash/block-commit-meta.sh "$(bash_json 'git log --oneline | grep commit | grep co-authored-by')" "commit-meta CONTROL: a git verb and the word commit in DIFFERENT clauses"
-check 0 pre-bash/block-commit-meta.sh "$(bash_json 'git diff HEAD~1 && echo commit && echo Co-Authored-By')" "commit-meta CONTROL: the gap does not span two && clauses"
+check 0 guards/block_commit_meta.py "$(bash_json 'git log --oneline | grep commit | grep co-authored-by')" "commit-meta CONTROL: a git verb and the word commit in DIFFERENT clauses"
+check 0 guards/block_commit_meta.py "$(bash_json 'git diff HEAD~1 && echo commit && echo Co-Authored-By')" "commit-meta CONTROL: the gap does not span two && clauses"
 # And the enforcement shapes the gate has to keep reaching. Narrowing a guard
 # without pinning what it must still catch is how the next narrowing goes too far.
-check 2 pre-bash/block-commit-meta.sh "$(bash_json 'git -C private/account commit -m x --trailer Co-Authored-By=bot')" "commit-meta: git -C <path> commit is still reached"
-check 2 pre-bash/block-commit-meta.sh "$(bash_json 'git commit -a -m x --trailer Co-Authored-By=bot')" "commit-meta: flags between the verb and the subcommand are still reached"
-check 2 pre-bash/block-commit-meta.sh "$(bash_json 'git tag -a v1 -m Co-Authored-By:bot')" "commit-meta: a tag message carries the same rule"
-check 2 pre-bash/block-commit-meta.sh "$(bash_json 'gh pr create --body Co-Authored-By:bot')" "commit-meta: a PR body carries it too"
-check 0 pre-bash/block-binary-deploy.sh "$(bash_json 'scp host:/var/log/renet.log ./logs/')" "binary-deploy CONTROL: pulling a log back is diagnosis, not a deploy"
-check 0 pre-bash/block-protected-files.sh "$(bash_json 'git checkout main && cat .claude/settings.json')" "protected-files CONTROL: checkout then READ is not a restore"
-check 0 pre-bash/block-protected-files.sh "$(bash_json 'grep -n hooks .claude/settings.json')" "protected-files CONTROL: reading the file is untouched"
+check 2 guards/block_commit_meta.py "$(bash_json 'git -C private/account commit -m x --trailer Co-Authored-By=bot')" "commit-meta: git -C <path> commit is still reached"
+check 2 guards/block_commit_meta.py "$(bash_json 'git commit -a -m x --trailer Co-Authored-By=bot')" "commit-meta: flags between the verb and the subcommand are still reached"
+check 2 guards/block_commit_meta.py "$(bash_json 'git tag -a v1 -m Co-Authored-By:bot')" "commit-meta: a tag message carries the same rule"
+check 2 guards/block_commit_meta.py "$(bash_json 'gh pr create --body Co-Authored-By:bot')" "commit-meta: a PR body carries it too"
+check 0 guards/block_binary_deploy.py "$(bash_json 'scp host:/var/log/renet.log ./logs/')" "binary-deploy CONTROL: pulling a log back is diagnosis, not a deploy"
+check 0 guards/block_protected_files.py "$(bash_json 'git checkout main && cat .claude/settings.json')" "protected-files CONTROL: checkout then READ is not a restore"
+check 0 guards/block_protected_files.py "$(bash_json 'grep -n hooks .claude/settings.json')" "protected-files CONTROL: reading the file is untouched"
 
 # ECHOING A BANNED COMMAND IS NOT RUNNING IT. Several guards matched their raw
 # command text, so a string merely NAMING the thing they guard was refused --
@@ -397,9 +528,9 @@ check 0 pre-bash/block-protected-files.sh "$(bash_json 'grep -n hooks .claude/se
 # fail silently: the real violation is still caught, which the `sh -c` and
 # `eval` cases assert. For the sleep/poll family, a missed match means a real
 # poll runs and nobody is told.
-check 0 pre-bash/block-ssh-docker.sh "$(bash_json "echo 'ssh host docker ps'")" "ssh-docker CONTROL: echoing it is not running it"
-check 0 pre-bash/block-ssh-file-write.sh "$(bash_json "echo 'cat a | ssh host tee /etc/x'")" "ssh-file-write CONTROL: echoing it is not writing"
-check 0 pre-bash/block-git-amend.sh "$(bash_json "echo 'git commit --amend'")" "git-amend CONTROL: quoting the rule is not amending"
+check 0 guards/block_ssh_docker.py "$(bash_json "echo 'ssh host docker ps'")" "ssh-docker CONTROL: echoing it is not running it"
+check 0 guards/block_ssh_file_write.py "$(bash_json "echo 'cat a | ssh host tee /etc/x'")" "ssh-file-write CONTROL: echoing it is not writing"
+check 0 guards/block_git_amend.py "$(bash_json "echo 'git commit --amend'")" "git-amend CONTROL: quoting the rule is not amending"
 # AND THE EVASION THAT CAME WITH IT. Stripping quoted spans to stop this guard
 # matching prose ALSO removed `sh -c "git commit --amend"`, where the whole
 # command lives inside a quoted span -- the guard returned 0 on a real amend.
@@ -407,83 +538,83 @@ check 0 pre-bash/block-git-amend.sh "$(bash_json "echo 'git commit --amend'")" "
 # test-block-git-amend.py pinned the `sh -c` case; it did not, and the claim was
 # never checked. One probe found the false comment and the hole together, which
 # is why these live here now rather than in a sentence.
-check 2 pre-bash/block-git-amend.sh "$(bash_json 'sh -c "git commit --amend"')" "git-amend: an amend hidden in sh -c is still caught"
-check 2 pre-bash/block-git-amend.sh "$(bash_json 'eval "git commit --amend"')" "git-amend: an amend hidden in eval is still caught"
-check 0 pre-bash/block-git-empty-commit.sh "$(bash_json "echo 'git commit --allow-empty -m x'")" "git-empty-commit CONTROL: echoing it is not committing"
+check 2 guards/block_git_amend.py "$(bash_json 'sh -c "git commit --amend"')" "git-amend: an amend hidden in sh -c is still caught"
+check 2 guards/block_git_amend.py "$(bash_json 'eval "git commit --amend"')" "git-amend: an amend hidden in eval is still caught"
+check 0 guards/block_git_empty_commit.py "$(bash_json "echo 'git commit --allow-empty -m x'")" "git-empty-commit CONTROL: echoing it is not committing"
 # The quoted case above was pinned; the UNQUOTED one was not, and the guard
 # blocked on it until 2026-08-28. hook_scan_target strips quoted spans, so an
 # ordinary sentence survives it intact and reached a matcher that looked for
 # the phrase ANYWHERE. A doc line or worklist note was refused as a command.
-check 0 pre-bash/block-git-empty-commit.sh "$(bash_json 'echo never use git commit --allow-empty to retrigger CI')" "git-empty-commit CONTROL: unquoted prose is not a command"
-check 0 pre-bash/block-cli-bundle.sh "$(bash_json "echo 'node packages/cli/cli-bundle.cjs'")" "cli-bundle CONTROL: echoing it is not running it"
-check 0 pre-bash/block-protected-files.sh "$(bash_json "echo 'git restore .claude/settings.json'")" "protected-files CONTROL: echoing it is not restoring"
+check 0 guards/block_git_empty_commit.py "$(bash_json 'echo never use git commit --allow-empty to retrigger CI')" "git-empty-commit CONTROL: unquoted prose is not a command"
+check 0 guards/block_cli_bundle.py "$(bash_json "echo 'node packages/cli/cli-bundle.cjs'")" "cli-bundle CONTROL: echoing it is not running it"
+check 0 guards/block_protected_files.py "$(bash_json "echo 'git restore .claude/settings.json'")" "protected-files CONTROL: echoing it is not restoring"
 # AND THE OTHER DIRECTION, which is the half that makes the narrowing safe. The
 # scanner extracts shell-wrapper payloads, so hiding a banned command inside
 # `sh -c` / `eval` must still be caught. Without these, "we stopped matching
 # prose" and "we stopped matching" look identical from the outside.
-check 2 pre-bash/block-ci-polling.sh "$(bash_json 'bash -c "sleep 30 && gh run view 123"')" "ci-polling: polling hidden in bash -c is still caught"
-check 2 pre-bash/block-ssh-docker.sh "$(bash_json "sh -c 'ssh host docker ps'")" "ssh-docker: hidden in sh -c is still caught"
-check 2 pre-bash/block-cli-bundle.sh "$(bash_json 'eval "node packages/cli/cli-bundle.cjs x"')" "cli-bundle: hidden in eval is still caught"
-check 2 pre-bash/block-git-empty-commit.sh "$(bash_json 'bash -c "git commit --allow-empty -m x"')" "git-empty-commit: hidden in bash -c is still caught"
-check 2 pre-bash/block-protected-files.sh "$(bash_json 'sh -c "git restore .claude/settings.json"')" "protected-files: hidden in sh -c is still caught"
-check 2 pre-bash/block-long-sleep.sh "$(bash_json 'bash -c "sleep 300"')" "long-sleep: hidden in bash -c is still caught"
+check 2 guards/block_ci_polling.py "$(bash_json 'bash -c "sleep 30 && gh run view 123"')" "ci-polling: polling hidden in bash -c is still caught"
+check 2 guards/block_ssh_docker.py "$(bash_json "sh -c 'ssh host docker ps'")" "ssh-docker: hidden in sh -c is still caught"
+check 2 guards/block_cli_bundle.py "$(bash_json 'eval "node packages/cli/cli-bundle.cjs x"')" "cli-bundle: hidden in eval is still caught"
+check 2 guards/block_git_empty_commit.py "$(bash_json 'bash -c "git commit --allow-empty -m x"')" "git-empty-commit: hidden in bash -c is still caught"
+check 2 guards/block_protected_files.py "$(bash_json 'sh -c "git restore .claude/settings.json"')" "protected-files: hidden in sh -c is still caught"
+check 2 guards/block_long_sleep.py "$(bash_json 'bash -c "sleep 300"')" "long-sleep: hidden in bash -c is still caught"
 # THE HEREDOC CASE IS NOT NEGOTIABLE for this guard. block-long-sleep documented
 # its prose false positive as ACCEPTED, reasoning that exempting heredoc bodies
 # would hide the shape most likely to carry a real long sleep. That reasoning is
 # right and it is about heredocs, not quotes -- so only the quotes were dropped,
 # and this pins the part that was kept.
-check 2 pre-bash/block-long-sleep.sh "$(bash_json 'bash <<EOF
+check 2 guards/block_long_sleep.py "$(bash_json 'bash <<EOF
 sleep 300
 EOF')" "long-sleep: a heredoc fed to bash is still scanned"
-check 2 pre-bash/block-ssh-docker.sh "$(bash_json 'ssh host docker ps')" "ssh-docker"
-check 2 pre-bash/block-ssh-file-write.sh "$(bash_json 'cat a | ssh host tee /etc/x')" "ssh-file-write"
+check 2 guards/block_ssh_docker.py "$(bash_json 'ssh host docker ps')" "ssh-docker"
+check 2 guards/block_ssh_file_write.py "$(bash_json 'cat a | ssh host tee /etc/x')" "ssh-file-write"
 
 # --- block-agent-browser-repo-output: two mechanisms, both exit 0 in the wild ---
 # 1. positional flag-eating: `screenshot [selector] [path]`, an unknown --flag is eaten
 #    as [path] and the file lands in $PWD. Reproduced 2026-08-27.
 # 2. AGENT_BROWSER_SCREENSHOT_DIR is ignored, so a bare filename resolves against $PWD
 #    (browser-probe.md:119-123: it put three untracked PNGs into a repo).
-check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot /tmp/x.png --full-page')" "agent-browser: unknown flag is eaten as the output path" "consume it as the output PATH"
-check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot probe.png')" "agent-browser: bare filename resolves against \$PWD" "No absolute output path"
-check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json "agent-browser screenshot $TEST_REPO_ROOT/packages/www/x.png")" "agent-browser: absolute path inside the repo" "is inside the repo at"
-check 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser pdf out.pdf')" "agent-browser: pdf with a relative path"
-check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot /tmp/x.png --full')" "agent-browser: absolute path outside the repo is fine"
-check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot .sp-problem /tmp/sec.png')" "agent-browser: selector plus absolute path"
-check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser open http://localhost:4321/en')" "agent-browser: open writes no file"
-check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json "echo 'agent-browser screenshot probe.png'")" "agent-browser CONTROL: echoing it is not running it"
+check_out 2 guards/block_agent_browser_repo_output.py "$(bash_json 'agent-browser screenshot /tmp/x.png --full-page')" "agent-browser: unknown flag is eaten as the output path" "consume it as the output PATH"
+check_out 2 guards/block_agent_browser_repo_output.py "$(bash_json 'agent-browser screenshot probe.png')" "agent-browser: bare filename resolves against \$PWD" "No absolute output path"
+check_out 2 guards/block_agent_browser_repo_output.py "$(bash_json "agent-browser screenshot $TEST_REPO_ROOT/packages/www/x.png")" "agent-browser: absolute path inside the repo" "is inside the repo at"
+check 2 guards/block_agent_browser_repo_output.py "$(bash_json 'agent-browser pdf out.pdf')" "agent-browser: pdf with a relative path"
+check 0 guards/block_agent_browser_repo_output.py "$(bash_json 'agent-browser screenshot /tmp/x.png --full')" "agent-browser: absolute path outside the repo is fine"
+check 0 guards/block_agent_browser_repo_output.py "$(bash_json 'agent-browser screenshot .sp-problem /tmp/sec.png')" "agent-browser: selector plus absolute path"
+check 0 guards/block_agent_browser_repo_output.py "$(bash_json 'agent-browser open http://localhost:4321/en')" "agent-browser: open writes no file"
+check 0 guards/block_agent_browser_repo_output.py "$(bash_json "echo 'agent-browser screenshot probe.png'")" "agent-browser CONTROL: echoing it is not running it"
 # A compound command has more than one agent-browser segment. Selecting only the FIRST
 # judged `open` (which has no path) and so BLOCKED a correct absolute screenshot, while a
 # second output subcommand on the same line was never inspected at all. Both directions:
-check 0 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser open http://localhost:4321/en && agent-browser screenshot /tmp/x.png')" "agent-browser: open then an absolute screenshot is fine"
-check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json "agent-browser open http://localhost:4321/en && agent-browser screenshot $TEST_REPO_ROOT/x.png")" "agent-browser: open then an in-repo screenshot" "is inside the repo at"
-check_out 2 pre-bash/block-agent-browser-repo-output.sh "$(bash_json 'agent-browser screenshot /tmp/a.png && agent-browser screenshot b.png')" "agent-browser: the SECOND output command is bare" "No absolute output path"
+check 0 guards/block_agent_browser_repo_output.py "$(bash_json 'agent-browser open http://localhost:4321/en && agent-browser screenshot /tmp/x.png')" "agent-browser: open then an absolute screenshot is fine"
+check_out 2 guards/block_agent_browser_repo_output.py "$(bash_json "agent-browser open http://localhost:4321/en && agent-browser screenshot $TEST_REPO_ROOT/x.png")" "agent-browser: open then an in-repo screenshot" "is inside the repo at"
+check_out 2 guards/block_agent_browser_repo_output.py "$(bash_json 'agent-browser screenshot /tmp/a.png && agent-browser screenshot b.png')" "agent-browser: the SECOND output command is bare" "No absolute output path"
 
 # --- block-host-toolchain-run: a gate that cannot run reports no verdict ---
 # This guard sat on disk UNREGISTERED, so the lesson it encodes had no enforcement at all.
 # It fires only when the HOST lacks the toolchain and the devbox has it, so its allow
 # direction is the interesting half: a host that has the tool must not be pushed anywhere.
-check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json './run.sh devbox exec -- npm run check:ci-python-lint')" "host-toolchain: already routed through the devbox"
-check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json 'npm run check:ci-dead-css')" "host-toolchain: a gate needing no extra toolchain"
-check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json "echo 'npm run check:ci-python-lint'")" "host-toolchain CONTROL: echoing a gate name is not running it"
-check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json 'ls -la')" "host-toolchain: an unrelated command"
+check 0 guards/block_host_toolchain_run.py "$(bash_json './run.sh devbox exec -- npm run check:ci-python-lint')" "host-toolchain: already routed through the devbox"
+check 0 guards/block_host_toolchain_run.py "$(bash_json 'npm run check:ci-dead-css')" "host-toolchain: a gate needing no extra toolchain"
+check 0 guards/block_host_toolchain_run.py "$(bash_json "echo 'npm run check:ci-python-lint'")" "host-toolchain CONTROL: echoing a gate name is not running it"
+check 0 guards/block_host_toolchain_run.py "$(bash_json 'ls -la')" "host-toolchain: an unrelated command"
 
 # NPX CANNOT RESOLVE A NON-NPM BINARY. Measured 2026-08-28: `npx --yes ruff
 # format ...` failed with an npm resolution error even though the real ruff
 # binary was on PATH the whole time; the session read that as "no ruff
 # resolves" and hand-patched two files instead. This fires on shape alone.
-check 2 pre-bash/block-host-toolchain-run.sh "$(bash_json 'npx --yes ruff format file.py')" "host-toolchain: npx cannot run a pinned non-npm tool"
-check 2 pre-bash/block-host-toolchain-run.sh "$(bash_json 'npx -y shfmt -l .')" "host-toolchain: npx misuse, short flag form"
-check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json 'npx --yes tsx scripts/foo.ts')" "host-toolchain CONTROL: npx running an actual npm package is untouched"
+check 2 guards/block_host_toolchain_run.py "$(bash_json 'npx --yes ruff format file.py')" "host-toolchain: npx cannot run a pinned non-npm tool"
+check 2 guards/block_host_toolchain_run.py "$(bash_json 'npx -y shfmt -l .')" "host-toolchain: npx misuse, short flag form"
+check 0 guards/block_host_toolchain_run.py "$(bash_json 'npx --yes tsx scripts/foo.ts')" "host-toolchain CONTROL: npx running an actual npm package is untouched"
 
 # BARE TOOL INVOCATIONS. The NEEDS table above only matches a GATE KEY in the
 # command; running the tool directly was invisible to it.
-check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json 'ruff format file.py')" "host-toolchain: bare tool, host has it"
-check 0 pre-bash/block-host-toolchain-run.sh "$(bash_json 'git commit -m \"note: install ruff and go before running this\"')" "host-toolchain CONTROL: prose mentioning tool names is not a command"
-check 2 pre-bash/block-ci-polling.sh "$(bash_json 'sleep 5 && gh run view 1')" "ci-polling"
-check 2 pre-bash/block-ci-reverse-poll.sh "$(bash_json 'gh run view 1 --jq .x && sleep 5')" "ci-reverse-poll"
-check 2 pre-bash/block-long-sleep.sh "$(bash_json 'sleep 30')" "long-sleep"
-check 2 pre-bash/block-git-amend.sh "$(bash_json 'git commit --amend')" "git-amend"
-check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git push --force')" "git-force-push"
+check 0 guards/block_host_toolchain_run.py "$(bash_json 'ruff format file.py')" "host-toolchain: bare tool, host has it"
+check 0 guards/block_host_toolchain_run.py "$(bash_json 'git commit -m \"note: install ruff and go before running this\"')" "host-toolchain CONTROL: prose mentioning tool names is not a command"
+check 2 guards/block_ci_polling.py "$(bash_json 'sleep 5 && gh run view 1')" "ci-polling"
+check 2 guards/block_ci_reverse_poll.py "$(bash_json 'gh run view 1 --jq .x && sleep 5')" "ci-reverse-poll"
+check 2 guards/block_long_sleep.py "$(bash_json 'sleep 30')" "long-sleep"
+check 2 guards/block_git_amend.py "$(bash_json 'git commit --amend')" "git-amend"
+check 2 guards/block_git_force_push.py "$(bash_json 'git push --force')" "git-force-push"
 # THE TWO SPELLINGS THE GUARD MISSED until 2026-08-23. Neither carries the word
 # --force, and both rewrite published history: --mirror forces every ref AND
 # deletes remote refs absent locally, and a leading + forces the ref it prefixes.
@@ -491,16 +622,16 @@ check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git push --force')" "git-
 # guard refused it -- dropping one word would have slipped the identical push
 # through. Command strings are CONCATENATED on purpose: the guard matches any
 # Bash command containing these literals, including the one that edits this file.
-check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush --mirror https://github.com/rediacc/console.git')" "force-push: --mirror is a force of every ref"
-check 2 pre-bash/block-git-force-push.sh "$(bash_json 'cd /tmp/mirror.git && git p''ush --mirror origin')" "force-push: --mirror behind a cd is still caught"
-check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin +refs/heads/main')" "force-push: a leading + on a refspec forces that ref"
+check 2 guards/block_git_force_push.py "$(bash_json 'git p''ush --mirror https://github.com/rediacc/console.git')" "force-push: --mirror is a force of every ref"
+check 2 guards/block_git_force_push.py "$(bash_json 'cd /tmp/mirror.git && git p''ush --mirror origin')" "force-push: --mirror behind a cd is still caught"
+check 2 guards/block_git_force_push.py "$(bash_json 'git p''ush origin +refs/heads/main')" "force-push: a leading + on a refspec forces that ref"
 # THE SHORTHAND FORMS, which the +refs/ case above did NOT cover. A refspec does
 # not have to be refs-qualified to force, and the first fix for this guard matched
 # only the long form: `+main:main` and `+HEAD:main` both slipped past a guard whose
 # commit message said the hole was closed. Caught in review on PR #571. The case
 # above tested the REGEX; these test the THREAT.
-check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin +main:main')" "force-push: a plus-prefixed branch shorthand forces too"
-check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin +HEAD:main')" "force-push: +HEAD:<branch> is the same force in shorthand"
+check 2 guards/block_git_force_push.py "$(bash_json 'git p''ush origin +main:main')" "force-push: a plus-prefixed branch shorthand forces too"
+check 2 guards/block_git_force_push.py "$(bash_json 'git p''ush origin +HEAD:main')" "force-push: +HEAD:<branch> is the same force in shorthand"
 # THE WRAPPER BYPASS, review-found on PR #579. Every sibling guard touched in
 # that same PR (block-cli-bundle.sh, block-protected-files.sh, etc.) routes
 # through lib/command-scan.sh's hook_scan_target, which unwraps eval/sh -c
@@ -509,29 +640,29 @@ check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin +HEAD:m
 # accepted separator, and the command-position anchor never fired. Same class
 # as the worktree-add wrapper case above, on the one guard this file's own
 # comment calls "the whole security story".
-check 2 pre-bash/block-git-force-push.sh "$(bash_json 'eval "git p''ush --force origin main"')" "force-push: eval wrapper bypass"
-check 2 pre-bash/block-git-force-push.sh "$(bash_json 'sh -c "git p''ush --force origin main"')" "force-push: sh -c wrapper bypass"
-check 2 pre-bash/block-git-force-push.sh "$(bash_json 'eval "git p''ush origin +main:main"')" "force-push: eval wrapper bypass, refspec form"
-check 2 pre-bash/block-git-empty-commit.sh "$(bash_json 'git commit --allow-empty -m x')" "git-empty-commit"
-check 2 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree add ../foo -b bar')" "worktree-add"
-check 2 pre-bash/block-worktree-add.sh "$(bash_json 'git -C /some/path worktree add ../x main')" "worktree-add: -C before the subcommand"
-check 2 pre-bash/block-worktree-add.sh "$(bash_json 'sh -c "git worktree add ../x"')" "worktree-add: sh -c wrapper bypass"
-check 2 pre-bash/block-worktree-add.sh "$(bash_json 'echo start; git worktree add ../x')" "worktree-add: after a command separator"
+check 2 guards/block_git_force_push.py "$(bash_json 'eval "git p''ush --force origin main"')" "force-push: eval wrapper bypass"
+check 2 guards/block_git_force_push.py "$(bash_json 'sh -c "git p''ush --force origin main"')" "force-push: sh -c wrapper bypass"
+check 2 guards/block_git_force_push.py "$(bash_json 'eval "git p''ush origin +main:main"')" "force-push: eval wrapper bypass, refspec form"
+check 2 guards/block_git_empty_commit.py "$(bash_json 'git commit --allow-empty -m x')" "git-empty-commit"
+check 2 guards/block_worktree_add.py "$(bash_json 'git worktree add ../foo -b bar')" "worktree-add"
+check 2 guards/block_worktree_add.py "$(bash_json 'git -C /some/path worktree add ../x main')" "worktree-add: -C before the subcommand"
+check 2 guards/block_worktree_add.py "$(bash_json 'sh -c "git worktree add ../x"')" "worktree-add: sh -c wrapper bypass"
+check 2 guards/block_worktree_add.py "$(bash_json 'echo start; git worktree add ../x')" "worktree-add: after a command separator"
 # THE WRAPPER FORMS. `./run.sh worktree create` runs `git worktree add -b` inside
 # scripts/dev/worktree.sh, so it is the same decision -- but the text this hook
 # sees never contains "git worktree add", and the literal block matched nothing.
 # It now also starts a devbox, so the bypass costs an image pull and a port block.
-check 2 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree create')" "worktree-add: run.sh wrapper"
-check 2 pre-bash/block-worktree-add.sh "$(bash_json 'run.sh worktree create -t')" "worktree-add: wrapper with flags"
-check 2 pre-bash/block-worktree-add.sh "$(bash_json 'bash scripts/dev/worktree.sh create')" "worktree-add: interpreter prefix puts bash in command position, not the script"
-check 2 pre-bash/block-worktree-add.sh "$(bash_json 'cd /x && ./run.sh worktree create')" "worktree-add: wrapper after a separator"
+check 2 guards/block_worktree_add.py "$(bash_json './run.sh worktree create')" "worktree-add: run.sh wrapper"
+check 2 guards/block_worktree_add.py "$(bash_json 'run.sh worktree create -t')" "worktree-add: wrapper with flags"
+check 2 guards/block_worktree_add.py "$(bash_json 'bash scripts/dev/worktree.sh create')" "worktree-add: interpreter prefix puts bash in command position, not the script"
+check 2 guards/block_worktree_add.py "$(bash_json 'cd /x && ./run.sh worktree create')" "worktree-add: wrapper after a separator"
 # The OTHER subcommands must stay usable, and prose about the command must not
 # trip it -- a detector that flags its own documentation cannot be satisfied
 # except by deleting the explanation.
-check 0 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree list')" "worktree-add: list is not create"
-check 0 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree remove 0826-1')" "worktree-add: remove is not create"
-check 0 pre-bash/block-worktree-add.sh "$(bash_json './run.sh worktree prune')" "worktree-add: prune is not create"
-check 0 pre-bash/block-worktree-add.sh "$(bash_json 'echo "run.sh worktree create is blocked"')" "worktree-add: prose is not an invocation"
+check 0 guards/block_worktree_add.py "$(bash_json './run.sh worktree list')" "worktree-add: list is not create"
+check 0 guards/block_worktree_add.py "$(bash_json './run.sh worktree remove 0826-1')" "worktree-add: remove is not create"
+check 0 guards/block_worktree_add.py "$(bash_json './run.sh worktree prune')" "worktree-add: prune is not create"
+check 0 guards/block_worktree_add.py "$(bash_json 'echo "run.sh worktree create is blocked"')" "worktree-add: prose is not an invocation"
 
 # ---- warn-stale-index: `git commit` takes the INDEX, not the working tree ----
 #
@@ -559,7 +690,7 @@ stale_probe() {
     local want="$1" desc="$2" cmd="$3" out
     out="$(cd "$STALE_REPO" && printf '{"tool_input":{"command":%s}}' \
         "$(printf '%s' "$cmd" | jq -Rs .)" |
-        bash "$DIR/pre-bash/warn-stale-index.sh" 2>&1 >/dev/null)"
+        python3 "$GUARD_DISPATCH" warn_stale_index 2>&1 >/dev/null)"
     local got=silent
     [ -n "$out" ] && got=warn
     if [ "$got" = "$want" ]; then
@@ -610,7 +741,7 @@ _gc_run() { # _gc_run <expected-rc> <shim-mode> <claim> <label> [needle] [not-ne
     d="$(_gc_shim "$mode")"
     out="$(printf '%s' "{\"tool_input\":{\"command\":\"git commit --allow-empty -m x\"}}" |
         PATH="$d:$PATH" CI_RETRIGGER_NO_RUN_FOR="$claim" \
-            bash "$DIR/pre-bash/block-git-empty-commit.sh" 2>&1 >/dev/null)"
+            python3 "$GUARD_DISPATCH" block_git_empty_commit 2>&1 >/dev/null)"
     rc=$?
     rm -rf "$d"
     [ "$rc" = "$exp" ] || bad="exit $rc, wanted $exp"
@@ -641,17 +772,36 @@ _gc_run 2 3 "$_gc_head" "empty-commit: 3 check-runs -> blocked, DOES advise the 
 _gc_run 2 FAIL "$_gc_head" "empty-commit: unreadable check-runs API fails closed" "could not be read"
 # The claim is a CHECK, not a flag: a sha that is not HEAD proves nothing.
 _gc_run 2 0 "deadbeefcafe" "empty-commit: a claim that is not HEAD is refused"
-check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A')" "blanket-git-add: -A with no pathspec"
-check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add --all')" "blanket-git-add: --all with no pathspec"
-check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add .')" "blanket-git-add: a lone dot"
-check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add :/')" "blanket-git-add: the repo-root magic pathspec"
+check 2 guards/block_blanket_git_add.py "$(bash_json 'git add -A')" "blanket-git-add: -A with no pathspec"
+check 2 guards/block_blanket_git_add.py "$(bash_json 'git add --all')" "blanket-git-add: --all with no pathspec"
+check 2 guards/block_blanket_git_add.py "$(bash_json 'git add .')" "blanket-git-add: a lone dot"
+check 2 guards/block_blanket_git_add.py "$(bash_json 'git add :/')" "blanket-git-add: the repo-root magic pathspec"
+
+# block-pathspecless-git-commit.sh -- the OTHER half of the blanket-add trap, and
+# the half a correct `git add` does not protect you from. `git commit` writes the
+# INDEX, so a peer session's staged work rides your commit. Added 2026-09-06
+# after it happened TWICE in one session: fifteen policy renames landed without
+# their readers, then an hour later, after the trap was written down by the same
+# session, 108 files landed where 33 were intended.
+check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -m "x"')" "pathspecless-commit: -m with no pathspec"
+check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit')" "pathspecless-commit: the bare form"
+check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -a -m "x"')" "pathspecless-commit: -a stages every modified tracked file"
+check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -m "x" --')" "pathspecless-commit: a -- with nothing after it is the bare form in disguise"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -F msg.txt -- a/b.ts')" "pathspecless-commit: ALLOW a named pathspec"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -q -F - -- .ci/x.sh agent/y.md')" "pathspecless-commit: ALLOW several named paths"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit --amend --no-edit')" "pathspecless-commit: ALLOW an amend, which chooses no new content"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git add -- a.ts')" "pathspecless-commit: ALLOW a git add, which is a different guard's business"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git init -q && git add -A && git commit -qm seed')" "pathspecless-commit: ALLOW a throwaway fixture repo, which every port agent must seal"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'cd /tmp/claude-1000/fx/r1; git add -A; git commit -qm seed')" "pathspecless-commit: ALLOW a commit inside /tmp, which is never this checkout"
+check 0 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git -C /tmp/claude-1000/fx/r1 commit -qm seed')" "pathspecless-commit: ALLOW git -C into a scratch repo"
+check 2 pre-bash/block-pathspecless-git-commit.sh "$(bash_json 'git commit -F /tmp/claude-1000/msg.txt')" "pathspecless-commit: a /tmp MESSAGE FILE is not a /tmp repo, so this is still blocked"
 
 # block-destructive-git-restore.sh -- the four commands that DISCARD uncommitted
 # work. Added 2026-08-14 after `git checkout -- <one file>`, run to tidy up a
 # stray edit, destroyed another live session's uncommitted value in that file.
 # The rule had existed in CLAUDE.md for months; a rule protects only the session
 # that recalls it at the one second it matters.
-H=pre-bash/block-destructive-git-restore.sh
+H=guards/block_destructive_git_restore.py
 check 2 "$H" "$(bash_json 'git checkout -- packages/www/src/i18n/translations/.translation-hashes.json')" "destructive-git: the exact 2026-08-14 command"
 check 2 "$H" "$(bash_json 'git checkout .')" "destructive-git: checkout a lone dot"
 check 2 "$H" "$(bash_json 'git restore src/file.ts')" "destructive-git: restore"
@@ -669,60 +819,60 @@ check 0 "$H" "$(bash_json 'git stash list')" "destructive-git: stash list is rea
 check 0 "$H" "$(bash_json 'git stash show -p')" "destructive-git: stash show is read-only"
 check 0 "$H" "$(bash_json 'git clean -n')" "destructive-git: clean --dry-run is read-only"
 check 0 "$H" "$(bash_json 'git status')" "destructive-git: unrelated git command"
-check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'cd /tmp && git add -A')" "blanket-git-add: after a command separator"
-check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'sh -c "git add -A"')" "blanket-git-add: sh -c wrapper bypass"
+check 2 guards/block_blanket_git_add.py "$(bash_json 'cd /tmp && git add -A')" "blanket-git-add: after a command separator"
+check 2 guards/block_blanket_git_add.py "$(bash_json 'sh -c "git add -A"')" "blanket-git-add: sh -c wrapper bypass"
 # BYPASSES found by review of PR #566, each confirmed by running the guard before
 # the fix: all three exited 0 while staging the whole tree. Redirection is not a
 # pathspec, and `--` with nothing after it is not a restriction -- git treats an
 # empty pathspec list as no restriction at all, so it is the bare form wearing
 # the escape's clothes.
-check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A > /dev/null')" "blanket-git-add: stdout redirection is not a pathspec"
-check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A 2>&1')" "blanket-git-add: fd redirection is not a pathspec"
-check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A --')" "blanket-git-add: a bare -- with no pathspec is still blanket"
-check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add . > /dev/null')" "blanket-git-add: dot plus redirection"
-check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --title x --body y')" "nondraft-create: console without --draft"
+check 2 guards/block_blanket_git_add.py "$(bash_json 'git add -A > /dev/null')" "blanket-git-add: stdout redirection is not a pathspec"
+check 2 guards/block_blanket_git_add.py "$(bash_json 'git add -A 2>&1')" "blanket-git-add: fd redirection is not a pathspec"
+check 2 guards/block_blanket_git_add.py "$(bash_json 'git add -A --')" "blanket-git-add: a bare -- with no pathspec is still blanket"
+check 2 guards/block_blanket_git_add.py "$(bash_json 'git add . > /dev/null')" "blanket-git-add: dot plus redirection"
+check 2 guards/block_nondraft_pr_create.py "$(bash_json 'gh pr create --title x --body y')" "nondraft-create: console without --draft"
 # Stale-dated PR branch (PR #575 was filed from 0825-2 on 08-26). Both
 # directions: the stale name blocks, today's name and a non-wave name pass.
-check 2 pre-bash/block-stale-pr-branch-date.sh "$(bash_json 'gh pr create --draft --head 0825-2 -t x -b y')" "stale-pr-branch: yesterday's MMDD blocked"
-check 0 pre-bash/block-stale-pr-branch-date.sh "$(bash_json "gh pr create --draft --head $(date +%m%d)-9 -t x -b y")" "stale-pr-branch: today's MMDD allowed"
-check 0 pre-bash/block-stale-pr-branch-date.sh "$(bash_json 'gh pr create --draft --head feature/not-a-wave -t x')" "stale-pr-branch: non-MMDD name is out of scope"
-check 0 pre-bash/block-stale-pr-branch-date.sh "$(bash_json 'gh pr list --head 0825-2')" "stale-pr-branch: not a create, ignored"
-check 2 pre-bash/block-stale-pr-branch-date.sh "$(bash_json "sh -c 'gh pr create --draft --head 0825-2 -t x'")" "stale-pr-branch: sh -c wrapper bypass blocked"
-check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --draft --title x')" "nondraft-create: draft on private submodule"
-check 2 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr merge 531 --squash --admin')" "admin-merge: --admin banned"
+check 2 guards/block_stale_pr_branch_date.py "$(bash_json 'gh pr create --draft --head 0825-2 -t x -b y')" "stale-pr-branch: yesterday's MMDD blocked"
+check 0 guards/block_stale_pr_branch_date.py "$(bash_json "gh pr create --draft --head $(date +%m%d)-9 -t x -b y")" "stale-pr-branch: today's MMDD allowed"
+check 0 guards/block_stale_pr_branch_date.py "$(bash_json 'gh pr create --draft --head feature/not-a-wave -t x')" "stale-pr-branch: non-MMDD name is out of scope"
+check 0 guards/block_stale_pr_branch_date.py "$(bash_json 'gh pr list --head 0825-2')" "stale-pr-branch: not a create, ignored"
+check 2 guards/block_stale_pr_branch_date.py "$(bash_json "sh -c 'gh pr create --draft --head 0825-2 -t x'")" "stale-pr-branch: sh -c wrapper bypass blocked"
+check 2 guards/block_nondraft_pr_create.py "$(bash_json 'cd private/renet && gh pr create --draft --title x')" "nondraft-create: draft on private submodule"
+check 2 guards/block_admin_merge.py "$(bash_json 'gh pr merge 531 --squash --admin')" "admin-merge: --admin banned"
 # Adversarial bypass cases (review finding F1): the quote-strip used to let
 # shell-wrapper / eval / flag=value / variable-indirection forms slip the ban.
-check 2 pre-bash/block-admin-merge.sh "$(bash_json "sh -c 'gh pr merge 531 --admin'")" "admin-merge: sh -c wrapper bypass blocked"
-check 2 pre-bash/block-admin-merge.sh "$(bash_json 'bash -c "gh pr merge 531 --admin"')" "admin-merge: bash -c wrapper bypass blocked"
-check 2 pre-bash/block-admin-merge.sh "$(bash_json "eval 'gh pr merge 531 --admin'")" "admin-merge: eval wrapper bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json "sh -c 'gh pr merge 531 --admin'")" "admin-merge: sh -c wrapper bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json 'bash -c "gh pr merge 531 --admin"')" "admin-merge: bash -c wrapper bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json "eval 'gh pr merge 531 --admin'")" "admin-merge: eval wrapper bypass blocked"
 # Round-39 review finding: bundled/separate flags before -c defeated both the
 # wrapper-unwrap AND the prose-strip (which erases the same quoted payload).
-check 2 pre-bash/block-admin-merge.sh "$(bash_json "bash -lc 'gh pr merge 531 --admin'")" "admin-merge: bundled-flag wrapper (bash -lc) bypass blocked"
-check 2 pre-bash/block-admin-merge.sh "$(bash_json "sh -eu -c 'gh pr merge 531 --admin'")" "admin-merge: separate-flag wrapper (sh -eu -c) bypass blocked"
-check 2 pre-bash/block-admin-merge.sh "$(bash_json "bash -eux -c 'gh pr merge 531 --admin'")" "admin-merge: multi-flag wrapper (bash -eux -c) bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json "bash -lc 'gh pr merge 531 --admin'")" "admin-merge: bundled-flag wrapper (bash -lc) bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json "sh -eu -c 'gh pr merge 531 --admin'")" "admin-merge: separate-flag wrapper (sh -eu -c) bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json "bash -eux -c 'gh pr merge 531 --admin'")" "admin-merge: multi-flag wrapper (bash -eux -c) bypass blocked"
 # Round-40 review finding: GNU long options and value-taking short options
 # before -c also defeated the round-40 flag-shape regex; fixed via
 # token-scanning (any intervening token is skippable) instead of a 4th regex.
-check 2 pre-bash/block-admin-merge.sh "$(bash_json "bash --posix -c 'gh pr merge 531 --admin'")" "admin-merge: GNU long-option wrapper (bash --posix -c) bypass blocked"
-check 2 pre-bash/block-admin-merge.sh "$(bash_json "bash --norc -c 'gh pr merge 531 --admin'")" "admin-merge: GNU long-option wrapper (bash --norc -c) bypass blocked"
-check 2 pre-bash/block-admin-merge.sh "$(bash_json "bash -o pipefail -c 'gh pr merge 531 --admin'")" "admin-merge: value-taking-flag wrapper (bash -o pipefail -c) bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json "bash --posix -c 'gh pr merge 531 --admin'")" "admin-merge: GNU long-option wrapper (bash --posix -c) bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json "bash --norc -c 'gh pr merge 531 --admin'")" "admin-merge: GNU long-option wrapper (bash --norc -c) bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json "bash -o pipefail -c 'gh pr merge 531 --admin'")" "admin-merge: value-taking-flag wrapper (bash -o pipefail -c) bypass blocked"
 # Round-42 review finding: a path-qualified shell name (exact-match anchor,
 # not basename) defeated the token-scanner the same way flag shapes did.
-check 2 pre-bash/block-admin-merge.sh "$(bash_json "/bin/bash -c 'gh pr merge 531 --admin'")" "admin-merge: path-qualified shell (/bin/bash -c) bypass blocked"
-check 2 pre-bash/block-admin-merge.sh "$(bash_json "./bash -c 'gh pr merge 531 --admin'")" "admin-merge: relative-path shell (./bash -c) bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json "/bin/bash -c 'gh pr merge 531 --admin'")" "admin-merge: path-qualified shell (/bin/bash -c) bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json "./bash -c 'gh pr merge 531 --admin'")" "admin-merge: relative-path shell (./bash -c) bypass blocked"
 # Round-44 review finding: a QUOTED shell path defeated the basename strip
 # (the last `/` lands inside the quotes, leaving a trailing quote character).
-check 2 pre-bash/block-admin-merge.sh "$(bash_json '"/bin/bash" -c '"'"'gh pr merge 531 --admin'"'"'')" 'admin-merge: double-quoted path ("/bin/bash" -c) bypass blocked'
-check 2 pre-bash/block-admin-merge.sh "$(bash_json "'/bin/bash' -c 'gh pr merge 531 --admin'")" "admin-merge: single-quoted path ('/bin/bash' -c) bypass blocked"
-check 2 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr merge 531 --squash --admin=true')" "admin-merge: --admin=value bypass blocked"
-check 2 pre-bash/block-admin-merge.sh "$(bash_json 'X=--admin; gh pr merge 531 $X')" "admin-merge: variable-indirection bypass blocked"
-check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json "sh -c 'gh pr create --title x --body y'")" "nondraft-create: sh -c wrapper bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json '"/bin/bash" -c '"'"'gh pr merge 531 --admin'"'"'')" 'admin-merge: double-quoted path ("/bin/bash" -c) bypass blocked'
+check 2 guards/block_admin_merge.py "$(bash_json "'/bin/bash' -c 'gh pr merge 531 --admin'")" "admin-merge: single-quoted path ('/bin/bash' -c) bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json 'gh pr merge 531 --squash --admin=true')" "admin-merge: --admin=value bypass blocked"
+check 2 guards/block_admin_merge.py "$(bash_json 'X=--admin; gh pr merge 531 $X')" "admin-merge: variable-indirection bypass blocked"
+check 2 guards/block_nondraft_pr_create.py "$(bash_json "sh -c 'gh pr create --title x --body y'")" "nondraft-create: sh -c wrapper bypass blocked"
 # Round-46 (live during a real /pr-merge): fields were parsed from the WHOLE
 # bash line, so sibling gh invocations donated fields to each other and only
 # ONE invocation per line was ever examined. Each of these pairs a compliant
 # invocation with a violating one; both must be judged on their own segment.
-check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft --repo rediacc/console -t x; gh pr create --repo rediacc/console -t y')" "nondraft-create: second create on the line is judged too (no --draft donation)"
-check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft --repo rediacc/console -t x; gh pr create --draft --repo rediacc/renet -t y')" "nondraft-create: draft-on-private caught in the second segment (no --repo donation)"
+check 2 guards/block_nondraft_pr_create.py "$(bash_json 'gh pr create --draft --repo rediacc/console -t x; gh pr create --repo rediacc/console -t y')" "nondraft-create: second create on the line is judged too (no --draft donation)"
+check 2 guards/block_nondraft_pr_create.py "$(bash_json 'gh pr create --draft --repo rediacc/console -t x; gh pr create --draft --repo rediacc/renet -t y')" "nondraft-create: draft-on-private caught in the second segment (no --repo donation)"
 # ---------------------------------------------------------------------------
 # pre-ask: the AskUserQuestion chain.
 #
@@ -732,15 +882,15 @@ check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft 
 # subject of this block, and the must-block cases are the easy half.
 ask_json() { printf '{"tool_input":{"questions":[{"question":%s,"header":"x"}]}}' "$(jq -Rn --arg c "$1" '$c')"; }
 
-check 2 pre-ask/block-settled-questions.sh "$(ask_json "Should I commit this change?")" "settled(commit)"
-check 2 pre-ask/block-settled-questions.sh "$(ask_json "Shall I open a PR for this?")" "settled(pr)"
-check 2 pre-ask/block-settled-questions.sh "$(ask_json "Do you want me to create a branch first?")" "settled(branch)"
+check 2 guards/block_settled_questions.py "$(ask_json "Should I commit this change?")" "settled(commit)"
+check 2 guards/block_settled_questions.py "$(ask_json "Shall I open a PR for this?")" "settled(pr)"
+check 2 guards/block_settled_questions.py "$(ask_json "Do you want me to create a branch first?")" "settled(branch)"
 # CONTROLS: a design question and a factual question that merely MENTION the
 # vocabulary must pass. Anchoring on words rather than on intent is the
 # over-matching mistake wl_agents.py paid for four times in one session.
-check 0 pre-ask/block-settled-questions.sh "$(ask_json "Which branching strategy should this repo use, trunk or release branches?")" "settled(design passes)"
-check 0 pre-ask/block-settled-questions.sh "$(ask_json "Did the rebase drop a commit, or is the count right?")" "settled(fact passes)"
-check 0 pre-ask/block-settled-questions.sh "$(ask_json "Should I install node from a tarball or a package manager?")" "settled(unrelated permission passes)"
+check 0 guards/block_settled_questions.py "$(ask_json "Which branching strategy should this repo use, trunk or release branches?")" "settled(design passes)"
+check 0 guards/block_settled_questions.py "$(ask_json "Did the rebase drop a commit, or is the count right?")" "settled(fact passes)"
+check 0 guards/block_settled_questions.py "$(ask_json "Should I install node from a tarball or a package manager?")" "settled(unrelated permission passes)"
 
 # THE MENTION-VS-TARGET PAIR. Both regexes hit anywhere in the question, so a
 # sentence ABOUT the settled rule was refused as if it were the rule being
@@ -748,13 +898,13 @@ check 0 pre-ask/block-settled-questions.sh "$(ask_json "Should I install node fr
 # commit unasked?" exited 2. The fix anchors the permission to the clause it
 # GOVERNS (no subordinating conjunction or comma in between) and does not touch
 # the object list, so the three direct forms above still refuse.
-check 0 pre-ask/block-settled-questions.sh "$(ask_json "Should I explain in the report why we never commit unasked?")" "settled(mention of the rule passes)"
-check 0 pre-ask/block-settled-questions.sh "$(ask_json "Can we record that the commit rule is settled?")" "settled(that-clause passes)"
-check 0 pre-ask/block-settled-questions.sh "$(ask_json "Should I describe how the branch guard works?")" "settled(how-clause passes)"
+check 0 guards/block_settled_questions.py "$(ask_json "Should I explain in the report why we never commit unasked?")" "settled(mention of the rule passes)"
+check 0 guards/block_settled_questions.py "$(ask_json "Can we record that the commit rule is settled?")" "settled(that-clause passes)"
+check 0 guards/block_settled_questions.py "$(ask_json "Should I describe how the branch guard works?")" "settled(how-clause passes)"
 
-check 2 pre-edit/block-suppressions.sh "$(edit_json "a // @ts-""ignore")" "suppressions(new_string)"
-check 2 pre-edit/block-suppressions.sh "$(multiedit_json "b // eslint-""disable")" "suppressions(MultiEdit)"
-check 2 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_FAT")" "inline-workflow-run: 9-line block blocked"
+check 2 guards/block_suppressions.py "$(edit_json "a // @ts-""ignore")" "suppressions(new_string)"
+check 2 guards/block_suppressions.py "$(multiedit_json "b // eslint-""disable")" "suppressions(MultiEdit)"
+check 2 guards/block_inline_workflow_run.py "$(wf_edit_json '.github/workflows/x.yml' "$WF_FAT")" "inline-workflow-run: 9-line block blocked"
 
 # --- block-plan-without-tasks: a plan file must carry a parseable task list ---
 #
@@ -788,32 +938,65 @@ print(); print('x' * 500)")"
 printf '%s\n' "$PLAN_PROSE" >"$PLAN_TMP/agent/PLAN-legacy.md"
 printf '%s\n' "$PLAN_TASKS" >"$PLAN_TMP/agent/PLAN-conforming.md"
 
-check_out 2 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_PROSE")" \
+check_out 2 guards/block_plan_without_tasks.py "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_PROSE")" \
     "plan-tasks: a prose plan whose DECISIONS parse as tasks is blocked" "has NO checkbox task"
-check_out 2 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_NOTASK")" \
+check_out 2 guards/block_plan_without_tasks.py "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_NOTASK")" \
     "plan-tasks: a plan with no list at all is blocked" "finds 0 tasks in it"
-check_out 2 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "/r/home/u/.claude/plans/harness.md" content "$PLAN_PROSE")" \
+check_out 2 guards/block_plan_without_tasks.py "$(tool_json Write "/r/home/u/.claude/plans/harness.md" content "$PLAN_PROSE")" \
     "plan-tasks: the harness plan directory is in scope too" "ADD a section like this"
-check_out 2 pre-edit/block-plan-without-tasks.sh "$(tool_json Edit "$PLAN_TMP/agent/PLAN-absent.md" new_string "$PLAN_PROSE")" \
+check_out 2 guards/block_plan_without_tasks.py "$(tool_json Edit "$PLAN_TMP/agent/PLAN-absent.md" new_string "$PLAN_PROSE")" \
     "plan-tasks: an edit CREATING a prose plan is blocked" "has NO checkbox task"
 # The message is the product here: a block that does not spell out the fix
 # sends the author back to the same prose. Pin the three things it must say.
-check_out 2 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_PROSE")" \
+check_out 2 guards/block_plan_without_tasks.py "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_PROSE")" \
     "plan-tasks: the block names the exact syntax to add" "- [ ] Fix <the concrete thing>"
-check_out 2 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_PROSE")" \
+check_out 2 guards/block_plan_without_tasks.py "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_PROSE")" \
     "plan-tasks: the block says which states do NOT parse" "'- [?]' and '- [>]' do NOT parse"
 
 # --- the ALLOW direction. Without these the guard cannot be shown to leave
 # --- legitimate work alone, which is how an over-blocking guard gets deleted.
-check 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_TASKS")" \
+check 0 guards/block_plan_without_tasks.py "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "$PLAN_TASKS")" \
     "plan-tasks: a plan with a checkbox list passes"
-check 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "/r/packages/cli/src/foo.ts" content "$PLAN_PROSE")" \
+check 0 guards/block_plan_without_tasks.py "$(tool_json Write "/r/packages/cli/src/foo.ts" content "$PLAN_PROSE")" \
     "plan-tasks: a non-plan path is out of scope"
-check 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "Status: ready")" \
+check 0 guards/block_plan_without_tasks.py "$(tool_json Write "$PLAN_TMP/agent/PLAN-new.md" content "Status: ready")" \
     "plan-tasks: a stub under 400 chars is exempt"
-check_out 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Edit "$PLAN_TMP/agent/PLAN-legacy.md" new_string "one more paragraph")" \
+check_out 0 guards/block_plan_without_tasks.py "$(tool_json Edit "$PLAN_TMP/agent/PLAN-legacy.md" new_string "one more paragraph")" \
     "plan-tasks: amending a legacy prose plan is grandfathered, with a note" "predates the plan-task convention"
-check 0 pre-edit/block-plan-without-tasks.sh "$(tool_json Edit "$PLAN_TMP/agent/PLAN-conforming.md" new_string "one more paragraph")" \
+
+# --- block-compacted-plan-edit.sh -----------------------------------------
+# A COMPACTED RECORD keeps the plan's path and moves its full text to a git
+# blob, so the header IS the only pointer back. The guard denies the spine and
+# leaves prose alone; both directions are asserted, because a guard that only
+# ever blocks gets deleted the first time it is inconvenient.
+REC_BLOB="0123456789abcdef0123456789abcdef01234567"
+REC="$PLAN_TMP/agent/PLAN-compacted.md"
+printf '%s\n' \
+    "# A compacted plan" \
+    "Status: compacted" \
+    "Full-Text: abc123def agent/PLAN-compacted.md" \
+    "Full-Text-Blob: $REC_BLOB" \
+    "Record-Sig: 1a2b3c4d" \
+    "" \
+    "## Why" \
+    "Because the wave needed it." \
+    "" \
+    "## Boxes" \
+    "- [x] Do the concrete thing at file.ts:10" \
+    "    (record) sig=1a2b3c4d done=abc123def" >"$REC"
+
+check_out 2 guards/block_compacted_plan_edit.py "$(tool_json Write "$REC" content '# x')" \
+    "compacted-record: a Write over a record is refused" "COMPACTED PLAN RECORD"
+# THE ACCIDENT THIS GUARD IS NAMED FOR: the Edit tool's own advice is to pass a
+# minimal unique substring, and for a header line that is the bare 40-hex blob.
+# A line-anchored pattern does not see it.
+check_out 2 guards/block_compacted_plan_edit.py "$(tool_json Edit "$REC" old_string "$REC_BLOB")" \
+    "compacted-record: a bare-blob old_string is refused" "Full-Text-Blob VALUE"
+check 0 guards/block_compacted_plan_edit.py "$(tool_json Edit "$REC" new_string 'a nicer sentence')" \
+    "compacted-record: a prose-only Edit is allowed"
+check 0 guards/block_compacted_plan_edit.py "$(tool_json Write "$PLAN_TMP/agent/PLAN-conforming.md" content '# x')" \
+    "compacted-record: a plain plan is out of scope"
+check 0 guards/block_plan_without_tasks.py "$(tool_json Edit "$PLAN_TMP/agent/PLAN-conforming.md" new_string "one more paragraph")" \
     "plan-tasks: amending a plan that already has a task list passes"
 rm -rf "$PLAN_TMP"
 # STATE.md write guard: the CLI refusal alone is bypassed by a raw Write (the
@@ -837,15 +1020,15 @@ rm -rf "$PLAN_TMP"
 # these very lines: the live one-level shape is asserted FIRST, and the retired
 # two-level shapes after it, because writing THERE is a session running stale
 # instructions rather than a path nobody would ever try.
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/deadbeef/STATE.md content tiny)" "agent-state: thin Write blocked" "worklist.py --state"
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/deadbeef/STATE.md content "$STATE_AIMLESS")" "agent-state: aimless Write (no Next action) blocked" "worklist.py --state"
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/agent/deadbeef/STATE.md new_string patch)" "agent-state: Edit blocked (rewrite, never append)" "agent/<your-prefix>/STATE.md"
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json MultiEdit /r/agent/deadbeef/STATE.md new_string patch)" "agent-state: MultiEdit blocked" "worklist.py --state"
+check_out 2 guards/block_agent_state_shape.py "$(tool_json Write /r/agent/deadbeef/STATE.md content tiny)" "agent-state: thin Write blocked" "worklist.py --state"
+check_out 2 guards/block_agent_state_shape.py "$(tool_json Write /r/agent/deadbeef/STATE.md content "$STATE_AIMLESS")" "agent-state: aimless Write (no Next action) blocked" "worklist.py --state"
+check_out 2 guards/block_agent_state_shape.py "$(tool_json Edit /r/agent/deadbeef/STATE.md new_string patch)" "agent-state: Edit blocked (rewrite, never append)" "agent/<your-prefix>/STATE.md"
+check_out 2 guards/block_agent_state_shape.py "$(tool_json MultiEdit /r/agent/deadbeef/STATE.md new_string patch)" "agent-state: MultiEdit blocked" "worklist.py --state"
 # The live path must be reached at DEPTH inside an absolute path too: a pattern
 # anchored at the string start leaves every real checkout open.
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/monorepo/console/agent/deadbeef/STATE.md content "$STATE_GOOD")" "agent-state: the real session path is reached, deep in an absolute path" "agent/<your-prefix>/STATE.md"
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/0814-1/deadbeef/STATE.md content "$STATE_GOOD")" "agent-state: the retired branch/session path is blocked too" "worklist.py --state"
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content "$STATE_GOOD")" "agent-state: the legacy dotted path is blocked too" "worklist.py --state"
+check_out 2 guards/block_agent_state_shape.py "$(tool_json Write /r/monorepo/console/agent/deadbeef/STATE.md content "$STATE_GOOD")" "agent-state: the real session path is reached, deep in an absolute path" "agent/<your-prefix>/STATE.md"
+check_out 2 guards/block_agent_state_shape.py "$(tool_json Write /r/agent/0814-1/deadbeef/STATE.md content "$STATE_GOOD")" "agent-state: the retired branch/session path is blocked too" "worklist.py --state"
+check_out 2 guards/block_agent_state_shape.py "$(tool_json Write /r/.agent/b/STATE.md content "$STATE_GOOD")" "agent-state: the legacy dotted path is blocked too" "worklist.py --state"
 
 # --- should PASS (exit 0) ---
 # NOTE: block-admin-merge.sh verifies live thread state over the network on its
@@ -857,14 +1040,14 @@ check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/S
 # cases a few lines below, and stubbing it here reaches the enforcement path in
 # both directions (see ready_case). "Cannot be tested here" is a claim, and the
 # command that would have disproved it took one minute to write.
-check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A -- packages/cli/src')" "blanket-git-add: -A WITH a pathspec is the escape, allowed"
-check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add packages/cli/src/foo.ts')" "blanket-git-add: a named file is allowed"
-check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git -C private/renet add -A -- pkg/')" "blanket-git-add: -C plus a pathspec is allowed"
-check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A -- . > /dev/null')" "blanket-git-add CONTROL: a real pathspec WITH redirection is still allowed"
+check 0 guards/block_blanket_git_add.py "$(bash_json 'git add -A -- packages/cli/src')" "blanket-git-add: -A WITH a pathspec is the escape, allowed"
+check 0 guards/block_blanket_git_add.py "$(bash_json 'git add packages/cli/src/foo.ts')" "blanket-git-add: a named file is allowed"
+check 0 guards/block_blanket_git_add.py "$(bash_json 'git -C private/renet add -A -- pkg/')" "blanket-git-add: -C plus a pathspec is allowed"
+check 0 guards/block_blanket_git_add.py "$(bash_json 'git add -A -- . > /dev/null')" "blanket-git-add CONTROL: a real pathspec WITH redirection is still allowed"
 # CROSS-TALK CONTROL. Two guards match adjacent `git ... add` shapes, and a
 # regex widened by one word would make this one swallow worktree creation --
 # which would then be blocked with the WRONG message and the wrong escape.
-check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git worktree add /tmp/wt main')" "blanket-git-add CONTROL: worktree add is NOT this guard's business"
+check 0 guards/block_blanket_git_add.py "$(bash_json 'git worktree add /tmp/wt main')" "blanket-git-add CONTROL: worktree add is NOT this guard's business"
 # --- one open PR at a time -------------------------------------------------
 # The guard shells out to `gh pr list`, so these stub it on PATH. Without the
 # stub the cases would depend on whatever PRs happen to be open, which is a
@@ -884,7 +1067,7 @@ stub_gh() { # stub_gh <json-or-empty> <exit>; prints a dir to prepend to PATH
 gh_case() { # gh_case <expected-rc> <stub-json> <stub-rc> <cmd> <label> [needle]
     local exp="$1" body="$2" grc="$3" cmd="$4" label="$5" needle="${6:-}" d out rc
     d="$(stub_gh "$body" "$grc")"
-    out="$(echo "$(bash_json "$cmd")" | PATH="$d:$PATH" bash "$DIR/pre-bash/block-second-open-pr.sh" 2>&1)"
+    out="$(echo "$(bash_json "$cmd")" | PATH="$d:$PATH" python3 "$GUARD_DISPATCH" block_second_open_pr 2>&1)"
     rc=$?
     rm -rf "$d"
     if [[ "$rc" == "$exp" ]] && { [[ -z "$needle" ]] || grep -qF "$needle" <<<"$out"; }; then
@@ -906,7 +1089,30 @@ gh_case 0 '[]' 0 'gh pr view 567' "one-pr CONTROL: a non-create gh command is ig
 # FAILS CLOSED: an unreadable list is not evidence that the list is empty.
 gh_case 2 'gh: could not connect' 1 'gh pr create --draft -t x -b y' \
     "one-pr: an unreadable PR list blocks rather than assuming none" "cannot verify"
-check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft --title x --body y')" "nondraft-create: console with --draft ok"
+# DIRECT CASES FOR THE SAME TWO DIRECTIONS, and they are not duplication of the
+# five above. `check-hook-integrity.sh` credits a helper-wrapped case by reading
+# which single guard the helper's body names UNDER $DIR -- and since the W5 P7
+# cutover this guard is a Python module reached through the dispatcher, so no
+# helper body names it that way any more and every one of those five became
+# invisible to the coverage assertion. The guard then read block=0,allow=0: a
+# fully covered guard reported as newly uncovered, and the cheap way to clear
+# that red is to baseline it, which retires the assertion for good.
+#
+# So the two directions are ALSO asserted directly, in the shape both readers
+# see. The helper cases stay: they cover the failure modes (sh -c wrapping, an
+# unreadable list) that these two do not.
+SOP_SAVED_PATH="$PATH"
+SOP_STUB_BLOCK="$(stub_gh '[{"number":563,"title":"t","headRefName":"b","isDraft":false}]' 0)"
+SOP_STUB_ALLOW="$(stub_gh '[]' 0)"
+PATH="$SOP_STUB_BLOCK:$PATH"
+check 2 guards/block_second_open_pr.py "$(bash_json 'gh pr create --draft -t x -b y')" "one-pr: a second create is blocked while one is open"
+PATH="$SOP_SAVED_PATH"
+PATH="$SOP_STUB_ALLOW:$PATH"
+check 0 guards/block_second_open_pr.py "$(bash_json 'gh pr create --draft -t x -b y')" "one-pr CONTROL: with no open PR the first one is allowed"
+PATH="$SOP_SAVED_PATH"
+rm -rf "$SOP_STUB_BLOCK" "$SOP_STUB_ALLOW"
+unset SOP_SAVED_PATH SOP_STUB_BLOCK SOP_STUB_ALLOW
+check 0 guards/block_nondraft_pr_create.py "$(bash_json 'gh pr create --draft --title x --body y')" "nondraft-create: console with --draft ok"
 
 # --- trapguard PostToolUse rules: they INJECT rather than block, so the product
 # is stdout, not the exit code. A rule that exits 0 silently and a rule that
@@ -1119,14 +1325,44 @@ unset gfd gfout gfleft gfbefore gfafter
 check_inject silent "$(inject_json 'git filter-repo --analyze' 'Processed 6177 commits')" \
     "trapguard CONTROL: --analyze is a READ of history and is never warned about"
 
-check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --title x --body y')" "nondraft-create: plain create on private submodule ok"
-check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr list --repo rediacc/console')" "nondraft-create: non-create command ignored"
-check 0 pre-bash/block-premature-ready.sh "$(bash_json 'gh pr ready 531 --undo')" "premature-ready: --undo always allowed"
-check 0 pre-bash/block-premature-ready.sh "$(bash_json 'gh pr view 531')" "premature-ready: non-ready command ignored"
+check 0 guards/block_nondraft_pr_create.py "$(bash_json 'cd private/renet && gh pr create --title x --body y')" "nondraft-create: plain create on private submodule ok"
+check 0 guards/block_nondraft_pr_create.py "$(bash_json 'gh pr list --repo rediacc/console')" "nondraft-create: non-create command ignored"
+check 0 guards/block_premature_ready.py "$(bash_json 'gh pr ready 531 --undo')" "premature-ready: --undo always allowed"
+check 0 guards/block_premature_ready.py "$(bash_json 'gh pr view 531')" "premature-ready: non-ready command ignored"
 # Regression: the phrase inside heredoc/doc prose is NOT an invocation. The
 # unanchored v1 fired on a round-log heredoc that merely mentioned the flow.
-check 0 pre-bash/block-premature-ready.sh "$(bash_json $'cat >> log.md <<EOF\ngreen-gated `gh pr ready` + hook-banned --admin\nEOF')" "premature-ready: prose mention in heredoc ignored"
-check 0 pre-bash/block-admin-merge.sh "$(bash_json $'cat >> log.md <<EOF\nthe old flow used gh pr merge --admin, now banned\nEOF')" "admin-merge: prose mention in heredoc ignored"
+check 0 guards/block_premature_ready.py "$(bash_json $'cat >> log.md <<EOF\ngreen-gated `gh pr ready` + hook-banned --admin\nEOF')" "premature-ready: prose mention in heredoc ignored"
+check 0 guards/block_admin_merge.py "$(bash_json $'cat >> log.md <<EOF\nthe old flow used gh pr merge --admin, now banned\nEOF')" "admin-merge: prose mention in heredoc ignored"
+
+# --- require-jq.sh: the guard that only has an opinion on a BROKEN toolchain --
+# Everything above this line runs on a machine that has jq, where require-jq.sh
+# exits 0 at its first line. These three cases are the only place in the suite
+# where it does any work at all.
+#
+# WHY A PostToolUse CASE EXISTS AS OF 2026-09-06. require-jq.sh was registered
+# first in all three PreToolUse chains and NOWHERE on PostToolUse, while both
+# post-bash hooks (cancel-old-ci.sh, refresh-pr-body.sh) read stdin with
+# `jq -r ... 2>/dev/null`. With no jq they got an empty string, matched nothing,
+# and exited 0 -- failing OPEN and silently. The exit is not a block there: the
+# Bash call has already run. It is the only thing that makes the broken
+# toolchain VISIBLE instead of letting two hooks quietly do nothing.
+#
+# Payloads are built here, with jq on the PATH, and only then handed to
+# check_nojq, which runs the hook under a PATH that has none. See check_nojq.
+nojq_sandboxes
+NOJQ_PRE_JSON="$(bash_json 'git push --force origin main')"
+NOJQ_POST_JSON="$(inject_json 'gh pr checks 42' 'all checks passed')"
+check_nojq 2 require-jq.sh "$NOJQ_PRE_JSON" \
+    "require-jq: a PreToolUse Bash payload is REFUSED when jq is missing" \
+    "BLOCKED: jq is not installed"
+check_nojq 2 require-jq.sh "$NOJQ_POST_JSON" \
+    "require-jq: a PostToolUse Bash payload is REFUSED when jq is missing" \
+    "On PostToolUse the tool has ALREADY run"
+# CONTROL, the direction that matters most: a guard that refuses everything
+# would pass both cases above and be useless. With jq present it must be mute.
+check_nojq 0 require-jq.sh "$NOJQ_PRE_JSON" \
+    "require-jq CONTROL: silent and exit 0 when jq IS present" "" "$WITHJQ_BIN"
+rm -rf "$NOJQ_BIN" "$WITHJQ_BIN"
 
 # --- merging with unpushed commits ------------------------------------------
 # NEAR-MISS 2026-09-01: a land pass had pushed `a3701d631` and was one step from
@@ -1153,9 +1389,9 @@ git -C "$MU_TMP" commit -qm base
 git -C "$MU_TMP" update-ref refs/remotes/origin/0901-1 "$(git -C "$MU_TMP" rev-parse HEAD)"
 (
     export CLAUDE_PROJECT_DIR="$MU_TMP"
-    check 0 pre-bash/block-merge-with-unpushed.sh "$(bash_json "gh pr merge 1 --rebase")" \
+    check 0 guards/block_merge_with_unpushed.py "$(bash_json "gh pr merge 1 --rebase")" \
         "merge-unpushed CONTROL: a branch in sync merges freely"
-    check 0 pre-bash/block-merge-with-unpushed.sh "$(bash_json "gh pr view 1 --json state")" \
+    check 0 guards/block_merge_with_unpushed.py "$(bash_json "gh pr view 1 --json state")" \
         "merge-unpushed CONTROL: gh pr view is not a merge"
 )
 : >"$MU_TMP/b"
@@ -1164,13 +1400,13 @@ git -C "$MU_TMP" commit -qm "the commit that would be stranded"
 (
     export CLAUDE_PROJECT_DIR="$MU_TMP"
     # SANITY: every control above is vacuous if this one does not fire.
-    check 2 pre-bash/block-merge-with-unpushed.sh "$(bash_json "gh pr merge 1 --rebase")" \
+    check 2 guards/block_merge_with_unpushed.py "$(bash_json "gh pr merge 1 --rebase")" \
         "merge-unpushed SANITY: an unpushed commit refuses the merge"
-    check 2 pre-bash/block-merge-with-unpushed.sh "$(bash_json "gh pr merge 583 --repo rediacc/console --rebase --auto")" \
+    check 2 guards/block_merge_with_unpushed.py "$(bash_json "gh pr merge 583 --repo rediacc/console --rebase --auto")" \
         "merge-unpushed: --repo console is still this checkout"
-    check 0 pre-bash/block-merge-with-unpushed.sh "$(bash_json "gh pr merge 84 --repo rediacc/account --rebase")" \
+    check 0 guards/block_merge_with_unpushed.py "$(bash_json "gh pr merge 84 --repo rediacc/account --rebase")" \
         "merge-unpushed CONTROL: a merge for a DIFFERENT repo is out of scope"
-    check 0 pre-bash/block-merge-with-unpushed.sh "$(bash_json "git push origin 0901-1")" \
+    check 0 guards/block_merge_with_unpushed.py "$(bash_json "git push origin 0901-1")" \
         "merge-unpushed CONTROL: a push is not a merge"
 )
 rm -rf "$MU_TMP"
@@ -1200,61 +1436,61 @@ git -C "$TR_TMP" commit -qm seed
 
 # SANITY FIRST. Every exemption case below is vacuous if the guard does not fire on an
 # untagged commit in THIS repo -- a guard that exits 0 for everything passes them all.
-check 2 pre-bash/block-untagged-commit.sh "$(bash_json 'git commit -m "chore: no trailer here"')" \
+check 2 guards/block_untagged_commit.py "$(bash_json 'git commit -m "chore: no trailer here"')" \
     "target-root SANITY: an untagged commit in THIS repo is refused"
-check 0 pre-bash/block-untagged-commit.sh "$(bash_json "git -C $TR_TMP commit -m 'chore: no trailer here'")" \
+check 0 guards/block_untagged_commit.py "$(bash_json "git -C $TR_TMP commit -m 'chore: no trailer here'")" \
     "target-root: -C into another repo is that repo's business, not ours"
-check 0 pre-bash/block-untagged-commit.sh "$(bash_json "cd $TR_TMP && git commit -m 'chore: no trailer here'")" \
+check 0 guards/block_untagged_commit.py "$(bash_json "cd $TR_TMP && git commit -m 'chore: no trailer here'")" \
     "target-root: a cd into another repo exempts the whole line"
 # THE SUBTLE ONE, and the reason the resolver compares git ROOTS rather than paths: a
 # -C into a SUBDIRECTORY of this repo is still this repo, and must stay covered. A
 # naive "any -C means elsewhere" check passes every case above and fails this one.
-check 2 pre-bash/block-untagged-commit.sh "$(bash_json 'git -C packages/cli commit -m "chore: no trailer here"')" \
+check 2 guards/block_untagged_commit.py "$(bash_json 'git -C packages/cli commit -m "chore: no trailer here"')" \
     "target-root CONTROL: -C into a subdirectory of THIS repo is still this repo"
-check 2 pre-bash/block-untagged-commit.sh "$(bash_json 'git -C /nonexistent-path-xyz commit -m "chore: no trailer"')" \
+check 2 guards/block_untagged_commit.py "$(bash_json 'git -C /nonexistent-path-xyz commit -m "chore: no trailer"')" \
     "target-root CONTROL: a -C that resolves to no repo is not an exemption"
 
 # The two guards the fix was made FOR. Only the exempting direction is asserted here:
 # their blocking direction depends on a gate-run stamp and a remote's position, neither
 # of which a harness can pin, and both are covered by their own cases above.
-check 0 pre-bash/block-unverified-push.sh "$(bash_json "git -C $TR_TMP push origin main")" \
+check 0 guards/block_unverified_push.py "$(bash_json "git -C $TR_TMP push origin main")" \
     "target-root: block-unverified-push ignores another repo's push"
-check 0 pre-bash/warn-remote-drift.sh "$(bash_json "git -C $TR_TMP push origin main")" \
+check 0 guards/warn_remote_drift.py "$(bash_json "git -C $TR_TMP push origin main")" \
     "target-root: warn-remote-drift ignores another repo's push"
 rm -rf "$TR_TMP"
 unset TR_TMP
 # Even a command-position-looking mention inside a heredoc BODY is data, not a
 # command, and must not fire (heredoc-body stripping, the FP that fired on a
 # worklist write).
-check 0 pre-bash/block-admin-merge.sh "$(bash_json $'cat >> log.md <<EOF\n; gh pr merge 531 --admin\nEOF')" "admin-merge: command-position mention in heredoc body ignored"
+check 0 guards/block_admin_merge.py "$(bash_json $'cat >> log.md <<EOF\n; gh pr merge 531 --admin\nEOF')" "admin-merge: command-position mention in heredoc body ignored"
 # Regression: a multi-line quoted COMMIT MESSAGE mentioning the commands (with
 # prose semicolons and even "--admin") is not an invocation. v2 fired on this.
 COMMITMSG=$'git commit -m "feat: x\n\n- gh pr ready is hook-gated; gh pr merge --admin is banned" && git push'
-check 0 pre-bash/block-premature-ready.sh "$(bash_json "$COMMITMSG")" "premature-ready: quoted commit-msg mention ignored"
-check 0 pre-bash/block-admin-merge.sh "$(bash_json "$COMMITMSG")" "admin-merge: quoted commit-msg --admin mention ignored"
+check 0 guards/block_premature_ready.py "$(bash_json "$COMMITMSG")" "premature-ready: quoted commit-msg mention ignored"
+check 0 guards/block_admin_merge.py "$(bash_json "$COMMITMSG")" "admin-merge: quoted commit-msg --admin mention ignored"
 # --auto on a rediacc repo now verifies review hygiene LIVE (report reply +
 # threads), which this offline harness cannot assert, and that path is covered
 # by the hook's manual live proofs. Offline we prove the non-rediacc
 # early-exit still holds for --auto.
-check 0 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr merge 7 --squash --auto --repo otherorg/tool')" "admin-merge: --auto on non-rediacc repo ignored"
-check 0 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr checks 531')" "admin-merge: non-merge command ignored"
+check 0 guards/block_admin_merge.py "$(bash_json 'gh pr merge 7 --squash --auto --repo otherorg/tool')" "admin-merge: --auto on non-rediacc repo ignored"
+check 0 guards/block_admin_merge.py "$(bash_json 'gh pr checks 531')" "admin-merge: non-merge command ignored"
 # Round-46 cross-attribution, the exact live firing: a sibling `gh pr view`
 # donated its --repo to the merge's PR number, resolving a DIFFERENT repo's
 # PR #66 (long merged, one unresolved thread) and blocking a clean merge.
 # With the segment fix this stays a foreign-repo no-op and never hits the
 # network; with the bug it resolves rediacc/renet and blocks.
-check 0 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo otherorg/tool')" "admin-merge: sibling gh --repo does not donate to the merge segment"
+check 0 guards/block_admin_merge.py "$(bash_json 'gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo otherorg/tool')" "admin-merge: sibling gh --repo does not donate to the merge segment"
 # NOT asserted here: per-segment --auto and per-segment PR selectors on
 # block-admin-merge. Both only change behavior once a rediacc repo is
 # resolved, which puts them on the network path this offline harness cannot
 # drive (same limitation as the NOTE above). They are covered by the hook's
 # live proofs, not by a case that would pass either way -- a green assertion
 # that cannot fail is worse than no assertion.
-check 0 pre-bash/block-git-amend.sh "$(bash_json 'git status')" "amend: benign"
-check 0 pre-bash/block-ssh-docker.sh "$(bash_json 'ssh 192.168.111.1 docker ps')" "ssh-docker: bridge allowed"
-check 0 pre-bash/block-ssh-file-write.sh "$(bash_json 'ssh host "cat /etc/criu/runc.conf 2>&1; ls"')" "ssh-file-write: stderr redirect is a read"
-check 0 pre-bash/block-ssh-file-write.sh "$(bash_json 'ssh host "cat /var/log/x >/dev/null 2>&1"')" "ssh-file-write: dev-null read ok"
-check 0 pre-bash/block-long-sleep.sh "$(bash_json 'sleep 10')" "long-sleep: 10s ok"
+check 0 guards/block_git_amend.py "$(bash_json 'git status')" "amend: benign"
+check 0 guards/block_ssh_docker.py "$(bash_json 'ssh 192.168.111.1 docker ps')" "ssh-docker: bridge allowed"
+check 0 guards/block_ssh_file_write.py "$(bash_json 'ssh host "cat /etc/criu/runc.conf 2>&1; ls"')" "ssh-file-write: stderr redirect is a read"
+check 0 guards/block_ssh_file_write.py "$(bash_json 'ssh host "cat /var/log/x >/dev/null 2>&1"')" "ssh-file-write: dev-null read ok"
+check 0 guards/block_long_sleep.py "$(bash_json 'sleep 10')" "long-sleep: 10s ok"
 # The sanctioned terminal-state CI watch (see .claude/skills/ci-watch/SKILL.md)
 # must pass all three CI-poll guards. This is the ATTEMPT-STABLE form: it waits
 # for the same run_attempt to be complete twice, because the watchdog re-runs a
@@ -1262,34 +1498,34 @@ check 0 pre-bash/block-long-sleep.sh "$(bash_json 'sleep 10')" "long-sleep: 10s 
 # exited on the first `completed`, reported a superseded attempt's verdict as
 # final on 2026-08-25 (console#574).
 WATCH='R=123; P=""; while :; do S=$(gh api "repos/o/r/actions/runs/$R" --jq ".status") || { sleep 20; continue; }; case "$S" in completed*) [ "$P" = "$S" ] && break; P="$S"; sleep 90 ;; *) P=""; sleep 20 ;; esac; done'
-check 0 pre-bash/block-ci-polling.sh "$(bash_bg_json "$WATCH")" "ci-polling: attempt-stable watch ok"
-check 0 pre-bash/block-ci-reverse-poll.sh "$(bash_bg_json "$WATCH")" "ci-reverse-poll: attempt-stable watch ok"
-check 0 pre-bash/block-long-sleep.sh "$(bash_bg_json "$WATCH")" "long-sleep: attempt-stable watch ok in background"
+check 0 guards/block_ci_polling.py "$(bash_bg_json "$WATCH")" "ci-polling: attempt-stable watch ok"
+check 0 guards/block_ci_reverse_poll.py "$(bash_bg_json "$WATCH")" "ci-reverse-poll: attempt-stable watch ok"
+check 0 guards/block_long_sleep.py "$(bash_bg_json "$WATCH")" "long-sleep: attempt-stable watch ok in background"
 # THE CONTROL THAT MATTERS for the max-sleep fix. block-long-sleep.sh used to
 # read the FIRST sleep in the command, so the watch above passed only because
 # its `sleep 20` arm happens to precede its `sleep 90` arm. Reordered, the
 # repo's own recommended recipe was blocked by the repo's own guard. The guard
 # now takes the MAXIMUM, so both orderings behave identically.
 WATCH_REORDERED='R=123; P=""; while :; do S=$(gh api "repos/o/r/actions/runs/$R" --jq ".status"); case "$S" in completed*) P="$S"; sleep 90 ;; *) sleep 20 ;; esac; done'
-check 0 pre-bash/block-long-sleep.sh "$(bash_bg_json "$WATCH_REORDERED")" "long-sleep: arm order does not decide the verdict"
+check 0 guards/block_long_sleep.py "$(bash_bg_json "$WATCH_REORDERED")" "long-sleep: arm order does not decide the verdict"
 # ...and the foreground cap must still bite, or the exemption above is a hole.
-check 2 pre-bash/block-long-sleep.sh "$(bash_json 'sleep 90')" "long-sleep: 90s in the FOREGROUND still blocked"
-check 2 pre-bash/block-long-sleep.sh "$(bash_json "$WATCH")" "long-sleep: the same watch unbackgrounded is blocked"
-check 2 pre-bash/block-long-sleep.sh "$(bash_bg_json 'sleep 900')" "long-sleep: background is not unlimited"
-check 0 pre-bash/block-long-sleep.sh "$(bash_bg_json 'sleep 20')" "long-sleep: short background sleep ok"
+check 2 guards/block_long_sleep.py "$(bash_json 'sleep 90')" "long-sleep: 90s in the FOREGROUND still blocked"
+check 2 guards/block_long_sleep.py "$(bash_json "$WATCH")" "long-sleep: the same watch unbackgrounded is blocked"
+check 2 guards/block_long_sleep.py "$(bash_bg_json 'sleep 900')" "long-sleep: background is not unlimited"
+check 0 guards/block_long_sleep.py "$(bash_bg_json 'sleep 20')" "long-sleep: short background sleep ok"
 
 # --- block-adhoc-sanctioned.sh: the registry-driven guard --------------------
 # It refuses an ad-hoc command when a sanctioned tool exists, reading the table
 # in .claude/hooks/lib/sanctioned.py. Both directions matter more than usual
 # here: this guard sits in front of every Bash call in the session, so an
 # over-broad row would be felt immediately and then removed.
-check 2 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'gh run watch 123 --exit-status')" "adhoc: the banned watch command is refused"
-check 2 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'gh pr edit 574 --body \"x\"')" "adhoc: gh pr edit --body is refused (it exits 1 and does not write)"
-check 2 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'until [ \"$(gh run view $R --json status --jq .status)\" = \"completed\" ]; do :; done')" "adhoc: a hand-rolled status loop is refused"
-check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json '.ci/scripts/ci/ci-trace.py --wait')" "adhoc: the sanctioned tracer passes"
-check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'gh run view 123 --json conclusion,jobs')" "adhoc: a one-shot read is not a watch"
-check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'gh api repos/o/r/pulls/574 -X PATCH -F body=@b.md')" "adhoc: the sanctioned body update passes"
-check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'git status')" "adhoc: an unrelated command passes"
+check 2 guards/block_adhoc_sanctioned.py "$(bash_json 'gh run watch 123 --exit-status')" "adhoc: the banned watch command is refused"
+check 2 guards/block_adhoc_sanctioned.py "$(bash_json 'gh pr edit 574 --body \"x\"')" "adhoc: gh pr edit --body is refused (it exits 1 and does not write)"
+check 2 guards/block_adhoc_sanctioned.py "$(bash_json 'until [ \"$(gh run view $R --json status --jq .status)\" = \"completed\" ]; do :; done')" "adhoc: a hand-rolled status loop is refused"
+check 0 guards/block_adhoc_sanctioned.py "$(bash_json '.ci/scripts/ci/ci-trace.py --wait')" "adhoc: the sanctioned tracer passes"
+check 0 guards/block_adhoc_sanctioned.py "$(bash_json 'gh run view 123 --json conclusion,jobs')" "adhoc: a one-shot read is not a watch"
+check 0 guards/block_adhoc_sanctioned.py "$(bash_json 'gh api repos/o/r/pulls/574 -X PATCH -F body=@b.md')" "adhoc: the sanctioned body update passes"
+check 0 guards/block_adhoc_sanctioned.py "$(bash_json 'git status')" "adhoc: an unrelated command passes"
 # WHAT THE HEREDOC NARROWING BOUGHT. A heredoc body is DATA, never executed, so
 # documentation quoting a banned recipe is not a use of it. This guard keeps
 # reading INSIDE quotes -- the hand-rolled loop above depends on that -- so the
@@ -1303,30 +1539,30 @@ check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json 'git status')" "adhoc: a
 # gate could only fail on it under parallel load, which is how the SIGPIPE race
 # in its own detector came to light.
 ADHOC_WATCH="gh run wat""ch 123 --exit-status"
-check 0 pre-bash/block-adhoc-sanctioned.sh "$(bash_json "cat > doc.md <<'EOF'
+check 0 guards/block_adhoc_sanctioned.py "$(bash_json "cat > doc.md <<'EOF'
 Use $ADHOC_WATCH to follow it
 EOF")" "adhoc CONTROL: a DOC quoting the banned recipe is not a use of it"
 unset ADHOC_WATCH
 # THE CONTROL THAT MATTERS: it must FAIL OPEN on its own breakage. A guard that
 # bricks every command when its registry is missing gets deleted, and then
 # nothing is guarded at all.
-check 0 pre-bash/block-adhoc-sanctioned.sh "$(printf '{"tool_input":{}}')" "adhoc: no command in the payload is not a violation"
+check 0 guards/block_adhoc_sanctioned.py "$(printf '{"tool_input":{}}')" "adhoc: no command in the payload is not a violation"
 
 # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------
 # The operator chose warn over block for hook edits (2026-08-25) because a hard
 # block would have fired six times that day on legitimate work. These pin that
 # it can never block: a warn hook that can block is a block hook nobody reviewed.
-check 0 pre-bash/warn-hook-change.sh "$(bash_json 'git commit -m x')" "warn-hook-change: a commit never blocks"
-check 0 pre-bash/warn-hook-change.sh "$(bash_json 'git status')" "warn-hook-change: an unrelated command never blocks"
+check 0 guards/warn_hook_change.py "$(bash_json 'git commit -m x')" "warn-hook-change: a commit never blocks"
+check 0 guards/warn_hook_change.py "$(bash_json 'git status')" "warn-hook-change: an unrelated command never blocks"
 
 # --- block-ci-polling.sh boundaries, both directions ------------------------
 # These pin the pattern itself. A guard nobody tests either rots into blocking
 # everything (and gets disabled) or stops matching (and guards nothing).
-check 2 pre-bash/block-ci-polling.sh "$(bash_json 'sleep 30 && gh run list --repo rediacc/console')" "ci-polling: classic poll with && blocks"
-check 2 pre-bash/block-ci-polling.sh "$(bash_json 'sleep 20; gh run view 123 --json status')" "ci-polling: classic poll with ; blocks"
-check 0 pre-bash/block-ci-polling.sh "$(bash_json 'gh run view 123 --json status')" "ci-polling: a bare gh run view is not a poll"
-check 0 pre-bash/block-ci-polling.sh "$(bash_json 'sleep 30')" "ci-polling: a bare sleep is not a poll"
-check 0 pre-bash/block-ci-polling.sh "$(bash_json 'while :; do S=$(gh api "repos/o/r/actions/runs/1" --jq .status); sleep 20; done')" "ci-polling: the gh api watch loop is not a gh-run-view poll"
+check 2 guards/block_ci_polling.py "$(bash_json 'sleep 30 && gh run list --repo rediacc/console')" "ci-polling: classic poll with && blocks"
+check 2 guards/block_ci_polling.py "$(bash_json 'sleep 20; gh run view 123 --json status')" "ci-polling: classic poll with ; blocks"
+check 0 guards/block_ci_polling.py "$(bash_json 'gh run view 123 --json status')" "ci-polling: a bare gh run view is not a poll"
+check 0 guards/block_ci_polling.py "$(bash_json 'sleep 30')" "ci-polling: a bare sleep is not a poll"
+check 0 guards/block_ci_polling.py "$(bash_json 'while :; do S=$(gh api "repos/o/r/actions/runs/1" --jq .status); sleep 20; done')" "ci-polling: the gh api watch loop is not a gh-run-view poll"
 
 # THE ACCEPTED FALSE POSITIVE, PINNED ON PURPOSE.
 #
@@ -1349,23 +1585,23 @@ check 0 pre-bash/block-ci-polling.sh "$(bash_json 'while :; do S=$(gh api "repos
 # ("sleeps 90s" is not `sleep +[0-9]+`; a `done;` sits between the sleep and the
 # gh in the until-loop form), so they failed on correct code -- a test pinning a
 # false positive that could not occur. These two are the real triggers.
-check 2 pre-bash/block-ci-polling.sh "$(bash_json "cat > doc.md <<'EOF'
+check 2 guards/block_ci_polling.py "$(bash_json "cat > doc.md <<'EOF'
 Poll with sleep 20; gh run view \$R --json status
 EOF")" "ci-polling: prose showing an INLINE poll is blocked on purpose (operator ruling 2026-08-25)"
-check 2 pre-bash/block-long-sleep.sh "$(bash_json "git commit -F - <<'MSG'
+check 2 guards/block_long_sleep.py "$(bash_json "git commit -F - <<'MSG'
 its sleep 20 arm precedes its sleep 90 arm
 MSG")" "long-sleep: a commit message quoting a literal long sleep is blocked on purpose (operator ruling 2026-08-25)"
 # The BOUNDARY, and the reason the false positive is narrower than it sounds:
 # prose showing the SANCTIONED until-loop is NOT blocked, because a `done;` sits
 # between its sleep and its gh. Only an inline `sleep N; gh run view` trips it.
-check 0 pre-bash/block-ci-polling.sh "$(bash_json "cat > doc.md <<'EOF'
+check 0 guards/block_ci_polling.py "$(bash_json "cat > doc.md <<'EOF'
 R=1; until [ \"\$(gh run view \$R --json status)\" = c ]; do sleep 20; done; gh run view \$R
 EOF")" "ci-polling: prose showing the sanctioned until-loop is NOT blocked"
 
 # ...and the sanctioned escape hatch must keep working, or the ruling above is
 # a trap rather than a trade-off: the same content passed by PATH is fine.
-check 0 pre-bash/block-ci-polling.sh "$(bash_json 'python3 /tmp/patch_the_docs.py')" "ci-polling: the documented workaround (file by path) passes"
-check 0 pre-bash/block-long-sleep.sh "$(bash_json 'git commit -F /tmp/commit-msg.txt')" "long-sleep: the documented workaround (message by path) passes"
+check 0 guards/block_ci_polling.py "$(bash_json 'python3 /tmp/patch_the_docs.py')" "ci-polling: the documented workaround (file by path) passes"
+check 0 guards/block_long_sleep.py "$(bash_json 'git commit -F /tmp/commit-msg.txt')" "long-sleep: the documented workaround (message by path) passes"
 
 # The self-matching pgrep waiter. The FIRE case is the literal shape that ran
 # 70 minutes past its condition on 2026-08-26; the first control is the
@@ -1373,7 +1609,7 @@ check 0 pre-bash/block-long-sleep.sh "$(bash_json 'git commit -F /tmp/commit-msg
 # not match its own literal text, which is the same property the hook tests
 # with. The last two keep the scope honest: a one-shot diagnostic and an
 # artifact waiter are not this bug and must not be refused.
-check 2 pre-bash/block-self-matching-pgrep.sh \
+check 2 guards/block_self_matching_pgrep.py \
     "$(bash_json "until ! pgrep -f 'some-suite.sh' >/dev/null 2>&1; do sleep 5; done")" \
     "self-pgrep: a loop whose pattern matches its own command line"
 # THE PREMISE, MEASURED RATHER THAN ASSERTED. Every control around it proves the
@@ -1415,23 +1651,23 @@ printf '#!/usr/bin/env bash\nsleep 8\n' >"$RS_TMP/running-fixture.sh"
 bash "$RS_TMP/running-fixture.sh" &
 RS_PID=$!
 sleep 0.3
-check 2 pre-edit/block-edit-of-running-script.sh \
+check 2 guards/block_edit_of_running_script.py \
     "$(printf '{"tool_input":{"file_path":"%s"}}' "$RS_TMP/running-fixture.sh")" \
     "running-script: editing a .sh a live process is executing is refused"
-check 0 pre-edit/block-edit-of-running-script.sh \
+check 0 guards/block_edit_of_running_script.py \
     "$(printf '{"tool_input":{"file_path":"%s"}}' "$RS_TMP/idle-fixture.sh")" \
     "running-script CONTROL: a .sh nothing is running is untouched"
-check 0 pre-edit/block-edit-of-running-script.sh \
+check 0 guards/block_edit_of_running_script.py \
     "$(printf '{"tool_input":{"file_path":"%s"}}' "$RS_TMP/running-fixture.ts")" \
     "running-script CONTROL: a non-shell file is out of scope"
-check 0 pre-edit/block-edit-of-running-script.sh '{"tool_input":{}}' \
+check 0 guards/block_edit_of_running_script.py '{"tool_input":{}}' \
     "running-script CONTROL: no file_path names nothing"
 # THE SAME WILDCARD BUG AS THE BASH-SIDE TWIN, found by sweeping the class rather than by
 # being bitten a second time. Both guards built their pattern by interpolating the
 # basename RAW, so a one-letter name plus the shell suffix gave `[x].sh` -- and `.` is a
 # wildcard, so for `b` that matches /bin/bash, every bash process alive. Fixing one door
 # and not the other would have left this one open.
-check 0 pre-edit/block-edit-of-running-script.sh \
+check 0 guards/block_edit_of_running_script.py \
     "$(printf '{"tool_input":{"file_path":"%s/b.sh"}}' "$RS_TMP")" \
     "running-script CONTROL: a one-letter name does not match /bin/bash"
 # THE MENTION-VS-EXECUTION BYPASS, review-found on PR #579. A real incident hit
@@ -1455,7 +1691,7 @@ RS_NONSHELL_NAME="rs-nonshell-fixture-$$.sh"
 bash -c 'exec -a "$1" sleep 8' -- "$RS_NONSHELL_NAME" &
 RS_NONSHELL_PID=$!
 sleep 0.3
-check 0 pre-edit/block-edit-of-running-script.sh \
+check 0 guards/block_edit_of_running_script.py \
     "$(printf '{"tool_input":{"file_path":"%s"}}' "$RS_TMP/$RS_NONSHELL_NAME")" \
     "running-script CONTROL: a NON-SHELL process carrying the name in argv is not running it"
 kill "$RS_NONSHELL_PID" 2>/dev/null || true
@@ -1465,7 +1701,7 @@ RS_PROSE_NAME="rs-prose-fixture-$$.sh"
 bash -c 'read x' -- "a long prose payload mentioning $RS_PROSE_NAME deep inside it, not as an invocation" &
 RS_PROSE_PID=$!
 sleep 0.3
-check 0 pre-edit/block-edit-of-running-script.sh \
+check 0 guards/block_edit_of_running_script.py \
     "$(printf '{"tool_input":{"file_path":"%s"}}' "$RS_TMP/$RS_PROSE_NAME")" \
     "running-script CONTROL: a SHELL process mentioning the name outside argv position is not running it"
 kill "$RS_PROSE_PID" 2>/dev/null || true
@@ -1476,7 +1712,7 @@ kill "$RS_PID" 2>/dev/null || true
 wait "$RS_PID" 2>/dev/null || true
 # CONTROL THAT MATTERS: once the process is gone the guard must go QUIET, or it
 # would block every edit to any script that was ever run.
-check 0 pre-edit/block-edit-of-running-script.sh \
+check 0 guards/block_edit_of_running_script.py \
     "$(printf '{"tool_input":{"file_path":"%s"}}' "$RS_TMP/running-fixture.sh")" \
     "running-script CONTROL: the guard goes quiet once the process exits"
 rm -rf "$RS_TMP"
@@ -1497,16 +1733,16 @@ printf '#!/usr/bin/env bash\nsleep 8\n' >"$BW_TMP/myLongbw-fixture.sh"
 bash "$BW_TMP/bw-fixture.sh" &
 BW_PID=$!
 sleep 0.3
-check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/bw-fixture.sh")" "bash-write: a redirect onto a live script is refused"
-check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "sed -i s/a/b/ $BW_TMP/bw-fixture.sh")" "bash-write: an in-place edit of a live script is refused"
-check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "cp other.sh $BW_TMP/bw-fixture.sh")" "bash-write: copying over a live script is refused"
+check 2 guards/block_bash_write_to_running_script.py "$(bash_json "echo x > $BW_TMP/bw-fixture.sh")" "bash-write: a redirect onto a live script is refused"
+check 2 guards/block_bash_write_to_running_script.py "$(bash_json "sed -i s/a/b/ $BW_TMP/bw-fixture.sh")" "bash-write: an in-place edit of a live script is refused"
+check 2 guards/block_bash_write_to_running_script.py "$(bash_json "cp other.sh $BW_TMP/bw-fixture.sh")" "bash-write: copying over a live script is refused"
 # WRITE INTENT, not the filename. Every second command here names a .sh path;
 # blocking on the name alone is the over-matching that gets a guard switched
 # off, and this session produced twelve instances of exactly that class.
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "cat $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: READING a live script is not writing to it"
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "bash $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: RUNNING it is not writing to it"
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "grep -n sleep $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: grepping it is not writing to it"
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/never-run.sh")" "bash-write CONTROL: a .sh nothing is running is untouched"
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "cat $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: READING a live script is not writing to it"
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "bash $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: RUNNING it is not writing to it"
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "grep -n sleep $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: grepping it is not writing to it"
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "echo x > $BW_TMP/never-run.sh")" "bash-write CONTROL: a .sh nothing is running is untouched"
 # THE TARGET NAME ITSELF BECAME A WILDCARD, round six and a different mechanism from the
 # five before it. `pat` interpolated the basename RAW, so a one-letter name plus the shell
 # suffix produced `[x].sh` -- and `.` is a regex wildcard, so for the letter `b` that
@@ -1514,7 +1750,7 @@ check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $B
 # TypeScript control whose FIXTURE filename was one letter long was refused, naming
 # `/bin/bash --init-file ...` as the job it would corrupt, with no such script running.
 : >"$BW_TMP/b.sh"
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/b.sh")" \
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "echo x > $BW_TMP/b.sh")" \
     "bash-write CONTROL: a one-letter name does not match /bin/bash"
 # ROUND FIVE OF "A MENTION IS NOT A TARGET", measured 2026-09-01. Writing a plain
 # markdown file was refused because its PROSE contained
@@ -1523,26 +1759,26 @@ check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $B
 # reproduced the same block. Four earlier rounds of this class are recorded in the
 # guard's own comments; none of them was this one, because `-` before `>` was never
 # considered. A real redirect's `>` follows whitespace, start-of-string or a digit.
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "$(printf 'cat > agent/NOTES.md <<MD\nthe suite is check:ci-hook-worklist-suite -> %s\nMD' "$BW_TMP/bw-fixture.sh")")" "bash-write CONTROL: an ASCII arrow in prose is not a redirect"
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "$(printf 'cat > agent/NOTES.md <<MD\nthe suite is check:ci-hook-worklist-suite -> %s\nMD' "$BW_TMP/bw-fixture.sh")")" "bash-write CONTROL: an ASCII arrow in prose is not a redirect"
 # The two redirect FORMS the arrow fix had to keep working. Neither was covered.
-check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x >> $BW_TMP/bw-fixture.sh")" "bash-write: an APPEND onto a live script is refused"
-check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "foo 2> $BW_TMP/bw-fixture.sh")" "bash-write: a NUMBERED stderr redirect is still a redirect"
+check 2 guards/block_bash_write_to_running_script.py "$(bash_json "echo x >> $BW_TMP/bw-fixture.sh")" "bash-write: an APPEND onto a live script is refused"
+check 2 guards/block_bash_write_to_running_script.py "$(bash_json "foo 2> $BW_TMP/bw-fixture.sh")" "bash-write: a NUMBERED stderr redirect is still a redirect"
 # The guard header names `p.write_text(...)` as the idiom it exists for, and it caught that
 # spelling while `open(path, "w").write(...)`, the commoner one, walked through its
 # write-detector untouched. Verified missed 2026-08-27, then closed.
-check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "python3 - <<PY
+check 2 guards/block_bash_write_to_running_script.py "$(bash_json "python3 - <<PY
 open('$BW_TMP/bw-fixture.sh', 'w').write('x')
 PY")" "bash-write: open(path,w) in a heredoc is refused, not only write_text"
 # Naming a live script in the CONTENT you write elsewhere is not writing to it. The broad
 # scan got this wrong, and a guard that blocks correct commands is a guard people route
 # around, which costs more than the block saves.
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "printf '%s' 'bash $BW_TMP/bw-fixture.sh' > $BW_TMP/other-target.sh")" "bash-write CONTROL: MENTIONING a live script while writing a different file"
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "printf '%s' 'bash $BW_TMP/bw-fixture.sh' > $BW_TMP/other-target.sh")" "bash-write CONTROL: MENTIONING a live script while writing a different file"
 # THE SAME DISTINCTION ON THE HEREDOC PATH, which is a different branch: the redirect
 # above is caught by the precise grep, while a python heredoc falls to the broad scan
 # that takes every .sh token in the command. That branch had no mention-control, so it
 # refused three honest edits in a row on 2026-08-27 -- each one writing documentation
 # that quoted a rebuild command while a peer happened to be running that script.
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "python3 - <<PY
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "python3 - <<PY
 p = '$BW_TMP/notes.py'
 open(p, 'w').write('docs: bash $BW_TMP/bw-fixture.sh')
 PY")" "bash-write CONTROL: a heredoc writing a .py that MENTIONS a live script"
@@ -1553,7 +1789,7 @@ PY")" "bash-write CONTROL: a heredoc writing a .py that MENTIONS a live script"
 # one. Fixed by requiring a space on both sides of `=`: every ruff-formatted real target
 # assignment in this repo has one; a bash env-assignment never can (bash forbids spaces
 # around `=`, or it is a syntax error).
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "python3 - <<PY
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "python3 - <<PY
 p = '$BW_TMP/other-guard.py'
 s = open(p).read()
 s = s.replace('X', 'ROUTE=\"./$BW_TMP/bw-fixture.sh devbox exec\"')
@@ -1562,7 +1798,7 @@ PY")" "bash-write CONTROL: a bash-shaped assignment MENTION inside replacement t
 # And the hole that narrowing could have opened: when NO target position is
 # identifiable, the broad scan must still fire. Without this the fix would trade a
 # false positive for a silent miss, which is the worse of the two.
-check 2 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "python3 - <<PY
+check 2 guards/block_bash_write_to_running_script.py "$(bash_json "python3 - <<PY
 import pathlib
 pathlib.Path(*['$BW_TMP/bw-fixture.sh']).write_text('x')
 PY")" "bash-write: unidentifiable target falls back to the broad scan"
@@ -1573,40 +1809,46 @@ PY")" "bash-write: unidentifiable target falls back to the broad scan"
 BW_ARGV_PID=""
 python3 -c 'import sys,time; time.sleep(45)' "$BW_TMP/argv-only.sh" >/dev/null 2>&1 &
 BW_ARGV_PID=$!
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/argv-only.sh")" "bash-write CONTROL: a NON-SHELL process carrying the name in argv is not running it"
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "echo x > $BW_TMP/argv-only.sh")" "bash-write CONTROL: a NON-SHELL process carrying the name in argv is not running it"
 kill "$BW_ARGV_PID" 2>/dev/null
 # A DECOY WHOSE NAME CONTAINS THE LIVE ONE. `pgrep -f` matches anywhere in a
 # command line, so a bare basename matched by SUBSTRING: the candidate `ver.sh`
 # (itself a phantom, see below) matched a running `wslServer.sh`, and the guard
 # reported VS Code's server as the job about to be corrupted. The pattern now
 # anchors to a path boundary.
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/myLongbw-fixture.sh")" "bash-write CONTROL: a name CONTAINING the live one is not the live one"
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "echo x > $BW_TMP/myLongbw-fixture.sh")" "bash-write CONTROL: a name CONTAINING the live one is not the live one"
 # A VARIABLE EXPANSION IS NOT A FILENAME. `"$SP/mp-$ver.sh"` yielded the
 # candidate `ver.sh` -- the tail of a variable name plus the suffix, naming a
 # file that exists nowhere. The guard cannot know what $ver expands to, so it
 # must not guess; both defects fired on one command while measuring this guard.
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json 'python3 - "$SP/mp-$ver.sh" "$SP/out-$ver.sh" && x.write_text(1)')" "bash-write CONTROL: a variable expansion yields no phantom candidate"
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json 'python3 - "$SP/mp-$ver.sh" "$SP/out-$ver.sh" && x.write_text(1)')" "bash-write CONTROL: a variable expansion yields no phantom candidate"
 # A HOOK-CHAIN SIBLING IS NOT A RUNNING JOB. Every pre-bash guard executes on
 # every Bash call, so without this exclusion the guard blocked all four of the
 # commands repairing it -- permanently, with no moment of quiet to wait for.
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "sed -i s/a/b/ $DIR/pre-bash/block-binary-deploy.sh")" "bash-write CONTROL: a chain evaluator is not a job you can corrupt"
+#
+# THE SUBJECT MOVED, the case did not. This named block-binary-deploy.sh until
+# the W5 P7 cutover ported it to Python and moved the bash original out of the
+# chain; the payload has to name a bash guard that is STILL registered in the
+# pre-bash chain, or it stops being an instance of the exclusion it controls.
+# block-pathspecless-git-commit.sh is the one that is left.
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "sed -i s/a/b/ $DIR/pre-bash/block-pathspecless-git-commit.sh")" "bash-write CONTROL: a chain evaluator is not a job you can corrupt"
 kill "$BW_PID" 2>/dev/null || true
 wait "$BW_PID" 2>/dev/null || true
 # THE CONTROL THAT MATTERS: liveness, not the filename. Without this the guard
 # could be keyed on the name and every case above would still pass.
-check 0 pre-bash/block-bash-write-to-running-script.sh "$(bash_json "echo x > $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: the guard goes quiet once the process exits"
+check 0 guards/block_bash_write_to_running_script.py "$(bash_json "echo x > $BW_TMP/bw-fixture.sh")" "bash-write CONTROL: the guard goes quiet once the process exits"
 rm -rf "$BW_TMP"
 unset BW_TMP BW_PID
-check 2 pre-bash/block-self-matching-pgrep.sh \
+check 2 guards/block_self_matching_pgrep.py \
     "$(bash_json 'until ! pgrep -f "some-suite.sh" >/dev/null; do sleep 2; done')" \
     "self-pgrep: the double-quoted form too"
-check 0 pre-bash/block-self-matching-pgrep.sh \
+check 0 guards/block_self_matching_pgrep.py \
     "$(bash_json "until ! pgrep -f '[s]ome-suite.sh' >/dev/null 2>&1; do sleep 5; done")" \
     "self-pgrep CONTROL: the bracket-class remedy is allowed"
-check 0 pre-bash/block-self-matching-pgrep.sh \
+check 0 guards/block_self_matching_pgrep.py \
     "$(bash_json 'pgrep -cf some-suite.sh')" \
     "self-pgrep CONTROL: a one-shot count is not a wait loop"
-check 0 pre-bash/block-self-matching-pgrep.sh \
+check 0 guards/block_self_matching_pgrep.py \
     "$(bash_json 'until [ -s out.txt ]; do sleep 5; done')" \
     "self-pgrep CONTROL: an artifact waiter names no process at all"
 # THE SIXTH MENTION-AS-EXECUTION FALSE POSITIVE OF THIS SESSION, and it was in
@@ -1614,10 +1856,10 @@ check 0 pre-bash/block-self-matching-pgrep.sh \
 # tested INDEPENDENTLY, so a one-shot `pgrep -cf` sharing a line with the
 # ordinary English word "while" -- in a worklist message, not a loop -- read as a
 # wedged waiter. The pgrep must sit in the loop's CONDITION.
-check 0 pre-bash/block-self-matching-pgrep.sh \
+check 0 guards/block_self_matching_pgrep.py \
     "$(bash_json 'echo "alive: $(pgrep -cf x.sh)"; worklist.py --add me "blocked while the suite runs"')" \
     "self-pgrep CONTROL: a one-shot count beside the WORD while is not a loop"
-check 2 pre-bash/block-self-matching-pgrep.sh \
+check 2 guards/block_self_matching_pgrep.py \
     "$(bash_json 'while pgrep -f "my-job.sh" >/dev/null; do sleep 2; done')" \
     "self-pgrep: the while form fires like the until form"
 # Branch names are MMDD-N with no suffix. The FIRE cases are the two shapes
@@ -1626,25 +1868,25 @@ check 2 pre-bash/block-self-matching-pgrep.sh \
 # the first draft of the hook let it through -- its escape hatch for start-point
 # refs skipped any candidate containing a slash -- and only the control caught
 # it. The SILENT cases keep reads, deletes and start points out of scope.
-check 2 pre-bash/block-nonstandard-branch-name.sh \
+check 2 guards/block_nonstandard_branch_name.py \
     "$(bash_json 'git branch 0826-1-prerebase 0826-1')" \
     "branch-name: a suffixed safety copy is refused"
-check 2 pre-bash/block-nonstandard-branch-name.sh \
+check 2 guards/block_nonstandard_branch_name.py \
     "$(bash_json 'git checkout -b feature/my-thing')" \
     "branch-name: a slashed feature name is refused"
-check 2 pre-bash/block-nonstandard-branch-name.sh \
+check 2 guards/block_nonstandard_branch_name.py \
     "$(bash_json 'git switch -c wip')" \
     "branch-name: a bare word is refused"
-check 2 pre-bash/block-nonstandard-branch-name.sh \
+check 2 guards/block_nonstandard_branch_name.py \
     "$(bash_json 'git branch -m 0826-3 0826-3-backup')" \
     "branch-name: renaming INTO a suffix is refused"
-check 0 pre-bash/block-nonstandard-branch-name.sh \
+check 0 guards/block_nonstandard_branch_name.py \
     "$(bash_json 'git branch -m 0826-3-prerebase 0826-4')" \
     "branch-name CONTROL: renaming OUT of a suffix is how you FIX it"
-check 0 pre-bash/block-nonstandard-branch-name.sh \
+check 0 guards/block_nonstandard_branch_name.py \
     "$(bash_json 'git checkout -b 0826-5 origin/main')" \
     "branch-name CONTROL: a legal name with a remote start point"
-check 0 pre-bash/block-nonstandard-branch-name.sh \
+check 0 guards/block_nonstandard_branch_name.py \
     "$(bash_json 'git branch --show-current')" \
     "branch-name CONTROL: a read is not a creation"
 # The PR-TASK trailer guard shipped this session with NO cases in either
@@ -1676,14 +1918,14 @@ UT_EID=$(grep -oE '^`?PR-TASK:[[:space:]]*[0-9a-f]{6,32}`?$' "$UT_SNAP" 2>/dev/n
 # epic, and it says so out loud rather than silently not running.
 UT_ID="${UT_EID:-f2757830}"
 UT_MSG=$(printf 'feat(x): a thing\n\nPR-TASK: %s' "$UT_ID")
-check 0 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -m \"$UT_MSG\"")" \
+check 0 guards/block_untagged_commit.py "$(bash_json "git commit -m \"$UT_MSG\"")" \
     "untagged-commit CONTROL: a real trailer passes"
-check 2 pre-bash/block-untagged-commit.sh "$(bash_json 'git commit -m "feat(x): a thing"')" \
+check 2 guards/block_untagged_commit.py "$(bash_json 'git commit -m "feat(x): a thing"')" \
     "untagged-commit: a message with no trailer is refused"
-check 2 pre-bash/block-untagged-commit.sh \
+check 2 guards/block_untagged_commit.py \
     "$(bash_json 'git commit -m "feat(x): mentions PR-TASK in prose but has no trailer"')" \
     "untagged-commit: a MENTION is not a trailer (anchored to line start)"
-check 0 pre-bash/block-untagged-commit.sh "$(bash_json 'cat m.txt | git commit -F -')" \
+check 0 guards/block_untagged_commit.py "$(bash_json 'cat m.txt | git commit -F -')" \
     "untagged-commit CONTROL: a PIPED message is genuinely unreadable, so it ALLOWS"
 # `-F` USED TO BE EXEMPTED OUTRIGHT, and that is the form every message longer
 # than one line uses -- 36 consecutive commits in one session passed this guard
@@ -1692,16 +1934,16 @@ check 0 pre-bash/block-untagged-commit.sh "$(bash_json 'cat m.txt | git commit -
 # disk. These four pin that.
 UT_HD_OK=$(printf 'git commit -q -F - <<%s\nfeat(x): a thing\n\nPR-TASK: %s\nMSG' "'MSG'" "$UT_ID")
 UT_HD_NO=$(printf 'git commit -q -F - <<%s\nfeat(x): a thing\n\nno trailer\nMSG' "'MSG'")
-check 0 pre-bash/block-untagged-commit.sh "$(bash_json "$UT_HD_OK")" \
+check 0 guards/block_untagged_commit.py "$(bash_json "$UT_HD_OK")" \
     "untagged-commit: a heredoc body IS read, and a real trailer in it passes"
-check 2 pre-bash/block-untagged-commit.sh "$(bash_json "$UT_HD_NO")" \
+check 2 guards/block_untagged_commit.py "$(bash_json "$UT_HD_NO")" \
     "untagged-commit: a heredoc with NO trailer is refused (was silently allowed)"
 UT_DIR="$(mktemp -d)"
 printf 'feat(x): a thing\n\nPR-TASK: %s\n' "$UT_ID" >"$UT_DIR/ok.txt"
 printf 'feat(x): a thing\n\nno trailer\n' >"$UT_DIR/no.txt"
-check 0 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -F $UT_DIR/ok.txt")" \
+check 0 guards/block_untagged_commit.py "$(bash_json "git commit -F $UT_DIR/ok.txt")" \
     "untagged-commit: -F <file> is READ from disk, and a real trailer passes"
-check 2 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -F $UT_DIR/no.txt")" \
+check 2 guards/block_untagged_commit.py "$(bash_json "git commit -F $UT_DIR/no.txt")" \
     "untagged-commit: -F <file> with no trailer is refused (was silently allowed)"
 rm -rf "$UT_DIR"
 # A TYPO IS WORSE THAN A MISSING TRAILER: it LOOKS tagged, so `git log --grep`
@@ -1711,20 +1953,20 @@ rm -rf "$UT_DIR"
 if [ -n "$UT_EID" ]; then
     UT_TYPO_ID="${UT_EID%?}$(printf '%s' "${UT_EID: -1}" | tr '0-9a-f' '1-9a-f0')"
     UT_TYPO=$(printf 'feat(x): a thing\n\nPR-TASK: %s' "$UT_TYPO_ID")
-    check 2 pre-bash/block-untagged-commit.sh "$(bash_json "git commit -m \"$UT_TYPO\"")" \
+    check 2 guards/block_untagged_commit.py "$(bash_json "git commit -m \"$UT_TYPO\"")" \
         "untagged-commit: an id naming NO epic is refused, not just a missing one"
 else
     PASS=$((PASS + 1))
     printf 'ok   [--] untagged-commit: NOT VERIFIED here -- no epic in %s, so there is no set to judge an id against\n' \
         "${UT_SNAP#"$UT_ROOT/"}"
 fi
-check 0 pre-bash/block-untagged-commit.sh "$(bash_json 'git status')" \
+check 0 guards/block_untagged_commit.py "$(bash_json 'git status')" \
     "untagged-commit CONTROL: a non-commit is out of scope"
 unset UT_MSG UT_HD_OK UT_HD_NO UT_TYPO UT_TYPO_ID UT_DIR UT_SNAP UT_EID UT_ROOT UT_BR UT_ID
-check 0 pre-bash/block-nonstandard-branch-name.sh \
+check 0 guards/block_nonstandard_branch_name.py \
     "$(bash_json 'git branch -d 0826-2')" \
     "branch-name CONTROL: a delete is not a creation"
-check 0 pre-bash/block-nonstandard-branch-name.sh \
+check 0 guards/block_nonstandard_branch_name.py \
     "$(bash_json 'git checkout 0826-3')" \
     "branch-name CONTROL: checking out an existing branch is not a creation"
 # THE TWO FALSE POSITIVES THIS HOOK SHIPPED WITH, both found by the hook
@@ -1736,43 +1978,43 @@ check 0 pre-bash/block-nonstandard-branch-name.sh \
 BN_ASSIGN=$(printf 'SLASH=%sgit checkout -b some/name%s; echo hi' "'" "'")
 BN_HEREDOC=$(printf 'git commit -F - <<%sMSG%s\nprose naming git checkout -b some/name here\nMSG' "'" "'")
 BN_AFTER=$(printf 'git commit -F - <<%sMSG%s\nprose about a name\nMSG\ngit switch -c nope' "'" "'")
-check 0 pre-bash/block-nonstandard-branch-name.sh "$(bash_json "$BN_ASSIGN")" \
+check 0 guards/block_nonstandard_branch_name.py "$(bash_json "$BN_ASSIGN")" \
     "branch-name CONTROL: a variable assignment holding the words runs nothing"
-check 0 pre-bash/block-nonstandard-branch-name.sh "$(bash_json "$BN_HEREDOC")" \
+check 0 guards/block_nonstandard_branch_name.py "$(bash_json "$BN_HEREDOC")" \
     "branch-name CONTROL: the shape named inside a heredoc BODY is prose"
-check 2 pre-bash/block-nonstandard-branch-name.sh "$(bash_json "$BN_AFTER")" \
+check 2 guards/block_nonstandard_branch_name.py "$(bash_json "$BN_AFTER")" \
     "branch-name: a real creation AFTER a heredoc still fires"
 # The sanctioned terminal-state CI watch (see .claude/agents/pr-babysitter.md) must pass all three CI-poll guards.
 WATCH='R=123; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs'
-check 0 pre-bash/block-ci-polling.sh "$(bash_json "$WATCH")" "ci-polling: terminal-state watch ok"
-check 0 pre-bash/block-ci-reverse-poll.sh "$(bash_json "$WATCH")" "ci-reverse-poll: terminal-state watch ok"
-check 0 pre-bash/block-long-sleep.sh "$(bash_json "$WATCH")" "long-sleep: terminal-state watch ok"
-check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git push')" "force-push: plain push ok"
+check 0 guards/block_ci_polling.py "$(bash_json "$WATCH")" "ci-polling: terminal-state watch ok"
+check 0 guards/block_ci_reverse_poll.py "$(bash_json "$WATCH")" "ci-reverse-poll: terminal-state watch ok"
+check 0 guards/block_long_sleep.py "$(bash_json "$WATCH")" "long-sleep: terminal-state watch ok"
+check 0 guards/block_git_force_push.py "$(bash_json 'git push')" "force-push: plain push ok"
 # THE CONTROLS THAT MATTER for the widened pattern. A guard that blocks every
 # push is worse than no guard: it gets disabled, and then nothing is guarded.
 # Each of these is an ordinary push that must survive the --mirror/+refspec
 # widening.
-check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush --set-upstream origin feat')" "force-push: --set-upstream ok"
+check 0 guards/block_git_force_push.py "$(bash_json 'git p''ush --set-upstream origin feat')" "force-push: --set-upstream ok"
 # THE CONTROL FOR THE WIDENING ABOVE. The guard now matches any WHITESPACE-preceded
 # plus, so this pins the boundary: a plus INSIDE a token is a legal branch name and
 # must stay allowed. Without this arm, widening the pattern further would silently
 # start refusing legitimate pushes.
-check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush origin HEAD:refs/heads/feature+x')" "force-push: a plus inside a branch name is not a force refspec"
-check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush --tags origin')" "force-push: --tags ok"
+check 0 guards/block_git_force_push.py "$(bash_json 'git p''ush origin HEAD:refs/heads/feature+x')" "force-push: a plus inside a branch name is not a force refspec"
+check 0 guards/block_git_force_push.py "$(bash_json 'git p''ush --tags origin')" "force-push: --tags ok"
 # LOAD-BEARING. This is the exact form the /pr-merge GitLab step uses. If the
 # guard ever matches it, that step dies SILENTLY -- a blocked hook is an exit 2
 # the step never distinguishes from a push that simply did not happen. Note how
 # close it comes: `--follow-tags` begins `--f`, one character from the `-f` arm.
-check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git p''ush gitlab refs/heads/main:refs/heads/main --follow-tags')" "force-push: the /pr-merge GitLab refspec push is NOT blocked"
+check 0 guards/block_git_force_push.py "$(bash_json 'git p''ush gitlab refs/heads/main:refs/heads/main --follow-tags')" "force-push: the /pr-merge GitLab refspec push is NOT blocked"
 # The `[^|;&]*` boundary, asserted rather than assumed: a forcing flag on the far
 # side of a pipe belongs to a different command, so the scan must stop at the
 # pipe instead of pairing it with the push.
-check 0 pre-bash/block-git-force-push.sh "$(bash_json 'echo "git p''ush origin main" | grep -q -- --mirror')" "force-push: a flag past a pipe is a different command"
-check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree list')" "worktree-add: list ok"
-check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree remove ../foo')" "worktree-add: remove ok"
-check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git status')" "worktree-add: unrelated git command ok"
-check 0 pre-bash/block-worktree-add.sh "$(bash_json 'echo "lets talk about git worktree add sometime"')" "worktree-add: quoted prose mention ignored"
-check 0 pre-edit/block-suppressions.sh "$(edit_json 'const x = 1;')" "suppressions: clean"
+check 0 guards/block_git_force_push.py "$(bash_json 'echo "git p''ush origin main" | grep -q -- --mirror')" "force-push: a flag past a pipe is a different command"
+check 0 guards/block_worktree_add.py "$(bash_json 'git worktree list')" "worktree-add: list ok"
+check 0 guards/block_worktree_add.py "$(bash_json 'git worktree remove ../foo')" "worktree-add: remove ok"
+check 0 guards/block_worktree_add.py "$(bash_json 'git status')" "worktree-add: unrelated git command ok"
+check 0 guards/block_worktree_add.py "$(bash_json 'echo "lets talk about git worktree add sometime"')" "worktree-add: quoted prose mention ignored"
+check 0 guards/block_suppressions.py "$(edit_json 'const x = 1;')" "suppressions: clean"
 
 # THE NEAR-MISS that `const x = 1;` never tested. block-suppressions' own header
 # named this over-block class as a known risk and nothing asserted against it,
@@ -1780,12 +2022,12 @@ check 0 pre-edit/block-suppressions.sh "$(edit_json 'const x = 1;')" "suppressio
 # the edit repairing it, because the repair's comment named the tokens. A real
 # suppression sits immediately after a comment opener; prose puts words in
 # between, and those words are the whole difference.
-check 0 pre-edit/block-suppressions.sh "$(wf_edit_json 'docs/style.md' "Never write @ts-ignore; fix the type instead.")" "suppressions CONTROL: prose in Markdown naming the directive"
-check 0 pre-edit/block-suppressions.sh "$(wf_edit_json 'a.ts' "// Never write @ts-ignore here -- fix the type.")" "suppressions CONTROL: prose INSIDE a code comment"
-check 0 pre-edit/block-suppressions.sh "$(wf_edit_json 'docs/x.md' "\`\`\`ts
+check 0 guards/block_suppressions.py "$(wf_edit_json 'docs/style.md' "Never write @ts-ignore; fix the type instead.")" "suppressions CONTROL: prose in Markdown naming the directive"
+check 0 guards/block_suppressions.py "$(wf_edit_json 'a.ts' "// Never write @ts-ignore here -- fix the type.")" "suppressions CONTROL: prose INSIDE a code comment"
+check 0 guards/block_suppressions.py "$(wf_edit_json 'docs/x.md' "\`\`\`ts
 // @ts-ignore
 \`\`\`")" "suppressions CONTROL: a fenced example of the wrong way stays writable"
-check 2 pre-edit/block-suppressions.sh "$(wf_edit_json 'a.ts' "const x = 1; // @ts-ignore")" "suppressions: a real directive in a .ts still blocks"
+check 2 guards/block_suppressions.py "$(wf_edit_json 'a.ts' "const x = 1; // @ts-ignore")" "suppressions: a real directive in a .ts still blocks"
 
 # --- inline Python in a JS/TS file ------------------------------------------
 # ZERO cases in either direction until 2026-08-27, and structurally invisible to
@@ -1804,13 +2046,13 @@ def main(argv):
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))
 `;'
-check 2 pre-edit/block-inline-python.sh "$(wf_edit_json 'packages/cli/src/x.ts' "$INLINE_PY")" "inline-python: a Python program inside a .ts is refused"
+check 2 guards/block_inline_python.py "$(wf_edit_json 'packages/cli/src/x.ts' "$INLINE_PY")" "inline-python: a Python program inside a .ts is refused"
 # THE SAME BYTES, a different extension. This is what proves the guard selects
 # on file type rather than sniffing for Python-ish text anywhere.
-check 0 pre-edit/block-inline-python.sh "$(wf_edit_json 'scripts/x.py' "$INLINE_PY")" "inline-python CONTROL: the identical content in a real .py file"
-check 0 pre-edit/block-inline-python.sh "$(wf_edit_json 'docs/x.md' "$INLINE_PY")" "inline-python CONTROL: the identical content in Markdown"
-check 0 pre-edit/block-inline-python.sh "$(wf_edit_json 'packages/cli/src/x.ts' 'export const n: number = 1;')" "inline-python CONTROL: ordinary TypeScript"
-check 0 pre-edit/block-inline-python.sh "$(wf_edit_json 'packages/cli/src/x.ts' 'const cmd = "python3 --version"; // run python here')" "inline-python CONTROL: TypeScript that merely MENTIONS python"
+check 0 guards/block_inline_python.py "$(wf_edit_json 'scripts/x.py' "$INLINE_PY")" "inline-python CONTROL: the identical content in a real .py file"
+check 0 guards/block_inline_python.py "$(wf_edit_json 'docs/x.md' "$INLINE_PY")" "inline-python CONTROL: the identical content in Markdown"
+check 0 guards/block_inline_python.py "$(wf_edit_json 'packages/cli/src/x.ts' 'export const n: number = 1;')" "inline-python CONTROL: ordinary TypeScript"
+check 0 guards/block_inline_python.py "$(wf_edit_json 'packages/cli/src/x.ts' 'const cmd = "python3 --version"; // run python here')" "inline-python CONTROL: TypeScript that merely MENTIONS python"
 unset INLINE_PY
 
 # --- the shell-backgrounded mail waiter -------------------------------------
@@ -1819,9 +2061,9 @@ unset INLINE_PY
 # literal behind a two-stage heredoc stripper: if the stripper ever over-strips,
 # the guard silently becomes a no-op and every existing check stays green. It
 # cannot detect its own neutering, so something else has to.
-check 2 pre-bash/block-shell-background-waiter.sh "$(bash_json 'python3 .claude/hooks/stop/wl_wait.py abc --timeout 60 &')" "background-waiter: a shell & makes it untracked"
-check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json 'python3 .claude/hooks/stop/wl_wait.py abc --timeout 60')" "background-waiter CONTROL: the same command in the foreground"
-check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json 'ps -eo pid,args | grep "[p]ython3.*wl_wait"')" "background-waiter CONTROL: checking whether one already runs"
+check 2 guards/block_shell_background_waiter.py "$(bash_json 'python3 .claude/hooks/stop/wl_wait.py abc --timeout 60 &')" "background-waiter: a shell & makes it untracked"
+check 0 guards/block_shell_background_waiter.py "$(bash_json 'python3 .claude/hooks/stop/wl_wait.py abc --timeout 60')" "background-waiter CONTROL: the same command in the foreground"
+check 0 guards/block_shell_background_waiter.py "$(bash_json 'ps -eo pid,args | grep "[p]ython3.*wl_wait"')" "background-waiter CONTROL: checking whether one already runs"
 # THE QUOTED HEREDOC DELIMITER, which reopened a false positive this guard had already
 # closed once. Quote-stripping runs `s/'[^']*'//g` and turns `<<'EOF'` into a bare `<<`,
 # so the heredoc stripper below it finds no delimiter, never enters the body, and scans
@@ -1831,15 +2073,15 @@ check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json 'ps -eo pid,args 
 # forms are pinned now, and the shell-heredoc bypass stays closed.
 BGW_DOC_Q="$(printf 'worklist.py --state abc <<%sEOF%s\n- wl_wait.py must never run with a shell &.\nEOF' "'" "'")"
 BGW_DOC_U="$(printf 'worklist.py --state abc <<EOF\n- wl_wait.py must never run with a shell &.\nEOF')"
-check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json "$BGW_DOC_Q")" \
+check 0 guards/block_shell_background_waiter.py "$(bash_json "$BGW_DOC_Q")" \
     "background-waiter CONTROL: a QUOTED-delimiter heredoc body is data, not commands"
-check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json "$BGW_DOC_U")" \
+check 0 guards/block_shell_background_waiter.py "$(bash_json "$BGW_DOC_U")" \
     "background-waiter CONTROL: the unquoted-delimiter form too"
-check 2 pre-bash/block-shell-background-waiter.sh \
+check 2 guards/block_shell_background_waiter.py \
     "$(bash_json "$(printf 'bash <<%sEOF%s\npython3 wl_wait.py x &\nEOF' "'" "'")")" \
     "background-waiter: a heredoc feeding a SHELL is still the command"
 unset BGW_DOC_Q BGW_DOC_U
-check 0 pre-bash/block-shell-background-waiter.sh "$(bash_json 'grep -n timeout .claude/hooks/stop/wl_wait.py')" "background-waiter CONTROL: merely reading the module"
+check 0 guards/block_shell_background_waiter.py "$(bash_json 'grep -n timeout .claude/hooks/stop/wl_wait.py')" "background-waiter CONTROL: merely reading the module"
 
 # --- premature `gh pr ready` ------------------------------------------------
 # Four allow cases and NO block case: nothing reached its single exit 2, so if
@@ -1856,7 +2098,7 @@ ready_case() { # ready_case <expected-rc> <ci-conclusion> <command> <label>
     local exp="$1" conclusion="$2" cmd="$3" label="$4" d rc
     d="$(stub_gh "$conclusion" 0)"
     printf '{"tool_input":{"command":%s},"cwd":%s}' "$(jq -Rn --arg c "$cmd" '$c')" "$(jq -Rn --arg c "$PWD" '$c')" |
-        PATH="$d:$PATH" bash "$DIR/pre-bash/block-premature-ready.sh" >/dev/null 2>&1
+        PATH="$d:$PATH" python3 "$GUARD_DISPATCH" block_premature_ready >/dev/null 2>&1
     rc=$?
     rm -rf "$d"
     if [[ "$rc" == "$exp" ]]; then
@@ -1869,11 +2111,23 @@ ready_case() { # ready_case <expected-rc> <ci-conclusion> <command> <label>
 }
 ready_case 2 FAILURE 'gh pr ready 42 --repo rediacc/console' "premature-ready: flipping ready while CI is not SUCCESS is refused"
 ready_case 0 SUCCESS 'gh pr ready 42 --repo rediacc/console' "premature-ready CONTROL: a green CI Complete lets the flip through"
+# AND DIRECTLY, for the reason spelled out at the one-open-PR cases above: after
+# the cutover a helper body no longer names its guard under $DIR, so the coverage
+# reader credited this guard with block=0 while `ready_case 2 FAILURE` above was
+# asserting the block direction on every run. The helper keeps the CI-conclusion
+# matrix; this is the one line the gate can see.
+PR_SAVED_PATH="$PATH"
+PR_STUB_RED="$(stub_gh FAILURE 0)"
+PATH="$PR_STUB_RED:$PATH"
+check 2 guards/block_premature_ready.py "$(bash_json 'gh pr ready 42 --repo rediacc/console')" "premature-ready: a red CI Complete refuses the flip"
+PATH="$PR_SAVED_PATH"
+rm -rf "$PR_STUB_RED"
+unset PR_SAVED_PATH PR_STUB_RED
 # INVERTED 2026-08-09: a well-shaped whole-file Write used to PASS here, and
 # that is the hole the incident went through. It is now denied like every other
 # direct write, and it lives up in the deny block above only in spirit -- it is
 # asserted here, beside its controls, so the pair reads as one decision.
-check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/deadbeef/STATE.md content "$STATE_GOOD")" "agent-state: well-shaped Write is ALSO blocked (shape was never the defect)" "worklist.py --state"
+check_out 2 guards/block_agent_state_shape.py "$(tool_json Write /r/agent/deadbeef/STATE.md content "$STATE_GOOD")" "agent-state: well-shaped Write is ALSO blocked (shape was never the defect)" "worklist.py --state"
 # The controls that keep the guard from being a blanket denial: it must not
 # reach RULES.md (sharpened by ordinary edits), the root-level plans, the
 # tree's own README, or anything outside the notes tree at all.
@@ -1886,20 +2140,20 @@ check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/dead
 # what proves the guard fires at all: break the pattern in the hook so it
 # matches nothing, and THEY go red while every line below stays green. That
 # one-minute mutation is how this block was checked rather than assumed.
-check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/agent/RULES.md new_string sharpen)" "agent-state: the shared RULES.md edits untouched"
-check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/agent/deadbeef/RULES.md new_string sharpen)" "agent-state: a session's own RULES.md untouched"
-check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/packages/cli/src/foo.ts content tiny)" "agent-state: non-agent files untouched"
-check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/TRAPS.md content "$STATE_GOOD")" "agent-state: TRAPS.md untouched"
-check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/README.md content "$STATE_GOOD")" "agent-state: the notes tree README untouched"
-check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/agent/PLAN-thing.md content "$STATE_GOOD")" "agent-state: root-level plan files untouched"
+check 0 guards/block_agent_state_shape.py "$(tool_json Edit /r/agent/RULES.md new_string sharpen)" "agent-state: the shared RULES.md edits untouched"
+check 0 guards/block_agent_state_shape.py "$(tool_json Edit /r/agent/deadbeef/RULES.md new_string sharpen)" "agent-state: a session's own RULES.md untouched"
+check 0 guards/block_agent_state_shape.py "$(tool_json Write /r/packages/cli/src/foo.ts content tiny)" "agent-state: non-agent files untouched"
+check 0 guards/block_agent_state_shape.py "$(tool_json Write /r/.agent/TRAPS.md content "$STATE_GOOD")" "agent-state: TRAPS.md untouched"
+check 0 guards/block_agent_state_shape.py "$(tool_json Write /r/agent/README.md content "$STATE_GOOD")" "agent-state: the notes tree README untouched"
+check 0 guards/block_agent_state_shape.py "$(tool_json Write /r/agent/PLAN-thing.md content "$STATE_GOOD")" "agent-state: root-level plan files untouched"
 # The docs trees are committed prose that this guard must not own, and they are
 # the paths a `*/agent/*/STATE.md` pattern would swallow by accident. Both
 # names are asserted: the standing docs live in docs/agent-reference/ since the
 # 2026-08-14 move, and docs/agent/ is what that tree was called before.
-check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/docs/agent/b/s/STATE.md content "$STATE_GOOD")" "agent-state: docs/agent/ is not this guard's tree"
-check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/docs/agent-reference/b/s/STATE.md content "$STATE_GOOD")" "agent-state: docs/agent-reference/ is not this guard's tree either"
-check 0 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_THIN")" "inline-workflow-run: thin block ok"
-check 0 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json 'packages/cli/src/foo.ts' "$WF_FAT")" "inline-workflow-run: non-workflow file ok"
+check 0 guards/block_agent_state_shape.py "$(tool_json Write /r/docs/agent/b/s/STATE.md content "$STATE_GOOD")" "agent-state: docs/agent/ is not this guard's tree"
+check 0 guards/block_agent_state_shape.py "$(tool_json Write /r/docs/agent-reference/b/s/STATE.md content "$STATE_GOOD")" "agent-state: docs/agent-reference/ is not this guard's tree either"
+check 0 guards/block_inline_workflow_run.py "$(wf_edit_json '.github/workflows/x.yml' "$WF_THIN")" "inline-workflow-run: thin block ok"
+check 0 guards/block_inline_workflow_run.py "$(wf_edit_json 'packages/cli/src/foo.ts' "$WF_FAT")" "inline-workflow-run: non-workflow file ok"
 
 # --- warn-remote-drift: needs a real repo pair (a bare origin, a stale local),
 # because its subject is git state, not the command string. The origin is a
@@ -1913,10 +2167,10 @@ git clone -q "$DRIFT_TMP/origin.git" "$DRIFT_TMP/stale" 2>/dev/null
 git -C "$DRIFT_TMP/writer" -c user.email=t@t -c user.name=t commit -q --allow-empty -m c2
 git -C "$DRIFT_TMP/writer" push -q origin main 2>/dev/null
 export CLAUDE_PROJECT_DIR="$DRIFT_TMP/stale"
-check 2 pre-bash/warn-remote-drift.sh "$(bash_json 'git push')" "remote-drift: push from a stale local is blocked"
+check 2 guards/warn_remote_drift.py "$(bash_json 'git push')" "remote-drift: push from a stale local is blocked"
 export CLAUDE_PROJECT_DIR="$DRIFT_TMP/writer"
-check 0 pre-bash/warn-remote-drift.sh "$(bash_json 'git push')" "remote-drift: aligned local pushes freely"
-check 0 pre-bash/warn-remote-drift.sh "$(bash_json 'git status')" "remote-drift: non-push commands untouched"
+check 0 guards/warn_remote_drift.py "$(bash_json 'git push')" "remote-drift: aligned local pushes freely"
+check 0 guards/warn_remote_drift.py "$(bash_json 'git status')" "remote-drift: non-push commands untouched"
 
 # --- pr-babysit ROUND LOG: the truncation guard, both directions ------------
 # On 2026-08-19 a heartbeat tick refreshed the STATUS block with
@@ -1942,36 +2196,36 @@ PY"
 RLOG_REAL="$(mktemp -d)/reports/pr-babysit-0818-1.md"
 mkdir -p "$(dirname "$RLOG_REAL")"
 printf '## Wave header\nx\n## STATUS (round 1, t)\ny\n## Rounds\nhistory\n' >"$RLOG_REAL"
-check 2 pre-edit/block-roundlog-write.sh "$(tool_json Write "$RLOG_REAL" content x)" "roundlog: a whole-file Write over an EXISTING log is blocked"
+check 2 guards/block_roundlog_write.py "$(tool_json Write "$RLOG_REAL" content x)" "roundlog: a whole-file Write over an EXISTING log is blocked"
 # The exemption, and the reason it is safe: nothing to swallow.
-check 0 pre-edit/block-roundlog-write.sh "$(tool_json Write "$RLOG" content x)" "roundlog CONTROL: CREATING one passes -- a file that does not exist has no appendix"
-check 0 pre-edit/block-roundlog-write.sh "$(tool_json Edit "$RLOG_REAL" new_string x)" "roundlog: a targeted Edit of an existing log passes"
-check 0 pre-edit/block-roundlog-write.sh "$(tool_json Edit "$RLOG" new_string x)" "roundlog: a targeted Edit passes (it cannot swallow an unnamed appendix)"
-check 0 pre-edit/block-roundlog-write.sh "$(tool_json Write /r/reports/pr-babysit-0818-1-briefing.md content x)" "roundlog: a briefing has its own contract, not this guard's"
-check 0 pre-edit/block-roundlog-write.sh "$(tool_json Write packages/www/src/x.astro content x)" "roundlog: an unrelated file is untouched"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "$RL_HEREDOC")" "roundlog: the exact 2026-08-19 heredoc is blocked"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi > $RLOG")" "roundlog: truncating redirection is blocked"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "sed -i s/a/b/ $RLOG")" "roundlog: sed -i is blocked"
+check 0 guards/block_roundlog_write.py "$(tool_json Write "$RLOG" content x)" "roundlog CONTROL: CREATING one passes -- a file that does not exist has no appendix"
+check 0 guards/block_roundlog_write.py "$(tool_json Edit "$RLOG_REAL" new_string x)" "roundlog: a targeted Edit of an existing log passes"
+check 0 guards/block_roundlog_write.py "$(tool_json Edit "$RLOG" new_string x)" "roundlog: a targeted Edit passes (it cannot swallow an unnamed appendix)"
+check 0 guards/block_roundlog_write.py "$(tool_json Write /r/reports/pr-babysit-0818-1-briefing.md content x)" "roundlog: a briefing has its own contract, not this guard's"
+check 0 guards/block_roundlog_write.py "$(tool_json Write packages/www/src/x.astro content x)" "roundlog: an unrelated file is untouched"
+check 2 guards/block_roundlog_truncate.py "$(bash_json "$RL_HEREDOC")" "roundlog: the exact 2026-08-19 heredoc is blocked"
+check 2 guards/block_roundlog_truncate.py "$(bash_json "echo hi > $RLOG")" "roundlog: truncating redirection is blocked"
+check 2 guards/block_roundlog_truncate.py "$(bash_json "sed -i s/a/b/ $RLOG")" "roundlog: sed -i is blocked"
 # A NAME IS NOT A TARGET. The python arm used to fire on any write idiom as soon as a
 # round-log name appeared ANYWHERE in the command. Measured 2026-08-27: it refused a
 # heredoc editing a scratchpad state-body file whose CONTENT quoted a round-log path --
 # a write that could not have touched a round log. None of the 23 existing cases for
 # this guard separated the two, which is how it survived.
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+check 0 guards/block_roundlog_truncate.py "$(bash_json "python3 - <<PY
 q = '/tmp/scratch/state-body.md'
 open(q, 'w').write('see $RLOG for the round history')
 PY")" "roundlog CONTROL: a python write to a DIFFERENT .md that merely QUOTES a round log"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+check 2 guards/block_roundlog_truncate.py "$(bash_json "python3 - <<PY
 open('$RLOG', 'w').write('x')
 PY")" "roundlog: a python write whose open() TARGET is the log is blocked"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+check 2 guards/block_roundlog_truncate.py "$(bash_json "python3 - <<PY
 q = '$RLOG'
 open(q, 'w').write('x')
 PY")" "roundlog: a python write whose ASSIGNED target is the log is blocked"
 # FAIL CLOSED, and this is the case that makes the narrowing safe rather than merely
 # quieter: no resolvable literal target, a slicing write_text, a round-log name in the
 # command. That is the 2026-08-19 shape verbatim and it must still fire.
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+check 2 guards/block_roundlog_truncate.py "$(bash_json "python3 - <<PY
 import pathlib
 q = pathlib.Path(*['$RLOG'.split('/')[-1]])
 q.write_text(s[:i] + new)
@@ -1980,21 +2234,21 @@ PY")" "roundlog: an UNRESOLVABLE target still fires (fail closed)"
 # round log since it was written; their python spelling was never covered, so
 # shutil.copy and os.replace onto the log both returned 0 -- a one-line rename walked
 # through a guard that read as thorough. Measured 2026-08-27.
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+check 2 guards/block_roundlog_truncate.py "$(bash_json "python3 - <<PY
 import shutil
 shutil.copy('/tmp/x', '$RLOG')
 PY")" "roundlog: shutil.copy ONTO the log is a write, and is blocked"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+check 2 guards/block_roundlog_truncate.py "$(bash_json "python3 - <<PY
 import os
 os.replace('/tmp/x', '$RLOG')
 PY")" "roundlog: os.replace ONTO the log is a write, and is blocked"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+check 2 guards/block_roundlog_truncate.py "$(bash_json "python3 - <<PY
 import shutil
 shutil.move('/tmp/x', '$RLOG')
 PY")" "roundlog: shutil.move ONTO the log is a write, and is blocked"
 # And the control that keeps the new arm from becoming a blanket refusal: a copy
 # between two innocent paths, with the log named only in a comment.
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "python3 - <<PY
+check 0 guards/block_roundlog_truncate.py "$(bash_json "python3 - <<PY
 import shutil
 # see $RLOG for the round history
 shutil.copy('/tmp/a.md', '/tmp/scratch/n.md')
@@ -2018,7 +2272,7 @@ unset RLOG_REAL
 DL_LOG="$(mktemp -d)/reports/pr-babysit-zz-deadlock-probe.md"
 mkdir -p "$(dirname "$DL_LOG")"
 rm -f "$DL_LOG" # must NOT exist: creation is the case under test
-echo "$(tool_json Write "$DL_LOG" content x)" | bash "$DIR/pre-edit/block-roundlog-write.sh" >/dev/null 2>&1
+echo "$(tool_json Write "$DL_LOG" content x)" | python3 "$GUARD_DISPATCH" block_roundlog_write >/dev/null 2>&1
 dl_guard=$?
 python3 "$DIR/stop/worklist.py" --roundlog zz-deadlock-probe >/dev/null 2>&1 <<'DLEOF'
 run:      probe
@@ -2049,24 +2303,24 @@ else
 fi
 rm -rf "$(dirname "$(dirname "$DL_LOG")")"
 unset DL_LOG dl_guard dl_verb
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "echo hi >> $RLOG")" "roundlog: appending passes (it cannot truncate)"
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "grep -n STATUS $RLOG")" "roundlog: reading passes"
+check 0 guards/block_roundlog_truncate.py "$(bash_json "echo hi >> $RLOG")" "roundlog: appending passes (it cannot truncate)"
+check 0 guards/block_roundlog_truncate.py "$(bash_json "grep -n STATUS $RLOG")" "roundlog: reading passes"
 # THE UNDER-BLOCK REGRESSIONS, found in review 2026-08-19 and each reproduced against the
 # live hook before it was fixed. All three are ways a command that genuinely TRUNCATES the
 # log was waved through, which is worse than an over-block: the guard reported safety it
 # was not providing. Every one has an allow-twin below so the fix cannot be "block more
 # until quiet".
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee --output-error=warn $RLOG")" "roundlog: tee --output-error=warn truncates, and is not an -a"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee -a /tmp/other.txt | tee $RLOG")" "roundlog: a decoy -a on another file does not license a bare tee"
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee --append $RLOG")" "roundlog: long --append is a real append"
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee -ai $RLOG")" "roundlog: a short bundle containing a is a real append"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee $RLOG")" "roundlog: a bare tee still truncates"
+check 2 guards/block_roundlog_truncate.py "$(bash_json "tee --output-error=warn $RLOG")" "roundlog: tee --output-error=warn truncates, and is not an -a"
+check 2 guards/block_roundlog_truncate.py "$(bash_json "tee -a /tmp/other.txt | tee $RLOG")" "roundlog: a decoy -a on another file does not license a bare tee"
+check 0 guards/block_roundlog_truncate.py "$(bash_json "tee --append $RLOG")" "roundlog: long --append is a real append"
+check 0 guards/block_roundlog_truncate.py "$(bash_json "tee -ai $RLOG")" "roundlog: a short bundle containing a is a real append"
+check 2 guards/block_roundlog_truncate.py "$(bash_json "tee $RLOG")" "roundlog: a bare tee still truncates"
 # cp names the log as a SOURCE here, which is a read, and backing the log up is the most
 # useful thing a session can do with it. mv in the same position is NOT a read: it removes
 # the log from its path, so the two verbs are deliberately treated differently.
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "cp $RLOG /tmp/backup.md")" "roundlog: cp with the log as SOURCE is a read"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "cp /tmp/new.md $RLOG")" "roundlog: cp ONTO the log still blocked"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "mv $RLOG /tmp/backup.md")" "roundlog: mv away removes the log, still blocked"
+check 0 guards/block_roundlog_truncate.py "$(bash_json "cp $RLOG /tmp/backup.md")" "roundlog: cp with the log as SOURCE is a read"
+check 2 guards/block_roundlog_truncate.py "$(bash_json "cp /tmp/new.md $RLOG")" "roundlog: cp ONTO the log still blocked"
+check 2 guards/block_roundlog_truncate.py "$(bash_json "mv $RLOG /tmp/backup.md")" "roundlog: mv away removes the log, still blocked"
 # THE OVER-BLOCK REGRESSIONS. Found in review, then reproduced twice against the
 # live hook within minutes: the truncating verbs were matched ANYWHERE in the
 # command rather than anchored to the log, so `truncate` hit this script's own
@@ -2074,16 +2328,16 @@ check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "mv $RLOG /tmp/backup.m
 # a command line with a round-log READ. The guard blocked `cat <log>`. Each case
 # below is one of those, and each has a still-blocks twin above or below it, so
 # the fix cannot be "loosen until quiet".
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "cp /tmp/a /tmp/b && grep STATUS $RLOG")" "roundlog: an unrelated cp beside a read passes"
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "grep STATUS $RLOG && mv /tmp/x /tmp/y")" "roundlog: an unrelated mv beside a read passes"
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "ls .claude/hooks/pre-bash/block-roundlog-truncate.sh; cat $RLOG")" "roundlog: the hook's OWN filename beside a read passes"
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee -a $RLOG < /tmp/x")" "roundlog: tee -a passes (it cannot truncate)"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "cp /tmp/x $RLOG")" "roundlog: cp ONTO the log is blocked"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "mv /tmp/x $RLOG")" "roundlog: mv ONTO the log is blocked"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "tee $RLOG < /tmp/x")" "roundlog: tee WITHOUT -a is blocked"
-check 2 pre-bash/block-roundlog-truncate.sh "$(bash_json "truncate -s 0 $RLOG")" "roundlog: truncate on the log is blocked"
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json "worklist.py --roundlog 0818-1")" "roundlog: the sanctioned verb passes"
-check 0 pre-bash/block-roundlog-truncate.sh "$(bash_json 'npm run ci')" "roundlog: an unrelated command is untouched"
+check 0 guards/block_roundlog_truncate.py "$(bash_json "cp /tmp/a /tmp/b && grep STATUS $RLOG")" "roundlog: an unrelated cp beside a read passes"
+check 0 guards/block_roundlog_truncate.py "$(bash_json "grep STATUS $RLOG && mv /tmp/x /tmp/y")" "roundlog: an unrelated mv beside a read passes"
+check 0 guards/block_roundlog_truncate.py "$(bash_json "ls .claude/hooks/guards/block_roundlog_truncate.py; cat $RLOG")" "roundlog: the hook's OWN filename beside a read passes"
+check 0 guards/block_roundlog_truncate.py "$(bash_json "tee -a $RLOG < /tmp/x")" "roundlog: tee -a passes (it cannot truncate)"
+check 2 guards/block_roundlog_truncate.py "$(bash_json "cp /tmp/x $RLOG")" "roundlog: cp ONTO the log is blocked"
+check 2 guards/block_roundlog_truncate.py "$(bash_json "mv /tmp/x $RLOG")" "roundlog: mv ONTO the log is blocked"
+check 2 guards/block_roundlog_truncate.py "$(bash_json "tee $RLOG < /tmp/x")" "roundlog: tee WITHOUT -a is blocked"
+check 2 guards/block_roundlog_truncate.py "$(bash_json "truncate -s 0 $RLOG")" "roundlog: truncate on the log is blocked"
+check 0 guards/block_roundlog_truncate.py "$(bash_json "worklist.py --roundlog 0818-1")" "roundlog: the sanctioned verb passes"
+check 0 guards/block_roundlog_truncate.py "$(bash_json 'npm run ci')" "roundlog: an unrelated command is untouched"
 unset CLAUDE_PROJECT_DIR
 rm -rf "$DRIFT_TMP"
 
@@ -2260,13 +2514,15 @@ fi
 # Empty output still fails: a suite that prints nothing has not demonstrated it
 # did anything, and exit 0 alone is what a stub returns.
 for mod in context/test-context-bands.py \
-    pre-bash/test-block-destructive-git-restore.py \
-    pre-bash/test-block-git-amend.py \
-    pre-bash/test-block-unverified-push.py \
-    pre-bash/test-block-host-toolchain-run.py \
+    ../rediacc_hooks/guards/test-block_destructive_git_restore.py \
+    ../rediacc_hooks/guards/test-block_git_amend.py \
+    ../rediacc_hooks/guards/test-block_unverified_push.py \
+    ../rediacc_hooks/guards/test-block_host_toolchain_run.py \
     stop/test-completion-evidence.py \
     stop/test-always-tier.py \
     stop/test-planfile.py \
+    stop/test-planindex.py \
+    stop/test-planrec.py \
     stop/test-reggate-ledger.py; do
     if [[ ! -f "$DIR/$mod" ]]; then
         FAIL=$((FAIL + 1))

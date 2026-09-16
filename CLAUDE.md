@@ -249,9 +249,16 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 
 | Package | Description |
 |---------|-------------|
-| `packages/cli/` | `rdc` CLI tool (Commander.js); includes SSH/SFTP/sync/terminal utilities under `src/shared-desktop/` |
+| `packages/cli/` | `rdc` CLI tool (Commander.js); includes SSH/SFTP/sync/terminal utilities under `src/remote/` |
 | `packages/www/` | Marketing website (Astro) |
 | `packages/shared/` | Shared types, config, services (consumed by cli, www, account) |
+
+## Search first
+
+Before creating a new file, gate, doc, or provider, search the tree for whether it already
+exists — under a different name, built by another session, or documented somewhere a plan
+doesn't point to. Several campaign boxes closed by finding the work already landed and only
+the record was stale, not by doing it again.
 
 ## CLI (`packages/cli/`)
 
@@ -267,32 +274,20 @@ e.g. `repo up --all -m <machine>`).
 # Full machine status (SSH + renet list all)
 rdc machine status <machine>
 
-# Filter by section
-rdc machine status <machine> --system
+# Filter by section: --system --containers --services --repositories --network --block-devices
 rdc machine status <machine> --containers
-rdc machine status <machine> --services
-rdc machine status <machine> --repositories
-rdc machine status <machine> --network
-rdc machine status <machine> --block-devices
 
-# SSH terminal: one positional target, either a machine name or a repo ref
+# SSH terminal: one positional target, a machine name or a repo ref
+# (a repo ref sets DOCKER_HOST and the working dir); -c runs one command
 rdc term connect <machine>
-
-# SSH terminal to repo (sets DOCKER_HOST, working dir)
 rdc term connect <repo>
-
-# Run command on machine
 rdc term connect <machine> -c "command"
 
 # Deploy/update a repository (machine derived from the ref)
 rdc repo up <repo>
 
-# File sync (directory)
+# File sync: a directory, or one file with --remote-file
 rdc repo sync upload <repo> --local ./local-path
-rdc repo sync download <repo> --local ./local-path
-
-# File sync (single file, explicit remote path)
-rdc repo sync upload <repo> --local ./config.toml --remote-file etc/config.toml
 rdc repo sync download <repo> --local ./out --remote-file etc/config.toml
 
 # Container logs / exec
@@ -303,61 +298,30 @@ rdc repo exec <repo> -c <container> -- <command>
 rdc vscode connect <repo>
 ```
 
-### Run Functions (escape hatch, debugging only)
-
-`rdc run` executes Rediaccfile functions remotely. It is hidden from help and MCP, and is for
-debugging only. Prefer the dedicated commands above. The function name is passed with `-f`.
-
-```bash
-rdc run -f container_list -m <machine> --param repository=<repo>
-rdc run -f container_logs -m <machine> --param repository=<repo> --param container=<name>
-rdc run -f container_exec -m <machine> --param repository=<repo> --param container=<name> --param command="..."
-rdc run -f container_restart -m <machine> --param repository=<repo> --param container=<name>
-```
-
 ### Config Setup
 
-```bash
-# Default config (~/.config/rediacc/rediacc.json) is created automatically on first use
-rdc config init production          # Create named config
-rdc repo list                       # List repos with name -> GUID mapping
-rdc --config production machine status prod-1  # Use specific config
-```
+The default config (`~/.config/rediacc/rediacc.json`) is created automatically on first use.
+`rdc config init <name>` creates a named one, `--config <name>` selects it, and
+`rdc config current` shows the active one.
 
 ### CLI Code Structure
 
-```
-packages/cli/src/
-├── commands/           # Command implementations (hand-registered Commander subtrees)
-│   ├── machine/        # machine subcommands (query filters, provision.ts = OpenTofu VM provision/destroy)
-│   ├── config.ts        # Config management (replaces context)
-│   ├── term.ts          # SSH terminal
-│   ├── repo-sync.ts     # File sync via rsync (`repo sync`)
-│   ├── vscode.ts        # VS Code Remote SSH
-│   └── repo.ts          # Repository management
-├── remote/             # SSH, SFTP, rsync, terminal, VS Code server modules (was shared-desktop/)
-├── services/           # Business logic, grouped by domain (concrete modules, no barrels)
-│   ├── state.ts          # getStateProvider() - local, config-file-backed state provider
-│   ├── account/          # account-client, license, cert-cache, subscription-{auth,device-auth}
-│   ├── backup/           # backup-schedule{,-execute,-reconcile,-unit-generator}, backup-env-file
-│   ├── config/           # config-base, config-resources{,-resolve}, config-{prune,refs-prune,network-id,server-client}, resource-state
-│   ├── core/             # cross-cutting: audit{,-log}, output, mutation-gate, master-password, file-lock, embedded-assets, context-language, vscode-server-remote
-│   ├── executor/         # local-executor, ops-executor
-│   ├── machine/          # machine-connection, machine-status, ssh-connection
-│   ├── provision/        # infra-provision, cloudflare-dns, region-discovery
-│   ├── renet/            # renet-execution, renet-provisioner, renet-binary-transfer, renet-license-contract
-│   ├── repo/             # repo-{key-deployment,mount-check,secrets-store,ssh-tunnel}, prune, storage-browser
-│   ├── telemetry/        # telemetry{,-attrs,-setup}, otlp-credentials, profiling
-│   ├── tofu/             # OpenTofu cloud-VM provisioning engine
-│   ├── update/           # updater, background-updater, update-state
-│   └── __tests__/        # unit tests (central, mirrors commands/__tests__)
-└── utils/             # cross-command helpers: command-policy, agent-guard, config-schema,
-                       # errors, platform, repo-{classify,target,executor}
-```
+`packages/cli/src/` splits four ways, and the split is the thing to know rather than the file
+list, which `ls` derives and a pasted tree does not:
+
+- `commands/` hand-registered Commander subtrees, one file or directory per command
+- `remote/` SSH, SFTP, rsync, terminal, VS Code server modules (this was `shared-desktop/`)
+- `services/` business logic grouped by domain, concrete modules with no barrels: `account/`,
+  `backup/`, `config/`, `core/`, `executor/`, `machine/`, `provision/`, `renet/`, `repo/`,
+  `telemetry/`, `update/`, `tofu/` (the OpenTofu cloud-VM provisioning engine, reached from
+  `commands/machine/provision.ts`), plus `state.ts` for `getStateProvider()`
+- `utils/` cross-command helpers (command policy, agent guard, config schema, errors, platform, repo classify/target/executor)
+
+Unit tests are central under `services/__tests__/`, mirroring `commands/__tests__/`.
 
 ### How the Local Adapter Works
 
-The CLI reads machine/repo config from `~/.config/rediacc/rediacc.json` (or other named config file) and connects via SSH directly. LocalResourceState reads from the config file directly.
+The CLI reads machine and repo config from the active config file and connects over SSH directly; `LocalResourceState` reads that file directly too.
 
 ## Terminology
 
@@ -370,104 +334,28 @@ When writing documentation, help text, error messages, or code comments, follow 
 
 ## i18n / Translations
 
-English (`packages/www/src/i18n/translations/en.json`) is the source of truth; the 12
-other locales are derived. **Read `docs/i18n/CONVENTIONS.md` before touching any
-translation.** Key rules:
+English (`packages/www/src/i18n/translations/en.json`) is the source of truth; the 12 other
+locales are DERIVED and **naturalized** — idiomatic, never word-for-word. Optimize English
+first, then lock it with `npm run i18n:generate-hashes`; on an English change re-translate
+only the delta. `check-i18n-naturalization` blocks `check:i18n` when a naturalized key goes
+stale.
 
-- English must read as natural, daily language (grade 5-7 for marketing; technical for
-  docs). Optimize English first, then lock it: after any English value change run
-  `npm run i18n:generate-hashes`.
-- Non-English values are **naturalized** (native, idiomatic phrasing, NOT literal /
-  word-for-word). Never bulk-replace a locale file with machine/literal translations.
-- Preserve every `{{placeholder}}`, HTML tag, number, and product name; mirror English
-  keys/order/structure; change values only.
-- **On English change, re-translate only the delta**: `npm run i18n:naturalize-status`
-  lists the stale keys; re-naturalize just those via `private/growth/i18n_pipeline`
-  (`./run.sh --lang <lang> --surface <surface>` — its ledger skips already-done keys).
-- **Use `--model haiku`** (the default, cheapest capable model — English/Turkish were
-  done on haiku; the ledger records the model per language). Only bump to sonnet/opus
-  for a language whose haiku output reads awkward. Cost compounds ×12 languages.
-- `check-i18n-naturalization` is a blocking gate in `check:i18n`: it fails when an
-  already-naturalized key goes stale (English changed without re-naturalizing).
+**Read [docs/i18n/CONVENTIONS.md](docs/i18n/CONVENTIONS.md) before touching any translation.**
+It carries the pipeline, the per-language ledger, and why `--model haiku` is the default.
 
-## `./run.sh setup` — one command per machine
+## Local environment (setup, devbox, `./rdc.sh`)
 
-`./run.sh setup` prepares a machine and hands back a URL. It is idempotent: a
-second run installs nothing, pulls nothing and recreates nothing.
+`./run.sh setup` prepares a machine idempotently and hands back a URL: host tools, docker, the
+devcontainer image, then ONE devbox container per worktree behind a shared traefik proxy, so the
+machine publishes exactly one port. `./run.sh devbox up|status|stop|shell|logs` drives it.
+Servers inside the devbox must bind `0.0.0.0` (`REDIACC_DEV_BIND`) or traefik answers 502.
 
-    1. host tools   node >= 22, plus jq/zstd/curl/git (jq's absence used to make
-                    the renet build silently ship without embedded assets)
-    2. docker       Go (go.dev tarball, version parsed from private/renet/go.mod)
-                    -> build renet -> `sudo renet install-docker --source=docker-repo`.
-                    The official docker.com repo, NOT docker.io. Skipped entirely
-                    when docker already works.
-    3. image        ghcr.io/rediacc/devcontainer:latest, with a local build from
-                    .devcontainer/Dockerfile as the fallback (that registry is
-                    private; pulling it needs a token with `read:packages`)
-    4. devbox       ONE container per worktree
+Bare `./rdc.sh` targets PRODUCTION. Local development is an explicit opt-in, `./rdc.sh --dev`
+(or `RDC_DEV=1`); bench is just another config, `./rdc.sh --config bench`. There is no
+`RDC_PROD` or `RDC_BENCH`.
 
-`./run.sh devbox up|status|stop|remove|shell|logs` drives the container directly,
-and `./run.sh setup --check` reports what is missing without changing anything.
-
-**One published port for the whole machine.** A shared `traefik:v3.6` container
-(`rediacc-devbox-proxy`, `.ci/lib/devbox.sh`) publishes `DEVBOX_PROXY_PORT` and routes
-by **Host header** to `<worktree>.localhost` (VS Code), `-account` (the whole app),
-`-db` and `-term` (ttyd on an attach-or-create tmux session, started by
-`devbox-autostart.sh`; a reload re-attaches rather than opening a new shell).
-Host routing rather than path routing is deliberate: every app keeps
-its own root path, so nothing needs `--server-base-path`/`base` configuration. Routes
-come from labels on the devbox container itself, so adding a worktree changes no proxy
-config. This exists because each published port needs its own manual forward on
-ChromeOS; now there is one -- and it is the ONLY one: devbox containers publish no
-ports at all, so the proxy is the sole ingress. `devbox status` PROBES each route
-and reports OK / "no backend yet", because Traefik's bare 502 names neither the
-service nor the reason. Servers started inside the devbox must bind `0.0.0.0`
-(`REDIACC_DEV_BIND`) or the proxy cannot reach them and Traefik answers 502.
-
-**The docker-group gap closes itself.** `usermod -aG docker` does not affect the
-shell that ran it, so the classic advice is "log out and back in". `run.sh`
-instead calls `reexec_with_docker_group` (`.ci/lib/local-common.sh`), which checks
-membership in `/etc/group` (NOT `id -nG`, which reports the stale groups of the
-current process — the very thing being worked around), proves `sg docker -c
-"docker version"` succeeds, then re-execs itself under `sg`. One hop, guarded by
-`REDIACC_DOCKER_GROUP_REEXEC`, after which every docker call in the run is plain
-`docker` rather than `sudo docker`.
-
-**`account db` serves sqlite-web, not Drizzle Studio, and that reversal was paid
-for.** Studio's local process serves only an API; its UI is hosted at
-local.drizzle.studio. A real browser (agent-browser) showed Chrome's Local Network
-Access restriction blocking that hosted page from reaching the local server -- the
-page says so itself -- which no proxy change can fix. sqlite-web serves its UI from
-the same origin as the data, so there is no third-party page and no permission to
-grant. `./run.sh account db --studio` keeps the old behaviour. Related trap: Studio's
-API endpoint IS `POST /`, so a redirect on `Path(/)` 307s the API; if you ever add
-one, scope it with `Method(\`GET\`)`.
-
-**One container per worktree, on a stable port.** The port block is derived from
-the worktree's absolute path (`derive_slot`/`find_port_block` in
-`.ci/lib/find-port.sh`), so a bookmarked URL survives a reboot and two worktrees
-never collide. A running container is authoritative for its own ports; the
-`.devbox-state` file is only a cache, and the container is found by the
-`com.rediacc.devbox.worktree` label rather than by name.
-
-**The container runs as YOU.** The image bakes its `vscode` user at UID 7111 and
-chowns `/home/vscode`, `/opt/openvscode-server` (extensions included) and `/go` to
-it. `docker run --user $(id -u)` therefore does NOT work — it leaves that
-ownership untouched, and every extension install fails with EACCES. Instead
-`.devcontainer/devbox-entrypoint.sh` starts as root, renumbers `vscode` to the
-host uid/gid, chowns exactly those three trees, and drops privileges with
-`setpriv`. It also sets `HOME` explicitly, because setpriv changes credentials
-and not the environment.
-
-The repo is bind-mounted at its IDENTICAL host path (never `/workspace`): a git
-worktree's gitdir link is absolute, and a nested `docker -v $(pwd)` is resolved by
-the host daemon. `~/.gitconfig`, `~/.git-credentials`, `~/.config/gh`,
-`~/.claude`, `~/.claude.json` and `~/.config/rediacc` are bound in by name.
-
-**`node_modules` is not shared between host and container** — the host and the
-image have different glibc versions, and `install:natives` builds against
-whichever one it runs on. `REDIACC_NPM_RUNTIME` is part of the `ensure_deps`
-stamp so switching sides forces one honest reinstall instead of a loader error.
+**[docs/agent-reference/local-env.md](docs/agent-reference/local-env.md)** carries the rest, and
+is worth reading BEFORE fighting any of it rather than after.
 
 ## Build & Test
 
@@ -477,24 +365,15 @@ stamp so switching sides forces one honest reinstall instead of a loader error.
 
 ### The 27-line `package-lock.json` flip is npm 11 vs npm 10, and it is cosmetic
 
-A working tree can sprout a `package-lock.json` diff of exactly 27 deletions,
-all `"dev": true`, that nobody remembers making. Do not go hunting for the
-script that "corrupted" it, and do not commit it either:
-
-- **Trigger**: any `npm install`-family write run under the *system* npm 11
-  (`npm install --package-lock-only` reproduces it exactly). npm 11 omits
-  redundant nested dev markers that npm 10 writes. CI pins `npm@10`
-  (`check-lockfile.sh`), so npm 10's form is the canonical one.
-- **NOT the trigger**: `npm run install:natives`. `npm rebuild` does not write
-  the lockfile, verified on both a warm tree and a fresh one straight after
-  `npm@10 ci`. Nor do `npm outdated`, `npm ls`, or `npm audit`.
-- **Impact: none.** All 27 entries sit under `node_modules/tsx/**`, and `tsx`
-  is a devDependency still marked dev at its own node, so npm prunes the whole
-  subtree regardless. `npm@10 ci --omit=dev --dry-run` resolves 179 packages
-  from *either* form, and `check:ci-lockfile` passes both. It is diff noise,
-  not a correctness problem, which is why there is no gate for it.
-- **Fix**: `npx -y npm@10 install --package-lock-only --ignore-scripts`
-  restores the canonical form byte for byte.
+A tree can sprout a `package-lock.json` diff of exactly 27 lines, all `"dev": true`, that
+nobody remembers making. It is npm 10 writing what npm 11 omits, the impact is nil (all 27
+sit under `node_modules/tsx/**`, pruned either way), and the fix is
+`npx -y npm@11 install --package-lock-only --ignore-scripts`. **Do not go hunting for the
+script that "corrupted" it, and do not commit it.** npm 11 is canonical; CI installing under
+npm 10 is not a contradiction, and `check:ci-lockfile` resolves every lockfile under both.
+The reasoning, the clean-room recipe and the retired npm@10 pin live in
+[.ci/scripts/quality/check-lockfile.sh](.ci/scripts/quality/check-lockfile.sh), where the
+enforcement is.
 
 ```bash
 # Install dependencies
@@ -516,227 +395,50 @@ cd packages/www && npm run build
 cd packages/www && npm run dev
 ```
 
-### `./rdc.sh` targets production by default (`RDC_DEV=1` for local dev)
-
-Bare `./rdc.sh` behaves like an installed `rdc`: the default config
-`~/.config/rediacc/rediacc.json` (its `account.*` fields carry the account server;
-there is no `server.json` any more) and its own token at
-`~/.config/rediacc/api-token-rediacc.json`. Each named config is a self-contained
-universe with its own server, keys, machines, and token beside it at
-`api-token-<name>.json`; there are no `.rdc-dev/` or `.rdc-bench/` token files.
-
-Local development against the dev gateway is an explicit opt-in: `./rdc.sh --dev …`
-(or `RDC_DEV=1 ./rdc.sh …`). `--dev` reads `REDIACC_ACCOUNT_SERVER` and
-`X25519_PUBLIC_KEY` from `private/account/.env`, seeds or patches
-`~/.config/rediacc/dev.json` with them, runs with `REDIACC_CONFIG=dev`, and fails
-fast if `./run.sh account dev` isn't running. Bench is just another config now:
-`./rdc.sh --config bench …` replaces the old `RDC_BENCH=1`. There is no `RDC_PROD`
-or `RDC_BENCH` any more. The renet build stays `--nolicense` in all wrapper modes;
-`RDC_RENET_LICENSE=1` is the independent enforcement opt-in (below).
-
-### Iterating on a local SEA (`./rdc.sh --native`)
-
-`./rdc.sh --native` builds the real single-executable binary (Node SEA) from local source and installs it over `~/.local/share/rediacc/bin/rdc`, instead of running via the dev bundle. Use it when iterating on SEA-only behaviors (embedded renet, auto-update gating) that the dev-mode `cli-bundle.cjs` path doesn't exercise. It cross-builds renet for BOTH linux arches into `private/bin` (via `build.sh stage_linux`) so the produced SEA can provision an amd64 or arm64 remote.
-
-The flag runs `ensure_deps` + `ensure_packages_built` first, so edits to `packages/shared` or `packages/provisioning` are picked up by the bundler — those packages resolve through their own `dist/` outputs, and forgetting to rebuild them was a silent footgun. Auto-update is short-circuited via the `VERSION === '0.0.0-dev'` guard in `packages/cli/src/utils/platform.ts::isUpdateDisabled`, so the `--native` binary survives the next `rdc` invocation.
-
-The previous binary is preserved as a backup matching `getOldBinaryPath()` (`<base>.old<ext>` — `rdc.old` on Linux/macOS, `rdc.old.exe` on Windows) so `cleanupOldBinary()` removes it on the next successful update.
-
-The SEA is injected by `.ci/scripts/build/sea-inject/` (a streaming replacement for postject, which could not inject a blob this large — see #525), so a full-fat SEA carrying the entire k8s stack for both arches builds fine.
-
-### Reproducing license-flow bugs in dev (`RDC_RENET_LICENSE=1`)
-
-By default `./rdc.sh` rebuilds renet with the `--nolicense` Go build tag (`pkg/license/runtime_nolicense.go` stub) so dev iteration isn't blocked by license enforcement. That's the right default for everyday work, but it also hides license-flow bugs (e.g. rediacc/console#482) because the renet binary deployed to your test machine never returns `LICENSE_REQUIRED` (exit 10), so the CLI's recovery framework in `packages/cli/src/services/local-executor.ts:632-720` never fires.
-
-To reproduce license-enforcement issues locally, set:
-
-```bash
-ACCOUNT_ED25519_PUBLIC_KEY="<the production ed25519 public key>" \
-RDC_RENET_LICENSE=1 \
-./rdc.sh --config <prod-config> repo push <repo> --to <fresh-machine>
-./rdc.sh --config <prod-config> backup restore <repo> --as <repo> -m <fresh-machine> --up
-```
-
-**Where the key comes from, corrected 2026-07-29.** This block used to fetch it
-with `curl -fsS https://www.rediacc.com/api/public/account-key`. That endpoint
-returns **404** and the account API is not served from `www.rediacc.com` at all
-(its other routes answer `410 Gone` there, while the same paths answer `200` on a
-PR preview worker). There is no public URL for the key today.
-
-CI does not need one: `ACCOUNT_ED25519_PUBLIC_KEY` already exists as an
-**organisation secret** (alongside `ACCOUNT_ED25519_PRIVATE_KEY` and both X25519
-halves), so any workflow can reference it directly. Verify with
-`gh api orgs/rediacc/actions/secrets`.
-
-Locally you must paste the value. GitHub secrets are **write-only** -- `gh` can
-list their names and never their contents -- so there is no command that fetches
-it, and the old one-liner was not merely pointing at a dead URL, it was pointing
-at a shape of solution that cannot exist for a secret.
-
-Whatever you substitute, do NOT pipe an unchecked HTTP response into this
-variable. That was the original bug and it is worth stating plainly: with plain
-`curl -s` a 404 is SILENT, its HTML body becomes the value, and that HTML is
-baked into `keys.ProductionPublicKey` via ldflags. The build succeeds and every
-prod-signed licence then fails as `invalid_signature` -- exactly the symptom this
-variable exists to prevent. The documented cure was producing the disease.
-
-`RDC_RENET_LICENSE=1` drops the `--nolicense` build flag. `ACCOUNT_ED25519_PUBLIC_KEY` must match the account server that issued the licenses on your test machines — for production licenses that's the prod ed25519 public key. The build flow wires this into `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags. Without it, prod-signed licenses fail validation as `invalid_signature`.
-
-After reproducing, unset `RDC_RENET_LICENSE` (or remove from your shell) so subsequent `./rdc.sh` invocations rebuild the dev-friendly nolicense renet again.
-
 ## Versioning
 
-Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits.
+Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits; injected
+at build time only, never stored in source, so every `package.json` carries the
+`0.0.0-dev` placeholder and none is published to npm.
 
-- `resolve-version.sh --current` reads latest tag, `--bump-type patch|minor|major` calculates next
-- Version injected at build time, never stored in source files
-- `package.json` files contain `0.0.0-dev` placeholder (never published to npm)
-
-| Component | Injection method |
-|-----------|-----------------|
-| CLI binary | `CLI_VERSION` env -> esbuild `--define:__CLI_VERSION__` |
-| CLI Docker | Same as CLI binary (bundle built with env) |
-| www footer | `APP_VERSION` env / git tag fallback |
-| renet (Go) | `-ldflags "-X main.Version=..."` |
-
-`bump.sh` still used by: CLI (npm pack tarball name). Runs only on push-to-main.
+**[docs/agent-reference/versioning.md](docs/agent-reference/versioning.md)** carries
+`resolve-version.sh`'s mechanics, the per-component injection table (CLI, CLI Docker, www,
+renet), and `bump.sh`'s two push-to-main-only call sites.
 
 ## Release Channels
 
-The CLI supports two release channels, both production-quality:
-- **stable** (default): Promoted from edge after 7-day soak. Downloaded from `cli/stable/`.
-- **edge**: Continuously deployed production. Tagged + released on every merge to main. Downloaded from `cli/edge/`.
+Two channels, both production-quality: **edge** (continuously deployed on every merge to
+main) and **stable** (the default, promoted from edge after a 7-day soak).
 
-R2 structure: `rediacc-releases/cli/{edge,stable}/{manifest.json,latest.json,rdc-*}`
-
-Environments:
-- `edge.rediacc.com` -- auto-deployed on merge to main, D1 cloned from production daily
-- `www.rediacc.com` -- production, promoted from edge after 7-day soak
+**[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)**
+carries the channel URLs, the R2 layout, and the dispatch commands.
 
 ## Media Assets (tutorial/solution videos + tutorial-narration audio)
 
-Tutorial/solution videos and the tutorial-narration audio cache live in
-Cloudflare R2, not git: bucket `rediacc-www-media`. Videos are served at
-`media.rediacc.com`; this replaced committing media directly under
-`packages/www/public/`, which bloated `.git` and caused CI timeouts on the
-`ubuntu-slim` runner's hard 15-minute cap. Measured across full history on
-2026-08-23: **7,768 blobs / 5,602.6 MB** over four prefixes, not the three
-below. The fourth is `packages/www/public/media/founder/` (138 files, narration
-audio, captions, photos, posters), which was untracked in #512 alongside the
-others but, unlike them, was never mirrored to R2 and never added to
-`packages/www/.gitignore`; see `.ci/docs/r2-media-setup.md` §6. The
-`packages/www/public/assets/{tutorials/video,videos/solutions,tutorials/audio}`
-directories are gitignored and no longer tracked — a fresh checkout has none
-of these files locally; the site fetches videos straight from
-`media.rediacc.com` at runtime (`src/utils/solution-video.ts`,
-`src/plugins/remark-tutorial-embed.ts` read `src/data/video-manifest.json`
-and emit CDN URLs when `PUBLIC_VIDEO_CDN_BASE_URL` is set — see
-`.github/workflows/cd-deploy-worker.yml`'s "Build pages" step). The two CI
-gate scripts (`check-locale-tutorial-assets.ts`, `check-solution-videos.ts`)
-check the manifest, not the local filesystem, so they're unaffected by
-whether media happens to be checked out locally. Because the files leave the
-git tree entirely (not just history), no CI sparse-checkout workaround was
-needed — even a full default `actions/checkout` no longer transfers them.
+Tutorial and solution videos and the tutorial-narration audio cache live in Cloudflare R2
+(bucket `rediacc-www-media`, served at `media.rediacc.com`), not in git. A fresh checkout has
+none of them and does not need them for `npm run dev`: the site fetches from the CDN at runtime
+and the two CI gates check the manifest, not the filesystem.
 
-**Solution-video publishing is gated in a repo this file cannot see.** `check-locale-tutorial-assets.ts`/`check-solution-videos.ts` above verify the *manifest* post-publish, in console CI. What verifies *pre*-publish — that a render pass actually produced all 26 slugs × 13 locales × 3 artifacts (main, vertical, teaser) before anything ships — lives entirely in `private/growth`, a separate, gitignored repo console CI cannot check out or run: `private/growth/.ci/checks/check-locale-completeness.sh --strict` is a mandatory, non-bypassable precondition inside `private/growth/video_pipeline/publish-solutions.sh` (no flag or env var skips it; it runs unconditionally in step 0, before the `--yes` real-upload gate). If you edit `publish-solutions.sh`, keep that call — its removal reopens the exact defect the two console-side gates above only catch after the fact, on manifest content, not before a bad publish ships.
-
-The tutorial-narration `.mp3` cache (`tutorials/audio/`) is a **different
-case**: it's never served to a browser (TTS narration muxed into the final
-`.mp4` at build time by `generate-tutorial-video.ts` /
-`scripts/lib/ffmpeg-video.ts`), so it's synced to the same bucket under
-`tutorials/audio/` purely as a build-time cache — not covered by the Cache
-Rule, only reachable via the S3 API. `./run.sh www tutorials generate|video`
-restores/backs it up automatically (best-effort, skips with a warning if R2
-credentials aren't set) via `www_tutorial_audio_restore` /
-`www_tutorial_audio_upload` in `run.sh`. Regenerating narration costs real
-TTS GPU/electricity, so this cache exists specifically to avoid re-paying
-that cost on a fresh checkout.
-
-See `.ci/docs/r2-media-setup.md` for the full bucket/domain/Cache Rule setup
-plus the audio-cache details (§9), `.ci/scripts/deploy/sync-media-to-r2.sh`
-to push changed media (incremental, `--tutorials-only`/`--solutions-only`/
-`--audio-only`), and `.ci/scripts/deploy/sync-media-from-r2.sh` to restore
-media locally (needed for pipeline development / offline ffmpeg work; not
-needed for normal `npm run dev` browsing). Credentials:
-`CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID`/`CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY`/`CLOUDFLARE_R2_MEDIA_ENDPOINT`
-(org secrets, scoped to `console`); bucket/domain names are org variables
-`R2_MEDIA_BUCKET`/`MEDIA_CDN_DOMAIN`.
-
-**The git-history rewrite LANDED on 2026-08-23** ([#532](https://github.com/rediacc/console/issues/532)),
-so `.git` itself finally shrank: `size-pack` went **5.64 GiB to 182 MiB**, and a
-fresh `git clone --filter=blob:none` is now **49 MB of `.git` in about 10
-seconds**. It removed the four media prefixes above and, in the same pass, 78 AI
-co-author trailers and 16 robot footers from 73 commit messages.
-
-Two consequences worth knowing before they surprise you:
-
-- **Every commit SHA changed.** Anything citing a pre-rewrite SHA (release
-  notes, R2 `.released` sentinels, older `agent/` and `docs/` prose) no longer
-  resolves. The old-to-new map is preserved at `~/commit-map-20260823.txt`.
-  `docs/agent-reference/deleted-branches-20260730.md` is the one file whose
-  stated purpose the rewrite voided; its header says so.
-- **GitHub's reported repository size will lag**, because the old objects become
-  unreachable rather than deleted until GitHub's own gc runs. An unchanged size
-  is not a failed push; the check that matters is that a fresh clone's
-  `HEAD^{tree}` still equals what it was before the rewrite.
-
-CI never paid for the dead blobs anyway: all 11 `fetch-depth: 0` checkouts pass
-`filter: blob:none`. Note that worktrees SHARE one object store, so `.git` was
-never a per-worktree cost. The full procedure, the controls, and the two traps
-it cost to get right are in `agent/PLAN-git-history-media-rewrite.md`.
+**[docs/agent-reference/media-assets.md](docs/agent-reference/media-assets.md)** carries the four
+prefixes, the pre-publish completeness gate that must never leave `publish-solutions.sh`, the
+audio-cache exception to the Cache Rule, the sync scripts, and both consequences of the
+2026-08-23 history rewrite that changed every commit SHA in the repository.
 
 ## CI/CD Pipeline
 
-Single pipeline: CI validates everything BEFORE publish. CD is a thin promote step.
+Single pipeline: CI validates everything BEFORE publish. CD is a thin promote step, and
+if CI fails, CD never triggers.
 
 ```
 CI: quality -> build -> dry-run -> validate install (6 platforms) -> ci-complete
-CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 upload -> deploy edge
+CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 -> deploy edge
 ```
 
-Install validation runs pre-publish against R2 staging artifacts. Docker validated on push-to-main only (PR images are dry-run). If CI fails, CD never triggers.
-
-Release dispatch (EDGE): `gh workflow run "Release to Edge" -f ci_run_id=<id> -f release_mode=patch|retry`
-(the workflow declares only `patch` and `retry`; `minor`/`major` are rejected by GitHub)
-Hotfix (edge + stable): `gh workflow run "Release to Edge" -f ci_run_id=<id> -f release_mode=patch -f publish_stable=true`
-Production (eu/us/asia): `Release to Production` — daily cron after the 7-day soak, or dispatch with `-f force=true`.
-
-## Dev Scripts (`scripts/dev/`)
-
-| Script | Purpose |
-|--------|---------|
-| `deploy-bench.sh` | Deploy account worker to `bench.rediacc.com` (internal-only D1 testing env) |
-| `reset-bench.sh` | Wipe bench D1 + R2 + worker secrets |
-| `backup-d1.sh` | Export production/edge D1 databases to `.backups/` |
-| `lib/cf-auth.sh` | Shared Cloudflare + AWS auth helpers (legacy; only `deploy-bench` still uses it) |
-
-## Secret Rotation (`./run.sh rotation`)
-
-Secret rotation lives in `private/account/scripts/rotation/` (private submodule). The CLI is dispatched via `./run.sh rotation <command>`. State is tracked in a committed manifest at `private/account/rotation-manifest.json` (no secrets — only IDs, timestamps, and states).
-
-| Command | Purpose |
-|---------|---------|
-| `init` | Bootstrap manifest from current AWS/CF state (one-time) |
-| `list` | Show every credential and its current version state |
-| `status` | Show pending grace→inactive and inactive→delete transitions |
-| `check [--for=<consumer>]` | Compare manifest to live platform state; exit 1 on drift |
-| `rotate <slug>` | Mint new credential, push to consumers, mark old as `grace` |
-| `deactivate <slug> [--force]` | `grace → inactive` (AWS: `Status=Inactive`; CF token: delete) |
-| `delete <slug> [--force]` | `inactive → deleted` (permanent) |
-| `sweep` | Run deactivate + delete for everything past its eligibility window |
-| `history [<slug>]` | Audit log of every rotation event |
-
-Slugs: `ses-eu`, `ses-us`, `ses-asia`, `ses-bench`, `cf-cd`, `cf-r2`, `cf-r2-media`, `cf-breakpoint`, `turnstile`, `turnstile-bench`, `otlp-eu`, `otlp-us`, `otlp-asia`, `otlp-bench`, `dkim-notify`.
-
-`cf-r2-media` is bucket-scoped (`rediacc-www-media` only, not account-wide like `cf-r2`) — least-privilege token for the www video-media pipeline, see `.ci/docs/r2-media-setup.md`.
-
-`cf-breakpoint` (secret `CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN`) is the on-demand debug box's Cloudflare token: Tunnel edit + Access apps/policies edit at the account level, DNS edit scoped to the **`rediacc.io` zone only**, and nothing else — no Workers, D1, R2 or Pages. It is deliberately NOT `cf-cd`: a breakpoint session's whole purpose is to put a human on a shell, so anything in that job's environment is readable by that human, and `cf-cd` would make one debug session equivalent to production Worker-deploy and D1-delete rights. See `.ci/breakpoint/README.md`.
-
-`dkim-notify` is the BYODKIM RSA-2048 keypair applied to every regional SES identity for `notify.rediacc.com`. One private key, one Cloudflare TXT record at `<selector>._domainkey.notify.rediacc.com`, three SES regions (eu/us/asia). To rotate, stage the PEM via `DKIM_NOTIFY_PRIVATE_KEY_PATH=<path>` and run `./run.sh rotation rotate dkim-notify`. The tool publishes the DNS, applies the key to all three regions, smoke-tests propagation, and updates the manifest atomically. If `DKIM_NOTIFY_PRIVATE_KEY_PATH` is unset, a fresh keypair is generated in-memory (acceptable for bench experiments only — production rotations must stage the PEM so the key can be backed up to 1Password before the process exits).
-
-Auth: `AWS_IAM_ADMIN_ACCESS_KEY_ID`/`AWS_IAM_ADMIN_SECRET_ACCESS_KEY` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or `CF_GLOBAL_API_KEY`+`CF_EMAIL`) for Cloudflare, authenticated `gh` CLI for GitHub secrets.
-
-`scripts/dev/deploy-bench.sh` runs `rotation check --for=bench` as a preflight, so a stale `private/account/.env.bench` cannot ship a dead key.
+**[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries
+`release_mode`'s semantics (GitHub itself rejects anything but `patch`/`retry`), the hotfix
+and workers-only dispatch inputs, and the 7-day soak / `force` behavior on the production
+promote.
 
 ## Quality Gates and the BLOCKER convention
 
@@ -757,3 +459,61 @@ they are lookup material, not standing rules:
   invites the deletion of the line it guards, an error that was only ever hiding
   the next one. **Read it when a result looks clean and you have not yet asked what
   it would look like if the check had not run.**
+
+### The shape of the gate estate
+
+Both tables below are GENERATED from `scripts/ci-runner/gates.lock.json` and
+`.claude/settings.json` by `npx tsx scripts/gen-docs.ts --write`, and verified by
+`gate-test:docs-gen`, which fails on drift in both directions. Do not hand-edit between the
+markers, and do not quote a number out of them into prose elsewhere: that is how
+`ci-gates.md` came to tell readers there were "254 fast gates" against a live 312. Per-gate
+detail is in [docs/agent-reference/ci-gates.md](docs/agent-reference/ci-gates.md).
+
+<!-- >>> gen-docs: gates-summary -->
+
+Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
+
+| Where it runs | Registered | `gate: true` | Slow | Is a gate test |
+|---|---|---|---|---|
+| (all lanes) | 486 | 476 | 95 | 149 |
+| local-only (CI never runs it) | 12 | 9 | 3 | 0 |
+| step / build-renet | 1 | 1 | 1 | 0 |
+| step / quality-branch | 5 | 5 | 0 | 0 |
+| step / quality-code | 103 | 102 | 19 | 0 |
+| step / quality-content | 42 | 42 | 4 | 0 |
+| step / quality-go | 16 | 16 | 3 | 0 |
+| step / quality-i18n | 40 | 38 | 3 | 0 |
+| step / quality-packages | 14 | 14 | 7 | 0 |
+| step / quality-security | 166 | 165 | 37 | 149 |
+| step / quality-static | 58 | 58 | 3 | 0 |
+| step / quality-www-build | 16 | 13 | 15 | 0 |
+| test (a gate test drives it) | 13 | 13 | 0 | 0 |
+
+13 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
+
+<!-- <<< gen-docs -->
+
+The last hook row is the one to act on: a tracked file under `.claude/hooks/` that nothing
+reaches, transitively, from that wiring is dead code beside live guards. The `hook-guards`
+region of [scripts/data/doc-registry.md](scripts/data/doc-registry.md) names them.
+
+<!-- >>> gen-docs: hook-summary -->
+
+Scans: the `hooks` wiring in .claude/settings.json, folded to one row per event, with the unreached residue.
+
+| Hook event | Matchers | Hook files |
+|---|---|---|
+| PostCompact | 1 | 4 |
+| PostToolUse | 2 | 8 |
+| PreCompact | 1 | 1 |
+| PreToolUse | 3 | 5 |
+| SessionStart | 1 | 3 |
+| Stop | 1 | 1 |
+| SubagentStop | 1 | 1 |
+| TeammateIdle | 1 | 1 |
+| (all events) | 11 | 15 |
+| (tracked hook files nothing reaches) | - | 3 |
+
+10 row(s). Generated by `npx tsx scripts/gen-docs.ts --write`; do not hand-edit.
+
+<!-- <<< gen-docs -->

@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Tests for verify_version() in .ci/scripts/test/test-install-methods.sh
+# ---- end gate ----
+
 # Tests for verify_version() in .ci/scripts/test/test-install-methods.sh.
 #
 # WHY THIS EXISTS. On 2026-08-07 release run 31154305287 published CLI binaries

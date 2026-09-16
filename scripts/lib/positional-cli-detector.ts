@@ -11,7 +11,7 @@
  * Consumed by:
  *   - eslint-rules/i18n/no-positional-cli-syntax.js (JSON locale files)
  *   - eslint-rules/no-positional-cli-syntax-source.js (TS/TSX source strings)
- *   - scripts/validate-cli-examples.ts (generic repo-wide validator)
+ *   - scripts/gen/validate-cli-examples.ts (generic repo-wide validator)
  *   - packages/www/scripts/validate-docs-cli-usage.js (www docs validator)
  */
 

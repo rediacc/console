@@ -32,6 +32,7 @@ import re
 import subprocess
 
 import wl_core as C
+import wl_proc
 import wl_store as S
 import worklist_messages as M
 
@@ -128,7 +129,7 @@ def debt_path(branch, root=None):
 # judge itself had already accepted a suite case (163e) as the gate. A
 # probe narrower than the judge's own ruling is a false-fire generator.
 CHECK_SCRIPT_GLOBS = (
-    "scripts/check-*.ts",
+    "scripts/gates/check-*.ts",
     # Package-local gates. Omitting these made the probe structurally blind to
     # NINE real gates -- check:ci-tutorial-parity, check:ci-locale-tutorial-assets,
     # check:ci-solution-videos, check:ci-command-planes and friends all live here,
@@ -140,7 +141,20 @@ CHECK_SCRIPT_GLOBS = (
     # www gate to the repo root, i.e. to let the probe dictate layout.
     "packages/*/scripts/check-*.ts",
     ".ci/scripts/quality/check-*.sh",
+    ".ci/scripts/quality/check_*.py",
     ".ci/scripts/test/gates/test-*.sh",
+    # THE PYTHON GATE-TEST SURFACE, and its omission was the THIRD instance of
+    # the exact class this header already records twice. Measured 2026-09-07:
+    # 149 bash gate tests here were visible to the probe and 99 Python ones were
+    # not, on the surface W7 is actively migrating all 149 onto -- so the blind
+    # half is the growing half. A session wrote
+    # test_gate_fanout_timeout_declarable.py, proved it against a re-planted
+    # defect, confirmed `check:ci-pytest` collects it and that the full gate went
+    # 9602 -> 9604 passed, and the probe still answered "no NEW or CHANGED check
+    # script this stop". Same shape as the nine www gates above: the only way to
+    # satisfy the old globs was to write the gate somewhere it does not belong,
+    # i.e. to let the probe dictate layout.
+    ".ci/rediacc_ci/tests/gates/test_gate_*.py",
     ".claude/hooks/stop/test-*.sh",
     ".claude/hooks/test-*.sh",
 )
@@ -342,7 +356,7 @@ def tick_touches_code(line):
 # .github/workflows and scripts/data and therefore answered False for
 # 3148399c9, a commit that is nothing BUT gate maintenance.
 GATE_ARTIFACT_PREFIXES = (
-    "scripts/check-",
+    "scripts/gates/check-",
     "scripts/data/",  # gate seeds and baselines
     "scripts/lib/",  # gate-support libraries: verified 2026-09-05 that
     # every consumer is a check script or a test, never
@@ -358,6 +372,10 @@ GATE_ARTIFACT_PREFIXES = (
     ".ci/scripts/quality/",
     ".ci/scripts/security/",
     ".ci/scripts/test/",
+    # The ported half of the same estate. Without it a fix whose regression home
+    # is a Python gate test counts as touching no gate artifact at all, which is
+    # the same blindness CHECK_SCRIPT_GLOBS carried, one list further down.
+    ".ci/rediacc_ci/tests/",
     ".claude/hooks/",
     ".github/workflows/ci-",  # the quality workflows a gate is wired into
 )
@@ -538,6 +556,48 @@ def package_scripts(root):
         return {}
 
 
+LOCK_REL = ("scripts", "ci-runner", "gates.lock.json")
+
+
+def _manifest_entries(root):
+    """Every manifest entry, read from `scripts/ci-runner/gates.lock.json`.
+
+    THIS USED TO BE A TYPESCRIPT PARSER WRITTEN IN REGEX, and it shipped wrong.
+    Two functions each ran
+    a finditer over a brace-delimited pattern matching an optional run of
+    whitespace-or-line-comment, then an `id:` string, applied to a 5,700-line TS
+    literal. The whitespace-or-comment alternation in that pattern is a
+    scar: the first version allowed whitespace only, so any entry whose leading comment sat
+    INSIDE the brace was invisible, and the reachability gate checked a smaller
+    set while printing a healthy "agrees with all N registrations". Found
+    2026-08-20 with a planted entry it went green over; it was already hiding
+    check:ci-dockerfile-mirror-resilience and check:ci-tutorial-card-fonts, at
+    259 of 261 seen. The next TS shape nobody anticipated would have done it
+    again, silently and in the same direction.
+
+    The lock is that literal, projected to JSON by `scripts/gen-gates-lock.ts`
+    and kept faithful by `check:ci-gates-lock`, which fails when the two
+    disagree. One parse, no regex archaeology, and a shape error is a JSON
+    error rather than a quietly shorter list.
+
+    RETURNS AN EMPTY LIST WHEN THE LOCK IS ABSENT, deliberately and not by
+    oversight. That matches what the regex version did on an unreadable file,
+    and `check_gate_reachability_coverage.py` DEPENDS on it: its control stubs
+    this lookup to empty and requires the probe's verdict to change, which is
+    how that gate proves it can still detect manifest-blindness. Absence is a
+    broken checkout rather than a state to tolerate, and the gate that refuses
+    it is check:ci-gates-lock, not this reader.
+    """
+    if root is None:
+        return []
+    try:
+        with open(os.path.join(str(root), *LOCK_REL), encoding="utf-8") as fh:
+            parsed = json.load(fh)
+    except (OSError, ValueError):
+        return []
+    return [g for g in parsed if isinstance(g, dict) and isinstance(g.get("id"), str)]
+
+
 def _manifest_gate_ids(root):
     """Gate ids registered in the ci-runner manifest, as a set.
 
@@ -545,25 +605,7 @@ def _manifest_gate_ids(root):
     listed there with `gate: true` IS run by `npm run ci` even though nothing in
     package.json ever says `npm run <that key>`.
     """
-    ids = set()
-    if root is None:
-        return ids
-    mf = os.path.join(str(root), "scripts", "ci-runner", "manifest.ts")
-    try:
-        with open(mf, encoding="utf-8") as fh:
-            src = fh.read()
-    except OSError:
-        return ids
-    # `(?:\s|//[^\n]*\n)*`, not `\s*`: a manifest entry whose leading comment sits
-    # INSIDE the brace was invisible to this scan, so the reachability gate silently
-    # checked a smaller set and still printed a healthy "agrees with all N
-    # registrations". Found 2026-08-20 with a planted entry that the gate went green
-    # over; it was already hiding check:ci-dockerfile-mirror-resilience and
-    # check:ci-tutorial-card-fonts (259 of 261 seen).
-    for m in re.finditer(r"\{(?:\s|//[^\n]*\n)*id:\s*'([^']+)'(.*?)\}", src, re.DOTALL):
-        if "gate: true" in m.group(2):
-            ids.add(m.group(1))
-    return ids
+    return {g["id"] for g in _manifest_entries(root) if g.get("gate") is True}
 
 
 def _manifest_gate_run_paths(root):
@@ -578,22 +620,11 @@ def _manifest_gate_run_paths(root):
     and still reporting real coverage as hallucinated. Same regex/parsing
     approach as _manifest_gate_ids, deliberately: one manifest scan, two views.
     """
-    paths = set()
-    if root is None:
-        return paths
-    mf = os.path.join(str(root), "scripts", "ci-runner", "manifest.ts")
-    try:
-        with open(mf, encoding="utf-8") as fh:
-            src = fh.read()
-    except OSError:
-        return paths
-    for m in re.finditer(r"\{(?:\s|//[^\n]*\n)*id:\s*'([^']+)'(.*?)\}", src, re.DOTALL):
-        if "gate: true" not in m.group(2):
-            continue
-        rm = re.search(r"run:\s*'([^']+)'", m.group(2))
-        if rm:
-            paths.add(rm.group(1))
-    return paths
+    return {
+        g["run"]
+        for g in _manifest_entries(root)
+        if g.get("gate") is True and isinstance(g.get("run"), str)
+    }
 
 
 def _citation_matches_gate(eg, root):
@@ -747,20 +778,14 @@ def prove_new_gate(root, scripts, state):
                     "(defined-but-never-run is the check-gate-reachability failure)" % (rel, key)
                 )
                 continue
-            try:
-                pr = subprocess.run(
-                    ["npm", "run", "--silent", key],
-                    cwd=str(root),
-                    capture_output=True,
-                    text=True,
-                    timeout=REGGATE_TIMEOUT_S,
-                    check=False,
-                )
-                code = pr.returncode
-            except subprocess.TimeoutExpired:
-                code = 124
-            except (OSError, subprocess.SubprocessError):
-                code = 127
+            # NO try/except: `wl_proc.run` never raises for a timeout or a failed
+            # spawn, and the codes it returns are the two this site was already
+            # synthesising by hand -- TIMEOUT_RC is 124 and SPAWN_FAILED_RC is 127.
+            code = wl_proc.run(
+                ["npm", "run", "--silent", key],
+                cwd=str(root),
+                timeout=REGGATE_TIMEOUT_S,
+            ).returncode
             state["gate_runs"][rel] = {"hash": digest, "exit": code, "at": stamp}
             notes.append("%s via `npm run %s`: exit %d" % (rel, key, code))
             if code == 0:

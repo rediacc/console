@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# kind: battery
+# id: gate-test:devbox-hostname
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Controls for the devbox HOSTNAME: the branch-derived slug, its drift against a
 # running container, and the route label that reports it.
 #

@@ -26,6 +26,13 @@ is a string or it is not), and catches the whole class rather than the instance.
 Run modes:
     check_i18n_value_types.py            the gate
     check_i18n_value_types.py --selftest controls only
+
+---- gate ----
+step: i18n value types match English
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import argparse

@@ -1,6 +1,29 @@
 #!/bin/bash
-# A gate test that WRITES INTO THE REAL TREE must be registered as a WRITER in
-# .ci/scripts/test/run-all.sh. This gate catches the one that is not.
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-pool-writer-safety is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_pool_writer_safety.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_pool_writer_safety.py" but its header derives ".ci/scripts/quality/check-pool-writer-safety.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
+# A gate test that WRITES INTO THE REAL TREE must be registered as a WRITER by a
+# `mutex: ["tree:..."]` declaration in scripts/ci-runner/gates.lock.json. This
+# gate catches the one that is not.
+#
+# RETARGETED 2026-09-09 (W7P3-BAT), IN LOCKSTEP WITH THE PORT. The registration
+# used to be the hand-maintained WRITER_TESTS / WRITER_TESTS_FALLBACK arrays in
+# .ci/scripts/test/run-all.sh, and this gate parsed them out of that file's text.
+# battery.py replaces run-all.sh and carries no such array on purpose: it
+# classifies from the lock, which is the same contract scripts/ci-runner/pool.ts
+# schedules by. Left parsing run-all.sh, this gate would have refused the moment
+# that file was deleted and read as a bug in the deletion.
+#
+# NOT A WEAKENING, MEASURED: the old parse returned 4 names and the lock returns
+# those same 4 plus test-shrink-only-composition.sh; the difference in the other
+# direction is empty. `reads` is deliberately NOT accepted -- only `mutex` puts a
+# test in the serial W chain.
 #
 # THE DEFECT THIS COMES FROM, 2026-08-17. run-all.sh fans the gate battery out
 # over the runner cores in three sets: W (writers, one serial chain, exclusive),
@@ -60,12 +83,35 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # BLOCKER: shared log_* helpers and get_repo_root used by every quality gate
 source "$SCRIPT_DIR/../lib/common.sh"
 
+# DECLARED, because this gate shells out to python3 and `set -euo pipefail` makes a
+# missing binary inside a command substitution exit 127 rather than say what is
+# absent -- the same "a guard that crashes never fired, and 127 is not a verdict"
+# failure the note below records for log_fail. Same one-liner as
+# check-editorconfig.sh:20 and check-regions-sync.sh:38.
+require_cmd python3
+
+# log_fail: log_error plus exit 1, in one call. common.sh defines log_info, log_warn,
+# log_error, log_step and log_debug, and NOT this one, so every `log_fail` below was
+# `command not found` and this gate exited 127 instead of refusing. That mattered more
+# than a missing helper usually does, because ALL THREE call sites are the anti-vacuity
+# refusals: the runner being absent, WRITER_TESTS parsing empty, and the gates directory
+# being empty. A guard that crashes is a guard that never fired, and 127 is not a verdict.
+# Found 2026-09-06 when the shape change below finally drove one of them.
+log_fail() {
+    log_error "$@"
+    exit 1
+}
+
 REPO_ROOT="$(get_repo_root)"
 cd "$REPO_ROOT"
 
 # Seams, so the CONTROL below can point the same scanner at planted fixtures.
+# POOL_SAFETY_RUNNER BECAME POOL_SAFETY_LOCK IN THE RETARGET, and the rename is
+# deliberate: the seam points at the declaration file now, and a seam still
+# called RUNNER would invite a caller to hand this gate a runner it no longer
+# reads, which is the quietest way to make a fixture-driven control test nothing.
 GATES_DIR="${POOL_SAFETY_GATES_DIR:-$REPO_ROOT/.ci/scripts/test/gates}"
-RUNNER="${POOL_SAFETY_RUNNER:-$REPO_ROOT/.ci/scripts/test/run-all.sh}"
+LOCK="${POOL_SAFETY_LOCK:-$REPO_ROOT/scripts/ci-runner/gates.lock.json}"
 
 # ---------------------------------------------------------------------------
 # The scanner.
@@ -246,19 +292,63 @@ if [[ -n "$control_noise" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# The registered writer set, read from the runner itself.
+# The registered writer set, read from the lock the runner schedules by.
 # ---------------------------------------------------------------------------
-[[ -f "$RUNNER" ]] || log_fail "check-pool-writer-safety: runner not found at $RUNNER; refusing to pass while measuring nothing"
+[[ -f "$LOCK" ]] || log_fail "check-pool-writer-safety: gate lock not found at $LOCK; refusing to pass while measuring nothing"
 
-# Comment lines inside the array name test files while describing them (the
-# test-generate-tag-inputs.sh entry cites two line numbers), so they are dropped
-# before the names are read.
-REGISTERED="$(sed -n '/^WRITER_TESTS=(/,/^)/p' "$RUNNER" |
-    grep -vE '^[[:space:]]*#' |
-    grep -oE 'test-[A-Za-z0-9._-]+\.sh' || true)"
+# RE-KEYED 2026-09-06, invariant 2, AND AGAIN 2026-09-09 BY THE RETARGET. The
+# 2026-09-06 read was `WRITER_TESTS(_FALLBACK)?=(` ... `)` out of run-all.sh, and
+# it is kept here as history because it explains the shape: W2.4b had already
+# made that array DERIVED from the lock's `tree:` declarations, leaving the
+# hand-maintained literal list as WRITER_TESTS_FALLBACK only. The old pattern
+# therefore matched the computed assignment `WRITER_TESTS=($RUN_ALL_WRITERS)`,
+# whose body holds no test names, and parsed EMPTY -- which is exactly the state
+# the refusal below exists to catch, and it could not report it because log_fail
+# did not exist.
+#
+# The retarget finishes that argument rather than repeating it: the declaration
+# IS the lock, so the lock is what gets read, by the same classifier run-all.sh
+# itself carried at run-all.sh:292. python3 rather than jq because jq is not a
+# guaranteed tool on this image and python3 is (the whole .ci battery is Python),
+# and because an inline heredoc keeps the algorithm readable next to the port's.
+REGISTERED="$(
+    python3 - "$LOCK" <<'CLASSIFY' 2>/dev/null || true
+import json, os, sys
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as fh:
+        entries = json.load(fh)
+except (OSError, ValueError):
+    raise SystemExit(0)
+if not isinstance(entries, list):
+    raise SystemExit(0)
+
+PREFIX = ".ci/scripts/test/gates/"
+names = set()
+for entry in entries:
+    if not isinstance(entry, dict):
+        continue
+    run = entry.get("run")
+    if not isinstance(run, str) or PREFIX not in run:
+        continue
+    claimed = entry.get("mutex")
+    if not isinstance(claimed, list):
+        continue
+    if not any(isinstance(r, str) and r.startswith("tree:") for r in claimed):
+        continue
+    # A `run` is a command line in the general case, so take the word that
+    # actually names the script rather than assuming it is the whole string.
+    for word in run.split():
+        if word.startswith(PREFIX):
+            names.add(os.path.basename(word))
+            break
+for name in sorted(names):
+    print(name)
+CLASSIFY
+)"
 
 if [[ -z "$REGISTERED" ]]; then
-    log_fail "check-pool-writer-safety: parsed an EMPTY WRITER_TESTS out of $RUNNER; the array shape changed and this gate would pass everything"
+    log_fail "check-pool-writer-safety: parsed ZERO mutex tree: writers out of $LOCK; the declaration shape changed and this gate would pass everything"
 fi
 
 shopt -s nullglob
@@ -279,14 +369,15 @@ for f in "${GATE_FILES[@]}"; do
     if grep -qxF "$base" <<<"$REGISTERED"; then
         continue
     fi
-    log_error "$base writes into the real tree but is NOT in WRITER_TESTS in ${RUNNER#"$REPO_ROOT"/}, so run-all.sh schedules it in the pool alongside tests that read the same paths:"
+    log_error "$base writes into the real tree but declares no mutex tree: resource in ${LOCK#"$REPO_ROOT"/}, so battery.py schedules it in the pool alongside tests that read the same paths:"
     printf '  %s\n' "$hits" >&2
     violations=$((violations + 1))
 done
 
 if ((violations > 0)); then
-    log_error "$violations unregistered real-tree writer(s). Add each to WRITER_TESTS in ${RUNNER#"$REPO_ROOT"/} so it runs in the serial W chain. A write left in the pool does not fail cleanly: it corrupts a concurrent reader and presents as an unrelated gate going red in a file that parses fine on the serial re-run."
+    log_error "$violations unregistered real-tree writer(s). Declare mutex: ['tree:repo'] on each one's entry in scripts/ci-runner/manifest.ts and regenerate ${LOCK#"$REPO_ROOT"/}, so it runs in the serial W chain. A write left in the pool does not fail cleanly: it corrupts a concurrent reader and presents as an unrelated gate going red in a file that parses fine on the serial re-run."
     exit 1
 fi
 
-log_info "every real-tree writer among ${#GATE_FILES[@]} gate tests is registered in WRITER_TESTS (controls fired in both directions, so this verdict is real)"
+REGISTERED_COUNT="$(printf '%s\n' "$REGISTERED" | grep -c . || true)"
+log_info "every real-tree writer among ${#GATE_FILES[@]} gate tests declares a mutex tree: resource ($REGISTERED_COUNT declared, controls fired in both directions, so this verdict is real)"

@@ -45,9 +45,10 @@ on:
         type: string
         default: 'false'
 
-permissions:
-  contents: read
-  actions: write   # cancel the target run, rerun failed jobs, dispatch next generation
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 # One chain per monitored run: a duplicate dispatch queues behind the live
 # generation, then sees the run already completed (or handled) and exits fast.
@@ -65,6 +66,15 @@ jobs:
     # ~25s AI + <=5min force-cancel wait = 13.4m, which still fits.
     # Enforced by CHECK 3 in .ci/scripts/security/check-workflow-gates.sh.
     timeout-minutes: 14
+    # actions: write is load-bearing: watchdog-monitor.cjs force-cancels and
+    # reruns failed jobs, and dispatch-watchdog.sh re-dispatches this workflow.
+    # pull-requests: read is ADDED - cjs listLabelsOnIssue reads the live
+    # no-auto-retry label and has been failing into its own try/catch, silently
+    # falling back to stale event-payload labels.
+    permissions:
+      contents: read
+      actions: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -73,6 +83,31 @@ jobs:
             .ci/prompts
             .github/actions
             .ci/config
+
+      # BOTH CLASSIFIER TIERS AUTHENTICATED WITH THE EMPTY STRING UNTIL 2026-09-09.
+      # The org secrets were deleted 2026-09-05 -- deliberately, to force every consumer
+      # onto Bitwarden and make the stragglers fail loudly. This workflow was the one that
+      # never got its fetch, and an absent secret in Actions is "" rather than an error, so
+      # tier 1 and tier 2 both failed as if their providers were down. The file's own note
+      # below says tier 2 exists so that "without a second provider every failure fell
+      # through to the allowlist and a judgment nobody made decided whether to spend a
+      # ~500-machine-minute retry" -- with both blank that was the operating mode.
+      #
+      # WHY THIS STEP IS ALLOWED TO PRECEDE THE MONITOR, which CHECK 6 of
+      # check-workflow-gates.sh otherwise forbids: it is registered in that check's PREREQS,
+      # whose contract is "steps that must be allowed to fail, because the monitor cannot
+      # run correctly without them". That is exactly this step -- a monitor with no
+      # classifier credentials does not degrade, it hands the retry decision to an allowlist
+      # nobody reviewed. The alternative route, `continue-on-error`, is banned repo-wide by
+      # check-workflows.sh; a previous session tried it and reverted, and so did I before
+      # reading the note at check-workflow-gates.sh:984-994.
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
 
       # Deterministic attempt-cap backstop, deliberately OUTSIDE the AI-driven
       # monitor process it guards: a misclassification loop cannot talk its way
@@ -135,8 +170,8 @@ jobs:
           # this the evidence for "real break or flake?" is destroyed by the
           # very action taken in response to it.
           WATCHDOG_LOG_CAPTURE_DIR: ${{ runner.temp }}/watchdog-logs
-          # Classifier tier 1: Cloudflare / DeepSeek V4 Pro.
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # Classifier tier 1: Cloudflare / DeepSeek V4 Pro, from Bitwarden.
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           # Classifier tier 2: Anthropic, on the org's OAuth token. Tier 1 has
           # been returning HTTP 402 (billing) continuously, which is an
@@ -156,9 +191,23 @@ jobs:
           # this one exited 1 and run 33704079162 reported failure having
           # monitored NOTHING -- a scaffold switched off the thing that watches
           # every other CI run, and it read like the watchdog working.
-          # CLAUDE_CODE_OAUTH_TOKEN is repo-scoped and survives the org deletion,
-          # so this read is live, not empty.
-          ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # THIS READ IS EMPTY ON THIS REPO, corrected 2026-09-06. The line here used
+          # to say "repo-scoped and survives the org deletion, so this read is live,
+          # not empty". Measured:
+          #   gh api repos/rediacc/console/actions/secrets -q '.secrets[].name'
+          #     -> BREAKPOINT_TUNNEL_TOKEN, BWS_ACCESS_TOKEN
+          #   gh api orgs/rediacc/actions/secrets -q '.total_count'  -> 0
+          # CLAUDE_CODE_OAUTH_TOKEN is repo-scoped on renet/account/elite -- and this
+          # workflow runs on CONSOLE, where it does not exist. Tier 1
+          # (CLOUDFLARE_API_TOKEN) is already known-empty, so BOTH classifier tiers
+          # are dead and every CI failure falls through to the retry allowlist: the
+          # "judgment nobody made" the paragraph above says this provider exists to
+          # prevent. Fixing it is a decision, not an edit -- add the repo secret
+          # (operator-only) or find the different shape the paragraph above rules
+          # out -- so what lands here is the truth, not a workaround.
+          # The vault name carries the ANTHROPIC_ prefix; the short spelling this line
+          # used is in no map and no vault, so it could only ever have been empty.
+          ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ env.BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
         with:
           script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 

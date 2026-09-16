@@ -13,7 +13,7 @@
  * in 13 locales. That is now this gate's corpus.
  *
  * The tutorial STORYBOARDS were considered and deliberately not taken, even though they
- * are a real current source of on-camera commands. `scripts/check-tutorial-commands.ts`
+ * are a real current source of on-camera commands. `scripts/gates/check-tutorial-commands.ts`
  * already validates them with the same `parseRdcCommand`, field-aware so it reads
  * `commandFull`/`teardownCommand` and never the abbreviated `command` label (measured:
  * 18 storyboards, 101 runnable commands, green). Pointing a second gate at that surface

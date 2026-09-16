@@ -26,19 +26,74 @@ If the guard fires on the sentence, it is matching a mention.
 ANCHOR, DO NOT NARROW. The fix for a finding here is to require command position
 `(^|[;&|(])`, never to delete the pattern: a guard that stops catching the real
 command is a worse outcome than the false positive it was cured of.
+
+---- gate ----
+step: Guard mention anchoring
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+why: A guard that refuses PROSE is a guard nobody can write a doc line about.
+     The class recurred FOUR times on 2026-08-28 and every instance was fixed
+     by hand, including one reintroduced within the hour by the session doing
+     the fixing -- which is the i18n lesson exactly. This probes each guard
+     with a sentence built from its OWN pattern, so it cannot go stale as
+     guards are added.
+---- end gate ----
 """
 
 from __future__ import annotations
 
 import json
 import re
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
+import _cipath  # noqa: F401
+
+# ALIASED: `proc` is the name this file's own code reaches for when it holds a
+# completed process, and it did until these call sites were routed. Keeping the
+# runner under a distinct name means a future local `proc =` cannot shadow it
+# into a NameError on the timeout path -- the path least likely to be exercised.
+from rediacc_ci import proc as ci_proc
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
-HOOKS = REPO_ROOT / ".claude" / "hooks"
+# W5 P7 CUTOVER. The guards are Python modules now, run through ONE dispatcher
+# command per chain; the bash originals are frozen at .claude/oracles/<chain>/ and
+# are still what this file reads PATTERNS out of, because `instantiate` understands
+# POSIX bracket expressions and shell quoting, not Python `re`.
+#
+# THE PROBE RUNS THE LIVE GUARD, which is the half that must not be frozen: a gate
+# probing the retired file would keep passing while the thing that actually refuses
+# commands went unchecked.
+#
+# THE RESIDUE, stated rather than left to be found: a pattern edited in the PORT and
+# not in the oracle is invisible here, because the oracle cannot change. That is
+# acceptable only as an interim. The end state is to drop the oracle and drive each
+# guard's own EDGE_CASES, since every module already declares literal instances of
+# what it matches, wrapping each in prose and asserting silence. That needs no
+# instantiator at all.
+HOOKS = REPO_ROOT / ".claude" / "oracles"
+DISPATCH = REPO_ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"
+
+
+def guard_argv(guard):
+    """How to RUN the guard this path names.
+
+    A path under the oracle tree names a RETIRED bash file whose live equivalent is
+    the Python module of the same stem, so it is dispatched. Anything else is run as
+    a file, which is what the throwaway fixtures `controls()` writes have to be: they
+    are bash by construction, deliberately, so that rewording a real guard cannot
+    silently void the control.
+    """
+    try:
+        guard.relative_to(HOOKS)
+    except ValueError:
+        return ["bash", str(guard)]
+    return [sys.executable, str(DISPATCH), guard.stem.replace("-", "_")]
+
 
 # EVERY CHAIN, not just pre-bash. Scoping this to one directory was the same
 # hole check-hook-integrity.sh has now had twice (pre-edit/pre-ask in its
@@ -221,19 +276,25 @@ def payload_for(kind: str, text: str, file_path: str) -> str:
 
 def fires(guard: Path, command: str, kind: str = "command", file_path: str = "") -> bool:
     payload = payload_for(kind, command, file_path)
+    # THROUGH THE SHARED RUNNER. A guard is a script, and a script can leave a
+    # grandchild holding the read end; `subprocess.run` then blocks in
+    # `communicate()` past its own timeout, which is how check:ci-pytest came to
+    # hang with zero bytes on both streams. `proc.run` kills the group, and it
+    # RETURNS on timeout rather than raising, so the old `except TimeoutExpired`
+    # is gone -- only a missing binary still raises.
     try:
-        proc = subprocess.run(
-            ["bash", str(guard)],
-            input=payload,
-            capture_output=True,
-            text=True,
+        result = ci_proc.run(
+            guard_argv(guard),
+            input_text=payload,
             timeout=30,
             cwd=str(REPO_ROOT),
-            check=False,  # a guard's exit 2 IS the signal; raising would lose it
         )
-    except subprocess.TimeoutExpired:
+    except OSError:
         return False
-    return proc.returncode == 2
+    if result.timed_out:
+        # A guard that will not answer is not a guard that said "no".
+        return False
+    return result.returncode == 2
 
 
 def file_path_for(guard: Path) -> str:
@@ -300,16 +361,13 @@ def controls() -> None:
             rlog = rlog_dir / "pr-babysit-0827-1.md"
             rlog.write_text("## STATUS (round 1)\n")
             edit_payload = payload_for("edit", "irrelevant content", str(rlog))
-            proc = subprocess.run(
-                ["bash", str(edit_guard)],
-                input=edit_payload,
-                capture_output=True,
-                text=True,
+            edit_result = ci_proc.run(
+                guard_argv(edit_guard),
+                input_text=edit_payload,
                 timeout=30,
                 cwd=str(REPO_ROOT),
-                check=False,
             )
-            if proc.returncode != 2:
+            if edit_result.returncode != 2:
                 fail(
                     "pre-edit payload plumbing: block-roundlog-write.sh did not fire on a "
                     "REAL round-log write -- the edit payload shape cannot be trusted"
@@ -318,16 +376,13 @@ def controls() -> None:
         ask_payload = payload_for("ask", "should i commit this change", "")
         ask_guard = HOOKS / "pre-ask" / "block-settled-questions.sh"
         if ask_guard.exists():
-            proc = subprocess.run(
+            ask_result = ci_proc.run(
                 ["bash", str(ask_guard)],
-                input=ask_payload,
-                capture_output=True,
-                text=True,
+                input_text=ask_payload,
                 timeout=30,
                 cwd=str(REPO_ROOT),
-                check=False,
             )
-            if proc.returncode != 2:
+            if ask_result.returncode != 2:
                 fail(
                     "pre-ask payload plumbing: block-settled-questions.sh did not fire on a "
                     "REAL settled question -- the ask payload shape cannot be trusted"

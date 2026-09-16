@@ -52,7 +52,7 @@ bandwidth-bound and constant in history depth.
 | CLI | `packages/cli/src/commands/backup.ts`, `backup-ops.ts`, `backup-storage.ts`, `backup-strategy.ts` |
 | schedules | `packages/cli/src/services/backup/backup-schedule{,-execute,-reconcile,-unit-generator}.ts` |
 | drill | `scripts/drills/backup.sh` |
-| wire gate | `scripts/check-backup-protocol-conformance.ts` (`npm run check:ci-backup-protocol-conformance`) |
+| wire gate | `scripts/gates/check-backup-protocol-conformance.ts` (`npm run check:ci-backup-protocol-conformance`) |
 
 Anchors live at `<datastore>/.chunk-anchors/<guid>` and the journal at
 `/var/lib/rediacc/backup-journal/<datastoreID>-<guid>.json`. The `.chunk-` prefix is

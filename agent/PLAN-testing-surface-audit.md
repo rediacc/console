@@ -44,7 +44,7 @@ re-derived rather than accepted:
   runner is `private/renet/.ci/scripts/test/run-tests.sh`, not a console-root path.
 - `check:ci-parity` is green. Run this session: `221 manifest gate(s); 2 workflow
   scope(s) in the parity surface; 8 exempt; 90 battery test(s)`, all five of its
-  own controls PASS. R1/R2/R3 read at `scripts/check-ci-parity.ts:9-11, 398, 408, 424`.
+  own controls PASS. R1/R2/R3 read at `scripts/gates/check-ci-parity.ts:9-11, 398, 408, 424`.
 - `packages/e2e-tests/README.md:31` "Deliberately not in CI" carries 8 entries.
   Suite 26 is correctly documented (`packages/e2e-tests/README.md:68-100`). Two omissions are NOT
   documented, and one documented entry is stale. See section 3.
@@ -305,7 +305,7 @@ followed.
 
 ### 3.2 Why no gate catches this
 
-- `scripts/check-e2e-skip-hygiene.ts` checks one direction only: every test-bearing
+- `scripts/gates/check-e2e-skip-hygiene.ts` checks one direction only: every test-bearing
   subdir of `tests/` must appear in the base config's `testIgnore` (`:72-84`). An
   orphan subdir passes by construction. Its own docstring (`:6-11`) asserts the
   invariant that is actually violated: each topology subdir "has a dedicated
@@ -498,7 +498,7 @@ none requires new product code.
 
 - **Defect caught:** the ops-lifecycle orphan class. A test file nobody deletes and
   nobody runs.
-- **Lands in:** extend `scripts/check-e2e-skip-hygiene.ts` (it already parses configs
+- **Lands in:** extend `scripts/gates/check-e2e-skip-hygiene.ts` (it already parses configs
   and walks `tests/`). Add a second direction: enumerate every `*.test.ts` under
   `tests/`, expand every `playwright*.config.ts` projects array, and require each file
   to be either selected by at least one config or named in a machine-readable

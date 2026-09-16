@@ -87,7 +87,7 @@ which would rewrite every entry and silently absorb any other writer's fresh fin
 A gate must exist in all three or it runs on one side only:
 
 1. `package.json` - `"check:ci-<name>": "<command>"`. Convention here is
-   `tsx scripts/check-<name>.ts --selftest && tsx scripts/check-<name>.ts`.
+   `tsx scripts/gates/check-<name>.ts --selftest && tsx scripts/gates/check-<name>.ts`.
 2. `scripts/ci-runner/manifest.ts` - an entry with `id`, `run`, `gate: true`, `leaves`, and
    a `ci: { kind: 'step', workflow, job, step }` pointing at a REAL step name.
 3. The workflow file - an actual step whose `name` matches the manifest exactly.

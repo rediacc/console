@@ -3,7 +3,7 @@
  *
  * Scans BOTH `.github/workflows/*.y{a,}ml` and composite actions at
  * `.github/actions/<name>/action.y{a,}ml`. The composite half matters: for a
- * long time scripts/check-actions.ts read only the workflows directory, which
+ * long time scripts/gates/check-actions.ts read only the workflows directory, which
  * made `actions/create-github-app-token` invisible to the freshness gate — it
  * is referenced solely from `.github/actions/app-token/action.yml`, and that is
  * the action minting every CI token in this repo.

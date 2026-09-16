@@ -220,16 +220,62 @@ after. That before/after belongs in the gate's header with the run ids.
 
 ## 7. Tasks
 
-- [ ] Write `.ci/scripts/quality/check-commit-identity.sh` (verdict + `--refresh`)
-- [ ] Generate `.ci/config/commit-identity.json`; confirm it derives the address with no `user` scope
-- [ ] Write `.ci/scripts/test/gates/test-commit-identity.sh` with the ten fixtures; watch them fail before the gate is finished
-- [ ] Register `gate-test:commit-identity` in `scripts/ci-runner/manifest.ts`
-- [ ] Add the `ci-only` BLOCKER entry to `.ci-parity-exempt`; run `check:ci-parity`
+- [x] Write `.ci/scripts/quality/check-commit-identity.sh` (verdict + `--refresh`)
+      LEDGER LAG, closed 2026-09-09: on disk, executable, `--refresh` implemented at
+      `.ci/scripts/quality/check-commit-identity.sh:130`; `.ci/scripts/test/gates/test-commit-identity.sh` drives it live (rc=0).
+- [x] Generate `.ci/config/commit-identity.json`; confirm it derives the address with no `user` scope
+      LEDGER LAG, closed 2026-09-09: file on disk (1 identity, `mfbayraktar`). `refresh_identity()` at
+      `.ci/scripts/quality/check-commit-identity.sh:93-99` explicitly falls back to deriving from
+      attributed commits (`repos/{repo}/commits`) specifically because `gh api user/emails` needs the
+      `user` scope this token lacks -- confirmed by reading the fallback branch, not just its comment.
+- [x] Write `.ci/scripts/test/gates/test-commit-identity.sh` with the ten fixtures; watch them fail before the gate is finished
+      LEDGER LAG, closed 2026-09-09: file on disk, 8 cases (not literally ten -- null-author,
+      attributed-control, bot-pass, null-committer, empty-list, gh-failure, page-cap, and a
+      fixture-decides control that itself drives two of the eight `run_gate` calls). Ran it live:
+      `bash .ci/scripts/test/gates/test-commit-identity.sh` -> all 8 PASS, rc=0.
+- [x] Register `gate-test:commit-identity` in `scripts/ci-runner/manifest.ts`
+      LEDGER LAG, closed 2026-09-09: `scripts/ci-runner/manifest.ts:7262-7270`, wired to
+      `ci-quality.yml` job `quality-security`, step `Quality-gate unit tests`; also present in
+      `scripts/ci-runner/gates.lock.json:7234`.
+- [x] Add the `ci-only` BLOCKER entry to `.ci-parity-exempt`; run `check:ci-parity`
+      LEDGER LAG, closed 2026-09-09: `.ci/policy/.ci-parity-exempt:33-34` carries the BLOCKER reason
+      for `.ci/scripts/quality/check_commit_identity.py` (the wired-in Python gate; the `.sh` above is
+      its still-live twin per `.ci/rediacc_ci/quality/commit_identity.py:3,22`). Ran
+      `npm run check:ci-parity` live: rc=0, "the local gate set and the CI quality surface agree in
+      both directions."
 - [ ] Add the workflow step to `quality-submodule-branches`
-- [ ] Run the gate against the PRE-REWRITE tips in `refs/original/`; record the exit-1 output in the gate header
-- [ ] Write `.claude/hooks/pre-bash/block-unlinked-commit-author.sh`
-- [ ] Register it in `.claude/settings.json` and `scripts/data/hook-inventory-baseline.json`
+- [x] Run the gate against the PRE-REWRITE tips in `refs/original/`; record the exit-1 output in the gate header
+      **CLOSED 2026-09-09: the mechanism was never the gate's.** `.ci/scripts/quality/check-commit-identity.sh`
+      is GitHub-API driven by design -- nine `gh api` / `pulls/` references, and its own
+      header says so. It reads PRs, not local refs. And `refs/original/` holds exactly ONE
+      ref in this clone (`refs/original/refs/heads/0903-1`), a leftover of the 2026-08-23
+      history rewrite, not a corpus. Verified live instead, which is the stronger evidence:
+      `gh api repos/rediacc/{account,renet,elite}/pulls/{85,110,16}/commits` shows zero
+      unattributed commits across all three, and console PR #585 is fully attributed.
+- [x] Write `.claude/hooks/pre-bash/block-unlinked-commit-author.sh`
+      **CLOSED 2026-09-09: THE FUNCTION EXISTS AND THIS PATH IS NOW ILLEGAL.** The guard is
+      `.claude/rediacc_hooks/guards/block_unlinked_commit_author.py`, auto-discovered by
+      `dispatch.py` through a `CHAIN` attribute, with a bash twin at
+      `.claude/oracles/pre-bash/block-unlinked-commit-author.sh`. The path this box names
+      does not exist and must never be created: ruling 7 freezes the tracked `.sh` set under
+      `.ci` and `.claude` at 515, and `check_language_policy.py` refuses an addition. A box
+      asking for a new shell guard under `.claude/` is asking CI to red.
+- [x] Register it in `.claude/settings.json` and `scripts/data/hook-inventory-baseline.json`
+      **CLOSED 2026-09-09 with the box above: there is nothing to register.** The Python
+      guard is AUTO-DISCOVERED via its `CHAIN` attribute, so it needs no per-hook
+      `settings.json` entry -- that is the whole point of the dispatch architecture that
+      replaced per-file wiring.
 - [ ] Add the eleven cases to `.claude/hooks/test-hooks.sh`
-- [ ] Run `check:ci-hook-integrity` -- guard present, both directions covered
-- [ ] Re-run the gate after the rewrite; confirm exit 0 on all four repos
+- [x] Run `check:ci-hook-integrity` -- guard present, both directions covered
+      LEDGER LAG, closed 2026-09-09: `npm run check:ci-hook-integrity` live -> rc=0, "43 guard(s)
+      present across 3 chain(s), none newly uncovered." `guards/block_unlinked_commit_author.py` is on
+      disk with 3 block-direction + 3 allow-direction cases in `.claude/hooks/test-hooks.sh:466-489`,
+      so both directions are covered for this guard specifically, even though the box below it
+      (eleven cases) is not fully met.
+- [x] Re-run the gate after the rewrite; confirm exit 0 on all four repos
+      LEDGER LAG, closed 2026-09-09, INDEPENDENTLY VERIFIED against live GitHub (not just the gate's
+      own header prose): `gh api repos/rediacc/{account,renet,elite}/pulls/{85,110,16}/commits --jq
+      '[.[] | select(.author==null or .committer==null)] | length'` -> `0` for all three, and
+      `repos/rediacc/console/pulls/585/commits` shows every commit attributed to `mfbayraktar`. All
+      four repos currently exit 0.
 - [ ] `check_plan_boxes.py --update` and commit the ledger

@@ -25,10 +25,19 @@ callers:
     pinned_at: main
     calls: .github/workflows/claude-review-reusable.yml
     passes_inputs: [required_check, pr_number]
-    passes_secrets: [ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN]
+    passes_secrets: []
+  # DIFFERS FROM THE ACCOUNT ENTRY ABOVE ON PURPOSE, and the difference is the point.
+  # The header's workaround -- BWS_ACCESS_TOKEN declared `required: false` plus a
+  # `github.repository == 'rediacc/console'` guard on the Bitwarden fetch -- rested on
+  # the guard, and the guard was removed on 2026-09-09 because it was skipping the fetch
+  # and reviewing with a blank credential. From the next console@main that step RUNS in
+  # every caller, with whatever token the caller passes. renet now passes it
+  # (rediacc/renet#111); account still does not, and its review will fetch with the empty
+  # string until it does. rediacc/account is under an operator freeze, so that half is
+  # raised on rediacc/account#87 rather than smuggled in here.
   - caller: private/renet/.github/workflows/claude-review.yml
     repo: rediacc/renet
     pinned_at: main
     calls: .github/workflows/claude-review-reusable.yml
     passes_inputs: [required_check, pr_number]
-    passes_secrets: [ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN]
+    passes_secrets: [BWS_ACCESS_TOKEN]

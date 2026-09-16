@@ -69,7 +69,7 @@ main() {
     # 568 .sh files across the four scopes. The floor is well under that so it
     # catches a broken find, not today's file count.
     MIN_SHELL_FILES="${SHFMT_MIN_FILES:-200}"
-    shell_seen=$(find .ci .claude scripts -name "*.sh" -type f 2>/dev/null | wc -l || true)
+    shell_seen=$(find .ci .claude scripts -name "*.sh" -type f -not -path '.claude/worktrees/*' 2>/dev/null | wc -l || true)
     if [[ "$shell_seen" -lt "$MIN_SHELL_FILES" ]]; then
         log_error "VACUOUS: found $shell_seen shell script(s), floor $MIN_SHELL_FILES."
         log_error "The enumeration lost its corpus; refusing to report formatting clean."
@@ -101,7 +101,7 @@ main() {
     log_info "Checking .claude/**/*.sh"
     # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry
     # shellcheck disable=SC2086
-    find .claude -name "*.sh" -type f -exec "$SHFMT_BIN" $SHFMT_OPTS {} +
+    find .claude -name "*.sh" -type f -not -path '.claude/worktrees/*' -exec "$SHFMT_BIN" $SHFMT_OPTS {} +
 
     # Check the main run.sh script
     log_info "Checking ./run.sh"

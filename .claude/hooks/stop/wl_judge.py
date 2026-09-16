@@ -16,6 +16,7 @@ import time
 
 import wl_bravedefault as BD
 import wl_classsweep as CS
+import wl_proc
 import worklist_messages as M
 
 # v5: no cap. Kept as a name so the counter file (used only to TELL the judge
@@ -40,6 +41,15 @@ JUDGE_BUDGET_USD = os.environ.get("WORKLIST_JUDGE_BUDGET_USD", "0.25")
 # 30s (3 turns, stop_reason tool_use) with two Opus sub-agents running, and had
 # exceeded 120s minutes earlier under heavier load. A stop happens precisely
 # when the session is busiest, so the typical-case budget was the wrong one.
+# THE OUTER DEADLINE MUST EXCEED THIS ONE PLUS THE PREAMBLE, and on 2026-09-08
+# it did not. `.claude/settings.json` gave the Stop hook `"timeout": 300` while
+# this was 240, leaving under 60s for everything the hook does BEFORE the judge
+# -- liveness, git, plan checks, report surfacing. Under load that preamble runs
+# long, the harness SIGTERMs the whole hook mid-judge, and the failure surfaces
+# as "judge exited 143" with empty stdout: a KILLED judge reported as an
+# unreachable one. The diagnostic that message offers then points at the model,
+# which was healthy -- the real schema-constrained call answered in 2 turns for
+# $0.0165 while 13 pytest workers were running. Outer raised to 900.
 JUDGE_TIMEOUT_S = int(os.environ.get("WORKLIST_JUDGE_TIMEOUT_S", "240"))
 JUDGE_DISABLED = os.environ.get("WORKLIST_JUDGE") == "off"
 
@@ -327,6 +337,29 @@ def _explain_failed_exit(label, proc):
     escape hatch wearing a gate's clothes -- the same swallowed-failure class the
     repo scans for, inside the thing that audits it.
     """
+    # A SIGNAL IS NOT A FAILURE TO ANSWER, and conflating the two cost a full turn
+    # on 2026-09-08. The child was SIGTERMed because the outer Stop-hook deadline
+    # was shorter than this judge's own; the gate reported "exited 143" with empty
+    # stdout, the operator-facing text read as an unreachable model, and the
+    # remedy it offered was to DISABLE the gate. The model was healthy -- the real
+    # schema-constrained call answered in 2 turns for $0.0165 minutes later. So a
+    # killed child says so, and points at the deadline rather than the model.
+    sig = (
+        -proc.returncode
+        if proc.returncode < 0
+        else (proc.returncode - 128 if 128 < proc.returncode < 160 else 0)
+    )
+    if sig:
+        return [
+            "%s was KILLED by signal %d (exit %d), which is not the same as failing "
+            "to answer: nothing here says the model is unreachable. Something "
+            "terminated the child -- usually an OUTER deadline shorter than this "
+            "gate's own %ds, so check the Stop hook's `timeout` in "
+            ".claude/settings.json before suspecting the model, and reproduce the "
+            "REAL call (--json-schema INLINE, not a path, plus --max-budget-usd) "
+            "rather than a bare connectivity probe."
+            % (label, sig, proc.returncode, JUDGE_TIMEOUT_S)
+        ]
     bits = ["%s exited %d" % (label, proc.returncode)]
     env_out = None
     try:
@@ -365,7 +398,7 @@ def run_triage(finding, context):
     env["STOPHOOK_CHILD"] = "1"
 
     def _call():
-        return subprocess.run(
+        return wl_proc.run(
             [
                 exe,
                 "-p",
@@ -394,21 +427,16 @@ def run_triage(finding, context):
                 "--max-budget-usd",
                 JUDGE_BUDGET_USD,
             ],
-            capture_output=True,
-            text=True,
             timeout=JUDGE_TIMEOUT_S,
             env=env,
-            check=False,
             cwd=str(workdir),
-            stdin=subprocess.DEVNULL,
         )
 
-    try:
-        proc = _call()
-    except subprocess.TimeoutExpired:
+    proc = _call()
+    if proc.timed_out:
         return None, "triage timed out after %ds" % JUDGE_TIMEOUT_S
-    except OSError as exc:
-        return None, "triage could not be launched: %s" % exc
+    if proc.returncode == wl_proc.SPAWN_FAILED_RC and not proc.stdout:
+        return None, "triage could not be launched: %s" % proc.stderr.strip()
     if proc.returncode != 0:
         proc, _why = retry_schema_exhaustion("triage", proc, _call)
         if proc is None:
@@ -476,7 +504,7 @@ def _run_structured(label, prompt, schema, extract):
     env["STOPHOOK_CHILD"] = "1"
 
     def _call():
-        return subprocess.run(
+        return wl_proc.run(
             [
                 exe,
                 "-p",
@@ -505,21 +533,16 @@ def _run_structured(label, prompt, schema, extract):
                 "--max-budget-usd",
                 JUDGE_BUDGET_USD,
             ],
-            capture_output=True,
-            text=True,
             timeout=JUDGE_TIMEOUT_S,
             env=env,
-            check=False,
             cwd=str(workdir),
-            stdin=subprocess.DEVNULL,
         )
 
-    try:
-        proc = _call()
-    except subprocess.TimeoutExpired:
+    proc = _call()
+    if proc.timed_out:
         return None, "%s timed out after %ds" % (label, JUDGE_TIMEOUT_S)
-    except OSError as exc:
-        return None, "%s could not be launched: %s" % (label, exc)
+    if proc.returncode == wl_proc.SPAWN_FAILED_RC and not proc.stdout:
+        return None, "%s could not be launched: %s" % (label, proc.stderr.strip())
     if proc.returncode != 0:
         proc, _why = retry_schema_exhaustion(label, proc, _call)
         if proc is None:
@@ -597,7 +620,7 @@ def run_admission(message):
     env["STOPHOOK_CHILD"] = "1"
 
     def _call():
-        return subprocess.run(
+        return wl_proc.run(
             [
                 exe,
                 "-p",
@@ -626,21 +649,16 @@ def run_admission(message):
                 "--max-budget-usd",
                 JUDGE_BUDGET_USD,
             ],
-            capture_output=True,
-            text=True,
             timeout=JUDGE_TIMEOUT_S,
             env=env,
-            check=False,
             cwd=str(workdir),
-            stdin=subprocess.DEVNULL,
         )
 
-    try:
-        proc = _call()
-    except subprocess.TimeoutExpired:
+    proc = _call()
+    if proc.timed_out:
         return None, "admission timed out after %ds" % JUDGE_TIMEOUT_S
-    except OSError as exc:
-        return None, "admission could not be launched: %s" % exc
+    if proc.returncode == wl_proc.SPAWN_FAILED_RC and not proc.stdout:
+        return None, "admission could not be launched: %s" % proc.stderr.strip()
     if proc.returncode != 0:
         proc, _why = retry_schema_exhaustion("admission", proc, _call)
         if proc is None:
@@ -907,23 +925,24 @@ def run_judge(
     ]
 
     def _call():
-        return subprocess.run(
+        # THROUGH THE SHARED RUNNER, and for this call site that is not a tidy-up.
+        # `claude -p` forks; `subprocess.run(capture_output=True, timeout=N)` kills
+        # only the direct child on timeout and then blocks in communicate() on pipe
+        # ends a grandchild still holds. This runs inside the STOP HOOK, so that
+        # block is not a slow gate -- it is a worktree in which no session can stop.
+        # `wl_proc.run` gives the child its own session and signals the group.
+        return wl_proc.run(
             argv,
-            capture_output=True,
-            text=True,
             timeout=JUDGE_TIMEOUT_S,
             env=env,
-            check=False,
             cwd=str(workdir),
-            stdin=subprocess.DEVNULL,
         )
 
-    try:
-        proc = _call()
-    except subprocess.TimeoutExpired:
+    proc = _call()
+    if proc.timed_out:
         return None, "judge timed out after %ds" % JUDGE_TIMEOUT_S
-    except OSError as exc:
-        return None, "judge could not be launched: %s" % exc
+    if proc.returncode == wl_proc.SPAWN_FAILED_RC and not proc.stdout:
+        return None, "judge could not be launched: %s" % proc.stderr.strip()
     if proc.returncode != 0:
         proc, _why = retry_schema_exhaustion("judge", proc, _call)
         if proc is None:

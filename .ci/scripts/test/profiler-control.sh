@@ -56,10 +56,20 @@ IDLE_S=30
 ALLOC_S=30
 DISK_S=75 # long enough that a decimated `df` tick lands inside the phase
 
+# EVERY ARM MUST CONSUME AT LEAST ONE ARGUMENT. `--interval` did `shift 2`
+# unconditionally; `shift 2` with only ONE argument left FAILS and shifts
+# NOTHING. There is no `set -e` here, so the failure was discarded, `$#`
+# stayed 1, and `profiler-control.sh --interval` (the flag as the last
+# argument) spun forever -- the same class of bug fixed in sampler-linux.sh
+# on 2026-09-10. The arity check below turns it into a loud exit instead.
 while (($# > 0)); do
     case "$1" in
         --interval)
-            INTERVAL="${2:-2}"
+            if (($# < 2)); then
+                echo "profiler-control.sh: --interval requires a value" >&2
+                exit 2
+            fi
+            INTERVAL="$2"
             shift 2
             ;;
         --keep)

@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Unit test for the retry policy in .ci/scripts/ci/watchdog-monitor.cjs (issue #537)
+# ---- end gate ----
+
 # Unit test for the retry policy in .ci/scripts/ci/watchdog-monitor.cjs (issue #537).
 #
 # WHAT BROKE. The failure classifier returns HTTP 402, so classifyFailure falls

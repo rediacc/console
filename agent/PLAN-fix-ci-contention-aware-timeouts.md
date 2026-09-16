@@ -222,7 +222,7 @@ change instead of two divergent ones if it had been used.
 - **`.ci/scripts/deploy/wait-for-preview-worker.sh`** (`MAX_ATTEMPTS=60` ×
   `PROBE_INTERVAL_SECONDS=2` = 120s, `exit 1` at line 123). Same shape (fixed
   budget gates a verdict, waits on a real deploy), but its own extensive
-  comments (`:37-97`) document THREE real incidents (commits `8b7840ed4`,
+  comments (`:37-97`) document THREE real incidents (commits `32211cbc9`,
   `cefa43ca7`, runs `30968082228`/`30995469629`), and every one of them was
   Cloudflare D1/Worker propagation flakiness and probing the wrong
   endpoint/body — not local machine contention. Cloudflare's edge isn't this

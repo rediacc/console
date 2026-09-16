@@ -27,7 +27,7 @@ and skip exactly those two assertions when empty, loudly, with a step-summary li
 
 **Quality/Workflows (07-26, 07-24).** The actions-freshness gate is **right**. Do the
 upgrade: `docker/login-action` is pinned at `abd2ef45` (v4.5.1); bump every site to current.
-No blocklist entry. Verify with `scripts/check-actions.ts` locally, expecting zero pending.
+No blocklist entry. Verify with `scripts/gates/check-actions.ts` locally, expecting zero pending.
 
 **Quality/Security (07-25).** Run the audit gate and act on what it says. It may have
 self-healed via the documented sub-24h auto-defer. If a real vulnerability persists, fix it

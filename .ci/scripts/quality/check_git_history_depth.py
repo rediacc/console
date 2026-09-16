@@ -73,6 +73,9 @@ import re
 import subprocess
 import sys
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls
+
 try:
     import yaml
 except ImportError:
@@ -162,15 +165,7 @@ def judge(workflows):
 
 def selftest():
     """Controls, both directions. A gate that cannot fail is worse than none."""
-    ok = True
-
-    def check(label, cond):
-        nonlocal ok
-        if cond:
-            print("  PASS  %s" % label)
-        else:
-            ok = False
-            print("  FAIL  %s" % label, file=sys.stderr)
+    check = controls.Checker()
 
     def job(*steps):
         return [("f.yml", {"jobs": {"j": {"steps": list(steps)}}})]
@@ -268,7 +263,7 @@ def selftest():
         len(judge(job(co, {"run": ".ci/scripts/version/resolve-version.sh --current"}))) == 0,
     )
     check("CONTROL: an empty workflow set yields no offences", len(judge([])) == 0)
-    return ok
+    return check.ok
 
 
 def workflows(root):

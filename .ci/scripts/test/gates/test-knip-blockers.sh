@@ -1,5 +1,12 @@
 #!/bin/bash
-# Integration test for scripts/check-knip-blockers.ts.
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
+# Integration test for scripts/gates/check-knip-blockers.ts.
 #
 # Creates temp knip.jsonc fixtures with known suppression + BLOCKER
 # combinations and verifies the validator accepts covered entries and
@@ -24,7 +31,7 @@ run_validator_with_config() {
     trap "rm -rf '$TEMP'" RETURN
     echo "$config_content" >"$TEMP/knip.jsonc"
     local out rc=0
-    out=$(cd "$REPO_ROOT" && npx tsx scripts/check-knip-blockers.ts --config "$TEMP/knip.jsonc" 2>&1) || rc=$?
+    out=$(cd "$REPO_ROOT" && npx tsx scripts/gates/check-knip-blockers.ts --config "$TEMP/knip.jsonc" 2>&1) || rc=$?
     echo "$out"
     return "$rc"
 }
@@ -34,7 +41,7 @@ test_accepts_real_config() {
     if [[ ! -f knip.jsonc ]]; then
         log_fail "knip.jsonc missing at repo root"
     fi
-    if ! npx tsx scripts/check-knip-blockers.ts >/dev/null 2>&1; then
+    if ! npx tsx scripts/gates/check-knip-blockers.ts >/dev/null 2>&1; then
         log_fail "real knip.jsonc should pass BLOCKER validation"
     fi
     log_pass "real knip.jsonc passes validation"

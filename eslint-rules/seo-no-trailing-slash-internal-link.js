@@ -24,9 +24,26 @@
  * URLs in pre-commit/IDE save actions would mask author intent.
  */
 
-/** Internal-path prefixes that route to a different system or static asset
- * tree, where trailing slashes are intentional or controlled elsewhere. */
-const EXEMPT_PREFIXES = [
+/**
+ * Internal-path prefixes that route to a different system or static asset tree,
+ * where trailing slashes are intentional or controlled elsewhere.
+ *
+ * ★ ONE DEFINITION, TWO CONSUMERS. This list used to be hand-copied into
+ * `scripts/gates/check-seo.ts`, joined only by a "keep in sync" comment on each side.
+ * The rule this repo learned the hard way: IF TWO PLACES MUST AGREE AND NEITHER
+ * IMPORTS THE OTHER, THEY ALREADY DISAGREE -- you just have not looked yet. A
+ * comment cannot fail. The gate now imports this array, exactly the way
+ * `scripts/lib/positional-cli-detector.ts` imports
+ * `eslint-rules/lib/cli-exempt-lists.js`.
+ *
+ * The definition lives on the ESLint side, not the TypeScript side, for the
+ * same reason it does there: an ESLint rule is plain ESM JavaScript and cannot
+ * import a `.ts` module, so the shared value has to sit somewhere a rule and a
+ * tsx script can both reach. Only the rule and the gate consume it, so it stays
+ * in the rule file rather than earning a third file under `lib/`; a third
+ * consumer is the moment to move it.
+ */
+export const EXEMPT_PREFIXES = [
   '/account/',
   '/api/',
   '/releases/',

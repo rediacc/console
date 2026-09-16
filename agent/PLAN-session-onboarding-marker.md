@@ -169,7 +169,10 @@ number is not cosmetic and a collision would have been a silent overwrite.
 ## Tasks
 
 - [x] Write `.claude/hooks/context/onboard.py`, modelled on `band-notice.py` (every exception swallowed to the error log, `sys.exit(0)` on every path, `additionalContext` output)
-- [ ] Register it: PostToolUse (universal, no matcher), plus `--arm` on PostCompact and SessionStart
+- [x] Register it: PostToolUse (universal, no matcher), plus `--arm` on PostCompact and SessionStart
+      LEDGER LAG, closed 2026-09-09: `.claude/settings.json:112` (PostToolUse, no `matcher`
+      key, unlike the `Bash`-matched group above it), `:189` (PostCompact) and `:215`
+      (SessionStart) both run `onboard.py --arm`.
 - [x] Write `worklist-cases/25-first-touch.sh` and register it in `CASE_FILES`
 - [ ] Case: arm (a) fires with the item id and the pre-substituted verb; a second tool call in the same epoch is SILENT
 - [x] Case: arm (b) waits for the first Edit; twenty Bash calls with no items emit nothing (the case that would have nagged 38 of 41 real sessions)

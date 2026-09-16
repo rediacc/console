@@ -13,8 +13,10 @@ on:
   pull_request_review_comment:
     types: [created]
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 # Queue (not cancel) per issue/PR: a second mention must not kill a running
 # answer.

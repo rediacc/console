@@ -1,6 +1,7 @@
 # Subagent idle/liveness detection
 
 Status: ready
+Owner: 0ad063bf
 Origin: session 0ad063bf, 2026-08-23. Design by a Plan agent, verified against live artifacts.
 Operator: approved to build; asked to be present when it starts.
 

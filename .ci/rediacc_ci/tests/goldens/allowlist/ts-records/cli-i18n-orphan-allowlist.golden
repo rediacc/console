@@ -1,0 +1,14 @@
+# rediacc_ci allowlist golden
+# reader: ts:scripts/lib/blocker-validator.ts::parseBlockeredList
+# command: parseBlockeredList(<corpus>, '#'); printf '%s\t%s\t%s\n' line entry blocker
+# projection: records
+# source: .cli-i18n-orphan-allowlist
+# corpus: corpus/cli-i18n-orphan-allowlist.list
+# comment-char: #
+# corpus-sha256: c028f45a67c0d57eb807ff3456ea43fcdb39702feb080070ba56d28cac113858
+# ---
+17	commands.sync.	repo-sync.ts builds t(`commands.sync.${mode}.completed|failed|starting|progress`) where mode is upload|download; the full leaf key is never a static literal, so the upload/download subtrees are only reachable at runtime.
+18	errors.term.	term.ts renders t(`errors.term.${codeKey}`) mapping an SSH exit code to a message; the per-code leaves are concatenated at runtime and never appear as a static t() literal.
+19	commands.machine.health.	machine/health.ts emits t(`commands.machine.health.${field.key}`) over a runtime field list; the per-field leaves are built dynamically and never appear as a static literal.
+20	commands.config.infra.push.dns	infra-provision.ts logDnsAction builds `commands.config.infra.push.dns${Created|Updated|Deleted}` from a DnsAction; the dnsCreated/dnsUpdated/dnsDeleted leaves are concatenated at runtime, not static literals.
+22	docs.	the docs.* namespace is the www cli-docs generator's private vocabulary (packages/www/scripts/generate-cli-docs.js), not CLI t(); it reads docs.frontmatter directly and emits docs.* via runtime-built {{t:cli.docs.*}} the committed markdown may not fully enumerate, so a static CLI scan cannot see these references.

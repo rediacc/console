@@ -26,6 +26,27 @@ if [[ -z "$branch" ]]; then
     exit 1
 fi
 
+# emit <line> -- append one `key=value` to $GITHUB_OUTPUT, or print it.
+#
+# NOT `>>"${GITHUB_OUTPUT:-/dev/stdout}"`, which is what both call sites below
+# were until 2026-09-10. Opening /dev/stdout FAILS with ENXIO ("No such device
+# or address") when stdout is a UNIX SOCKET, and a socket is exactly what
+# Node's child_process.spawnSync hands a child -- including this repo's own
+# scripts/lib/shadow-gate.ts harness. The script then printed its human line,
+# LOST the epics= line entirely and exited 1: a failure report from a run that
+# had already done its work, with the one output the workflow reads missing.
+# Reproduced 2026-09-10 with a socketpair on fd 1: twin exit 1, stderr
+# "discover-epics.sh: line 36: /dev/stdout: No such device or address".
+# GITHUB_OUTPUT is always set in Actions, so the live matrix never hit this;
+# every local run and every harness run did.
+emit() {
+    if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+        printf '%s\n' "$1" >>"$GITHUB_OUTPUT"
+    else
+        printf '%s\n' "$1"
+    fi
+}
+
 ids=()
 while IFS= read -r id; do
     [[ -n "$id" ]] && ids+=("$id")
@@ -33,12 +54,12 @@ done < <(review_epic_ids "$branch")
 
 if [[ ${#ids[@]} -eq 0 ]]; then
     echo "no epics declared for ${branch}; one flat review pass will run"
-    echo 'epics=[""]' >>"${GITHUB_OUTPUT:-/dev/stdout}"
+    emit 'epics=[""]'
     exit 0
 fi
 
 printf 'epics for %s: %s\n' "$branch" "${ids[*]}"
 printf '%s\n' "${ids[@]}" | jq -R . | jq -sc . | {
     read -r json
-    echo "epics=$json" >>"${GITHUB_OUTPUT:-/dev/stdout}"
+    emit "epics=$json"
 }

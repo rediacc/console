@@ -31,15 +31,22 @@ on:
     secrets:
       BWS_ACCESS_TOKEN:
         required: true
-permissions:
-  contents: read
-  packages: write   # GHCR push
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
 
 jobs:
   build-cli:
     name: CLI
     runs-on: ubuntu-slim
     timeout-minutes: 14
+    # Builds an artifact, never touches a registry. build-www holds a
+    # github.token only so the Astro latest-release fetch is not anonymous.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # RELEASE GATE. next_version is `required: false` and every consumer below
@@ -96,6 +103,10 @@ jobs:
     # the dist/ artifact ~5.6GB, and the slim runner was cancelled mid-upload. A
     # standard runner has the disk/network headroom to build and upload it reliably.
     runs-on: ubuntu-latest
+    # Builds an artifact, never touches a registry. build-www holds a
+    # github.token only so the Astro latest-release fetch is not anonymous.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # Same release gate as build-cli: the www footer stamps this version into
@@ -138,6 +149,10 @@ jobs:
   build-json:
     name: JSON
     runs-on: ubuntu-slim
+    # Builds an artifact, never touches a registry. build-www holds a
+    # github.token only so the Astro latest-release fetch is not anonymous.
+    permissions:
+      contents: read
     if: "!inputs.test_images_only"
     timeout-minutes: 10
     steps:
@@ -181,6 +196,12 @@ jobs:
     name: Server Docker (${{ matrix.variant }} amd64)
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create-manifest.sh
+    # runs `docker buildx imagetools create`, which is a registry write. The
+    # ghcr login uses github.token, so this is a real packages: write.
+    permissions:
+      contents: read
+      packages: write
     needs: [build-www, build-cli]
     if: inputs.web_exists != 'true'
     strategy:
@@ -275,6 +296,12 @@ jobs:
     name: Server Docker (${{ matrix.variant }} arm64)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 45
+    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create-manifest.sh
+    # runs `docker buildx imagetools create`, which is a registry write. The
+    # ghcr login uses github.token, so this is a real packages: write.
+    permissions:
+      contents: read
+      packages: write
     needs: [build-www, build-cli]
     if: "inputs.web_exists != 'true' && !inputs.test_images_only"
     strategy:
@@ -372,6 +399,12 @@ jobs:
     name: Server Docker Manifest (${{ matrix.variant }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create-manifest.sh
+    # runs `docker buildx imagetools create`, which is a registry write. The
+    # ghcr login uses github.token, so this is a real packages: write.
+    permissions:
+      contents: read
+      packages: write
     needs: [build-server-docker-amd64, build-server-docker-arm64]
     if: "inputs.web_exists != 'true' && !inputs.test_images_only"
     strategy:
@@ -400,13 +433,15 @@ jobs:
 
       - name: Create multi-arch manifest
         run: |
-          .ci/scripts/docker/create-manifest.sh \
+          .ci/scripts/docker/create_manifest.py \
             --image-path ${{ steps.resolve.outputs.image_path }} \
             --tag "${{ inputs.web_tag }}"
 
   build-server-docker-skip:
     name: Server Docker (cached)
     runs-on: ubuntu-latest
+    # A single echo. No checkout, no registry, no API: it needs nothing at all.
+    permissions: {}
     if: inputs.web_exists == 'true'
     steps:
       - run: echo "::notice::Skipping Docker build - server image at tag ${{ inputs.web_tag }} already exists in registry"
@@ -417,6 +452,12 @@ jobs:
     name: CLI Docker
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create-manifest.sh
+    # runs `docker buildx imagetools create`, which is a registry write. The
+    # ghcr login uses github.token, so this is a real packages: write.
+    permissions:
+      contents: read
+      packages: write
     # No job-level needs: the musl SEA binaries come from ci-build-cli.yml, which
     # ci.yml orders BEFORE this workflow (build-docker needs build-cli), so the
     # artifacts are already uploaded by the time this job downloads them.
@@ -465,13 +506,15 @@ jobs:
 
       - name: Create multi-arch manifest
         run: |
-          .ci/scripts/docker/create-manifest.sh \
+          .ci/scripts/docker/create_manifest.py \
             --image rdc \
             --tag "${{ inputs.rdc_tag }}"
 
   build-cli-docker-skip:
     name: CLI Docker (cached)
     runs-on: ubuntu-latest
+    # A single echo. No checkout, no registry, no API: it needs nothing at all.
+    permissions: {}
     if: "!inputs.test_images_only && inputs.rdc_exists == 'true'"
     steps:
       - run: echo "::notice::Skipping Docker build - rdc:${{ inputs.rdc_tag }} already exists in registry"
@@ -487,6 +530,12 @@ jobs:
     name: Renet Docker
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Pushes to ghcr: buildx-push-web.sh runs `--push`, and create-manifest.sh
+    # runs `docker buildx imagetools create`, which is a registry write. The
+    # ghcr login uses github.token, so this is a real packages: write.
+    permissions:
+      contents: read
+      packages: write
     if: inputs.renet_exists != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -552,13 +601,15 @@ jobs:
       - name: Create multi-arch manifest
         if: "!inputs.test_images_only"
         run: |
-          .ci/scripts/docker/create-manifest.sh \
+          .ci/scripts/docker/create_manifest.py \
             --image renet \
             --tag "${{ inputs.renet_tag }}"
 
   build-renet-skip:
     name: Renet (cached)
     runs-on: ubuntu-latest
+    # A single echo. No checkout, no registry, no API: it needs nothing at all.
+    permissions: {}
     if: inputs.renet_exists == 'true'
     steps:
       - run: echo "::notice::Skipping Docker build - renet:${{ inputs.renet_tag }} already exists in registry"
@@ -571,6 +622,12 @@ jobs:
     name: Devcontainer (amd64)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # docker/build-push-action with `push: github.event_name == 'push'`, i.e. it
+    # pushes on push-to-main and builds only on a PR. A job-level permission
+    # cannot be conditional, so packages: write is declared unconditionally.
+    permissions:
+      contents: read
+      packages: write
     if: "!inputs.test_images_only"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -604,6 +661,12 @@ jobs:
     name: Devcontainer (arm64)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 45
+    # docker/build-push-action with `push: github.event_name == 'push'`, i.e. it
+    # pushes on push-to-main and builds only on a PR. A job-level permission
+    # cannot be conditional, so packages: write is declared unconditionally.
+    permissions:
+      contents: read
+      packages: write
     if: "!inputs.test_images_only"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -636,6 +699,11 @@ jobs:
   build-devcontainer-manifest:
     name: Devcontainer Manifest
     runs-on: ubuntu-latest
+    # imagetools create against ghcr, i.e. a manifest push. No checkout in this
+    # job, but contents: read is kept for the composite action resolution.
+    permissions:
+      contents: read
+      packages: write
     needs: [build-devcontainer-amd64, build-devcontainer-arm64]
     if: "!inputs.test_images_only && github.event_name == 'push'"
     steps:

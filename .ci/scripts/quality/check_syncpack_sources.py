@@ -26,6 +26,13 @@ The point of the list is to make that distinction VISIBLE -- an omission and a d
 look identical in a config file, and this gate is what tells them apart.
 
 Exit 1 on any uncovered manifest or unusable reason, 2 on a failed control.
+
+---- gate ----
+step: syncpack source coverage
+needs: submodules
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -36,6 +43,9 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+import _cipath  # noqa: F401
+from rediacc_ci import controls
 
 ROOT = Path(os.environ.get("SYNCPACK_SOURCES_ROOT") or Path(__file__).resolve().parents[3])
 RC = ROOT / ".syncpackrc.json"
@@ -139,12 +149,8 @@ def selftest() -> int:
 
 
 def main() -> int:
-    print("syncpack sources: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("syncpack sources", selftest):
+        return refusal
 
     try:
         rc = json.loads(RC.read_text(encoding="utf-8"))

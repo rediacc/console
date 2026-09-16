@@ -9,7 +9,7 @@ accumulated surface.
 This repo reached that conclusion by hand THREE times and wrote it down each time:
 `scripts/lib/shrink-only-baseline.ts:25-31` ("a class, not an instance... seven chances to
 drift"), `.claude/hooks/pre-bash/block-adhoc-sanctioned.sh:4-8` (a new class is "a row
-rather than a 22nd copy of this file"), and `scripts/check-shared-constant-duplication.ts`
+rather than a 22nd copy of this file"), and `scripts/gates/check-shared-constant-duplication.ts`
 (one constant existing twice while "nothing failed"). Three times a person noticed.
 
 ITS OWN MODEL CALL, and the reason is a measurement rather than a preference. The approved
@@ -22,7 +22,7 @@ against operator-supplied worked examples. So this rule pays its own way: one ex
 `claude -p` only on the stops where the COUNTER has already fired, which is rare by
 construction.
 
-THE COUNTER IS MECHANICAL AND COMES FIRST. `scripts/check-shape-duplication.ts` hashes
+THE COUNTER IS MECHANICAL AND COMES FIRST. `scripts/gates/check-shape-duplication.ts` hashes
 sliding 5-line windows over the gate families, seeded so the 219-span standing backlog is
 silent, and fires only when a shape that was NOT already present reaches its third copy. A
 model asked "is there duplication?" answers yes far too often; a counter answers only when
@@ -34,9 +34,9 @@ import glob
 import hashlib
 import json
 import os
-import subprocess
 
 import wl_judge
+import wl_proc
 import wl_rules
 
 SHAPE_MARKER = "IS THIS THE NTH COPY"
@@ -268,7 +268,7 @@ def ask(instances):
     env["STOPHOOK_CHILD"] = "1"
 
     def _call():
-        return subprocess.run(
+        return wl_proc.run(
             [
                 exe,
                 "-p",
@@ -282,18 +282,15 @@ def ask(instances):
                 "--max-budget-usd",
                 wl_judge.JUDGE_BUDGET_USD,
             ],
-            capture_output=True,
-            text=True,
             timeout=wl_judge.JUDGE_TIMEOUT_S,
             env=env,
-            check=False,
-            stdin=subprocess.DEVNULL,
         )
 
-    try:
-        proc = _call()
-    except (OSError, subprocess.SubprocessError) as exc:
-        return None, "shape_dup model call failed: %s" % exc
+    proc = _call()
+    if proc.timed_out:
+        return None, "shape_dup model call timed out after %ds" % wl_judge.JUDGE_TIMEOUT_S
+    if proc.returncode == wl_proc.SPAWN_FAILED_RC and not proc.stdout:
+        return None, "shape_dup model call failed: %s" % proc.stderr.strip()
     if proc.returncode != 0:
         # THE FIFTH SCHEMA-CONSTRAINED CALL SITE, and it was missed when the other
         # four were fixed. `error_max_structured_output_retries` is one SAMPLE
@@ -369,11 +366,11 @@ def apply_verdict(out, instances, shape_hash, root=None, path=None):
 # -- The driver: counter first, model only if the counter fired ---------------
 #
 # THE COUNTER IS THE TRIGGER AND IT IS MECHANICAL. A model asked "is there duplication?"
-# answers yes far too often; `scripts/check-shape-duplication.ts` answers only when a shape
+# answers yes far too often; `scripts/gates/check-shape-duplication.ts` answers only when a shape
 # that was NOT in the seed reaches its third copy. So the paid call happens on the rare
 # stop where a real Nth instance landed, and never otherwise.
 
-COUNTER = "scripts/check-shape-duplication.ts"
+COUNTER = "scripts/gates/check-shape-duplication.ts"
 COUNTER_TIMEOUT_S = 60
 
 # The corpus signature, so an unchanged tree costs a stat sweep rather than 1.1s of tsx.
@@ -381,7 +378,7 @@ COUNTER_TIMEOUT_S = 60
 # Stop hook fires on every poll. mtime+size rather than content: any edit moves it, so this
 # can make the rule LATE by nothing and can never silently switch it off.
 CORPUS_GLOBS = (
-    "scripts/check-*.ts",
+    "scripts/gates/check-*.ts",
     ".ci/scripts/quality/check-*.sh",
     ".ci/scripts/test/gates/test-*.sh",
     ".claude/hooks/pre-bash/block-*.sh",
@@ -405,18 +402,15 @@ def counter_findings(root):
     script = os.path.join(root, COUNTER)
     if not os.path.exists(script):
         return [], "counter not present at %s" % COUNTER
-    try:
-        proc = subprocess.run(
-            ["npx", "tsx", COUNTER, "--json"],
-            capture_output=True,
-            text=True,
-            timeout=COUNTER_TIMEOUT_S,
-            cwd=root,
-            check=False,
-            stdin=subprocess.DEVNULL,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        return [], "counter failed: %s" % exc
+    proc = wl_proc.run(
+        ["npx", "tsx", COUNTER, "--json"],
+        timeout=COUNTER_TIMEOUT_S,
+        cwd=root,
+    )
+    if proc.timed_out:
+        return [], "counter timed out after %ds" % COUNTER_TIMEOUT_S
+    if proc.returncode == wl_proc.SPAWN_FAILED_RC and not proc.stdout:
+        return [], "counter failed: %s" % proc.stderr.strip()
     # The counter EXITS NON-ZERO on its own floors (a broken glob, a missing seed). That is
     # its report to CI, not an answer to this question, so it is surfaced as an error and
     # never read as "no duplication".

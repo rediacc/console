@@ -15,7 +15,7 @@
  * TEXTLESS (operator decision L4), so one file serves 13 locales; and INLINED rather
  * than referenced by `<img src>`, because they paint from the `--illustration-*` custom
  * properties, which an externally-loaded SVG is a separate document from and can never
- * see. `scripts/check-svg-theme-reach.ts` gates the second one.
+ * see. `scripts/gates/check-svg-theme-reach.ts` gates the second one.
  */
 const thumbModules = import.meta.glob<string>('../assets/images/disclosure/*.svg', {
   eager: true,

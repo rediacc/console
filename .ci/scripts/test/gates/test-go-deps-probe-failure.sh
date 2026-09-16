@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Unit test for the probe-failure guard in .ci/scripts/quality/check-go-deps.sh.
 #
 # WHAT BROKE. The gate gathered its data with
@@ -39,8 +46,18 @@ mkdir -p "$FIXTURE/.ci/scripts/quality" "$FIXTURE/.ci/scripts/lib" \
     "$FIXTURE/private/fakemod" "$FIXTURE/shim"
 cp "$REPO_ROOT/.ci/scripts/quality/check-go-deps.sh" "$FIXTURE/.ci/scripts/quality/"
 cp "$REPO_ROOT"/.ci/scripts/lib/*.sh "$FIXTURE/.ci/scripts/lib/"
+# release-age.sh stopped being self-contained on 2026-09-06: it is now a SHIM
+# over scripts/lib/release-age.ts, which holds the freshness rule once instead of
+# twice. Copying only .ci/scripts/lib is therefore no longer enough -- the
+# delegate would be unreachable, is_release_deferred would fail closed, and the
+# outdated case below would be silently deferred rather than reported. The gate
+# would pass while asserting nothing, which is the exact failure the rest of this
+# file exists to catch.
+mkdir -p "$FIXTURE/scripts/lib"
+cp "$REPO_ROOT/scripts/lib/release-age.ts" "$FIXTURE/scripts/lib/"
 printf 'module example.com/fakemod\n\ngo 1.25\n' >"$FIXTURE/private/fakemod/go.mod"
-: >"$FIXTURE/.go-deps-upgrade-blocklist"
+mkdir -p "$FIXTURE/.ci/policy"
+: >"$FIXTURE/.ci/policy/.go-deps-upgrade-blocklist"
 GATE="$FIXTURE/.ci/scripts/quality/check-go-deps.sh"
 
 # install_fake_go <mode>
@@ -62,7 +79,15 @@ EOF
 # run_gate -> prints exit code; output captured to $FIXTURE/out.txt
 run_gate() {
     local rc=0
-    PATH="$FIXTURE/shim:$PATH" bash "$GATE" >"$FIXTURE/out.txt" 2>&1 || rc=$?
+    # REDIACC_CI_ROOT points age-check.sh at the REAL rediacc_ci package. The
+    # fixture mirrors .ci/scripts only, and since age-check.sh became a shim over
+    # rediacc_ci.core.age it refuses to source without .ci/rediacc_ci/core -- so
+    # every case here failed at source time with "cannot find rediacc_ci",
+    # including the healthy baseline, and the gate's own probe-failure assertions
+    # were passing for the wrong reason. The package is pure Python and reads no
+    # fixture state, so borrowing the real one changes nothing under test.
+    PATH="$FIXTURE/shim:$PATH" REDIACC_CI_ROOT="$REPO_ROOT" bash "$GATE" \
+        >"$FIXTURE/out.txt" 2>&1 || rc=$?
     echo "$rc"
 }
 out() { cat "$FIXTURE/out.txt"; }

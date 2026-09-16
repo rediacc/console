@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Both-ways test for the version component of the closure key in .ci/scripts/ci/generate-tag.sh
+# ---- end gate ----
+
 # Both-ways test for the version component of the closure key in
 # .ci/scripts/ci/generate-tag.sh.
 #
@@ -41,7 +50,7 @@ RDC_CLOSURE_PATHS=(
     .ci/scripts/build/build-cli-musl.sh
     .ci/scripts/build/build-cli-executables.sh
     .ci/scripts/build/prepare-cli-assets.sh
-    scripts/generate-third-party-licenses.ts
+    scripts/gen/generate-third-party-licenses.ts
     .github/workflows/ci-build-cli.yml
     .github/workflows/ci-build-docker.yml
 )

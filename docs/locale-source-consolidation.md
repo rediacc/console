@@ -31,17 +31,17 @@ the console tree, in five different orderings, plus more in the submodules.
 `packages/shared/src/i18n/types.ts:24`, `packages/www/scripts/build-account-onboarding.ts:26`,
 `generate-cli-docs.js:24`, `lib/landing-terminal-catalog.js:10`, `validate-cli-docs.js:28`,
 `validate-content-accuracy.js:30`, `validate-content.js:23`, `validate-docs-cli-usage.js:162`,
-`validate-tutorial-transcripts.js:11`, `scripts/check-directive-quotes.ts:68`,
-`scripts/check-docs-inline-translations.ts:34`, `workers/www/src/index.ts:132`,
+`validate-tutorial-transcripts.js:11`, `scripts/gates/check-directive-quotes.ts:68`,
+`scripts/gates/check-docs-inline-translations.ts:34`, `workers/www/src/index.ts:132`,
 `workers/www/src/smart-redirect.ts:38`.
 
 Other orderings: `packages/www/src/i18n/types.ts:18` (display order),
-`scripts/check-account-email-templates.ts:11`, and in the submodule
+`scripts/gates/check-account-email-templates.ts:11`, and in the submodule
 `private/account/tests/integration/lead-magnet-template.test.ts:12` (a fifth, alphabetical).
 
 **4 non-English lists** (the 13 minus `en`, derivable): `scaffold-tutorial-transcript-locales.js:11`,
 `translate-tutorial-transcripts.ts:29`, `validate-translation-freshness.js:13`,
-`scripts/check-docs-untranslated-text.ts:30`.
+`scripts/gates/check-docs-untranslated-text.ts:30`.
 
 **Deliberate subsets that must NOT be blindly widened**, because they gate on published
 media in R2: `VIDEO_LANGS` (11, gap `{ar,et}`), and two `AUDIO_LANGUAGES`

@@ -8,7 +8,7 @@
  * template matches one of its containers (the runtime walker stops at the
  * first match, treating the container as one leaf — e.g. `/policy`).
  *
- * The gate `check:ci-schema-coverage` (scripts/check-schema-coverage.ts) runs
+ * The gate `check:ci-schema-coverage` (scripts/gates/check-schema-coverage.ts) runs
  * this against RdcConfigSchema + SENSITIVITY_REGISTRY and fails closed on:
  *   - any schema leaf no registry template covers (an unclassified field), and
  *   - any registry template that matches nothing the schema can produce

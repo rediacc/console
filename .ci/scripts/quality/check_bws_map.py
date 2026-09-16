@@ -86,6 +86,13 @@ each the converse of something already checked:
 
 Control-first: the parser is proven on synthetic input in both directions
 before any verdict, and the failure direction is proven by a planted name.
+
+---- gate ----
+step: Bitwarden secret map
+needs: submodules
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -859,6 +866,19 @@ def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = N
     # ---- gather every request and every DIRECT read, per job -----------------
     requested: set[str] = set()
     direct_reads = 0
+    # THE SCAN'S OWN PULSE, separate from `direct_reads`. Once the last GitHub-side
+    # rename is gone (2026-09-14: BREAKPOINT_TUNNEL_TOKEN was the final one --
+    # `github-secret-preimage.json` was itself deleted as its own docstring's
+    # documented end state), `direct_reads` legitimately reaches ZERO: every
+    # consumer reads its Bitwarden-sourced env var, none reads `secrets.X` for a
+    # mapped name any more. A vacuity guard keyed on `direct_reads` cannot tell
+    # that apart from `USE_RE` silently breaking or `call_sites()` returning
+    # nothing, which is the actual failure this assertion exists to catch. This
+    # counter proves the scan MACHINERY still runs across real content -- every
+    # `secrets.X` reference the regex finds on an uncommented line, mapped or not,
+    # shadowed or not -- so the guard below fires on a broken scan and stays
+    # silent on a finished migration.
+    total_secret_uses = 0
     for f in call_sites():
         text = f.read_text(encoding="utf-8")
         lines = text.split("\n")
@@ -880,6 +900,7 @@ def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = N
             if line.lstrip().startswith("#"):
                 continue
             for gh_name in USE_RE.findall(line):
+                total_secret_uses += 1
                 if gh_name in NOT_SHADOWED:
                     continue
                 bw_name = renames.get(gh_name, gh_name)
@@ -905,9 +926,14 @@ def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = N
                     f"{f.relative_to(ROOT)}:{reads[bw_name]} job {job!r} reads a secret it never "
                     f"requests ({bw_name}); at cutover that job fetches nothing for it"
                 )
-    if direct_reads == 0:
+    if total_secret_uses == 0:
         problems.append(
-            "no job reads any mapped secret directly; the per-job scan lost its subject"
+            "not one `secrets.X` reference was found anywhere in the scanned workflows; "
+            "the per-job scan lost its subject (broken regex, empty corpus, or a "
+            "call_sites() that stopped returning files) -- ZERO direct reads of a "
+            "Bitwarden-mapped name is the expected, GREEN end state once migration is "
+            "complete, so this counts EVERY `secrets.X` use, mapped or not, to tell a "
+            "finished migration apart from a scan that stopped running"
         )
     for key, rec in sorted(no_fetch.items()):
         # A MALFORMED ENTRY MUST REPORT, NOT CRASH. Writing the reason as a bare string

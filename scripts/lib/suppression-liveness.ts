@@ -27,7 +27,7 @@
  */
 
 import { existsSync as fsExistsSync, readFileSync } from 'node:fs';
-import { DIM, GREEN, NC, RED, YELLOW } from '../utils/console.js';
+import { DIM, GREEN, NC, RED, YELLOW } from './console.js';
 
 const readFileUtf8 = (p: string): string => readFileSync(p, 'utf-8');
 
@@ -165,7 +165,7 @@ const MAX_FINDINGS_PER_PROBE = 10;
 /**
  * Output is deliberately SHARP, not comprehensive: one block per finding, one
  * file:line, one copy-pasteable fix, and a hard cap per probe followed by a
- * roll-up. The anti-pattern being avoided is scripts/check-actions.ts's old
+ * roll-up. The anti-pattern being avoided is scripts/gates/check-actions.ts's old
  * `Files: a:1, b:2, …` dump, which listed 137 paths for a single action and
  * buried the one line a reader actually needed.
  */

@@ -65,6 +65,12 @@ argument rather than three conveniences.
 WHAT IT DOES NOT DO. It does not predict cost or duration, and it never edits a
 workflow. It asserts one thing: that a measured, repeatedly-observed fit is
 either taken or justified.
+
+---- gate ----
+step: Runner sizing advice
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import argparse
@@ -75,6 +81,10 @@ import pathlib
 import re
 import subprocess
 import sys
+
+import _cipath  # noqa: F401
+from rediacc_ci.core import allowlist
+from rediacc_ci.policy_paths import policy_path
 
 # --- The thresholds. These MIRROR .ci/scripts/ci/profiler/report.awk's advise()
 # --- and its BEGIN block. Changing one without the other is what the gate
@@ -591,31 +601,28 @@ def controls(pairs):
 
 
 def parse_allowlist(path):
-    """Entries with their BLOCKER reason. Same grammar as .profiler-coverage-allowlist.
+    """Entries with their BLOCKER reason, from the one parser in this tree.
 
-    Structure only: presence of a reason, and the shrink-only liveness above.
-    The PROSE quality bar is the shared validator's
-    (.ci/scripts/lib/blocker-validator.sh), applied to this file by the gate
-    test, so the banned-phrase list lives in exactly one place.
+    COLLAPSED 2026-09-09. This was a hand-rolled fourth copy of the grammar,
+    twenty lines whose own docstring said it was "the same grammar as
+    .profiler-coverage-allowlist". It was not quite: it had no INLINE
+    `entry  # BLOCKER: reason` branch, so an inline-form entry parsed with an
+    EMPTY reason and this gate would have reported it at :964 as "missing a
+    '# BLOCKER:' comment above it" when the reason was on the line itself.
+    Measured over the seventeen frozen real lists in
+    .ci/rediacc_ci/tests/goldens/allowlist/corpus: fourteen parsed identically,
+    three (cli-i18n-orphan, deps-upgrade, go-deps-upgrade) differed on exactly
+    that branch, sixteen entries in all. Nothing changes for
+    `.runner-advice-allowlist`, which uses the block form and is empty today.
+
+    A MISSING FILE IS STILL AN EMPTY DICT, which is this gate's contract: the
+    allowlist is optional and its absence means no exemptions. `missing_ok=True`
+    says so at the call site rather than inside the parser.
+
+    The PROSE quality bar stays the shared validator's, applied to this file by
+    the gate test.
     """
-    entries = {}
-    if not os.path.isfile(path):
-        return entries
-    reason = ""
-    with open(path, encoding="utf-8") as handle:
-        for raw in handle:
-            line = raw.strip()
-            if not line:
-                reason = ""
-                continue
-            m = re.match(r"^#\s*BLOCKER:\s*(.+)$", line)
-            if m:
-                reason = m.group(1).strip()
-                continue
-            if line.startswith("#"):
-                continue
-            entries[line.split()[0]] = reason
-    return entries
+    return allowlist.pairs(allowlist.parse_file(path, missing_ok=True))
 
 
 def gh_json(args, root):
@@ -887,10 +894,13 @@ def main(argv=None):
         or os.environ.get("RUNNER_ADVICE_WORKFLOW_DIR")
         or root / ".github/workflows"
     )
+    # THE FLAG AND THE ENVIRONMENT STAY IN FRONT OF THE SEAM (W4 P4a): both are
+    # per-run redirections a harness sets, and `policy_path` is deliberately
+    # blind to them so there is exactly one default location, not two live ones.
     allowlist_path = pathlib.Path(
         args.allowlist
         or os.environ.get("RUNNER_ADVICE_ALLOWLIST")
-        or root / ".runner-advice-allowlist"
+        or policy_path(".runner-advice-allowlist", root)
     )
 
     if not baseline_path.is_file() or not workflow_dir.is_dir():

@@ -1,11 +1,12 @@
 #!/bin/bash
-# ---- gate ----
-# step: www build token
-# needs: none
-# lane: quality-code
-# why: every www build must pass github.token. Found and fixed by hand at two of
-#      three call sites, twice, before the third reddened job 99839065246
-# ---- end gate ----
+# HEADER REMOVED 2026-09-07 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-www-build-token is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_www_build_token.py, so a header here would declare a
+# registration that has moved, and gate-bind refuses that by name:
+#   package.json runs "...check_www_build_token.py" but its header derives "...check-www-build-token.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 
 # Every www build in CI must pass GITHUB_TOKEN. All of them, not most of them.
 #

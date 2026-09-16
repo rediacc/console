@@ -349,6 +349,30 @@ async function stepChannelRewrite(): Promise<void> {
  * that the SERVED BUNDLE still contains the route, because a page dropped from
  * the build takes its route string with it.
  */
+/**
+ * True when any of `srcs` is a served bundle whose text contains `needle`.
+ *
+ * Split out of stepQuotaPageShipped so that function stays under the cognitive
+ * complexity ceiling: the fetch-and-scan loop nests a continue and a break
+ * inside a loop inside a try, and that nesting was the whole of the overage
+ * (measured 11 against the 10 allowed when workers/, .ci/ and eslint-rules/
+ * entered the lint scope on 2026-09-06). Extracting it costs nothing at runtime
+ * and leaves each half describable in one sentence.
+ *
+ * A bundle that will not fetch is skipped rather than fatal: the shell routinely
+ * references cross-origin or already-evicted chunks, and one unreachable script
+ * is not evidence that the route is missing. Only an exhausted list is.
+ */
+async function anyBundleMentions(srcs: string[], needle: string): Promise<boolean> {
+  for (const src of srcs) {
+    const url = src.startsWith('http') ? src : `${PREVIEW_URL}${src}`;
+    const js = await fetch(url);
+    if (!js.ok) continue;
+    if ((await js.text()).includes(needle)) return true;
+  }
+  return false;
+}
+
 async function stepQuotaPageShipped(): Promise<void> {
   try {
     const shell = await fetch(`${PREVIEW_URL}/account/backup-storage`);
@@ -359,17 +383,7 @@ async function stepQuotaPageShipped(): Promise<void> {
     const srcs = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => m[1]);
     if (srcs.length === 0) throw new Error('the shell referenced no scripts at all');
 
-    let found = false;
-    for (const src of srcs) {
-      const url = src.startsWith('http') ? src : `${PREVIEW_URL}${src}`;
-      const js = await fetch(url);
-      if (!js.ok) continue;
-      if ((await js.text()).includes('backup-storage')) {
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
+    if (!(await anyBundleMentions(srcs, 'backup-storage'))) {
       throw new Error(
         'no served bundle mentions the backup-storage route: the quota page is not in this deployment'
       );

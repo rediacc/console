@@ -43,13 +43,13 @@ KEYISH = ("k", "key", "excl", "entry", "pat", "prefix")
 TEXTISH = ("line", "raw", "src", "text", "content", "body", "haystack")
 
 # The corpus cannot be allowed to vanish: a walk that lists nothing prints a tick that is
-# indistinguishable from a clean tree. See scripts/check-enumeration-vacuity.ts.
+# indistinguishable from a clean tree. See scripts/gates/check-enumeration-vacuity.ts.
 MIN_CONSUMERS = 2
 
 
 # TypeScript says the same thing with different words: `.includes(` and `.startsWith(`
 # are its substring tests. A TS arm is here because this gate scanned ONLY Python, and
-# that blind spot let a live one survive: scripts/check-unverified-downloads.ts matched
+# that blind spot let a live one survive: scripts/gates/check-unverified-downloads.ts matched
 # its allowlist with `f.url.includes(t)` over bare hosts, so
 # https://awscli.amazonaws.com.attacker.net/x.tgz carried the token and was waved through
 # by the gate whose entire job is refusing an unverified download. Fixed 2026-09-04, and

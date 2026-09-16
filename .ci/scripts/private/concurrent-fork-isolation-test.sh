@@ -281,7 +281,7 @@ fi
 
 log_step "Waiting for parent counter to reach 15 (restore-vs-fresh margin)"
 parent_count=0
-for _ in $(seq 1 30); do
+for ((_i = 1; _i <= 30; _i++)); do
     parent_count=$(counter_value "$parent_sock")
     [[ "${parent_count:-0}" -ge 15 ]] && break
     sleep 2

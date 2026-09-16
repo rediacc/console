@@ -1,5 +1,12 @@
 #!/bin/bash
-# Integration test for scripts/check-embed-asset-freshness.ts.
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node, submodules
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
+# Integration test for scripts/gates/check-embed-asset-freshness.ts.
 #
 # Drives the gate through EMBED_FRESHNESS_FIXTURE (a JSON map of base -> latest
 # version/date used instead of the network), so it runs offline and
@@ -15,7 +22,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-VALIDATOR="$REPO_ROOT/scripts/check-embed-asset-freshness.ts"
+VALIDATOR="$REPO_ROOT/scripts/gates/check-embed-asset-freshness.ts"
 
 # The gate reads the real Dockerfile pins from the renet submodule; without it
 # there is nothing to compare against.
@@ -69,6 +76,17 @@ EOF
     # Empty fixture -> every source "not in fixture" -> could-not-check (fail soft).
     echo '{}' >"$FIXTURE_DIR/empty.json"
 
+    # AN EMPTY BLOCKLIST for the upstream-map controls below, so they test the
+    # GATE rather than whatever the repository's live policy happens to hold.
+    # Without it `run_gate` read `.ci/policy/.embed-assets-upgrade-blocklist`,
+    # and every one of those controls plants its staleness on k3s -- so the day
+    # k3s was first held (2026-09-16, branch 0914-1) `test_fires_when_stale`
+    # reported "a pin behind upstream should fail: expected 1, got 0". The
+    # control had been passing only because production policy happened to be
+    # empty, which is a control coupled to a decision it does not own.
+    printf '# no holds; this fixture exists so the controls do not read live policy\n' \
+        >"$FIXTURE_DIR/blocklist-empty"
+
     # A blocklist entry with NO BLOCKER reason -> verifyAllBlockers must reject it.
     printf 'criu\n' >"$FIXTURE_DIR/blocklist-bad"
 
@@ -78,7 +96,13 @@ EOF
 }
 
 run_gate() { # <fixture-file> -> stdout+stderr, returns gate exit code
-    (cd "$REPO_ROOT" && EMBED_FRESHNESS_FIXTURE="$FIXTURE_DIR/$1" npx tsx "$VALIDATOR" 2>&1)
+    # THE BLOCKLIST IS PINNED TO AN EMPTY FIXTURE, not inherited from the repo.
+    # See blocklist-empty above: these controls plant their staleness on k3s, and
+    # a real hold on k3s silently turned the staleness control into a no-op.
+    (cd "$REPO_ROOT" &&
+        EMBED_FRESHNESS_FIXTURE="$FIXTURE_DIR/$1" \
+            EMBED_BLOCKLIST_FILE="$FIXTURE_DIR/blocklist-empty" \
+            npx tsx "$VALIDATOR" 2>&1)
 }
 
 # Runs the gate with a fixture upstream map AND a fixture blocklist, so the

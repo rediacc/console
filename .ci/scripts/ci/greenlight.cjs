@@ -415,15 +415,23 @@ const CLOSURES = {
       'packages/shared',
       'packages/provisioning',
       'packages/locales',
-      // The drills' own source, and the two entry points that reach it:
-      // run.sh:1987 and :1991 dispatch into scripts/drills/, both of which
-      // source scripts/drills/lib.sh.
+      // The drills' own source, and the entry points that reach it. The drill
+      // dispatch into scripts/drills/ lived in run.sh until the 2026-09-06 router
+      // split moved every verb body to .ci/legacy/run-legacy.sh; run.sh is now a
+      // 120-line dispatcher that execs into it. Both are listed, because a change
+      // to EITHER can change which drill runs, and the line numbers this comment
+      // used to cite (run.sh:1987 and :1991) no longer exist -- naming the files
+      // rather than their addresses is what stops that going stale again.
       'scripts/drills',
       'run.sh',
+      '.ci/legacy',
       'rdc.sh',
-      // run.sh:15-17 sources constants.sh, local-common.sh and service.sh, and
-      // :1854/:1891 sources account.sh, which pulls in find-port.sh. The whole
-      // .ci/lib tree is one listing entry and self-maintains.
+      // The router sources constants.sh, local-common.sh and service.sh, and the
+      // legacy body sources account.sh, which pulls in find-port.sh. Named by FILE
+      // rather than by address: the line numbers this comment used to carry
+      // (run.sh:15-17 and :1854/:1891) pointed past the end of a file that is now
+      // 120 lines, which is the same way the block three lines above went stale.
+      // The whole .ci/lib tree is one listing entry and self-maintains.
       '.ci/lib',
       '.ci/config/constants.sh',
       '.ci/scripts/test/collect-drill-diagnostics.sh',
@@ -465,7 +473,6 @@ const CLOSURES = {
       'packages/cli',
       'packages/locales',
       'Dockerfile',
-      'docker-compose.yml',
       '.ci/docker',
       '.ci/scripts/build/buildx-push-web.sh',
       '.ci/scripts/ci/set-image-tags.sh',

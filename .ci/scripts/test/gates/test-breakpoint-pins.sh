@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Static analysis of breakpoint's third-party tool pins. Downloads NOTHING:
 # a gate that hits the network to prove a checksum is a gate that goes red on
 # somebody else's outage, and it would then get skipped.

@@ -25,6 +25,7 @@ import wl_judge
 import wl_liveness
 import wl_planfid
 import wl_planfile
+import wl_planindex as PI
 import wl_reggate
 import wl_report
 import wl_requests
@@ -514,7 +515,24 @@ CITE_RE = re.compile(
     # files (every tutorial doc), 86 .svg, 18 .cast and 14 .txt could not be cited
     # AT ALL. Binary formats (png, pdf) stay OUT on purpose: a line number in a
     # binary cites nothing.
-    r"(?<![\w./-])(\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt))"
+    # EXTENSIONLESS ROOT DOTFILES, added 2026-09-06. Same class as the three
+    # gaps above and found the same way: a tick of mine citing .gitignore:9 was
+    # refused as evidence-free. The first branch requires a `.<ext>` suffix, and
+    # a name like `.gitignore` or `.dead-bash-allowlist` has its only dot at the
+    # FRONT, so 22 of this repo's 24 tracked root dotfiles could not be cited AT
+    # ALL. That set is not incidental: it is every one of the 16 allowlists and
+    # blocklists the whole suppressions discipline is built on, plus .gitignore,
+    # .npmrc, .gitattributes and .gitmodules. A session draining an allowlist
+    # entry, which is exactly the work that most needs a record, could not cite
+    # the file it had just edited. The branch carries no slash on purpose, so it
+    # reaches root dotfiles and cannot swallow the `.ci` prefix of a real path;
+    # the first branch is tried first and wins for anything with an extension.
+    # Over-matching is cheap here anyway: citation_state still has to RESOLVE the
+    # path on disk, so a stray `.foo:3` in prose fails there rather than passing.
+    r"(?<![\w./-])("
+    r"\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt)"
+    r"|\.[\w][\w-]*"
+    r")"
     r":(\d+)(?:-\d+)?\b"
 )
 
@@ -1071,7 +1089,11 @@ PLAN_HEADER_LINES = 10
 # `Owner: <session-prefix>` in the same header block. plan_drift_rows is scoped to the
 # plans THIS session owns, so it needs to read the field, not just the status.
 PLAN_OWNER_RE = re.compile(r"^\*{0,2}Owner\*{0,2}:\s*[`'\"]?([0-9A-Za-z_-]{4,})", re.MULTILINE)
-PLAN_DONE_STATES = ("done", "superseded")
+# `compacted` joins the two original words for the same reason they are here: a
+# compacted record is HISTORY, so plans_block counts it rather than listing it as
+# live work, and plan_status_excerpt never picks one as "the newest live plan".
+# `parked` is deliberately NOT here -- its work is unfinished, so it stays visible.
+PLAN_DONE_STATES = ("done", "superseded", "compacted")
 PLAN_EXCERPT_CHARS = 1500
 PLAN_DRIFT_MAX = int(os.environ.get("WORKLIST_PLAN_DRIFT_MAX", "5"))
 # How many of MY items must have moved past a plan before it counts as behind.
@@ -1359,33 +1381,80 @@ def plans_block(root):
 
     Each line carries its BOX COUNTS, and two summary lines carry the tree-wide
     totals -- see plan_box_census for why the per-stop advisory cannot supply them.
+
+    W12 P1.7: THE NUMBERS COME FROM `agent/INDEX.md` NOW, not from opening every
+    plan. Measured on this tree before the change, 166 `read_text` calls across 83
+    files and 2,018,737 bytes, on every SessionStart and every PostCompact, to
+    print 56 lines. `wl_planindex.index_census` answers the same question from ONE
+    file read plus a `stat` per plan.
+
+    THE FALLBACK IS THE OLD PATH AND IT IS LOUD. An absent or stale index does not
+    shorten this listing and does not empty it -- it rebuilds it by reading the
+    plans, exactly as before, and PREPENDS a banner naming the state, the
+    disagreement and the regeneration command. A plans block that went quiet
+    because its index was missing would be a worse defect than the cost it saves,
+    so the degraded path is slow-and-correct and never fast-and-blind.
     """
-    recs = plan_records(root)
-    live = [r for r in recs if r[1] not in PLAN_DONE_STATES]
-    if not live:
+    stats = PI.plan_stats(root)
+    if not stats:
         return "", []
-    counts, o_tot, d_tot, in_scope, exempt = plan_box_census(root, recs)
+    rows, state, detail = PI.index_census(root, stats=stats)
+    if state != PI.CENSUS_FRESH:
+        rows = PI.census_rows(root, plan_records=plan_records, plan_box_census=plan_box_census)
+    head = PI.banner(state, detail, len(stats))
+    # NEWEST FIRST, restored from the `stat` pass rather than from the committed
+    # file. `plan_records` has always sorted this way and `plan_status_excerpt`
+    # takes `live[0]` as "the newest live plan", so an index that dropped mtime
+    # would silently change which plan a compacted session gets excerpted. The
+    # sort is stable, so the by-path order inside an mtime tie is the same order
+    # `sorted(d.glob(...))` gave the old path.
+    mtimes = {rel: mt for rel, _sz, mt in stats}
+    rows = sorted(rows, key=lambda r: -mtimes.get(r[0], 0.0))
+    live = [r for r in rows if r[1] not in PLAN_DONE_STATES]
+    if not live:
+        # PLANS EXIST BUT NONE ARE LIVE. This used to return ("", []), which made
+        # "every plan is done" indistinguishable from "this project has no plans"
+        # -- both printed nothing. It is a real and reportable state, so it now
+        # renders its summary lines. The `not stats` guard above still returns
+        # ("", []) for a project with no plans at all, which is the case the
+        # early return was actually written for.
+        tail = _plan_census_summary(rows)
+        return (head + "\n".join(tail)) if tail else "", []
     lines = []
-    for rel, status, n in live:
-        boxes = counts.get(rel)
-        suffix = ", %d open box(es), %d ticked" % boxes if boxes else ""
+    for rel, status, n, n_open, n_done, _size in live:
+        suffix = ", %d open box(es), %d ticked" % (n_open, n_done) if (n_open or n_done) else ""
         lines.append("  %s [%s] (%d lines%s)" % (rel, status, n, suffix))
-    done = len(recs) - len(live)
+    done = len(rows) - len(live)
     if done:
         lines.append(
             "  (+%d done or superseded plan(s) in the same directory: historical "
             "record, read one only if you need the reasoning behind it)" % done
         )
-    if counts:
-        lines.append(
-            "  %d plan file(s) carry %d open box(es) and %d ticked, tree-wide."
-            % (len(counts), o_tot, d_tot)
-        )
-        lines.append(
-            "  %d of them are in scope for the per-stop advisory; %d are exempt by "
-            "Status, so their boxes are counted HERE and nowhere else." % (in_scope, exempt)
-        )
-    return "\n".join(lines), live
+    lines.extend(_plan_census_summary(rows))
+    return head + "\n".join(lines), [(r[0], r[1], r[2]) for r in live]
+
+
+def _plan_census_summary(rows):
+    """The two tree-wide totals lines, or [] when no plan carries a box.
+
+    Split out of plans_block because both of its exits need them and because the
+    arithmetic is the part that has to agree with `plan_box_census` exactly: a
+    plan with no boxes contributes NO row to the counts, which is why the filter
+    is on `(open or ticked)` and not on the plan set.
+    """
+    boxed = [r for r in rows if r[3] or r[4]]
+    if not boxed:
+        return []
+    o_tot = sum(r[3] for r in boxed)
+    d_tot = sum(r[4] for r in boxed)
+    in_scope = sum(1 for r in boxed if wl_planfile.in_scope_status(r[1]))
+    return [
+        "  %d plan file(s) carry %d open box(es) and %d ticked, tree-wide."
+        % (len(boxed), o_tot, d_tot),
+        "  %d of them are in scope for the per-stop advisory; %d are exempt by "
+        "Status, so their boxes are counted HERE and nowhere else."
+        % (in_scope, len(boxed) - in_scope),
+    ]
 
 
 def plan_status_excerpt(root, live):
@@ -1646,6 +1715,93 @@ GUIDE_MAX = int(os.environ.get("WORKLIST_GUIDE_MAX", "12"))
 # on a pointer somebody forgot, and a forgotten pointer ships whatever the
 # parent last recorded. A move to a new sha re-fires immediately regardless.
 SUBMODULE_LATCH_MIN = int(os.environ.get("WORKLIST_SUBMODULE_LATCH_MIN", "15"))
+# How long the same warning stays latched once a session has RECORDED a decision
+# about that exact (path, sha). Longer than the bare latch by a lot, and still
+# NOT permanent, because the reason the bare latch is time-boxed applies here
+# too: a decision can go stale, and a pointer nobody revisits ships whatever the
+# parent last recorded. A day means a decided pointer stops interrupting a
+# working session and still gets re-examined tomorrow.
+SUBMODULE_DECIDED_LATCH_MIN = int(os.environ.get("WORKLIST_SUBMODULE_DECIDED_LATCH_MIN", "1440"))
+
+
+def _json_or_none(line):
+    """One JSONL row, or None when the line is not a row. A ledger is
+    append-only under a lock, so a torn final line is possible and is not an
+    error worth propagating."""
+    try:
+        return json.loads(line)
+    except (ValueError, TypeError):
+        return None
+
+
+def submodule_decision_recorded(root, path, sha):
+    """Has ANY session ticked an item naming this submodule path and target sha?
+
+    The check offers two doors, KEEP (stage it) and DROP (`git submodule update
+    --checkout`), and there is a third that is often the right one: leave the
+    worktree alone and never stage it, which is correct when the parent's HEAD
+    already matches and the checkout belongs to a peer session. Nothing in the
+    warning could see that such a decision existed, so a session that had
+    decided, ticked and documented it was told off every fifteen minutes.
+
+    Reads the ledgers of EVERY session, not just this one, because a submodule
+    pointer is shared state: a peer's ruling on it is as binding as ours.
+
+    FAIL-SAFE BY CONSTRUCTION. Any error at all returns False, which restores
+    exactly the previous behaviour. This function runs inside the stop hook of
+    every session in the worktree, so the cost of it being wrong is not local,
+    and the safe direction is to warn too often rather than too rarely.
+    """
+    try:
+        store = pathlib.Path(root) / "agent" / "worklist"
+        if not store.is_dir():
+            return False
+        short = str(sha)[:9]
+        for led in store.glob("*.jsonl"):
+            try:
+                text = led.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            # TWO PASSES, because the decision is the ITEM and not any one event.
+            # A tick is `ev: state` with `s: "x"` -- that is the schema, not a
+            # guess: the store has no "tick" or "done" event kind at all, and a
+            # first draft looking for one matched nothing and would have shipped
+            # a predicate that could never fire. The other state value is "?" for
+            # a deferral, and a deferral is explicitly NOT a decision.
+            #
+            # The sha usually appears in the item's TITLE, on its `add` event,
+            # rather than in the tick evidence, and that is not an accident: a
+            # submodule commit is a gitlink and never an object in this
+            # repository, so `completion_evidence` REFUSES a tick whose only
+            # evidence is such a sha. The tick therefore describes the decision in
+            # prose while the title carries the pair. Matching one line at a time
+            # misses that, which a both-direction test caught here.
+            ticked = set()
+            events = []
+            for line in text.splitlines():
+                ev = _json_or_none(line)
+                if ev is None:
+                    continue
+                events.append(ev)
+                if ev.get("ev") == "state" and ev.get("s") == "x" and ev.get("id"):
+                    ticked.add(ev["id"])
+            for ev in events:
+                if ev.get("id") not in ticked:
+                    continue
+                blob = " ".join(v for v in ev.values() if isinstance(v, str))
+                if path in blob and short in blob:
+                    return True
+        return False
+    except (OSError, ValueError, TypeError):
+        # NARROW ON PURPOSE, and still fail-safe: these are what a missing store,
+        # an unreadable ledger or a malformed row can raise. A blind `except`
+        # here would also swallow a real programming error in this function and
+        # report "no decision", which is the safe DIRECTION but hides the bug
+        # forever. This runs in the stop hook of every session in the worktree,
+        # so a mistake is not local, but neither is a defect nobody can see.
+        return False
+
+
 GUIDE_TEXT_CHARS = 90
 
 # The allow-report diet (operator, 2026-07-31: "Why I see such a big
@@ -1941,6 +2097,14 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
                 wtag = "worker:%s%s" % (wid or "?", " [%s]" % osw if osw else "")
                 if rec.get("lease_tolerated"):
                     wtag += " (lease expired, worker verified alive: auto-honored; renew or tick when it lands)"
+                # THE DEADLINE IS RENDERED RELATIVE AS WELL AS ABSOLUTE, because the
+                # absolute form alone is misread the moment the reader's LOCAL date has
+                # rolled over while UTC has not. Measured 2026-09-08T22:37Z: local was
+                # already 2026-09-09 00:37 CEST, the item carried `until:2026-09-08T23:36Z`,
+                # and the stop-gate judge read that as "in the past" and refused a
+                # legitimate stop. `lease_state` had it right all along -- it compares in
+                # UTC -- so nothing was wrong except what the line SHOWED.
+                wtag += C.lease_remaining_tag(rec["line"])
                 rows.append(
                     (
                         3,
@@ -2189,6 +2353,19 @@ def handle_post_compact(event):
             hit, _errs = A.hint_for(text + "\n" + "\n".join(items))
             if hit:
                 msg += "\n\n" + M.N_AGENT_HINT % (hit[0], hit[0], ", ".join(hit[2][:6]))
+    # W12 P2.3. A compaction has just thrown away whatever this session knew about
+    # WHY the files it has in flight are the shape they are; those files have not
+    # changed. So the compacted plan records that name them go into the same
+    # briefing, from the working tree's own dirty list.
+    #
+    # ADDS NOTHING WHEN NOTHING MATCHES -- `why_for_paths` returns "" -- and never
+    # raises: this is one append to a briefing that must be emitted either way.
+    with contextlib.suppress(Exception):
+        import wl_planrec as _R  # noqa: PLC0415 -- optional; the briefing must not need it
+
+        _why = _R.why_for_paths(root, sorted(_R.dirty_paths(root, "."))[:60])
+        if _why:
+            msg += "\n\n" + _why
     C.emit(
         {
             "systemMessage": "PostCompact: STATE.md %s (agent/%s/STATE.md)"
@@ -3996,7 +4173,15 @@ def run_stop(event, event_ok, worklist, hook_file):
         _sub = state_doc.get("subptr") or {}
         _same = _sub.get("sig") == _sub_sig
         _sub_age = C.stamp_age_min(_sub.get("at")) if _same else None
-        _due = (not _same) or _sub_age is None or _sub_age >= SUBMODULE_LATCH_MIN
+        # A RECORDED DECISION LENGTHENS THE LATCH; it never removes it. See
+        # submodule_decision_recorded: the third door (leave it, never stage it)
+        # is invisible to this warning, so a session that decided correctly was
+        # told off every fifteen minutes. A day is long enough to stop
+        # interrupting the work and short enough that a stale decision is
+        # re-examined rather than enshrined.
+        _decided = all(submodule_decision_recorded(root, p, b) for p, _a, b, _w in moves)
+        _latch = SUBMODULE_DECIDED_LATCH_MIN if _decided else SUBMODULE_LATCH_MIN
+        _due = (not _same) or _sub_age is None or _sub_age >= _latch
         if _due:
             vadd(
                 "submodule",

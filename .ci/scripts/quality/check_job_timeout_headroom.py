@@ -35,6 +35,13 @@ cost scales with the `edge` channel, which grows with every release. It only
 asserts that the margin between measured reality and the declared ceiling has
 not closed. Catching the creep still requires refreshing the baseline; the
 `stale baseline` check below is what stops that from being forgotten quietly.
+
+---- gate ----
+step: CI job timeout headroom
+needs: none
+id: check:ci-timeout-headroom
+selftest: true
+---- end gate ----
 """
 
 import argparse

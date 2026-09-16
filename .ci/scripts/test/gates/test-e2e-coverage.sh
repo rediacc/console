@@ -1,6 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node
+# slow: true
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Integration test for the FORWARD half of the e2e-coverage gate
-# (scripts/check-e2e-coverage.ts), driven through its E2E_COV_* overrides
+# (scripts/gates/check-e2e-coverage.ts), driven through its E2E_COV_* overrides
 # against a controlled fixture tree.
 #
 # "Prove the instrument": the primary test PLANTS a renet function whose only
@@ -19,7 +27,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/gates/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GATE="$REPO_ROOT/scripts/check-e2e-coverage.ts"
+GATE="$REPO_ROOT/scripts/gates/check-e2e-coverage.ts"
 
 # Build a minimal fixture repo at $1. One live suite (01-live) covers live_verb
 # (via the harness method map: it calls .liveVerb()) and litonly_verb (via a raw

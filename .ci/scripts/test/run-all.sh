@@ -86,12 +86,17 @@ if ((BASH_VERSINFO[0] < 5)) || { ((BASH_VERSINFO[0] == 5)) && ((BASH_VERSINFO[1]
 fi
 
 VERBOSE=false
+SELFTEST_ONLY=false
 PATTERN="test-*.sh"
 
 while (($# > 0)); do
     case "$1" in
         --verbose | -v)
             VERBOSE=true
+            shift
+            ;;
+        --selftest)
+            SELFTEST_ONLY=true
             shift
             ;;
         *)
@@ -101,15 +106,236 @@ while (($# > 0)); do
     esac
 done
 
+# --- the tree guard's classifier, and its controls -------------------------
+#
+# WHY THESE ARE FUNCTIONS. Both were written inline inside the end-of-run guard,
+# where nothing could reach them: the guard only executes when the tree actually
+# moved mid-run, so the only way to exercise it was to race a real write against
+# a real battery. That is how both of its bugs were found, by hand, twice --
+# and a proof you have to stage by hand is a proof that is not in the tree. Named
+# and called from the guard, they can be driven directly by the controls below.
+
+# changed_paths_between <before> <after> -- tracked paths that differ, sorted,
+# one per line. The `|| true` is LOAD-BEARING: `diff` exits 1 whenever its inputs
+# differ, which is always true at the only call site, and under `set -euo
+# pipefail` a non-zero pipeline inside a command substitution aborts the script
+# before the summary ever prints. Dropping it killed this runner silently once
+# already; `guard_selftest` below now fails if it is dropped again.
+changed_paths_between() {
+    { diff <(printf '%s\n' "$1") <(printf '%s\n' "$2") || true; } |
+        sed -n 's/^[<>] *[A-Z?! ][A-Z?! ] *//p' | sort -u
+}
+
+# battery_could_have_written -- reads paths on stdin, exits 0 if ANY is under a
+# tree this battery writes. That question is the whole diagnosis: the battery is
+# blamed only for paths it plausibly touched, and everything else is reported as
+# an unknown concurrent writer, which in a checkout several sessions share is
+# what the evidence actually supports.
+battery_could_have_written() {
+    local cp
+    while IFS= read -r cp; do
+        [[ -z "$cp" ]] && continue
+        case "$cp" in
+            .ci/* | scripts/* | packages/* | .github/*) return 0 ;;
+        esac
+    done
+    return 1
+}
+
+# guard_selftest -- controls over the two functions above. Runs on EVERY battery
+# invocation, before any test, for the same reason `check_pytest.py` runs its
+# own: a verdict from an instrument that cannot fail is worse than no verdict,
+# and this instrument decides who gets blamed for a moved tree.
+guard_selftest() {
+    local n=0 bad=0 got
+    _c() {
+        n=$((n + 1))
+        if [[ "$2" != "$3" ]]; then
+            echo "FAIL  $1: got '$2', wanted '$3'" >&2
+            bad=$((bad + 1))
+        fi
+    }
+
+    # A path under a tree the battery writes -> the battery is blamed.
+    got=no
+    printf '%s\n' ".ci/scripts/x.ts" | battery_could_have_written && got=yes
+    _c "a .ci path blames the battery" "$got" "yes"
+    got=no
+    printf '%s\n' "scripts/x.ts" | battery_could_have_written && got=yes
+    _c "so does a scripts path" "$got" "yes"
+
+    # A path outside them -> an unknown writer. THIS is the arm the false
+    # accusation of 2026-09-08 lacked: the driver edited .claude/settings.json
+    # from another terminal and the battery was handed a remediation for a file
+    # no gate test touches.
+    got=no
+    printf '%s\n' ".claude/settings.json" | battery_could_have_written && got=yes
+    _c "a .claude path does NOT blame the battery" "$got" "no"
+    got=no
+    printf '%s\n' "docs/x.md" | battery_could_have_written && got=yes
+    _c "nor does a docs path" "$got" "no"
+
+    # Mixed: one plausible path is enough, because the battery may have written
+    # its own while a peer wrote the other.
+    got=no
+    printf '%s\n' ".claude/settings.json" ".ci/scripts/x.ts" |
+        battery_could_have_written && got=yes
+    _c "a mixed set still blames the battery" "$got" "yes"
+
+    # Empty input must not blame anyone. An `in`-style test that answered yes
+    # here would make every clean run an accusation.
+    got=no
+    printf '' | battery_could_have_written && got=yes
+    _c "an empty set blames nobody" "$got" "no"
+
+    # THE EXTRACTOR, against real `git status --porcelain` shapes: two-column
+    # status prefix, and ` M ` vs `M  ` vs `?? ` all stripped the same way.
+    got="$(changed_paths_between " M a/one.ts" "$(printf ' M a/one.ts\nM  b/two.ts')")"
+    _c "a new modified path is extracted" "$got" "b/two.ts"
+    got="$(changed_paths_between "$(printf ' M a/one.ts\n M b/two.ts')" " M a/one.ts")"
+    _c "a path that stopped differing is extracted too" "$got" "b/two.ts"
+
+    # SORTED AND DEDUPLICATED, both observable only with more than one line.
+    # A single-line control cannot see `sort -u` at all: dropping it left the
+    # first two controls green, so these two were added to make it falsifiable.
+    got="$(changed_paths_between " M b/two.ts" " M a/one.ts" | tr '\n' ',')"
+    _c "the extracted paths come out sorted" "$got" "a/one.ts,b/two.ts,"
+    got="$(changed_paths_between " M a/one.ts" "M  a/one.ts" | tr '\n' ',')"
+    _c "and a path named on both sides appears once" "$got" "a/one.ts,"
+
+    # AND THE `|| true`, WHICH NEEDS A FRESH PROCESS TO BE PROVABLE AT ALL.
+    # `diff` exits 1 here by construction -- the inputs always differ at the real
+    # call site, that is why the guard is running -- so without `|| true` the
+    # assignment aborts the script before the summary prints. That is the silent
+    # death this runner already suffered once.
+    #
+    # WHY `bash -c` AND NOT A SUBSHELL. This function is invoked as
+    # `if ! guard_selftest`, and bash disables errexit for the whole body of a
+    # command tested that way -- INCLUDING inside a command substitution that
+    # re-runs `set -e` itself. Both weaker forms were tried against a subject
+    # with the `|| true` deliberately removed and both PASSED: vacuous controls
+    # reporting a proof they had not made. Only a separate process starts with a
+    # clean errexit, so the mutant is what the child's silence measures.
+    export -f changed_paths_between
+    got="$(bash -c 'set -euo pipefail
+        cp="$(changed_paths_between "$1" "$2")"
+        printf "reached:%s" "$(printf "%s" "$cp" | tr "\n" ",")"' _ \
+        " M a/one.ts" " M b/two.ts" 2>/dev/null)" || true
+    export -n changed_paths_between
+    _c "the extractor survives a differing diff under set -e" \
+        "$got" "reached:a/one.ts,b/two.ts"
+
+    unset -f _c
+    if ((bad)); then
+        echo "FAIL: $bad of $n tree-guard control(s) failed" >&2
+        return 1
+    fi
+    echo "tree-guard selftest: $n control(s) passed"
+    return 0
+}
+
+if ! guard_selftest; then
+    echo "REFUSING TO RUN: the tree guard's own controls failed, so its verdict about" >&2
+    echo "who moved the tree could not be trusted. Fix the classifier above." >&2
+    exit 1
+fi
+$SELFTEST_ONLY && exit 0
+
 # --- membership ------------------------------------------------------------
 #
-# Both lists are BY NAME, so a pattern-subset run ('test-gate-*.sh') classifies
-# correctly without any extra bookkeeping. Everything not named here is T.
+# Membership is BY NAME, so a pattern-subset run ('test-gate-*.sh') classifies
+# correctly without any extra bookkeeping. Anything unclassified is T.
+#
+# ---------------------------------------------------------------------------
+# THE ISOLATION CONTRACT (W2.4b). This runner is one of TWO schedulers over the
+# same 147 gate tests. The other is scripts/ci-runner/pool.ts, whose header
+# carries the contract's single definition; read it there rather than restating
+# it here, because a definition living in two places is the thing this change
+# exists to remove.
+#
+# In one line: `mutex: [r]` is an EXCLUSIVE claim on resource r, `reads: [r]` is
+# a SHARED one, and two gates may overlap unless one holds r exclusively and the
+# other holds r at all. That is exactly the W / S / T schedule below, so the
+# three sets are DERIVED from the manifest rather than typed out here:
+#
+#   W = declares a `tree:` resource under `mutex`   (the real-tree writers)
+#   S = declares a `tree:` resource under `reads`   (the scanners)
+#   T = declares neither                            (fixture-isolated)
+#
+# WHY IT MOVED. The two schedulers decided isolation SEPARATELY, and they
+# disagreed. Measured 2026-09-06 at commit ac817a647: this file honoured all
+# three writers, while the manifest registered them with no `mutex` at all --
+# zero of the 147 qualityGateTest entries carried one -- so `npm run ci` ran the
+# exact combination the header above calls "a flake manufactured by the runner".
+# Driven against the real pool, those three gates overlapped each other in every
+# pairing. The disagreement was invisible because nothing compared the two, and
+# it could not be fixed by editing one of them: a hand list inside a runner is
+# not something the other runner can read. Driver contract section 7 states the
+# same requirement, that adding a gate must not require an edit to a runner file.
+#
+# THE FALLBACK BELOW IS TEMPORARY AND LOUD. The mutex/reads declarations are a
+# registry change and the registry has a single writer; until it lands, this file
+# would otherwise lose the isolation it has today, which is the one outcome worse
+# than the disagreement. So it falls back to the previous hand lists and SAYS SO
+# on stderr. Delete the two *_FALLBACK arrays and the fallback branch in the same
+# change that lands the declarations.
+# ---------------------------------------------------------------------------
+
+REPO_ROOT_FOR_LOCK="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+GATES_LOCK="$REPO_ROOT_FOR_LOCK/scripts/ci-runner/gates.lock.json"
+
+# classify_from_lock <mutex|reads> -- basenames of gate tests whose manifest entry
+# declares a `tree:` resource under that claim strength, one per line. Empty when
+# the lock is unreadable or declares nothing; the CALLER decides what that means,
+# because "no declarations yet" and "lock is broken" must not silently become the
+# same thing as "nothing needs isolating".
+classify_from_lock() {
+    python3 - "$GATES_LOCK" "$1" <<'CLASSIFY' 2>/dev/null || true
+import json, os, sys
+
+lock_path, claim = sys.argv[1], sys.argv[2]
+try:
+    with open(lock_path, encoding="utf-8") as fh:
+        entries = json.load(fh)
+except (OSError, ValueError):
+    raise SystemExit(0)
+if not isinstance(entries, list):
+    raise SystemExit(0)
+
+for entry in entries:
+    if not isinstance(entry, dict):
+        continue
+    run = entry.get("run")
+    if not isinstance(run, str) or ".ci/scripts/test/gates/" not in run:
+        continue
+    claimed = entry.get(claim)
+    if not isinstance(claimed, list):
+        continue
+    if not any(isinstance(r, str) and r.startswith("tree:") for r in claimed):
+        continue
+    # A `run` is a command line in the general case, so take the word that
+    # actually names the script rather than assuming it is the whole string.
+    for word in run.split():
+        if word.startswith(".ci/scripts/test/gates/"):
+            print(os.path.basename(word))
+            break
+CLASSIFY
+}
 
 # W: writes into the real tree while it runs. Adding to this list is cheap;
 # leaving something off it is a flake.
-WRITER_TESTS=(
+#
+# FALLBACK COPY -- see the block above. The reasons stay with the entries because
+# they are the only record of why each one is here, and each names the exact line
+# that does the writing, which is what a `tree:` resource has to be derived from.
+WRITER_TESTS_FALLBACK=(
+    # Plants and deletes .ci/scripts/.gate-paths-exist{,-noise}-fixture.<pid>.ts;
+    # test-gate-paths-exist.sh:71 sets FIXTURE_DIR to the real .ci/scripts.
     test-gate-paths-exist.sh
+    # Plants and deletes scripts/.gate-anti-vacuity-fixture.ts
+    # (test-gate-anti-vacuity.sh:393). Its harness also COPIES scripts/ and
+    # .ci/scripts/ into a fixture, so it READS the resource the other two write,
+    # which is why it stays exclusive against them under a path-scoped contract.
     test-gate-anti-vacuity.sh
     # Swaps the REAL .ci/scripts/version/resolve-version.sh for a stub and
     # restores it (two sites: test-generate-tag-inputs.sh:289 and :311), because
@@ -120,13 +346,25 @@ WRITER_TESTS=(
     # reddened gate-test:claude-hooks with a bash syntax error in a file that
     # parses clean, because a concurrent gate read a script mid-restore.
     test-generate-tag-inputs.sh
+    # Backs up the REAL CLAUDE.md and scripts/data/doc-registry.md, drives
+    # `gen-docs --write` over them, and restores with `cp "$BACKUP" "$TARGET"`
+    # (test-docs-gen.sh:55 and :98). Both files are read by other gates while it
+    # runs, so left in the pool it corrupts a concurrent reader.
+    #
+    # It was UNREGISTERED until 2026-09-06 and nothing said so, because
+    # check-pool-writer-safety.sh could not report it: its parse had gone empty
+    # against this file's post-W2.4b shape, and the anti-vacuity refusal that
+    # exists for exactly that case called a log_fail() that does not exist, so
+    # the gate exited 127 rather than refusing. Two failures had to be repaired
+    # before this one line became visible.
+    test-docs-gen.sh
 )
 
 # S: reads or copies the real .ci/scripts / scripts tree, directly or through
 # the gate it drives. Written longest-first so the cost of the tail is legible
 # here; the scheduler itself spawns S in glob order, which costs nothing because
 # the members ahead of the long pole run in seconds.
-SCANNER_TESTS=(
+SCANNER_TESTS_FALLBACK=(
     test-dead-bash.sh
     test-ci-parity.sh
     test-review-status.sh
@@ -150,6 +388,40 @@ SCANNER_TESTS=(
     test-shell-counter-increment.sh
 )
 
+# A READ LOOP, and it is worth saying why it is neither of the two shorter
+# spellings, because both were tried and both are wrong here.
+#
+# NOT `ARR=($(cmd))`, which the two env seams below do use. Those split a VARIABLE
+# the operator typed; this splits COMMAND OUTPUT, which is SC2207 and a different
+# hazard: a test filename carrying a space would be silently split into two
+# non-existent members and both would then be classified as T, quietly losing the
+# isolation this block exists to establish. `check:ci-shell-lint` catches it.
+#
+# NOT `mapfile -t`, which is what shellcheck suggests for SC2207 and what this
+# code said for about an hour. `mapfile` is bash 4+, and `check:ci-shell-commands`
+# bans it repo-wide for the ubuntu-slim CI image, prescribing this exact loop in
+# its own fix line. Taking shellcheck's advice traded one gate's finding for
+# another's; the loop satisfies both. (This file already refuses to run below bash
+# 5.1, so `mapfile` would have WORKED here and still been a policy violation --
+# which is the kind of green a reviewer would have had no reason to question.)
+read_lines_into() {
+    local -n _dest="$1"
+    local _line
+    _dest=()
+    while IFS= read -r _line; do
+        [[ -n "$_line" ]] && _dest+=("$_line")
+    done
+}
+read_lines_into WRITER_TESTS < <(classify_from_lock mutex)
+read_lines_into SCANNER_TESTS < <(classify_from_lock reads)
+
+# THE FALLBACK IS CONSULTED LAST, AFTER THE ENV SEAMS, and the ordering is not
+# cosmetic. Put ahead of them it still fires when RUN_ALL_WRITERS has already
+# decided membership, so its notice lands in the stderr of a run whose isolation
+# was never in doubt -- and test-run-all-parallel.sh captures runner output with
+# `2>&1` and compares it byte-for-byte, so a diagnostic printed on a run that did
+# not need it is a diagnostic that ends up inside an assertion. Speak only when
+# nothing else has spoken.
 if [[ -n "${RUN_ALL_WRITERS+x}" ]]; then
     # BLOCKER: intentional word splitting of the injected W list into an array; quoting would make the whole space-separated string one member and the seam would silently classify nothing
     # shellcheck disable=SC2206
@@ -161,6 +433,20 @@ if [[ -n "${RUN_ALL_SCANNERS+x}" ]]; then
     # shellcheck disable=SC2206
     # BLOCKER: intentional word splitting of the injected S list
     SCANNER_TESTS=($RUN_ALL_SCANNERS)
+fi
+
+if [[ -z "${RUN_ALL_WRITERS+x}" && -z "${RUN_ALL_SCANNERS+x}" ]] &&
+    ((${#WRITER_TESTS[@]} == 0)) && ((${#SCANNER_TESTS[@]} == 0)); then
+    # NOT silent, and not a line that scrolls past either: it names the exact file
+    # that has to change to make it stop, so the fallback cannot become permanent
+    # by nobody noticing it is still there.
+    echo "run-all.sh: no 'tree:' isolation declared in scripts/ci-runner/gates.lock.json;" >&2
+    echo "  falling back to the hand-maintained W/S lists in this file. This is the" >&2
+    echo "  pre-W2.4b behaviour and is expected ONLY until the registry change lands" >&2
+    echo "  the mutex/reads declarations. Delete the *_FALLBACK arrays and this branch" >&2
+    echo "  in that same change." >&2
+    WRITER_TESTS=("${WRITER_TESTS_FALLBACK[@]}")
+    SCANNER_TESTS=("${SCANNER_TESTS_FALLBACK[@]}")
 fi
 
 # THE BATTERY MAY NOT LEAVE A MARK ON THE TREE, and this is here rather than in a
@@ -189,7 +475,18 @@ BATTERY_REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 # possible reason: a developer's tree nearly always has SOME modified file, so
 # the grep matched and returned 0. A CLEAN checkout is the case that breaks it,
 # and a clean checkout is exactly what CI has.
-tree_state() { (cd "$BATTERY_REPO_ROOT" && git status --porcelain 2>/dev/null | { grep -v '^??' || true; } | sort); }
+# `|| true` ON THE GIT CALL TOO, and it is the same bug one stage upstream.
+# `set -o pipefail` makes the pipeline take git's status, so anywhere git itself
+# exits non-zero -- a directory that is not a work tree, a broken .git, git absent
+# from PATH -- the whole battery aborts at this line with exit 128 and NOT ONE BYTE
+# of output, before its first test runs. Found 2026-09-06 driving this runner
+# against a fixture tree, which is exactly the setup the RUN_ALL_GATES_DIR seam
+# exists to allow. The comment above already describes this failure shape for the
+# grep and it is worth stating that the fix was applied to only one of the two
+# stages: a pipefail hazard is per-stage, so guarding the last one that can fail is
+# not guarding the pipeline. An unavailable git yields an empty snapshot on BOTH
+# sides, so the before/after comparison stays honest rather than firing spuriously.
+tree_state() { (cd "$BATTERY_REPO_ROOT" && { git status --porcelain 2>/dev/null || true; } | { grep -v '^??' || true; } | sort); }
 TREE_BEFORE="$(tree_state)"
 
 cd "$GATES_DIR"
@@ -203,6 +500,23 @@ shopt -u nullglob
 if ((${#TEST_FILES[@]} == 0)); then
     log_fail "No test files matched pattern: $PATTERN in $GATES_DIR"
 fi
+
+# THE EMPTY-SET CHECK ABOVE DOES NOT CATCH EVERY EMPTY SET, and the gap is only
+# visible once you know how nullglob decides. It drops a word that IS a glob and
+# matches nothing; a word containing no glob metacharacter is not a glob, so it
+# survives verbatim. `test-{a,b}.sh` is exactly that shape -- brace expansion is
+# NOT applied to the result of a parameter expansion, so the braces stay literal
+# and `{}` and `,` are not glob characters. The array is then one entry long, the
+# check above passes, and the run dies at `./test-{a,b}.sh: No such file or
+# directory` from line 266 with a shell error naming no cause.
+#
+# The DIRECTION was already safe -- it counted as a failed test with 0 assertions
+# rather than a short green -- so this changes the diagnostic, not the verdict.
+for f in "${TEST_FILES[@]}"; do
+    if [[ ! -f "$f" ]]; then
+        log_fail "Pattern '$PATTERN' yielded '$f', which is not a file in $GATES_DIR. A pattern with no glob character is taken literally (brace expansion does not apply to \$PATTERN), so it is not filtered by nullglob."
+    fi
+done
 
 # --- worker count ----------------------------------------------------------
 #
@@ -424,15 +738,52 @@ fi
 
 TREE_AFTER="$(tree_state)"
 if [[ "$TREE_BEFORE" != "$TREE_AFTER" ]]; then
+    # WHO CHANGED IT IS NOT KNOWABLE FROM A BEFORE/AFTER DIFF ALONE, and asserting
+    # the battery did it was wrong on 2026-09-08: the driver edited
+    # `.claude/settings.json` from another terminal while this ran, and the battery
+    # was accused plus handed a remediation -- "take a path seam" -- for a file no
+    # gate test touches and for which no such seam exists. In a checkout several
+    # sessions and agents write concurrently, which is this repo's normal state,
+    # that is a false accusation with a misleading fix attached.
+    #
+    # So the message splits on a CHECKABLE fact: is a changed path one this battery
+    # could plausibly have written? Under the trees the gate tests and their
+    # subjects live in, it is still blamed on the battery. Anything else is an
+    # unknown concurrent writer -- which is what the evidence actually supports.
+    # EITHER WAY THE RUN STILL FAILS: a verdict from a tree that moved underneath
+    # it is suspect whoever moved it, so this narrows the diagnosis without
+    # softening the refusal.
+    # `|| true` IS REQUIRED, and its absence killed this script silently the first
+    # time: `diff` exits 1 when the inputs differ -- which is ALWAYS true here, that
+    # is why we are in this branch -- and under `set -e` with `pipefail` a non-zero
+    # pipeline in a command substitution aborts the run before the summary block
+    # ever prints. The original guard carried the same `|| true` on its own diff for
+    # exactly this reason. Caught by driving a real concurrent write, not by reading.
+    changed_paths="$(changed_paths_between "$TREE_BEFORE" "$TREE_AFTER")"
+    plausible=0
+    if printf '%s\n' "$changed_paths" | battery_could_have_written; then
+        plausible=1
+    fi
     echo ""
-    echo "✗ the battery CHANGED TRACKED FILES in the working tree:"
-    diff <(printf '%s\n' "$TREE_BEFORE") <(printf '%s\n' "$TREE_AFTER") | sed 's/^/    /' || true
-    echo "  A gate test must work on a COPY. The validator it drives should take a path"
-    echo "  seam (as check-devcontainer-pin-freshness.ts takes DEVCONTAINER_DOCKERFILE)"
-    echo "  so the test can hand it a fixture instead of the tracked file. Find the"
-    echo "  culprit by re-running tests one at a time against the file named above."
-    fail=$((fail + 1))
-    failed_tests+=("the battery itself: it left a tracked file modified")
+    if ((plausible)); then
+        echo "✗ the battery CHANGED TRACKED FILES in the working tree:"
+        diff <(printf '%s\n' "$TREE_BEFORE") <(printf '%s\n' "$TREE_AFTER") | sed 's/^/    /' || true
+        echo "  A gate test must work on a COPY. The validator it drives should take a path"
+        echo "  seam (as check-devcontainer-pin-freshness.ts takes DEVCONTAINER_DOCKERFILE)"
+        echo "  so the test can hand it a fixture instead of the tracked file. Find the"
+        echo "  culprit by re-running tests one at a time against the file named above."
+        fail=$((fail + 1))
+        failed_tests+=("the battery itself: it left a tracked file modified")
+    else
+        echo "✗ TRACKED FILES CHANGED while the battery ran, by an UNKNOWN WRITER:"
+        diff <(printf '%s\n' "$TREE_BEFORE") <(printf '%s\n' "$TREE_AFTER") | sed 's/^/    /' || true
+        echo "  None of those paths is under a tree this battery writes, so the battery is"
+        echo "  probably not the culprit -- a concurrent session or agent most likely is."
+        echo "  The verdict is STILL SUSPECT: the tree moved underneath the run. Re-run on"
+        echo "  a quiet tree before believing this result."
+        fail=$((fail + 1))
+        failed_tests+=("an unknown writer changed the tree mid-run; verdict suspect")
+    fi
 fi
 
 echo "=============================================="

@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Workflow lint (actionlint)
+# needs: none
+# selftest: true
+# lane: quality-code
+# ---- end gate ----
+
 # Validate workflow YAML with actionlint.
 #
 # WHY THIS GATE EXISTS

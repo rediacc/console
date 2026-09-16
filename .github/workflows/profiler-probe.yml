@@ -28,8 +28,10 @@ name: Profiler Probe
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 jobs:
   facts-slim:
@@ -39,6 +41,10 @@ jobs:
     # neither pass nor fail and poisons anything aggregating it. An explicit
     # timeout under the cap turns it into an ordinary, legible failure.
     timeout-minutes: 14
+    # Checkout + runner-local profiler only. index.js makes zero network
+    # calls; the step summary and ::warning:: are runner-side, not API calls.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -53,6 +59,10 @@ jobs:
     name: Facts (ubuntu-latest)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Same as facts-slim: checkout + profiler. "post" here is the JS action
+    # post-step hook, not posting anything to GitHub.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -67,6 +77,10 @@ jobs:
     name: Post hook, direct (ubuntu-latest)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Same as facts-slim: checkout + profiler. "post" here is the JS action
+    # post-step hook, not posting anything to GitHub.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -82,6 +96,10 @@ jobs:
     name: Post hook, nested in a composite (ubuntu-latest)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Same as facts-slim: checkout + profiler. "post" here is the JS action
+    # post-step hook, not posting anything to GitHub.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -97,6 +115,10 @@ jobs:
     name: Post hook, nested in a composite (ubuntu-slim)
     runs-on: ubuntu-slim
     timeout-minutes: 14
+    # Same as facts-slim: checkout + profiler. "post" here is the JS action
+    # post-step hook, not posting anything to GitHub.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

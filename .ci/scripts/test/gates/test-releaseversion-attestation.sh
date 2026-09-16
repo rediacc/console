@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Both-ways test for .ci/scripts/release/verify-artifact-attestation.sh
+# ---- end gate ----
+
 # Both-ways test for .ci/scripts/release/verify-artifact-attestation.sh.
 #
 # WHAT IT IS FOR. cd-v2.yml runs it after downloading the release artifacts and

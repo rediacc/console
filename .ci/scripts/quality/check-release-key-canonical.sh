@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-release-key-canonical is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_release_key_canonical.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_release_key_canonical.py" but its header derives "...check-release-key-canonical.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # THE RELEASE SIGNING KEY MUST REACH nfpm AS CANONICAL ARMOR.
 #
 # WHY THIS EXISTS. On 2026-09-05 a release build failed at
@@ -31,15 +40,12 @@ set -uo pipefail
 ROOT="${RELEASE_KEY_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}"
 CANON="$ROOT/.ci/scripts/build/canonicalise-gpg-key.sh"
 
-fails=0
-n=0
-_c() {
-    n=$((n + 1))
-    if [[ "$2" == "$3" ]]; then echo "  ok    $1"; else
-        fails=$((fails + 1))
-        echo "  FAIL  $1 (got '$2' want '$3')" >&2
-    fi
-}
+# One copy of the tally, shared. check:ci-shape-duplication caught this body at
+# three copies and the extraction converted only ONE of them, which took the count
+# to two and made the gate quiet at its own threshold of three. Doing a third of
+# the work is how a gate gets silenced instead of satisfied.
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/gate-controls.sh"
+_c() { gate_check "$@"; }
 
 [[ -x "$CANON" ]] || {
     echo "✗ $CANON is missing or not executable -- the build depends on it" >&2
@@ -87,7 +93,25 @@ _c "CONTROL: gpg still reads the welded key, which is why it slipped through" \
     "$(gpg --show-keys --with-colons "$TMP/welded.asc" 2>/dev/null | awk -F: '$1=="fpr"{print 1; exit}')" "1"
 
 cp "$TMP/welded.asc" "$TMP/repaired.asc"
-if "$CANON" "$TMP/repaired.asc" "$PASS" >/dev/null 2>&1; then
+# 0 = was already canonical, 10 = REPAIRED. Both are success here; only 1 is failure.
+# Treating any non-zero as failure is what this gate did before the repair signal
+# existed, and it turned a working repair into "canonicaliser-failed".
+canon_rc=0
+"$CANON" "$TMP/repaired.asc" "$PASS" >/dev/null 2>&1 || canon_rc=$?
+_c "a welded key reports REPAIRED, not 'already fine'" "$canon_rc" "10"
+# CONTROL: an already-canonical key must NOT claim a repair, or the signal is noise
+# and the next person mutes it.
+cp "$TMP/good.asc" "$TMP/good-probe.asc"
+good_rc=0
+"$CANON" "$TMP/good-probe.asc" "$PASS" >/dev/null 2>&1 || good_rc=$?
+_c "CONTROL: an already-canonical key reports 0, not 10" "$good_rc" "0"
+# The caller runs under `set -e`, so a BARE call to a script exiting 10 aborts the
+# whole build -- which is exactly the production case the signal exists for.
+# Count CODE, not prose: the same idiom appears in the comment that explains it, and
+# a naive grep -c reads 2 and fails on a correct file.
+_c "build-linux-pkg.sh guards that non-zero exit" \
+    "$(grep -v '^\s*#' "$ROOT/.ci/scripts/build/build-linux-pkg.sh" | grep -c '|| canon_rc=\$?')" "1"
+if [[ "$canon_rc" == "0" || "$canon_rc" == "10" ]]; then
     _c "the canonicaliser repairs a welded key" \
         "$(($(longest "$TMP/repaired.asc") <= 64 ? 1 : 0))" "1"
     _c "...and the repaired key is still the SAME key" \
@@ -124,12 +148,7 @@ fi
 _c "build-linux-pkg.sh calls the canonicaliser" \
     "$(grep -c 'canonicalise-gpg-key.sh' "$ROOT/.ci/scripts/build/build-linux-pkg.sh")" "1"
 
-if ((n < 8)); then
-    echo "FAIL  only $n control(s) ran; the battery is not being executed as written" >&2
-    fails=$((fails + 1))
-fi
-if ((fails)); then
-    echo "✗ release key canonicalisation: $fails of $n control(s) failed" >&2
-    exit 1
-fi
-echo "✓ release key canonicalisation: $n control(s) passed (throwaway key; the real one is a secret and is deliberately out of scope)"
+# The floor and the verdict were the SECOND duplicated shape, byte-identical down
+# to the "not being executed as written" wording. gate_finish already is it.
+gate_finish 8 "release key canonicalisation" || exit 1
+echo "  (throwaway key; the real one is a secret and is deliberately out of scope)"

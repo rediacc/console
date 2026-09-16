@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node, submodules
+# slow: true
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Tests for the Wave C autopilot harness (.ci/scripts/autopilot/), the
 # deterministic write path that runs AFTER the model exits
 # (docs/ci-overhaul/03-v2-autonomy.md). The two invariants under test:

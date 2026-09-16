@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Every vacuity floor must actually REFUSE an empty corpus
+# ---- end gate ----
+
 # Every vacuity floor must actually REFUSE an empty corpus.
 #
 # WHY THIS EXISTS, and why it is not a check-*.ts. check:ci-enumeration-vacuity proves a

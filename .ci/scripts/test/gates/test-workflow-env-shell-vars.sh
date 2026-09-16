@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: Both-ways test for the env-shell-var rule in .ci/scripts/quality/check-workflows.sh
+# ---- end gate ----
+
 # Both-ways test for the env-shell-var rule in .ci/scripts/quality/check-workflows.sh.
 #
 # THE BUG IT GUARDS. GitHub does not expand shell syntax in an `env:` VALUE --
@@ -78,6 +88,11 @@ test_flags_home() {
     local rc=0
     run_check "$d" || rc=$?
     assert_exit_code 1 "$rc" 'a literal $HOME in an env: value must fail'
+    # NAME THE RULE. `check-workflows.sh` enforces a dozen rules and exits 1 for
+    # any of them, so a bare code cannot tell "the $HOME env: value was caught"
+    # from "the fixture tripped the banned-label or unpinned-action rule".
+    assert_contains "$LAST_OUT" 'env: value uses shell syntax GitHub will not expand' \
+        'and it must be THIS rule that fired, not another of the gate rules'
     log_pass 'flags $HOME too, which has no context equivalent'
 }
 
@@ -124,6 +139,8 @@ test_arbitrary_variable_is_flagged() {
     local rc=0
     run_check "$d" || rc=$?
     assert_exit_code 1 "$rc" 'SECRET_X: $SOME_VAR in an env: block must be flagged'
+    assert_contains "$LAST_OUT" 'env: value uses shell syntax GitHub will not expand' \
+        'and it must be THIS rule that fired, not another of the gate rules'
     log_pass 'an arbitrary $IDENT (not one of the old six) is flagged'
 }
 

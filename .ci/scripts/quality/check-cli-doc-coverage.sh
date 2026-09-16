@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# HEADER REMOVED 2026-09-07 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-cli-doc-coverage is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_cli_doc_coverage.py, so a header here would declare a
+# registration that has moved, and gate-bind refuses that by name:
+#   package.json runs "...check_cli_doc_coverage.py" but its header derives "...check-cli-doc-coverage.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
 # Gate: every CLI flag a script actually has is taught in its canonical doc.
 #
 # Why this exists. check-ci-watch-recipe.sh's Check G did this for exactly one
@@ -14,7 +22,7 @@
 # (.claude/skills/testing/SKILL.md) is a pure router across six docs with no
 # single script whose CLI surface it owns, so there is nothing to flag-diff
 # there. And `rdc`'s CLI docs already have their own, different mechanism
-# (scripts/check-cli-docs.ts, generation-based, checks the OPPOSITE direction
+# (scripts/gates/check-cli-docs.ts, generation-based, checks the OPPOSITE direction
 # -- no stale flag mentioned that doesn't exist) -- not reinvented here.
 #
 # Extraction is genuinely per-script-family: Python argparse and this repo's
@@ -129,6 +137,13 @@ check_pair() {
         return
     fi
     sed -i "s/${target//-/\\-}/REDACTED/g" "$fixture"
+    # PROOF OF PLANT. The loop above picked $target BECAUSE it is in the fixture, so
+    # this cannot fail today -- and that is the point: the day the redaction stops
+    # applying (a flag whose spelling needs escaping the substitution does not do),
+    # the control below scans an UNMUTATED doc and reports a pass for an assertion it
+    # never made. The needle is checked by name, not by trusting the loop.
+    grep -q REDACTED "$fixture" ||
+        fail "$label control: CONTROL PLANT DID NOT LAND -- redacting $target left the fixture unchanged, so the control below proves nothing"
     local ctrl_missing=()
     for flag in "${flags[@]}"; do
         grep -qF -- "$flag" "$fixture" || ctrl_missing+=("$flag")

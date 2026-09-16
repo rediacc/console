@@ -455,6 +455,111 @@ old = time.time() - 3600
 os.utime(p, (old, old))' "$T"
 assert_has "13 control: backdated, the same agent IS indexed" "$(report_py --scan)" "running"
 
+echo "== 13b. THE HARNESS ROSTER OUTRANKS MTIME =="
+# WHAT CASE 13 CANNOT SEE, and why this is a separate case rather than another
+# arm of it. Case 13 varies exactly ONE thing -- mtime -- and both of its arms
+# AGREE with the mtime oracle, so it is a faithful test of the rule that was
+# implemented and structurally blind to that rule being wrong. The defect lives
+# in the one quadrant no fixture in this suite had ever built: STALE MTIME AND
+# STILL ALIVE. An agent blocked in a single Bash call is silent by construction
+# for the length of that call, so on 2026-09-07 two live agents -- one waiting
+# on check:ci-pytest (661s in this repo's own receipt), one on the bash gate
+# battery (606s) -- sailed past the idle check and were captured mid-thought.
+#
+# AND THE COST IS A LOST REPORT, not a premature row: capture() returns None
+# once an id is indexed, so the mid-flight row PERMANENTLY shadows the real
+# report that arrives at SubagentStop. The half-answer becomes the only
+# artifact that ever exists.
+#
+# THE JOIN IS THE WHOLE CLAIM, verified live before this was written: for a
+# type:"subagent" entry the harness's background_tasks[].id is BYTE-IDENTICAL
+# to the transcript's agent-<id>.jsonl stem. If that convention ever changes
+# this case goes red, which is exactly what should happen.
+scratch
+python3 - "$T" <<'PY'
+import json, os, pathlib, re, sys, time
+T = pathlib.Path(sys.argv[1])
+root = T / "repo"
+proj = T / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(root)) / "s" / "subagents"
+proj.mkdir(parents=True)
+# Both agents are IDENTICAL in every respect the mtime oracle can see: same
+# shape, same body length, same backdated mtime. The ONLY difference between
+# them is the roster. That is what makes this a test of the new oracle and not
+# accidentally a test of something else.
+old = time.time() - 3600
+for aid, atype in (("alive-7777777777777777", "liveagent"),
+                   ("adone-8888888888888888", "doneagent")):
+    (proj / ("agent-%s.meta.json" % aid)).write_text(json.dumps({"agentType": atype}))
+    p = proj / ("agent-%s.jsonl" % aid)
+    p.write_text(json.dumps({
+        "type": "assistant", "agentId": aid, "gitBranch": "testbr",
+        "message": {"content": [{"type": "text", "text":
+            "Now I have the full picture. Let me write the CLI. " * 8}]}}) + "\n")
+    os.utime(p, (old, old))  # STALE by mtime: the old oracle calls both finished
+
+# The sidecar wl_checks.py writes on every full stop, planted where
+# C.worklist_for(start) looks: $TMPDIR/claude-worklist/<slug>.lastevent-<p>.json
+wl = pathlib.Path(os.environ["TMPDIR"]) / "claude-worklist"
+wl.mkdir(parents=True, exist_ok=True)
+slug = re.sub(r"[^A-Za-z0-9._-]", "_", str(root)).strip("_")
+(wl / (slug + ".lastevent-aaaaaaaa.json")).write_text(json.dumps({
+    "session_id": "aaaaaaaa-1111", "background_tasks": [
+        # RUNNING, joined to the transcript by id alone.
+        {"id": "alive-7777777777777777", "type": "subagent", "status": "running",
+         "description": "blocked in a 661s gate"},
+        # A FINISHED peer in the SAME roster: proves the filter is `status`, not
+        # "appears in background_tasks at all".
+        {"id": "adone-8888888888888888", "type": "subagent", "status": "completed",
+         "description": "finished"},
+        # A RUNNING SHELL task: proves the filter is also `type`, so a shell id
+        # can never mask an agent.
+        {"id": "b701wk0zr", "type": "shell", "status": "running",
+         "command": "sleep 900"},
+    ]}))
+PY
+OUT13B="$(report_py --scan)"
+assert_lacks "13b a harness-RUNNING agent is not indexed despite a stale mtime" \
+    "$OUT13B" "liveagent"
+# THE CONTROL THAT MAKES THIS NON-VACUOUS: the identical fixture beside it,
+# differing ONLY in `status`, IS indexed. Without this, "lacks liveagent" is
+# satisfied by a scan that saw nothing at all.
+assert_has "13b control: its identical twin marked completed IS indexed" \
+    "$OUT13B" "doneagent"
+assert_eq "13b exactly one of the two was captured" \
+    "$(wc -l <"$T/store/index.jsonl" | tr -d ' ')" "1"
+
+# STALENESS OF THE ROSTER RELEASES THE HOLD. A dead session's sidecar freezes
+# with its tasks still "running"; if that protected an id forever the self-heal
+# scan() exists for would starve permanently and silently. SCAN_LIVE_MIN=0 ages
+# every sidecar out, so mtime decides -- i.e. exactly the pre-fix behaviour.
+assert_has "13b control: a STALE roster releases the hold and the agent IS indexed" \
+    "$(WORKLIST_REPORT_SCAN_LIVE_MIN=0 report_py --scan)" "liveagent"
+
+# BLINDNESS IS REPORTED, NOT SILENTLY ASSUMED HEALTHY. With no sidecar at all
+# (wiped TMPDIR, fresh worktree, CI) the oracle cannot see, and a check that
+# cannot fail must say so. It must ALSO still capture: skipping everything is
+# fail-OFF, not fail-open, and would make scan() a permanent no-op.
+scratch
+python3 - "$T" <<'PY'
+import json, os, pathlib, re, sys, time
+T = pathlib.Path(sys.argv[1])
+root = T / "repo"
+proj = T / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(root)) / "s" / "subagents"
+proj.mkdir(parents=True)
+aid = "ablind-999999999999999"
+(proj / ("agent-%s.meta.json" % aid)).write_text(json.dumps({"agentType": "blindagent"}))
+p = proj / ("agent-%s.jsonl" % aid)
+p.write_text(json.dumps({"type": "assistant", "agentId": aid, "gitBranch": "testbr",
+    "message": {"content": [{"type": "text", "text": "a finished report " * 20}]}}) + "\n")
+old = time.time() - 3600
+os.utime(p, (old, old))
+PY
+OUTBLIND="$(report_py --scan)"
+assert_has "13b control: with no roster at all the scan still self-heals" \
+    "$OUTBLIND" "blindagent"
+assert_has "13b control: and it NAMES its blindness rather than looking healthy" \
+    "$OUTBLIND" "BLIND"
+
 echo "== 14. torn index tail =="
 scratch
 stop_event "atorn-one-8888888888888888" torn-one "a real report $BIG"
@@ -1003,6 +1108,171 @@ assert_has "27 the log stayed append-only (the line is still there)" "$(cat "$T/
 assert_has "27 and a retire event was appended for it" "$(cat "$T/store/index.jsonl")" '"ev":"retire"'
 # Re-runnable, and a second pass finds nothing.
 assert_has "27 control: re-running finds nothing left" "$(report_py --retire-phantoms)" "nothing to retire"
+
+echo "== 29. open-items handback: a sub-agent that ends with work in hand =="
+# THE GAP THIS CLOSES. `SubagentStop` is a CAPTURE hook and can never refuse a
+# turn, so every rule the Stop hook enforces on the main loop is unenforceable
+# for a sub-agent. The fix is not to make it blocking (a wedged sub-agent costs
+# more than a lost report); it is to RECORD the condition and let the parent's
+# blocking Stop surface it. These cases prove both directions, because a flag
+# that is always on is the same as no flag.
+scratch
+stop_event "aopen-handback-1111222233334444" porter "Batch 9 ports, partial.
+
+## Remaining
+- [ ] four gate tests still unported
+- [?] whether the twin is deleted here or in P5  DEFAULT: P5
+- [>] shadow pair re-measure  worker:someworker
+- [x] the six that landed
+- [~] withdrawn, was a duplicate
+"
+stop_event "aclean-handback-5555666677778888" porter "All six ports landed.
+
+## Remaining
+- [x] every box closed
+- [~] one withdrawn
+"
+IDX="$T/store/index.jsonl"
+# THREE open states counted, `[x]` and `[~]` excluded -- the same partition the
+# store's own parser draws, not a second opinion about it.
+assert_has "29 the handback records its open count" "$(sed -n 1p "$IDX")" '"opens":3'
+assert_has "29 control: the clean report records zero" "$(sed -n 2p "$IDX")" '"opens":0'
+# ALWAYS WRITTEN, never omitted when zero: an absent key cannot be told apart
+# from a capture taken before the field existed.
+assert_has "29 zero is written, not omitted" "$(sed -n 2p "$IDX")" '"opens"'
+# Selected by CONTENT, not by a guessed filename: `short_id` takes the LAST 12
+# characters of the agent id, so both fixtures land in `*-porter-*.md`.
+BODY1="$(grep -l 'four gate tests still unported' "$T"/store/testbr/*.md | head -1 | xargs cat)"
+assert_has "29 the front matter carries it too" "$BODY1" "open_boxes: 3"
+
+OUT="$(surface --session-start startup)"
+assert_has "29 the parent Stop sees the marker" "$OUT" "OPEN:3"
+assert_has "29 and a legend saying what to do about it" "$OUT" "ENDED ITS TURN declaring"
+# The row prints the SHORT id (`short_id` = the last 12 characters), not the
+# agent id the fixture was created with.
+assert_has "29 control: the clean agent IS surfaced (it is unread)" "$OUT" "666677778888"
+# The discriminator: same block, same reader, one marked and one not.
+assert_lacks "29 control: the clean agent carries no marker" "$OUT" "OPEN:0"
+
+# 29b. A SILENT agent declares nothing, so it must not sprout a handback marker
+# -- and the two flags must not both claim the column.
+scratch
+stop_event "asilent-none-1111222233334444" quiet-one ""
+OUT="$(surface --session-start startup)"
+assert_has "29b silent still reads SILENT" "$OUT" "SILENT"
+assert_lacks "29b and carries no open-items marker" "$OUT" "OPEN:"
+assert_lacks "29b no legend when nothing was handed back" "$OUT" "ENDED ITS TURN declaring"
+
+# 29c. THE CAPTURE HOOK STAYS NON-BLOCKING. This is the invariant the whole
+# design rests on, and it is the one an "improvement" would quietly break, so it
+# is asserted rather than trusted: a sub-agent handing back three open items
+# still exits 0 with no output on stdout.
+scratch
+OUT="$(stop_event "aexit-check-1111222233334444" porter "- [ ] one
+- [ ] two
+- [ ] three" 2>&1)"
+RC=$?
+assert_eq "29c a handback still exits 0" "$RC" "0"
+assert_eq "29c and says nothing to the sub-agent" "$OUT" ""
+
+# 29d. `--list --unread` carries the same marker, so the inbox and the surfaced
+# block cannot disagree about which agent handed work back.
+assert_has "29d the listing marks it" "$(report_py --list --all)" "[OPEN:3]"
+
+# 29e. BACKWARD COMPATIBILITY, because the index is append-only and never
+# rewritten: every line captured before this field existed has no `opens` key at
+# all. A reader that assumed the key would raise on the whole historical tail --
+# the exact shape that once aborted `scan()` permanently and silently. The
+# fixture is a REAL capture with the key surgically removed rather than a
+# hand-typed line, so it cannot drift from what the writer actually produces.
+scratch
+stop_event "alegacy-line-1111222233334444" porter "A report from before the field existed.
+- [ ] this box must NOT be counted, because the line has no opens key
+"
+IDX="$T/store/index.jsonl"
+assert_has "29e control: the fresh capture does carry the key" "$(cat "$IDX")" '"opens":1'
+python3 - "$IDX" <<'STRIP'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1])
+out = []
+for line in p.read_text().splitlines():
+    e = json.loads(line)
+    e.pop("opens", None)
+    out.append(json.dumps(e, separators=(",", ":"), ensure_ascii=False))
+p.write_text("\n".join(out) + "\n")
+STRIP
+assert_lacks "29e the key is really gone from the fixture" "$(cat "$IDX")" '"opens"'
+OUT="$(report_py --list --all 2>&1)"
+assert_has "29e a legacy line still lists" "$OUT" "222233334444"
+assert_lacks "29e and carries no marker" "$OUT" "[OPEN:"
+OUT="$(surface --session-start startup 2>&1)"
+assert_has "29e a legacy line still surfaces" "$OUT" "222233334444"
+assert_lacks "29e and the legend stays away" "$OUT" "ENDED ITS TURN declaring"
+
+echo "== 30. a RESUMED agent's later reports are captured, not dropped =="
+# THE DEFECT, measured live 2026-09-07 on agent a41545ec804647d3b. Dedup was
+# keyed on the agent id alone, so only an agent's FIRST stop was ever recorded.
+# `SendMessage` resumes an agent and every resume ends in another SubagentStop,
+# so the store kept that agent's 75-byte SILENT sign-off and DISCARDED both
+# substantive reports that followed. That is this module's stated purpose
+# running backwards -- keeping the silence, dropping the substance.
+scratch
+stop_event "aresumed-agent-1111222233334444" porter "First stop: nothing much yet."
+stop_event "aresumed-agent-1111222233334444" porter "SECOND STOP, THE REAL REPORT.
+$BIG"
+IDX="$T/store/index.jsonl"
+assert_eq "30 both stops are indexed" "$(wc -l <"$IDX" | tr -d ' ')" "2"
+assert_has "30 the first keeps the bare id" "$(sed -n 1p "$IDX")" '"id":"222233334444"'
+assert_has "30 the second gets its own id" "$(sed -n 2p "$IDX")" '"id":"222233334444-2"'
+# WHY A DISTINCT ID IS LOAD-BEARING and not cosmetic: `unread` suppresses by id,
+# so a second capture sharing the id would be born already-read.
+report_py --read aaaaaaaa-1111 222233334444 >/dev/null
+OUT="$(surface --session-start startup)"
+assert_lacks "30 the first, once read, stays suppressed" "$OUT" "First stop: nothing much"
+assert_has "30 but the SECOND still surfaces" "$OUT" "222233334444-2"
+assert_has "30 and it is the substantive one" "$OUT" "SECOND STOP, THE REAL REPORT"
+
+# 30b. CONTROL: the dedup this replaced must still work. The hook captures at
+# the stop and `--scan` self-heals over the same agent later, both producing a
+# byte-identical body; that duplicate is what dedup exists for.
+scratch
+stop_event "asame-body-5555666677778888" porter "Identical sign-off."
+stop_event "asame-body-5555666677778888" porter "Identical sign-off."
+assert_eq "30b control: an identical re-capture is still deduped" \
+    "$(wc -l <"$T/store/index.jsonl" | tr -d ' ')" "1"
+
+# 30c. CONTROL: a LEGACY index line, written before bodies were keyed, keeps the
+# old id-only dedup. Without this the first --scan after the change would
+# re-capture all 349 already-indexed reports as `-2` duplicates.
+scratch
+stop_event "alegacy-dedup-9999aaaabbbbcccc" porter "Original body."
+python3 - "$T/store/index.jsonl" <<'STRIPKEY'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1])
+out = []
+for line in p.read_text().splitlines():
+    e = json.loads(line)
+    e.pop("bkey", None)
+    out.append(json.dumps(e, separators=(",", ":"), ensure_ascii=False))
+p.write_text("\n".join(out) + "\n")
+STRIPKEY
+assert_lacks "30c the fixture really is legacy-shaped" "$(cat "$T/store/index.jsonl")" '"bkey"'
+stop_event "alegacy-dedup-9999aaaabbbbcccc" porter "A DIFFERENT body entirely."
+assert_eq "30c control: a legacy line still dedupes by id alone" \
+    "$(wc -l <"$T/store/index.jsonl" | tr -d ' ')" "1"
+
+# 30d. "Nothing unread" and "nothing captured" are DIFFERENT facts, and one
+# sentence used to state both -- "no reports indexed" was printed for an index
+# holding 349 entries the reader had simply read.
+scratch
+assert_has "30d an empty store says so" "$(report_py --list --unread 2>&1)" "no reports indexed"
+stop_event "aallread-agent-ddddeeeeffff0000" porter "Something substantive here.
+$BIG"
+report_py --read aaaaaaaa-1111 eeeeffff0000 >/dev/null
+OUT="$(report_py --list --unread 2>&1)"
+assert_has "30d a fully-read store says THAT instead" "$OUT" "no UNREAD reports"
+assert_has "30d and names how many are indexed" "$OUT" "1 indexed, all read"
+assert_lacks "30d it no longer claims nothing was captured" "$OUT" "no reports indexed"
 
 # 28. META-CONTROL: the ambient scrub at the top of this file really happened.
 # A CHECK ON A CHECK, and not redundant. Every identity assertion above depends

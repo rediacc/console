@@ -123,7 +123,7 @@ head_sha=$(git rev-parse HEAD) || {
     exit 0
 }
 baseline=""
-for _ in $(seq 1 "$WALK_CAP"); do
+for ((_i = 1; _i <= WALK_CAP; _i++)); do
     if git rev-parse --verify --quiet "${current}^2" >/dev/null; then
         no_fast_path "merge commit ${current:0:7} in the walk"
     fi
