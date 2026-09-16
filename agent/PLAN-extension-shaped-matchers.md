@@ -506,3 +506,14 @@ citations fixed, `#21096609`'s gate-widening committed locally at `b7610de50` an
 re-verified against `check:ci-gates-lock`, and dispatching two parallel agents for an unrelated
 prose-style-adoption task) touched none of this plan's files or its precondition. Status stays
 `executing`, commit 3 stays not started.
+
+### Re-checked a twenty-first time 2026-09-16, session d778be9d: still unchanged
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still
+16 files; `.ci/shadow/w7p6-*.observations.jsonl` is still 153 files. Activity since the
+twentieth check (a live operator correction of the ask-blocker's worktree/branch scope, the
+account-stage npm-404 retry cycle on PR #589, a CLAUDE.md/Standing Orders voice rewrite plus
+its onboard.py sibling, and a repo-wide you/your/yours count for the prose-style rollout's
+already-scoped boundary) touched none of this plan's files or its precondition. Status stays
+`executing`, commit 3 stays not started.
