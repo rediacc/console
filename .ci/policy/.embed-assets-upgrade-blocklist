@@ -11,3 +11,18 @@
 #   <base>
 #
 # Empty by default — nothing is held; every pin tracks upstream.
+
+# BLOCKER: k3s 1.37.0+k3s1 is a MINOR bump to a binary renet EMBEDS, and three
+# CI lanes execute it -- E2E K8s, E2E K8s Ceph and E2E K8s Multinode. Taking it
+# means rebuilding the renet builder image, moving the SHA256 pin and
+# AssetK3sVersion in private/renet/pkg/embed/embed.go, and re-deriving
+# credits.go plus third-party-credits.json: a submodule change whose blast
+# radius is the cluster lanes themselves. Branch 0914-1 / PR #589 is a CI-repair
+# wave that took Quality / Security from 56 failures to an intermittent-flake
+# hunt, and an embedded runtime upgrade landing beside it would make any red in
+# those lanes ambiguous between the upgrade and the repair -- the one thing this
+# wave has spent its whole length disentangling.
+# REVISIT WHEN PR #589 MERGES: delete this line, run
+# `npm run check:ci-embed-asset-freshness -- --upgrade`, then follow the four
+# steps that gate prints. The pin is 1.36.4+k3s1 as of 2026-09-16.
+k3s
