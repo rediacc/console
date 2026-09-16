@@ -526,11 +526,12 @@
       ]
     },
     "agent/PLAN-printf-echo-pipefail-sweep.md": {
-      "status": "draft",
-      "owner": "unowned",
-      "open": 34,
-      "done": 0,
-      "open_sigs": [
+      "status": "done",
+      "owner": "d778be9d",
+      "open": 0,
+      "done": 33,
+      "open_sigs": [],
+      "done_sigs": [
         "15933b53",
         "1b4ab335",
         "1cb3b673",
@@ -554,7 +555,6 @@
         "a2aa105c",
         "a4c1ff44",
         "a9832229",
-        "b679e35c",
         "bc30c6ec",
         "beaf467f",
         "d288cb32",
@@ -565,8 +565,7 @@
         "ea27bbe1",
         "f2775b0e",
         "fe98f8bf"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/PLAN-promote-mutation-runner.md": {
       "status": "done",

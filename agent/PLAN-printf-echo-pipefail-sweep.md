@@ -296,4 +296,11 @@ each side), and note the general limitation in the header.
 
 ## Remaining
 
-- [ ] FOLLOW-ON, not this PR: `private/renet` has no copy of this gate, so its two sites had no gate and its next one will have none either. Mirroring the gate into renet is its own change.
+NOT A CHECKBOX, DELIBERATELY. `Status: done` plus an open box is a
+contradiction this repo refuses: the Stop hook EXEMPTS finished plans from its
+advisory, so a `- [ ]` under a `done` header is a task nothing will ever chase
+while looking like one that will. `check:ci-plan-boxes` reds on exactly that
+shape rather than treating it as an exemption. The follow-on below is real, so
+it is tracked in the worklist where it IS chased, and recorded here as prose.
+
+- FOLLOW-ON, not this PR: `private/renet` has no copy of this gate, so its two sites had no gate and its next one will have none either. Mirroring the gate into renet is its own change.
