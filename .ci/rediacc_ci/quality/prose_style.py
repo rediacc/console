@@ -103,6 +103,12 @@ SCOPE_BY_SUFFIX = {
     ".cjs": "comment",
     ".mjs": "comment",
     ".go": "comment",
+    # REUSES "comment" RATHER THAN A NEW SCOPE NAMED "config". A JSON
+    # `_comment`/`why`/`reason` block is the same register, by the same
+    # authors, as a source-file comment -- and a "config" scope would
+    # silently disable R18, since R18's own `scopes` list is
+    # `["markdown", "comment", "pr"]` and does not name one.
+    ".json": "comment",
 }
 
 # A line carrying one of these is exempt, the same shape `<!-- slop-ok -->` has
@@ -575,6 +581,69 @@ def _emit(lines, text, lineno, piece, markers):
         lines.append(Line(lineno, raw, scrubbed))
 
 
+# JSON string values whose key marks them as an IDENTIFIER or a QUOTED
+# EXAMPLE rather than prose about the work. `patterns`/`exceptions` are regex
+# text; `text` is a rule's own bad/good exemplar (the JSON analogue of
+# `BAD_EXAMPLE`, since a JSON example's `kind: "bad"` marker sits on a
+# DIFFERENT physical line than its `text`, so the character-level BAD_EXAMPLE
+# match cannot see it); `id`/`glob`/`schema`/`$schema`/`format`/`version` are
+# short machine-facing tokens, never a sentence about the work.
+JSON_SKIP_KEYS = frozenset(
+    ("patterns", "exceptions", "text", "id", "glob", "schema", "$schema", "format", "version")
+)
+
+_JSON_KEYED_STRING = re.compile(r'^\s*"((?:[^"\\]|\\.)*)"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,?\s*$')
+_JSON_ARRAY_STRING = re.compile(r'^\s*"((?:[^"\\]|\\.)*)"\s*,?\s*$')
+
+
+def json_prose_lines(text, markers=DEFAULT_MARKERS):
+    """Prose lines of a `.json` file: PHYSICAL LINE, decoded string VALUES only.
+
+    NOT A PARSED WALK. `json.load` gives no line numbers, so a `Finding`
+    (which is anchored to a line) could not be built from one, and a
+    decoded-string-length measure would let a 380-char value sitting at 300
+    columns of indentation pass while the file is unreadable as text. R18
+    measures what a reader of the FILE sees, the same contract `Line.raw`
+    already keeps for every other suffix.
+
+    ONE LINE, ONE JSON TOKEN. This repository's `.json` is machine-written
+    with `json.dumps(..., indent=2)` (or hand-written to match), so a
+    `"key": "value"` pair and an array element each occupy exactly one
+    physical line in practice. A minified or reformatted file degenerates to
+    the file being unreadable as text, which is the same failure mode a
+    minified `.js` file already has against `cstyle_comment_lines`.
+
+    KEYS ARE NEVER PROSE, only the string VALUE beside one is -- catches a
+    key like `"glob": "agent/pr/*.md"` before it is scanned as a sentence.
+    An ARRAY ELEMENT has no key at all: this is the wrapped-prose shape
+    `exempt_why`/`exclude_why`/an array-form `reason` already use, and each
+    element is measured on its own line exactly the way a hand-wrapped
+    paragraph in a `.md` file is.
+    """
+    lines = []
+    for lineno, raw in enumerate(text.splitlines(), start=1):
+        keyed = _JSON_KEYED_STRING.match(raw)
+        if keyed:
+            key, value = keyed.groups()
+            if key in JSON_SKIP_KEYS:
+                continue
+        else:
+            arrayed = _JSON_ARRAY_STRING.match(raw)
+            if not arrayed:
+                continue
+            (value,) = arrayed.groups()
+        if is_marked(raw, markers) or BAD_EXAMPLE.match(value):
+            continue
+        try:
+            decoded = json.loads('"%s"' % value)
+        except ValueError:
+            continue
+        scrubbed = scrub(decoded).strip()
+        if scrubbed:
+            lines.append(Line(lineno, raw, scrubbed))
+    return lines
+
+
 def extract(path, text, markers=DEFAULT_MARKERS):
     """Prose lines of one file, dispatched on its suffix.
 
@@ -591,6 +660,8 @@ def extract(path, text, markers=DEFAULT_MARKERS):
             return python_comment_lines(text, markers), None
         except (tokenize.TokenError, IndentationError, SyntaxError) as exc:
             return [], "%s did not tokenize as Python (%s), so NOTHING was extracted" % (path, exc)
+    if suffix == ".json":
+        return json_prose_lines(text, markers), None
     return cstyle_comment_lines(text, markers), None
 
 
@@ -773,13 +844,13 @@ def discover(root, globals_, subtrees=None):
     reader can act on. git's own order is not this order either, so the sort
     stays.
     """
-    suffixes = {os.path.splitext(p)[1] for p in (globals_.get("include") or ())}
+    patterns = tuple(globals_.get("include") or ())
     skip = set(globals_.get("exclude_dirs") or ())
     prefixes = tuple(str(s).rstrip("/") + "/" for s in (subtrees or ()))
     out = []
     for path in tracked_files(root):
         rel = path.replace(os.sep, "/")
-        if os.path.splitext(rel)[1] not in suffixes:
+        if not any(fnmatch.fnmatchcase(rel, pat) for pat in patterns):
             continue
         if under_excluded_dir(rel, skip):
             continue
@@ -965,8 +1036,15 @@ def write_baseline(root, findings, previous):
     entries = {f.fid: f for f in findings}
     added = sorted(set(entries) - set(previous or {}))
     grouped = {}
+    # DEDUPED BY fid, THE SAME WAY `entries`/`count` ARE. `fid` hashes
+    # (path, rule, text) and not the line number, so the identical template
+    # string flagged on two physical lines of one file collapses to one
+    # entry in `findings` -- and `by_rule` must collapse it the same way, or
+    # its sum drifts from `count` by exactly the number of such repeats.
+    # Measured live: 8 repeated (path, rule, text) triples inflated the sum
+    # by 11 before this fix.
     by_rule = {}
-    for finding in findings:
+    for finding in entries.values():
         grouped.setdefault(finding.path, {}).setdefault(finding.rule, set()).add(finding.fid)
         by_rule[finding.rule] = by_rule.get(finding.rule, 0) + 1
     doc = {
@@ -1098,7 +1176,7 @@ def run_check(
             return 1
         log.success(
             "baseline written: %d finding(s) frozen. %s"
-            % (len(findings), _shape(globals_, rules, len(files), prose_lines))
+            % (len({f.fid for f in findings}), _shape(globals_, rules, len(files), prose_lines))
         )
         return 0
 

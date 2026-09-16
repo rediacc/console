@@ -16,14 +16,15 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 3542,
- "files": 716,
+ "count": 3597,
+ "files": 731,
  "by_rule": {
-  "R1": 1558,
-  "R11": 146,
-  "R18": 496,
-  "R2": 828,
-  "R7": 524
+  "R1": 1564,
+  "R11": 148,
+  "R14": 1,
+  "R18": 522,
+  "R2": 834,
+  "R7": 528
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -44,6 +45,109 @@
     "27337132b5acc6c4"
    ]
   },
+  ".ci/config/bws-unrequested.json": {
+   "R1": [
+    "336426ff6d8dda99"
+   ],
+   "R18": [
+    "6fb23b458938fe6c"
+   ]
+  },
+  ".ci/config/carried-reds.json": {
+   "R18": [
+    "a2e4fb4c2acb9783"
+   ],
+   "R2": [
+    "bdd9543ade51aff1"
+   ]
+  },
+  ".ci/config/commit-identity.json": {
+   "R18": [
+    "0a14ee56455ca80e"
+   ]
+  },
+  ".ci/config/docker-npm-pin-exclusions.json": {
+   "R18": [
+    "03303b46df6bc488"
+   ]
+  },
+  ".ci/config/env-manifest.json": {
+   "R1": [
+    "31757ffb12c43f3f",
+    "e5e889d4f2fe355d",
+    "eed5959eed0aa435"
+   ],
+   "R18": [
+    "526b03a09ced2d3a",
+    "6513516559020abf",
+    "7faceb803bb9ee4e",
+    "8f56e43dd35785d7",
+    "f5660f150df20aba"
+   ]
+  },
+  ".ci/config/language-policy-baseline.json": {
+   "R18": [
+    "85bee0394d233ea8"
+   ]
+  },
+  ".ci/config/plant-proof-baseline.json": {
+   "R18": [
+    "8dccff0c4d153c48"
+   ]
+  },
+  ".ci/config/prose-style-rules.json": {
+   "R1": [
+    "22fe182669235c38",
+    "a372293b257a3584",
+    "a43d1ee56aaf4f12",
+    "ad2492b83de9c858",
+    "ed04c0f3c667e61e",
+    "f95c2f42ee8e4ed2",
+    "fbd72edbd99d0d2e"
+   ],
+   "R14": [
+    "98c86c0cdc78d756"
+   ],
+   "R2": [
+    "0d58c74c3153eacf",
+    "4e07df087368fb91",
+    "57ad69724668c864",
+    "678a1fba893e1615",
+    "77fdfe74cbf16cab",
+    "82e4a0ba4b812b3c",
+    "8f74488e589dc134",
+    "ce868a0f37c8086c",
+    "e5038611286af891"
+   ]
+  },
+  ".ci/config/python-env-registry.json": {
+   "R18": [
+    "7970e93bb65005b6"
+   ]
+  },
+  ".ci/config/rubric-calibration.json": {
+   "R18": [
+    "13e83c1ee8de9eb0",
+    "2f7c0ec2b8c6e248",
+    "8e18735d10f308aa"
+   ]
+  },
+  ".ci/config/secret-supply.json": {
+   "R18": [
+    "bd8fb88650c54a39",
+    "d8611eb72fc2b51f",
+    "e73e5bb2814a50a0",
+    "ebe57b29df863947"
+   ],
+   "R7": [
+    "b65f611b0a5546a9"
+   ]
+  },
+  ".ci/config/tracked-credentials-baseline.json": {
+   "R18": [
+    "efe1a48d004f28bb"
+   ]
+  },
   ".ci/docs/r2-media-setup.md": {
    "R1": [
     "146330d66d0d0568",
@@ -53,6 +157,23 @@
   ".ci/docs/r2-setup.md": {
    "R18": [
     "3c6afbc2acd10933"
+   ]
+  },
+  ".ci/policy/hook-exec-baseline.json": {
+   "R18": [
+    "cc1078fb71468958"
+   ]
+  },
+  ".ci/policy/worklist-env-registry.json": {
+   "R18": [
+    "0a5d3d94b0f9dddf",
+    "4a4d6caa4cd9ab1d",
+    "74c2ea36dcf397c3",
+    "83b6278ab7f8e361",
+    "bf25b1d32bd3299e"
+   ],
+   "R7": [
+    "33006525c9e20d0e"
    ]
   },
   ".ci/prompts/ci-failure-classifier.md": {
@@ -3508,6 +3629,17 @@
    "R11": [
     "fbe487f442aef6ce",
     "fec1bfec1d157d8c"
+   ]
+  },
+  "agent/PLAN-git-ignore-aware-discover.md": {
+   "R11": [
+    "3c24b3ef0e97ff71",
+    "615c487cce8874cc",
+    "850136161bbc20dc"
+   ],
+   "R7": [
+    "7bd6cdabd510768c",
+    "8fcd4e90b0b1c58d"
    ]
   },
   "agent/PLAN-hook-inventory-warn-guards.md": {

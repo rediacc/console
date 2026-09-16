@@ -68,7 +68,9 @@
       "*.js",
       "*.cjs",
       "*.mjs",
-      "*.go"
+      "*.go",
+      ".ci/config/*.json",
+      ".ci/policy/*.json"
     ],
     "exclude_dirs": [
       ".git",

@@ -345,6 +345,26 @@ def test_write_baseline_refuses_a_drain_that_added(tmp_path):
     assert len(ps.load_baseline(tmp_path)) == 2
 
 
+def test_by_rule_sum_matches_count_when_a_finding_repeats(tmp_path):
+    """Two physical lines, one fid: `by_rule` must not double-count it.
+
+    `fid` hashes (path, rule, text) and not the line number on purpose, so
+    the identical template string flagged on two different lines of one
+    file collapses to ONE baseline entry -- `count`/`findings` already
+    dedupe by fid. `by_rule`'s own tally must collapse the same way, or its
+    sum drifts from `count`: measured live, 8 such repeats in the real tree
+    inflated the printed total by 11 before this was fixed.
+    """
+    (tmp_path / ".ci" / "config").mkdir(parents=True)
+    repeated_a = [_finding(line=3, rule="R1", text="Did you run it?")] * 2
+    repeated_b = [_finding(line=9, rule="R2", text="I already told you")] * 3
+    single = [_finding(line=20, rule="R1", text="Your feedback")]
+    ps.write_baseline_guarded(tmp_path, repeated_a + repeated_b + single, None, False)
+    doc = json.loads((tmp_path / ps.BASELINE_FILE).read_text(encoding="utf-8"))
+    assert doc["count"] == 3, "3 distinct fids, however many times each was seen"
+    assert sum(doc["by_rule"].values()) == doc["count"]
+
+
 def test_a_clean_drain_is_allowed(tmp_path):
     """The MIRROR: removing only must not be refused, or the guard blocks all progress."""
     (tmp_path / ".ci" / "config").mkdir(parents=True)

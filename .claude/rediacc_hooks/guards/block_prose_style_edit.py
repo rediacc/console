@@ -73,6 +73,7 @@ thing being guarded, and reporting nothing at all is worse than both, because
 "the operator never learns what was not asked".
 """
 
+import fnmatch
 import os
 import pathlib
 import sys
@@ -317,12 +318,27 @@ def _relative(root, file_path, cwd=None):
 
 
 def _in_scope(engine, globals_, rel):
+    """Whether an edited file is scanned at all.
+
+    SUFFIX ALONE IS NOT ENOUGH, since `.json` widened `include` to two
+    directories (`.ci/config/*.json`, `.ci/policy/*.json`) rather than every
+    tracked `.json` -- the 740-finding flood a whole-tree `.json` scan would
+    produce, most of it translated CLI copy where second person is the
+    correct register. `SCOPE_BY_SUFFIX` answers "what SCANNER", `include`
+    answers "which FILES"; a suffix present in the first without being
+    checked against the second would scan every `.json` in the tree the
+    moment `discover()`'s own corpus wants only two directories of it.
+    """
     if not rel or rel.startswith(".."):
         return False
-    suffix = os.path.splitext(rel)[1]
+    fixed = rel.replace(os.sep, "/")
+    suffix = os.path.splitext(fixed)[1]
     if suffix not in engine.SCOPE_BY_SUFFIX:
         return False
-    parts = pathlib.PurePosixPath(rel.replace(os.sep, "/")).parts
+    patterns = tuple(globals_.get("include") or ())
+    if patterns and not any(fnmatch.fnmatchcase(fixed, pat) for pat in patterns):
+        return False
+    parts = pathlib.PurePosixPath(fixed).parts
     skip = set(globals_.get("exclude_dirs") or ())
     joined = ""
     for part in parts[:-1]:
