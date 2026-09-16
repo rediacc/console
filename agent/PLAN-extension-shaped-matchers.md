@@ -552,3 +552,14 @@ exemption for `agent/pr/*.md` and its regenerated doc-region/plan-record tables 
 `discover()` gitignore-blindness defect found live in CI, worked around narrowly, and its general
 fix triaged PLAN+SUBAGENT and dispatched) touched none of this plan's files or its precondition.
 Status stays `executing`, commit 3 stays not started.
+
+### Re-checked a twenty-fifth time 2026-09-16, session d778be9d: still unchanged
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still
+16 files; `.ci/shadow/w7p6-*.observations.jsonl` is still 153 files. Activity since the
+twenty-fourth check (a real discover() gitignore-awareness fix implemented and verified, a
+sys.path-hop tier-3 escalation ruled and resolved with an EXEMPT entry rather than the
+babysitter's own proposed dispatch.py alternative, and two class sweeps confirming no
+further siblings of either defect) touched none of this plan's files or its precondition.
+Status stays `executing`, commit 3 stays not started.
