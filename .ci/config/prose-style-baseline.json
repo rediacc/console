@@ -16,13 +16,13 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 3563,
- "files": 727,
+ "count": 3548,
+ "files": 722,
  "by_rule": {
   "R1": 1564,
   "R11": 146,
   "R18": 496,
-  "R2": 843,
+  "R2": 828,
   "R7": 524
  },
  "findings": {
@@ -4344,41 +4344,6 @@
     "a55e5ac99810fb58",
     "d9ea4936727d02f3",
     "f7990d13365cf1e8"
-   ]
-  },
-  "agent/pr/0827-1.md": {
-   "R2": [
-    "0bd930456c5d9f94",
-    "a413220cfb906117"
-   ]
-  },
-  "agent/pr/0903-1.md": {
-   "R2": [
-    "0a20123911890199"
-   ]
-  },
-  "agent/pr/0906-1.md": {
-   "R2": [
-    "7840e6c4343e2aa1",
-    "8d6c2b2287994718",
-    "9c37e37287d7b826",
-    "e7a10f1b02a18f29",
-    "eac1816ed3da3abf",
-    "efa8d19550e52f6f"
-   ]
-  },
-  "agent/pr/0914-1.md": {
-   "R2": [
-    "83ed34ef932885f1"
-   ]
-  },
-  "agent/pr/tooling-transformation-w0.md": {
-   "R2": [
-    "1cbc9831659c3eb5",
-    "3afa2dfa250dfe76",
-    "58ebee35ef850ed4",
-    "68ddc1c459f65133",
-    "886820517ad36647"
    ]
   },
   "agent/programs/clarity-round6/01-verified-context.md": {
