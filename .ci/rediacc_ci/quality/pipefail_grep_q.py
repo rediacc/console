@@ -527,8 +527,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         else:
             report.fail(
-                "%d racing pipeline(s): a producer piped into grep -q under pipefail"
-                % len(found)
+                "%d racing pipeline(s): a producer piped into grep -q under pipefail" % len(found)
             )
             # `printf '    %s\n' "${found[@]}"` -- an ARRAY, so the format is
             # reused per element and every line carries the four-space indent.

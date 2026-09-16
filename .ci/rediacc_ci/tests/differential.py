@@ -39,9 +39,9 @@ fails on invisible bytes and the natural "fix" is to compare stripped strings,
 which would also stop the comparison seeing a real trailing-whitespace change.
 """
 
-import re
 import os
 import pty
+import re
 import selectors
 import subprocess
 

@@ -1157,7 +1157,7 @@ def _race(tmp_path: pathlib.Path, body: str) -> tuple[list[int], pathlib.Path]:
     driver = tmp_path / "driver.sh"
     driver.write_text(
         'set -u\nsource "$TOOLCHAIN_SH"\n%s\n'
-        'for ((i = 0; i < %d; i++)); do\n'
+        "for ((i = 0; i < %d; i++)); do\n"
         '    ( %s >/dev/null 2>&1; echo "$?" >>"$RC" ) &\n'
         "done\nwait\n" % (_OLD_SHAPE, _RACERS, body),
         encoding="utf-8",
@@ -1195,9 +1195,7 @@ def test_concurrent_downloads_all_succeed_and_install_an_intact_binary(
     tmp_path: pathlib.Path,
 ) -> None:
     """The real helper, raced the same way: every caller succeeds, bytes intact."""
-    codes, cache = _race(
-        tmp_path, '_toolchain_download_shfmt 3.13.1 "$CACHE" "$CACHE/shfmt"'
-    )
+    codes, cache = _race(tmp_path, '_toolchain_download_shfmt 3.13.1 "$CACHE" "$CACHE/shfmt"')
     assert codes == [0] * _RACERS, codes
     binary = cache / "shfmt"
     assert binary.read_bytes() == _PAYLOAD, "the installed binary is torn"
@@ -1339,7 +1337,19 @@ def test_defect_2_the_headline_still_says_mismatch_with_no_verifier(
     # tier as `cut` and `tr` already here; without it the helper fails CLOSED
     # ("mktemp: command not found", rc 1, nothing installed), which is the right
     # behaviour but not the one this control is driving at.
-    needed = ("mkdir", "chmod", "mv", "rm", "cut", "tr", "uname", "dirname", "grep", "sed", "mktemp")
+    needed = (
+        "mkdir",
+        "chmod",
+        "mv",
+        "rm",
+        "cut",
+        "tr",
+        "uname",
+        "dirname",
+        "grep",
+        "sed",
+        "mktemp",
+    )
     for name in needed:
         found = shutil.which(name)
         if found:
