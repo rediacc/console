@@ -44,22 +44,22 @@
     "agent/PLAN-b2-emit-matrix.md": {
       "status": "partially",
       "owner": "f4da5c2e",
-      "open": 7,
-      "done": 6,
+      "open": 6,
+      "done": 7,
       "open_sigs": [
         "305684a3",
         "38408011",
         "58c11652",
         "a43698e8",
         "bd4ab20b",
-        "c0d7264c",
-        "d4905d66"
+        "c0d7264c"
       ],
       "done_sigs": [
         "147d7736",
         "1ac9f622",
         "3b4ee7c6",
         "3c1835b5",
+        "d4905d66",
         "ee72707e",
         "f2c3441f"
       ]
@@ -536,7 +536,6 @@
         "1cb3b673",
         "21ee2737",
         "22187554",
-        "231fcfdb",
         "26469fef",
         "29621864",
         "3093b1de",
@@ -556,6 +555,7 @@
         "a4c1ff44",
         "a9832229",
         "b679e35c",
+        "bc30c6ec",
         "beaf467f",
         "d288cb32",
         "d8f636c2",
