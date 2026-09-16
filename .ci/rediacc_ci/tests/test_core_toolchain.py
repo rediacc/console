@@ -1041,7 +1041,14 @@ def test_download_shfmt_refuses_a_checksum_mismatch(
     assert re.fullmatch(r"  actual   [0-9a-f]{64}", messages[2]), messages[2]
     assert messages[2].split()[-1] == hashlib.sha256(b"not the real binary").hexdigest()
     assert not binary.exists()
-    assert not binary.with_name("shfmt.tmp").exists(), "the rejected download was left behind"
+    # ASSERT ON THE DIRECTORY, NOT ON ONE NAME. This used to read
+    # `not binary.with_name("shfmt.tmp").exists()`, which was exact while the
+    # temp path was the fixed `$bin.tmp`. The concurrency fix gives every
+    # process a `mktemp` name, and that assertion would then have passed for the
+    # only bad reason there is -- it names a file that can no longer exist under
+    # any behaviour, so it could not fail. An empty cache is the claim that was
+    # always meant, and it is strictly stronger.
+    assert sorted(p.name for p in cache.iterdir()) == [], "the rejected download was left behind"
 
 
 def test_download_shfmt_installs_a_matching_download(
@@ -1073,6 +1080,130 @@ def test_download_shfmt_installs_a_matching_download(
     assert (got, messages) == (str(binary), [])
     assert os.access(str(binary), os.X_OK)
     assert binary.read_bytes() == payload
+
+
+# ---------------------------------------------------------------------------
+# concurrent acquisition
+# ---------------------------------------------------------------------------
+#
+# THE PYTEST SUITE ITSELF IS THE CONCURRENT CALLER. It runs under xdist with
+# several workers, and more than one of its modules shells out to a gate that
+# acquires shfmt, so a cold cache is hit by many processes at once. Both
+# download helpers wrote to ONE fixed temp path, which made that data
+# corruption rather than redundant work: `curl -o` truncates, so the racers
+# interleaved writes into a single inode, and the winner's `mv` renamed it out
+# from under the losers mid-verify. The losers then reported
+# "checksum MISMATCH -- refusing to install" with an EMPTY `actual` -- a race
+# accusing the download of being tampered with -- and the losers' curls kept
+# writing into the now-installed inode, so the binary at the final path could be
+# torn while already executable. CI job 104650234908 is that: `shfmt.sh: line
+# 63: .../shfmt: cannot execute`, from a gate whose tool had just been
+# "installed".
+#
+# Measured before the fix, 8 racers into a cold cache: 7 failed. After: 8/8.
+
+_RACERS = 8
+
+# A curl that writes its payload in CHUNKS. The window between "started writing"
+# and "finished writing" has to be wide enough to race DELIBERATELY, or this
+# case would only fail on an unlucky day and would prove nothing on a good one.
+_CHUNK = b"payload-"
+_CHUNKS = 12
+_PAYLOAD = _CHUNK * _CHUNKS
+
+_STUB_CURL = """#!/usr/bin/env bash
+out=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -o)
+            out="$2"
+            shift 2
+            ;;
+        *) shift ;;
+    esac
+done
+: >"$out"
+for ((i = 0; i < %d; i++)); do
+    printf '%%s' '%s' >>"$out"
+    sleep 0.02
+done
+""" % (_CHUNKS, _CHUNK.decode())
+
+# The OLD shape, kept verbatim as a planted regression. Racing it must FAIL, or
+# the harness above is not actually producing a window and the real case below
+# would pass for no reason.
+_OLD_SHAPE = """
+old_shape() {
+    local cache="$1" bin="$2"
+    curl -fsSL -o "$bin.tmp" http://stub/shfmt || return 1
+    echo "$WANT_SHA  $bin.tmp" | sha256sum -c - >/dev/null 2>&1 || {
+        rm -f "$bin.tmp"
+        return 1
+    }
+    chmod +x "$bin.tmp" && mv "$bin.tmp" "$bin" || return 1
+}
+"""
+
+
+def _race(tmp_path: pathlib.Path, body: str) -> tuple[list[int], pathlib.Path]:
+    """Run `body` in `_RACERS` concurrent subshells; return exit codes and the cache."""
+    stub = tmp_path / "bin"
+    stub.mkdir(parents=True, exist_ok=True)
+    (stub / "curl").write_text(_STUB_CURL, encoding="utf-8")
+    (stub / "curl").chmod(0o755)
+    cache = tmp_path / "cache"
+    cache.mkdir(parents=True, exist_ok=True)
+    rc_file = tmp_path / "rcs"
+    driver = tmp_path / "driver.sh"
+    driver.write_text(
+        'set -u\nsource "$TOOLCHAIN_SH"\n%s\n'
+        'for ((i = 0; i < %d; i++)); do\n'
+        '    ( %s >/dev/null 2>&1; echo "$?" >>"$RC" ) &\n'
+        "done\nwait\n" % (_OLD_SHAPE, _RACERS, body),
+        encoding="utf-8",
+    )
+    sha = hashlib.sha256(_PAYLOAD).hexdigest()
+    env = diff.env_for()
+    env["PATH"] = "%s:%s" % (stub, env.get("PATH", ""))
+    env["TOOLCHAIN_SH"] = str(paths.from_root(".ci/scripts/lib/toolchain.sh"))
+    env["RC"] = str(rc_file)
+    env["CACHE"] = str(cache)
+    env["WANT_SHA"] = sha
+    # Both arches, so the case does not silently skip its own subject on arm64.
+    env["SHFMT_SHA256_LINUX_AMD64"] = sha
+    env["SHFMT_SHA256_LINUX_ARM64"] = sha
+    subprocess.run(["bash", str(driver)], env=env, check=True, timeout=300)
+    codes = [int(line) for line in rc_file.read_text(encoding="utf-8").split()]
+    assert len(codes) == _RACERS, codes
+    return codes, cache
+
+
+def test_a_fixed_temp_path_loses_the_race(tmp_path: pathlib.Path) -> None:
+    """CONTROL, and it must come first: the planted OLD shape has to break here.
+
+    If this passes, the harness is not producing a real window and the case
+    below proves nothing.
+    """
+    codes, _ = _race(tmp_path, 'old_shape "$CACHE" "$CACHE/shfmt"')
+    assert any(rc != 0 for rc in codes), (
+        "the shared-temp shape survived %d concurrent downloads; the window is gone "
+        "and this control can no longer fire" % _RACERS
+    )
+
+
+def test_concurrent_downloads_all_succeed_and_install_an_intact_binary(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The real helper, raced the same way: every caller succeeds, bytes intact."""
+    codes, cache = _race(
+        tmp_path, '_toolchain_download_shfmt 3.13.1 "$CACHE" "$CACHE/shfmt"'
+    )
+    assert codes == [0] * _RACERS, codes
+    binary = cache / "shfmt"
+    assert binary.read_bytes() == _PAYLOAD, "the installed binary is torn"
+    assert os.access(str(binary), os.X_OK)
+    assert binary.stat().st_mode & 0o777 == 0o755
+    assert sorted(p.name for p in cache.iterdir()) == ["shfmt"], "a temp file leaked"
 
 
 def test_acquire_returns_a_path_binary_at_the_pin_without_installing(
@@ -1203,12 +1334,17 @@ def test_defect_2_the_headline_still_says_mismatch_with_no_verifier(
     """
     sandbox = tmp_path / "bin"
     sandbox.mkdir()
-    needed = ("mkdir", "chmod", "mv", "rm", "cut", "tr", "uname", "dirname", "grep", "sed")
+    # `mktemp` joined this list when the download helpers stopped sharing one
+    # fixed temp path between concurrent acquirers. It is coreutils, the same
+    # tier as `cut` and `tr` already here; without it the helper fails CLOSED
+    # ("mktemp: command not found", rc 1, nothing installed), which is the right
+    # behaviour but not the one this control is driving at.
+    needed = ("mkdir", "chmod", "mv", "rm", "cut", "tr", "uname", "dirname", "grep", "sed", "mktemp")
     for name in needed:
         found = shutil.which(name)
         if found:
             (sandbox / name).symlink_to(found)
-    if not all((sandbox / n).exists() for n in ("mkdir", "rm", "tr", "uname", "cut")):
+    if not all((sandbox / n).exists() for n in ("mkdir", "rm", "tr", "uname", "cut", "mktemp")):
         pytest.skip("this host does not have the coreutils this control needs")
     (sandbox / "curl").write_text(
         '#!/bin/bash\nwhile [ $# -gt 0 ]; do case "$1" in -o) out="$2"; shift 2;; '
@@ -1474,3 +1610,35 @@ def test_cli_report_refuses_rather_than_printing_a_table_of_blanks(
     real = _module_cli(["report"])
     assert real.returncode == 0
     assert "lane: " in real.stdout
+
+
+def test_the_temp_name_mask_hides_the_temp_and_nothing_else() -> None:
+    """`differential.mask_toolchain_tmp` is load-bearing in two differentials.
+
+    It is the one token those comparisons deliberately stop checking, so it has
+    to be narrow. The second half is the control: a mask that swallowed the
+    version, the URL or the real binary's name would make both differentials
+    pass on a genuine divergence, which is worse than the drift it was added to
+    absorb.
+    """
+    assert (
+        diff.mask_toolchain_tmp("/c/rediacc-toolchain/shfmt-3.13.1/shfmt.1R2NkECK")
+        == "/c/rediacc-toolchain/shfmt-3.13.1/shfmt.<tmp>"
+    )
+    assert (
+        diff.mask_toolchain_tmp("/c/shellcheck-0.10.0/sc.wlea__5l/sc.tar.xz")
+        == "/c/shellcheck-0.10.0/sc.<tmp>/sc.tar.xz"
+    )
+    # Both alphabets, because the two sides do not share one.
+    assert diff.mask_toolchain_tmp("/x/shfmt.abcdefgh") == "/x/shfmt.<tmp>"
+    assert diff.mask_toolchain_tmp("/x/shfmt.AB90_xyz") == "/x/shfmt.<tmp>"
+
+    for untouched in (
+        "/c/rediacc-toolchain/shfmt-3.13.1/shfmt",  # the installed binary
+        ".ci/scripts/security/shfmt.sh",  # the twin itself
+        "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64",
+        "/x/shfmt.short",  # 5 chars, not a mktemp suffix
+        "/x/shfmt.toooolong9",  # 10 chars
+        "shfmt.1R2NkECK",  # no leading separator: not a path component we emit
+    ):
+        assert diff.mask_toolchain_tmp(untouched) == untouched, untouched

@@ -148,6 +148,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 from itertools import zip_longest
 
 from rediacc_ci import paths
@@ -1090,8 +1091,16 @@ def download_shfmt(
         ]
     cache.mkdir(parents=True, exist_ok=True)
     url = shfmt_url(want, os_key, arch)
-    tmp = binary.with_name(binary.name + ".tmp")
+    # A PRIVATE TEMP PER PROCESS, mirroring `mktemp "$cache/shfmt.XXXXXXXX"` in
+    # the twin. The shared `$bin.tmp` both sides used to write was a data-
+    # corruption race under any concurrent acquisition; the twin carries the
+    # measurement (8 racers, 7 failures, a false "checksum MISMATCH") and the
+    # reasoning. `.replace()` is the atomic rename the fix turns on.
+    fd, tmp_name = tempfile.mkstemp(prefix="shfmt.", dir=str(cache))
+    os.close(fd)
+    tmp = pathlib.Path(tmp_name)
     if not _curl(url, tmp):
+        tmp.unlink(missing_ok=True)
         return None, ["toolchain: could not download shfmt from %s" % url]
     actual = sha256_of(tmp)
     if actual != sha:
@@ -1209,9 +1218,15 @@ def acquire_shellcheck(
             ),
         ]
     cache.mkdir(parents=True, exist_ok=True)
-    tmp = cache / "sc.tar.xz"
+    # PRIVATE STAGING DIR, mirroring `mktemp -d "$cache/sc.XXXXXXXX"` in the
+    # twin. Both the archive and the extraction used to target the shared
+    # `$cache`, so two concurrent acquisitions could leave a half-written
+    # `shellcheck` at the final path, executable, for a third process to run.
+    stage = pathlib.Path(tempfile.mkdtemp(prefix="sc.", dir=str(cache)))
+    tmp = stage / "sc.tar.xz"
     url = shellcheck_url(want, os_key, arch)
     if not _curl(url, tmp):
+        shutil.rmtree(stage, ignore_errors=True)
         return None, ["toolchain: could not download shellcheck from %s" % url]
     actual = sha256_of(tmp)
     if actual != sha:
@@ -1220,23 +1235,32 @@ def acquire_shellcheck(
             "  expected %s" % sha,
             "  actual   %s" % actual,
         ]
-        tmp.unlink(missing_ok=True)
+        shutil.rmtree(stage, ignore_errors=True)
         return None, messages
     member = "shellcheck-v%s/shellcheck" % want
     proc = subprocess.run(
-        ["tar", "-xJf", str(tmp), "-C", str(cache), "--strip-components=1", member],
+        ["tar", "-xJf", str(tmp), "-C", str(stage), "--strip-components=1", member],
         capture_output=True,
         text=True,
         check=False,
     )
     if proc.returncode != 0:
-        # THE TWIN LEAKS THE ARCHIVE HERE. `:436` is `tar ... || return 1` and
-        # the `rm -f "$tmp"` is the NEXT line, so a failed extraction leaves a
-        # multi-megabyte `sc.tar.xz` in the cache forever. Reproduced, because
-        # the cache directory's contents are observable to a caller that lists
-        # it, and a port that tidied up would differ from the twin on disk.
+        # THE TWIN NO LONGER LEAKS THE ARCHIVE HERE, and neither does this. It
+        # used to: `tar ... || return 1` with the `rm -f "$tmp"` on the NEXT
+        # line left a multi-megabyte `sc.tar.xz` in the cache forever, and this
+        # port reproduced that rather than tidying, because the cache
+        # directory's contents are observable to a caller that lists it. Private
+        # staging changed the arithmetic -- one file overwritten in place became
+        # an unbounded pile of randomly named directories -- so both sides now
+        # tear the staging dir down on every exit path.
+        shutil.rmtree(stage, ignore_errors=True)
         return None, []
-    tmp.unlink(missing_ok=True)
+    staged = stage / "shellcheck"
+    if not os.access(str(staged), os.X_OK):
+        shutil.rmtree(stage, ignore_errors=True)
+        return None, []
+    staged.replace(binary)
+    shutil.rmtree(stage, ignore_errors=True)
     if not os.access(str(binary), os.X_OK):
         return None, []
     return str(binary), []

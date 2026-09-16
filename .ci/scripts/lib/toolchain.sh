@@ -313,7 +313,7 @@ _toolchain_os() {
 
 _toolchain_download_shfmt() {
     _toolchain_need_checksums
-    local want="$1" cache="$2" bin="$3" os osk arch sha sha_var url
+    local want="$1" cache="$2" bin="$3" os osk arch sha sha_var url tmp
     os="$(_toolchain_os)" || return 1
     osk="$(printf '%s' "$os" | tr '[:lower:]' '[:upper:]')"
     case "$(uname -m)" in
@@ -337,18 +337,45 @@ _toolchain_download_shfmt() {
     }
     mkdir -p "$cache"
     url="https://github.com/mvdan/sh/releases/download/v${want}/shfmt_v${want}_${os}_${arch}"
-    curl -fsSL --max-time 180 --retry 3 --retry-delay 5 -o "$bin.tmp" "$url" || {
+    # A PRIVATE TEMP PER PROCESS, NOT A SHARED `$bin.tmp`. Every caller that
+    # misses the cache lands here at once -- the pytest suite runs under xdist
+    # with 8 workers, and several of its modules shell out to gates that acquire
+    # shfmt -- and a single fixed temp path turns that into data corruption.
+    # Measured 2026-09-16 with 8 concurrent `toolchain_acquire shfmt` into a cold
+    # cache: SEVEN of the eight failed. `curl -o` truncates, so they interleave
+    # writes into ONE inode; the winner's `mv` then renames that inode out from
+    # under the losers, whose checksum step reads a path that no longer exists
+    # and reports "checksum MISMATCH -- refusing to install" with an EMPTY
+    # `actual`. A RACE THAT ACCUSES THE DOWNLOAD OF BEING TAMPERED WITH is the
+    # most misleading message this file could print. Worse, the losers' curls
+    # keep writing into the now-installed inode, so `$bin` can be a torn binary
+    # that is already in place and +x -- which is how CI job 104650234908 got
+    # `shfmt.sh: line 63: .../shfmt: cannot execute`, from a gate whose tool had
+    # been "successfully installed".
+    #
+    # mktemp gives each process its own file, so the only shared operation left
+    # is the rename -- atomic, and of a fully verified file. Redundant parallel
+    # downloads are the cost, and they are cheap next to a corrupt toolchain.
+    tmp="$(mktemp "$cache/shfmt.XXXXXXXX")" || return 1
+    curl -fsSL --max-time 180 --retry 3 --retry-delay 5 -o "$tmp" "$url" || {
         echo "toolchain: could not download shfmt from $url" >&2
+        rm -f "$tmp"
         return 1
     }
-    echo "${sha}  ${bin}.tmp" | _toolchain_sha256sum -c - >/dev/null 2>&1 || {
+    echo "${sha}  ${tmp}" | _toolchain_sha256sum -c - >/dev/null 2>&1 || {
         echo "toolchain: shfmt checksum MISMATCH -- refusing to install" >&2
         echo "  expected $sha" >&2
-        echo "  actual   $(_toolchain_sha256sum "$bin.tmp" | cut -d' ' -f1)" >&2
-        rm -f "$bin.tmp"
+        echo "  actual   $(_toolchain_sha256sum "$tmp" | cut -d' ' -f1)" >&2
+        rm -f "$tmp"
         return 1
     }
-    chmod +x "$bin.tmp" && mv "$bin.tmp" "$bin" || return 1
+    # 755 EXPLICITLY, not `chmod +x`. mktemp creates at 600, so `+x` would have
+    # yielded 700 where the old umask-dependent path yielded 755 -- a difference
+    # nothing here would notice until another user shared the cache.
+    chmod 755 "$tmp" && mv "$tmp" "$bin" || {
+        rm -f "$tmp"
+        return 1
+    }
     printf '%s' "$bin"
 }
 
@@ -393,7 +420,7 @@ _toolchain_acquire_shfmt() {
 
 _toolchain_acquire_shellcheck() {
     _toolchain_need_checksums
-    local want="$1" cache bin os osk arch sha sha_var url tmp
+    local want="$1" cache bin os osk arch sha sha_var url tmp stage
     cache="$(toolchain_cache_dir)/shellcheck-$want"
     bin="$cache/shellcheck"
     [[ -x "$bin" ]] && {
@@ -430,10 +457,19 @@ _toolchain_acquire_shellcheck() {
         return 1
     fi
     mkdir -p "$cache"
-    tmp="$cache/sc.tar.xz"
+    # PRIVATE STAGING DIR, for the reason spelled out in the shfmt helper above:
+    # a fixed `$cache/sc.tar.xz` is one inode shared by every concurrent
+    # acquirer. This one is worse than shfmt's, because the extraction ALSO
+    # targeted the shared `$cache` -- two `tar -x` runs racing meant a partially
+    # written `shellcheck` could sit at the final path, executable, while a third
+    # process ran it. Staging privately and renaming the finished binary in makes
+    # the only shared step an atomic rename again.
+    stage="$(mktemp -d "$cache/sc.XXXXXXXX")" || return 1
+    tmp="$stage/sc.tar.xz"
     url="https://github.com/koalaman/shellcheck/releases/download/v${want}/shellcheck-v${want}.${os}.${arch}.tar.xz"
     curl -fsSL --max-time 180 --retry 3 --retry-delay 5 -o "$tmp" "$url" || {
         echo "toolchain: could not download shellcheck from $url" >&2
+        rm -rf "$stage"
         return 1
     }
     # Verify BEFORE extracting: an unverified archive is arbitrary content, and
@@ -442,11 +478,24 @@ _toolchain_acquire_shellcheck() {
         echo "toolchain: shellcheck checksum MISMATCH -- refusing to extract" >&2
         echo "  expected $sha" >&2
         echo "  actual   $(_toolchain_sha256sum "$tmp" | cut -d' ' -f1)" >&2
-        rm -f "$tmp"
+        rm -rf "$stage"
         return 1
     }
-    tar -xJf "$tmp" -C "$cache" --strip-components=1 "shellcheck-v${want}/shellcheck" || return 1
-    rm -f "$tmp"
+    # The staging dir is torn down on EVERY exit path now, including the failed
+    # extraction that used to leak the archive (`tar ... || return 1` with the
+    # `rm -f` on the next line). That leak was one file overwritten in place;
+    # under private staging it would have become an unbounded pile of
+    # multi-megabyte directories, so tidying is not scope creep here, it is what
+    # keeps the change from being a regression.
+    tar -xJf "$tmp" -C "$stage" --strip-components=1 "shellcheck-v${want}/shellcheck" || {
+        rm -rf "$stage"
+        return 1
+    }
+    if ! { [[ -x "$stage/shellcheck" ]] && mv "$stage/shellcheck" "$bin"; }; then
+        rm -rf "$stage"
+        return 1
+    fi
+    rm -rf "$stage"
     [[ -x "$bin" ]] || return 1
     printf '%s' "$bin"
 }

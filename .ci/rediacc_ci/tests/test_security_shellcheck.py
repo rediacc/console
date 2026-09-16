@@ -214,7 +214,8 @@ def run_both(
         )
 
         def _mask(text: str, side: str = side) -> str:
-            return text.replace(str(fx / "cache" / side), "<cache>").replace(str(fx), "<fx>")
+            masked = text.replace(str(fx / "cache" / side), "<cache>").replace(str(fx), "<fx>")
+            return differential.mask_toolchain_tmp(masked)
 
         results.append((proc.returncode, _mask(proc.stdout), _mask(proc.stderr)))
         logs.append(_mask(log.read_text(encoding="utf-8")).splitlines())

@@ -61,6 +61,7 @@ PORT_REL = ".ci/rediacc_ci/security/shfmt.py"
 TWIN = ROOT / TWIN_REL
 PORT = ROOT / PORT_REL
 
+
 # The minimum of the package a path-invoked port needs. `core/toolchain.py` is
 # the shared acquisition path both sides go through, so its bash original comes
 # too.
@@ -215,7 +216,17 @@ def run_both(
         )
 
         def _mask(text: str, side: str = side) -> str:
-            return text.replace(str(fx / "cache" / side), "<cache>").replace(str(fx), "<fx>")
+            masked = text.replace(str(fx / "cache" / side), "<cache>").replace(str(fx), "<fx>")
+            # THE TEMP NAME IS RANDOM ON PURPOSE, so it is the one token here a
+            # differential must not demand equality of. Both helpers moved off a
+            # shared `$bin.tmp` onto a per-process `mktemp` name precisely so
+            # that concurrent acquirers stop corrupting each other, and the two
+            # sides draw from different alphabets (`mktemp` vs `tempfile`).
+            # Masking it keeps the comparison on what is actually observable --
+            # the flags, the URL, the order, the fact that a temp is used at all
+            # -- exactly as `<cache>` above does for a path that is also not a
+            # behavioural claim.
+            return differential.mask_toolchain_tmp(masked)
 
         results.append((proc.returncode, _mask(proc.stdout), _mask(proc.stderr)))
         logs.append(_mask(log.read_text(encoding="utf-8")).splitlines())

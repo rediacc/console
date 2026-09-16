@@ -39,6 +39,7 @@ fails on invisible bytes and the natural "fix" is to compare stripped strings,
 which would also stop the comparison seeing a real trailing-whitespace change.
 """
 
+import re
 import os
 import pty
 import selectors
@@ -215,3 +216,26 @@ def escape_bytes(text: str) -> int:
     anticipated still trips it.
     """
     return text.count("\033")
+
+
+# `<cache>/shfmt-3.13.1/shfmt.1R2NkECK` -> `.../shfmt.<tmp>`, and the same for
+# shellcheck's `sc.XXXXXXXX` staging directory.
+#
+# BOTH toolchain download helpers give every process its OWN temp name, because
+# the single fixed path they shared before was a data-corruption race between
+# concurrent acquirers (the reasoning is at `.ci/scripts/lib/toolchain.sh`, in
+# `_toolchain_download_shfmt`). The randomness IS the fix, so it is the one
+# token a twin/port differential must not demand equality of -- `mktemp` and
+# `tempfile` draw from different alphabets and always will. Masking it leaves
+# every observable claim intact: the flags, the URL, the order, and the fact
+# that a temp path is used at all.
+#
+# Shared rather than copied into each differential, because the first version of
+# this lived in the shfmt module alone and the shellcheck module failed the same
+# way twenty minutes later.
+_TOOLCHAIN_TMP_RE = re.compile(r"(/(?:shfmt|sc))\.[A-Za-z0-9_]{8}\b")
+
+
+def mask_toolchain_tmp(text: str) -> str:
+    """Replace per-process toolchain temp names with a stable `<tmp>`."""
+    return _TOOLCHAIN_TMP_RE.sub(r"\1.<tmp>", text)
