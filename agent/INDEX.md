@@ -306,7 +306,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-npm-ci-parallel-parity.md` | compacted | 52 | 0 | 0 | 3219 |
 | `agent/PLAN-plan-file-lifecycle.md` | ready | 456 | 3 | 10 | 28872 |
 | `agent/PLAN-plyr-css-on-demand-loading.md` | draft | 175 | 4 | 7 | 11070 |
-| `agent/PLAN-printf-echo-pipefail-sweep.md` | done | 306 | 0 | 33 | 24471 |
+| `agent/PLAN-printf-echo-pipefail-sweep.md` | done | 306 | 0 | 33 | 24762 |
 | `agent/PLAN-promote-mutation-runner.md` | done | 923 | 0 | 0 | 51731 |
 | `agent/PLAN-pytest-parallelism.md` | done | 266 | 0 | 10 | 16119 |
 | `agent/PLAN-rclone-decommission.md` | compacted | 56 | 0 | 0 | 3004 |

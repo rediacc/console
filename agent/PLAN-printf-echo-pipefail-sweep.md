@@ -230,7 +230,7 @@ each side), and note the general limitation in the header.
 - [x] Re-derive the 11-site list by importing `rediacc_ci.quality.pipefail_grep_q` and substituting `SCALING_PRODUCERS`; confirm it matches §1 exactly before touching anything. If it does not, this plan is stale — say so, do not adjust the code to fit it
       (ticked) 2026-09-16 by d778be9d: d67415782/763425f52. Re-derived by importing the module and substituting SCALING_PRODUCERS: matched 11/8 exactly, per the implementation report and independently spot-checked.
 - [x] Add `printf` and `echo` to `SCALING_PRODUCERS` in BOTH `.ci/scripts/quality/check-pipefail-grep-q.sh:120` and `.ci/rediacc_ci/quality/pipefail_grep_q.py:241`, keeping the sorted spelling byte-equal
-      (ticked) 2026-09-16 by d778be9d: 763425f52. Verified live: check-pipefail-grep-q.sh:191 lists `echo ... printf` sorted alongside the 16 commands; pipefail_grep_q.py mirrors it.
+      (ticked) 2026-09-16 by d778be9d: 763425f52. Verified live: .ci/scripts/quality/check-pipefail-grep-q.sh:191 lists `echo ... printf` sorted alongside the 16 commands; pipefail_grep_q.py mirrors it.
 - [x] Widen the pathspecs in BOTH twins to add `:(glob).ci/lib/**/*.sh`, `:(glob).devcontainer/**/*.sh`, `:(glob).ci/media/**/*.sh` — ONE line each, as `check:ci-pathspec-scope` requires, and byte-equal across the twins
       (ticked) 2026-09-16 by d778be9d: 763425f52. Verified live: scripts/ci-runner/gates.lock.json's check:ci-pipefail-grep-q entry lists .ci/lib/**, .devcontainer/**, .ci/media/** (fixed at the manifest source in 511765538 after a hand-edit trap).
 - [x] Add `INHERITS_PIPEFAIL_PREFIXES` (`.ci/lib/`) to both twins so a sourced library is treated as pipefail-bearing
@@ -238,11 +238,11 @@ each side), and note the general limitation in the header.
 - [x] Rewrite the FOUR inverted controls (twin :266-273, port `main()` :468-472, port `selftest()` :588-592, pytest `a-bounded-builtin-producer`) so each now asserts that a builtin producer IS flagged, with its mirror
       (ticked) 2026-09-16 by d778be9d: 763425f52, confirmed via selftest floor bump (18->26, 8 net new/rewritten controls) and the port's own docstring.
 - [x] Rewrite the green-banner blind-spot paragraph in both twins; it currently says the opposite of what will be true
-      (ticked) 2026-09-16 by d778be9d: 763425f52. check-pipefail-grep-q.sh:528 now reads "the commands and builtins in SCALING_PRODUCERS, which since 2026-09-16...".
+      (ticked) 2026-09-16 by d778be9d: 763425f52. .ci/scripts/quality/check-pipefail-grep-q.sh:528 now reads "the commands and builtins in SCALING_PRODUCERS, which since 2026-09-16...".
 - [x] Record the `.claude/oracles/**` exclusion and its reason (frozen twins, README.md:49-54, live code is Python) in the gate header, so the next sweep does not re-derive it
       (ticked) 2026-09-16 by d778be9d: 763425f52, per the implementation report's verified exclusion of the 8 frozen oracle sites.
 - [x] Record the per-FILE pipefail limitation in the header, citing `.ci/scripts/test/test-install-methods.sh:1129` as the live false positive and `.ci/lib/devbox.sh:1082` as the live false negative
-      (ticked) 2026-09-16 by d778be9d: d67415782, test-install-methods.sh:1129 converted with an in-place note per the implementation report.
+      (ticked) 2026-09-16 by d778be9d: d67415782, .ci/scripts/test/test-install-methods.sh:1129 converted with an in-place note per the implementation report.
 - [x] NEW CONTROL, both twins + port selftest: a BUILTIN producer (`printf`) piped into `grep -q` under pipefail is detected. Mirror: the command-substitution form of the same is not
       (ticked) 2026-09-16 by d778be9d: 763425f52, selftest floor 18->26 confirms new controls landed and pass.
 - [x] NEW CONTROL, both twins + port selftest: `echo` likewise, with its mirror
@@ -252,7 +252,7 @@ each side), and note the general limitation in the header.
 - [x] NEW CONTROL: a file under `.ci/lib/` with no `set -o pipefail` of its own IS scanned; mirror, a file elsewhere with no pipefail is not
       (ticked) 2026-09-16 by d778be9d: 763425f52, corpus-widening control per the selftest floor bump.
 - [x] Bump `Controls("pipefail-grep-q", floor=18)` in `selftest()` to the new count (21 pass today)
-      (ticked) 2026-09-16 by d778be9d: 763425f52. Verified live: pipefail_grep_q.py:803 reads floor=26.
+      (ticked) 2026-09-16 by d778be9d: 763425f52. Verified live: .ci/rediacc_ci/quality/pipefail_grep_q.py:803 reads floor=26.
 - [x] Convert `.ci/scripts/test/gates/test-shadow-gate.sh:217` and `:357`
       (ticked) 2026-09-16 by d778be9d: d67415782, shadow-gate's own test re-run 0->0 per the implementation report.
 - [x] Convert `.ci/scripts/test/proxies/proxy-go-unit.sh:124` — `grep -qx` becomes `grep -Fx`, inside the loop
@@ -268,7 +268,7 @@ each side), and note the general limitation in the header.
 - [x] Convert `.devcontainer/start-kvm.sh:216` — pre-existing offender under the CURRENT rule, unlocked by the corpus widening
       (ticked) 2026-09-16 by d778be9d: d67415782, per the implementation report's file list.
 - [x] Convert `private/renet/.ci/scripts/quality/i18n.sh:229` (keep the `--`) and `private/renet/scripts/ci-test.sh:515`, on the renet submodule's own branch, submodule-first per the PR convention
-      (ticked) 2026-09-16 by d778be9d: renet 2e4a4b4a8 (rides PR #111), console pointer bumped in d67415782. renet's own test driven live, rc=0, per the implementation report.
+      (ticked) 2026-09-16 by d778be9d: renet's commit rides PR #111; it is a gitlink in submodule private/renet, never an object in this repo, so follow it from the console pointer bumped in d67415782 (`git ls-tree d67415782 private/renet`). renet's own test driven live, rc=0, per the implementation report.
 - [x] `bash -n` every touched shell file; `npm run check:ci-shell-format` (shfmt) and `npm run check:ci-shell-lint` (shellcheck) clean
       (ticked) 2026-09-16 by d778be9d: d67415782/763425f52, all 9 files bash -n clean, shfmt/shellcheck rc=0 per the implementation report.
 - [x] `npm run check:ci-pipefail-grep-q` exits 0 with the new control count and a scanned count of 478+26
@@ -292,7 +292,7 @@ each side), and note the general limitation in the header.
 - [x] Update `scripts/ci-runner/gates.lock.json` — the entry's `paths` are `pathsOrigin: declared` and list `.ci/scripts/**`, `scripts/**`, `.claude/hooks/**`; the three new corpus roots must be added or the gate stops being triggered by edits to them
       (ticked) 2026-09-16 by d778be9d: 763425f52 initially edited the lock directly (a hand-edit trap the babysitter caught -- would have silently DROPPED the new paths on next regeneration); fixed at the manifest source in 511765538, regeneration now reproduces the committed bytes exactly.
 - [x] Commit under `PR-TASK: e87fa3ce`; submodule PR first, then the console pointer bump
-      (ticked) 2026-09-16 by d778be9d: d67415782 (console + renet pointer), 763425f52 (gate widening), both carry the trailer; renet commit 2e4a4b4a8 landed first, submodule-first per convention.
+      (ticked) 2026-09-16 by d778be9d: d67415782 (console + renet pointer), 763425f52 (gate widening), both carry the trailer; renet's commit landed first, submodule-first per convention; it is a gitlink in private/renet, readable via `git ls-tree d67415782 private/renet`.
 
 ## Remaining
 
