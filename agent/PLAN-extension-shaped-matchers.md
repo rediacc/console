@@ -410,3 +410,17 @@ commit 3 stays not started, for the same reason as every prior check: this sessi
 capacity is on the PR #589 CI-green campaign, which the operator's own standing instruction
 ("I'll not be around... don't ask") keeps as the active priority over this box.
 
+### Re-checked a twelfth time 2026-09-16, session d778be9d, operator back mid-wave: still unchanged
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still 16;
+`.ci/shadow/w7p6-*.observations.jsonl` is still 153. Activity since the eleventh check (the
+babysitter's actionlint-sibling commit `8d0601308`, my own `23c99c9c4` committing this very
+plan's eleventh re-check, its `agent/INDEX.md` regeneration at `1b13713d9`, the push to
+`origin/0914-1`, and dispatching the printf/echo sweep -- a Plan agent's design written to
+`agent/PLAN-printf-echo-pipefail-sweep.md` and now being implemented) touched none of this
+plan's files or its precondition. The operator returned mid-wave and directed attention to
+extending the pipefail/grep-q class to printf/echo producers and to a gh-auth-token fallback
+fix, both separate from this plan's subject. Status stays `executing`, commit 3 stays not
+started.
+
