@@ -2765,3 +2765,78 @@ correct for blobs and commits alike. Then walk the corpus with the gate's OWN
 `added_lines`, `fenced_lines` and `citations` rather than a fresh regex. Done that way the
 local count matched CI's exactly, which is the only agreement worth anything: two
 independent wrong answers agree with each other just as readily.
+
+---
+
+## An `isolation: "worktree"` agent can be handed a stale worktree, and that is not an escalation
+Trap-Id: stale-isolated-worktree-base
+Enforced-By: JUDGMENT-ONLY
+Residue: nothing checks a freshly provisioned worktree's HEAD against the branch that dispatched it; the gap is caught only if the agent itself thinks to compare.
+
+Seen at least four times on branch `0914-1` alone (2026-09-14/15, four different agent
+dispatches, days apart), always the same stale base: `5f4c7608b`. An agent given
+`isolation: "worktree"` opened its worktree, went looking for a file or a commit the
+dispatching session named, and found neither -- because the worktree was provisioned from
+a commit up to 281 commits behind the branch actually being worked, not from its tip.
+
+Two wrong reactions, both seen: (1) proceed anyway against the stale tree, silently
+producing work against code that no longer exists on the real branch; (2) diagnose it
+correctly, then stop and escalate to the operator as if the worktree needed manual repair.
+Both waste a round. The right check, cheap and mechanical:
+
+    git status --short                                    # must be clean
+    git merge-base --is-ancestor HEAD <target-branch>      # must be true
+    git log --oneline <target-branch>..HEAD                # must be empty
+
+All three holding means the worktree has zero commits of its own to lose -- a
+`git merge --ff-only <target-branch>` is lossless by construction, not a judgment call,
+and is NOT the `git worktree add` CLAUDE.md's pre-bash hook blocks (that hook is about
+*creating* worktree state; fast-forwarding a branch already checked out into one is a
+different, safe operation). Do the fast-forward and continue the original task. Escalate
+only if any of the three checks fails -- e.g. the worktree carries its own commits, which
+would make a fast-forward not the same as "nothing to lose."
+
+A SECOND, sharper version of the same gap: a completed `isolation: "worktree"` agent that
+made NO changes has its worktree reclaimed automatically (documented Agent-tool behaviour,
+not a bug on its own). Resuming that same agent later via `SendMessage` does not recreate
+it -- the agent silently finds itself back in the PRIMARY checkout instead, with no signal
+that isolation was lost except its own working directory having changed underneath it.
+Seen live 2026-09-15: a docker-cutover writer's first pass made no changes (blocked on a
+stale base, see above), and resuming it to retry landed it directly in the shared tree,
+mid-push by an unrelated live session. It noticed only because it re-ran `pwd` and
+`git worktree list` before acting, per its own task instructions to re-verify state before
+a consequential step -- an agent that trusted its original briefing's "you are isolated"
+premise instead would have edited the shared tree believing itself alone in it. Re-verify
+the working directory and `git worktree list` after ANY resume of a worktree-isolated
+agent, not only after its first dispatch.
+
+---
+
+## A control proves the mutant is detectable, not that the check will ever see the mutant's shape
+Trap-Id: control-env-inherits-what-it-tests-for
+Enforced-By: gate:check:ci-toolchain-pins
+Residue: nothing checks whether a gate's own SELFTEST runs under the same ambient environment the real gate does; a control built to look clean in isolation can still be silently defeated by state the production caller always carries.
+
+`check-toolchain-pins.sh`'s A9 control mutates a copy of `toolchain.sh`, appending a
+no-op override of `toolchain_load()`, then asserts `toolchain_pin_for shellcheck` resolves
+EMPTY under that mutant -- proving a library that skips loading its pins is detectable.
+Run standalone, it is: the shell that sources the mutant starts with no `SHELLCHECK_VERSION`
+in its environment, so skipping the load really does leave the pin empty.
+
+`quality-security`'s own "Load gate toolchain pins" step, several lines earlier in the SAME
+job, exports `SHELLCHECK_VERSION` (and every other pin) into `$GITHUB_ENV` -- which every
+later step, including the one running this gate, inherits. `toolchain_pin_for` falls back to
+reading an already-exported variable when the library's own resolution is skipped, so under
+CI the "mutant" subshell inherits the real pin from the ambient environment regardless of
+whether `toolchain_load()` ran. The control's own `fail "A9 CONTROL DID NOT FIRE"` branch
+exists for exactly this, and it fires in CI on every run -- not because the check found a
+real gap, but because the control's premise (a clean environment with nothing pre-exported)
+was never true there. A9 was built to catch a check that cannot fail, and the environment it
+runs in made it one.
+
+The general shape: a control isolates the ONE variable it means to flip (here,
+`toolchain_load` skipped or not) and assumes everything else is neutral. When the real
+caller's environment carries state the control didn't account for (an exported variable,
+an ambient PATH entry, a cached file), the control's neutral case and its mutant case can
+converge, and the control passes locally (where that state is absent) while being vacuous
+in the one environment it exists to protect.
