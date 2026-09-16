@@ -466,3 +466,13 @@ is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jso
 (the account lockfile npm-major fix landing in CI, a test_proc.py zombie-vs-exited /proc
 guard fix, ongoing renet pipefail-grep-q gate implementation) touched none of this plan's
 files or its precondition. Status stays `executing`, commit 3 stays not started.
+
+### Re-checked a seventeenth time 2026-09-16, session d778be9d: still unchanged
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still
+16; `.ci/shadow/w7p6-*.observations.jsonl` is still 153. Activity since the sixteenth check
+(the private/renet pipefail-grep-q gate landing across two repos, console's SCALING_PRODUCERS
+widened with tee/docker, 4 more console sites converted, a twin-parity ledger cleanup commit)
+touched none of this plan's files or its precondition. Status stays `executing`, commit 3
+stays not started.
