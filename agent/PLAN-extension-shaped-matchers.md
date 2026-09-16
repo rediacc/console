@@ -447,3 +447,13 @@ none of this plan's files or its precondition. Status stays `executing`, commit 
 started. Landing this now as a single, deliberate exception to a concurrent plan-doc write
 freeze (agreed with the pr-babysit teammate mid-push), because three consecutive identical
 stop-hook stalls waiting on that freeze became the worse failure.
+
+### Re-checked a fifteenth time 2026-09-16, session d778be9d, freeze lifted: still unchanged
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is still the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still
+16; `.ci/shadow/w7p6-*.observations.jsonl` is still 153. Activity since the fourteenth check
+(the private/account lockfile/npm-major fix, the private/renet pipefail-grep-q gate design
+and its dispatched implementation) touched none of this plan's files or its precondition.
+Status stays `executing`, commit 3 stays not started. The pr-babysit teammate's plan-doc
+write freeze from the fourteenth check has since lifted; this commit is an ordinary one.
