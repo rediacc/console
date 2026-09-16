@@ -30,11 +30,13 @@ nothing.
 """
 
 import json
+import os
 import pathlib
+import subprocess
 
 import pytest
 
-from rediacc_ci import paths
+from rediacc_ci import gitx, paths
 from rediacc_ci.quality import prose_style as ps
 
 ROOT = paths.repo_root()
@@ -367,9 +369,94 @@ def _tree(tmp_path, files):
     return tmp_path
 
 
+GIT_ISOLATED = {"GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"}
+DIRTY = "Did you run the tests?\n"  # <!-- style-ok -->
+CLEAN = "The tests were run.\n"
+
+
+def _repo(tmp_path, tracked, *, ignore=(), untracked=()):
+    """A real checkout: `tracked` staged, `ignore` written to .gitignore,
+    `untracked` planted AFTER the add so git never sees it.
+
+    NO COMMIT. `git ls-files` reads the index, so `git add` is the whole
+    requirement, and skipping the commit skips every way a global identity
+    or signing configuration could make this fixture machine-dependent.
+    """
+    root = _tree(tmp_path, tracked)
+    if ignore:
+        (root / ".gitignore").write_text("".join(p + "\n" for p in ignore), encoding="utf-8")
+    env = {**os.environ, **GIT_ISOLATED}
+    subprocess.run(["git", "init", "-q", "-b", "main", "."], cwd=root, env=env, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=root, env=env, check=True)
+    for rel, text in dict(untracked).items():
+        path = root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    return root
+
+
+def test_a_gitignored_file_is_not_discovered(tmp_path):
+    root = _repo(
+        tmp_path, {"kept.md": CLEAN}, ignore=["local/"], untracked={"local/dirty.md": DIRTY}
+    )
+    found = ps.discover(root, GLOBALS)
+    assert "kept.md" in found  # MIRROR: a real discover() cannot return nothing
+    assert "local/dirty.md" not in found
+
+
+def test_an_untracked_file_is_not_discovered(tmp_path):
+    root = _repo(tmp_path, {"kept.md": CLEAN}, untracked={"fresh.md": DIRTY})
+    found = ps.discover(root, GLOBALS)
+    assert "kept.md" in found
+    assert "fresh.md" not in found
+
+
+def test_a_gitignored_finding_cannot_enter_the_baseline(tmp_path):
+    root = _repo(
+        tmp_path, {"kept.md": DIRTY}, ignore=["local/"], untracked={"local/dirty.md": DIRTY}
+    )
+    rc = ps.run_check(root, GLOBALS, RULES, [], write_baseline=True)
+    assert rc == 0
+    baseline = json.loads((root / ps.BASELINE_FILE).read_text(encoding="utf-8"))
+    assert "kept.md" in baseline["findings"]  # MIRROR: the write was not vacuous
+    assert "local/dirty.md" not in baseline["findings"]
+
+
+def test_an_explicitly_named_untracked_file_is_still_scanned(tmp_path, capsys):
+    root = _repo(tmp_path, {"kept.md": CLEAN}, untracked={"brand-new.md": DIRTY})
+    rc = ps.run_check(root, GLOBALS, RULES, ["brand-new.md"])
+    assert rc == 1
+    assert "Do not add them to the baseline" in capsys.readouterr().err
+    assert "brand-new.md" not in ps.discover(root, GLOBALS)
+
+
+def test_discovery_outside_a_checkout_refuses_rather_than_reporting_nothing(tmp_path, capsys):
+    root = _tree(tmp_path, {"a.md": DIRTY})
+    with pytest.raises(ps.RuleError):
+        ps.discover(root, GLOBALS)
+    rc = ps.run_check(root, GLOBALS, RULES, [])
+    assert rc == 1
+    assert "not a git checkout" in capsys.readouterr().err
+
+
+def test_the_real_corpus_is_a_subset_of_what_git_tracks():
+    found = set(ps.discover(ROOT, GLOBALS))
+    tracked = set(gitx.ls_files(root=ROOT))
+    assert found <= tracked
+    assert len(found) > 2000
+
+
+def test_exclude_dirs_prunes_by_bare_name_and_by_path():
+    skip = {"node_modules", "packages/www"}
+    assert ps.under_excluded_dir("a/node_modules/b.md", skip) is True
+    assert ps.under_excluded_dir("packages/www/x.md", skip) is True
+    assert ps.under_excluded_dir("docs/build.md", {"build"}) is False
+    assert ps.under_excluded_dir("node_modules", {"node_modules"}) is False
+
+
 def test_zero_files_is_a_failure(tmp_path, capsys):
     """A glob that matches nothing must not exit 0 looking like a clean tree."""
-    root = _tree(tmp_path, {})
+    root = _repo(tmp_path, {})
     rc = ps.run_check(root, GLOBALS, RULES, [])
     assert rc == 1
     assert "VACUOUS" in capsys.readouterr().err

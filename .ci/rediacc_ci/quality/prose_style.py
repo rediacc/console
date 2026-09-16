@@ -74,11 +74,13 @@ import json
 import os
 import pathlib
 import re
+import subprocess
 import sys
+import tempfile
 import textwrap
 import tokenize
 
-from rediacc_ci import log, paths
+from rediacc_ci import gitx, log, paths
 from rediacc_ci.controls import Controls
 
 RULES_FILE = ".ci/config/prose-style-rules.json"
@@ -693,33 +695,97 @@ def lint_message(text, rules, globals_, scope):
 # ---------------------------------------------------------------------------
 
 
-def discover(root, globals_, subtrees=None):
-    """Every file the globals admit, sorted.
+def tracked_files(root):
+    """Every path git TRACKS under `root`, repo-relative, present on disk.
 
-    SORTED, NOT READDIR ORDER. `check_content_quality.py` records measuring the
-    same thing on this tree: raw `find` is not lexicographic here, so an unsorted
-    walk makes the output depend on filesystem state rather than on repository
-    content, and two runs on two machines disagree for no reason a reader can
-    act on.
+    GIT, NOT A FILESYSTEM WALK, and the reason is the artifact this gate writes.
+    `.ci/config/prose-style-baseline.json` is COMMITTED and SHRINK-ONLY, so
+    every path in it must exist in a fresh checkout. A walk enumerates whatever
+    the machine happens to hold -- a gitignored scratch directory, a file not
+    yet added, a peer's stale worktree -- and `--write-baseline` then freezes
+    rows CI is structurally incapable of satisfying. 944aa6210 is the receipt:
+    six precompact-facts entries, ignored by a gitignore of a bare star,
+    reded CI with "6 baselined finding(s) no longer fire".
+
+    TRACKED, NOT MERELY NOT-IGNORED. `dead_python.py:249` adds
+    `--others --exclude-standard` and is right to: a reachability scan that
+    could not see a brand-new module would call it dead. Here the claim is
+    about what the repository SHIPS, and an untracked-but-unignored file is the
+    same contamination as an ignored one -- it is on one disk and in no
+    checkout.
+
+    REFUSES RATHER THAN RETURNING NOTHING, which is what
+    `plant_proofs.py:867-877`, `python_env_registry.py:345-355` and
+    `check_language_policy.py:235-241` all do at this exact call. An empty
+    corpus and a clean tree are indistinguishable by exit code, and only one is
+    good news.
+
+    `existing=True` drops index entries whose file is gone -- gitx TRAP 1's
+    second half. A file removed with `rm` rather than `git rm` would otherwise
+    arrive here, fail to open, and land in the UNCHECKED list that `run_check`
+    treats as a failure.
     """
-    root = pathlib.Path(root)
+    if not gitx.is_work_tree(root):
+        msg = (
+            "%s is not a git checkout, so the tracked corpus this gate is built on cannot be "
+            "enumerated. Reporting zero files would report zero INPUTS, which reads exactly "
+            "like a clean tree." % root
+        )
+        raise RuleError(msg)
+    return gitx.ls_files(root=root, existing=True)
+
+
+def under_excluded_dir(rel, skip):
+    """Does any ANCESTOR directory of `rel` appear in `skip`?
+
+    BOTH SPELLINGS, because `exclude_dirs` has always carried both and the walk
+    this replaces honoured both: a BARE NAME prunes at every depth, a
+    repo-relative PATH prunes once. Dropping the bare-name arm is not a
+    tidy-up, it is a corpus change -- `build` alone admits the tracked modules
+    under `.ci/rediacc_ci/build/`, `private` admits `.ci/rediacc_ci/private/`.
+
+    A FILE is never matched, only its ancestors, so a tracked `docs/build.md`
+    survives an entry of `build`.
+    """
+    parts = rel.split("/")
+    for index in range(len(parts) - 1):
+        if parts[index] in skip or "/".join(parts[: index + 1]) in skip:
+            return True
+    return False
+
+
+def discover(root, globals_, subtrees=None):
+    """Every TRACKED file the globals admit, sorted.
+
+    EXPLICIT TARGETS DO NOT COME THROUGH HERE, and that is the distinction this
+    function exists on one side of. `run_check` and `run_reflow` both spell it
+    `targets or discover(...)`: a path named on the command line is scanned
+    whatever git thinks of it, because the caller named it and a file being
+    written for the first time is untracked by definition. Only the BROAD
+    sweep -- the default `check`, and every `--write-baseline` -- is narrowed
+    to what git tracks, because only the broad sweep writes the committed
+    baseline.
+
+    SORTED, NOT READDIR ORDER. `check_content_quality.py` records measuring
+    the same thing on this tree: raw `find` is not lexicographic here, so an
+    unsorted walk makes the output depend on filesystem state rather than on
+    repository content, and two runs on two machines disagree for no reason a
+    reader can act on. git's own order is not this order either, so the sort
+    stays.
+    """
     suffixes = {os.path.splitext(p)[1] for p in (globals_.get("include") or ())}
     skip = set(globals_.get("exclude_dirs") or ())
+    prefixes = tuple(str(s).rstrip("/") + "/" for s in (subtrees or ()))
     out = []
-    bases = [root / s for s in subtrees] if subtrees else [root]
-    for base in bases:
-        for dirpath, dirnames, filenames in os.walk(base):
-            rel_dir = os.path.relpath(dirpath, root)
-            dirnames[:] = sorted(
-                d
-                for d in dirnames
-                if d not in skip and os.path.normpath(os.path.join(rel_dir, d)) not in skip
-            )
-            out.extend(
-                os.path.relpath(os.path.join(dirpath, name), root)
-                for name in sorted(filenames)
-                if os.path.splitext(name)[1] in suffixes
-            )
+    for path in tracked_files(root):
+        rel = path.replace(os.sep, "/")
+        if os.path.splitext(rel)[1] not in suffixes:
+            continue
+        if under_excluded_dir(rel, skip):
+            continue
+        if prefixes and not rel.startswith(prefixes):
+            continue
+        out.append(rel)
     return sorted(set(out))
 
 
@@ -959,7 +1025,14 @@ def run_check(
     non-empty file set: the second one is the extractor breaking rather than the
     glob, and both look like a clean tree from the outside.
     """
-    files = targets or discover(root, globals_)
+    # TARGETS BYPASS DISCOVERY DELIBERATELY. A path named on the command line
+    # is scanned whether or not git tracks it; only the broad sweep is
+    # narrowed.
+    try:
+        files = targets or discover(root, globals_)
+    except RuleError as exc:
+        log.error(str(exc))
+        return 1
     if not files:
         log.error(
             "VACUOUS: zero files matched. This gate is not seeing the tree, and its green "
@@ -1161,7 +1234,11 @@ def _rule_help(rules, ids):
 def run_reflow(root, globals_, targets, *, write=False, show_diff=False):
     """The `reflow` subcommand. DRY RUN BY DEFAULT; `--write` is the opt-in."""
     width = globals_.get("max_line_length", 384)
-    files = targets or discover(root, globals_)
+    try:
+        files = targets or discover(root, globals_)
+    except RuleError as exc:
+        log.error(str(exc))
+        return 1
     files = [f for f in files if f.endswith(".md")]
     if not files:
         log.error("VACUOUS: zero markdown files matched, so reflow checked nothing.")
@@ -1612,6 +1689,49 @@ def selftest():
         _added(old, [rewritten]),
         [rewritten.fid],
     )
+
+    # ---- discovery is git's answer, not the walking machine's -----------
+    with tempfile.TemporaryDirectory() as ctldir:
+        ctlroot = pathlib.Path(ctldir)
+        env = {**os.environ, "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"}
+        subprocess.run(["git", "init", "-q", "-b", "main", "."], cwd=ctlroot, env=env, check=True)
+        (ctlroot / "kept.md").write_text("clean\n", encoding="utf-8")
+        subprocess.run(["git", "add", "-A"], cwd=ctlroot, env=env, check=True)
+        (ctlroot / ".gitignore").write_text("ignored/\n", encoding="utf-8")
+        (ctlroot / "ignored").mkdir()
+        (ctlroot / "ignored" / "dirty.md").write_text("dirty\n", encoding="utf-8")
+        (ctlroot / "untracked.md").write_text("dirty\n", encoding="utf-8")
+        discovered = discover(ctlroot, globals_)
+        ctl.check("discovery: a tracked file is discovered (MIRROR)", "kept.md" in discovered, True)
+        ctl.check(
+            "discovery: a gitignored file is NOT discovered",
+            "ignored/dirty.md" in discovered,
+            False,
+        )
+        ctl.check(
+            "discovery: an untracked, unignored file is NOT discovered",
+            "untracked.md" in discovered,
+            False,
+        )
+        ctl.check(
+            "discovery: exclude_dirs prunes a bare name at depth",
+            under_excluded_dir("a/node_modules/b.md", {"node_modules"}),
+            True,
+        )
+        ctl.check(
+            "discovery: a FILE whose stem matches an exclude_dirs entry survives (MIRROR)",
+            under_excluded_dir("node_modules", {"node_modules"}),
+            False,
+        )
+    with tempfile.TemporaryDirectory() as nongit:
+        (pathlib.Path(nongit) / "a.md").write_text("dirty\n", encoding="utf-8")
+        ctl.raises(
+            "discovery: outside a checkout refuses rather than reporting nothing",
+            RuleError,
+            discover,
+            nongit,
+            globals_,
+        )
 
     # ---- reflow ---------------------------------------------------------
     wrapped = "one two three\nfour five six\n\nnext para\n"

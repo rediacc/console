@@ -81,8 +81,7 @@
       "build",
       ".venv",
       "vendor",
-      ".artifacts",
-      ".claude/hooks/context/state"
+      ".artifacts"
     ],
     "exempt_paths": [
       {
@@ -122,7 +121,13 @@
       "whose English is the source of 12 derived locales, so a reflow there re-keys the i18n",
       "naturalization ledger. .sh is absent from `include` on purpose and not by oversight:",
       "shell scripts are a shrinking surface under this repo's bash-to-Python migration, and",
-      "teaching this tool a comment syntax it will outlive is effort spent backwards."
+      "teaching this tool a comment syntax it will outlive is effort spent backwards.",
+      "",
+      "exclude_dirs now only describes TRACKED directories that are out of scope. discover()",
+      "enumerates `git ls-files`, so a gitignored or never-added path is excluded structurally",
+      "and needs no entry here. `.claude/hooks/context/state` was one such entry, added after",
+      "944aa6210 froze six of its ignored files into this gate's committed baseline; it is gone",
+      "because the corpus itself is now git's answer rather than the walking machine's."
     ]
   },
   "rules": [
