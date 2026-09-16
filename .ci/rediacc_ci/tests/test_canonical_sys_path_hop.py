@@ -134,6 +134,24 @@ EXEMPT: dict[str, str] = {
         "per-line waiver where the bare form costs nothing. The exemption dies the "
         "day that import moves inside a function."
     ),
+    ".claude/rediacc_hooks/guards/block_prose_style_edit.py": (
+        "BLOCKER: importing `rediacc_ci.quality.prose_style` needs `.ci` on sys.path, "
+        "and neither `_cipath.py` nor `paths.on_sys_path` can supply it -- both live "
+        "inside `.ci`, so reaching either one already needs the thing the hop exists "
+        "to do. Moving the hop into `rediacc_hooks/dispatch.py`, the package's usual "
+        "single entry point, was considered and rejected: dispatch.py runs every "
+        "guard in one process, so a permanent `.ci` insert there would put "
+        "`rediacc_ci` and `_cipath` on every LATER guard's import path for the "
+        "whole chain, not just this one's. This guard's insert is SCOPED and "
+        "removed in a `finally` (see its own docstring), which is the narrower, "
+        "self-cleaning shape and the reason it stays local rather than moving up."
+    ),
+    ".claude/rediacc_hooks/guards/block_prose_style_commit.py": (
+        "BLOCKER: the same circularity and the same rejected alternative as "
+        "`block_prose_style_edit.py`'s entry above; see that reason in full. Both "
+        "guards import the same engine the same scoped way, so the argument is "
+        "identical rather than duplicated by accident."
+    ),
 }
 
 #: relpath -> the hop fingerprints frozen there. DEBT, not permission. The total may
