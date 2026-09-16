@@ -86,7 +86,15 @@
     "exempt_paths": [
       {
         "glob": "agent/*/STATE.md",
-        "reason": "BLOCKER: live per-session coordination scratch, written continuously by running sessions. A CI gate that reds because a CONCURRENT session wrote a 430-character line in its own notes is failing for a reason unrelated to the commit under test, which is flakiness wearing a gate's name. Measured 2026-09-16: 10 of the tracked STATE.md files already carry over-length lines, and the two that triggered this entry belong to the session that dispatched the work, so they were not this session's to rewrite either."
+        "reason": [
+          "BLOCKER: live per-session coordination scratch, written continuously by running",
+          "sessions. A CI gate that reds because a CONCURRENT session wrote a 430-character",
+          "line in its own notes is failing for a reason unrelated to the commit under test,",
+          "which is flakiness wearing a gate's name. Measured 2026-09-16: 10 of the tracked",
+          "STATE.md files already carry over-length lines, and the two that triggered this",
+          "entry belong to the session that dispatched the work, so they were not this",
+          "session's to rewrite either."
+        ]
       },
       {
         "glob": "agent/archive/*/*/STATE.md",
@@ -94,7 +102,20 @@
       },
       {
         "glob": "agent/pr/*.md",
-        "reason": "BLOCKER: a GENERATED artifact, not authored prose. `worklist.py --publish` renders this file from the append-only worklist event log, so every line in it is the text of a worklist item, and most of those items belong to sessions that have ended. The four R2 findings that triggered this entry (#043041d3, #0d972047, #1e5ce54d, #2e642173) were all written by f4da5c2e and are ticked and closed; the only way to clear them at the artifact is to rewrite a dead session's history in an append-only store. check_plan_citations.py settled the same scope question for the same tree and the same reason: `agent/pr/*.md, agent/worklist/*   OUT. Generated. The fix for a dead pointer in a generated file is a change to the generator, and reporting it at the artifact teaches the wrong lesson.` Prose style in a rendered snapshot of historical items is that case exactly. The generator, and the style of items written from here on, remain in scope through the source files themselves."
+        "reason": [
+          "BLOCKER: a GENERATED artifact, not authored prose. `worklist.py --publish` renders",
+          "this file from the append-only worklist event log, so every line in it is the text",
+          "of a worklist item, and most of those items belong to sessions that have ended. The",
+          "four R2 findings that triggered this entry (#043041d3, #0d972047, #1e5ce54d,",
+          "#2e642173) were all written by f4da5c2e and are ticked and closed; the only way to",
+          "clear them at the artifact is to rewrite a dead session's history in an",
+          "append-only store. check_plan_citations.py settled the same scope question for the",
+          "same tree and the same reason: `agent/pr/*.md, agent/worklist/*   OUT. Generated.",
+          "The fix for a dead pointer in a generated file is a change to the generator, and",
+          "reporting it at the artifact teaches the wrong lesson.` Prose style in a rendered",
+          "snapshot of historical items is that case exactly. The generator, and the style of",
+          "items written from here on, remain in scope through the source files themselves."
+        ]
       }
     ],
     "exempt_why": [

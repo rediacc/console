@@ -803,7 +803,13 @@ def exemptions(globals_):
     """
     out = []
     for entry in globals_.get("exempt_paths") or ():
-        reason = entry.get("reason", "")
+        raw = entry.get("reason", "")
+        # A REASON MAY BE AN ARRAY OF LINES, the same shape `exempt_why` and
+        # `exclude_why` already use elsewhere in this file. .json carries no
+        # R18 line-length check of its own -- it is absent from `include` --
+        # so a reason long enough to need wrapping has nowhere else to be
+        # wrapped. Joined with a space, it reads as the one sentence it is.
+        reason = " ".join(raw) if isinstance(raw, list) else raw
         if not reason.startswith("BLOCKER:"):
             msg = "exempt_paths entry %r carries no BLOCKER: reason" % entry.get("glob")
             raise RuleError(msg)
