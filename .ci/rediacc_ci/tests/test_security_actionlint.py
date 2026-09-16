@@ -222,7 +222,8 @@ def run_both(fx: pathlib.Path, *, path_has_tool: bool = True, **extra: str) -> t
         # name, the URL -- and only stops the differential tripping on the
         # isolation the test itself introduced.
         def _mask(text: str, side: str = side) -> str:
-            return text.replace(str(fx / "cache" / side), "<cache>").replace(str(fx), "<fx>")
+            masked = text.replace(str(fx / "cache" / side), "<cache>").replace(str(fx), "<fx>")
+            return differential.mask_toolchain_tmp(masked)
 
         results.append((proc.returncode, _mask(proc.stdout), _mask(proc.stderr)))
         logs.append(_mask(log.read_text(encoding="utf-8")).splitlines())

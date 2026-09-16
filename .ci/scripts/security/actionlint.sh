@@ -73,7 +73,7 @@ ensure_actionlint() {
 
     [[ -x "$BIN" ]] && return 0
 
-    local arch sha url tmp
+    local arch sha url tmp stage
     arch="$(uname -m)"
     case "$arch" in
         x86_64 | amd64)
@@ -93,11 +93,31 @@ ensure_actionlint() {
 
     url="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_${arch}.tar.gz"
     mkdir -p "$CACHE_DIR"
-    tmp="$CACHE_DIR/actionlint.tar.gz"
+    # PRIVATE STAGING DIR, NOT A FIXED PATH IN THE SHARED CACHE. $CACHE_DIR sits
+    # under ${CI_TEMP:-${RUNNER_TEMP:-/tmp}}, which a CI runner shares across
+    # every concurrent invocation, so a fixed `$CACHE_DIR/actionlint.tar.gz` is
+    # one inode that all of them download into at once. `curl -o` truncates, so
+    # they interleave writes; the winner's `rm -f "$tmp"` then deletes the
+    # tarball out from under the losers, whose sha256sum reads a path that no
+    # longer exists and reports "checksum MISMATCH -- refusing to extract" --
+    # a race accusing the download of being tampered with.
+    #
+    # Measured 2026-09-16 with a cold cache and 8 concurrent invocations of this
+    # gate: SEVEN of the eight exited 2. Identical to the shfmt and shellcheck
+    # acquirers fixed in this same change; this one had simply never been hit
+    # hard enough to flake, because actionlint is acquired far less often.
+    #
+    # The extraction targets the staging dir too: two `tar -xzf` runs into the
+    # shared $CACHE_DIR could leave a half-written `actionlint` at the final
+    # path, executable, for a third process to run. Only the finished, verified
+    # binary is moved into place, and a rename is atomic.
+    stage="$(mktemp -d "$CACHE_DIR/al.XXXXXXXX")" || exit 2
+    tmp="$stage/actionlint.tar.gz"
 
     log_info "fetching actionlint ${ACTIONLINT_VERSION} (${arch})"
     if ! curl -fsSL --max-time 180 --retry 3 --retry-delay 5 -o "$tmp" "$url"; then
         log_error "could not download actionlint from $url"
+        rm -rf "$stage"
         exit 2
     fi
 
@@ -108,13 +128,19 @@ ensure_actionlint() {
         log_error "  expected: $sha"
         log_error "  actual:   $(sha256sum "$tmp" | cut -d' ' -f1)"
         log_error "if the release was legitimately re-cut, update the pin in .ci/config/constants.sh"
-        rm -f "$tmp"
+        rm -rf "$stage"
         exit 2
     fi
 
-    tar -xzf "$tmp" -C "$CACHE_DIR" actionlint
-    rm -f "$tmp"
-    chmod +x "$BIN"
+    if ! tar -xzf "$tmp" -C "$stage" actionlint; then
+        rm -rf "$stage"
+        exit 2
+    fi
+    # chmod the STAGED binary and move it in already executable, so there is no
+    # window in which $BIN exists but cannot be run.
+    chmod 755 "$stage/actionlint"
+    mv "$stage/actionlint" "$BIN"
+    rm -rf "$stage"
 }
 
 # -----------------------------------------------------------------------------

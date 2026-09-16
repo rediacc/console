@@ -1641,6 +1641,10 @@ def test_the_temp_name_mask_hides_the_temp_and_nothing_else() -> None:
     )
     # Both alphabets, because the two sides do not share one.
     assert diff.mask_toolchain_tmp("/x/shfmt.abcdefgh") == "/x/shfmt.<tmp>"
+    assert (
+        diff.mask_toolchain_tmp("/c/actionlint-1.7.12/al.WxWibLSj/actionlint.tar.gz")
+        == "/c/actionlint-1.7.12/al.<tmp>/actionlint.tar.gz"
+    )
     assert diff.mask_toolchain_tmp("/x/shfmt.AB90_xyz") == "/x/shfmt.<tmp>"
 
     for untouched in (

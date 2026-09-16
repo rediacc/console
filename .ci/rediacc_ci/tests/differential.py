@@ -219,7 +219,7 @@ def escape_bytes(text: str) -> int:
 
 
 # `<cache>/shfmt-3.13.1/shfmt.1R2NkECK` -> `.../shfmt.<tmp>`, and the same for
-# shellcheck's `sc.XXXXXXXX` staging directory.
+# shellcheck's `sc.XXXXXXXX` and actionlint's `al.XXXXXXXX` staging directories.
 #
 # BOTH toolchain download helpers give every process its OWN temp name, because
 # the single fixed path they shared before was a data-corruption race between
@@ -233,7 +233,7 @@ def escape_bytes(text: str) -> int:
 # Shared rather than copied into each differential, because the first version of
 # this lived in the shfmt module alone and the shellcheck module failed the same
 # way twenty minutes later.
-_TOOLCHAIN_TMP_RE = re.compile(r"(/(?:shfmt|sc))\.[A-Za-z0-9_]{8}\b")
+_TOOLCHAIN_TMP_RE = re.compile(r"(/(?:shfmt|sc|al))\.[A-Za-z0-9_]{8}\b")
 
 
 def mask_toolchain_tmp(text: str) -> str:

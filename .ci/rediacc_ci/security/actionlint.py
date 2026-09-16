@@ -143,6 +143,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 
 from rediacc_ci import log, paths
 
@@ -317,7 +318,16 @@ def ensure_actionlint(version: str, checksums: dict[str, str]) -> str:
         "actionlint_%s_linux_%s.tar.gz" % (version, version, arch)
     )
     cache.mkdir(parents=True, exist_ok=True)
-    tmp = cache / "actionlint.tar.gz"
+    # PRIVATE STAGING DIR, mirroring `mktemp -d "$CACHE_DIR/al.XXXXXXXX"` in the
+    # twin. The cache lives under a temp root a CI runner shares across every
+    # concurrent invocation, so the fixed `cache / "actionlint.tar.gz"` both
+    # sides used was one inode they all downloaded into at once; the winner's
+    # unlink then deleted it out from under the losers mid-verify. The twin
+    # carries the measurement (8 racers on a cold cache, 7 exited 2, all with a
+    # false "checksum MISMATCH"). Extraction is staged too, so a half-written
+    # binary can never sit at the final path.
+    stage = pathlib.Path(tempfile.mkdtemp(prefix="al.", dir=str(cache)))
+    tmp = stage / "actionlint.tar.gz"
 
     log.info("fetching actionlint %s (%s)" % (version, arch))
     # stderr INHERITED, not captured: `-fsSL` includes `-S`. See port note 6.
@@ -327,6 +337,7 @@ def ensure_actionlint(version: str, checksums: dict[str, str]) -> str:
     )
     if proc.returncode != 0:
         log.error("could not download actionlint from %s" % url)
+        shutil.rmtree(stage, ignore_errors=True)
         raise SystemExit(2)
 
     actual = sha256_of(tmp) if tmp.is_file() else ""
@@ -337,14 +348,18 @@ def ensure_actionlint(version: str, checksums: dict[str, str]) -> str:
         log.error(
             "if the release was legitimately re-cut, update the pin in .ci/config/constants.sh"
         )
-        tmp.unlink(missing_ok=True)
+        shutil.rmtree(stage, ignore_errors=True)
         raise SystemExit(2)
 
     with tarfile.open(str(tmp), "r:gz") as archive:
         member = archive.getmember("actionlint")
-        archive.extract(member, str(cache), filter="data")
-    tmp.unlink(missing_ok=True)
-    binary.chmod(binary.stat().st_mode | 0o111)
+        archive.extract(member, str(stage), filter="data")
+    staged = stage / "actionlint"
+    # chmod the STAGED binary and move it in already executable, so there is no
+    # window in which the final path exists but cannot be run.
+    staged.chmod(0o755)
+    staged.replace(binary)
+    shutil.rmtree(stage, ignore_errors=True)
     return str(binary)
 
 
