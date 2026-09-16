@@ -1472,7 +1472,20 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-pipefail-grep-q',
     slow: true, // 13.5s standalone / 37.0s contended: it greps every shell file twice
     gate: true,
-    paths: ['.ci/scripts/**', 'scripts/**', '.claude/hooks/**'],
+    // `.ci/lib/**`, `.devcontainer/**` and `.ci/media/**` joined the corpus with the
+    // printf/echo widening, and this list is what decides whether CI RUNS the gate
+    // when one of them changes. It was expanded in gates.lock.json alone, which is
+    // generated from here -- so regenerating the lock would have quietly narrowed the
+    // gate back and left it not watching the very directories the sweep just
+    // converted sites in. A green gate with less coverage than yesterday.
+    paths: [
+      '.ci/scripts/**',
+      'scripts/**',
+      '.claude/hooks/**',
+      '.ci/lib/**',
+      '.devcontainer/**',
+      '.ci/media/**',
+    ],
     pathsOrigin: 'declared',
     leaves: ['.ci/scripts/quality/check_pipefail_grep_q.py'],
     ci: {

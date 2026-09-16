@@ -36,10 +36,10 @@ Measured, not estimated. Every number below came from running the SHIPPED
 The ~33 estimate and the 11-file same-line sweep were wrong in both directions:
 
 - **Over**-counted, because the same-line sweep did not strip comments and string
-  literals. `test-run-sh.sh:77`, `test-linux-packages.sh:49`,
-  `test-verify-version.sh:17`, `cleanup-versions.sh:1488` and four hits in
+  literals. `.ci/scripts/test/gates/test-run-sh.sh:77`, `.ci/scripts/test/test-linux-packages.sh:49`,
+  `.ci/scripts/test/gates/test-verify-version.sh:17`, `.ci/scripts/housekeeping/cleanup-versions.sh:1488` and four hits in
   `check-pipefail-grep-q.sh` itself are PROSE describing the bug;
-  `check-label-references.sh:159` is a fixture inside a single-quoted string.
+  `.ci/scripts/quality/check-label-references.sh:159` is a fixture inside a single-quoted string.
   The gate's existing `strip_code()` already rejects all nine — the
   mention-as-execution class its header documents.
 - **Under**-counted, because it did not join multi-line pipelines (the
@@ -116,7 +116,7 @@ The eleven sites, read individually:
 | `.ci/scripts/test/test-install-methods.sh:1129` | `$script` = curl of install.sh, **17,088 B today** | UNBOUNDED-ish | **not actually live — see §5** |
 | `.devcontainer/start-kvm.sh:216` | `id -G \| tr` | bounded | not printf/echo; offends the CURRENT rule |
 
-`$code` at `test-media-shims.sh:119/121` is provably bounded: the immediately
+`$code` at `.ci/scripts/test/gates/test-media-shims.sh:119/121` is provably bounded: the immediately
 preceding `[ "$lines" -le 4 ] || log_fail ...`, and `log_fail` in
 `.ci/scripts/test/lib/test-helpers.sh:24` **exits 1**. So control flow cannot
 reach the two pipelines with more than 4 lines in `$code`.
@@ -132,8 +132,8 @@ mechanism (a builtin takes EPIPE and returns non-zero; an external producer is
 SIGPIPE'd to 141) but is identical in effect under `pipefail`. Three caveats
 must be respected per site and are worth adding to the gate header:
 
-1. **Keep every grep flag except `-q`.** `proxy-go-unit.sh:124` is `grep -qx`
-   (→ `grep -Fx`), `renet/i18n.sh:229` is `grep -q --` (the `--` is load-bearing:
+1. **Keep every grep flag except `-q`.** `.ci/scripts/test/proxies/proxy-go-unit.sh:124` is `grep -qx`
+   (→ `grep -Fx`), `private/renet/.ci/scripts/quality/i18n.sh:229` is `grep -q --` (the `--` is load-bearing:
    the pattern starts `--- PASS:`). The header's `grep -E` spelling is an
    example, not the rule.
 2. **`[ -n "$(...)" ]` is NOT equivalent when the pattern can match an empty
@@ -168,7 +168,7 @@ untriaged, not cleared: a 1129-byte printf raced on 2026-08-31"), which becomes
 false and must change identically on both sides.
 
 **Python-port parity: yes, the port models the concept directly.**
-`SCALING_PRODUCERS` is a tuple at `pipefail_grep_q.py:241`, `logical_lines()` is
+`SCALING_PRODUCERS` is a tuple at `.ci/rediacc_ci/quality/pipefail_grep_q.py:241`, `logical_lines()` is
 the port of `join_logical()`, and the shadow ledger compares the two verdicts
 byte for byte. A one-sided edit is a false divergence.
 
@@ -188,7 +188,7 @@ anything else. Mirroring the gate into renet is a real option but is a second
 PR's worth of work; this plan converts the two sites and files the gate-mirror as
 the follow-on.
 
-## 5. `test-install-methods.sh:1129` is a FALSE POSITIVE, and it is the honest one
+## 5. `.ci/scripts/test/test-install-methods.sh:1129` is a FALSE POSITIVE, and it is the honest one
 
 The widened gate flags it because the OUTER file sets `set -euo pipefail` at
 line 29. The line itself lives inside a `docker run ... bash -c "..."` heredoc
@@ -219,7 +219,7 @@ and produces exactly **2** findings — the two already listed. Cheap.
 
 The sourced-library inheritance is a separate rule change. Measured over every
 tracked shell file that lacks its own `pipefail` and is sourced by one that has
-it: **exactly 1 site in the whole repo**, `devbox.sh:1082`. Building a
+it: **exactly 1 site in the whole repo**, `.ci/lib/devbox.sh:1082`. Building a
 source-graph analyser for one site is not proportionate. Recommendation: widen
 the pathspecs, add a short `INHERITS_PIPEFAIL_PREFIXES = (".ci/lib/",)` treated
 as pipefail-bearing (one constant, one `or`, mirrored in both twins, one control
@@ -234,7 +234,7 @@ each side), and note the general limitation in the header.
 - [ ] Rewrite the FOUR inverted controls (twin :266-273, port `main()` :468-472, port `selftest()` :588-592, pytest `a-bounded-builtin-producer`) so each now asserts that a builtin producer IS flagged, with its mirror
 - [ ] Rewrite the green-banner blind-spot paragraph in both twins; it currently says the opposite of what will be true
 - [ ] Record the `.claude/oracles/**` exclusion and its reason (frozen twins, README.md:49-54, live code is Python) in the gate header, so the next sweep does not re-derive it
-- [ ] Record the per-FILE pipefail limitation in the header, citing `test-install-methods.sh:1129` as the live false positive and `.ci/lib/devbox.sh:1082` as the live false negative
+- [ ] Record the per-FILE pipefail limitation in the header, citing `.ci/scripts/test/test-install-methods.sh:1129` as the live false positive and `.ci/lib/devbox.sh:1082` as the live false negative
 - [ ] NEW CONTROL, both twins + port selftest: a BUILTIN producer (`printf`) piped into `grep -q` under pipefail is detected. Mirror: the command-substitution form of the same is not
 - [ ] NEW CONTROL, both twins + port selftest: `echo` likewise, with its mirror
 - [ ] NEW MECHANISM CONTROL, run for real in a bash child like the existing one at twin :224-244 / port `mechanism_output()`: a **builtin** producer over a ~300 KB payload reports MISSED. The existing control proves SIGPIPE kills an EXTERNAL producer; it does NOT prove the builtin EPIPE path, and without this the two new controls guard a claim nothing on the host has confirmed. Assemble the fixture at runtime, per the existing convention, so the file's own text never carries the racing shape contiguously
