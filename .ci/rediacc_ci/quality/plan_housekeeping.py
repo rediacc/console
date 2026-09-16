@@ -972,7 +972,25 @@ def selftest() -> int:
         5,
     )
 
-    with tempfile.TemporaryDirectory() as tmp:
+    # `ignore_cleanup_errors` BECAUSE THE FAILURE IS JANITORIAL, NOT A VERDICT.
+    # This block runs `git init` and real commits inside the temp tree, and on a
+    # loaded runner the directory can still be gaining files when
+    # `TemporaryDirectory.__exit__` walks it, so `shutil.rmtree` raises
+    # `OSError: [Errno 39] Directory not empty` and the selftest reports a
+    # FAILURE that says nothing about any control. Observed once in CI, job
+    # 104604932125.
+    #
+    # SAFE HERE IN A WAY IT WOULD NOT BE ELSEWHERE, which is the reason this is
+    # fixed on a single observation while the control-vacuity flake next door is
+    # not: every `ctl.check` in this block has already RUN and been recorded by
+    # the time `__exit__` is reached. Tolerating undeleted scratch cannot hide a
+    # failing assertion -- it can only stop leftover bytes in /tmp from being
+    # reported as one. Nothing is suppressed; the verdict is unchanged.
+    #
+    # The writer was NOT identified (no process is leaked -- every call here is a
+    # synchronous `subprocess.run`), so this tolerates the debris rather than
+    # claiming to have removed its cause.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         base = pathlib.Path(tmp)
         record = base / "r.md"
 
