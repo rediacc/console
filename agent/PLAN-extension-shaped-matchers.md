@@ -424,3 +424,13 @@ extending the pipefail/grep-q class to printf/echo producers and to a gh-auth-to
 fix, both separate from this plan's subject. Status stays `executing`, commit 3 stays not
 started.
 
+
+### Re-checked a thirteenth time 2026-09-16, session d778be9d, wave continuing: still unchanged
+
+Re-derived directly once more: `FAMILIES` (`scripts/gates/check-shape-duplication.ts:133-143`)
+is the identical four bash-only rows. `.ci/shadow/w7p5a-*.observations.jsonl` is still 16;
+`.ci/shadow/w7p6-*.observations.jsonl` is still 153. Activity since the twelfth check (the
+gh-auth-token fallback landing at `f01d244e39`, the `latest-release.ts` fix at `858f27358`,
+the printf/echo Plan agent's design committed at `27e7eddec`, and its implementation still
+running) touched none of this plan's files or its precondition. Status stays `executing`,
+commit 3 stays not started.
