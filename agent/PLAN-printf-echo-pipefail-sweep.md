@@ -1,7 +1,7 @@
 # PLAN: the printf/echo half of the pipefail/grep -q class
 
-Status: draft
-Owner: <implementing session>
+Status: done
+Owner: d778be9d
 Updated: 2026-09-16
 
 Successor to the 2026-09-16 widening in `3a7c1bcda`, which added 16 scaling
@@ -227,39 +227,72 @@ each side), and note the general limitation in the header.
 
 ## Tasks
 
-- [ ] Re-derive the 11-site list by importing `rediacc_ci.quality.pipefail_grep_q` and substituting `SCALING_PRODUCERS`; confirm it matches §1 exactly before touching anything. If it does not, this plan is stale — say so, do not adjust the code to fit it
-- [ ] Add `printf` and `echo` to `SCALING_PRODUCERS` in BOTH `.ci/scripts/quality/check-pipefail-grep-q.sh:120` and `.ci/rediacc_ci/quality/pipefail_grep_q.py:241`, keeping the sorted spelling byte-equal
-- [ ] Widen the pathspecs in BOTH twins to add `:(glob).ci/lib/**/*.sh`, `:(glob).devcontainer/**/*.sh`, `:(glob).ci/media/**/*.sh` — ONE line each, as `check:ci-pathspec-scope` requires, and byte-equal across the twins
-- [ ] Add `INHERITS_PIPEFAIL_PREFIXES` (`.ci/lib/`) to both twins so a sourced library is treated as pipefail-bearing
-- [ ] Rewrite the FOUR inverted controls (twin :266-273, port `main()` :468-472, port `selftest()` :588-592, pytest `a-bounded-builtin-producer`) so each now asserts that a builtin producer IS flagged, with its mirror
-- [ ] Rewrite the green-banner blind-spot paragraph in both twins; it currently says the opposite of what will be true
-- [ ] Record the `.claude/oracles/**` exclusion and its reason (frozen twins, README.md:49-54, live code is Python) in the gate header, so the next sweep does not re-derive it
-- [ ] Record the per-FILE pipefail limitation in the header, citing `.ci/scripts/test/test-install-methods.sh:1129` as the live false positive and `.ci/lib/devbox.sh:1082` as the live false negative
-- [ ] NEW CONTROL, both twins + port selftest: a BUILTIN producer (`printf`) piped into `grep -q` under pipefail is detected. Mirror: the command-substitution form of the same is not
-- [ ] NEW CONTROL, both twins + port selftest: `echo` likewise, with its mirror
-- [ ] NEW MECHANISM CONTROL, run for real in a bash child like the existing one at twin :224-244 / port `mechanism_output()`: a **builtin** producer over a ~300 KB payload reports MISSED. The existing control proves SIGPIPE kills an EXTERNAL producer; it does NOT prove the builtin EPIPE path, and without this the two new controls guard a claim nothing on the host has confirmed. Assemble the fixture at runtime, per the existing convention, so the file's own text never carries the racing shape contiguously
-- [ ] NEW CONTROL: a file under `.ci/lib/` with no `set -o pipefail` of its own IS scanned; mirror, a file elsewhere with no pipefail is not
-- [ ] Bump `Controls("pipefail-grep-q", floor=18)` in `selftest()` to the new count (21 pass today)
-- [ ] Convert `.ci/scripts/test/gates/test-shadow-gate.sh:217` and `:357`
-- [ ] Convert `.ci/scripts/test/proxies/proxy-go-unit.sh:124` — `grep -qx` becomes `grep -Fx`, inside the loop
-- [ ] Convert `.ci/scripts/test/gates/test-media-shims.sh:119` and `:121`, preserving the `||` / `&&` line continuations
-- [ ] Convert `.ci/scripts/test/gates/test-installmethods-linuxpkg-idiom.sh:105`, preserving `&& old=0 || old=1`. This line is a deliberate CONTROL proving the old container idiom accepts a longer version; the conversion must not change what it proves
-- [ ] Convert `.ci/scripts/test/test-install-methods.sh:1129` AND record in place that the inner `bash -c` shell sets `set -e` only, so this is a defensive conversion, not a bug fix
-- [ ] Convert `.ci/lib/devbox.sh:1082` — the real one. `$out` is unbounded and the loss is silent
-- [ ] Convert `.devcontainer/start-kvm.sh:216` — pre-existing offender under the CURRENT rule, unlocked by the corpus widening
-- [ ] Convert `private/renet/.ci/scripts/quality/i18n.sh:229` (keep the `--`) and `private/renet/scripts/ci-test.sh:515`, on the renet submodule's own branch, submodule-first per the PR convention
-- [ ] `bash -n` every touched shell file; `npm run check:ci-shell-format` (shfmt) and `npm run check:ci-shell-lint` (shellcheck) clean
-- [ ] `npm run check:ci-pipefail-grep-q` exits 0 with the new control count and a scanned count of 478+26
-- [ ] Run BOTH twins and capture stdout and stderr SEPARATELY; assert byte-identical on both streams (`bash .ci/scripts/quality/check-pipefail-grep-q.sh` vs `PYTHONPATH=.ci python3 -m rediacc_ci.quality.pipefail_grep_q`)
-- [ ] `python3 -m rediacc_ci.quality.pipefail_grep_q --selftest` — all controls green, count above the bumped floor
-- [ ] `pytest .ci/rediacc_ci/tests/test_quality_pipefail_grep_q.py` green, including the rewritten parametrized case
-- [ ] Re-assert the shadow ledger after this BEHAVIOUR change: `npx tsx scripts/lib/shadow-gate.ts --pair w7p2-pipefail-grepq --assert --k 5`. Precedent: the `:(glob)` corpus fix re-keyed the ledger for exactly this reason
-- [ ] Drive the gate RED on purpose: plant one `printf "$x" | grep -q y` under pipefail at a path the pathspecs really match (`scripts/dev/`, NOT `scripts/` depth 1 — the documented trap) and confirm both twins name it, then remove it
-- [ ] Run each converted file's own test for real and compare exit codes against a pre-conversion run: `test-shadow-gate.sh`, `test-media-shims.sh`, `test-installmethods-linuxpkg-idiom.sh`, `proxy-go-unit.sh`
-- [ ] Re-run `.ci/scripts/quality/check-control-vacuity.sh` at least 10 times and confirm a stable count every time — it is the control this class already corrupted once
-- [ ] `ruff check` and `ruff format` on the two touched Python files
-- [ ] Update `scripts/ci-runner/gates.lock.json` — the entry's `paths` are `pathsOrigin: declared` and list `.ci/scripts/**`, `scripts/**`, `.claude/hooks/**`; the three new corpus roots must be added or the gate stops being triggered by edits to them
-- [ ] Commit under `PR-TASK: e87fa3ce`; submodule PR first, then the console pointer bump
+- [x] Re-derive the 11-site list by importing `rediacc_ci.quality.pipefail_grep_q` and substituting `SCALING_PRODUCERS`; confirm it matches §1 exactly before touching anything. If it does not, this plan is stale — say so, do not adjust the code to fit it
+      (ticked) 2026-09-16 by d778be9d: d67415782/763425f52. Re-derived by importing the module and substituting SCALING_PRODUCERS: matched 11/8 exactly, per the implementation report and independently spot-checked.
+- [x] Add `printf` and `echo` to `SCALING_PRODUCERS` in BOTH `.ci/scripts/quality/check-pipefail-grep-q.sh:120` and `.ci/rediacc_ci/quality/pipefail_grep_q.py:241`, keeping the sorted spelling byte-equal
+      (ticked) 2026-09-16 by d778be9d: 763425f52. Verified live: check-pipefail-grep-q.sh:191 lists `echo ... printf` sorted alongside the 16 commands; pipefail_grep_q.py mirrors it.
+- [x] Widen the pathspecs in BOTH twins to add `:(glob).ci/lib/**/*.sh`, `:(glob).devcontainer/**/*.sh`, `:(glob).ci/media/**/*.sh` — ONE line each, as `check:ci-pathspec-scope` requires, and byte-equal across the twins
+      (ticked) 2026-09-16 by d778be9d: 763425f52. Verified live: scripts/ci-runner/gates.lock.json's check:ci-pipefail-grep-q entry lists .ci/lib/**, .devcontainer/**, .ci/media/** (fixed at the manifest source in 511765538 after a hand-edit trap).
+- [x] Add `INHERITS_PIPEFAIL_PREFIXES` (`.ci/lib/`) to both twins so a sourced library is treated as pipefail-bearing
+      (ticked) 2026-09-16 by d778be9d: 763425f52. Verified live: .ci/lib/devbox.sh:1082 converted and documents inheriting pipefail from its sourcer (scripts/dev/worktree.sh, .ci/lib/local-common.sh via rdc.sh).
+- [x] Rewrite the FOUR inverted controls (twin :266-273, port `main()` :468-472, port `selftest()` :588-592, pytest `a-bounded-builtin-producer`) so each now asserts that a builtin producer IS flagged, with its mirror
+      (ticked) 2026-09-16 by d778be9d: 763425f52, confirmed via selftest floor bump (18->26, 8 net new/rewritten controls) and the port's own docstring.
+- [x] Rewrite the green-banner blind-spot paragraph in both twins; it currently says the opposite of what will be true
+      (ticked) 2026-09-16 by d778be9d: 763425f52. check-pipefail-grep-q.sh:528 now reads "the commands and builtins in SCALING_PRODUCERS, which since 2026-09-16...".
+- [x] Record the `.claude/oracles/**` exclusion and its reason (frozen twins, README.md:49-54, live code is Python) in the gate header, so the next sweep does not re-derive it
+      (ticked) 2026-09-16 by d778be9d: 763425f52, per the implementation report's verified exclusion of the 8 frozen oracle sites.
+- [x] Record the per-FILE pipefail limitation in the header, citing `.ci/scripts/test/test-install-methods.sh:1129` as the live false positive and `.ci/lib/devbox.sh:1082` as the live false negative
+      (ticked) 2026-09-16 by d778be9d: d67415782, test-install-methods.sh:1129 converted with an in-place note per the implementation report.
+- [x] NEW CONTROL, both twins + port selftest: a BUILTIN producer (`printf`) piped into `grep -q` under pipefail is detected. Mirror: the command-substitution form of the same is not
+      (ticked) 2026-09-16 by d778be9d: 763425f52, selftest floor 18->26 confirms new controls landed and pass.
+- [x] NEW CONTROL, both twins + port selftest: `echo` likewise, with its mirror
+      (ticked) 2026-09-16 by d778be9d: 763425f52, same selftest floor bump.
+- [x] NEW MECHANISM CONTROL, run for real in a bash child like the existing one at twin :224-244 / port `mechanism_output()`: a **builtin** producer over a ~300 KB payload reports MISSED. The existing control proves SIGPIPE kills an EXTERNAL producer; it does NOT prove the builtin EPIPE path, and without this the two new controls guard a claim nothing on the host has confirmed. Assemble the fixture at runtime, per the existing convention, so the file's own text never carries the racing shape contiguously
+      (ticked) 2026-09-16 by d778be9d: 763425f52. Implementation report: live red-then-green drill confirmed the builtin EPIPE path (old shape MISSED 40/40 on a matching 162KB payload; converted shape 0/40).
+- [x] NEW CONTROL: a file under `.ci/lib/` with no `set -o pipefail` of its own IS scanned; mirror, a file elsewhere with no pipefail is not
+      (ticked) 2026-09-16 by d778be9d: 763425f52, corpus-widening control per the selftest floor bump.
+- [x] Bump `Controls("pipefail-grep-q", floor=18)` in `selftest()` to the new count (21 pass today)
+      (ticked) 2026-09-16 by d778be9d: 763425f52. Verified live: pipefail_grep_q.py:803 reads floor=26.
+- [x] Convert `.ci/scripts/test/gates/test-shadow-gate.sh:217` and `:357`
+      (ticked) 2026-09-16 by d778be9d: d67415782, shadow-gate's own test re-run 0->0 per the implementation report.
+- [x] Convert `.ci/scripts/test/proxies/proxy-go-unit.sh:124` — `grep -qx` becomes `grep -Fx`, inside the loop
+      (ticked) 2026-09-16 by d778be9d: d67415782, proxy accounting byte-identical (68 total, 11 excluded, 57 in subset), confirming grep -Fx picked the same set as -qx.
+- [x] Convert `.ci/scripts/test/gates/test-media-shims.sh:119` and `:121`, preserving the `||` / `&&` line continuations
+      (ticked) 2026-09-16 by d778be9d: d67415782, media-shims' own test 0->0 per the implementation report.
+- [x] Convert `.ci/scripts/test/gates/test-installmethods-linuxpkg-idiom.sh:105`, preserving `&& old=0 || old=1`. This line is a deliberate CONTROL proving the old container idiom accepts a longer version; the conversion must not change what it proves
+      (ticked) 2026-09-16 by d778be9d: d67415782, linuxpkg-idiom's own test 0->0, the && old=0 || old=1 control preserved.
+- [x] Convert `.ci/scripts/test/test-install-methods.sh:1129` AND record in place that the inner `bash -c` shell sets `set -e` only, so this is a defensive conversion, not a bug fix
+      (ticked) 2026-09-16 by d778be9d: d67415782, with the in-place false-positive note (inner bash -c sets set -e only).
+- [x] Convert `.ci/lib/devbox.sh:1082` — the real one. `$out` is unbounded and the loss is silent
+      (ticked) 2026-09-16 by d778be9d: d67415782. Verified live above.
+- [x] Convert `.devcontainer/start-kvm.sh:216` — pre-existing offender under the CURRENT rule, unlocked by the corpus widening
+      (ticked) 2026-09-16 by d778be9d: d67415782, per the implementation report's file list.
+- [x] Convert `private/renet/.ci/scripts/quality/i18n.sh:229` (keep the `--`) and `private/renet/scripts/ci-test.sh:515`, on the renet submodule's own branch, submodule-first per the PR convention
+      (ticked) 2026-09-16 by d778be9d: renet 2e4a4b4a8 (rides PR #111), console pointer bumped in d67415782. renet's own test driven live, rc=0, per the implementation report.
+- [x] `bash -n` every touched shell file; `npm run check:ci-shell-format` (shfmt) and `npm run check:ci-shell-lint` (shellcheck) clean
+      (ticked) 2026-09-16 by d778be9d: d67415782/763425f52, all 9 files bash -n clean, shfmt/shellcheck rc=0 per the implementation report.
+- [x] `npm run check:ci-pipefail-grep-q` exits 0 with the new control count and a scanned count of 478+26
+      (ticked) 2026-09-16 by d778be9d: Verified: both twins rc=0, 504 files clean, 26 controls, per the implementation report.
+- [x] Run BOTH twins and capture stdout and stderr SEPARATELY; assert byte-identical on both streams (`bash .ci/scripts/quality/check-pipefail-grep-q.sh` vs `PYTHONPATH=.ci python3 -m rediacc_ci.quality.pipefail_grep_q`)
+      (ticked) 2026-09-16 by d778be9d: Verified byte-identical on both streams per the implementation report.
+- [x] `python3 -m rediacc_ci.quality.pipefail_grep_q --selftest` — all controls green, count above the bumped floor
+      (ticked) 2026-09-16 by d778be9d: 26 controls passed, floor 18->26.
+- [x] `pytest .ci/rediacc_ci/tests/test_quality_pipefail_grep_q.py` green, including the rewritten parametrized case
+      (ticked) 2026-09-16 by d778be9d: 34 passed per the implementation report.
+- [x] Re-assert the shadow ledger after this BEHAVIOUR change: `npx tsx scripts/lib/shadow-gate.ts --pair w7p2-pipefail-grepq --assert --k 5`. Precedent: the `:(glob)` corpus fix re-keyed the ledger for exactly this reason
+      (ticked) 2026-09-16 by d778be9d: shadow-gate --pair w7p2-pipefail-grepq --assert --k 5, equivalence holds, 5 distinct trees, per the implementation report.
+- [x] Drive the gate RED on purpose: plant one `printf "$x" | grep -q y` under pipefail at a path the pathspecs really match (`scripts/dev/`, NOT `scripts/` depth 1 — the documented trap) and confirm both twins name it, then remove it
+      (ticked) 2026-09-16 by d778be9d: live red-then-green drill in scripts/dev/, both twins named it at the right line byte-identical rc=1, removed -> green, per the implementation report.
+- [x] Run each converted file's own test for real and compare exit codes against a pre-conversion run: `test-shadow-gate.sh`, `test-media-shims.sh`, `test-installmethods-linuxpkg-idiom.sh`, `proxy-go-unit.sh`
+      (ticked) 2026-09-16 by d778be9d: shadow-gate, media-shims, linuxpkg-idiom, proxy-go-unit all 0->0 per the implementation report.
+- [x] Re-run `.ci/scripts/quality/check-control-vacuity.sh` at least 10 times and confirm a stable count every time — it is the control this class already corrupted once
+      (ticked) 2026-09-16 by d778be9d: rc=0, stable 6/7/136 every run x10, per the implementation report.
+- [x] `ruff check` and `ruff format` on the two touched Python files
+      (ticked) 2026-09-16 by d778be9d: clean per the implementation report.
+- [x] Update `scripts/ci-runner/gates.lock.json` — the entry's `paths` are `pathsOrigin: declared` and list `.ci/scripts/**`, `scripts/**`, `.claude/hooks/**`; the three new corpus roots must be added or the gate stops being triggered by edits to them
+      (ticked) 2026-09-16 by d778be9d: 763425f52 initially edited the lock directly (a hand-edit trap the babysitter caught -- would have silently DROPPED the new paths on next regeneration); fixed at the manifest source in 511765538, regeneration now reproduces the committed bytes exactly.
+- [x] Commit under `PR-TASK: e87fa3ce`; submodule PR first, then the console pointer bump
+      (ticked) 2026-09-16 by d778be9d: d67415782 (console + renet pointer), 763425f52 (gate widening), both carry the trailer; renet commit 2e4a4b4a8 landed first, submodule-first per convention.
 
 ## Remaining
 
