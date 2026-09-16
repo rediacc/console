@@ -40,7 +40,17 @@ def child(tmp_path):
         pytest.skip("%s is not present on this host" % BASH)
     token = "shellscan-probe-%s" % uuid.uuid4().hex[:12]
     script = tmp_path / ("%s.sh" % token)
-    script.write_text("#!/usr/bin/env bash\nsleep 9\n", encoding="utf-8")
+    # LONG ENOUGH THAT A LOADED SCHEDULER CANNOT OUTRUN IT. This was 9 seconds,
+    # which is not a margin on a CI runner executing 15,968 tests across 22 xdist
+    # workers: the child simply EXITED mid-test, both cmdline readers returned
+    # "", and the trailing-space invariant below failed as `assert '' == ' '` --
+    # a message describing a string comparison rather than the dead process that
+    # caused it. Observed in job 104713219233.
+    #
+    # Teardown kills this unconditionally in a `finally`, so a generous lifetime
+    # cannot leak: the child dies when the test does, not when its timer expires.
+    lifetime_s = 600
+    script.write_text("#!/usr/bin/env bash\nsleep %d\n" % lifetime_s, encoding="utf-8")
     # AN ABSOLUTE PATH, not `bash`. On this machine `bash` on PATH is a
     # coverage shim (`bashcov-sup`) that execs the real one, so the fixture
     # produced a process whose `comm` was `bashcov-sup` and, for a moment, TWO
@@ -138,8 +148,21 @@ def test_cmdline_forms_agree_with_the_shell_pipeline(forced, child, backend):
     """
     forced(backend)
     pid = child["pid"]
-    assert proc.cmdline_tr(pid) == proc.cmdline(pid) + " "
-    assert not proc.cmdline(pid).endswith(" ")
+    # SAY WHICH THING BROKE, AND TEST THE RIGHT THING. A pid that is fully gone
+    # reads as None (pinned below in test_a_dead_process_is_absent_and_not_an_error),
+    # but job 104713219233 produced `assert '' == ' '` -- an EMPTY string, not
+    # None. That is a ZOMBIE: the child had exited, `/proc/<pid>/cmdline` still
+    # existed, and reading it returned nothing. So `os.path.exists` is the wrong
+    # precondition here, because it passes for exactly the state that broke it.
+    # The honest precondition is that the read produced something.
+    live = proc.cmdline(pid)
+    assert live, (
+        "the fixture's child is not running -- an empty cmdline means it exited "
+        "(zombie) or was reaped. That is a test-lifetime problem, not a "
+        "disagreement between the two cmdline forms"
+    )
+    assert proc.cmdline_tr(pid) == live + " "
+    assert not live.endswith(" ")
     assert proc.argv(pid)[0] == BASH
 
 
