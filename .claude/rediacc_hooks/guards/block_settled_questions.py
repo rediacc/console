@@ -14,10 +14,14 @@ lifecycle events and apply regardless of what Claude decides to do."
 So this is a hook.
 
 WHAT IT REFUSES, and nothing more: a PERMISSION-SEEKING question about
-committing, branching, pushing, opening a PR or merging. CLAUDE.md settles
-those twice over -- "the default deliverable is an uncommitted working tree"
-and "ask for the big-bang, not for permission to patch one thing" -- so asking
-costs the operator a round trip to repeat a rule they already wrote down.
+committing, branching, pushing, opening a PR or merging, OR a routing question
+about where a task's work should happen (new worktree vs. the current
+checkout). CLAUDE.md settles all of those the same way -- "the default
+deliverable is an uncommitted working tree", "ask for the big-bang, not for
+permission to patch one thing", and (2026-09-16, live) "[a worktree/branch
+routing question] shouldn't have asked ... it has big-bang answering usually"
+-- so asking costs the operator a round trip to repeat a rule they already
+wrote down.
 
 THE MATCH IS NARROW ON PURPOSE, and the narrowness is the whole design. A hook
 that swallows legitimate questions is worse than the nagging it replaces,
@@ -86,9 +90,11 @@ DEFECT = (
 
 PERMISSION = (
     r"(should|shall|may|can) (i|we)|do you want|would you like|want me to|"
-    r"is it (ok|okay|fine)|are you happy for|should it be"
+    r"is it (ok|okay|fine)|are you happy for|should it be|"
+    r"where should|new worktree or|worktree or (the )?current|"
+    r"should (a |the )?(new )?worktree"
 )
-OBJECT = r"commit|branch|push|pull request|open a pr|[^a-z]pr[^a-z]|merge"
+OBJECT = r"commit|branch|push|pull request|open a pr|[^a-z]pr[^a-z]|merge|worktree"
 
 # ---- ANCHOR: the permission must GOVERN the object, not merely precede it ----
 # Both regexes hit anywhere in the question, so a sentence ABOUT the rule was
@@ -131,6 +137,10 @@ a rule the operator has written down twice.
   Findings rule: "Ask for the big-bang, not for permission to patch one thing...
   put the whole cluster into a single plan and ask to run it."
 
+  Worktree/branch routing: default to the checkout the session is already in.
+  `git worktree add` stays hook-blocked from the assistant's own Bash tool
+  regardless, so a new one only ever comes from the operator's own `!` prefix.
+
 Proceed with the documented default: leave the work uncommitted, and if a
 decision genuinely needs the operator, park it as a worklist [?] carrying its
 own DEFAULT rather than blocking the turn on a question.
@@ -160,6 +170,17 @@ EDGE_CASES = [
     ("a comma is a clause boundary too", "Should I, before the merge, run the suite?"),
     # The object sits BEFORE the permission phrase. Left refusing, deliberately.
     ("the object before the permission", "The commit is staged, should i proceed?"),
+    # 2026-09-16: the worktree/branch routing class, added live -- "shouldn't
+    # have asked ... it should also catch the worktree and branching
+    # questions". Same two-condition shape, new object and permission forms.
+    (
+        "worktree routing question",
+        "Where should this work happen: a new worktree, or the current checkout?",
+    ),
+    ("should a new worktree be created", "Should a new worktree be created for this task?"),
+    ("new worktree or continue", "New worktree or continue in the current checkout?"),
+    # CONTROL: mentioning worktrees is not itself permission-seeking.
+    ("a design question about worktrees", "How are worktrees organized across the repos?"),
     # A payload shaped as the single-question form rather than the array.
     ("the singular question field", {"tool_input": {"question": "Should I push?"}}),
     ("no question at all", {"tool_input": {}}),

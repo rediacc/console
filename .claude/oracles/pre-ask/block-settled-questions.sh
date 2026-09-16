@@ -15,10 +15,14 @@
 # So this is a hook.
 #
 # WHAT IT REFUSES, and nothing more: a PERMISSION-SEEKING question about
-# committing, branching, pushing, opening a PR or merging. CLAUDE.md settles
-# those twice over -- "the default deliverable is an uncommitted working tree"
-# and "ask for the big-bang, not for permission to patch one thing" -- so asking
-# costs the operator a round trip to repeat a rule they already wrote down.
+# committing, branching, pushing, opening a PR or merging, OR a routing question
+# about where a task's work should happen (new worktree vs. the current
+# checkout). CLAUDE.md settles all of those the same way -- "the default
+# deliverable is an uncommitted working tree", "ask for the big-bang, not for
+# permission to patch one thing", and (2026-09-16, live) "[a worktree/branch
+# routing question] shouldn't have asked ... it has big-bang answering usually"
+# -- so asking costs the operator a round trip to repeat a rule they already
+# wrote down.
 #
 # THE MATCH IS NARROW ON PURPOSE, and the narrowness is the whole design. A hook
 # that swallows legitimate questions is worse than the nagging it replaces,
@@ -73,8 +77,8 @@ QUESTION=$(printf '%s' "$INPUT" | jq -r '
 
 [ -z "$QUESTION" ] && exit 0
 
-PERMISSION='(should|shall|may|can) (i|we)|do you want|would you like|want me to|is it (ok|okay|fine)|are you happy for|should it be'
-OBJECT='commit|branch|push|pull request|open a pr|[^a-z]pr[^a-z]|merge'
+PERMISSION='(should|shall|may|can) (i|we)|do you want|would you like|want me to|is it (ok|okay|fine)|are you happy for|should it be|where should|new worktree or|worktree or (the )?current|should (a |the )?(new )?worktree'
+OBJECT='commit|branch|push|pull request|open a pr|[^a-z]pr[^a-z]|merge|worktree'
 
 PERM_HIT=$(printf '%s' "$QUESTION" | grep -oE "$PERMISSION" | head -n1)
 [ -z "$PERM_HIT" ] && exit 0
@@ -154,6 +158,10 @@ a rule the operator has written down twice.
 
   Findings rule: "Ask for the big-bang, not for permission to patch one thing...
   put the whole cluster into a single plan and ask to run it."
+
+  Worktree/branch routing: default to the checkout the session is already in.
+  `git worktree add` stays hook-blocked from the assistant's own Bash tool
+  regardless, so a new one only ever comes from the operator's own `!` prefix.
 
 Proceed with the documented default: leave the work uncommitted, and if a
 decision genuinely needs the operator, park it as a worklist [?] carrying its

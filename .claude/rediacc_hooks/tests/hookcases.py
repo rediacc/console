@@ -1317,6 +1317,24 @@ STATIC: list[Case] = [
         ask_json("Should I describe how the branch guard works?"),
         "settled(how-clause passes)",
     ),
+    # 2026-09-16, added live: the worktree/branch ROUTING class -- "shouldn't
+    # have asked ... it has big-bang answering usually" -- gets the same
+    # two-condition treatment as commit/branch/push/pr/merge.
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("Where should this work happen: a new worktree, or the current checkout?"),
+        "settled(worktree routing)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("Should a new worktree be created for this task?"),
+        "settled(worktree should)",
+    ),
+    case(
+        "check 0 guards/block_settled_questions.py",
+        ask_json("How are worktrees organized across the repos?"),
+        "settled(worktree design question passes)",
+    ),
     case(
         "check 2 guards/block_suppressions.py",
         edit_json("a // @ts-ignore"),
