@@ -1370,7 +1370,10 @@
     "paths": [
       ".ci/scripts/**",
       "scripts/**",
-      ".claude/hooks/**"
+      ".claude/hooks/**",
+      ".ci/lib/**",
+      ".devcontainer/**",
+      ".ci/media/**"
     ],
     "pathsOrigin": "declared",
     "leaves": [

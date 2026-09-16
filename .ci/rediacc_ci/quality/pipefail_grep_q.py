@@ -72,16 +72,86 @@ It depends on whether `grep -q` has already exited and CLOSED the read end when
 the write syscall lands, and that is pure scheduling. A bounded producer is less
 likely to lose the race, never immune to it.
 
-So the narrow scope here is a matter of BLAST RADIUS, not of safety: the scaling
-producers are converted and gated at zero, and the bounded ones remain a known,
-measured flake source rather than a proven-safe pattern. Do not read this gate's
-green as a claim that a bounded `printf | grep -q` is correct. It is not; it is
-untriaged.
+THE BOUNDED PRODUCERS STOPPED BEING EXEMPT ON 2026-09-16, and the deferral that
+used to sit here -- "a separate, larger, still-untriaged class" -- was closed by
+measuring it rather than by arguing about it. The measurement:
+`set -uo pipefail; if printf '%s' "$s" | grep -q NEEDLE; ...` with the NEEDLE on
+line 1, 40 trials per size, this host::
+
+      payload   printf MISSED   echo MISSED
+      1,219 B       0/40           0/40
+      8,289 B       0/40           0/40
+     16,470 B       0/40            --
+     32,832 B       0/40            --
+     49,194 B      32/40            --
+     61,516 B      40/40            --
+     65,556 B      39/40          40/40
+    300,078 B      40/40            --
+
+So the shell BUILTINS reproduce the class outright, and the knee sits between
+32 KB and 48 KB -- BELOW the nominal 64 KB pipe buffer, because `grep -q` exits
+after its FIRST READ rather than after the buffer fills. This also re-confirms
+the 2026-08-31 datum above from the other side: a 1129-byte printf is 0/80 here
+and still lost the race once in CI under load, so sub-knee is RARE, not SAFE.
+
+The mechanism differs and the effect does not: a BUILTIN takes EPIPE and returns
+non-zero, an EXTERNAL producer is SIGPIPE'd to 141, and under `pipefail` both
+make a pipeline that MATCHED report false. `printf` and `echo` are therefore in
+SCALING_PRODUCERS, and the eleven sites that widening found across eight files
+were converted in the same change.
+
+`.claude/oracles/**` IS EXCLUDED FROM THE CORPUS ON PURPOSE and holds eight of
+the shape. Those files are the FROZEN bash originals for
+`.claude/rediacc_hooks/guards/block_compacted_plan_edit.py` and
+`block_unlinked_commit_author.py`; `.claude/oracles/README.md:49-54` says "They
+are FROZEN. Do not fix a bug here; fix it in the port." Nothing registers them,
+the live code is Python and has no pipe, so the eight are not defects and must
+not be converted. Recorded here so the next sweep does not re-derive 47 files
+and 104 sites and have to work out again why they do not count.
+
+THE PIPEFAIL TEST IS PER-FILE, AND IT IS WRONG IN BOTH DIRECTIONS. It greps the
+whole file for `set -o pipefail` and cannot see an inner shell's options:
+
+  FALSE POSITIVE -- `.ci/scripts/test/test-install-methods.sh:1129`. The file
+  sets `set -euo pipefail` at line 29, but the flagged line lives inside a
+  `docker run ... bash -c "..."` whose INNER shell sets `set -e` only (line 1057,
+  and the same at 800, 886, 925, 965, 1010, 1097). Without pipefail the pipeline
+  reports grep's status and the match stands, so there is no bug at that line.
+  Converted regardless: an allowlist entry would be a suppression, which this
+  repo forbids, and the conversion is defensively correct the day anyone adds
+  `-o pipefail` to those container scripts.
+
+  FALSE NEGATIVE -- `.ci/lib/devbox.sh:1082`, which is the strongest finding the
+  2026-09-16 sweep produced. The file sets no pipefail of its own and INHERITS it
+  from every sourcer: `scripts/dev/worktree.sh:12`, and `.ci/lib/local-common.sh`
+  at 937 and 983, itself sourced by `rdc.sh:11`. It is a live, user-facing
+  detector -- `devbox_identity_ok` hunting "dubious ownership" -- and losing the
+  race makes it return SUCCESS. INHERITS_PIPEFAIL_PREFIXES below is the narrow
+  answer. A general source-graph analyser is not proportionate: measured over
+  every tracked shell file that lacks its own pipefail and is sourced by one that
+  has it, this is the ONLY such site in the repository.
 
 THE FIX IS ALWAYS THE SAME and is a drop-in: command substitution reads the
 producer to completion, so there is no signal to race.
 
     [ -n "$(producer | grep -E '<pattern>')" ]
+
+THREE CAVEATS ON THAT DROP-IN, each paid for by a site in the 2026-09-16 sweep:
+
+  1. KEEP EVERY GREP FLAG EXCEPT `-q`. The spelling above is an EXAMPLE, not the
+     rule. `proxy-go-unit.sh:124` was `grep -qx` and became `grep -Fx`;
+     `renet .ci/scripts/quality/i18n.sh:229` is `grep -q --` and the `--` is
+     load-bearing, because its pattern starts `--- PASS:`.
+
+  2. `[ -n "$(...)" ]` IS NOT EQUIVALENT WHEN THE PATTERN CAN MATCH AN EMPTY
+     LINE. Command substitution strips trailing newlines, so a matched empty line
+     reads back as no match. Checked against all eleven patterns in that sweep --
+     none can match empty -- and recorded here because the next sweep must check
+     it again rather than inherit the conclusion.
+
+  3. `set -e` BEHAVIOUR IS UNCHANGED as long as the converted test keeps its
+     position in the same `&&`/`||` list. Verify by RUNNING the file, not by
+     reading it.
 
 NO BASELINE, deliberately. The class was 13 sites and every one was converted, so
 this gate stands at zero with an anti-vacuity floor. A baseline here would have
@@ -144,6 +214,14 @@ gone, and Python cannot answer that on bash's behalf. Both implementations
 therefore spawn the same fixture, and if the host ever stops reproducing the race
 BOTH go red together, which is the correct joint behaviour.
 
+THERE ARE TWO OF THEM SINCE 2026-09-16, AND THE SECOND IS NOT A DUPLICATE. The
+original kills an EXTERNAL producer with SIGPIPE. A BUILTIN reaches the same
+verdict down a different kernel path: bash traps SIGPIPE for its own builtins, so
+`printf` does not die -- it takes EPIPE from write(2) and returns non-zero, which
+`pipefail` promotes to the pipeline's status. Adding `printf`/`echo` to
+SCALING_PRODUCERS without `mechanism_builtin_output()` would have left the two
+builtin controls guarding a claim nothing on the host had confirmed.
+
 THE SED IS THREE SUBSTITUTIONS IN ORDER, per line: strip from the first `#` to
 end of line, then blank single-quoted spans, then blank double-quoted spans.
 Order matters -- a `#` inside a string is removed before the string is blanked,
@@ -179,11 +257,29 @@ from rediacc_ci.controls import Controls
 # shell files. Measured 2026-09-08: 471 before, 477 after. Kept BYTE-EQUAL to the
 # twin's spelling at `check-pipefail-grep-q.sh`, since the shadow ledger compares
 # the two verdicts and a corpus difference would read as a behavioural divergence.
+#
+# THE LAST THREE ROOTS WERE ADDED 2026-09-16 and cost 26 files for two findings,
+# both real: `.ci/lib/devbox.sh:1082` (a silent-miss detector, and the reason
+# `.ci/lib/` is also in INHERITS_PIPEFAIL_PREFIXES) and
+# `.devcontainer/start-kvm.sh:216`, which offended the rule as it stood and was
+# invisible only because nothing looked there. `.ci/media/**` came in with them and
+# is clean; it is listed so the next shell script written there is covered rather
+# than discovered by the sweep after next.
 PATHSPECS = (
     ":(glob).ci/scripts/**/*.sh",
     ":(glob)scripts/**/*.sh",
     ":(glob).claude/hooks/**/*.sh",
+    ":(glob).ci/lib/**/*.sh",
+    ":(glob).devcontainer/**/*.sh",
+    ":(glob).ci/media/**/*.sh",
 )
+
+# A SOURCED LIBRARY INHERITS ITS SOURCER'S OPTIONS, and the per-file pipefail test
+# cannot see that. These repo-relative prefixes are treated as pipefail-bearing
+# whatever the file itself sets; see the FALSE NEGATIVE note in the docstring. One
+# prefix, because one site in the whole repository needs it: building a source-graph
+# analyser for `.ci/lib/devbox.sh:1082` would be the wrong size of answer.
+INHERITS_PIPEFAIL_PREFIXES = (".ci/lib/",)
 
 # `grep -qE 'set -[a-z]*o pipefail|set -o pipefail'`. Only a script that actually
 # sets pipefail can have the bug; without it the pipeline reports grep's status
@@ -234,21 +330,25 @@ _GQ = "grep -q"
 # controls while still printing a tick. The twin/port differential is the only
 # reason it ever surfaced.
 #
-# `printf`/`echo` are deliberately NOT here. They are not proven safe -- the
-# docstring above records a 1129-byte `printf` that raced -- they are a separate,
-# larger, and still untriaged class, and mixing the two would hide a real
-# detection gap inside a blast radius argument.
+# `printf`/`echo` JOINED THIS LIST ON 2026-09-16, when the deferral the docstring
+# used to carry was closed by measurement: both builtins report MISSED 40/40 at
+# 300 KB and the knee is between 32 KB and 48 KB. They are here for the same reason
+# as the commands -- their output scales with what is interpolated into them, which
+# is routinely a captured command's whole stdout -- not because "printf" is
+# dangerous.
 SCALING_PRODUCERS = (
     "awk",
     "cat",
     "comm",
     "cut",
     "diff",
+    "echo",
     "find",
     "git",
     "grep",
     "jq",
     "ls",
+    "printf",
     "sed",
     "sort",
     "tail",
@@ -256,6 +356,15 @@ SCALING_PRODUCERS = (
     "uniq",
     "xargs",
 )
+
+
+def inherits_pipefail(rel: str | None) -> bool:
+    """The twin's `inherits_pipefail`. An EMPTY path is false.
+
+    Fixture controls have no repo-relative identity, so they keep testing the
+    ordinary per-file rule.
+    """
+    return bool(rel) and str(rel).startswith(INHERITS_PIPEFAIL_PREFIXES)
 
 
 def strip_code(line: str) -> str:
@@ -319,15 +428,19 @@ def producer_names(text: str) -> list[str]:
     return sorted(set(local_functions(text)) | set(SCALING_PRODUCERS))
 
 
-def offenders_in(text: str) -> list[str]:
-    """`offenders <file>` -- one `<line>:<text>` per racing pipeline. Empty is clean.
+def offenders_in(text: str, rel: str | None = None) -> list[str]:
+    """`offenders <file> [<rel>]` -- one `<line>:<text>` per racing pipeline.
+
+    Empty is clean. `rel` is the REPO-RELATIVE path, used only to ask
+    `inherits_pipefail()`; it is None for a fixture, which then takes the ordinary
+    per-file test.
 
     The order is the twin's: producer names in sorted order, and within each name
     the file's own line order, because the twin runs one `grep -n` per name. A
     line naming two different producers is therefore reported TWICE, which is real
     and is preserved.
     """
-    if not PIPEFAIL_RE.search(text):
+    if not inherits_pipefail(rel) and not PIPEFAIL_RE.search(text):
         return []
     names = producer_names(text)
     if not names:
@@ -346,10 +459,10 @@ def offenders_in(text: str) -> list[str]:
     return hits
 
 
-def offenders(path: pathlib.Path) -> list[str]:
+def offenders(path: pathlib.Path, rel: str | None = None) -> list[str]:
     """`offenders` over a file on disk. An unreadable file is silent, as `2>/dev/null` is."""
     try:
-        return offenders_in(path.read_text(encoding="utf-8", errors="replace"))
+        return offenders_in(path.read_text(encoding="utf-8", errors="replace"), rel)
     except OSError:
         return []
 
@@ -367,6 +480,19 @@ def scan_files(root: pathlib.Path) -> list[str]:
     return (completed.stdout or "").split("\n")
 
 
+def _write_big(big: pathlib.Path) -> None:
+    """The twin's `{ echo NEEDLE; ...1500 x 200-byte lines... } >"$TMP/big.txt"`.
+
+    ~300 KB, well past the 64 KB pipe buffer, with the NEEDLE on line 1 so the
+    reader exits after its first read while the writer is still going.
+    """
+    pad = "x" * MECH_PAD_WIDTH
+    with big.open("w", encoding="utf-8") as handle:
+        handle.write("NEEDLE\n")
+        for _ in range(MECH_LINES):
+            handle.write(pad + "\n")
+
+
 def mechanism_output(tmp: pathlib.Path) -> str:
     """Run the SIGPIPE fixture in a real bash child. "MISSED" means the race is live.
 
@@ -382,11 +508,7 @@ def mechanism_output(tmp: pathlib.Path) -> str:
         encoding="utf-8",
     )
     big = tmp / "big.txt"
-    pad = "x" * MECH_PAD_WIDTH
-    with big.open("w", encoding="utf-8") as handle:
-        handle.write("NEEDLE\n")
-        for _ in range(MECH_LINES):
-            handle.write(pad + "\n")
+    _write_big(big)
     completed = subprocess.run(
         ["bash", str(mech), "x", str(big)],
         stdout=subprocess.PIPE,
@@ -396,6 +518,44 @@ def mechanism_output(tmp: pathlib.Path) -> str:
         check=False,
     )
     # `mech_out="$(...)"` strips trailing newlines, and the comparison is `=`.
+    return (completed.stdout or "").rstrip("\n")
+
+
+def mechanism_builtin_output(tmp: pathlib.Path) -> str:
+    """The BUILTIN half of the mechanism, in a real bash child. "MISSED" means live.
+
+    Not a duplicate of `mechanism_output`: that one proves SIGPIPE kills an
+    EXTERNAL producer, and bash traps SIGPIPE for its own builtins, so `printf`
+    reaches the same verdict by taking EPIPE from write(2) instead. Adding
+    `printf`/`echo` to SCALING_PRODUCERS without this control would leave the two
+    builtin controls guarding a claim nothing on the host had confirmed.
+
+    Re-uses the same ~300 KB `big.txt` the external fixture writes, so the two
+    controls are measured against the identical payload.
+    """
+    mech = tmp / "mech-builtin.sh"
+    mech.write_text(
+        "set -uo pipefail\n"
+        'payload="$(cat "$1")"\n'
+        "if printf '%%s\\n' \"$payload\" | %s 'NEEDLE'; then echo MATCHED; else echo MISSED; fi\n"
+        % _GQ,
+        encoding="utf-8",
+    )
+    big = tmp / "big.txt"
+    if not big.exists():
+        # `main()` always runs the external fixture first, so the twin can simply
+        # reuse `$TMP/big.txt`. A caller that drives this function ALONE (pytest
+        # does) would otherwise measure an empty payload and report MATCHED --
+        # a vacuous green for the one control that must not have one.
+        _write_big(big)
+    completed = subprocess.run(
+        ["bash", str(mech), str(big)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        errors="replace",
+        check=False,
+    )
     return (completed.stdout or "").rstrip("\n")
 
 
@@ -451,6 +611,21 @@ def main(argv: list[str] | None = None) -> int:
                 "means nothing here." % mech_out
             )
 
+        # THE SECOND MECHANISM CONTROL, AND IT IS NOT A DUPLICATE OF THE FIRST.
+        # See the docstring: a builtin does not die of SIGPIPE, it takes EPIPE.
+        mech_builtin_out = mechanism_builtin_output(tmp)
+        if mech_builtin_out == "MISSED":
+            report.ok(
+                "control: a BUILTIN producer takes EPIPE under pipefail and flips a matching "
+                "pipeline to false"
+            )
+        else:
+            report.fail(
+                "CONTROL DID NOT FIRE: a matching `printf | grep -q` reported '%s' on a 300 KB "
+                "payload. The builtin EPIPE path did not reproduce, so the printf/echo half of "
+                "this gate is guarding a myth here." % mech_builtin_out
+            )
+
         bad = 'set -o pipefail\nbody() { cat "$1"; }\nif body "$1" | %s x; then :; fi\n' % _GQ
         if offenders_in(bad):
             report.ok("control: a local function piped into grep -q is detected")
@@ -465,11 +640,56 @@ def main(argv: list[str] | None = None) -> int:
         else:
             report.fail("GATE IS OVER-BROAD: the sanctioned fix was flagged")
 
-        bounded = 'set -o pipefail\nif printf "%%s" "$x" | %s y; then :; fi\n' % _GQ
-        if not offenders_in(bounded):
-            report.ok("control: a bounded producer (printf, not a local function) is not flagged")
+        # THE BUILTIN HALF, ADDED 2026-09-16. These four controls used to be ONE
+        # control asserting the OPPOSITE -- "a bounded producer (printf, not a
+        # local function) is not flagged" -- which is why they are spelled out
+        # rather than folded into the command-producer pair below: the inversion is
+        # the change, and a reader diffing this file should see it stated.
+        builtin_printf = 'set -o pipefail\nif printf "%%s" "$x" | %s y; then :; fi\n' % _GQ
+        if offenders_in(builtin_printf):
+            report.ok("control: a BUILTIN producer (printf) piped into grep -q is detected")
         else:
-            report.fail("GATE IS OVER-BROAD: a bounded builtin producer was flagged")
+            report.fail("CONTROL DID NOT FIRE: a builtin printf producer raced and went undetected")
+
+        printf_fixed = 'set -o pipefail\nif [ -n "$(printf "%s" "$x" | grep y)" ]; then :; fi\n'
+        if not offenders_in(printf_fixed):
+            report.ok("control: the command-substitution form of printf is NOT flagged")
+        else:
+            report.fail("GATE IS OVER-BROAD: the sanctioned fix for a printf producer was flagged")
+
+        builtin_echo = 'set -o pipefail\nif echo "$x" | %s y; then :; fi\n' % _GQ
+        if offenders_in(builtin_echo):
+            report.ok("control: a BUILTIN producer (echo) piped into grep -q is detected")
+        else:
+            report.fail("CONTROL DID NOT FIRE: a builtin echo producer raced and went undetected")
+
+        echo_fixed = 'set -o pipefail\nif [ -n "$(echo "$x" | grep y)" ]; then :; fi\n'
+        if not offenders_in(echo_fixed):
+            report.ok("control: the command-substitution form of echo is NOT flagged")
+        else:
+            report.fail("GATE IS OVER-BROAD: the sanctioned fix for an echo producer was flagged")
+
+        # INHERITED PIPEFAIL, both directions. The SAME bytes are classified twice,
+        # once under a repo-relative path inside INHERITS_PIPEFAIL_PREFIXES and once
+        # outside it, so the control cannot pass by accident of the file's own
+        # content: the content is identical and only the path differs.
+        inherited = (
+            'lib_detect() { git -C "$1" status --porcelain; }\n'
+            'if printf "%%s" "$out" | %s dubious; then :; fi\n' % _GQ
+        )
+        if offenders_in(inherited, ".ci/lib/inherited.sh"):
+            report.ok("control: a file under .ci/lib/ with no pipefail of its OWN is still scanned")
+        else:
+            report.fail(
+                "CONTROL DID NOT FIRE: .ci/lib/devbox.sh:1082 is exactly this shape and would be "
+                "invisible again"
+            )
+        if not offenders_in(inherited, "scripts/dev/inherited.sh"):
+            report.ok("control: the same bytes OUTSIDE the inheriting prefixes are not flagged")
+        else:
+            report.fail(
+                "GATE IS OVER-BROAD: a file that never sets pipefail was flagged on its path alone"
+            )
 
         # THE TWO CASES THE 2026-09-16 WIDENING ADDED. Each had a live offender in
         # this repo and neither could be seen before, so each gets a control that
@@ -513,7 +733,7 @@ def main(argv: list[str] | None = None) -> int:
             if not target.is_file():
                 continue
             scanned += 1
-            found.extend("%s:%s" % (rel, hit) for hit in offenders(target))
+            found.extend("%s:%s" % (rel, hit) for hit in offenders(target, rel))
 
         # ANTI-VACUITY: scanning nothing must FAIL, never pass quietly.
         if scanned == 0:
@@ -557,8 +777,11 @@ def main(argv: list[str] | None = None) -> int:
             print("%s✓%s pipefail/grep -q: %d file(s) clean." % (report.green, report.nc, scanned))
             print("  Blind spot, stated so the green is not read as more than it is: this sees")
             print("  producers that SCALE with their input -- this file's own functions, and")
-            print("  the commands in SCALING_PRODUCERS. A bounded producer (printf, echo) is")
-            print("  untriaged, not cleared: a 1129-byte printf raced on 2026-08-31.")
+            print("  the commands and builtins in SCALING_PRODUCERS, which since 2026-09-16")
+            print("  includes printf and echo. What it still cannot see is an INNER shell's")
+            print("  options: the pipefail test is per-FILE, so a docker/ssh heredoc that sets")
+            print("  only 'set -e' reads as pipefail-bearing, and a sourced library reads as")
+            print("  clean unless its prefix is in INHERITS_PIPEFAIL_PREFIXES.")
             return 0
         print("%s✗%s pipefail/grep -q: %d failure(s)." % (report.red, report.nc, report.fails))
         return 1
@@ -572,7 +795,12 @@ def selftest() -> int:
     does not cover: two functions on one line, a line number that survives
     quoting, and the empty corpus.
     """
-    ctl = Controls("pipefail-grep-q", floor=18, verbose=True)
+    # FLOOR 26, raised from 18 when the 2026-09-16 builtin widening added five
+    # controls (a printf pair, an echo pair, and the inherited-pipefail pair, less
+    # the one inverted mirror it replaced). The floor is the only thing that catches
+    # controls that stopped EXECUTING, so it tracks the real count rather than
+    # sitting comfortably below it.
+    ctl = Controls("pipefail-grep-q", floor=26, verbose=True)
 
     bad = 'set -o pipefail\nbody() { cat "$1"; }\nif body "$1" | %s x; then :; fi\n' % _GQ
     ctl.check("CONTROL: the racing shape is detected", len(offenders_in(bad)), 1)
@@ -585,9 +813,46 @@ def selftest() -> int:
         ),
         [],
     )
+    # INVERTED 2026-09-16. This used to read "MIRROR: a bounded builtin producer is
+    # not flagged" and assert []. The builtins are in SCALING_PRODUCERS now, so the
+    # old assertion is the exact opposite of the shipped rule; keeping it would have
+    # made the port and the twin disagree at the first run.
     ctl.check(
-        "MIRROR: a bounded builtin producer is not flagged",
-        offenders_in('set -o pipefail\nif printf "%%s" "$x" | %s y; then :; fi\n' % _GQ),
+        "CONTROL: a builtin producer (printf) is detected",
+        len(offenders_in('set -o pipefail\nif printf "%%s" "$x" | %s y; then :; fi\n' % _GQ)),
+        1,
+    )
+    ctl.check(
+        "MIRROR: the command-substitution form of printf is not flagged",
+        offenders_in('set -o pipefail\nif [ -n "$(printf "%s" "$x" | grep y)" ]; then :; fi\n'),
+        [],
+    )
+    ctl.check(
+        "CONTROL: a builtin producer (echo) is detected",
+        len(offenders_in('set -o pipefail\nif echo "$x" | %s y; then :; fi\n' % _GQ)),
+        1,
+    )
+    ctl.check(
+        "MIRROR: the command-substitution form of echo is not flagged",
+        offenders_in('set -o pipefail\nif [ -n "$(echo "$x" | grep y)" ]; then :; fi\n'),
+        [],
+    )
+
+    # INHERITED PIPEFAIL: identical bytes, classified by PATH alone. `.ci/lib/`
+    # files set no pipefail of their own and get it from every sourcer, which is
+    # how `.ci/lib/devbox.sh:1082` stayed invisible.
+    _inherited = (
+        'lib_detect() { git -C "$1" status --porcelain; }\n'
+        'if printf "%%s" "$out" | %s dubious; then :; fi\n' % _GQ
+    )
+    ctl.check(
+        "CONTROL: a .ci/lib/ file with no pipefail of its own IS scanned",
+        len(offenders_in(_inherited, ".ci/lib/inherited.sh")),
+        1,
+    )
+    ctl.check(
+        "MIRROR: the same bytes elsewhere, with no pipefail, are not",
+        offenders_in(_inherited, "scripts/dev/inherited.sh"),
         [],
     )
     ctl.check(

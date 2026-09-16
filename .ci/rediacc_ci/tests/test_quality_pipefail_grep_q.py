@@ -155,10 +155,30 @@ _SEED = 'set -o pipefail\nbody() { cat "$1"; }\n'
             0,
             id="the-sanctioned-fix",
         ),
+        # INVERTED 2026-09-16. This case asserted 0 while it was called
+        # "a-bounded-builtin-producer", which was the gate's rule until `printf`
+        # and `echo` joined SCALING_PRODUCERS. Both builtins report MISSED 40/40 on
+        # a 300 KB payload on this host, so the bounded exemption was not a safety
+        # claim that survived measurement.
         pytest.param(
             'set -o pipefail\nif printf "%%s" "$x" | %s y; then :; fi\n' % GQ,
+            1,
+            id="a-builtin-printf-producer-is-flagged",
+        ),
+        pytest.param(
+            'set -o pipefail\nif [ -n "$(printf "%s" "$x" | grep y)" ]; then :; fi\n',
             0,
-            id="a-bounded-builtin-producer",
+            id="the-sanctioned-fix-for-printf",
+        ),
+        pytest.param(
+            'set -o pipefail\nif echo "$x" | %s y; then :; fi\n' % GQ,
+            1,
+            id="a-builtin-echo-producer-is-flagged",
+        ),
+        pytest.param(
+            'set -o pipefail\nif [ -n "$(echo "$x" | grep y)" ]; then :; fi\n',
+            0,
+            id="the-sanctioned-fix-for-echo",
         ),
         pytest.param(
             'body() { cat "$1"; }\nif body "$1" | %s x; then :; fi\n' % GQ,
@@ -229,6 +249,40 @@ def test_the_mechanism_control_reproduces_on_this_host(tmp_path: pathlib.Path) -
     assert gate.mechanism_output(tmp_path) == "MISSED"
 
 
+def test_the_builtin_mechanism_control_reproduces_on_this_host(tmp_path: pathlib.Path) -> None:
+    """The OTHER half of the OS claim, and a different kernel path from the above.
+
+    bash traps SIGPIPE for its own builtins, so `printf` does not die -- it takes
+    EPIPE from write(2) and returns non-zero, which pipefail promotes. The gate
+    flags eleven `printf`/`echo` sites on the strength of that; if it ever stops
+    reproducing, those flags are guarding a myth and this must go red rather than
+    skip.
+    """
+    assert gate.mechanism_builtin_output(tmp_path) == "MISSED"
+
+
+@pytest.mark.parametrize(
+    ("rel", "hits"),
+    [
+        pytest.param(".ci/lib/devbox.sh", 1, id="under-an-inheriting-prefix"),
+        pytest.param("scripts/dev/thing.sh", 0, id="anywhere-else"),
+        pytest.param(None, 0, id="a-fixture-has-no-path"),
+    ],
+)
+def test_inherited_pipefail_is_decided_by_path(rel: str | None, hits: int) -> None:
+    """Identical bytes, classified by PATH alone.
+
+    `.ci/lib/devbox.sh:1082` sets no pipefail of its own and inherits it from every
+    sourcer (scripts/dev/worktree.sh:12, .ci/lib/local-common.sh:937,983 via
+    rdc.sh:11), which is why the gate could not see the sweep's strongest finding.
+    """
+    text = (
+        'lib_detect() { git -C "$1" status --porcelain; }\n'
+        'if printf "%%s" "$out" | %s dubious; then :; fi\n' % GQ
+    )
+    assert len(gate.offenders_in(text, rel)) == hits
+
+
 def test_the_live_corpus_is_not_empty() -> None:
     """`git ls-files` over the real tree must return files, or the gate is blind."""
     files = [f for f in gate.scan_files(paths.repo_root()) if f]
@@ -239,4 +293,4 @@ def test_selftest_passes_and_is_not_vacuous(capsys) -> None:
     assert gate.selftest() == 0
     out = capsys.readouterr().out
     assert "control(s) passed" in out
-    assert int(out.strip().split("\n")[-1].split()[0]) >= 18
+    assert int(out.strip().split("\n")[-1].split()[0]) >= 26
