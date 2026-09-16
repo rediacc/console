@@ -1,5 +1,6 @@
 import { GITHUB_REPO } from '../config/constants';
 import type { GitHubRelease } from './release-parser';
+import { githubToken } from '../../../../scripts/lib/github-token.ts';
 
 /**
  * The latest GitHub release, fetched ONCE per build and shared by every locale.
@@ -13,11 +14,20 @@ import type { GitHubRelease } from './release-parser';
  * This module memoises the promise, so all 13 pages await one request. It
  * deliberately does NOT swallow the failure: it resolves to null and lets the
  * caller decide, which is how the build can be made to fail.
+ *
+ * The token comes from `scripts/lib/github-token.ts`'s shared `githubToken()`
+ * rather than reading `process.env.GITHUB_TOKEN` here a second time -- this
+ * was the fifth independent reader of that env var found in one sweep of a
+ * sibling bug, and the whole point of that helper existing is that a caller
+ * does not get to decide for itself. This module runs only inside
+ * `getStaticPaths`, which Astro executes in the Node build step, never in
+ * client code, so importing a helper that may shell out to `gh auth token`
+ * is safe here.
  */
 let inflight: Promise<GitHubRelease | null> | undefined;
 
 async function fetchOnce(): Promise<GitHubRelease | null> {
-  const token = process.env.GITHUB_TOKEN;
+  const token = githubToken();
   const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
   if (token !== undefined && token !== '') headers.Authorization = `Bearer ${token}`;
 
