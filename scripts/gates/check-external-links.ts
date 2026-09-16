@@ -79,6 +79,24 @@ const ALLOWLISTED_DOMAINS = new Set([
   'sdaia.gov.sa', // Saudi SDAIA - connection refused from non-Saudi IPs
   'www.pipc.go.kr', // South Korea PIPC - extremely slow, times out in CI
   'www.legislation.gov.au', // Australia legislation - intermittent timeouts from CI runners
+  // billauer.co.il - the MIRROR IMAGE of every other entry here, which is why it
+  // is in this list rather than KNOWN_BROKEN. Measured 2026-09-16 from three
+  // vantage points: a GitHub runner fetched it fine (the liveness audit reported
+  // `1 sampled URL(s) all returned 2xx` and told us to drop the KNOWN_BROKEN
+  // entry), while this dev network answered HTTP 000 with no TCP connect at all
+  // -- three times from the host and twice more from a container on a separate
+  // egress path. So the host is selectively reachable BY SOURCE NETWORK, and
+  // "fixed upstream" is not what happened.
+  //
+  // Deleting the KNOWN_BROKEN entry on the runner's word alone would have traded
+  // a CI warning for a permanent local red: verified by doing it, after which
+  // the gate reported `BROKEN [fetch failed]` and exit 1 here while CI was
+  // green. An IP-dependent block is what this list is for; KNOWN_BROKEN means
+  // the link is broken, and it is not.
+  //
+  // Cited once, docs/code-signing-guide.md:309, as attribution for the eSigner
+  // overage claim -- a citation, not an instruction, so the URL stays in prose.
+  'billauer.co.il',
   'ariregister.rik.ee', // Estonia e-Business Register - intermittent from CI runners: TIMEOUT against the 15s budget on one run and 503 on the next (jobs 104615289932, 104616780132); answers 200 from a non-datacenter IP but slowly, 9.7s and 13.9s in three probes that also returned one 500, so it is unstable rather than dead
   'www.iso.org', // ISO standards - returns 403 to non-browser User-Agent (anti-scraping)
   'www.meity.gov.in', // India MeitY - intermittent fetch failures from CI runners (Azure US-East), reachable from browsers
@@ -213,25 +231,6 @@ const KNOWN_BROKEN = new Map<string, string>([
   [
     'https://www.rediacc.com/api/public/account-key',
     'route does not exist on any host (404 on www/edge/eu/us/asia); both docs now cite it only to warn against it, never as a command',
-  ],
-  // MEASURED FROM TWO INDEPENDENT VANTAGE POINTS, 2026-09-15, because "the link
-  // is dead" and "this runner cannot reach it" look identical from one machine.
-  // The GitHub runner reported `BROKEN [fetch failed]`, and a dev box on a
-  // different network got HTTP 000 with a connect time of 0.000000s -- no TCP
-  // connection at all, rather than a 404 or a redirect. The control matters as
-  // much as the result: github.com and www.debian.org both answered 200 from
-  // that same box in the same loop, so egress works and the failure is specific
-  // to this host.
-  //
-  // The link is a citation, not an instruction: docs/code-signing-guide.md:309
-  // cites it for the claim that users reported unexpected charges once the
-  // eSigner signature count exceeds its included quota. The claim is still worth
-  // making and the attribution is still worth keeping, so the URL stays in prose
-  // and the breakage is recorded here rather than the sentence being quietly
-  // stripped of its source.
-  [
-    'https://billauer.co.il/blog/2021/11/esigner-cloud-signing-ssl-com-certificate/',
-    'host unreachable (no TCP connect) from a GitHub runner and a separate dev network on 2026-09-15; cited in docs/code-signing-guide.md as attribution for the eSigner overage claim, not as a command',
   ],
   // NOTE: a comment block for a gnupg.org entry used to sit here, describing
   // the domain as unreachable from two networks on 2026-07-30. Its ENTRY is
