@@ -106,8 +106,9 @@
       "Every entry carries a `BLOCKER:` reason, the same convention",
       "docs/agent-reference/suppressions.md requires of every other allowlist in this tree.",
       "",
-      "`agent/PLAN-*.md` and `agent/pr/*.md` are deliberately NOT here: those are authored",
-      "documents that a person reads, which is exactly what this style is for."
+      "`agent/PLAN-*.md` is deliberately NOT here: it is an authored document that a",
+      "person reads, which is exactly what this style is for. `agent/pr/*.md` WAS here",
+      "until it turned out to be generated, not authored -- see its own entry above."
     ],
     "exclude_why": [
       "private/ holds four GIT SUBMODULES (account, elite, homebrew-tap, renet), which are",
