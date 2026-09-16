@@ -130,6 +130,20 @@ def _env(fixture: pathlib.Path, path: str | None = None) -> dict[str, str]:
         "PATH": path if path is not None else os.environ.get("PATH", "/usr/bin:/bin"),
         "HOME": str(home),
         "npm_config_cache": str(home / ".npm"),
+        # NPM'S UPGRADE NOTICE IS ORDER-DEPENDENT, so it is switched off rather
+        # than filtered. npm prints "New major version of npm available!" at most
+        # once per interval and records that it has done so IN THE CACHE -- which
+        # both subjects share, because the line above deliberately points them at
+        # one fixture-local cache. So the twin runs first, gets the notice, and
+        # the port runs second and does not:
+        #
+        #     - npm notice New major version of npm available! 11.17.0 -> 12.0.2
+        #
+        # Five identical bytes of difference that belong to npm's release
+        # schedule, not to either implementation. It appeared the night npm 12
+        # shipped (CI job 104641293034) and would otherwise recur at every future
+        # npm release, on whichever subject happened to run first.
+        "npm_config_update_notifier": "false",
         "LC_ALL": "C",
         "LANG": "C",
         "PYTHONPATH": str(fixture / ".ci"),
