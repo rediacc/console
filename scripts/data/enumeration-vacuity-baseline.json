@@ -10,7 +10,6 @@
     ".ci/scripts/quality/check_e2e_case_blind_assertions.py",
     ".ci/scripts/quality/check_guard_feature_completeness.py",
     ".ci/scripts/quality/check_guard_mention_anchoring.py",
-    ".ci/scripts/quality/check_pr_head_ref_completeness.py",
     ".ci/scripts/quality/check_python_gate_deps.py",
     ".ci/scripts/quality/check_tutorial_cli_validity.py",
     ".ci/scripts/quality/check_tutorial_no_skips.py",

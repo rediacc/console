@@ -39,7 +39,7 @@
  * needs: node
  * selftest: true
  * env-PR_BASE_REF: origin/${{ github.event.pull_request.base.ref }}
- * env-PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+ * env-PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
  * why: Every commit must name the epic it belongs to, because the review selects
  *      an epic's commits by trailer. An untagged commit is reviewed by nobody.
  * ---- end gate ----

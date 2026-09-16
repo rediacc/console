@@ -1029,7 +1029,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-pr-task-trailers',
     env: {
       PR_BASE_REF: 'origin/${{ github.event.pull_request.base.ref }}',
-      PR_HEAD_REF: '${{ github.event.pull_request.head.ref }}',
+      PR_HEAD_REF: '${{ github.event.pull_request.head.ref || github.ref_name }}',
     },
     run: 'npm run check:ci-pr-task-trailers',
     gate: true,
@@ -1078,7 +1078,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-pr-epic-block',
     env: {
       GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}',
-      PR_HEAD_REF: '${{ github.event.pull_request.head.ref }}',
+      PR_HEAD_REF: '${{ github.event.pull_request.head.ref || github.ref_name }}',
       PR_NUMBER: '${{ github.event.pull_request.number }}',
     },
     run: 'npm run check:ci-pr-epic-block',
@@ -5043,10 +5043,10 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // NO `env:`. The PR_HEAD_REF this carried was empty on push, schedule and
+    // the nightly dispatch, and nothing under `.ci/rediacc_ci/` reads it from
+    // the ambient environment -- the battery's tests scrub it or pin their own.
     id: 'check:ci-quality-gates',
-    env: {
-      PR_HEAD_REF: '${{ github.event.pull_request.head.ref }}',
-    },
     run: 'npm run check:ci-quality-gates',
     gate: false,
     leaves: ['.ci/rediacc_ci/battery.py'],

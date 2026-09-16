@@ -985,7 +985,7 @@
     "id": "check:ci-pr-task-trailers",
     "env": {
       "PR_BASE_REF": "origin/${{ github.event.pull_request.base.ref }}",
-      "PR_HEAD_REF": "${{ github.event.pull_request.head.ref }}"
+      "PR_HEAD_REF": "${{ github.event.pull_request.head.ref || github.ref_name }}"
     },
     "run": "npm run check:ci-pr-task-trailers",
     "gate": true,
@@ -1031,7 +1031,7 @@
     "id": "check:ci-pr-epic-block",
     "env": {
       "GH_TOKEN": "${{ secrets.GITHUB_TOKEN }}",
-      "PR_HEAD_REF": "${{ github.event.pull_request.head.ref }}",
+      "PR_HEAD_REF": "${{ github.event.pull_request.head.ref || github.ref_name }}",
       "PR_NUMBER": "${{ github.event.pull_request.number }}"
     },
     "run": "npm run check:ci-pr-epic-block",
@@ -4927,9 +4927,6 @@
   },
   {
     "id": "check:ci-quality-gates",
-    "env": {
-      "PR_HEAD_REF": "${{ github.event.pull_request.head.ref }}"
-    },
     "run": "npm run check:ci-quality-gates",
     "gate": false,
     "leaves": [

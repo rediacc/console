@@ -37,7 +37,7 @@
  * needs: node
  * selftest: true
  * env-GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
- * env-PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+ * env-PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
  * env-PR_NUMBER: ${{ github.event.pull_request.number }}
  * why: The PR body carries a generated epic block; this asserts it matches the
  *      published snapshot, since a generated section nobody checks drifts while

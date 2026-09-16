@@ -1111,14 +1111,29 @@ jobs:
           # the way to `git branch --show-current` (empty) and the check
           # silently reported "skipped: on an unknown branch" instead of
           # actually validating the epic block.
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          #
+          # `|| github.ref_name` is the second half, and it is the same
+          # one-clause remedy as f1ce6911f. This lane's caller (ci.yml) also
+          # runs on push, schedule and the nightly workflow_dispatch, and
+          # neither job `if:` narrows by event -- so on those three the first
+          # clause is EMPTY and the check degraded to the same
+          # indistinguishable-from-broken skip. On them ci.yml runs against
+          # main, so the fallback resolves to `main` and the reader takes its
+          # explicit `skipped: on main; the epic block is a PR artefact` path.
+          # On pull_request the first clause wins, so ref_name's `<n>/merge`
+          # can never shadow it.
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
       # The local hook cannot read a -F message, so this is where the trailer
       # rule is actually enforced, against the commits that really landed.
       - name: Every commit names its epic
         run: npm run check:ci-pr-task-trailers
         env:
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          # `|| github.ref_name` for the same reason as the step above, and it
+          # also retires PR_BASE_REF's own empty-on-push shape without touching
+          # it: `origin/` alone is non-empty garbage, but the reader's
+          # `branch === 'main'` skip is taken first and never reaches it.
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
           PR_BASE_REF: origin/${{ github.event.pull_request.base.ref }}
 
 
@@ -2193,11 +2208,21 @@ jobs:
           bash .ci/bootstrap.sh
           npm run check:ci-pytest
 
+      # NO `env:` HERE, AND THE ABSENCE IS DELIBERATE. This step carried
+      # `PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}`, empty on push,
+      # schedule and the nightly dispatch. Nothing under `.ci/rediacc_ci/` reads
+      # PR_HEAD_REF from the ambient environment -- `branch_from_ci()`
+      # (gitx.py:235) has no production caller, and the battery's own tests
+      # either SCRUB the variable (test_gate_untagged_commit_branch.py:105,
+      # test-untagged-commit-branch.sh:66) or pin their own per call
+      # (test-review-status.sh:1207). Two of those modules were written
+      # precisely because a differential inheriting the developer's environment
+      # passes or fails on whether PR_HEAD_REF happens to be exported. So the
+      # key was dead, and adding a fallback clause would have re-created the
+      # exact ambient leak they defend against.
       - name: Quality-gate unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-quality-gates
-        env:
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
