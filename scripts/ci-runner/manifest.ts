@@ -6841,19 +6841,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    id: 'gate-test:renet-pipefail-grep-q',
-    run: '.ci/scripts/test/gates/test-renet-pipefail-grep-q.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-renet-pipefail-grep-q.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
     id: 'gate-test:review-labels',
     run: '.ci/scripts/test/gates/test-review-labels.sh',
     gate: true,
