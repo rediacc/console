@@ -79,6 +79,7 @@ const ALLOWLISTED_DOMAINS = new Set([
   'sdaia.gov.sa', // Saudi SDAIA - connection refused from non-Saudi IPs
   'www.pipc.go.kr', // South Korea PIPC - extremely slow, times out in CI
   'www.legislation.gov.au', // Australia legislation - intermittent timeouts from CI runners
+  'ariregister.rik.ee', // Estonia e-Business Register - intermittent from CI runners: TIMEOUT against the 15s budget on one run and 503 on the next (jobs 104615289932, 104616780132); answers 200 from a non-datacenter IP but slowly, 9.7s and 13.9s in three probes that also returned one 500, so it is unstable rather than dead
   'www.iso.org', // ISO standards - returns 403 to non-browser User-Agent (anti-scraping)
   'www.meity.gov.in', // India MeitY - intermittent fetch failures from CI runners (Azure US-East), reachable from browsers
   'eur-lex.europa.eu', // EU EUR-Lex - returns 403 to CI runners (Cloudflare/anti-scraping), reachable from browsers
