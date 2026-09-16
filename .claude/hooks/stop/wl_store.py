@@ -2055,12 +2055,21 @@ def migrate_candidates(worklist, fold, me, projects_dir=None, events=None):
     # covered above is enriched with `next_action` up there, never duplicated
     # down here.
     # Unlike an item, a STATE.md section never gets ticked, so nothing bounds
-    # how long it keeps surfacing here on its own. Reuse the SAME staleness
-    # horizon `agent_state_dead()` already applies when reaping a peer's
-    # section from the live-visibility listing (WORKLIST_DEAD_HOURS, default
-    # 24h) rather than inventing a second one: a section too old to show a
-    # live peer is too old to offer here either.
-    dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    # how long it keeps surfacing here on its own. NOT `WORKLIST_DEAD_HOURS`
+    # (24h): that constant answers "is this session's process still alive",
+    # a different question, and reusing it here made the fallback nearly
+    # unusable -- a session must be both dead (typically >24h quiet, or it
+    # would not need migrating at all) and have written its STATE.md within
+    # the last 24h to pass both checks, which is close to the same instant.
+    # Measured live 2026-09-16: session 8f55d4f0's STATE.md, 52.8h old, named
+    # real unfinished work ("batch 9 is running") and was silently excluded.
+    # `WORKLIST_ARCHIVE_HOURS` (168h/7 days) is this file's existing constant
+    # for "too stale to act on", but measured too tight for this exact case:
+    # 8f55d4f0's own transcript-based age is 187h (~7.8 days), one week plus
+    # change, and the skill's own text says WEEKS plural. A dedicated,
+    # larger constant avoids re-tuning `WORKLIST_ARCHIVE_HOURS` for an
+    # unrelated tombstoning purpose it already serves correctly.
+    stale_h = float(os.environ.get("WORKLIST_HANDOFF_STALE_HOURS", "720"))
     covered = set(by_owner) | mine
     for d in agent_session_dirs(root):
         owner = d.name[:8]
@@ -2075,7 +2084,7 @@ def migrate_candidates(worklist, fold, me, projects_dir=None, events=None):
                 age_h = (time.time() - (d / "STATE.md").stat().st_mtime) / 3600.0
             except OSError:
                 age_h = None
-        if age_h is not None and age_h >= dead_h:
+        if age_h is not None and age_h >= stale_h:
             continue
         verdict, why = session_liveness(worklist, owner, projects_dir, events)
         if verdict in ("live", "unknown"):
