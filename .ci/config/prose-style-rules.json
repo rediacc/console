@@ -81,7 +81,8 @@
       "build",
       ".venv",
       "vendor",
-      ".artifacts"
+      ".artifacts",
+      ".claude/hooks/context/state"
     ],
     "exempt_paths": [
       {

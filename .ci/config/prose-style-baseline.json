@@ -16,10 +16,10 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 3548,
- "files": 722,
+ "count": 3542,
+ "files": 716,
  "by_rule": {
-  "R1": 1564,
+  "R1": 1558,
   "R11": 146,
   "R18": 496,
   "R2": 828,
@@ -1864,36 +1864,6 @@
   ".claude/hooks/context/onboard.py": {
    "R7": [
     "1f8f9986ac58b89e"
-   ]
-  },
-  ".claude/hooks/context/state/74de73ca-precompact-facts.md": {
-   "R1": [
-    "4de29e4aabfe967e"
-   ]
-  },
-  ".claude/hooks/context/state/8f55d4f0-precompact-facts.md": {
-   "R1": [
-    "1e3390193873d629"
-   ]
-  },
-  ".claude/hooks/context/state/a276391d-precompact-facts.md": {
-   "R1": [
-    "d7db925f53502893"
-   ]
-  },
-  ".claude/hooks/context/state/b7baf3ee-precompact-facts.md": {
-   "R1": [
-    "56ce9ef1034ab63e"
-   ]
-  },
-  ".claude/hooks/context/state/d778be9d-precompact-facts.md": {
-   "R1": [
-    "17545cc55fa6c19c"
-   ]
-  },
-  ".claude/hooks/context/state/f88f9be7-precompact-facts.md": {
-   "R1": [
-    "f845184592a3be9c"
    ]
   },
   ".claude/hooks/lib/sanctioned.py": {
