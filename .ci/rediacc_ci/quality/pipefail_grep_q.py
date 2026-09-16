@@ -190,6 +190,9 @@ PATHSPECS = (
 # and the match stands.
 PIPEFAIL_RE = re.compile(r"set -[a-z]*o pipefail|set -o pipefail")
 
+# A stripped line that ends in `|` is a pipeline continued on the next line.
+CONTINUES_RE = re.compile(r"\|[ \t]*$")
+
 # `grep -oE '^[A-Za-z_][A-Za-z0-9_]*\(\)'` -- a function DEFINITION at column one,
 # with no space before the parentheses.
 FUNCDEF_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\(\)")
@@ -215,6 +218,46 @@ MECH_LINES = 1500
 _GQ = "grep -q"
 
 
+# PRODUCERS WHOSE OUTPUT SCALES WITH THEIR INPUT, which is the criterion this
+# gate has stated since it was written -- "a function that reads a file, filters
+# a corpus, enumerates a tree". Until 2026-09-16 only the FUNCTION half of that
+# sentence was implemented, so a scaling producer that happened to be a command
+# rather than a local function was invisible.
+#
+# THAT HOLE WAS LIVE, not theoretical. `check-control-vacuity.sh:81-83` is
+#
+#     grep -vE '<comments>' "$1" | grep -vE '<prefix-sed>' | grep -qE '<subst>'
+#
+# and it lost the race in 2 of 20 measured runs under suite load, returning 141
+# for a file that MATCHED. The effect was not a flaky test: the gate moved that
+# file from `checked` to `exempt` and silently stopped checking one of its own
+# controls while still printing a tick. The twin/port differential is the only
+# reason it ever surfaced.
+#
+# `printf`/`echo` are deliberately NOT here. They are not proven safe -- the
+# docstring above records a 1129-byte `printf` that raced -- they are a separate,
+# larger, and still untriaged class, and mixing the two would hide a real
+# detection gap inside a blast radius argument.
+SCALING_PRODUCERS = (
+    "awk",
+    "cat",
+    "comm",
+    "cut",
+    "diff",
+    "find",
+    "git",
+    "grep",
+    "jq",
+    "ls",
+    "sed",
+    "sort",
+    "tail",
+    "tr",
+    "uniq",
+    "xargs",
+)
+
+
 def strip_code(line: str) -> str:
     """The twin's `sed -e 's/#.*$//' -e "s/'[^']*'/''/g" -e 's/"[^"]*"/""/g'`.
 
@@ -233,27 +276,71 @@ def local_functions(text: str) -> list[str]:
     return sorted(names)
 
 
+def logical_lines(text: str) -> list[tuple[int, str]]:
+    """Stripped lines, with a pipeline that CONTINUES onto the next line joined.
+
+    A pipeline written across several lines was invisible to a per-line regex,
+    and that is precisely how the `check-control-vacuity.sh` offender survived
+    every run of this gate: its three `grep` stages sit on three separate lines,
+    so no single line ever contained both a producer and `grep -q`.
+
+    A line whose stripped text ends in `|` is continued, so it is joined to the
+    one after it with NO separator inserted -- the next line's own leading
+    whitespace is what keeps the tokens apart, and inserting anything here would
+    make the twin and this port disagree byte for byte. The tuple carries the
+    number of the line the pipeline STARTED on, so the report still points at the
+    top of the construct rather than at its tail.
+    """
+    out: list[tuple[int, str]] = []
+    start = 0
+    buf = ""
+    for number, line in enumerate(text.split("\n"), start=1):
+        stripped = strip_code(line)
+        if not buf:
+            start = number
+            buf = stripped
+        else:
+            buf += stripped
+        if CONTINUES_RE.search(buf):
+            continue
+        out.append((start, buf))
+        buf = ""
+    if buf:
+        out.append((start, buf))
+    return out
+
+
+def producer_names(text: str) -> list[str]:
+    """The producers worth searching for: this file's own functions, plus commands.
+
+    Both halves are "a producer whose output scales with its input"; the gate has
+    always said so and, until 2026-09-16, only implemented the first half.
+    """
+    return sorted(set(local_functions(text)) | set(SCALING_PRODUCERS))
+
+
 def offenders_in(text: str) -> list[str]:
     """`offenders <file>` -- one `<line>:<text>` per racing pipeline. Empty is clean.
 
-    The order is the twin's: function names in sorted order, and within each name
+    The order is the twin's: producer names in sorted order, and within each name
     the file's own line order, because the twin runs one `grep -n` per name. A
-    line naming two different local functions is therefore reported TWICE, which
-    is real and is preserved.
+    line naming two different producers is therefore reported TWICE, which is real
+    and is preserved.
     """
     if not PIPEFAIL_RE.search(text):
         return []
-    names = local_functions(text)
+    names = producer_names(text)
     if not names:
         return []
-    lines = text.split("\n")
-    stripped = [strip_code(line) for line in lines]
     hits: list[str] = []
+    joined = logical_lines(text)
     for name in names:
-        # `grep -nE "\b${fn}\b[^|]*\|[[:space:]]*grep -q"` -- a CALL to that
-        # function, then a pipe, then grep -q, in CODE.
+        # `grep -nE "\b${fn}\b[^|]*\|[[:space:]]*grep -q"` -- the producer, then
+        # a pipe, then grep -q, in CODE. `[^|]*` keeps the producer in the stage
+        # IMMEDIATELY before the pipe, so `printf x | grep -q` is not dragged in
+        # by a `grep` that appears earlier in the same line.
         pattern = re.compile(r"\b%s\b[^|]*\|%s*%s" % (re.escape(name), _SPACE, re.escape(_GQ)))
-        for number, line in enumerate(stripped, start=1):
+        for number, line in joined:
             if pattern.search(line):
                 hits.append("%d:%s" % (number, line))
     return hits
@@ -384,6 +471,23 @@ def main(argv: list[str] | None = None) -> int:
         else:
             report.fail("GATE IS OVER-BROAD: a bounded builtin producer was flagged")
 
+        # THE TWO CASES THE 2026-09-16 WIDENING ADDED. Each had a live offender in
+        # this repo and neither could be seen before, so each gets a control that
+        # fails if the widening is ever reverted or regressed.
+        cmdprod = 'set -o pipefail\nif grep -vE "^x" "$1" | %s needle; then :; fi\n' % _GQ
+        if offenders_in(cmdprod):
+            report.ok("control: a scaling COMMAND producer piped into grep -q is detected")
+        else:
+            report.fail("CONTROL DID NOT FIRE: a command producer raced and went undetected")
+
+        # check-control-vacuity.sh:81-83 in miniature: no single LINE holds both
+        # the producer and grep -q, which is why a per-line regex never saw it.
+        multiline = 'set -o pipefail\ngrep -vE "^x" "$1" |\n    %sE needle\n' % _GQ
+        if offenders_in(multiline):
+            report.ok("control: a pipeline SPANNING LINES is detected")
+        else:
+            report.fail("CONTROL DID NOT FIRE: a multi-line racing pipeline went undetected")
+
         nopipefail = 'body() { cat "$1"; }\nif body "$1" | %s x; then :; fi\n' % _GQ
         if not offenders_in(nopipefail):
             report.ok("control: without pipefail the same shape is harmless and not flagged")
@@ -419,11 +523,11 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif not found:
             report.ok(
-                "no racing `function | grep -q` under pipefail in %d scanned file(s)" % scanned
+                "no racing `producer | grep -q` under pipefail in %d scanned file(s)" % scanned
             )
         else:
             report.fail(
-                "%d racing pipeline(s): a local function piped into grep -q under pipefail"
+                "%d racing pipeline(s): a producer piped into grep -q under pipefail"
                 % len(found)
             )
             # `printf '    %s\n' "${found[@]}"` -- an ARRAY, so the format is
@@ -453,8 +557,9 @@ def main(argv: list[str] | None = None) -> int:
         if report.fails == 0:
             print("%s✓%s pipefail/grep -q: %d file(s) clean." % (report.green, report.nc, scanned))
             print("  Blind spot, stated so the green is not read as more than it is: this sees")
-            print("  only LOCALLY-DEFINED producers. A racing pipeline whose producer is an")
-            print("  external command with unbounded output is real and invisible here.")
+            print("  producers that SCALE with their input -- this file's own functions, and")
+            print("  the commands in SCALING_PRODUCERS. A bounded producer (printf, echo) is")
+            print("  untriaged, not cleared: a 1129-byte printf raced on 2026-08-31.")
             return 0
         print("%s✗%s pipefail/grep -q: %d failure(s)." % (report.red, report.nc, report.fails))
         return 1

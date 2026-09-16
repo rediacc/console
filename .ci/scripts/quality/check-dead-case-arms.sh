@@ -100,8 +100,10 @@ extract_case_keys() {
 key_is_live() {
     local key="$1"
     # shellcheck disable=SC2086 # CODE_DIRS is deliberately word-split
-    grep -rhE --exclude-dir=test "${key}=" $CODE_DIRS 2>/dev/null |
-        grep -qvE '^[[:space:]]*(#|//|\*)'
+    [ -n "$(
+        grep -rhE --exclude-dir=test "${key}=" $CODE_DIRS 2>/dev/null |
+            grep -vE '^[[:space:]]*(#|//|\*)'
+    )" ]
 }
 
 # SCAN_HITS carries the count OUT of scan(). It used to come back as the exit status,

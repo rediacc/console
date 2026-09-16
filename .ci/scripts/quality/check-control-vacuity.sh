@@ -78,9 +78,23 @@ builds_by_substitution() {
     # existed ONLY inside a comment explaining why that construct was avoided
     # here. A gate that reads its own documentation as the thing it forbids
     # cannot be satisfied except by deleting the explanation.
-    grep -vE '^[[:space:]]*#' "$1" |
-        grep -vE "sed [^&]*[[:punct:]]s[/@|#]\^[/@|#]" |
-        grep -qE '\$\{[A-Za-z_][A-Za-z0-9_]*//|sed [^&]*[[:punct:]]s[/@|#]|sed -i'
+    # NEVER `| grep -q` HERE, and this file is why the rule has teeth.
+    # `grep -q` exits at its FIRST match, SIGPIPEs the upstream greps, and under
+    # this file's own `set -uo pipefail` that 141 becomes the pipeline's status --
+    # so a file that MATCHED is reported as not matching. Measured 2026-09-16,
+    # 20 rounds under suite load: check-submodule-branches.sh came back 141 in 2
+    # of them. The damage was not a flaky test. A false negative here moves a
+    # gate out of `checked` and into `exempt`, so THIS GATE QUIETLY STOPPED
+    # CHECKING ONE OF ITS CONTROLS while still printing a tick; only the
+    # twin/port differential ever noticed.
+    #
+    # Command substitution reads the producer to completion, so there is no
+    # signal to race. Same drop-in as check-ci-watch-recipe.sh:117.
+    [ -n "$(
+        grep -vE '^[[:space:]]*#' "$1" |
+            grep -vE "sed [^&]*[[:punct:]]s[/@|#]\^[/@|#]" |
+            grep -E '\$\{[A-Za-z_][A-Za-z0-9_]*//|sed [^&]*[[:punct:]]s[/@|#]|sed -i'
+    )" ]
 }
 
 # Does it prove the plant landed? Either shape counts:

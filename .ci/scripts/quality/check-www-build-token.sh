@@ -50,7 +50,7 @@ find_sites() {
 # and the end of its `env:`.
 covered() {
     local file="$1" line="$2"
-    sed -n "${line},$((line + 25))p" "$file" | grep -q 'GITHUB_TOKEN:'
+    [ -n "$(sed -n "${line},$((line + 25))p" "$file" | grep -e 'GITHUB_TOKEN:')" ]
 }
 
 audit() {

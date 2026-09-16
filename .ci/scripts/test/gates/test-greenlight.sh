@@ -778,7 +778,7 @@ test_candidate_window_is_widened() {
     local probe
     probe="$(mktemp)"
     printf '%s\n' 'bounded node "$GREENLIGHT" --repo x --budget 90 --debug' >"$probe"
-    if grep -n -- '--limit' "$probe" | grep -q 'GREENLIGHT'; then
+    if [ -n "$(grep -n -- '--limit' "$probe" | grep -e 'GREENLIGHT')" ]; then
         rm -f "$probe"
         log_fail "CONTROL DID NOT FIRE: an invocation with no --limit read as compliant"
     fi

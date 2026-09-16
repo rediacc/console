@@ -170,8 +170,10 @@ case "${EVENT_NAME:-}" in
         # reporter failure and must be loud, which is the case that used to be
         # indistinguishable from the main-push case.
         artifact_pr=""
-        if gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${WR_RUN_ID}/artifacts" \
-            --jq '.artifacts[] | select(.name == "review-target") | .id' 2>/dev/null | grep -q .; then
+        if [ -n "$(
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${WR_RUN_ID}/artifacts" \
+                --jq '.artifacts[] | select(.name == "review-target") | .id' 2>/dev/null
+        )" ]; then
             art_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${WR_RUN_ID}/artifacts" \
                 --jq '[.artifacts[] | select(.name == "review-target")] | first | .id')"
             tmp_dir="$(mktemp -d)"

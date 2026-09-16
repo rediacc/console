@@ -98,12 +98,12 @@ else
 fi
 
 # --- 3. fix and check must use the SAME binary -------------------------------
-if grep -A 12 '^fix_shell()' "$SRC" | grep -q 'toolchain_acquire shfmt'; then
+if [ -n "$(grep -A 12 '^fix_shell()' "$SRC" | grep -e 'toolchain_acquire shfmt')" ]; then
     ok "fix shell formats with the pinned binary, the one the gate verifies with"
 else
     no "fix shell takes shfmt from PATH; it can format into a state the gate rejects"
 fi
-if grep -A 20 '^fix_shell()' "$SRC" | grep -qE '^\s+(find [^|]*-exec |")shfmt'; then
+if [ -n "$(grep -A 20 '^fix_shell()' "$SRC" | grep -E '^\s+(find [^|]*-exec |")shfmt')" ]; then
     no "CONTROL: fix_shell still calls a bare shfmt somewhere"
 else
     ok "CONTROL: no bare shfmt invocation survives in fix_shell"

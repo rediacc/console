@@ -200,7 +200,7 @@ get_submodule_branch() {
 branch_exists_in_remote() {
     local sm_path="$1"
     local branch="$2"
-    git -C "$sm_path" ls-remote --heads origin "$branch" 2>/dev/null | grep -q "$branch"
+    [ -n "$(git -C "$sm_path" ls-remote --heads origin "$branch" 2>/dev/null | grep -e "$branch")" ]
 }
 
 # Get open PR number and URL for a branch in a repo

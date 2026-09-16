@@ -101,11 +101,65 @@ trap 'rm -rf "$TMP"' EXIT
 #
 # Only scripts that actually set pipefail can have the bug; without it the
 # pipeline reports grep's status and the match stands.
+# PRODUCERS WHOSE OUTPUT SCALES WITH THEIR INPUT. The criterion this gate has
+# stated since it was written is "a producer whose output SCALES WITH ITS INPUT --
+# a function that reads a file, filters a corpus, enumerates a tree". Only the
+# FUNCTION half was ever implemented, so a scaling producer that happened to be a
+# command was invisible to it.
+#
+# THE HOLE WAS LIVE. check-control-vacuity.sh:81-83 is three `grep` stages piped
+# into `grep -qE`, and it lost the race in 2 of 20 measured runs under suite
+# load, returning 141 for a file that MATCHED. That did not merely flake a test:
+# the gate moved the file from `checked` to `exempt` and stopped checking one of
+# its own controls while still printing a tick.
+#
+# `printf`/`echo` are deliberately absent. They are NOT proven safe -- the header
+# above records a 1129-byte `printf` that raced -- they are a separate, larger,
+# still-untriaged class, and folding them in here would bury a real detection gap
+# inside a blast-radius argument.
+SCALING_PRODUCERS="awk cat comm cut diff find git grep jq ls sed sort tail tr uniq xargs"
+
+# Stripped lines, with a pipeline CONTINUED onto the next line joined into one.
+#
+# A pipeline written across several lines was invisible to a per-line regex, and
+# that is exactly how check-control-vacuity.sh survived every run of this gate:
+# its three stages sit on three separate lines, so no single line ever held both
+# a producer and `grep -q`.
+#
+# Joined with NO separator -- the next line's own indentation keeps the tokens
+# apart, and inserting anything here would break byte-for-byte agreement with the
+# port. The emitted number is the line the pipeline STARTED on.
+join_logical() {
+    local f="$1" n=0 start=0 buf="" line
+    while IFS= read -r line; do
+        n=$((n + 1))
+        if [ -z "$buf" ]; then
+            start=$n
+            buf="$line"
+        else
+            buf="$buf$line"
+        fi
+        if [[ "$buf" =~ \|[[:blank:]]*$ ]]; then
+            continue
+        fi
+        printf '%s:%s\n' "$start" "$buf"
+        buf=""
+    done < <(sed -e 's/#.*$//' -e "s/'[^']*'/''/g" -e 's/"[^"]*"/""/g' "$f" 2>/dev/null)
+    [ -n "$buf" ] && printf '%s:%s\n' "$start" "$buf"
+    return 0
+}
+
 offenders() {
-    local f="$1" fns fn
+    local f="$1" fns fn joined
     grep -qE 'set -[a-z]*o pipefail|set -o pipefail' "$f" 2>/dev/null || return 0
-    fns="$(grep -oE '^[A-Za-z_][A-Za-z0-9_]*\(\)' "$f" 2>/dev/null | tr -d '()' | sort -u)"
+    fns="$(
+        {
+            grep -oE '^[A-Za-z_][A-Za-z0-9_]*\(\)' "$f" 2>/dev/null | tr -d '()'
+            printf '%s\n' $SCALING_PRODUCERS
+        } | sort -u
+    )"
     [ -n "$fns" ] || return 0
+    joined="$(join_logical "$f")"
     while IFS= read -r fn; do
         [ -n "$fn" ] || continue
         # A CALL to that function, then a pipe, then grep -q -- in CODE.
@@ -122,8 +176,8 @@ offenders() {
         #
         # `sed` blanks quoted spans rather than deleting the line, so line
         # numbers stay honest in the report.
-        sed -e 's/#.*$//' -e "s/'[^']*'/''/g" -e 's/"[^"]*"/""/g' "$f" 2>/dev/null |
-            grep -nE "\b${fn}\b[^|]*\|[[:space:]]*grep -q"
+        printf '%s\n' "$joined" |
+            grep -E "\b${fn}\b[^|]*\|[[:space:]]*grep -q"
     done <<<"$fns"
 }
 
@@ -218,6 +272,30 @@ else
     fail "GATE IS OVER-BROAD: a bounded builtin producer was flagged"
 fi
 
+# THE TWO CASES THE 2026-09-16 WIDENING ADDED. Each had a live offender in this
+# repo and neither could be seen before, so each gets a control that fails if the
+# widening is ever reverted or regressed.
+printf '%s\n' \
+    'set -o pipefail' \
+    'if grep -vE "^x" "$1" | grep -q needle; then :; fi' >"$TMP/cmdprod.sh"
+if [ -n "$(offenders "$TMP/cmdprod.sh")" ]; then
+    pass "control: a scaling COMMAND producer piped into grep -q is detected"
+else
+    fail "CONTROL DID NOT FIRE: a command producer raced and went undetected"
+fi
+
+# check-control-vacuity.sh:81-83 in miniature: no single LINE holds both the
+# producer and grep -q, which is why a per-line regex never saw the real one.
+printf '%s\n' \
+    'set -o pipefail' \
+    'grep -vE "^x" "$1" |' \
+    '    grep -qE needle' >"$TMP/multiline.sh"
+if [ -n "$(offenders "$TMP/multiline.sh")" ]; then
+    pass "control: a pipeline SPANNING LINES is detected"
+else
+    fail "CONTROL DID NOT FIRE: a multi-line racing pipeline went undetected"
+fi
+
 printf '%s\n' \
     'body() { cat "$1"; }' \
     'if body "$1" | grep -q x; then :; fi' >"$TMP/nopipefail.sh"
@@ -254,9 +332,9 @@ done < <(scan_files)
 if [ "$scanned" -eq 0 ]; then
     fail "scanned ZERO files -- the pathspec matched nothing, so a green here would mean nothing"
 elif [ ${#found[@]} -eq 0 ]; then
-    pass "no racing \`function | grep -q\` under pipefail in $scanned scanned file(s)"
+    pass "no racing \`producer | grep -q\` under pipefail in $scanned scanned file(s)"
 else
-    fail "${#found[@]} racing pipeline(s): a local function piped into grep -q under pipefail"
+    fail "${#found[@]} racing pipeline(s): a producer piped into grep -q under pipefail"
     printf '    %s\n' "${found[@]}" >&2
     echo "" >&2
     echo "  grep -q exits at its first match and SIGPIPEs the producer; pipefail then" >&2
@@ -271,8 +349,9 @@ echo
 if [ "$fails" -eq 0 ]; then
     echo "${GREEN}✓${NC} pipefail/grep -q: $scanned file(s) clean."
     echo "  Blind spot, stated so the green is not read as more than it is: this sees"
-    echo "  only LOCALLY-DEFINED producers. A racing pipeline whose producer is an"
-    echo "  external command with unbounded output is real and invisible here."
+    echo "  producers that SCALE with their input -- this file's own functions, and"
+    echo "  the commands in SCALING_PRODUCERS. A bounded producer (printf, echo) is"
+    echo "  untriaged, not cleared: a 1129-byte printf raced on 2026-08-31."
     exit 0
 fi
 echo "${RED}✗${NC} pipefail/grep -q: $fails failure(s)."

@@ -511,7 +511,7 @@ test_the_branch_listing_paginates() {
     calls="$(gh_calls "$t")"
     assert_contains "$calls" "repos/rediacc/console/branches?per_page=100" \
         "the recorder captured the branch listing (so the next assertion is about a call that happened)"
-    printf '%s\n' "$calls" | grep -F 'repos/rediacc/console/branches?per_page=100' | grep -q -- '--paginate' ||
+    [ -n "$(printf '%s\n' "$calls" | grep -F 'repos/rediacc/console/branches?per_page=100' | grep -e '--paginate')" ] ||
         log_fail "the branch listing does not pass --paginate, so it stops at 100 branches"
     log_pass "the branch listing paginates (asserted on a call the recorder actually captured)"
 }

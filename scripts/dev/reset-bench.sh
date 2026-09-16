@@ -145,7 +145,7 @@ if [[ "$DO_D1" == "true" ]]; then
         result=$(curl -sS -X POST "$CF_API_BASE/accounts/$ACCOUNT_ID/d1/database/$DB_UUID/query" \
             "${CF_AUTH_HEADERS[@]}" -H "Content-Type: application/json" \
             -d "$(jq -n --arg sql "$sql" '{sql: $sql}')")
-        if ! echo "$result" | jq -r '.success' | grep -q true; then
+        if [ -z "$(echo "$result" | jq -r '.success' | grep -e true)" ]; then
             echo "$result" | jq .
             log_error "Drop tables failed"
             exit 1

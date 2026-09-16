@@ -190,8 +190,10 @@ else
     fail "A8 CONTROL DID NOT FIRE: a direct tool invocation went undetected"
 fi
 printf '        run: .ci/scripts/security/shfmt.sh\n' >"$TMP/c/wf-script.yml"
-if grep -E "(^|[;&|[:space:]])(${GATED_TOOLS})[[:space:]]+-" "$TMP/c/wf-script.yml" |
-    grep -qvE "\.sh|install|--version|uvx"; then
+if [ -n "$(
+    grep -E "(^|[;&|[:space:]])(${GATED_TOOLS})[[:space:]]+-" "$TMP/c/wf-script.yml" |
+        grep -vE "\.sh|install|--version|uvx"
+)" ]; then
     fail "A8 IS OVER-BROAD: running the gate SCRIPT was flagged, and that is the required pattern"
 else
     pass "A8 control: invoking the gate script is not flagged"
@@ -237,10 +239,12 @@ while IFS= read -r g; do
     # cannot distinguish from a bare command word. Only a line matching
     # `NAME=(...)` in full (the assignment is complete on one line, no command
     # separator) is dropped, same narrowing discipline as the echo/printf case.
-    grep -vE '^[[:space:]]*#' "$ROOT/$g" |
-        grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
-        grep -vE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\([^)]*\)[[:space:]]*$' |
-        grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]" || continue
+    [ -n "$(
+        grep -vE '^[[:space:]]*#' "$ROOT/$g" |
+            grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
+            grep -vE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\([^)]*\)[[:space:]]*$' |
+            grep -E "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]"
+    )" ] || continue
     # RESOLVING at a pin, not merely NAMING one. The first version accepted any
     # `*_VERSION` mention, and check-python-lint.sh passed it while still taking
     # an unversioned `command -v ruff` from PATH -- the assertion was satisfied
@@ -352,13 +356,13 @@ fi
 mkdir -p "$TMP/c"
 printf 'RUFF_VERSION=9.9.9\n' >"$TMP/c/pins.env"
 printf 'run: pip install "ruff==9.9.9"\n' >"$TMP/c/restates.yml"
-if grep -F '9.9.9' "$TMP/c/restates.yml" | grep -qvF 'RUFF_VERSION'; then
+if [ -n "$(grep -F '9.9.9' "$TMP/c/restates.yml" | grep -vF 'RUFF_VERSION')" ]; then
     pass "control: a restated pin value is detectable"
 else
     fail "A1 CONTROL DID NOT FIRE: a restated value went undetected"
 fi
 printf 'run: pip install "ruff==${RUFF_VERSION}"\n' >"$TMP/c/reads.yml"
-if grep -F '9.9.9' "$TMP/c/reads.yml" | grep -qvF 'RUFF_VERSION'; then
+if [ -n "$(grep -F '9.9.9' "$TMP/c/reads.yml" | grep -vF 'RUFF_VERSION')" ]; then
     fail "A1 IS OVER-BROAD: a line READING the pin was flagged as restating it"
 else
     pass "control: a line reading the pin is not flagged"
@@ -387,9 +391,11 @@ fi
     printf '# this gate never runs shellcheck itself, it only greps for it\n'
     printf 'echo "  # shellcheck extended-analysis=false"\n'
 } >"$TMP/c/prose-gate.sh"
-if grep -vE '^[[:space:]]*#' "$TMP/c/prose-gate.sh" |
-    grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
-    grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]"; then
+if [ -n "$(
+    grep -vE '^[[:space:]]*#' "$TMP/c/prose-gate.sh" |
+        grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
+        grep -E "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]"
+)" ]; then
     fail "A6 IS OVER-BROAD: a comment and an echoed string read as an invocation"
 else
     pass "A6 control: naming a tool in prose or an echo is not invoking it"
@@ -403,10 +409,12 @@ fi
     printf '# this gate only reads NPX_TOOLS from another file, it never runs any of them\n'
     printf 'NPX_TOOLS=(ruff go shfmt shellcheck actionlint)\n'
 } >"$TMP/c/array-literal-gate.sh"
-if grep -vE '^[[:space:]]*#' "$TMP/c/array-literal-gate.sh" |
-    grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
-    grep -vE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\([^)]*\)[[:space:]]*$' |
-    grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]"; then
+if [ -n "$(
+    grep -vE '^[[:space:]]*#' "$TMP/c/array-literal-gate.sh" |
+        grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
+        grep -vE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\([^)]*\)[[:space:]]*$' |
+        grep -E "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]"
+)" ]; then
     fail "A6 IS OVER-BROAD: an array literal defining tool names reads as an invocation"
 else
     pass "A6 control: naming a tool inside an array literal is not invoking it"

@@ -133,7 +133,7 @@ for ((_i = 1; _i <= WALK_CAP; _i++)); do
     # parent TREE (":040000 040000 ... private") and never matches 160000.
     raw=$(git diff-tree -r --raw "$parent" "$current")
     [[ -n "$raw" ]] || no_fast_path "empty commit ${current:0:7}"
-    if grep -vE '^:160000 160000 ' <<<"$raw" | grep -q .; then
+    if [ -n "$(grep -vE '^:160000 160000 ' <<<"$raw")" ]; then
         # First commit that touches anything beyond existing gitlinks.
         if [[ "$current" == "$head_sha" ]]; then
             no_fast_path "HEAD is not a pointer-only commit"
@@ -155,7 +155,7 @@ green=$(GH_TOKEN="${CHECKS_TOKEN:-}" gh api -X GET \
 
 # --- Step 3: every net gitlink move is tree-identical and merged ---------------
 net=$(git diff-tree -r --raw "$baseline" HEAD)
-if grep -vE '^:160000 160000 ' <<<"$net" | grep -q .; then
+if [ -n "$(grep -vE '^:160000 160000 ' <<<"$net")" ]; then
     no_fast_path "net diff vs baseline is not gitlink-only"
 fi
 
