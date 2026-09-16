@@ -157,6 +157,13 @@ either inside `check-quality-complete.ts` or a new small gate, asserting:
 
 ## 5. What B2 still owes: the five pieces (D1-D5), re-verified against today's line numbers
 
+**STALE, superseded by the Tasks checklist below and by this file's own header.** This
+section's "unimplemented" framing predates the 2026-09-15 landing of D1-D4 and D5's first
+clause (`3c8775b30`/`117d6438f`, `d76f805a2`, `c8c5932f5`, `0a101dc66`/`b1468eba1`/
+`08c65a1d6`/`ac61c8f68`, `b7d139ce0`). Left as historical design prose rather than deleted,
+since the per-piece detail below is still accurate as a DESIGN description; treat the
+`## Tasks` section as the authoritative status, not this paragraph.
+
 All of D1-D5 below are the box's own design (`:3901-3972`), re-verified live and unimplemented.
 Order matters: D1 changes the unit of planning that D2-D5 build on.
 
@@ -331,6 +338,22 @@ is in `SHARD_COUNTS`") should read "no lane is" -- still stale, confirmed live.
       today before choosing a real replacement lane -- this is real, non-trivial remaining work,
       not a one-line retarget as the task text implies. Re-verified live 2026-09-15 by d778be9d:
       scripts/ci-runner/manifest.ts:5024-5028 still reads `job: 'quality-code'`, unchanged since that revert.
+      TRACED 2026-09-16 by d778be9d (read-only; deliberately not touched while PR #589's own CI
+      run is live against this exact workflow file): it is not a coincidence, it is the current
+      correct placement -- the "Quality shard aggregation" step (`.github/workflows/ci-quality.yml:1012`)
+      sits inside `quality-code`'s own job block (678-1186), matching the manifest's declared
+      `job: 'quality-code'` exactly. The revert's real cause is `runs-on`, not step placement:
+      `quality-branch` and `quality-submodule-branches` (the only two lanes invariant 11
+      guarantees can NEVER be sharded) both run on `ubuntu-slim`, which has no node preinstalled,
+      while `quality-code` runs `ubuntu-latest` (node built in). Every OTHER `ubuntu-latest` lane
+      (`quality-content`, `quality-packages`, `quality-go`, `quality-www-build`, `quality-security`)
+      is a real `SHARD_COUNTS` candidate today, so retargeting there risks the exact
+      self-referential trap D5b exists to prevent. No lane is both node-having AND
+      guaranteed-unshardable-by-construction. Two real options, neither attempted:
+      (a) add a lightweight node setup step to `quality-branch` or `quality-submodule-branches`
+      (extra job cost on an otherwise-fast lane), or (b) a new, dedicated, always-run job with
+      node and nothing else, matching the box's own "or a dedicated always-run step" alternative.
+      Choosing between them is a real design call, not a mechanical edit -- next session's job.
 - [ ] Add the two missing selftest controls to `scripts/gate-bind.ts`'s `selftest()`: a lane
       WITH an assignment emits `matrix.shard == N` on exactly the steps the plan gives that leg;
       a lane WITHOUT one emits byte-identically to today. Required before any `SHARD_COUNTS`
