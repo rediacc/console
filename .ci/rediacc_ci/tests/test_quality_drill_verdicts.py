@@ -20,6 +20,7 @@ becoming a surprise.
 """
 
 import pathlib
+import re
 
 from rediacc_ci import paths
 from rediacc_ci.quality import drill_verdicts as dv
@@ -104,7 +105,27 @@ def test_the_bash_subshell_agrees_with_the_twins() -> None:
     )
     code, out, err = diff.bash_streams("source .ci/scripts/lib/common.sh; " + twin, cwd=root)
     assert (code, err) == (0, ""), err
-    assert dv.run_summary(paths.repo_root(), "0", "0") == out
+    port = dv.run_summary(paths.repo_root(), "0", "0")
+
+    # THE ELAPSED SECONDS ARE MASKED, and only those. Each side computes its own
+    # `now - DRILL_STARTED_AT` and renders it whole-seconds, so when the two runs
+    # straddle a second boundary the twin says `failed  (1s)` and the port says
+    # `failed  (0s)`. That is a clock tick, not a disagreement about behaviour.
+    # Observed in CI job 104616780062 after five clean runs, which is what a
+    # boundary race looks like.
+    #
+    # Masked rather than pinned because the duration is environmental: the claim
+    # this case makes is "the same shell code runs", and how long it took is no
+    # part of it. Same stance as the `cb=<digits>` cache-buster normalisation in
+    # test_deploy_verify_edge_endpoints.py -- neither side can be made to agree
+    # and neither is supposed to.
+    elapsed = re.compile(r"\(\d+s\)")
+    assert elapsed.search(out), (
+        "the twin printed no elapsed time, so the mask below would hide a real "
+        "divergence rather than a clock tick: %r" % out
+    )
+    assert elapsed.search(port), "the port printed no elapsed time: %r" % port
+    assert elapsed.sub("(<elapsed>)", port) == elapsed.sub("(<elapsed>)", out)
 
 
 def test_the_byte_tail_matches_the_twins_pipeline() -> None:
