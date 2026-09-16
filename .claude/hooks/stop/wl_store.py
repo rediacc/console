@@ -434,6 +434,32 @@ def agent_peer_sections(root, session_id):
     return out
 
 
+def agent_next_action(root, owner, limit=1500):
+    """The '## Next action' section from agent/<owner>/STATE.md's NEWEST entry,
+    or "". `find` rather than `rfind`: sections are prepended (newest first),
+    the same convention `agent_state_parse` walks top-down for.
+
+    Extracted from `_migrate_cli`'s move path so `--candidates` can offer the
+    same signal BEFORE a prefix is named, not only after: a session that ticks
+    every worklist item before dying still leaves this section behind, and
+    until this existed `migrate_candidates()` had no way to see it.
+    """
+    try:
+        text = (
+            agent_session_dir(root, owner)
+            .joinpath("STATE.md")
+            .read_text(encoding="utf-8", errors="replace")
+        )
+    except OSError:
+        return ""
+    i = text.find("## Next action")
+    if i < 0:
+        return ""
+    body = text[i + len("## Next action") :]
+    j = body.find("\n## ")
+    return (body[:j] if j >= 0 else body).strip()[:limit]
+
+
 def agent_state_lock_path(worklist):
     # In TMPDIR beside the store, NOT under agent/: the notes tree stays free
     # of machine artifacts, and the lock shares the store's lifetime.
@@ -1971,12 +1997,10 @@ def migrate_candidates(worklist, fold, me, projects_dir=None, events=None):
             continue
         by_owner.setdefault(owner, []).append((rid, rec))
 
-    my_branch = _branch_of(C.project_root(C.project_start()))
-    out = []
-    for owner, items in by_owner.items():
-        verdict, why = session_liveness(worklist, owner, projects_dir, events)
-        if verdict in ("live", "unknown"):
-            continue
+    root = C.project_root(C.project_start())
+    my_branch = _branch_of(root)
+
+    def _newest_branch_host(owner):
         newest, branch, hh = "", "", ""
         for ev in events:
             if str(ev.get("by") or "")[:8] != owner:
@@ -1984,6 +2008,23 @@ def migrate_candidates(worklist, fold, me, projects_dir=None, events=None):
             at = str(ev.get("at") or "")
             if at > newest:
                 newest, branch, hh = at, str(ev.get("br") or ""), str(ev.get("h") or "")
+        return newest, branch, hh
+
+    def _host_label(hh):
+        # AN EVENT WITH NO HOST STAMP IS NOT "ANOTHER HOST". Every event
+        # written before the tracked store existed carries no `h`, and
+        # calling those foreign would tell the operator a session ran
+        # somewhere it did not.
+        return (
+            "this machine" if hh == host_hash() else ("another host" if hh else "host unrecorded")
+        )
+
+    out = []
+    for owner, items in by_owner.items():
+        verdict, why = session_liveness(worklist, owner, projects_dir, events)
+        if verdict in ("live", "unknown"):
+            continue
+        newest, branch, hh = _newest_branch_host(owner)
         counts = {"open": 0, "inflight": 0, "deferred": 0}
         for _rid, rec in items:
             counts[{" ": "open", ">": "inflight", "?": "deferred"}[rec["state"]]] += 1
@@ -1995,22 +2036,66 @@ def migrate_candidates(worklist, fold, me, projects_dir=None, events=None):
                 "counts": counts,
                 "newest": newest,
                 "branch": branch,
-                # AN EVENT WITH NO HOST STAMP IS NOT "ANOTHER HOST". Every
-                # event written before the tracked store existed carries no
-                # `h`, and calling those foreign would tell the operator a
-                # session ran somewhere it did not.
-                "host": (
-                    "this machine"
-                    if hh == host_hash()
-                    else ("another host" if hh else "host unrecorded")
-                ),
+                "host": _host_label(hh),
                 "handed_off": owner in handed,
+                "next_action": agent_next_action(root, owner),
                 "items": [
                     {"id": rid, "state": rec["state"], "text": brief_text(rec)[:160]}
                     for rid, rec in sorted(items, key=lambda kv: kv[0])
                 ],
             }
         )
+
+    # A session that ticks every worklist item before dying is invisible to
+    # the loop above even with real, undone work still named in its own
+    # documents: `by_owner` only ever contains owners with an OPEN/in-flight/
+    # deferred ITEM. Walk every agent/<prefix>/ directory too, so a live
+    # STATE.md "## Next action" -- left behind with zero worklist rows to
+    # show for it -- still surfaces. This is additive: an owner already
+    # covered above is enriched with `next_action` up there, never duplicated
+    # down here.
+    # Unlike an item, a STATE.md section never gets ticked, so nothing bounds
+    # how long it keeps surfacing here on its own. Reuse the SAME staleness
+    # horizon `agent_state_dead()` already applies when reaping a peer's
+    # section from the live-visibility listing (WORKLIST_DEAD_HOURS, default
+    # 24h) rather than inventing a second one: a section too old to show a
+    # live peer is too old to offer here either.
+    dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    covered = set(by_owner) | mine
+    for d in agent_session_dirs(root):
+        owner = d.name[:8]
+        if owner in covered:
+            continue
+        na = agent_next_action(root, owner)
+        if not na:
+            continue
+        age_h = owner_age_hours(owner, projects_dir)
+        if age_h is None:
+            try:
+                age_h = (time.time() - (d / "STATE.md").stat().st_mtime) / 3600.0
+            except OSError:
+                age_h = None
+        if age_h is not None and age_h >= dead_h:
+            continue
+        verdict, why = session_liveness(worklist, owner, projects_dir, events)
+        if verdict in ("live", "unknown"):
+            continue
+        newest, branch, hh = _newest_branch_host(owner)
+        out.append(
+            {
+                "prefix": owner,
+                "verdict": verdict,
+                "evidence": why,
+                "counts": {"open": 0, "inflight": 0, "deferred": 0},
+                "newest": newest,
+                "branch": branch,
+                "host": _host_label(hh),
+                "handed_off": owner in handed,
+                "next_action": na,
+                "items": [],
+            }
+        )
+
     out.sort(
         key=lambda c: (
             0 if c["branch"] == my_branch else 1,

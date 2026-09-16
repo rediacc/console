@@ -1109,14 +1109,21 @@ def _migrate_cli(argv):
         print("SESSIONS WITH REMAINING WORK (nothing moves until you name one):")
         for c in cands:
             n = c["counts"]
+            total = n["open"] + n["inflight"] + n["deferred"]
+            # A candidate can carry ZERO worklist items and still belong here:
+            # every item ticked before the session died, with real unfinished
+            # work surviving only in its STATE.md "## Next action" section.
+            item_desc = (
+                "%d item(s) [open %d, in-flight %d, deferred %d]"
+                % (total, n["open"], n["inflight"], n["deferred"])
+                if total
+                else "0 worklist item(s), but a STATE.md Next action below"
+            )
             print(
-                "  %s  %d item(s) [open %d, in-flight %d, deferred %d]  %s  %s%s"
+                "  %s  %s  %s  %s%s"
                 % (
                     c["prefix"],
-                    n["open"] + n["inflight"] + n["deferred"],
-                    n["open"],
-                    n["inflight"],
-                    n["deferred"],
+                    item_desc,
                     c["host"],
                     ("branch %s  " % c["branch"]) if c["branch"] else "",
                     "  (already handed off)" if c["handed_off"] else "",
@@ -1125,6 +1132,10 @@ def _migrate_cli(argv):
             print("      %s: %s" % (c["verdict"], c["evidence"]))
             for it in c["items"][:3]:
                 print("      - [%s] #%s %s" % (it["state"], it["id"], it["text"][:110]))
+            if c.get("next_action"):
+                print("      STATE.md Next action (agent/%s/STATE.md):" % c["prefix"])
+                for line in c["next_action"][:400].splitlines()[:6]:
+                    print("        %s" % line)
         print("\ncontinue one:  worklist.py --migrate %s <prefix> [<prefix>...]" % me)
         return
 
@@ -1140,30 +1151,29 @@ def _migrate_cli(argv):
             sys.exit(2)
         if not moved:
             print("nothing left to migrate from %s (%d already migrated)" % (prev, len(refused)))
-            continue
-        print("migrated %d item(s) from %s:" % (len(moved), prev))
-        for old, new, st in moved:
-            print("  [%s] #%s -> #%s" % (st, old, new))
-        if refused:
-            print("  skipped %d already-migrated item(s)" % len(refused))
+        else:
+            print("migrated %d item(s) from %s:" % (len(moved), prev))
+            for old, new, st in moved:
+                print("  [%s] #%s -> #%s" % (st, old, new))
+            if refused:
+                print("  skipped %d already-migrated item(s)" % len(refused))
         # THE PREDECESSOR'S NEXT ACTION, printed rather than merged: its STATE.md
         # is a peer's document, which this session reads and never writes. The
         # section is quoted whole -- the operator asked for the next action to
         # come across, and a one-line lead is not that.
-        try:
-            st = S.agent_session_dir(root, prev) / "STATE.md"
-            text = st.read_text(encoding="utf-8", errors="replace")
-            i = text.find("## Next action")
-            if i >= 0:
-                body = text[i + len("## Next action") :]
-                j = body.find("\n## ")
-                section = (body[:j] if j >= 0 else body).strip()
-                if section:
-                    print("\n  HANDED OFF NEXT ACTION from %s (agent/%s/STATE.md):" % (prev, prev))
-                    for line in section[:1500].splitlines():
-                        print("    %s" % line)
-        except (OSError, AttributeError):
-            pass  # no STATE.md for that session: the items are the handoff
+        #
+        # This runs REGARDLESS of whether an item moved. A session that ticks
+        # every worklist item before dying has nothing for the branch above to
+        # move, but its STATE.md can still name the one thing that actually
+        # matters -- an earlier version of this function `continue`d past this
+        # block on exactly that "nothing moved" path, so naming a zero-item
+        # predecessor here printed nothing at all: the one case the whole verb
+        # exists for was also the one case it stayed silent on.
+        section = S.agent_next_action(root, prev)
+        if section:
+            print("\n  HANDED OFF NEXT ACTION from %s (agent/%s/STATE.md):" % (prev, prev))
+            for line in section.splitlines():
+                print("    %s" % line)
         print("\n  requests addressed to %s are NOT moved; read them with --requests" % prev)
         total_moved += len(moved)
         fold = S.load(worklist, sync=False)

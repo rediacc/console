@@ -1,6 +1,6 @@
 ---
 name: migrate
-description: Continue another session's remaining worklist items in this session. Lists sessions that still have open work and are not running here, ASKS which ones to continue, then re-tags their open, in-flight and deferred items to this session and prints the predecessor's next action. Use after a harness restart, after switching machines, or when a stop report names a session with work nobody owns.
+description: Continue another session's remaining work in this session. Lists sessions that still have open work and are not running here -- worklist items, and/or an unresolved STATE.md "Next action" left behind even after every item was ticked -- ASKS which ones to continue, then re-tags their open, in-flight and deferred items to this session and prints the predecessor's next action. Use after a harness restart, after switching machines, or when a stop report names a session with work nobody owns.
 user-invocable: true
 self-improving: false
 ---
@@ -22,6 +22,16 @@ An empty list is a normal, common answer, not a failure: say so and stop. A
 session that is LIVE on this machine is deliberately excluded — its work is not
 yours to take, and the listing says which artifact proved it.
 
+**A candidate can carry zero worklist items.** Ticking every `[ ]`/`[>]`/`[?]`
+before dying does not mean nothing is left: `agent/<prefix>/STATE.md`'s newest
+"## Next action" section is checked too (bounded to the same `WORKLIST_DEAD_HOURS`
+horizon a peer's section ages out under elsewhere, so this does not resurrect
+weeks-old handoffs). Such a candidate shows `0 worklist item(s), but a STATE.md
+Next action below` — read that text, it is the whole reason the prefix is
+listed. This exists because it was missing once: a session that had ticked
+every item still had a live PR-babysit wave and an unresolved next step named
+only in its STATE.md, and `--candidates` reported nothing.
+
 ## Then ASK, and never assume
 
 One `AskUserQuestion` call, `multiSelect: true`, `header: "Continue"`. The
@@ -31,9 +41,12 @@ question names this session and the consequence:
 > and deferred items will be re-tagged to `<me>`; the originals are ticked
 > "migrated to", nothing is deleted, and cross-session requests are not moved.
 
-One option per candidate. Label is `<prefix> (<branch>) <n> open`; the
-description carries the verdict and its evidence, the age, whether the last
-event came from this machine, and the one-line brief. **Pre-select nothing and
+One option per candidate. Label is `<prefix> (<branch>) <n> open` (`0 open` is
+valid — a STATE.md-only candidate still names real work, just not in the
+worklist store); the description carries the verdict and its evidence, the
+age, whether the last event came from this machine, and the one-line brief, or
+the STATE.md Next-action excerpt when there is no worklist brief to quote.
+**Pre-select nothing and
 recommend nothing.** The whole reason this is a question is that the answer is
 not derivable: two sessions on one branch at one time look identical from here,
 and picking for the operator is how a colleague's work gets swept up.
@@ -79,3 +92,10 @@ stays true.
 two and refuses without harness evidence; a restart leaves none, which is
 exactly the gap this verb fills. Use `--adopt` when the evidence exists — it
 keeps one identity — and `--migrate` when it does not.
+
+**Naming a zero-item prefix still prints its handoff.** The move step
+(`--migrate "$ME" <prefix>`) prints `nothing left to migrate` for a prefix with
+no worklist items, but it ALWAYS checks that prefix's STATE.md for a
+`HANDED OFF NEXT ACTION` block too, even then — it used to `continue` past that
+check on exactly this path, so naming the one prefix this section exists for
+(zero items, real work) printed nothing at all.
