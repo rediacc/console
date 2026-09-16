@@ -481,6 +481,31 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/PLAN-pipefail-grep-q-renet-gate.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "open": 16,
+      "done": 0,
+      "open_sigs": [
+        "5f53f957",
+        "695bedf8",
+        "7644c1ee",
+        "8f7e9c01",
+        "95e70680",
+        "9da858e5",
+        "ac4c55db",
+        "af6a7ff7",
+        "b139bdbf",
+        "b61a0445",
+        "d8e5079e",
+        "da94040f",
+        "e16543fc",
+        "e2366f73",
+        "eb7aa103",
+        "f1533f2e"
+      ],
+      "done_sigs": []
+    },
     "agent/PLAN-plan-file-lifecycle.md": {
       "status": "ready",
       "owner": "74de73ca",

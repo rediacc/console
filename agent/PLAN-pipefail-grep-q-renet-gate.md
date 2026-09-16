@@ -159,7 +159,7 @@ convention, and renet's `.ci` scripts carry no gate headers at all -- verified, 
 Structure, in order:
 
 1. `source ../lib/common.sh`, then `set +e` with a comment: the gate COUNTS failures and
-   reports them all, so errexit (inherited from `common.sh:9`) must be off; `-u` and
+   reports them all, so errexit (inherited from `private/renet/.ci/scripts/lib/common.sh:9`) must be off; `-u` and
    `-o pipefail` stay on. `require_cmd git`.
 2. `offenders() { ... }` and `join_logical() { ... }` -- ported from
    `.ci/scripts/quality/check-pipefail-grep-q.sh` (the bash twin, whose `SCALING_PRODUCERS`
@@ -294,7 +294,7 @@ guess.
 ## 7. Risks
 
 - **The gate reds on install.** By design: `tee` and `docker` in the list mean
-  `i18n.sh:155`, `ci-test.sh:174` and `ci-test.sh:217` must be converted in the SAME change.
+  `private/renet/.ci/scripts/quality/i18n.sh:155`, `private/renet/scripts/ci-test.sh:174` and `private/renet/scripts/ci-test.sh:217` must be converted in the SAME change.
   A gate landed green by omitting its own findings is a baseline with extra steps.
 - **Superset parity couples the two repos.** A console widening now requires a renet commit
   and a pointer bump in the same PR pair. That is the submodule-first flow this repo already
