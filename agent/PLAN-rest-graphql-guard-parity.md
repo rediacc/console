@@ -1,5 +1,5 @@
 # PLAN: REST and GraphQL parity for the gh pr guards
-Status: executing
+Status: done
 Owner: d778be9d
 Updated: 2026-09-17
 
@@ -18,14 +18,32 @@ The REST merge endpoint walks past that ban along with the review-thread and rep
 
 ## Tasks
 
-- [ ] Add the REST merge arm to block_admin_merge.py at :170-172, before the gh_pr_at_command_pos early return
-- [ ] Mirror that arm byte-for-byte into the twin .claude/oracles/pre-bash/block-admin-merge.sh at :28-29
-- [ ] Add the REST create arm to block_nondraft_pr_create.py at :70-72 and its twin block-nondraft-pr-create.sh at :21-22
-- [ ] Add the GraphQL ready arm to block_premature_ready.py at :70-72 and its twin block-premature-ready.sh at :23-24, as the two-part raw-versus-scan test
-- [ ] Extend EDGE_CASES in all three ports with the bypass, the reordered-flag bypass, the GET control and the prose control
-- [ ] Mirror one BLOCK and one ALLOW per guard into .claude/rediacc_hooks/tests/hookcases.py at the :1052 shape
-- [ ] Run the four defect plants in a scratch copy and record that each flips the case it is supposed to flip
-- [ ] Run the full verification list and the live chain matrix, including the refresh-pr-body.sh non-regression
+- [x] Add the REST merge arm to block_admin_merge.py at :170-172, before the gh_pr_at_command_pos early return
+- [x] Mirror that arm byte-for-byte into the twin .claude/oracles/pre-bash/block-admin-merge.sh at :28-29
+- [x] Add the REST create arm to block_nondraft_pr_create.py at :70-72 and its twin block-nondraft-pr-create.sh at :21-22
+- [x] Add the GraphQL ready arm to block_premature_ready.py at :70-72 and its twin block-premature-ready.sh at :23-24, as the two-part raw-versus-scan test
+- [x] Extend EDGE_CASES in all three ports with the bypass, the reordered-flag bypass, the GET control and the prose control
+- [x] Mirror one BLOCK and one ALLOW per guard into .claude/rediacc_hooks/tests/hookcases.py at the :1052 shape
+- [x] Run the four defect plants in a scratch copy and record that each flips the case it is supposed to flip
+- [x] Run the full verification list and the live chain matrix, including the refresh-pr-body.sh non-regression
+
+## Outcome
+
+Landed as `b163191d2`, seven files, 188 insertions and no deletions. Every file:line anchor in this plan matched the tree; nothing here had to be re-derived during implementation.
+
+The finding is closed against the measurement that opened it. All three bypasses moved from rc=0 to rc=2 through `--chain pre-bash`, and the three `gh pr` controls still return rc=2.
+The false-positive controls all still pass: a GET on the merge endpoint, a `pulls` listing, and a POST to the `comments` sub-endpoint.
+The sanctioned PATCH body edit returns rc=2 from `block_raw_pr_body_edit` and rc=0 from both new arms, which is the distinction that kept `refresh-pr-body.sh` working, and that script still passes the chain at rc=0.
+
+The REST create is refused at ORDER 23, which is the live confirmation that `block_stale_pr_branch_date` at ORDER 24 never needed a change of its own.
+
+Differential green across all three ports and their twins, with comment-to-code ratios 1.73, 1.68 and 1.46 against the 0.90 floor. All four planted defects flipped only the case each targeted.
+
+ONE DEVIATION FROM THE PLAN AS WRITTEN, recorded because a plan that quietly absorbs its own deviations stops being evidence.
+The oracle-drift plant was specified to run BEFORE the twin edit, as proof the pair is coupled. Each port and twin were instead written in lockstep per pair, so the plant ran against a scratch reversion that removes the arm from the twin only.
+The evidence is equivalent -- port rc=2 against twin rc=0, a genuine mismatch the differential rejects -- but the order differs from what this document asked for.
+
+A LATER COMMIT REWROTE THESE FILES' COMMENTS. `b13267223` and the comment-scope reflow after it rewrapped prose across the tree, guard files included, which changes the comment-to-code ratio the differential floors at 0.90. The live probes above were re-run afterwards and still hold.
 
 ## What an earlier reading of this got wrong
 
