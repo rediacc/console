@@ -46,19 +46,31 @@ SHAPES = (
 PROSE = "prose"
 
 
-def shape_of(line):
-    """The first matching SHAPE name, or `prose`. First match wins; see the SHAPES note."""
+# TWO SHAPES ARE MARKDOWN-ONLY, and running them against source code was a real bug caught by dogfooding this tool against its own repository's first bulk `.py` reflow. `heading` (`^#{1,6}\s`) matches an ordinary single-`#` PYTHON COMMENT by coincidence, since one hash followed by a space satisfies `#{1,6}` at count 1. `indent-code` (`^ {4,}\S`) matches any ordinarily-indented
+# Python statement, and just as often an ordinarily-indented COMMENT inside a function body. Both false-positived on a legitimate comment-paragraph join, reporting real reflow work as markdown-structure loss. `MARKDOWN_ONLY_SHAPES` names exactly the two, rather than a broader exclusion list, because every other shape (comment, list-item, table-row, allcaps, doctest) was measured
+# to mean the same thing in a code comment that it means in markdown prose -- a banner or a numbered list inside a `#` block is exactly the structure this tool exists to protect there too.
+MARKDOWN_ONLY_SHAPES = frozenset({"heading", "indent-code"})
+MARKDOWN_SUFFIXES = frozenset({".md", ".mdx"})
+
+
+def shape_of(line, markdown=True):
+    """The first matching SHAPE name, or `prose`. First match wins; see the SHAPES note.
+
+    `markdown=False` skips `MARKDOWN_ONLY_SHAPES`, so a `.py`/`.ts`/`.go` line falls through to `comment`/`list-item`/etc. instead of colliding with a pattern tuned for a different language.
+    """
     for name, pattern in SHAPES:
+        if not markdown and name in MARKDOWN_ONLY_SHAPES:
+            continue
         if pattern.match(line):
             return name
     return PROSE
 
 
-def cluster(text):
+def cluster(text, markdown=True):
     """{shape: count} for one revision of one file."""
     counts = collections.Counter()
     for line in text.splitlines():
-        counts[shape_of(line)] += 1
+        counts[shape_of(line, markdown=markdown)] += 1
     return counts
 
 
@@ -105,7 +117,8 @@ def report(rev, paths, want_columns):
             after = pathlib.Path(rel).read_text(encoding="utf-8", errors="surrogateescape")
         except OSError:
             continue
-        cb, ca = cluster(before), cluster(after)
+        markdown = pathlib.Path(rel).suffix in MARKDOWN_SUFFIXES
+        cb, ca = cluster(before, markdown=markdown), cluster(after, markdown=markdown)
         totals_before.update(cb)
         totals_after.update(ca)
         lost = {k: (cb[k], ca[k]) for k in cb if ca[k] < cb[k]}
@@ -160,6 +173,28 @@ def selftest():
     check("a table row is a row before it is prose", shape_of("| a | b |") == "table-row")
     check("a fence is a fence first", shape_of("```python") == "fence")
     check("ordinary prose falls through", shape_of("an ordinary sentence here") == PROSE)
+
+    # THE MARKDOWN-ONLY FIX, planted against the exact live case that found it: a bare
+    # single-`#` Python comment joining with its neighbour must not read as heading loss.
+    py_comment = "# a first line of a comment paragraph here\n# a second line joining it\n"
+    py_joined = "# a first line of a comment paragraph here a second line joining it\n"
+    check(
+        "a Python comment reads as 'comment', not 'heading', when markdown=False",
+        cluster(py_comment, markdown=False)["heading"] == 0,
+    )
+    check(
+        "joining it costs no heading count when markdown=False",
+        cluster(py_joined, markdown=False)["heading"] == 0,
+    )
+    check(
+        "the SAME line genuinely does read as a heading when markdown=True",
+        cluster(py_comment, markdown=True)["heading"] == 2,
+    )
+    indented_comment = "def f():\n    # an indented comment line\n    x = 1\n"
+    check(
+        "an indented comment reads as 'comment', not 'indent-code', when markdown=False",
+        cluster(indented_comment, markdown=False)["indent-code"] == 0,
+    )
 
     for label in failures:
         print("*** FAIL *** %s" % label, file=sys.stderr)
