@@ -3899,3 +3899,30 @@ not an executed command": a `cat > file <<'EOF' ... EOF` heredoc that quoted an 
 routing through it (heredoc bodies and quoted spans stripped before the anchor runs, the introducer line kept) closed the gap with no new parsing code.
 
 Each fix carries a `test-block_prose_style_commit.py` case proving it (28/28 green), because a control harness that only re-runs the cases that already passed is not evidence against the next regression of the same shape.
+
+## R19, one scanner per language, and seven reflow bugs no gate could see (2026-09-17)
+
+The gate above enforced R1-R18 but could not stop a paragraph being hard-wrapped narrow in the first place, which is the shape the 384-char limit exists to prevent: the point of the width is FEWER LINES carrying the same prose, not shorter ones. `9b731869d` added R19, under-wrap detection, and it blocks rather than advises -- a freshly written three-line narrow comment now exits 2
+through `dispatch.py block_prose_style_edit`, verified by live probe rather than by reading the guard.
+
+R19 needs a heuristic rather than a "would joining change anything" test, because the naive form fires on 99.99% of this tree's markdown and is therefore a debt pile rather than a signal. The gate is a paragraph of three or more lines whose common width sits within a 20-char band, at or under 40% of the limit, and which the shared reflow primitive actually shortens.
+
+**The defect R19 exposed was not in R19.** `python_comment_lines` (lint side) read comments AND docstrings while `_python_reflow_lines` (reflow side) read comments only, and `cstyle_comment_lines`/`_cstyle_reflow_lines` repeated the split for the C-style languages. Four scanners where there should have been two, and the two Python ones disagreed about what prose is. Because the
+reflow-side scanner fed both the rewriter and R19, every docstring in the tree was invisible to both: 9,932 narrow docstring paragraphs across 1,021 of 1,024 in-scope files. No gate, no test and no agent caught it. The operator did, by noticing narrow comments and asking why two code paths existed. `527fc9ad7` collapsed the four into `_python_scan` and `_cstyle_scan`, and the
+docstring coverage fell out of the merge rather than being a feature beside it.
+
+**Seven corruption bugs in the reflow, every one found by running the tool at real scale and reading the output.** Not one was found by reading code. In order: multi-row tables flattened; gen-docs region markers and trailing `style-ok` markers absorbed; `Status:`/`Owner:` header pairs merged across 89 files; `<details>`/`<summary>` blocks swallowed; 838 rule-line banners plus 296 all-caps headings destroyed across 161 files because the comment path never applied the stops `REFLOW_STOP` has always had for markdown; the same fix landed for Python only, leaving 32 banners and 19 list items absorbed in `.ts`/`.js`/`.go`; and a list item's indented continuation re-emitted at column 0, detaching it from its item.
+
+**The seventh is the one worth the space, because of what it survived.** A corpus-wide docstring-normalized AST proof, a fence/heading/table/list-marker structural check, a line-count check, 82/82 selftest and 216 pytest were all green while it shipped. Every instrument here counts LINES; not one reads the COLUMN a line starts in. Worse, `reflow_markdown`'s own docstring already
+promised the correct behaviour -- "a list item's wrapped continuation lines carry indentation that is part of the structure" -- while the code only ever stopped the item line and never its continuation. A comment describing a contract the code does not keep is invisible to every test that agrees with the comment, and this document has now recorded the instrument-versus-prose lesson
+often enough that the corollary deserves stating: a test written from the same belief as the code proves the belief, not the behaviour.
+
+**The method that found six of the seven is worth more than any individual fix, so it is written down as a procedure.** Reflow the corpus in memory, diff every file against HEAD, and CLUSTER every line that disappeared by shape. Guessing which shapes are at risk finds the shape already thought of; clustering finds the ones nobody enumerated. Two detectors built this way gave false
+positives that nearly caused wrong fixes -- one keyed on stripped line text reported fenced YAML being de-indented when a key had merely collided, another reported 81 lost indented lines that were legitimate joins collapsing continuations at the correct margin -- and both were checked against the bytes rather than acted on.
+
+**Where the reflow was allowed to run, and where it was not.** `9616fa247` dropped `packages/www` from `exclude_dirs`, taking the corpus from 2,524 files to 3,546. The old exclusion blamed the i18n naturalization ledger, which does not survive checking: that ledger is `src/i18n/translations/*.json` and `globals.include` anchors its JSON globs to `.ci/config/*.json`, so those files
+were never in the corpus. A real hazard sits underneath it on different files, measured rather than assumed: `validate-translation-freshness.js:75` digests `normalizeText(body)` and `normalizeText` at `:41` maps CRLF and trims the tail and nothing else, so internal newlines reach the hash and rewrapping one English doc re-keys the `sourceHash` every locale copy carries. Detection
+therefore covers all 863 markdown files while the rewrite touched only the 11 carrying no ledger.
+
+`72f36408b` seeded the baseline at 6,088 findings over 205,624 prose lines. R19 fell from 7,946 findings to 62 because the reflow fixed the debt instead of the baseline hiding it, and those 62 are exactly the `src/content` paragraphs the ledger protects. It is the SECOND seed: the first captured the tree while continuations were still being flattened to column 0, and committing it
+would have frozen that corruption as the reference.

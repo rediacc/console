@@ -918,7 +918,15 @@ def markdown_segments(text):
                 buffer = []
             yield "raw", lineno, raw
             continue
-        if LIST_ITEM.match(raw) or any(p.match(raw) for p in REFLOW_STOP):
+        # A TAG NAMED INSIDE A CODE SPAN IS PROSE ABOUT HTML, NOT HTML. `HTML_BLOCK_TAG` carries a `.*` prefix so it can catch a tag anywhere on the line, which also makes it fire on a sentence that merely MENTIONS one in backticks -- the mention-versus-target class `docs/ci-overhaul/06-progress.md` already records for six separate guards.
+        # The consequence was mild rather than corrupting, since refusing to reflow is the safe direction, but it stranded such a paragraph over the length limit with no tool able to fix it. Matching against the code-span-scrubbed line costs nothing for a real `<details>` block, which carries its tag outside any backticks and still matches.
+        if LIST_ITEM.match(raw) or any(p.match(raw) for p in REFLOW_STOP if p is not HTML_BLOCK_TAG):
+            if buffer:
+                yield "para", start, buffer
+                buffer = []
+            yield "raw", lineno, raw
+            continue
+        if HTML_BLOCK_TAG.match(INLINE_CODE.sub(" ", raw)):
             if buffer:
                 yield "para", start, buffer
                 buffer = []

@@ -850,6 +850,18 @@ def test_a_list_inside_a_hash_comment_block_is_never_absorbed():
     assert ps.reflow_comments(text, ".py", 384) == text
 
 
+def test_an_html_tag_named_inside_a_code_span_is_prose_not_a_block():
+    """The mention-versus-target class, which `docs/ci-overhaul/06-progress.md` already records for six separate guards, reaching the reflow stop list. `HTML_BLOCK_TAG` carries a `.*` prefix so it can find a tag anywhere on a line, which also made it fire on a sentence merely NAMING one in backticks, stranding that paragraph over the length limit with no tool able to rewrap it.
+    Both directions are pinned here, because the obvious fix of scrubbing the line first is WRONG: `scrub` strips every HTML tag, real ones included, so a genuine block would have stopped being a stop. Only the code spans may be removed.
+    """
+    block = "<details>\n<summary>Click</summary>\n\nBody text long enough to matter.\n</details>\n"
+    assert ps.reflow_markdown(block, 384) == block
+    inline_real = "Some text <details> opening inline here\nand a second line.\n"
+    assert ps.reflow_markdown(inline_real, 384) == inline_real
+    mention = "Bugs found: `<details>`/`<summary>` blocks swallowed, and\nanother line of the same paragraph that should join.\n"
+    assert ps.reflow_markdown(mention, 384) != mention
+
+
 def test_a_list_item_continuation_keeps_its_left_margin():
     """REPORTED BY THE OPERATOR FROM THE RENDERED RESULT, which is the detail worth keeping: this survived a corpus-wide AST proof, a structural fence/heading/table check and a full reflow, because every one of those counts lines and none of them reads the COLUMN a line starts in.
     `_join_and_wrap` strips each piece before joining, correct for the words and wrong for the margin, so an indented continuation came back at column 0 and detached from the item above it. `reflow_markdown`'s own docstring already claimed the opposite, which is how the gap stayed invisible.

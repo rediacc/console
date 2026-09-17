@@ -74,6 +74,15 @@ or use the shared "we". Never "you", never "I".
 """
 
 FOOTER = """
+R18 (too long) and R19 (hard-wrapped narrow) are WIDTH findings, and the tool
+fixes them. Do not hand-wrap and re-submit: 384 is a ceiling, not a target,
+and guessing at it costs a round trip per attempt.
+
+    .ci/scripts/quality/check_prose_style.py reflow --write <path>
+
+For a file not yet written, draft it anywhere, reflow the draft, then write
+the reflowed text. Reflow keeps the words and only moves the line breaks.
+
 The rules, their examples and the reasons for each are in
 .ci/config/prose-style-rules.json. To check a file directly:
 
