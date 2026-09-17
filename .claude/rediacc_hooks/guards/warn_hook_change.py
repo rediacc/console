@@ -2,8 +2,7 @@
 
 The hooks are the enforcement layer, and until 2026-08-25 nothing at all guarded changing them: block-protected-files.sh covers only settings.json and pre-commit-check.sh, and only against restore/checkout/rm. One session changed 5 hook files across 6 commits with no friction. A session that finds a guard inconvenient can weaken it AND delete its controls in the same commit.
 
-The operator chose WARN over BLOCK here (2026-08-25): a hard block would have fired six times that day on legitimate hook work. The teeth are in CI instead -- check:ci-hook-integrity holds a shrink-only inventory and requires every guard to keep controls in BOTH directions. This is the reminder at the moment
-of the act; the gate is what actually refuses.
+The operator chose WARN over BLOCK here (2026-08-25): a hard block would have fired six times that day on legitimate hook work. The teeth are in CI instead -- check:ci-hook-integrity holds a shrink-only inventory and requires every guard to keep controls in BOTH directions. This is the reminder at the moment of the act; the gate is what actually refuses.
 
 PORT NOTE ON THE `|| exit 0` AFTER THE jq. The bash reads
 `CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command' 2>/dev/null) || exit 0`,
@@ -120,9 +119,7 @@ def run(ev):
     if not hookio.case_glob(cmd, "*git commit*"):
         return hookio.ALLOW
 
-    # `git diff --cached --name-only 2>/dev/null | grep '^\\.claude/hooks/' || true`.
-    # The `|| true` only stops the pipeline's failure status from escaping; the
-    # substitution keeps grep's (possibly empty) output either way, which is what the `[ -n "$STAGED" ]` below then tests.
+    # `git diff --cached --name-only 2>/dev/null | grep '^\\.claude/hooks/' || true`. The `|| true` only stops the pipeline's failure status from escaping; the substitution keeps grep's (possibly empty) output either way, which is what the `[ -n "$STAGED" ]` below then tests.
     staged = hookio.git_out(["diff", "--cached", "--name-only"])
     hooks = hookio.grep_lines(HOOK_PATH, staged)
     if not hooks:

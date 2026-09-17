@@ -5,8 +5,7 @@
 // NO DEPENDENCIES, ON PURPOSE. Not even @actions/core. A JS action's node_modules has to be vendored into the repo, and this tool exists to save runner time, not to add 40 files to every checkout. Everything here is node stdlib against the runner's own bundled node, which is why the SAMPLER is pure bash: node's presence inside the ubuntu-slim container is exactly the thing the
 // probe workflow is there to establish, and the sampler must work before it is known.
 
-// ESM, NOT CommonJS, and not by preference. The runner executes this file with plain `node`, which resolves the nearest package.json -- and the repo root's declares "type": "module". A `require()` here dies with "require is not defined in ES module scope" on the runner exactly as it does locally, before
-// a single sample is taken. Caught by driving a real main->post cycle; reading
+// ESM, NOT CommonJS, and not by preference. The runner executes this file with plain `node`, which resolves the nearest package.json -- and the repo root's declares "type": "module". A `require()` here dies with "require is not defined in ES module scope" on the runner exactly as it does locally, before a single sample is taken. Caught by driving a real main->post cycle; reading
 // the file could not have shown it.
 
 import fs from 'node:fs';
@@ -184,15 +183,12 @@ function runPost() {
     return;
   }
   if (res.status !== 0) {
-    // panel.sh only exits non-zero under strict; anything else is its own bug
-    // and must not be swallowed.
+    // panel.sh only exits non-zero under strict; anything else is its own bug and must not be swallowed.
     process.exitCode = res.status;
   }
 }
 
-// main and post are the SAME file, so the phase is carried in state. This is
-// the marker @actions/core writes for the same reason; it is reproduced here
-// rather than depended on, because a state key is cheaper than a vendored dependency tree.
+// main and post are the SAME file, so the phase is carried in state. This is the marker @actions/core writes for the same reason; it is reproduced here rather than depended on, because a state key is cheaper than a vendored dependency tree.
 if (process.env.STATE_isPost === 'true') {
   runPost();
 } else {

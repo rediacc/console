@@ -54,9 +54,7 @@ Related: ./run.sh devbox [up|status|stop|remove|shell|logs]"""
 # `return 2` for an unknown option, `.ci/legacy/run-legacy.sh:578`. Named because 2 is this repository's usage-error code everywhere else too (`rediacc_ci/__main__.py:55`, `core/env.py`, `core/ports.py`).
 EXIT_USAGE = 2
 
-# The seven questions `setup_check()` asks `devbox.sh`, as ONE shell program.
-# See `_devbox_facts` for why they are batched; held here as a constant so the
-# program is readable next to the bash it mirrors and nothing can interpolate into it.
+# The seven questions `setup_check()` asks `devbox.sh`, as ONE shell program. See `_devbox_facts` for why they are batched; held here as a constant so the program is readable next to the bash it mirrors and nothing can interpolate into it.
 DEVBOX_FACTS = """printf "worktree=%s\\n" "$(devbox_worktree 2>/dev/null || echo "")"
 if devbox_image_present; then printf "image=1\\n"; else printf "image=0\\n"; fi
 printf "base_port=%s\\n" "$(devbox_base_port 2>/dev/null || echo "")"
@@ -80,8 +78,7 @@ class Options:
 def parse_args(argv: list[str]) -> Options:
     """The `while [[ $# -gt 0 ]]` loop at `.ci/legacy/run-legacy.sh:549-581`.
 
-    ORDER-INSENSITIVE AND REPEAT-TOLERANT, exactly like the loop: `--check --check` is `--check`, and `--pull --check` is the same as `--check --pull`. The bash returns 0 immediately on `--help` without reading the rest, so a
-    `--help` anywhere wins over a later unknown option; that is carried.
+    ORDER-INSENSITIVE AND REPEAT-TOLERANT, exactly like the loop: `--check --check` is `--check`, and `--pull --check` is the same as `--check --pull`. The bash returns 0 immediately on `--help` without reading the rest, so a `--help` anywhere wins over a later unknown option; that is carried.
     """
     check = pull = False
     start = True
@@ -147,8 +144,7 @@ def _devbox_facts(root: pathlib.Path, env: dict[str, str]) -> dict[str, str]:
     function call inside one already-sourced shell; a Python port that bridged
     each one separately would pay the whole prelude seven times, which on this host is about 0.2s each. Behaviour is identical, so this is the one place the port is deliberately not a line-for-line transcription.
 
-    EVERY VALUE IS A STRING AND AN ABSENT ONE IS "", never a raised error: this is a REPORT, and a report that dies because one row could not be computed is worse than a report with one row missing. `devbox_base_port` in particular is
-    allowed to fail; see `_port_block_row`.
+    EVERY VALUE IS A STRING AND AN ABSENT ONE IS "", never a raised error: this is a REPORT, and a report that dies because one row could not be computed is worse than a report with one row missing. `devbox_base_port` in particular is allowed to fail; see `_port_block_row`.
     """
     _, out = bridge.capture(DEVBOX_FACTS, root, env)
     facts: dict[str, str] = {}
@@ -224,9 +220,7 @@ def check(ctx: Ctx, constants: dict[str, str]) -> int:
 
     email = host._git_global(ctx, "user.email")
     if email:
-        # NOTE THE COLUMN. The bash writes `' git identity %s\n'`, two spaces narrower than every other row because the label is two characters
-        # longer. It looks like a typo and it is the existing output; changing it
-        # would be a diff in a gate's input for no reason.
+        # NOTE THE COLUMN. The bash writes `' git identity %s\n'`, two spaces narrower than every other row because the label is two characters longer. It looks like a typo and it is the existing output; changing it would be a diff in a gate's input for no reason.
         ctx.say("  git identity %s" % email)
     else:
         ctx.say("  git identity UNSET (setup asks for it once, then remembers)")
@@ -293,9 +287,7 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
 
     if host.node_toolchain(ctx) != 0:
         return 1
-    # NO `:-22.0.0` DEFAULT. `bridge.constants` refuses an empty floor rather
-    # than substituting a looser one; see `.ci/lib/setup.sh:44-51` for the day
-    # that mattered.
+    # NO `:-22.0.0` DEFAULT. `bridge.constants` refuses an empty floor rather than substituting a looser one; see `.ci/lib/setup.sh:44-51` for the day that mattered.
     if bridge.call('check_node_version "$NODE_VERSION_MIN"', ctx.root, ctx.env) != 0:
         return 1
     ctx.say()

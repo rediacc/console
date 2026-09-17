@@ -260,18 +260,15 @@ def read_verdict(out):
 #   find workers -type f \( -name '*.ts' -o -name '*.tsx' \) | xargs -I {} sh -c 'grep -q {} tsconfig.json || echo {
 # cut off at the 300-character schema cap, mid-token, with an unbalanced quote. It cannot parse, so it cannot run.
 #
-# The module docstring already says an unactionable block is "the one thing this rule cannot afford". A WRONG-BUT-PLAUSIBLE order is worse than an absent one: it spends the session's turn and can manufacture a false finding out of an error message. So the command is validated, and a command that fails is
-# DROPPED -- never the demand. The block still happens, at full strength; only
+# The module docstring already says an unactionable block is "the one thing this rule cannot afford". A WRONG-BUT-PLAUSIBLE order is worse than an absent one: it spends the session's turn and can manufacture a false finding out of an error message. So the command is validated, and a command that fails is DROPPED -- never the demand. The block still happens, at full strength; only
 # the bogus "Run: ..." is replaced by the generic order plus the reason, which is also how the operator gets to see that the model is emitting commands that do not run.
 #
-# WHAT THIS CANNOT CATCH, said plainly so the green is not over-read: a command that runs and answers the wrong question. `tsc --noEmit | grep 'error TS'` at this repo's root is perfectly runnable and reports 10,095 errors that are all the base config rather than any defect. Static validation reaches syntax and
-# existence; it never reaches meaning.
+# WHAT THIS CANNOT CATCH, said plainly so the green is not over-read: a command that runs and answers the wrong question. `tsc --noEmit | grep 'error TS'` at this repo's root is perfectly runnable and reports 10,095 errors that are all the base config rather than any defect. Static validation reaches syntax and existence; it never reaches meaning.
 
 SEARCH_MAX = 300  # the schema's maxLength; a value at the cap arrived truncated
 
-# A SWEEP ENUMERATES. It never writes, moves or deletes, so a proposed command that does is not a bad search -- it is an order to damage the tree, issued by a model and handed to a session under the word "Run:". The verb sets and the prose matcher live
-# in wl_rules because wl_bravedefault needs them too at a DIFFERENT threshold; keeping
-# a second copy here is the very duplication this module exists to catch.
+# A SWEEP ENUMERATES. It never writes, moves or deletes, so a proposed command that does is not a bad search -- it is an order to damage the tree, issued by a model and handed to a session under the word "Run:". The verb sets and the prose matcher live in wl_rules because wl_bravedefault needs them too at a DIFFERENT threshold; keeping a second copy here is the very duplication
+# this module exists to catch.
 _DESTRUCTIVE = wl_rules.WRITE_VERBS
 _DESTRUCTIVE_GIT = wl_rules.WRITE_GIT
 
@@ -289,9 +286,8 @@ def _repo_root():
 def names_destructive(text):
     """The write verb this PROSE names, or "". See wl_rules.names_write.
 
-    THE SECOND DOOR, and it stayed open after the first was shut. `search` is a command
-    and is validated as one; `instruction` is model-authored PROSE that reaches the
-    session verbatim through V_ACTION_NOSEARCH whenever `search` is empty. Prose is not a command line, so it is not tokenised -- but a session told "next step: git clean -xdf" may well run it, and the read-only guarantee a sweep carries has to hold on every path out of this module, not only the one wearing the word "Run:".
+    THE SECOND DOOR, and it stayed open after the first was shut. `search` is a command and is validated as one; `instruction` is model-authored PROSE that reaches the session verbatim through V_ACTION_NOSEARCH whenever `search` is empty. Prose is not a command line, so it is not tokenised -- but a session told "next step: git clean -xdf" may well run it, and the read-only
+    guarantee a sweep carries has to hold on every path out of this module, not only the one wearing the word "Run:".
     """
     return wl_rules.names_write(text)
 
@@ -385,9 +381,8 @@ def enforce(out, payload):
         action = V_ACTION_DROPPED % {"why": why[:70]}
     else:
         verb = names_destructive(payload["instruction"])
-        # THE SAME SECOND DOOR, for the standing order rather than for safety. `instruction` is model prose reaching the session verbatim, so it can carry "commit the fix" as easily as "git clean" -- and this repo's first standing order reserves committing, branching, pushing and opening a PR to an explicit operator ask. wl_bravedefault emitted exactly that on
-        # 2026-09-02 and the session quietly disobeyed it; the fix belongs on every
-        # path that hands model text to a session, not only the one that was seen.
+        # THE SAME SECOND DOOR, for the standing order rather than for safety. `instruction` is model prose reaching the session verbatim, so it can carry "commit the fix" as easily as "git clean" -- and this repo's first standing order reserves committing, branching, pushing and opening a PR to an explicit operator ask. wl_bravedefault emitted exactly that on 2026-09-02 and the
+        # session quietly disobeyed it; the fix belongs on every path that hands model text to a session, not only the one that was seen.
         reserved = wl_rules.names_operator_reserved(payload["instruction"])
         if verb:
             action = V_ACTION_DROPPED % {

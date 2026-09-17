@@ -239,8 +239,7 @@ function selftest(): number {
     !enumerates('data = json.load(open(".ci/config/thing.json"))')
   );
 
-  // THE ARGV-ARRAY CONTROLS. The first is the shape that was invisible; the second and
-  // third are what stop the widening from becoming a match-anything rule.
+  // THE ARGV-ARRAY CONTROLS. The first is the shape that was invisible; the second and third are what stop the widening from becoming a match-anything rule.
   check(
     'the argv-array form of git ls-files is an enumeration',
     enumerates("execFileSync('git', ['-C', ROOT, 'ls-files', 'scripts'])")
@@ -289,9 +288,7 @@ function selftest(): number {
     'CONTROL: the same script WITH a floor is not',
     findings(() => 'MIN_X = 3\nfiles = root.glob("*.py")', ['x/check-a.py']).length === 0
   );
-  // THE COMMENT CONTROLS, and the second is the one that matters. Stripping prose can
-  // only be safe if a real call on a code line is still found; a strip that swallowed
-  // both would make this gate quieter and blinder at the same time.
+  // THE COMMENT CONTROLS, and the second is the one that matters. Stripping prose can only be safe if a real call on a code line is still found; a strip that swallowed both would make this gate quieter and blinder at the same time.
   const Q3 = '"'.repeat(3);
   check(
     'a `git ls-files` named only in a PYTHON DOCSTRING is prose, not an enumeration',
@@ -340,13 +337,10 @@ function main(argv: string[]): void {
 
   const files = tracked();
   // THIS GATE ENUMERATES TOO, so it obeys its own rule -- BY HAND, not by its own detector, and the difference was measured on 2026-09-06 rather than assumed. Feed this file's own source to `enumerates()` and the answer is FALSE. The predicate wants `git\s+ls-files`, and every TypeScript enumerator in this repo writes the argv-array form instead: `execFileSync('git', ['-C', ROOT,
-  // 'ls-files', ...])`, where
-  // a comma stands between the two words. The floor below is real and wired; the claim
-  // that the gate is inside its own scope was not.
+  // 'ls-files', ...])`, where a comma stands between the two words. The floor below is real and wired; the claim that the gate is inside its own scope was not.
   //
-  // MEASURED BLIND SPOT: 19 tracked scripts enumerate in a form this predicate cannot see, and 6 of them carry no vacuity guard, so widening the regex adds 6 findings to a baseline that may only SHRINK. That makes the widening a CLUSTER (one regex plus six corpus-derived floors) rather than a one-line fix, and it is tracked as such.
-  // Reproduce the count with the probe recorded in that item; do not re-derive it by
-  // eye, because the narrow and wide sets differ by more than the unguarded six.
+  // MEASURED BLIND SPOT: 19 tracked scripts enumerate in a form this predicate cannot see, and 6 of them carry no vacuity guard, so widening the regex adds 6 findings to a baseline that may only SHRINK. That makes the widening a CLUSTER (one regex plus six corpus-derived floors) rather than a one-line fix, and it is tracked as such. Reproduce the count with the probe recorded in
+  // that item; do not re-derive it by eye, because the narrow and wide sets differ by more than the unguarded six.
   //
   // Measured 2026-09-04: 67 enumerating scripts out of a wider check/gate-test population. A floor well under that catches a broken `git ls-files` without pinning the number to today's tree.
   const MIN_SUBJECTS = Number(process.env.ENUM_VACUITY_MIN ?? 40);

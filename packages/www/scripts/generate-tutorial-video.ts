@@ -49,8 +49,7 @@ function parseArgs(argv: string[]): {
   const out: Record<string, string> = {};
   let keep = false;
   let debug = false;
-  // Browser silent-segment cache: reuse-if-present by default; --refresh forces
-  // a live re-record + overwrite; --no-browser-cache disables both.
+  // Browser silent-segment cache: reuse-if-present by default; --refresh forces a live re-record + overwrite; --no-browser-cache disables both.
   let cacheReuse = true;
   let cacheRefresh = false;
   let captionsOnly = false;
@@ -176,9 +175,7 @@ async function main(): Promise<void> {
   const tmp = mkdtempSync(path.join(tmpdir(), 'tutorial-video-'));
   console.log(`[video] tmp dir: ${tmp}`);
 
-  // Storyboard-level environment hooks: setupCommand prepares live resources
-  // browser scenes depend on (demo forks, tunnels, stacks); teardownCommand
-  // is guaranteed below even when compilation throws. Both run from the monorepo root — storyboard commands reference repo-root-relative paths (e.g. .ci/tutorials/lib/…) regardless of where the generator is invoked.
+  // Storyboard-level environment hooks: setupCommand prepares live resources browser scenes depend on (demo forks, tunnels, stacks); teardownCommand is guaranteed below even when compilation throws. Both run from the monorepo root — storyboard commands reference repo-root-relative paths (e.g. .ci/tutorials/lib/…) regardless of where the generator is invoked.
   //
   // Skip the lab hooks entirely when every browser scene reuses a cached silent segment — a fully-cached locale render needs no live resources.
   const browserCache = { dir: browserCacheDir, reuse: cacheReuse, refresh: cacheRefresh };
@@ -248,8 +245,7 @@ async function main(): Promise<void> {
 
     if (captionsOnly) {
       // --captions-only assumes the mp4 already exists (that's the entire premise -- "the video didn't change, just re-derive captions for it"). Silently proceeding without one produces vtt/chapters/ words.json for a video that was never downloaded/rendered locally, which publish-tutorial-video-to-r2.ts's --all mode won't even discover (it finds tutorials by scanning for .mp4
-      // files) -- the sidecars would be written and then silently never published. Fail loudly instead: restore/render the mp4 first (`sync-media-from-r2.sh` doesn't cover video/, only audio -- there's no per-tutorial video
-      // restore command; use a full render for now).
+      // files) -- the sidecars would be written and then silently never published. Fail loudly instead: restore/render the mp4 first (`sync-media-from-r2.sh` doesn't cover video/, only audio -- there's no per-tutorial video restore command; use a full render for now).
       if (!existsSync(outPath)) {
         throw new Error(
           `--captions-only: ${outPath} does not exist locally -- this mode only ` +
@@ -278,9 +274,7 @@ async function main(): Promise<void> {
       }
       console.log(`[video] recovered timing for ${storyboard.scenes.length} scenes, no encode`);
     } else {
-      // Phase 1 — live execution in storyboard order. Eager scenes (title,
-      // slide, cast*) compile to finished chunks immediately; browser scenes
-      // run their live interactions against (possibly shared) sessions and
+      // Phase 1 — live execution in storyboard order. Eager scenes (title, slide, cast*) compile to finished chunks immediately; browser scenes run their live interactions against (possibly shared) sessions and
       // return deferred producers — their footage is a slice of a session
       // recording that only exists once the session closes.
       const outputs: SceneOutput[] = [];
@@ -290,8 +284,7 @@ async function main(): Promise<void> {
         sessions.beginScene(i);
         const out = await compileScene(scene, ctx);
         outputs.push(out);
-        // chunks mirrors compiled output for compileCastFreeze's last-frame
-        // peek; deferred scenes leave a sentinel (guarded in cast.ts).
+        // chunks mirrors compiled output for compileCastFreeze's last-frame peek; deferred scenes leave a sentinel (guarded in cast.ts).
         chunks.push(typeof out === 'string' ? out : `__deferred__:${scene.id}`);
         await sessions.closeFinished(i);
       }
@@ -371,9 +364,7 @@ async function main(): Promise<void> {
     console.log(`[video] chapters  → ${chaptersPath}`);
     console.log(`[video] words     → ${wordsJsonPath}`);
 
-    // Poster: extract a frame from the first cast-narrated scene (so the
-    // poster shows a terminal, not the title card); fall back to 1s in.
-    // Skipped in --captions-only: the mp4 (and therefore its poster) is unchanged, nothing to re-extract.
+    // Poster: extract a frame from the first cast-narrated scene (so the poster shows a terminal, not the title card); fall back to 1s in. Skipped in --captions-only: the mp4 (and therefore its poster) is unchanged, nothing to re-extract.
     if (!captionsOnly) {
       const firstCastNarrated = storyboard.scenes.find((s) => s.type === 'cast-narrated');
       const posterAtSec = firstCastNarrated

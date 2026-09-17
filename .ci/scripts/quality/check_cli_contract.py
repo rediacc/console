@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported CLI-contract freshness gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.cli_contract`, which pytest and
-the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.cli_contract`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 3). See DRIVEN, below.
 
@@ -14,8 +12,7 @@ the three workflow-region checks (`gate-bind.ts:1724`) while the registration as
 
 `needs: node` IS LOAD-BEARING AFTER THE MOVE. `bind()` unions the declared needs
 with `inferredNeeds(source)`, and the twin got `node` for free from its own
-`npx tsx` call; this entry point runs neither, and `inferredNeeds` strips Python
-docstrings as prose (`gate-header.ts:300`), so it infers nothing. Carried whole,
+`npx tsx` call; this entry point runs neither, and `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:300`), so it infers nothing. Carried whole,
 both sides resolve to {node}, unchanged.
 
 `selftest: true` IS INERT HERE and is carried anyway: `headerLines` emits that field only for `.ts` (`gate-bind.ts:598`), so for a `.py` gate it decides nothing. It is true of the port regardless.
@@ -26,8 +23,7 @@ exit 0, and here the STDERR is byte-identical too, npm's own warnings included.
 THE RED DRIVE IS THEREFORE THE LOAD-BEARING ONE. Against a fixture root holding a copy of `.ci`, a copy of `packages/shared/src/cli-contract/data` with a line appended to `contract.generated.ts`, and PATH shims standing in for the builder and the generator (the generator shim writes the UNPLANTED golden data, so the committed copy is genuinely the stale one), both sides exit 1 and
 print identical stdout and identical stderr, naming `contract.generated.ts`.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-cli-contract.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-cli-contract.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: CLI contract needs: node selftest: true lane: quality-packages ---- end gate ----
 """

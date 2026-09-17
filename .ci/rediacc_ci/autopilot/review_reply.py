@@ -18,9 +18,7 @@ it records dispositions as `decisions` entries shaped `thread <id>: <disposition
 WHY THE ID MUST BE IN THE FIXTURE, NOT MERELY WELL-SHAPED
 -----------------------------------------------------------------------------
 The twin's own paragraph, kept because it is the security argument for the whole file: the reply body is MODEL-AUTHORED TEXT and the thread id chooses WHERE it is posted. A global GraphQL node id names a thread on ANY pull request in any repo the token can reach, so validating the id's characters alone would let a round that read a hostile finding post that finding's suggested text
-onto an
-unrelated PR. The payload is the round's whole world; a thread outside it is not
-addressable.
+onto an unrelated PR. The payload is the round's whole world; a thread outside it is not addressable.
 
 That is TWO checks, not one, and the differential drives them separately (`malformed-id` and `unknown-thread`) because they fail for different reasons and a port that collapsed them into one would still pass a test that only ever fed it garbage.
 
@@ -29,9 +27,7 @@ THE ID SHAPE IS RE-CHECKED AT THE WRITE, not only at the plan, and that is not b
 -----------------------------------------------------------------------------
 THE PLAN PROGRAM IS JQ'S, VERBATIM, AND THAT IS THE POINT OF THIS PORT
 -----------------------------------------------------------------------------
-`PLAN_PROGRAM` below is the twin's jq program character for character. It is
-not a formatting decision; it is a piece of REASONING with four rules a rewrite
-would have to re-derive, and the first one it got wrong would post model text somewhere nobody looked:
+`PLAN_PROGRAM` below is the twin's jq program character for character. It is not a formatting decision; it is a piece of REASONING with four rules a rewrite would have to re-derive, and the first one it got wrong would post model text somewhere nobody looked:
 
   1. `select(test("^thread [^:]+: "))` decides what is thread traffic AT ALL. An
      ordinary `decisions` entry is not a reply and is not an error either, so it
@@ -45,8 +41,7 @@ would have to re-derive, and the first one it got wrong would post model text so
   4. `$repos[.id] // "console"` is a `//`, so a thread whose payload entry has
      `repo: false` would fall back to `console`. jq's falsy rule, not Python's.
 
-`known` and `known_repos` are two more jq programs, and `(.threads // .) // []` in both is meant to be the twin's shrug at its own input: `--threads` is documented as accepting `review-payload.sh`'s object OR a bare array. See
-DEFECT 2; it does not.
+`known` and `known_repos` are two more jq programs, and `(.threads // .) // []` in both is meant to be the twin's shrug at its own input: `--threads` is documented as accepting `review-payload.sh`'s object OR a bare array. See DEFECT 2; it does not.
 
 -----------------------------------------------------------------------------
 TWO REAL DEFECTS IN THE TWIN, MEASURED AGAINST jq 1.8.1 ON 2026-09-13,
@@ -143,8 +138,7 @@ USAGE_PLAN = (
 USAGE_APPLY = "usage: review-reply.sh apply --plan <file>"
 UNKNOWN_SUBCOMMAND = "unknown subcommand '%s' (plan|apply)"
 
-# GraphQL node ids are base64url-ish; this is the character set GitHub uses plus
-# a hard length bound, so nothing shell-shaped or path-shaped can ride through into a mutation variable.
+# GraphQL node ids are base64url-ish; this is the character set GitHub uses plus a hard length bound, so nothing shell-shaped or path-shaped can ride through into a mutation variable.
 ID_SHAPE = "^[A-Za-z0-9_=-]{1,128}$"
 
 DEFAULT_MAX_BODY = "2000"
@@ -219,8 +213,7 @@ def _json_usable(body: bytes) -> bool:
 def gh_json(what: str, args: list[str], *, sleeper=time.sleep) -> bool:
     """`gh_json <what> -- <gh args...> >/dev/null`, i.e. `_gh_probe true`.
 
-    Returns success only; every caller here discards the body. Three attempts,
-    a `log_warn` between them, a 3-then-6-second backoff, and the captured stderr replayed indented four spaces on final failure.
+    Returns success only; every caller here discards the body. Three attempts, a `log_warn` between them, a 3-then-6-second backoff, and the captured stderr replayed indented four spaces on final failure.
     """
     rc = 0
     err = b""
@@ -425,8 +418,7 @@ def _apply(args: dict[str, str], *, sleeper=time.sleep) -> int:
             ],
             sleeper=sleeper,
         ):
-            # `set -e` on gh_json's non-zero status. NOTHING is rolled back; see
-            # the module docstring on the non-transactional failure.
+            # `set -e` on gh_json's non-zero status. NOTHING is rolled back; see the module docstring on the non-transactional failure.
             return 1
         if not gh_json(
             "resolve thread %s" % tid,

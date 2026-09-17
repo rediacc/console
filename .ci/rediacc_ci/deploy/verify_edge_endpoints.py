@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/verify-edge-endpoints.sh`.
 
-Post-deploy smoke test for the edge environment. The twin's own header carries
-the WHY for every assertion; this docstring records only what the PORT had to
-decide, because everything else is a line-for-line transcription.
+Post-deploy smoke test for the edge environment. The twin's own header carries the WHY for every assertion; this docstring records only what the PORT had to decide, because everything else is a line-for-line transcription.
 
 CURL IS SHELLED OUT TO, NOT REPLACED BY `urllib`. Its sibling `wait_for_preview_worker.py` went the other way and said so: `curl` is a generic HTTP client with no credential of its own, so faking the BINARY there would have reimplemented `urllib.request` under another name. THIS script is different in the one way that matters. Every URL in it is a hard-coded production hostname
 (`edge.rediacc.com`, `releases.rediacc.com`) with no override knob anywhere, so the only way to drive either implementation without touching production is to put a fake `curl` on `PATH`. A port that used `urllib` could not be driven through that fake, which means it could not be compared against the twin at all, which means it could never be shown equivalent. The argv is therefore
@@ -14,22 +12,17 @@ diagnostics.
 
 PIPEFAIL IS OFF IN THE TWIN AND ITS ABSENCE IS LOAD-BEARING, which the twin's
 own header explains: `HDRS=$(curl -sI ... | tr -d '\\r')` reports `tr`'s status,
-so a transient curl failure falls through to the "headers not yet enabled" branch instead of aborting the smoke test. Python has no such option to get
-wrong; the equivalent is simply that `headers()` below ignores curl's exit
-status, and it is called out here so a later reader does not "fix" it.
+so a transient curl failure falls through to the "headers not yet enabled" branch instead of aborting the smoke test. Python has no such option to get wrong; the equivalent is simply that `headers()` below ignores curl's exit status, and it is called out here so a later reader does not "fix" it.
 
 THE GLOBALS ARE REAL GLOBALS IN THE TWIN, and the error paths depend on it. `_install_sh_baked` assigns `INSTALL_SH` with no `local`, so after `fetch_retry` gives up, the `echo "$INSTALL_SH" | grep -E ...` diagnostic prints the body of the LAST attempt. `S`, `FOOTER_HTML`, `EDGE_VERSION`, `R2_SH` and `R2_PS1` are the same. `_Last` below is that shared scratch space, named rather
 than hidden so the coupling stays visible.
 
-`$RANDOM$RANDOM` BECOMES `secrets.randbelow(32768)` TWICE, not `random`. The value is a cache-buster in a query string and nothing reads it back, so the
-generator's quality is irrelevant; `secrets` is used only because ruff's S311
-objects to `random` and this repo does not add per-line suppressions to get past a gate. The value DOMAIN is identical (0..32767 concatenated), which is the only property the twin relies on.
+`$RANDOM$RANDOM` BECOMES `secrets.randbelow(32768)` TWICE, not `random`. The value is a cache-buster in a query string and nothing reads it back, so the generator's quality is irrelevant; `secrets` is used only because ruff's S311 objects to `random` and this repo does not add per-line suppressions to get past a gate. The value DOMAIN is identical (0..32767 concatenated), which is
+the only property the twin relies on.
 
 REWORDED ON EXACTLY ONE PATH: a missing `$VERSION`. The twin spells that
 `${VERSION:?verify-edge-endpoints.sh: VERSION must be set}`, and bash prefixes
-its own `<path>: line 87:` to the message. The line number is not worth reproducing and would rot on the next edit, so the port prints its own line.
-Exit code (1) and the named variable agree; the bytes do not, and the
-differential asserts that narrowly rather than pretending otherwise.
+its own `<path>: line 87:` to the message. The line number is not worth reproducing and would rot on the next edit, so the port prints its own line. Exit code (1) and the named variable agree; the bytes do not, and the differential asserts that narrowly rather than pretending otherwise.
 
 Exit: 0 smoke test passed, 1 any assertion failed.
 """
@@ -391,9 +384,7 @@ NOSNIFF = re.compile(r"^x-content-type-options: *nosniff", re.IGNORECASE)
 def _region_domains() -> list[str]:
     """`done < <(jq -r '.regions[] | .edgeDomain' regions.json)`.
 
-    A FAILING jq PRODUCES ZERO DOMAINS AND NO ERROR, because a process substitution's exit status is not the loop's and `set -e` never sees it.
-    Carried unchanged; see FINDING 1 in the differential, where it is
-    reproduced rather than fixed.
+    A FAILING jq PRODUCES ZERO DOMAINS AND NO ERROR, because a process substitution's exit status is not the loop's and `set -e` never sees it. Carried unchanged; see FINDING 1 in the differential, where it is reproduced rather than fixed.
     """
     _rc, out = jq_run(["-r", ".regions[] | .edgeDomain", "regions.json"])
     # `read -r domain` strips leading and trailing IFS whitespace.
@@ -407,8 +398,7 @@ def _region_health() -> int:
         rc, out = curl_run(
             ["-sf", "-o", "/dev/null", "-w", "%{http_code}", info_url], quiet_stderr=True
         )
-        # `$(curl ... || echo "000")`: BOTH outputs land in the substitution, so
-        # a real 404 becomes the string "404000". Carried; see FINDING 2.
+        # `$(curl ... || echo "000")`: BOTH outputs land in the substitution, so a real 404 becomes the string "404000". Carried; see FINDING 2.
         http_code = substitute(out + "000\n") if rc != 0 else substitute(out)
         if http_code != "200":
             print("::error::%s health check failed (HTTP %s)" % (domain, http_code), flush=True)

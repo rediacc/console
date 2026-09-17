@@ -3,9 +3,7 @@
 
 WHY THIS EXISTS. On 2026-08-06 eight locales were found carrying `"ref": "[1]"` where en.json holds `"ref": 1` -- a citation INDEX that had been replaced by its own rendered marker, 18 keys per locale, 144 values. Where the index was 0 it had become `""`, because 0 is falsy and something in the pipeline did `value || ''`.
 
-It was live in production. packages/www/src/components/solution-pages/
-SPProblem.astro guards with `callout.ref && callout.ref > 0`; for a string
-`'[1]' > 0` is false, so the citation superscript and its source link rendered
+It was live in production. packages/www/src/components/solution-pages/ SPProblem.astro guards with `callout.ref && callout.ref > 0`; for a string `'[1]' > 0` is false, so the citation superscript and its source link rendered
 for NOBODY in those eight languages across six solution pages, while English
 rendered them normally.
 
@@ -56,8 +54,7 @@ def compare(en_doc, loc_doc):
         if key not in loc_flat:
             continue
         loc_value = loc_flat[key]
-        # bool is a subclass of int in Python; treat them as distinct so a
-        # `true` swapped for `1` is still caught.
+        # bool is a subclass of int in Python; treat them as distinct so a `true` swapped for `1` is still caught.
         if type(en_value) is not type(loc_value):
             bad.append((key, en_value, loc_value))
     return bad

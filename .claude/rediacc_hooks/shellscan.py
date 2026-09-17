@@ -123,9 +123,7 @@ def _tr(text, frm, to):
 
 # Extract the payload of a shell-wrapper invocation (`<shell> [...anything...] -c <payload>` or `eval <payload>`) by SCANNING TOKENS for the token that actually selects -c mode, instead of enumerating flag shapes in a regex. Review findings (rounds 39-40) showed that a single regex chasing flag shapes is a losing game: bare `-c`, then bundled (`-lc`) and separate (`-eux -c`) short
 # flags, then GNU long options (`--posix`, `--norc`) and value-taking short options (`-o pipefail`) each broke it in turn, and there will always be another shape. Token-scanning treats ANY intervening token as skippable and asks only "is THIS token the -c selector" -- a closed, enumerable question (`-c` exactly, or a single-dash bundle ending in `c`) -- so no flag syntax needs to
-# be recognized at all. This also drops the old design's second failure mode: the extraction regex and a separate prefix-strip regex had to independently agree on the exact same shape, and
-# small drift between the two was itself a bug source; this emits the payload
-# directly, so there is nothing left to keep in sync.
+# be recognized at all. This also drops the old design's second failure mode: the extraction regex and a separate prefix-strip regex had to independently agree on the exact same shape, and small drift between the two was itself a bug source; this emits the payload directly, so there is nothing left to keep in sync.
 #
 # Round-42 review finding: the shell-name test required an EXACT, bare token match, so a path-qualified shell (`/bin/bash -c`, `./bash -c`) never matched -- the same enumeration trap the flag side already escaped, just moved to the shell-name side. Fixed the same way: match the BASENAME of the token (strip any leading `.*/`) rather than adding literal path prefixes as more
 # alternatives. `env bash -c` was already fine (`env` isn't a shell name, so the scan naturally advances to the next bare `bash` token) -- only direct path-qualification broke it.
@@ -154,9 +152,7 @@ def _wrapper_payload(text):
                     if t == "-c" or re.search(r"^-[^-].*c$", t):
                         out = "".join(tok[m] + (" " if m < n - 1 else "") for m in range(j + 1, n))
                         return out + "\n"
-                # NO `exit` HERE, and that is load-bearing: a shell name whose token run carries no -c selector falls back to the OUTER
-                # loop, so `bash script.sh; sh -c 'gh pr merge'` still finds
-                # the second one.
+                # NO `exit` HERE, and that is load-bearing: a shell name whose token run carries no -c selector falls back to the OUTER loop, so `bash script.sh; sh -c 'gh pr merge'` still finds the second one.
     return ""
 
 
@@ -197,9 +193,8 @@ def _strip_heredocs(text):
 #   block-blanket-git-add          rc=2 -> rc=0
 #   block-worktree-add             rc=2 -> rc=0
 #
-# The fix belongs HERE rather than in seven regexes: an assignment prefix is a property of shell syntax, which is what this file normalises, and a seventh copy of the anchor would have been a seventh chance to miss it. The assignments are dropped
-# rather than kept because no guard matches on them; the one guard that needs their
-# VALUES reads them from the RAW command for exactly that reason.
+# The fix belongs HERE rather than in seven regexes: an assignment prefix is a property of shell syntax, which is what this file normalises, and a seventh copy of the anchor would have been a seventh chance to miss it. The assignments are dropped rather than kept because no guard matches on them; the one guard that needs their VALUES reads them from the RAW command for exactly that
+# reason.
 _ENV_PREFIX = re.compile(
     r"(^|[;&|(]|\$\(|`)(["
     + BLANK
@@ -215,8 +210,7 @@ def _strip_env_prefix(text):
     records, terminated = _records(text)
     out = []
     for record in records:
-        # The bash is `sed -E ':a; s/.../\1\2/g; ta'`, a label-and-branch loop.
-        # It exists because `^` matches only at the true start of the pattern
+        # The bash is `sed -E ':a; s/.../\1\2/g; ta'`, a label-and-branch loop. It exists because `^` matches only at the true start of the pattern
         # space even under `/g`, so `A=1 B=2 git` needs a SECOND pass before
         # `B=2 ` is at the start and can match. Python's `re.sub` without
         # MULTILINE has the identical `^` rule, so the loop ports one-for-one. It terminates because every substitution deletes a non-empty group 3.
@@ -240,8 +234,7 @@ def _strip_env_prefix(text):
 #
 # THE EMPTY-COMMAND CONTRACT IS NOT WHAT IT LOOKS LIKE. `jq -r` prints the four characters `null` for a key that is absent or JSON null, so a payload
 # with no `.tool_input.command` yields the STRING "null", passes the `-z` test
-# and is scanned as if someone had typed `null`. Only a jq FAILURE (malformed JSON, so nothing on stdout) or a genuinely empty string command returns 1. That asymmetry is behaviour 25 guards depend on, so it is preserved rather
-# than tidied into `None`; the differential pins all four shapes.
+# and is scanned as if someone had typed `null`. Only a jq FAILURE (malformed JSON, so nothing on stdout) or a genuinely empty string command returns 1. That asymmetry is behaviour 25 guards depend on, so it is preserved rather than tidied into `None`; the differential pins all four shapes.
 def hook_init(payload):
     cmd = _jq_raw_command(payload)
     if cmd == "":
@@ -328,9 +321,7 @@ def _sed_quotes_to_spaces(text):
 # Command position = line start (covers wrapper-payload lines, now
 # prefix-stripped), or after ; & | ( $( or a backtick.
 def gh_pr_at_command_pos(scan, verb):
-    # `verb` is interpolated into the ERE by the original, so it is a PATTERN and not a literal. Every caller passes a bare word (create, merge,
-    # ready, edit); re.escape here would be an improvement that changes what
-    # is matched, which is the one thing this port may not do.
+    # `verb` is interpolated into the ERE by the original, so it is a PATTERN and not a literal. Every caller passes a bare word (create, merge, ready, edit); re.escape here would be an improvement that changes what is matched, which is the one thing this port may not do.
     pattern = re.compile(
         r"(^|[;&|(]|\$\(|`)["
         + SPACE
@@ -360,11 +351,9 @@ def flag_present(cmd, flag):
 # Round-46 finding, hit live during a real merge: every field was parsed from the entire line, so when several gh commands shared it the repo of one was paired with the PR number of another --
 #   gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo rediacc/account
 # resolved as rediacc/renet#66 (a long-merged, unrelated PR) and blocked the merge on THAT PR's unresolved thread. Same class as the wrapper/flag/path findings the rest of this file records: a field read at the wrong scope. Splitting on command separators fixes the scope rather than special-casing the observed pairing. Prints EVERY such segment, one per line, so a caller checks
-# each invocation on its own. The old line-wide parsing also silently checked only ONE of several same-verb invocations (the greedy selector regex took the last PR number, the repo grep took the first repo), so a second `gh pr merge` on the
-# line went entirely unexamined; looping closes that too.
+# each invocation on its own. The old line-wide parsing also silently checked only ONE of several same-verb invocations (the greedy selector regex took the last PR number, the repo grep took the first repo), so a second `gh pr merge` on the line went entirely unexamined; looping closes that too.
 def gh_pr_segment(scan, verb):
-    # `sed -e 's/[;&|()`]/\n/g'`: the separator is REPLACED by a newline, not
-    # split on, so the separator character itself never reaches the anchor.
+    # `sed -e 's/[;&|()`]/\n/g'`: the separator is REPLACED by a newline, not split on, so the separator character itself never reaches the anchor.
     records, terminated = _records(scan)
     split = _sed_out([re.sub(r"[;&|()`]", "\n", record) for record in records], terminated)
     pattern = re.compile(
@@ -452,8 +441,7 @@ def target_root(scan, this_root):
         hint = re.sub(r"[" + SPACE + r"]+$", "", hint, count=1)
     if hint == "":
         return ""
-    # bash `case "$hint" in /*) ... ;; *) ...` -- a leading slash, nothing more
-    # elaborate. A `~` or a `$HOME` is NOT expanded here, in either language.
+    # bash `case "$hint" in /*) ... ;; *) ...` -- a leading slash, nothing more elaborate. A `~` or a `$HOME` is NOT expanded here, in either language.
     abs_path = hint if hint.startswith("/") else this_root + "/" + hint
     target = _git_stdout(["-C", abs_path, "rev-parse", "--show-toplevel"], want_rc=True)
     if target is None:
@@ -474,9 +462,7 @@ def _printf_line(text):
 
 def _grep_only(pattern, text):
     """`grep -oE <pattern>` -- every non-overlapping match, in order, one per
-    line, across every record. Python's finditer scans left to right and
-    resumes after each match, which is GNU grep's rule too; what differs is
-    leftmost-longest versus leftmost-first, and the module docstring records why the alternations here do not feel it.
+    line, across every record. Python's finditer scans left to right and resumes after each match, which is GNU grep's rule too; what differs is leftmost-longest versus leftmost-first, and the module docstring records why the alternations here do not feel it.
     """
     compiled = re.compile(pattern)
     records, _ = _records(text)

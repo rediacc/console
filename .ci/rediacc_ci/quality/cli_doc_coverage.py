@@ -1,7 +1,6 @@
 """Every CLI flag a script actually has is taught in its canonical doc.
 
-Ported from `.ci/scripts/quality/check-cli-doc-coverage.sh`, which is not
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-cli-doc-coverage.sh`, which is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 Why this exists. `check-ci-watch-recipe.sh`'s Check G did this for exactly one pair (ci-trace.py / ci-watch's SKILL.md) and immediately found two real, previously-invisible gaps (--until-final, --timeout) the moment it ran. Generalized here (2026-08-27) to a second real pair found by the same sweep:
 `scripts/ci-runner/run.ts`'s hand-rolled `switch (arg) { case '--flag': }` parser
@@ -20,9 +19,8 @@ PORT NOTES.
 
 THIS GATE HAS NO ENVIRONMENT SEAM, and that shapes how it is proven. Its twin
 derives its root from `dirname "${BASH_SOURCE[0]}"/../../..`, so there is no
-variable to point at a fixture. The differential therefore runs the twin from a BYTE-IDENTICAL COPY placed at the same relative path inside a fixture tree, whose `.ci/scripts/ci/ci-trace.py`, `scripts/ci-runner/run.ts` and two docs carry the
-plant; the port is pointed at the same tree with `REDIACC_CI_ROOT`. The copy is
-compared with `cmp` before every run, because a differential against a stale copy of the twin proves the port matches something nobody ships. The port keeps `REDIACC_CI_ROOT` rather than inventing a private variable: `rediacc_ci.paths` exists precisely because eight gates had eight different names for this idea.
+variable to point at a fixture. The differential therefore runs the twin from a BYTE-IDENTICAL COPY placed at the same relative path inside a fixture tree, whose `.ci/scripts/ci/ci-trace.py`, `scripts/ci-runner/run.ts` and two docs carry the plant; the port is pointed at the same tree with `REDIACC_CI_ROOT`. The copy is compared with `cmp` before every run, because a differential
+against a stale copy of the twin proves the port matches something nobody ships. The port keeps `REDIACC_CI_ROOT` rather than inventing a private variable: `rediacc_ci.paths` exists precisely because eight gates had eight different names for this idea.
 
 `grep -A1` IS A LINE-WINDOW, NOT A FILTER, and reproducing it needs saying out loud. It emits the matching line AND the following one, so a flag whose `add_argument(` call wraps onto the next line is still seen. A port that scanned only matching lines would silently lose every wrapped call -- and the gate's own comment explains why the window exists rather than a whole-file grep:
 "a bare `grep -oE '\"--[a-z-]+\"'` over the whole script also matches internal subprocess flags the script shells out to (git's `--abbrev-ref`, gh's `--repo`), which are not the script's own CLI surface at all."
@@ -64,8 +62,7 @@ _ADD_ARGUMENT = "add_argument("
 def _colours() -> tuple[str, str, str]:
     """The twin's own colour rule: stdout is a tty AND NO_COLOR is unset.
 
-    Not `rediacc_ci.log`, and the difference is deliberate. This gate never
-    sourced `common.sh`; it writes `ok` lines to STDOUT and `✗` lines to stderr
+    Not `rediacc_ci.log`, and the difference is deliberate. This gate never sourced `common.sh`; it writes `ok` lines to STDOUT and `✗` lines to stderr
     with its own two-colour palette, and a port that routed everything through
     the shared logger would move the `ok` lines to stderr. That is exactly the 2026-09-06 stream swap recorded in `rediacc_ci.log`'s docstring, performed deliberately, which is worse than performing it by accident.
     """
@@ -109,8 +106,7 @@ EXTRACTORS = {
 class _Report:
     """The twin's `fails` counter plus its two printers, in one object.
 
-    An object rather than a module global because two runs in one process -- which is what the selftest does -- must not share a counter. The bash original could
-    not have that bug; a port with a module-level `FAILS` would introduce it.
+    An object rather than a module global because two runs in one process -- which is what the selftest does -- must not share a counter. The bash original could not have that bug; a port with a module-level `FAILS` would introduce it.
     """
 
     def __init__(self) -> None:
@@ -265,9 +261,7 @@ def selftest() -> int:
         expect_finding(py, ts, taught_py, taught_ts)
         ctl.check("CONTROL: every flag taught is clean", run(), 0)
 
-        # THE WRAPPED CALL. `add_argument(` on one line and the flag on the next
-        # is why the twin uses `grep -A1`; a port that scanned only the matching
-        # line would report 0 flags here and fail its own vacuity check.
+        # THE WRAPPED CALL. `add_argument(` on one line and the flag on the next is why the twin uses `grep -A1`; a port that scanned only the matching line would report 0 flags here and fail its own vacuity check.
         ctl.check(
             "WINDOW: a flag on the line AFTER add_argument( is still found",
             len(extract_python_argparse(root / ".ci/scripts/ci/ci-trace.py")),

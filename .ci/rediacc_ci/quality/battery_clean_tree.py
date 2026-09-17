@@ -1,8 +1,6 @@
 r"""battery.py's tree guard must survive a CLEAN checkout.
 
-Ported from `.ci/scripts/quality/check-battery-clean-tree.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live and for the
-phase-5 decision that retires the twin.
+Ported from `.ci/scripts/quality/check-battery-clean-tree.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live and for the phase-5 decision that retires the twin.
 
 -----------------------------------------------------------------------------
 RETARGETED 2026-09-09 (W7P3-BAT), FROM `.ci/scripts/test/run-all.sh` ONTO `.ci/rediacc_ci/battery.py`.
@@ -15,8 +13,7 @@ would have passed forever while policing nothing. Retargeting is what keeps the 
 WHAT DID NOT CHANGE, deliberately: the gate still EXTRACTS the live guard by name rather than copying it, still refuses when the extraction finds nothing, still plants the historical defect first to prove the instrument can fire, and still asserts BOTH directions (quiet on a clean tree, loud on a dirty one). The extraction language is the only thing that changed, because the
 subject is now Python.
 
-THE PLANT IS THE SAME DEFECT IN THE NEW LANGUAGE. `PREFIX_GUARD` below is a
-`tree_state` that shells the snapshot out to `bash -c 'set -euo pipefail; git
+THE PLANT IS THE SAME DEFECT IN THE NEW LANGUAGE. `PREFIX_GUARD` below is a `tree_state` that shells the snapshot out to `bash -c 'set -euo pipefail; git
 status --porcelain | grep -v ...'` under `check=True`. That is not a synthetic
 failure: it is the exact pre-fix pipeline, and the realistic way a Python rewrite reintroduces it is by handing the whole thing back to bash. On a CLEAN
 tree the grep matches nothing, pipefail carries the 1 out of bash, `check=True`
@@ -77,17 +74,14 @@ line only and tests for code after the colon.
 THE GIT-STATUS SANITY CHECK HAD TO BE RE-KEYED WITH THE SUBJECT, and this is the trap in the retarget. The twin looked for the literal substring `git status`, which is right for a shell pipeline and WRONG for an argv list: battery.py spells it `["git", "status", "--porcelain"]`, where the two words are separated by `", "`. A gate carried over unchanged would have refused on a
 perfectly good guard. `GIT_STATUS_RE` therefore admits up to eight non-word characters between the two tokens, which covers both spellings and still refuses a `tree_state` that reads something else entirely (`git diff --name-only` has no `status` in it at all).
 
-`python3` IS PROBED FOR ON BOTH SIDES, and this is the one place the retarget adds a refusal the twin did not have. The subject is now Python, so the drive is
-`python3 <driver>`; without a probe an absent interpreter surfaces as an OSError
-in the port and a `command not found` in the twin, which is a divergence in the one case where the two must agree. Both sides now refuse by name with the fix in the message.
+`python3` IS PROBED FOR ON BOTH SIDES, and this is the one place the retarget adds a refusal the twin did not have. The subject is now Python, so the drive is `python3 <driver>`; without a probe an absent interpreter surfaces as an OSError in the port and a `command not found` in the twin, which is a divergence in the one case where the two must agree. Both sides now refuse by name
+with the fix in the message.
 
 THE DRIVER CATCHES AND PRINTS `ERR:<type>: <message>`, rather than letting the traceback out. A traceback carries the driver's own path, and the driver lives in a `mktemp` directory, so the failure detail would differ between two runs of the SAME implementation -- and every twin comparison of a red would be noise. The marker is deterministic and still names the exception.
 
 `$(...)` STRIPS TRAILING NEWLINES, AND THAT IS LOAD-BEARING TWICE. The extracted guard is compared against `-z`, and the drive result is compared against the
 literal string `"rc=0 out="` -- a comparison that a single trailing newline would
-break. `_capture` therefore rstrips "\n" and nothing else, which is exactly what
-the shell does; stripping whitespace would additionally eat the trailing space of
-a `git status --porcelain` line and make two different guards look identical.
+break. `_capture` therefore rstrips "\n" and nothing else, which is exactly what the shell does; stripping whitespace would additionally eat the trailing space of a `git status --porcelain` line and make two different guards look identical.
 
 `out="$(python3 "$TMP/drive.py" 2>&1)"` MERGES THE TWO STREAMS. That is the
 `2>&1` anti-pattern this repo warns about, and here it is deliberate and correct: the whole POINT is to capture the abort, which prints on stderr when it prints at all, next to the guard's stdout. Reproduced with
@@ -113,8 +107,7 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# The three extraction conditions, as three named patterns. Named rather than
-# inlined because each one is a decision with a blast radius; see the port notes.
+# The three extraction conditions, as three named patterns. Named rather than inlined because each one is a decision with a blast radius; see the port notes.
 DEFN_RE = re.compile(r"^def tree_state\(")
 # Code after the colon, i.e. a one-line def. `[^:]*` stops the scan at the first colon, which for `def tree_state(root: pathlib.Path) -> str:` is the ANNOTATION colon, so the pattern is anchored on the closing paren instead.
 SELF_CLOSING_RE = re.compile(r"^def tree_state\(.*\)[^:]*:[ \t]*[^ \t#]")
@@ -130,9 +123,7 @@ ROOT_ENV = "BATTERY_CLEAN_TREE_ROOT"
 # Where the guard lives, relative to the root. RETARGETED 2026-09-09: this was `.ci/scripts/test/run-all.sh` until battery.py replaced it as the runner.
 BATTERY_REL = ".ci/rediacc_ci/battery.py"
 
-# THE DRIVER'S PREAMBLE AND EPILOGUE. Held as constants so the twin can be diffed
-# against them line for line; the two implementations must generate the SAME
-# driver or they are not testing the same thing.
+# THE DRIVER'S PREAMBLE AND EPILOGUE. Held as constants so the twin can be diffed against them line for line; the two implementations must generate the SAME driver or they are not testing the same thing.
 DRIVER_HEAD = "import pathlib\nimport subprocess\nimport sys\n\n"
 DRIVER_TAIL = (
     "\n\ntry:\n"
@@ -193,9 +184,7 @@ def _capture(argv: list[str], cwd: str | None = None, merge: bool = False) -> tu
 
     `merge` puts stderr onto stdout, reproducing `2>&1` INSIDE the child rather than by concatenating two captured buffers, so the interleaving is the child's. See the port notes.
 
-    THE RSTRIP IS `"\\n"` AND NOT `.strip()`. `$(...)` removes trailing newlines
-    and nothing else; a `git status --porcelain` line can end in a meaningful
-    space, and eating it would make two different guards produce the same text.
+    THE RSTRIP IS `"\\n"` AND NOT `.strip()`. `$(...)` removes trailing newlines and nothing else; a `git status --porcelain` line can end in a meaningful space, and eating it would make two different guards produce the same text.
     """
     proc = subprocess.run(
         argv,
@@ -342,8 +331,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# The live guard's shape as of battery.py:313, kept here so the selftest has a CONTROL that must pass. It is a MULTI-LINE def, which is the branch every real
-# run takes; the one-line branch is exercised by its own case below.
+# The live guard's shape as of battery.py:313, kept here so the selftest has a CONTROL that must pass. It is a MULTI-LINE def, which is the branch every real run takes; the one-line branch is exercised by its own case below.
 _LIVE_GUARD = (
     "def tree_state(root):\n"
     "    try:\n"
@@ -572,8 +560,7 @@ def selftest() -> int:
             True,
         )
 
-        # THE REAL SUBJECT IS STILL THERE. Every case above runs against a
-        # fixture root; this one asserts the live tree still holds a battery.py
+        # THE REAL SUBJECT IS STILL THERE. Every case above runs against a fixture root; this one asserts the live tree still holds a battery.py
         # with an extractable guard, so a rename cannot leave the selftest green
         # while the gate refuses on every real run.
         live = paths.repo_root() / BATTERY_REL

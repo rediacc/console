@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported profiler-coverage gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.profiler_coverage`, which pytest and the
-port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.profiler_coverage`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 8a, the broad tree-scanning nine). See DRIVEN, below.
 
@@ -37,8 +35,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, EMPTY on both sides
     stderr: BYTE-IDENTICAL, 147 bytes, sha256 ee6269d080293050...
 
-No normalisation was applied and none was needed; the twin was run TWICE against
-an unchanged tree and is byte-stable against itself on both streams.
+No normalisation was applied and none was needed; the twin was run TWICE against an unchanged tree and is byte-stable against itself on both streams.
 
 DRIVEN RED AS WELL, through the twin's own `PROFILER_COVERAGE_ALLOWLIST` seam, which the port reads under the same name. The fixture is a copy of `.ci/policy/.profiler-coverage-allowlist` with ONE BLANK LINE inserted above its last entry. That is the whole plant, and it is the exact shape the file's own header describes: a blank line resets the tracked BLOCKER, so the entry beneath
 it is suddenly a suppression with no stated reason.
@@ -63,12 +60,10 @@ Re-driven after the fix, both sides are byte-identical on both streams, and the 
 
 THE REAL TREE WAS NEVER WRITTEN TO for this gate; the allowlist is untouched.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-profiler-coverage.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-profiler-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- kind: test test: .ci/scripts/test/gates/test-profiler-coverage.sh
-blocker: BLOCKER: test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") -- real .github/workflows, real .profiler-coverage-allowlist, real .github/actions/profiler/action.yml, real floors -- so the full 121-job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree-only case can never exercise
-needs: none ---- end gate ----
+---- gate ---- kind: test test: .ci/scripts/test/gates/test-profiler-coverage.sh blocker: BLOCKER: test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") -- real .github/workflows, real .profiler-coverage-allowlist, real .github/actions/profiler/action.yml, real floors -- so the full
+121-job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree-only case can never exercise needs: none ---- end gate ----
 """
 
 import sys

@@ -1,8 +1,7 @@
 """Repo-root conftest: attach the xdist groups derived in `rediacc_ci.xdist_groups`.
 
-WHY AT THE ROOT AND NOWHERE ELSE. `pyproject.toml` lists three `testpaths` (`.ci/rediacc_ci/tests`, `.ci/rediacc_ci/tests/gates`, `.claude/rediacc_hooks/tests`), and pytest loads a conftest for every directory from the rootdir DOWN to each
-collected file. Only a conftest at the rootdir is therefore seen by all three; one
-placed in any of them would silently leave the other two ungrouped, which is the half-wired shape that reads as working.
+WHY AT THE ROOT AND NOWHERE ELSE. `pyproject.toml` lists three `testpaths` (`.ci/rediacc_ci/tests`, `.ci/rediacc_ci/tests/gates`, `.claude/rediacc_hooks/tests`), and pytest loads a conftest for every directory from the rootdir DOWN to each collected file. Only a conftest at the rootdir is therefore seen by all three; one placed in any of them would silently leave the other two
+ungrouped, which is the half-wired shape that reads as working.
 
 WHY THE IMPORT BELOW WORKS WITHOUT A sys.path HOP. `pythonpath = [".ci"]` in
 pyproject.toml is applied by `Config._configure_python_path`, which `_pytest/config/__init__.py:1575` calls BEFORE the `pytest_load_initial_conftests` dispatch at :1603 that imports this file (verified against pytest 9.1.1). A hand-written hop here would be a second copy of that decision. If the ordering ever changes, the failure is a loud ConftestImportFailure naming this file,
@@ -15,9 +14,7 @@ WHAT IT DOES NOT DO. It does not turn parallelism on, and it does not decide the
 import pytest
 from rediacc_ci import xdist_groups
 
-# The lock plus run-all.sh join, read ONCE per process. A dict rather than a
-# module-level rebind so no `global` statement is needed; the key names the
-# reason the entry exists rather than being a bare index.
+# The lock plus run-all.sh join, read ONCE per process. A dict rather than a module-level rebind so no `global` statement is needed; the key names the reason the entry exists rather than being a bare index.
 _CACHE: dict[str, set[str]] = {}
 
 

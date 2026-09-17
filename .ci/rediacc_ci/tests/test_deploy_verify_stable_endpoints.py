@@ -89,9 +89,7 @@ def test_healthy_deployment_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None
     assert old.out.endswith("Stable verification complete\n")
     for domain in region_domains("domain"):
         assert "  %s health: OK (security headers verified)" % domain in old.out
-    # 7 fixed fetches (2 marketing bodies, 3 fingerprints, 2 R2 bodies) plus two
-    # per region. There is NO footer fetch and NO latest.json fetch here; the
-    # edge twin has both, and a port that copied them in would be caught by this number alone.
+    # 7 fixed fetches (2 marketing bodies, 3 fingerprints, 2 R2 bodies) plus two per region. There is NO footer fetch and NO latest.json fetch here; the edge twin has both, and a port that copied them in would be caught by this number alone.
     assert old.log.count("curl ") == 7 + 2 * len(region_domains("domain")), old.log
     assert "latest.json" not in old.log
     assert "footer" not in old.out

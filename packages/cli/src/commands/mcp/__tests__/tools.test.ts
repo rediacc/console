@@ -101,9 +101,7 @@ describe('MCP tool definitions', () => {
     it('repo_create builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_create')!;
       const argv = tool.command({ name: 'webapp', machine: 'prod', size: '10G' });
-      // `repo create <name>` takes the repo name POSITIONALLY (spec §5.4 placement
-      // union); the old `--name` flag is gone, and placement is --machine XOR
-      // --datastore.
+      // `repo create <name>` takes the repo name POSITIONALLY (spec §5.4 placement union); the old `--name` flag is gone, and placement is --machine XOR --datastore.
       expect(argv.slice(0, 3)).toEqual(['repo', 'create', 'webapp']);
       expect(argv).not.toContain('--name');
       expect(argv).toContain('--machine');
@@ -173,8 +171,7 @@ describe('MCP tool definitions', () => {
 
     it('repo_delete builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_delete')!;
-      // repo delete <ref>: the repo is a positional; the machine is DERIVED, so
-      // there is no --machine flag to carry (spec §2.3).
+      // repo delete <ref>: the repo is a positional; the machine is DERIVED, so there is no --machine flag to carry (spec §2.3).
       const argv = tool.command({ ref: 'webapp' });
       expect(argv.slice(0, 3)).toEqual(['repo', 'delete', 'webapp']);
       expect(argv).not.toContain('--name');
@@ -224,9 +221,7 @@ describe('MCP tool definitions', () => {
     });
 
     it('the positional-converted repo tools bind their repo to the <ref> arg', () => {
-      // repo cat/status/delete/fork/migrate/up/down carry a positional <ref>
-      // (spec §2.2); the guard's repo field is the positional name, not a dead
-      // --name flag.
+      // repo cat/status/delete/fork/migrate/up/down carry a positional <ref> (spec §2.2); the guard's repo field is the positional name, not a dead --name flag.
       for (const name of [
         'repo_cat',
         'repo_status',
@@ -247,8 +242,7 @@ describe('MCP tool definitions', () => {
     });
 
     it('repo_checkout binds its repo to the <commit-or-branch-ref> positional', () => {
-      // Checkout clones a commit/branch (not a family) into a fresh fork, so its
-      // positional is role-named; the guard field is the positional name.
+      // Checkout clones a commit/branch (not a family) into a fresh fork, so its positional is role-named; the guard field is the positional name.
       expect(TOOLS.find((t) => t.name === 'repo_checkout')!.repoArgField).toBe(
         'commit-or-branch-ref'
       );
@@ -278,8 +272,7 @@ describe('MCP tool definitions', () => {
     });
 
     it('schemas with required fields reject missing values', () => {
-      // machine_status' name is now an OPTIONAL positional; machine_containers
-      // still requires the machine name, so it is the required-field example.
+      // machine_status' name is now an OPTIONAL positional; machine_containers still requires the machine name, so it is the required-field example.
       const tool = TOOLS.find((t) => t.name === 'machine_containers')!;
       const schema = z.object(tool.schema);
       const result = schema.safeParse({});
@@ -287,8 +280,7 @@ describe('MCP tool definitions', () => {
     });
 
     it('schemas with optional fields accept missing values', () => {
-      // repo_up requires only its <ref> positional; no-start/skip-checkpoint/tls
-      // are optional and may be absent.
+      // repo_up requires only its <ref> positional; no-start/skip-checkpoint/tls are optional and may be absent.
       const tool = TOOLS.find((t) => t.name === 'repo_up')!;
       const schema = z.object(tool.schema);
       const result = schema.safeParse({ ref: 'app' });

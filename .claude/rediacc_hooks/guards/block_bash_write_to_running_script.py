@@ -14,13 +14,10 @@ so it still matches and still blocks.
 WRITE INTENT IS REQUIRED, not merely the filename. Every second command in this repo mentions a .sh path -- running it, grepping it, checking its processes. Blocking on the name alone would be the over-matching that gets a guard switched off, so this needs a write operator AND a live process.
 
 PORT NOTE ON THE DUPLICATION WITH ITS EDIT-TOOL SIBLING. `pattern_for` and the pgrep loop below are the same twenty lines as block_edit_of_running_script.py, and that is deliberate: the two BASH files duplicate them too, and the duplication is exactly what produced the sibling drift their comments record (the path anchor reached the Edit-side guard on 2026-08-30, three days after
-this one got it on 2026-08-27). A port whose job is fidelity does not get to
-unify them, because each half is judged against its own twin; unifying is a P6
-change, once there is no twin left to diverge from.
+this one got it on 2026-08-27). A port whose job is fidelity does not get to unify them, because each half is judged against its own twin; unifying is a P6 change, once there is no twin left to diverge from.
 
 PORT NOTE ON `for cand in $TARGETS`. That is an UNQUOTED expansion, so bash splits on IFS -- dropping empty fields, which is why an empty first line from `printf '%s\\n%s'` costs nothing -- and then GLOBS each word against the filesystem. The globbing has never mattered here (a `.sh` path holding a `*` or a `?` would already have been skipped by the `$` test or failed to match a
-process) and is not reproduced; the splitting is, because the empty-field case
-happens on every command that reaches the fallback with no redirect targets.
+process) and is not reproduced; the splitting is, because the empty-field case happens on every command that reaches the fallback with no redirect targets.
 
 PORT NOTE ON `sort -u`. Under `LC_ALL=C` sort orders by BYTE, so the key below
 is the UTF-8 encoding rather than Python's default codepoint comparison. The two agree on every ASCII path and can differ on anything else, and the order is observable: it decides which of several targets is reported first.
@@ -160,8 +157,7 @@ Pick one:
 
 # --------------------------------------------------------------------------- The fixture world ---------------------------------------------------------------------------
 #
-# ITS OWN WORLD, not the Edit-side guard's. The two could share one, and sharing
-# would halve the processes; they do not, because the pgrep pattern is built
+# ITS OWN WORLD, not the Edit-side guard's. The two could share one, and sharing would halve the processes; they do not, because the pgrep pattern is built
 # from a BASENAME and two worlds holding the same basename would each report the
 # other's process in the message. Distinct names keep each guard's output about its own world.
 WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-bashwrite")
@@ -196,9 +192,8 @@ def _spawn(argv):
     )
 
 
-# One session at a time in this world. TWO pytest runs of this suite were live on this machine at once on 2026-09-06 (a peer agent's and this one's), and they fought: each `_kill_stale` killed the other's shells, and the case that names a running script reported different pids on the two sides of one differential. The world has to sit at a FIXED path -- a static payload names
-# it -- so it cannot be made per-process; an advisory lock held for the life of
-# the interpreter makes the second run wait instead.
+# One session at a time in this world. TWO pytest runs of this suite were live on this machine at once on 2026-09-06 (a peer agent's and this one's), and they fought: each `_kill_stale` killed the other's shells, and the case that names a running script reported different pids on the two sides of one differential. The world has to sit at a FIXED path -- a static payload names it --
+# so it cannot be made per-process; an advisory lock held for the life of the interpreter makes the second run wait instead.
 _LOCK_FDS = []
 
 
@@ -217,9 +212,7 @@ def _hold_world_lock(world):
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
             if time.monotonic() >= deadline:
-                # A five-minute wait means the other run is wedged, not busy.
-                # Proceeding is better than a suite that never finishes; the
-                # differential will say so loudly if the worlds then collide.
+                # A five-minute wait means the other run is wedged, not busy. Proceeding is better than a suite that never finishes; the differential will say so loudly if the worlds then collide.
                 break
             time.sleep(0.2)
             continue
@@ -257,9 +250,7 @@ def _kill_stale(paths):
 def _await_visible():
     """Both shells must be in the process table before any case runs.
 
-    `Popen` returns before the exec completes and the bash sweep starts
-    immediately afterwards; a case that ran in that gap would see one process on
-    one side and two on the other, reported as a port defect.
+    `Popen` returns before the exec completes and the bash sweep starts immediately afterwards; a case that ran in that gap would see one process on one side and two on the other, reported as a port defect.
     """
     import time  # noqa: PLC0415
 
@@ -343,9 +334,8 @@ def pattern_for(base):
 
     ESCAPE THE DOTS. `.` is a regex wildcard and the basename was interpolated raw, so a target whose name is one letter plus `.sh` produced the pattern `[x].sh`, which matches any process containing `x<any>sh` -- and for the letter `b` that is **/bin/bash**, i.e. every bash process on the machine.
 
-    Measured 2026-09-01: writing a TypeScript control whose FIXTURE filename was one letter plus the shell suffix was refused, naming `/bin/bash --init-file ...` as the job it would corrupt. No script of that name was running anywhere. Round six of this guard's over-matching, and the first that is not about command shape at all -- the
-    previous five were all "a mention scored as a target"; this one is the TARGET name
-    itself becoming a wildcard.
+    Measured 2026-09-01: writing a TypeScript control whose FIXTURE filename was one letter plus the shell suffix was refused, naming `/bin/bash --init-file ...` as the job it would corrupt. No script of that name was running anywhere. Round six of this guard's over-matching, and the first that is not about command shape at all -- the previous five were all "a mention scored as a
+    target"; this one is the TARGET name itself becoming a wildcard.
     """
     esc = re.sub(META, r"\\\1", base[1:])
     return r"(^|[/" + _S + r"])[" + base[:1] + r"]" + esc

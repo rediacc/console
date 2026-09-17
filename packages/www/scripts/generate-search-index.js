@@ -228,9 +228,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
             (h) => h.depth === 2 || h.depth === 3
           );
           if (sectionHeadings.length !== sectionAnchors.length) {
-            // The build enforces full heading alignment with the English source
-            // (rehype-stable-heading-ids); a mismatch here means THIS script's
-            // sectioning drifted from that contract, and a silently wrong fragment is worse than a loud failure.
+            // The build enforces full heading alignment with the English source (rehype-stable-heading-ids); a mismatch here means THIS script's sectioning drifted from that contract, and a silently wrong fragment is worse than a loud failure.
             throw new Error(
               `${collection}/${langDir}/${file}: ${sectionHeadings.length} H2/H3 section(s) ` +
                 `but ${sectionAnchors.length} English anchor(s); cannot assign search fragments`
@@ -393,6 +391,5 @@ function stripMarkdown(text) {
   );
 }
 
-// Run generator. The boolean is the verdict; exiting 0 on failure made a lost
-// index invisible to both the CLI caller and the build integration.
+// Run generator. The boolean is the verdict; exiting 0 on failure made a lost index invisible to both the CLI caller and the build integration.
 process.exit(generateSearchIndex() ? 0 : 1);

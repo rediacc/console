@@ -23,9 +23,7 @@ ORDER = 11
 
 # Dropping the SUBCOMMAND makes every `gh run <anything>` after a wait a refusal, so re-running a failed job on a delay is blocked as if it were polling. It is the half that names WHICH gh calls re-fetch the job tree.
 #
-# The separator was the first candidate and it does not work: `[^|;&]*` on
-# either side of it already cannot cross a separator, so making `(&&|;)`
-# optional changes nothing any realistic command can see. The anti-vacuity control said so rather than the defect being taken on trust.
+# The separator was the first candidate and it does not work: `[^|;&]*` on either side of it already cannot cross a separator, so making `(&&|;)` optional changes nothing any realistic command can see. The anti-vacuity control said so rather than the defect being taken on trust.
 DEFECT = ("run[{B}]+(view|list)", "run[{B}]+")
 
 PATTERN = hookio.rx(r"sleep[{B}]+[0-9]+[^|;&]*(&&|;)[{B}]*[^|;&]*gh[{B}]+run[{B}]+(view|list)")

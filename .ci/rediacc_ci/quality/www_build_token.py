@@ -12,9 +12,7 @@ for reasons that have nothing to do with the commit under test.
 
 WHY A GATE AND NOT A THIRD CAREFUL COMMENT. It was found and fixed twice, at ci-quality.yml and cd-deploy-worker.yml, each time with a thorough comment naming run 32223128728 -- and the THIRD call site, ci-build-docker.yml, was left behind both times and reddened job 99839065246 months later. Two prose comments did not find the third site. A rule that enumerates them does.
 
-THE GENERAL SHAPE, and this repo hit it twice in one day: a fix applied at two of three call sites is a fix with a live hole. The nfpm checksum was the same story
-that morning (ci.yml verified before extracting; two siblings piped straight into
-tar).
+THE GENERAL SHAPE, and this repo hit it twice in one day: a fix applied at two of three call sites is a fix with a live hole. The nfpm checksum was the same story that morning (ci.yml verified before extracting; two siblings piped straight into tar).
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -30,9 +28,8 @@ and a differential over this gate reports VACUOUS_BOTH_EMPTY -- both sides exit 
 with zero RECOGNISED findings. That is the comparator behaving correctly and
 saying so: its VACUOUS message names both causes, "plant one" and "the finding extractor does not recognise this gate's output (pass --finding-re)". The differential for this pair therefore runs with `--finding-re '^ *MISSING '`. The text is kept byte-identical to the twin's precisely so that ONE `--finding-re` serves both sides.
 
-THE FLOOR IS THE INTERESTING PART OF THIS GATE. Three call sites exist today, and finding none means the spellings moved -- at which point a green asserts nothing, which is the exact failure the gate is written against. The floor is carried at the same value with the same message. It is a hand-typed count and contract
-section 6 says a floor should be set-based or corpus-derived; that is a real
-finding about this gate, and it is NOT fixed here, because changing the floor changes the verdict and a port that changes the verdict is not a port.
+THE FLOOR IS THE INTERESTING PART OF THIS GATE. Three call sites exist today, and finding none means the spellings moved -- at which point a green asserts nothing, which is the exact failure the gate is written against. The floor is carried at the same value with the same message. It is a hand-typed count and contract section 6 says a floor should be set-based or corpus-derived;
+that is a real finding about this gate, and it is NOT fixed here, because changing the floor changes the verdict and a port that changes the verdict is not a port.
 """
 
 import pathlib
@@ -43,9 +40,7 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# The three spellings a www build wears. Kept as a list because a fourth spelling
-# is how a fourth call site would arrive unnoticed. Compiled once; the twin
-# re-passes the same alternation to grep on every call.
+# The three spellings a www build wears. Kept as a list because a fourth spelling is how a fourth call site would arrive unnoticed. Compiled once; the twin re-passes the same alternation to grep on every call.
 SITE_RE = re.compile(r"build-www\.sh|npm run build:www|npm run build -w @rediacc/www")
 
 # The two filters, both carried. See the module docstring for why the first one cannot match and is kept anyway.
@@ -69,9 +64,7 @@ DEFAULT_WORKFLOWS = ".github/workflows"
 def find_sites(directory: pathlib.Path) -> list[tuple[pathlib.Path, int, str]]:
     """Every www build invocation under `directory`, as (file, 1-based line, text).
 
-    ONLY `*.yml`, matching the twin's `"$1"/*.yml` glob exactly. That glob is not
-    recursive and does not match `.yaml`; both facts are behaviour, and a port
-    that quietly widened either would report call sites the twin never saw and read as a regression in the workflows rather than in the gate.
+    ONLY `*.yml`, matching the twin's `"$1"/*.yml` glob exactly. That glob is not recursive and does not match `.yaml`; both facts are behaviour, and a port that quietly widened either would report call sites the twin never saw and read as a regression in the workflows rather than in the gate.
 
     Files are visited in sorted order so two runs over one directory produce the
     findings in the same order. The shell's glob is already sorted under LC_ALL=C,
@@ -82,8 +75,7 @@ def find_sites(directory: pathlib.Path) -> list[tuple[pathlib.Path, int, str]]:
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
-            # grep skips what it cannot read and says so on stderr; it does not
-            # abort the scan. Matching that is deliberate -- one unreadable file must not turn a coverage report into no report at all.
+            # grep skips what it cannot read and says so on stderr; it does not abort the scan. Matching that is deliberate -- one unreadable file must not turn a coverage report into no report at all.
             continue
         for index, line in enumerate(text.split("\n"), start=1):
             if not SITE_RE.search(line):
@@ -288,8 +280,7 @@ def selftest() -> int:
         _m, _t, bad = audit(far)
         ctl.check("WINDOW MIRROR: a token beyond the window does not count", bad, 1)
 
-        # A commented-out call site is not a call site. This is the filter that
-        # actually works; its dead sibling is documented in the module docstring.
+        # A commented-out call site is not a call site. This is the filter that actually works; its dead sibling is documented in the module docstring.
         commented = workflow("commented")
         write(commented, "a.yml", "jobs:\n  a:\n    steps:\n      # - run: npm run build:www\n")
         _m, total, _b = audit(commented)

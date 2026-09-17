@@ -20,9 +20,7 @@ FOUR KINDS OF EVIDENCE ARE COMPARED, because no one of them is sufficient:
   * The exit code, which for this script is `go`'s, `zstd`'s, `ls`'s or
     `build.sh`'s own rather than a flattened 1.
 
-`ls -la` TIMESTAMPS ARE MASKED, AND ONLY THEY. The two sides run seconds apart,
-so `ls` prints a different mtime for otherwise identical files; the mask
-replaces the `<Mon> <day> <HH:MM>` field and leaves mode, link count, owner, group, size and name alone. `test_the_ls_mask_hides_only_the_timestamp` pins that in both directions. The only other mask is `$0`.
+`ls -la` TIMESTAMPS ARE MASKED, AND ONLY THEY. The two sides run seconds apart, so `ls` prints a different mtime for otherwise identical files; the mask replaces the `<Mon> <day> <HH:MM>` field and leaves mode, link count, owner, group, size and name alone. `test_the_ls_mask_hides_only_the_timestamp` pins that in both directions. The only other mask is `$0`.
 
 RECORDING FAKES WRITE TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. This script's stdout IS an artifact (the `ls` listing and the checksum file), and a fake that logged to stdout would corrupt the very output under comparison. The `FAKEBIN ` prefix
 is also what the K=5 ledger scopes `--finding-re` to, because `shadow-gate.ts`
@@ -64,9 +62,7 @@ VENDORED = (
 
 BASH = shutil.which("bash") or "/bin/bash"
 
-# Real and deterministic. `ls`, `sha256sum` and `cat` put their stdout straight
-# into the script's own output; `readlink -f` and `chmod +x` are behaviour the
-# twin delegates to coreutils and this port delegates to the same binaries.
+# Real and deterministic. `ls`, `sha256sum` and `cat` put their stdout straight into the script's own output; `readlink -f` and `chmod +x` are behaviour the twin delegates to coreutils and this port delegates to the same binaries.
 PATH_MINIMUM = (
     "dirname",
     "uname",
@@ -669,8 +665,7 @@ def test_the_stripped_verdict_reports_both_ways(tmp_path) -> None:
     assert old_t[0].returncode == 0, old_t[0].stderr
     assert "\u2713 renet-linux-amd64: stripped (release build)\n" in old_t[0].stderr
     assert "\u26a0 renet-darwin-arm64: may contain debug symbols\n" in old_t[0].stderr
-    # The windows arm never asks the stripped question; it prints the first 80
-    # BYTES of `file -b`, which truncates this description mid-word.
+    # The windows arm never asks the stripped question; it prints the first 80 BYTES of `file -b`, which truncates this description mid-word.
     assert (
         "\u2713 renet-windows-amd64.exe: ELF 64-bit LSB executable, x86-64,"
         " statically linked, with debug_info, not strip\n"
@@ -908,8 +903,7 @@ def test_defect_an_output_parent_that_does_not_exist_dies_silently(tmp_path) -> 
 
 def test_defect_a_malformed_lockfile_makes_the_completeness_check_vacuous(tmp_path) -> None:
     """DEFECT 3. `jq` runs in a PROCESS SUBSTITUTION, so its failure is
-    invisible to `set -e`; the asset array stays empty and the "fail fast" loop
-    whose comment says a missing asset "must break HERE" runs zero times. The build then ships exactly the incomplete artifact that check exists to
+    invisible to `set -e`; the asset array stays empty and the "fail fast" loop whose comment says a missing asset "must break HERE" runs zero times. The build then ships exactly the incomplete artifact that check exists to
     prevent, with exit 0."""
     root = fixture(tmp_path, lockfile="{ this is not json\n")
     old_t, new_t = run_both(root)

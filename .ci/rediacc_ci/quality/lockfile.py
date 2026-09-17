@@ -1,7 +1,6 @@
 """Validate EVERY package-lock.json in the tree, on two independent properties.
 
-Ported from `.ci/scripts/quality/check-lockfile.sh`, which is NOT deleted; see
-`rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-lockfile.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
 
 WHY THE TWIN WAS REWRITTEN, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
@@ -91,17 +90,13 @@ English advice is read as a gate refusing to report a verdict, the comparison is
 disagreed.
 
 That matters more than it sounds, because `assertEquivalent` disqualifies a tree id UNCONDITIONALLY once any row against it is non-EQUIVALENT, and the id is the content of both implementations -- so a FALSE refusal can never be cleared by re-running, only by changing code that had nothing wrong with it. The row was archived verbatim and removed from the ledger rather than left to
-poison the pair forever, and the recorded trees now exercise the CI-installer failure branch instead. The canonical-writer branch is still covered, by `--selftest` ("PLANT: the canonical writer failing to resolve reds") and by the pytest twin.
-Reported to the root driver; not fixed here, because `scripts/lib/shadow-gate.ts`
-is not this port's file.
+poison the pair forever, and the recorded trees now exercise the CI-installer failure branch instead. The canonical-writer branch is still covered, by `--selftest` ("PLANT: the canonical writer failing to resolve reds") and by the pytest twin. Reported to the root driver; not fixed here, because `scripts/lib/shadow-gate.ts` is not this port's file.
 
 THE `break` AFTER A RESOLVE FAILURE IS LOAD-BEARING. When the canonical writer cannot read a lockfile, the CI-installer probe is not run at all: the two have DIFFERENT fixes, and telling someone to reconcile with the wrong npm is how the flip oscillated in the first place. So exactly one resolve failure is ever reported per lockfile, and it is the first one.
 
-STREAMS. `common.sh`'s four loggers all write to stderr and gate colour on `[[ -t 2 ]]`, which is the one pre-existing variant that tests the stream it writes to -- so `rediacc_ci.log` matches it exactly and no stream moves in this port. The bare `echo` advice lines around a resolve failure are STDOUT in the
-twin and stay stdout here; they are data a reader copies, not messages.
+STREAMS. `common.sh`'s four loggers all write to stderr and gate colour on `[[ -t 2 ]]`, which is the one pre-existing variant that tests the stream it writes to -- so `rediacc_ci.log` matches it exactly and no stream moves in this port. The bare `echo` advice lines around a resolve failure are STDOUT in the twin and stay stdout here; they are data a reader copies, not messages.
 
-ONE KNOWN DIVERGENCE, inherited from the logger and stated so nobody "fixes" it: `common.sh` logs with `echo -e`, which interprets backslash escapes IN THE MESSAGE. A lockfile path containing `\t` would be printed differently by the two implementations. No such path exists, and `rediacc_ci.log` formats the message
-as data on purpose; see its docstring.
+ONE KNOWN DIVERGENCE, inherited from the logger and stated so nobody "fixes" it: `common.sh` logs with `echo -e`, which interprets backslash escapes IN THE MESSAGE. A lockfile path containing `\t` would be printed differently by the two implementations. No such path exists, and `rediacc_ci.log` formats the message as data on purpose; see its docstring.
 """
 
 import contextlib
@@ -114,14 +109,11 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The npm whose OUTPUT FORM is canonical for every committed lockfile (issue #587). CLAUDE.md's "27-line package-lock.json flip" section is the prose half
-# of this pin; the two must be changed together or the repo goes back to arguing
+# The npm whose OUTPUT FORM is canonical for every committed lockfile (issue #587). CLAUDE.md's "27-line package-lock.json flip" section is the prose half of this pin; the two must be changed together or the repo goes back to arguing
 # with itself.
 CANONICAL_NPM = "npm@11"
 
-# The npm CI actually runs. Keep in step with setup-node's bundled npm (Node 22
-# -> npm 10); the exact version is printed in every job's "Environment details".
-# This is NOT the canonical writer any more, but it is still the installer, so it still gets a vote.
+# The npm CI actually runs. Keep in step with setup-node's bundled npm (Node 22 -> npm 10); the exact version is printed in every job's "Environment details". This is NOT the canonical writer any more, but it is still the installer, so it still gets a vote.
 CI_NPM = "npm@10"
 
 # The file name discovered everywhere. Named once so the discovery and the messages cannot drift apart.
@@ -155,14 +147,11 @@ def discover(root: pathlib.Path) -> list[str]:
     # `paths.walk_tree` prunes `node_modules` in place, which is what `-not -path '*/node_modules/*'` amounts to for every path `find` can produce, and is also why a lockfile sitting directly beside a node_modules is still found. It prunes `.claude/worktrees` too: a peer session's sibling checkout of this repository carries its own `package-lock.json` files, and this gate was
     # linting them as if they were ours.
     #
-    # THE PRUNE IS NO LONGER SPELLED BY `EXCLUDED_DIR`. That constant now only builds the selftest fixture below, so editing it will NOT change what this
-    # walk skips; `paths.PRUNED_DIR_NAMES` is where that lives. Said out loud
-    # because a constant that used to steer the code it sits above is exactly the kind of thing a later reader edits expecting an effect.
+    # THE PRUNE IS NO LONGER SPELLED BY `EXCLUDED_DIR`. That constant now only builds the selftest fixture below, so editing it will NOT change what this walk skips; `paths.PRUNED_DIR_NAMES` is where that lives. Said out loud because a constant that used to steer the code it sits above is exactly the kind of thing a later reader edits expecting an effect.
     for dirpath, _dirnames, filenames in paths.walk_tree(root):
         if LOCK_NAME in filenames:
             out.append(str(pathlib.Path(dirpath).relative_to(root) / LOCK_NAME))
-    # `find`'s output starts `./`, which the twin's sed strips; a path directly
-    # at the root therefore has no directory prefix at all.
+    # `find`'s output starts `./`, which the twin's sed strips; a path directly at the root therefore has no directory prefix at all.
     return sorted(path.removeprefix("./") for path in out)
 
 
@@ -189,8 +178,7 @@ def run_lint(root: pathlib.Path, lock: str) -> int:
 def run_resolve(directory: pathlib.Path, npm_pin: str) -> int:
     """`npm ci --dry-run` in `directory`, output DISCARDED. Returns the exit code.
 
-    Discarded to match the twin's `>/dev/null 2>&1`: the first probe is a yes/no question and npm's success chatter is long. The failure path re-runs it with
-    output kept; see `resolve_failure_detail`.
+    Discarded to match the twin's `>/dev/null 2>&1`: the first probe is a yes/no question and npm's success chatter is long. The failure path re-runs it with output kept; see `resolve_failure_detail`.
     """
     return subprocess.run(
         resolve_argv(npm_pin),
@@ -216,8 +204,7 @@ def resolve_failure_detail(directory: pathlib.Path, npm_pin: str, limit: int = 2
     )
     text = proc.stdout or ""
     lines = text.split("\n")
-    # A trailing newline produces a final empty element that `head` never emits
-    # as a line; dropping it keeps the two transcripts identical.
+    # A trailing newline produces a final empty element that `head` never emits as a line; dropping it keeps the two transcripts identical.
     if lines and lines[-1] == "":
         lines.pop()
     return ["    " + line for line in lines[:limit]]
@@ -235,8 +222,7 @@ def main(argv: list[str] | None = None) -> int:
     root = paths.repo_root()
     lockfiles = discover(root)
 
-    # THE VACUITY CASE, AND THE TWIN SAYS IT IN ONE SENTENCE. A repository with
-    # no lockfile anywhere has not been validated; it has been missed.
+    # THE VACUITY CASE, AND THE TWIN SAYS IT IN ONE SENTENCE. A repository with no lockfile anywhere has not been validated; it has been missed.
     if not lockfiles:
         log.error("No package-lock.json found anywhere. That cannot be right.")
         return 1
@@ -291,8 +277,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(line)
             failed.append("%s (%s cannot resolve)" % (lock, npm_pin))
             resolve_failed = True
-            # THE BREAK IS LOAD-BEARING; see the port notes. The second probe is
-            # not run, because the two failures have different fixes.
+            # THE BREAK IS LOAD-BEARING; see the port notes. The second probe is not run, because the two failures have different fixes.
             break
         if resolve_failed:
             continue

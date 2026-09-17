@@ -5,9 +5,7 @@ The no-retry force-cancel decision in `.ci/scripts/ci/watchdog-monitor.cjs`: WHI
 HISTORY. The twin was `test-watchdog-cancel-label.sh` and existed for the `no-cancel-failure` label, which suppressed the force-cancel so a run could finish and report every red at once. The label was removed 2026-08-05: holding a known-red run open makes every CI iteration wait out the expensive legs (E2E, OPS) for information the drain already delivers for the deterministic
 lanes. What remains under test is the part that outlived it -- the branch ordering and the drain.
 
-WHY A UNIT TEST AND NOT A MIRROR. It would be easy to re-implement the boolean here
-and assert on the copy; that proves nothing about the watchdog. This calls the
-EXPORTED decision and reads `WATCHDOG_NO_RETRY_PATTERNS` out of the REAL `watchdog-monitor.yml`, so a renamed pattern or a reordered branch fails here.
+WHY A UNIT TEST AND NOT A MIRROR. It would be easy to re-implement the boolean here and assert on the copy; that proves nothing about the watchdog. This calls the EXPORTED decision and reads `WATCHDOG_NO_RETRY_PATTERNS` out of the REAL `watchdog-monitor.yml`, so a renamed pattern or a reordered branch fails here.
 
 Both directions matter:
   - Too quiet: a deterministic Quality failure stops killing the run, and one lint
@@ -21,8 +19,7 @@ THE PATTERN READ IS REIMPLEMENTED, and the two spellings agree by construction. 
 
 and this module uses the same expression as a Python regex under `re.MULTILINE`. Both are greedy on `.*` and both anchor the closing quote at end of line, so a value containing a quote resolves identically in either. The port then REFUSES an empty result exactly as the twin does, because a pattern list that read as empty would make every case below pass for the wrong reason.
 
-NO `xdist_group`. Every case is a short-lived `node -e` subprocess that reads two
-tracked files and writes nothing; nothing is bound and no module global is mutated.
+NO `xdist_group`. Every case is a short-lived `node -e` subprocess that reads two tracked files and writes nothing; nothing is bound and no module global is mutated.
 """
 
 import json
@@ -57,8 +54,7 @@ def no_retry_patterns(gate) -> str:
             "every case in this module would pass for the wrong reason"
             % paths.relative_to_root(CI_WORKFLOW)
         )
-    # `sed -n ...p` prints EVERY match and the twin takes the whole stream; there
-    # is one line today, and taking the last preserves the twin's behaviour if a second ever appears.
+    # `sed -n ...p` prints EVERY match and the twin takes the whole stream; there is one line today, and taking the last preserves the twin's behaviour if a second ever appears.
     return matches[-1]
 
 

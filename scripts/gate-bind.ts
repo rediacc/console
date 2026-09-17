@@ -160,9 +160,8 @@ export function planExtract(
     const got = rb === null ? 'nothing' : `${rb.id} / "${rb.step}" / ${rb.run}`;
     return { error: `${reg.file}: header re-derives ${got}, not ${id} / "${reg.step}"` };
   }
-  // THE WRITE MODE NOW RUNS THE VERIFIER'S OWN CHECK. Everything above proves the
-  // header re-derives the right id, step and run; NONE of it proved the lane can
-  // provide what the file needs, which is precisely what the verifier asserts a moment later. So --extract happily wrote headers that gate-bind then rejected, and on 2026-09-06 two of them reddened check:ci-gate-bind mid-wave and had to be stripped by hand. A tool whose write mode does not run its own verify is how a green plan produces a red tree.
+  // THE WRITE MODE NOW RUNS THE VERIFIER'S OWN CHECK. Everything above proves the header re-derives the right id, step and run; NONE of it proved the lane can provide what the file needs, which is precisely what the verifier asserts a moment later. So --extract happily wrote headers that gate-bind then rejected, and on 2026-09-06 two of them reddened check:ci-gate-bind mid-wave
+  // and had to be stripped by hand. A tool whose write mode does not run its own verify is how a green plan produces a red tree.
   //
   // Refusing HERE turns that into a named refusal the caller can act on, which is the difference between "this gate cannot be declared, and here is why" and a broken tree someone else has to diagnose. The two known causes are a genuine lane mismatch (check-editorconfig.sh needs submodules its lane does not check out) and a false positive in inferredNeeds (its npx probe has no
   // command position check, so it matches a parameter expansion). Both deserve a refusal rather than a write.
@@ -663,9 +662,8 @@ export function usesLocalBin(run: string): boolean {
 export function emitStep(b: Emitting, guard = 'setup', stepId?: string): string[] {
   const cmd = usesLocalBin(b.run) ? `npm run ${b.id}` : b.run;
   const acquire = b.needs.flatMap((n) => ACQUIRE[n] ?? []);
-  // `when` IS ANDED ON, NEVER SUBSTITUTED. The standard guard is what stops a gate
-  // running after setup failed; a field that could replace it would let a gate opt out
-  // of the ordering contract, which is invariant 11 through a side door. Parenthesised so a `when` containing `||` cannot bind looser than the `&&` and swallow the guard -- `a && b || c` is `(a && b) || c`, which would run the step on a failed setup.
+  // `when` IS ANDED ON, NEVER SUBSTITUTED. The standard guard is what stops a gate running after setup failed; a field that could replace it would let a gate opt out of the ordering contract, which is invariant 11 through a side door. Parenthesised so a `when` containing `||` cannot bind looser than the `&&` and swallow the guard -- `a && b || c` is `(a && b) || c`, which would
+  // run the step on a failed setup.
   const cond =
     `!cancelled() && steps.${guard}.outcome == 'success'` + (b.when ? ` && (${b.when})` : '');
   // `id:` ONLY when sharded (`stepId` passed), so every unsharded step's YAML stays byte-identical to before D4 -- an added id on a step nothing reads it from is a diff with no reader, which is how a generator trains people to stop reading its diffs at all.
@@ -944,9 +942,8 @@ export function registered(manifest: string, id: string): Registered | { error: 
   const end = text.indexOf('\n  },\n', at);
   if (start === -1 || end === -1) return { error: `could not bound the entry for '${id}'` };
   const block = text.slice(start, end);
-  // BOTH QUOTE STYLES. This accepted single quotes only, so an entry whose value CONTAINS an apostrophe -- and is therefore written with double quotes in the manifest -- read as absent. check:ci-cli-doc-coverage's step is "CLI docs stay in sync with their scripts' real flags", so field('step') returned '' and --extract reported "entry is missing leaves, ci.step or
-  // ci.job". The entry was complete; the reader was not, and every other entry
-  // needing double quotes was silently un-extractable the same way.
+  // BOTH QUOTE STYLES. This accepted single quotes only, so an entry whose value CONTAINS an apostrophe -- and is therefore written with double quotes in the manifest -- read as absent. check:ci-cli-doc-coverage's step is "CLI docs stay in sync with their scripts' real flags", so field('step') returned '' and --extract reported "entry is missing leaves, ci.step or ci.job". The
+  // entry was complete; the reader was not, and every other entry needing double quotes was silently un-extractable the same way.
   const field = (k: string): string =>
     new RegExp(`\\b${k}: '([^']*)'`).exec(block)?.[1] ??
     new RegExp(`\\b${k}: "([^"]*)"`).exec(block)?.[1] ??
@@ -2365,9 +2362,8 @@ function main(argv: string[]): void {
     const runsScriptDirectly =
       lockEntry !== undefined &&
       !lockEntry.run.startsWith('npm run ') &&
-      // `.py` TOO, and for the W7 P4 reason. A gate registered as a bare path with no package.json key keeps that shape when its path is repointed at a Python
-      // port; keying on `.sh` alone meant the checks below -- run must match the
-      // header's derived run, and no package.json key may exist -- silently stopped applying to a gate the moment it was ported. Same class as the `paths:` glob that stops selecting its own gate once the leaf is a `.py`.
+      // `.py` TOO, and for the W7 P4 reason. A gate registered as a bare path with no package.json key keeps that shape when its path is repointed at a Python port; keying on `.sh` alone meant the checks below -- run must match the header's derived run, and no package.json key may exist -- silently stopped applying to a gate the moment it was ported. Same class as the `paths:`
+      // glob that stops selecting its own gate once the leaf is a `.py`.
       (lockEntry.run.endsWith('.sh') || lockEntry.run.endsWith('.py'));
     if (lockEntry?.qualityGateTest === true || runsScriptDirectly) {
       if (lockEntry.run !== b.run) {
@@ -2450,9 +2446,7 @@ function main(argv: string[]): void {
     }
   }
 
-  // BELT AND BRACES, AND IT CAN NO LONGER FIRE. A malformed block now refuses above, before the write branch, so `malformed` is always empty by here. The line stays because the refusal above is the load-bearing one and this is the
-  // safety net if the two are ever reordered; it is annotated rather than deleted
-  // so nobody reads it as the check that catches malformed headers. It is not.
+  // BELT AND BRACES, AND IT CAN NO LONGER FIRE. A malformed block now refuses above, before the write branch, so `malformed` is always empty by here. The line stays because the refusal above is the load-bearing one and this is the safety net if the two are ever reordered; it is annotated rather than deleted so nobody reads it as the check that catches malformed headers. It is not.
   problems.push(...malformed);
 
   if (problems.length > 0) {

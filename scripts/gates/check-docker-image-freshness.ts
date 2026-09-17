@@ -266,9 +266,7 @@ async function listHubTags(repo: string): Promise<TagInfo[] | null> {
   //
   // Measured on CI run 32200906643: the job received DOCKERHUB_TOKEN (the step env shows it masked), every one of the five images failed to list, and the same gate had listed them anonymously in earlier runs of this branch. So the token was being rejected and sending it unconditionally turned a working anonymous path into a total failure.
   //
-  // A token still buys the higher rate limit when it is valid, so it is tried FIRST. On a
-  // 401 or 403 the request is retried without it; anything else, 429 included, stays a
-  // failure, because a rate limit is genuinely unknown and unknown is never a pass.
+  // A token still buys the higher rate limit when it is valid, so it is tried FIRST. On a 401 or 403 the request is retried without it; anything else, 429 included, stays a failure, because a rate limit is genuinely unknown and unknown is never a pass.
   const attempts: { label: string; headers: Record<string, string> }[] = token
     ? [
         { label: 'token', headers: { Authorization: `Bearer ${token}` } },
@@ -413,10 +411,8 @@ async function main(): Promise<void> {
   const win = getMinReleaseAgeMs();
   const now = Date.now();
   const stale: string[] = [];
-  // BASELINE IDENTITY, kept separate from the DISPLAY string above it. `stale[i]`
-  // embeds `file:line` for a human to find the pin; `staleKeys[i]` (same index,
-  // same order) is `image:tag` alone, which `seen` already proves is globally unique. A baseline keyed on the display string re-keys itself on any Dockerfile edit that shifts the FROM line -- a comment added above it, an unrelated stage inserted earlier in the file -- reporting the SAME unresolved debt as simultaneously "newly stale" (new key, not in the old baseline) and "no
-  // longer stale" (old key, missing from the new run). Same
+  // BASELINE IDENTITY, kept separate from the DISPLAY string above it. `stale[i]` embeds `file:line` for a human to find the pin; `staleKeys[i]` (same index, same order) is `image:tag` alone, which `seen` already proves is globally unique. A baseline keyed on the display string re-keys itself on any Dockerfile edit that shifts the FROM line -- a comment added above it, an
+  // unrelated stage inserted earlier in the file -- reporting the SAME unresolved debt as simultaneously "newly stale" (new key, not in the old baseline) and "no longer stale" (old key, missing from the new run). Same
   // shape as the CSS-selector re-keying trap this repo already paid for once;
   // this baseline's key must not depend on anything that can move independent of the finding itself.
   const staleKeys: string[] = [];

@@ -13,8 +13,7 @@ mechanism exists to avoid: a deleted plan announces its own absence.
 WHY A GUARD AND NOT A GATE ALONE. check:ci-plan-record already catches a broken pointer, and catching it in CI is a round trip AFTER the plan text is only in an object nobody can name any more. The blob is still reachable at that point -- `git log --find-object` will find it if you know to look -- but the session that made the edit has moved on, and the next reader inherits a file
 whose header is self-consistent and wrong. The cheap moment to refuse is the edit.
 
-WHY IT DENIES THE SPINE AND NOT THE WHOLE FILE, which was the first design and was wrong. A record is meant to be SHARPENED: `Record-Sig` deliberately canonicalises status, pointer and the box table and NOT the prose, exactly so `## Why`, `## Outcome` and `## Lessons` stay editable in place -- that is the
-"sharpen; edit in place when wrong" lifetime agent/README.md:57 assigns to a
+WHY IT DENIES THE SPINE AND NOT THE WHOLE FILE, which was the first design and was wrong. A record is meant to be SHARPENED: `Record-Sig` deliberately canonicalises status, pointer and the box table and NOT the prose, exactly so `## Why`, `## Outcome` and `## Lessons` stay editable in place -- that is the "sharpen; edit in place when wrong" lifetime agent/README.md:57 assigns to a
 durable design. A guard that refused every edit would make the record the one document in this tree nobody may correct, and an uncorrectable document is one people route around. So:
 
   DENIED   a Write (whole-file replacement always carries the spine), and any
@@ -38,9 +37,7 @@ line survives only here. It is worth recording because it is the ONLY guard in t
 
 PORT NOTE ON `${#_body}`. bash counts CHARACTERS in the current locale, so the
 12-character floor below is a byte count under `LC_ALL=C` (which the
-differential exports) and a codepoint count under a UTF-8 session. The port spells it as `len()` on the string, i.e. the UTF-8 reading, because that is the
-locale a session actually runs in; the two answers can only differ for a box
-body that is non-ASCII AND within a few characters of the floor.
+differential exports) and a codepoint count under a UTF-8 session. The port spells it as `len()` on the string, i.e. the UTF-8 reading, because that is the locale a session actually runs in; the two answers can only differ for a box body that is non-ASCII AND within a few characters of the floor.
 
 PORT NOTE ON `break 2`. The bash breaks out of BOTH loops at once, which is why the box search cannot report a second match. The port returns the reason straight out of a helper instead, which is the same control flow with the nesting made explicit rather than counted.
 """
@@ -169,8 +166,7 @@ def _record_world(_unused):
 
 FIXTURES = {"record-world": _record_world}
 
-# The variable is never read by this guard; resolving the token is what builds
-# the world before any case runs.
+# The variable is never read by this guard; resolving the token is what builds the world before any case runs.
 ENVS = [("records", {"REDIACC_RECORD_WORLD": "{FIXTURE:record-world}"}, {})]
 
 EDGE_CASES = [
@@ -255,8 +251,7 @@ EDGE_CASES = [
 def _field(pattern, head10):
     """`sed -n 's/^Field:[[:space:]]*\\(...\\)/\\1/p' | head -1`.
 
-    sed prints ONLY the lines its substitution matched, and `head -1` keeps the
-    first of them; the command substitution then strips the newline. A record
+    sed prints ONLY the lines its substitution matched, and `head -1` keeps the first of them; the command substitution then strips the newline. A record
     with two `Full-Text-Blob:` lines therefore takes the first, which is the
     behaviour the port has to keep rather than the one a dict lookup would give.
     """
@@ -333,9 +328,7 @@ def run(ev):
     if fragments == "":
         return hookio.ALLOW
 
-    # TWO KINDS OF TEST, and the first version had only the first kind. The
-    # line-anchored patterns catch an edit that quotes a WHOLE line; the VALUES
-    # are tested by substring, read out of the FILE rather than pattern-matched out of the payload, which is what makes them exact.
+    # TWO KINDS OF TEST, and the first version had only the first kind. The line-anchored patterns catch an edit that quotes a WHOLE line; the VALUES are tested by substring, read out of the FILE rather than pattern-matched out of the payload, which is what makes them exact.
     if tool == "Write":
         spine = SPINE_WRITE
     elif hookio.grep_q(HEADER_FIELD, fragments):

@@ -12,9 +12,8 @@ import type { ExecResult } from '../../src/utils/bridge/types';
 //   - LOCAL-tier fork: a local datastore fork is REFUSED by design (gate C8);
 // repos inside a local datastore fork individually by REFLINK. So the fork proof here is `repository fork` (CoW repo clone) + `repository up` on the fork: instant, data diverges, parent untouched.
 //
-// RED-UNTIL-LIVE-RUN (spec 06 authoring bar): this file is authored to COMPILE
-// (tsc) + keep the coverage gate green; its BODY is not executed by this wave
-// (no live k3s-on-a-worker + RAM window). The live follow-up (P3 gate item 5) must exercise: node Ready on 10.150.x.1, the 9 up-verification checks, the F5 default-SC hazard, and the reflink fork divergence — mirroring p1-wave3b-vm.md.
+// RED-UNTIL-LIVE-RUN (spec 06 authoring bar): this file is authored to COMPILE (tsc) + keep the coverage gate green; its BODY is not executed by this wave (no live k3s-on-a-worker + RAM window). The live follow-up (P3 gate item 5) must exercise: node Ready on 10.150.x.1, the 9 up-verification checks, the F5 default-SC hazard, and the reflink fork divergence — mirroring
+// p1-wave3b-vm.md.
 //
 // Gated on K8S_MODE=1 + at least one worker VM.
 const enabled = process.env.K8S_MODE === '1';
@@ -189,8 +188,7 @@ test.describe
       /\sRunning\s/.test((await kubectl(`-n ${ns} get pod ${pod} --no-headers`)).stdout);
     const podMarker = async (ns: string, pod: string): Promise<string> =>
       (await kubectl(`-n ${ns} exec ${pod} -- cat /data/marker.txt`)).stdout.trim();
-    // A restricted-PSA-compliant single-container pod that keeps a PVC mounted at /data and (optionally) seeds a marker only when /data is empty. seccomp
-    // RuntimeDefault is mandatory under PSA restricted (spec 09 §9; the #84 caveat).
+    // A restricted-PSA-compliant single-container pod that keeps a PVC mounted at /data and (optionally) seeds a marker only when /data is empty. seccomp RuntimeDefault is mandatory under PSA restricted (spec 09 §9; the #84 caveat).
     const csiPod = (name: string, claim: string, seed?: string): string => {
       const cmd = seed
         ? `test -s /data/marker.txt || echo ${seed} > /data/marker.txt; exec tail -f /dev/null`
@@ -258,8 +256,7 @@ ${dataSource ?? ''}`;
       );
 
     // A stopped k3s node leaves KERNEL mounts behind in TWO places: submounts UNDER the datastore mount (kubelet pod volumes) and containerd overlays mounted at /run/k3s/containerd/... whose lowerdir/upperdir point INTO the datastore (they hold it busy from OUTSIDE its path). `kube uninstall` (cgroup-kill) unwinds neither, so the datastore release is then CORRECTLY refused by the
-    // no-lazy-success guard (spec 03 §2b, "target is busy"). The suite unwinds what
-    // it created; the missing product porcelain is gate finding #20 (4 witnesses).
+    // no-lazy-success guard (spec 03 §2b, "target is busy"). The suite unwinds what it created; the missing product porcelain is gate finding #20 (4 witnesses).
     //
     // Shell form: executeViaBridge relays through THREE shells and escapeForNestedSSH does NOT escape `$`, so this stays variable-free (a `$(...)` would be expanded on the LOCAL host). Excluding `^<root>/` from the outside-holder branch keeps a SIBLING datastore (a prefix match) out of the list.
     const unwindSubmounts = async (runner: BridgeTestRunner, mount: string): Promise<void> => {
@@ -339,9 +336,8 @@ ${dataSource ?? ''}`;
     });
 
     test('R1. zot pull-through cache: registry up + wire BEFORE k3s so image pulls resolve through it', async () => {
-      // Revives the coverage the (now deleted) kube-registry.test.ts anchor stood in for. Bring the zot cache online and point containerd/k3s at it BEFORE the k3s install (test 1), so the workload image pull (test 4) resolves THROUGH the cache. `up` extracts the embedded zot binary + renders its
-      // sync.onDemand config + installs the rediacc-zot unit; `wire` writes the
-      // containerd certs.d hosts.toml + k3s registries.yaml.
+      // Revives the coverage the (now deleted) kube-registry.test.ts anchor stood in for. Bring the zot cache online and point containerd/k3s at it BEFORE the k3s install (test 1), so the workload image pull (test 4) resolves THROUGH the cache. `up` extracts the embedded zot binary + renders its sync.onDemand config + installs the rediacc-zot unit; `wire` writes the containerd
+      // certs.d hosts.toml + k3s registries.yaml.
       if (!adopted) {
         expect(
           w1.isSuccess(
@@ -535,8 +531,7 @@ ${dataSource ?? ''}`;
       // fork-empty (F6 at namespace scope, via KubeRuntime.Fork). SEED a value only the PARENT could have written. This is what makes the clone PROVABLE: the app's entrypoint writes 'original-data' whenever the marker file is empty, so a fork whose volume was freshly provisioned (rather than carrying the parent's cloned LUKS image) would ALSO read 'original-data' — the two are
       // indistinguishable. A unique value the fork's own pod would never write is the only assertion that proves the DATA rode the reflink. (Live-caught: the first version of this test could not tell a clone from a fresh volume, and passed
       // while the parent's writes were in fact never reaching the clone.)
-      // Adopted standing fork → skip seed+fork; the lineage proof degrades
-      // gracefully: parent and fork still carry the SAME seeded value from the original fork (nothing writes the marker after it), which a fresh volume could not reproduce.
+      // Adopted standing fork → skip seed+fork; the lineage proof degrades gracefully: parent and fork still carry the SAME seeded value from the original fork (nothing writes the marker after it), which a fresh volume could not reproduce.
       const forkStanding =
         adopted &&
         (await kubectl(`get ns ${FORK_REPO} --no-headers`)).code === 0 &&
@@ -597,9 +592,7 @@ ${dataSource ?? ''}`;
     });
 
     test('7. CSI dynamic PVC: pod-triggered WFFC provisioning binds a per-datastore CSI volume + marker persists', async () => {
-      // spec 09 §12 e2e item 1: a PVC on the DYNAMIC per-datastore CSI class (rediacc-csi-<ds>, WaitForFirstConsumer) is provisioned only once a
-      // consuming pod schedules; the pod writes a marker into the CSI volume.
-      // KEEP iteration: a prior run (or a mid-battery failure) may have left battery residue standing — pre-clean so the battery is re-entrant.
+      // spec 09 §12 e2e item 1: a PVC on the DYNAMIC per-datastore CSI class (rediacc-csi-<ds>, WaitForFirstConsumer) is provisioned only once a consuming pod schedules; the pod writes a marker into the CSI volume. KEEP iteration: a prior run (or a mid-battery failure) may have left battery residue standing — pre-clean so the battery is re-entrant.
       if (KEEP) {
         await csiCleanup(
           ['csi-writer', 'csi-restored', 'csi-cloned', 'csi-toobig-pod'],
@@ -749,8 +742,7 @@ spec:
         containerdCfg.stdout.trim(),
         'k3s generated no containerd config referencing the mirror — registries.yaml was not ingested'
       ).not.toBe('');
-      // #96 tripwire (LOUD, not blocking until #96 lands): zot's serve path is broken on this fleet — observed live, an on-demand manifest GET can HANG indefinitely (one unbounded curl ate the whole 360s test timeout) while containerd's pulls succeed via upstream fallback.
-      // Bounded + logged; flip serve and catalog to hard asserts with #96.
+      // #96 tripwire (LOUD, not blocking until #96 lands): zot's serve path is broken on this fleet — observed live, an on-demand manifest GET can HANG indefinitely (one unbounded curl ate the whole 360s test timeout) while containerd's pulls succeed via upstream fallback. Bounded + logged; flip serve and catalog to hard asserts with #96.
       const serve = await w1.executeViaBridge(
         `curl -s --max-time 60 -o /dev/null -w '%{http_code}' -H 'Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json' http://127.0.0.1:5000/v2/library/busybox/manifests/1.36; true`
       );
@@ -776,9 +768,7 @@ spec:
     test('10. teardown: repository down (no leak) + cluster + datastores + dummy interface removed', async () => {
       test.skip(KEEP, 'KEEP_CLUSTER=1: cluster left standing for iteration');
       // BOTH repos come down: the FORK first, then the parent. Since F1 landed, test 6 creates a real fork — its own namespace with a RUNNING pod holding its own cloned per-volume LUKS mounts. Those are live holders of the data datastore, and a DATA-datastore release must never kill node processes, so the product (correctly) refuses the detach while they exist: the workload has to
-      // be stopped before its storage is released. `repository down` on the fork deletes
-      // its namespace and releases its volumes; then the parent's does the same.
-      // `repository down` releases the per-volume LUKS mounts (CT-07 converge, no leak).
+      // be stopped before its storage is released. `repository down` on the fork deletes its namespace and releases its volumes; then the parent's does the same. `repository down` releases the per-volume LUKS mounts (CT-07 converge, no leak).
       const downFork = await w1.executeViaBridge(
         `sudo renet repository down --name ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET}`
       );

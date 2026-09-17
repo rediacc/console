@@ -52,9 +52,7 @@ def build(tmp_path: pathlib.Path, source: str | None) -> pathlib.Path:
     (root / ".ci" / "rediacc_ci" / "quality").mkdir(parents=True)
     shutil.copytree(src / ".ci" / "scripts" / "lib", root / ".ci" / "scripts" / "lib")
     shutil.copy2(src / TWIN, root / TWIN)
-    # `proc.py` is in the list because the port routes its `bash -c` harness
-    # through the shared runner; without it the specimen dies at import and the
-    # differential compares a traceback with the twin's verdict.
+    # `proc.py` is in the list because the port routes its `bash -c` harness through the shared runner; without it the specimen dies at import and the differential compares a traceback with the twin's verdict.
     for name in ("__init__.py", "log.py", "paths.py", "controls.py", "proc.py"):
         shutil.copy2(src / ".ci" / "rediacc_ci" / name, root / ".ci" / "rediacc_ci" / name)
     for name in ("__init__.py", "%s.py" % MODULE):

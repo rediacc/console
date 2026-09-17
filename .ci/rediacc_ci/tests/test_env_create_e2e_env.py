@@ -1,8 +1,7 @@
 """`rediacc_ci.env.create_e2e_env` against its bash twin.
 
-THE FILE IS THE SUBJECT, NOT THE MESSAGES. This program prints three lines, all
-progress, all on stderr; its product is the `.env` file. So `run_both` returns
-the generated FILE alongside the two streams and the exit code, and every case compares all four. A differential here that only read stdout and stderr would pass while the port wrote a completely different file, which is the exact shape of blindness `scripts/lib/shadow-gate.ts` was built to refuse.
+THE FILE IS THE SUBJECT, NOT THE MESSAGES. This program prints three lines, all progress, all on stderr; its product is the `.env` file. So `run_both` returns the generated FILE alongside the two streams and the exit code, and every case compares all four. A differential here that only read stdout and stderr would pass while the port wrote a completely different file, which is the
+exact shape of blindness `scripts/lib/shadow-gate.ts` was built to refuse.
 
 EVERY CASE WRITES INTO `tmp_path`, NEVER INTO THE CHECKOUT, and one case makes that non-negotiable: `--output` with no value resolves to the literal string `true` and creates a file with that name in the CURRENT DIRECTORY (Defect C in the port's docstring). Driving it from the repository root leaves an untracked `true` behind, which is what happened while this port was being
 written. `assert_is_scratch` re-derives the working directory before the two sides run, so a bug in a fixture cannot point a writing differential at the real tree.
@@ -32,8 +31,7 @@ TWIN = ".ci/scripts/env/create-e2e-env.sh"
 COMMON = ".ci/scripts/lib/common.sh"
 MODULE = "rediacc_ci.env.create_e2e_env"
 
-# `<anything>: line <N>: ` -- bash naming itself. The name differs between a
-# `.sh` and a module; the number does not and is compared.
+# `<anything>: line <N>: ` -- bash naming itself. The name differs between a `.sh` and a module; the number does not and is compared.
 _PROG = re.compile(r"^\S+: line ", re.MULTILINE)
 
 

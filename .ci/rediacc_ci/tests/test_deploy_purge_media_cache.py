@@ -52,9 +52,7 @@ if os.environ.get("FAKE_CURL_BODY") is not None:
 sys.stdout.write(json.dumps({"success": True, "errors": [], "result": {"id": "purge"}}) + "\\n")
 """
 
-# common.sh needs `dirname` at source time and `uname`/`tr` in its detection
-# helpers; `jq` is a REQUIRED command of the subject and is therefore the real
-# binary on both sides -- the port shells out to the same one.
+# common.sh needs `dirname` at source time and `uname`/`tr` in its detection helpers; `jq` is a REQUIRED command of the subject and is therefore the real binary on both sides -- the port shells out to the same one.
 PATH_MINIMUM = ("dirname", "uname", "tr", "jq")
 
 

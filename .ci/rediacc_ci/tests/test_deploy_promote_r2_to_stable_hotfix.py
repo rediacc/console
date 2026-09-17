@@ -1,9 +1,8 @@
 """Differential: `rediacc_ci.deploy.promote_r2_to_stable_hotfix` against its twin
 `.ci/scripts/deploy/promote-r2-to-stable-hotfix.sh`.
 
-RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2 or Cloudflare: the `aws` fake serves an on-disk directory standing in for the bucket, logs its exact argv, and logs the CONTENT
-of every uploaded file; the `curl` fake answers cf-purge-urls.sh from a
-constant. Every case pins a fixture endpoint, bucket and credential. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
+RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2 or Cloudflare: the `aws` fake serves an on-disk directory standing in for the bucket, logs its exact argv, and logs the CONTENT of every uploaded file; the `curl` fake answers cf-purge-urls.sh from a constant. Every case pins a fixture endpoint, bucket and credential.
+`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG IS THE PRIMARY EVIDENCE. This script prints five `Promoting ...` lines and one closing line, none of which is derived from what actually moved, so two implementations can agree on every printed byte while copying different prefixes. The content log is load-bearing too: the channel-pointer files are REWRITTEN on the way past, and a port that skipped the rewrite would
 print the same six lines while publishing an install script that still installs `edge`.
@@ -11,9 +10,8 @@ print the same six lines while publishing an install script that still installs 
 WHAT THE `aws` FAKE MODELS AND WHAT IT DOES NOT. It is a model of the AWS CLI, not the AWS CLI, and this file says so rather than letting a reader assume otherwise. `aws` IS NOT INSTALLED IN THIS SANDBOX (`command -v aws` is empty), so nothing here can be checked against the real tool. What the differential proves is INDEPENDENT of the model's fidelity: both implementations are
 driven through the SAME fake, so the argv comparison, the exit code and the two streams are real evidence about the port. The modelled parts -- which local files a recursive copy moves, and the include/exclude semantics -- exist only to make the vacuity floor and the purge list realistic, and any statement about which files reached `stable/` is a statement about the model.
 
-`/tmp/promote-<dir>`, `/tmp/config` AND `/tmp/script` ARE FIXED PATHS IN THE TWIN, so these cases cannot be given a private temporary directory: they clean those exact seven paths before every side of every case, and the module carries an `xdist_group` so the two promote differentials land on the SAME xdist worker
-and cannot run concurrently. Both facts are the twin's, not the test's; see
-`STALE_TMP_IS_PROMOTED` in the port's docstring.
+`/tmp/promote-<dir>`, `/tmp/config` AND `/tmp/script` ARE FIXED PATHS IN THE TWIN, so these cases cannot be given a private temporary directory: they clean those exact seven paths before every side of every case, and the module carries an `xdist_group` so the two promote differentials land on the SAME xdist worker and cannot run concurrently. Both facts are the twin's, not the
+test's; see `STALE_TMP_IS_PROMOTED` in the port's docstring.
 """
 
 from __future__ import annotations
@@ -40,9 +38,7 @@ if typing.TYPE_CHECKING:
 # THE NAME IS NOW SHARED WITH test_deploy_simulate_promotion.py, and the widening is the fix rather than tidying. This module drives `/tmp/config` too -- the docstring above lists it among the twin's fixed paths -- and so does that one, which additionally holds a machine-wide flock for it. A lock ONE of two parties takes is not a lock: under the old split names `--dist loadgroup`
 # put the two modules on different workers BY CONSTRUCTION, so this module's `/tmp/config` writes landed inside the other's critical section. Measured 2026-09-15: 50/50 pass serially, 4-5 fail under xdist, and not the same 4-5 on consecutive runs.
 #
-# RESIDUAL, named rather than left to be rediscovered: this module still does not
-# take `FIXED_TMP_LOCK`. The shared group makes the two serial WITHIN a run; the
-# lock is what would also protect against a SECOND pytest run in the same tree, and only the simulate module has it.
+# RESIDUAL, named rather than left to be rediscovered: this module still does not take `FIXED_TMP_LOCK`. The shared group makes the two serial WITHIN a run; the lock is what would also protect against a SECOND pytest run in the same tree, and only the simulate module has it.
 pytestmark = pytest.mark.xdist_group("deploy-fixed-tmp")
 
 ROOT = paths.repo_root()
@@ -209,9 +205,7 @@ if rc:
 sys.stdout.write(json.dumps({"success": True, "errors": []}) + "\\n")
 """
 
-# Every real binary either side reaches for. `find` and `sed` are called by BOTH implementations (the port shells out to the same two, for the reasons in its
-# docstring); `jq` belongs to cf-purge-urls.sh; `uname`, `dirname`, `basename`
-# and `tr` are what the twin and common.sh need. Nothing else is on the scratch PATH, so a tool leaking in would show up as a behaviour change.
+# Every real binary either side reaches for. `find` and `sed` are called by BOTH implementations (the port shells out to the same two, for the reasons in its docstring); `jq` belongs to cf-purge-urls.sh; `uname`, `dirname`, `basename` and `tr` are what the twin and common.sh need. Nothing else is on the scratch PATH, so a tool leaking in would show up as a behaviour change.
 PATH_MINIMUM = ("jq", "uname", "dirname", "basename", "tr", "find", "wc", "sed", "rm")
 
 
@@ -491,8 +485,7 @@ def test_each_required_variable_refuses_with_the_same_status(tmp_path, missing) 
     """THE ONE NAMED DIVERGENCE, and it is in text nobody parses.
 
     bash's `${VAR:?msg}` prefixes the message with the script path and a line
-    number; the port prints the `VAR: msg` half. Same stream, same status, no
-    call made. Both are asserted here rather than compared byte for byte.
+    number; the port prints the `VAR: msg` half. Same stream, same status, no call made. Both are asserted here rather than compared byte for byte.
     """
     root = fixture(tmp_path)
     old, old_calls = _run(root, "old", drop_env=(missing,))

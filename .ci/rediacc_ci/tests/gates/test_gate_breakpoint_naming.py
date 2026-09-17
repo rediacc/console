@@ -14,12 +14,9 @@ function returns a value -- so `derive()` here returns the `RunResult` directly.
 hazard the twin was guarding against cannot exist in this spelling, which is why the globals are not reproduced.
 
 `env_replace=True` IS THE TWIN'S `env -i`, and it is load-bearing rather than tidy.
-`test_missing_run_id_refuses_and_invents_nothing` asserts what the subject does with NO `GITHUB_RUN_ID` in the environment, and this process may well be running under a
-real one; inheriting it would hand the subject the value whose absence is the case.
+`test_missing_run_id_refuses_and_invents_nothing` asserts what the subject does with NO `GITHUB_RUN_ID` in the environment, and this process may well be running under a real one; inheriting it would hand the subject the value whose absence is the case.
 
-NO `xdist_group`. Every case runs one short-lived `bash` with a replaced environment
-whose `HOME` and `RUNNER_TEMP` point into its own `mktemp -d`; the subject is only
-ever READ, and nothing binds a port or mutates a module global.
+NO `xdist_group`. Every case runs one short-lived `bash` with a replaced environment whose `HOME` and `RUNNER_TEMP` point into its own `mktemp -d`; the subject is only ever READ, and nothing binds a port or mutates a module global.
 """
 
 import os

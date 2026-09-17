@@ -5,9 +5,7 @@ function whose body is `pass` is a passing test, and a test whose fixture silent
 
 So the fixture counts, and its teardown refuses a test that recorded nothing.
 
-IT REFUSES ONLY ON A TEST THAT OTHERWISE PASSED, and that ordering is deliberate.
-A test that already failed has a real diagnostic; raising a second, vaguer error on
-top of it in teardown replaces the message a reader needs with one they do not. The outcome is read from the `call`-phase report, which pytest has already produced by the time a function-scoped fixture is torn down.
+IT REFUSES ONLY ON A TEST THAT OTHERWISE PASSED, and that ordering is deliberate. A test that already failed has a real diagnostic; raising a second, vaguer error on top of it in teardown replaces the message a reader needs with one they do not. The outcome is read from the `call`-phase report, which pytest has already produced by the time a function-scoped fixture is torn down.
 """
 
 import os

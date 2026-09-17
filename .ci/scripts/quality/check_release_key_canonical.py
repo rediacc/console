@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported release-key canonicalisation gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.release_key_canonical`, which
-pytest and the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.release_key_canonical`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 6). See DRIVEN, below.
 
@@ -16,10 +14,8 @@ NO `id:` IS CORRECT HERE, checked rather than assumed: `derivedId` (`gate-header
 
 `selftest: true` is inert for a `.py` gate (`headerLines` emits it only for `.ts`, `gate-bind.ts:598`) and is carried because the twin declared it and because `release_key_canonical.main(["--selftest"])` exits 0.
 
-THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files rather than by reading them. `bind()` unions declared needs with
-`inferredNeeds(source)`; the twin's gpg body infers nothing and this two-import
-entry point infers nothing, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both resolve to the empty set `needs: none` declares. GPG IS NOT A DECLARABLE NEED and its absence is not an oversight: the module probes for the binary and refuses loudly with the install command in the message ("gpg is not installed, so nothing here was verified ... sudo
-apt-get install -y gnupg"), rather than folding a missing tool into a pass.
+THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files rather than by reading them. `bind()` unions declared needs with `inferredNeeds(source)`; the twin's gpg body infers nothing and this two-import entry point infers nothing, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both resolve to the empty set `needs: none`
+declares. GPG IS NOT A DECLARABLE NEED and its absence is not an oversight: the module probes for the binary and refuses loudly with the install command in the message ("gpg is not installed, so nothing here was verified ... sudo apt-get install -y gnupg"), rather than folding a missing tool into a pass.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -28,9 +24,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, 823 bytes, sha256 a589d2eb1429e582...
     stderr: BYTE-IDENTICAL, and EMPTY on both sides
 
-Byte-identical despite twelve controls that each generate a throwaway RSA key, weld it, repair it and sign with it: the key material never reaches either stream, and both sides print the same twelve control lines plus the same
-"(throwaway key; the real one is a secret and is deliberately out of scope)".
-Nothing was normalised.
+Byte-identical despite twelve controls that each generate a throwaway RSA key, weld it, repair it and sign with it: the key material never reaches either stream, and both sides print the same twelve control lines plus the same "(throwaway key; the real one is a secret and is deliberately out of scope)". Nothing was normalised.
 
 DRIVEN RED AS WELL, against a HARD-COPIED FIXTURE rather than the live tree, because both implementations honour `RELEASE_KEY_ROOT`. The fixture was built
 with `cp -r` and checked with `find -type l` for zero symlinks, for the reason
@@ -44,9 +38,7 @@ The plant drops the `|| canon_rc=$?` guard from the canonicaliser call site in
 
 The fixture was restored from its `.orig` copy and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-release-key-canonical.sh` is
-NOT deleted here. It stays on disk as the differential twin; deletion is
-W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-release-key-canonical.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Release key canonical needs: none selftest: true lane: quality-security ---- end gate ----
 """

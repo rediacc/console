@@ -81,8 +81,7 @@ USAGE = "usage: fetch-review-threads.sh --pr <number> --repo <owner/name> --out 
 GH_ATTEMPTS = 3
 GH_BACKOFF_SECONDS = 3
 
-# 50 pages is 5000 threads; a real PR never approaches it, so reaching it means
-# the cursor stopped advancing. Fail closed rather than spin.
+# 50 pages is 5000 threads; a real PR never approaches it, so reaching it means the cursor stopped advancing. Fail closed rather than spin.
 PAGE_LIMIT = 50
 
 # THE QUERY, byte for byte from the twin, LEADING NEWLINE INCLUDED. It travels
@@ -316,9 +315,7 @@ def linked_targets(body: str) -> tuple[int, list[tuple[str, str]]]:
 
     Returns (exit code, [(target, number)]). THE EXIT CODE IS RETURNED AND IGNORED, exactly as the twin ignores it: a process substitution feeding a `while read` loop cannot fail the loop, so a `linked-sub-prs.sh` that died reads as "no linked PRs". Returned anyway so the differential can see it and the next reader can decide whether to keep ignoring it.
 
-    `read -r target number` splits on IFS, so a line with more than two fields
-    puts the REMAINDER in `number`; a line with one field leaves `number` empty
-    and is still fetched, as `<repo>#`. Both reproduced.
+    `read -r target number` splits on IFS, so a line with more than two fields puts the REMAINDER in `number`; a line with one field leaves `number` empty and is still fetched, as `<repo>#`. Both reproduced.
     """
     proc = subprocess.run(
         [str(script_dir() / "linked-sub-prs.sh"), "--body", body],
@@ -340,9 +337,7 @@ def linked_targets(body: str) -> tuple[int, list[tuple[str, str]]]:
 def _non_empty(path: str) -> bool:
     """`[[ -n "$p" && -s "$p" ]]`, NOT `require_file`.
 
-    `--body` is optional and a mistyped path therefore reads as "no linked PRs",
-    silently. Same asymmetry `autopilot_gate.py` records for `--state`; named
-    here because the consequence is the same one the LINKED SUBMODULE paragraph above exists to prevent -- a round that cannot see a submodule thread cannot answer it -- reached this time by a typo rather than by a missing token.
+    `--body` is optional and a mistyped path therefore reads as "no linked PRs", silently. Same asymmetry `autopilot_gate.py` records for `--state`; named here because the consequence is the same one the LINKED SUBMODULE paragraph above exists to prevent -- a round that cannot see a submodule thread cannot answer it -- reached this time by a typo rather than by a missing token.
     """
     if not path:
         return False
@@ -379,9 +374,7 @@ def main(argv: list[str], *, sleeper=time.sleep) -> int:
         log.error("cannot fetch review threads for the console PR; failing closed")
         return 1
 
-    # The linked submodule PRs, when the caller supplied the console body.
-    # BEST-EFFORT, and the twin's own paragraph says why at length; the short
-    # version is that the gate holds no cross-repo token, so a private submodule's PR is unreadable from here and killing the round over it would take fix rounds down with it.
+    # The linked submodule PRs, when the caller supplied the console body. BEST-EFFORT, and the twin's own paragraph says why at length; the short version is that the gate holds no cross-repo token, so a private submodule's PR is unreadable from here and killing the round over it would take fix rounds down with it.
     if _non_empty(body):
         _, targets = linked_targets(body)
         for target, number in targets:

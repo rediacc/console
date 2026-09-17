@@ -29,13 +29,10 @@ THE MARKER IS `go.mod`, NOT THE DIRECTORY. An uninitialised submodule leaves an 
 `grep -v` ON A MISSING FILE LEAKS ITS ERROR, and the port leaks the same bytes. `compare_ignoring_version` runs both greps inside process substitutions, and the `2>/dev/null` on the enclosing `diff` does NOT cover them: measured, a missing committed file prints `grep: <path>: No such file or directory` on the gate's own stderr and the comparison then reports "differ", so the file
 lands in the STALE list. The port emits the identical line. It is a twin defect -- the message reads as a crash when it means "this generated file has never been committed" -- and it is reported rather than repaired, because repairing it would change what the gate prints.
 
-A FILE THE GENERATOR DID NOT PRODUCE IS SKIPPED ENTIRELY. `if [[ -f "$TEMP_DIR/$file" ]] && ...` means a generator that stopped emitting one of the
-six is NOT reported as stale; the file simply drops out of the comparison. That
-is the second blind spot in the same loop and it is likewise preserved.
+A FILE THE GENERATOR DID NOT PRODUCE IS SKIPPED ENTIRELY. `if [[ -f "$TEMP_DIR/$file" ]] && ...` means a generator that stopped emitting one of the six is NOT reported as stale; the file simply drops out of the comparison. That is the second blind spot in the same loop and it is likewise preserved.
 
-`go` MISSING IS THE ONE DELIBERATE DIVERGENCE IN WORDING. Under `set -e` the twin dies with bash's own `go: command not found` and exit 127, a message the gate never wrote. The port cannot produce that string without pretending to be a shell, so it prints its own line naming the same fix and returns the same 127.
-The exit code is what any caller reads; the text differs and is stated here so
-nobody reports it as a regression.
+`go` MISSING IS THE ONE DELIBERATE DIVERGENCE IN WORDING. Under `set -e` the twin dies with bash's own `go: command not found` and exit 127, a message the gate never wrote. The port cannot produce that string without pretending to be a shell, so it prints its own line naming the same fix and returns the same 127. The exit code is what any caller reads; the text differs and is
+stated here so nobody reports it as a regression.
 """
 
 import os
@@ -55,8 +52,7 @@ OUTPUT_REL = "packages/shared/src/renet-contract/data"
 # The marker whose presence means the submodule is really checked out.
 MARKER = "go.mod"
 
-# The generated files this gate compares. THE LIST IS THE GATE; see the module
-# docstring for the file that went stale for months because it was missing here.
+# The generated files this gate compares. THE LIST IS THE GATE; see the module docstring for the file that went stale for months because it was missing here.
 FILES = (
     "functions.generated.ts",
     "functions.schema.ts",
@@ -76,9 +72,7 @@ def strip_version_lines(path: pathlib.Path) -> tuple[list[str], str | None]:
     """The file's lines minus the version lines, plus grep's error if it failed.
 
     A MISSING FILE IS AN EMPTY STREAM, NOT A FAILURE, and getting that wrong is a divergence this port shipped in a draft. `grep -v PAT missing` writes its diagnostic to stderr and produces NO output, and the process substitution around it still presents a readable, empty file to `diff`. So two missing files compare EQUAL: `diff -q` sees two empty streams and exits 0. The draft
-    returned a sentinel and treated either side's absence as "differ", which
-    disagreed with the twin on exactly that case; the pytest differential caught
-    it on the both-missing row of its table.
+    returned a sentinel and treated either side's absence as "differ", which disagreed with the twin on exactly that case; the pytest differential caught it on the both-missing row of its table.
 
     Returns the error TEXT rather than raising, because the twin does not raise: it lets grep write to stderr and lets the comparison fall out of the byte content. The caller reproduces both halves of that.
     """
@@ -191,9 +185,7 @@ def main(argv: list[str] | None = None) -> int:
             # `set -e` again: the generator's own output is already on the streams and its exit code is the gate's.
             return generated.returncode
 
-        # A FILE THE GENERATOR DID NOT PRODUCE IS SKIPPED, not reported. See
-        # the port notes; this is the twin's second blind spot, and the `-f`
-        # guard below is where it lives.
+        # A FILE THE GENERATOR DID NOT PRODUCE IS SKIPPED, not reported. See the port notes; this is the twin's second blind spot, and the `-f` guard below is where it lives.
         stale: list[str] = [
             name
             for name in FILES

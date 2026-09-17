@@ -3,22 +3,18 @@
 
 Copies every R2 release channel from `edge/` to `stable/` inline with the release, skipping the normal 7-day soak. This is the emergency lane `Release`
 takes with `publish_stable=true`. The soak-gated sibling is
-`.ci/scripts/deploy/promote-r2-to-stable.sh`, ported beside this one as
-`rediacc_ci.deploy.promote_r2_to_stable`; the twin's own header explains why
-this lane does a straight recursive copy where that one does a two-phase, metadata-last upload.
+`.ci/scripts/deploy/promote-r2-to-stable.sh`, ported beside this one as `rediacc_ci.deploy.promote_r2_to_stable`; the twin's own header explains why this lane does a straight recursive copy where that one does a two-phase, metadata-last upload.
 
 -----------------------------------------------------------------------------
 THE SIBLING SHARES REAL LOGIC WITH THIS FILE AND IT IS DELIBERATELY NOT
 FACTORED OUT, WHICH IS A RULING RATHER THAN AN OMISSION
 -----------------------------------------------------------------------------
-Four blocks are near-identical between the two twins: the `for dir in cli apt rpm apk archlinux` download leg, the `VACUOUS:` floor, the `find`-driven purge URL loop, and the closing `cf-purge-urls.sh` pipeline. THE BASH TWINS DO NOT SHARE THEM. Both source `.ci/scripts/lib/common.sh` and take exactly two
-functions from it, `require_cmd` and `sed_in_place`; there is no
+Four blocks are near-identical between the two twins: the `for dir in cli apt rpm apk archlinux` download leg, the `VACUOUS:` floor, the `find`-driven purge URL loop, and the closing `cf-purge-urls.sh` pipeline. THE BASH TWINS DO NOT SHARE THEM. Both source `.ci/scripts/lib/common.sh` and take exactly two functions from it, `require_cmd` and `sed_in_place`; there is no
 promote-specific bash library, and `release-state-validator.sh` is reached by neither. A Python helper holding those four blocks would therefore have no bash counterpart, and the acceptance rule for this wave is agreement with the LIVE twin: a shared module would mean one Python function standing in for two bash blocks that are free to drift, and a later edit to one twin would
 silently change the other's port. The same ruling was taken for `infra/docker_prepull.py` and its near-twin. The duplication is named here so a reader sees it was measured, and the cutover box that eventually deletes both bash files is the right place to collapse it.
 
-The blocks are NOT identical, which is the other half of the argument. This lane uploads with `aws s3 cp --recursive` and rewrites the channel-pointer files
-by DOWNLOADING THEM BACK from `stable/` afterwards; the sibling uploads with two
-phases of `aws s3 sync` and rewrites the same files on the LOCAL copy before phase 2. The purge lists that come out differ accordingly, and so does the closing line.
+The blocks are NOT identical, which is the other half of the argument. This lane uploads with `aws s3 cp --recursive` and rewrites the channel-pointer files by DOWNLOADING THEM BACK from `stable/` afterwards; the sibling uploads with two phases of `aws s3 sync` and rewrites the same files on the LOCAL copy before phase 2. The purge lists that come out differ accordingly, and so
+does the closing line.
 
 -----------------------------------------------------------------------------
 NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST
@@ -186,9 +182,8 @@ class BashExitError(Exception):
 def script_dir() -> str:
     """`SCRIPT_DIR` (twin :44), by location rather than by cwd.
 
-    The twin resolves `.ci/scripts/deploy` from its own `BASH_SOURCE`; this file
-    sits at `.ci/rediacc_ci/deploy/`, three directories under the same root, so the arithmetic is identical and neither side depends on the caller's cwd. `abspath`, NOT `realpath`: bash's `cd` is logical, so a checkout reached through a symlink keeps the symlinked spelling on both sides. `paths.repo_root()` is deliberately not used, because it resolves symlinks and honours
-    `$REDIACC_CI_ROOT`, and neither is a thing the twin does.
+    The twin resolves `.ci/scripts/deploy` from its own `BASH_SOURCE`; this file sits at `.ci/rediacc_ci/deploy/`, three directories under the same root, so the arithmetic is identical and neither side depends on the caller's cwd. `abspath`, NOT `realpath`: bash's `cd` is logical, so a checkout reached through a symlink keeps the symlinked spelling on both sides.
+    `paths.repo_root()` is deliberately not used, because it resolves symlinks and honours `$REDIACC_CI_ROOT`, and neither is a thing the twin does.
     """
     here = os.path.dirname(os.path.abspath(__file__))
     root = os.path.abspath(os.path.join(here, "..", "..", ".."))
@@ -198,10 +193,8 @@ def script_dir() -> str:
 def environment() -> dict[str, str]:
     """Every variable this module reads, ONE `os.environ.get` PER NAME.
 
-    NOT `dict(os.environ)`, AND THE DIFFERENCE IS A GATE RATHER THAN A STYLE. `check:ci-python-env-registry` derives a module's declared inputs by walking
-    its AST for literal `os.environ` subscripts and `.get` calls; a read that
-    goes through a materialised copy or a local alias is INVISIBLE to it, and the module then reports zero inputs while depending on four. Measured 2026-09-13 against the gate's own `derive`: with `dict(os.environ)` here this file contributed only `CLOUDFLARE_ZONE_ID`, the one name read at its own call
-    site; with this function it contributes all four.
+    NOT `dict(os.environ)`, AND THE DIFFERENCE IS A GATE RATHER THAN A STYLE. `check:ci-python-env-registry` derives a module's declared inputs by walking its AST for literal `os.environ` subscripts and `.get` calls; a read that goes through a materialised copy or a local alias is INVISIBLE to it, and the module then reports zero inputs while depending on four. Measured 2026-09-13
+    against the gate's own `derive`: with `dict(os.environ)` here this file contributed only `CLOUDFLARE_ZONE_ID`, the one name read at its own call site; with this function it contributes all four.
 
     `require_env` still takes a dict, so the guard logic stays a pure helper the differential can drive without an environment.
     """
@@ -331,9 +324,7 @@ def strip_prefix(path: str, prefix: str) -> str:
 def read_lines(text: str) -> list[str]:
     """`while IFS= read -r f; do ... done < <(find ...)`.
 
-    A FINAL LINE WITH NO NEWLINE IS DROPPED, because `read` stores it and then returns non-zero at EOF so the loop body never runs for it. find always
-    terminates its last line, so this cannot bite on real input; it is written
-    the bash way anyway, because the day it does bite the two would disagree about a URL rather than about a count.
+    A FINAL LINE WITH NO NEWLINE IS DROPPED, because `read` stores it and then returns non-zero at EOF so the loop body never runs for it. find always terminates its last line, so this cannot bite on real input; it is written the bash way anyway, because the day it does bite the two would disagree about a URL rather than about a count.
     """
     if not text:
         return []
@@ -345,10 +336,8 @@ def read_lines(text: str) -> list[str]:
 def _flush() -> None:
     """Empty Python's own buffers before a child inherits the descriptor.
 
-    NOT HOUSEKEEPING, A REAL DIVERGENCE THIS REPAIRS. bash `echo` writes through
-    immediately; Python block-buffers stdout when it is a pipe and flushes at
-    exit, so without this the `Promoting ...` lines land after the purge script's output instead of before it, on the same stream, with byte-identical content in a different order. The call log is identical and
-    both exits are 0; only a byte comparison of stdout sees it.
+    NOT HOUSEKEEPING, A REAL DIVERGENCE THIS REPAIRS. bash `echo` writes through immediately; Python block-buffers stdout when it is a pipe and flushes at exit, so without this the `Promoting ...` lines land after the purge script's output instead of before it, on the same stream, with byte-identical content in a different order. The call log is identical and both exits are 0; only
+    a byte comparison of stdout sees it.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -463,8 +452,7 @@ def _purge(urls: list[str], zone: str) -> None:
     try:
         status = _run(argv, input=payload, text=True)
     except OSError as exc:
-        # A MISSING OR UNRUNNABLE PURGE SCRIPT. bash reports this itself, with
-        # its own line number and status 127; Python raises. Same stream, same
+        # A MISSING OR UNRUNNABLE PURGE SCRIPT. bash reports this itself, with its own line number and status 127; Python raises. Same stream, same
         # status, different sentence, which is the ruling the `${VAR:?}` guards
         # get too.
         print("%s: %s: %s" % (SELF, argv[0], exc.strerror), file=sys.stderr)

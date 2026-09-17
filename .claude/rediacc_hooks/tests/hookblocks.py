@@ -68,9 +68,7 @@ class Block:
 
         ZERO CASES IS A FAILURE. A block whose fixture silently produced nothing to assert would otherwise report a clean green over an empty loop, which is the exact shape the suite's own controls exist to refuse.
         """
-        # `raise AssertionError`, not `assert`. This is not a test module, and a bare
-        # `assert` in one is stripped under -O; the repo holds every non-test file to
-        # that rule for exactly that reason.
+        # `raise AssertionError`, not `assert`. This is not a test module, and a bare `assert` in one is stripped under -O; the repo holds every non-test file to that rule for exactly that reason.
         if self.count == 0:
             raise AssertionError("%s asserted NOTHING; its fixture produced no cases" % self.name)
         if self.failures:

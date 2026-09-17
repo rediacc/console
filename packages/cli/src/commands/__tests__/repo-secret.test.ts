@@ -6,9 +6,7 @@ vi.mock('../../i18n/index.js', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key,
 }));
 
-// configService used by the command handlers. `resolveRepoRefLocal` (the
-// config-local ref resolver the secret verbs use) reads `getCurrent()`; the
-// mutation gate reads the decrypted config (aliased to the same mock).
+// configService used by the command handlers. `resolveRepoRefLocal` (the config-local ref resolver the secret verbs use) reads `getCurrent()`; the mutation gate reads the decrypted config (aliased to the same mock).
 const mockGetRepository = vi.hoisted(() => vi.fn());
 const mockGetCurrent = vi.hoisted(() => vi.fn());
 const mockGetResourceState = vi.hoisted(() => vi.fn());
@@ -17,8 +15,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: mockGetRepository,
     getCurrent: mockGetCurrent,
-    // v3: the precondition gate reads the decrypted config; alias it to the same
-    // mock so `mockGetCurrent.mockResolvedValue(...)` drives both.
+    // v3: the precondition gate reads the decrypted config; alias it to the same mock so `mockGetCurrent.mockResolvedValue(...)` drives both.
     getDecryptedConfig: mockGetCurrent,
     getResourceState: mockGetResourceState,
   },
@@ -163,9 +160,7 @@ describe('rdc repo secret get/list', () => {
     restoreEnv(envBackup);
   });
 
-  // V2: write-only model. `get` returns digest only — no plaintext for anyone, no agent-vs-human asymmetry. The fork-vs-grand `grandGuard`
-  // is gone (mutation-gate is the actual safety property; reads are
-  // always safe because there's no plaintext to leak).
+  // V2: write-only model. `get` returns digest only — no plaintext for anyone, no agent-vs-human asymmetry. The fork-vs-grand `grandGuard` is gone (mutation-gate is the actual safety property; reads are always safe because there's no plaintext to leak).
   describe('agent on grand repo (V2: read-safe, no grandGuard)', () => {
     beforeEach(() => {
       process.env.REDIACC_AGENT = '1';

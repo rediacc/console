@@ -591,9 +591,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-shape-duplication',
     run: 'npm run check:ci-shape-duplication',
-    // 1.9s measured on a quiet machine, five samples. The 21.4s this entry used
-    // to claim was a contended sample; the tier oracle judges the floor of
-    // `recent` for exactly that reason.
+    // 1.9s measured on a quiet machine, five samples. The 21.4s this entry used to claim was a contended sample; the tier oracle judges the floor of `recent` for exactly that reason.
     gate: true,
     leaves: ['scripts/gates/check-shape-duplication.ts'],
     ci: {
@@ -884,10 +882,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-npmrc',
     run: 'npm run check:ci-npmrc',
     gate: true,
-    // W7 P4 PILOT, 2026-09-07: the FIRST port cut over from bash to Python. The leaf is the Python entry point now, not check-npmrc.sh. The twin is
-    // NOT deleted (invariant 5 forbids that in the porting change; deletion is
-    // W7 P5) -- what changed is only which of the two the registry invokes. Condition for cutting over is the one the sibling entry points name in their own docstrings: the differential ledger says the port kept its verdict. `shadow-gate --pair w7p2-npmrc --assert --k 5` reports equivalence over 5 distinct trees, and driven again on this tree both sides exit 0 with byte-identical
-    // stdout AND stderr.
+    // W7 P4 PILOT, 2026-09-07: the FIRST port cut over from bash to Python. The leaf is the Python entry point now, not check-npmrc.sh. The twin is NOT deleted (invariant 5 forbids that in the porting change; deletion is W7 P5) -- what changed is only which of the two the registry invokes. Condition for cutting over is the one the sibling entry points name in their own docstrings:
+    // the differential ledger says the port kept its verdict. `shadow-gate --pair w7p2-npmrc --assert --k 5` reports equivalence over 5 distinct trees, and driven again on this tree both sides exit 0 with byte-identical stdout AND stderr.
     leaves: ['.ci/scripts/quality/check_npmrc.py'],
     ci: {
       kind: 'step',
@@ -1000,8 +996,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // The PR body carries a generated epic block; this asserts it matches the
-    // published snapshot, since a generated section nobody checks drifts while still looking authoritative.
+    // The PR body carries a generated epic block; this asserts it matches the published snapshot, since a generated section nobody checks drifts while still looking authoritative.
     id: 'check:ci-pr-epic-block',
     env: {
       GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}',
@@ -1225,11 +1220,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-guard-mention-anchoring',
     run: 'npm run check:ci-guard-mention-anchoring',
     gate: true,
-    // The script scans all 3 chains (pre-bash, pre-edit, pre-ask) since the
-    // peer's extension on 2026-08-28; this list had stayed pre-bash-only, the
-    // exact "half-populated path table" anti-pattern gate-author.md warns against -- a guard added under pre-edit/pre-ask would not have re-selected this gate on --changed. RE-KEYED BY THE W5 CUTOVER, which is invariant 2: the three chain directories moved and a glob that matches nothing can only EXCLUDE. The gate now reads its PATTERNS from the frozen oracles and PROBES the live
-    // Python guards, so both trees select it; the port tree is what actually
-    // refuses commands, and it was the one this table would have stopped watching.
+    // The script scans all 3 chains (pre-bash, pre-edit, pre-ask) since the peer's extension on 2026-08-28; this list had stayed pre-bash-only, the exact "half-populated path table" anti-pattern gate-author.md warns against -- a guard added under pre-edit/pre-ask would not have re-selected this gate on --changed. RE-KEYED BY THE W5 CUTOVER, which is invariant 2: the three chain
+    // directories moved and a glob that matches nothing can only EXCLUDE. The gate now reads its PATTERNS from the frozen oracles and PROBES the live Python guards, so both trees select it; the port tree is what actually refuses commands, and it was the one this table would have stopped watching.
     paths: [
       '.claude/oracles/**',
       '.claude/rediacc_hooks/guards/**',
@@ -1246,10 +1238,8 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // The manifest is the pre-push lane's only source of truth about which gates are cheap and which files select them, and nothing re-reads it. Three oracles, each with both directions in --selftest: a `slow` claim must agree with the measured cache BOTH ways (a cheap gate marked slow is the invisible direction -- the push stays fast while coverage
-    // shrinks); a gate declaring paths must include its own leaves, or editing
-    // the gate does not select the gate; and a declared glob must match at
-    // least one tracked file. Found eight live leaf violations and one mis-tiered gate on its first run.
+    // The manifest is the pre-push lane's only source of truth about which gates are cheap and which files select them, and nothing re-reads it. Three oracles, each with both directions in --selftest: a `slow` claim must agree with the measured cache BOTH ways (a cheap gate marked slow is the invisible direction -- the push stays fast while coverage shrinks); a gate declaring
+    // paths must include its own leaves, or editing the gate does not select the gate; and a declared glob must match at least one tracked file. Found eight live leaf violations and one mis-tiered gate on its first run.
     id: 'check:ci-gate-manifest',
     run: 'npm run check:ci-gate-manifest',
     gate: true,
@@ -1658,8 +1648,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // Box A2's other half. `gate-bind` pins header -> workflow for an emitted step; this
-    // pins workflow -> lock, and the two together close the chain. Without it a step's `env:` could be dropped in a rewrite and nothing would red: the measured receipt is stripping DOCKERHUB_TOKEN from ci-quality.yml and running the whole battery green.
+    // Box A2's other half. `gate-bind` pins header -> workflow for an emitted step; this pins workflow -> lock, and the two together close the chain. Without it a step's `env:` could be dropped in a rewrite and nothing would red: the measured receipt is stripping DOCKERHUB_TOKEN from ci-quality.yml and running the whole battery green.
     id: 'check:ci-step-env-parity',
     run: 'npm run check:ci-step-env-parity',
     gate: true,
@@ -1673,9 +1662,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     // W8 P2. Every environment variable this repo reads or supplies, classified by who supplies the value and who may read it. Five readers derive the corpus from tracked files on EVERY run and no count is written down anywhere: the box quoted 1,014, its own design note re-measured 745 then 721 then 777, and the swing was one developer's .env.pre-rename.bak. Four set-arithmetic
-    // clauses hold the derived set against an
-    // eight-shard classification; the eighth shard is tombstones, so "a dead name came
-    // back" and "a new name is unclassified" are one assertion rather than two mechanisms to keep in sync.
+    // clauses hold the derived set against an eight-shard classification; the eighth shard is tombstones, so "a dead name came back" and "a new name is unclassified" are one assertion rather than two mechanisms to keep in sync.
     id: 'check:ci-env-manifest',
     run: 'npm run check:ci-env-manifest',
     gate: true,
@@ -1688,11 +1675,8 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // W8 P4. `set -a; source <envfile>` EXECUTES the file and lets it overwrite the shell,
-    // on files holding ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_JWT_SECRET. Three sites
-    // adopted env_file_load; this sweeps for the pattern returning, RUNS each adopted
-    // site's own line against a planted override, and drives a real `set -a; source` on
-    // the same fixture demanding the OPPOSITE answer -- without which the per-site check would pass just as happily against a helper that read nothing at all.
+    // W8 P4. `set -a; source <envfile>` EXECUTES the file and lets it overwrite the shell, on files holding ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_JWT_SECRET. Three sites adopted env_file_load; this sweeps for the pattern returning, RUNS each adopted site's own line against a planted override, and drives a real `set -a; source` on the same fixture demanding the OPPOSITE answer --
+    // without which the per-site check would pass just as happily against a helper that read nothing at all.
     id: 'check:ci-env-file-adoption',
     run: 'npm run check:ci-env-file-adoption',
     gate: true,
@@ -1749,9 +1733,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     // The control-plant class in bash and TypeScript, tree-wide. Python is delegated to check:ci-python-control-plants and the delegation is ASSERTED, not documented: if that entry point stops existing or stops being registered, this gate REFUSES rather than leaving a third of the class unscanned. A control mutant built by raw substitution passes for free when its needle has gone
-    // -- it scans unmutated text and asserts the
-    // opposite verdict about it. Seeded 2026-09-09 at 25 unproven plants of 33; the baseline
-    // is shrink-only and set-equal in both directions. NO `paths:` ON PURPOSE: the corpus is every tracked .sh and .ts, so a path table would make `--changed` drop this gate exactly when a control moves.
+    // -- it scans unmutated text and asserts the opposite verdict about it. Seeded 2026-09-09 at 25 unproven plants of 33; the baseline is shrink-only and set-equal in both directions. NO `paths:` ON PURPOSE: the corpus is every tracked .sh and .ts, so a path table would make `--changed` drop this gate exactly when a control moves.
     id: 'check:ci-plant-proofs',
     run: 'npm run check:ci-plant-proofs',
     gate: true,
@@ -1765,9 +1747,8 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     // W8 P6. 445 module:NAME pairs across 164 tracked Python modules, derived from the AST and frozen as a shrink-only SET. Set equality BOTH ways is what makes the baseline untrimmable: deleting an entry whose read persists reds as NEW, banking one no read backs reds as STALE. A blanket `--write` `-baseline` (written split: the shrink-only gate's offerer scan is a text grep, so
-    // quoting the flag whole makes this comment an offender) is refused whenever it would ADD a
-    // pair, so a trimmer cannot reseed past it; additions are typed with --allow-new, which
-    // is itself checked against the derived set so it cannot pre-bank. 124 read sites hold the name in a variable, so constant resolution recovers 87 pairs a literal scan cannot see -- it is load-bearing, not polish.
+    // quoting the flag whole makes this comment an offender) is refused whenever it would ADD a pair, so a trimmer cannot reseed past it; additions are typed with --allow-new, which is itself checked against the derived set so it cannot pre-bank. 124 read sites hold the name in a variable, so constant resolution recovers 87 pairs a literal scan cannot see -- it is load-bearing,
+    // not polish.
     id: 'check:ci-python-env-registry',
     run: 'npm run check:ci-python-env-registry',
     gate: true,
@@ -1877,8 +1858,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     // W4 P4b. Four directions over the policy directory, because a one-way check reads a DELETED list as "nothing is suppressed": nothing on disk outside POLICY_FILES, nothing in POLICY_FILES missing from disk, Python and TypeScript agreeing on both the names and POLICY_DIR, and no literal policy-path join outside the two seams. Its honest control is a run against 19c45c78e, the
-    // commit whose drift this estate
-    // actually suffered; it reds there naming exactly `.language-policy-allowlist`.
+    // commit whose drift this estate actually suffered; it reds there naming exactly `.language-policy-allowlist`.
     id: 'check:ci-policy-inventory',
     run: 'npm run check:ci-policy-inventory',
     gate: true,
@@ -1912,9 +1892,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // The other half of box X0.1. X0.1 PREFIXED the ids so `D-A6` could not be transcribed
-    // as a gate rule; this asserts a `D-` id resolves to a row at all, and that a
-    // supersession is stated out loud in a commit rather than happening silently.
+    // The other half of box X0.1. X0.1 PREFIXED the ids so `D-A6` could not be transcribed as a gate rule; this asserts a `D-` id resolves to a row at all, and that a supersession is stated out loud in a commit rather than happening silently.
     id: 'check:ci-decision-ids',
     env: {
       GITHUB_BASE_REF: '${{ github.base_ref }}',
@@ -1949,9 +1927,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // The other half of the plan lifetime. check:ci-plan-boxes rules on a plan's
-    // boxes; this one rules on a COMPACTED plan's pointer back to its full text,
-    // which lives in a git blob and is the only thing standing between a record and an unreachable document that still advertises a recovery command.
+    // The other half of the plan lifetime. check:ci-plan-boxes rules on a plan's boxes; this one rules on a COMPACTED plan's pointer back to its full text, which lives in a git blob and is the only thing standing between a record and an unreachable document that still advertises a recovery command.
     id: 'check:ci-plan-record',
     env: {
       GITHUB_BASE_REF: '${{ github.base_ref }}',
@@ -1992,9 +1968,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // The manifest's machine-readable projection, and the gate that keeps it faithful.
-    // Three readers parse this file as TEXT because they are not TypeScript; the lock is
-    // the file they should read instead. Emitter and checker landed together (invariant 1, the rediacc/console#549 failure class).
+    // The manifest's machine-readable projection, and the gate that keeps it faithful. Three readers parse this file as TEXT because they are not TypeScript; the lock is the file they should read instead. Emitter and checker landed together (invariant 1, the rediacc/console#549 failure class).
     id: 'check:ci-gates-lock',
     run: 'npm run check:ci-gates-lock',
     gate: true,
@@ -2400,14 +2374,10 @@ export const GATES: readonly GateSpec[] = [
       step: 'Agent hints can actually fire',
     },
   },
-  // Answers the question the other two wiring gates cannot: not "is what we declared wired up?" but "did we forget to declare something?". A test file absent from the manifest is absent from BOTH sides of ci-parity, so parity
-  // agrees and reports success; gate-reachability can only ask about entries
-  // that registered. test-teammate-idle.py was committed with 20 controls and ran nowhere, and this gate then found four more orphans of the same shape. Gate 1 of the sentence-wrapping pair. Source-level and sub-second, so it runs on
-  // every PR; the browser half (check:ci-sentence-lines) measures real line boxes and
-  // needs a build. Neither subsumes the other. Shrink-only baseline, seeded at 51 because the <Sentences> mechanism does not exist yet -- that is what lets wave B land it incrementally without this gate being either useless or blocking. The half of www-round5's gate 3 the content schema does NOT cover. Per-doc subcategory legality moved into content/config.ts (z.enum +
-  // superRefine), where it
-  // cannot be bypassed; what is left is thumbnail coverage. The thumbnails are
-  // hand-authored and their generator was deleted, so a new doc without one ships a blank browse card in all 13 locales silently -- one file serves every translation, resolved by base slug. Plyr's quality pane cannot host the language picker: it snaps every click to min(options), so the video plays a language nobody chose. Re-adding it is the regression that looks like it works.
+  // Answers the question the other two wiring gates cannot: not "is what we declared wired up?" but "did we forget to declare something?". A test file absent from the manifest is absent from BOTH sides of ci-parity, so parity agrees and reports success; gate-reachability can only ask about entries that registered. test-teammate-idle.py was committed with 20 controls and ran
+  // nowhere, and this gate then found four more orphans of the same shape. Gate 1 of the sentence-wrapping pair. Source-level and sub-second, so it runs on every PR; the browser half (check:ci-sentence-lines) measures real line boxes and needs a build. Neither subsumes the other. Shrink-only baseline, seeded at 51 because the <Sentences> mechanism does not exist yet -- that is
+  // what lets wave B land it incrementally without this gate being either useless or blocking. The half of www-round5's gate 3 the content schema does NOT cover. Per-doc subcategory legality moved into content/config.ts (z.enum + superRefine), where it cannot be bypassed; what is left is thumbnail coverage. The thumbnails are hand-authored and their generator was deleted, so a new
+  // doc without one ships a blank browse card in all 13 locales silently -- one file serves every translation, resolved by base slug. Plyr's quality pane cannot host the language picker: it snaps every click to min(options), so the video plays a language nobody chose. Re-adding it is the regression that looks like it works.
   {
     id: 'check:ci-video-player-invariants',
     run: 'npm run check:ci-video-player-invariants',
@@ -2420,9 +2390,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Video player invariants',
     },
   },
-  // A skill an agent may edit gets longer every pass, because appending beats
-  // rewriting. The cap is what forces the editing pass; skills opt in through
-  // `self-improving: true` in their own frontmatter rather than a list here.
+  // A skill an agent may edit gets longer every pass, because appending beats rewriting. The cap is what forces the editing pass; skills opt in through `self-improving: true` in their own frontmatter rather than a list here.
   {
     id: 'check:ci-skill-size',
     run: 'npm run check:ci-skill-size',
@@ -2698,8 +2666,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-worklist-path-resolution',
     run: 'npm run check:ci-worklist-path-resolution',
     gate: true,
-    // why: three verbs each spelled "find the worklist" differently and only the
-    // unlucky one was ever wrong; a per-site test cannot see a cross-site rule
+    // why: three verbs each spelled "find the worklist" differently and only the unlucky one was ever wrong; a per-site test cannot see a cross-site rule
     leaves: ['scripts/gates/check-worklist-path-resolution.ts'],
     ci: {
       kind: 'step',
@@ -2983,9 +2950,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-i18n-cross-locale',
     run: 'npm run check:ci-i18n-cross-locale',
-    // gate:false since 2026-09-06. Its constituents (check:ci-i18n-cross-locale-core, check:ci-locale-de-contamination and check:ci-locale-config-divergence) are scheduled
-    // individually below; scheduling this as well ran the latter two TWICE per full local
-    // run. Body and `leaves` unchanged so the step still resolves to every child's leaves.
+    // gate:false since 2026-09-06. Its constituents (check:ci-i18n-cross-locale-core, check:ci-locale-de-contamination and check:ci-locale-config-divergence) are scheduled individually below; scheduling this as well ran the latter two TWICE per full local run. Body and `leaves` unchanged so the step still resolves to every child's leaves.
     gate: false,
     leaves: [
       'scripts/gates/check-i18n-cross-locale.ts',
@@ -3371,9 +3336,8 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check scope registry audit',
     },
   },
-  // Runs the WHOLE private/account/web tree, not just the contract-coverage
-  // file it used to name. That one file was 1 of 34; the other 33 (config key
-  // slots, the config session provider, useJobStream, executor-session, all of src/lib) could go red while CI stayed green. Renamed rather than quietly widened, because the step name is the only thing a reader of a red log sees and "Console contract coverage" would then be lying about 33 files.
+  // Runs the WHOLE private/account/web tree, not just the contract-coverage file it used to name. That one file was 1 of 34; the other 33 (config key slots, the config session provider, useJobStream, executor-session, all of src/lib) could go red while CI stayed green. Renamed rather than quietly widened, because the step name is the only thing a reader of a red log sees and
+  // "Console contract coverage" would then be lying about 33 files.
   {
     id: 'check:ci-test-account-web',
     run: 'npm run check:ci-test-account-web',
@@ -3598,9 +3562,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-seo',
     run: 'npm run check:ci-seo',
     slow: true, // needs build:www (131.9s); the runner demoted it anyway
-    // gate:false since 2026-09-06. Its two constituents (check:ci-seo-core and
-    // check:ci-client-bundle-budget) are scheduled individually below; scheduling this
-    // as well ran check-client-bundle-budget TWICE per full local run. The body and `leaves` stay byte-identical so the 'SEO' step still resolves to both children's leaves (R3, check-ci-parity.ts) and CI keeps one step.
+    // gate:false since 2026-09-06. Its two constituents (check:ci-seo-core and check:ci-client-bundle-budget) are scheduled individually below; scheduling this as well ran check-client-bundle-budget TWICE per full local run. The body and `leaves` stay byte-identical so the 'SEO' step still resolves to both children's leaves (R3, check-ci-parity.ts) and CI keeps one step.
     gate: false,
     needs: ['build:www'],
     leaves: ['scripts/gates/check-seo.ts', 'scripts/gates/check-client-bundle-budget.ts'],
@@ -3752,9 +3714,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-redirects',
     run: 'npm run check:ci-redirects',
     slow: true, // needs build:www (131.9s); the runner demoted it anyway
-    // gate:false since 2026-09-06. Its two constituents (check:ci-redirect-integrity and
-    // check:ci-anchor-integrity) are scheduled individually below; scheduling this as well
-    // ran check-anchor-integrity TWICE per full local run. Body and `leaves` unchanged so the 'Redirects' step still resolves to both children's leaves and CI keeps one step.
+    // gate:false since 2026-09-06. Its two constituents (check:ci-redirect-integrity and check:ci-anchor-integrity) are scheduled individually below; scheduling this as well ran check-anchor-integrity TWICE per full local run. Body and `leaves` unchanged so the 'Redirects' step still resolves to both children's leaves and CI keeps one step.
     gate: false,
     needs: ['build:www'],
     leaves: [
@@ -3827,8 +3787,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-landmarks',
     slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
-    // Reads packages/www/dist, so this is NOT an optimisation: without dist the gate REFUSES ("zero built pages found") rather than self-skipping, and the runner recorded that refusal as a FAILURE on every local lane. Seven
-    // sibling gates that read dist already declare this; these two never did.
+    // Reads packages/www/dist, so this is NOT an optimisation: without dist the gate REFUSES ("zero built pages found") rather than self-skipping, and the runner recorded that refusal as a FAILURE on every local lane. Seven sibling gates that read dist already declare this; these two never did.
     needs: ['build:www'],
     leaves: ['scripts/gates/check-landmarks.ts'],
     ci: {
@@ -3874,9 +3833,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-baseline-key-semantics',
     run: 'npm run check:ci-baseline-key-semantics',
     gate: true,
-    // `leaves` is what package.json's run command actually resolves to (the real
-    // source file check:ci-parity cross-checks); the 13 baseline JSON files this
-    // script reads at runtime belong in `paths` (change-detection selection), not here -- conflating the two is what check:ci-parity caught on this entry's first real run.
+    // `leaves` is what package.json's run command actually resolves to (the real source file check:ci-parity cross-checks); the 13 baseline JSON files this script reads at runtime belong in `paths` (change-detection selection), not here -- conflating the two is what check:ci-parity caught on this entry's first real run.
     paths: [
       'scripts/gates/check-baseline-key-semantics.ts',
       'scripts/data/dead-translation-keys-baseline.json',
@@ -4084,9 +4041,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-tutorial-card-fonts',
     run: 'npm run check:ci-tutorial-card-fonts',
     gate: true,
-    // Leaves are the scripts the npm key RUNS, not everything it imports.
-    // card-fonts.ts is a module this gate reads; listing it here made
-    // check:ci-parity red on a leaves-vs-package.json mismatch.
+    // Leaves are the scripts the npm key RUNS, not everything it imports. card-fonts.ts is a module this gate reads; listing it here made check:ci-parity red on a leaves-vs-package.json mismatch.
     leaves: ['packages/www/scripts/check-tutorial-card-fonts.ts'],
     ci: {
       kind: 'step',
@@ -4609,8 +4564,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
 
-  // Prerequisite nodes. They validate nothing, so gate:false; they run only
-  // when something that needs them is selected.
+  // Prerequisite nodes. They validate nothing, so gate:false; they run only when something that needs them is selected.
   //
   // build:www is what closes F5. check:ci-seo's built-HTML link scan self-skips without packages/www/dist (ci-quality.yml:738-740) and the old `&&` chain never built www, so that scan has been vacuous locally for its whole life.
   {
@@ -4675,8 +4629,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
 
-  // --------------------------------------------------------------------------- The battery, flattened. run-all.sh runs these 57 serially behind one opaque
-  // npm key; scheduling them individually is what lifts the parallel ceiling
+  // --------------------------------------------------------------------------- The battery, flattened. run-all.sh runs these 57 serially behind one opaque npm key; scheduling them individually is what lifts the parallel ceiling
   // from 2.4x to roughly 7x and what makes the summary name the failing test.
   //
   // Assertion 7 pins this set against the on-disk glob run-all.sh:26,46 uses, so a newly added test cannot be silently omitted here -- without that rule this flattening would recreate #549 fifty-seven times over.
@@ -4692,17 +4645,15 @@ export const GATES: readonly GateSpec[] = [
   // the script must stay under packages/cli for node to resolve @rediacc/shared. OPEN .ci/scripts/test/gates/test-gate-anti-vacuity.sh:255 -> scripts/.gate-anti-vacuity-fixture.ts, same shape, no victim observed. Cannot use the same fix either: run_against_empty_tree() builds its fixture tree with `cp -r "$REPO_ROOT/scripts"`, so the file has to exist under the real scripts/ at
   // copy time to reach the harness at all. The hazard PREDATES the runner: `npm run check:lint` in one terminal while `npm run check:ci-quality-gates` runs in another hits the same ENOENT, and that is how it was first seen here, not through the pool.
   //
-  // `mktemp` is NOT the fix, which is the trap: test-gate-paths-exist.sh's scan_targets() (:62-64) hardcodes `cd $REPO_ROOT` and `find scripts`, so a fixture outside the real tree stops being scanned and its control at
-  // :178-192 silently stops firing; and check-config-migrations.sh's generated
-  // script must sit under packages/cli for node to resolve @rediacc/shared and its relative fixtures dir. Both files have to stay in the tree.
+  // `mktemp` is NOT the fix, which is the trap: test-gate-paths-exist.sh's scan_targets() (:62-64) hardcodes `cd $REPO_ROOT` and `find scripts`, so a fixture outside the real tree stops being scanned and its control at :178-192 silently stops firing; and check-config-migrations.sh's generated script must sit under packages/cli for node to resolve @rediacc/shared and its relative
+  // fixtures dir. Both files have to stay in the tree.
   //
   // PREFER AN IGNORE RULE OVER A MUTEX, on measured cost. The insertion points
   // exist: eslint.config.js's global `ignores` array and biome.json's
   // `files.includes`, which already takes negated patterns. Both lists are "this is not source" exclusions (dist, node_modules, generated .d.ts), and a fixture that lives for milliseconds and is never committed belongs there. Cost: zero scheduling time, and it stands on its own merits whether or not the runner exists.
   //
-  // USE THE FOUR EXACT PATHS, NOT A GLOB. `scripts/.gate-*-fixture.ts` would
-  // silently exempt any future file matching it; four literals cannot, because
-  // they name exactly the files that exist. The failure mode also inverts the right way: a fifth writer added later is NOT covered, so it trips the scanner loudly the first time it races instead of being silently absorbed. That matches how the rest of this repo's suppressions work, enumerated rather than pattern-matched.
+  // USE THE FOUR EXACT PATHS, NOT A GLOB. `scripts/.gate-*-fixture.ts` would silently exempt any future file matching it; four literals cannot, because they name exactly the files that exist. The failure mode also inverts the right way: a fifth writer added later is NOT covered, so it trips the scanner loudly the first time it races instead of being silently absorbed. That matches
+  // how the rest of this repo's suppressions work, enumerated rather than pattern-matched.
   //
   // Both halves were PROVEN on a throwaway tree, each with a control that fires (2026-07-31), rather than reasoned from the tools' documented semantics.
   // Both probes ran against the WORKSPACE tools, eslint 9 and biome 2.5.6,
@@ -4710,14 +4661,11 @@ export const GATES: readonly GateSpec[] = [
   //   eslint  no ignore entry -> exit 1 on a planted parse error;
   // exact-path `ignores` entry -> exit 0.
   //   biome   no negation -> "Checked 2 files", flags the temp file, exit 1;
-  // exact-path `!` negation -> "Checked 1 file", exit 0. That biome run, and only that one, is what establishes that biome DOES walk dotfiles, which is why check:format was a victim at all. An earlier attempt without the node_modules link exited 0 in silence on a deliberately
-  // misformatted file; `npx` had resolved something other than the workspace
-  // biome, so that run is evidence about npx resolution and about nothing else. Do not read it as biome skipping dotfiles: a tool that never ran produces a green indistinguishable from a passing one, which is this whole file's subject.
+  // exact-path `!` negation -> "Checked 1 file", exit 0. That biome run, and only that one, is what establishes that biome DOES walk dotfiles, which is why check:format was a victim at all. An earlier attempt without the node_modules link exited 0 in silence on a deliberately misformatted file; `npx` had resolved something other than the workspace biome, so that run is evidence
+  // about npx resolution and about nothing else. Do not read it as biome skipping dotfiles: a tool that never ran produces a green indistinguishable from a passing one, which is this whole file's subject.
   //
   // A mutex group binding the three writers against check:lint / check:format / lint:unused is the fallback, and it is expensive. It would serialise 511.7s of work against an observed 264.2s wall, a 1.94x regression that drops the run from about 9x to about 4.7x. It also binds the two LONGEST gates in the set to each other, because one of the writers is the critical path:
-  // test-gate-paths-exist.sh measured 142.6s standalone on an idle tree and 264.1s under parallel load, against check:lint at 194.8s under the same
-  // load. (The plan's 116.7s for check:lint is stale; do not cost this from it.)
-  // No mutex is declared here, deliberately, because that trade wants an explicit decision rather than a silent default.
+  // test-gate-paths-exist.sh measured 142.6s standalone on an idle tree and 264.1s under parallel load, against check:lint at 194.8s under the same load. (The plan's 116.7s for check:lint is stale; do not cost this from it.) No mutex is declared here, deliberately, because that trade wants an explicit decision rather than a silent default.
   {
     // The composition guard shared by every shrink-only baseline here. Registered as a gate-test rather than a `check:ci-*` npm alias because it RUNS a gates/ script directly, which is the convention check-gate-id-convention.sh enforces.
     id: 'gate-test:shrink-only-composition',
@@ -5302,9 +5250,7 @@ export const GATES: readonly GateSpec[] = [
     qualityGateTest: true,
     // SCOPED 2026-09-06. This declared no `paths` at all, so the heaviest gate in the repository -- the local full-run floor -- was selected by every `--changed` set, including ones that touch nothing it reads.
     //
-    // The set was DERIVED from what the harness actually opens, not guessed. The leaf is
-    // a 40-line wrapper; all verdict-bearing work is in .claude/hooks/test-hooks.sh, and
-    // two of its dependencies live OUTSIDE .claude: it sources .ci/scripts/test/lib/ git-fixture.sh, and its inline-python cases assert the verdicts of the detector .ci/scripts/quality/check_inline_python.py.
+    // The set was DERIVED from what the harness actually opens, not guessed. The leaf is a 40-line wrapper; all verdict-bearing work is in .claude/hooks/test-hooks.sh, and two of its dependencies live OUTSIDE .claude: it sources .ci/scripts/test/lib/ git-fixture.sh, and its inline-python cases assert the verdicts of the detector .ci/scripts/quality/check_inline_python.py.
     //
     // `.claude/hooks/**`, NOT `.claude/hooks/**/*.sh`: the Python modules decide cases too (lib/sanctioned.py changes hook exit codes, and a ten-file loop runs the stop/ and pre-bash test modules). The leaf is listed explicitly because `.claude/hooks/**` does not cover it and the leaf oracle requires a gate's own leaves to be selectable.
     //
@@ -5596,9 +5542,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'gate-test:devcontainer-pin-freshness',
     run: '.ci/scripts/test/gates/test-devcontainer-pin-freshness.sh',
-    // 21.3s measured (EWMA of five runs, 19-28s): every one of its 6 cases is its own `npx tsx` start of the validator, so the floor is interpreter
-    // start-up, not work. Offline and deterministic; CI's quality-security
-    // lane still runs it. Marked 2026-09-04 when the EWMA crossed the 20s line.
+    // 21.3s measured (EWMA of five runs, 19-28s): every one of its 6 cases is its own `npx tsx` start of the validator, so the floor is interpreter start-up, not work. Offline and deterministic; CI's quality-security lane still runs it. Marked 2026-09-04 when the EWMA crossed the 20s line.
     slow: true,
     gate: true,
     qualityGateTest: true,
@@ -5870,8 +5814,7 @@ export const GATES: readonly GateSpec[] = [
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
       // quality-security, NOT quality-static, and this was a live defect rather than a preference. Measured 2026-09-07: 23 of the 64 ported gate tests shell out to node tooling (npx, tsx, npm run, node_modules), and quality-static is one of only three lanes that runs NO setup-workspace, so it has neither node nor the workspace deps. Driven with node hidden from PATH, exactly as
-      // that runner sees it, three of those ported modules gave 24 failed / 1 passed. They do not
-      // skip; they fail.
+      // that runner sees it, three of those ported modules gave 24 failed / 1 passed. They do not skip; they fail.
       //
       // CI has not caught it because every port is still UNTRACKED, so the checkout CI runs has never contained one. The red would have arrived on the commit that landed them, which is the worst moment to discover a lane cannot run its own gate.
       //
@@ -5983,16 +5926,12 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     // The comparator that decides whether a ported gate kept its twin's verdict. It is on the critical path for W7's 74 bash gates, W4's blocker-validator collapse and W8, so the thing that must not happen is a comparator that cannot report a mismatch: it would not merely fail to help, it would launder every port that followed with a green artifact nobody re-reads. Hence the three
-    // MUTATION CONTROLS in this test, which break one load-bearing line each in a COPY of the module and require the module's own
-    // selftest to go red; and hence a real pilot pair rather than a fixture --
-    // the two live blocker-validator implementations, plus the vendored breakpoint subset whose five recorded divergences are a mismatch nobody planted.
+    // MUTATION CONTROLS in this test, which break one load-bearing line each in a COPY of the module and require the module's own selftest to go red; and hence a real pilot pair rather than a fixture -- the two live blocker-validator implementations, plus the vendored breakpoint subset whose five recorded divergences are a mismatch nobody planted.
     id: 'gate-test:shadow-gate',
     run: '.ci/scripts/test/gates/test-shadow-gate.sh',
     gate: true,
     qualityGateTest: true,
-    // 12.6s/13.1s measured back to back in a feature worktree. Driver contract section 5 says no such number is admissible, so this is a placeholder that
-    // keeps the entry from being blank; the reference-worktree re-tiering box
-    // owns the final value and may drop `slow` entirely.
+    // 12.6s/13.1s measured back to back in a feature worktree. Driver contract section 5 says no such number is admissible, so this is a placeholder that keeps the entry from being blank; the reference-worktree re-tiering box owns the final value and may drop `slow` entirely.
     slow: true,
     leaves: ['.ci/scripts/test/gates/test-shadow-gate.sh'],
     paths: [
@@ -6002,8 +5941,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/lib/blocker-validator.sh',
       'scripts/lib/blocker-validator.ts',
       '.ci/breakpoint/lib/breakpoint-blocker.sh',
-      // The pilot pair are CLIENTS of this module as of 2026-09-09; it decides both
-      // sides' verdicts, so a change here can move the recorded divergence this test asserts, and `--changed` would not otherwise select the gate.
+      // The pilot pair are CLIENTS of this module as of 2026-09-09; it decides both sides' verdicts, so a change here can move the recorded divergence this test asserts, and `--changed` would not otherwise select the gate.
       '.ci/rediacc_ci/core/allowlist.py',
       '.ci/scripts/test/gates/test-blocker-golden-corpus.sh',
     ],
@@ -6218,10 +6156,8 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // The `rebase-resolve` verb, driven against REAL halted rebases rather than hand-written stage tables. wl_git.py's own selftest covers the classifier
-    // and the union as pure functions; this covers the half that only a real
-    // halt can reach -- what git writes into .git/rebase-merge and the index. The first wiring passed (sha, mode) tuples to an oracle wanting bare
-    // shas; a pure-function test could not have seen it.
+    // The `rebase-resolve` verb, driven against REAL halted rebases rather than hand-written stage tables. wl_git.py's own selftest covers the classifier and the union as pure functions; this covers the half that only a real halt can reach -- what git writes into .git/rebase-merge and the index. The first wiring passed (sha, mode) tuples to an oracle wanting bare shas; a
+    // pure-function test could not have seen it.
     id: 'gate-test:rebase-resolve',
     run: '.ci/scripts/test/gates/test-rebase-resolve.sh',
     gate: true,
@@ -6473,9 +6409,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'gate-test:slim-timeout',
     run: '.ci/scripts/test/gates/test-slim-timeout.sh',
     gate: true,
-    // 23.7s by the floor of its last five (23.7 24.3 24.7 24.9 27.1). It parses every workflow and walks each ubuntu-slim job's timeout, several times over
-    // fixture trees. Swept with two siblings on 2026-09-02; a scan of the whole
-    // duration cache says these three were the only unmarked gates over budget.
+    // 23.7s by the floor of its last five (23.7 24.3 24.7 24.9 27.1). It parses every workflow and walks each ubuntu-slim job's timeout, several times over fixture trees. Swept with two siblings on 2026-09-02; a scan of the whole duration cache says these three were the only unmarked gates over budget.
     slow: true,
     qualityGateTest: true,
     leaves: ['.ci/scripts/test/gates/test-slim-timeout.sh'],
@@ -6745,9 +6679,8 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // check:ci-enumeration-vacuity proves a floor is PRESENT, which is a source shape. Whether it REFUSES is behaviour, and a check-*.ts asserting the source still looks right is not the same claim -- the testing skill says so, and a static version of this was written and DISCARDED for being wrong on all six names it flagged.
-    // Covers only the floors whose corpus is addressable from outside; the file names
-    // the seven it cannot reach and why.
+    // check:ci-enumeration-vacuity proves a floor is PRESENT, which is a source shape. Whether it REFUSES is behaviour, and a check-*.ts asserting the source still looks right is not the same claim -- the testing skill says so, and a static version of this was written and DISCARDED for being wrong on all six names it flagged. Covers only the floors whose corpus is addressable from
+    // outside; the file names the seven it cannot reach and why.
     id: 'gate-test:vacuity-floors',
     run: '.ci/scripts/test/gates/test-vacuity-floors.sh',
     gate: true,
@@ -6965,14 +6898,11 @@ export const GATES: readonly GateSpec[] = [
   // package-tests job, ct-tests.yml, ct-update-flow.yml and ci-ops-test.yml, none
   // of which is in paritySurface(), so a `step` pointer would fail R3 correctly.
   //
-  // NO `paths` ON ANY OF THEM, and that is a decision rather than an omission. Each depends on the CLI bundle, the renet submodule, constants.sh,
-  // toolchain.env, the packaging scripts and the workflow it mirrors; enumerating
-  // that is the half-populated table this file's own header warns makes `--changed` drop gates silently. Always-selected is the safe direction.
+  // NO `paths` ON ANY OF THEM, and that is a decision rather than an omission. Each depends on the CLI bundle, the renet submodule, constants.sh, toolchain.env, the packaging scripts and the workflow it mirrors; enumerating that is the half-populated table this file's own header warns makes `--changed` drop gates silently. Always-selected is the safe direction.
   //
   // The `slow:` values are PROVISIONAL. They were measured on a contended tree
   // with five writer agents live, which driver-contract section 5 makes
-  // inadmissible; only the three above 5 s carry it and the retier box owns the
-  // final values.
+  // inadmissible; only the three above 5 s carry it and the retier box owns the final values.
   {
     id: 'check:ci-proxy-linux-packages',
     run: 'npm run check:ci-proxy-linux-packages',

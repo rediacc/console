@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported subscription-schema consistency gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.subscription_schema`, which
-pytest and the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.subscription_schema`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 4). See DRIVEN, below.
 
@@ -18,8 +16,7 @@ whole, both sides resolve to {go, node, submodules}, unchanged.
 
 `selftest: true` IS INERT HERE and is carried anyway: `headerLines` emits that field only for `.ts` (`gate-bind.ts:598`), so for a `.py` gate it decides nothing. It is true of the port regardless.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-subscription-schema.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-subscription-schema.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Check subscription schema consistency needs: go, node, submodules selftest: true ---- end gate ----
 """

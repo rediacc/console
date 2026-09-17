@@ -15,9 +15,7 @@ WHAT IS COMPARED BY SHAPE RATHER THAN BYTE, and why each one has to be:
   * `--1bad x` -- `printf -v` refuses a key that is not a shell identifier,
     which carries the twin's own path and line number into the message.
 
-THE NEGATIVE CONTROLS ARE THE POINT OF HALF THIS FILE. A parser that returned
-every number it saw would pass every positive case here; `test_the_allowlist_
-is_the_boundary` and `test_near_miss_spellings_are_not_links` are what stop it.
+THE NEGATIVE CONTROLS ARE THE POINT OF HALF THIS FILE. A parser that returned every number it saw would pass every positive case here; `test_the_allowlist_ is_the_boundary` and `test_near_miss_spellings_are_not_links` are what stop it.
 
 K=5 LEDGER: `.ci/shadow/w7p6-linked-sub-prs.observations.jsonl`, recorded in a
 disposable scratch git repository outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout is never clean.
@@ -251,8 +249,7 @@ def test_the_owner_is_a_parameter() -> None:
 def test_divergence_an_owner_that_is_not_valid_regex() -> None:
     """The port's one known divergence, pinned so a later "fix" turns it red.
 
-    Both sides find nothing and exit 0; only the diagnostic differs (grep's
-    versus Python's, and the twin emits one per submodule).
+    Both sides find nothing and exit 0; only the diagnostic differs (grep's versus Python's, and the twin emits one per submodule).
     """
     with tempfile.TemporaryDirectory() as td:
         seen = []

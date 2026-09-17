@@ -67,8 +67,7 @@ vi.mock('../config/config-resources.js', () => ({
   },
 }));
 
-// The three network-facing verbs are stubbed; everything else stays REAL. In
-// particular `isDatastoreScopedId` — the executor asks it whether a resolved datastore identity will actually scope the write, and the licence writer asks it where to put the file. Stubbing it here would let the two answers drift, which is the exact class of bug this module is guarding against.
+// The three network-facing verbs are stubbed; everything else stays REAL. In particular `isDatastoreScopedId` — the executor asks it whether a resolved datastore identity will actually scope the write, and the licence writer asks it where to put the file. Stubbing it here would let the two answers drift, which is the exact class of bug this module is guarding against.
 vi.mock('../account/license.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../account/license.js')>()),
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
@@ -890,9 +889,7 @@ describe('localExecutorService create/fork licensing flow', () => {
     });
 
     it('keeps a machine-placed create on the legacy unscoped path', async () => {
-      // The implicit default datastore carries no descriptor and therefore no
-      // identity; renet reads the unscoped population for it. Inventing a scope
-      // here would break every ordinary create.
+      // The implicit default datastore carries no descriptor and therefore no identity; renet reads the unscoped population for it. Inventing a scope here would break every ordinary create.
       mockGetRepository.mockResolvedValue({
         repositoryGuid: 'guid-1',
         placement: { machine: 'hostinger' },

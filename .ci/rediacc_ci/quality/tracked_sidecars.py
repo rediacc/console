@@ -1,15 +1,12 @@
 """No stop-hook RUNTIME sidecar may be tracked by git.
 
-Ported from `.ci/scripts/quality/check-tracked-sidecars.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side
-until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-tracked-sidecars.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS. Every date and every named file below is the original's, not a paraphrase of it.
 -----------------------------------------------------------------------------
 
-WHY THIS EXISTS. On 2026-08-05 a `git add -A` swept two runtime files into a commit: `.claude/hooks/stop/.sessions` and `.claude/hooks/stop/.waiter-aaaaaaaa`. They were removed by hand and added to .gitignore, and nothing whatsoever prevented their return -- every existing gate was blind to them by
-construction. These files have no static markers in source; they exist only
+WHY THIS EXISTS. On 2026-08-05 a `git add -A` swept two runtime files into a commit: `.claude/hooks/stop/.sessions` and `.claude/hooks/stop/.waiter-aaaaaaaa`. They were removed by hand and added to .gitignore, and nothing whatsoever prevented their return -- every existing gate was blind to them by construction. These files have no static markers in source; they exist only
 while a session runs, so no linter, type-check or dead-code scan can see them.
 The only observable that distinguishes the defect is `git ls-files`.
 
@@ -110,8 +107,7 @@ def control_fires(patterns: list[str]) -> bool:
 def ls_files(pathspec: str, root) -> tuple[int, str]:
     """`git ls-files -- <pathspec>` with stderr FOLDED INTO the output.
 
-    Returns (exit status, combined text). The fold is the twin's `2>&1`: on the failure path the text is printed back to the reader as `git said: ...`, so it is data, not a stream to be discarded. Keeping the status is the whole
-    point of the function; see the module docstring.
+    Returns (exit status, combined text). The fold is the twin's `2>&1`: on the failure path the text is printed back to the reader as `git said: ...`, so it is data, not a stream to be discarded. Keeping the status is the whole point of the function; see the module docstring.
     """
     proc = subprocess.run(
         ["git", "ls-files", "--", pathspec],
@@ -135,9 +131,7 @@ def err(message: str) -> None:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 clean, 1 violation or refusal.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes no
-    arguments at all and would ignore the string; no caller passes it, and the
-    differential never passes it to the old side.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes no arguments at all and would ignore the string; no caller passes it, and the differential never passes it to the old side.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -233,8 +227,7 @@ def selftest() -> int:
         len(parse_patterns("The sidecars (.a,\n.b,\n.c)")),
         3,
     )
-    # THE NON-GREEDY CASE. `(.*?)` must stop at the FIRST paren; a greedy match
-    # would swallow the rest of the file and admit tokens from elsewhere.
+    # THE NON-GREEDY CASE. `(.*?)` must stop at the FIRST paren; a greedy match would swallow the rest of the file and admit tokens from elsewhere.
     ctl.check(
         "CONTROL: the match stops at the first closing paren",
         parse_patterns("The sidecars (.a) and later (.b)"),

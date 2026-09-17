@@ -71,8 +71,7 @@ def build_text(band_name, usage, res, st, state_md):
     This used to report `usage / threshold` -- 98% meaning "nearly full". Claude Code's own display says "N% until auto-compact", which reads 2% at that same moment. Two numbers for one quantity, pointing opposite ways, in a notice whose entire job is to be believed at a glance: the operator saw 100% and 0% describing the same instant and asked for them aligned. So the only
     percentage this hook prints is REMAINING, in the status line's direction.
 
-    It will still not match the status line DIGIT for digit, and that is expected rather than a bug to chase: Claude Code divides by its internal token estimate over the message list, this divides by the measured threshold in reported-prompt tokens (see COMPACT_MARGIN in ctx_budget). The direction
-    and the unit are what were misleading; the residual gap is a few points.
+    It will still not match the status line DIGIT for digit, and that is expected rather than a bug to chase: Claude Code divides by its internal token estimate over the message list, this divides by the measured threshold in reported-prompt tokens (see COMPACT_MARGIN in ctx_budget). The direction and the unit are what were misleading; the residual gap is a few points.
     """
     threshold = res["threshold"]
     headroom = threshold - usage
@@ -185,8 +184,7 @@ def main():
         st = B.load_state(session_id)
         state_md = B.state_md_path(project, session_id)
 
-        # `window_floor` is this session's own evidence: it has carried more than any configured window allows, which no pin can argue with. The cap-disproof mechanism that used to sit beside it was deleted once the
-        # pin rule made it unreachable; see ctx_budget.resolve_threshold.
+        # `window_floor` is this session's own evidence: it has carried more than any configured window allows, which no pin can argue with. The cap-disproof mechanism that used to sit beside it was deleted once the pin rule made it unreachable; see ctx_budget.resolve_threshold.
         floor = st.get("window_floor")
         res = B.resolve_threshold(model, project, window_floor=floor)
         if not res["threshold"] or res["threshold"] <= 0:
@@ -200,15 +198,11 @@ def main():
             if ceiling > (res["window"] or 0):
                 st["window_floor"] = ceiling
                 res = B.resolve_threshold(model, project, window_floor=ceiling)
-                # Re-seat the ladder under the corrected threshold rather than clearing it. Clearing would replay every band the session has
-                # already passed; leaving it would suppress the bands it has
-                # not reached yet under the new, larger denominator.
+                # Re-seat the ladder under the corrected threshold rather than clearing it. Clearing would replay every band the session has already passed; leaving it would suppress the bands it has not reached yet under the new, larger denominator.
                 st["band"] = B.band_for(usage, res["threshold"])
                 st["threshold_corrected"] = True
 
-        # A compaction this hook did not see still has to reset the ladder.
-        # PostCompact is the primary reset; this is the backstop for a
-        # compaction that happened while the hook was unregistered or failing.
+        # A compaction this hook did not see still has to reset the ladder. PostCompact is the primary reset; this is the backstop for a compaction that happened while the hook was unregistered or failing.
         prev_usage = st.get("usage") or 0
         if prev_usage and usage < prev_usage * 0.75:
             st = {

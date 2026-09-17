@@ -50,9 +50,8 @@ CREDENTIAL_EXPRESSIONS = (
 def credential_hits(path) -> list[str]:
     """Every `<line-number>:<line>` in `path` carrying a credential expression.
 
-    FACTORED OUT for the same reason the twin factors out `detect_credential_exposure`: the anti-vacuity case below points it at a deliberately broken copy, and a detector that only ever runs against the real file has never been shown to fire. The twin
-    returns 1 and prints; this returns the hits, because a caller that must decide
-    whether the detector FIRED needs the evidence rather than an exit code.
+    FACTORED OUT for the same reason the twin factors out `detect_credential_exposure`: the anti-vacuity case below points it at a deliberately broken copy, and a detector that only ever runs against the real file has never been shown to fire. The twin returns 1 and prints; this returns the hits, because a caller that must decide whether the detector FIRED needs the evidence rather
+    than an exit code.
     """
     return [
         "%d:%s" % (number, line)
@@ -83,9 +82,7 @@ def test_no_credential_expression_in_workflow(gate):
 
 def test_detector_fires_on_the_real_leak(gate):
     """ANTI-VACUITY, BY MUTATION AND NOT BY ASSERTION. A gate that has only ever been
-    seen to pass has not been verified. This reconstructs the exact line that leaked in
-    run 30254567365, points the detector at it, and asserts it trips; weaken the
-    expression list or the scan and THIS case goes red rather than the gate going quietly blind.
+    seen to pass has not been verified. This reconstructs the exact line that leaked in run 30254567365, points the detector at it, and asserts it trips; weaken the expression list or the scan and THIS case goes red rather than the gate going quietly blind.
 
     It also avoids the trap the twin's first version fell into: asserting the guarded output names still exist in the scripts. After the fix they legitimately do not -- the whole point is that nothing emits them any more -- so that check failed on a correct tree and would have been "fixed" by deleting it.
     """

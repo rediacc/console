@@ -5,9 +5,7 @@
     test-install-methods.sh --dry-run --method bogus --version 1.2.17
     -> "Results: 0 passed, 0 failed, 0 skipped (total 0)"   EXIT=0
 
-Two causes, both fixed and both pinned here. The argument parser ended with a
-bare `*) shift ;;` that swallowed anything it did not recognise, and METHOD was
-never validated, so a typo produced a run that matched no test block. And success was defined as `[[ $FAIL -eq 0 ]]`, which is also true of a run that did nothing at all.
+Two causes, both fixed and both pinned here. The argument parser ended with a bare `*) shift ;;` that swallowed anything it did not recognise, and METHOD was never validated, so a typo produced a run that matched no test block. And success was defined as `[[ $FAIL -eq 0 ]]`, which is also true of a run that did nothing at all.
 
 The rule: every path ends VERIFIED, or in a VISIBLE skip, or in a FAILURE. An all-skipped run is deliberately still a success -- each skip is printed with its reason and counted -- but a zero-total run is not, because it says nothing.
 
@@ -24,9 +22,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-installmethods-args.sh"
 
 TARGET = paths.from_root(".ci", "scripts", "test", "test-install-methods.sh")
 
-# The mutations. WIDEN loosens the parser so a method matching no test block is
-# admitted, which is the pre-fix behaviour; DROP_BACKSTOP additionally deletes
-# the zero-total refusal, i.e. the code exactly as it stood on 2026-08-07.
+# The mutations. WIDEN loosens the parser so a method matching no test block is admitted, which is the pre-fix behaviour; DROP_BACKSTOP additionally deletes the zero-total refusal, i.e. the code exactly as it stood on 2026-08-07.
 WIDEN = ('VALID_METHODS="binary', 'VALID_METHODS="bogus binary')
 
 

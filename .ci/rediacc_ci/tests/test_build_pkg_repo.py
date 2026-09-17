@@ -152,9 +152,7 @@ mkdir -p "$1/repodata"
 echo "<repomd/>" >"$1/repodata/repomd.xml"
 """
 
-# The two docker images, faked to write what the real ones write. The apk arm
-# emits a real gzipped tar so the twin's `tar xzf ... -O APKINDEX` succeeds; that
-# is what makes the docker-ABSENT case (DEFECT 1) a contrast rather than the only behaviour the harness can produce.
+# The two docker images, faked to write what the real ones write. The apk arm emits a real gzipped tar so the twin's `tar xzf ... -O APKINDEX` succeeds; that is what makes the docker-ABSENT case (DEFECT 1) a contrast rather than the only behaviour the harness can produce.
 FAKE_DOCKER = """#!/usr/bin/env bash
 echo "call: docker $*" >>"$CALLLOG"
 outdir=""; repodir=""; arch_image=""
@@ -359,8 +357,7 @@ def _run(
         "LC_ALL": "C",
         "LANG": "C",
         "PYTHONDONTWRITEBYTECODE": "1",
-        # The port imports `rediacc_ci`; the COPY under the fixture is what runs,
-        # so the package itself comes from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci`; the COPY under the fixture is what runs, so the package itself comes from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
         "CALLLOG": str(call_log),
     }
@@ -580,10 +577,7 @@ def _assert_agree(old: dict[str, object], new: dict[str, object]) -> None:
 def test_the_fakes_are_actually_reached_and_the_repository_is_real(tmp_path):
     """ANTI-VACUITY, and it is the load-bearing test in this file.
 
-    Every comparison above is worthless if both sides did nothing. This pins the SHAPE of a successful run: gpg imported, listed, verified the fingerprint and
-    produced three signatures; dpkg-scanpackages ran TWICE, from the pool's own
-    directory; createrepo_c ran once; docker ran FOUR times, two images by two
-    architectures. Then it names the files that must exist.
+    Every comparison above is worthless if both sides did nothing. This pins the SHAPE of a successful run: gpg imported, listed, verified the fingerprint and produced three signatures; dpkg-scanpackages ran TWICE, from the pool's own directory; createrepo_c ran once; docker ran FOUR times, two images by two architectures. Then it names the files that must exist.
     """
     root = _fixture(tmp_path / "v")
     out = _run(PORT_REL, root, args=BUILD_ARGS, env_extra=DEFAULT_ENV)

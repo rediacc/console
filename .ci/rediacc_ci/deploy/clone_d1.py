@@ -5,8 +5,7 @@ Clone a D1 database from source to target: export the source, wrap the dump in
 `PRAGMA defer_foreign_keys=ON` / `foreign_keys=OFF` because D1 exports tables
 alphabetically rather than in FK dependency order, import into the target, and verify FK integrity afterwards.
 
-LIVE CALLERS, NOT REPOINTED. `.github/workflows/edge-clone-d1.yml:78` runs the bash twin, and so does `.ci/scripts/deploy/test-d1-migrations.sh:114` (whose own port, `deploy/test_d1_migrations.py`, deliberately invokes the BASH twin for the reason its docstring gives). This module is the twin's verified-equivalent
-alternative; the cutover is a separate, later, driver-only step.
+LIVE CALLERS, NOT REPOINTED. `.github/workflows/edge-clone-d1.yml:78` runs the bash twin, and so does `.ci/scripts/deploy/test-d1-migrations.sh:114` (whose own port, `deploy/test_d1_migrations.py`, deliberately invokes the BASH twin for the reason its docstring gives). This module is the twin's verified-equivalent alternative; the cutover is a separate, later, driver-only step.
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) and `sqlite3` are the only two programs that could, and the differential (`.ci/rediacc_ci/tests/test_deploy_clone_d1.py`) puts a RECORDING FAKE for each on a scratch PATH. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger
 is a separate, achievable piece of work. This is that piece.
@@ -90,9 +89,7 @@ builds `--env=X` and there is no `cloneSource` here: the only assignment is
 `CONFIG_FLAG="--config $WRANGLER_CONFIG"` (:61). The suppression is correct
 about the mechanism (word-splitting is genuinely wanted) and stale about the value, which is the shape the BLOCKER-liveness convention exists to catch.
 
-AND `--wrangler-config` HAS NO CALLER AT ALL. `edge-clone-d1.yml` passes
-`--source/--target/--sanitize`; `test-d1-migrations.sh` passes
-`--source/--target`. The flag, its documented usage line, and both BLOCKER comments are all about a code path nothing exercises.
+AND `--wrangler-config` HAS NO CALLER AT ALL. `edge-clone-d1.yml` passes `--source/--target/--sanitize`; `test-d1-migrations.sh` passes `--source/--target`. The flag, its documented usage line, and both BLOCKER comments are all about a code path nothing exercises.
 
 -----------------------------------------------------------------------------
 WHAT IS BYTE-IDENTICAL, AND THE THREE THINGS THAT ARE NOT
@@ -126,15 +123,11 @@ from rediacc_ci.core import common
 SELF = "clone-d1.sh"
 
 # `EXPORT_ATTEMPTS=3` (twin :90) and the `sleep 10` between them (twin :99).
-# RETRIED because `d1 export` stages through R2 and R2 fails transiently in ways
-# that have nothing to do with the database; the twin's header records the two
-# distinct R2 errors seen on 2026-08-07 that motivated it. A database that genuinely cannot be exported still fails, three times over.
+# RETRIED because `d1 export` stages through R2 and R2 fails transiently in ways that have nothing to do with the database; the twin's header records the two distinct R2 errors seen on 2026-08-07 that motivated it. A database that genuinely cannot be exported still fails, three times over.
 EXPORT_ATTEMPTS = 3
 EXPORT_RETRY_SECONDS = 10
 
-# The redaction pattern (twin :102), a BRE with an escaped alternation, quoted
-# verbatim. Wrangler prints a pre-signed R2 URL valid for one hour; leaking it
-# into a CI log is a database download link in plain text.
+# The redaction pattern (twin :102), a BRE with an escaped alternation, quoted verbatim. Wrangler prints a pre-signed R2 URL valid for one hour; leaking it into a CI log is a database download link in plain text.
 #
 # NOT A PIPE INTO `grep -v`, and the twin's comment explains why at length: the old form died silently two ways under `pipefail` (a failing wrangler whose message was lost, and a SUCCESSFUL export whose entire output was the filtered lines, which made `grep -v` exit 1 and kill the step with nothing to show). Capture first, redact after, report wrangler's own status.
 REDACT_PATTERN = r"r2.cloudflarestorage.com\|valid for one hour"
@@ -159,8 +152,7 @@ FK_JQ = ".[0].results | length"
 FK_RESULTS_JQ = ".[0].results"
 FK_COMMAND = "PRAGMA foreign_key_check"
 
-# The usage line (twin :50), which is also the only place `--wrangler-config` is
-# documented. `--sanitize` is absent from it; see DEFECT D.
+# The usage line (twin :50), which is also the only place `--wrangler-config` is documented. `--sanitize` is absent from it; see DEFECT D.
 USAGE = "Usage: clone-d1.sh --source <db-name> --target <db-name> [--wrangler-config <path>]"
 
 # The one variable `require_var` demands (twin :54). The header claims two; see
@@ -195,9 +187,7 @@ def parse_argv(argv: list[str]) -> tuple[str, str, str, bool]:
 
     LAST FLAG WINS, because each arm assigns rather than appends: `--source a --source b` clones `b`. That is bash's behaviour here and it is reproduced rather than turned into an error.
 
-    A FLAG WITH NO VALUE raises `BashExitError(1)` after printing this port's
-    stand-in for bash's `$2: unbound variable`; divergence 1 in the module
-    docstring.
+    A FLAG WITH NO VALUE raises `BashExitError(1)` after printing this port's stand-in for bash's `$2: unbound variable`; divergence 1 in the module docstring.
     """
     source_db = ""
     target_db = ""
@@ -329,8 +319,7 @@ def make_temp_dir() -> str:
 def wc_lines(path: str) -> str:
     """`$(wc -l <path)` inside a message, which is a COMMAND SUBSTITUTION.
 
-    A redirection that cannot be opened there does NOT end the run: the enclosing command is `log_info`, which succeeds, so bash prints its own complaint and the message interpolates an empty string. Both halves are
-    reproduced; only the wording of the complaint diverges.
+    A redirection that cannot be opened there does NOT end the run: the enclosing command is `log_info`, which succeeds, so bash prints its own complaint and the message interpolates an empty string. Both halves are reproduced; only the wording of the complaint diverges.
     """
     try:
         handle = open(path, "rb")  # noqa: SIM115
@@ -471,8 +460,7 @@ def verify_fk(target_db: str, config_words: list[str]) -> None:
     try:
         violations = bash_arithmetic_gt_zero(fk_count)
     except BashUnboundError as exc:
-        # bash prints `<script>: line 153: <name>: unbound variable` and stops.
-        # Same three facts, same stream, same status; the EXIT trap still runs.
+        # bash prints `<script>: line 153: <name>: unbound variable` and stops. Same three facts, same stream, same status; the EXIT trap still runs.
         print("%s: %s: unbound variable" % (SELF, exc.name), file=sys.stderr, flush=True)
         raise BashExitError(1) from exc
 
@@ -522,8 +510,8 @@ def bash_arithmetic_gt_zero(text: str) -> bool:
     THE FATAL ROWS ARE THE POINT. A bare word is a VARIABLE REFERENCE, and an unset one under `set -u` ends the script with exit 1 and no message of the script's own -- so a `jq` program that ever emitted `null` here would turn a clone into a hard failure rather than a verdict. It cannot today: `jq length` prints a number or the pipeline fails and `|| echo "0"` supplies one.
     Reproduced anyway, because the next person to edit that jq program should not have to rediscover it.
 
-    THE TWO NON-FATAL ERROR ROWS ARE REPRODUCED WITH THEIR DIAGNOSTIC, minus bash's own `<file>: line <n>:` prefix, because the zero-padded-octal class has bitten this campaign four times and a silent FALSE would hide it a fifth. The residual case (a non-numeric value that does not start with a digit and names no variable, e.g. `+`) evaluates FALSE here with no
-    message, where bash prints an `arithmetic syntax error`; it is unreachable
+    THE TWO NON-FATAL ERROR ROWS ARE REPRODUCED WITH THEIR DIAGNOSTIC, minus bash's own `<file>: line <n>:` prefix, because the zero-padded-octal class has bitten this campaign four times and a silent FALSE would hide it a fifth. The residual case (a non-numeric value that does not start with a digit and names no variable, e.g. `+`) evaluates FALSE here with no message, where bash
+    prints an `arithmetic syntax error`; it is unreachable
     from `jq length` and from this script's `|| echo "0"` fallback.
     """
     stripped = text.strip()

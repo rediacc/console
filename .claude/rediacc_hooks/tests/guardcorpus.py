@@ -8,14 +8,12 @@ answers as its own twin does. `.claude/hooks/test-hooks.sh` already holds that p
     ^     ^ ^                                 ^                              ^
     verb  | the guard                         the event                      why
 
-so one pass over the file yields (guard, payload) for every call site. Those
-are the inputs; the ORACLE is the bash guard itself, run on the same bytes.
+so one pass over the file yields (guard, payload) for every call site. Those are the inputs; the ORACLE is the bash guard itself, run on the same bytes.
 
 THE KEY SPELLING CHANGED AT THE P7 CUTOVER and the reason is not cosmetic. A
 case names its guard by the key `check-hook-integrity.sh` inventories it under,
-so that one spelling drives the suite, credits the coverage assertion and keys this corpus. The guards are Python modules now, living at
-`.claude/rediacc_hooks/guards/`, so the key is `guards/<module>.py`; the bash
-original the differential compares against was moved to `.claude/oracles/<chain>/<name>.sh` and is reached through the port module's own TWIN field rather than by rewriting the key.
+so that one spelling drives the suite, credits the coverage assertion and keys this corpus. The guards are Python modules now, living at `.claude/rediacc_hooks/guards/`, so the key is `guards/<module>.py`; the bash original the differential compares against was moved to `.claude/oracles/<chain>/<name>.sh` and is reached through the port module's own TWIN field rather than by
+rewriting the key.
 
 THE EXPECTED EXIT CODE IN COLUMN 2 IS DELIBERATELY NOT THE ORACLE, and that is the difference between a differential and a re-run of the suite. Several payloads interpolate suite-local variables (`$PB_DIR`, `$PLAN_TMP`, `$BW_TMP`) that this module does not reconstruct, so the bytes it recovers are not always the bytes the suite fed. That weakens nothing: both implementations
 receive the IDENTICAL bytes, and disagreement between them is the finding. It also means a payload reconstructed imperfectly is still a perfectly good differential input, which is why no attempt is made to run the suite.
@@ -34,9 +32,8 @@ from rediacc_hooks.tests import corpus
 SUITE = corpus.SUITE
 repo_root = corpus.repo_root
 
-# The suite's payload builders, and the event each one produces. Reading them
-# out of the suite would be the purer move; they are transcribed here because
-# they are seven one-line `printf` functions, and a parser for them would be more code than they are. `test_builders_match_the_suite` compares this table against the real definitions on every run, so a change to either side is a failure rather than a silent drift.
+# The suite's payload builders, and the event each one produces. Reading them out of the suite would be the purer move; they are transcribed here because they are seven one-line `printf` functions, and a parser for them would be more code than they are. `test_builders_match_the_suite` compares this table against the real definitions on every run, so a change to either side is a
+# failure rather than a silent drift.
 BUILDERS = {
     "bash_json": lambda a: {"tool_input": {"command": a[0]}},
     "bash_bg_json": lambda a: {"tool_input": {"command": a[0], "run_in_background": True}},
@@ -58,9 +55,7 @@ BUILDER_SHAPES = {
     "ask_json": '{"tool_input":{"questions":[{"question":%s,"header":"x"}]}}',
 }
 
-# Vacuity floors, both corpus-derived rather than hand-typed (driver contract section 6). The first is a RATIO of the call sites counted in the same pass,
-# so adding suite cases raises it; the second is the base case that stops the
-# ratio meaning anything over a gutted file, exactly as `corpus.MIN_COMMANDS` is for the shellscan corpus.
+# Vacuity floors, both corpus-derived rather than hand-typed (driver contract section 6). The first is a RATIO of the call sites counted in the same pass, so adding suite cases raises it; the second is the base case that stops the ratio meaning anything over a gutted file, exactly as `corpus.MIN_COMMANDS` is for the shellscan corpus.
 RECOVERY_FLOOR = 0.85
 MIN_CASES = 300
 
@@ -174,9 +169,7 @@ def harvest_cases():
             continue
         i = _skip_blanks(src, i)
         guard_word, i = _raw_word(src, i)
-        # `.py` AS WELL AS `.sh`, and `guards/` as well as a chain name. The
-        # ported guards are modules; a reader anchored to the old spelling would
-        # recover ZERO cases for all 46 of them and the recovery ratio below would be the only thing that said so.
+        # `.py` AS WELL AS `.sh`, and `guards/` as well as a chain name. The ported guards are modules; a reader anchored to the old spelling would recover ZERO cases for all 46 of them and the recovery ratio below would be the only thing that said so.
         if not re.fullmatch(r"[a-z_-]+/[A-Za-z0-9_.-]+\.(?:sh|py)", guard_word):
             continue
         sites += 1
@@ -228,9 +221,7 @@ def cross_sample(payloads, guard, limit=CROSS_SAMPLE):
     return [payload for _, payload in scored[:limit]]
 
 
-# Event shapes no suite case produces, and every one of them is a shape a guard can be handed by the real harness. The suite's builders always emit a
-# well-formed document; the harness does not promise one, and `jq -r` answers
-# each of these differently (see `hookio._jq_raw`, whose four-way asymmetry is what these pin).
+# Event shapes no suite case produces, and every one of them is a shape a guard can be handed by the real harness. The suite's builders always emit a well-formed document; the harness does not promise one, and `jq -r` answers each of these differently (see `hookio._jq_raw`, whose four-way asymmetry is what these pin).
 DEGENERATE_PAYLOADS = [
     ("empty stdin", ""),
     ("malformed json", "{not json"),
@@ -260,8 +251,7 @@ DEGENERATE_PAYLOADS = [
 ]
 
 
-# The retired bash originals. They are NOT hooks and nothing registers them; see
-# `.claude/oracles/README.md` for why they are kept and why they had to leave `.claude/hooks/`.
+# The retired bash originals. They are NOT hooks and nothing registers them; see `.claude/oracles/README.md` for why they are kept and why they had to leave `.claude/hooks/`.
 ORACLES = "oracles"
 
 

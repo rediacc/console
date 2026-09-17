@@ -54,8 +54,7 @@ TREE_FILES = (
     PORT_REL,
 )
 
-# `dirname`/`uname`/`tr` are what `common.sh` needs at source time; `rm` is the
-# real one, on purpose. If a port ever stopped shelling out AND stopped deleting, only the filesystem snapshot would notice, which is why it exists.
+# `dirname`/`uname`/`tr` are what `common.sh` needs at source time; `rm` is the real one, on purpose. If a port ever stopped shelling out AND stopped deleting, only the filesystem snapshot would notice, which is why it exists.
 PATH_MINIMUM = ("dirname", "uname", "tr", "rm")
 
 FAKE_NPM = """#!{python}
@@ -353,9 +352,7 @@ def test_dist_as_a_symlink_loses_the_link_and_keeps_the_target(
     tmp_path: pathlib.Path,
 ) -> None:
     """A stale `dist` symlink into another worktree is a real state in a repo
-    that uses git worktrees. `rm -rf` unlinks it and never touches what it points
-    at; a port that resolved the link first would silently delete somebody else's
-    build output, with byte-identical stdout and stderr. The snapshot includes
+    that uses git worktrees. `rm -rf` unlinks it and never touches what it points at; a port that resolved the link first would silently delete somebody else's build output, with byte-identical stdout and stderr. The snapshot includes
     `keepsake/` precisely so that deletion would be visible here."""
     old3, new3 = run_both(
         tmp_path,

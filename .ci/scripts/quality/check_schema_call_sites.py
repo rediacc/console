@@ -4,9 +4,7 @@
 WHY THIS EXISTS. `retry_schema_exhaustion` turns "the model could not produce an object matching the schema" into one retry instead of a hard failure. On 2026-09-05 a sweep added it to the judge call sites one at a time and MISSED THE FIFTH -- the one in wl_shapedup.py -- and the commit that found it says so in its own subject: "the fifth schema-constrained call site". Five
 examples checked individually is not the same claim as the set being uniform, and the fifth is exactly what an example-based sweep drops.
 
-THE INVARIANT. A function that builds a `--json-schema` model invocation must route its
-subprocess through `retry_schema_exhaustion`. Not "most of them"; the whole set,
-enumerated from the source, so a SIXTH site is covered the day it is written with no edit here.
+THE INVARIANT. A function that builds a `--json-schema` model invocation must route its subprocess through `retry_schema_exhaustion`. Not "most of them"; the whole set, enumerated from the source, so a SIXTH site is covered the day it is written with no edit here.
 
 Blind spot, stated: this proves the helper is CALLED in the same function, not that its result is used correctly. A site that calls it and discards `proc` passes here.
 
@@ -29,8 +27,7 @@ MARKER = "--json-schema"
 # WHAT "SPAWNS" MEANS, and why it is a tuple. It was the single string `subprocess.`, and the hooks then moved their model calls behind `wl_proc.run` -- a helper that adds the timeout and the spawn-failure sentinel. The marker went stale silently: the walk fell from five sites to ONE, and only MIN_SITES stood between that and a tick over a corpus the gate could no longer see.
 # Measured 2026-09-14: `subprocess.` alone finds 1 site, `subprocess.` or `wl_proc.run` finds 6, and all 6 route through the helper -- so the invariant had held the whole time and only the detector had rotted.
 #
-# ADD to this tuple when a new spawn path appears; do NOT lower MIN_SITES to
-# match a shrinking walk. The floor is what caught this, and a floor edited to fit the finding is a floor that cannot catch the next one.
+# ADD to this tuple when a new spawn path appears; do NOT lower MIN_SITES to match a shrinking walk. The floor is what caught this, and a floor edited to fit the finding is a floor that cannot catch the next one.
 SPAWNS = ("subprocess.", "wl_proc.run")
 
 # A walk that finds nothing prints a tick indistinguishable from a clean tree. Measured 2026-09-05: five sites across wl_judge.py and wl_shapedup.py.
@@ -51,8 +48,7 @@ def sites(src: str) -> list[tuple[str, int, bool]]:
         if not isinstance(node, ast.FunctionDef):
             continue
         body = ast.get_source_segment(src, node) or ""
-        # A REAL call site SPAWNS something. test-judge-schema.py:498 `fake_run` names `--json-schema` in a stub that returns a canned object. A name-based exclusion (test-*.py) would be the same proxy-for-a-role mistake this repo has paid for
-        # three times in one session; spawning is the property that distinguishes them.
+        # A REAL call site SPAWNS something. test-judge-schema.py:498 `fake_run` names `--json-schema` in a stub that returns a canned object. A name-based exclusion (test-*.py) would be the same proxy-for-a-role mistake this repo has paid for three times in one session; spawning is the property that distinguishes them.
         if MARKER in body and any(s in body for s in SPAWNS):
             out.append((node.name, node.lineno, HELPER in body))
     return out

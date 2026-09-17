@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported silent-failure-pattern gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.silent_failure_patterns`, which
-pytest and the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.silent_failure_patterns`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 6). See DRIVEN, below.
 
@@ -12,16 +10,13 @@ WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, extracted from `.ci/scripts/quality/check-silent-failure-patterns.sh` with an awk range over its `---- gate ----` block and diffed line by line against this one, INCLUDING THE FIELD ORDER, which the twin writes as step / needs / id / selftest. The twin carried exactly those four and no `emit:`, no `blocker:`, no `run:`, no `kind:`,
 no `why:` -- and, the presence that matters here, NO `lane:`.
 
-`id: check:ci-silent-failures` IS THE FIELD THIS GATE WOULD DIE WITHOUT, and it is the reason the task brief warned that the dash-for-underscore convention does not always hold. `derivedId` (`gate-header.ts:260`) turns this basename into
-`check:ci-silent-failure-patterns`; the manifest id is `check:ci-silent-failures`.
-Drop the line and the header binds to an id the manifest does not have, which is a parity failure in the lucky case and a gate bound to nothing in the unlucky one. The twin needed the same line for the same reason, its own basename being `check-silent-failure-patterns.sh`.
+`id: check:ci-silent-failures` IS THE FIELD THIS GATE WOULD DIE WITHOUT, and it is the reason the task brief warned that the dash-for-underscore convention does not always hold. `derivedId` (`gate-header.ts:260`) turns this basename into `check:ci-silent-failure-patterns`; the manifest id is `check:ci-silent-failures`. Drop the line and the header binds to an id the manifest does
+not have, which is a parity failure in the lucky case and a gate bound to nothing in the unlucky one. The twin needed the same line for the same reason, its own basename being `check-silent-failure-patterns.sh`.
 
 NO `lane:` IS ALSO CARRIED. The twin declares none, the manifest already places the step in `quality-static` (ci-quality.yml:327, inside that lane's `# >>> gate-bind` region), and adding a lane here would be a new claim rather than a moved one. `selftest: true` is inert for `.py` (`headerLines` emits it only for `.ts`, `gate-bind.ts:598`) and is carried because the twin declared it
 and because `silent_failure_patterns.main(["--selftest"])` really does exit 0 over a control battery.
 
-THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files rather than by reading them. `bind()` unions the declared needs with
-`inferredNeeds(source)`; the twin's `find`/`awk` body infers nothing, and this
-two-import entry point infers nothing because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both resolve to the empty set.
+THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files rather than by reading them. `bind()` unions the declared needs with `inferredNeeds(source)`; the twin's `find`/`awk` body infers nothing, and this two-import entry point infers nothing because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both resolve to the empty set.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -38,9 +33,7 @@ DRIVEN RED AS WELL, by a probe script at `.ci/scripts/quality/__gate_probe_silen
 `set -euo pipefail` and then `count=$(find . -name '*.txt' | wc -l)`, the
 unguarded pipefail-risk pipeline this gate exists for. Both sides exit 1 with stdout still empty and BYTE-IDENTICAL 585-byte stderr, naming the same file, the same line 3 and the same three remedies. The probe was deleted afterwards and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-silent-failure-patterns.sh` is
-NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's
-job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-silent-failure-patterns.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Silent-failure patterns needs: none id: check:ci-silent-failures selftest: true ---- end gate ----
 """

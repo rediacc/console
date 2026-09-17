@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """The prose-style engine: R1-R18, "the work, not the person".
 
-WHAT THIS ENFORCES. `.ci/config/prose-style-rules.json` is the single source of truth for the eighteen rules, their severities, their scopes, their patterns and
-their examples. Nothing in this module restates a rule; it loads them, extracts
-PROSE from a file or a message, and reports what fires. A rule added to that file is enforced here with no edit to this one, and a rule whose patterns move here would be a rule with two definitions.
+WHAT THIS ENFORCES. `.ci/config/prose-style-rules.json` is the single source of truth for the eighteen rules, their severities, their scopes, their patterns and their examples. Nothing in this module restates a rule; it loads them, extracts PROSE from a file or a message, and reports what fires. A rule added to that file is enforced here with no edit to this one, and a rule whose
+patterns move here would be a rule with two definitions.
 
 =============================================================================
 THE THING THIS MODULE IS MOSTLY MADE OF: DECIDING WHAT IS PROSE
@@ -66,8 +65,7 @@ BASELINE_FILE = ".ci/config/prose-style-baseline.json"
 # Every scope a rule may name, plus the wildcard. Checked at load time rather than at match time: a typo in `scopes` would otherwise make a rule silently apply nowhere, which is the vacuity this gate is built against.
 SCOPE_ALL = "all"
 
-# Which scope a path is linted under. `.md` is prose end to end; a source file
-# contributes only its COMMENTS, so it is linted under `comment`, which is the scope R11's imperative arm deliberately excludes.
+# Which scope a path is linted under. `.md` is prose end to end; a source file contributes only its COMMENTS, so it is linted under `comment`, which is the scope R11's imperative arm deliberately excludes.
 SCOPE_BY_SUFFIX = {
     ".md": "markdown",
     ".py": "comment",
@@ -241,9 +239,8 @@ HTML_BLOCK_TAG = re.compile(
 BLOCKQUOTE = re.compile(r"^\s{0,3}>")
 # A `gen-docs` generated region. Everything between the two markers is MACHINE OUTPUT, and `check:ci-doc-region-parity` refuses a hand-edit to it in as many words: "the committed bytes of every gen-docs region must equal what the generator produces".
 #
-# LINTING TEXT NOBODY MAY EDIT IS A TRAP, and it was sprung immediately. The `prose-style` region renders one row per rule, so its own table contains the
-# cells `No "you"` and `Hidden "you"`; the pre-edit guard refused the document
-# carrying it, and the only ways out would have been to rename the rules or to suppress the gate. Found 2026-09-16 by the guard blocking this gate's own reference document at the moment it was written.
+# LINTING TEXT NOBODY MAY EDIT IS A TRAP, and it was sprung immediately. The `prose-style` region renders one row per rule, so its own table contains the cells `No "you"` and `Hidden "you"`; the pre-edit guard refused the document carrying it, and the only ways out would have been to rename the rules or to suppress the gate. Found 2026-09-16 by the guard blocking this gate's own
+# reference document at the moment it was written.
 REGION_OPEN = re.compile(r"^\s*<!--\s*>>>\s*gen-docs:")
 REGION_CLOSE = re.compile(r"^\s*<!--\s*<<<\s*gen-docs\s*-->")
 ATX_HEADING = re.compile(r"^\s{0,3}#{1,6}\s")
@@ -251,18 +248,14 @@ ATX_HEADING = re.compile(r"^\s{0,3}#{1,6}\s")
 RULE_LINE = re.compile(r"^\s{0,3}(?:[-*_=]\s*){3,}$")
 # A markdown link REFERENCE definition: `[id]: https://...`
 LINK_DEF = re.compile(r"^\s{0,3}\[[^\]]+\]:\s")
-# A word made of letters, at least two, with no digits or underscores. What is left after stripping is scanned as text, but only these are eligible to be a
-# pronoun; the filter keeps `you_id` and `PROSE_STYLE` out without needing a
-# separate identifier pass.
+# A word made of letters, at least two, with no digits or underscores. What is left after stripping is scanned as text, but only these are eligible to be a pronoun; the filter keeps `you_id` and `PROSE_STYLE` out without needing a separate identifier pass.
 INDENT_CODE = re.compile(r"^(?: {4,}|\t)")
 
 
 class Line:
     """One extracted prose line: where it came from, and what is left of it.
 
-    `raw` is the untouched source line, kept because R18 measures the LINE and
-    not the residue; `text` is what the pattern rules see, after code spans,
-    URLs and link targets are removed.
+    `raw` is the untouched source line, kept because R18 measures the LINE and not the residue; `text` is what the pattern rules see, after code spans, URLs and link targets are removed.
     """
 
     __slots__ = ("lineno", "raw", "text")
@@ -383,8 +376,7 @@ class _PyChunk:
 def _python_scan(text):
     """Every COMMENT token and every docstring-shaped STRING token, in source order.
 
-    NOT A REGEX OVER `#`. `re.split("#")` reports the fragment identifier inside `"https://x/#frag"` as a comment, and a string containing the word `you` as prose. `tokenize` knows which is which because it is the same lexer the interpreter uses.
-    `_is_docstring` (unchanged; see its own docstring for the grammar) is what keeps a list/dict/call-argument string OUT of this scan.
+    NOT A REGEX OVER `#`. `re.split("#")` reports the fragment identifier inside `"https://x/#frag"` as a comment, and a string containing the word `you` as prose. `tokenize` knows which is which because it is the same lexer the interpreter uses. `_is_docstring` (unchanged; see its own docstring for the grammar) is what keeps a list/dict/call-argument string OUT of this scan.
     `list(...)` materializes the whole token stream up front, exactly as the single walk this factors out of always did, so a file Python itself cannot lex raises HERE rather than partway through a caller's own loop, and the caller falls back and SAYS it fell back.
     """
     stream = list(tokenize.generate_tokens(io.StringIO(text).readline))
@@ -403,8 +395,8 @@ def python_comment_lines(text, markers=DEFAULT_MARKERS):
     `# code` IS AN INDENTED BLOCK, exactly as ` code` is in markdown, and it is how a Python comment shows a snippet. Measured 2026-09-16 at `prose_style.py:388`: the fix for the docstring case below handled STRING bodies only, and the very next run flagged the capital `I` in the COMMENT restating that same literal block. The gate found a false positive in the comment explaining
     its previous false positive, twice, which is what finally made the indent rule apply to both token kinds instead of one.
 
-    THE DOCSTRING'S OWN INDENT is what makes an indented block inside it detectable at all. A markdown document's code block is four spaces from column zero; a docstring's is four spaces from wherever the docstring starts, and a function's docstring already starts at four.
-    MEASURED, NOT ANTICIPATED: `prose_style.py:404` -- this file -- once carried a reStructuredText literal block holding the very test label that exposed the docstring bug above, and R2 flagged the capital `I` inside it before the indent rule covered docstrings too.
+    THE DOCSTRING'S OWN INDENT is what makes an indented block inside it detectable at all. A markdown document's code block is four spaces from column zero; a docstring's is four spaces from wherever the docstring starts, and a function's docstring already starts at four. MEASURED, NOT ANTICIPATED: `prose_style.py:404` -- this file -- once carried a reStructuredText literal block
+    holding the very test label that exposed the docstring bug above, and R2 flagged the capital `I` inside it before the indent rule covered docstrings too.
     """
     lines = []
     for chunk in _python_scan(text):
@@ -518,8 +510,8 @@ def _cstyle_scan(text):
     agreed on everything except one thing neither copy's author noticed: the lint copy advanced past a backslash-escaped newline inside a string WITHOUT counting the line, so a comment after a multi-line string with a line-continuation backslash was reported at the wrong line number. Fixed here, in the one walk both consumers now share, rather than carried forward into a merge that
     kept it broken in exactly one of the two former copies.
 
-    Yields `("line", lineno, indent, body)` for a `//` comment -- `indent` is the raw text before the `//` on its physical line, which is how the reflow side tells a whole-line comment from a trailing one.
-    And `("block", start_lineno, raw_text)` for a `/* */` span, UNSPLIT into physical lines, because the two consumers break it apart differently (one strips a leading `*` per line for lint; the other never touches a block at all).
+    Yields `("line", lineno, indent, body)` for a `//` comment -- `indent` is the raw text before the `//` on its physical line, which is how the reflow side tells a whole-line comment from a trailing one. And `("block", start_lineno, raw_text)` for a `/* */` span, UNSPLIT into physical lines, because the two consumers break it apart differently (one strips a leading `*` per line
+    for lint; the other never touches a block at all).
     """
     i = 0
     lineno = 1
@@ -590,11 +582,8 @@ def _emit(lines, text, lineno, piece, markers):
         lines.append(Line(lineno, raw, scrubbed))
 
 
-# JSON string values whose key marks them as an IDENTIFIER or a QUOTED EXAMPLE rather than prose about the work. `patterns`/`exceptions` are regex
-# text; `text` is a rule's own bad/good exemplar (the JSON analogue of
-# `BAD_EXAMPLE`, since a JSON example's `kind: "bad"` marker sits on a DIFFERENT physical line than its `text`, so the character-level BAD_EXAMPLE
-# match cannot see it); `id`/`glob`/`schema`/`$schema`/`format`/`version` are
-# short machine-facing tokens, never a sentence about the work.
+# JSON string values whose key marks them as an IDENTIFIER or a QUOTED EXAMPLE rather than prose about the work. `patterns`/`exceptions` are regex text; `text` is a rule's own bad/good exemplar (the JSON analogue of `BAD_EXAMPLE`, since a JSON example's `kind: "bad"` marker sits on a DIFFERENT physical line than its `text`, so the character-level BAD_EXAMPLE match cannot see it);
+# `id`/`glob`/`schema`/`$schema`/`format`/`version` are short machine-facing tokens, never a sentence about the work.
 JSON_SKIP_KEYS = frozenset(
     ("patterns", "exceptions", "text", "id", "glob", "schema", "$schema", "format", "version")
 )
@@ -675,8 +664,7 @@ class Finding:
     def fid(self):
         """The stable id: a hash of the PATH, the RULE and the TEXT.
 
-        NOT the line number. See the module header; this is the half that lets a
-        paragraph move without regenerating the whole baseline.
+        NOT the line number. See the module header; this is the half that lets a paragraph move without regenerating the whole baseline.
         """
         digest = hashlib.sha256(
             ("%s\x1f%s\x1f%s" % (self.path, self.rule, self.text)).encode(
@@ -692,9 +680,7 @@ class Finding:
 def lint_line(line, rules, scope, max_len):
     """Every rule that fires on ONE extracted line.
 
-    An EXCEPTION on a rule suppresses that rule for the whole line, which is what
-    makes `My mistake; the fix is on the way.` legal under R2 while `My branch is
-    ready.` is not.
+    An EXCEPTION on a rule suppresses that rule for the whole line, which is what makes `My mistake; the fix is on the way.` legal under R2 while `My branch is ready.` is not.
     """
     hits = []
     for rule in rules:
@@ -919,8 +905,8 @@ def markdown_segments(text):
                 buffer = []
             yield "raw", lineno, raw
             continue
-        # A TAG NAMED INSIDE A CODE SPAN IS PROSE ABOUT HTML, NOT HTML. `HTML_BLOCK_TAG` carries a `.*` prefix so it can catch a tag anywhere on the line, which also makes it fire on a sentence that merely MENTIONS one in backticks -- the mention-versus-target class `docs/ci-overhaul/06-progress.md` already records for six separate guards.
-        # The consequence was mild rather than corrupting, since refusing to reflow is the safe direction, but it stranded such a paragraph over the length limit with no tool able to fix it. Matching against the code-span-scrubbed line costs nothing for a real `<details>` block, which carries its tag outside any backticks and still matches.
+        # A TAG NAMED INSIDE A CODE SPAN IS PROSE ABOUT HTML, NOT HTML. `HTML_BLOCK_TAG` carries a `.*` prefix so it can catch a tag anywhere on the line, which also makes it fire on a sentence that merely MENTIONS one in backticks -- the mention-versus-target class `docs/ci-overhaul/06-progress.md` already records for six separate guards. The consequence was mild rather than
+        # corrupting, since refusing to reflow is the safe direction, but it stranded such a paragraph over the length limit with no tool able to fix it. Matching against the code-span-scrubbed line costs nothing for a real `<details>` block, which carries its tag outside any backticks and still matches.
         if LIST_ITEM.match(raw) or any(p.match(raw) for p in REFLOW_STOP if p is not HTML_BLOCK_TAG):
             if buffer:
                 yield "para", start, buffer
@@ -1005,9 +991,7 @@ def underwrap_findings(path, text, rule, scope, max_len):
                     Finding(path, start, rule.id, payload[0][:80], "\n".join(payload), rule.severity)
                 )
     elif scope == "comment":
-        # `comment` scope only ever reaches here from `lint_text` (a real
-        # file); `lint_message` never carries it, since a commit/PR body is
-        # markdown-shaped text, not source code.
+        # `comment` scope only ever reaches here from `lint_text` (a real file); `lint_message` never carries it, since a commit/PR body is markdown-shaped text, not source code.
         suffix = pathlib.Path(path).suffix
         for item in comment_segments(text, suffix):
             if item[0] != "para":
@@ -1035,9 +1019,8 @@ def reflow_markdown(text, width):
         if kind == "raw":
             out.append(payload)
         else:
-            # A PARAGRAPH KEEPS ITS OWN LEFT MARGIN, and losing it is how the paragraph above stopped being true of the code beneath it. `_join_and_wrap` strips every piece before joining, which is right for the words and wrong for the column they start in, so an indented list CONTINUATION came back at column 0
-            # and detached itself from the item it belongs to. Measured 2026-09-17 across the markdown this session had already rewritten: 95 such lines across 7 files, reported by the operator from the rendered result rather than caught here. The stop list protects the `-` line itself; nothing protected the
-            # lines beneath it. The width shrinks by the indent so the reflowed lines still end inside the limit once the margin is put back.
+            # A PARAGRAPH KEEPS ITS OWN LEFT MARGIN, and losing it is how the paragraph above stopped being true of the code beneath it. `_join_and_wrap` strips every piece before joining, which is right for the words and wrong for the column they start in, so an indented list CONTINUATION came back at column 0 and detached itself from the item it belongs to. Measured 2026-09-17
+            # across the markdown this session had already rewritten: 95 such lines across 7 files, reported by the operator from the rendered result rather than caught here. The stop list protects the `-` line itself; nothing protected the lines beneath it. The width shrinks by the indent so the reflowed lines still end inside the limit once the margin is put back.
             indent = payload[0][: len(payload[0]) - len(payload[0].lstrip(" \t"))]
             out.extend(indent + piece for piece in _join_and_wrap(payload, width - len(indent)))
     trailing = "\n" if text.endswith("\n") else ""
@@ -1069,9 +1052,8 @@ def load_baseline(root):
 def write_baseline(root, findings, previous):
     """Write the baseline, refusing a drain that ADDED anything.
 
-    THE COMPOSITION TRAP, which a size comparison does not catch. A drain here can print `2,189 -> 2,160` and go green while the two sets differ by thirty removed and ONE added -- a fresh violation, made in the same hour, silently enshrined. So the ADDED side is diffed and must be empty. Baselining a new
-    finding is still possible; it takes `--accept-new`, at the command line,
-    where it is a decision somebody typed.
+    THE COMPOSITION TRAP, which a size comparison does not catch. A drain here can print `2,189 -> 2,160` and go green while the two sets differ by thirty removed and ONE added -- a fresh violation, made in the same hour, silently enshrined. So the ADDED side is diffed and must be empty. Baselining a new finding is still possible; it takes `--accept-new`, at the command line, where
+    it is a decision somebody typed.
     """
     path = pathlib.Path(root) / BASELINE_FILE
     entries = {f.fid: f for f in findings}
@@ -1141,9 +1123,7 @@ def run_check(
 
     ZERO SCANNED FILES IS A FAILURE. So is zero extracted prose lines across a non-empty file set: the second one is the extractor breaking rather than the glob, and both look like a clean tree from the outside.
     """
-    # TARGETS BYPASS DISCOVERY DELIBERATELY. A path named on the command line
-    # is scanned whether or not git tracks it; only the broad sweep is
-    # narrowed.
+    # TARGETS BYPASS DISCOVERY DELIBERATELY. A path named on the command line is scanned whether or not git tracks it; only the broad sweep is narrowed.
     try:
         files = targets or discover(root, globals_)
     except RuleError as exc:
@@ -1165,6 +1145,7 @@ def run_check(
     # way, after a family fell to one tracked file while the gate printed a confident tick; this is that lesson reaching the gate whose own two scanners had already disagreed about docstrings once.
     per_suffix_lines = collections.Counter()
     per_suffix_files = collections.Counter()
+    per_suffix_noted = collections.Counter()
     for rel in files:
         full = pathlib.Path(root) / rel
         try:
@@ -1180,11 +1161,11 @@ def run_check(
         per_suffix_lines[suffix] += len(lines)
         if note:
             notes.append(note)
+            per_suffix_noted[suffix] += 1
         got, _ = lint_text(rel, text, rules, globals_)
         reason = exempt_for(rel, exempts)
         if reason is not None:
-            # EXEMPT, AND COUNTED. The file is still read and still linted; only
-            # the VERDICT is suppressed, so the number below is real rather than an absence. A quiet exemption is how a gate stops meaning what its name says.
+            # EXEMPT, AND COUNTED. The file is still read and still linted; only the VERDICT is suppressed, so the number below is real rather than an absence. A quiet exemption is how a gate stops meaning what its name says.
             if got:
                 exempted.setdefault(reason, []).append((rel, len(got)))
             continue
@@ -1198,10 +1179,14 @@ def run_check(
         )
         return 1
 
-    # THE SAME QUESTION ASKED PER SUFFIX. A suffix contributing files and no prose at all is one
-    # extractor that stopped working, and the aggregate above is far too coarse to notice.
+    # THE SAME QUESTION ASKED PER SUFFIX. A suffix contributing files and no prose at all is one extractor that stopped working, and the aggregate above is far too coarse to notice.
+    #
+    # EXCLUDING A SUFFIX WHOSE ZERO IS ALREADY EXPLAINED, and this exclusion is what a real regression proved necessary rather than a hypothetical. A lone `.py` file that fails to tokenize legitimately extracts zero lines, and that failure already has its own more-specific report a few lines down ("N file(s) went UNCHECKED"). Without this exclusion that ALREADY-SURFACED per-file
+    # failure double-fired as a false "dead extractor" for the whole suffix, and it did so FIRST, so the real UNCHECKED message never printed -- caught by `test_an_unreadable_file_is_unchecked_not_clean`, not by review.
     dead = sorted(
-        sfx for sfx, n in per_suffix_files.items() if n and per_suffix_lines[sfx] == 0
+        sfx
+        for sfx, n in per_suffix_files.items()
+        if n and per_suffix_lines[sfx] == 0 and per_suffix_noted[sfx] < n
     )
     if dead:
         log.error(
@@ -1361,8 +1346,7 @@ def _rule_help(rules, ids):
 
 # Directive-shaped comment bodies that must NEVER be joined with a neighbour, checked against the RAW line rather than a stripped body, to sidestep any assumption about whether a space follows the marker -- Go's own directive
 # comments, `//go:build linux`, have none. An ALLOWLIST of known tool-directive
-# shapes, deliberately, not a broad heuristic: after two structural bugs in `reflow_markdown` this same session (a multi-row table, an HTML-comment marker), under-reflowing here -- leaving a directive-adjacent line un-joined
-# -- is the safe failure mode; over-reflowing -- silently absorbing a
+# shapes, deliberately, not a broad heuristic: after two structural bugs in `reflow_markdown` this same session (a multi-row table, an HTML-comment marker), under-reflowing here -- leaving a directive-adjacent line un-joined -- is the safe failure mode; over-reflowing -- silently absorbing a
 # `noqa`/`eslint-disable`/`go:build` line into a joined paragraph, turning the
 # tool it talks to off -- is not. The names are BACKTICKED, deliberately: bare, the first one reads to ruff as a malformed suppression directive on this very line (ruff warns "Invalid ... directive" on every lint run, quoting the marker back -- which is why this sentence cannot quote it either), and one well-meant edit adding a code after it would have suppressed a real finding
 # here while looking like prose.
@@ -1372,10 +1356,13 @@ COMMENT_DIRECTIVE = re.compile(
     r"|\bnolint\b|SPDX-License-Identifier)",
     re.IGNORECASE,
 )
-# A body that reads as CODE rather than PROSE: an assignment, a brace, a statement/block keyword, or a trailing semicolon. This exists because the obvious "does the body start with a space" test alone would happily join COMMENTED-OUT CODE into one garbled line -- `# def foo():` followed by `# return 1` reads as "a space after the marker" exactly like real prose does, and joining
+# A body that reads as CODE rather than PROSE: an assignment, a brace, a statement/block keyword, or a TRAILING semicolon. This exists because the obvious "does the body start with a space" test alone would happily join COMMENTED-OUT CODE into one garbled line -- `# def foo():` followed by `# return 1` reads as "a space after the marker" exactly like real prose does, and joining
 # them corrupts the reference the comment exists to keep. Matching commented-out code is the safe direction to err in: a missed reflow costs one narrow paragraph, a wrongly-joined one costs a broken reference nobody notices until they try to use it.
+#
+# THE SEMICOLON IS ANCHORED TO THE END OF THE BODY, and a bare `;` anywhere was measured to be the wrong shape. A semicolon used as ordinary English punctuation ("...LLM can; it judges...") matched the unanchored pattern and silently stopped a real paragraph from folding -- safe direction, but a real coverage gap, since prose is exactly what this reflow exists to fold. Measured
+# 2026-09-17 across 400 tracked `.py` files: 650 comment-body semicolons sit MID-line, the shape a continuing clause takes, against 30 that sit at the end of the body, the shape a commented-out statement (`# x = 1;`) actually takes. `=`/`{`/`}` stay unanchored: they are rare enough in ordinary prose that matching them anywhere is still the safe direction.
 CODE_SHAPED_COMMENT = re.compile(
-    r"[={};]|^\s*(?:def|class|import|from|return|if|elif|else|for|while|try|except|"
+    r"[={}]|;\s*$|^\s*(?:def|class|import|from|return|if|elif|else|for|while|try|except|"
     r"finally|with|const|let|var|function|type|interface|enum|switch|case|package|"
     r"func|struct|@\w)\b"
 )
@@ -1398,8 +1385,8 @@ DOCTEST_PROMPT = re.compile(r"^\s*(?:>>>|\.\.\.) ")
 REST_FIELD = re.compile(r"^\s*:[^:\s][^:]*:")
 REST_DIRECTIVE = re.compile(r"^\s*\.\.\s+\S")
 
-# THE COMMENT PATH NEEDS THE SAME STOPS THE MARKDOWN PATH HAS, and the belief that it did not is what this block exists to correct. The previous note here claimed a comment "has no equivalent convention" to protect; measured across 400 tracked `.py` files on 2026-09-17, one reflow pass absorbed 793 rule-line banners
-# across 154 files, 296 standalone all-caps section headings and 9 list items, turning a three-line `---- / TITLE / ----` banner into one run-on line joined to the paragraph beneath it. A docstring and a `#` comment both carry section structure in this repository, so both get checked.
+# THE COMMENT PATH NEEDS THE SAME STOPS THE MARKDOWN PATH HAS, and the belief that it did not is what this block exists to correct. The previous note here claimed a comment "has no equivalent convention" to protect; measured across 400 tracked `.py` files on 2026-09-17, one reflow pass absorbed 793 rule-line banners across 154 files, 296 standalone all-caps section headings and 9
+# list items, turning a three-line `---- / TITLE / ----` banner into one run-on line joined to the paragraph beneath it. A docstring and a `#` comment both carry section structure in this repository, so both get checked.
 #
 # MATCHING TOO MUCH IS THE SAFE DIRECTION HERE, which is the same trade `DOC_HEADER_FIELD` records: an over-broad stop costs a paragraph that could have been rewrapped, while a missing one costs the structure of a document nobody re-reads until it is wrong. `ALLCAPS_HEADING` therefore requires the WHOLE line to be caps, so this file's own `WHAT THIS ENFORCES. The single source ...`
 # lead-in, which is caps followed by ordinary prose on one line, still joins normally. The first column at which a `#` comment's body counts as a HANGING continuation rather than ordinary prose. One space after the hash is this repository's convention and zero is the other common spelling, so two is the first depth that means something.
@@ -1428,12 +1415,10 @@ def _is_structural_comment_line(piece):
 def _python_reflow_lines(text):
     """1-based line number -> (indent, body, marker) for each Python line SAFE to fold into a reflowed paragraph.
 
-    Two shapes, sharing one map so `comment_segments` need not know which kind it is looking at: a WHOLE-LINE `#` comment (`marker` is `"#"`; a comment whose physical line carries code before it is TRAILING and is absent here).
-    Or a FLUSH interior line of a docstring (`marker` is `None`, meaning "prose text, no marker to reproduce").
+    Two shapes, sharing one map so `comment_segments` need not know which kind it is looking at: a WHOLE-LINE `#` comment (`marker` is `"#"`; a comment whose physical line carries code before it is TRAILING and is absent here). Or a FLUSH interior line of a docstring (`marker` is `None`, meaning "prose text, no marker to reproduce").
 
-    A DOCSTRING'S FIRST AND LAST PHYSICAL LINE ARE NEVER INCLUDED. The first carries the opening quote (and, for a one-line docstring, the whole thing); the last carries the closing quote, sometimes with a trailing comment beside it.
-    Joining either into a reconstructed paragraph would mean splicing prose around a string delimiter instead of between two lines of plain text -- a risk a `#` comment never carries, since it owns no delimiter to protect. Losing the two boundary lines to reflow is the same conservative trade `reflow_markdown` states for a list item: it loses some reflow and cannot corrupt a
-    document.
+    A DOCSTRING'S FIRST AND LAST PHYSICAL LINE ARE NEVER INCLUDED. The first carries the opening quote (and, for a one-line docstring, the whole thing); the last carries the closing quote, sometimes with a trailing comment beside it. Joining either into a reconstructed paragraph would mean splicing prose around a string delimiter instead of between two lines of plain text -- a risk
+    a `#` comment never carries, since it owns no delimiter to protect. Losing the two boundary lines to reflow is the same conservative trade `reflow_markdown` states for a list item: it loses some reflow and cannot corrupt a document.
 
     AN INTERIOR LINE ONLY JOINS WHEN IT SITS FLUSH WITH THE DOCSTRING'S OWN LEFT MARGIN -- the same `base` column `python_comment_lines` already measures indentation against for its own `>= base + 4` code-block rule.
     A line indented by 1-3 columns is neither prose nor a code block by that rule, and is exactly the shape a hand-written flag list or enumerated block uses in this repository's own docstrings (`retire-shadowed-secrets.py`'s `Usage:` section is a real, currently-tracked example). Never joined, each such line is kept on its own. A doctest prompt/continuation or a reST
@@ -1472,9 +1457,7 @@ def _python_reflow_lines(text):
 def _cstyle_reflow_lines(text):
     """The same shape for a `//` language, from `_cstyle_scan`'s shared walk.
 
-    Only a WHOLE-LINE `//` comment is eligible (`marker` is always `"//"`
-    here; a C-style language has no docstring convention this module reflows).
-    A `/* */` span is a STOP, never a paragraph: rewrapping one risks its own asterisk alignment, and there is no reader benefit that pays for that.
+    Only a WHOLE-LINE `//` comment is eligible (`marker` is always `"//"` here; a C-style language has no docstring convention this module reflows). A `/* */` span is a STOP, never a paragraph: rewrapping one risks its own asterisk alignment, and there is no reader benefit that pays for that.
     """
     found = {}
     for item in _cstyle_scan(text):
@@ -1483,8 +1466,8 @@ def _cstyle_reflow_lines(text):
         _, lineno, indent, body = item
         if indent.strip():
             continue
-        # THE SAME STOPS THE `#` BRANCH ABOVE APPLIES, and leaving them off here was a sibling of the very bug that added them. Fixing the Python path alone still absorbed 32 rule-line banners, 19 list items and 3 all-caps headings across the tracked `.ts`/`.js`/`.go` corpus, because a `//` comment block carries section
-        # structure exactly as a `#` block does. Found by re-running the cluster sweep over the scopes that had not been rewritten yet rather than by assuming one fix covered both languages.
+        # THE SAME STOPS THE `#` BRANCH ABOVE APPLIES, and leaving them off here was a sibling of the very bug that added them. Fixing the Python path alone still absorbed 32 rule-line banners, 19 list items and 3 all-caps headings across the tracked `.ts`/`.js`/`.go` corpus, because a `//` comment block carries section structure exactly as a `#` block does. Found by re-running the
+        # cluster sweep over the scopes that had not been rewritten yet rather than by assuming one fix covered both languages.
         if _is_structural_comment_line(body):
             continue
         if len(body) - len(body.lstrip(" ")) >= COMMENT_BODY_FLUSH:
@@ -1524,8 +1507,8 @@ def comment_segments(text, suffix):
             yield "raw", lineno, raw
             continue
         indent, body, marker = entry
-        # The "does the body start with a space" directive check (`#!shebang`, `##header`, an ASCII `#---` divider) only means something for a real comment, where a marker and its text are conventionally separated by one space. A docstring interior line carries no marker to separate from, so
-        # that check is skipped for it (`marker is not None` below); `DOCTEST_PROMPT`/`REST_FIELD`/`REST_DIRECTIVE` already excluded the docstring shapes that need the same protection, one level up in `_python_reflow_lines`.
+        # The "does the body start with a space" directive check (`#!shebang`, `##header`, an ASCII `#---` divider) only means something for a real comment, where a marker and its text are conventionally separated by one space. A docstring interior line carries no marker to separate from, so that check is skipped for it (`marker is not None` below);
+        # `DOCTEST_PROMPT`/`REST_FIELD`/`REST_DIRECTIVE` already excluded the docstring shapes that need the same protection, one level up in `_python_reflow_lines`.
         if (
             not body.strip()
             or COMMENT_DIRECTIVE.search(raw)
@@ -1652,8 +1635,8 @@ def run_sync(globals_, rules):
         "|---|---|---|---|---|",
     ]
     for rule in rules:
-        # NAME THE DETECTION RATHER THAN ENUMERATE THE KNOWN ONES. The previous form tested for `measured` by name and sent everything else to a pattern count, so R19 -- an ENFORCED error detected by a heuristic over a whole paragraph, carrying no patterns -- was published to readers as `advisory`, the one word that says a rule is not enforced. A new detection kind falling
-        # silently into the wrong bucket is the same shape as the defect this gate's own two scanners had, one table further out.
+        # NAME THE DETECTION RATHER THAN ENUMERATE THE KNOWN ONES. The previous form tested for `measured` by name and sent everything else to a pattern count, so R19 -- an ENFORCED error detected by a heuristic over a whole paragraph, carrying no patterns -- was published to readers as `advisory`, the one word that says a rule is not enforced. A new detection kind falling silently
+        # into the wrong bucket is the same shape as the defect this gate's own two scanners had, one table further out.
         if rule.advisory:
             detection = "advisory"
         elif rule.raw_patterns:
@@ -2182,9 +2165,7 @@ def selftest():
         'def f():\n    """Doc.\n\n    # an example inside the docstring"""\n'
         "    # a real comment that is hard wrapped over two lines\n    return 1\n",
     )
-    # The same shape one language over: a template literal ending on a line
-    # that OPENS with `//`. No semicolon, deliberately -- `;` would trip
-    # CODE_SHAPED_COMMENT and the broken code would pass by accident.
+    # The same shape one language over: a template literal ending on a line that OPENS with `//`. No semicolon, deliberately -- `;` would trip CODE_SHAPED_COMMENT and the broken code would pass by accident.
     _ts_template = (
         "const t = `\n// looks like a comment`\n"
         "// a real comment that is\n// hard wrapped over two lines\n"

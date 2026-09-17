@@ -8,9 +8,7 @@ from their own file location (`BASH_SOURCE[0]` / `__file__`, three directories
 up from where each actually lives -- `.ci/scripts/infra/` for the twin, `.ci/rediacc_ci/infra/` for the port). Driving the TRACKED files directly would point both at this real checkout's `private/elite`, so each case COPIES both subjects into a fresh tree at the right relative depth and runs the copies.
 
 K=5 LEDGER: `.ci/shadow/w7p6-ci-stop-elite.observations.jsonl`, recorded
-against a disposable scratch git repo built outside this checkout (this
-checkout's own working tree is not clean; `shadow-gate.ts --record` refuses a
-dirty tree). See that file's own header for the exact recording commands.
+against a disposable scratch git repo built outside this checkout (this checkout's own working tree is not clean; `shadow-gate.ts --record` refuses a dirty tree). See that file's own header for the exact recording commands.
 """
 
 from __future__ import annotations

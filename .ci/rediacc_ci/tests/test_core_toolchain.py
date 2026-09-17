@@ -95,9 +95,7 @@ def _live_pins() -> dict[str, str]:
 def _bash_tool_arms() -> dict[str, str]:
     """The tool -> key arms of `toolchain_pin_for`, read out of the bash source.
 
-    READ, not restated. The whole value of this comparison is that it breaks when
-    one side gains a tool the other does not; a hand-copied list here would be a
-    third place to update and would agree with neither.
+    READ, not restated. The whole value of this comparison is that it breaks when one side gains a tool the other does not; a hand-copied list here would be a third place to update and would agree with neither.
     """
     text = paths.from_root(SHIM).read_text(encoding="utf-8")
     body = text.split("toolchain_pin_for()", 1)[1].split("\n}", 1)[0]
@@ -1207,9 +1205,7 @@ def test_defect_2_the_headline_still_says_mismatch_with_no_verifier(
     """
     sandbox = tmp_path / "bin"
     sandbox.mkdir()
-    # `mktemp` joined this list when the download helpers stopped sharing one fixed temp path between concurrent acquirers. It is coreutils, the same
-    # tier as `cut` and `tr` already here; without it the helper fails CLOSED
-    # ("mktemp: command not found", rc 1, nothing installed), which is the right behaviour but not the one this control is driving at.
+    # `mktemp` joined this list when the download helpers stopped sharing one fixed temp path between concurrent acquirers. It is coreutils, the same tier as `cut` and `tr` already here; without it the helper fails CLOSED ("mktemp: command not found", rc 1, nothing installed), which is the right behaviour but not the one this control is driving at.
     needed = (
         "mkdir",
         "chmod",

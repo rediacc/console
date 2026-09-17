@@ -42,8 +42,7 @@ SCAN_EVERY_S = float(os.environ.get("WORKLIST_WAIT_SCAN_S", "300"))
 
 def _stat(path):
     """(size, mtime_ns), or None when absent. The ONLY watch primitive portable
-    to linux, macOS and Windows. `.requests` is strictly append-only and never
-    compacted, so size alone is a sound change detector there; the pair is used
+    to linux, macOS and Windows. `.requests` is strictly append-only and never compacted, so size alone is a sound change detector there; the pair is used
     anyway so an index rewrite could not hide behind an equal size."""
     try:
         st = path.stat()
@@ -60,9 +59,7 @@ def arm(worklist, store, branch, me):
     CORRECTNESS ARGUMENT. There is no recipient-side read marker anywhere in the request system: "unread" there is computed as "not resolved and not escalated", which conflates *I have not seen it* with *I have seen it and am deliberately still working on it*. So the classified slice is NOT an inbox of unseen things. A waiter armed on "wake when the slice is non-empty" would fire
     instantly on launch, be relaunched, fire instantly again, and spin -- turning the push mechanism into a busy loop strictly worse than the cron it replaces.
 
-    The baseline is process-local and deliberately NOT persisted. A waiter is one
-    bounded wait; persisting its baseline would recreate that same read-marker
-    problem in a file, with no owner.
+    The baseline is process-local and deliberately NOT persisted. A waiter is one bounded wait; persisting its baseline would recreate that same read-marker problem in a file, with no owner.
     """
     import wl_report as RPT  # noqa: PLC0415
     import wl_requests as R  # noqa: PLC0415
@@ -164,9 +161,7 @@ def tombstone(path, why):
 
     THE CARRIER IS THE SAME PATH, deliberately, and that is what makes this the cheapest possible change. Every existing reader is `_fresh(hb,
     HEARTBEAT_STALE_S)` with HEARTBEAT_STALE_S = 60s, and a tombstone is a
-    WRITE, so it ages out within a minute exactly as a real heartbeat would. No
-    existing caller changes behaviour; the only new reader is waiter_lapsed()
-    below, which looks at the CONTENT rather than the mtime.
+    WRITE, so it ages out within a minute exactly as a real heartbeat would. No existing caller changes behaviour; the only new reader is waiter_lapsed() below, which looks at the CONTENT rather than the mtime.
     """
     with contextlib.suppress(OSError):
         path.write_text("%s %s %s\n" % (TOMBSTONE, C.stamp_now(), why), encoding="utf-8")
@@ -202,9 +197,7 @@ def wait(me, timeout_min, start):
     branch = C.git_branch(C.project_root(start)) or RPT.NO_BRANCH
     hook_path = "python3 %s" % (pathlib.Path(__file__).resolve().parent / "worklist.py")
 
-    # Scan BEFORE arming, never after. The first scan on a fresh store indexes
-    # every already-finished agent in the lookback window; if the baseline were
-    # taken first, all of them would read as NEW and the waiter would wake immediately with a flood of history on its very first run.
+    # Scan BEFORE arming, never after. The first scan on a fresh store indexes every already-finished agent in the lookback window; if the baseline were taken first, all of them would read as NEW and the waiter would wake immediately with a flood of history on its very first run.
     _safe_scan(store, start)
     base = arm(worklist, store, branch, me)
 
@@ -358,9 +351,8 @@ def _is_tombstone(path):
 def decay_nudges(worklist, me):
     """Take ONE off the ignored-count, floor zero. Never a reset.
 
-    THE UNLINK THIS REPLACES WAS RESETTABLE BY THE FAILURE ITSELF. nudge() saw a fresh heartbeat and deleted the counter outright, so arming a single waiter
-    zeroed it; when that waiter lapsed the count had to climb from zero again,
-    over another WAITER_GRACE_NUDGES * NUDGE_EVERY_S (half an hour) before the Stop-side `no-waiter` backstop could fire. A session that armed one 60-minute waiter every few hours therefore held the check permanently below threshold while being deaf most of the time -- and the absent `.waiternudge-<id>` file on the failing night is the evidence it happened.
+    THE UNLINK THIS REPLACES WAS RESETTABLE BY THE FAILURE ITSELF. nudge() saw a fresh heartbeat and deleted the counter outright, so arming a single waiter zeroed it; when that waiter lapsed the count had to climb from zero again, over another WAITER_GRACE_NUDGES * NUDGE_EVERY_S (half an hour) before the Stop-side `no-waiter` backstop could fire. A session that armed one 60-minute
+    waiter every few hours therefore held the check permanently below threshold while being deaf most of the time -- and the absent `.waiternudge-<id>` file on the failing night is the evidence it happened.
 
     Decay keeps the counter a measure of RECENT behaviour (which is what the reset was rightly for) without letting one act of compliance erase a history of ignoring it. Complying repeatedly still walks it to zero, one nudge window at a time.
     """
@@ -405,9 +397,7 @@ def outstanding_work(worklist, session_id, transcript_path=""):
       in `in_flight` below. An unleased job is invisible from here, and no
       cheaper oracle for it exists on this event.
 
-    ANY FAILURE ANSWERS TRUE. Silence has to be EARNED by evidence that there
-    is nothing to hear; a store that will not read is not that evidence, and
-    failing the other way would switch the nudge off in exactly the window the worklist is sick.
+    ANY FAILURE ANSWERS TRUE. Silence has to be EARNED by evidence that there is nothing to hear; a store that will not read is not that evidence, and failing the other way would switch the nudge off in exactly the window the worklist is sick.
     """
     try:
         # Tasks first: a directory glob against a resolved path, and the transcript is consulted only on the cold path (bounded tail read, and it banks the resolution for every later process).
@@ -457,9 +447,8 @@ def nudge(event):
     if not peers:
         return
 
-    # AND DO NOT NUDGE A SESSION THAT IS FINISHED. The waiter is how a session
-    # HEARS a peer while it still has something to do with what it hears; a
-    # drained session paid for it twice over -- a process held for up to an hour, plus this line on every single tool call telling it to relaunch. Observed live 2026-08-19 on a session with no open items, no background jobs and its VMs already torn down, still being told it was NOT LISTENING. Last of the three gates because it is the dearest of them.
+    # AND DO NOT NUDGE A SESSION THAT IS FINISHED. The waiter is how a session HEARS a peer while it still has something to do with what it hears; a drained session paid for it twice over -- a process held for up to an hour, plus this line on every single tool call telling it to relaunch. Observed live 2026-08-19 on a session with no open items, no background jobs and its VMs
+    # already torn down, still being told it was NOT LISTENING. Last of the three gates because it is the dearest of them.
     if not outstanding_work(
         worklist, str(event.get("session_id") or ""), event.get("transcript_path")
     ):

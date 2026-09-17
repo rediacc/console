@@ -217,9 +217,8 @@ export async function runPool(
   const results = new Map<string, GateResult>();
   const unstarted = new Set(specs.map((spec) => spec.id));
   const running = new Map<string, Promise<{ id: string; outcome: ExecOutcome }>>();
-  // The isolation contract's two claim strengths. Exclusive is a set because a
-  // resource has at most one writer at a time; shared is a COUNT because any
-  // number of readers may hold one and the last one out has to be the one that releases it. A plain Set here would have the first reader to finish unlock a resource three others were still reading, which is the shape of bug that only ever shows up as an unreproducible mid-enumeration error.
+  // The isolation contract's two claim strengths. Exclusive is a set because a resource has at most one writer at a time; shared is a COUNT because any number of readers may hold one and the last one out has to be the one that releases it. A plain Set here would have the first reader to finish unlock a resource three others were still reading, which is the shape of bug that only
+  // ever shows up as an unreproducible mid-enumeration error.
   const heldExclusive = new Set<string>();
   const heldShared = new Map<string, number>();
   let slots = 0;
@@ -235,9 +234,7 @@ export async function runPool(
   const rank = (a: GateSpec, b: GateSpec): number =>
     expected(b) - expected(a) || (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0);
 
-  // THE CONTRACT, and this is the whole of it. An exclusive claim conflicts with
-  // any claim on the same resource; a shared claim conflicts only with an
-  // exclusive one. Shared against shared is deliberately admissible, which is the asymmetry the header explains and the reason this is not one Set.
+  // THE CONTRACT, and this is the whole of it. An exclusive claim conflicts with any claim on the same resource; a shared claim conflicts only with an exclusive one. Shared against shared is deliberately admissible, which is the asymmetry the header explains and the reason this is not one Set.
   const blockedByClaim = (spec: GateSpec): boolean =>
     (spec.mutex ?? []).some((r) => heldExclusive.has(r) || (heldShared.get(r) ?? 0) > 0) ||
     sharedClaims(spec).some((r) => heldExclusive.has(r));

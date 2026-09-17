@@ -1,7 +1,6 @@
 r"""The machine-setup path must stay idempotent, guarded, and honest.
 
-Ported from `.ci/scripts/quality/check-setup-idempotency.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-setup-idempotency.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__`.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS. Seven invariants, each paid for by a defect found while building this feature.
@@ -62,9 +61,8 @@ A DELTA MUST PERSIST BEFORE IT IS BLAMED ON `setup --check`. The filter above pi
     FAIL B: setup --check changed the working tree
     >  M .ci/scripts/version/resolve-version.sh
 
--- which `run.sh` never writes and which was byte-identical to HEAD moments later. Some neighbour among the 291 gates sharing this tree had it open across the two snapshots. So test the property that actually distinguishes the two: a change `setup --check` made is STILL THERE afterwards, and a neighbour's scratch
-is not. Poll back toward the `before` snapshot for a bounded window; recovering
-means the delta was never ours. This keeps the assertion able to fail -- a real mutation never reverts, so it burns the full window and is then reported --
+-- which `run.sh` never writes and which was byte-identical to HEAD moments later. Some neighbour among the 291 gates sharing this tree had it open across the two snapshots. So test the property that actually distinguishes the two: a change `setup --check` made is STILL THERE afterwards, and a neighbour's scratch is not. Poll back toward the `before` snapshot for a bounded window;
+recovering means the delta was never ours. This keeps the assertion able to fail -- a real mutation never reverts, so it burns the full window and is then reported --
 while removing a false accusation that names the wrong command and sends the
 reader hunting through run.sh.
 
@@ -80,9 +78,7 @@ the control can point it at a COPY of the package with the digest line broken. T
 
 FIVE SAMPLES, NOT TWO. The control for check C plants a random digest, and a random value mod 100 repeats itself about 1% of the time -- so a two-sample comparison let the planted defect pass at that rate and the gate reported "CONTROL DID NOT FIRE" at random. Five agreeing samples drops that to ~1e-8
 while costing microseconds. A flaky control is worse than no control: it teaches
-the reader to re-run until green. (The planted value was `$RANDOM` while the
-implementation was bash; it is `random.randbytes` now that it is Python. The
-arithmetic is unchanged.)
+the reader to re-run until green. (The planted value was `$RANDOM` while the implementation was bash; it is `random.randbytes` now that it is Python. The arithmetic is unchanged.)
 
 CHECK G STRIPS COMMENTS, and that is load-bearing. The first version matched "private/renet/go.mod" inside the comment that explains the ordering and concluded the real, correctly-ordered code was broken. Same family as the gate that matched "binary" against a PATH: judge the code, not the prose describing it.
 
@@ -98,10 +94,8 @@ THE C CONTROL COPIES THE PACKAGE rather than editing it in place, and that matte
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-EVERY SUBPROCESS THE TWIN RUNS IS STILL RUN. The slot is derived by running `rediacc_ci.core.ports derive-slot` as a CHILD under the control's PYTHONPATH
-(it used to be sourced out of a bash shim, deleted in W7P5-b; importing the
-module in-process instead would read THIS interpreter's copy and the broken-copy control would go permanently green). `devbox_route_label` is still sourced out of `devbox.sh` through `bash -c`, exactly as the twin invokes it. Re-implementing either in Python would test this module's idea of what those functions do rather than what they do, and check E in particular exists because
-"OK" and "404" are both valid text to a static reader.
+EVERY SUBPROCESS THE TWIN RUNS IS STILL RUN. The slot is derived by running `rediacc_ci.core.ports derive-slot` as a CHILD under the control's PYTHONPATH (it used to be sourced out of a bash shim, deleted in W7P5-b; importing the module in-process instead would read THIS interpreter's copy and the broken-copy control would go permanently green). `devbox_route_label` is still
+sourced out of `devbox.sh` through `bash -c`, exactly as the twin invokes it. Re-implementing either in Python would test this module's idea of what those functions do rather than what they do, and check E in particular exists because "OK" and "404" are both valid text to a static reader.
 
 THE `awk` FUNCTION-BODY EXTRACTOR IS TRANSLATED, NOT SHELLED OUT, because it is four lines and its exact semantics matter: it starts at a line matching
 `^<name>\(\) \{`, prints every line from there INCLUDING the closing `}`, and
@@ -115,8 +109,7 @@ would change the bytes of a gate CI already reads.
 `control()` RUNS ITS SUBJECT IN A SUBSHELL, so a `fail()` inside the mutated run increments a counter that is then discarded and prints into a captured string that is then discarded. That is deliberate: a control is asking "does this assertion REJECT the defect", and the assertion's own complaint about the defect is not a complaint about the tree. The Python version captures the
 streams and the counter the same way.
 
-STREAMS. `fail()` and every CONTROL line go to stderr; `pass()` and the offender
-detail go to stdout. Nothing here uses `rediacc_ci.log`: the twin sources no logger and its lines carry no glyph.
+STREAMS. `fail()` and every CONTROL line go to stderr; `pass()` and the offender detail go to stdout. Nothing here uses `rediacc_ci.log`: the twin sources no logger and its lines carry no glyph.
 """
 
 import contextlib
@@ -136,8 +129,7 @@ from rediacc_ci.controls import Controls
 # The escapes, computed only when stdout is a tty and NO_COLOR is unset.
 _ANSI = {"RED": "\033[0;31m", "GREEN": "\033[0;32m", "NC": "\033[0m"}
 
-# The shape of another gate's throwaway fixture: a DOTTED, PID-SUFFIXED name.
-# Applied to BOTH snapshots so it cannot hide a real change; see the header.
+# The shape of another gate's throwaway fixture: a DOTTED, PID-SUFFIXED name. Applied to BOTH snapshots so it cannot hide a real change; see the header.
 FIXTURE_NOISE_RE = re.compile(r"(^|/)\.[a-z0-9-]+-fixture\.[0-9]+\.[a-z]+$")
 
 # The words a `setup --check` run must actually print. A check that prints nothing is indistinguishable from a check that did not run.
@@ -327,9 +319,7 @@ def check_b(report: Report, root: pathlib.Path) -> bool:
         out = proc.stdout
         rc = proc.returncode
     except OSError:
-        # `./run.sh: No such file or directory` under a shell is exit 127 with
-        # the message on the captured stream. The message differs; the verdict
-        # does not, because none of the required rows appears in either text.
+        # `./run.sh: No such file or directory` under a shell is exit 127 with the message on the captured stream. The message differs; the verdict does not, because none of the required rows appears in either text.
         out = ""
         rc = 127
     after = tree_snapshot(root)
@@ -377,8 +367,7 @@ def check_b(report: Report, root: pathlib.Path) -> bool:
 def _unified_delta(before: str, after: str) -> list[str]:
     """`diff <(before) <(after)` in the shape the twin prints on failure.
 
-    Only reached when B has already decided to fail, so its exact spelling is
-    advisory rather than a verdict; the `<`/`>` prefixes are what a reader looks
+    Only reached when B has already decided to fail, so its exact spelling is advisory rather than a verdict; the `<`/`>` prefixes are what a reader looks
     for and they are preserved.
     """
     before_set = before.split("\n")
@@ -391,9 +380,7 @@ def _unified_delta(before: str, after: str) -> list[str]:
 def derive_slot(root: str, key: str, modulus: str) -> str:
     """`rediacc_ci.core.ports derive-slot <key> <modulus>` out of `<root>/.ci`.
 
-    Shelled out on purpose; see the port notes. It used to go through
-    `source find-port.sh; derive_slot ...`, but that shim is DELETED (W7P5-b)
-    and PYTHONPATH is what the shim was setting anyway. Prefixed, never appended, because the whole point of check C's control is that a broken COPY of the package at `<root>` must win over the real one.
+    Shelled out on purpose; see the port notes. It used to go through `source find-port.sh; derive_slot ...`, but that shim is DELETED (W7P5-b) and PYTHONPATH is what the shim was setting anyway. Prefixed, never appended, because the whole point of check C's control is that a broken COPY of the package at `<root>` must win over the real one.
     """
     env = dict(os.environ)
     ci_dir = str(pathlib.Path(root) / ".ci")
@@ -567,10 +554,8 @@ def python_function_body(text: str, name: str) -> str:
 def check_g(report: Report, runsh: pathlib.Path) -> bool:
     """G: setup initialises submodules before any phase that reads one.
 
-    TWO SUBJECTS, ONE INVARIANT, and the fallback is the whole point. `setup()`
-    was ported to `rediacc_ci.setup.machine.run_setup`; the ordering rule it
-    enforces did not move with it, it applies to whichever implementation is the live one. Written against the bash alone, this assertion would have gone RED at the moment the port succeeded, which is the same trap `.ci/scripts/test/gates/test-run-sh.sh:315-327` had to be rewritten to escape. `INIT_RE` and `READER_RE` match both languages unchanged: the Python names
-    `init-submodules.sh` in its `ctx.run` and `ensure_docker_installed` in its `bridge.call`, which are the same two tokens the bash used.
+    TWO SUBJECTS, ONE INVARIANT, and the fallback is the whole point. `setup()` was ported to `rediacc_ci.setup.machine.run_setup`; the ordering rule it enforces did not move with it, it applies to whichever implementation is the live one. Written against the bash alone, this assertion would have gone RED at the moment the port succeeded, which is the same trap
+    `.ci/scripts/test/gates/test-run-sh.sh:315-327` had to be rewritten to escape. `INIT_RE` and `READER_RE` match both languages unchanged: the Python names `init-submodules.sh` in its `ctx.run` and `ensure_docker_installed` in its `bridge.call`, which are the same two tokens the bash used.
 
     THE REFUSAL IS WHEN NEITHER EXISTS, which is a tree with no setup at all.
     """
@@ -623,9 +608,7 @@ def check_g(report: Report, runsh: pathlib.Path) -> bool:
 def g_subject(root: pathlib.Path, tmpdir: pathlib.Path, body_file: pathlib.Path):
     """(text, make_copy, docker_anchor, init_line) for whichever setup `check_g` reads.
 
-    ONE INVARIANT, TWO LANGUAGES. Before the cutover the subject is the bash
-    `setup()`; after it, `rediacc_ci.setup.machine.run_setup`. The two plants
-    below need the subject's TEXT, a place to write the mutated copy that `check_g` will find, and the line that marks the first phase which READS a submodule. All three differ by language and nothing else does.
+    ONE INVARIANT, TWO LANGUAGES. Before the cutover the subject is the bash `setup()`; after it, `rediacc_ci.setup.machine.run_setup`. The two plants below need the subject's TEXT, a place to write the mutated copy that `check_g` will find, and the line that marks the first phase which READS a submodule. All three differ by language and nothing else does.
     """
     bash_text = read_text(body_file)
     if function_body(bash_text, "setup"):
@@ -656,8 +639,7 @@ def g_subject(root: pathlib.Path, tmpdir: pathlib.Path, body_file: pathlib.Path)
 def g_runsh(written: pathlib.Path) -> pathlib.Path:
     """The path to hand `check_g` for a copy `g_subject` produced.
 
-    For the bash subject that is the file itself; for the Python subject it is
-    the empty `legacy/run-legacy.sh` beside it, because `check_g` takes the LEGACY path and finds the port relative to it.
+    For the bash subject that is the file itself; for the Python subject it is the empty `legacy/run-legacy.sh` beside it, because `check_g` takes the LEGACY path and finds the port relative to it.
     """
     if written.name == "machine.py":
         return written.parent.parent.parent / "legacy" / "run-legacy.sh"
@@ -669,8 +651,7 @@ def run_control(label: str, fn, *args) -> bool:
 
     The twin captures both streams and the return code into one string and looks
     for `rc=0`. A control's own complaint about the defect is not a complaint
-    about the tree, so the output is discarded and the counter is private; see
-    the port notes.
+    about the tree, so the output is discarded and the counter is private; see the port notes.
     """
     private = Report(colour={"RED": "", "GREEN": "", "NC": ""})
     sink = io.StringIO()

@@ -8,9 +8,7 @@ Usage: cleanup_versions.py [--days N] [--versions N] [--dry-run]
 -----------------------------------------------------------------------------
 THE TWIN IS THE LIVE GATE. THIS IS THE VERIFIED-EQUIVALENT ALTERNATIVE.
 -----------------------------------------------------------------------------
-Nothing here is wired into `npm run ci`, the manifest, or any workflow. The bash
-twin stays registered and stays the thing that runs nightly; this file exists so
-the cutover, when a driver makes it, is a one-line change against a port whose equivalence is already on the record.
+Nothing here is wired into `npm run ci`, the manifest, or any workflow. The bash twin stays registered and stays the thing that runs nightly; this file exists so the cutover, when a driver makes it, is a one-line change against a port whose equivalence is already on the record.
 
     differential: `.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py`
     K=5 ledger:   `.ci/shadow/w7p6-cleanup-versions.observations.jsonl`
@@ -46,8 +44,7 @@ WHAT IS EXECUTED RATHER THAN REIMPLEMENTED
   3. `sleep` resolves through PATH on both sides, so one stub answers for both
      and the retry schedule is testable without six real seconds per assertion.
 
-`jq` IS REIMPLEMENTED, and that is the one large deliberate difference. The twin
-runs jq roughly sixty times; every filter is one of a dozen shapes (`length`,
+`jq` IS REIMPLEMENTED, and that is the one large deliberate difference. The twin runs jq roughly sixty times; every filter is one of a dozen shapes (`length`,
 `.[]`, `sort_by(...)|reverse`, `[.[]|{...}]`, `group_by`, `add // 0`, a slice,
 an `index($x) != null`, a `test("^pr-[0-9]+$")` select). Each one is a named
 function in the JQ FILTERS section below, the twin's filter text is quoted in its
@@ -68,9 +65,8 @@ BASH ARITHMETIC IS EMULATED, INCLUDING THE OCTAL TRAP
 
 Both are the twin's live behaviour on an operator's own input (`--days` and `--versions` are documented flags), and both are reproduced by `arith` rather than papered over: a port that read these with `int()` would keep ten versions where the twin keeps eight, which is a difference in what gets DELETED.
 
-THE ONE NAMED DIVERGENCE IN THE WHOLE PORT is the text of that error. bash
-prefixes it with the script path and the LINE NUMBER of the comparison; this port
-cannot honestly claim a line in a file it is not. It prints the same sentence under its own name and takes the same branch (false). Pinned, in both directions, by `test_a_zero_padded_versions_value_is_octal_on_both_sides` and `test_an_invalid_octal_versions_value_takes_the_same_branch_on_both_sides`.
+THE ONE NAMED DIVERGENCE IN THE WHOLE PORT is the text of that error. bash prefixes it with the script path and the LINE NUMBER of the comparison; this port cannot honestly claim a line in a file it is not. It prints the same sentence under its own name and takes the same branch (false). Pinned, in both directions, by `test_a_zero_padded_versions_value_is_octal_on_both_sides` and
+`test_an_invalid_octal_versions_value_takes_the_same_branch_on_both_sides`.
 
 -----------------------------------------------------------------------------
 HAZARDS IN THE TWIN, REPRODUCED RATHER THAN REPAIRED
@@ -299,9 +295,7 @@ def _capture(argv: list[str], *, stderr: int | None) -> tuple[int, str]:
 
     `$( )` strips ALL trailing newlines, not one, which matters for the several places the twin compares a captured value against the empty string.
 
-    A MISSING BINARY IS 127 WITH BASH'S OWN SENTENCE. Every caller here is
-    already `|| something`, so this only decides which arm runs; getting the
-    number right keeps `retry_with_backoff`'s reporting honest.
+    A MISSING BINARY IS 127 WITH BASH'S OWN SENTENCE. Every caller here is already `|| something`, so this only decides which arm runs; getting the number right keeps `retry_with_backoff`'s reporting honest.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -406,10 +400,7 @@ def retry_with_backoff(attempts: int, delay: int, argv: list[str], *, quiet: boo
 def date_epoch(spec: str) -> str:
     """`date -d "<spec>" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" ... || echo 0`.
 
-    The three-arm chain `should_retain` uses, EXECUTED, returning the raw text
-    the twin's variable would hold. On GNU the first arm answers; on BSD it fails
-    and the second does; if both fail the twin's `echo 0` yields the literal
-    `0`, which is the sentinel the caller tests for.
+    The three-arm chain `should_retain` uses, EXECUTED, returning the raw text the twin's variable would hold. On GNU the first arm answers; on BSD it fails and the second does; if both fail the twin's `echo 0` yields the literal `0`, which is the sentinel the caller tests for.
     """
     code, out = capture_quiet(["date", "-d", spec, "+%s"])
     if code == 0:
@@ -437,8 +428,7 @@ def now_epoch_utc() -> str:
 def now_epoch_local() -> str:
     """`date +%s` -- Phase 9's, which is the one site without `-u`.
 
-    Identical output to the `-u` form (epoch seconds do not have a zone); kept
-    separate because the argv is what the call log compares.
+    Identical output to the `-u` form (epoch seconds do not have a zone); kept separate because the argv is what the call log compares.
     """
     return capture_quiet(["date", "+%s"])[1]
 
@@ -511,9 +501,7 @@ def json_values(blob: str, filter_text: str = "length") -> list:
 def length_text(blob: str, filter_text: str = "length") -> str:
     """`jq 'length'` -- one line per value in the stream, so "" for none.
 
-    Only ever applied to arrays here, so the array case is the only one
-    implemented; a string or object would answer differently in jq and cannot
-    reach these call sites (each blob is either `[]`, a `[...]` from a filter, or empty).
+    Only ever applied to arrays here, so the array case is the only one implemented; a string or object would answer differently in jq and cannot reach these call sites (each blob is either `[]`, a `[...]` from a filter, or empty).
     """
     return "\n".join(
         str(len(v)) if isinstance(v, (list, dict, str)) else "1"
@@ -660,8 +648,7 @@ def jq_get(value: object, *path: str) -> object:
 # `[[ "$env" =~ ^pr-([0-9]+)$ ]]` (Phase 4) and the identical test in Phase 5b.
 _PR_ENV_RE = re.compile(r"^pr-([0-9]+)$")
 
-# `select(.name | test("^pr-[0-9]+$"))` (Phase 6). jq's `test` is a SEARCH with whatever anchors the pattern carries, which is why this is `.search` and not
-# `.match`; the anchors are in the pattern.
+# `select(.name | test("^pr-[0-9]+$"))` (Phase 6). jq's `test` is a SEARCH with whatever anchors the pattern carries, which is why this is `.search` and not `.match`; the anchors are in the pattern.
 _PR_NAME_RE = re.compile(r"^pr-[0-9]+$")
 
 # `select(.name | test("^account-db-pr-[0-9]+$"))` (Phase 7).
@@ -679,8 +666,7 @@ _DIGITS_RE = re.compile(r"^[0-9]+$")
 # A word `arith` will read as a plain decimal, used to keep a `null` size out of the arithmetic in Phase 12. See `arith` for why a bare identifier is not one.
 _INT_RE = re.compile(r"^[+-]?[0-9]+$")
 
-# The three awk line filters in Phase 8. `[[:space:]]` and the literal `PRE` are
-# the twin's; `aws s3 ls` prints `                           PRE <name>/`.
+# The three awk line filters in Phase 8. `[[:space:]]` and the literal `PRE` are the twin's; `aws s3 ls` prints ` PRE <name>/`.
 _PRE_DRYRUN_RE = re.compile(r"^[ \t]*PRE[ \t]dryrun-")
 _PRE_PR_RE = re.compile(r"^[ \t]*PRE[ \t]pr-[0-9]+/")
 _PRE_VERSION_RE = re.compile(r"^[ \t]*PRE[ \t]v[0-9]+\.")
@@ -709,9 +695,7 @@ class ExpansionAbortError(Exception):
     THE EXIT STATUS DEPENDS ON WHAT FOLLOWS, and for this script nothing does: `run_all_phases` is the last top-level command, so the shell ends carrying the failed expansion's own status, 1. Measured both ways (probe with and without a trailing `echo`).
 
     Applied to the real thing, `BRANCH_MAX_AGE_DAYS=08` means Phase 9 stops
-    where it stands, Phases 10, 11 and 12 and the whole final summary never run, and the only evidence is one line of bash arithmetic diagnostics. That is
-    HAZARD 8. HAZARD 9 reaches the same unwind from an ordinary API failure; see
-    `cleanup_actions_cache`.
+    where it stands, Phases 10, 11 and 12 and the whole final summary never run, and the only evidence is one line of bash arithmetic diagnostics. That is HAZARD 8. HAZARD 9 reaches the same unwind from an ordinary API failure; see `cleanup_actions_cache`.
     """
 
 
@@ -733,9 +717,7 @@ def _blank() -> None:
 def _grep_qx(needle: str, haystack: str) -> bool:
     """`grep -qx "$needle" <<<"$haystack"`: a WHOLE-LINE match.
 
-    `-x` anchors both ends, and the needle is still a BASIC REGULAR EXPRESSION, not a literal (that would be `-F`). Every needle here is a PR number matched
-    against a list of PR numbers, so the distinction cannot bite; it is
-    reproduced with an anchored search anyway because a port that quietly became stricter than its twin is still a divergence.
+    `-x` anchors both ends, and the needle is still a BASIC REGULAR EXPRESSION, not a literal (that would be `-F`). Every needle here is a PR number matched against a list of PR numbers, so the distinction cannot bite; it is reproduced with an anchored search anyway because a port that quietly became stricter than its twin is still a divergence.
     """
     return any(line == needle for line in records(haystack))
 
@@ -1016,8 +998,7 @@ def try_json_values(blob: str) -> list | None:
 class Housekeeping:
     """The twin's SOURCE-TIME state: parsed args, config, guards, counters.
 
-    Constructing one is `source cleanup-versions.sh <args>`; calling a method is
-    calling the function of that name. See the module docstring for why the seam is shaped this way.
+    Constructing one is `source cleanup-versions.sh <args>`; calling a method is calling the function of that name. See the module docstring for why the seam is shaped this way.
     """
 
     def __init__(self, argv: list[str]) -> None:
@@ -1061,8 +1042,7 @@ class Housekeeping:
         THE RIGHT-HAND SIDE IS AN OPERATOR-SUPPLIED STRING and is read with
         bash's arithmetic rules, so `MAX_DELETES_PER_RUN=0100` is SIXTY-FOUR and
         `MAX_DELETES_PER_RUN=08` is a diagnostic plus a permanently false
-        budget -- i.e. every phase reports its backlog deferred and nothing is
-        ever deleted again. Both are the twin's behaviour; see `arith`.
+        budget -- i.e. every phase reports its backlog deferred and nothing is ever deleted again. Both are the twin's behaviour; see `arith`.
         """
         return arith_cmp(self.deletes_this_run, "lt", self.max_deletes)
 
@@ -1088,9 +1068,7 @@ class Housekeeping:
         '{"success":false}')`, so the status is returned rather than acted on
         here.
 
-        `$CLOUDFLARE_API_TOKEN` IS UNGUARDED IN THE TWIN -- under `set -u` an unset token would abort the whole run inside this function. Every caller
-        checks it first, so the path is unreachable; the port reads it with a
-        `""` default rather than reproducing an abort nothing can trigger.
+        `$CLOUDFLARE_API_TOKEN` IS UNGUARDED IN THE TWIN -- under `set -u` an unset token would abort the whole run inside this function. Every caller checks it first, so the path is unreachable; the port reads it with a `""` default rather than reproducing an abort nothing can trigger.
         """
         return capture_quiet(
             [
@@ -2282,9 +2260,8 @@ class Housekeeping:
         """`cleanup_r2` (:1187-1553). Six sub-phases, in the twin's ORDER OF
         EXECUTION, which is 8a, 8b, 8c, 8d, 8f, 8e -- 8f really does run before 8e in the file, and the labels really are out of order.
 
-        `set +e` FOR THE WHOLE PHASE, restored at the end. The twin relaxes errexit here because several `aws | awk` pipes have SIGPIPE edges that
-        would otherwise kill the job silently; every destructive call carries its
-        own guard. The port has no errexit to relax, and the one place the difference shows is 8e's `jq 'length'` over an `aws` response of `null`, which is a soft failure here and a soft failure there.
+        `set +e` FOR THE WHOLE PHASE, restored at the end. The twin relaxes errexit here because several `aws | awk` pipes have SIGPIPE edges that would otherwise kill the job silently; every destructive call carries its own guard. The port has no errexit to relax, and the one place the difference shows is 8e's `jq 'length'` over an `aws` response of `null`, which is a soft failure
+        here and a soft failure there.
         """
         log.step("Phase 8: Cleaning up R2 orphans")
 
@@ -2693,8 +2670,7 @@ class Housekeeping:
 
         now_epoch = arith(now_epoch_local())
         # `local max_age_seconds=$((BRANCH_MAX_AGE_DAYS * 86400))`. A refused word
-        # here does not just skip the phase: bash unwinds the whole call stack out to the top level, so Phases 10, 11 and 12 and the final summary never run and the script still exits 0. See HAZARD 8 in the module
-        # docstring; `ExpansionAbortError` reproduces the unwind.
+        # here does not just skip the phase: bash unwinds the whole call stack out to the top level, so Phases 10, 11 and 12 and the final summary never run and the script still exits 0. See HAZARD 8 in the module docstring; `ExpansionAbortError` reproduces the unwind.
         try:
             max_age_seconds = arith(self.branch_max_age_days) * 86400
         except BashArithError as exc:
@@ -3245,8 +3221,7 @@ class Housekeeping:
                     )
                     break
 
-        # THE TWO BRANCHES DIFFER BY MORE THAN THE VERB: the dry-run arm says "freeING", the real arm says "freeD". Spelled out in full rather than assembled from a verb variable, because the first version of this port did assemble it and printed "freed" in a dry run. The differential
-        # caught it; a reader would not have.
+        # THE TWO BRANCHES DIFFER BY MORE THAN THE VERB: the dry-run arm says "freeING", the real arm says "freeD". Spelled out in full rather than assembled from a verb variable, because the first version of this port did assemble it and printed "freed" in a dry run. The differential caught it; a reader would not have.
         if self.dry_run:
             log.info(
                 "  Actions cache: would delete %d of %s, freeing ~%d MB "

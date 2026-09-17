@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported e2e-tests coverage gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.e2e_coverage`, which pytest and
-the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.e2e_coverage`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 6). See DRIVEN, below.
 
@@ -42,8 +40,7 @@ moving the probe one directory down turned both red at once. Recorded because th
 
 The probe was deleted and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-e2e-coverage.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-e2e-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Check E2E test coverage for all renet functions needs: node, submodules selftest: true lane: quality-content ---- end gate ----
 """

@@ -14,9 +14,7 @@ THE GHCR-AUTH DUPLICATION IS REAL, AND IT IS DELIBERATELY NOT FACTORED HERE
     docker pull ... ; docker logout ghcr.io
 
 `.ci/scripts/lib/common.sh` is 772 lines and has NO ghcr, docker or registry helper at all (grepped 2026-09-13: zero hits for `ghcr` and for `docker login`). So the two bash twins do not share a helper, and inventing one on the Python side would give the port a structure its twin does not have, which is exactly the shape that makes a differential stop being a comparison. The
-duplication is
-NAMED here and left in place; a shared `core.ghcr` is a cutover decision, not a
-porting one.
+duplication is NAMED here and left in place; a shared `core.ghcr` is a cutover decision, not a porting one.
 
 FOUR WAYS THE TWO SCRIPTS DISAGREE WHILE DOING "THE SAME THING", all preserved, because each is a live behavioural difference and not a spelling one:
 
@@ -35,9 +33,7 @@ HAZARD, REPORTED RATHER THAN REPAIRED: A FAILED PULL LEAVES THE CREDENTIALS ON
 THE RUNNER
 -----------------------------------------------------------------------------
 The cleanup block is straight-line code AFTER the subshell, with no `trap`. The subshell runs under `set -e`, so a failing `docker login` or a failing `docker pull` takes the whole script down at that line, and every line below it -- `docker logout`, the `jq del(.auths["ghcr.io"])` scrub, the "environment is now safe for debug access" claim -- is never reached. The comment on line
-45
-says the subshell exists "to contain credential exposure"; a subshell contains a
-VARIABLE, not a file, and `~/.docker/config.json` is written by `docker login` in the real filesystem where it outlives the subshell.
+45 says the subshell exists "to contain credential exposure"; a subshell contains a VARIABLE, not a file, and `~/.docker/config.json` is written by `docker login` in the real filesystem where it outlives the subshell.
 
 So the failure mode is: pull fails, job continues into a debug/ssh step, and the GHCR token is sitting in `~/.docker/config.json`. The fix is one `trap ... EXIT` around the cleanup block. It is NOT applied here: this port's contract is one-for-one equivalence with a twin that stays live and registered, and a port that cleaned up where the twin does not would be a divergence in
 exactly the direction a differential cannot bless. Pinned by `test_a_failing_pull_skips_the_credential_cleanup_on_both_sides`.
@@ -75,9 +71,7 @@ WHAT IS EXECUTED RATHER THAN REIMPLEMENTED, AND WHY
 with this script's own log lines, and a port that captured and replayed would
 reorder them.
 
-Exit: 0 on the full path; 1 on either missing environment variable; the
-subshell's failing status (docker's) when login or a pull fails; 127 when there
-is no `docker` at all.
+Exit: 0 on the full path; 1 on either missing environment variable; the subshell's failing status (docker's) when login or a pull fails; 127 when there is no `docker` at all.
 
 K=5 LEDGER: `.ci/shadow/w7p6-ci-pull-images.observations.jsonl`.
 """
@@ -302,8 +296,7 @@ def main(argv: list[str]) -> int:
 
     scrub_docker_config(env.get("HOME", ""))
 
-    # `unset` on the way out. A no-op in both implementations; see the module
-    # docstring. Kept so the two processes end in the same state.
+    # `unset` on the way out. A no-op in both implementations; see the module docstring. Kept so the two processes end in the same state.
     env.pop("GITHUB_TOKEN", None)
     env.pop("DOCKER_REGISTRY_PASSWORD", None)
 

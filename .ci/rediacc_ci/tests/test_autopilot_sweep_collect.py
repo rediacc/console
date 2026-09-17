@@ -204,9 +204,7 @@ def _sides(name: str, argv: list[str], *, exact_stderr: bool = True, **gh_env: s
 def _mask_redirection(stderr: bytes) -> bytes:
     """Replace the failed-redirection diagnostic with a token.
 
-    The twin's is bash's (`<path>/sweep-collect.sh: line 64: <file>: ...`) and
-    the port's is its own; both name the same file and the same errno, and
-    every other line on the stream has to match exactly.
+    The twin's is bash's (`<path>/sweep-collect.sh: line 64: <file>: ...`) and the port's is its own; both name the same file and the same errno, and every other line on the stream has to match exactly.
     """
     out = []
     for line in stderr.split(b"\n"):

@@ -1,8 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-release-state-consistency.sh`.
 
-Unit-tests `rsv_assert_bijection` and `rsv_assert_channel_pointer_tagged` in `.ci/scripts/lib/release-state-validator.sh` against synthetic version lists. The live R2 and git probes are exercised end to end by the quality gate itself during
-CI; this pins the pure assertion logic so drift detection stays correct even if
-callers refactor.
+Unit-tests `rsv_assert_bijection` and `rsv_assert_channel_pointer_tagged` in `.ci/scripts/lib/release-state-validator.sh` against synthetic version lists. The live R2 and git probes are exercised end to end by the quality gate itself during CI; this pins the pure assertion logic so drift detection stays correct even if callers refactor.
 
 HOW A PYTHON FILE DRIVES A BASH LIBRARY, and why the two sides agree. The twin
 `source`s the library into its own shell ONCE and calls the functions directly;
@@ -21,9 +19,7 @@ OVERLAYS `os.environ`, so it can set a variable but cannot unset one, and an inh
 
 OUTPUT IS READ MERGED (`.combined`), because the twin captures `2>&1` and every assertion below is written against that merged text.
 
-NO `xdist_group`. The ratchet cases write a single file inside pytest's own
-`tmp_path`; nothing else is written anywhere, no port is bound and no module
-global is mutated.
+NO `xdist_group`. The ratchet cases write a single file inside pytest's own `tmp_path`; nothing else is written anywhere, no port is bound and no module global is mutated.
 """
 
 import pathlib
@@ -153,8 +149,7 @@ def test_prerelease_tags_ignored(gate):
 
 def test_floor_excludes_pre_contract_tags(gate):
     gate.log_test("tags older than the oldest cli sentinel are excluded (data-derived floor)")
-    # Mirrors the live shape: pre-contract tags exist (v0.9.5..v1.0.4) but have
-    # no sentinel; the contract first wrote a sentinel at v1.0.5.
+    # Mirrors the live shape: pre-contract tags exist (v0.9.5..v1.0.4) but have no sentinel; the contract first wrote a sentinel at v1.0.5.
     result = run_assert(
         gate,
         versions("v1.0.5", "v1.0.6"),
@@ -303,8 +298,7 @@ def test_pointer_naming_an_untagged_version_is_caught(gate):
 
 
 def test_torn_pointer_write_is_caught(gate):
-    # latest.json and manifest.json are written seconds apart; disagreement
-    # means install.sh and the auto-updater resolve to different versions.
+    # latest.json and manifest.json are written seconds apart; disagreement means install.sh and the auto-updater resolve to different versions.
     result = run_pointer(gate, "edge", "v1.3.1", "v1.3.0", POINTER_TAGS)
     gate.assert_exit_code(1, result.rc, "a torn write MUST fail")
     gate.assert_contains(result.combined, "torn write", "the finding names the cause")

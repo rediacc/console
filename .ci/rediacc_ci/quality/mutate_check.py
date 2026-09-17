@@ -43,24 +43,18 @@ THE FOUR VERDICTS, and the twin's reason for each, kept at the scenario that ass
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE RUNNER IS DRIVEN, NEVER REIMPLEMENTED. This gate's subject is a bash program
-and its four exit codes; a Python reimplementation of mutate-check.sh would be a
-second instrument and this gate would then certify the wrong one. Every scenario is a subprocess, and the twin's `2>&1` capture is reproduced by merging the child's two streams into one string -- which is the ONE place in this package where merging is correct, because the captured text is the gate's INPUT rather than its output.
+THE RUNNER IS DRIVEN, NEVER REIMPLEMENTED. This gate's subject is a bash program and its four exit codes; a Python reimplementation of mutate-check.sh would be a second instrument and this gate would then certify the wrong one. Every scenario is a subprocess, and the twin's `2>&1` capture is reproduced by merging the child's two streams into one string -- which is the ONE place in
+this package where merging is correct, because the captured text is the gate's INPUT rather than its output.
 
-`ok` AND `FAIL` CARRY RAW ESCAPES, UNCONDITIONALLY, and that is the twin's
-behaviour rather than an oversight to fix. `printf '  \\033[0;32mok\\033[0m   %s\\n'`
-has no tty test at all, so this gate writes colour into a pipe and into a CI log. `scripts/lib/shadow-gate.ts` strips ANSI before comparing, so the escapes cost
-nothing there; they are carried because a port that removed them would print
-different BYTES to a human diffing the two, and reported as a twin finding.
+`ok` AND `FAIL` CARRY RAW ESCAPES, UNCONDITIONALLY, and that is the twin's behaviour rather than an oversight to fix. `printf ' \\033[0;32mok\\033[0m %s\\n'` has no tty test at all, so this gate writes colour into a pipe and into a CI log. `scripts/lib/shadow-gate.ts` strips ANSI before comparing, so the escapes cost nothing there; they are carried because a port that removed them
+would print different BYTES to a human diffing the two, and reported as a twin finding.
 
 THE FAILURE LINE IS NOT A FINDING TO THE COMPARATOR, and knowing that is what keeps this port honest. `bad()` prints ` FAIL <label>` with ONE space, while `scripts/lib/shadow-gate.ts`'s marker is `/^FAIL\\s\\s+/` (two or more) or `/^FAIL:/`. So a failing scenario's line is classified as CHATTER, and the only compared finding this gate emits is the final `✗ N mutate-check.sh
 self-test(s) failed`. That is why the differential fixtures vary the NUMBER of failing scenarios rather than which one fails: the number is the only thing the ledger can see. Stated here so nobody reads a passing differential as proof that the per-scenario labels agree.
 
 THE DETAIL BLOCK IS `sed 's/^/ /' | head -12`: seven spaces, twelve lines, on STDOUT. Reproduced exactly, including the truncation, because those lines land under a chatter header and any of them shaped like `<file>.<ext>:<line>:` is promoted to a finding by the comparator's path-line rule.
 
-`grep -qE '^\\s+echo " (PASS|FAIL): '` IS SCANNED LINE BY LINE with an explicit POSIX space class. `grep` applies the pattern per line, so `\\s` can never reach a
-newline there; Python's `\\s` on a str would additionally match U+00A0 and U+2028,
-so the class is written out rather than abbreviated.
+`grep -qE '^\\s+echo " (PASS|FAIL): '` IS SCANNED LINE BY LINE with an explicit POSIX space class. `grep` applies the pattern per line, so `\\s` can never reach a newline there; Python's `\\s` on a str would additionally match U+00A0 and U+2028, so the class is written out rather than abbreviated.
 
 ONE DELIBERATE DIVERGENCE, named rather than hidden: if the runner exists but is NOT EXECUTABLE, bash reports 126 with its own "Permission denied" text captured into the scenario output, while this port raises OSError and reports 126 with an empty output. The twin's own precondition loop tests `-f`, not `-x`, so both implementations reach that state the same way. No fixture in the
 ledger exercises it, and it is written down because an undocumented divergence is the kind a later reader takes for a defect in the port.
@@ -84,8 +78,7 @@ TARGET_NAME = "fixture_mod.py"
 # `grep -qE '^\s+echo " (PASS|FAIL): '`, with [[:space:]] written out. See the port notes for why `\s` is the wrong abbreviation here.
 INDENTED_RESULT_RE = re.compile(r"^[ \t\v\f\r]+echo \"  (PASS|FAIL): ")
 
-# The colour codes the twin printf's unconditionally. No tty test in the twin, so
-# none here; see the port notes.
+# The colour codes the twin printf's unconditionally. No tty test in the twin, so none here; see the port notes.
 _GREEN = "\033[0;32m"
 _RED = "\033[0;31m"
 _NC = "\033[0m"
@@ -172,9 +165,8 @@ def run_scenario(
     except OSError:
         # See the port notes: bash reports 126 with its own diagnostic text, this reports 126 with none. No ledger fixture reaches here.
         return 126, ""
-    # `$(...)` STRIPS EVERY TRAILING NEWLINE, and the twin captures through it. Without this the detail block printed one extra blank line per failing scenario, because `<<<"$OUT"` re-adds exactly one newline and `splitlines` then sees a final empty record. Found 2026-09-06 by the byte-for-byte case
-    # in tests/test_quality_mutate_check.py; the shadow differential could NOT
-    # see it, because `bad()` prints ` FAIL <label>` with ONE space and scripts/lib/shadow-gate.ts needs two, so the whole block is chatter there.
+    # `$(...)` STRIPS EVERY TRAILING NEWLINE, and the twin captures through it. Without this the detail block printed one extra blank line per failing scenario, because `<<<"$OUT"` re-adds exactly one newline and `splitlines` then sees a final empty record. Found 2026-09-06 by the byte-for-byte case in tests/test_quality_mutate_check.py; the shadow differential could NOT see it,
+    # because `bad()` prints ` FAIL <label>` with ONE space and scripts/lib/shadow-gate.ts needs two, so the whole block is chatter there.
     return completed.returncode, (completed.stdout or "").rstrip("\n")
 
 
@@ -288,9 +280,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Plant each violation, prove it fires; remove it, prove it does not.
 
-    THE DECISION FUNCTIONS, NOT THE SUBPROCESSES. Driving the real runner here
-    would re-run the gate and prove only that the gate agrees with itself; what
-    is worth pinning is the three exit-code modes, the fixed-string match, and the indentation rule, each in BOTH directions.
+    THE DECISION FUNCTIONS, NOT THE SUBPROCESSES. Driving the real runner here would re-run the gate and prove only that the gate agrees with itself; what is worth pinning is the three exit-code modes, the fixed-string match, and the indentation rule, each in BOTH directions.
     """
     ctl = Controls("mutate-check", floor=18, verbose=True)
 

@@ -7,8 +7,7 @@ pinned diagnostic. Mutating the LIVE file rather than a frozen fixture keeps the
 
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Every case reads `.github/workflows/autopilot.yml` off the working tree and the first case drives the subject at it in place. A battery step rewriting the workflow mid-read is a
 divergence that would be blamed on this port. `REAL_TREE_TWIN = True` is what buys
-the serialisation, and it is honoured only because this module declares no
-`XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
+the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
 WHAT IS REIMPLEMENTED, AND WHAT IS NOT. The SUBJECT is never reimplemented: every verdict below comes from the real `bash check-autopilot-workflow-invariants.sh`. What is reimplemented is the twin's MUTATION toolkit -- `perl -pe`, `perl -0pe`, `sed` and `grep -v` -- as the four line helpers below. Their perl semantics are reproduced deliberately and are documented on each helper,
 because a mutation that lands in the wrong place is a control that fires for the wrong reason. Every mutation is still checked against the real file by `assert_mutated`, which is the thing that catches a helper whose semantics drifted.
@@ -75,9 +74,7 @@ def run_gate(gate, workflow_file) -> harness.RunResult:
 def assert_mutated(gate, mutated: str, label: str) -> None:
     """The mutation must actually differ from the real file.
 
-    Without this, a "failure" case that no longer lands would silently re-run the
-    control and stay green forever. `diff -q` in the twin; a byte comparison here,
-    which is the same claim made exactly.
+    Without this, a "failure" case that no longer lands would silently re-run the control and stay green forever. `diff -q` in the twin; a byte comparison here, which is the same claim made exactly.
     """
     if mutated == REAL.read_text(encoding="utf-8"):
         gate.log_fail(
@@ -381,9 +378,8 @@ def test_model_without_state_guard_fails(gate):
 def test_model_round_file_tools_required(gate):
     """The model round's permission allowlist must include the file tools.
 
-    The handoff contract requires the model to edit files and write handoff.json, and an allowlist denies everything unlisted. Live proof: runs 31321211521/31326053280 burned 41 turns with 21 denials on an allowlist that
-    simply omitted Edit/Write. Strip ONLY "Edit"; every other permission entry
-    survives, so a checker that merely counts entries or greps the file for the word Edit (it appears in prose comments) would pass this mutation.
+    The handoff contract requires the model to edit files and write handoff.json, and an allowlist denies everything unlisted. Live proof: runs 31321211521/31326053280 burned 41 turns with 21 denials on an allowlist that simply omitted Edit/Write. Strip ONLY "Edit"; every other permission entry survives, so a checker that merely counts entries or greps the file for the word Edit
+    (it appears in prose comments) would pass this mutation.
     """
     source = real_source(gate)
     mutated = substitute_each_line(source, r'^                  "Edit",$', "")

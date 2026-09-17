@@ -155,9 +155,8 @@ export function scanComponent(src: string, file: string): FormFinding[] {
   const findings: FormFinding[] = [];
   const handlers = submitHandlers(src);
 
-  // ONE GUARD, ONE FINDING. submitHandlers() matches the enclosing component function too
-  // whenever the handler is declared inside it, so the same `if (!email) return;` was
-  // reported twice -- once at the component's line and once at the handler's. Keeping the LAST occurrence keeps the innermost (and correct) line, and the key is the guard itself so two genuinely different guards still count as two.
+  // ONE GUARD, ONE FINDING. submitHandlers() matches the enclosing component function too whenever the handler is declared inside it, so the same `if (!email) return;` was reported twice -- once at the component's line and once at the handler's. Keeping the LAST occurrence keeps the innermost (and correct) line, and the key is the guard itself so two genuinely different guards
+  // still count as two.
   const seen = new Map<string, FormFinding>();
 
   for (const handler of handlers) {

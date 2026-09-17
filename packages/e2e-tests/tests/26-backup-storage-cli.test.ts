@@ -498,8 +498,7 @@ test.describe
         subscriptionId = usage.subscriptionId;
         quotaBytes = usage.quotaBytes;
         expect(subscriptionId, 'usage carried no subscription id').not.toBe('');
-        // The quota is the only lever in this feature; a row that does not add
-        // up is a row somebody is billed against.
+        // The quota is the only lever in this feature; a row that does not add up is a row somebody is billed against.
         expect(usageViolations(usage), 'the usage row is internally inconsistent').toEqual([]);
         expect(quotaBytes, 'every subscription has a quota, the free one included').toBeGreaterThan(
           0
@@ -613,9 +612,7 @@ test.describe
     } else {
       const gate = announcePrerequisites(engineVerdict);
       if (gate.skip) {
-        // The declared-skip banner prints the OPERATOR's reason and the unmet
-        // prerequisite names; this adds the standing next step, so a reader does
-        // not have to rediscover what the tier wants.
+        // The declared-skip banner prints the OPERATOR's reason and the unmet prerequisite names; this adds the standing next step, so a reader does not have to rediscover what the tier wants.
         process.stderr.write(
           [
             '',
@@ -723,8 +720,7 @@ test.describe
       });
 
       test('0. the run verb is really registered ON THE MACHINE', async () => {
-        // The tier's prerequisite probed the LOCAL binary; this probes the one
-        // the fleet actually runs. They differ whenever a deploy did not land, and without this the failure would surface as an unknown-command error in test 1 and be read as a broken upload.
+        // The tier's prerequisite probed the LOCAL binary; this probes the one the fleet actually runs. They differ whenever a deploy did not land, and without this the failure would surface as an unknown-command error in test 1 and be read as a broken upload.
         const help = await w1.executeViaBridge('renet backup --help 2>&1 || true');
         const text = w1.getCombinedOutput(help);
         expect(
@@ -763,9 +759,7 @@ test.describe
 
       test('2. an incremental after a known write sends only the cells it touched', async () => {
         expect(seedManifest, 'test 1 did not produce a seed').toBeDefined();
-        // A 4 KiB write inside one cell. Everything else in the FILE is
-        // untouched; ext4 still moves its own metadata, which is what
-        // FS_METADATA_CELLS below accounts for.
+        // A 4 KiB write inside one cell. Everything else in the FILE is untouched; ext4 still moves its own metadata, which is what FS_METADATA_CELLS below accounts for.
         await churn('churn.bin', `bs=${WRITE_LENGTH} count=1 seek=${WRITE_OFFSET / WRITE_LENGTH}`);
 
         const run = await runEngine(w1);
@@ -820,8 +814,7 @@ test.describe
         });
         expect(res.status).toBe(200);
 
-        // Churn something so the run has work to do; without it a refusal and
-        // a no-op look the same.
+        // Churn something so the run has work to do; without it a refusal and a no-op look the same.
         await churn('churn2.bin', 'bs=1M count=4');
 
         const before = (await manifests()).length;

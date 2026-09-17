@@ -2,8 +2,7 @@
 """Port of `.ci/scripts/security/check-workflow-gates.sh` (`check:ci-workflow-gates`).
 
 Six structural invariants over GitHub Actions workflow YAML that only a real parser can see. The twin is 1108 lines, of which only 125 are bash: 788 lines already live inside six `python3 - ... <<'PYEOF'` heredocs. So this is not a translation of 1108 lines of shell, it is a translation of the 125-line orchestrator plus a transcription of six Python programs that were already
-Python. Each `sys.exit(N)` below became `return N`; nothing else about the six
-programs' logic moved.
+Python. Each `sys.exit(N)` below became `return N`; nothing else about the six programs' logic moved.
 
 LIVE CALLERS OF THE TWIN, none repointed by this port:
   * `package.json:44` -- `"check:ci-workflow-gates": ".ci/scripts/security/check-workflow-gates.sh"`
@@ -35,21 +34,16 @@ THE SIX CHECKS, and what each one reads:
   6. nothing optional may precede the watchdog's monitor step. Reads
      `$ROOT_DIR/.github/workflows/watchdog-monitor.yml`, NOT `$WORKFLOWS_DIR`.
 
-PORT NOTES -- unless an item says otherwise it is REPRODUCED, not repaired. Fixing one only HERE would make the differential lie, so the two ways an item can end are: reproduced in both sides, or fixed in BOTH SIDES IN LOCKSTEP in one change that also flips its differential test and re-records the shadow ledger.
-CHECK 6's checkout exemption took the second route on 2026-09-10; everything else
-below is still the first.
+PORT NOTES -- unless an item says otherwise it is REPRODUCED, not repaired. Fixing one only HERE would make the differential lie, so the two ways an item can end are: reproduced in both sides, or fixed in BOTH SIDES IN LOCKSTEP in one change that also flips its differential test and re-records the shadow ledger. CHECK 6's checkout exemption took the second route on 2026-09-10;
+everything else below is still the first.
 
-CHECK 1 WALKS, CHECKS 2 AND 3 DO NOT. `check-workflow-gates.sh:164`
-(`os.walk(workflows_dir)`) descends into subdirectories; `:236`
-(`os.listdir`) and `:527` (`os.listdir`) are flat. A workflow YAML in a subdirectory of `$WORKFLOWS_DIR` is therefore audited for the `always()` rule and NOT for the secret contract or the slim timeout. Measured: `.github/workflows` has no subdirectory today, so the blast radius on the real tree is zero and the divergence is only reachable through a fixture.
-`test_check1_walks_and_check3_does_not` pins it.
+CHECK 1 WALKS, CHECKS 2 AND 3 DO NOT. `check-workflow-gates.sh:164` (`os.walk(workflows_dir)`) descends into subdirectories; `:236` (`os.listdir`) and `:527` (`os.listdir`) are flat. A workflow YAML in a subdirectory of `$WORKFLOWS_DIR` is therefore audited for the `always()` rule and NOT for the secret contract or the slim timeout. Measured: `.github/workflows` has no subdirectory
+today, so the blast radius on the real tree is zero and the divergence is only reachable through a fixture. `test_check1_walks_and_check3_does_not` pins it.
 
 CHECKS 5 AND 6 IGNORE `$WORKFLOWS_DIR` ENTIRELY. `check-workflow-gates.sh:886` and `:1012` pass `"$ROOT_DIR"`, so a gate test pointing `WORKFLOWS_DIR` at a fixture tree still runs CHECK 5 and CHECK 6 against the REAL repository. That is why `test_gate_slim_timeout.py` and friends can only assert on the checks they target: the other two run for real underneath them every time.
 Reproduced here by resolving the root the same way the twin does and never letting `workflows_dir` reach `check5`/`check6`.
 
-CHECK 5 GLOBS `*.yml` ONLY. `:894-895` uses `.glob("*.yml")` for both
-`.github/workflows` and `.ci/breakpoint/workflow`; a `.yaml` workflow is
-invisible to CHECK 5 while CHECKS 1/2/3 all accept both extensions. Measured: 0 `.yaml` files under either directory today.
+CHECK 5 GLOBS `*.yml` ONLY. `:894-895` uses `.glob("*.yml")` for both `.github/workflows` and `.ci/breakpoint/workflow`; a `.yaml` workflow is invisible to CHECK 5 while CHECKS 1/2/3 all accept both extensions. Measured: 0 `.yaml` files under either directory today.
 
 CHECK 6's CHECKOUT EXEMPTION WAS FIXED IN BOTH SIDES ON 2026-09-10, in lockstep. It used to test the step's *NAME*, not its `uses:`: `names` was built as `step.get("name") or str(step.get("uses",""))` and the exemption then asked `"actions/checkout" in name`, so a checkout step that HAS a `name:` lost the exemption unless the name itself contained `actions/checkout`. Measured on
 the real tree: 139 of the 144 `actions/checkout` steps under `.github/workflows` are unnamed (so they were exempt by the `uses:` fallback) and 5 are named (so they were not). `watchdog-monitor.yml`'s own checkout is unnamed, which is why the gate was green while one ordinary `name: Checkout` edit would have turned it red on the single workflow it guards. It now reads `uses:` and
@@ -57,9 +51,7 @@ nothing else, and the same code path grew the type guards it never had: a non-st
 `test_check6_a_non_string_step_name` and `test_check6_a_malformed_workflow_reports_cleanly` pin all three on both sides.
 
 `SLIM_TIMEOUT_MAX` IS `int()`-ED WITH NO GUARD. `:520` (`int(sys.argv[2])`) raises `ValueError` on a non-numeric override, the heredoc dies with a traceback and exit 1, and bash then prints "ubuntu-slim timeout violations (see above)" -- a message about violations for what is a configuration error. Reproduced: the port lets the same `ValueError` escape `check3`, prints its own
-traceback and returns 1. The traceback TEXT necessarily
-differs (different file, different line); the exit code and the bash-level
-message do not.
+traceback and returns 1. The traceback TEXT necessarily differs (different file, different line); the exit code and the bash-level message do not.
 
 `${VAR:-default}` TREATS EMPTY AS UNSET. `SLIM_TIMEOUT_MAX=` exported empty is
 14, not "". `_env` below is that operator. `CI` is compared with `==` rather
@@ -166,9 +158,7 @@ def _ensure_yaml(palette: _Palette) -> ModuleType | None:
             continue
         if proc.returncode != 0:
             continue
-        # A `--user` install lands in a site directory this interpreter resolved before the install ran. The twin gets this for free by starting a new
-        # `python3` for every check; in-process the caches have to be dropped by
-        # hand or the import below finds nothing that was just written.
+        # A `--user` install lands in a site directory this interpreter resolved before the install ran. The twin gets this for free by starting a new `python3` for every check; in-process the caches have to be dropped by hand or the import below finds nothing that was just written.
         with contextlib.suppress(AttributeError, OSError):  # defensive
             site.main()
         importlib.invalidate_caches()
@@ -348,9 +338,8 @@ def check2(yaml: ModuleType, workflows_dir: str, real_tree: bool, registry_file:
 
     # --- carried verbatim from check-workflow-gates.sh, lines 294-306 --------------------- (a2) a reusable workflow may not DECLARE a secret nothing in it reads.
     #
-    # THE ARM THAT WAS MISSING, and its absence is measurable: 57 such declarations had accumulated by 2026-09-06, left behind when consumers moved to Bitwarden, and were
-    # removed in one sweep. (a) catches a read with no declaration; nothing caught a
-    # declaration with no read, so dead scaffolding grew quietly on the one surface where a stale secret name is most misleading -- a caller reads the declaration and passes a value that goes nowhere.
+    # THE ARM THAT WAS MISSING, and its absence is measurable: 57 such declarations had accumulated by 2026-09-06, left behind when consumers moved to Bitwarden, and were removed in one sweep. (a) catches a read with no declaration; nothing caught a declaration with no read, so dead scaffolding grew quietly on the one surface where a stale secret name is most misleading -- a caller
+    # reads the declaration and passes a value that goes nowhere.
     # A LIST, converted below, deliberately: `{...}` with its last member deleted is
     # `{}`, which is an empty DICT, and the set arithmetic in arm (a3) then dies with
     # a TypeError while `in` and `sorted()` above degrade to silently matching nothing. Draining this list to empty is the declared endgame (W8 P1b), so the empty form has to be the safe one. Found by planting exactly that drain.
@@ -374,10 +363,8 @@ def check2(yaml: ModuleType, workflows_dir: str, real_tree: bool, registry_file:
 
     # --- carried verbatim from check-workflow-gates.sh, lines 337-347 --------------------- An exemption naming a declaration that is gone, or one that IS read, excuses nothing and would sit forever looking like coverage.
     #
-    # SCOPED TO THE REAL TREE, and that scoping is not a nicety. The exemptions name
-    # files in .github/workflows; a CHECK 1/CHECK 3 fixture tree contains two or
-    # three synthetic YAMLs and none of them. Sweeping there reported every exemption as dangling, which made this script exit 1 on EVERY fixture tree and turned two unrelated gate tests red for a file their fixtures were never meant to have -- test-slim-timeout.sh and test-workflow-contracts.sh, nightly run 34014201256. A liveness probe that cannot see the thing it probes for must
-    # stay silent, not condemn it.
+    # SCOPED TO THE REAL TREE, and that scoping is not a nicety. The exemptions name files in .github/workflows; a CHECK 1/CHECK 3 fixture tree contains two or three synthetic YAMLs and none of them. Sweeping there reported every exemption as dangling, which made this script exit 1 on EVERY fixture tree and turned two unrelated gate tests red for a file their fixtures were never
+    # meant to have -- test-slim-timeout.sh and test-workflow-contracts.sh, nightly run 34014201256. A liveness probe that cannot see the thing it probes for must stay silent, not condemn it.
     if real_tree:
         for fname, name in sorted(declared_unused_ok):
             doc = docs.get(fname)
@@ -473,9 +460,7 @@ def check2(yaml: ModuleType, workflows_dir: str, real_tree: bool, registry_file:
     for fname, doc in docs.items():
         # The isinstance guard was an UNRECORDED DIVERGENCE until 2026-09-10: the twin
         # had only `(doc or {})`, which covers an empty file and not a workflow whose
-        # YAML parses to a scalar or a list, so the twin died with `AttributeError: 'str' object has no attribute 'get'` where the port passed. Found while
-        # testing CHECK 6's guard; the twin now carries the same guard
-        # (check-workflow-gates.sh, CHECK 2's (b)/(c) loop) and `test_check2_a_workflow_that_is_not_a_mapping` pins the pair.
+        # YAML parses to a scalar or a list, so the twin died with `AttributeError: 'str' object has no attribute 'get'` where the port passed. Found while testing CHECK 6's guard; the twin now carries the same guard (check-workflow-gates.sh, CHECK 2's (b)/(c) loop) and `test_check2_a_workflow_that_is_not_a_mapping` pins the pair.
         jobs = (doc or {}).get("jobs") or {} if isinstance(doc, dict) else {}
         if not isinstance(jobs, dict):
             continue
@@ -546,8 +531,7 @@ SLIM = "ubuntu-slim"
 
 
 def check3(yaml: ModuleType, workflows_dir: str, limit_raw: str, require_coverage: bool) -> int:
-    # `int(sys.argv[2])` with no guard (`:520`). A non-numeric override raises
-    # here exactly as it does in the twin; `main` turns the traceback into exit 1.
+    # `int(sys.argv[2])` with no guard (`:520`). A non-numeric override raises here exactly as it does in the twin; `main` turns the traceback into exit 1.
     limit = int(limit_raw)
     offenders: list[str] = []
     checked = 0
@@ -581,8 +565,7 @@ def check3(yaml: ModuleType, workflows_dir: str, limit_raw: str, require_coverag
             # --- carried verbatim from check-workflow-gates.sh, lines 555-561 --------------------- Named `declared`, not `timeout`: check-commands.sh scans this file as bash and has no heredoc scoping, so a Python line reading
             # `timeout = ...` is indistinguishable from the bash command invocation
             # `timeout = ...` actually is. That gate is RIGHT about bash and must not
-            # be taught to skip heredoc bodies -- a `ssh host <<'EOF' ... timeout 5` body is exactly the remote-minimal-environment case it exists to
-            # catch. Avoiding the collision is the fix; widening the gate is not.
+            # be taught to skip heredoc bodies -- a `ssh host <<'EOF' ... timeout 5` body is exactly the remote-minimal-environment case it exists to catch. Avoiding the collision is the fix; widening the gate is not.
             declared = job.get("timeout-minutes")
             if declared is None:
                 offenders.append(
@@ -626,9 +609,8 @@ def check3(yaml: ModuleType, workflows_dir: str, limit_raw: str, require_coverag
 #   declares them; this runs CHECK 2's contract against each declaration,
 # re-checks the declaration against the caller's real file when the submodule is checked out, and fails on any external caller that is not registered.
 #
-# --- carried verbatim from check-workflow-gates.sh, lines 607-620 --------------------- CHECK 2 above scans WORKFLOWS_DIR only, so it is structurally blind to callers that live in OTHER repositories -- which are the only callers that can suffer the breakage it exists to prevent. A same-repo caller moves with its callee in
-# one commit; a cross-repo caller resolves `@main` at run time, so a callee edit
-# merged here breaks the other repo's next run, an hour later, in a log nobody on this PR is reading.
+# --- carried verbatim from check-workflow-gates.sh, lines 607-620 --------------------- CHECK 2 above scans WORKFLOWS_DIR only, so it is structurally blind to callers that live in OTHER repositories -- which are the only callers that can suffer the breakage it exists to prevent. A same-repo caller moves with its callee in one commit; a cross-repo caller resolves `@main` at run
+# time, so a callee edit merged here breaks the other repo's next run, an hour later, in a log nobody on this PR is reading.
 #
 # .github/external-callers.yml declares them. CHECK 4 runs CHECK 2's three-way contract against each declaration, verifies the declaration still matches the caller's real file when the submodule is checked out, and refuses to let an undeclared external caller exist. EXTERNAL_CALLERS_ROOT / EXTERNAL_CALLERS_FILE are resolved near the top of the file, because CHECK 2's arm (a3) needs
 # the same registry and must resolve it the same way rather than growing a second copy of the rule.
@@ -747,8 +729,7 @@ def _check4(yaml: ModuleType, workflows_dir: str, registry_file: str, scan_root:
             continue
         caller = entry["caller"]
         abs_caller = os.path.join(scan_root, caller)
-        # The submodule holding this caller may simply not be checked out. That is
-        # not a finding; a checked-out submodule that has LOST the file is.
+        # The submodule holding this caller may simply not be checked out. That is not a finding; a checked-out submodule that has LOST the file is.
         repo_tree = os.path.join(scan_root, caller.split("/.github/")[0], ".github", "workflows")
         if not os.path.isfile(abs_caller):
             if os.path.isdir(repo_tree):
@@ -976,9 +957,7 @@ MONITOR = "Monitor jobs and cancel on failure"
 # Steps the monitor genuinely depends on: the checkout that puts its scripts on disk, and the deterministic attempt cap, which must run first BECAUSE it writes the env var the monitor reads.
 PREREQS = {
     "Attempt cap (deterministic backstop)",
-    # Added 2026-09-09. The monitor's two classifier tiers read credentials this step
-    # exports; without them it does not degrade gracefully, it hands the retry decision to
-    # an allowlist nobody reviewed -- which is the harm the workflow's own comment describes. That is the PREREQS contract: allowed to fail BECAUSE the monitor cannot run correctly without it.
+    # Added 2026-09-09. The monitor's two classifier tiers read credentials this step exports; without them it does not degrade gracefully, it hands the retry decision to an allowlist nobody reviewed -- which is the harm the workflow's own comment describes. That is the PREREQS contract: allowed to fail BECAUSE the monitor cannot run correctly without it.
     "Fetch secrets from Bitwarden",
 }
 MAX_TIMEOUT_MINUTES = 5

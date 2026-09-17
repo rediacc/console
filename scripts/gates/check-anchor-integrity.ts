@@ -270,9 +270,7 @@ function selftest(): boolean {
     JSON.stringify(dup.dead)
   );
 
-  // The attribute order must not matter. Astro emits `href` first on TOC links and `class`
-  // first elsewhere; a regex that assumed one order reported ZERO duplicates on a page
-  // carrying seven identical `#set` links, which is how this control came to exist.
+  // The attribute order must not matter. Astro emits `href` first on TOC links and `class` first elsewhere; a regex that assumed one order reported ZERO duplicates on a page carrying seven identical `#set` links, which is how this control came to exist.
   const DUP_REORDERED = `<h3 id="set">set</h3>
     <a class="sidebar-link toc-link" href="#set">set</a>
     <a class="sidebar-link toc-link" href="#set">set</a>`;
@@ -377,9 +375,7 @@ function main(): void {
   const dist = path.resolve(arg('--dist') ?? path.join(REPO_ROOT, DEFAULT_DIST));
   const maxReport = Number(arg('--max-report') ?? 25);
 
-  // REFUSE, never self-skip. check:ci-seo's built-HTML link scan self-skipped on a missing
-  // dist and was therefore vacuous on every developer machine for its whole life; this
-  // gate declares `needs: ['build:www']` in the manifest instead, so the build is a prerequisite rather than an excuse.
+  // REFUSE, never self-skip. check:ci-seo's built-HTML link scan self-skipped on a missing dist and was therefore vacuous on every developer machine for its whole life; this gate declares `needs: ['build:www']` in the manifest instead, so the build is a prerequisite rather than an excuse.
   if (!fs.existsSync(dist)) {
     console.error(
       `✗ Refusing to run: no build output at ${dist}.\n` +

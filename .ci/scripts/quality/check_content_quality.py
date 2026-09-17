@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported content-quality (AI slop) gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.content_quality`, which pytest and the
-port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.content_quality`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 8a, the broad tree-scanning nine). See DRIVEN, below.
 
@@ -32,16 +30,14 @@ THIS IS THE ONE PAIR IN THE BATCH THAT IS NOT BYTE-IDENTICAL, and the difference
     stdout: 1141 bytes on BOTH sides, different sha256
     stderr:  598 bytes on BOTH sides, different sha256
 
-THE TWIN IS BYTE-STABLE AGAINST ITSELF, checked first and on both streams, and each side reproduces its own bytes exactly across runs. So this is not flake and
-it is not a peer's plant window; it was re-run and is deterministic on each side.
+THE TWIN IS BYTE-STABLE AGAINST ITSELF, checked first and on both streams, and each side reproduces its own bytes exactly across runs. So this is not flake and it is not a peer's plant window; it was re-run and is deterministic on each side.
 
 WHAT DIFFERS IS THE FILE ENUMERATION ORDER, and the port's is deliberate. `discover()` documents it: the twin's `find` emits in readdir order, which is filesystem state rather than repository content, so the port sorts. Measured here rather than taken on trust: raw `find` over the two content roots is NOT lexicographic on this tree (1107 files, first entry
 `docs/ru/account-management.md` against a sorted first entry of `blog/ar/git-diff-...`), which is what makes the twin's order a property of this filesystem and not a contract either side could be held to.
 
 NORMALISED COMPARISON, and exactly what was normalised: RECORD ORDER, nothing
 else. stdout is consecutive (`Pattern:`, `Line:`) PAIRS, so it was chunked into
-pairs and the multiset compared; stderr's three header lines and its summary line
-are positional and were compared IN PLACE, with only the warning block between them compared as a multiset.
+pairs and the multiset compared; stderr's three header lines and its summary line are positional and were compared IN PLACE, with only the warning block between them compared as a multiset.
 
     corpus size:      1107 files on both sides (the same number, so nothing
                       silently grew or shrank across the cutover)
@@ -67,8 +63,7 @@ THE CONTROL WAS PROVED BEFORE EITHER SIDE RAN: the clean fixture was driven firs
 
 THE REAL TREE WAS NEVER WRITTEN TO for this gate.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-content-quality.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-content-quality.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Check content for AI slop patterns needs: none selftest: true lane: quality-content `slow: true ---- end gate ----
 """

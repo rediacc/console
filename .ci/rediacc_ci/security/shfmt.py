@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/security/shfmt.sh`.
 
-W7P6 wave 28. The bash twin stays the LIVE registered gate
-(`check:ci-shell-format`, step "Shell format"); this module is its
-VERIFIED-EQUIVALENT ALTERNATIVE, proved on both streams by
+W7P6 wave 28. The bash twin stays the LIVE registered gate (`check:ci-shell-format`, step "Shell format"); this module is its VERIFIED-EQUIVALENT ALTERNATIVE, proved on both streams by
 `.ci/rediacc_ci/tests/test_security_shfmt.py` and by the K=5 shadow ledger
 `.ci/shadow/w7p6-shfmt.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
@@ -90,8 +88,7 @@ FLOOR_ROOTS = (".ci", ".claude", "scripts")
 # The two optional scopes at the end of main, in the twin's `for dir in` order.
 OPTIONAL_SCOPES = ("scripts/dev", "scripts/docker")
 
-# ANSI, matching the twin's own literals. Not `rediacc_ci.log`'s; see the
-# module docstring.
+# ANSI, matching the twin's own literals. Not `rediacc_ci.log`'s; see the module docstring.
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
@@ -186,9 +183,7 @@ def run_shfmt(binary: str, targets: list[str]) -> int:
 def check_scope(binary: str, relative: str) -> int:
     """One `find <relative> ... -exec shfmt ... {} +` scope, RELATIVE to cwd.
 
-    RETURNS 1, NOT shfmt's OWN CODE, on a failing scope. Under `set -e` the twin exits with FIND's status, and find reports "an -exec command failed" as exactly 1 regardless of what the child returned. The direct `./run.sh` call
-    has no find in front of it and therefore does return shfmt's own code; that
-    asymmetry is the twin's and is reproduced in `main`.
+    RETURNS 1, NOT shfmt's OWN CODE, on a failing scope. Under `set -e` the twin exits with FIND's status, and find reports "an -exec command failed" as exactly 1 regardless of what the child returned. The direct `./run.sh` call has no find in front of it and therefore does return shfmt's own code; that asymmetry is the twin's and is reproduced in `main`.
     """
     return 1 if run_shfmt(binary, shell_files(pathlib.Path(relative))) != 0 else 0
 

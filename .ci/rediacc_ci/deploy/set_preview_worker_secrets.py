@@ -4,9 +4,7 @@
 Pushes fifteen runtime secrets into the per-PR preview Worker `pr-<PR_NUMBER>` in ONE `wrangler secret bulk` call. The twin's own header carries the reason the call is bulk and not fifteen `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded. One bulk call sets them all against a
 single version.
 
-SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS, and this port keeps that property end to end. `argv` is visible in `ps` and in some log
-surfaces; the value only ever travels env -> `jq --arg` -> the pipe into
-`wrangler`, exactly as the twin routes it.
+SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS, and this port keeps that property end to end. `argv` is visible in `ps` and in some log surfaces; the value only ever travels env -> `jq --arg` -> the pipe into `wrangler`, exactly as the twin routes it.
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` is the only external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_set_preview_worker_secrets.py`) puts a RECORDING FAKE `npx` on a scratch PATH that logs its exact argv AND THE BYTES ON ITS STDIN. The stdin log is the main evidence for this script: the observable effect of the program is the
 JSON document handed to `wrangler`, and two implementations can print an identical `✓ Set 15 secrets` line while writing a different key set, a different key ORDER, or a differently escaped value.
@@ -29,9 +27,7 @@ A port cannot honestly print a line number in a file it is not. `MISSING_PR_NUMB
 `:?` IS AN UNSET-OR-EMPTY TEST, not an unset test, so `PR_NUMBER=` refuses
 exactly as an absent one does. Driven in the differential, because a port testing `"PR_NUMBER" in os.environ` would sail past the empty case and then write fifteen production secrets to a Worker literally named `pr-`.
 
-TWO OBSERVATIONS ABOUT THE TWIN, NEITHER OF THEM REPAIRED HERE (this wave's
-acceptance rule is agreement with the live twin; a repair is a cutover-box
-decision):
+TWO OBSERVATIONS ABOUT THE TWIN, NEITHER OF THEM REPAIRED HERE (this wave's acceptance rule is agreement with the live twin; a repair is a cutover-box decision):
 
   1. THE GUARD MESSAGE NAMES A VARIABLE THIS SCRIPT DOES NOT HAVE. Line 53
      prints `WORKER_NAME=$WORKER`, and there is no `WORKER_NAME` here: the

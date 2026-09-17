@@ -147,17 +147,14 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/clusters/*/registry/upstreams/*': { kind: 'public' },
   '/resources/clusters/*/ceph/pool': { kind: 'public' },
   '/resources/clusters/*/controlNode': { kind: 'public' },
-  // Local KVM topology — libvirt network naming + a registry hostname; no
-  // credentials by design (D15: kubeconfigs/join tokens never enter the config).
+  // Local KVM topology — libvirt network naming + a registry hostname; no credentials by design (D15: kubeconfigs/join tokens never enter the config).
   '/resources/clusters/*/kvm/netName': { kind: 'public' },
   '/resources/clusters/*/kvm/netBase': { kind: 'public' },
   '/resources/clusters/*/kvm/netOffset': { kind: 'public' },
   '/resources/clusters/*/kvm/controlId': { kind: 'public' },
   '/resources/clusters/*/kvm/dockerRegistry': { kind: 'public' },
 
-  // ── Backup strategies (scheduling topology; storage creds live in vaultContent) ──
-  // A strategy references storages by NAME; the credentials are in
-  // /resources/storages/*/vaultContent (secret). Folder paths and include/ exclude globs are location topology, same sensitivity as datastore paths.
+  // ── Backup strategies (scheduling topology; storage creds live in vaultContent) ── A strategy references storages by NAME; the credentials are in /resources/storages/*/vaultContent (secret). Folder paths and include/ exclude globs are location topology, same sensitivity as datastore paths.
   '/resources/backupStrategies/*/schedule': { kind: 'public' },
   '/resources/backupStrategies/*/mode': { kind: 'public' },
   '/resources/backupStrategies/*/enabled': { kind: 'public' },
@@ -170,9 +167,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/backupStrategies/*/destinations/*/enabled': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/bandwidthLimit': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/folder': { kind: 'public' },
-  // hosted-service destination: the endpoint identifies a customer/elite plane
-  // (mirror accountServer/releasesUrl → identifier); vaultContent is the
-  // credential bag, one container-level secret leaf like storages/*/vaultContent.
+  // hosted-service destination: the endpoint identifies a customer/elite plane (mirror accountServer/releasesUrl → identifier); vaultContent is the credential bag, one container-level secret leaf like storages/*/vaultContent.
   '/resources/backupStrategies/*/destinations/*/endpoint': { kind: 'identifier' },
   '/resources/backupStrategies/*/destinations/*/vaultContent': { kind: 'secret' },
   // GFS retention knobs (counts; enforced server-side). Non-sensitive policy.
@@ -239,10 +234,8 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/infra/certEmail': { kind: 'pii' },
   '/infra/cfDnsZoneId': { kind: 'identifier' },
 
-  // ── State (runtime status half; never pushed) ──────────────────────────────
-  // payload.ts strips `state` before push, so nothing here may carry a commitment: any non-public entry below MUST set `commit: false` (a committed-but-not-carried pointer is dropped on the first pull and bricks the re-push — same doctrine as masterPasswordVerifier). Runtime observations are registered `public` so the coverage gate forces a
-  // conscious sensitivity choice whenever a new runtime field lands; records
-  // and arrays whose values are primitives are registered at the container level (same style as backupStrategies/*/include).
+  // ── State (runtime status half; never pushed) ────────────────────────────── payload.ts strips `state` before push, so nothing here may carry a commitment: any non-public entry below MUST set `commit: false` (a committed-but-not-carried pointer is dropped on the first pull and bricks the re-push — same doctrine as masterPasswordVerifier). Runtime observations are registered
+  // `public` so the coverage gate forces a conscious sensitivity choice whenever a new runtime field lands; records and arrays whose values are primitives are registered at the container level (same style as backupStrategies/*/include).
   '/state/datastores/*/attachedTo': { kind: 'public' },
   '/state/datastores/*/lastHolder': { kind: 'public' },
   '/state/datastores/*/writes': { kind: 'public' },
@@ -301,8 +294,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/certCache/*/certs': { kind: 'public' },
   '/state/certCache/*/data': { kind: 'credential', commit: false },
   '/state/certCache/*/rawSize': { kind: 'public' },
-  // Managed replica/canary sets (spec 05, R2-F17). repoGuid mirrors the spec-side repositoryGuid (identifier there), so it gets the same
-  // agent-redaction here; commit:false per the state rule above.
+  // Managed replica/canary sets (spec 05, R2-F17). repoGuid mirrors the spec-side repositoryGuid (identifier there), so it gets the same agent-redaction here; commit:false per the state rule above.
   '/state/replicaSets/*/repo': { kind: 'public' },
   '/state/replicaSets/*/repoGuid': { kind: 'identifier', commit: false },
   '/state/replicaSets/*/datastore': { kind: 'public' },
@@ -327,16 +319,14 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/canaries/*/updatedAt': { kind: 'public' },
   '/state/reconciledAt': { kind: 'public' },
 
-  // ── Remote (config store pointer) ──────────────────────────────────────── HOST-LOCAL bootstrap data: how THIS host reaches the store. It is never carried in the blob (a pulled config self-evidently already knows its
-  // store; the wire identity lives in the plaintext envelope), so it must not
-  // be committed either — the CLI pushes its on-disk document with `remote` present, and a committed-but-not-carried pointer is dropped by the first pull, making the re-push fail anti-downgrade. Same doctrine as masterPasswordVerifier: not synced, therefore not committed.
+  // ── Remote (config store pointer) ──────────────────────────────────────── HOST-LOCAL bootstrap data: how THIS host reaches the store. It is never carried in the blob (a pulled config self-evidently already knows its store; the wire identity lives in the plaintext envelope), so it must not be committed either — the CLI pushes its on-disk document with `remote` present, and a
+  // committed-but-not-carried pointer is dropped by the first pull, making the re-push fail anti-downgrade. Same doctrine as masterPasswordVerifier: not synced, therefore not committed.
   '/remote/apiUrl': { kind: 'identifier', commit: false },
   '/remote/storeId': { kind: 'identifier', commit: false },
   '/remote/configId': { kind: 'identifier', commit: false },
   '/remote/teamId': { kind: 'identifier', commit: false },
   '/remote/storageKeyId': { kind: 'identifier', commit: false },
-  // Region display label ("eu"/"us"); public, so never committed either —
-  // consistent with the host-local doctrine of its siblings above.
+  // Region display label ("eu"/"us"); public, so never committed either — consistent with the host-local doctrine of its siblings above.
   '/remote/dataRegion': { kind: 'public' },
   // Offline read-cache metadata (last pulled server version + timestamp). Host-local observations, same doctrine as dataRegion: public, not committed.
   '/remote/cachedVersion': { kind: 'public' },

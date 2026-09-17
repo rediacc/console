@@ -2,8 +2,8 @@
 
 Both-ways test for `.ci/scripts/release/resolve-backfill-commit.sh` -- the step that decides which commit a backfilled release sentinel records.
 
-WHY THIS CLASS NEEDS A GATE. The script had none, and its only caller is a manually-dispatched workflow (`.github/workflows/backfill-release-sentinel.yml`), so its failure paths are seen by a human roughly never, and then only by a human already mid-incident, reading the message to decide what went wrong. A wrong
-message there does not fail loudly; it sends the investigation somewhere else.
+WHY THIS CLASS NEEDS A GATE. The script had none, and its only caller is a manually-dispatched workflow (`.github/workflows/backfill-release-sentinel.yml`), so its failure paths are seen by a human roughly never, and then only by a human already mid-incident, reading the message to decide what went wrong. A wrong message there does not fail loudly; it sends the investigation
+somewhere else.
 
 THE DEFECT THIS PINS. `git merge-base --is-ancestor` returns non-zero for two unrelated situations: a commit that exists but sits off main, and a SHA that is not an object in this repository at all. Git's own "Not a valid object name" for the second went to a `2>/dev/null`, so BOTH produced "commit <sha> is not reachable
 from origin/main" -- which reads as a real tag pointing somewhere odd. After the
@@ -13,9 +13,8 @@ HOW. Every case runs the REAL script (not a copy) with its working directory set
 
 EXIT CODES ARE PART OF THE CONTRACT. This was a diagnosis change, not a control-flow change, so every case asserts the exit code as well as the text. A "clearer message" that also changed which inputs are accepted would be a different and much worse change.
 
-WHERE THE PORT REIMPLEMENTS THE TWIN. `swallowed_distinction` only. The twin builds
-it from `grep -a '::error::'` piped into two `sed` substitutions; the port filters
-the same lines and applies the same two substitutions with `re.sub`. Both normalise every 40-hex run to `<SHA>` before comparing, which is what keeps the comparison from being trivially true -- the informational echoes name the SHA, so raw outputs always differ and comparing them would make the whole check vacuous.
+WHERE THE PORT REIMPLEMENTS THE TWIN. `swallowed_distinction` only. The twin builds it from `grep -a '::error::'` piped into two `sed` substitutions; the port filters the same lines and applies the same two substitutions with `re.sub`. Both normalise every 40-hex run to `<SHA>` before comparing, which is what keeps the comparison from being trivially true -- the informational
+echoes name the SHA, so raw outputs always differ and comparing them would make the whole check vacuous.
 
 NO `xdist_group`. Each case builds its own git repository under pytest's `tmp_path` and runs the script with that directory as cwd. Nothing in the real tree is read
 for state or written at all.

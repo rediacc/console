@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported gate-id-convention gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.gate_id_convention`, which pytest and the
-port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.gate_id_convention`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 8a, the broad tree-scanning nine). See DRIVEN, below.
 
@@ -42,12 +40,10 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
 THAT SCOPE LINE IS THE ANTI-VACUITY EVIDENCE, and it is identical on both sides, which is what makes the comparison mean something: a corpus that had silently collapsed across the cutover would print different numbers.
 
-No normalisation was applied and none was needed; the twin was run TWICE against
-an unchanged tree and is byte-stable against itself on both streams.
+No normalisation was applied and none was needed; the twin was run TWICE against an unchanged tree and is byte-stable against itself on both streams.
 
-A PORT GAP WAS FOUND DOING THIS AND FIXED IN `gate_id_convention.py`. The first comparison came back 322 bytes against 311: same exit code, same words, and ELEVEN BYTES of ANSI escape missing. The twin assigns `RED`/`GREEN`/`NC` at check-gate-id-convention.sh:81-83 with no tty test, so it writes colour into a
-pipe; the port printed the glyphs bare. Eleven bytes is not cosmetic when the
-bar is byte identity, and TTY-gating one side during a move is a behaviour change smuggled into a file move. The module now carries the same three unconditional constants and uses them at all three sites (the `fail` cross, the findings cross, the success tick), matching `shell_size.py`'s precedent.
+A PORT GAP WAS FOUND DOING THIS AND FIXED IN `gate_id_convention.py`. The first comparison came back 322 bytes against 311: same exit code, same words, and ELEVEN BYTES of ANSI escape missing. The twin assigns `RED`/`GREEN`/`NC` at check-gate-id-convention.sh:81-83 with no tty test, so it writes colour into a pipe; the port printed the glyphs bare. Eleven bytes is not cosmetic when
+the bar is byte identity, and TTY-gating one side during a move is a behaviour change smuggled into a file move. The module now carries the same three unconditional constants and uses them at all three sites (the `fail` cross, the findings cross, the success tick), matching `shell_size.py`'s precedent.
 
 DRIVEN RED AS WELL, in a `cp -r` fixture root and not on the real tree: the twin copied to `.ci/scripts/quality/` so its `$BASH_SOURCE` root is the fixture, plus `package.json`, `.ci/scripts/test/` and `scripts/ci-runner/gates.lock.json`. The port is aimed at the same tree with `REDIACC_CI_ROOT`. The plant appends ONE entry to the fixture lock: id `check:ci-probe-8a-alias`, `run`
 pointing straight at `.ci/scripts/test/gates/test-dead-case-arms.sh`.
@@ -68,8 +64,7 @@ That red run also re-proves the colour fix on the FAILURE path, where the cross 
 
 THE REAL TREE WAS NEVER WRITTEN TO for this gate: `scripts/ci-runner/gates.lock.json` is untouched by this change and the planted copy lives only under the fixture.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-gate-id-convention.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-gate-id-convention.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Gate registration follows the gates/ convention needs: none selftest: true ---- end gate ----
 """

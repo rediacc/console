@@ -24,12 +24,10 @@ around its sed calls. They agree with the sed forms because both target the sing
 WHERE THIS REIMPLEMENTS grep AND sort, AND WHY THE ANSWERS AGREE. `upload_flags` is `grep -oE '^ +--[a-z-]+\\)' | tr -d ' )' | sort -u`, and `tts_env_names` is `grep -vE '^\\s*#' | grep -oE '\\b(REDIACC|RDC)_[A-Z0-9_]+' | sort -u`. Both are line-oriented regex scans over ASCII identifiers, and Python's `sorted()` on a set of ASCII strings is `sort -u` under any collation that
 cannot reorder them: every flag shares the `--` prefix and every variable shares an uppercase alphabet, so the two orders coincide. The frozen lists below are the twin's, unchanged, which is what makes that claim checkable rather than asserted.
 
-ONE DELIBERATE DIFFERENCE, stated because it is a difference: the twin measures a shim's code size with `printf '%s\\n' "$code" | wc -l`, which reports 1 for an EMPTY code set. This module counts the lines it actually has, so an empty shim reports 0. Both are under the ceiling of 4 and both then fail the `exec` check on
-the next line, so no verdict moves; the Python number is simply the honest one.
+ONE DELIBERATE DIFFERENCE, stated because it is a difference: the twin measures a shim's code size with `printf '%s\\n' "$code" | wc -l`, which reports 1 for an EMPTY code set. This module counts the lines it actually has, so an empty shim reports 0. Both are under the ceiling of 4 and both then fail the `exec` check on the next line, so no verdict moves; the Python number is
+simply the honest one.
 
-NO `xdist_group`. Every sandbox is built under pytest's own `tmp_path`, and the two cases that drive the REAL shims execute them read-only from an arbitrary cwd. `harness.fake_bin` mutates `os.environ["PATH"]` and restores it in a `finally`,
-which is per-process and therefore per-worker; pytest never runs two tests at once
-inside one worker, so no case can observe another's PATH.
+NO `xdist_group`. Every sandbox is built under pytest's own `tmp_path`, and the two cases that drive the REAL shims execute them read-only from an arbitrary cwd. `harness.fake_bin` mutates `os.environ["PATH"]` and restores it in a `finally`, which is per-process and therefore per-worker; pytest never runs two tests at once inside one worker, so no case can observe another's PATH.
 """
 
 import pathlib
@@ -172,9 +170,7 @@ def test_the_relocation_landed_and_the_old_context_is_gone(gate):
 
 
 def test_the_old_paths_are_exec_shims_and_nothing_more(gate):
-    # A SHIM WITH LOGIC IS A SECOND IMPLEMENTATION. The contract these two paths
-    # carry is already implemented once; anything here that inspects, rewrites or
-    # validates argv is a place for the two copies to disagree, and the disagreement would only show up in a repository this one cannot read.
+    # A SHIM WITH LOGIC IS A SECOND IMPLEMENTATION. The contract these two paths carry is already implemented once; anything here that inspects, rewrites or validates argv is a place for the two copies to disagree, and the disagreement would only show up in a repository this one cannot read.
     for relative in (TTS_SHIM, R2_SHIM):
         code = [
             line

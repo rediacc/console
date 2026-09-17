@@ -20,9 +20,7 @@ import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
 import LanguageMenu from './LanguageMenu';
 import { baseLocale, mountLanguagePane } from './tutorial-video/language-pane';
-// The player's stylesheets are NOT imported here. A module-scope import puts them in this chunk's importedCss, and Astro then links them on every page carrying the
-// hydrator -- 794 pages with no player. They load at runtime instead; see
-// ../scripts/tutorial-video-styles.ts, and check:ci-player-css-scope guards it.
+// The player's stylesheets are NOT imported here. A module-scope import puts them in this chunk's importedCss, and Astro then links them on every page carrying the hydrator -- 794 pages with no player. They load at runtime instead; see ../scripts/tutorial-video-styles.ts, and check:ci-player-css-scope guards it.
 
 /**
  * One locale's assets.
@@ -229,9 +227,8 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   const restoreRef = useRef<PlaybackSnapshot | null>(null);
   // Did the in-menu language pane build? False means the in-frame overlay stays up.
   const [menuMounted, setMenuMounted] = useState(false);
-  // The fetched sidecar is stored WITH the URL it came from. Clearing it on a language change would mean calling setState from an effect body (react-hooks/set-state-in-effect,
-  // and a cascading render); carrying the source instead lets the consumer below simply
-  // ignore a document that does not belong to the video currently loaded, which also closes the window where the overlay painted the old language's words against the new clock.
+  // The fetched sidecar is stored WITH the URL it came from. Clearing it on a language change would mean calling setState from an effect body (react-hooks/set-state-in-effect, and a cascading render); carrying the source instead lets the consumer below simply ignore a document that does not belong to the video currently loaded, which also closes the window where the overlay
+  // painted the old language's words against the new clock.
   const [words, setWords] = useState<{ src: string; doc: WordsDoc } | null>(null);
   const [activeLang, setActiveLang] = useState<string>(lang);
   // Chrome around the video stays in the PAGE's language; only the media follows the picker.
@@ -243,9 +240,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     [sources]
   );
 
-  // PORTRAIT BELOW 768px, and chosen in JS rather than by rendering both cuts and hiding
-  // one in CSS. Two <video> elements was how the solution player did it; with Plyr that
-  // would mean two player instances, two sets of listeners and two caption overlays, only one of them reachable. `matchMedia` gives the same breakpoint with one element.
+  // PORTRAIT BELOW 768px, and chosen in JS rather than by rendering both cuts and hiding one in CSS. Two <video> elements was how the solution player did it; with Plyr that would mean two player instances, two sets of listeners and two caption overlays, only one of them reachable. `matchMedia` gives the same breakpoint with one element.
   const [isNarrow, setIsNarrow] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
@@ -255,8 +250,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     return () => mq.removeEventListener('change', apply);
   }, []);
 
-  // The URLs in play. `sources` is the whole truth once present; the individual props
-  // stay the fallback so a page built before the attribute existed still plays.
+  // The URLs in play. `sources` is the whole truth once present; the individual props stay the fallback so a page built before the attribute existed still plays.
   const active = sources?.[activeLang];
   const activeLandscape = active?.mp4 ?? src;
   const activeVertical = active?.vertical ?? verticalSrc;
@@ -327,9 +321,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     // all. The overlay's own mount below already handles its absence.
     const chapterOverlay = chapterOverlayRef.current;
     if (!video) return;
-    // Capture the caption node at mount so the cleanup closure does not read
-    // captionRef.current after render (react-hooks/exhaustive-deps); the node
-    // is rendered once and stable for the life of this effect.
+    // Capture the caption node at mount so the cleanup closure does not read captionRef.current after render (react-hooks/exhaustive-deps); the node is rendered once and stable for the life of this effect.
     const captionNode = captionRef.current;
 
     alignPlyrCaptionLanguage(activeLang);
@@ -337,8 +329,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     // A CC BUTTON WITH NO TRACK IS DEAD UI, so the captions control and the captions settings pane are dropped when there is no subtitles file. The solution videos burn their captions into the media, so this is their normal state, not a degraded one.
     const player = new Plyr(video, {
       // THE RATIO HAS TO BE TOLD TO PLYR, not just to the outer box. `.tvp-root--portrait` sets `aspect-ratio: 9 / 16` on the container, but Plyr builds its own wrapper and defaults it to 16:9, so the portrait cut was letterboxed inside it: measured at 390px the mount was a correct 327x581 while the <video> inside was 327x184 with `object-fit: contain`, leaving 397px of dead black
-      // under a sliver of picture. The file was right (1080x1920) and the container
-      // was right; only Plyr's wrapper disagreed.
+      // under a sliver of picture. The file was right (1080x1920) and the container was right; only Plyr's wrapper disagreed.
       ratio: usePortrait ? '9:16' : '16:9',
       controls: [
         'play-large',
@@ -415,9 +406,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       host?.appendChild(caption);
     };
 
-    // Put the viewer back where they were. The snapshot is taken in
-    // handleLanguageChange; `readyState` is 0 here because the src attribute changed in the
-    // same commit, so the restore waits for metadata of the NEW file.
+    // Put the viewer back where they were. The snapshot is taken in handleLanguageChange; `readyState` is 0 here because the src attribute changed in the same commit, so the restore waits for metadata of the NEW file.
     const pending = restoreRef.current;
     restoreRef.current = null;
     const applyRestore = () => {
@@ -475,9 +464,8 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       }
       playerRef.current = null;
     };
-    // Every added dep is STABLE, so this still rebuilds Plyr only on a real source or language change: `pickerLangs` is a useMemo over `sources`, `t` is memoised on the page locale, `handleLanguageChange` is a useCallback with no deps, and `activeBase` and `activeSubtitles` are primitives derived from `activeLang`, which is already
-    // here. They arrived with the in-menu picker and were left out; CI lints with
-    // `--max-warnings 0`, so an exhaustive-deps warning is a failing build, and calling it pre-existing was wrong -- it is on lines written this session.
+    // Every added dep is STABLE, so this still rebuilds Plyr only on a real source or language change: `pickerLangs` is a useMemo over `sources`, `t` is memoised on the page locale, `handleLanguageChange` is a useCallback with no deps, and `activeBase` and `activeSubtitles` are primitives derived from `activeLang`, which is already here. They arrived with the in-menu picker and
+    // were left out; CI lints with `--max-warnings 0`, so an exhaustive-deps warning is a failing build, and calling it pre-existing was wrong -- it is on lines written this session.
   }, [
     activeSrc,
     activeLang,

@@ -22,9 +22,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, EMPTY on both sides
     stderr: BYTE-IDENTICAL, 277 bytes, sha256 7ac7bc44787c114e...
 
-NO NORMALISATION WAS APPLIED and none was needed. The twin was first run TWICE
-against an unchanged tree to establish byte-stability against itself; it is
-stable on both streams despite being a 26-second whole-repository sweep.
+NO NORMALISATION WAS APPLIED and none was needed. The twin was first run TWICE against an unchanged tree to establish byte-stability against itself; it is stable on both streams despite being a 26-second whole-repository sweep.
 
 DRIVEN RED AS WELL, and the plant had to go in the REAL TREE because this gate's root is script-location-derived with no override: `get_repo_root` (`.ci/scripts/lib/common.sh:205`) walks up three levels from the library's own directory and honours no environment variable, so a fixture root would move the port and not the twin. The plant is therefore a single CRLF-terminated line
 appended to a tracked file, and the file chosen is one this batch owns (`.ci/scripts/quality/check_shell_size.py`) rather than a neighbour's.
@@ -41,8 +39,7 @@ The plant was reverted from a `cp` backup, verified back at its pre-plant sha256
 with `sha256sum -c`, and `git status --porcelain` diffed against its pre-plant
 capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-editorconfig.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-editorconfig.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 """
 

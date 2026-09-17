@@ -265,9 +265,8 @@ def _snapshot(root, ref, cache, allow_branch=False):
     elif cancelled:
         verdict = "red"
         detail = (
-            # DO NOT assert a newer push here. This unconditionally said "a newer push superseded this run. Trace the newer head." -- and on 2026-09-05 it said that for a032863c7, which WAS the branch head, so there was no
-            # newer head to trace. Console CI had succeeded on attempt 2; the cancelled
-            # context was Review Status, a gate that genuinely did not report. The cause is a guess, so the message names the observation and leaves the guess to the reader.
+            # DO NOT assert a newer push here. This unconditionally said "a newer push superseded this run. Trace the newer head." -- and on 2026-09-05 it said that for a032863c7, which WAS the branch head, so there was no newer head to trace. Console CI had succeeded on attempt 2; the cancelled context was Review Status, a gate that genuinely did not report. The cause is a guess,
+            # so the message names the observation and leaves the guess to the reader.
             "%d context(s) CANCELLED with nothing failing -- each is a gate that did"
             " NOT report. A newer push is the usual cause; confirm one exists before"
             " assuming it." % len(cancelled)
@@ -372,9 +371,7 @@ def main(argv=None):
         payload, err = _snapshot(root, ref, cache, allow_branch=allow_branch)
 
         if payload is None:
-            # A read that cannot complete is NEVER green. Failure 4 was a
-            # `network is unreachable` blip; a bounded retry absorbs that
-            # without ever letting silence read as success.
+            # A read that cannot complete is NEVER green. Failure 4 was a `network is unreachable` blip; a bounded retry absorbs that without ever letting silence read as success.
             read_failures += 1
             if not args.wait or read_failures >= MAX_READ_FAILURES:
                 print("no-verdict: %s" % err, file=sys.stderr)
@@ -383,8 +380,7 @@ def main(argv=None):
             continue
         read_failures = 0
 
-        # FAILURE 3, made structural. Pin the head from the first good read; if
-        # the PR's head changes underneath us, a later push superseded what we were watching and the old verdict is meaningless.
+        # FAILURE 3, made structural. Pin the head from the first good read; if the PR's head changes underneath us, a later push superseded what we were watching and the old verdict is meaningless.
         if pinned_head is None:
             pinned_head = payload["head"]
         elif payload["head"] and payload["head"] != pinned_head:

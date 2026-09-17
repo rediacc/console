@@ -95,8 +95,7 @@ GO_DL_INDEX = "https://go.dev/dl/?mode=json&include=all"
 def _at_least(have: str, want: str) -> bool:
     """`printf '%s\\n%s\\n' "$want" "$have" | sort -V -C`, without coreutils.
 
-    UNPARSEABLE IS FALSE, NOT AN EXCEPTION. `sort -V -C` never raises; it ranks.
-    A probe that threw here would turn "this node is too old" into a traceback, and the caller's whole point is to report the old node and carry on. `rediacc_ci.core.toolchain.at_least` is the shared implementation and its agreement with `sort -V` is what the w6p2-toolchain shadow ledger records.
+    UNPARSEABLE IS FALSE, NOT AN EXCEPTION. `sort -V -C` never raises; it ranks. A probe that threw here would turn "this node is too old" into a traceback, and the caller's whole point is to report the old node and carry on. `rediacc_ci.core.toolchain.at_least` is the shared implementation and its agreement with `sort -V` is what the w6p2-toolchain shadow ledger records.
     """
     try:
         return toolchain.at_least(have, want)
@@ -206,9 +205,7 @@ def node_toolchain(ctx: Ctx) -> int:
 
     current = ""
     if ctx.which("node"):
-        # `node -v | cut -d'v' -f2`. cut on a DELIMITER, so `v22.13.0` yields
-        # `22.13.0`; carried as a strip of the leading `v` because that is the
-        # only `v` the string ever has.
+        # `node -v | cut -d'v' -f2`. cut on a DELIMITER, so `v22.13.0` yields `22.13.0`; carried as a strip of the leading `v` because that is the only `v` the string ever has.
         raw = ctx.run(["node", "-v"], timeout=10).out.strip()
         current = raw.removeprefix("v")
         if current and _at_least(current, minimum):
@@ -374,9 +371,7 @@ def _node_install(ctx: Ctx, *, major: str, os_name: str, arch: str, minimum: str
 def _extract_strip1(tar, dest: pathlib.Path) -> None:
     """`tar -x ... --strip-components=1`.
 
-    THE PATH IS CHECKED, which `tar(1)` does not do and which is the difference between extracting an archive and letting an archive write anywhere. A member
-    whose resolved destination leaves `dest` is skipped rather than written; the
-    bash had no equivalent and the port is not obliged to carry that hole.
+    THE PATH IS CHECKED, which `tar(1)` does not do and which is the difference between extracting an archive and letting an archive write anywhere. A member whose resolved destination leaves `dest` is skipped rather than written; the bash had no equivalent and the port is not obliged to carry that hole.
     """
     root = dest.resolve()
     for member in tar.getmembers():
@@ -663,8 +658,7 @@ def _gh_install(ctx: Ctx) -> int:
 def docker_probe(ctx: Ctx) -> int:
     """`setup_docker_probe`, .ci/lib/setup.sh:575. ADVISORY, never fatal.
 
-    NOT IN `phases.PHASES`, because the bash `setup()` never calls it either. Ported anyway so the discrepancy is visible in two files rather than hidden
-    in one; see this module's header for the measurement.
+    NOT IN `phases.PHASES`, because the bash `setup()` never calls it either. Ported anyway so the discrepancy is visible in two files rather than hidden in one; see this module's header for the measurement.
     """
     if not ctx.which("docker"):
         ctx.warn("Docker not found. Fine for CLI, www and test work.")

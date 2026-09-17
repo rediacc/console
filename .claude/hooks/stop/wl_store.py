@@ -1,17 +1,14 @@
 """wl_store: the v10 item store, sidecars, and session state.
 
 STORAGE MODEL (v10). Items live in an append-only JSONL EVENT LOG at <worklist>.events.jsonl, folded into state on read. The markdown file is an INBOX, not the store: sessions with current instructions use the CLI verbs (--add/--tick/--defer/--lease/--update), while anything written into the markdown by hand or by a session with older instructions is folded in by a whole-file DIFF
-SYNC. A line written to the old file and silently ignored would be the lost-work failure this program exists to prevent, so the sync
-is not a compatibility shim; it is the safety net for exactly that failure.
+SYNC. A line written to the old file and silently ignored would be the lost-work failure this program exists to prevent, so the sync is not a compatibility shim; it is the safety net for exactly that failure.
 
 WHY a diff sync and not an append offset: the markdown is MUTATED in place by its writers (ticking flips a state byte, evidence is edited into a line, the dead-session cleaner pwrites `~`), so any importer keyed on byte offsets corrupts on the first in-place edit. The sync parses the whole file, diffs against the fold's view of the markdown, and appends small `md` events
 (add/chg/del). Identity of a markdown line is sha1(owner|text) EXCLUDING the state byte, so the common flow -- tick a line in place without changing its text -- is a `chg` that keeps the item's first-seen stamp. An edited text is del+add and honestly resets the clock: an edit IS an update.
 
 WHY events and not a JSON document: a document is a whole-file rewrite by nature, which is the lost-update hazard the old `>>` discipline existed to
 avoid. One event = one write() on an O_APPEND fd under a blocking flock on
-<events>.lock, the discipline proven by the .requests sidecar. Readers take
-no lock; a torn tail line (crash mid-write) fails json.loads and is skipped.
-NEW hardening over the .requests original: before appending, the writer checks the file's last byte under the lock and heals a missing newline, so a torn tail can never concatenate with the next event and corrupt both.
+<events>.lock, the discipline proven by the .requests sidecar. Readers take no lock; a torn tail line (crash mid-write) fails json.loads and is skipped. NEW hardening over the .requests original: before appending, the writer checks the file's last byte under the lock and heals a missing newline, so a torn tail can never concatenate with the next event and corrupt both.
 
 CRASH STORY, complete: append crash = torn tail, healed on next append,
 skipped by every reader. Session-doc crash = tempfile + os.replace, old doc
@@ -55,9 +52,7 @@ def _flock(handle, flags):
 
     WHY A SHIM RATHER THAN A BARE MODULE-SCOPE IMPORT. `import fcntl` at the top of this file means the module does not DEGRADE on Windows, it DIES at
     import -- and it takes every read-only path down with it, including the
-    report inbox and the waiter, which import this module purely to reuse its
-    fold and take no lock at all. The read paths never needed fcntl; only the
-    writes do. So the import is guarded, reads keep working everywhere, and a write on a platform without locking fails with a sentence naming the reason instead of an ImportError raised from a file nobody was looking at.
+    report inbox and the waiter, which import this module purely to reuse its fold and take no lock at all. The read paths never needed fcntl; only the writes do. So the import is guarded, reads keep working everywhere, and a write on a platform without locking fails with a sentence naming the reason instead of an ImportError raised from a file nobody was looking at.
 
     This does NOT make the hook Windows-complete: `_append_lines` still uses os.pwrite, and ~20 sibling hooks are bash. It makes the read-only surfaces usable there, which is what the new inbox needs.
     """
@@ -72,18 +67,14 @@ def _flock(handle, flags):
 SESSION_BRIEF_MAX = 200
 SESSION_BRIEF_STALE_MIN = int(os.environ.get("WORKLIST_BRIEF_STALE_MIN", "90"))
 
-# The compact-recovery document is `agent/<session>/STATE.md` (operator redesign, 2026-07-30, replacing the single per-session handover). The split
-# is BY LIFETIME: STATE.md is rewritten and freshness-gated; RULES.md is
-# sharpened and never age-gated; TRAPS.md is shared, append-only, and feeds the
-# judge headings. Only STATE.md can go stale by the clock, so only it has constants here.
+# The compact-recovery document is `agent/<session>/STATE.md` (operator redesign, 2026-07-30, replacing the single per-session handover). The split is BY LIFETIME: STATE.md is rewritten and freshness-gated; RULES.md is sharpened and never age-gated; TRAPS.md is shared, append-only, and feeds the judge headings. Only STATE.md can go stale by the clock, so only it has constants here.
 #
-# FIFTEEN MINUTES, unchanged from the handover it replaces. Since v10 the clock only matters when the WORLD has moved: the document is stale when it is old AND the world signature has changed since it was written. The pure-age rule was outpaced by the 5-minute poll cron (a quiet session went stale every
-# other poll and could never take the silent path); staleness is about the
+# FIFTEEN MINUTES, unchanged from the handover it replaces. Since v10 the clock only matters when the WORLD has moved: the document is stale when it is old AND the world signature has changed since it was written. The pure-age rule was outpaced by the 5-minute poll cron (a quiet session went stale every other poll and could never take the silent path); staleness is about the
 # document no longer matching reality, and an unchanged world cannot invalidate it.
 AGENT_STATE_STALE_MIN = int(os.environ.get("WORKLIST_AGENT_STATE_STALE_MIN", "15"))
 AGENT_STATE_MIN_CHARS = 250
-# 4000, up from the handover's 1500. The premise of the split is that the old cap was strangling the WRONG file: measured, ~40% of every handover was standing rules re-typed verbatim, and 8 rewrites in one session were refused as over-budget, with the hard-won trap the first thing trimmed. Rules and traps now live in their own unbudgeted files, so STATE.md needs room for
-# state alone; 4000 still refuses a pasted transcript.
+# 4000, up from the handover's 1500. The premise of the split is that the old cap was strangling the WRONG file: measured, ~40% of every handover was standing rules re-typed verbatim, and 8 rewrites in one session were refused as over-budget, with the hard-won trap the first thing trimmed. Rules and traps now live in their own unbudgeted files, so STATE.md needs room for state
+# alone; 4000 still refuses a pasted transcript.
 AGENT_STATE_MAX_CHARS = int(os.environ.get("WORKLIST_AGENT_STATE_MAX_CHARS", "4000"))
 
 # The cap is FLAT again, and that is only sound because the budget and the document now have the same scope. It was briefly scaled by the number of `## SESSION` headings, because the budget was per SESSION while the document was per BRANCH: measured 2026-08-05 with a 1899-char neighbour, one session had ~1850 usable and was refused ELEVEN times across three refresh cycles, deleting
@@ -103,8 +94,7 @@ AGENT_STATE_LEGACY_OWNER = "legacy"
 
 # A second session arriving on a branch has no recorded signature for a document the first session wrote. The old pure-age fallback would order it rewritten immediately, reproducing the exact churn the redesign fixes, so an UNSIGNED document is ADOPTED on first sight instead -- bounded by this horizon so an abandoned one is not.
 AGENT_STATE_ADOPT_MAX_MIN = int(os.environ.get("WORKLIST_AGENT_ADOPT_MAX_MIN", "60"))
-# The one structural demand on STATE.md. Length is a proxy for value; the
-# presence of a next action IS the value, and it cannot be satisfied by padding. Case-insensitive, any heading level.
+# The one structural demand on STATE.md. Length is a proxy for value; the presence of a next action IS the value, and it cannot be satisfied by padding. Case-insensitive, any heading level.
 AGENT_NEXT_RE = re.compile(r"^\s*#{1,6}\s*next action\b", re.IGNORECASE | re.MULTILINE)
 
 # THE FIRST STEP OF '## Next action' MAY NOT BE A WAIT.
@@ -115,8 +105,7 @@ AGENT_NEXT_RE = re.compile(r"^\s*#{1,6}\s*next action\b", re.IGNORECASE | re.MUL
 #
 # What made that survive COMPACTION is this document. A session whose '## Next action' opened with "1. Watch <worker>" handed exactly that priority to whoever picked the session up, who then did CI first and rewrote the document saying "watch CI first" again. The inversion was authored, inherited, and re-authored, once per compaction, with nothing in the loop to break it.
 #
-# So a wait may APPEAR in the next action; it may not LEAD it. A background watch
-# is a CONDITION the session is under, not an action a recovered session takes: the watch is already armed and will wake somebody by itself, whereas the open items will not. Leading with it spends the one artifact designed to survive compaction on the one instruction that needs no carrying.
+# So a wait may APPEAR in the next action; it may not LEAD it. A background watch is a CONDITION the session is under, not an action a recovered session takes: the watch is already armed and will wake somebody by itself, whereas the open items will not. Leading with it spends the one artifact designed to survive compaction on the one instruction that needs no carrying.
 #
 # Deliberately BODY-ONLY, with no store lookup: "lead with real work" holds even at zero open items, and a rule that reads the store would be unable to explain itself from the text a session just wrote.
 AGENT_WAIT_LEAD_RE = re.compile(
@@ -150,9 +139,8 @@ def events_path(worklist):
 def teammate_idle_path(worklist):
     """Where TeammateIdle edges are journalled.
 
-    A SIDECAR, not an event in the worklist log, and the distinction is deliberate. The event log is the worklist's own history and every record in
-    it is folded into item state on read; a teammate going idle changes no
-    item's state (the plan is emphatic that nothing auto-ticks and nothing auto-unleases), so putting it there would grow the fold's input with records the fold must then learn to ignore. It is telemetry about a WORKER, read only when something asks about one.
+    A SIDECAR, not an event in the worklist log, and the distinction is deliberate. The event log is the worklist's own history and every record in it is folded into item state on read; a teammate going idle changes no item's state (the plan is emphatic that nothing auto-ticks and nothing auto-unleases), so putting it there would grow the fold's input with records the fold must
+    then learn to ignore. It is telemetry about a WORKER, read only when something asks about one.
     """
     return worklist.with_suffix(".teammate-idle.jsonl")
 
@@ -193,12 +181,10 @@ def agent_session_slug(me):
 
 def agent_session_dir(root, me):
     """agent/<session>/ -- ONE session's own notes, and the reason the tree
-    moved out of a single shared STATE.md on 2026-08-14: a peer can no longer overwrite what it cannot address. Peers stay VISIBLE as siblings
-    (agent_peer_sections below); they simply stop being writable.
+    moved out of a single shared STATE.md on 2026-08-14: a peer can no longer overwrite what it cannot address. Peers stay VISIBLE as siblings (agent_peer_sections below); they simply stop being writable.
 
     NO BRANCH COMPONENT since 2026-08-18 (operator decision: "avoid using branch name in folder path, instead let's only use the session name"). The branch was never the right key for this document and the tree showed it: ONE session, 97604f47, owned three STATE.md files at once -- under `main`, `0815-1` and `backup-storage` -- because a `/pr-merge` moved the checkout under a live
-    session and the hook silently started writing somewhere else. Its compact-recovery document is exactly the artifact that must not fork when the branch does. The session id is stable for the session's whole
-    life, which is the lifetime this document has; a branch is not.
+    session and the hook silently started writing somewhere else. Its compact-recovery document is exactly the artifact that must not fork when the branch does. The session id is stable for the session's whole life, which is the lifetime this document has; a branch is not.
 
     Two consequences fall straight out and are load-bearing, not incidental: a DETACHED HEAD no longer makes the check blind (there is no branch to resolve), and a rebase or a branch rename can no longer strand a session's only recovery document at a path nothing reads.
     """
@@ -258,9 +244,8 @@ def agent_session_dirs(root):
 def agent_peer_sections(root, session_id):
     """Every OTHER session's sections, read from the SIBLING directories.
 
-    This is what peer visibility became when the shared document was split (2026-08-14). Before, every section sat in one file and a whole-file write
-    could delete the lot; now each session owns a directory, and a peer's
-    STATE.md is READ-ONLY to everyone else by construction. Losing sight of them was never the goal: a session that cannot see what its peers are doing duplicates their work, or edits under them.
+    This is what peer visibility became when the shared document was split (2026-08-14). Before, every section sat in one file and a whole-file write could delete the lot; now each session owns a directory, and a peer's STATE.md is READ-ONLY to everyone else by construction. Losing sight of them was never the goal: a session that cannot see what its peers are doing duplicates their
+    work, or edits under them.
 
     Each file is parsed against ITS OWN mtime, so an unstamped peer document ages by its own clock rather than by whoever wrote last -- the per-file version of the per-section fix that made the old shared document honest.
     """
@@ -324,9 +309,8 @@ def _agent_slot_suffix(me):
 def agent_state_backup_path(worklist, me=""):
     """The ONE previous STATE.md, so a clobber is undoable.
 
-    Last-write-wins within a session is deliberate (see worklist.py --state): a document whose contract is "rewrite every time" has no merge semantics. What was NOT deliberate is that the loss is permanent. Two live sessions shared one document once, and 84611aab replaced b9491d9c's 0-minute-old
-    document TWICE; both bodies were gone for good, because the event log
-    stores worklist item text and never STATE bodies, and the success line echoes only the first line back. One backup turns "sorry, rewrite it" into a `cp`. Same TMPDIR-beside-the-lock placement, for the same reason.
+    Last-write-wins within a session is deliberate (see worklist.py --state): a document whose contract is "rewrite every time" has no merge semantics. What was NOT deliberate is that the loss is permanent. Two live sessions shared one document once, and 84611aab replaced b9491d9c's 0-minute-old document TWICE; both bodies were gone for good, because the event log stores worklist
+    item text and never STATE bodies, and the success line echoes only the first line back. One backup turns "sorry, rewrite it" into a `cp`. Same TMPDIR-beside-the-lock placement, for the same reason.
 
     SESSION-SCOPED since the tree split (2026-08-14). While every session wrote one shared document, a peer's backup held that whole document including my section, so a shared slot lost nothing. Once each session writes its own STATE.md, a shared slot means my peer's next write overwrites the only copy of MY replaced body.
 
@@ -340,9 +324,8 @@ def agent_state_reaped_path(worklist, me=""):
     """APPEND-ONLY archive of sections reaped as dead. Same session-scoping
     rule as the backup slot beside it.
 
-    Separate from `.prev` and strictly stronger, because the hazard is different. `.prev` covers one generation of a document a session CHOSE to
-    replace; reaping deletes a section NOBODY chose to delete, so it appends
-    instead of overwriting. One append per dead session, which is small enough that unbounded growth is the right trade against ever losing the last words of a session that died mid-campaign.
+    Separate from `.prev` and strictly stronger, because the hazard is different. `.prev` covers one generation of a document a session CHOSE to replace; reaping deletes a section NOBODY chose to delete, so it appends instead of overwriting. One append per dead session, which is small enough that unbounded growth is the right trade against ever losing the last words of a session
+    that died mid-campaign.
     """
     return worklist.with_suffix(".agentstate.reaped%s.md" % _agent_slot_suffix(me))
 
@@ -378,8 +361,7 @@ def trap_headings(root):
     return out
 
 
-# Only entries the machine is NOT already watching reach a model prompt, so the corpus can grow mechanized entries for free. TRAP_PROMPT_CAP is belt and
-# braces against a pathological corpus, never the mechanism; it overflows LOUDLY
+# Only entries the machine is NOT already watching reach a model prompt, so the corpus can grow mechanized entries for free. TRAP_PROMPT_CAP is belt and braces against a pathological corpus, never the mechanism; it overflows LOUDLY
 # for the same reason TRAP_HEADING_CAP does.
 TRAP_PROMPT_CAP = 60
 
@@ -389,9 +371,8 @@ TRAILER_KEYS = ("Trap-Id:", "Enforced-By:", "Residue:")
 def trap_entries(root):
     """Every `## ` entry of TRAPS.md as {line, title, id, enforced, residue}.
 
-    FENCED CODE BLOCKS ARE NOT ENTRIES, and the bare `startswith("## ")` this replaces could not tell the difference. Latent while no trap body contained
-    a fenced `## ` line; ACTIVATED by the registry, because once
-    check:ci-trap-registry requires a Trap-Id per entry, a `## ` inside a fenced markdown example becomes a phantom entry with no id and the gate reds on a document that is correct. A trap body carrying a markdown example is ordinary, and this file's own header now carries fenced examples.
+    FENCED CODE BLOCKS ARE NOT ENTRIES, and the bare `startswith("## ")` this replaces could not tell the difference. Latent while no trap body contained a fenced `## ` line; ACTIVATED by the registry, because once check:ci-trap-registry requires a Trap-Id per entry, a `## ` inside a fenced markdown example becomes a phantom entry with no id and the gate reds on a document that is
+    correct. A trap body carrying a markdown example is ordinary, and this file's own header now carries fenced examples.
 
     The trailer is read only from the block between the heading and the first blank line, so a body paragraph that opens with "Residue:" stays body.
 
@@ -581,8 +562,7 @@ def _append_lines(path, lock_path, payloads):
 # on the new one every open item, every deferral and every lease simply did not exist. Moving it into git is what makes `git pull` carry the work.
 #
 # WHY PER WRITER AND NOT ONE FILE. Both sides of a merge append at EOF, so a single shared file conflicts on every concurrent append from two branches. A session id exists in exactly one harness process, so a per-writer file has exactly one appender and two machines produce disjoint paths that git merges without ever consulting content. When a conflict does happen (the same writer
-# on two machines, or a compaction), the resolution is UNION -- keep both sides, drop the markers -- because the reader sorts by timestamp before folding, so the union of two histories is a valid history. That property is the whole
-# design; do not "optimise" the sort away.
+# on two machines, or a compaction), the resolution is UNION -- keep both sides, drop the markers -- because the reader sorts by timestamp before folding, so the union of two histories is a valid history. That property is the whole design; do not "optimise" the sort away.
 #
 # ONLY THE LOG MOVED. Every sidecar named in this module's docstring is per-machine runtime state (locks, caches, transcripts, briefs, .lastevent) and stays in TMPDIR. The lock is still the TMPDIR one: one machine, N sessions, one flock, which is exactly the scope a lock can cover.
 STORE_DIR_NAME = "worklist"
@@ -615,13 +595,10 @@ def identity_activity(worklist, root=None):
     snapshot_events(by="compact"), so a compaction ERASES the writer of every
     historical event while preserving its owner. Both readers of "which identities does this store know about" -- the phantom backstop in wl_checks.phantom_identities and the age gate in --reassign -- scanned `by` alone. After any compaction they therefore saw NO identities at all, while the code that actually moves the work, three lines below the age gate, selects on `owner`.
 
-    That disagreement is not academic. Three fixture items reached the live store owned by prefixes that had never written under their own name, and the result was an item unreachable through every sanctioned verb at once:
-    --tick refused it ("owned by deadpeer; never tick another session's
-    tracking"), and --reassign, the designated repair verb, refused the same item as "has written no events at all". Counting an identity's OWNED events as its own is what makes the derivation agree with the selection it exists to serve.
+    That disagreement is not academic. Three fixture items reached the live store owned by prefixes that had never written under their own name, and the result was an item unreachable through every sanctioned verb at once: --tick refused it ("owned by deadpeer; never tick another session's tracking"), and --reassign, the designated repair verb, refused the same item as "has written
+    no events at all". Counting an identity's OWNED events as its own is what makes the derivation agree with the selection it exists to serve.
 
-    ONE SET OF NON-SESSION NAMES, shared with _writer_for. wl_checks kept its own copy that omitted "import", so an imported store could surface the
-    importer as a phantom identity; two spellings of "this name is not a
-    person" is the same drift in miniature.
+    ONE SET OF NON-SESSION NAMES, shared with _writer_for. wl_checks kept its own copy that omitted "import", so an imported store could surface the importer as a phantom identity; two spellings of "this name is not a person" is the same drift in miniature.
     """
     counts, first_at = {}, {}
     for ev in _read_events(worklist, root):
@@ -690,9 +667,8 @@ def append_events(worklist, payloads, writer=None, root=None):
             ev.setdefault("h", hh)
             if br:
                 ev.setdefault("br", br)
-            # A SUB-SECOND SEQUENCE, because `at` has second resolution and the sort below would otherwise break ties by FILENAME. Measured: the stop-gate judge reopens an item and the session ticks it in the
-            # same second; the reopen is written by writer `judge` and the tick
-            # by the session, so sorting on `at` alone put judge.jsonl last and the reopen won -- the item stayed open and an allowed stop became a block. Events written before this field sort as 0, which keeps their existing (stable, file-order) behaviour.
+            # A SUB-SECOND SEQUENCE, because `at` has second resolution and the sort below would otherwise break ties by FILENAME. Measured: the stop-gate judge reopens an item and the session ticks it in the same second; the reopen is written by writer `judge` and the tick by the session, so sorting on `at` alone put judge.jsonl last and the reopen won -- the item stayed open and
+            # an allowed stop became a block. Events written before this field sort as 0, which keeps their existing (stable, file-order) behaviour.
             ev.setdefault("ns", time.time_ns())
     target = writer_path(_writer_for(payloads, writer), root)
     with contextlib.suppress(OSError):
@@ -716,9 +692,7 @@ def _read_events(worklist, root=None):
     """Every tracked writer file, PLUS the legacy TMPDIR log while it exists,
     folded in timestamp order.
 
-    THE LEGACY UNION IS WHAT MAKES THE MOVE GAP-FREE. Until `--import-tmp` has
-    run on this host, the old log still holds open items; reading both means no
-    item stops blocking merely because the code changed under it. The writer never appends to the legacy file again, so the two cannot diverge.
+    THE LEGACY UNION IS WHAT MAKES THE MOVE GAP-FREE. Until `--import-tmp` has run on this host, the old log still holds open items; reading both means no item stops blocking merely because the code changed under it. The writer never appends to the legacy file again, so the two cannot diverge.
 
     THE SORT IS LOAD-BEARING. File name order is not time order, and after a merge one file can hold events older than another's first line. Sorting by the stamp (which is `%Y-%m-%dT%H:%M:%SZ`, so lexical order is chronological) is what makes a union of histories fold to the same state as one history.
     """
@@ -792,10 +766,8 @@ def _render_line(rec):
 def brief_text(rec, cap=None):
     """basetext + LATEST note only -- the v14 display identity.
 
-    rec['text'] accumulates every state/lease note forever; one live item
-    reached ~20 concatenated update lines and every block that mentioned it printed them all. Logic (DEFAULT_TOKEN scans, lease_state, the reggate
-    token scan) still reads the FULL line; only human-facing rendering goes
-    through here. Items folded before v14 have no basetext, so the fallback splits at the first double space, which is exactly the join the accumulator uses. With a cap, base and note split it roughly in half so
+    rec['text'] accumulates every state/lease note forever; one live item reached ~20 concatenated update lines and every block that mentioned it printed them all. Logic (DEFAULT_TOKEN scans, lease_state, the reggate token scan) still reads the FULL line; only human-facing rendering goes through here. Items folded before v14 have no basetext, so the fallback splits at the first
+    double space, which is exactly the join the accumulator uses. With a cap, base and note split it roughly in half so
     the newest information survives truncation."""
     base = (rec.get("basetext") or "").strip()
     if not base:
@@ -824,8 +796,7 @@ def brief_line(rec):
 
 def _fold_events(events):
     """(records, md_keys, cli_ids, last_md_hash, lineage). Chronological single
-    pass; a later event wins, which is exactly the right answer for the one real
-    conflict (a CLI tick vs a later deliberate markdown re-open).
+    pass; a later event wins, which is exactly the right answer for the one real conflict (a CLI tick vs a later deliberate markdown re-open).
 
     `lineage` is the list of proven compaction edges, in order. It is a LIST and not a fold-to-latest: a session can compact more than once, and the chain
     a276391d -> 74de73ca -> ... is only resolvable if every hop survives."""
@@ -887,11 +858,8 @@ def _fold_events(events):
                 "state": ev.get("s", " "),
                 "owner": ev.get("o"),
                 "text": str(ev.get("t", "")),
-                # v14: the display identity. `text` accumulates every note
-                # forever (the durable history --list shows); rendering the
-                # whole accumulation in blocks was the single largest noise source of the v13 night, so displays show basetext + the LATEST note only, via brief_line(). COMPACT CARRY-OVER. A normal `add` has no bt/ln/tr/ju and
-                # falls back exactly as before; a compact-written `add` carries
-                # them so the rewrite is not lossy. See compact() for why.
+                # v14: the display identity. `text` accumulates every note forever (the durable history --list shows); rendering the whole accumulation in blocks was the single largest noise source of the v13 night, so displays show basetext + the LATEST note only, via brief_line(). COMPACT CARRY-OVER. A normal `add` has no bt/ln/tr/ju and falls back exactly as before; a
+                # compact-written `add` carries them so the rewrite is not lossy. See compact() for why.
                 "basetext": str(ev.get("bt", ev.get("t", ""))),
                 "lastnote": str(ev.get("ln", "")),
                 "first": at,
@@ -904,9 +872,7 @@ def _fold_events(events):
                 records[rid]["just"] = ev["ju"]
             cli_ids.add(rid)
         elif kind == "reassign":
-            # v19: an item's OWNER moves to a live session. Appended, never rewritten, like every other event here -- that is what makes the lock-free fold sound, and it keeps the log truthful about who
-            # actually wrote the item. Only the `o` field moves; `by` on the
-            # original events still names the phantom, because it really did write them.
+            # v19: an item's OWNER moves to a live session. Appended, never rewritten, like every other event here -- that is what makes the lock-free fold sound, and it keeps the log truthful about who actually wrote the item. Only the `o` field moves; `by` on the original events still names the phantom, because it really did write them.
             rec = records.get(ev.get("id"))
             if rec is not None:
                 rec["owner"] = ev.get("o")
@@ -927,8 +893,7 @@ def _fold_events(events):
                 if isinstance(j, dict) and j:
                     rec["just"] = j
             elif kind == "update":
-                # The stamp bump below is the point; the note additionally
-                # becomes the item's display note (v14) -- before that, --update notes were recorded and never shown anywhere.
+                # The stamp bump below is the point; the note additionally becomes the item's display note (v14) -- before that, --update notes were recorded and never shown anywhere.
                 note = str(ev.get("note", "")).strip()
                 if note:
                     rec["lastnote"] = note
@@ -1163,8 +1128,7 @@ def lease_item(worklist, by, item_id, until, worker, note="", worker_verified=Fa
     """Record a lease, INCLUDING whether the worker was verifiable when taken.
 
     That bit is the difference between "this worker died" and "this worker was never something the OS could confirm". The liveness ladder used to conflate them: any id absent from the harness snapshot was reported as gone, so an Agent leased by NAME -- which can never appear in a background-task list -- was accused of being dead while it was demonstrably writing files. The caller
-    already computes this at lease time to print its warning; it simply threw the
-    answer away.
+    already computes this at lease time to print its warning; it simply threw the answer away.
     """
     append_events(
         worklist,
@@ -1208,14 +1172,12 @@ def classify_items(fold, session_id, live_worker_ids=None):
     """(open_items, others, deferred, in_flight) as display strings / recs,
     the v2-v9 state machine unchanged: open blocks, [?] is reported, fresh [>] is allowed-and-reported, an expired or invalid lease fails closed into an open item.
 
-    v14 gap 4: an EXPIRED (never invalid) lease whose worker id appears in `live_worker_ids` (the OS-verified running background tasks) is tolerated as in-flight instead of failing closed, with `lease_tolerated` stamped on the rec so displays can say so. A long job outliving the lease cap while
-    its watcher is demonstrably alive is supervision, not abandonment; the
+    v14 gap 4: an EXPIRED (never invalid) lease whose worker id appears in `live_worker_ids` (the OS-verified running background tasks) is tolerated as in-flight instead of failing closed, with `lease_tolerated` stamped on the rec so displays can say so. A long job outliving the lease cap while its watcher is demonstrably alive is supervision, not abandonment; the
     moment the worker disappears the item fails closed exactly as before."""
     open_items, others, deferred, in_flight = [], {}, [], []
     for rec in fold.items:
         state, owner, line = rec["state"], rec["owner"], rec["line"]
-        # v14: DISPLAY strings are brief (basetext + latest note); every
-        # decision below still reads the full line (lease_state, ownership).
+        # v14: DISPLAY strings are brief (basetext + latest note); every decision below still reads the full line (lease_state, ownership).
         disp = brief_line(rec)
         mine = C.owned_by_me(owner, session_id)
         if state == " ":
@@ -1337,8 +1299,7 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
 def snapshot_events(fold, by="compact"):
     """The minimal, LOSSLESS set of events that folds back to `fold`.
 
-    Extracted from compact() so the importer writes exactly what a compaction would: the same carry-over of bt/ln/upd/tr/ju (whose loss turned a justified deferral into an unjustified one, and collapsed every liveness age onto creation time) and the same lease re-emission. Two writers of this shape
-    would drift; one is the point.
+    Extracted from compact() so the importer writes exactly what a compaction would: the same carry-over of bt/ln/upd/tr/ju (whose loss turned a justified deferral into an unjustified one, and collapsed every liveness age onto creation time) and the same lease re-emission. Two writers of this shape would drift; one is the point.
     """
     at = C.stamp_now()
     out = []
@@ -1393,8 +1354,8 @@ def snapshot_events(fold, by="compact"):
         out.append(add_ev)
         # ONLY FOR AN ITEM THAT IS ACTUALLY IN FLIGHT. The fold's lease arm sets
         # state = ">" unconditionally, and a DONE item that was leased at some
-        # point still carries `until`/`worker` as history -- so re-emitting the lease for it RESURRECTS it. Measured on this repo's own store while verifying the importer: 39 of 189 items flipped from [x] to [>] and the open count went from 5 to 44. compact() carried the identical construction, so every compaction had been quietly reopening old
-        # work; folding both onto this one builder fixes it in both places.
+        # point still carries `until`/`worker` as history -- so re-emitting the lease for it RESURRECTS it. Measured on this repo's own store while verifying the importer: 39 of 189 items flipped from [x] to [>] and the open count went from 5 to 44. compact() carried the identical construction, so every compaction had been quietly reopening old work; folding both onto this one
+        # builder fixes it in both places.
         if r["state"] == ">" and (r.get("until") or r.get("worker")):
             out.append(
                 {
@@ -1436,8 +1397,7 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
     THE HAZARD, and why this is not just "rewrite the directory". Each file in agent/worklist/ belongs to a different session, possibly on a different machine. Rewriting one that a LIVE peer is appending to loses whatever it wrote between this read and this write -- silently, because an append to a file that has since been replaced simply lands in the old inode or past the
     truncation point.
 
-    So: the fold is GLOBAL (an item added by one session and ticked by another only folds correctly when every file is read), the snapshot is written to the compactor's own file, and the ONLY files cleared are this session's own and those whose writer is demonstrably not live. A live peer's file is left
-    exactly as it is; its events then simply outrank the snapshot's, which is
+    So: the fold is GLOBAL (an item added by one session and ticked by another only folds correctly when every file is read), the snapshot is written to the compactor's own file, and the ONLY files cleared are this session's own and those whose writer is demonstrably not live. A live peer's file is left exactly as it is; its events then simply outrank the snapshot's, which is
     correct, because they are the newer truth.
 
     The snapshot's `add` events carry each item's ORIGINAL `first` timestamp, so a straggling event from a peer sorts after them and still wins.
@@ -1572,13 +1532,9 @@ def doctor(root=None):
 def import_legacy(worklist, again=False, root=None):
     """Snapshot the legacy TMPDIR log into the tracked store, once per host.
 
-    THE MOVE IS GAP-FREE WITHOUT THIS, and that is exactly why it is a separate verb rather than something that happens on its own. `_read_events` unions the legacy file, so every open item keeps blocking from the moment the code
-    changes; what the union does NOT do is make that history portable, because
-    it lives in TMPDIR on one machine. This is the step that puts it in git.
+    THE MOVE IS GAP-FREE WITHOUT THIS, and that is exactly why it is a separate verb rather than something that happens on its own. `_read_events` unions the legacy file, so every open item keeps blocking from the moment the code changes; what the union does NOT do is make that history portable, because it lives in TMPDIR on one machine. This is the step that puts it in git.
 
-    Per host, because two machines each have their own TMPDIR log and a shared
-    filename would collide; the host hash keeps them apart and the union folds
-    both. The legacy file is RENAMED rather than deleted -- an import that got something wrong should be recoverable from the bytes it read.
+    Per host, because two machines each have their own TMPDIR log and a shared filename would collide; the host hash keeps them apart and the union folds both. The legacy file is RENAMED rather than deleted -- an import that got something wrong should be recoverable from the bytes it read.
     """
     if root is None:
         root = C.project_root(C.project_start())
@@ -1732,8 +1688,8 @@ def migrate_candidates(worklist, fold, me, projects_dir=None, events=None):
             }
         )
 
-    # THIRD PASS: committed plans with open work whose owner is neither this session nor verifiably live. ADDITIVE ONLY -- an owner already in `out` (from a worklist item or a STATE.md handoff) is ENRICHED with its plans, never duplicated; an owner present only because of a plan gets a fresh, all-zero-counts candidate row. See `plan_candidates` for why this has no time cutoff
-    # and why FINISHED_STATES, not `in_scope_status`, is the filter.
+    # THIRD PASS: committed plans with open work whose owner is neither this session nor verifiably live. ADDITIVE ONLY -- an owner already in `out` (from a worklist item or a STATE.md handoff) is ENRICHED with its plans, never duplicated; an owner present only because of a plan gets a fresh, all-zero-counts candidate row. See `plan_candidates` for why this has no time cutoff and
+    # why FINISHED_STATES, not `in_scope_status`, is the filter.
     by_prefix = {c["prefix"]: c for c in out}
     for owner, plans in plan_candidates(root).items():
         if owner in mine:
@@ -1777,8 +1733,8 @@ def plan_candidates(root):
     THE GAP THIS CLOSES. Measured 2026-09-17: 96 `agent/PLAN-*.md` files exist, 15 carry open boxes, 151 open boxes total -- 99 of them owned by a session `migrate_candidates` above already treats as idle, and none of them named anywhere `--candidates` prints. `wl_checks.plan_drift_rows` and `wl_planfile.plan_rows` both answer "does THIS session's own plan need attention" by design
     (`C.owned_by_me` gates both), so neither can answer "what committed, undone design exists that nobody live is driving". This is the one place that answers it, and `migrate_candidates` is its only caller.
 
-    SOURCED FROM THE CENSUS, NOT A FRESH SCAN. `wl_planindex.index_census` is the same cache `plans_block` already trusts every SessionStart; scanning the directory again here would be a second, driftable answer to "how many plans exist". `wl_planindex` imports THIS module at its own top, so importing it back at module level here would cycle -- deferred into the function body,
-    same reason `wl_planindex.census_rows` gives for deferring its own `wl_checks` import.
+    SOURCED FROM THE CENSUS, NOT A FRESH SCAN. `wl_planindex.index_census` is the same cache `plans_block` already trusts every SessionStart; scanning the directory again here would be a second, driftable answer to "how many plans exist". `wl_planindex` imports THIS module at its own top, so importing it back at module level here would cycle -- deferred into the function body, same
+    reason `wl_planindex.census_rows` gives for deferring its own `wl_checks` import.
 
     FILTERED TO `open > 0` AND STATUS NOT IN `wl_planfile.FINISHED_STATES` -- deliberately NOT `in_scope_status`, which also excludes NOT_STARTED_STATES (`draft`). Measured: `draft` is this repo's default header on a plan under active execution (6 of 8 box-carrying plans use it, hiding 72 of 88 open boxes), so filtering by `in_scope_status` would hide most of the very work this
     exists to surface.
@@ -1817,9 +1773,7 @@ def migrate_items(worklist, fold, me, prev, projects_dir=None, events=None):
 
     RE-TAG, not alias: the operator chose it, and it has the property that matters here -- after the move the items are MINE, so the Stop hook blocks on them exactly as it would on work I typed myself. An alias would have left them owned by a session that no longer exists.
 
-    The originals are ticked `[x]` with a note naming the new id. Nothing is
-    deleted and nothing is rewritten; both facts stay in an append-only log, so
-    the history still says who really did the work.
+    The originals are ticked `[x]` with a note naming the new id. Nothing is deleted and nothing is rewritten; both facts stay in an append-only log, so the history still says who really did the work.
     """
     me8, prev8 = str(me or "")[:8], str(prev or "")[:8]
     if not me8 or not prev8:
@@ -1858,9 +1812,7 @@ def migrate_items(worklist, fold, me, prev, projects_dir=None, events=None):
         new_id = new_item_id(text + at + rid)
         note = "migrated from #%s (%s)" % (rid, prev8)
         if st == ">":
-            # THE LEASE IS NOT CARRIED. Its worker was a background task of the
-            # PREVIOUS session, on the previous machine; re-leasing would claim
-            # a live worker that cannot exist and stop the liveness ladder from ever asking about it.
+            # THE LEASE IS NOT CARRIED. Its worker was a background task of the PREVIOUS session, on the previous machine; re-leasing would claim a live worker that cannot exist and stop the liveness ladder from ever asking about it.
             note += "; lease on worker:%s reset by migration" % (rec.get("worker") or "?")
         add = {
             "ev": "add",
@@ -1911,8 +1863,7 @@ def migrate_items(worklist, fold, me, prev, projects_dir=None, events=None):
 
 def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
     """Tombstone dead sessions' items. Markdown lines are flipped to `~` IN
-    PLACE (os.pwrite of one byte, v4 discipline: file length only grows, so
-    racing appends are safe); CLI-origin items get a `tomb` event. Returns
+    PLACE (os.pwrite of one byte, v4 discipline: file length only grows, so racing appends are safe); CLI-origin items get a `tomb` event. Returns
     (archived_lines, orphaned_lines, changed)."""
     dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
     archive_h = float(os.environ.get("WORKLIST_ARCHIVE_HOURS", "168"))
@@ -2144,8 +2095,8 @@ def sole_live_session(worklist, session_id):
 def loop_state(worklist, session_id):
     """('none'|'ok'|'overdue', next_fire_or_None, label, others_text, count).
 
-    HISTORICAL: this record predates the Stop event carrying the full cron expansion. `session_crons` now includes each task's schedule AND prompt, so the live truth is computable (wl_core.cron_next) and the checks that matter prefer it. This declared record survives ONLY as the fallback for contexts with no event in hand (the CLI) and for the
-    declared-vs-live divergence check; its stamped next-fire goes stale on
+    HISTORICAL: this record predates the Stop event carrying the full cron expansion. `session_crons` now includes each task's schedule AND prompt, so the live truth is computable (wl_core.cron_next) and the checks that matter prefer it. This declared record survives ONLY as the fallback for contexts with no event in hand (the CLI) and for the declared-vs-live divergence check; its
+    stamped next-fire goes stale on
     write, which is why nothing reports it when a live schedule is visible."""
     p = loop_path(worklist)
     if not p.exists():
@@ -2185,9 +2136,8 @@ def agent_state_shape(body):
     """Shape verdict for a STATE.md body not yet on disk: thin | bloated |
     aimless | ok, plus a detail string.
 
-    Extracted so BOTH write paths (`worklist.py --state` and the PreToolUse guard) refuse a bad document AT WRITE TIME with the identical rule the Stop check reads with. The handover this replaces once accepted any body and let
-    the check reject it a stop later; an accept-then-reject asymmetry leaves
-    the one artifact designed to survive compaction broken while the session believes it is fine.
+    Extracted so BOTH write paths (`worklist.py --state` and the PreToolUse guard) refuse a bad document AT WRITE TIME with the identical rule the Stop check reads with. The handover this replaces once accepted any body and let the check reject it a stop later; an accept-then-reject asymmetry leaves the one artifact designed to survive compaction broken while the session believes
+    it is fine.
 
     `aimless` replaces the old fragmented/paragraph guard, which was an explicit proxy for a 600-char cap and counted every markdown heading as a paragraph (split on blank lines), which is why the old message had to forbid headings outright. Presence of a `## Next action` section is a strictly better gate: it targets the one question STATE.md exists to answer, and padding cannot
     satisfy it.
@@ -2213,9 +2163,7 @@ def agent_state_shape(body):
 def agent_next_lead(text, start):
     """('wait'|'work'|'empty', first_step_text) for the '## Next action' section.
 
-    The FIRST non-blank, non-heading line after the heading is the step that a recovered session reads as its instruction, so that is the only line judged.
-    A wait mentioned in step 2 or later is fine and often correct; what is
-    refused is a wait occupying the position that tells someone what to do.
+    The FIRST non-blank, non-heading line after the heading is the step that a recovered session reads as its instruction, so that is the only line judged. A wait mentioned in step 2 or later is fine and often correct; what is refused is a wait occupying the position that tells someone what to do.
     """
     for raw in text[start:].splitlines():
         line = raw.strip()
@@ -2350,8 +2298,7 @@ def agent_state_state(root, session_id="", cur_sig=None, saved_sig=None):
 
     WHY THIS EXISTS. Compaction silently drops context, and a session lost a real operator decision that way: the rediacc-autopilot App had already been created, the operator had said so, and after a compact it was reported as blocked-on-operator. The transcript is not the recovery mechanism, because the thing that failed IS the transcript being summarised.
 
-    Staleness is WORLD-KEYED, unchanged from v10: age alone never stales the
-    document; the world signature must also have moved since it was recorded.
+    Staleness is WORLD-KEYED, unchanged from v10: age alone never stales the document; the world signature must also have moved since it was recorded.
 
     ADOPT-ON-FIRST-SIGHT was forced by the document once being shared.
     `saved_sig is None` used to fall back to pure age and demand a rewrite;
@@ -2364,8 +2311,8 @@ def agent_state_state(root, session_id="", cur_sig=None, saved_sig=None):
     PER-SESSION since 2026-08-09, and this is the half that matters. The verdict is about the CALLER'S OWN SECTION and nothing else. Age comes from that section's heading stamp, not from the file's mtime, because mtime is per FILE while the obligation is per SESSION: a peer's write used to reset everyone's clock, so B's stale document read "ok" the moment A wrote, and wl_checks
     then banked A's world signature as B's own. A peer's MALFORMED section never blocks me either -- blocking me on a section I must not edit leaves deletion as the only way to clear the gate, which is precisely the incentive that destroyed a live campaign's document.
 
-    NAMED RESIDUAL, fail-open by at most one peer-write interval: a section whose heading carries no parseable stamp (only reachable by a raw `cat > STATE.md`, since Write and Edit are both denied) falls back to the file's mtime, which is the NEWEST write to the file, so it can read fresher than it is. Treating it as permanently stale would nag forever on a
-    document the tool did not write; the reap path still bounds it at 24 hours.
+    NAMED RESIDUAL, fail-open by at most one peer-write interval: a section whose heading carries no parseable stamp (only reachable by a raw `cat > STATE.md`, since Write and Edit are both denied) falls back to the file's mtime, which is the NEWEST write to the file, so it can read fresher than it is. Treating it as permanently stale would nag forever on a document the tool did
+    not write; the reap path still bounds it at 24 hours.
 
     OSError degrades to "missing", which BLOCKS: a permissions problem on agent/ must not read as a clean bill.
     """
@@ -2484,8 +2431,7 @@ def my_requests_sig(worklist, session_id):
     """A digest of the request events that involve THIS session, and only
     those. Deliberately parsed here rather than through wl_requests, which imports this module: the poll baseline must not depend on an import cycle.
 
-    Two passes, because a follow-up event (answer, ack, decline, escalation) carries the request id but not its from/to: pass one collects the ids of
-    asks this session sent, was sent, or that were broadcast; pass two hashes
+    Two passes, because a follow-up event (answer, ack, decline, escalation) carries the request id but not its from/to: pass one collects the ids of asks this session sent, was sent, or that were broadcast; pass two hashes
     every event touching one of those ids."""
     p = requests_path(worklist)
     try:

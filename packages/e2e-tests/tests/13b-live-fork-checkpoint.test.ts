@@ -53,10 +53,8 @@ test.describe
     let runner: BridgeTestRunner;
     const timestamp = Date.now();
     const parentRepoName = `cp-livefork-${timestamp}`;
-    // In raw renet, `repository fork --tag` takes the fork's FULL image name —
-    // "--tag IS its image name; the rdc `name:tag` compositing is a config
-    // concern" (suite 17's ledger; the bridge ParamDef describes `tag` as
-    // "Fork repository name", and rdc passes the fork's GUID here). The fork's storage therefore lives at repositories/<forkRepoName>, NOT at repositories/<parent>:<tag> — mounting the latter was this suite's original bug: fork exit 0, then "repository storage not found".
+    // In raw renet, `repository fork --tag` takes the fork's FULL image name — "--tag IS its image name; the rdc `name:tag` compositing is a config concern" (suite 17's ledger; the bridge ParamDef describes `tag` as "Fork repository name", and rdc passes the fork's GUID here). The fork's storage therefore lives at repositories/<forkRepoName>, NOT at repositories/<parent>:<tag> —
+    // mounting the latter was this suite's original bug: fork exit 0, then "repository storage not found".
     const forkRepoName = `cpfork-${timestamp}`;
     const parentContainerName = `cp-counter-${timestamp}`;
     const datastorePath = DEFAULT_DATASTORE_PATH;

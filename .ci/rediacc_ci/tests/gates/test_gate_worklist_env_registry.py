@@ -1,12 +1,8 @@
 """The gate test for `check:ci-worklist-env-registry`, which has no bash twin.
 
-NEW GATE, NOT A PORT. The selftest proves the predicate against a four-name
-fixture repository; nothing in it says the registry matches the 133-name tree.
-These cases drive the entry point as a PROCESS against the real corpus, and plant into the real files.
+NEW GATE, NOT A PORT. The selftest proves the predicate against a four-name fixture repository; nothing in it says the registry matches the 133-name tree. These cases drive the entry point as a PROCESS against the real corpus, and plant into the real files.
 
-TWO KINDS OF PLANT, and the pairing is the point. Planting into the REGISTRY
-exercises the comparison against a real scan; planting into a real SOURCE file
-exercises the scanner against a real registry. A gate can pass one and fail the other, and this gate did neither until both were driven.
+TWO KINDS OF PLANT, and the pairing is the point. Planting into the REGISTRY exercises the comparison against a real scan; planting into a real SOURCE file exercises the scanner against a real registry. A gate can pass one and fail the other, and this gate did neither until both were driven.
 
 THE SOURCE PLANT TARGET is `.claude/hooks/stop/worklist-cases/21-cadence.sh`, a
 case file reached only by `test-hooks.sh` and never by a live hook chain, and

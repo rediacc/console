@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/security/actionlint.sh`.
 
-W7P6 wave 28. The bash twin stays the LIVE registered gate ("Workflow lint
-(actionlint)", lane quality-code); this module is its VERIFIED-EQUIVALENT
-ALTERNATIVE, proved byte-for-byte on both streams by
+W7P6 wave 28. The bash twin stays the LIVE registered gate ("Workflow lint (actionlint)", lane quality-code); this module is its VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by
 `.ci/rediacc_ci/tests/test_security_actionlint.py` and by the K=5 shadow ledger
 `.ci/shadow/w7p6-actionlint.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
-WHAT IT DOES. Acquires actionlint at the pin (a PATH binary at the exact pinned
-version wins; otherwise a checksum-verified release tarball is fetched into
-a cache directory whose rungs are NOT the ones the twin's line reads as; see `cache_dir`), enumerates every
-workflow file under `.github/workflows/` PLUS the vendorable templates under `.ci/*/workflow/`, refuses an empty corpus, and runs `actionlint -no-color` over the lot.
+WHAT IT DOES. Acquires actionlint at the pin (a PATH binary at the exact pinned version wins; otherwise a checksum-verified release tarball is fetched into a cache directory whose rungs are NOT the ones the twin's line reads as; see `cache_dir`), enumerates every workflow file under `.github/workflows/` PLUS the vendorable templates under `.ci/*/workflow/`, refuses an empty corpus,
+and runs `actionlint -no-color` over the lot.
 
 REAL RUNS OR STUBS: BOTH, SPLIT THE SAME WAY WAVE 27's dependency-inventory PORT
 SPLIT THEM.
@@ -158,8 +154,7 @@ ARCH_TABLE = {
     "arm64": ("arm64", "ACTIONLINT_SHA256_LINUX_ARM64"),
 }
 
-# `curl -fsSL --max-time 180 --retry 3 --retry-delay 5`. `-S` is what makes curl
-# speak on failure; see port note 6.
+# `curl -fsSL --max-time 180 --retry 3 --retry-delay 5`. `-S` is what makes curl speak on failure; see port note 6.
 CURL_ARGS = ("-fsSL", "--max-time", "180", "--retry", "3", "--retry-delay", "5")
 
 
@@ -294,9 +289,8 @@ def ensure_actionlint(version: str, checksums: dict[str, str]) -> str:
         "actionlint_%s_linux_%s.tar.gz" % (version, version, arch)
     )
     cache.mkdir(parents=True, exist_ok=True)
-    # PRIVATE STAGING DIR, mirroring `mktemp -d "$CACHE_DIR/al.XXXXXXXX"` in the twin. The cache lives under a temp root a CI runner shares across every concurrent invocation, so the fixed `cache / "actionlint.tar.gz"` both
-    # sides used was one inode they all downloaded into at once; the winner's
-    # unlink then deleted it out from under the losers mid-verify. The twin carries the measurement (8 racers on a cold cache, 7 exited 2, all with a false "checksum MISMATCH"). Extraction is staged too, so a half-written binary can never sit at the final path.
+    # PRIVATE STAGING DIR, mirroring `mktemp -d "$CACHE_DIR/al.XXXXXXXX"` in the twin. The cache lives under a temp root a CI runner shares across every concurrent invocation, so the fixed `cache / "actionlint.tar.gz"` both sides used was one inode they all downloaded into at once; the winner's unlink then deleted it out from under the losers mid-verify. The twin carries the
+    # measurement (8 racers on a cold cache, 7 exited 2, all with a false "checksum MISMATCH"). Extraction is staged too, so a half-written binary can never sit at the final path.
     stage = pathlib.Path(tempfile.mkdtemp(prefix="al.", dir=str(cache)))
     tmp = stage / "actionlint.tar.gz"
 
@@ -401,13 +395,11 @@ def main(argv: list[str]) -> int:
     count = len(targets)
 
     # `targets="$(collect_targets)"` UNDER `set -e`. When the last template glob
-    # matched nothing the substitution's status is 1 and bash exits RIGHT HERE,
-    # silently. Port note 3; this is a reproduced defect, not a design.
+    # matched nothing the substitution's status is 1 and bash exits RIGHT HERE, silently. Port note 3; this is a reproduced defect, not a design.
     if collect_targets_status(root) != 0:
         return 1
 
-    # ANTI-VACUITY. A linter with no input exits 0 and looks like a pass.
-    # UNREACHABLE in practice; see port note 3. Kept because the twin keeps it.
+    # ANTI-VACUITY. A linter with no input exits 0 and looks like a pass. UNREACHABLE in practice; see port note 3. Kept because the twin keeps it.
     if count == 0:
         log.error("no workflow files found under .github/workflows/ or .ci/*/workflow/")
         log.error("a lint run over zero files reports success while checking nothing")

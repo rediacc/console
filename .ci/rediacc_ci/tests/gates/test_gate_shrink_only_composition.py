@@ -2,9 +2,7 @@
 
 Every shrink-only baseline in this repo must enforce shrink-only on the WRITE path, and this file is both the detector and its test: there is no separate `check-*.ts` to shell out to, so porting it means re-expressing the scan in Python. Parity here is therefore a claim about two implementations agreeing on the same tree, which is why the controls matter more than usual.
 
-WHY IT EXISTS. Seven gates freeze a backlog and describe it as shrink-only. All
-seven enforced that on the READ path only; the drain flag was an
-unconditional reseed in every one. The difference is not academic:
+WHY IT EXISTS. Seven gates freeze a backlog and describe it as shrink-only. All seven enforced that on the READ path only; the drain flag was an unconditional reseed in every one. The difference is not academic:
 
     as enforced:  the TOTAL cannot grow without someone noticing.
     as promised:  the SET can only lose members.
@@ -61,9 +59,7 @@ EXEMPT = (GUARD,)
 #
 # `packages/www/scripts/lib/p7-backlog.js::writeBacklog` performs the composition check itself and exits non-zero on refusal, which covers its four consumers without any of them importing the guard by name. So a file that imports p7-backlog IS guarded, and asserting otherwise would flag three validators that are in fact protected.
 #
-# ONE HOP, deliberately, matching the precedent in check-gate-id-convention. A
-# two-hop chain would escape this. No such chain exists today; if one appears,
-# plant it as a control and widen the resolver THEN.
+# ONE HOP, deliberately, matching the precedent in check-gate-id-convention. A two-hop chain would escape this. No such chain exists today; if one appears, plant it as a control and widen the resolver THEN.
 GUARDED_VIA = ("shrink-only-baseline", "p7-backlog")
 
 # Known-unguarded CLIs. This list may only SHRINK. A new offender is not added here, it is fixed: the whole point is that a new gate must not be born with the old shape. EMPTY as of 2026-08-20, when the P7 choke point closed the last three.
@@ -532,9 +528,7 @@ def test_this_module_is_not_itself_an_offender(gate):
         )
     # AND THE SPLIT MUST STILL PRODUCE THE REAL FLAG. A control that only checks
     # for absence is satisfied by a typo, and a typo would make every probe below
-    # invisible to the scan while all four controls kept passing. CHECKED AGAINST THE TWIN, which is a `.sh` file and therefore outside this corpus, so it can
-    # carry the flag whole; a literal written here would either be a tautology or
-    # a second thing to keep rendered.
+    # invisible to the scan while all four controls kept passing. CHECKED AGAINST THE TWIN, which is a `.sh` file and therefore outside this corpus, so it can carry the flag whole; a literal written here would either be a tautology or a second thing to keep rendered.
     twin = (ROOT / BASH_TWIN).read_text(encoding="utf-8")
     if FLAG not in twin:
         gate.log_fail(

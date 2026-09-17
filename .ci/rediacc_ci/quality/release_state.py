@@ -1,7 +1,6 @@
 """The R2 `.released` sentinels, the git tags and the channel pointers agree.
 
-Ported from `.ci/scripts/quality/check-release-state.sh` TOGETHER WITH the parts of `.ci/scripts/lib/release-state-validator.sh` it calls, neither of which is
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-release-state.sh` TOGETHER WITH the parts of `.ci/scripts/lib/release-state-validator.sh` it calls, neither of which is deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHY THE LIBRARY COMES WITH IT. The bash gate is thirty lines of glue over five library functions, and the library has five other bash consumers (`upload-to-r2.sh`, `write-release-sentinel.sh`, `assert-r2-sentinel.sh`, `cleanup-versions.sh`) that still source it. A port of the gate alone would be a port of the glue, and the differential would compare two programs that both delegate
 the interesting half to the same shell file, which proves nothing about the half that decides. So the five functions the gate reaches are ported here, into the gate's own module, and the bash library stays exactly where it is for its other callers.
@@ -10,29 +9,22 @@ THE CONTRACT, from the library's own header:
 
     Committed(v${V})  <=>  cli/v${V}/.released exists  AND  git tag v${V} exists
 
-`.released` sentinels are the commit markers; they are written LAST, after every
-CI gate has passed. A prefix that is non-empty but missing its sentinel is an
-orphan from a cancelled run. Drift is never auto-healed; the error lines include
-remediation pointers for a human.
+`.released` sentinels are the commit markers; they are written LAST, after every CI gate has passed. A prefix that is non-empty but missing its sentinel is an orphan from a cancelled run. Drift is never auto-healed; the error lines include remediation pointers for a human.
 
 THE RELATION THE BIJECTION CANNOT SEE, and the incident that added the second half of this gate. A `bump-none` merge correctly skips both the sentinel and the tag, so the two sides stay in step, while the R2 channel pointer was advanced anyway. That is how `cli/edge/manifest.json` came to advertise 1.3.1 with no v1.3.1 tag and a 404 notes URL, three times over (#573, #574, #576),
 and it would have half-applied a production release across eu/us/asia on 2026-09-01, because promote-stable reads the manifest and then checks out `ref: v<version>`.
 
-ORDERING IS WHAT MAKES THE POINTER CHECK SAFE ON THE RELEASE PATH: the gate runs BEFORE stage-artifacts (ci.yml says so), so the pointer it reads is the PREVIOUS release's. The back-to-back case resolves itself: if release X's tag is not
-pushed yet, IN_FLIGHT is vX and the pointer's X is excluded; if it is pushed,
-IN_FLIGHT is vX+1 and X has its tag.
+ORDERING IS WHAT MAKES THE POINTER CHECK SAFE ON THE RELEASE PATH: the gate runs BEFORE stage-artifacts (ci.yml says so), so the pointer it reads is the PREVIOUS release's. The back-to-back case resolves itself: if release X's tag is not pushed yet, IN_FLIGHT is vX and the pointer's X is excluded; if it is pushed, IN_FLIGHT is vX+1 and X has its tag.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`aws` IS SHELLED OUT TO, NOT REPLACED BY BOTO. Two reasons and the second is the one that matters. The credentials are mapped into `AWS_*` environment variables and consumed by the CLI's own resolution chain, which a Python SDK would resolve
-differently; and the twin's `--query` expressions are JMESPath evaluated by the
-CLI, so re-expressing them in Python would move the filtering from the server's answer into the port and change WHICH keys are seen. The port runs the same argv.
+`aws` IS SHELLED OUT TO, NOT REPLACED BY BOTO. Two reasons and the second is the one that matters. The credentials are mapped into `AWS_*` environment variables and consumed by the CLI's own resolution chain, which a Python SDK would resolve differently; and the twin's `--query` expressions are JMESPath evaluated by the CLI, so re-expressing them in Python would move the filtering
+from the server's answer into the port and change WHICH keys are seen. The port runs the same argv.
 
-THE `--query` STRING CARRIES BACKTICKS AND IS PASSED AS ONE ARGV ELEMENT. The expression is Contents[?ends_with(Key, <backtick>/.released<backtick>)].Key, and those backticks are JMESPath's literal syntax rather than a shell substitution. The twin has to backslash-escape them because it writes the expression inside
-double quotes; there is no shell here, so it is written plain. The two backticks
-are spelled out in words on purpose. Written literally, a backslash immediately before a backtick is an INVALID ESCAPE SEQUENCE to Python, and this docstring carried two of them: every run of the module printed a SyntaxWarning on stderr, which the first side-by-side run against the twin caught, the twin's stderr being clean.
+THE `--query` STRING CARRIES BACKTICKS AND IS PASSED AS ONE ARGV ELEMENT. The expression is Contents[?ends_with(Key, <backtick>/.released<backtick>)].Key, and those backticks are JMESPath's literal syntax rather than a shell substitution. The twin has to backslash-escape them because it writes the expression inside double quotes; there is no shell here, so it is written plain. The
+two backticks are spelled out in words on purpose. Written literally, a backslash immediately before a backtick is an INVALID ESCAPE SEQUENCE to Python, and this docstring carried two of them: every run of the module printed a SyntaxWarning on stderr, which the first side-by-side run against the twin caught, the twin's stderr being clean.
 
 TWO OUTPUT DEFECTS ARE REPRODUCED RATHER THAN REPAIRED, and both are reported:
 
@@ -48,9 +40,8 @@ TWO OUTPUT DEFECTS ARE REPRODUCED RATHER THAN REPAIRED, and both are reported:
 `sort -uV` IS APPROXIMATED BY A NUMERIC KEY, AND THE INPUTS MAKE THAT SAFE. Everything reaching a sort here has already passed `grep -E '^v[0-9]+\\.[0-9]+\\.[0-9]+$'`, so the values are three integers and `sort -V` reduces to a numeric tuple comparison. The two escapes from that are named: `$RSV_GRANDFATHER_BEFORE`, an override the library's own comment says "production should
 never set", and the ratchet file, which is itself filtered by the same grep. `version_key` below handles a general string by splitting digit runs, which agrees with `sort -V` on everything this gate can be handed.
 
-THE GREEDY `.*` IN THE POINTER SED IS LOAD-BEARING. `sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' | head -1` takes the LAST `"version"` on the FIRST matching line, because BRE `.*` is greedy. A manifest that carries a nested `"version"` after the top-level one
-therefore reports the nested value. Reproduced exactly; a left-to-right search
-would be a different gate.
+THE GREEDY `.*` IN THE POINTER SED IS LOAD-BEARING. `sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' | head -1` takes the LAST `"version"` on the FIRST matching line, because BRE `.*` is greedy. A manifest that carries a nested `"version"` after the top-level one therefore reports the nested value. Reproduced exactly; a left-to-right search would be a different
+gate.
 """
 
 import os
@@ -74,8 +65,7 @@ STRICT_SEMVER = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 # The sentinel key shape `rsv_list_sentinels` extracts a version from: `s|^cli/\(v[0-9][0-9.]*\)/.released$|\1|p`. Looser than STRICT_SEMVER on purpose -- the grep behind it is what tightens the result -- so the two stages are kept separate rather than folded into one pattern.
 SENTINEL_LINE = re.compile(r"^%s/(v[0-9][0-9.]*)/%s$")
 
-# The channel pointer sed. GREEDY `.*` first, which is what makes it take the
-# LAST match on the line; see the port notes.
+# The channel pointer sed. GREEDY `.*` first, which is what makes it take the LAST match on the line; see the port notes.
 POINTER_VERSION = re.compile(r'.*"version"[ \t]*:[ \t]*"([^"]*)"')
 
 # The two channels, in the twin's loop order. Order is observable: each channel prints a log_step and an OK/DRIFT line.
@@ -165,9 +155,7 @@ def list_sentinels(product: str, endpoint: str) -> list[str]:
             "text",
         ]
     )
-    # `2>/dev/null`: a failed probe yields no keys and no message, which is the twin's behaviour and is the weakest part of this gate. The library's own siblings (`rsv_prefix_nonempty`, `rsv_binary_count`, `rsv_sentinel_exists`)
-    # all grew a third "COULD NOT TELL" state for exactly this reason; this one
-    # never did. Carried unchanged, and reported.
+    # `2>/dev/null`: a failed probe yields no keys and no message, which is the twin's behaviour and is the weakest part of this gate. The library's own siblings (`rsv_prefix_nonempty`, `rsv_binary_count`, `rsv_sentinel_exists`) all grew a third "COULD NOT TELL" state for exactly this reason; this one never did. Carried unchanged, and reported.
     pattern = re.compile(SENTINEL_LINE.pattern % (re.escape(product), re.escape(SENTINEL_KEY)))
     found: list[str] = []
     for line in _records(proc.stdout.replace("\t", "\n")):
@@ -253,8 +241,7 @@ def assert_bijection(
 
     PURE, and returned rather than printed, so the decision can be asserted without capturing a stream. The twin echoes on STDOUT and returns the same two codes.
 
-    `in_flight` is the one version this CI run is building; it is excluded so
-    the gate does not false-positive on its own in-flight release.
+    `in_flight` is the one version this CI run is building; it is excluded so the gate does not false-positive on its own in-flight release.
     """
     out: list[str] = []
     floor = pre_contract_floor(cli_versions, root)
@@ -318,8 +305,7 @@ def assert_channel_pointer_tagged(
 ) -> tuple[list[str], int]:
     """(the lines to print, 0 when the pointer is consistent and tagged).
 
-    PURE, deliberately, and the library says why: "`aws` is not installable on the maintainer's host or in the devbox, so an I/O-coupled assertion here would be untestable locally -- which is how a release gate ends up
-    unverified." The caller does the R2 and git reads; this only judges them.
+    PURE, deliberately, and the library says why: "`aws` is not installable on the maintainer's host or in the devbox, so an I/O-coupled assertion here would be untestable locally -- which is how a release gate ends up unverified." The caller does the R2 and git reads; this only judges them.
     """
     out: list[str] = []
     drift = 0

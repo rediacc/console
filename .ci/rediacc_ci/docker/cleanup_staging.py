@@ -6,9 +6,7 @@ Deletes the staging Docker tags from GHCR after a Phase 1 staging failure or a P
 THE `staging-` PREFIX GUARD IS THE WHOLE SAFETY MODEL, so it is reproduced character for character rather than "improved". The twin refuses any tag that does not start with `staging-` before it reaches a single API call, which is what makes a stray invocation unable to delete `edge`, `stable`, `latest` or a semver. `rediacc_ci.release.cleanup_channel_docker_tags` documents the same
 guard from the caller's side, and `.ci/scripts/quality/check-staging-tag-guard.sh` is a gate whose subject is that this guard exists. A port that widened it would delete the rail three separate things are leaning on.
 
-WHAT IS DELETED IS A PACKAGE VERSION, NOT A TAG. GHCR has no delete-one-tag API, so the twin resolves a version id and deletes the VERSION. A version carrying a second tag loses that tag too. Reproduced as-is and pinned by
-`test_a_version_carrying_a_second_tag_is_deleted_whole`; changing it is a
-cutover-box decision.
+WHAT IS DELETED IS A PACKAGE VERSION, NOT A TAG. GHCR has no delete-one-tag API, so the twin resolves a version id and deletes the VERSION. A version carrying a second tag loses that tag too. Reproduced as-is and pinned by `test_a_version_carrying_a_second_tag_is_deleted_whole`; changing it is a cutover-box decision.
 
 jq IS SHELLED OUT TO, NOT REIMPLEMENTED, and the reason is the two filters
 rather than laziness. `type == "array"` under `jq -e` is a REFUSAL TEST on
@@ -67,9 +65,7 @@ def dry_run_default() -> str:
 def org_of(registry_url: str) -> str:
     """`${REG#ghcr.io/}` then `${ORG%%/*}` (twin :67-68).
 
-    `%%/*` removes the LONGEST trailing match of `/*`, i.e. keeps everything before the FIRST slash. Note that a non-GHCR registry falls through the prefix strip and yields the HOST as the org, which is the twin's behaviour
-    and is wrong for any registry that is not ghcr.io; the differential records
-    it as `test_defect_a_non_ghcr_registry_yields_the_host_as_the_org`.
+    `%%/*` removes the LONGEST trailing match of `/*`, i.e. keeps everything before the FIRST slash. Note that a non-GHCR registry falls through the prefix strip and yields the HOST as the org, which is the twin's behaviour and is wrong for any registry that is not ghcr.io; the differential records it as `test_defect_a_non_ghcr_registry_yields_the_host_as_the_org`.
     """
     # `removeprefix` IS `${VAR#prefix}`: strip if present, leave alone if not.
     return registry_url.removeprefix(GHCR_PREFIX).split("/", 1)[0]
@@ -162,8 +158,7 @@ def parse_args(argv: list[str]) -> Options:
 def _flush() -> None:
     """stdout before every spawn that INHERITS it.
 
-    Python block-buffers stdout against a pipe; the child writes straight to the
-    descriptor. Without this the two `echo ""` separators arrive after gh's own output, with byte-identical content in the wrong order.
+    Python block-buffers stdout against a pipe; the child writes straight to the descriptor. Without this the two `echo ""` separators arrive after gh's own output, with byte-identical content in the wrong order.
     """
     sys.stdout.flush()
 
@@ -196,9 +191,7 @@ def _gh_list(org: str, package: str) -> str:
 def _jq(program: str, payload: str, *, exit_status: bool) -> subprocess.CompletedProcess[str]:
     """`echo "$payload" | jq [-e|-r] '<program>'` with the twin's redirections.
 
-    `echo` appends a newline, so the payload does too. `exit_status` picks
-    between the `-e` refusal test (:88) and the `-r` extraction (:94-95); both
-    have their stderr discarded by the twin.
+    `echo` appends a newline, so the payload does too. `exit_status` picks between the `-e` refusal test (:88) and the `-r` extraction (:94-95); both have their stderr discarded by the twin.
     """
     flag = "-e" if exit_status else "-r"
     return subprocess.run(
@@ -237,8 +230,7 @@ def extract_version_id(payload: str, tag: str) -> str:
 def _gh_delete(org: str, package: str, version_id: str) -> bool:
     """`gh api -X DELETE "<path>" 2>/dev/null` (:103).
 
-    STDOUT IS INHERITED, stderr is discarded. Discarding stderr is why a failure
-    here reports no reason at all; see the defect note in the differential.
+    STDOUT IS INHERITED, stderr is discarded. Discarding stderr is why a failure here reports no reason at all; see the defect note in the differential.
     """
     argv = ["gh", "api", "-X", "DELETE", version_delete_path(org, package, version_id)]
     _flush()

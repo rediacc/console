@@ -115,8 +115,7 @@ printf 'FAKECALL shfmt %s\\n' "$*" >>"$FAKE_LOG"
 exit 0
 """
 
-# Silent on failure; see the module docstring of shfmt.py for why a talking fake
-# would break the differential for a reason that is not the port's.
+# Silent on failure; see the module docstring of shfmt.py for why a talking fake would break the differential for a reason that is not the port's.
 FAKE_CURL = """#!/bin/bash
 printf 'FAKECALL curl %s\\n' "$*" >>"$FAKE_LOG"
 exit 22
@@ -315,9 +314,7 @@ def _warm_shfmt_once() -> None:
     IT WAS NOT ENOUGH TO WARM ONLY `_run_real`. The fixture cases share the same on-disk cache (`_env` sets CI_TEMP only for the scratch-cache case), so the ordering artifact is not a property of the real-tree path -- it is a property of whichever case reaches a COLD cache first. Under `--dist loadgroup` that is a different case on a different worker from run to run, which is why
     `test_a_dirty_file_in_claude_reports_the_same_diff` failed in CI job 104583449222 while the real-tree case, already warmed by `_run_real`, passed. Warming inside one code path fixed one case and left its siblings racing.
 
-    Session-scoped and autouse, so it runs before the first case in this module
-    on each worker; the cache is shared on disk, so the first worker pays and the
-    rest are a no-op.
+    Session-scoped and autouse, so it runs before the first case in this module on each worker; the cache is shared on disk, so the first worker pays and the rest are a no-op.
     """
     _warm_shfmt()
 
@@ -327,8 +324,7 @@ def _warm_shfmt() -> None:
 
     WITHOUT THIS THE REAL-TREE CASE MEASURES RUN ORDER. `_run_real` runs the twin first and the port second into a cache they SHARE
     (`${CI_TEMP:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}}/rediacc-toolchain/shfmt-<v>`,
-    toolchain.sh:258). Whoever runs first pays for acquisition and says so on
-    stderr; the second finds it cached and is silent.
+    toolchain.sh:258). Whoever runs first pays for acquisition and says so on stderr; the second finds it cached and is silent.
 
     That stayed invisible while acquisition simply FAILED in this lane -- both sides returned exit 77 and agreed about it. `b3a53cb06` made a failed `go install` fall back to the download, so acquisition now SUCCEEDS, and the twin started emitting `toolchain: go install shfmt@v3.13.1 failed` (its first, honest attempt) where the port, running second into a warm cache,
     emitted nothing. Measured in run 35009582358: `assert '' == 'toolchain: g...
@@ -433,8 +429,7 @@ def test_the_twins_order_is_the_ambient_finds_and_the_ports_is_sorted() -> None:
     ).stdout.split()
     rank = {path: i for i, path in enumerate(found)}
     twin_files = block_files(old_blocks)
-    # Only the `.ci` scope runs when it has findings; `set -e` ends the script
-    # there. That is the twin's own defect, reproduced, and it is what makes the comparison against a single `find .ci` legitimate.
+    # Only the `.ci` scope runs when it has findings; `set -e` ends the script there. That is the twin's own defect, reproduced, and it is what makes the comparison against a single `find .ci` legitimate.
     assert all(f.startswith(".ci/") for f in twin_files), twin_files
     assert all(f in rank for f in twin_files), "a diff names a file find did not"
     assert [rank[f] for f in twin_files] == sorted(rank[f] for f in twin_files), (
@@ -511,8 +506,7 @@ def test_an_unparseable_file_puts_the_same_bytes_on_stderr(fixture: pathlib.Path
 def test_the_first_failing_scope_aborts_the_rest(fixture: pathlib.Path) -> None:
     """THE DEFECT, asserted rather than mentioned: three scopes go unchecked.
 
-    A dirty file in `.claude` AND a dirty file in `scripts/docker`; only the
-    first is ever reported, and a reader who fixes it learns about the second on the next run.
+    A dirty file in `.claude` AND a dirty file in `scripts/docker`; only the first is ever reported, and a reader who fixes it learns about the second on the next run.
     """
     _write(fixture / ".claude" / "two.sh", DIRTY_SH)
     _write(fixture / "scripts" / "docker" / "four.sh", DIRTY_SH)

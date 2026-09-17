@@ -1,7 +1,6 @@
 r"""Workflow files must not use patterns that violate the CI design principles.
 
-Ported from `.ci/scripts/quality/check-workflows.sh`, which is NOT deleted; see
-`rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-workflows.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__`.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS.
@@ -47,9 +46,7 @@ THE FOUR STRUCTURAL RULES AND THE INCIDENTS BEHIND THEM.
 THE INLINE-RUN RULE. CI step LOGIC belongs in .ci/scripts/<area>/<name>.sh, which is locally runnable and shareable across CI systems. A workflow `run:` block scalar whose shell logic (non-blank, non-comment lines) exceeds $INLINE_MAX_LOGIC lines is a violation. Full stop -- there is no baseline and no grandfathering. There used to be a ratchet:
 .ci/quality/workflow-inline-baseline.json froze 52 legacy violations per-file and only allowed the counts to fall. All 52 were extracted, so the file and its ratchet logic are gone. Do not reintroduce them: an escape hatch that exists gets used, and the rule only actually held once the hatch was removed.
 
-A block owns every following line that is blank OR indented deeper than the
-`run:` key; a logic line is a non-blank line whose first non-space char is not
-`#`.
+A block owns every following line that is blank OR indented deeper than the `run:` key; a logic line is a non-blank line whose first non-space char is not `#`.
 
 Anti-vacuity: no workflows parsed means the layout moved and this gate is asserting nothing. Fail loudly rather than report a clean run.
 
@@ -81,9 +78,8 @@ deleted by hand. BOTH SYNTACTIC FORMS, because only one of them is the obvious o
 
 A `grep 'name: pr-'` would be the vacuous version -- it misses the scalar shorthand entirely, and the shorthand is exactly what somebody writes when re-adding this in a hurry. No escape hatch, matching the inline-run rule above and for its stated reason: a hatch that exists gets used. An environment that legitimately needs a `pr-` prefix should be renamed.
 
-THE gh `--slurp`/`--jq` RULE. The RUNNER's gh refuses `--slurp` combined with `--jq` ("the --slurp option is not supported with --jq or --template") while local gh versions accept it, so the incompatibility is invisible to every local
-run and to shell linting (the bash is valid; the tool rejects the flags at
-runtime). It killed the first live autopilot dispatch on 2026-08-09 (run 31321043543). Pipe the --slurp output through jq as a separate process instead. Control-first: the scanner must prove it can fire before its silence means
+THE gh `--slurp`/`--jq` RULE. The RUNNER's gh refuses `--slurp` combined with `--jq` ("the --slurp option is not supported with --jq or --template") while local gh versions accept it, so the incompatibility is invisible to every local run and to shell linting (the bash is valid; the tool rejects the flags at runtime). It killed the first live autopilot dispatch on 2026-08-09 (run
+31321043543). Pipe the --slurp output through jq as a separate process instead. Control-first: the scanner must prove it can fire before its silence means
 anything. The scanner's own awk program and control string carry both flags;
 scanning this file would be a permanent self-match, not a finding.
 
@@ -97,24 +93,18 @@ patterns with the `|` escaped, and each one is quoted above its constant so the 
 THE MATCH SPLIT IS `${match%%:*}` AND `${match#*:}`, so the "line number" is
 everything before the FIRST colon and the "content" is everything after it. With `grep -n` over a single file that is exactly right. It is written out here rather than using a regex, because a regex would silently do something else on a line whose content contains a colon.
 
-`grep -qE "^\s*#"` USES `\s`, WHICH IS A GNU/ugrep EXTENSION, not POSIX. It is carried as `[ \t]` plus the leading anchor, which is what it means for these
-inputs; the difference (`\s` also matching a form feed) cannot arise in a YAML
-line that reached this point.
+`grep -qE "^\s*#"` USES `\s`, WHICH IS A GNU/ugrep EXTENSION, not POSIX. It is carried as `[ \t]` plus the leading anchor, which is what it means for these inputs; the difference (`\s` also matching a form feed) cannot arise in a YAML line that reached this point.
 
-`require_cmd jq` IS PRESERVED EVEN THOUGH NOTHING PARSES JSON ANY MORE. The
-inline-run rule used to read a baseline JSON file; the baseline was deleted with
-its ratchet, and the `require_cmd jq` line stayed. Removing it would be a behaviour change on a machine without jq -- the twin exits 1 there, and so does this -- so it stays, and this paragraph is the record of why a jq-less gate still demands jq.
+`require_cmd jq` IS PRESERVED EVEN THOUGH NOTHING PARSES JSON ANY MORE. The inline-run rule used to read a baseline JSON file; the baseline was deleted with its ratchet, and the `require_cmd jq` line stayed. Removing it would be a behaviour change on a machine without jq -- the twin exits 1 there, and so does this -- so it stays, and this paragraph is the record of why a jq-less
+gate still demands jq.
 
-THE AWK BLOCK-SCALAR PARSER IS TRANSLATED, not shelled out. Its two subtleties are reproduced explicitly: `match(line, /^ */)` counts SPACES only, so a
-tab-indented block is measured as indent 0; and a line inside a block that is
-blank was already skipped by the `^[[:space:]]*$` rule ABOVE the block handling, so blanks never terminate a block and never count as logic.
+THE AWK BLOCK-SCALAR PARSER IS TRANSLATED, not shelled out. Its two subtleties are reproduced explicitly: `match(line, /^ */)` counts SPACES only, so a tab-indented block is measured as indent 0; and a line inside a block that is blank was already skipped by the `^[[:space:]]*$` rule ABOVE the block handling, so blanks never terminate a block and never count as logic.
 
 `match($0, /[^ ]/)` IN THE env RULE IS ALSO SPACES-ONLY, and it returns a 1-BASED index, with 0 for a line that is entirely spaces. Both facts are carried
 because the comparison is `ind <= envind`, and an off-by-one there silently
 changes which lines belong to the mapping.
 
-STREAMS. `log_error` is `✗ <msg>` on stderr; every `Line:` / `Fix:` /
-continuation line is a bare `echo` on stdout. That split is the reason `scripts/lib/shadow-gate.ts` sees one finding per violation rather than three.
+STREAMS. `log_error` is `✗ <msg>` on stderr; every `Line:` / `Fix:` / continuation line is a bare `echo` on stdout. That split is the reason `scripts/lib/shadow-gate.ts` sees one finding per violation rather than three.
 """
 
 import os
@@ -139,9 +129,7 @@ DEFAULT_INLINE_MAX_LOGIC = 8
 COMMENT_RE = re.compile(r"^[ \t]*#")
 APPROVED = "# security: approved"
 
-# The five banned patterns, as (pattern, label, fix hint). The regexes are the
-# BRE the twin hands to `grep -n`, re-spelled; see the port notes for why the
-# `script:` one matters.
+# The five banned patterns, as (pattern, label, fix hint). The regexes are the BRE the twin hands to `grep -n`, re-spelled; see the port notes for why the `script:` one matters.
 BANNED = (
     (
         re.compile(r"continue-on-error"),
@@ -355,10 +343,7 @@ class Block:
 def parse_run_blocks(lines: list[str]) -> list[Block]:
     """The block-scalar parser, translated from the awk program.
 
-    A block owns every following line that is blank OR indented deeper than the
-    `run:` key; a logic line is a non-blank line whose first non-space char is
-    not `#`. `match(line, /^ */)` counts SPACES only, so a tab-indented block is
-    measured as indent 0; see the port notes.
+    A block owns every following line that is blank OR indented deeper than the `run:` key; a logic line is a non-blank line whose first non-space char is not `#`. `match(line, /^ */)` counts SPACES only, so a tab-indented block is measured as indent 0; see the port notes.
     """
     out: list[Block] = []
     in_block = False
@@ -594,9 +579,7 @@ def slurp_jq_offenders(text: str) -> list[int]:
         # BASH CONTINUES WITH A BACKSLASH, PYTHON WITH AN OPEN BRACKET, and the second is not a line SUFFIX -- it is a running depth. A per-line test was written first and its control refused it: in subprocess.run( [ "gh", "api", "repos/x/issues", "--paginate", "--slurp", "--jq", ".[]", the third line opens nothing, so a suffix test ends the join there and the `--slurp`/`--jq` pair
         # two lines later is never seen. Counting brackets across the joined text is what actually spans the call.
         #
-        # QUOTED BRACKETS ARE NOT DISCOUNTED. Over-joining can only make this scan see
-        # MORE of a command; its failure mode is missing one, so the cheap reading is
-        # the safe one in the direction that matters. A comment resets both, as before.
+        # QUOTED BRACKETS ARE NOT DISCOUNTED. Over-joining can only make this scan see MORE of a command; its failure mode is missing one, so the cheap reading is the safe one in the direction that matters. A comment resets both, as before.
         depth += sum(line.count(c) for c in "([{") - sum(line.count(c) for c in ")]}")
         depth = max(depth, 0)
         if depth > 0 or CONTINUATION_RE.search(line):
@@ -615,9 +598,8 @@ def check_gh_slurp_jq(errors: Errors, root: pathlib.Path, files: list[str]) -> N
         for dirpath, _dirnames, filenames in paths.walk_tree(ci_scripts):
             for name in filenames:
                 candidate = pathlib.Path(dirpath) / name
-                # `.py` JOINED `.sh` HERE ON 2026-09-08, and the omission was the extension-shaped matcher class rather than a decision: W7 ported the quality gates under this very tree to Python, and a gate that shells out to `gh api --slurp --jq` is exactly as broken in Python as in bash.
-                # A matcher keyed on `.sh` does not report that it stopped looking; it
-                # reports nothing, and exits 0. 72 `.py` files under `.ci/scripts` mention `gh` and none of them was being read.
+                # `.py` JOINED `.sh` HERE ON 2026-09-08, and the omission was the extension-shaped matcher class rather than a decision: W7 ported the quality gates under this very tree to Python, and a gate that shells out to `gh api --slurp --jq` is exactly as broken in Python as in bash. A matcher keyed on `.sh` does not report that it stopped looking; it reports nothing, and
+                # exits 0. 72 `.py` files under `.ci/scripts` mention `gh` and none of them was being read.
                 if name.endswith((".sh", ".py")) and candidate.is_file():
                     scan_files.append(str(candidate.relative_to(root)))
 

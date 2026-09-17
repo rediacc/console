@@ -32,9 +32,8 @@ THE FOUR CLASSES, each with the Linux/macOS divergence that puts it here:
                   Branching on the platform IS platform handling, and it belongs
                   inside a declared seam where a test can force both sides.
 
-AST, NOT grep, AND THAT IS THE WHOLE DIFFERENCE BETWEEN THIS AND A NOISE
-MACHINE. A textual sweep for `pgrep` over this package returns 15 hits; every
-one of them is prose or a pattern a guard MATCHES AGAINST in somebody else's command line. `block_self_matching_pgrep.py` is named after the string. The AST walk sees a string constant used as `subprocess.run(["pgrep", ...])` and does not see the same characters inside a regex, which takes the same corpus from 15 findings to one.
+AST, NOT grep, AND THAT IS THE WHOLE DIFFERENCE BETWEEN THIS AND A NOISE MACHINE. A textual sweep for `pgrep` over this package returns 15 hits; every one of them is prose or a pattern a guard MATCHES AGAINST in somebody else's command line. `block_self_matching_pgrep.py` is named after the string. The AST walk sees a string constant used as `subprocess.run(["pgrep", ...])` and
+does not see the same characters inside a regex, which takes the same corpus from 15 findings to one.
 
 BOTH DIRECTIONS, AND THE SECOND ONE IS THE HALF THAT DECAYS.
 
@@ -45,13 +44,9 @@ BOTH DIRECTIONS, AND THE SECOND ONE IS THE HALF THAT DECAYS.
     the tree is seamed when it is not, and it is the direction a gate normally
     forgets, because nothing breaks when it rots.
 
-AND THE SEAM ITSELF IS CHECKED, not just its scope. Each declaration names an
-environment variable; that name must appear in the seam module's own source, and
-the module must accept at least two backend values. A declaration whose env override does not exist is a claim about a seam that is not there.
+AND THE SEAM ITSELF IS CHECKED, not just its scope. Each declaration names an environment variable; that name must appear in the seam module's own source, and the module must accept at least two backend values. A declaration whose env override does not exist is a claim about a seam that is not there.
 
-ANTI-VACUITY, FIVE REFUSALS. Zero Python files in the scan root; a scan root
-that does not exist; zero declared scopes; a seam module that is missing; and a
-corpus that parsed to zero AST nodes. Every one exits 1. The success line prints the file count, the finding count per class and the scope table, so a collapse is visible rather than silent.
+ANTI-VACUITY, FIVE REFUSALS. Zero Python files in the scan root; a scan root that does not exist; zero declared scopes; a seam module that is missing; and a corpus that parsed to zero AST nodes. Every one exits 1. The success line prints the file count, the finding count per class and the scope table, so a collapse is visible rather than silent.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
 
@@ -559,8 +554,7 @@ def selftest():
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        # ANTI-SILENCER, and this is the case that separates this gate from a grep. The needle appears twice in the clean guard already, inside a
-        # regex; adding a third mention in a COMMENT must still be clean.
+        # ANTI-SILENCER, and this is the case that separates this gate from a grep. The needle appears twice in the clean guard already, inside a regex; adding a third mention in a COMMENT must still be clean.
         quiet = plant(
             _CLEAN_GUARD,
             "def verdict(command):",

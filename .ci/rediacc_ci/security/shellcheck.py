@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/security/shellcheck.sh`.
 
-W7P6 wave 28. The bash twin stays the LIVE registered gate
-(`check:ci-shell-lint`, step "Shell lint"); this module is its
-VERIFIED-EQUIVALENT ALTERNATIVE, proved on both streams by
+W7P6 wave 28. The bash twin stays the LIVE registered gate (`check:ci-shell-lint`, step "Shell lint"); this module is its VERIFIED-EQUIVALENT ALTERNATIVE, proved on both streams by
 `.ci/rediacc_ci/tests/test_security_shellcheck.py` and by the K=5 shadow ledger
 `.ci/shadow/w7p6-shellcheck.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
@@ -92,8 +90,7 @@ THE ONE NAMED ORDERING DIVERGENCE, and it is confined to the bash-4 block. The m
 `require_cmd` defect (`common.sh:141-148` binds `local cmd="$1"` and ignores the
 rest) does not apply. Checked, and recorded so the next reader does not repeat the check.
 
-WHY NOT `rediacc_ci.log`: identical to the reason in `shfmt.py`. This twin does
-not source `common.sh`; it defines its own `error: `/`info: `/`success: ` logger
+WHY NOT `rediacc_ci.log`: identical to the reason in `shfmt.py`. This twin does not source `common.sh`; it defines its own `error: `/`info: `/`success: ` logger
 whose colour rule is `CI != true` with no tty test and whose `info`/`success`
 land on STDOUT.
 
@@ -126,8 +123,7 @@ BUILD_DIR = ".ci/scripts/build"
 _READ_ARR = "read" + "array"
 _MAP_FILE = "map" + "file"
 
-# ANSI, matching the twin's own literals. Not `rediacc_ci.log`'s; see the
-# module docstring.
+# ANSI, matching the twin's own literals. Not `rediacc_ci.log`'s; see the module docstring.
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
@@ -258,8 +254,7 @@ def build_scripts() -> list[str]:
 
     RELATIVE to the current directory, because `main` has already reproduced the twin's `cd "$ROOT_DIR"` and the twin's `grep -rn ... .ci/scripts/build` names the directory relatively. The relative spelling reaches the report: every finding line is `<path>:<lineno>:<line>`, and an absolute `<path>` there would be a different report.
 
-    Byte order rather than the ambient `grep -r`'s traversal order; see the
-    module docstring for why that is a decision and not an accident.
+    Byte order rather than the ambient `grep -r`'s traversal order; see the module docstring for why that is a decision and not an accident.
     """
     root = pathlib.Path(BUILD_DIR)
     found: list[str] = []

@@ -1,8 +1,7 @@
 """wl_resprofile: one resource record per python3 exit, and a per-shape rollup.
 
 WHY THIS EXISTS. The Stop hook can only surface an optimisation it can see. Today nothing records what a hook invocation cost, so "sequential work that could parallelise" and "a wait that could be event-driven" are invisible by construction. This module is the CHEAP half of the profiling layer: at interpreter exit it writes ONE JSON line with what the kernel already accounted for.
-The tree SAMPLER (per-child lifetimes at a cadence, the thing E1/E2/E3 need) is a separate
-component; conflating the two is how a profiler ends up sampling itself.
+The tree SAMPLER (per-child lifetimes at a cadence, the thing E1/E2/E3 need) is a separate component; conflating the two is how a profiler ends up sampling itself.
 
 WHAT IS RECORDED, and what is deliberately NOT.
   * `cpu` user+sys for SELF and CHILDREN via getrusage -- the only place a
@@ -50,8 +49,7 @@ import time
 from pathlib import Path
 
 RECENT_KEEP = 5
-# Raw day folders older than this are pruned by fold(). Two weeks is enough to bisect a
-# regression; the ROLLUP and RANK.md are kept forever and are what anyone actually reads.
+# Raw day folders older than this are pruned by fold(). Two weeks is enough to bisect a regression; the ROLLUP and RANK.md are kept forever and are what anyone actually reads.
 RAW_RETENTION_DAYS = 14
 EWMA_ALPHA = 0.3
 _T0 = time.monotonic()
@@ -338,9 +336,7 @@ def install() -> None:
     try:
         if os.environ.get("WORKLIST_PROFILE") == "off":
             return
-        # CLAIM THE PROCESS. sitecustomize.py (.claude/hooks/profile/py/) arms a
-        # minimal recorder in EVERY python3 at interpreter startup; this module is
-        # the richer one and runs only where wl_core is imported. The marker tells the minimal handler to stand down at exit, so a hook process writes one record, not two.
+        # CLAIM THE PROCESS. sitecustomize.py (.claude/hooks/profile/py/) arms a minimal recorder in EVERY python3 at interpreter startup; this module is the richer one and runs only where wl_core is imported. The marker tells the minimal handler to stand down at exit, so a hook process writes one record, not two.
         os.environ["_WL_SITEPROFILE"] = "super"
         for name in ("cpu", "io"):
             v = _psi_some_total(name)

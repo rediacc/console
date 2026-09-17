@@ -91,9 +91,7 @@ export default test.defineConfig({
     ...(process.env.CI ? [] : [{ name: 'test-20', testMatch: '20-*.test.ts' }]),
     { name: 'test-21', testMatch: '21-*.test.ts' },
     { name: 'test-22', testMatch: '22-*.test.ts' },
-    // CLI-migrate routing (suite 23) — first rdc-driven e2e (CliRunner). Two
-    // workers, no ceph; distro-agnostic routing logic, so CI runs it on the
-    // single CLI_SUITE leg (ct-tests.yml ubuntu-24.04 include). Always runs locally.
+    // CLI-migrate routing (suite 23) — first rdc-driven e2e (CliRunner). Two workers, no ceph; distro-agnostic routing logic, so CI runs it on the single CLI_SUITE leg (ct-tests.yml ubuntu-24.04 include). Always runs locally.
     ...(process.env.CI && process.env.CLI_SUITE !== '1'
       ? []
       : [{ name: 'test-23', testMatch: '23-*.test.ts' }]),

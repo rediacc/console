@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/env/create-e2e-env.sh` (175 lines).
 
-Write the `.env` file the E2E integration harness reads: VM network base and offset, control-node and worker and Ceph VM ids, per-role RAM, image name, bridge timeout, renet binary path, and three optional extras. The twin's header
-owns the flag catalogue and the topology advice; it is not restated here.
+Write the `.env` file the E2E integration harness reads: VM network base and offset, control-node and worker and Ceph VM ids, per-role RAM, image name, bridge timeout, renet binary path, and three optional extras. The twin's header owns the flag catalogue and the topology advice; it is not restated here.
 
-LIVE CALLER, NOT REPOINTED. The bash twin stays the live implementation; this
-module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
+LIVE CALLER, NOT REPOINTED. The bash twin stays the live implementation; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
 Ledger: `.ci/shadow/w7p6-create-e2e-env.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-create-e2e-env --assert --k 5`). Differential: `.ci/rediacc_ci/tests/test_env_create_e2e_env.py`.
 
@@ -13,9 +11,7 @@ THE PRODUCT IS THE FILE, NOT THE STREAMS. Everything this program prints goes to
 compare the GENERATED FILE byte for byte, and the ledger's finding lines are the file's own contents echoed with a distinctive prefix.
 
 WHAT THIS SHELLS OUT TO, AND THE ONE THING IT DOES NOT. The twin runs no network, renet or VM command: `--renet-path` defaults to a STRING built from the repository root, and nothing probes the binary or asks `command -v` for it. The only external command is `mkdir -p`, and this port keeps it as a subprocess rather than calling `os.makedirs`, because the failure text belongs to
-coreutils and not to the script. On this host `mkdir` is uutils coreutils 0.8.0, which prints `mkdir: Not a directory` where GNU prints
-`mkdir: cannot create directory 'X': Not a directory`; reimplementing the
-message would pin one vendor's spelling into a Python file and break the differential the day the host's coreutils changes.
+coreutils and not to the script. On this host `mkdir` is uutils coreutils 0.8.0, which prints `mkdir: Not a directory` where GNU prints `mkdir: cannot create directory 'X': Not a directory`; reimplementing the message would pin one vendor's spelling into a Python file and break the differential the day the host's coreutils changes.
 
 -----------------------------------------------------------------------------
 DEFECT A -- A ZERO-PADDED RAM VALUE SILENTLY SKIPS THE WHOLE RAM BUDGET CHECK
@@ -35,10 +31,8 @@ Driven 2026-09-14 in the checkout:
     -> Creating E2E test environment: /tmp/b.env
     (exit 0, file written, VM_RAM_WORKER=08)
 
-The 14.5 GB ceiling exists so a topology that cannot fit a 16 GB runner is refused BEFORE the VMs are booted. A zero-padded value defeats it completely: `--vm-ram-worker 08192 --vm-workers "11 12 13 14"` writes the file and exits 0. Every other arithmetic error class behaves the same way (`1 2`, `(`, `4096)`,
-`1;ls`, and a value naming a set-but-non-numeric variable such as `HOME`), so
-this is the general shape and not one bad digit: A MALFORMED INPUT IS SCORED AS
-A CLEAN CHECK. Reproduced here exactly, including the skip; not repaired.
+The 14.5 GB ceiling exists so a topology that cannot fit a 16 GB runner is refused BEFORE the VMs are booted. A zero-padded value defeats it completely: `--vm-ram-worker 08192 --vm-workers "11 12 13 14"` writes the file and exits 0. Every other arithmetic error class behaves the same way (`1 2`, `(`, `4096)`, `1;ls`, and a value naming a set-but-non-numeric variable such as
+`HOME`), so this is the general shape and not one bad digit: A MALFORMED INPUT IS SCORED AS A CLEAN CHECK. Reproduced here exactly, including the skip; not repaired.
 
 -----------------------------------------------------------------------------
 DEFECT B -- THE WORKER/CEPH COUNT IS PATHNAME-EXPANDED AGAINST THE CURRENT
@@ -67,8 +61,7 @@ DEFECT C -- `--output` WITH NO VALUE CREATES A FILE CALLED `true`
     -> Creating E2E test environment: true
     (exit 0)
 
-That happened in this checkout while driving the twin, and the stray untracked
-`true` had to be deleted by hand. Reproduced; not repaired.
+That happened in this checkout while driving the twin, and the stray untracked `true` had to be deleted by hand. Reproduced; not repaired.
 
 -----------------------------------------------------------------------------
 DEFECT D -- EVERY `ARG_*` NAME IS AN UNDOCUMENTED ENVIRONMENT VARIABLE
@@ -82,17 +75,14 @@ works exactly like `--output /tmp/x.env`, with no flag at all (driven). This por
 THE ONE PLACE THIS PORT KNOWINGLY DIVERGES
 -----------------------------------------------------------------------------
 `arithmetic()`, over the `_Arith` parser below, implements bash's integer CONSTANT grammar exactly (decimal, leading zero octal, `0x` hex, `base#digits`, and the "value too great for base" error that Defect A rides on) plus `+ - * / % **`, parentheses, unary `+`/`-`, and recursive variable lookup with `set -u` semantics for an unset name. It does NOT implement bash's comparison,
-bitwise, shift, logical, ternary, comma or assignment operators; a value using
-one of those gets an `arithmetic syntax error` instead of bash's answer.
+bitwise, shift, logical, ternary, comma or assignment operators; a value using one of those gets an `arithmetic syntax error` instead of bash's answer.
 
 The cost is bounded and stated rather than hidden: those inputs are values of `--vm-ram-worker` / `--vm-ram-ceph`, which are RAM figures in megabytes, and in every one of them the twin ALSO reaches Defect A's skip-or-compute fork. So the divergence usually changes only the diagnostic text. It changes the EXIT CODE when the expression's value would cross the 14848 MB ceiling,
 because then the twin refuses the topology and the port skips the check: `--vm-ram-worker '1<<13'` is the shortest such input, and `test_env_create_e2e_env.py::test_the_documented_divergence_on_an_unsupported_operator_is_real` drives exactly it and asserts BOTH sides of the disagreement, so nobody discovers this by accident.
 
-A SECOND, SMALLER ONE: colour. `common.sh:18` enables colour when stderr is a
-tty and `NO_COLOR` is unset, ignoring `CI`; `rediacc_ci.log` also disables it
+A SECOND, SMALLER ONE: colour. `common.sh:18` enables colour when stderr is a tty and `NO_COLOR` is unset, ignoring `CI`; `rediacc_ci.log` also disables it
 under `CI=true`. That divergence is `rediacc_ci.log`'s, is documented there,
-and is pinned by `test_log.py`; it is named here so a reader of this file does
-not have to find it.
+and is pinned by `test_log.py`; it is named here so a reader of this file does not have to find it.
 """
 
 from __future__ import annotations
@@ -122,8 +112,7 @@ DEFAULT_VM_IMAGE = "ubuntu-24.04"  # twin :80
 # `$(get_repo_root)/private/renet/bin/renet` (twin :50). A STRING, never probed: nothing here runs `command -v renet`, stats the path, or shells out to it.
 RENET_RELATIVE_PATH = "private/renet/bin/renet"
 
-# The budget, twin :106-109. The bridge is fixed by the kvm driver; the ceiling
-# is 14.5 GB so a 16 GB runner keeps headroom for QEMU and the host.
+# The budget, twin :106-109. The bridge is fixed by the kvm driver; the ceiling is 14.5 GB so a 16 GB runner keeps headroom for QEMU and the host.
 BRIDGE_RAM_MB = 1024
 FALLBACK_ROLE_RAM_MB = "4096"  # renet's VMRAM, as a STRING: the twin's `${X:-4096}`
 CEILING_MB = 14848
@@ -142,8 +131,7 @@ TWIN_RELATIVE_DIR = ".ci/scripts/env"
 
 USAGE = "Usage: create-e2e-env.sh --output <path> [options]"  # twin :101
 
-# The heredoc at twin :132-156. `\$RUNNER_TEMP` is escaped in the twin, so the
-# literal dollar reaches the file; every other `$NAME` is a substitution.
+# The heredoc at twin :132-156. `\$RUNNER_TEMP` is escaped in the twin, so the literal dollar reaches the file; every other `$NAME` is a substitution.
 FILE_TEMPLATE = """\
 # E2E Test Environment
 # Generated by .ci/scripts/env/create-e2e-env.sh
@@ -183,8 +171,7 @@ class RefusalError(Exception):
 def dirname(path: str) -> str:
     """POSIX `dirname`, NOT `os.path.dirname`, and the difference is observable.
 
-    `os.path.dirname("a/")` is `"a"`; coreutils `dirname a/` is `"."`. Since the
-    result is handed straight to `mkdir -p`, the two answers create different directories, and `--output out/` is not an exotic input.
+    `os.path.dirname("a/")` is `"a"`; coreutils `dirname a/` is `"."`. Since the result is handed straight to `mkdir -p`, the two answers create different directories, and `--output out/` is not an exotic input.
 
     Driven against `/usr/bin/dirname` over a table in the differential test.
     """
@@ -203,8 +190,7 @@ def dirname(path: str) -> str:
 # What bash's pathname expansion looks for before it touches the filesystem. A word with none of these is passed through untouched and costs no syscall.
 _GLOB_METACHARACTERS = ("*", "?", "[")
 
-# `echo`'s option words: any run of n/e/E after a single dash, and only while
-# they lead. `-ne` is one word setting both; `-x` ends option parsing.
+# `echo`'s option words: any run of n/e/E after a single dash, and only while they lead. `-ne` is one word setting both; `-x` ends option parsing.
 _ECHO_OPTION = re.compile(r"^-[neE]+$")
 
 # The escapes `echo -e` interprets. `\c` is handled separately: it truncates.
@@ -299,8 +285,7 @@ class ArithError(Exception):
 class UnboundVariableError(Exception):
     """`set -u` firing inside the arithmetic. FATAL, unlike ArithError.
 
-    The asymmetry is bash's: an arithmetic error makes one command fail (and `local` hides even that), while an unset variable under `set -u` exits the
-    shell outright. `--vm-ram-worker abc` exits 1; `--vm-ram-worker 08` exits 0.
+    The asymmetry is bash's: an arithmetic error makes one command fail (and `local` hides even that), while an unset variable under `set -u` exits the shell outright. `--vm-ram-worker abc` exits 1; `--vm-ram-worker 08` exits 0.
     """
 
     def __init__(self, name: str) -> None:
@@ -314,9 +299,7 @@ _ARITH_TOKEN = re.compile(
     r"|(?P<op>\*\*|[-+*/%()]))"
 )
 
-# The characters that can begin ANY bash arithmetic token, used only to pick between bash's two leftover-input messages. A leftover starting with one of
-# these is "syntax error in expression"; anything else is "invalid arithmetic
-# operator" (driven: `4096)` gives the first, `1;ls` the second).
+# The characters that can begin ANY bash arithmetic token, used only to pick between bash's two leftover-input messages. A leftover starting with one of these is "syntax error in expression"; anything else is "invalid arithmetic operator" (driven: `4096)` gives the first, `1;ls` the second).
 _TOKEN_START = re.compile(r"[0-9A-Za-z_(){}\[\]+\-*/%<>=!~^&|?:,]")
 
 _MAX_ARITH_DEPTH = 32
@@ -396,8 +379,7 @@ class _Arith:
         return self.text[self.pos :].strip()
 
     def operand_expected(self) -> NoReturn:
-        # Bash names the remaining input; when the input is exhausted it names
-        # the token it last consumed (driven: `(` reports `(`).
+        # Bash names the remaining input; when the input is exhausted it names the token it last consumed (driven: `(` reports `(`).
         offender = self.rest() or self.last
         raise ArithError(
             self.text,
@@ -522,13 +504,10 @@ def _shell_var(args: dict[str, str], name: str) -> str:
 def shell_namespace(args: dict[str, str], scope: dict[str, str]) -> dict[str, str]:
     """Every name `$((...))` can resolve, in the order bash would resolve it.
 
-    NOT an environment ALIAS, and the distinction matters. Nothing here reads a
-    configuration value out of this dict; every setting is read from
-    `os.environ` at its own call site in `settings()`. This models bash's single variable NAMESPACE, which is the thing `--vm-ram-worker HOME` reaches: the inherited environment, then `parse_args`' `ARG_*` assignments, then the script's own globals, each layer shadowing the last exactly as bash does.
+    NOT an environment ALIAS, and the distinction matters. Nothing here reads a configuration value out of this dict; every setting is read from `os.environ` at its own call site in `settings()`. This models bash's single variable NAMESPACE, which is the thing `--vm-ram-worker HOME` reaches: the inherited environment, then `parse_args`' `ARG_*` assignments, then the script's own
+    globals, each layer shadowing the last exactly as bash does.
 
-    The five colour names and `SCRIPT_DIR` are in scope in the twin too (common.sh:18-32, twin :38). The colours are given their non-tty values,
-    which is every run this differential makes; on a tty the twin would hold an
-    escape sequence there and `--vm-ram-worker RED` would fail differently.
+    The five colour names and `SCRIPT_DIR` are in scope in the twin too (common.sh:18-32, twin :38). The colours are given their non-tty values, which is every run this differential makes; on a tty the twin would hold an escape sequence there and `--vm-ram-worker RED` would fail differently.
     """
     namespace = dict(os.environ)
     namespace.update(args)

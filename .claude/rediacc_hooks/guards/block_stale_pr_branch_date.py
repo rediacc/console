@@ -23,9 +23,7 @@ for BOTH sides so that boundary is at least the same boundary.
 
 THAT PIN IS ALSO WHAT MADE THE DIFFERENTIAL BLIND. This port read the clock as
 `datetime.now(tz=datetime.UTC)` -- UTC unconditionally -- while the twin's bare
-`date +%m%d` reads LOCAL time and merely honours TZ. Under the harness both are
-UTC, so the two could never disagree there; in production, on a machine at
-UTC+2, they disagreed for the two hours after local midnight. Measured on 2026-09-07 at 00:47 CEST: `test-hooks.sh` reported
+`date +%m%d` reads LOCAL time and merely honours TZ. Under the harness both are UTC, so the two could never disagree there; in production, on a machine at UTC+2, they disagreed for the two hours after local midnight. Measured on 2026-09-07 at 00:47 CEST: `test-hooks.sh` reported
 
     FAIL [0] stale-pr-branch: today's MMDD allowed (got exit 2)
 
@@ -64,8 +62,7 @@ EDGE_CASES = [
     ("gh pr edit is not gh pr create", "gh pr edit 42 --add-label ci"),
     ("prose naming the verb", "echo 'then gh pr create --draft'"),
     ("a wrapper payload is still at a command position", "sh -c 'gh pr create --head 0825-2'"),
-    # THE TWO CLOCKS, and these two cases exist because a defect lived between them. One head carries UTC's today, the other carries the machine's local
-    # today; on any machine whose offset is not zero they are DIFFERENT strings
+    # THE TWO CLOCKS, and these two cases exist because a defect lived between them. One head carries UTC's today, the other carries the machine's local today; on any machine whose offset is not zero they are DIFFERENT strings
     # for part of every day, so an implementation that hard-codes UTC and one
     # that honours TZ answer differently on at least one of them. Computed at
     # import rather than written as a literal: a fixed date would be stale

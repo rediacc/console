@@ -160,9 +160,7 @@ class BashExitError(Exception):
 class UsageError(Exception):
     """`log_error ...; exit 1` from the argument parser, and its bash cousins.
 
-    `logged` decides which stream shape the message takes. For the two `--x is required` refusals and `Unknown option:` it goes through `log_error`,
-    so it gains the `common.sh` glyph; for `$2: unbound variable` it does not,
-    because bash's own `set -u` refusal is not a `log_error` call.
+    `logged` decides which stream shape the message takes. For the two `--x is required` refusals and `Unknown option:` it goes through `log_error`, so it gains the `common.sh` glyph; for `$2: unbound variable` it does not, because bash's own `set -u` refusal is not a `log_error` call.
     """
 
     def __init__(self, message: str, *, logged: bool = True) -> None:
@@ -174,9 +172,8 @@ class UsageError(Exception):
 def repo_root() -> str:
     """`get_repo_root` (common.sh:205-210), by location rather than by cwd.
 
-    The twin resolves `.ci/scripts/lib/../../..` from `common.sh`'s own
-    directory; this file sits at `.ci/rediacc_ci/deploy/`, also three directories
-    under the root, so the arithmetic is identical. `abspath` and NOT `realpath`, because bash's `cd` is logical and a checkout reached through a symlink keeps the symlinked spelling on both sides. `paths.repo_root()` is deliberately not used: it resolves symlinks and honours `$REDIACC_CI_ROOT`, and the twin does neither.
+    The twin resolves `.ci/scripts/lib/../../..` from `common.sh`'s own directory; this file sits at `.ci/rediacc_ci/deploy/`, also three directories under the root, so the arithmetic is identical. `abspath` and NOT `realpath`, because bash's `cd` is logical and a checkout reached through a symlink keeps the symlinked spelling on both sides. `paths.repo_root()` is deliberately not
+    used: it resolves symlinks and honours `$REDIACC_CI_ROOT`, and the twin does neither.
     """
     return os.path.abspath(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
@@ -322,8 +319,7 @@ def _quote(path: str) -> str:
 def _flush() -> None:
     """Empty Python's buffers before a child inherits the descriptor.
 
-    NOT HOUSEKEEPING. bash's `echo` writes through immediately; Python
-    block-buffers stdout when it is a pipe. Without this the `log_step` line that precedes a call can land AFTER the child's own output, byte-identical content in a different order, with an identical call log and identical exits. Every spawn in this file goes through here.
+    NOT HOUSEKEEPING. bash's `echo` writes through immediately; Python block-buffers stdout when it is a pipe. Without this the `log_step` line that precedes a call can land AFTER the child's own output, byte-identical content in a different order, with an identical call log and identical exits. Every spawn in this file goes through here.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -538,9 +534,7 @@ def _jq(argv: list[str], stdin: str) -> str:
         $ bash -c 'set -e; f(){ false; echo body; }; f; echo unreachable'
         (exits 1, prints nothing)
 
-    WHATEVER jq PRINTED BEFORE FAILING IS KEPT, because `$( )` captures it either
-    way. jq's stderr is inherited, so the parse error is still visible; it is just
-    not acted on.
+    WHATEVER jq PRINTED BEFORE FAILING IS KEPT, because `$( )` captures it either way. jq's stderr is inherited, so the parse error is still visible; it is just not acted on.
     """
     _flush()
     proc = subprocess.run(argv, input=stdin, stdout=subprocess.PIPE, text=True, check=False)
@@ -569,10 +563,8 @@ def bash_glob(directory: str, pattern: str) -> list[str]:
 def parse_args(argv: list[str], argv0: str) -> dict[str, str]:
     """The `while [[ $# -gt 0 ]]` parser (:35-70), including its two refusals.
 
-    THE TWO REFUSALS RAISE; `--help` DOES NOT. `Unknown option:` and
-    `$2: unbound variable` are both `UsageError` and differ only in `logged`, which decides whether the message gains `common.sh`'s `✗ ` glyph. `--help`
-    fills the `help` key and RETURNS, because the twin's `echo ...; exit 0` is a
-    success and returning keeps that visible in the type rather than hiding a zero exit inside an exception.
+    THE TWO REFUSALS RAISE; `--help` DOES NOT. `Unknown option:` and `$2: unbound variable` are both `UsageError` and differ only in `logged`, which decides whether the message gains `common.sh`'s `✗ ` glyph. `--help` fills the `help` key and RETURNS, because the twin's `echo ...; exit 0` is a success and returning keeps that visible in the type rather than hiding a zero exit
+    inside an exception.
     """
     parsed = {
         "version": "",

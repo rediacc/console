@@ -1,7 +1,6 @@
 r"""The Claude-review turn budget cannot starve a review it is willing to route.
 
-Ported from `.ci/scripts/quality/check-review-turn-capacity.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-review-turn-capacity.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHY THIS EXISTS, in the twin's own words, because the incident IS the design:
 
@@ -166,18 +165,14 @@ def extract_function(text: str) -> str:
         out.append(line)
         if FN_CLOSE.search(line):
             break
-    # awk prints each selected line followed by a newline; `$(...)` then strips
-    # the trailing newlines. The join reproduces both steps.
+    # awk prints each selected line followed by a newline; `$(...)` then strips the trailing newlines. The join reproduces both steps.
     return "\n".join(out)
 
 
 def harness(fn: str) -> str:
     """The bash program `turns_for` runs, with `fn` spliced in.
 
-    EVERY STUB HERE IS LOAD-BEARING. `gh` must be a FUNCTION rather than a script on PATH, so the real `gh` cannot be reached even if it is installed and
-    authenticated; `log_info` must exist because the subject calls it and an
-    unbound command would take the whole probe down; `GITHUB_OUTPUT` must be a
-    real file because the subject appends to it and reads nothing back.
+    EVERY STUB HERE IS LOAD-BEARING. `gh` must be a FUNCTION rather than a script on PATH, so the real `gh` cannot be reached even if it is installed and authenticated; `log_info` must exist because the subject calls it and an unbound command would take the whole probe down; `GITHUB_OUTPUT` must be a real file because the subject appends to it and reads nothing back.
     """
     return (
         "GITHUB_OUTPUT=$(mktemp); GITHUB_REPOSITORY=x/y\n"
@@ -211,9 +206,7 @@ def turns_for(size: int, fn: str) -> str:
 def evaluate(fn: str, min_per_kloc: int) -> list[str]:
     """Every property violation, one message per line. Empty means all four hold.
 
-    RETURNS A LIST, NOT AN EXIT STATUS. The twin prints to stdout and the caller
-    tests emptiness; a list cannot be truncated by a shell taking a count mod 256
-    and it is directly assertable from a test.
+    RETURNS A LIST, NOT AN EXIT STATUS. The twin prints to stdout and the caller tests emptiness; a list cannot be truncated by a shell taking a count mod 256 and it is directly assertable from a test.
     """
     findings: list[str] = []
     prev_size = -1
@@ -235,8 +228,7 @@ def evaluate(fn: str, min_per_kloc: int) -> list[str]:
         prev_turns = value
 
     # 4. REGRESSION -- the measured starvation point must be strictly better
-    # resourced now. Numbered 4 in the twin's code and 5 in its header; the
-    # discrepancy is carried rather than silently renumbered, because the header is what a reader quotes.
+    # resourced now. Numbered 4 in the twin's code and 5 in its header; the discrepancy is carried rather than silently renumbered, because the header is what a reader quotes.
     turns = turns_for(STARVED_LINES, fn)
     if NUMERIC.match(turns) and int(turns) <= STARVED_TURNS:
         findings.append(

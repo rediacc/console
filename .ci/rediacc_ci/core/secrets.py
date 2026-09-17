@@ -21,9 +21,7 @@ THE NAMING RULE, WHICH IS THE WHOLE INTERFACE
 NO FUNCTION IN THIS MODULE RETURNS A SECRET VALUE. `redact` returns text with values removed, `presence` returns the word "present" or "absent", `report` returns lines of names, and `fingerprint` returns a digest. A future function that does hand back a value must say so in its name, the way `rediacc_ci.core.env.unredacted_value` does -- so that a reviewer reading a call site, with
 no memory of this file, can still see it happening.
 
-`redact` is the DEFAULT PATH and the others are the exceptions. A caller with
-arbitrary text and a set of values reaches for `redact`; a caller that wants to
-say something about a value it is not allowed to show reaches for `presence` or `fingerprint`.
+`redact` is the DEFAULT PATH and the others are the exceptions. A caller with arbitrary text and a set of values reaches for `redact`; a caller that wants to say something about a value it is not allowed to show reaches for `presence` or `fingerprint`.
 
 --------------------------------------------------------------------------
 WHY `::add-mask::` IS NOT ENOUGH, WITH A RECEIPT
@@ -164,9 +162,7 @@ def redact(text: str, values: Iterable[str] | Mapping[str, str | None]) -> str:
 
     THE DEFAULT PATH. Accepts either the values themselves or a name-to-value mapping, in which case only the VALUES are masked -- names stay legible, because a log that has had its variable names removed is a log nobody can act on, and the names were never the secret.
 
-    LONGEST FIRST, which is not cosmetic. With values "abc" and "abcdef" and the shorter one applied first, "abcdef" becomes "***def" and the tail of the longer secret survives in the output, masked in a way that looks masked.
-    Sorting by descending length removes that case entirely; the secondary sort
-    is lexicographic so the result does not depend on set iteration order.
+    LONGEST FIRST, which is not cosmetic. With values "abc" and "abcdef" and the shorter one applied first, "abcdef" becomes "***def" and the tail of the longer secret survives in the output, masked in a way that looks masked. Sorting by descending length removes that case entirely; the secondary sort is lexicographic so the result does not depend on set iteration order.
 
     A value is also masked in its whitespace-stripped form. An env-file value and the same value read from a command's stdout routinely differ by one trailing newline, and a redactor that misses on that difference is a redactor that fails exactly when two sources are being compared.
 
@@ -194,9 +190,7 @@ def redact_env(
 ) -> str:
     """`redact` over the environment, restricted to names `looks_secret` accepts.
 
-    The convenience wrapper a gate wants before printing a captured command's
-    output. `names` narrows it further; without it, every secret-looking name in
-    the environment is masked, which is the conservative default for a program that is about to print bytes it did not produce.
+    The convenience wrapper a gate wants before printing a captured command's output. `names` narrows it further; without it, every secret-looking name in the environment is masked, which is the conservative default for a program that is about to print bytes it did not produce.
     """
     env = os.environ if environ is None else environ
     wanted = list(env) if names is None else list(names)

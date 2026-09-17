@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported dead-case-arm scanner. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.dead_case_arms`, which pytest and the
-port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.dead_case_arms`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 8a, the broad tree-scanning nine). See DRIVEN, below.
 
@@ -28,9 +26,7 @@ PINNED BY PATH IN FOUR HARNESS ROWS, ALL OF THEM RUN-IN-PLACE, so all four take 
   - `.ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py:41`  runs it
   - `.ci/rediacc_ci/tests/gates/test_gate_media_helpers.py:40`   runs it
 
-`.ci/rediacc_ci/tests/test_quality_dead_case_arms.py:42` is the DIFFERENTIAL and
-must keep naming the twin; it copies the twin's two pipelines verbatim as a
-comment and pins the twin as the comparison side.
+`.ci/rediacc_ci/tests/test_quality_dead_case_arms.py:42` is the DIFFERENTIAL and must keep naming the twin; it copies the twin's two pipelines verbatim as a comment and pins the twin as the comparison side.
 
 BECAUSE THIS GATE IS `kind: test`, REPOINTING IS NOT COSMETIC HERE, and it is the driver's call, not this writer's: while `test-dead-case-arms.sh:25` still names the `.sh`, CI executes the TWIN and only the local `npm run` executes the port. That is the one-sided shape this programme exists to prevent, so it is called out in the report rather than left in a diff.
 
@@ -41,8 +37,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, EMPTY on both sides
     stderr: BYTE-IDENTICAL, 176 bytes, sha256 143260083699ab2c...
 
-No normalisation was applied and none was needed; the twin was run TWICE against
-an unchanged tree and is byte-stable against itself on both streams.
+No normalisation was applied and none was needed; the twin was run TWICE against an unchanged tree and is byte-stable against itself on both streams.
 
 DRIVEN RED AS WELL, through the twin's own three root overrides (`DEAD_CASE_TEST_DIRS`, `DEAD_CASE_MEDIA_DIRS`, `DEAD_CASE_CODE_DIRS`), which the port reads under the same names. The fixture is three scratch directories: a test
 root holding a `case` arm globbing `zzz8aprobe=`, a code root that emits
@@ -66,12 +61,10 @@ and only then, with the one dead arm restored:
 
 The key was also confirmed absent from the whole real tree before the run, so nothing in the repository could have vouched for it. THE REAL TREE WAS NEVER WRITTEN TO for this gate.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-dead-case-arms.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-dead-case-arms.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- kind: test test: .ci/scripts/test/gates/test-dead-case-arms.sh
-blocker: BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test-dead-case-arms.sh:14 runs it seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests")
-needs: none ---- end gate ----
+---- gate ---- kind: test test: .ci/scripts/test/gates/test-dead-case-arms.sh blocker: BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test-dead-case-arms.sh:14 runs it seam-free against the real tree inside run-all.sh
+(ci-quality.yml quality-security, "Quality-gate unit tests") needs: none ---- end gate ----
 """
 
 import sys

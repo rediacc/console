@@ -60,18 +60,14 @@ PORT NOTES.
 
 THE EXEMPTION LIST IS PRINTED NOWHERE AND THAT IS CARRIED, NOT FIXED. The twin's
 `EXEMPT_VERBS=("unlink" "purge" "revoke")` is silent: a consumer verb it forgives
-never appears in any line of output, so a reader of a green run cannot see which operations were excused. The port keeps that behaviour because the differential
-compares finding sets and a new line would be a divergence; it is reported as a
-finding against the twin rather than repaired here.
+never appears in any line of output, so a reader of a green run cannot see which operations were excused. The port keeps that behaviour because the differential compares finding sets and a new line would be a divergence; it is reported as a finding against the twin rather than repaired here.
 
 `sort -u` IS UNDER `LC_ALL=C`, which `scripts/lib/shadow-gate.ts` pins for both
 sides (`buildEnv`). Python's `sorted()` on `str` is code-point order, which agrees with C collation for the `[a-z]` alphabet these verbs are drawn from. The regexes admit nothing else, so the two orders cannot diverge here.
 
 THE `sed` COMMENT STRIP REPLACES ONLY THE FIRST MATCH PER LINE, which is what `s///` without `g` means, and the leftmost match of `[[:space:]]*#.*$` starts at
 the whitespace RUN preceding the first `#`. `re.sub(..., count=1)` is the same
-rule. A `#` inside a quoted shell string is therefore treated as a comment by
-both sides, identically; that is a known imprecision of the twin, not of the
-port.
+rule. A `#` inside a quoted shell string is therefore treated as a comment by both sides, identically; that is a known imprecision of the twin, not of the port.
 
 THE PROBE PATTERN HAS THE ALTERNATED-ANCHOR SHAPE (`(^|[^-[:alnum:]_])`) THAT THE HOUSE RULES WARN CAN RETURN SILENT FALSE ZEROS UNDER `-E`. Probed 2026-09-06 against this exact pattern and a three-line specimen, using `/usr/bin/grep`, which is GNU grep 3.12 and is what a SCRIPT resolves `grep` to on this host: it matched `keyctl add` at line start and ` keyctl pipe` mid-line and
 rejected `xkeyctl show`. So the twin is not affected. The port reproduces the leading-character capture (the matched text includes the boundary character, which
@@ -82,9 +78,7 @@ MEASURE grep WITH `/usr/bin/grep`, NEVER AT AN INTERACTIVE PROMPT. A Claude Code
 `-G --ignore-files --hidden -I --exclude-dir=.git ...`; a script sees GNU grep
 3.12. The two disagree on `\x27`, on binary-file reporting and on which files are searched, and a probe run at the prompt is a statement about the wrapper rather than about the gate. This cost two wrong port notes in this same wave.
 
-THE EM DASHES IN THE TWIN'S MESSAGES ARE EMITTED AS `—` ESCAPES. The house
-rule forbids an em dash in authored text; the twin's message bytes are not
-authored here, they are REPRODUCED, and the differential compares finding text. Writing the escape keeps this file free of the character while keeping the two sides byte-identical.
+THE EM DASHES IN THE TWIN'S MESSAGES ARE EMITTED AS `—` ESCAPES. The house rule forbids an em dash in authored text; the twin's message bytes are not authored here, they are REPRODUCED, and the differential compares finding text. Writing the escape keeps this file free of the character while keeping the two sides byte-identical.
 """
 
 import pathlib
@@ -98,9 +92,7 @@ from rediacc_ci.controls import Controls
 CONSUMER = "packages/cli/src/utils/secure-storage.ts"
 PROBE = "scripts/drills/transfer.sh"
 
-# Cleanup-only verbs, carried verbatim from the twin with its reasoning:
-# "The consumer unlinks; the probe purges. Both remove the key and neither is on
-# the success path the probe exists to predict, so they are interchangeable here. Anything else must be exercised."
+# Cleanup-only verbs, carried verbatim from the twin with its reasoning: "The consumer unlinks; the probe purges. Both remove the key and neither is on the success path the probe exists to predict, so they are interchangeable here. Anything else must be exercised."
 EXEMPT_VERBS = ("unlink", "purge", "revoke")
 
 # The em dash the twin's require_input lead carries. Named rather than embedded;
@@ -159,8 +151,7 @@ def missing_verbs(consumer: list[str], probe: list[str], exempt=EXEMPT_VERBS) ->
 def _read(path: pathlib.Path) -> str:
     """File text, decoding replacement rather than raising.
 
-    grep does not stop at a bad byte and neither does this; a source file with a
-    stray latin-1 byte is a portability defect somewhere else, not a reason this gate cannot report.
+    grep does not stop at a bad byte and neither does this; a source file with a stray latin-1 byte is a portability defect somewhere else, not a reason this gate cannot report.
     """
     return path.read_bytes().decode("utf-8", "replace")
 
@@ -196,9 +187,7 @@ def main(argv: list[str] | None = None) -> int:
     consumer = consumer_verbs(_read(consumer_path))
     probe = probe_verbs(_read(probe_path))
 
-    # CONTROL: an empty side makes the comparison vacuous. This is the branch the
-    # twin's missing `|| true` made unreachable until 96355d3b5; see the module
-    # docstring.
+    # CONTROL: an empty side makes the comparison vacuous. This is the branch the twin's missing `|| true` made unreachable until 96355d3b5; see the module docstring.
     if not consumer:
         log.error("CONTROL FAILED: no keyctl verbs extracted from %s." % CONSUMER)
         log.error("Either the consumer stopped using keyctl (retire this gate) or the")

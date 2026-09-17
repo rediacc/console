@@ -32,9 +32,8 @@ WHERE THIS REIMPLEMENTS grep, sed, sort AND awk, AND WHY THE ANSWERS AGREE.
 
 WHY THE ROUTE TABLE IS DRIVEN ROW BY ROW AND FLOORED AT 16. A table that lost rows would still pass every row it kept, which is the composition failure a count of green cases cannot see. The floor is the twin's, unchanged.
 
-NO `xdist_group`. The sandbox repo is built under pytest's own `tmp_path` and every
-write lands inside it; the only process-wide state touched is `os.environ["PATH"]`,
-which `harness.fake_bin` restores in a `finally`. The one case that sources the REAL `media-entry.sh` does so in a FRESH `bash -c` with every routed verb replaced by a stub, so nothing it can reach runs in this process or in the checkout.
+NO `xdist_group`. The sandbox repo is built under pytest's own `tmp_path` and every write lands inside it; the only process-wide state touched is `os.environ["PATH"]`, which `harness.fake_bin` restores in a `finally`. The one case that sources the REAL `media-entry.sh` does so in a FRESH `bash -c` with every routed verb replaced by a stub, so nothing it can reach runs in this
+process or in the checkout.
 """
 
 import re
@@ -118,9 +117,7 @@ ROUTES = (
     ("media.sh", "luma /tmp/nothing.mp4", "teaser.sh", "growth_luma", "/tmp/nothing.mp4"),
 )
 
-# STUBS replaces every verb the tree routes to. Sourcing the entry point defines
-# them from the real modules first; these override them, so what is under test is
-# the routing and nothing it routes to ever runs.
+# STUBS replaces every verb the tree routes to. Sourcing the entry point defines them from the real modules first; these override them, so what is under test is the routing and nothing it routes to ever runs.
 STUBS = """
 provision_start() { echo "provision_start: $*"; }
 provision_stop() { echo "provision_stop"; }
@@ -236,9 +233,7 @@ def test_the_whole_media_surface_is_delegated_and_this_file_owns_it(gate):
 
 
 def test_the_delegation_assertion_can_fail(gate):
-    # CONTROL, on both halves. Put a media call back into a COPY of run.sh's
-    # dispatch tree and the "routes none" check must see it; take the exec out and
-    # the arm check must.
+    # CONTROL, on both halves. Put a media call back into a COPY of run.sh's dispatch tree and the "routes none" check must see it; take the exec out and the arm check must.
     source = (ROOT / "run.sh").read_text(encoding="utf-8")
     lines = source.splitlines()
     anchor = '        www) exec "$ROOT_DIR/.ci/media/media-entry.sh" "$@" ;;'

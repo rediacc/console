@@ -1,8 +1,7 @@
 """Security audit with allowlist support, ported from `.ci/scripts/security/audit.sh`.
 
-PORTED FROM `.ci/scripts/security/audit.sh` (541 lines), which is the LIVE registered gate `check:ci-security-audit` and is not touched by this file. Both
-implementations exist; `.ci/rediacc_ci/tests/test_security_audit.py` is the
-differential that says they agree on both streams, the exit code and the exact argv of every external command, and `.ci/shadow/w7p6-audit.observations.jsonl`
+PORTED FROM `.ci/scripts/security/audit.sh` (541 lines), which is the LIVE registered gate `check:ci-security-audit` and is not touched by this file. Both implementations exist; `.ci/rediacc_ci/tests/test_security_audit.py` is the differential that says they agree on both streams, the exit code and the exact argv of every external command, and
+`.ci/shadow/w7p6-audit.observations.jsonl`
 is the K=5 ledger. Cutover is a later, driver-only step.
 
 WHAT THE GATE DOES, in the order it does it, because the order is the contract:
@@ -18,9 +17,8 @@ WHAT THE GATE DOES, in the order it does it, because the order is the contract:
   4. pass 3, the strict stale sweep: an allowlisted advisory that now has a fix,
      or has stopped firing altogether, fails unless it carries a BLOCKER.
 
-FOUR LIBRARIES ARE NOT RE-PORTED HERE, because they already are. The twin `source`s `emit-advisory.sh`, `blocker-validator.sh`, `release-age.sh` and
-`age-check.sh`; the last three are themselves SHIMS that shell out to
-`rediacc_ci.core.allowlist` / `.release_age` / `.age`, and the first has a port at `rediacc_ci.core.advisory`. So this file imports the same four modules the twin ultimately reaches, and the differential measures THIS file rather than re-measuring them: `test_core_advisory.py`, `test_core_blocker_validator.py`, `test_core_release_age.py` and `test_core_age.py` own those.
+FOUR LIBRARIES ARE NOT RE-PORTED HERE, because they already are. The twin `source`s `emit-advisory.sh`, `blocker-validator.sh`, `release-age.sh` and `age-check.sh`; the last three are themselves SHIMS that shell out to `rediacc_ci.core.allowlist` / `.release_age` / `.age`, and the first has a port at `rediacc_ci.core.advisory`. So this file imports the same four modules the twin
+ultimately reaches, and the differential measures THIS file rather than re-measuring them: `test_core_advisory.py`, `test_core_blocker_validator.py`, `test_core_release_age.py` and `test_core_age.py` own those.
 
 --------------------------------------------------------------------------
 DEFECT 1, MEASURED: AN EMPTY `npm audit` REPORT IS A PASS, NOT A REFUSAL
@@ -74,8 +72,7 @@ DEFECT 5: A WRONG-SHAPED (BUT VALID) REPORT IS A PASS WITH A jq ERROR ON stderr
 --------------------------------------------------------------------------
 `build_advisory_map` feeds its loop from a PROCESS SUBSTITUTION, `while ... done < <(jq -r '...' "$audit_json")`, whose exit status bash discards. A document that parses but has no `.vulnerabilities` object makes that jq exit 5
 with `jq: error (at audit-prod.json:1): null (null) has no keys` on stderr, and
-the run continues with an empty advisory map, `total // 0` supplying 0, and a
-green verdict. Reproduced, message and line number included; see `jq_error`.
+the run continues with an empty advisory map, `total // 0` supplying 0, and a green verdict. Reproduced, message and line number included; see `jq_error`.
 
 --------------------------------------------------------------------------
 DEFECT 6, MEASURED, AND THE WORST OF THE SIX: A FAILED `gh api` KILLS THE GATE
@@ -148,17 +145,14 @@ from rediacc_ci import paths
 from rediacc_ci.core import advisory, age, blocker_validator, release_age
 from rediacc_ci.policy_paths import policy_rel
 
-# THE EM DASH IS BUILT, NEVER TYPED. Nine of the twin's messages carry U+2014 and byte equality is the whole claim of this file, but the repo's house rule bans the literal character from authored text and `check:ci-em-dash-surfaces` scans `.ci/**/*.py`. `core/allowlist.py:180` already resolves the same conflict the
-# same way; this is that decision, not a new one.
+# THE EM DASH IS BUILT, NEVER TYPED. Nine of the twin's messages carry U+2014 and byte equality is the whole claim of this file, but the repo's house rule bans the literal character from authored text and `check:ci-em-dash-surfaces` scans `.ci/**/*.py`. `core/allowlist.py:180` already resolves the same conflict the same way; this is that decision, not a new one.
 EM = "\u2014"
 
 # `ADVISORY_CACHE_DIR=".audit-advisory-cache"` (audit.sh:50). RELATIVE, and it
 # stays relative: the twin `cd`s to the repo root first and .gitignore lists the path from the root.
 ADVISORY_CACHE_DIR = ".audit-advisory-cache"
 
-# The two reports, both written into the repo root and both gitignored.
-# `audit-report.json` SURVIVES the run for the CI artifact upload; only the prod
-# sidecar is removed (audit.sh:537-538).
+# The two reports, both written into the repo root and both gitignored. `audit-report.json` SURVIVES the run for the CI artifact upload; only the prod sidecar is removed (audit.sh:537-538).
 PROD_REPORT = "audit-prod.json"
 ALL_REPORT = "audit-report.json"
 
@@ -208,8 +202,7 @@ class Die(Exception):  # noqa: N818 -- not an Error; it is bash's `set -e`, name
 def _flush() -> None:
     """stdout and stderr before every spawn that inherits them.
 
-    Bash writes each `echo` with a syscall; Python buffers a pipe. Without this
-    the child's output overtakes the `log_info` line that announced it, and the differential reports a reordering that exists only in the buffering.
+    Bash writes each `echo` with a syscall; Python buffers a pipe. Without this the child's output overtakes the `log_info` line that announced it, and the differential reports a reordering that exists only in the buffering.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -409,9 +402,7 @@ def jq_to_entries(value: object) -> list[tuple[str, object]]:
 def jq_sort_key(value: object) -> tuple:
     """jq's total order, far enough to sort advisory source ids.
 
-    null < false < true < numbers < strings < arrays < objects. Only the number
-    and string rungs are reachable from `.via[].source`; the rest are ordered so
-    a surprising document sorts deterministically instead of raising.
+    null < false < true < numbers < strings < arrays < objects. Only the number and string rungs are reachable from `.via[].source`; the rest are ordered so a surprising document sorts deterministically instead of raising.
     """
     if value is None:
         return (0,)
@@ -600,8 +591,7 @@ class Audit:
         # `local stale_actionable=false` in main, written by check_stale_entries
         # through bash's dynamic scoping.
         self.stale_actionable = False
-        # The freshness delegate. ONE instance for the process, matching the
-        # twin's shell-lifetime memo; see the module docstring's divergence list.
+        # The freshness delegate. ONE instance for the process, matching the twin's shell-lifetime memo; see the module docstring's divergence list.
         self.release = release_age.ReleaseAge()
 
     # -- emission ----------------------------------------------------------
@@ -643,9 +633,7 @@ class Audit:
 
         `2>/dev/null || echo ""` means a jq runtime error produces one empty line on stdout, and the caller's `for advisory in $list` then iterates zero times -- indistinguishable from the empty-list success. Returning `[]` here is that same nothing, without inventing a blank word.
 
-        THE RESULT IS WORD-SPLIT, not line-split, because both call sites are `for advisory in $prod_advisories_list` with the variable UNQUOTED. For
-        the numeric ids npm emits the two are the same list; for a `.source`
-        that was a string with a space in it they are not, and bash would see two advisories where the file has one. Reproduced rather than tidied.
+        THE RESULT IS WORD-SPLIT, not line-split, because both call sites are `for advisory in $prod_advisories_list` with the variable UNQUOTED. For the numeric ids npm emits the two are the same list; for a `.source` that was a string with a space in it they are not, and bash would see two advisories where the file has one. Reproduced rather than tidied.
 
         BOUNDARY, STATED: a MULTI-DOCUMENT report where one document errors and another does not. jq prints the good document's lines and still exits 0 (measured on jq 1.8.1), while this returns nothing for the whole file. `npm audit --json` writes exactly one document, and no test claims agreement there.
         """
@@ -668,14 +656,11 @@ class Audit:
                 try:
                     lines.extend(program_advisory_map(document))
                 except JqError as exc:
-                    # jq CONTINUES with the next input value after a runtime
-                    # error rather than aborting the program; measured on jq
-                    # 1.8.1 with a two-document file whose first document errored and whose second still printed.
+                    # jq CONTINUES with the next input value after a runtime error rather than aborting the program; measured on jq 1.8.1 with a two-document file whose first document errored and whose second still printed.
                     print(jq_error(audit_json, end_line, str(exc)), file=sys.stderr, flush=True)
                     continue
         except (ValueError, OSError, UnicodeDecodeError):
-            # `jq empty` already accepted this file, so a parse failure here means it changed underneath the run. The twin would print jq's
-            # parse diagnostic; both sides then read zero rows.
+            # `jq empty` already accepted this file, so a parse failure here means it changed underneath the run. The twin would print jq's parse diagnostic; both sides then read zero rows.
             lines = []
 
         for raw in lines:
@@ -772,8 +757,7 @@ class Audit:
     def get_advisory_fix_info(self, advisory_id: str, audit_json: str) -> dict | None:
         """`get_advisory_fix_info` (audit.sh:183-205). None when jq printed nothing.
 
-        RAISES `Die(5)` FOR A NON-NUMERIC ID, which is DEFECT 2: jq exits 5, `pipefail` promotes it through `head -1`, and the caller decides whether `set -e` is live. `should_defer_advisory` catches it (the twin is inside
-        an `if`); `check_stale_entries` does not (the twin is not).
+        RAISES `Die(5)` FOR A NON-NUMERIC ID, which is DEFECT 2: jq exits 5, `pipefail` promotes it through `head -1`, and the caller decides whether `set -e` is live. `should_defer_advisory` catches it (the twin is inside an `if`); `check_stale_entries` does not (the twin is not).
         """
         try:
             for document, _line in documents(audit_json):
@@ -939,9 +923,7 @@ class Audit:
     def check_entry_age(self, file: str, entry: str, ident: str, name: str = "") -> bool:
         """`check_entry_age` (age-check.sh:107-127). False only for `error`.
 
-        The twin shells out to `python3 -m rediacc_ci.core.age verdict` and reads
-        a TAB-separated line back; this calls the same function. The two window
-        values are read from the environment AT THE CALL SITE, because
+        The twin shells out to `python3 -m rediacc_ci.core.age verdict` and reads a TAB-separated line back; this calls the same function. The two window values are read from the environment AT THE CALL SITE, because
         `age-check.sh` resolves `${AGE_WARN_DAYS:-180}` when it is sourced and an
         empty value means the default there too.
         """
@@ -950,8 +932,8 @@ class Audit:
             warn_days = int(os.environ.get("AGE_WARN_DAYS") or age.DEFAULT_WARN_DAYS)
             fail_days = int(os.environ.get("AGE_FAIL_DAYS") or age.DEFAULT_FAIL_DAYS)
         except ValueError:
-            # A NON-INTEGER WINDOW IS A REFUSAL ON BOTH SIDES, WITH DIFFERENT BYTES, AND THAT IS SAID HERE RATHER THAN DISCOVERED. The twin runs the verdict in a SUBPROCESS, so `int("later")` there is a Python traceback on stderr, an exit 1, an empty line read back, and then the shim's own `unreadable verdict` refusal. This side cannot
-            # produce the traceback; it produces the refusal and the same
+            # A NON-INTEGER WINDOW IS A REFUSAL ON BOTH SIDES, WITH DIFFERENT BYTES, AND THAT IS SAID HERE RATHER THAN DISCOVERED. The twin runs the verdict in a SUBPROCESS, so `int("later")` there is a Python traceback on stderr, an exit 1, an empty line read back, and then the shim's own `unreadable verdict` refusal. This side cannot produce the traceback; it produces the refusal
+            # and the same
             # `age_fail=1`, so the exit code and the loop behaviour match and
             # the stderr text does not. No differential case claims otherwise.
             print(
@@ -1171,8 +1153,7 @@ class Audit:
             return 1
 
         advisory.log_success("Security audit passed")
-        # Keep audit-report.json for ci-quality.yml artifact upload; clean
-        # sidecar only.
+        # Keep audit-report.json for ci-quality.yml artifact upload; clean sidecar only.
         with contextlib.suppress(OSError):
             os.remove(PROD_REPORT)
         return 0
@@ -1242,9 +1223,7 @@ def describe_fix(fix_type: str, is_major: str, fix_version: str, fix_value: str)
 def _field(info: dict, name: str, *, default: str = "", empty: bool = False) -> str:
     """One `echo "$info" | jq -r '.<name> // <fallback>'`.
 
-    `// empty` yields the empty string in a command substitution; `// "null"`
-    yields the four characters `null`; a bare `.pkg` yields `null` on a missing
-    key, because `jq -r` renders null as the word. The default is therefore spelled at every call site rather than guessed here.
+    `// empty` yields the empty string in a command substitution; `// "null"` yields the four characters `null`; a bare `.pkg` yields `null` on a missing key, because `jq -r` renders null as the word. The default is therefore spelled at every call site rather than guessed here.
 
     ONLY `null` AND `false` ARE ABSENT, which is jq's rule and not Python's: an EMPTY STRING is truthy in jq, so `"" // "unknown"` is the empty string. A port that used `or` here would print `unknown` for a package literally named the empty string, which is unreachable but is also not what the twin does.
     """

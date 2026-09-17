@@ -84,8 +84,7 @@ interface Surface {
 
 // Declared with subset() rather than as a literal so an unknown or misspelled code throws at module load. A literal cannot: it just silently scans a directory that does not exist, which is how a locale goes unchecked for months while the gate reports green.
 //
-// ru is EXCLUDED ON PURPOSE and this is the single place that records it: Russian narration keeps its copula dash, because `Репозиторий — это ...` is grammatically required where
-// English uses "is". The catalog surface still includes ru; only transcripts are exempt.
+// ru is EXCLUDED ON PURPOSE and this is the single place that records it: Russian narration keeps its copula dash, because `Репозиторий — это ...` is grammatically required where English uses "is". The catalog surface still includes ru; only transcripts are exempt.
 const TRANSCRIPT_DASH_LOCALES = subset('em-dash-transcripts', [
   'en',
   'de',
@@ -102,13 +101,11 @@ const TRANSCRIPT_DASH_LOCALES = subset('em-dash-transcripts', [
 ]);
 
 const SURFACES: readonly Surface[] = [
-  // 13 locales today; the floor sits below that so it catches a collapsed glob, not a
-  // deliberate locale change. The two `.`-prefixed hash sidecars in this directory are skipped by the walker, which is why the real count is 13 and not the 15 `find` reports.
+  // 13 locales today; the floor sits below that so it catches a collapsed glob, not a deliberate locale change. The two `.`-prefixed hash sidecars in this directory are skipped by the walker, which is why the real count is 13 and not the 15 `find` reports.
   { dir: 'packages/www/src/i18n/translations', kind: 'catalog', exts: ['.json'], minFiles: 10 },
   { dir: 'packages/www/src', kind: 'source', exts: ['.astro', '.tsx'], minFiles: 50 },
-  // Tutorial narration. This surface was MISSING and it is the one that reaches a user's ears: these strings are spoken by the TTS engine and rendered as VTT captions, so an em dash here is not a style nit, it is something a listener
-  // hears as an odd pause. 234 files across 13 locales; the floor sits well below
-  // that so it catches a collapsed glob rather than a deliberate locale change.
+  // Tutorial narration. This surface was MISSING and it is the one that reaches a user's ears: these strings are spoken by the TTS engine and rendered as VTT captions, so an em dash here is not a style nit, it is something a listener hears as an odd pause. 234 files across 13 locales; the floor sits well below that so it catches a collapsed glob rather than a deliberate locale
+  // change.
   //
   // NESTED inside `packages/www/src` above and disjoint from it only by extension (.json here, .astro/.tsx there), the same arrangement as the packages/cli pair. `nestedSurfaceOverlap()` turns that from a claim into a check.
   //
@@ -130,17 +127,14 @@ const SURFACES: readonly Surface[] = [
   // THE CI TOOLING TREE, added 2026-09-08. The gate's own header calls these "the www surfaces", but `.claude/hooks` above has never been www, so the real boundary was never www: it was whichever directories somebody had got round to listing, and `.ci` was simply absent. The rule in CLAUDE.md binds comments, help text and error messages repo-wide, and these files carry all three
   // -- `check_secret_reachability.py:289` put an em dash straight into a gate's CI output, and `check-command-tree.sh:70` still does, which is what surfaced the hole.
   //
-  // SEEDED, NOT CLEAN, and the difference is worth stating rather than burying in a baseline diff: 83 files under `.ci/scripts` and 3 under `.ci/rediacc_ci` carry em dashes today. Seeding grandfathers those and bans the 84th from this day. That is a
-  // real ban going forward and a paper one backwards; the drain is opportunistic, and
-  // `--write-baseline` REFUSES to add, so the number can only fall from here.
+  // SEEDED, NOT CLEAN, and the difference is worth stating rather than burying in a baseline diff: 83 files under `.ci/scripts` and 3 under `.ci/rediacc_ci` carry em dashes today. Seeding grandfathers those and bans the 84th from this day. That is a real ban going forward and a paper one backwards; the drain is opportunistic, and `--write-baseline` REFUSES to add, so the number
+  // can only fall from here.
   //
   // Three sibling dirs rather than one `.ci`, because the floors differ by an order of magnitude and one global floor would stop catching a collapsed glob in the small one.
   { dir: '.ci/scripts', kind: 'source', exts: ['.sh', '.py'], minFiles: 300 },
   { dir: '.ci/rediacc_ci', kind: 'source', exts: ['.py'], minFiles: 200 },
   { dir: '.ci/lib', kind: 'source', exts: ['.sh'], minFiles: 5 },
-  // packages/cli. The first two join at ZERO (measured clean when they were
-  // added); the third rides the baseline, because 93 percent of its findings are
-  // prose inside JSDoc where the dash often does real syntactic work, and a mechanical pass over that changes documented meaning.
+  // packages/cli. The first two join at ZERO (measured clean when they were added); the third rides the baseline, because 93 percent of its findings are prose inside JSDoc where the dash often does real syntactic work, and a mechanical pass over that changes documented meaning.
   //
   // THE NESTING IS LOAD-BEARING. `packages/cli/src/i18n/locales` sits INSIDE `packages/cli/src`, and they stay disjoint only because their extension sets do not intersect. Adding '.json' to the source surface would count every catalog finding twice. `nestedSurfaceOverlap()` below turns that from a comment into a check.
   { dir: 'packages/cli/src/i18n/locales', kind: 'catalog', exts: ['.json'], minFiles: 10 },

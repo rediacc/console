@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported label-reference gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.label_references`, which pytest and the
-port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.label_references`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 7). See DRIVEN, below.
 
@@ -37,9 +35,8 @@ THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files.
 
 PINNED BY PATH, and this one is pinned in three places rather than one, so say which. `.ci/scripts/test/gates/test-label-references.sh:26` sets
 `GATE=".../check-label-references.sh"` and RUNS it, and the manifest's `test:`
-points at that harness; `.ci/rediacc_ci/tests/test_quality_label_references.py:35`
-and `.ci/rediacc_ci/tests/gates/test_gate_label_references.py:63` also name the twin path. All three go on exercising the bash twin after this cutover and go on passing, so the registry flip alone does not move them. Repointing is the driver's call, and the rows differ in kind: the harness RUNS the script by path, so it must be repointed at the ENTRY POINT (a module is not runnable
-by path),
+points at that harness; `.ci/rediacc_ci/tests/test_quality_label_references.py:35` and `.ci/rediacc_ci/tests/gates/test_gate_label_references.py:63` also name the twin path. All three go on exercising the bash twin after this cutover and go on passing, so the registry flip alone does not move them. Repointing is the driver's call, and the rows differ in kind: the harness RUNS the
+script by path, so it must be repointed at the ENTRY POINT (a module is not runnable by path),
 while any row asserting a behavioural needle belongs on the MODULE.
 
 THE TWIN'S SELF-EXCLUSION DOES NOT COVER THIS FILE, and that was checked rather than assumed. `check-label-references.sh:80` excludes exactly two BASENAMES, `check-label-references.sh` and `test-label-references.sh`, because each carries planted sample lines. This entry point carries none, and neither do its nine batch-mates: ALL TEN of the twin's extractor pipelines were run over
@@ -52,9 +49,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, EMPTY on both sides
     stderr: BYTE-IDENTICAL, 69 bytes, sha256 e262cdef2577de2d...
 
-THE WHOLE REPORT IS ON STDERR AND STDOUT IS EMPTY on this pair, so comparing stdout alone would have compared nothing. Both streams were captured to separate
-files. No normalisation was applied and none was needed; the twin was first run
-TWICE against an unchanged tree and is byte-stable against itself on both streams.
+THE WHOLE REPORT IS ON STDERR AND STDOUT IS EMPTY on this pair, so comparing stdout alone would have compared nothing. Both streams were captured to separate files. No normalisation was applied and none was needed; the twin was first run TWICE against an unchanged tree and is byte-stable against itself on both streams.
 
 DRIVEN RED AS WELL. The plant is a one-line file at `.ci/scripts/__gate_probe_labelref.yml` carrying the `workflow-contains` shape
 for a name no inventory declares.
@@ -69,12 +64,10 @@ THE CONTROL WAS PROVED IN BOTH DIRECTIONS BEFORE EITHER SIDE RAN: the twin's own
 
 The plant was removed with `rm` and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-label-references.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-label-references.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- kind: test id: check:ci-label-refs test: .ci/scripts/test/gates/test-label-references.sh
-blocker: BLOCKER: test-label-references.sh:116 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions
-needs: none ---- end gate ----
+---- gate ---- kind: test id: check:ci-label-refs test: .ci/scripts/test/gates/test-label-references.sh blocker: BLOCKER: test-label-references.sh:116 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire
+directions needs: none ---- end gate ----
 """
 
 import sys

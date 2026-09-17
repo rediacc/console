@@ -138,10 +138,8 @@ function parseArgs(argv: readonly string[]): Options {
         i += 1;
         break;
       case '--only':
-        // APPENDS, and used to ASSIGN. A repeated flag silently discarded every earlier one, so `--only a --only b` ran ONLY b, printed `ci-runner: 1 gate` and exited green. The operator believes two gates
-        // passed; one did, and the other was never scheduled. That is a vacuous
-        // green produced by the selector rather than by a gate, which is the worse of the two because nothing in the output names a missing gate. The `1 gate` header line was the only tell and it reads as a count, not as a warning. Found 2026-09-06 by an agent that passed eleven separate --only flags and was told it had run one gate, ok. Comma-separated remains the documented
-        // spelling and still works.
+        // APPENDS, and used to ASSIGN. A repeated flag silently discarded every earlier one, so `--only a --only b` ran ONLY b, printed `ci-runner: 1 gate` and exited green. The operator believes two gates passed; one did, and the other was never scheduled. That is a vacuous green produced by the selector rather than by a gate, which is the worse of the two because nothing in the
+        // output names a missing gate. The `1 gate` header line was the only tell and it reads as a count, not as a warning. Found 2026-09-06 by an agent that passed eleven separate --only flags and was told it had run one gate, ok. Comma-separated remains the documented spelling and still works.
         opts.only = [...(opts.only ?? []), ...value(i, arg).split(',').filter(Boolean)];
         i += 1;
         break;
@@ -323,8 +321,7 @@ function changedFiles(): ChangeSet {
     })
       .split('\n')
       .filter(Boolean);
-    // expandGitlinks warns through stderr directly; a submodule it cannot read
-    // widens to a wildcard rather than narrowing, so the set stays inclusive.
+    // expandGitlinks warns through stderr directly; a submodule it cannot read widens to a wildcard rather than narrowing, so the set stays inclusive.
     return {
       files: expandGitlinks(named, (t) => process.stderr.write(t)),
       origin: 'resolved',
@@ -466,8 +463,7 @@ function saveDurations(
     const next: Record<string, DurationRecord> = Object.fromEntries(loadDurationRecords(cachePath));
     for (const r of results) {
       // ONLY a passing run. A gate that fails fast is cheap in wall-clock and expensive in nothing -- but the tier oracle judges the FLOOR of `recent`, so one 1.1s failure of a 21s gate makes it look like a pre-push-lane candidate forever. That is how check:ci-shape-duplication (21.4s), check:ci-renet-types (10.7s) and gate-test:trap-registry (46.4s) were all demanded into the
-      // fast lane on 2026-09-02, during a session that had just triaged ten red gates. A failure's duration is
-      // not the gate's cost; it is the cost of the part that ran.
+      // fast lane on 2026-09-02, during a session that had just triaged ten red gates. A failure's duration is not the gate's cost; it is the cost of the part that ran.
       if (r.status !== 'ok' || r.ms <= 0) continue;
       const old = prior.get(r.id);
       const ewma =
@@ -596,12 +592,10 @@ async function selftest(): Promise<number> {
     );
   }
 
-  // ORDERING, END TO END, THROUGH main() ITSELF. The two select() controls
-  // below exercise the FUNCTION; neither would notice `--list` moving back
-  // above the `select()` call, which is exactly the regression that shipped: `--list` returned before selection ran, so `--list --changed` printed all 314 specs whatever the scoping did, and a measurement taken from it was reported to the operator by an instrument that could not have shown otherwise.
+  // ORDERING, END TO END, THROUGH main() ITSELF. The two select() controls below exercise the FUNCTION; neither would notice `--list` moving back above the `select()` call, which is exactly the regression that shipped: `--list` returned before selection ran, so `--list --changed` printed all 314 specs whatever the scoping did, and a measurement taken from it was reported to the
+  // operator by an instrument that could not have shown otherwise.
   //
-  // A unit test on select() cannot see that; only the real argv path can. The
-  // first draft of this spawned `process.execPath run.ts`, which fails because node cannot execute TypeScript -- so it drives main() in-process with argv set and stdout captured. Same path, no interpreter, no subprocess.
+  // A unit test on select() cannot see that; only the real argv path can. The first draft of this spawned `process.execPath run.ts`, which fails because node cannot execute TypeScript -- so it drives main() in-process with argv set and stdout captured. Same path, no interpreter, no subprocess.
   const listGateLines = async (argv: string[]): Promise<number> => {
     const realArgv = process.argv;
     const realWrite = process.stdout.write.bind(process.stdout);
@@ -825,9 +819,7 @@ function writeReceipt(receipt: Receipt, warn: (text: string) => void): void {
     fs.mkdirSync(path.dirname(RECEIPT_PATH), { recursive: true });
     fs.writeFileSync(RECEIPT_PATH, `${JSON.stringify(receipt, null, 2)}\n`);
   } catch (err) {
-    // LOUD, unlike the duration cache. That cache is an optimisation and is
-    // deliberately non-load-bearing; this authorises a push, so a silent
-    // failure to write it would present as "you never ran the gates".
+    // LOUD, unlike the duration cache. That cache is an optimisation and is deliberately non-load-bearing; this authorises a push, so a silent failure to write it would present as "you never ran the gates".
     warn(`ci-runner: could not write the push receipt: ${(err as Error).message}\n`);
   }
 }
@@ -916,11 +908,9 @@ async function main(): Promise<number> {
   //
   // `--quick` runs selftest() first (see the npm key), and selftest() refuses to return 0 unless a planted failing gate produced exit 1, both captured streams, and a skipped dependent. A runner that cannot fail authorising a push would be strictly worse than no lane at all: it would replace "nobody checked" with "something green says it checked".
   //
-  // Minted on RED as well as green, carrying the failing ids. The guard decides
-  // what a red receipt is worth; the runner's job is to record what happened,
-  // not to editorialise. A receipt that appeared only on success would make "gates failed" and "gates never ran" the same observation at the guard -- the exact conflation this repo keeps paying for. SAMPLE THE TREE AGAIN, and compare. dirtyAtStart alone answers "was the tree
-  // dirty when we began"; it cannot answer "did it hold still", and those are
-  // different questions once anything else is running in this worktree. Two whole-lane runs were spent on 2026-08-27 discovering that four gates failed only in the lane and passed standalone every time, because a peer session was editing files mid-run. The lane read a moving tree and said nothing.
+  // Minted on RED as well as green, carrying the failing ids. The guard decides what a red receipt is worth; the runner's job is to record what happened, not to editorialise. A receipt that appeared only on success would make "gates failed" and "gates never ran" the same observation at the guard -- the exact conflation this repo keeps paying for. SAMPLE THE TREE AGAIN, and
+  // compare. dirtyAtStart alone answers "was the tree dirty when we began"; it cannot answer "did it hold still", and those are different questions once anything else is running in this worktree. Two whole-lane runs were spent on 2026-08-27 discovering that four gates failed only in the lane and passed standalone every time, because a peer session was editing files mid-run. The
+  // lane read a moving tree and said nothing.
   const dirtyAtEnd = dirtyDigest();
   if (dirtyAtEnd !== dirtyAtStart) {
     humanOut(

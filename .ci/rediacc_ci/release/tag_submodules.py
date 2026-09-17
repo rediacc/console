@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/release/tag-submodules.sh`.
 
-Tags each release-carrying submodule at the parent repo's release-pointer commit, so "which renet is in v1.2.3" is answerable from renet's own history.
-The twin's header carries the reasoning; what matters for the port is the
-behaviour it singles out:
+Tags each release-carrying submodule at the parent repo's release-pointer commit, so "which renet is in v1.2.3" is answerable from renet's own history. The twin's header carries the reasoning; what matters for the port is the behaviour it singles out:
 
 DRIFT IS A HARD FAILURE, NOT A SILENT RETAG. If `v<VERSION>` already exists in the submodule and points somewhere OTHER than the checked-out HEAD, the release would be claiming one version maps to two different commits. The twin refuses, exit 1, and says a human must resolve it. When the tag already points AT HEAD it is reused and the push is idempotent, so retries are safe. Those
 three arms -- absent, present-at-HEAD, present-elsewhere -- are the whole program, and `test_release_tag_submodules.py` drives all three against a real local submodule with a real bare remote rather than only the happy path.
@@ -34,9 +32,7 @@ ONE DOCUMENTED DIVERGENCE, MESSAGE TEXT ONLY. The twin's
 `VERSION="${VERSION:?tag-submodules.sh: VERSION must be set}"` produces bash's
 own `<script>: line 36: VERSION: tag-submodules.sh: VERSION must be set` and exit 1. That prefix carries a line number not worth reproducing (the same
 ruling as the `${VAR:?msg}` twins in `rediacc_ci.deploy`), so this port prints
-`tag-submodules.py: VERSION must be set` to stderr and exits 1. The exit code,
-the stream and the substance match; the wrapper's prefix does not. `:?` fires
-on set-but-EMPTY as well as unset, and so does this.
+`tag-submodules.py: VERSION must be set` to stderr and exits 1. The exit code, the stream and the substance match; the wrapper's prefix does not. `:?` fires on set-but-EMPTY as well as unset, and so does this.
 
 K=5 LEDGER: `.ci/shadow/w7p6-tag-submodules.observations.jsonl`.
 """

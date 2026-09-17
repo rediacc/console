@@ -136,8 +136,7 @@ def safe_default_vars(files: list[pathlib.Path]) -> list[str]:
 def envblock_lines(text: str) -> list[str]:
     """`sed -n '/<<ENVBLOCK/,/^ENVBLOCK/p'` over `text`.
 
-    An explicit state machine; see the port notes for the three sed behaviours a
-    regex would get wrong (the start line never closes its own range, ranges restart, an unterminated range runs to EOF).
+    An explicit state machine; see the port notes for the three sed behaviours a regex would get wrong (the start line never closes its own range, ranges restart, an unterminated range runs to EOF).
     """
     out: list[str] = []
     inside = False
@@ -184,9 +183,7 @@ def main(argv: list[str] | None = None) -> int:
     files = compose_files(compose_dir)
     compose_vars = referenced_vars(files)
 
-    # ZERO INPUTS IS A FAILURE, NEVER A PASS. A parse that finds no references
-    # at all is a broken parse or a moved directory; either way its green would
-    # mean nothing, and the twin says so in the message rather than in a comment.
+    # ZERO INPUTS IS A FAILURE, NEVER A PASS. A parse that finds no references at all is a broken parse or a moved directory; either way its green would mean nothing, and the twin says so in the message rather than in a comment.
     if not compose_vars:
         log.error(PARSE_LOGIC_ERROR)
         return 1

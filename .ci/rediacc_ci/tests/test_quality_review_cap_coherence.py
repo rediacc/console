@@ -185,9 +185,7 @@ def test_the_redefinition_count_matches_bash(
 def test_the_splice_case_is_really_a_splice() -> None:
     """The blind spot, asserted so the report's claim about it is checked.
 
-    A definition on line 1 of the status script vanishes because the gate's
-    last line is glued to it. This is the twin's behaviour; the port keeps it
-    and it is reported rather than fixed, because fixing it would change the verdict and a port does not get to do that.
+    A definition on line 1 of the status script vanishes because the gate's last line is glued to it. This is the twin's behaviour; the port keeps it and it is reported rather than fixed, because fixing it would change the verdict and a port does not get to do that.
     """
     gate = "#!/bin/bash\necho a"
     status = "review_cap_for() {\n    echo 3\n}"

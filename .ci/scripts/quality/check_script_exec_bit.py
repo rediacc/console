@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported script-exec-bit gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.script_exec_bit`, which pytest
-and the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.script_exec_bit`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 2). Measured that day:
 
@@ -21,8 +19,7 @@ resolves the leaves to `[python3]`. The registered command is the bare path to t
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. `emit: false`, the `blocker:` it carries, `needs: none`, `selftest: true` and `lane: quality-code` all moved across unchanged. Dropping any of them is invisible to the gates for a while: `emit: false` suppresses only the three workflow-region checks while the registration assertions still agree, so the loss surfaces later as a
 duplicate step written into the emitted region by `gate:bind --write`.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-script-exec-bit.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-script-exec-bit.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
 
 ---- gate ---- step: Block non-executable invoked scripts emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code slow: true ---- end gate ----
 """

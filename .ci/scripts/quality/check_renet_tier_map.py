@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported renet licence tier-map gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.renet_tier_map`, which pytest
-imports directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.renet_tier_map`, which pytest imports directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 4). See DRIVEN, below.
 
@@ -33,12 +31,10 @@ THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, diffed side by side rather than
 so it
 infers NOTHING. Carried whole, both sides resolve to {go, submodules}.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-renet-tier-map.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-renet-tier-map.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- kind: local-only id: check:ci-renet-tiers
-blocker: BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes
-needs: go, submodules ---- end gate ----
+---- gate ---- kind: local-only id: check:ci-renet-tiers blocker: BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes needs: go,
+submodules ---- end gate ----
 """
 
 import sys

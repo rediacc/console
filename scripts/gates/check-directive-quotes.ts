@@ -108,9 +108,8 @@ const NIS2_MENTION_PATTERNS: RegExp[] = [
   /\b32022L2555\b/i,
 ];
 
-// Capture an article reference plus any number of `(N)` / `(a)` modifiers. Accept English "Article" plus the most common EU-language equivalents so translated content can use the native word for "article" without losing the rule-A trigger. ja/ar/ru/tr/zh/ko translations keep English "Article"
-// per glossary; this regex still picks them up via the case-insensitive
-// English alternative. Avoid trailing `\b` after `)` because that breaks at the first `(` and yields a truncated match.
+// Capture an article reference plus any number of `(N)` / `(a)` modifiers. Accept English "Article" plus the most common EU-language equivalents so translated content can use the native word for "article" without losing the rule-A trigger. ja/ar/ru/tr/zh/ko translations keep English "Article" per glossary; this regex still picks them up via the case-insensitive English
+// alternative. Avoid trailing `\b` after `)` because that breaks at the first `(` and yields a truncated match.
 const ARTICLE_REF =
   /\b(?:Article|Artikel|art[íi]culo|articolo|artigo|artikkel|статья|статьи|Madde|المادة|条|조)\s+2[0-3](?:\([0-9a-z]+\))*/i;
 const RECITAL_REF = /\bRecital\s+\d+\b/i;
@@ -286,9 +285,7 @@ function detectFileLang(filePath: string): ContentLang {
   }
   // private/growth/dist/nis2-directive-summary-a4/ (legacy English-only path)
   if (rel.startsWith('private/growth/dist/nis2-directive-summary-a4/')) return 'en';
-  // Astro pages and any other path we walk default to English (the source
-  // template is a single-template Astro file; the [lang] route param is a
-  // runtime concern).
+  // Astro pages and any other path we walk default to English (the source template is a single-template Astro file; the [lang] route param is a runtime concern).
   return 'en';
 }
 

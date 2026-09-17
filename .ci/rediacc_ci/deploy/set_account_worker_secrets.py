@@ -28,9 +28,7 @@ THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the o
      `<account>.eu.r2.cloudflarestorage.com`, so the jurisdiction label is
      spliced into the host when it is not already there.
 
-SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS. `argv` is visible
-in `ps` and in some log surfaces; a value travels env -> `jq --arg` -> the pipe
-into `wrangler` and nowhere else.
+SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS. `argv` is visible in `ps` and in some log surfaces; a value travels env -> `jq --arg` -> the pipe into `wrangler` and nowhere else.
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` is the only external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_set_account_worker_secrets.py`) puts a RECORDING FAKE `npx` on a scratch PATH that logs its exact argv AND the bytes on its stdin. As with the www sibling the document IS the evidence on the happy path: this twin prints nothing
 of its own when it succeeds, so a port that sent the wrong bucket, the wrong region's SES key, or an un-jurisdictioned endpoint would produce byte-identical streams and exit 0.
@@ -113,8 +111,7 @@ MISSING_MESSAGES: tuple[tuple[str, str], ...] = (
     ("SUFFIX", "SUFFIX: %s: SUFFIX must be set" % SELF),
 )
 
-# The four PREFIXES read through a constructed `<PREFIX>_<SUFFIX>` name, in the order the twin evaluates them. STRIPE_WEBHOOK_SECRET is first and is reached on
-# the stable channel only; the other three are reached on both.
+# The four PREFIXES read through a constructed `<PREFIX>_<SUFFIX>` name, in the order the twin evaluates them. STRIPE_WEBHOOK_SECRET is first and is reached on the stable channel only; the other three are reached on both.
 SUFFIXED_PREFIXES: tuple[str, ...] = (
     "STRIPE_WEBHOOK_SECRET",
     "AWS_SES_ACCESS_KEY_ID",
@@ -138,8 +135,7 @@ ASIA_BORROWS = ("AWS_SES_ACCESS_KEY_ID_EU", "AWS_SES_SECRET_ACCESS_KEY_EU")
 BUCKET_VAR_STABLE = "BACKUP_BUCKET_STABLE"
 BUCKET_VAR_EDGE = "BACKUP_BUCKET_EDGE"
 
-# The four lines of the bucket refusal (:151-154). The first is dynamic; the
-# other three are byte for byte, including their two-space indent.
+# The four lines of the bucket refusal (:151-154). The first is dynamic; the other three are byte for byte, including their two-space indent.
 BUCKET_REFUSAL: tuple[str, ...] = (
     "  Expected BACKUP_BUCKET_STABLE / BACKUP_BUCKET_EDGE from the deploy",
     "  matrix (regions.json backupR2/edgeBackupR2). Refusing to deploy a",

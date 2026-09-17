@@ -42,9 +42,8 @@ def _colours_on() -> bool:
 def describe_exit(code: int) -> str:
     """`"143 (KILLED by SIGTERM)"` rather than `"143"`.
 
-    THREE ENCODINGS OF THE SAME EVENT, and a reader should not have to know which one they are holding. `subprocess` reports a signal as a NEGATIVE
-    returncode; a shell reports the same death as 128+n; and an ordinary exit is
-    neither. 160 is outside the band deliberately -- 128+32 is past the last real signal, so a plain exit status of 159 or above is left alone rather than renamed into a signal that does not exist.
+    THREE ENCODINGS OF THE SAME EVENT, and a reader should not have to know which one they are holding. `subprocess` reports a signal as a NEGATIVE returncode; a shell reports the same death as 128+n; and an ordinary exit is neither. 160 is outside the band deliberately -- 128+32 is past the last real signal, so a plain exit status of 159 or above is left alone rather than renamed
+    into a signal that does not exist.
     """
     if code < 0:
         number = -code
@@ -69,9 +68,7 @@ class GateAssertionError(AssertionError):
 class RunResult:
     """`(returncode, stdout, stderr)` with the streams kept APART.
 
-    SEPARATE ON PURPOSE, and `combined` is offered rather than assumed. Several of
-    the bash twins redirect `2>&1` into one log and assert on the merged text; those
-    ports use `.combined`. Everything else reads `.out` or `.err`, which is what catches the two defects a merge hides: progress text written to stdout, and a wrapper that swallows one stream entirely.
+    SEPARATE ON PURPOSE, and `combined` is offered rather than assumed. Several of the bash twins redirect `2>&1` into one log and assert on the merged text; those ports use `.combined`. Everything else reads `.out` or `.err`, which is what catches the two defects a merge hides: progress text written to stdout, and a wrapper that swallows one stream entirely.
     """
 
     def __init__(self, rc: int, out: str, err: str) -> None:
@@ -103,8 +100,7 @@ def run(
 
     `env_replace=True` IS THE `env -i` CASE, and it is opt-in by name because it
     is exactly the mistake the overlay defaults exist to prevent. Two twins need it for a real reason rather than for tidiness: `test-ci-complete-tiers.sh` drives assert-ci-complete.sh under `env -i` so that a `RESULT_*` variable the fixture did NOT set reads as `<unset>` -- which is the case that catches a renamed job -- and it cannot do that while this process's own environment
-    is inherited, because a real CI run exports those very names. Callers pass the
-    WHOLE environment they want, PATH included; nothing is added back for them.
+    is inherited, because a real CI run exports those very names. Callers pass the WHOLE environment they want, PATH included; nothing is added back for them.
     """
     merged = dict(env or {}) if env_replace else dict(os.environ)
     if env and not env_replace:
@@ -145,8 +141,7 @@ def require_python_module(interpreter: str, module: str, fix: str) -> None:
 
     THE CASE THIS EXISTS FOR IS NOT HYPOTHETICAL. `check-workflow-gates.sh` opens
     with its own pyyaml bootstrap because "pyyaml is absent from ubuntu-slim by
-    default"; a test that LIFTS one of its python bodies out and runs it directly
-    bypasses that bootstrap and gets `ModuleNotFoundError: No module named 'yaml'` -- from a nested interpreter, rendered as an exit code, in a case whose message is about workflow ordering. Probing first names the missing module and the remedy instead.
+    default"; a test that LIFTS one of its python bodies out and runs it directly bypasses that bootstrap and gets `ModuleNotFoundError: No module named 'yaml'` -- from a nested interpreter, rendered as an exit code, in a case whose message is about workflow ordering. Probing first names the missing module and the remedy instead.
 
     NOT A SKIP. A case that could not import its dependency has not been checked, and unchecked folded into fine is the shape this directory refuses.
     """
@@ -343,9 +338,7 @@ class Harness:
         """`assert_exit_code <expected> <actual>`. EXPECTED FIRST -- the opposite
         of `assert_eq`, and it is that way in bash. Normalising the two would flip the meaning of every existing call site silently, which is worse than the inconsistency.
 
-        A SIGNAL IS NAMED, NOT LEFT AS A NUMBER. `got 143` reads as a verdict the subject chose and sends the reader looking for the branch that returned
-        it; there is no such branch, because 143 is 128+15 and something killed
-        it. This helper is used across the whole gate-test estate, so the naming belongs here rather than at each call site.
+        A SIGNAL IS NAMED, NOT LEFT AS A NUMBER. `got 143` reads as a verdict the subject chose and sends the reader looking for the branch that returned it; there is no such branch, because 143 is 128+15 and something killed it. This helper is used across the whole gate-test estate, so the naming belongs here rather than at each call site.
         """
         self.assertions += 1
         if actual != expected:
@@ -357,9 +350,7 @@ class Harness:
     def assert_vacuous_tree_fails(self, runner, directory: pathlib.Path, needle: str, label: str):
         """The anti-vacuity case every gate test taking a ROOT override owes.
 
-        `runner(path)` must return the gate's EXIT CODE and leave its output in the
-        RunResult it returns; the bash original leaves it in `$LAST_OUT`, which is
-        the only difference and only because a Python function can return two things.
+        `runner(path)` must return the gate's EXIT CODE and leave its output in the RunResult it returns; the bash original leaves it in `$LAST_OUT`, which is the only difference and only because a Python function can return two things.
         """
         empty = directory / "empty"
         empty.mkdir(parents=True, exist_ok=True)
@@ -412,15 +403,13 @@ class Harness:
 def block_from(text: str, opener: str) -> list[str]:
     """The lines from the first one STARTING WITH `opener` through the closing `}`.
 
-    SHARED BECAUSE FIVE GATE TESTS CARRIED THE SAME NINE LINES, and unlike an assertion message there is nothing per-case in them. The five are `test_gate_installmethods_container_version.py`, `..._linuxpkg_idiom.py`, `..._manifest.py`, `test_gate_preview_worker_reaping.py` and
-    `test_gate_watchdog_supersession.py`; they pull a bash function body, a bash
+    SHARED BECAUSE FIVE GATE TESTS CARRIED THE SAME NINE LINES, and unlike an assertion message there is nothing per-case in them. The five are `test_gate_installmethods_container_version.py`, `..._linuxpkg_idiom.py`, `..._manifest.py`, `test_gate_preview_worker_reaping.py` and `test_gate_watchdog_supersession.py`; they pull a bash function body, a bash
     function body, a bash function body, `cleanup_preview_workers()` and an
     `async function hasNewerRun` respectively, which is the whole of the variation and it is an ARGUMENT. `check:ci-shape-duplication` reported the loop as four overlapping findings the moment the gate-test family entered its corpus.
 
     `awk "/^name\\(\\) \\{/,/^\\}/"` in the bash twins. It matches a line-anchored
     `}` and nothing cleverer, because the subjects are shell and JavaScript files
-    formatted with the closing brace in column 1; a brace counter would be a second
-    thing to be wrong about.
+    formatted with the closing brace in column 1; a brace counter would be a second thing to be wrong about.
 
     IT RETURNS EMPTY RATHER THAN REFUSING, and that is deliberate. Every caller has its own refusal sentence naming what it was looking for and why its absence makes that file check nothing -- the per-case content this repo keeps duplicated on purpose. Folding those five sentences into one generic "block not found" would make each red harder to read, which is the opposite of the
     trade this extraction is for.

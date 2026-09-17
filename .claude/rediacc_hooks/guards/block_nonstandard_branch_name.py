@@ -5,17 +5,14 @@ makes the ref sort next to a wave branch while belonging to no wave, and nothing
 
 THE SUBMODULE POINT IS THE SHARP ONE. `/pr-merge` finds a submodule's PRs by matching the console branch name EXACTLY. A console branch carrying a suffix silently matches nothing, so a coordinated submodule PR is invisible to the merge path and gets left behind.
 
-ONLY CREATION IS CHECKED. `git branch -d`, `-r`, `--list`, `--show-current`
-and `--contains` read; they are none of this hook's business. Blocking a read
-would be the over-matching that gets a guard switched off.
+ONLY CREATION IS CHECKED. `git branch -d`, `-r`, `--list`, `--show-current` and `--contains` read; they are none of this hook's business. Blocking a read would be the over-matching that gets a guard switched off.
 
 CITED BY HEADING, NOT LINE. Three of this file's original `:NNN` references rotted inside the same session that wrote them, because the files they point at were edited in the same working tree. block-blanket-git-add.sh adopted the heading convention for exactly this reason.
 
 `main` is allowed because it is not a feature branch. Nothing else is special cased: if a name is neither `main` nor `MMDD-N`, the convention does not describe it, and the operator is the one who decides to widen the convention.
 
-PORT NOTE ON `read -ra TOKENS <<<"$BRANCH_ARGS"`. `read` splits on IFS (space, tab, newline -- NOT `\\r`, which Python's bare `str.split()` would also eat), performs no pathname expansion, and reads ONE line. `BRANCH_ARGS` has already
-been through `head -1`, so the single-line part is guaranteed; the split below
-is written out with the exact IFS set rather than delegated to `split()`.
+PORT NOTE ON `read -ra TOKENS <<<"$BRANCH_ARGS"`. `read` splits on IFS (space, tab, newline -- NOT `\\r`, which Python's bare `str.split()` would also eat), performs no pathname expansion, and reads ONE line. `BRANCH_ARGS` has already been through `head -1`, so the single-line part is guaranteed; the split below is written out with the exact IFS set rather than delegated to
+`split()`.
 """
 
 import re

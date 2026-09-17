@@ -15,9 +15,7 @@ WHAT CLAUDE CODE ACTUALLY EXPOSES (verified against 2.1.235, not assumed):
   * Every hook gets `transcript_path`. So any hook can compute proximity from
     a tail read of one file. That is the whole mechanism.
 
-THE THRESHOLD IS MEASURED, NOT DERIVED. There is no "reserve" setting, and the formula in the bundle turned out to predict the wrong number in the only unit
-this module can see; see COMPACT_MARGIN below for what was measured instead and
-why the derivation misled. With the window at 900_000 the trigger is treated as 885_000.
+THE THRESHOLD IS MEASURED, NOT DERIVED. There is no "reserve" setting, and the formula in the bundle turned out to predict the wrong number in the only unit this module can see; see COMPACT_MARGIN below for what was measured instead and why the derivation misled. With the window at 900_000 the trigger is treated as 885_000.
 
 RESOLUTION ORDER, as this module implements it (env, then settings highest-scope-first, then the model cap, then evidence):
 
@@ -51,9 +49,7 @@ from pathlib import Path
 #
 # Auto-compact window: 1m tokens ⛝ Autocompact buffer: 33k tokens (3.3%)
 #
-# 33_000 is exactly min(20_000, 20_000) + 13_000. The formula describes the
-# shipped behaviour; what was wrong was the inference drawn from compaction
-# timings, which cluster where they do because a 1M window is reached in REPORTED prompt tokens long before the message list alone reaches 967_000.
+# 33_000 is exactly min(20_000, 20_000) + 13_000. The formula describes the shipped behaviour; what was wrong was the inference drawn from compaction timings, which cluster where they do because a 1M window is reached in REPORTED prompt tokens long before the message list alone reaches 967_000.
 #
 # The old value was wrong in the dangerous direction: it under-reserved by 18_000 tokens, so every notice promised more headroom than existed.
 COMPACT_MARGIN = 33_000
@@ -63,9 +59,7 @@ OUTPUT_RESERVE = 20_000
 WINDOW_MIN = 100_000
 WINDOW_MAX = 1_000_000
 
-# --- Bands ----------------------------------------------------------------- TWO bands, not one, and the second one is not merely "later". The late band
-# is where the operator wants the refresh; the early band exists because a
-# rewrite is not free and a rewrite that gets interrupted by the compaction it was racing is worse than no rewrite at all.
+# --- Bands ----------------------------------------------------------------- TWO bands, not one, and the second one is not merely "later". The late band is where the operator wants the refresh; the early band exists because a rewrite is not free and a rewrite that gets interrupted by the compaction it was racing is worse than no rewrite at all.
 #
 # Measured, not guessed: 414 real `worklist.py --state` turns across this project's transcripts cost p50 2,246 / p90 3,603 / p99 4,876 tokens for the write step, and p50 4,802 / p99 10,344 / max 17,765 when you charge the whole preceding stretch of the turn to it. At 98% of a 867,000 threshold the headroom is 17,340 tokens, which covers the p99 comfortably and the worst
 # case observed by 425 tokens. The early band is the insurance on that tail.
@@ -98,9 +92,7 @@ def model_max_context(model):
 def _settings_files(project_dir):
     """Settings sources for `autoCompactWindow`, highest priority first.
 
-    Managed/policy settings outrank all of these and are NOT read here: they live outside the repo and outside this hook's business. If one is ever set, this module's threshold will be wrong in the safe direction only when the
-    managed window is LARGER; `--explain` names the sources it actually read so
-    the gap is inspectable.
+    Managed/policy settings outrank all of these and are NOT read here: they live outside the repo and outside this hook's business. If one is ever set, this module's threshold will be wrong in the safe direction only when the managed window is LARGER; `--explain` names the sources it actually read so the gap is inspectable.
     """
     p = Path(project_dir) if project_dir else None
     out = []
@@ -134,9 +126,8 @@ def configured_window(project_dir):
     return None, "unset"
 
 
-# THE CAP-DISPROOF MECHANISM WAS DELETED ON 2026-08-24, because the pin rule below made it unreachable rather than merely redundant. It watched for a session carrying more tokens than its inferred model cap allows and, on that proof, kept the configured window. But with a pin present the pin now wins
-# outright, so there is nothing left to prove; and with no pin `configured` is
-# None, which its own guard rejected. Neither branch could ever fire again.
+# THE CAP-DISPROOF MECHANISM WAS DELETED ON 2026-08-24, because the pin rule below made it unreachable rather than merely redundant. It watched for a session carrying more tokens than its inferred model cap allows and, on that proof, kept the configured window. But with a pin present the pin now wins outright, so there is nothing left to prove; and with no pin `configured` is None,
+# which its own guard rejected. Neither branch could ever fire again.
 #
 # Three mutation controls died with it, and that is the correct reading: they could no longer distinguish a working disproof from a missing one, because the outcome no longer depended on it. What survives is `window_floor`, which is a different and still-live claim -- evidence that the window is bigger than ANY configured value, which is the case where a pin was added after a
 # session had already started.
@@ -153,8 +144,7 @@ def resolve_threshold(model, project_dir, window_floor=None):
     if window_floor and (not configured or window_floor > configured):
         return _finish(model, None, window_floor, "observed", from_evidence=True)
     if configured is None:
-        # No pin. Claude Code would fall back to a model-tuned window; the
-        # honest answer here is the model's own max, flagged as derived.
+        # No pin. Claude Code would fall back to a model-tuned window; the honest answer here is the model's own max, flagged as derived.
         configured = mmax
     return _finish(model, mmax, configured, source)
 
@@ -172,9 +162,8 @@ def _finish(model, mmax, configured, source, from_evidence=False):
             "window_from_evidence": from_evidence,
             "assumed_cap_overruled": False,
         }
-    # THE PIN IS THE WINDOW. A cap inferred from the model id may not clip it: `claude-opus-5` is exactly what a 1M session reports (verified again on 2026-08-24 against a transcript entry carrying 228,201 prompt tokens), so clipping a pinned 1,000,000 down to the 200K boundary produced "1.9% until auto-compact" on a session that was 21% full -- every turn, for hours.
-    # Crying wolf changes behaviour on every turn; going quiet is survivable,
-    # because PreCompact writes its facts snapshot either way.
+    # THE PIN IS THE WINDOW. A cap inferred from the model id may not clip it: `claude-opus-5` is exactly what a 1M session reports (verified again on 2026-08-24 against a transcript entry carrying 228,201 prompt tokens), so clipping a pinned 1,000,000 down to the 200K boundary produced "1.9% until auto-compact" on a session that was 21% full -- every turn, for hours. Crying wolf
+    # changes behaviour on every turn; going quiet is survivable, because PreCompact writes its facts snapshot either way.
     #
     # AND AN EXPLICIT CAP CANNOT CLIP EITHER, which is why there is no `min()` here at all: an explicit cap (a `[1m]` marker) is only ever 1,000,000, and `configured_window` clamps every pin to WINDOW_MAX, which is 1,000,000. A branch for it would be unreachable, and unreachable code in a module that decides when to warn is how the next reader is misled about what runs.
     window = configured
@@ -186,8 +175,7 @@ def _finish(model, mmax, configured, source, from_evidence=False):
         "window": window,
         "threshold": window - COMPACT_MARGIN,
         "source": source,
-        # A window taken on trust from a model id is not a measurement, a window derived from a session's own high-water mark is a fallback, and a pin allowed to overrule an assumed cap is a bet on the pin. None of the three is
-        # "confident"; the notice says so out loud in every case.
+        # A window taken on trust from a model id is not a measurement, a window derived from a session's own high-water mark is a fallback, and a pin allowed to overrule an assumed cap is a bet on the pin. None of the three is "confident"; the notice says so out loud in every case.
         "confident": mmax is not None and not from_evidence and not assumed_cap_overruled,
         "window_from_evidence": from_evidence,
         "assumed_cap_overruled": assumed_cap_overruled,
@@ -233,9 +221,7 @@ def last_usage(transcript_path):
     Reads the TAIL, growing the window until an entry is found, because a single transcript line here can be hundreds of kilobytes and the file can be tens of megabytes. Sidechain entries are skipped: a subagent's usage is not this session's context.
 
     THE SCAN STOPS AT A COMPACTION BOUNDARY, and that is the whole point of the boundary check below. Measured on this project's own transcript 2026-08-26: a PostToolUse hook fired in the gap between the compact_boundary entry and the first assistant entry after it, so the backward scan ran straight past the summary and returned the PRE-compaction peak -- 958,036 against a 967,000
-    threshold, i.e. "0.9% until auto-compact, a headroom of 8,964 tokens", when the real post-compaction size was 30,359. Truncating the
-    transcript one line earlier reproduces it exactly; one line later returns
-    98,043.
+    threshold, i.e. "0.9% until auto-compact, a headroom of 8,964 tokens", when the real post-compaction size was 30,359. Truncating the transcript one line earlier reproduces it exactly; one line later returns 98,043.
 
     That is the worst possible direction to be wrong in: the stale value is by construction the session's MAXIMUM, so the notice screams "nearly full" at precisely the moment the context has just been emptied. It is also not self-correcting within the turn -- the session reads the notice, believes it, and makes real decisions on it (this one delegated work and rushed a hand-off it
     did not need to). The usage-drop backstop in band-notice does clean up afterwards, but only on a LATER call, and only after the ladder has already been re-seated from a false peak.
@@ -261,9 +247,7 @@ def last_usage(transcript_path):
             except Exception:  # noqa: BLE001, S112 -- a torn line is expected at a tail boundary
                 continue
             if not hit_boundary and _is_compact_boundary(d):
-                # Everything older than this belongs to a context that no
-                # longer exists. Stop treating it as usage; keep scanning ONLY
-                # to recover the model, which compaction does not change.
+                # Everything older than this belongs to a context that no longer exists. Stop treating it as usage; keep scanning ONLY to recover the model, which compaction does not change.
                 hit_boundary = True
                 post_tokens = _compact_post_tokens(d)
                 continue
@@ -271,8 +255,7 @@ def last_usage(transcript_path):
                 continue
             msg = d.get("message") or {}
             if hit_boundary:
-                # This entry is OLDER than the boundary. Its usage is dead; the
-                # boundary's own postTokens is the only honest reading, and if the boundary did not carry one, silence beats the peak.
+                # This entry is OLDER than the boundary. Its usage is dead; the boundary's own postTokens is the only honest reading, and if the boundary did not carry one, silence beats the peak.
                 return (post_tokens, msg.get("model")) if post_tokens else None
             u = msg.get("usage") or {}
             total = (

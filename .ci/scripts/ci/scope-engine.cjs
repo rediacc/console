@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 // The CI scope engine: the one baseline-and-net-delta mechanism that will replace detect-pointer-bump.sh (whose ancestor walk NEVER fired on a pull_request: HEAD there is the synthetic 2-parent refs/pull/N/merge commit, so the walk aborted on its first step, defect D9).
 //
-// LIVE SINCE 2026-07-31 (D-1). Until then nothing in CI consumed these
-// outputs and every mode landed inert; that is no longer true, and the header
-// used to say so in three places. `--resolve-baseline` is now the source of the plan that gates jobs: scope-shadow.sh writes plan.json from it, ci.yml
+// LIVE SINCE 2026-07-31 (D-1). Until then nothing in CI consumed these outputs and every mode landed inert; that is no longer true, and the header used to say so in three places. `--resolve-baseline` is now the source of the plan that gates jobs: scope-shadow.sh writes plan.json from it, ci.yml
 // reads `run_<key>=false` outputs derived from that plan, and the reconcile
 // step audits the same object against the run's actual per-job outcomes.
 //
@@ -15,9 +13,7 @@
 //         renames carry both paths and BOTH classify, edge case 20; a deleted
 // file is a path like any other, edge case 19) Any line the parser cannot understand stays a single opaque path, which no rule matches, which is full CI: unsupported input degrades to more CI, never to a wrong reduced run.
 //
-// The classification table and the fail-closed semantics live in
-// scope-map.cjs; the edge-case numbers cited in both files refer to the Wave B
-// edge-case matrix.
+// The classification table and the fail-closed semantics live in scope-map.cjs; the edge-case numbers cited in both files refer to the Wave B edge-case matrix.
 
 'use strict';
 
@@ -28,8 +24,7 @@ const scopeMap = require('./scope-map.cjs');
 
 // --------------------------------------------------------------------------- File-list parsing (edge cases 19, 20, 21) ---------------------------------------------------------------------------
 
-// Decode a git C-quoted path ("...") into a real string: git escapes bytes outside ASCII as \NNN octal (UTF-8 bytes) and the usual \t \n \" \\ forms.
-// Returns null on anything malformed; the caller then keeps the raw line,
+// Decode a git C-quoted path ("...") into a real string: git escapes bytes outside ASCII as \NNN octal (UTF-8 bytes) and the usual \t \n \" \\ forms. Returns null on anything malformed; the caller then keeps the raw line,
 // which classifies as unclassified = full (fail-closed, never a silent drop).
 function unquoteCPath(quoted) {
   if (quoted.length < 2 || !quoted.startsWith('"') || !quoted.endsWith('"')) return null;
@@ -72,9 +67,7 @@ function unquoteCPath(quoted) {
 // One raw or plain line -> array of repo-relative paths (renames yield two).
 function parseLine(line) {
   if (line.startsWith(':')) {
-    // `git diff-tree -r --raw`: ":<old> <new> <sha> <sha> <status>\tpath[\tpath]".
-    // Tab-separated, so paths with spaces survive; a rename/copy carries both
-    // sides and both are returned (edge case 20: union wins).
+    // `git diff-tree -r --raw`: ":<old> <new> <sha> <sha> <status>\tpath[\tpath]". Tab-separated, so paths with spaces survive; a rename/copy carries both sides and both are returned (edge case 20: union wins).
     const fields = line.split('\t');
     if (fields.length < 2) return [line]; // malformed raw line: opaque => full
     return fields.slice(1);
@@ -127,13 +120,10 @@ function computeWorkflowClosure(repoRoot, entry = 'ci.yml') {
 // exported for unit tests. The harvesting side that drives them (walking
 // ancestors, downloading the attested plan artifact, reading the merge
 // commit's first parent) needs gh and git and lives below, behind
-// --resolve-baseline; these stay separable so the decisions can be tested with
-// no network at all. ---------------------------------------------------------------------------
+// --resolve-baseline; these stay separable so the decisions can be tested with no network at all. ---------------------------------------------------------------------------
 
 // A usable baseline is a GREEN run whose attested skip-plan exists, says mode 'full', and whose reconciler confirmed the outcome. Anything less and evidence would chain across reduced runs (case 1), or rest on a run that cannot prove what it ran (case 2: pre-engine or expired artifact reads as absent, case 3), or on a plan whose jobs were skipped by a watchdog rerun rather than by
-// scope (case 4: intent is not outcome). A greenlit skip is written by scope-shadow.sh's apply_greenlight as
-// `greenlight:<run-id>`; nothing else in the pipeline produces a reason of
-// that shape (buildPlan writes 'full', 'modules:<...>' and 'out-of-scope').
+// scope (case 4: intent is not outcome). A greenlit skip is written by scope-shadow.sh's apply_greenlight as `greenlight:<run-id>`; nothing else in the pipeline produces a reason of that shape (buildPlan writes 'full', 'modules:<...>' and 'out-of-scope').
 const GREENLIGHT_REASON_RE = /^greenlight:\d+$/;
 
 // planCoverageIsFull(plan) -> did that run cover every key, by execution or by evidence? THE MODE LABEL IS NOT THE ANSWER, and reading it as one is what kept this engine from ever reducing a round.
@@ -192,10 +182,7 @@ function evaluateBaselineCandidate(candidate) {
 // NOBODY WRITES `reconciled`, the READER derives it. The alternative design, where the run that produced the plan marks its own artifact once its reconciler passes, mints a trust token that then travels forward in time: every later reader has to believe a claim it cannot check, and the check would have to live in `ci-complete` (the pipeline's single required check, on ubuntu-slim
 // with timeout-minutes: 5) where a slow artifact write costs every PR. Here the consumer already holds the plan, can fetch that run's per-job outcomes, and can run the EXISTING pure reconcile() itself. Nothing is carried forward, and the verdict lands on the FAIL-OPEN side: a wrong refusal costs one full CI round, not a red required check.
 //
-// SELF-DECLARATION IS DELETED, NOT BLACKLISTED. The downloaded bytes come from a different run and `reconciled` is now load-bearing, so whatever the
-// artifact says about itself is dropped before anything reads it; only the
-// recomputation below may put it back. A blacklist would have to enumerate the
-// ways a writer could vouch for itself; deleting the field enumerates nothing.
+// SELF-DECLARATION IS DELETED, NOT BLACKLISTED. The downloaded bytes come from a different run and `reconciled` is now load-bearing, so whatever the artifact says about itself is dropped before anything reads it; only the recomputation below may put it back. A blacklist would have to enumerate the ways a writer could vouch for itself; deleting the field enumerates nothing.
 //
 // `jobs` may be an ARRAY or a zero-argument function returning one. The
 // function form is what makes the cheap-first ordering real rather than
@@ -262,15 +249,12 @@ function isBaseUnchanged({ planBaseSha, mergeParentSha }) {
 //
 // THIS MODE IS NO LONGER INERT. It landed that way deliberately, so it could be observed on real traffic before it was trusted, and the comment here used to say that no job `if:` referenced a scope value. D-1 flipped it on 2026-07-31: scope-shadow.sh writes plan.json from THIS mode's output, emits
 // one `run_<key>=false` line per out-of-scope key, and ci.yml's job conditions
-// read them. The soak is over; the fail-open encoding below is now the only
-// thing standing between a bad answer here and a job that should have run.
+// read them. The soak is over; the fail-open encoding below is now the only thing standing between a bad answer here and a job that should have run.
 //
 // Candidates USED to resolve to 'no-skip-plan' unconditionally, because nothing wrote the artifact. The shadow step in `initialize` now uploads `ci-skip-plan` on every PR run, so the artifact exists and the question has moved from "is there a plan" to "does that plan describe what that run actually did". That is attestPlan's job, at READ time, per candidate.
 //
-// WIRING PRECONDITION, satisfied but still load-bearing. `initialize` used to check out with `fetch-tags: true` and NO `fetch-depth`, which is a depth-1
-// shallow clone; wired against that, this mode would answer
-// 'baseline:shallow-clone' on every single run and go full forever while looking perfectly healthy from the outside, which is D9's exact failure shape. That job now carries `fetch-depth: 0` plus `filter: blob:none` (blob:none keeps it cheap: commits and trees only, no historical file contents). Anyone tempted to trim that checkout back should know they would be retiring this
-// engine silently rather than turning it off. ---------------------------------------------------------------------------
+// WIRING PRECONDITION, satisfied but still load-bearing. `initialize` used to check out with `fetch-tags: true` and NO `fetch-depth`, which is a depth-1 shallow clone; wired against that, this mode would answer 'baseline:shallow-clone' on every single run and go full forever while looking perfectly healthy from the outside, which is D9's exact failure shape. That job now carries
+// `fetch-depth: 0` plus `filter: blob:none` (blob:none keeps it cheap: commits and trees only, no historical file contents). Anyone tempted to trim that checkout back should know they would be retiring this engine silently rather than turning it off. ---------------------------------------------------------------------------
 
 // GitHub truncates a compare file list at 300 entries. Past that the list is a lie by omission, and an omission classifies as REDUCED (the missing paths simply do not vote), so the cap is a fail-open trigger and not a display limit.
 const DIFF_FILE_CAP = 300;
@@ -394,8 +378,7 @@ function resolveBaseline(opts, io) {
         baseline = candidate;
         break;
       }
-      // Only candidates that actually paid for attestation attempts consume
-      // budget; red candidates are free and the streak can be any length.
+      // Only candidates that actually paid for attestation attempts consume budget; red candidates are free and the streak can be any length.
       if (candidate && candidate.attestsTried > 0) {
         budgetSpent += 1;
         if (budgetSpent >= GREEN_ATTEST_BUDGET) {
@@ -551,9 +534,7 @@ function createRepoIo({
   const readAttestedPlanForRun = (runId, sha) => {
     const plan = downloadPlan(runId);
     if (!plan) return null;
-    // LAZY, and inside a try. skip-plan-reconcile.cjs runs validateNameTable at
-    // module load and THROWS on table drift; required at the top of this file,
-    // that throw would take down the whole engine (including --classify, which has nothing to do with attestation) instead of degrading to full CI.
+    // LAZY, and inside a try. skip-plan-reconcile.cjs runs validateNameTable at module load and THROWS on table drift; required at the top of this file, that throw would take down the whole engine (including --classify, which has nothing to do with attestation) instead of degrading to full CI.
     let reconcile = null;
     try {
       ({ reconcile } = require('./skip-plan-reconcile.cjs'));
@@ -563,9 +544,7 @@ function createRepoIo({
     return attestPlan({ plan, jobs: () => readJobsForRun(runId), runId, sha, reconcile });
   };
 
-  // Per-commit run lookup, the FALLBACK cost model: one gh process per
-  // candidate. Kept for the no-branch case only; the walk normally joins
-  // against the one-shot listing below, where a candidate costs zero calls.
+  // Per-commit run lookup, the FALLBACK cost model: one gh process per candidate. Kept for the no-branch case only; the walk normally joins against the one-shot listing below, where a candidate costs zero calls.
   const runsForShaViaGh = (sha) =>
     JSON.parse(
       gh(
@@ -584,11 +563,8 @@ function createRepoIo({
       )
     );
 
-  // One paginated listing of the branch's runs, joined locally. This is what makes the fenced walk affordable: run-listing cost scales with PAGES (RUNS_LIST_MAX_PAGES max), never with candidates, so a red streak of any
-  // length adds nothing. `null` until loaded; `false` when the listing failed
-  // or no branch is known, which degrades to the per-commit fallback above.
-  // Filled by resolveBaseline via setNoteSink; a no-op until then, so calling
-  // io functions outside a resolve stays silent rather than crashing.
+  // One paginated listing of the branch's runs, joined locally. This is what makes the fenced walk affordable: run-listing cost scales with PAGES (RUNS_LIST_MAX_PAGES max), never with candidates, so a red streak of any length adds nothing. `null` until loaded; `false` when the listing failed or no branch is known, which degrades to the per-commit fallback above. Filled by
+  // resolveBaseline via setNoteSink; a no-op until then, so calling io functions outside a resolve stays silent rather than crashing.
   let noteSink = () => {};
 
   let runsBySha = null;
@@ -629,9 +605,7 @@ function createRepoIo({
     return runsForShaViaGh(sha);
   };
 
-  // One walked sha -> one candidate, lazily and never throwing. attestsTried
-  // counts the plan downloads paid for this sha; resolveBaseline's
-  // GREEN_ATTEST_BUDGET consumes it.
+  // One walked sha -> one candidate, lazily and never throwing. attestsTried counts the plan downloads paid for this sha; resolveBaseline's GREEN_ATTEST_BUDGET consumes it.
   const candidateFor = (sha) => {
     let runs = [];
     try {
@@ -677,9 +651,7 @@ function createRepoIo({
     diffPaths: (from, to) =>
       parseFileList(git('diff-tree', '-r', '--raw', '--no-commit-id', from, to)),
 
-    // The fenced sha walk (candidate C). `^fence` scopes the domain to the
-    // commits this PR owns; the valve only guards against a wrong fence.
-    // `truncated` is conservative: a branch exactly valve-long reads as truncated, which costs a pinned walk-valve reason instead of a wrong merge-base-reached one.
+    // The fenced sha walk (candidate C). `^fence` scopes the domain to the commits this PR owns; the valve only guards against a wrong fence. `truncated` is conservative: a branch exactly valve-long reads as truncated, which costs a pinned walk-valve reason instead of a wrong merge-base-reached one.
     walkShas: (head, { fence, valve }) => {
       const args = ['rev-list', '--first-parent', `--max-count=${Number(valve) + 1}`, head];
       if (fence) args.push(`^${fence}`);
@@ -761,9 +733,7 @@ function main(argv) {
       process.stderr.write(`scope-engine: --resolve-baseline needs --repo\n${usage()}\n`);
       return 2;
     }
-    // The branch powers the one-shot run listing (candidate C's cost model). GITHUB_HEAD_REF is the PR head branch on pull_request-family events, so
-    // existing callers (scope-shadow.sh) get the cheap path with no flag; when
-    // neither is present the io degrades to per-commit lookups, which is a cost regression only, never a correctness one.
+    // The branch powers the one-shot run listing (candidate C's cost model). GITHUB_HEAD_REF is the PR head branch on pull_request-family events, so existing callers (scope-shadow.sh) get the cheap path with no flag; when neither is present the io degrades to per-commit lookups, which is a cost regression only, never a correctness one.
     const io = createRepoIo({
       repoRoot,
       repo: opts.repo,

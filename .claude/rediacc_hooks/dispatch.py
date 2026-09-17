@@ -58,14 +58,10 @@ EMPTY_CHAIN = (
 def run_chain(chain, payload, cwd=None, env=None):
     """A chain in one process, stopping at the first refusal.
 
-    STOPPING IS THE HARNESS'S BEHAVIOUR, NOT A SHORTCUT. Claude Code runs the
-    commands of a block in order and a non-zero exit refuses the tool call; the
-    guards behind it never get to speak, which is why require-jq.sh's whole contract is about being FIRST. Reproducing that here means a chain run and 38 separate runs deny the same events for the same reasons.
+    STOPPING IS THE HARNESS'S BEHAVIOUR, NOT A SHORTCUT. Claude Code runs the commands of a block in order and a non-zero exit refuses the tool call; the guards behind it never get to speak, which is why require-jq.sh's whole contract is about being FIRST. Reproducing that here means a chain run and 38 separate runs deny the same events for the same reasons.
 
     A CRASHING GUARD DOES NOT TAKE THE CHAIN WITH IT, and that is the one place this deliberately does NOT let an exception propagate. Before P7 a guard that died mid-run exited non-zero, the harness showed its stderr and did not block, and the 20-odd guards registered behind it still ran as their own commands. In one process an uncaught exception would end the interpreter, so
-    those 20 would silently never run -- a bug in one guard quietly disarming the rest, which is a strictly larger blast radius than the arrangement it replaced. So a
-    crash is caught, named loudly on stderr, and counted; the chain continues, and
-    the process exits 1 rather than 0 so the failure is visible.
+    those 20 would silently never run -- a bug in one guard quietly disarming the rest, which is a strictly larger blast radius than the arrangement it replaced. So a crash is caught, named loudly on stderr, and counted; the chain continues, and the process exits 1 rather than 0 so the failure is visible.
 
     Returns (rc, stdout, stderr). rc is 2 if any guard REFUSED (a refusal always wins, since that is a decision and a crash is not), 1 if any guard crashed and none refused, 0 otherwise.
     """

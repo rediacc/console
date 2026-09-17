@@ -139,9 +139,7 @@ def entry_age_days(
     )
     lines = [line for line in result.stdout.splitlines() if line.strip()]
     if not lines:
-        # No commit found. On a complete history that means the line is
-        # untracked and genuinely new; on a truncated one it means the
-        # introducing commit was cut away, which is not the same thing.
+        # No commit found. On a complete history that means the line is untracked and genuinely new; on a truncated one it means the introducing commit was cut away, which is not the same thing.
         return CANNOT_VERIFY if grafts_file(root) else 0
 
     commit_sha, _, commit_date = lines[-1].partition(" ")
@@ -238,9 +236,7 @@ def main(argv: list[str]) -> int:
         print(entry_age_days(rest[0], rest[1]))
         return 0
     if verb == "grafts-file":
-        # Prints the path or nothing, and always exits 0 -- the bash it
-        # replaces was `[[ -n "$f" && -s "$f" ]] && echo "$f"; return 0`, and a
-        # caller testing `[[ -n "$(_age_grafts_file)" ]]` reads the output, not the status.
+        # Prints the path or nothing, and always exits 0 -- the bash it replaces was `[[ -n "$f" && -s "$f" ]] && echo "$f"; return 0`, and a caller testing `[[ -n "$(_age_grafts_file)" ]]` reads the output, not the status.
         path = grafts_file()
         if path is not None:
             print(path)

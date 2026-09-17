@@ -1,7 +1,6 @@
 """A SHELL FILE CAN GROW UNTIL IT KILLS THE LINTER, and nothing noticed.
 
-Ported from `.ci/scripts/quality/check-shell-size.sh`, which is NOT deleted; see
-`rediacc_ci.quality.__init__` for why both copies live until a committed differential ledger retires the twin.
+Ported from `.ci/scripts/quality/check-shell-size.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until a committed differential ledger retires the twin.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS. The measurements below are the original's.
@@ -13,9 +12,7 @@ took 199 MB. The fix was to split it into a 135-line runner plus 22 topic files,
 
 NOTHING PREVENTS IT COMING BACK. Every content-based linter passed that file: its own shellcheck findings were clean, shfmt was clean, and the size was invisible to all of them by construction -- a linter cannot report a file it died on. That is the i18n lesson exactly: fixed by hand, ungated.
 
-THE RULE IS SIZE **OR** THE DIRECTIVE, not size alone. A genuinely large
-generated or table-driven script is legitimate; what is not legitimate is one
-that is both large AND asks shellcheck for the expensive analysis. Carrying
+THE RULE IS SIZE **OR** THE DIRECTIVE, not size alone. A genuinely large generated or table-driven script is legitimate; what is not legitimate is one that is both large AND asks shellcheck for the expensive analysis. Carrying
 `# shellcheck extended-analysis=false` is an explicit, reviewable statement
 that the author knows the file is big, so the gate accepts it.
 
@@ -34,8 +31,7 @@ PORT NOTES.
 
 THE COLOURS ARE UNCONDITIONAL IN THE TWIN, and that is worth stating because every other gate in this batch tests `[ -t 1 ]` first. `check-shell-size.sh`
 assigns `RED=$'\\033[0;31m'` with no tty test at all, so it writes escape bytes
-into a CI log and into a pipe. That is arguably a defect; it is NOT fixed here,
-because fixing it would change the bytes and the port's job is to keep the verdict. `scripts/lib/shadow-gate.ts` strips ANSI before comparing, so the two sides agree either way, and a reader diffing the raw streams sees the same file.
+into a CI log and into a pipe. That is arguably a defect; it is NOT fixed here, because fixing it would change the bytes and the port's job is to keep the verdict. `scripts/lib/shadow-gate.ts` strips ANSI before comparing, so the two sides agree either way, and a reader diffing the raw streams sees the same file.
 
 EVERYTHING GOES TO STDOUT. `fail()` in the twin is `echo "  ${RED}FAIL${NC} $*"`
 with no `>&2`, and so are the offender list, the two advice lines and the final
@@ -52,8 +48,7 @@ The twin also explains why it uses `read` rather than `${n//[[:space:]]/}`:
 "check-control-vacuity counts ANY `${VAR//x/y}` in a gate as control-building,
 so a substitution used for data cleaning reads as a control that never proves its plant landed." That constraint is about BASH source text and does not survive into Python, so it is recorded here as history rather than obeyed.
 
-`wc -l` COUNTS NEWLINES, NOT LINES. A file whose last line has no terminator is reported one short by `wc` and must be reported one short here, or a file sitting exactly on the threshold would flip verdicts between the two sides.
-`text.count("\\n")` is the faithful spelling; `len(splitlines())` is not.
+`wc -l` COUNTS NEWLINES, NOT LINES. A file whose last line has no terminator is reported one short by `wc` and must be reported one short here, or a file sitting exactly on the threshold would flip verdicts between the two sides. `text.count("\\n")` is the faithful spelling; `len(splitlines())` is not.
 
 DISCOVERED, TRACKED AND UNTRACKED. `git ls-files` alone is blind to a script not yet committed, which is exactly when a file is being grown, so the twin unions `ls-files '*.sh'` with `ls-files --others --exclude-standard '*.sh'` and pipes
 the result through `sort -u`. Under `LC_ALL=C` -- which the differential harness
@@ -118,8 +113,7 @@ def has_directive(text: str) -> bool:
 def over_limit(path: pathlib.Path, limit: int) -> str:
     """The line count when the file breaks the rule, UNREADABLE, or "".
 
-    Three-valued on purpose; see the port notes. "" means either "small enough"
-    or "large but declared", which the twin also collapses, because the caller treats both as compliant and printing them differently would be a different gate.
+    Three-valued on purpose; see the port notes. "" means either "small enough" or "large but declared", which the twin also collapses, because the caller treats both as compliant and printing them differently would be a different gate.
     """
     try:
         text = path.read_text(encoding="utf-8", errors="replace")

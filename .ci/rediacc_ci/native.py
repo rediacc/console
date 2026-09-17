@@ -123,9 +123,7 @@ def plan(
 def _stream(argv: list[str], cwd: str | os.PathLike[str] | None = None) -> None:
     """Run a build step with the terminal attached, and raise on failure.
 
-    NOT `rediacc_ci.proc.run`, and the reason is not style. `proc.run` captures both
-    streams and bounds the command at 60 seconds; a two-arch Go cross-compile plus an
-    esbuild bundle plus a SEA injection is minutes of output a person watches to know it is alive. Swallowing that and killing it at 60 seconds would both be wrong.
+    NOT `rediacc_ci.proc.run`, and the reason is not style. `proc.run` captures both streams and bounds the command at 60 seconds; a two-arch Go cross-compile plus an esbuild bundle plus a SEA injection is minutes of output a person watches to know it is alive. Swallowing that and killing it at 60 seconds would both be wrong.
     """
     completed = subprocess.run(argv, cwd=None if cwd is None else str(cwd), check=False)
     if completed.returncode != 0:

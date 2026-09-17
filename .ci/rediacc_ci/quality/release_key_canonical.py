@@ -1,8 +1,6 @@
 """The release signing key must reach nfpm as CANONICAL armor.
 
-Ported from `.ci/scripts/quality/check-release-key-canonical.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live until a
-differential ledger row exists over K distinct trees. Its gate header registers it as step "Release key canonical", needs none, lane quality-security.
+Ported from `.ci/scripts/quality/check-release-key-canonical.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "Release key canonical", needs none, lane quality-security.
 
 WHY THIS EXISTS, carried whole from the twin, dated incident included:
 
@@ -31,8 +29,7 @@ PORT NOTES.
 THE TALLY IS TRANSLITERATED, NOT REPLACED BY `rediacc_ci.controls.Controls`. The twin sources `.ci/scripts/lib/gate-controls.sh`, whose header records why that file exists: "Extracted 2026-09-06 after check:ci-shape-duplication caught the same ~5 lines at three copies (check-release-key-canonical, check-release-signing-coverage, check-staging-tag-guard) and was right to". The
 twin's own line for it is "One copy of the tally, shared. check:ci-shape-duplication caught this body at three copies and the extraction converted only ONE of them, which took the count to two and made the gate quiet at its own threshold of three. Doing a third of the work is how a gate gets silenced instead of satisfied."
 
-`Controls` prints `FAIL  <label>: got <got!r>, wanted <want!r>`; gate-controls.sh
-prints ` FAIL <label> (got '<got>' want '<want>')`. Both are findings to `scripts/lib/shadow-gate.ts` and their TEXT differs, so a port using `Controls`
+`Controls` prints `FAIL <label>: got <got!r>, wanted <want!r>`; gate-controls.sh prints ` FAIL <label> (got '<got>' want '<want>')`. Both are findings to `scripts/lib/shadow-gate.ts` and their TEXT differs, so a port using `Controls`
 for the gate's own output would disagree with the twin on every failing control
 and the differential would read MISMATCH_FINDINGS for a port behaving correctly. `Controls` is used only for `--selftest`, where nothing compares text. This is the SECOND port to make that call (`rediacc_ci.quality.staging_tag_guard` was the first) and the duplication is real: the right home is a shared `rediacc_ci.gate_controls` byte-compatible with the bash file. It is not
 created here because this change owns three files per subject and none of them is a new shared module, and because `.ci/rediacc_ci/core/` is off limits to this writer.
@@ -40,9 +37,7 @@ created here because this change owns three files per subject and none of them i
 THE FLOOR MESSAGE IS A REFUSAL TO THE COMPARATOR, and that shapes what a differential can be recorded over. `gate_finish`'s short-battery line contains "the battery is not being executed as written", which `scripts/lib/shadow-gate.ts` matches as a REFUSAL and which suspends the comparison entirely. So do the three early exits: "nothing here was verified" (no gpg) and "so NOTHING
 was verified" (key generation failed). Those states are real and are ported faithfully, but no ledger row can be recorded over them -- a refusal is not a verdict, and pretending otherwise is exactly the vacuity the comparator refuses.
 
-gpg IS DRIVEN, NEVER REIMPLEMENTED. Every control here is a claim about what gpg
-and the canonicaliser do to real bytes; a Python OpenPGP library would answer a
-different question and would make the gate certify itself. `python-gnupg` is not imported and no key parsing happens in this module.
+gpg IS DRIVEN, NEVER REIMPLEMENTED. Every control here is a claim about what gpg and the canonicaliser do to real bytes; a Python OpenPGP library would answer a different question and would make the gate certify itself. `python-gnupg` is not imported and no key parsing happens in this module.
 
 THE `awk` WELDER IS TRANSLITERATED WITH ITS `getline`, and the `NR>3` is the part worth stating: `gpg --armor --export-secret-keys` emits the BEGIN line, a blank line, then base64, so the first weldable pair is lines 4 and 5. A rewrite that welded "the first two body lines" would produce a different fixture and a different control. The `/^-----/` rule fires only on a line the main
 loop reads, NOT on a line pulled in by `getline`, which is why the footer can in principle be welded onto the last body line and why `done` is set on the first weld.
@@ -54,10 +49,8 @@ THE TWO ARE ASYMMETRIC WHEN THE FILE IS ABSENT, and reproducing that asymmetry i
     grep -v '^\\s*#' missing.sh 2>/dev/null | grep -c '...'   ->  prints "0"
     grep -c '...' missing.sh                                  ->  prints NOTHING
 
-The pipeline's second grep reads an EMPTY STDIN and dutifully counts zero; the
-direct grep never opens a stream and writes only a warning to stderr, so the twin's `$(...)` captures the empty string. The gate therefore reports `(got '0' want '1')` for the guard control and `(got '' want '1')` for the call control over the SAME missing file, and both of those strings are compared findings. A port that returned 0 for both would disagree on one line of a real
-recorded row. `guard_count_field` returns a number always; `call_count_field`
-returns "" for an absent file.
+The pipeline's second grep reads an EMPTY STDIN and dutifully counts zero; the direct grep never opens a stream and writes only a warning to stderr, so the twin's `$(...)` captures the empty string. The gate therefore reports `(got '0' want '1')` for the guard control and `(got '' want '1')` for the call control over the SAME missing file, and both of those strings are compared
+findings. A port that returned 0 for both would disagree on one line of a real recorded row. `guard_count_field` returns a number always; `call_count_field` returns "" for an absent file.
 
 ONE RESIDUAL DIVERGENCE, named rather than hidden: grep's own `ugrep: warning: <path>: No such file or directory` lands on the twin's stderr and this port writes nothing there. `scripts/lib/shadow-gate.ts` classifies that line as CHATTER (it carries no severity marker and its `.sh:` is not followed by a line number), and chatter is recorded but never compared, so it cannot change a
 verdict. It is still a difference in the bytes a human diffs.
@@ -88,9 +81,8 @@ BUILD_PKG_REL = (".ci", "scripts", "build", "build-linux-pkg.sh")
 # The twin's own seam, kept by name so one harness drives either implementation.
 ROOT_ENV = "RELEASE_KEY_ROOT"
 
-# The throwaway key. Its passphrase is a literal in the twin and is a literal here: it protects nothing, and a generated one would make the "wrong passphrase" control depend on a value the reader cannot see. THE SUPPRESSION ON THE NEXT LINE IS NOT A SILENCING. bandit is right that this
-# is a hardcoded credential; it protects a key generated and thrown away inside a
-# temp GNUPGHOME for the length of one process, and it is the twin's literal. Replacing it with a random value would cost the "wrong passphrase" control its readability and would change nothing about what is protected.
+# The throwaway key. Its passphrase is a literal in the twin and is a literal here: it protects nothing, and a generated one would make the "wrong passphrase" control depend on a value the reader cannot see. THE SUPPRESSION ON THE NEXT LINE IS NOT A SILENCING. bandit is right that this is a hardcoded credential; it protects a key generated and thrown away inside a temp GNUPGHOME
+# for the length of one process, and it is the twin's literal. Replacing it with a random value would cost the "wrong passphrase" control its readability and would change nothing about what is protected.
 PASSPHRASE = "gate-throwaway-passphrase"  # noqa: S105
 KEY_UID = "Release Key Gate <gate@example.invalid>"
 
@@ -183,9 +175,7 @@ def longest_body_line(text: str) -> int:
 def weld(text: str) -> str:
     """The twin's awk welder: join the first weldable body pair, losing one break.
 
-    THE DEFECT SHAPE, exactly as `part1 + part2` produces it when part1 carries no trailing newline. Content identical, one line break gone. `NR>3` and the
-    `getline` are transliterated; see the port notes for why the line number
-    matters.
+    THE DEFECT SHAPE, exactly as `part1 + part2` produces it when part1 carries no trailing newline. Content identical, one line break gone. `NR>3` and the `getline` are transliterated; see the port notes for why the line number matters.
     """
     lines = text.split("\n")
     # awk sees no final empty record for a trailing newline; `split` invents one.
@@ -244,8 +234,7 @@ def guard_count_field(path: pathlib.Path) -> str:
 def call_count_field(path: pathlib.Path) -> str:
     """The call control's `got`, as the twin's DIRECT grep produces it.
 
-    EMPTY for a missing file, because grep never opens a stream and writes only a warning to stderr. This is the half of the asymmetry a port loses by being
-    tidy; see the port notes.
+    EMPTY for a missing file, because grep never opens a stream and writes only a warning to stderr. This is the half of the asymmetry a port loses by being tidy; see the port notes.
     """
     if not path.is_file():
         return ""
@@ -514,9 +503,7 @@ _ARMOR = (
 def selftest() -> int:
     """Plant each violation, prove it fires; remove it, prove it does not.
 
-    THE PURE HALVES ONLY. Generating a throwaway key here would re-run the gate
-    and prove that gpg agrees with itself; what is worth pinning is the welder,
-    the line-length measure and the two counters, each in BOTH directions.
+    THE PURE HALVES ONLY. Generating a throwaway key here would re-run the gate and prove that gpg agrees with itself; what is worth pinning is the welder, the line-length measure and the two counters, each in BOTH directions.
     """
     ctl = Controls("release-key-canonical", floor=18, verbose=True)
 
@@ -627,9 +614,7 @@ def selftest() -> int:
     ctl.check("VACUITY: no fpr record yields the empty string", _first_fpr("sec:u:2048::\n"), "")
     ctl.check("VACUITY: empty colon output yields the empty string", _first_fpr(""), "")
 
-    # -- the tally's own contract -------------------------------------------- THE TWO LINES THIS BLOCK PRINTS ARE THE SUBJECT, NOT A FAILURE. The tally is what is under test here, so its own ` FAIL ...` and `✗ selftest: ...`
-    # land on stderr on purpose; a reader scanning for red would otherwise take
-    # them for the selftest failing.
+    # -- the tally's own contract -------------------------------------------- THE TWO LINES THIS BLOCK PRINTS ARE THE SUBJECT, NOT A FAILURE. The tally is what is under test here, so its own ` FAIL ...` and `✗ selftest: ...` land on stderr on purpose; a reader scanning for red would otherwise take them for the selftest failing.
     tally = _GateTally()
     tally.check("EXPECTED-OK: the tally under test, passing", "1", "1")
     tally.check("EXPECTED-FAIL: the tally under test, failing", "0", "1")

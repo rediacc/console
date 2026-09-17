@@ -4,13 +4,10 @@ supersession is stated out loud.
 
 WHY THIS GATE EXISTS, and it has a measurement rather than an opinion.
 
-Three id schemes collided on the same-looking token and two ADJACENT boxes of `agent/PLAN-tooling-transformation.md` ended up pointing at OPPOSITE FILES.
-`W12 P2.7` cited "A5 in `docs/ci-overhaul/04-decisions.md`"; `grep` for that
-token in that file returns 0, because it meant the GATE RULE at `.ci/scripts/quality/check_plan_boxes.py:41`. Box X0.1 fixed the source on 2026-09-08 by PREFIXING: gate rules became `G-A<n>`, operator decisions `D-A<n>`. A prefix stops the collision recurring by transcription. It does not, on its own, stop a `D-` id from naming nothing at all, which is the same failure one step
-later: a pointer that looks authoritative and resolves to no row.
+Three id schemes collided on the same-looking token and two ADJACENT boxes of `agent/PLAN-tooling-transformation.md` ended up pointing at OPPOSITE FILES. `W12 P2.7` cited "A5 in `docs/ci-overhaul/04-decisions.md`"; `grep` for that token in that file returns 0, because it meant the GATE RULE at `.ci/scripts/quality/check_plan_boxes.py:41`. Box X0.1 fixed the source on 2026-09-08 by
+PREFIXING: gate rules became `G-A<n>`, operator decisions `D-A<n>`. A prefix stops the collision recurring by transcription. It does not, on its own, stop a `D-` id from naming nothing at all, which is the same failure one step later: a pointer that looks authoritative and resolves to no row.
 
-So this gate is the other half of X0.1. `agent/DECISIONS.md` holds the rows; this
-holds the rows and their citations to each other.
+So this gate is the other half of X0.1. `agent/DECISIONS.md` holds the rows; this holds the rows and their citations to each other.
 
 WHAT "ENFORCING A LICENCE" CAN MEAN, stated here so nobody builds the impossible. `D-A6` is a standing operator licence to substitute a better design, provided the substitution is stated out loud. NO GATE CAN TELL A GOOD SUBSTITUTION FROM A BAD ONE. What a gate CAN assert is the licence's PRECONDITION: that the substitution was stated, at a pointer that resolves, naming the licence
 it was taken under.
@@ -79,9 +76,7 @@ paths.on_sys_path(paths.hooks_stop_dir(ROOT))
 try:
     import wl_planrec as R
 except ImportError as _exc:  # pragma: no cover -- exercised by the anti-vacuity harness
-    # A check that cannot see must SAY it cannot see. Every pointer this gate
-    # resolves goes through that module on purpose; without it there is no
-    # oracle and no verdict to give.
+    # A check that cannot see must SAY it cannot see. Every pointer this gate resolves goes through that module on purpose; without it there is no oracle and no verdict to give.
     print(
         "VACUOUS INPUT: cannot import the citation resolver from %s (%s). This gate "
         "resolves pointers ONLY through wl_planrec, so without it it has no oracle."
@@ -137,8 +132,7 @@ def register_label():
 def parse_rows(text):
     """[{id, decision, source, status, licence, notes, line}] from a register.
 
-    THE TABLE IS THE GRAMMAR. A row is a markdown table line whose first cell is an exact id, which is why the separator row, the source-key table above it and every sentence of prose in the file are invisible here without a single
-    special case. A cell is stripped; an empty cell is the empty string.
+    THE TABLE IS THE GRAMMAR. A row is a markdown table line whose first cell is an exact id, which is why the separator row, the source-key table above it and every sentence of prose in the file are invisible here without a single special case. A cell is stripped; an empty cell is the empty string.
     """
     rows = []
     for n, raw in enumerate(text.splitlines(), start=1):

@@ -1,7 +1,6 @@
 """Catch shell scripts that pipe a command which can exit non-zero on empty input.
 
-Ported from `.ci/scripts/quality/check-silent-failure-patterns.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-silent-failure-patterns.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__`.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS.
@@ -40,9 +39,7 @@ TWO BUGS THAT EACH ALONE KEPT THIS GATE PERMANENTLY GREEN, both recorded in the 
 CLASS 2, the redaction-filter sink, from the twin's own comment: `cmd 2>&1 | grep -v X` under pipefail dies with ZERO error text when grep filters every line -- including on SUCCESS, when the head's whole output happens to be the redacted lines (live: clone-d1.sh's D1 export, run 30628110972: a 21-second gap, then cleanup, nothing else). The head's own failure text is also lost
 when its output never flushes. Capture to a file, redact after, and test the head's own exit code instead.
 
-A line is guarded if it contains `|| true`, `|| echo`, `|| return`, or a trailing `2>/dev/null` immediately after the head (the latter does not actually rescue
-exit codes but is the common operator habit; the twin treats it as a soft signal
-and still flags).
+A line is guarded if it contains `|| true`, `|| echo`, `|| return`, or a trailing `2>/dev/null` immediately after the head (the latter does not actually rescue exit codes but is the common operator habit; the twin treats it as a soft signal and still flags).
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -55,20 +52,16 @@ was already green-for-the-wrong-reason once for this class of reason (the `../..
 It is NOT repaired in this port, because a port that changes the verdict on any tree is not a port: a floor added here would make the two implementations disagree on an empty tree, and the shadow ledger would be attesting to something that is no longer true of the twin CI actually runs. The fix belongs in a change that touches BOTH files. `selftest()` below carries a control that
 pins the CURRENT behaviour and names it as the defect it is, so the day someone fixes the twin the control tells them this file needs the same edit.
 
-THE FIND ORDER IS DIRECTORY ORDER, NOT SORTED. `find ... -print0` walks in readdir order and the twin never sorts, so the printed finding ORDER is filesystem-dependent. `os.walk` gives the same class of order. `scripts/lib/shadow-gate.ts` compares findings as an unordered multiset, so this
-cannot make the two sides disagree; it is stated because a reader diffing the
-raw streams may see the same findings in a different order and should not go looking for a bug.
+THE FIND ORDER IS DIRECTORY ORDER, NOT SORTED. `find ... -print0` walks in readdir order and the twin never sorts, so the printed finding ORDER is filesystem-dependent. `os.walk` gives the same class of order. `scripts/lib/shadow-gate.ts` compares findings as an unordered multiset, so this cannot make the two sides disagree; it is stated because a reader diffing the raw streams may
+see the same findings in a different order and should not go looking for a bug.
 
 `[+\\-]` IS A THREE-CHARACTER CLASS, and it is worth pausing on. Inside a POSIX bracket expression a backslash is LITERAL, so the twin's `^set [+\\-]e` matches `set +e`, `set -e` and a backslash-e that is nonsense nothing writes. It is is carried across rather than tidied to `[+-]`, because tidying it is a change to the matcher, and a matcher change is the one thing a differential
 cannot see on trees that contain no instance of the difference.
 
 THE STRICT-MODE RULE DOES NOT `next`. The twin's `/^set [+\\-]e/` block updates `strict` and then falls through to the ordinary line handling, so the `set` line itself is scanned for pipeline shapes. It never matches one, but the fall-through is behaviour and is reproduced rather than "cleaned up" into an early return.
 
-THE FILE-LEVEL PRE-FILTER AND THE PER-LINE TRACKER ARE DIFFERENT TESTS, and that asymmetry is the twin's. A file qualifies for scanning when ANY line matches the
-long `^set [+\\-](...)` alternation; within the file, `strict` is toggled by the
-much looser `^set [+\\-]e` plus a `pipefail` substring. A file that says
-`set -euo pipefail` at the top qualifies on both counts; one that only says
-`set -e` qualifies on neither. Reproduced exactly, including the fact that `set -e` alone (with no trailing space) fails the pre-filter.
+THE FILE-LEVEL PRE-FILTER AND THE PER-LINE TRACKER ARE DIFFERENT TESTS, and that asymmetry is the twin's. A file qualifies for scanning when ANY line matches the long `^set [+\\-](...)` alternation; within the file, `strict` is toggled by the much looser `^set [+\\-]e` plus a `pipefail` substring. A file that says `set -euo pipefail` at the top qualifies on both counts; one that
+only says `set -e` qualifies on neither. Reproduced exactly, including the fact that `set -e` alone (with no trailing space) fails the pre-filter.
 
 STREAMS. The twin's findings go through `log_error`, so they are `✗ <text>` on stderr, and its clean verdict through `log_info`. `rediacc_ci.log` produces byte-identical lines for both. The `--json` output is a bare `printf` on stdout and stays there.
 """
@@ -101,9 +94,7 @@ CONDITION_HEAD_RE = re.compile(r"^[ \t]*(if|elif|while|until) ")
 # The waiver comment. Whitelists the NEXT non-blank, non-comment line.
 WAIVER_RE = re.compile(r"# *silent-failure-ok")
 
-# Blank and comment lines are skipped outright, and a comment also clears a
-# dangling waiver only in the sibling gate; here a comment is simply `next`, so
-# a waiver survives an intervening comment. That asymmetry between the two gates is real and is preserved.
+# Blank and comment lines are skipped outright, and a comment also clears a dangling waiver only in the sibling gate; here a comment is simply `next`, so a waiver survives an intervening comment. That asymmetry between the two gates is real and is preserved.
 BLANK_RE = re.compile(r"^[ \t]*$")
 COMMENT_RE = re.compile(r"^[ \t]*#")
 

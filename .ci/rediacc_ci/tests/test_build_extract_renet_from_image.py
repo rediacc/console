@@ -13,9 +13,7 @@ THREE KINDS OF EVIDENCE ARE COMPARED, because no one of them is sufficient:
   * The tree. `pkg/embed/assets/<arch>/<class>/*.zst` and `private/bin/*` are
     what the script exists to produce.
 
-`ls -la` TIMESTAMPS ARE MASKED, AND ONLY THEY. The two sides run seconds apart,
-so `ls` prints a different mtime for files that are otherwise identical; the
-mask replaces the `<Mon> <day> <HH:MM>` field and leaves mode, link count, owner, group, size and name alone. Nothing else in the output is masked except `$0`.
+`ls -la` TIMESTAMPS ARE MASKED, AND ONLY THEY. The two sides run seconds apart, so `ls` prints a different mtime for files that are otherwise identical; the mask replaces the `<Mon> <day> <HH:MM>` field and leaves mode, link count, owner, group, size and name alone. Nothing else in the output is masked except `$0`.
 
 RECORDING FAKES WRITE TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. This script's stdout IS an artifact (the checksum listing), and a prior wave's fake that logged to stdout corrupted the very file its twin was writing. The `FAKEBIN ` prefix is
 also what the K=5 ledger scopes `--finding-re` to, because `shadow-gate.ts`
@@ -57,9 +55,7 @@ VENDORED = (
 
 BASH = shutil.which("bash") or "/bin/bash"
 
-# Real and deterministic: the twin genuinely calls each, and `ls`/`sha256sum` put their stdout straight into the script's own output. `grep`/`sed`/`sort`
-# are here for the twin's version-check pipeline; the port uses `re` instead,
-# which is the one named divergence, and supplying the real binaries is what makes the two sides comparable at all.
+# Real and deterministic: the twin genuinely calls each, and `ls`/`sha256sum` put their stdout straight into the script's own output. `grep`/`sed`/`sort` are here for the twin's version-check pipeline; the port uses `re` instead, which is the one named divergence, and supplying the real binaries is what makes the two sides comparable at all.
 PATH_MINIMUM = (
     "dirname",
     "uname",
@@ -155,8 +151,7 @@ rm -f "$f"
 exit 0
 """
 
-# `strings -a <file>`. `$FAKE_CRIU_VERSION` decides which version the "binary"
-# appears to carry; leaving it unset makes it match the lockfile.
+# `strings -a <file>`. `$FAKE_CRIU_VERSION` decides which version the "binary" appears to carry; leaving it unset makes it match the lockfile.
 FAKE_STRINGS = """#!/bin/bash
 {
     printf 'FAKEBIN strings'
@@ -202,8 +197,7 @@ exit "${FAKE_BUILD_SH_RC:-0}"
 
 SELF_RE = re.compile(r"\S*(?:%s|%s)" % (re.escape(TWIN_REL), re.escape(PORT_REL)))
 
-# `ls -la` prints an mtime, and the two sides run seconds apart. Only the date
-# field is masked; mode, links, owner, group, size and name are compared.
+# `ls -la` prints an mtime, and the two sides run seconds apart. Only the date field is masked; mode, links, owner, group, size and name are compared.
 LS_DATE_RE = re.compile(r"\b[A-Z][a-z]{2} +\d{1,2} +\d{2}:\d{2}\b")
 
 
@@ -539,8 +533,7 @@ def test_the_proxy_compose_is_staged_through_build_sh_from_the_renet_directory(
     tmp_path,
 ) -> None:
     """`:211` is `(cd "$REPO_ROOT/private/renet" && ./build.sh embed_proxy)`, and
-    the fake records its own `$PWD` so the directory is asserted rather than
-    assumed. Only the PROXY step is delegated; the asset staging deliberately is
+    the fake records its own `$PWD` so the directory is asserted rather than assumed. Only the PROXY step is delegated; the asset staging deliberately is
     not."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root)
@@ -699,8 +692,7 @@ def test_criu_versions_reads_both_shapes_and_neither_when_there_is_nothing(
     tmp_path,
 ) -> None:
     del tmp_path
-    # Exercised through the real `strings` fake in the driven cases above; here
-    # the regexes themselves are pinned in both directions.
+    # Exercised through the real `strings` fake in the driven cases above; here the regexes themselves are pinned in both directions.
     assert port.CRIU_BUILD_PATH_RE.findall("junk /build/criu-4.2.1 junk") == ["/build/criu-4.2.1"]
     assert port.CRIU_BUILD_PATH_RE.findall("/build/criu-x") == []
     assert port.CRIU_BARE_VERSION_RE.match("4.2.1") is not None

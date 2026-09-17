@@ -144,8 +144,7 @@ CASES = [
         ),
         "trapguard CONTROL: --cached is exempt (the index IS the subject there)",
     ),
-    # THE FALSE POSITIVE THIS RULE SHIPPED WITH, for one hour. A TRACKED file that simply lost lines is a normal diff, and the first version fired on it because
-    # it keyed on "the file exists". Existence narrows; tracked-ness decides.
+    # THE FALSE POSITIVE THIS RULE SHIPPED WITH, for one hour. A TRACKED file that simply lost lines is a normal diff, and the first version fired on it because it keyed on "the file exists". Existence narrows; tracked-ness decides.
     inject(
         ("check_inject silent", ""),
         inject_json(
@@ -236,9 +235,7 @@ CASES = [
         ),
         "trapguard: a message-callback fires on arm 2 even when arm 1 has nothing to say",
     ),
-    # A heredoc BODY is written, not run. Prose describing the rewrite hazard fed the matcher its own trigger words and produced a warning about a rewrite that never
-    # happened; the second control proves the stripper eats the body ONLY, so a real
-    # command sharing the line-set with a heredoc still fires.
+    # A heredoc BODY is written, not run. Prose describing the rewrite hazard fed the matcher its own trigger words and produced a warning about a rewrite that never happened; the second control proves the stripper eats the body ONLY, so a real command sharing the line-set with a heredoc still fires.
     inject(
         ("check_inject silent", ""),
         inject_json(
@@ -305,9 +302,8 @@ def test_every_trapguard_rule_fires_and_stays_silent_where_it_should():
     block.done()
 
 
-# --- `--git rebase-status` against a REAL halted rebase, one per conflict kind ---- The selftest's classifier controls prove the ARITHMETIC over hand-written stage
-# tables; only a real halt proves the verb reads what git actually writes into
-# .git/rebase-merge and the index. The harness refuses to hand back a fixture that did not halt, which already caught a broken fixture of its own: the two submodule commits were linear, so git took the descendant and nothing conflicted.
+# --- `--git rebase-status` against a REAL halted rebase, one per conflict kind ---- The selftest's classifier controls prove the ARITHMETIC over hand-written stage tables; only a real halt proves the verb reads what git actually writes into .git/rebase-merge and the index. The harness refuses to hand back a fixture that did not halt, which already caught a broken fixture of its
+# own: the two submodule commits were linear, so git took the descendant and nothing conflicted.
 GIT_FIXTURE = hookcases.ROOT / ".ci" / "scripts" / "test" / "lib" / "git-fixture.sh"
 WORKLIST = hookcases.HOOKS / "stop" / "worklist.py"
 
@@ -378,9 +374,7 @@ def test_rebase_status_reads_a_real_halt(kind):
     block.done()
 
 
-# STEP 3: resolve-gitlinks may now WRITE, and these are the two halves that make that
-# safe. The happy path resolves a real halt end to end; the guard refuses a MIXED
-# conflict set rather than half-resolving it, because a half-resolved index reads as nearly done and the next --continue then fails for a reason that no longer names the submodule.
+# STEP 3: resolve-gitlinks may now WRITE, and these are the two halves that make that safe. The happy path resolves a real halt end to end; the guard refuses a MIXED conflict set rather than half-resolving it, because a half-resolved index reads as nearly done and the next --continue then fails for a reason that no longer names the submodule.
 @pytest.mark.xdist_group("hooks-trapguard")
 def test_resolve_gitlinks_clears_a_real_gitlink_halt():
     block = hookblocks.Block("resolve-gitlinks/happy")

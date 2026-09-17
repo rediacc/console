@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/security/dependency-inventory.sh`.
 
-W7P6 wave 27. The bash twin stays the LIVE tool; this module is its
-VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by
+W7P6 wave 27. The bash twin stays the LIVE tool; this module is its VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by
 `.ci/rediacc_ci/tests/test_security_dependency_inventory.py` and by the K=5
 shadow ledger `.ci/shadow/w7p6-dependency-inventory.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
-WHAT IT DOES. Enumerates every dependency across the four analyzed Rediacc packages (www, cli, account, renet) for the NIS2/CRA supply-chain SBOM. Each dependency is classified by level (direct vs transitive), tagged by type
-(dependencies/devDependencies/peer/optional for npm; direct/indirect for Go),
-and carries its full dependency chain(s) from the package root down.
+WHAT IT DOES. Enumerates every dependency across the four analyzed Rediacc packages (www, cli, account, renet) for the NIS2/CRA supply-chain SBOM. Each dependency is classified by level (direct vs transitive), tagged by type (dependencies/devDependencies/peer/optional for npm; direct/indirect for Go), and carries its full dependency chain(s) from the package root down.
 
 REAL RUNS OR STUBS: THE ANSWER IS BOTH, AND THE SPLIT IS DELIBERATE.
 The twin's only external calls are `npm ls --all --json [--omit=dev]
@@ -53,9 +50,7 @@ PORT NOTES -- unless an item says otherwise it is REPRODUCED, not repaired. Fixi
      ONLY case in the whole differential that is normalised for anything other
      than a traceback.
 
-WHY THERE IS NO `jq` AND NO `awk` IN THIS FILE. The twin's real content is six
-jq programs and two awk programs; a port that shelled out to jq would be a
-rewrite of the shell, not of the tool. Every one is transcribed into Python, and each transcription carries the jq semantics it depends on:
+WHY THERE IS NO `jq` AND NO `awk` IN THIS FILE. The twin's real content is six jq programs and two awk programs; a port that shelled out to jq would be a rewrite of the shell, not of the tool. Every one is transcribed into Python, and each transcription carries the jq semantics it depends on:
 
   * `group_by(f)` SORTS BY f, then groups. The final `sort_by(.level, .depth,
     .name)` is STABLE in jq, so ties (one name at two versions) keep the
@@ -199,8 +194,7 @@ def jq_argjson_banner() -> str:
         jq 1.8.1 (this tree's hosts)  ... online docs  at https://jqlang.org
         jq 1.7.x (ubuntu-24.04 runner) ... online docs  at https://jqlang.github.io/jq
 
-    The twin PRINTS whatever the real jq printed; the port SYNTHESISES the same
-    bytes without running jq. With a constant, the two agree only where the developer's jq matches the constant, so `test_an_empty_prod_tree_dies_on_a_ raw_jq_diagnostic` passed here and failed in CI -- measured 2026-09-15, run 34970782616, the first run that let `quality-security` finish.
+    The twin PRINTS whatever the real jq printed; the port SYNTHESISES the same bytes without running jq. With a constant, the two agree only where the developer's jq matches the constant, so `test_an_empty_prod_tree_dies_on_a_ raw_jq_diagnostic` passed here and failed in CI -- measured 2026-09-15, run 34970782616, the first run that let `quality-security` finish.
 
     A pin cannot fix this, because there is no single right answer: two hosts
     with two jqs are both correct at the same time. Transcribing a tool's
@@ -285,9 +279,7 @@ def group_dependencies(
 ) -> list[dict]:
     """`:156-175`: walk, group by `name@version`, aggregate, sort.
 
-    The group key uses `.version // "null"` and the prodReachable key uses
-    `.version // "unknown"`; both spellings are kept, because a package whose
-    `version` is genuinely absent lands in a group named `x@null` while its prod-set lookup asks for `x@unknown`, and collapsing the two would change which records report `prodReachable: true`.
+    The group key uses `.version // "null"` and the prodReachable key uses `.version // "unknown"`; both spellings are kept, because a package whose `version` is genuinely absent lands in a group named `x@null` while its prod-set lookup asks for `x@unknown`, and collapsing the two would change which records report `prodReachable: true`.
     """
     groups: dict[str, list[dict]] = {}
     for record in walk_tree(root, ()):
@@ -449,9 +441,7 @@ def build_npm_package(
 
     RETURNS None WHEN `npm ls` PRINTED NOTHING, and that is a REPRODUCED DEFECT, not a convenience. With an empty `tree_all` every jq in the chain has no input and therefore emits no output, so `$WORK/pkg_N.json` is written EMPTY, `jq -s` slurps nothing from it, and the package VANISHES from the inventory
     while the run still exits 0. Measured on a fixture: `packagesAnalyzed`
-    reported 3 with four packages requested, and no warning was printed. Since this document is NIS2/CRA supply-chain evidence, a package silently dropping
-    out is the worst outcome the tool has; it is reported in this wave's findings
-    and fixed in neither side, because fixing one side only would make the differential lie.
+    reported 3 with four packages requested, and no warning was printed. Since this document is NIS2/CRA supply-chain evidence, a package silently dropping out is the worst outcome the tool has; it is reported in this wave's findings and fixed in neither side, because fixing one side only would make the differential lie.
     """
     directory = os.path.join(repo_root, relpath)
     if mode == "workspace":
@@ -478,8 +468,7 @@ def build_npm_package(
         log.error("%s: npm ls produced invalid JSON" % name)
         raise Failure
 
-    # `jq empty` on empty input EXITS 0, so an empty prod tree takes the valid branch and `jq -c '<keyset>'` then produces no output -- the empty string
-    # that kills the next jq. `_NOVALUE` is what carries that distinction; a
+    # `jq empty` on empty input EXITS 0, so an empty prod tree takes the valid branch and `jq -c '<keyset>'` then produces no output -- the empty string that kills the next jq. `_NOVALUE` is what carries that distinction; a
     # plain `None` would collapse it into the `tree_prod == "null"` case, which
     # is valid and yields `{}`.
     parsed_prod = _jq_empty(tree_prod)
@@ -560,8 +549,7 @@ def _jq_empty(text: str) -> object:
 def _root_expr(doc: object, name: str, mode: str) -> dict:
     """`rootexpr` (`:117-123`), with jq's null-propagating indexing.
 
-    workspace: `.dependencies["<name>"].dependencies`; standalone:
-    `.dependencies`. Indexing null yields null in jq rather than raising, and
+    workspace: `.dependencies["<name>"].dependencies`; standalone: `.dependencies`. Indexing null yields null in jq rather than raising, and
     the caller's `// {}` then supplies the empty map.
     """
     node = doc if isinstance(doc, dict) else {}
@@ -583,8 +571,7 @@ def _go(directory: str, args: list[str]) -> tuple[int, str, str]:
             check=False,
         )
     except OSError as exc:
-        # bash would print `go: command not found` to the probe file and the
-        # subshell would exit 127; same shape, same indented echo.
+        # bash would print `go: command not found` to the probe file and the subshell would exit 127; same shape, same indented echo.
         return 127, "", "%s\n" % exc
     return proc.returncode, proc.stdout, proc.stderr
 
@@ -602,8 +589,7 @@ def _echo_probe(stderr_text: str) -> None:
         lines.pop()  # the split's phantom element, not a line sed would see
     body = "".join("    %s\n" % line for line in lines)
     if not trailing_newline:
-        # GNU sed PRESERVES a missing final newline; it does not add one.
-        # Measured, because the reflex is the opposite: $ printf 'a\nb' | sed 's/^/ /' | xxd 2020 2020 610a 2020 2020 62 .a. b A `go` probe whose stderr ends mid-line is the only way to reach it, and `test_a_go_probe_whose_stderr_lacks_a_final_newline` drives it.
+        # GNU sed PRESERVES a missing final newline; it does not add one. Measured, because the reflex is the opposite: $ printf 'a\nb' | sed 's/^/ /' | xxd 2020 2020 610a 2020 2020 62 .a. b A `go` probe whose stderr ends mid-line is the only way to reach it, and `test_a_go_probe_whose_stderr_lacks_a_final_newline` drives it.
         body = body[:-1]
     sys.stderr.write(body)
     sys.stderr.flush()
@@ -652,8 +638,7 @@ def build_go_package(repo_root: str, work_dir: str) -> dict:
         {"from": parts[0], "to": parts[1] if len(parts) > 1 else None}
         for parts in (line.split(" ") for line in edges.split("\n") if line)
     ]
-    # The twin materialises this through $WORK/go_edges.json; kept so a reader
-    # comparing the two files finds the same intermediate on disk.
+    # The twin materialises this through $WORK/go_edges.json; kept so a reader comparing the two files finds the same intermediate on disk.
     with open(os.path.join(work_dir, "go_edges.json"), "w", encoding="utf-8") as handle:
         handle.write(json.dumps(edge_records, separators=(",", ":"), ensure_ascii=False))
 
@@ -876,8 +861,7 @@ def main(argv: list[str]) -> int:
             for name, relpath, mode in NPM_PKGS:
                 log.step("Analyzing %s (%s)" % (name, relpath))
                 package = build_npm_package(repo_root, name, relpath, mode, max_chains)
-                # None means `$WORK/pkg_N.json` was written EMPTY and `jq -s` slurped nothing from it. Skipping is what reproduces the
-                # twin's silent drop; see build_npm_package's docstring.
+                # None means `$WORK/pkg_N.json` was written EMPTY and `jq -s` slurped nothing from it. Skipping is what reproduces the twin's silent drop; see build_npm_package's docstring.
                 if package is not None:
                     packages.append(package)
             log.step("Analyzing renet (%s)" % GO_PKG_PATH)

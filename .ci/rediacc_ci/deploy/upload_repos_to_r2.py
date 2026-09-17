@@ -29,17 +29,15 @@ THREE EXTERNAL TOOLS ARE CALLED RATHER THAN REIMPLEMENTED, each for a measured r
     honouring TMPDIR) as the twin's. That path appears in the `aws s3 cp` argv,
     which is the thing the differential compares.
 
-`cf-purge-urls.sh` IS INVOKED AS THE BASH SCRIPT THE TWIN INVOKES, deliberately, even though `rediacc_ci.deploy.cf_purge_urls` exists and is itself a verified port. The acceptance rule for this wave is agreement with the LIVE twin, and the
-twin's observable behaviour includes that script's exact bytes; repointing a
-call site is a cutover-box decision, not this one's. `PURGE_SCRIPT` names the path once so the cutover is a one-line change when the box that owns it lands.
+`cf-purge-urls.sh` IS INVOKED AS THE BASH SCRIPT THE TWIN INVOKES, deliberately, even though `rediacc_ci.deploy.cf_purge_urls` exists and is itself a verified port. The acceptance rule for this wave is agreement with the LIVE twin, and the twin's observable behaviour includes that script's exact bytes; repointing a call site is a cutover-box decision, not this one's. `PURGE_SCRIPT`
+names the path once so the cutover is a one-line change when the box that owns it lands.
 
 `get_repo_root` IS REPRODUCED BY LOCATION, NOT BY cwd. The twin does `cd "$(get_repo_root)"`, and `get_repo_root` resolves `.ci/scripts/lib/../../..`
 from `common.sh`'s own directory. This file sits at `.ci/rediacc_ci/deploy/`,
 also three directories under the root, so the arithmetic is identical. It is `abspath`, NOT `realpath`, on purpose: bash's `cd` is logical, so a checkout reached through a symlink keeps the symlinked spelling on both sides. `paths.repo_root()` is deliberately not used, because it resolves symlinks and honours `$REDIACC_CI_ROOT`, and neither is a thing the twin does.
 
 TWO VACUITY FACTS ABOUT THE TWIN, THE FIRST DELIBERATE AND THE SECOND NOT.
-Neither is repaired here; this wave's acceptance rule is agreement with the live
-twin.
+Neither is repaired here; this wave's acceptance rule is agreement with the live twin.
 
   1. THE `VACUOUS:` GUARD IS SCOPED NARROWLY AND SAYS SO (twin :123-127). A
      MISSING `dist/repos/<dir>` is legitimate, because not every channel builds
@@ -108,9 +106,7 @@ REQUIRED_ENV: tuple[tuple[str, str], ...] = (
 
 # The `case` arms of `skip_release_requested` (:70-73). A SET, because the twin lists each spelling explicitly rather than lowercasing: `TrUe` and `Y` are NOT
 # skip values, and a port using `.lower() in {...}` would skip a release the twin
-# publishes. Sits between the two marker comments the gate test `.ci/scripts/test/gates/test-skip-release-channel-pointer.sh` splits the twin
-# on; that test assembles its mutants from the twin's own text, so it is
-# unaffected by this file, but the set has to stay in step with those lines.
+# publishes. Sits between the two marker comments the gate test `.ci/scripts/test/gates/test-skip-release-channel-pointer.sh` splits the twin on; that test assembles its mutants from the twin's own text, so it is unaffected by this file, but the set has to stay in step with those lines.
 SKIP_RELEASE_VALUES = frozenset({"true", "TRUE", "True", "1", "yes", "YES", "y", "on", "ON"})
 
 # `if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]` (:77). A `pr-N`
@@ -279,9 +275,7 @@ def strip_prefix(path: str, prefix: str) -> str:
 def read_lines(text: str) -> list[str]:
     """`while IFS= read -r f; do ... done < <(find ...)`.
 
-    A FINAL LINE WITH NO NEWLINE IS DROPPED, because `read` stores it and then returns non-zero at EOF so the loop body never runs for it. find always
-    terminates its last line, so this cannot bite on real input; it is written
-    the bash way anyway, because the day it does bite the two would disagree about a URL rather than about a count.
+    A FINAL LINE WITH NO NEWLINE IS DROPPED, because `read` stores it and then returns non-zero at EOF so the loop body never runs for it. find always terminates its last line, so this cannot bite on real input; it is written the bash way anyway, because the day it does bite the two would disagree about a URL rather than about a count.
     """
     if not text:
         return []
@@ -311,9 +305,8 @@ def _find_files(directory: str) -> tuple[str, int]:
 def _flush() -> None:
     """Empty Python's own buffers before a child inherits the descriptor.
 
-    NOT HOUSEKEEPING, A REAL DIVERGENCE THIS REPAIRS, measured 2026-09-13. bash
-    `echo` writes through immediately; Python block-buffers stdout when it is a
-    pipe and flushes at exit. Without this, `Repos uploaded to R2 channel: edge` landed AFTER the purge script's two lines instead of before them, on the same stream, with byte-identical content in a different order. The call log was identical, both exits were 0, and only a byte comparison of stdout saw it. Every spawn goes through here for that reason.
+    NOT HOUSEKEEPING, A REAL DIVERGENCE THIS REPAIRS, measured 2026-09-13. bash `echo` writes through immediately; Python block-buffers stdout when it is a pipe and flushes at exit. Without this, `Repos uploaded to R2 channel: edge` landed AFTER the purge script's two lines instead of before them, on the same stream, with byte-identical content in a different order. The call log
+    was identical, both exits were 0, and only a byte comparison of stdout saw it. Every spawn goes through here for that reason.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -401,8 +394,7 @@ def _purge(urls: list[str], zone: str) -> None:
     try:
         status = _run(purge_argv(zone), input=payload, text=True)
     except OSError as exc:
-        # A MISSING OR UNRUNNABLE PURGE SCRIPT. bash reports this itself, with
-        # its own line number and status 127; Python raises. Same stream, same
+        # A MISSING OR UNRUNNABLE PURGE SCRIPT. bash reports this itself, with its own line number and status 127; Python raises. Same stream, same
         # status, different sentence -- the same ruling the `${VAR:?}` guards get.
         print("%s: %s: %s" % (SELF, PURGE_SCRIPT, exc.strerror), file=sys.stderr)
         raise BashExitError(127) from exc

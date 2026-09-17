@@ -40,18 +40,14 @@ WHY THREE ARMS AND NOT ONE WIDENED GATE. This was decided on evidence, not taste
      workflow for a gate that is currently green, to merge two predicates that
      stay different anyway.
 
-So: this gate owns BASH and TYPESCRIPT, everywhere in the tracked tree, and it DELEGATES Python -- with an assertion, not a comment. If the Python gate's entry point stops existing or stops being registered, this gate REFUSES rather than quietly leaving a third of the class unscanned. That refusal is the whole
-difference between a delegation and a hole; the 2026-09-08 note in
+So: this gate owns BASH and TYPESCRIPT, everywhere in the tracked tree, and it DELEGATES Python -- with an assertion, not a comment. If the Python gate's entry point stops existing or stops being registered, this gate REFUSES rather than quietly leaving a third of the class unscanned. That refusal is the whole difference between a delegation and a hole; the 2026-09-08 note in
 `check_python_control_plants.py` records what happened the last time a coverage boundary was documented in prose instead of asserted ("21 became 50, and it changed silently").
 
 -----------------------------------------------------------------------------
 THE BASH PREDICATE
 -----------------------------------------------------------------------------
 
-A PLANT is an IN-PLACE mutation of a named file: `sed -i`, `sed -E -i`, `sed --in-place`, or `perl -i`/`perl -pi`/`perl -ni`. The target is the last
-word of the command SEGMENT (the logical line split on unquoted `;`, `&&`, `||`
-and `|`), so `for e in "$@"; do sed -i "$e" "$dst"; done` yields `"$dst"` and
-not `done`.
+A PLANT is an IN-PLACE mutation of a named file: `sed -i`, `sed -E -i`, `sed --in-place`, or `perl -i`/`perl -pi`/`perl -ni`. The target is the last word of the command SEGMENT (the logical line split on unquoted `;`, `&&`, `||` and `|`), so `for e in "$@"; do sed -i "$e" "$dst"; done` yields `"$dst"` and not `done`.
 
 A PROOF is a `grep -q`/`grep -c`/`cmp`/`diff` within eight logical lines either side of the plant, naming the SAME target, on a line that is not building a string. Both directions count, and both are in real use here:
 
@@ -93,9 +89,7 @@ A CONTROL REGION is opened by either of two markers and closed by the brace dept
     function selftestFoo() { ... }              a declaration named for one
     const controlBar = () => { ... }
 
-Both shapes are in the tree. `scripts/gates/check-backup-bucket-conformance.ts:145`
-is the first; `scripts/gates/check-guard-mutations.ts` reaches its mutant builder from
-the second.
+Both shapes are in the tree. `scripts/gates/check-backup-bucket-conformance.ts:145` is the first; `scripts/gates/check-guard-mutations.ts` reaches its mutant builder from the second.
 
 -----------------------------------------------------------------------------
 THE SHELL LEXER, AND WHY IT REPORTS ITS OWN DEGRADATION
@@ -130,9 +124,7 @@ THE BASELINE
 and `--allow-new` is itself checked against the derived set, so it cannot pre-load a row for a plant that does not exist.
 
 IDS ARE HASHED OVER THE TEXT, NEVER THE LINE NUMBER. A line number churns when a paragraph moves above it, and a churning baseline gets reseeded wholesale, which silently re-absorbs every other writer's fresh findings. The id covers the language, the file and the WHITESPACE-NORMALISED command text, so a row survives a MOVE and re-keys on a REWRITE -- a rewrite being exactly when a
-human should
-look at the plant again. When a re-key happens, hand-edit the single row; do not
-run `--write-baseline`.
+human should look at the plant again. When a re-key happens, hand-edit the single row; do not run `--write-baseline`.
 
 ---------------------------------------------------------------------------
 ANTI-VACUITY, and every clause is written for the FINISH LINE as well as today
@@ -188,8 +180,7 @@ _HEREDOC = re.compile(r"<<-?\s*(\\?)(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\2")
 def shell_rows(text):
     """[(lineno, code, mask)] plus whether the file needed DEGRADED scanning.
 
-    `code` is the line with any trailing comment removed; `mask[i]` is True when
-    `code[i]` sits inside a quoted string. Heredoc bodies are dropped entirely: they are data, not commands.
+    `code` is the line with any trailing comment removed; `mask[i]` is True when `code[i]` sits inside a quoted string. Heredoc bodies are dropped entirely: they are data, not commands.
 
     Quote and heredoc state carry ACROSS lines, which is what a bash quote does. When the state has not returned to neutral at EOF the file is rescanned line by line and the second element of the return is True -- see the module docstring on why over-reporting is the safe direction.
     """
@@ -309,8 +300,7 @@ _SEGMENT = re.compile(r"&&|\|\||[;|]")
 def command_segment(code, mask, at):
     """The command around offset `at`, cut at unquoted `;`, `&&`, `||`, `|`.
 
-    Without this the target of `for e in "$@"; do sed -i "$e" "$dst"; done` is
-    the word `done`, and a proof naming `"$dst"` would never be matched to it.
+    Without this the target of `for e in "$@"; do sed -i "$e" "$dst"; done` is the word `done`, and a proof naming `"$dst"` would never be matched to it.
     """
     start = 0
     end = len(code)

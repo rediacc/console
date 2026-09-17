@@ -1,7 +1,6 @@
 """`npm ls` must not report an invalid peer dependency.
 
-Ported from `.ci/scripts/quality/check-peer-deps.sh`, which is NOT deleted; see
-`rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees.
+Ported from `.ci/scripts/quality/check-peer-deps.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees.
 
 WHAT THE TWIN SAYS, carried whole because it is the entire statement of intent the original ever made:
 
@@ -34,9 +33,7 @@ of `npm ls`, while a false negative ships a broken peer tree. The selftest pins 
 THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the one archaeology token this file would otherwise drop. `log_step`, `log_error`, `log_info` and `get_repo_root` are the gate's only dependency on the shared bash library, which is what makes the twin cheap to retire. Here `log.*` comes from `rediacc_ci.log` and the root from
 `rediacc_ci.paths.repo_root()`.
 
-TWO PLACES THIS IS DELIBERATELY STRONGER THAN THE TWIN, both of them cases where the twin reports a clean tree having verified NOTHING. Neither can fire on a tree
-where npm works, so neither is reachable from the differential ledger; they are
-stated here so the divergence is a decision on the record rather than a surprise.
+TWO PLACES THIS IS DELIBERATELY STRONGER THAN THE TWIN, both of them cases where the twin reports a clean tree having verified NOTHING. Neither can fire on a tree where npm works, so neither is reachable from the differential ledger; they are stated here so the divergence is a decision on the record rather than a surprise.
 
   1. NO npm ON PATH. `NPM_LS_OUTPUT=$(npm ls 2>&1 || true)` captures bash's own
      "npm: command not found" into the variable, finds no "invalid" in it, and
@@ -74,9 +71,7 @@ EXIT_CANNOT_RUN = 77
 def invalid_lines(output: str) -> list[str]:
     """The lines `echo "$NPM_LS_OUTPUT" | grep "invalid"` would print.
 
-    Pure, so the selftest and pytest can drive it without an npm on PATH. The trailing-newline strip reproduces `$( )`, which eats trailing newlines before
-    the text ever reaches grep; without it the last element is an empty string
-    that grep never sees.
+    Pure, so the selftest and pytest can drive it without an npm on PATH. The trailing-newline strip reproduces `$( )`, which eats trailing newlines before the text ever reaches grep; without it the last element is an empty string that grep never sees.
     """
     return [line for line in output.rstrip("\n").split("\n") if NEEDLE in line]
 
@@ -84,9 +79,7 @@ def invalid_lines(output: str) -> list[str]:
 def npm_ls(cwd: pathlib.Path) -> tuple[int, str]:
     """Run `npm ls` with stderr MERGED into stdout. Returns (exit code, text).
 
-    The merge is the twin's `2>&1` and is described in the port notes. The exit
-    code is returned rather than swallowed so the caller can PRINT it; the twin's
-    `|| true` means it must never decide anything.
+    The merge is the twin's `2>&1` and is described in the port notes. The exit code is returned rather than swallowed so the caller can PRINT it; the twin's `|| true` means it must never decide anything.
     """
     completed = subprocess.run(
         [NPM, *NPM_LS_ARGS],

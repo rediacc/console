@@ -50,13 +50,10 @@ THE GLOB, WHICH IS THE ONE PLACE A TRANSCRIPTION COULD GO WRONG
 
 This port globs in Python and removes what it finds, which reproduces all three cases: the empty match removes nothing, exactly as `rm -f` on a nonexistent literal removes nothing.
 
-`rm -rf` ALSO REMOVES A NON-DIRECTORY. If `packages/shared/dist` is a regular
-file or a symlink, `rm -rf` deletes it without complaint; `shutil.rmtree` would
-raise `NotADirectoryError`. `remove_path` below branches on that, because "dist is a stale symlink into another worktree" is a real state in a repo that uses git worktrees and a port that crashed on it would be worse than the twin.
+`rm -rf` ALSO REMOVES A NON-DIRECTORY. If `packages/shared/dist` is a regular file or a symlink, `rm -rf` deletes it without complaint; `shutil.rmtree` would raise `NotADirectoryError`. `remove_path` below branches on that, because "dist is a stale symlink into another worktree" is a real state in a repo that uses git worktrees and a port that crashed on it would be worse than the
+twin.
 
-STREAMS ARE INHERITED FOR npm, NEVER CAPTURED. `npm run build:packages` is a
-`tsc` build that prints its diagnostics as it goes; capturing them would hold
-every line until the build finished and lose them entirely if it hung.
+STREAMS ARE INHERITED FOR npm, NEVER CAPTURED. `npm run build:packages` is a `tsc` build that prints its diagnostics as it goes; capturing them would hold every line until the build finished and lose them entirely if it hung.
 """
 
 from __future__ import annotations
@@ -74,8 +71,7 @@ from rediacc_ci.core import common
 # The npm script the twin runs (build-packages.sh:21). One string, so the differential's expected call log and the code cannot drift.
 BUILD_SCRIPT = "build:packages"
 
-# The two arguments of the `rm -rf` (build-packages.sh:19), in the twin's order.
-# The second is a PATTERN and is glob-expanded; the first is a literal path.
+# The two arguments of the `rm -rf` (build-packages.sh:19), in the twin's order. The second is a PATTERN and is glob-expanded; the first is a literal path.
 DIST_DIR = "packages/shared/dist"
 TSBUILDINFO_GLOB = "packages/shared/*.tsbuildinfo"
 
@@ -117,9 +113,7 @@ def clean_targets(root: pathlib.Path | None = None) -> list[str]:
 
 
 def main(argv: list[str]) -> int:
-    # THE TWIN PARSES NOTHING. `build-packages.sh` has no `parse_args` call and
-    # no `case` loop; its usage line reads `build-packages.sh` with no options.
-    # Every argument is therefore ignored, including `--help`, and that is reproduced rather than improved: an argparse here would exit 2 on `--help` where the twin builds the packages.
+    # THE TWIN PARSES NOTHING. `build-packages.sh` has no `parse_args` call and no `case` loop; its usage line reads `build-packages.sh` with no options. Every argument is therefore ignored, including `--help`, and that is reproduced rather than improved: an argparse here would exit 2 on `--help` where the twin builds the packages.
     del argv
 
     os.chdir(common.repo_root())
@@ -141,8 +135,7 @@ def main(argv: list[str]) -> int:
         if os.path.isdir(pkg):
             log.info("Verified: %s exists" % pkg)
         else:
-            # A WARNING, AND THEN EXIT 0. See the second section of the module
-            # docstring; this is the line that lets a no-op build pass.
+            # A WARNING, AND THEN EXIT 0. See the second section of the module docstring; this is the line that lets a no-op build pass.
             log.warn("Package directory %s not found (may be expected)" % pkg)
 
     return 0

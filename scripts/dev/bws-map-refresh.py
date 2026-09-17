@@ -57,8 +57,7 @@ EXPIRY = ROOT / ".ci" / "config" / "bws-token-expiry.json"
 #
 # It did `dt.date.fromisoformat(str(e["expires"]))` inside a try that swallows ValueError and returns, so a single non-date row silently disabled the WHOLE warning -- including
 # for the other rows, which is the worst direction. That was invisible while the file held
-# exactly one dated token; the 2026-09-09 split into a never-expiring local account and an
-# unverified CI one is what made it reachable.
+# exactly one dated token; the 2026-09-09 split into a never-expiring local account and an unverified CI one is what made it reachable.
 #
 # Bitwarden's own default is no expiry ("When the token Expires. By default, Never." -- bitwarden.com/help/access-tokens), so `null` is the COMMON case, not an edge one, and "unknown" has to stay distinct from it: null is a claim that the token never expires, "unknown" is a record that nobody checked. Collapsing them would let an unverified CI credential read as safe forever.
 NEVER = "never"
@@ -93,9 +92,7 @@ def warn_if_token_expiring() -> None:
 
     Advisory on purpose: a hard refusal here would block the refresh on a clock even when the token still works, and this script has real refusals for the things it can actually verify. What it prevents is the failure MODE: `bws` answers an expired token with an opaque auth error, so without this the first symptom is every local command breaking at once for no stated reason.
 
-    THE SCHEMA IS AN ARRAY because the replacement posture is a SPLIT -- a read-only account for .env and CI, a read-write one supplied per rotation -- and a one-token file cannot describe the state during the swap, which is
-    exactly when it is being read. One entry today; the loop is not speculative
-    scaffolding, it is the shape the next mint produces.
+    THE SCHEMA IS AN ARRAY because the replacement posture is a SPLIT -- a read-only account for .env and CI, a read-write one supplied per rotation -- and a one-token file cannot describe the state during the swap, which is exactly when it is being read. One entry today; the loop is not speculative scaffolding, it is the shape the next mint produces.
     """
     try:
         doc = json.loads(EXPIRY.read_text(encoding="utf-8"))
@@ -112,9 +109,7 @@ def warn_if_token_expiring() -> None:
     # BIND THE CLAIM TO THE TOKEN IT DESCRIBES. Every other state-changing script in scripts/dev/ derives applied-vs-pending from the live system -- apply-cf-redirect-rules.sh reads the Cloudflare ruleset, the R2 scrubs read R2, this script's own map carries refreshed_at behind a staleness gate. A hand-written date is the one shape that cannot self-check, so it gets the nearest
     # thing: a fingerprint of the token's client id. Mint a new token without updating the file and this says so, instead of the date quietly describing a token that no longer exists.
     #
-    # WITH AN ARRAY THE FINGERPRINT ALSO SELECTS. When the live token matches one
-    # declared entry, only that entry's date is the one in force; the others
-    # describe accounts this process is not using. When it matches NONE, the file describes something else entirely and every date below is about the wrong account -- that is louder than any expiry warning, so it returns.
+    # WITH AN ARRAY THE FINGERPRINT ALSO SELECTS. When the live token matches one declared entry, only that entry's date is the one in force; the others describe accounts this process is not using. When it matches NONE, the file describes something else entirely and every date below is about the wrong account -- that is louder than any expiry warning, so it returns.
     fp = _live_client_fingerprint()
     declared = {str(e.get("client_id_sha256", "")) for e, _ in tokens}
     if fp:

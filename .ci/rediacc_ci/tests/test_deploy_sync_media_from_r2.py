@@ -4,9 +4,7 @@
 A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches Cloudflare R2: the fake logs its exact argv, answers from the environment, and the only real credential name in the file is an environment KEY, never a value. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a
 separate, achievable piece of work. This is that piece.
 
-THE CALL LOG IS COMPARED AS WELL AS THE TWO STREAMS, and for this script it is the more important half. Everything the program prints is three `Restoring ...`
-lines plus one closing line, none of it derived from what actually moved; the
-whole observable effect is which prefixes were synced, into which directories,
+THE CALL LOG IS COMPARED AS WELL AS THE TWO STREAMS, and for this script it is the more important half. Everything the program prints is three `Restoring ...` lines plus one closing line, none of it derived from what actually moved; the whole observable effect is which prefixes were synced, into which directories,
 with which flags. A port that dropped `--no-progress`, reordered the three legs
 or pointed one at the wrong prefix would print identical output and exit 0. `test_planted_defect_is_caught` plants exactly that.
 
@@ -85,9 +83,7 @@ sys.stdout.write("call: aws " + " ".join(shlex.quote(a) for a in argv) + "\\n")
 sys.exit(int(os.environ.get("FAKE_AWS_RC") or 0))
 """
 
-# `common.sh` needs `dirname` at source time and `uname`/`tr` in the detection
-# helpers it runs there; `mkdir` is called by the SUBJECT on both sides and is
-# deliberately the real binary, so a failing `mkdir` produces the same bytes through both implementations.
+# `common.sh` needs `dirname` at source time and `uname`/`tr` in the detection helpers it runs there; `mkdir` is called by the SUBJECT on both sides and is deliberately the real binary, so a failing `mkdir` produces the same bytes through both implementations.
 PATH_MINIMUM = ("dirname", "uname", "tr", "mkdir")
 
 

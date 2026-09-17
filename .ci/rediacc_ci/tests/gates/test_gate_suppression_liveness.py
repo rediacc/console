@@ -2,21 +2,18 @@
 
 Integration test for `scripts/gates/check-suppression-liveness.ts`, the gate that asks whether every allowlist / blocklist / override entry in this repo still suppresses something that exists.
 
-WHAT IT GUARDS. The `BLOCKER:` convention proves a reason EXISTS; it cannot prove
-the reason is still TRUE. This gate closes the other half, and the twin's header names the two receipts for why it has to be provable in BOTH directions: `check_stale_entries` in `audit.sh` skipped the common staleness case for its whole life, and `check-no-app-admin-perm.sh` was never wired into a job at all. A gate that has only ever been seen to pass is indistinguishable from
-`true`.
+WHAT IT GUARDS. The `BLOCKER:` convention proves a reason EXISTS; it cannot prove the reason is still TRUE. This gate closes the other half, and the twin's header names the two receipts for why it has to be provable in BOTH directions: `check_stale_entries` in `audit.sh` skipped the common staleness case for its whole life, and `check-no-app-admin-perm.sh` was never wired into a
+job at all. A gate that has only ever been seen to pass is indistinguishable from `true`.
 
 EVERY FIXTURE CASE RUNS AGAINST A FIXTURE ROOT through `SUPPRESSION_LIVENESS_ROOT`, so no tracked file is ever mutated. The working tree routinely holds uncommitted work from other sessions, which is the reason the twin took that shape and the reason this port keeps it.
 
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `test_passes_on_real_repo` and the added shape case drive the subject seam-free over the REAL repository: the probes walk `.ci`, `scripts`, `.claude`, `.devcontainer`, `packages` and `private` for shell scripts, shell out to `git ls-files`, and read the real `package.json`, `package-lock.json` and eleven policy files. A battery step
 writing under any of those mid-sweep is a divergence that would be blamed on this port.
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured only because
-this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in
-`test_twin_parity.py`.
+this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
-THE SUBJECT DOES NOT SELF-SCAN THIS FILE, checked rather than assumed. The one probe that walks `.ci` recursively is `dead-bash-allowlist`, and it collects only
-names ending `.sh`; `dockerfileFetchTokens` reads `git ls-files` filtered to
-`Dockerfile*`. Nothing in either corpus can match a `.py` file under `.ci/rediacc_ci/tests/gates/`, so the fixture strings below are written out literally rather than through the `%s` template treatment `test_gate_label_references.py` owes its own self-scanning subject.
+THE SUBJECT DOES NOT SELF-SCAN THIS FILE, checked rather than assumed. The one probe that walks `.ci` recursively is `dead-bash-allowlist`, and it collects only names ending `.sh`; `dockerfileFetchTokens` reads `git ls-files` filtered to `Dockerfile*`. Nothing in either corpus can match a `.py` file under `.ci/rediacc_ci/tests/gates/`, so the fixture strings below are written out
+literally rather than through the `%s` template treatment `test_gate_label_references.py` owes its own self-scanning subject.
 
 TWO DELIBERATE DIVERGENCES FROM THE TWIN, both narrower than they look.
 
@@ -62,9 +59,7 @@ SUMMARY_RE = re.compile(r"probes: (\d+) run, (\d+) skipped\s+entries: (\d+) chec
 REAL_PROBE_FLOOR = 6
 REAL_ENTRY_FLOOR = 20
 
-# The four files make_fixture MUST have. Copied from the real tree because the
-# probes' oracles are real manifests; a hand-written stub would make every
-# liveness answer below a statement about the stub.
+# The four files make_fixture MUST have. Copied from the real tree because the probes' oracles are real manifests; a hand-written stub would make every liveness answer below a statement about the stub.
 REQUIRED_SOURCES = (
     "package.json",
     "package-lock.json",
@@ -141,9 +136,7 @@ def write_policy(root, name: str, body: str) -> None:
 def add_override(root, reason: str) -> None:
     """`ghost-pkg` in `overrides`, with `reason` in `_overridesReasons`.
 
-    The twin shells out to `python3 - "$t" <<'PY'` for this because bash cannot
-    edit JSON. A port already in Python edits it directly; that is the only
-    difference, and the resulting manifest is the same one.
+    The twin shells out to `python3 - "$t" <<'PY'` for this because bash cannot edit JSON. A port already in Python edits it directly; that is the only difference, and the resulting manifest is the same one.
     """
     manifest = root / "package.json"
     data = json.loads(manifest.read_text(encoding="utf-8"))

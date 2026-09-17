@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported shell-file-size gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.shell_size`, which pytest and the
-port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.shell_size`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 7). See DRIVEN, below.
 
@@ -19,9 +17,7 @@ NO `id:` IS CORRECT HERE, checked rather than assumed. `derivedId` (`gate-header
 for `.ts`, `gate-bind.ts:598`) and is carried because the twin declared it and
 because it is TRUE of this port: `shell_size.main(["--selftest"])` exits 0.
 
-THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files rather than by reading them. `bind()` unions declared needs with
-`inferredNeeds(source)`; the twin infers `[]` and this two-import entry point
-infers `[]`, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both sides resolve to the empty set `needs: none` declares.
+THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files rather than by reading them. `bind()` unions declared needs with `inferredNeeds(source)`; the twin infers `[]` and this two-import entry point infers `[]`, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both sides resolve to the empty set `needs: none` declares.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -30,9 +26,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, 587 bytes, sha256 f36d156d21e45bd8...
     stderr: BYTE-IDENTICAL, EMPTY on both sides
 
-NO NORMALISATION WAS APPLIED and none was needed. The twin was first run TWICE against an unchanged tree to establish that its own output is byte-stable
-against itself; it is, on both streams. Both sides also emit the same ANSI
-colour to a redirected stream, so even the escapes match byte for byte.
+NO NORMALISATION WAS APPLIED and none was needed. The twin was first run TWICE against an unchanged tree to establish that its own output is byte-stable against itself; it is, on both streams. Both sides also emit the same ANSI colour to a redirected stream, so even the escapes match byte for byte.
 
 DRIVEN RED AS WELL, which is the half that matters. The plant is a 5002-line shell script at `.ci/scripts/__gate_probe_shell_size.sh`, one line over the
 5000-line threshold and carrying no `# shellcheck extended-analysis=false`
@@ -46,8 +40,8 @@ in it, because a probe the sweep never walks is how a plant fails to fire for re
              .ci/scripts/__gate_probe_shell_size.sh (5002 lines)
       ok   S2. 621 shell file(s) actually scanned
 
-The plant was removed with `rm` and `git status --porcelain` diffed against its pre-plant capture with no difference, because a runner that writes into the real tree makes twin and port agree by both reading the same corrupted tree. INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-shell-size.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+The plant was removed with `rm` and `git status --porcelain` diffed against its pre-plant capture with no difference, because a runner that writes into the real tree makes twin and port agree by both reading the same corrupted tree. INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-shell-size.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's
+job.
 
 ---- gate ---- step: Shell file size emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code ---- end gate ----
 """

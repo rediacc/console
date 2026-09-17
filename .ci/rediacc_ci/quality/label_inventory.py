@@ -161,14 +161,11 @@ AND THE SWALLOWED-FAILURE NOTE ON THAT COMPARISON, which is the reason it has an
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE EMBEDDED PYTHON HEREDOC BECOMES ORDINARY FUNCTIONS, and its exit-code contract becomes an exception. The twin runs a `python3 - <<'PY'` child and captures
-`drift_rc` separately so that a crash cannot read as agreement; here the same
-distinction is `DriftUnreadableError`, raised where that child exits 1, and the caller turns it into the identical message and exit. The shape of the guarantee is what matters: an unreadable comparison is never a clean tree.
+THE EMBEDDED PYTHON HEREDOC BECOMES ORDINARY FUNCTIONS, and its exit-code contract becomes an exception. The twin runs a `python3 - <<'PY'` child and captures `drift_rc` separately so that a crash cannot read as agreement; here the same distinction is `DriftUnreadableError`, raised where that child exits 1, and the caller turns it into the identical message and exit. The shape of
+the guarantee is what matters: an unreadable comparison is never a clean tree.
 
 `length()` IN awk IS BYTES UNDER `LC_ALL=C`, which `scripts/lib/shadow-gate.ts`
-pins for both sides, while Python's `len()` counts CHARACTERS. Every description in
-this repo is ASCII, so the two agree today; a description with a non-ASCII
-character would be measured differently, and the port would under-report rather than over-report. Stated rather than silently normalised, because normalising it would make the port disagree with the twin on a real file.
+pins for both sides, while Python's `len()` counts CHARACTERS. Every description in this repo is ASCII, so the two agree today; a description with a non-ASCII character would be measured differently, and the port would under-report rather than over-report. Stated rather than silently normalised, because normalising it would make the port disagree with the twin on a real file.
 
 THE UNQUOTING ORDER IS OBSERVABLE AND IS PRESERVED. The twin strips the `- name:` prefix, then a surrounding pair of double quotes, then a surrounding pair of single quotes, and only THEN trailing whitespace. So `- name: "x" ` keeps its quotes: the `^"(.*)"$` anchor fails while the trailing spaces are still there. That is a bug in the twin and it is carried, because "fixing" it
 changes which names reconcile.
@@ -211,8 +208,7 @@ CREATE_ON_DEMAND = (
     "bump-none|.ci/scripts/review/claude-review-gate.sh",
 )
 
-# The declaration reader, as four sequential `sed`s. The ORDER is observable; see
-# the port notes.
+# The declaration reader, as four sequential `sed`s. The ORDER is observable; see the port notes.
 NAME_PREFIX = re.compile(r"^- name:[ \t]*")
 DQUOTED = re.compile(r'^"(.*)"$')
 SQUOTED = re.compile(r"^'(.*)'$")
@@ -240,9 +236,7 @@ class DriftUnreadableError(RuntimeError):
 def declared_labels(text: str) -> list[str]:
     """`grep -E '^- name:' | sed | sed | sed | sed`, one label per line.
 
-    RETURNS AN EMPTY LIST FOR AN EMPTY FILE, never raising. That is the behaviour
-    the twin only acquired at 96355d3b5; see the module docstring for what its
-    absence disarmed.
+    RETURNS AN EMPTY LIST FOR AN EMPTY FILE, never raising. That is the behaviour the twin only acquired at 96355d3b5; see the module docstring for what its absence disarmed.
     """
     out: list[str] = []
     for line in text.split("\n"):
@@ -320,9 +314,7 @@ def drift(live_json: str, labels_text: str) -> list[tuple[str, str, str]]:
 def url_encode(name: str) -> str:
     """`jq -sRr @uri` when jq is present, else the space-only fallback.
 
-    "Space is the only character in this repo's label names that needs it
-    ('good first issue'); a name with anything more exotic would fail the probe
-    loudly rather than silently, which is the safe direction."
+    "Space is the only character in this repo's label names that needs it ('good first issue'); a name with anything more exotic would fail the probe loudly rather than silently, which is the safe direction."
     """
     try:
         proc = subprocess.run(

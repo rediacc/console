@@ -5,8 +5,7 @@ THE GENERAL CASE OF `check:ci-worklist-env-registry`. That gate, landed the same
 complements and the narrow one is NOT subsumed: it additionally pins the DEFAULT SPELLING each name is read with and an authored KIND per name, neither of which this file has any opinion about. See the section "WHAT THIS DOES NOT CLAIM" below.
 
 WHY A REGISTRY AT ALL. An environment read is an undeclared input. Nothing in this tree could answer "which Python modules depend on the environment, and on what" without a fresh grep, and a grep answers wrongly in both directions: it misses the 87 pairs read through a module-level constant (`os.environ.get( paths.ROOT_ENV)`), and it counts names that appear only inside string
-literals and prose. Both were measured here, on the tree, before a line of this was
-written; the numbers are in "THE SEEDING RECEIPT" below.
+literals and prose. Both were measured here, on the tree, before a line of this was written; the numbers are in "THE SEEDING RECEIPT" below.
 
 WHAT IS DERIVED, AND WHY NOTHING IS AUTHORED. Every entry in the baseline is derived from the AST. There is no `why` field, no kind, no owner. That is a deliberate difference from the worklist registry: 445 machine-written sentences about environment variables would be filler, and filler is how a required field stops being read. What this file buys instead is CHANGE DETECTION --
 the set is frozen, and any movement in it, in either direction, has to be looked at.
@@ -150,9 +149,7 @@ def module_constants(tree: ast.Module) -> dict[str, str]:
 def module_index(rels) -> dict[str, str]:
     """Every dotted suffix of every module path -> the file, COLLISIONS NULLED.
 
-    `from rediacc_ci import paths` gives the alias `paths` the dotted target
-    `rediacc_ci.paths`, which must reach `.ci/rediacc_ci/paths.py`; so every
-    suffix of the path is indexed. A suffix produced by two different files maps to nothing at all, for the same reason `module_constants` drops a name assigned twice: an ambiguous hit is a wrong hit.
+    `from rediacc_ci import paths` gives the alias `paths` the dotted target `rediacc_ci.paths`, which must reach `.ci/rediacc_ci/paths.py`; so every suffix of the path is indexed. A suffix produced by two different files maps to nothing at all, for the same reason `module_constants` drops a name assigned twice: an ambiguous hit is a wrong hit.
     """
     hits: dict[str, set[str]] = {}
     for rel in rels:
@@ -186,9 +183,8 @@ def env_key_nodes(tree: ast.Module):
 
     Three shapes, and the NON-READ exclusion is the load-bearing part.
     `os.environ["X"] = v` is a test SETTING a variable and `del os.environ["X"]`
-    is a test CLEARING one; neither is code depending on a value. Counting
-    either would make a name that only the test corpus manipulates look like an input, and the `del` half is not hypothetical: 34 sites in this tree spell `del os.environ[paths.ROOT_ENV]` inside a save/restore harness, and the first draft of this function scored every one of them as a read. It is the same argument that keeps `pop` and `setdefault` out of GET_FUNCS, and the two
-    exclusions have to agree or the registry says a variable is an input depending on which spelling the harness happens to use.
+    is a test CLEARING one; neither is code depending on a value. Counting either would make a name that only the test corpus manipulates look like an input, and the `del` half is not hypothetical: 34 sites in this tree spell `del os.environ[paths.ROOT_ENV]` inside a save/restore harness, and the first draft of this function scored every one of them as a read. It is the same
+    argument that keeps `pop` and `setdefault` out of GET_FUNCS, and the two exclusions have to agree or the registry says a variable is an input depending on which spelling the harness happens to use.
     """
     not_a_read = set()
     for node in ast.walk(tree):
@@ -552,9 +548,7 @@ def main(argv=None) -> int:
         for i, arg in enumerate(argv):
             if arg != "--allow-new":
                 continue
-            # A DANGLING FLAG IS AN ERROR, NOT AN EMPTY LIST. `--allow-new` with nothing after it, or with the next token being another flag, is a
-            # typed permission that names nothing; silently dropping it would
-            # turn an intended registration into a blanket reseed the very next refusal then blames on the author.
+            # A DANGLING FLAG IS AN ERROR, NOT AN EMPTY LIST. `--allow-new` with nothing after it, or with the next token being another flag, is a typed permission that names nothing; silently dropping it would turn an intended registration into a blanket reseed the very next refusal then blames on the author.
             if i + 1 >= len(argv) or argv[i + 1].startswith("--"):
                 log.error("--allow-new needs a <module>:<NAME> argument after it")
                 return 1

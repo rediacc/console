@@ -86,17 +86,12 @@ Everything else on that path is identical: three attempts, the 10/20 backoff, th
 -----------------------------------------------------------------------------
 WHAT IS NOT REPRODUCIBLE, STATED RATHER THAN LEFT AS AN ABSENCE
 -----------------------------------------------------------------------------
-The twin `cd`s to the repo root in ITS OWN shell and never returns; a sourced
-copy would move the caller. `os.chdir` here has the same effect on this process and the same non-effect on its parent, which is what a caller expects. Every path below the chdir is relative in both implementations, so the working directory is part of the contract rather than a detail.
+The twin `cd`s to the repo root in ITS OWN shell and never returns; a sourced copy would move the caller. `os.chdir` here has the same effect on this process and the same non-effect on its parent, which is what a caller expects. Every path below the chdir is relative in both implementations, so the working directory is part of the contract rather than a detail.
 
-STREAMS ARE INHERITED, NEVER CAPTURED. `npm ci` on a cold tree prints for
-minutes and that output is the thing an operator watches; a port that captured
-it would turn a live install into a silent hang. `subprocess.run` with no
+STREAMS ARE INHERITED, NEVER CAPTURED. `npm ci` on a cold tree prints for minutes and that output is the thing an operator watches; a port that captured it would turn a live install into a silent hang. `subprocess.run` with no
 `stdout=`/`stderr=` is what the twin's bare `npm $NPM_ARGS` does.
 
-`npm $NPM_ARGS` IS UNQUOTED IN THE TWIN, deliberately, so that `ci --ignore-scripts` word-splits into two arguments. That is a word-splitting
-construct that works only because the values are known-safe literals; this port
-builds an argv LIST, which cannot split wrongly and cannot be widened by a value containing a space. Same argv, structurally instead of by luck.
+`npm $NPM_ARGS` IS UNQUOTED IN THE TWIN, deliberately, so that `ci --ignore-scripts` word-splits into two arguments. That is a word-splitting construct that works only because the values are known-safe literals; this port builds an argv LIST, which cannot split wrongly and cannot be widened by a value containing a space. Same argv, structurally instead of by luck.
 """
 
 from __future__ import annotations
@@ -108,8 +103,7 @@ import sys
 from rediacc_ci import log, proc
 from rediacc_ci.core import common
 
-# `retry_with_backoff 3 10` at both call sites (install-deps.sh:57 and :86).
-# Three attempts, ten seconds before the second and twenty before the third; the
+# `retry_with_backoff 3 10` at both call sites (install-deps.sh:57 and :86). Three attempts, ten seconds before the second and twenty before the third; the
 # doubling is `delay=$((delay * 2))` in common.sh:229. Named constants rather
 # than inline numbers because the two call sites must not drift apart, which is exactly what happened to the account trees before they were listed in one place.
 RETRY_ATTEMPTS = 3
@@ -182,9 +176,7 @@ def retry(action) -> bool:
 
     THE TWO ERROR LINES ARE NOT ONE. On exhaustion the helper itself prints `Command failed after 3 attempts` and returns 1, and only then does the CALLER print its own `Failed to install dependencies...`. Both land on stderr, in that order, and a port that emitted only the caller's line would lose the half that says how many attempts were made.
 
-    `action` returns True on success. Anything falsy is a failed attempt, which
-    is the twin's policy exactly: `if "$@"; then return 0; fi` and nothing else.
-    No exit code is inspected, so a 127 (npm absent) and a 1 (registry refused) are the same event -- fact 5 above.
+    `action` returns True on success. Anything falsy is a failed attempt, which is the twin's policy exactly: `if "$@"; then return 0; fi` and nothing else. No exit code is inspected, so a 127 (npm absent) and a 1 (registry refused) are the same event -- fact 5 above.
     """
 
     def on_retry(attempt: int, attempts: int, pause: float, result: object) -> None:
@@ -230,9 +222,8 @@ def wants_ignore_scripts(*, requested: bool, os_name: str) -> bool:
 def spawn(argv: list[str], cwd: str | None = None) -> bool:
     """One child, BOTH streams inherited, True when it exited 0.
 
-    THE `FileNotFoundError` ARM IS THE WHOLE REASON THIS IS A FUNCTION. Bash prints `<script>: line <n>: npm: command not found` and moves on to the next
-    retry; Python raises, and an unhandled raise here would turn the twin's
-    five-line report into a traceback whose first useful frame is `subprocess._execute_child`. The message is bash's own wording minus the prefix that names a shell script, and it is written once per ATTEMPT because that is when bash writes it -- so a run against an absent `npm` still shows three of them.
+    THE `FileNotFoundError` ARM IS THE WHOLE REASON THIS IS A FUNCTION. Bash prints `<script>: line <n>: npm: command not found` and moves on to the next retry; Python raises, and an unhandled raise here would turn the twin's five-line report into a traceback whose first useful frame is `subprocess._execute_child`. The message is bash's own wording minus the prefix that names a
+    shell script, and it is written once per ATTEMPT because that is when bash writes it -- so a run against an absent `npm` still shows three of them.
 
     `PermissionError` and every other `OSError` take the same arm: from the caller's point of view "the binary did not run" is one event, and bash's `Permission denied` is the same shape of line.
     """
@@ -296,8 +287,7 @@ def main(argv: list[str]) -> int:
     if opts.want_account and os.path.isfile(os.path.join(ACCOUNT_DIRS[0], PACKAGE_JSON)):
         log.step("Installing account dependencies...")
         for account_dir in ACCOUNT_DIRS:
-            # The outer guard already proved the FIRST one; the per-directory
-            # test is what makes `web` and `e2e` optional (install-deps.sh:85).
+            # The outer guard already proved the FIRST one; the per-directory test is what makes `web` and `e2e` optional (install-deps.sh:85).
             if not os.path.isfile(os.path.join(account_dir, PACKAGE_JSON)):
                 continue
             if not retry(lambda d=account_dir: run_account(d)):

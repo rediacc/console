@@ -177,11 +177,8 @@ export async function provisionOneReplica(
 ): Promise<void> {
   const tag = replicaTag(input.setName, index);
   const forkName = `${input.datastore}:${tag}`;
-  // Clone the datastore from the snapshot (constant-time, DB-size-independent). datastore_fork registers the fork record ONLY in the control machine's
-  // registry; when the replica lands on a DIFFERENT node, its registry has no
-  // such record, so we ferry the record (the `datastore fork --json` output)
-  // there via datastore_adopt before attaching (finding #36; mirrors the
-  // cluster-fork cross-machine path, cluster-fork.ts:203-218 / finding #14).
+  // Clone the datastore from the snapshot (constant-time, DB-size-independent). datastore_fork registers the fork record ONLY in the control machine's registry; when the replica lands on a DIFFERENT node, its registry has no such record, so we ferry the record (the `datastore fork --json` output) there via datastore_adopt before attaching (finding #36; mirrors the cluster-fork
+  // cross-machine path, cluster-fork.ts:203-218 / finding #14).
   const forkRes = await getExecutor().execute({
     functionName: 'datastore_fork',
     machineName: input.controlMachine,
@@ -212,10 +209,8 @@ export async function provisionOneReplica(
     input.debug
   );
   if (node.machine !== input.controlMachine) {
-    // The fork record now lives on the replica node and is attached there; the
-    // control's copy (from datastore_fork) is vestigial. Forget it on control
-    // (registry-only; the fork is DETACHED there and the clone is owned by the
-    // node's record) so a later re-fork of the SAME tag — `repo replicate refresh`, which discards on the node then re-forks on control — does not collide with a stale control record (finding #40).
+    // The fork record now lives on the replica node and is attached there; the control's copy (from datastore_fork) is vestigial. Forget it on control (registry-only; the fork is DETACHED there and the clone is owned by the node's record) so a later re-fork of the SAME tag — `repo replicate refresh`, which discards on the node then re-forks on control — does not collide with a
+    // stale control record (finding #40).
     await dispatch('datastore_forget', input.controlMachine, { name: forkName }, input.debug);
   }
   // Open the repo's per-volume LUKS images on the fork (bug #49). The fork is a BLOCK-layer clone, so it carries the ciphertext `<fork>/repos/<GUID>/volumes/ <pvc>.img` AND the empty directory that image was mounted over. The replica's PV points at that directory. Without this step the image is never opened, the pod bind-mounts the empty dir, and the replica comes up healthy,

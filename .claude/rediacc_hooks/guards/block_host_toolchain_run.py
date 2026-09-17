@@ -44,14 +44,11 @@ ORDER = 35
 # The host-bound arm, added 2026-08-28. Without it a command reaching into a component with its own `.venv` is routed into the container, where the venv's absolute shebangs and host glibc do not exist: the measured symptom was `ModuleNotFoundError: No module named anyio`.
 DEFECT = ("if hostbound:", "if False:")
 
-# NPX CANNOT RESOLVE A NON-NPM BINARY. Measured 2026-08-28: `npx --yes ruff format ...` failed with "npm error could not determine executable to run", and the session reading that failure concluded "no ruff binary resolves in this shell" and hand-patched two files instead of running the tool. The real ruff (0.16.1, the pinned version) was on PATH the entire time. npx resolves
-# its argument as an NPM PACKAGE NAME; none of this repo's pinned non-JS
-# toolchain binaries are npm packages, so npx can never run them, whether or not they are actually installed. This fires on the shape alone, independent of host tool state, because the diagnosis is "wrong verb", not "missing tool".
+# NPX CANNOT RESOLVE A NON-NPM BINARY. Measured 2026-08-28: `npx --yes ruff format ...` failed with "npm error could not determine executable to run", and the session reading that failure concluded "no ruff binary resolves in this shell" and hand-patched two files instead of running the tool. The real ruff (0.16.1, the pinned version) was on PATH the entire time. npx resolves its
+# argument as an NPM PACKAGE NAME; none of this repo's pinned non-JS toolchain binaries are npm packages, so npx can never run them, whether or not they are actually installed. This fires on the shape alone, independent of host tool state, because the diagnosis is "wrong verb", not "missing tool".
 NPX_TOOLS = ("ruff", "go", "shfmt", "shellcheck", "actionlint")
 
-# gate key -> the host binary it needs. Extend this table when a gate acquires
-# a new toolchain dependency; the entry is what makes the refusal specific
-# enough to act on, and a gate absent from it is never routed.
+# gate key -> the host binary it needs. Extend this table when a gate acquires a new toolchain dependency; the entry is what makes the refusal specific enough to act on, and a gate absent from it is never routed.
 #
 # AN ENTRY BELONGS HERE ONLY IF THE GATE FAILS WITHOUT THE BINARY ON PATH. Three of the original six did not, and each produced a confident, specific refusal of a gate that works: check:ci-shell-lint shellcheck.sh calls toolchain_acquire check:ci-shell-format shfmt.sh calls toolchain_acquire check:ci-actionlint downloads a pinned, checksum-verified release toolchain_acquire
 # fetching the PIN is the entire point of that helper -- its own comment says a bare `command -v` accepts any version and "a stale binary on a developer's PATH silently decided this gate's verdict". Measured 2026-08-27 with neither tool on PATH: shfmt.sh acquired v3.13.1 and reported "Shell script formatting passed", exit 0. Check for toolchain_acquire in the gate's script before
@@ -67,9 +64,7 @@ NEEDS = (
 #
 # `main.py --publish-www` copied 52 files locally, uploaded ZERO, exited 0, and printed "R2_MEDIA_* env vars not set". Every one of those words was load-bearing and the run still read as a publish: the site had new files in packages/www, and nothing reached media.rediacc.com.
 #
-# The credentials are not meant to be in the shell. They live in private/account/.env, a SUBMODULE file, alongside 48 other keys. A command that
-# needs them and does not source it does not fail; it half-succeeds, which is worse.
-# So require the sourcing to be VISIBLE in the command.
+# The credentials are not meant to be in the shell. They live in private/account/.env, a SUBMODULE file, alongside 48 other keys. A command that needs them and does not source it does not fail; it half-succeeds, which is worse. So require the sourcing to be VISIBLE in the command.
 #
 # Extend the table when another command grows a credential dependency. Match on something specific to that command, never on a bare tool name.
 NEEDS_ENV = (
@@ -272,10 +267,8 @@ def run(ev):
     for key, tool in NEEDS:
         if not hookio.grep_q(key, scan, fixed=True):
             continue
-        # THE HOST IS ASKED, NOT ASSUMED. A developer who has installed ruff should
-        # not be pushed into a container for it; the point is to stop a MISSING tool
-        # being recorded as a property of the repo. `command -v` resolves a name on PATH and says NOTHING about whether it can be executed: on bash 5.3.9 it returns 0 for a mode-0600 file. A half-installed ruff/go/shfmt would therefore read as "the host is fine" and this guard would decline to route the gate, which is the exact outcome it exists to prevent wearing the face of a
-        # guard that simply did not fire. `test -x` asks the real question.
+        # THE HOST IS ASKED, NOT ASSUMED. A developer who has installed ruff should not be pushed into a container for it; the point is to stop a MISSING tool being recorded as a property of the repo. `command -v` resolves a name on PATH and says NOTHING about whether it can be executed: on bash 5.3.9 it returns 0 for a mode-0600 file. A half-installed ruff/go/shfmt would therefore
+        # read as "the host is fine" and this guard would decline to route the gate, which is the exact outcome it exists to prevent wearing the face of a guard that simply did not fire. `test -x` asks the real question.
         # Verified 2026-08-27: command -v rc=0 and test -x rc=1 on the same file.
         if _have_executable(tool):
             continue

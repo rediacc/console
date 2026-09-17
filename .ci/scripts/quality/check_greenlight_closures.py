@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported greenlight-closure-path gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.greenlight_closures`, which
-pytest and the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.greenlight_closures`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 5). See DRIVEN, below.
 
@@ -27,8 +25,7 @@ twin's own colour switch is off (`if [[ "${CI:-}" == "true" ]]; then GREEN=""`):
     stderr: empty on both sides
 
 WITHOUT `CI=true` the two stdouts differ by exactly the twin's ANSI wrapper on
-its first line and nothing else: identical once the ANSI CSI escapes are stripped from both. That residue is the twin's colour policy, which tests `CI` and neither the tty
-nor NO_COLOR; the module's own docstring records it as reported-not-reproduced.
+its first line and nothing else: identical once the ANSI CSI escapes are stripped from both. That residue is the twin's colour policy, which tests `CI` and neither the tty nor NO_COLOR; the module's own docstring records it as reported-not-reproduced.
 
 THE PORT NEEDED ONE FIX TO REACH THAT PARITY, made here rather than papered over. It sent its headline through `log.info`, which writes to STDERR by design,
 while the six indented continuation lines below it went to stdout -- ONE
@@ -37,8 +34,7 @@ paragraph split across TWO streams, so a reader piping stdout saw six dangling c
 DRIVEN RED AS WELL, against a plant in the real tree: one bogus path (`__gate_probe_missing.txt`) added to the `e2e_migrate` closure in `.ci/scripts/ci/greenlight.cjs`. Both sides exit 1, both print an EMPTY stdout and a byte-identical 289-byte stderr naming `__gate_probe_missing.txt -- named by a closure but NOT ON DISK`. The plant was then reverted by its exact inverse and the
 file verified byte-identical (sha256 26b3eed64efa3b96c03b6474e142d5f6a96bfb831c74a94d2dec08e2c5cc4a49) to its pre-plant state, with both sides back at exit 0.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-greenlight-closures.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-greenlight-closures.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Greenlight closure paths needs: node selftest: true ---- end gate ----
 """

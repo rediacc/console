@@ -11,9 +11,7 @@ neither subject `cd`s, and that absence can only be observed from inside the chi
 
 PATH IS REPLACED, NEVER PREPENDED. `_binder` builds the entire PATH out of named tools, so nothing the fixture forgot can be silently supplied by the host.
 
-THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming
-the file it is running; the port composes the same prefix from `sys.argv[0]` and
-its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
+THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming the file it is running; the port composes the same prefix from `sys.argv[0]` and its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
 
 THE ONE THING THIS FILE ASSERTS THAT IS NOT AN EQUALITY.
 `test_the_missing_ci_arm_is_a_real_hole` pins BOTH subjects at exit 0 with a
@@ -160,8 +158,7 @@ def _run(
         "PATH": binder,
         "HOME": str(tmp_path),
         "PYTHONDONTWRITEBYTECODE": "1",
-        # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci.log`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})

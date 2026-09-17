@@ -5,14 +5,11 @@ Detect a "pointer bump only" PR head: content provably identical to a commit tha
 degrades
 to `pointer_bump_only=false`.
 
-The twin's header owns the three-step proof and the D9 root cause; neither is
-restated here.
+The twin's header owns the three-step proof and the D9 root cause; neither is restated here.
 
 LIVE CALLER, NOT REPOINTED. `initialize.sh` runs the bash twin after submodule init, and `.ci/rediacc_ci/ci/initialize.py` invokes the same bash file. This module is the twin's verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
-NOT A REGISTERED GATE. It carries no `---- gate ----` header (checked with `scripts/lib/gate-header.ts`'s own OPEN pattern, not by eye), so nothing in
-`scripts/ci-runner` selects it; it is a workflow STEP that writes two outputs.
-This port carries no header either, for the same reason.
+NOT A REGISTERED GATE. It carries no `---- gate ----` header (checked with `scripts/lib/gate-header.ts`'s own OPEN pattern, not by eye), so nothing in `scripts/ci-runner` selects it; it is a workflow STEP that writes two outputs. This port carries no header either, for the same reason.
 
 Ledger: `.ci/shadow/w7p6-detect-pointer-bump.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-detect-pointer-bump --assert --k 5`).
 
@@ -63,8 +60,7 @@ DEFECT B -- STEP 3 STILL COMPARES AGAINST `HEAD`, WHICH IS D9's OTHER HALF
     pointer_bump_only=false -- net diff vs baseline is not gitlink-only
 
 for a branch whose own commits are pointer-only. The walk was taught about the
-merge commit; the proof it feeds was not. Driven in the differential
-(`test_defect_b_...`).
+merge commit; the proof it feeds was not. Driven in the differential (`test_defect_b_...`).
 
 -----------------------------------------------------------------------------
 DEFECT C -- A `.gitmodules` WITH NO `submodule.*.path` AT ALL IS A HARD EXIT,
@@ -92,9 +88,7 @@ that string is a VARIABLE REFERENCE. Under `set -u` an unset one ends the script
 
 Exit 1, nothing on stdout, and no message of the script's own -- against exit 0
 with a reason, which is what every other doubt in this file produces. Not
-reachable through today's `gh --jq '[...] | length'`, which answers with a
-number or exits non-zero; one shape change in that jq program away, and the
-same class as DEFECT C. A MALFORMED NUMBER is different and benign: `08` and `1a` draw bash's `value too great for base` complaint, evaluate FALSE, and the run carries on to the ordinary refusal. Both halves are reproduced.
+reachable through today's `gh --jq '[...] | length'`, which answers with a number or exits non-zero; one shape change in that jq program away, and the same class as DEFECT C. A MALFORMED NUMBER is different and benign: `08` and `1a` draw bash's `value too great for base` complaint, evaluate FALSE, and the run carries on to the ordinary refusal. Both halves are reproduced.
 
 -----------------------------------------------------------------------------
 WHAT IS BYTE-IDENTICAL, AND THE TWO THINGS THAT ARE NOT
@@ -134,8 +128,7 @@ STATUS_JQ = ".status"
 # `jq -r '.pull_request.head.sha // empty'` (twin :92). `// empty` is what makes an absent field print nothing rather than the string `null`.
 HEAD_SHA_JQ = ".pull_request.head.sha // empty"
 
-# `sed -E 's#\.git$##; s#.*[:/]([^/]+/[^/]+)$#\1#'` (twin :175). Two programs in
-# one argument, applied in order.
+# `sed -E 's#\.git$##; s#.*[:/]([^/]+/[^/]+)$#\1#'` (twin :175). Two programs in one argument, applied in order.
 REPO_SLUG_SED = r"s#\.git$##; s#.*[:/]([^/]+/[^/]+)$#\1#"
 
 # The two output keys (twin :57-58, :207-208), in the order they are written.
@@ -366,8 +359,7 @@ def commit_exists(sha: str) -> bool:
 def is_shallow_clone() -> bool:
     """`[[ -f "$(git rev-parse --git-dir)/shallow" ]]` (twin :66).
 
-    A FAILING `rev-parse` LEAVES AN EMPTY SUBSTITUTION, so the test becomes `-f /shallow`, which is false. The twin therefore treats "not a git
-    repository" as "not shallow" and carries on to fail later; reproduced.
+    A FAILING `rev-parse` LEAVES AN EMPTY SUBSTITUTION, so the test becomes `-f /shallow`, which is false. The twin therefore treats "not a git repository" as "not shallow" and carries on to fail later; reproduced.
     """
     _, git_dir = git(["rev-parse", "--git-dir"])
     return os.path.isfile(os.path.join(git_dir, "shallow"))
@@ -376,8 +368,7 @@ def is_shallow_clone() -> bool:
 def find_baseline(current: str, head_sha: str) -> tuple[str, str]:
     """Step 1, the walk (twin :126-146). Returns `(baseline, "")` or `("", reason)`.
 
-    A reason is `no_fast_path`'s argument; the caller raises with it rather than
-    this function exiting, so the walk stays testable without a subprocess.
+    A reason is `no_fast_path`'s argument; the caller raises with it rather than this function exiting, so the walk stays testable without a subprocess.
 
     THE LOOP RUNS AT MOST `WALK_CAP` TIMES and the FIRST non-pointer commit ends it. `head_sha` is compared rather than re-read on every iteration, which the twin hoisted deliberately: an unguarded `$(git rev-parse HEAD)` inside the loop would yield "" on failure, read as "not HEAD", and let the walk continue past the commit it exists to stop at. DEFECT A is about WHICH commit
     `head_sha` names, not about the hoist.
@@ -524,8 +515,7 @@ def main(argv: list[str]) -> int:
     outputs = Outputs(args.get("ARG_OUTPUT", ""))
 
     root = str(common.repo_root())
-    # `cd "$REPO_ROOT"` (twin :42) under `set -e`. bash names the file and a
-    # line number; same three facts, same stream, same status.
+    # `cd "$REPO_ROOT"` (twin :42) under `set -e`. bash names the file and a line number; same three facts, same stream, same status.
     try:
         os.chdir(root)
     except OSError as exc:
@@ -656,8 +646,7 @@ def _at_least_one(green: str) -> bool:
 
     DEFECT D LIVES IN THE LAST TWO ROWS. A bare word is a VARIABLE REFERENCE, and an unset one under `set -u` ends the script with exit 1, NO `pointer_bump_only` pair on stdout at all, and no message of the script's own -- so the caller gets a failed step rather than the fail-safe `false` every other doubt in this file produces. `gh --jq '... | length'` answers
     with a number today, and `gh` exits non-zero when it cannot, so the row is
-    not reachable through the current call; it is one shape change in the
-    reducing jq program away, and it is the same class as DEFECT C.
+    not reachable through the current call; it is one shape change in the reducing jq program away, and it is the same class as DEFECT C.
     """
     stripped = green.strip()
     if stripped == "":

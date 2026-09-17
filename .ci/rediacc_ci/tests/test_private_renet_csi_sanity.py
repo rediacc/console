@@ -3,10 +3,8 @@
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
-NOTHING REAL IS EVER INVOKED, AND THAT IS NOT A CONVENIENCE. The twin runs under `sudo`, formats a 4 GB BTRFS image, mounts it on a loop device, apt-installs two packages and then drives the ginkgo csi-sanity suite through `go test -tags
-root`. Every one of those needs root and a Go toolchain; a suite that reached
-them would take minutes, would mutate `/mnt`, and would SKIP on any machine missing one -- which is the exact vacuity this campaign exists to avoid. All SEVEN externals (`apt-get`, `umount`, `truncate`, `mkfs.btrfs`, `mkdir`, `mount`, `go`) are recording fakes on a scratch PATH: each appends its cwd and full argv to a log, writes canned bytes to both streams, and exits with a
-canned status.
+NOTHING REAL IS EVER INVOKED, AND THAT IS NOT A CONVENIENCE. The twin runs under `sudo`, formats a 4 GB BTRFS image, mounts it on a loop device, apt-installs two packages and then drives the ginkgo csi-sanity suite through `go test -tags root`. Every one of those needs root and a Go toolchain; a suite that reached them would take minutes, would mutate `/mnt`, and would SKIP on any
+machine missing one -- which is the exact vacuity this campaign exists to avoid. All SEVEN externals (`apt-get`, `umount`, `truncate`, `mkfs.btrfs`, `mkdir`, `mount`, `go`) are recording fakes on a scratch PATH: each appends its cwd and full argv to a log, writes canned bytes to both streams, and exits with a canned status.
 
 WHAT IS COMPARED, AND WHY THE CALL LOG IS THE MOST IMPORTANT OF THE FOUR. Every
 case compares the exit code, stdout, stderr, and the CALL LOG. Almost everything
@@ -19,9 +17,7 @@ deliberate exclusion really took: a probe that cannot fire looks exactly like a 
 
 OUTPUT IS CAPTURED AS BYTES, not text. One case drives a transcript that is not valid UTF-8, because the twin's two guards are `grep`s over bytes and a port that decoded first would raise where the twin ruled.
 
-THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming
-the file it is running; the port composes the same prefix from `sys.argv[0]` and
-its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
+THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming the file it is running; the port composes the same prefix from `sys.argv[0]` and its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
 """
 
 import pathlib
@@ -210,8 +206,7 @@ def _run(
         "PATH": binder,
         "HOME": str(tmp_path),
         "PYTHONDONTWRITEBYTECODE": "1",
-        # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci.log`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})
@@ -397,8 +392,7 @@ def test_every_external_is_actually_reached_in_order(tmp_path):
         "mount"
     ]
 
-    # The setup runs from the CALLER's directory; only `go` runs from the
-    # submodule, and only `go` sees the datastore variable.
+    # The setup runs from the CALLER's directory; only `go` runs from the submodule, and only `go` sees the datastore variable.
     for name in ("umount", "truncate", "mkfs.btrfs", "mkdir", "mount"):
         assert fields[name][1] == "<tmp>/elsewhere", "%s ran in %r" % (name, fields[name][1])
         assert fields[name][2] == "BASE=<unset>", (
@@ -488,8 +482,7 @@ def test_the_two_guards_fire_in_order_and_only_one_speaks(tmp_path):
 def test_a_failing_go_run_loses_its_exit_code(tmp_path):
     """A (minor) DEFECT IN THE TWIN, PINNED RATHER THAN FIXED.
     `|| { echo "$out"; exit 1; }` flattens every non-zero go status to 1, so a
-    build failure (2) and a test failure (1) are indistinguishable to a caller.
-    Both subjects are asserted; the day the twin propagates the real status,
+    build failure (2) and a test failure (1) are indistinguishable to a caller. Both subjects are asserted; the day the twin propagates the real status,
     this goes red and names the decision."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, root, go_rc=2, go_out=b"build failed\n")

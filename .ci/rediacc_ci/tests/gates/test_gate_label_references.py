@@ -9,8 +9,7 @@ ONE DIRECTION ONLY, and that is a decision rather than an omission: a declared l
 
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Two cases drive the subject seam-free over the REAL tree: it recursively greps `.github` and `.ci` and reconciles what it finds against the real `.github/labels.yml`. A battery step writing under either directory mid-sweep is a divergence that would be blamed on
 this port. `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured
-only because this module declares no `XDIST_GROUP` of its own; see
-`real_tree_admission` in `test_twin_parity.py`.
+only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
 --------------------------------------------------------------------------
 WHY EVERY FIXTURE LINE IN THIS FILE IS BUILT FROM A `%s` TEMPLATE
@@ -40,16 +39,13 @@ GATE_REL = ".ci/scripts/quality/check-label-references.sh"
 GATE = paths.from_root(*GATE_REL.split("/"))
 HERE_REL = ".ci/rediacc_ci/tests/gates"
 
-# The subject's own floor on distinct references found in the real tree. Repeated
-# here only so the real-tree case can PRINT the shape it swept; the number that
-# governs is the one in the subject.
+# The subject's own floor on distinct references found in the real tree. Repeated here only so the real-tree case can PRINT the shape it swept; the number that governs is the one in the subject.
 REAL_FLOOR = 8
 
 # `all 23 code-referenced labels are declared in .github/labels.yml`
 DISTINCT_RE = re.compile(r"all (\d+) code-referenced labels")
 
-# The fixture label stem and the ten names, one per consumption shape the subject
-# knows about. Built rather than written out; see the module docstring.
+# The fixture label stem and the ten names, one per consumption shape the subject knows about. Built rather than written out; see the module docstring.
 STEM = "fixture"
 SUFFIXES = (
     "alpha",
@@ -169,9 +165,7 @@ def test_all_declared_passes(gate):
 def test_undeclared_reference_fails(gate):
     """FIRE: remove one declaration; the gate must name the label AND the file.
 
-    Naming the site is the half that makes the finding actionable. "label X is
-    undeclared" sends the reader grepping; "label X, referenced at tool.cjs" does
-    not.
+    Naming the site is the half that makes the finding actionable. "label X is undeclared" sends the reader grepping; "label X, referenced at tool.cjs" does not.
     """
     with harness.temp_dir() as d:
         names = scaffold(gate, d)
@@ -217,13 +211,10 @@ def test_floor_catches_a_dead_sweep(gate):
 def test_real_tree_is_clean_and_excludes_this_file(gate):
     """THE REAL-TREE CASE. The real invocation over the real `.github` and `.ci`.
 
-    It also proves the basename exclusion still works, because the TWIN plants
-    matchable reference lines and is excluded by name; if that exclusion broke, the
-    real gate would demand the twin's fixtures be declared in the real labels.yml.
+    It also proves the basename exclusion still works, because the TWIN plants matchable reference lines and is excluded by name; if that exclusion broke, the real gate would demand the twin's fixtures be declared in the real labels.yml.
 
-    THE PORT ASSERTS MORE THAN THE TWIN HERE, in two ways. The twin looks for one
-    leaked fixture label; this checks all ten, because an exclusion that broke for
-    one shape broke for all of them and reporting the first is reporting a tenth of the finding. And the DISTINCT count is read out of the verdict line and printed, so a sweep that collapsed toward the subject's floor is visible rather than silent -- "the real tree is clean" says nothing about how much tree was swept.
+    THE PORT ASSERTS MORE THAN THE TWIN HERE, in two ways. The twin looks for one leaked fixture label; this checks all ten, because an exclusion that broke for one shape broke for all of them and reporting the first is reporting a tenth of the finding. And the DISTINCT count is read out of the verdict line and printed, so a sweep that collapsed toward the subject's floor is
+    visible rather than silent -- "the real tree is clean" says nothing about how much tree was swept.
     """
     bash = require_gate(gate)
     result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root())

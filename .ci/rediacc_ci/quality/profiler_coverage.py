@@ -1,12 +1,9 @@
 """Every Linux job must be profiled, and every profiled job configured correctly.
 
-Ported from `.ci/scripts/quality/check-profiler-coverage.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live until W7
-phase 5. The twin's own registration is `kind: test`, covered by `.ci/scripts/test/gates/test-profiler-coverage.sh`, whose BLOCKER reads: `test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests")`
+Ported from `.ci/scripts/quality/check-profiler-coverage.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until W7 phase 5. The twin's own registration is `kind: test`, covered by `.ci/scripts/test/gates/test-profiler-coverage.sh`, whose BLOCKER reads: `test-profiler-coverage.sh:584 runs the gate seam-free against the real tree inside run-all.sh
+(ci-quality.yml quality-security, "Quality-gate unit tests")`
 with the real `.github/workflows`, the real `.profiler-coverage-allowlist`, the
-real `.github/actions/profiler/action.yml` and the real floors, so the full
-121-job parse and both relations execute every CI run; the 22 fixture cases
-around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree run can never exercise.
+real `.github/actions/profiler/action.yml` and the real floors, so the full 121-job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction, including the anti-vacuity refusals (empty dir, missing dir, zero jobs, three floors, missing action.yml) that a real-tree run can never exercise.
 
 -----------------------------------------------------------------------------
 THE TWIN'S ARCHAEOLOGY, CARRIED.
@@ -35,8 +32,7 @@ panel appeared on ubuntu-slim and on ubuntu-latest through a composite wrapper).
 A WRAPPER IS VERIFIED, NOT TRUSTED. Coverage for those jobs now hangs on one `uses:` line inside somebody else's file, and deleting that line would leave 26 jobs reporting as profiled while profiling nothing, a fail-open of exactly the shape this gate exists to prevent. So each wrapper's own `action.yml` must be shown to reference the profiler before it counts, and a wrapper that
 stops doing so REFUSES rather than quietly covering nothing.
 
-ANTI-VACUITY. Every extractor self-tests against a planted sample BEFORE the sweep, and the sweep refuses on zero workflows, zero jobs, zero declared action inputs, or counts under the floors. An empty scan is a broken instrument, never
-a clean tree; this repo has shipped gates that checked zero files for weeks.
+ANTI-VACUITY. Every extractor self-tests against a planted sample BEFORE the sweep, and the sweep refuses on zero workflows, zero jobs, zero declared action inputs, or counts under the floors. An empty scan is a broken instrument, never a clean tree; this repo has shipped gates that checked zero files for weeks.
 
 TEST SEAMS, all optional, used by `.ci/scripts/test/gates/test-profiler-coverage.sh`:
 
@@ -71,16 +67,12 @@ rather than written as `\\s`, because Python's `\\s` on a `str` pattern also mat
 
 `covering_uses` ESCAPES ONLY THE DOT. The twin builds its pattern with
 `${ref//./\\.}`, which escapes `.` and nothing else, so a reference containing
-another regex metacharacter is a regex on both sides. `re.escape` would be
-STRICTER and would therefore differ; the twin's exact substitution is
-reproduced, and the difference is named here rather than improved in silence.
+another regex metacharacter is a regex on both sides. `re.escape` would be STRICTER and would therefore differ; the twin's exact substitution is reproduced, and the difference is named here rather than improved in silence.
 
 THE INLINE SELF-TEST RUNS ON EVERY INVOCATION, exactly as the twin's does. It is not behind the `--selftest` flag: the twin plants a sample and checks ten extractor answers before it looks at the real tree, and a port that moved that behind a flag would change what a plain run does. `--selftest` is an ADDITION on top, driving the decision function through plants and mirrors the
 inline controls cannot express.
 
-THE `mktemp -d` SCRATCH DIRECTORIES ARE GONE and nothing depends on them. The twin writes each job's body to `$WORK_DIR/block.txt` because its extractors take
-FILES; these take lists of lines. The `trap 'rm -rf ...' EXIT` that cleaned them
-up, and the second `trap` that had to re-list both directories after the work directory appeared, disappear with them.
+THE `mktemp -d` SCRATCH DIRECTORIES ARE GONE and nothing depends on them. The twin writes each job's body to `$WORK_DIR/block.txt` because its extractors take FILES; these take lists of lines. The `trap 'rm -rf ...' EXIT` that cleaned them up, and the second `trap` that had to re-list both directories after the work directory appeared, disappear with them.
 
 EXIT CODES ARE UNCHANGED: 0 and 1 only. Every refusal in the twin is `exit 1`, including the ones a reader might expect to be a setup error, and that is deliberate on the twin's part: an unscannable surface is a broken instrument, not a clean tree, and reporting it as a different class would let a runner treat it as skippable.
 """
@@ -121,9 +113,8 @@ DEFAULT_ACTION_DIR = ".github/actions/profiler"
 # to the empty string means "no wrappers at all", which is the control for the wrapper path. `os.environ.get(name, default)` is the same distinction.
 DEFAULT_WRAPPER_DIRS = ".github/actions/setup-workspace"
 
-# THE FLOORS ARE THE TWIN'S, CARRIED AT THE SAME VALUES. The tree carries 28
-# workflows / 121 jobs / 97 Linux jobs; anything far under these numbers means
-# the parse found a layout it does not understand, and "all covered" off three jobs is precisely the lie this gate exists to prevent. They are hand-typed in the twin and are NOT re-derived here, because a port that changes a floor changes the verdict and the differential would rule MISMATCH on the tree that proves the new floor right.
+# THE FLOORS ARE THE TWIN'S, CARRIED AT THE SAME VALUES. The tree carries 28 workflows / 121 jobs / 97 Linux jobs; anything far under these numbers means the parse found a layout it does not understand, and "all covered" off three jobs is precisely the lie this gate exists to prevent. They are hand-typed in the twin and are NOT re-derived here, because a port that changes a floor
+# changes the verdict and the differential would rule MISMATCH on the tree that proves the new floor right.
 DEFAULT_MIN_WORKFLOWS = 10
 DEFAULT_MIN_JOBS = 60
 DEFAULT_MIN_LINUX = 40
@@ -164,8 +155,7 @@ def job_block(lines: list[str], job: str) -> list[str]:
 
     RULE ORDER IS LOAD-BEARING HERE. In the twin the "a new top-level key ends the jobs block" rule does not `next`, so the very same line then hits
     `!in_jobs { next }` and is dropped. `job` is interpolated into a REGEX by
-    awk, not quoted, so a job id containing a metacharacter is a pattern on both
-    sides; every real id is `[A-Za-z0-9_-]+`.
+    awk, not quoted, so a job id containing a metacharacter is a pattern on both sides; every real id is `[A-Za-z0-9_-]+`.
     """
     out: list[str] = []
     in_jobs = False
@@ -403,8 +393,7 @@ def _selftest_fail(name: str, got: object, want: str) -> int:
 def inline_selftest() -> int:
     """Every extractor must produce its known answer from a planted sample.
 
-    An extractor that silently stopped matching would under-report coverage,
-    which reads exactly like a clean tree. Returns 0 or 1; the caller exits.
+    An extractor that silently stopped matching would under-report coverage, which reads exactly like a clean tree. Returns 0 or 1; the caller exits.
     """
     lines = records(SAMPLE)
 
@@ -434,8 +423,7 @@ def inline_selftest() -> int:
         return _selftest_fail("covering_uses(negative)", covering_uses(caller, SAMPLE_REF), "0")
 
     # LC_ALL=C: same sibling risk as test-scope-gate-outputs.sh (see
-    # docs/agent-reference/TRAPS.md). A shell `sort` compared against a hand-written literal is locale-dependent by construction. Currently
-    # correct under en_US.UTF-8 only because 'i' < 'r' in both orderings; pinned
+    # docs/agent-reference/TRAPS.md). A shell `sort` compared against a hand-written literal is locale-dependent by construction. Currently correct under en_US.UTF-8 only because 'i' < 'r' in both orderings; pinned
     # so it stays correct everywhere rather than by luck. `sorted(key=encode)`
     # is that byte sort.
     got = ",".join(sorted(step_inputs(block, SAMPLE_REF), key=str.encode)) + ","
@@ -458,9 +446,7 @@ def inline_selftest() -> int:
 def records(text: str) -> list[str]:
     """awk's records, not Python's `split`.
 
-    THE ONE-ELEMENT DIFFERENCE THAT IS NOT COSMETIC. A POSIX text file ends with
-    a newline, and awk reads it as N records; `str.split("\n")` reads it as N+1,
-    the last being the empty string. That phantom record sits INSIDE the last job's block, so `job_block` emitted one extra blank line and the port and the twin disagreed byte for byte on the final job of every workflow.
+    THE ONE-ELEMENT DIFFERENCE THAT IS NOT COSMETIC. A POSIX text file ends with a newline, and awk reads it as N records; `str.split("\n")` reads it as N+1, the last being the empty string. That phantom record sits INSIDE the last job's block, so `job_block` emitted one extra blank line and the port and the twin disagreed byte for byte on the final job of every workflow.
 
     It changes no verdict today -- every consumer either skips a blank line or is unaffected by one, which is why the shadow differential over five trees and the real 124-job tree all read EQUIVALENT. It is still fixed rather than documented as harmless: the next consumer added to `job_block`'s output will not know the phantom is there, and "harmless" is a property of today's
     callers rather than of the data.

@@ -115,9 +115,7 @@ import {
 import { followJobLogs, readJobStatus, renderJobEvent } from './job-remote.js';
 import type { ExecuteOptions, ExecuteResult, RenetEvent } from './types.js';
 
-// ExecuteResult only. The other seam types are consumed from executor-factory,
-// which is the entry point to this layer; re-exporting them here as well just
-// gave callers two doors to the same room.
+// ExecuteResult only. The other seam types are consumed from executor-factory, which is the entry point to this layer; re-exporting them here as well just gave callers two doors to the same room.
 export type { ExecuteResult } from './types.js';
 
 import { authorizeSubscriptionViaDeviceCode } from '../account/subscription-device-auth.js';
@@ -358,8 +356,7 @@ async function resolveRepoLicenseContext(
 
   // No identity proofs here, by construction. This context is only ever built
   // for provisioning verbs, whose target repo does not exist on disk yet, so
-  // there is nothing to fingerprint; the proofs arrive afterwards, when
-  // refreshRepoLicenseIdentity reissues from renet's own licence scan.
+  // there is nothing to fingerprint; the proofs arrive afterwards, when refreshRepoLicenseIdentity reissues from renet's own licence scan.
   //
   // A `stat`-based fingerprint used to be computed on this path and it was dead code that was ALSO wrong: `storageFingerprint` is a signed payload field whose exact bytes renet re-derives (pkg/license/identity.go, `kind:size:mtime:mode` over Go's FileMode), and no `stat -c` format string produces them. One producer of those bytes now, and it is renet's scan.
   //
@@ -458,8 +455,7 @@ async function restoreLicenseAlreadyInstalled(
   remoteRenetPath: string,
   sftp: SFTPClient
 ): Promise<boolean> {
-  // `--all-datastores`, so a licence in a NAMED datastore is visible here; the
-  // scope comparison below is what keeps that breadth from being permissive.
+  // `--all-datastores`, so a licence in a NAMED datastore is visible here; the scope comparison below is what keeps that breadth from being permissive.
   const statuses = await readRuntimeRepoLicenseStatuses(
     machine,
     sshPrivateKey,
@@ -529,9 +525,7 @@ async function resolveRepoLicenseInputs(
 } | null> {
   if (!functionName.startsWith('repository_')) return null;
   const repoName = typeof params.repository === 'string' ? params.repository : '';
-  // For a tag-targeted verb `params.repository` names the SOURCE, and the
-  // licence target is `params.tag`; a missing source is not fatal here because
-  // buildRepoLicenseContext decides what it can build without one.
+  // For a tag-targeted verb `params.repository` names the SOURCE, and the licence target is `params.tag`; a missing source is not fatal here because buildRepoLicenseContext decides what it can build without one.
   if (!repoName && !usesTagAsProvisioningTarget(functionName)) return null;
   // Try bare name first, then composite key (e.g., "my-app" → "my-app:latest")
   let repo = await configService.getRepository(repoName);
@@ -1029,8 +1023,7 @@ export function buildRenetEnvPrefix(params: {
   const { isDevelopment, telemetryDisabled, otlpCreds, envSecrets, kubeconfig } = params;
   const envParts: string[] = [];
   if (isDevelopment) {
-    // REMOTE plane: this REDIACC_ENVIRONMENT travels to the renet process on the machine, a different plane from the local CLI's dev signal. Keep the
-    // name; the env-tombstone test allowlists this one literal.
+    // REMOTE plane: this REDIACC_ENVIRONMENT travels to the renet process on the machine, a different plane from the local CLI's dev signal. Keep the name; the env-tombstone test allowlists this one literal.
     envParts.push('REDIACC_ENVIRONMENT=development');
   }
   if (kubeconfig) {
@@ -1280,9 +1273,7 @@ class LocalExecutorService {
     remoteRenetPath: string,
     sftp: SFTPClient
   ): Promise<LicenseIssuanceOutcome> {
-    // NOTE: recovery is deliberately NOT gated on any "is this function licensed" predicate. There used to be one (isLicensedRenetFunction, with
-    // a repository_up/down/delete deny-list); it is deleted, because it was a
-    // hand-maintained second source of truth that had already drifted from renet's tier map, and nothing consumed it but this comment.
+    // NOTE: recovery is deliberately NOT gated on any "is this function licensed" predicate. There used to be one (isLicensedRenetFunction, with a repository_up/down/delete deny-list); it is deleted, because it was a hand-maintained second source of truth that had already drifted from renet's tier map, and nothing consumed it but this comment.
     //
     // The reasoning it encoded still holds and is why nothing like it belongs here: such a deny-list governs PRE-FLIGHT issuance, since operate-tier ops do not issue a license before running. But this method runs during RECOVERY, after renet has already reported
     // LICENSE_REQUIRED (reason=missing) for the repo on the target machine.
@@ -1833,14 +1824,11 @@ class LocalExecutorService {
     const stdoutHandler = createStdoutHandler(options, collector);
     // Renet routes diagnostics (lifecycle brackets, relayed sub-command stderr) to ITS stderr so they can never interleave with parseable stdout. Echo them live in interactive text mode — to OUR stderr, same "stdout belongs to the command" rule as createStdoutHandler.
     const echoStderrLive = Boolean(!options.captureOutput && !options.eventsMode);
-    // Quiet logrus lines are WITHHELD from the live terminal and replayed only if the command fails. They were 227-358 columns wide and wrapped into garbage
-    // in every tutorial recording; dropping them outright is worse and was tried
-    // (see daemon/client.ts), because a failing child explains itself at info level. REDIACC_DEBUG restores the old firehose.
+    // Quiet logrus lines are WITHHELD from the live terminal and replayed only if the command fails. They were 227-358 columns wide and wrapped into garbage in every tutorial recording; dropping them outright is worse and was tried (see daemon/client.ts), because a failing child explains itself at info level. REDIACC_DEBUG restores the old firehose.
     //
     // This USES the shared pump rather than restating it: an inline copy lived here first, and it was a byte-for-byte duplicate of createQuietStderrPump whose only lasting effect was to push this function past the complexity gate. Two copies of a withhold-and-replay buffer is exactly how the two drift apart while both keep passing. BOTH the env var and the `--debug` FLAG. This
     // read only the env var, so `rdc repo up --debug` withheld renet's info-level lines anyway and a flag named --debug did not enable debug output. It cost a CI test: the concurrent-fork-isolation suite greps its `--debug` log for renet's "restored from checkpoint" (emitted with log.Infof), found nothing, and blamed console#440 for a regression that had not happened. The two
-    // sibling
-    // call sites already pass options.debug; this one reached past it.
+    // sibling call sites already pass options.debug; this one reached past it.
     const stderrPump = createQuietStderrPump({ echoAll: shouldEchoRelayLive(options) });
     const execStart = Date.now();
     const exitCode = await sftp.execStreaming(command, {
@@ -1946,8 +1934,7 @@ class LocalExecutorService {
       );
 
       if (interrupted) {
-        // The operator stopped WATCHING; the job keeps running. Cancelling here
-        // would destroy a half-finished migration because someone hit Ctrl-C on a scrolling log, which is the opposite of what a detached job is for.
+        // The operator stopped WATCHING; the job keeps running. Cancelling here would destroy a half-finished migration because someone hit Ctrl-C on a scrolling log, which is the opposite of what a detached job is for.
         const hint = resumeHint(handle.job_id, options.machineName);
         writeStderr(`\n${hint}\n`);
         return {
@@ -2093,9 +2080,8 @@ class LocalExecutorService {
       };
       await Promise.all([runVerify(), runLicense()]);
     } else if (isRestoreLicenseFunction(options.functionName)) {
-      // Sequential, unlike the provisioning arm above, and the difference is not stylistic. That arm's concurrency is safe because its pre-flight
-      // only needs the renet binary; this one runs a licence SCAN on the target
-      // (the skip probe) over the same shared SFTP session `verifyMachineSetup` is using, and a restore target is by construction a machine nobody has verified yet. Verify first, then license: a DR restore is not a path where a second of wall clock is worth an interleaving hazard.
+      // Sequential, unlike the provisioning arm above, and the difference is not stylistic. That arm's concurrency is safe because its pre-flight only needs the renet binary; this one runs a licence SCAN on the target (the skip probe) over the same shared SFTP session `verifyMachineSetup` is using, and a restore target is by construction a machine nobody has verified yet. Verify
+      // first, then license: a DR restore is not a path where a second of wall clock is worth an interleaving hazard.
       await runVerify();
       const licStart = Date.now();
       await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>

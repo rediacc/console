@@ -3,12 +3,10 @@ to `sys.path` from under `.claude/hooks/`.
 
 WHY THE HOOKS NEEDED ONE. Eight call sites across four `wl_*` modules launch a command that FORKS -- `npm run <gate>`, `npx tsx`, and six `claude -p` invocations -- and every
 one used `subprocess.run(capture_output=True, timeout=N)`. That combination bounds
-nothing when the child has children: on timeout `run` kills the direct child and then blocks in `communicate()` waiting for pipe write ends a GRANDCHILD still holds. `.ci/rediacc_ci/proc.py` fixes that by putting the child in its own session and signalling the whole group, and it is already the tree's single implementation of that
-fix; a second copy inside the hooks is the drift `rediacc_ci/controls.py` argues against.
+nothing when the child has children: on timeout `run` kills the direct child and then blocks in `communicate()` waiting for pipe write ends a GRANDCHILD still holds. `.ci/rediacc_ci/proc.py` fixes that by putting the child in its own session and signalling the whole group, and it is already the tree's single implementation of that fix; a second copy inside the hooks is the drift
+`rediacc_ci/controls.py` argues against.
 
-AND IT MATTERS MORE HERE THAN IN A GATE. These eight run inside the STOP HOOK. A gate
-that hangs fails one job; a hook that hangs means no session in this worktree can ever
-stop, including sessions with nothing to do with the command that hung.
+AND IT MATTERS MORE HERE THAN IN A GATE. These eight run inside the STOP HOOK. A gate that hangs fails one job; a hook that hangs means no session in this worktree can ever stop, including sessions with nothing to do with the command that hung.
 
 THE FAILURE IS DEFERRED TO THE CALL, NOT RAISED AT IMPORT, and that is not politeness -- it is a measured requirement. `test-worklist-v5.sh` case 222j copies the hook directory somewhere WITHOUT `.ci` beside it and asserts the hook still reports exactly the one module it planted a crash in. An import-time raise made three more modules unimportable there, `worklist.py` refused with
 "3 sibling module(s) unusable", and the case went red. That red is the real behaviour in miniature: a tree without `.ci` would have lost the WHOLE Stop hook, every check, over a runner that most stops never reach.

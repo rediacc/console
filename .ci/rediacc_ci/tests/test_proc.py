@@ -39,9 +39,7 @@ FAST = 0.4
 def bash_rc(script: str) -> int:
     """The exit code of a bash snippet, with two traps handled once rather than per case.
 
-    TRAP ONE: common.sh sets `set -euo pipefail` when sourced, so
-    `run_with_timeout 1 false; echo $?` never reaches the echo -- the shell aborts
-    at the non-zero. Every case that wants a code has to capture it with
+    TRAP ONE: common.sh sets `set -euo pipefail` when sourced, so `run_with_timeout 1 false; echo $?` never reaches the echo -- the shell aborts at the non-zero. Every case that wants a code has to capture it with
     `|| rc=$?`, and having one helper stops a case silently measuring 0 because it
     forgot.
 
@@ -138,9 +136,7 @@ def test_a_missing_binary_is_127_and_not_an_exception():
 def test_neither_bash_timeout_enforces_its_deadline_and_this_one_does():
     """DEFECT 1, measured in both directions.
 
-    A child that traps SIGTERM outlives both bash bounds. GNU timeout reports 124
-    but only once the child finished on its own; common.sh reports **0**, so the
-    timeout is not merely late, it is invisible. SIGKILL cannot be trapped, so the Python side ends at its deadline.
+    A child that traps SIGTERM outlives both bash bounds. GNU timeout reports 124 but only once the child finished on its own; common.sh reports **0**, so the timeout is not merely late, it is invisible. SIGKILL cannot be trapped, so the Python side ends at its deadline.
 
     ASSERTED IN BOTH DIRECTIONS on purpose. If a future coreutils starts passing `--kill-after` by default, or common.sh grows one, this fails and the divergence gets re-decided rather than silently disappearing.
     """
@@ -216,8 +212,7 @@ def _alive(pid: int) -> bool:
 def test_the_bash_retry_discards_the_exit_code_and_this_one_keeps_it():
     """DEFECT 3, both directions.
 
-    `common.sh:208-209` is `log_error ...; return 1`, so 127 (not installed), 7
-    (a real finding) and 124 (timed out every time) all arrive at the caller as
+    `common.sh:208-209` is `log_error ...; return 1`, so 127 (not installed), 7 (a real finding) and 124 (timed out every time) all arrive at the caller as
     1. `retry_command` returns the last Result intact.
     """
     bash = bash_rc(
@@ -383,8 +378,7 @@ def test_partial_output_survives_a_timeout():
 def test_stdin_is_closed_by_default():
     """A command that decides to prompt must fail, not hang.
 
-    `cat` with no argument reads stdin; against /dev/null it gets EOF at once.
-    Inheriting the caller's stdin is the latent hang the module docstring names, and only one of the tree's nineteen Python call sites closes it today.
+    `cat` with no argument reads stdin; against /dev/null it gets EOF at once. Inheriting the caller's stdin is the latent hang the module docstring names, and only one of the tree's nineteen Python call sites closes it today.
     """
     result = proc.run(["cat"], timeout=2)
     assert result.ok
@@ -443,9 +437,7 @@ def _described(rc):
 def test_describe_says_killed_when_a_signal_ended_the_child():
     """A SIGNALLED CHILD DID NOT "EXIT", and calling it one misdirects the reader.
 
-    Learned expensively on 2026-09-08 in `wl_judge`, whose equivalent line read "judge exited 143" and let a reader conclude the model was unreachable -- the
-    remedy that message offers is to DISABLE the gate. The model was healthy; an
-    outer deadline had SIGTERMed the child.
+    Learned expensively on 2026-09-08 in `wl_judge`, whose equivalent line read "judge exited 143" and let a reader conclude the model was unreachable -- the remedy that message offers is to DISABLE the gate. The model was healthy; an outer deadline had SIGTERMed the child.
 
     BOTH SPELLINGS, deliberately: `subprocess` reports a signalled child as a NEGATIVE returncode, while a shell in between reports 128+N -- and the live failure arrived as 143, the shell form, so testing only the negative form would have missed the case that actually happened.
     """

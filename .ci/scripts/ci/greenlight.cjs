@@ -13,8 +13,7 @@
 //
 // INTENT IS NOT OUTCOME. A candidate that was itself a REDUCED run is a perfectly good witness, because rule 1 asks whether the job RAN, not what the plan intended. A skipped job is refused precisely so evidence cannot chain across runs that skipped their way to green.
 //
-// FAIL-OPEN IS THE CONTRACT, identical to scope-shadow.sh:9-19. This engine
-// may only ever cause a job to be SKIPPED that would otherwise RUN; it has no
+// FAIL-OPEN IS THE CONTRACT, identical to scope-shadow.sh:9-19. This engine may only ever cause a job to be SKIPPED that would otherwise RUN; it has no
 // path that turns a skip back into a run, because it emits `run_<key>=false`
 // and nothing else. Any error, any timeout, any absence of a match yields no emit line at all, which changes nothing, which is a full round.
 //
@@ -31,12 +30,9 @@
 // global now, and rebinding it shadows the builtin.
 const { createHash } = require('node:crypto');
 
-// --------------------------------------------------------------------------- THE CLOSURE TABLE. Hand-derived by walking each job's steps in its DEFINING workflow and one level into every script it invokes, then re-verified against the live tree. A path here is either a file (blob sha) or a
-// directory (tree sha); both come back from the same contents listing.
+// --------------------------------------------------------------------------- THE CLOSURE TABLE. Hand-derived by walking each job's steps in its DEFINING workflow and one level into every script it invokes, then re-verified against the live tree. A path here is either a file (blob sha) or a directory (tree sha); both come back from the same contents listing.
 //
-// OVER-INCLUSION IS SAFE AND UNDER-INCLUSION IS NOT. Every extra path can only
-// make a greenlight rarer (more full rounds); a missing one would let a PR
-// that edits a real input inherit somebody else's green. When in doubt the path is listed.
+// OVER-INCLUSION IS SAFE AND UNDER-INCLUSION IS NOT. Every extra path can only make a greenlight rarer (more full rounds); a missing one would let a PR that edits a real input inherit somebody else's green. When in doubt the path is listed.
 //
 // SHAPE. Each entry is { jobNames: [...], submodules: [...], paths: [...] }.
 // - `jobNames` is a LIST because a matrix job is several API jobs. Every name must match exactly one job and every one of them must be `success`: a five-leg matrix with four green legs and one skipped leg proves nothing about the fifth, so partial evidence is refused outright. - `submodules` may be EMPTY, which is legal and means rule 2 is vacuous. `Unit` and `Linux Packages`
@@ -48,9 +44,7 @@ const { createHash } = require('node:crypto');
 // The eight VM/E2E legs share ONE closure. They check out with `submodules: true`, run the same setup-workspace + build-cli + build-renet chain, and differ only in env and playwright config that live inside ct-tests.yml and packages/e2e-tests, both of which are in the closure. scope-map.cjs:243-264 already treats them as a single surface for the same reason. Sharing the list also
 // makes the candidate walk cheap: one parent listing answers all eight keys, cached per ref.
 const VM_E2E_SUBMODULES = [
-  // `submodules: true` (ct-tests.yml:259 and the seven siblings) pulls every gitlink in .gitmodules, so all four are checked out and all four are pinned. private/elite and private/homebrew-tap are not READ by these
-  // suites; they are listed because a moved pointer changes the tree the job
-  // ran against, and the safe direction is to refuse.
+  // `submodules: true` (ct-tests.yml:259 and the seven siblings) pulls every gitlink in .gitmodules, so all four are checked out and all four are pinned. private/elite and private/homebrew-tap are not READ by these suites; they are listed because a moved pointer changes the tree the job ran against, and the safe direction is to refuse.
   'private/renet',
   'private/account',
   'private/elite',
@@ -173,9 +167,7 @@ const CLOSURES = {
       '.github/workflows/ct-tests.yml',
     ],
   },
-  // ci-ops-test.yml, called from ci.yml:864. FIVE leaf jobs across three job
-  // blocks and two matrices; the rendered names are disjoint, verified against
-  // ci-ops-test.yml:16 + :31-34, :329 + :344-347, :467 + :482-493.
+  // ci-ops-test.yml, called from ci.yml:864. FIVE leaf jobs across three job blocks and two matrices; the rendered names are disjoint, verified against ci-ops-test.yml:16 + :31-34, :329 + :344-347, :467 + :482-493.
   ops: {
     jobNames: [
       'OPS Provision (linux-amd64)',
@@ -184,9 +176,8 @@ const CLOSURES = {
       'OPS Check (macos-arm64)',
       'OPS Check (windows-amd64)',
     ],
-    // Only ops-vm-provision checks out submodules (`recursive`,
-    // ci-ops-test.yml:55-59); the qemu and platform-check legs consume a
-    // prebuilt renet artifact instead. renet and account are pinned because the provision leg builds renet from source and runs the account-backed tutorial sequence. elite and homebrew-tap are NOT pinned: nothing in this workflow reads them, and pinning them would cost greenlights on every elite pointer bump for no coverage gain.
+    // Only ops-vm-provision checks out submodules (`recursive`, ci-ops-test.yml:55-59); the qemu and platform-check legs consume a prebuilt renet artifact instead. renet and account are pinned because the provision leg builds renet from source and runs the account-backed tutorial sequence. elite and homebrew-tap are NOT pinned: nothing in this workflow reads them, and pinning them
+    // would cost greenlights on every elite pointer bump for no coverage gain.
     submodules: ['private/renet', 'private/account'],
     paths: [
       // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
@@ -196,8 +187,7 @@ const CLOSURES = {
       'packages/provisioning',
       'packages/locales',
       'packages/json',
-      // run-sequence.sh:31,37 globs packages/www/src/content/docs/en/ tutorial-*.mdx and derives the tutorial list AND its order from their `order:` frontmatter, then requires a 1:1 match against .ci/tutorials/tutorial-<slug>.sh (:57-70). Both sides are inputs. The `en` tree is the narrowest entry that self-maintains as tutorials come
-      // and go; the other locales are not read.
+      // run-sequence.sh:31,37 globs packages/www/src/content/docs/en/ tutorial-*.mdx and derives the tutorial list AND its order from their `order:` frontmatter, then requires a 1:1 match against .ci/tutorials/tutorial-<slug>.sh (:57-70). Both sides are inputs. The `en` tree is the narrowest entry that self-maintains as tutorials come and go; the other locales are not read.
       'packages/www/src/content/docs/en',
       '.ci/tutorials',
       '.ci/scripts/setup/install-deps.sh',
@@ -297,9 +287,8 @@ const CLOSURES = {
       'packages/shared',
       'packages/provisioning',
       'packages/locales',
-      // The drills' own source, and the entry points that reach it. The drill dispatch into scripts/drills/ lived in run.sh until the 2026-09-06 router
-      // split moved every verb body to .ci/legacy/run-legacy.sh; run.sh is now a
-      // 120-line dispatcher that execs into it. Both are listed, because a change to EITHER can change which drill runs, and the line numbers this comment used to cite (run.sh:1987 and :1991) no longer exist -- naming the files rather than their addresses is what stops that going stale again.
+      // The drills' own source, and the entry points that reach it. The drill dispatch into scripts/drills/ lived in run.sh until the 2026-09-06 router split moved every verb body to .ci/legacy/run-legacy.sh; run.sh is now a 120-line dispatcher that execs into it. Both are listed, because a change to EITHER can change which drill runs, and the line numbers this comment used to
+      // cite (run.sh:1987 and :1991) no longer exist -- naming the files rather than their addresses is what stops that going stale again.
       'scripts/drills',
       'run.sh',
       '.ci/legacy',
@@ -363,15 +352,13 @@ const CLOSURES = {
   // ct-tests.yml:1596 `test-license-enforcement`. Checkout plus Go plus one script: no npm, no setup-workspace, no packages/.
   license_enforcement: {
     jobNames: ['License Enforcement'],
-    // `submodules: true` at ct-tests.yml:1611 checks out all four; only renet
-    // is read. license-e2e.sh:186 `go build`s ./cmd/renet out of private/renet and mints its own throwaway key, so private/account is not consumed (the reference at license-e2e.sh:179-180 is a comment explaining why the account key path is deliberately NOT taken).
+    // `submodules: true` at ct-tests.yml:1611 checks out all four; only renet is read. license-e2e.sh:186 `go build`s ./cmd/renet out of private/renet and mints its own throwaway key, so private/account is not consumed (the reference at license-e2e.sh:179-180 is a comment explaining why the account key path is deliberately NOT taken).
     submodules: ['private/renet'],
     paths: [
       // The shadow-run step every ct-tests job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the job's closure has to hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
       '.ci/scripts/private/license-e2e.sh',
-      // license-e2e.sh:69 points MINT_SRC at it and :605 `go build`s it; the
-      // job also caches on its go.sum (ct-tests.yml:1626).
+      // license-e2e.sh:69 points MINT_SRC at it and :605 `go build`s it; the job also caches on its go.sum (ct-tests.yml:1626).
       '.ci/scripts/private/license-mint',
       // license-e2e.sh:55 sources it.
       '.ci/scripts/lib/common.sh',
@@ -409,8 +396,7 @@ const CLOSURES = {
       '.github/workflows/ci-build-renet.yml',
     ],
   },
-  // ci.yml:702 `package-tests`, gate at :707. The rendered name already carries a "Tests + Infra / " prefix written into `name:` by hand
-  // (ci.yml:703); only the leaf is matched, so that spelling is irrelevant.
+  // ci.yml:702 `package-tests`, gate at :707. The rendered name already carries a "Tests + Infra / " prefix written into `name:` by hand (ci.yml:703); only the leaf is matched, so that spelling is irrelevant.
   package_tests: {
     jobNames: ['Linux Packages'],
     // EMPTY, and the emptiness is derived: ci.yml:709 is a bare checkout with no `with:` block at all, so no submodule is present and rule 2 has nothing to compare. The binary under test is a dummy shell script the harness synthesises in-job (test-linux-packages.sh:122-131), which is also why no packages/ tree is listed.
@@ -467,9 +453,7 @@ const CLOSURES = {
   },
 };
 
-// --------------------------------------------------------------------------- PURE CORE. No network, no git, no clock. Everything below the io line feeds
-// this; the unit gate (.ci/scripts/test/gates/test-greenlight.sh) drives it
-// directly with fixtures. ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- PURE CORE. No network, no git, no clock. Everything below the io line feeds this; the unit gate (.ci/scripts/test/gates/test-greenlight.sh) drives it directly with fixtures. ---------------------------------------------------------------------------
 
 // The leaf of a reusable-workflow job name. See CLOSURES.renet.jobNames.
 function jobLeafName(name) {
@@ -523,8 +507,7 @@ function evaluateCandidate(candidate, { jobNames, wantGitlinks, wantClosureHash 
   if (!Array.isArray(jobs)) {
     return { usable: false, reason: 'jobs-unreadable:not-a-list' };
   }
-  // Only a multi-leg key tags its refusal with the leg that caused it; a
-  // single-name key keeps the bare reason, which is what the trail table and every existing assertion read.
+  // Only a multi-leg key tags its refusal with the leg that caused it; a single-name key keeps the bare reason, which is what the trail table and every existing assertion read.
   const tag = (name) => (jobNames.length > 1 ? `@${name}` : '');
   for (const jobName of jobNames) {
     const matches = jobs.filter((j) => j && jobLeafName(j.name) === jobName);
@@ -562,8 +545,7 @@ function evaluateCandidate(candidate, { jobNames, wantGitlinks, wantClosureHash 
   return { usable: true, reason: 'job-green-same-inputs' };
 }
 
-// The whole decision for one key. Returns the first usable candidate; the
-// caller orders candidates newest-first, so "first" means "most recent proof".
+// The whole decision for one key. Returns the first usable candidate; the caller orders candidates newest-first, so "first" means "most recent proof".
 //
 // `trail` records every candidate examined with its refusal reason. It is the only thing that makes a non-greenlight diagnosable: without it, "no match" and "the API returned nothing" read identically in the job log, which is the unreadable-instrument failure scope-shadow.sh:96-104 was written to fix.
 function evaluateGreenlight({ key, wantGitlinks, wantClosureHash, candidates }) {
@@ -832,8 +814,7 @@ function main(argv) {
     }
   }
 
-  // The budget covers the WHOLE invocation, all keys included, because it exists to bound `initialize`, which every other job waits on. Overrunning
-  // it stalls the pipeline; giving up early costs one full round.
+  // The budget covers the WHOLE invocation, all keys included, because it exists to bound `initialize`, which every other job waits on. Overrunning it stalls the pipeline; giving up early costs one full round.
   const deadline = Date.now() + Math.max(1, budgetSeconds) * 1000;
   const selfRunId = process.env.GITHUB_RUN_ID ? String(process.env.GITHUB_RUN_ID) : null;
 
@@ -848,8 +829,7 @@ function main(argv) {
     return 0;
   }
 
-  // Newest first is what the API already returns; the dedupe keeps that order
-  // so the first usable candidate is the most recent proof.
+  // Newest first is what the API already returns; the dedupe keeps that order so the first usable candidate is the most recent proof.
   const seen = new Set();
   const runRows = [];
   for (const r of runs) {

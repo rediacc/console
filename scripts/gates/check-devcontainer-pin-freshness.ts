@@ -120,9 +120,7 @@ async function fetchJson(url: string): Promise<unknown> {
     Accept: 'application/vnd.github+json',
     'User-Agent': 'rediacc-devcontainer-pin-freshness',
   };
-  // Unauthenticated GitHub is 60 requests/hour per IP, which one CI runner shared
-  // between jobs can exhaust. A token raises it; its absence is not fatal because
-  // the caller treats a rate-limit as could-not-check.
+  // Unauthenticated GitHub is 60 requests/hour per IP, which one CI runner shared between jobs can exhaust. A token raises it; its absence is not fatal because the caller treats a rate-limit as could-not-check.
   const token = githubToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   const ctl = new AbortController();
@@ -193,8 +191,7 @@ async function latestFor(src: Source): Promise<Latest> {
 
   const digests = new Map<string, string>();
   for (const a of hit.assets ?? []) {
-    // `digest` is "sha256:<hex>". Bitwarden publishes no .sha256 sidecars and no GPG/cosign signatures, so this is the only machine-readable checksum there is -- an integrity check against the same API that serves the download,
-    // not an independent trust root. Worth knowing; still better than no pin.
+    // `digest` is "sha256:<hex>". Bitwarden publishes no .sha256 sidecars and no GPG/cosign signatures, so this is the only machine-readable checksum there is -- an integrity check against the same API that serves the download, not an independent trust root. Worth knowing; still better than no pin.
     if (a.name && a.digest?.startsWith('sha256:')) {
       digests.set(a.name, a.digest.slice('sha256:'.length));
     }

@@ -4,19 +4,15 @@ Composes one autopilot round's prompt from the trusted template plus the gate's 
 
 THE INJECTED BLOCKS ARE THE MODEL'S ONLY STATE CHANNEL, and that is why this script is more than a `cat`. Agent mode inlines no PR text at all (03-v2-autonomy.md wall 1), so everything a round needs rides in this file: the decision, the state comment, the failed-job list, and -- for a review-response round -- the author-filtered review payload the gate built.
 
-A REVIEW ROUND WITH NO PAYLOAD REFUSES, exit 1. The gate treats a failed thread
-fetch as a warning so one GraphQL hiccup cannot stop fix rounds; the cost of
-that choice is paid here, where a missing payload would mean answering findings the round never read. Note the ORDER, which the port keeps: the refusal happens AFTER `--out` has already been written with the state and failed-jobs blocks, so a refused review round still leaves a partial prompt file on disk.
+A REVIEW ROUND WITH NO PAYLOAD REFUSES, exit 1. The gate treats a failed thread fetch as a warning so one GraphQL hiccup cannot stop fix rounds; the cost of that choice is paid here, where a missing payload would mean answering findings the round never read. Note the ORDER, which the port keeps: the refusal happens AFTER `--out` has already been written with the state and
+failed-jobs blocks, so a refused review round still leaves a partial prompt file on disk.
 
-THE HEREDOC DELIMITER IS RANDOM PER RUN, and it is a security control rather than a flourish. The prompt carries review-thread text an outsider can
-influence by replying into a trusted thread; a FIXED marker appearing in that
-text would close the `prompt` output early and let the remainder of the comment declare step outputs of its own. The twin draws it from `head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \\n'`, which is 32 lowercase hex characters. This port uses `secrets.token_hex(16)`: same 16 bytes, same alphabet, same length, from the same kernel CSPRNG, without three processes. The differential
-asserts the SHAPE (prefix plus 32 hex characters) and that two runs differ, because asserting the value would be asserting that a random number generator repeats itself.
+THE HEREDOC DELIMITER IS RANDOM PER RUN, and it is a security control rather than a flourish. The prompt carries review-thread text an outsider can influence by replying into a trusted thread; a FIXED marker appearing in that text would close the `prompt` output early and let the remainder of the comment declare step outputs of its own. The twin draws it from `head -c 16
+/dev/urandom | od -An -tx1 | tr -d ' \\n'`, which is 32 lowercase hex characters. This port uses `secrets.token_hex(16)`: same 16 bytes, same alphabet, same length, from the same kernel CSPRNG, without three processes. The differential asserts the SHAPE (prefix plus 32 hex characters) and that two runs differ, because asserting the value would be asserting that a random number
+generator repeats itself.
 
 `cat` IS NOT EXECUTED, AND ITS ERRORS ARE REPRODUCED BY HAND. The twin runs five `cat` calls whose failures are load-bearing: `$FX/decision.json` has NO `require_file` in front of it, so a missing decision file is a raw `cat: <path>: No such file or directory` on stderr and a `set -e` exit 1, with `--out` half written. That is a hazard (see below) and reproducing it means
-reproducing coreutils' message, which is `cat: %s: %s` with `strerror(errno)`
-as the tail. Doing that in Python costs one f-string; shelling out to `cat`
-five times to get it for free would make a pure string-assembly script spawn processes, and would make the port's behaviour depend on which `cat` is on PATH.
+reproducing coreutils' message, which is `cat: %s: %s` with `strerror(errno)` as the tail. Doing that in Python costs one f-string; shelling out to `cat` five times to get it for free would make a pure string-assembly script spawn processes, and would make the port's behaviour depend on which `cat` is on PATH.
 
 THE HAZARD, PRESERVED AND REPORTED, not repaired here. Three of the five inputs are checked and two are not:
 
@@ -29,13 +25,9 @@ THE HAZARD, PRESERVED AND REPORTED, not repaired here. Three of the five inputs 
   optional     $FX/state.txt, $FX/failed-jobs.txt -- guarded with `[[ -f ]]`
                and genuinely optional.
 
-`decision.json` reads like the one fixture that must exist, so the asymmetry is
-almost certainly an oversight rather than a decision; fixing it means editing a
-live workflow step, which is the cutover box's call, not this one's.
+`decision.json` reads like the one fixture that must exist, so the asymmetry is almost certainly an oversight rather than a decision; fixing it means editing a live workflow step, which is the cutover box's call, not this one's.
 
-BASH REDIRECTION FAILURE IS A DIVERGENCE IN TEXT ONLY. `>"$OUT"` into a nonexistent directory is a bash diagnostic carrying the twin's path and line
-number; this port opens the same file at the same point (before any content is
-produced, because bash sets up a group's redirection before running the group) and reports the same errno with the same exit code 1.
+BASH REDIRECTION FAILURE IS A DIVERGENCE IN TEXT ONLY. `>"$OUT"` into a nonexistent directory is a bash diagnostic carrying the twin's path and line number; this port opens the same file at the same point (before any content is produced, because bash sets up a group's redirection before running the group) and reports the same errno with the same exit code 1.
 
 K=5 LEDGER: `.ci/shadow/w7p6-compose-prompt.observations.jsonl`.
 """
@@ -56,8 +48,7 @@ USAGE = (
     "--mode <mode> --out <file>"
 )
 
-# The mode that requires a review payload. One name, one place; the twin
-# compares the literal in two spots and this port compares it in one.
+# The mode that requires a review payload. One name, one place; the twin compares the literal in two spots and this port compares it in one.
 REVIEW_MODE = "review-response"
 
 # The `prompt` heredoc marker's fixed half. The random half is appended per run.
@@ -92,9 +83,8 @@ def compose_chunks(prompts: str, fx: str, template: str):
 
     A GENERATOR RATHER THAN ONE RETURNED BUFFER, and the differential is what
     made that necessary rather than a preference. `{ cat a; printf x; cat b; }
-    >"$OUT"` writes each command's output to the file AS IT RUNS, so when `cat "$FX/decision.json"` fails the file already holds the template and the opening `<autopilot_state>` tag. The first version of this port composed the whole thing in memory and wrote once at the end, which left a ZERO-BYTE
-    `--out` on that path; `test_missing_inputs` caught it on the first run. The
-    partial file is not cosmetic: a workflow step that inspects `--out` after a failed compose sees what the twin left, and a port that truncates it changes what that step reads.
+    >"$OUT"` writes each command's output to the file AS IT RUNS, so when `cat "$FX/decision.json"` fails the file already holds the template and the opening `<autopilot_state>` tag. The first version of this port composed the whole thing in memory and wrote once at the end, which left a ZERO-BYTE `--out` on that path; `test_missing_inputs` caught it on the first run. The partial
+    file is not cosmetic: a workflow step that inspects `--out` after a failed compose sees what the twin left, and a port that truncates it changes what that step reads.
 
     PATHS ARE CONCATENATED, NOT `os.path.join`-ed, and that is deliberate: `"$PROMPTS/$TEMPLATE"` in bash always glues the two with a slash, while `os.path.join(prompts, template)` DISCARDS `prompts` entirely when `template` is absolute. `--template /etc/passwd` would therefore read a different file in the port than in the twin, which is a sandbox escape a reader would never spot
     in a helper call.

@@ -32,9 +32,7 @@ because the CLEAN-run case asserts exactly that emptiness.
 
 WHY ONE CASE BYPASSES `media_run_module`. `_tutorial_auto_jobs` is asserted on its STREAM SEPARATION, and `media_run_module` returns a `RunResult` whose `.combined` would merge the very two streams under test. That case therefore builds its own `bash -c` with the same three sources and reads `.out` and `.err` apart, which is the same shell the helper would have built.
 
-NO `xdist_group`. `fake_bin` mutates PATH on this process and restores it in a
-`finally`; every case owns its own `mktemp -d`, nothing is bound, and
-`MEDIA_MODULE_DIR` is a per-call argument here rather than an environment variable.
+NO `xdist_group`. `fake_bin` mutates PATH on this process and restores it in a `finally`; every case owns its own `mktemp -d`, nothing is bound, and `MEDIA_MODULE_DIR` is a per-call argument here rather than an environment variable.
 """
 
 import stat
@@ -181,8 +179,7 @@ def test_auto_jobs_is_bounded_by_cpu_memory_and_a_ceiling(gate):
         for cores, gib, expect in ((20, 64, "4"), (64, 32, "4"), (64, 256, "6"), (4, 8, "1")):
             with harness.fake_bin("nproc awk +chmod +uname") as fake:
                 script_machine(fake.dir, cores, gib)
-                # STDOUT ALONE. The number is the return value; every log_* line is
-                # stderr, and the pool READS this stream. Keeping them apart is the assertion, not a convenience.
+                # STDOUT ALONE. The number is the return value; every log_* line is stderr, and the pool READS this stream. Keeping them apart is the assertion, not a convenience.
                 script = "\n".join(
                     [
                         "ROOT_DIR='%s'" % d,

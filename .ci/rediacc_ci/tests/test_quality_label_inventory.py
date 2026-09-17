@@ -92,9 +92,7 @@ FIVE = ("alpha", "bravo", "charlie", "delta", "echo1")
 
 CASES = [
     (
-        # THE NEGATIVE HALF, first. Both directions agree, so the gate must be
-        # silent; without this every red case below is satisfied by a port that
-        # reports everything.
+        # THE NEGATIVE HALF, first. Both directions agree, so the gate must be silent; without this every red case below is satisfied by a port that reports everything.
         "a reconciled inventory is silent",
         {"fx/labels.yml": declarations(*FIVE), "fx/live.txt": "\n".join(FIVE) + "\n"},
         SEAM_ENV,
@@ -259,8 +257,7 @@ def test_an_unreadable_drift_raises_rather_than_returning_nothing():
 def test_the_probe_has_three_outcomes(tmp_path):
     """0 exists, 1 CONFIRMED absent, 2 could not probe. Never two.
 
-    Only a 404 confirms absence; a 403, a 500 or a network error says nothing about
-    the label and must not be read as agreement with a stale list.
+    Only a 404 confirms absence; a 403, a 500 or a network error says nothing about the label and must not be read as agreement with a stale list.
     """
     present = tmp_path / "probe.txt"
     present.write_text("alpha\n", encoding="utf-8")

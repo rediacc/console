@@ -1,11 +1,9 @@
 """`rediacc_ci.quality.pool_writer_safety` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-pool-writer-safety.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. The twin has TWO environment seams of its own -- `POOL_SAFETY_GATES_DIR` and `POOL_SAFETY_LOCK` -- so the gate battery and the
-registration are pointed at the fixture; the twin itself is copied in anyway,
-because the committed ledger (`.ci/shadow/w7p2-pool-writer.observations.jsonl`) records a tree id that has to be a claim about BOTH implementations.
+A bash child runs the REAL `.ci/scripts/quality/check-pool-writer-safety.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. The twin has TWO environment seams of its own -- `POOL_SAFETY_GATES_DIR` and `POOL_SAFETY_LOCK` -- so the gate battery and the registration are pointed at the fixture; the twin itself is copied in
+anyway, because the committed ledger (`.ci/shadow/w7p2-pool-writer.observations.jsonl`) records a tree id that has to be a claim about BOTH implementations.
 
-RETARGETED 2026-09-09 (W7P3-BAT) WITH ITS SUBJECT. The registration used to be the `WRITER_TESTS` / `WRITER_TESTS_FALLBACK` arrays in
-`.ci/scripts/test/run-all.sh`; `battery.py` replaced that runner and classifies
+RETARGETED 2026-09-09 (W7P3-BAT) WITH ITS SUBJECT. The registration used to be the `WRITER_TESTS` / `WRITER_TESTS_FALLBACK` arrays in `.ci/scripts/test/run-all.sh`; `battery.py` replaced that runner and classifies
 from `scripts/ci-runner/gates.lock.json`'s `mutex: ["tree:..."]` declarations
 instead, so the seam is now `POOL_SAFETY_LOCK` and the fixtures are JSON. The three defects below are unchanged and still pinned, because they are properties of the GATE and not of the file it reads.
 
@@ -74,9 +72,7 @@ NO_WRITERS = json.dumps(
 def lock_text(*registered: str) -> str:
     """A lock declaring `mutex: ["tree:repo"]` on each named gate test.
 
-    One non-gate-test entry is always present, because `run` is a command line in
-    the general case and the parser has to pick the WORD that names the script; a
-    fixture holding only gate tests could not catch a parser that took the whole string.
+    One non-gate-test entry is always present, because `run` is a command line in the general case and the parser has to pick the WORD that names the script; a fixture holding only gate tests could not catch a parser that took the whole string.
     """
     entries: list[dict[str, object]] = [
         {
@@ -191,8 +187,7 @@ def test_a_registered_writer_alone_is_green_on_both_sides(tmp_path: pathlib.Path
 def test_a_reads_declaration_is_not_a_writer_registration(tmp_path: pathlib.Path) -> None:
     """The half of the retarget that could silently re-open the old hole.
 
-    `reads` releases a test to run BESIDE other scanners; only `mutex` puts it in
-    the serial W chain. A parser that accepted either would look correct on every positive case above and would bless exactly the misclassification this gate exists for.
+    `reads` releases a test to run BESIDE other scanners; only `mutex` puts it in the serial W chain. A parser that accepted either would look correct on every positive case above and would bless exactly the misclassification this gate exists for.
     """
     lock = json.dumps(
         [

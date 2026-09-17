@@ -16,9 +16,8 @@ THE ENTRYPOINT IS ALWAYS THE SAME SHELL PROGRAM. Sourcing `run-legacy.sh` pulls 
 `if [[ "${BASH_SOURCE[0]}" == "${0}" ]]`. `devbox.sh` is sourced on top, exactly
 as the `setup()` arm does at `.ci/legacy/run-legacy.sh:583`.
 
-STREAMS ARE NOT CAPTURED BY DEFAULT. `ensure_deps` compiles native modules and
-`devbox_up` prints a probed route table; both take minutes and both are the
-thing an operator watches. A bridge that captured them would turn a live install into a silent hang, so `call()` inherits the streams and only `capture()` does not. The two are different functions rather than a flag, because a flag is a thing a caller gets wrong once and never notices.
+STREAMS ARE NOT CAPTURED BY DEFAULT. `ensure_deps` compiles native modules and `devbox_up` prints a probed route table; both take minutes and both are the thing an operator watches. A bridge that captured them would turn a live install into a silent hang, so `call()` inherits the streams and only `capture()` does not. The two are different functions rather than a flag, because a
+flag is a thing a caller gets wrong once and never notices.
 """
 
 from __future__ import annotations

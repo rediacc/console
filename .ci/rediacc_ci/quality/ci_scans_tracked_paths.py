@@ -1,7 +1,6 @@
 """CI CANNOT EXECUTE WHAT GIT DOES NOT TRACK.
 
-Ported from `.ci/scripts/quality/check-ci-scans-tracked-paths.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-ci-scans-tracked-paths.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 The twin's header, carried whole because the incident and the false-positive argument are both load-bearing:
 
@@ -33,8 +32,7 @@ PORT NOTES.
 -----------------------------------------------------------------------------
 
 THE IGNORED ROOTS ARE ASKED OF GIT, NEVER HARDCODED, and the twin says why in one line kept at the function: "a new ignored directory is covered the day it appears, and a path that stops being ignored stops being flagged." The globs are `*/` and `*/*/`, which is bash's own behaviour and therefore EXCLUDES dotted directories: `.git`, `.github` and `.ci` are never candidates. That is
-not an
-oversight to be tidied; widening it would put `.git` itself in the alternation.
+not an oversight to be tidied; widening it would put `.git` itself in the alternation.
 
 TWO CONDITIONS, AND DROPPING EITHER MAKES THIS GATE NOISE. The twin's words, carried at the two tests they describe:
 
@@ -50,8 +48,7 @@ TWO CONDITIONS, AND DROPPING EITHER MAKES THIS GATE NOISE. The twin's words, car
 
 `return "$hits"` IS FORBIDDEN AND THE REASON IS CARRIED. The twin: "A shell
 return is taken mod 256, so exactly 256 findings would return 0 and read as a
-clean scan. Only the STATUS is made boolean here; the count itself is still
-printed with the findings." This port returns the findings themselves and lets the caller test emptiness, which cannot wrap at all, and the comment stays because it explains why an obvious refactor is wrong.
+clean scan. Only the STATUS is made boolean here; the count itself is still printed with the findings." This port returns the findings themselves and lets the caller test emptiness, which cannot wrap at all, and the comment stays because it explains why an obvious refactor is wrong.
 
 ONE PASS, NOT ONE PER ROOT. The twin: "ONE grep over each surface, not one pass per ignored root. The nested form was O(roots x files x lines) in pure bash and did not finish in two minutes on this repo." Measured while porting on the real checkout: `node_modules/*` alone contributes several hundred ignored roots, so the alternation is enormous and the nested form would be
 hopeless. The port compiles the same alternation once.
@@ -76,13 +73,10 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# The gate's own filename, skipped by BASENAME so the examples inside it are not
-# read as findings. The twin spells this `SELF`; the value has to stay the bash
-# file's name, because that is the file whose examples would otherwise match.
+# The gate's own filename, skipped by BASENAME so the examples inside it are not read as findings. The twin spells this `SELF`; the value has to stay the bash file's name, because that is the file whose examples would otherwise match.
 SELF = "check-ci-scans-tracked-paths.sh"
 
-# The two surfaces scanned, and the two extensions. Anything a runner executes
-# lives in one of these; a third surface is a deliberate widening, not a typo.
+# The two surfaces scanned, and the two extensions. Anything a runner executes lives in one of these; a third surface is a deliberate widening, not a typo.
 SURFACES = ((".github", "workflows"), (".ci", "scripts"))
 # `.py` ALONGSIDE `.sh`, and the twin at .ci/scripts/quality/check-ci-scans-tracked-paths.sh:85 carries the same widening, because the two must agree or the shadow differential disagrees on the corpus rather than on the verdict. SURFACES above already puts `.ci/scripts` in scope, so only the extension filter was keeping the ported gates out. Measured 2026-09-08: 45 quality gates
 # exist ONLY as `check_*.py`, with no `.sh` twin left to cover them by accident, so a ported gate that invokes a gitignored path was judged by nothing.
@@ -126,9 +120,7 @@ def ignored_roots(root: pathlib.Path) -> list[str]:
         candidates.extend(sorted(_glob_dirs(root, depth)))
     if not candidates:
         return []
-    # ONE `git check-ignore` call, not one per directory. `--stdin` answers the
-    # same question for the whole list; the twin pays a process per directory and
-    # that is the only place this port is deliberately faster rather than identical, because the ANSWER is the same set.
+    # ONE `git check-ignore` call, not one per directory. `--stdin` answers the same question for the whole list; the twin pays a process per directory and that is the only place this port is deliberately faster rather than identical, because the ANSWER is the same set.
     proc = subprocess.run(
         ["git", "-C", str(root), "check-ignore", "--stdin"],
         input="\n".join(candidates).encode("utf-8"),

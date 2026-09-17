@@ -12,13 +12,10 @@ THE THREE EXPECTATIONS, and the third one is the honest part:
                 COUNTED, so the coverage gap is a number in the output instead of
                 a sentence in a comment somebody stops reading
 
-`undetected` is not a skip and is not an excuse. R12's bad example "The project failed." and R3's good example "The build failed after the last change." are the
-same surface shape; a pattern catching one catches the other. The rules file says
-so, this file asserts the consequence, and `test_undetectable_set_is_small_and_declared` keeps the set from quietly growing into a way of retiring rules.
+`undetected` is not a skip and is not an excuse. R12's bad example "The project failed." and R3's good example "The build failed after the last change." are the same surface shape; a pattern catching one catches the other. The rules file says so, this file asserts the consequence, and `test_undetectable_set_is_small_and_declared` keeps the set from quietly growing into a way of
+retiring rules.
 
-THE REST OF THIS FILE IS THE EXTRACTOR, which is where a prose linter actually
-lives. Matching four characters is easy; deciding that the four characters inside
-a fence, an inline code span, a blockquote or a `bad:` exemplar are not prose is the entire gate, and each of those is a way for it to go green while meaning nothing.
+THE REST OF THIS FILE IS THE EXTRACTOR, which is where a prose linter actually lives. Matching four characters is easy; deciding that the four characters inside a fence, an inline code span, a blockquote or a `bad:` exemplar are not prose is the entire gate, and each of those is a way for it to go green while meaning nothing.
 """
 
 import ast
@@ -292,8 +289,7 @@ def test_an_id_survives_a_move_and_not_a_rewrite():
 def test_write_baseline_refuses_a_drain_that_added(tmp_path):
     """THE COMPOSITION TRAP, driven rather than argued.
 
-    The set SHRINKS by one and still contains something brand new. A size
-    comparison calls that progress; the diff calls it what it is.
+    The set SHRINKS by one and still contains something brand new. A size comparison calls that progress; the diff calls it what it is.
     """
     (tmp_path / ".ci" / "config").mkdir(parents=True)
     old = [_finding(text="one"), _finding(text="two"), _finding(text="three")]
@@ -880,6 +876,24 @@ def test_an_indented_continuation_joins_without_losing_its_margin():
     assert ps.reflow_markdown(text, 384) == "- item\n  first continuation line second continuation line\n"
 
 
+def test_a_midline_semicolon_is_prose_not_commented_out_code():
+    """Measured 2026-09-17 across 400 tracked `.py` files: 650 comment-body semicolons sit MID-line, the shape a continuing English clause takes ("...can; it judges..."), against 30 sitting at the end of the body, the shape a commented-out statement (`# x = 1;`) actually takes. The unanchored version of this check matched a semicolon anywhere and silently stopped a real
+    paragraph from folding -- safe direction, but real prose left narrow is exactly what this reflow exists to fix.
+    """
+    text = (
+        "# It cannot judge WHETHER a transform is mechanical the way the LLM can; it\n"
+        "# judges SCALE instead, which is the plan's own principle.\n"
+        "x = 1\n"
+    )
+    assert ps.reflow_comments(text, ".py", 384) != text
+
+
+def test_a_trailing_semicolon_still_reads_as_commented_out_code():
+    """The other half: a real commented-out statement must still stop a join, or anchoring the check to end-of-body would have traded one false positive for a false negative."""
+    text = "# x = 1;\n# y = 2;\nz = 3\n"
+    assert ps.reflow_comments(text, ".py", 384) == text
+
+
 def test_a_cstyle_comment_block_gets_the_same_stops_as_a_hash_block():
     """THE SIBLING THE FIRST FIX MISSED, which is the whole reason the class sweep is run against every scope rather than the one that surfaced the bug. Adding the stops to the Python branch alone still absorbed 32 rule-line banners, 19 list items and 3 all-caps headings across the tracked `.ts`/`.js`/`.go` corpus, because `_cstyle_reflow_lines` had no equivalent check.
     A `//` block carries section structure exactly as a `#` block does.
@@ -950,8 +964,8 @@ def _mask_comments(text):
 def test_reflow_comments_preserves_non_comment_bytes_of_every_tracked_cstyle_file():
     """The C-style analogue of the Python AST proof above. A `//`/`/* */` language has no docstring convention this module reflows, so the claim is simpler and stronger: every character OUTSIDE a comment span must be byte-identical before and after, in the same relative order.
 
-    WHITESPACE-RUNS ARE COLLAPSED BEFORE COMPARING, and that is a stated relaxation rather than a blind spot: joining several whole-line `//` comments into fewer physical lines removes newlines that sat BETWEEN those comment lines, which shrinks the amount of connective whitespace outside the masked spans too, exactly as expected.
-    A real corruption -- a code token deleted, altered or reordered -- survives whitespace collapsing and still fails this assertion; only the benign, expected shrinkage from line-count reduction does not.
+    WHITESPACE-RUNS ARE COLLAPSED BEFORE COMPARING, and that is a stated relaxation rather than a blind spot: joining several whole-line `//` comments into fewer physical lines removes newlines that sat BETWEEN those comment lines, which shrinks the amount of connective whitespace outside the masked spans too, exactly as expected. A real corruption -- a code token deleted, altered
+    or reordered -- survives whitespace collapsing and still fails this assertion; only the benign, expected shrinkage from line-count reduction does not.
     """
     files = gitx.ls_files(
         "*.ts", "*.tsx", "*.js", "*.cjs", "*.mjs", "*.go", root=ROOT, existing=True

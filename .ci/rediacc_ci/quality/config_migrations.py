@@ -1,8 +1,6 @@
 r"""The config-migration runner, its file coverage, and its committed fixtures.
 
-Ported from `.ci/scripts/quality/check-config-migrations.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live and for the
-phase-5 decision that retires the twin.
+Ported from `.ci/scripts/quality/check-config-migrations.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live and for the phase-5 decision that retires the twin.
 
 THE TWIN'S OWN HEADER, carried over because the list of catches IS the gate:
 
@@ -154,9 +152,7 @@ def parse_current_version(text: str) -> str | None:
 
     Returns the version STRING, or None when the constant is absent -- which the twin turns into a silent exit 1, not into the error message written beneath it. See the port notes.
 
-    A LIST WOULD BE MORE HONEST AND WOULD BE WRONG. `$(...)` joins multiple matches with newlines and the twin then feeds that whole string to bash
-    arithmetic, so the multi-match case is not "the first one wins"; it is an
-    arithmetic error. `current_versions` below exposes the list for the caller that has to decide.
+    A LIST WOULD BE MORE HONEST AND WOULD BE WRONG. `$(...)` joins multiple matches with newlines and the twin then feeds that whole string to bash arithmetic, so the multi-match case is not "the first one wins"; it is an arithmetic error. `current_versions` below exposes the list for the caller that has to decide.
     """
     versions = current_versions(text)
     if len(versions) != 1:

@@ -4,8 +4,7 @@
 BOTH SIDES PASS ON THE REAL TREE, which proves only that two programs agree about an `install.sh` neither is currently catching out. So every case below runs both against a FIXTURE TREE holding a MUTATED copy of `packages/www/public/install.sh`, driving the twin's five failure branches -- including the one it was written for, "a preview-cloned backend must not override the baked
 channel".
 
-THE ONE BYTE THE TWO SIDES CANNOT SHARE is the mock server's port. Each side boots its own `python3 -m http.server` on a kernel-assigned port, and case
-five's line quotes it. `norm()` masks `127.0.0.1:<port>` on both sides; nothing
+THE ONE BYTE THE TWO SIDES CANNOT SHARE is the mock server's port. Each side boots its own `python3 -m http.server` on a kernel-assigned port, and case five's line quotes it. `norm()` masks `127.0.0.1:<port>` on both sides; nothing
 else is normalized, so the ANSI-free glyph lines, the blank lines
 `write_install_config` prints, the tally and the exit code are all compared as bytes.
 
@@ -39,8 +38,7 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "install_sh_config_check.py"
 INSTALL_SH_REL = "packages/www/public/install.sh"
 INSTALL_SH = ROOT / INSTALL_SH_REL
 
-# The VALUES are the twin's literal glyph prefixes; the NAMES avoid "PASS",
-# which ruff S105 reads as a hardcoded password.
+# The VALUES are the twin's literal glyph prefixes; the NAMES avoid "PASS", which ruff S105 reads as a hardcoded password.
 OK_GLYPH = "  ✓ "
 BAD_GLYPH = "  ✗ "
 
@@ -105,13 +103,9 @@ def python_shows_caret_ruler() -> bool:
             File "<string>", line 1, in <module>
             KeyError: 'updateChannel'
 
-    CPython only began echoing the SOURCE of a `-c` snippet (and so the PEP 657
-    ruler under it) in 3.13; before that there is no source line to underline.
-    An unconditional `"^^^" in stderr` therefore passed on every machine here and failed in CI run 35009582358 -- the fourth toolchain in this wave whose version differs between this tree and the runner, after bash, jq and coreutils.
+    CPython only began echoing the SOURCE of a `-c` snippet (and so the PEP 657 ruler under it) in 3.13; before that there is no source line to underline. An unconditional `"^^^" in stderr` therefore passed on every machine here and failed in CI run 35009582358 -- the fourth toolchain in this wave whose version differs between this tree and the runner, after bash, jq and coreutils.
 
-    THE DIFFERENTIAL IS NOT WEAKENED BY THIS. `assert_same` still compares the twin's and the port's stderr byte for byte, so a port that forged ANY part of
-    the rendering still reds; this predicate only decides which anti-vacuity
-    proof is available on the interpreter at hand.
+    THE DIFFERENTIAL IS NOT WEAKENED BY THIS. `assert_same` still compares the twin's and the port's stderr byte for byte, so a port that forged ANY part of the rendering still reds; this predicate only decides which anti-vacuity proof is available on the interpreter at hand.
     """
     proc = subprocess.run(
         ["python3", "-c", 'd={"a":1}; d["updateChannel"]'],
@@ -221,8 +215,7 @@ def test_a_config_missing_a_key_kills_both_sides_the_same_way(
 ) -> None:
     """The `set -e` + un-redirected `python3 -c` path.
 
-    `test-install-sh-config.sh:98` captures only stdout, so a `KeyError` puts CPython's own traceback -- caret ruler and tilde underline included -- on the gate's stderr and then ends the run. The port runs the identical
-    command rather than forging that rendering; this case is what proves it.
+    `test-install-sh-config.sh:98` captures only stdout, so a `KeyError` puts CPython's own traceback -- caret ruler and tilde underline included -- on the gate's stderr and then ends the run. The port runs the identical command rather than forging that rendering; this case is what proves it.
     """
     fixture = build_fixture(tmp_path)
     mutate(
@@ -232,8 +225,7 @@ def test_a_config_missing_a_key_kills_both_sides_the_same_way(
     assert old.returncode == 1
     assert old.stderr.startswith("Traceback (most recent call last):\n")
     assert old.stderr.rstrip("\n").endswith("KeyError: 'updateChannel'")
-    # CPython's own rendering, proved without assuming an interpreter version.
-    # The frame line is emitted by every CPython; the caret ruler is not.
+    # CPython's own rendering, proved without assuming an interpreter version. The frame line is emitted by every CPython; the caret ruler is not.
     assert 'File "<string>", line 1, in <module>' in old.stderr, (
         "the traceback is not CPython's own: %r" % old.stderr
     )

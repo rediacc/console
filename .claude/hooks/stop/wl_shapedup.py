@@ -8,9 +8,8 @@ twice while "nothing failed"). Three times a person noticed.
 ITS OWN MODEL CALL, and the reason is a measurement rather than a preference. The approved plan rode this rule on the existing judge call, paid for by trimming SWEEP_PROMPT's five worked examples to three -- estimated at ~2,300 characters freed. Measured after the trim landed (`eb34b3a47`): **62**. The five examples were ~700 characters in total. A fix stop already carries 17,735
 characters of rubric (JUDGE 5,762 + REGGATE 2,646 + SWEEP 5,683 + BRAVE 3,644), and adding a fourth object unoffset degrades two rubrics that are calibrated against operator-supplied worked examples. So this rule pays its own way: one extra `claude -p` only on the stops where the COUNTER has already fired, which is rare by construction.
 
-THE COUNTER IS MECHANICAL AND COMES FIRST. `scripts/gates/check-shape-duplication.ts` hashes sliding 5-line windows over the gate families, seeded so the 219-span standing backlog is silent, and fires only when a shape that was NOT already present reaches its third copy. A
-model asked "is there duplication?" answers yes far too often; a counter answers only when
-a real Nth instance lands. The model is never asked to FIND anything -- `instances` comes
+THE COUNTER IS MECHANICAL AND COMES FIRST. `scripts/gates/check-shape-duplication.ts` hashes sliding 5-line windows over the gate families, seeded so the 219-span standing backlog is silent, and fires only when a shape that was NOT already present reaches its third copy. A model asked "is there duplication?" answers yes far too often; a counter answers only when a real Nth instance
+lands. The model is never asked to FIND anything -- `instances` comes
 from the counter and is not read back off the model, so it cannot be fabricated.
 """
 
@@ -108,9 +107,7 @@ def harness_is_real(harness, root=None):
 def read_verdict(out, root=None):
     """(kind, payload). kind is 'silent', 'fire' or 'degraded'.
 
-    FAIL SEMANTICS are wl_classsweep's, not the regression gate's: a missing or malformed
-    object NEVER fails closed. Degrading loses a demand; it can never grant an exit that
-    was otherwise refused.
+    FAIL SEMANTICS are wl_classsweep's, not the regression gate's: a missing or malformed object NEVER fails closed. Degrading loses a demand; it can never grant an exit that was otherwise refused.
     """
     sd = out.get("shape_dup") if isinstance(out, dict) else None
     if not isinstance(sd, dict):
@@ -142,21 +139,15 @@ def read_verdict(out, root=None):
     # `already` USED TO RETURN SILENT HERE, and that was backwards. Operator ruling 2026-09-02, after the calibration fixture and this line had contradicted each other for a full run: "Make it FIRE".
     #
     # The rubric asks whether these copies should become one thing, and reads `already` as "yes, and the thing already exists". Answering that with silence made the MOST actionable case the quietest one -- a helper is on disk, N copies ignore it, and adopting it is a mechanical edit with no design left to do. V_ACTION already carried the right order for it ("Extract the shared
-    # piece into <harness>"), which is the adopt
-    # instruction; nothing needed writing, only unmuting. The evidence that
-    # settled it: with_temp_dir exists at .ci/scripts/test/lib/test-helpers.sh, and 70 gate scripts hand-roll `mktemp -d` against 26 that use it.
+    # piece into <harness>"), which is the adopt instruction; nothing needed writing, only unmuting. The evidence that settled it: with_temp_dir exists at .ci/scripts/test/lib/test-helpers.sh, and 70 gate scripts hand-roll `mktemp -d` against 26 that use it.
     #
-    # `already` naming a module that is NOT on disk still fires too -- that is a claim, not a fact, and it fires with the harness it named so the session
-    # can see the mistake. Both branches fire now; they differ only in whether
-    # the named harness is real, which the instruction carries either way.
+    # `already` naming a module that is NOT on disk still fires too -- that is a claim, not a fact, and it fires with the harness it named so the session can see the mistake. Both branches fire now; they differ only in whether the named harness is real, which the instruction carries either way.
     return "fire", {
         "shape": shape,
         "harness": harness,
         # Kept on the payload rather than collapsed into the verdict, so BOTH branches stay separately testable now that both fire. It also picks the order: adopting a harness that exists is a mechanical edit, writing one that does not is a design decision.
         "harness_real": harness_is_real(harness, root),
-        # The VERDICT itself, because harness_real alone is the wrong proxy for it. `consolidatable: yes` naming an existing library file as the extraction target is the COMMON case, and it was getting the adopt order -- "X already exists, adopt it" -- when the shared piece still
-        # has to be written into X. Found by audit; the comment above used to
-        # state that bug as the design.
+        # The VERDICT itself, because harness_real alone is the wrong proxy for it. `consolidatable: yes` naming an existing library file as the extraction target is the COMMON case, and it was getting the adopt order -- "X already exists, adopt it" -- when the shared piece still has to be written into X. Found by audit; the comment above used to state that bug as the design.
         "verdict": verdict,
         "instruction": _clean(sd, "instruction", 300),
     }
@@ -204,9 +195,7 @@ def demand_for(shape_hash):
 
 
 # THE WRAPPER THIS MODULE HANDS TO `--json-schema`, as a NAMED constant rather than a dict literal inside the argv. wl_judge's four schemas are all module constants (TRIAGE_SCHEMA, PLANFID_SCHEMA, ADMISSION_SCHEMA, and the one judge_schema_for builds), and this fifth one was the only inline literal -- which is exactly why it was the one that drifted: it alone omitted
-# `additionalProperties: False`, so the wrapper accepted top-level keys the other
-# four refuse. SHAPE_SCHEMA itself was correctly constrained all along; the
-# defect was only in the envelope built at the call site.
+# `additionalProperties: False`, so the wrapper accepted top-level keys the other four refuse. SHAPE_SCHEMA itself was correctly constrained all along; the defect was only in the envelope built at the call site.
 #
 # Being a constant is half the fix. The other half is that test-judge-schema.py now checks all five TOGETHER, which is the thing no per-site test could do.
 ASK_SCHEMA = {
@@ -259,9 +248,8 @@ def ask(instances):
         if proc is None:
             return None, _why
     if proc.returncode != 0:
-        # The TAIL OF THE CHILD'S OUTPUT, because the exit code alone says nothing. The counter path in this same file already does it (see the run_counter
-        # error below); this branch did not, so a live calibration reported
-        # "shape_dup model call exited 1" and SHAPE_PROMPT sat uncalibrated with no way to learn why. A rubric with exactly one fixture cannot afford an opaque failure: one erroring case blanks the whole rubric.
+        # The TAIL OF THE CHILD'S OUTPUT, because the exit code alone says nothing. The counter path in this same file already does it (see the run_counter error below); this branch did not, so a live calibration reported "shape_dup model call exited 1" and SHAPE_PROMPT sat uncalibrated with no way to learn why. A rubric with exactly one fixture cannot afford an opaque failure: one
+        # erroring case blanks the whole rubric.
         return None, "shape_dup model call exited %d: %s" % (
             proc.returncode,
             (proc.stderr or proc.stdout or "<no output>").strip()[-300:],
@@ -270,9 +258,8 @@ def ask(instances):
         env_out = json.loads(proc.stdout)
     except ValueError as exc:
         return None, "shape_dup reply was not JSON: %s" % exc
-    # THE ENVELOPE IS UNWRAPPED HERE, in one place. `claude -p --output-format json` returns
-    # a wrapper whose `structured_output` holds the schema'd object; `apply_verdict` MUTATES
-    # the dict it is handed, so a caller that judged the inner object and then read the reason back off the outer one gets an empty string and a rule that fires silently. That was the first version of this, caught before it shipped.
+    # THE ENVELOPE IS UNWRAPPED HERE, in one place. `claude -p --output-format json` returns a wrapper whose `structured_output` holds the schema'd object; `apply_verdict` MUTATES the dict it is handed, so a caller that judged the inner object and then read the reason back off the outer one gets an empty string and a rule that fires silently. That was the first version of this,
+    # caught before it shipped.
     if not isinstance(env_out, dict):
         return None, "shape_dup reply was not an object"
     if env_out.get("is_error"):
@@ -309,9 +296,7 @@ def apply_verdict(out, instances, shape_hash, root=None, path=None):
 
 # -- The driver: counter first, model only if the counter fired ---------------
 #
-# THE COUNTER IS THE TRIGGER AND IT IS MECHANICAL. A model asked "is there duplication?"
-# answers yes far too often; `scripts/gates/check-shape-duplication.ts` answers only when a shape
-# that was NOT in the seed reaches its third copy. So the paid call happens on the rare stop where a real Nth instance landed, and never otherwise.
+# THE COUNTER IS THE TRIGGER AND IT IS MECHANICAL. A model asked "is there duplication?" answers yes far too often; `scripts/gates/check-shape-duplication.ts` answers only when a shape that was NOT in the seed reaches its third copy. So the paid call happens on the rare stop where a real Nth instance landed, and never otherwise.
 
 COUNTER = "scripts/gates/check-shape-duplication.ts"
 COUNTER_TIMEOUT_S = 60

@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported www-build-token gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.www_build_token`, which is
-importable by pytest and by the port's own `--selftest`.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.www_build_token`, which is importable by pytest and by the port's own `--selftest`.
 
 CUT OVER FROM BASH 2026-09-07 (W7 P4). Measured that day:
 
@@ -16,8 +14,7 @@ THE FIRST ATTEMPT AT THAT CONTROL WAS THE UNFAIR KIND, and it is worth keeping b
 and `line` becomes the word `run`. The twin does not pass silently (its own "expected at least 3 call sites" floor catches it) and the real `.github/workflows` never has one file, so this is latent rather than live. THIS PORT DOES NOT HAVE THAT BUG, which is one more reason the cutover is the right direction. Do not "fix" the twin: it is the frozen comparison subject until W7 P5
 deletes it, and editing it would re-key its ledger.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-www-build-token.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-www-build-token.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
 
 ---- gate ---- step: www build token
      # The EXISTING step name, lower case and all. Renaming it is a separate

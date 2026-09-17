@@ -8,13 +8,10 @@ gate AND propagates its exit code, and that the self-test carries controls.
 
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Three cases read the working tree in place -- the predicate file itself, `package.json`'s script table, and `scripts/ci-runner/manifest.ts` -- and `--selftest` runs the real shipped predicate out of `packages/www/scripts/`. A battery step rewriting any of those mid-read is
 the flake that would be blamed on this port. `REAL_TREE_TWIN = True` is what buys
-the serialisation, and it is honoured only because this module declares no
-`XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, which
-refuses the combination.
+the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, which refuses the combination.
 
-TWO CASES ARE REIMPLEMENTED RATHER THAN SHELLED OUT, and both are reads, not verdicts. The twin asks node to print `package.json`'s script value (`node -e "...require(package.json).scripts[...]"`) and greps `manifest.ts` for a
-literal; this reads the same two files with `json.loads` and a substring search.
-The strings asserted on are byte-identical to the twin's, so a drift in either file reds both sides. Nothing about the SUBJECT is reimplemented: every predicate invocation below is the real `node <predicate>`.
+TWO CASES ARE REIMPLEMENTED RATHER THAN SHELLED OUT, and both are reads, not verdicts. The twin asks node to print `package.json`'s script value (`node -e "...require(package.json).scripts[...]"`) and greps `manifest.ts` for a literal; this reads the same two files with `json.loads` and a substring search. The strings asserted on are byte-identical to the twin's, so a drift in
+either file reds both sides. Nothing about the SUBJECT is reimplemented: every predicate invocation below is the real `node <predicate>`.
 """
 
 import json

@@ -103,14 +103,11 @@ export function isWithinFreshnessWindow(
 
 // --------------------------------------------------------------------------- CLI -- the seam .ci/scripts/lib/release-age.sh delegates to.
 //
-// Seconds in, seconds out, because every bash caller already holds epoch
-// SECONDS (`date -u -d ... +%s`); doing the milliseconds conversion here keeps
-// the unit mismatch from being a second thing two implementations can disagree about. Every mode writes ONE line to stdout and nothing to stderr on success, so the shim can capture it with a plain command substitution.
+// Seconds in, seconds out, because every bash caller already holds epoch SECONDS (`date -u -d ... +%s`); doing the milliseconds conversion here keeps the unit mismatch from being a second thing two implementations can disagree about. Every mode writes ONE line to stdout and nothing to stderr on success, so the shim can capture it with a plain command substitution.
 //
 // --window-seconds -> the base window, or 0 if unset --eligible-epoch <publish> [window] -> the epoch it becomes actionable --deferred <publish> [now] [window] -> prints "deferred" or "eligible"
 //
-// Guarded so importing the module never runs it; the six TS gates import the
-// functions above and must not pay for argv parsing. ---------------------------------------------------------------------------
+// Guarded so importing the module never runs it; the six TS gates import the functions above and must not pay for argv parsing. ---------------------------------------------------------------------------
 
 function cliMain(argv: string[]): number {
   const mode = argv[0] ?? '';

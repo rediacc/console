@@ -1,8 +1,7 @@
 """Every ported gate test and its bash twin must reach the SAME VERDICT on THIS tree.
 
-WHY THIS FILE IS THE POINT OF THE PORT. A migration that changes a verdict is not a migration, it is a regression wearing one. The only way to know a port still says what the original said is to run BOTH, on the same tree, in the same run -- which is also why invariant 5 forbids deleting a twin in the change that ports it. A twin kept
-but never driven is a twin that quietly rots; a twin driven on every run is a
-control.
+WHY THIS FILE IS THE POINT OF THE PORT. A migration that changes a verdict is not a migration, it is a regression wearing one. The only way to know a port still says what the original said is to run BOTH, on the same tree, in the same run -- which is also why invariant 5 forbids deleting a twin in the change that ports it. A twin kept but never driven is a twin that quietly rots; a
+twin driven on every run is a control.
 
 WHAT IS COMPARED, and why it is not "did they both exit 0".
 
@@ -62,9 +61,7 @@ PASS_LINE_RE = re.compile(r"^PASS:", re.MULTILINE)
 # WHY THIS IS DECLARABLE RATHER THAN ONE NUMBER. It was one number, 600, and that silently made a whole class of twin UNPORTABLE: `test-claude-hooks.sh` runs 2 229 offline cases in 13m31s, so the driver would raise `TimeoutExpired` before either side reached a verdict, and the port would look like a defect in the port. A fifth batch would then select that subject, discover the same
 # wall, and drop it again -- which is how a real constraint becomes folklore. The subject declares what it costs instead.
 #
-# CAPPED, because a declared timeout is also a way to hang the suite forever.
-# `check:ci-pytest` is the slowest gate in the estate already; anything past the
-# cap is a subject that needs splitting, not a bigger number.
+# CAPPED, because a declared timeout is also a way to hang the suite forever. `check:ci-pytest` is the slowest gate in the estate already; anything past the cap is a subject that needs splitting, not a bigger number.
 DEFAULT_TWIN_TIMEOUT = 600
 MAX_TWIN_TIMEOUT = 1800
 
@@ -100,8 +97,7 @@ def real_tree_admission(module: object, twin: str, unsafe: set[str]) -> str | No
 
     An opt-in replaces it, and it is deliberately TWO conditions rather than
     one. A module that merely declares `REAL_TREE_TWIN = True` has stated an
-    intention; what makes it safe is landing in `REAL_TREE_GROUP`, which is what
-    actually serialises it against the battery. Accepting the declaration alone would be the vacuous shape -- a promise checked against itself.
+    intention; what makes it safe is landing in `REAL_TREE_GROUP`, which is what actually serialises it against the battery. Accepting the declaration alone would be the vacuous shape -- a promise checked against itself.
 
     The reverse drift is refused too: declaring the attribute for a twin that is NOT in the real-tree set takes a serialisation slot nothing needs, and an opt-in that costs nothing to over-claim stops meaning anything.
     """
@@ -137,9 +133,8 @@ MODULES = ported_modules()
 def real_tree_tests() -> set[str]:
     """Gate tests that touch the REAL tree while they run, from both sources.
 
-    WHY THIS EXISTS, and it is the constraint the remaining batches will hit. Driving a bash twin from inside `check:ci-pytest` makes that gate a participant in the battery's isolation contract WITHOUT declaring anything to either scheduler. Four of the 148 write into the real tree (one of them rewrites CLAUDE.md and
-    scripts/data/doc-registry.md and restores them) and about twenty read it; a
-    parity run overlapping one of those is the `cp: cannot stat` / grep-exit-2 flake that run-all.sh's W/S/T schedule exists to prevent, and it would be blamed on the port.
+    WHY THIS EXISTS, and it is the constraint the remaining batches will hit. Driving a bash twin from inside `check:ci-pytest` makes that gate a participant in the battery's isolation contract WITHOUT declaring anything to either scheduler. Four of the 148 write into the real tree (one of them rewrites CLAUDE.md and scripts/data/doc-registry.md and restores them) and about twenty
+    read it; a parity run overlapping one of those is the `cp: cannot stat` / grep-exit-2 flake that run-all.sh's W/S/T schedule exists to prevent, and it would be blamed on the port.
 
     THE UNION ITSELF NOW LIVES IN `rediacc_ci.xdist_groups`, and this is a call into it rather than a copy of it. The parallel scheduler asks the SAME question this test asks -- which twins may not run beside another -- and two implementations of one question is two answers, the expensive half being that both look right. The reasons for the two sources, and for the anti-vacuity
     refusal on their union, are written there.
@@ -153,9 +148,7 @@ def bash_cases(twin_source: str) -> set[str]:
     Declared-but-never-called is dead code in a shell script, and pinning a port against a case the twin does not run would demand coverage of something nothing covers. Requiring both halves is also how this notices a twin whose bottom-of-file call list lost an entry.
 
     A CALL IS NOT ALWAYS A BARE NAME ON ITS OWN LINE, and requiring that was a hole that failed OPEN. This predicate was a bare-name-on-its-own-line match, so a twin invoking its cases as `test_mapping_form_is_caught "$D/mapping"` or `with_temp_dir test_flags_runner` matched nothing at all. Measured 2026-09-07 across the 130 twins that declare cases: 43 had at least one case
-    invisible here, and 16 saw ZERO. A twin seeing
-    zero does not fail; it falls through to the flat-twin floor (the twin's runtime
-    `PASS:` count), so the SET comparison this module exists to perform silently did not happen for those 16, `test-ci-parity.sh` (22 cases) among them.
+    invisible here, and 16 saw ZERO. A twin seeing zero does not fail; it falls through to the flat-twin floor (the twin's runtime `PASS:` count), so the SET comparison this module exists to perform silently did not happen for those 16, `test-ci-parity.sh` (22 cases) among them.
 
     The two error directions are not symmetric, which is why widening is right. Over-admitting demands the port cover a case the twin does not run: noisy, and it fails CLOSED. Under-admitting drops the set check entirely and fails OPEN. So a name is called when it appears as a WORD on any line that is neither its own declaration nor a whole-line comment.
 
@@ -181,9 +174,8 @@ def run_port(module_path: pathlib.Path, ledger: pathlib.Path, timeout: int):
 
     A SUBPROCESS and not an in-process re-run: the module is already being collected by the outer session, and re-entering it here would double every side effect and make the ledger a sum of two runs.
 
-    NO `-p no:cacheprovider`, and the reason is a trap worth writing down. Disabling that plugin UNREGISTERS the `cache_dir` ini key, and this repo's pyproject sets
-    both `cache_dir` and `--strict-config`; the nested pytest then exits 4 with
-    "Unknown config option: cache_dir" and collects nothing. It was found by this very test refusing to call that a pass, which is the whole argument for comparing verdicts rather than trusting a green. The nested run therefore shares the outer run's cache directory, which is gitignored and per-worktree already.
+    NO `-p no:cacheprovider`, and the reason is a trap worth writing down. Disabling that plugin UNREGISTERS the `cache_dir` ini key, and this repo's pyproject sets both `cache_dir` and `--strict-config`; the nested pytest then exits 4 with "Unknown config option: cache_dir" and collects nothing. It was found by this very test refusing to call that a pass, which is the whole
+    argument for comparing verdicts rather than trusting a green. The nested run therefore shares the outer run's cache directory, which is gitignored and per-worktree already.
     """
     proc = subprocess.run(
         [sys.executable, "-m", "pytest", "-q", str(module_path)],
@@ -315,14 +307,11 @@ def test_a_changed_hash_forces_a_re_drive_and_an_unchanged_one_does_not(gate, tm
 def test_record_parity_writes_a_hash_keyed_row_and_never_raises(gate, tmp_path, monkeypatch):
     """The ledger's two claims, neither of which was controlled when it landed.
 
-    IT MUST KEY ON BOTH SIDES. A future skip reads these hashes to decide whether
-    a differential still needs re-proving; a row that pinned only one side would
+    IT MUST KEY ON BOTH SIDES. A future skip reads these hashes to decide whether a differential still needs re-proving; a row that pinned only one side would
     let a change on the other go unnoticed, which is the exact hole the skip must
     not have. So the control changes each side in turn and requires the key to move -- and requires the OTHER side's key to hold, because a digest that moved for both would prove nothing about which side it tracks.
 
-    AND IT MUST NEVER RAISE. A ledger that can fail a parity test turns a bookkeeping problem into what reads as a behavioural divergence, the confusion this whole module exists to prevent. `record_parity` swallows
-    everything; nothing asserted that until now, so the `except` was as
-    unfalsifiable as the controls this gate estate keeps finding.
+    AND IT MUST NEVER RAISE. A ledger that can fail a parity test turns a bookkeeping problem into what reads as a behavioural divergence, the confusion this whole module exists to prevent. `record_parity` swallows everything; nothing asserted that until now, so the `except` was as unfalsifiable as the controls this gate estate keeps finding.
 
     THE LEDGER IS REDIRECTED, NOT MOCKED. `paths.from_root` is repointed at `tmp_path`, so the real writer runs -- its `mkdir`, its `open("a")`, its JSON -- against a scratch root. A fake writer would control the test's own code.
     """
@@ -453,9 +442,7 @@ def test_no_ported_twin_is_a_real_tree_writer_or_scanner(gate):
 # NOT `*.observations.jsonl`, AND THE SUFFIX IS THE WHOLE REASON. That glob is enumerated by `scripts/lib/shadow-gate.ts`, which reads every file matching it as a SHADOW PAIR ledger and expects a `tree` field on every row. This file is a parity ledger, not a shadow pair -- there is no `twin-parity` gate pair to assert -- so occupying the glob made the standing shadow sweep report
 # `RED twin-parity` on a file that is working exactly as intended. Measured 2026-09-08: `shadow-gate.ts --pair twin-parity --assert` died at :1085 with `TypeError: Cannot read properties of undefined (reading 'clean')`.
 #
-# The SHAPE still mirrors those files deliberately, so a future skip has a
-# precedent to follow. Sharing a directory is fine; answering someone else's glob
-# is not.
+# The SHAPE still mirrors those files deliberately, so a future skip has a precedent to follow. Sharing a directory is fine; answering someone else's glob is not.
 LEDGER_REL = ".ci/shadow/twin-parity.ledger.jsonl"
 
 
@@ -477,9 +464,7 @@ def ledger_path(ledger: pathlib.Path | None = None) -> pathlib.Path:
 def last_agreement(name: str, ledger: pathlib.Path | None = None) -> dict | None:
     """The LAST row for `name`, or None. Later rows supersede earlier ones.
 
-    LAST, NOT ANY. A subject that agreed on Monday and diverged on Tuesday must
-    not be skippable because Monday's row is still in the file; the ledger is
-    append-only, so "has it ever agreed" is the wrong question and "what did it do most recently" is the right one.
+    LAST, NOT ANY. A subject that agreed on Monday and diverged on Tuesday must not be skippable because Monday's row is still in the file; the ledger is append-only, so "has it ever agreed" is the wrong question and "what did it do most recently" is the right one.
     """
     path = ledger_path(ledger)
     found = None
@@ -490,9 +475,7 @@ def last_agreement(name: str, ledger: pathlib.Path | None = None) -> dict | None
             try:
                 row = json.loads(line)
             except ValueError:
-                # A CORRUPT LINE IS NOT A LICENCE TO SKIP. Skipping it and reading
-                # on would let a truncated write hand back an older agreement; the
-                # conservative reading is that this ledger cannot be trusted to answer, so nothing is reused.
+                # A CORRUPT LINE IS NOT A LICENCE TO SKIP. Skipping it and reading on would let a truncated write hand back an older agreement; the conservative reading is that this ledger cannot be trusted to answer, so nothing is reused.
                 return None
             if isinstance(row, dict) and row.get("subject") == name:
                 found = row

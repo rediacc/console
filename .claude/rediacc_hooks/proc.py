@@ -38,8 +38,7 @@ WHAT THE TWO BACKENDS CANNOT AGREE ON, stated rather than smoothed over:
     Both backends reproduce that by skipping empty cmdlines.
 
 A NAME COLLISION, REPORTED RATHER THAN RESOLVED HERE. `.ci/rediacc_ci/proc.py` landed in the same window and is a DIFFERENT thing: running a command, bounding it in time and retrying it (the `run`/`timeout`/`retry` family). This module READS the process table and starts nothing. Both are `proc`, and a guard that later imports both will read `from rediacc_ci import proc` and `from
-rediacc_hooks import proc` in one file. The filename here is the one the workstream brief specifies, so it is kept and the clash is handed to the root
-driver; `proctable` would be the unambiguous name for this one.
+rediacc_hooks import proc` in one file. The filename here is the one the workstream brief specifies, so it is kept and the clash is handed to the root driver; `proctable` would be the unambiguous name for this one.
 """
 
 import os
@@ -59,9 +58,7 @@ SHELL_COMMS = ("bash", "sh", "dash", "zsh", "ksh")
 class ProcError(RuntimeError):
     """The process table could not be read at all.
 
-    Distinct from "nothing matched" on purpose. A guard that cannot see the
-    process table must say so; treating the two as the same is how a guard
-    becomes a permanent no-op that still exits 0.
+    Distinct from "nothing matched" on purpose. A guard that cannot see the process table must say so; treating the two as the same is how a guard becomes a permanent no-op that still exits 0.
     """
 
 
@@ -142,8 +139,7 @@ class _PsBackend:
         for line in comms.splitlines():
             pid, _, name = line.strip().partition(" ")
             if pid.isdigit():
-                # macOS prints a full path here; Linux prints a truncated bare
-                # name. Basename makes both mean the same thing, which is what the guards' shell-name test compares against.
+                # macOS prints a full path here; Linux prints a truncated bare name. Basename makes both mean the same thing, which is what the guards' shell-name test compares against.
                 table[int(pid)] = [name.strip().rsplit("/", 1)[-1], []]
         for line in args.splitlines():
             pid, _, rest = line.strip().partition(" ")
@@ -235,9 +231,7 @@ def pgrep_full(pattern):
     THE PATTERN IS AN ERE, and it is the CALLER's, unescaped. Both guards build it deliberately -- a bracket class on the first character so the pattern cannot match the shell running the hook itself, a path-boundary anchor, and every regex metacharacter in the rest of the basename escaped after a one-letter name plus `.sh` produced `[b].sh`, which matches **/bin/bash**, i.e. every
     bash process on the machine (measured 2026-09-01). Escaping it here would break all three.
 
-    NOTHING IS EXCLUDED. Real pgrep hides only the pgrep process itself, never
-    its parent, which is why the guards need the bracket trick at all; here
-    there is no separate process to hide, and the caller is as visible as the hook's shell was. The trap and its defence are unchanged.
+    NOTHING IS EXCLUDED. Real pgrep hides only the pgrep process itself, never its parent, which is why the guards need the bracket trick at all; here there is no separate process to hide, and the caller is as visible as the hook's shell was. The trap and its defence are unchanged.
     """
     compiled = re.compile(pattern)
     backend = _backend()

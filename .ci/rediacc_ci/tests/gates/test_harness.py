@@ -1,13 +1,11 @@
 """Controls for `harness.py` itself, in BOTH directions for every helper.
 
-WHY THIS FILE EXISTS SEPARATELY FROM THE PORTS. The ported gate tests are evidence
-about their subjects; they are evidence about the harness only by accident, and only
-in the directions they happen to exercise. `assert_not_contains` is used by four ports and NONE of them ever supplies a haystack that does contain the needle, so a version of it that never fired would pass every one of them. A helper with only positive controls will happily flag, or fail to flag, the whole tree.
+WHY THIS FILE EXISTS SEPARATELY FROM THE PORTS. The ported gate tests are evidence about their subjects; they are evidence about the harness only by accident, and only in the directions they happen to exercise. `assert_not_contains` is used by four ports and NONE of them ever supplies a haystack that does contain the needle, so a version of it that never fired would pass every one
+of them. A helper with only positive controls will happily flag, or fail to flag, the whole tree.
 
 So each helper is driven twice: once with an input that must be accepted, once with an input that must be REFUSED. The refusals are checked with `pytest.raises` rather than through the harness's own comparison, which keeps the failure direction from being decided by the very method under test.
 
-THE SUBJECT IS AN INNER `Harness`; the outer `gate` fixture is the instrument. Two
-instances, so a control recorded on the subject cannot satisfy the instrument's own anti-vacuity floor and vice versa.
+THE SUBJECT IS AN INNER `Harness`; the outer `gate` fixture is the instrument. Two instances, so a control recorded on the subject cannot satisfy the instrument's own anti-vacuity floor and vice versa.
 """
 
 import json
@@ -273,8 +271,7 @@ def test_the_harness_module_is_where_the_ported_tests_think_it_is(gate):
 def test_run_replaces_the_environment_only_when_asked(gate):
     """`env_replace=True` is the `env -i` case, and it must be BOTH ways.
 
-    A version that always replaced would drop PATH from every other caller; a
-    version that never replaced would silently inherit the `RESULT_*` variables a real CI run exports, which is exactly what `test_gate_ci_complete_tiers` relies on NOT happening.
+    A version that always replaced would drop PATH from every other caller; a version that never replaced would silently inherit the `RESULT_*` variables a real CI run exports, which is exactly what `test_gate_ci_complete_tiers` relies on NOT happening.
     """
     os.environ["GATE_HARNESS_PROBE"] = "inherited"
     try:

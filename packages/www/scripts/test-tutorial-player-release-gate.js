@@ -88,9 +88,7 @@ function runAgent(args) {
   } catch (error) {
     // THE EXIT STATUS OF `agent-browser open` IS NOT EVIDENCE, and this repo already knows it: `.ci/scripts/quality/check-agent-browser-exit.sh` measured the same
     // binary returning rc=0 on a terminal and rc=1 with stdout redirected, for a page
-    // that loaded correctly both ways, and states the invariant as "no script may let that exit status decide control flow". That gate scans SHELL scripts under
-    // `set -e`; this is the same defect in JavaScript, where `execFileSync` throws on
-    // the same worthless status.
+    // that loaded correctly both ways, and states the invariant as "no script may let that exit status decide control flow". That gate scans SHELL scripts under `set -e`; this is the same defect in JavaScript, where `execFileSync` throws on the same worthless status.
     //
     // THE RED THIS EXPLAINS: CI run 33430885467, job 99616335703, died on the FIRST navigation of the first scenario with the single line `Error: Command failed: agent-browser --session ... open http://127.0.0.1:4511/en/docs/tutorial-production-mode` -- no status, no output, and the identical command passing locally on the same tree. `String(error)` produces exactly that and drops
     // `.status`/`.stdout`/`.stderr`.
@@ -248,9 +246,7 @@ async function startDevServer() {
       detached: true,
     });
 
-    // A cold `astro dev` start (no vite cache, content store rebuild) measured
-    // 84s on a loaded devbox; CI runners hit the same cold path every run, so
-    // 60s under-times it. 180s leaves headroom without masking a real hang.
+    // A cold `astro dev` start (no vite cache, content store rebuild) measured 84s on a loaded devbox; CI runners hit the same cold path every run, so 60s under-times it. 180s leaves headroom without masking a real hang.
     const timeout = setTimeout(() => {
       reject(new Error('Timed out waiting for astro dev server to start'));
     }, 180000);
@@ -302,9 +298,8 @@ async function stopDevServer() {
   const proc = serverProc;
   serverProc = null;
   intentionalShutdown = true;
-  // `proc`'s own 'exit' event is NOT a reliable signal that the whole group is dead -- PROVEN live 2026-08-28: npm (the direct child, `proc` here) exits fast on SIGTERM while `astro` (its grandchild, still in its own graceful
-  // shutdown) keeps running; the old code resolved on npm's exit and
-  // `process.exit()` in main()'s finally then killed the whole script before the SIGKILL safety-net timer (`timer.unref()`'d, so it never survives process.exit()) got a chance to fire. astro was left holding the port on EVERY run, including fully passing ones. Fix: always send an unconditional group-wide SIGKILL after a short grace window, never conditionally.
+  // `proc`'s own 'exit' event is NOT a reliable signal that the whole group is dead -- PROVEN live 2026-08-28: npm (the direct child, `proc` here) exits fast on SIGTERM while `astro` (its grandchild, still in its own graceful shutdown) keeps running; the old code resolved on npm's exit and `process.exit()` in main()'s finally then killed the whole script before the SIGKILL
+  // safety-net timer (`timer.unref()`'d, so it never survives process.exit()) got a chance to fire. astro was left holding the port on EVERY run, including fully passing ones. Fix: always send an unconditional group-wide SIGKILL after a short grace window, never conditionally.
   try {
     process.kill(-proc.pid, 'SIGTERM');
   } catch {
@@ -545,9 +540,8 @@ function scenarioMountConsistency() {
   // pair worth checking for consistency: same component, two different placements.
   log('→ scenario: docs/solution-page mount consistency');
 
-  // ONE PROBE SHAPE for both pages, because the point of this scenario is that the
-  // two surfaces answer it DIFFERENTLY. Docs mounts build immediately; solution
-  // mounts carry `data-click-to-load` and render a server-side poster instead of building the 122 KB player. Measured across all 44 English mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so an IntersectionObserver fires on load and defers nothing -- which is why the deferral had to become a click.
+  // ONE PROBE SHAPE for both pages, because the point of this scenario is that the two surfaces answer it DIFFERENTLY. Docs mounts build immediately; solution mounts carry `data-click-to-load` and render a server-side poster instead of building the 122 KB player. Measured across all 44 English mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so an
+  // IntersectionObserver fires on load and defers nothing -- which is why the deferral had to become a click.
   //
   // The solution assertions are the REAL contract and strictly stronger than the single `hasPlayer` this used to carry: no player before the click, a poster to click, a player after it, and the poster gone. The old form could not tell a working deferral from a broken mount.
   const probe = () =>
@@ -704,9 +698,8 @@ async function main() {
       baseUrl,
       resources,
       serverDiedMidRun,
-      // THE BOOT TIMEOUT IS THE ONE FAILURE THAT CANNOT BE READ WITHOUT THIS, and it was the one path that omitted it. `serverLog` was written on the navigation path only, so five boot-timeout artifacts in a row reported that the server "timed out" while discarding the banner proving it had started in 4.7s. The
-      // header comment above already claimed this was "written out on failure"; now
-      // it is.
+      // THE BOOT TIMEOUT IS THE ONE FAILURE THAT CANNOT BE READ WITHOUT THIS, and it was the one path that omitted it. `serverLog` was written on the navigation path only, so five boot-timeout artifacts in a row reported that the server "timed out" while discarding the banner proving it had started in 4.7s. The header comment above already claimed this was "written out on
+      // failure"; now it is.
       serverLog,
     });
     exitCode = 1;

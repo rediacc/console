@@ -24,9 +24,7 @@ ORDER = 29
 # THE WRAPPER SAILED STRAIGHT PAST THE FIRST CHECK, and removing the second one puts it back: `./run.sh worktree create` runs the banned command through a script whose text never contains it.
 DEFECT = ("if hookio.grep_q(RUN_SH_CREATE, scan):", "if False:")
 
-# Command position: line start (or wrapper-payload line start), or after
-# ; & | ( $( or a backtick. `git -C <path> worktree add ...` still matches
-# since -C is a flag between `git` and `worktree`, not a new command.
+# Command position: line start (or wrapper-payload line start), or after ; & | ( $( or a backtick. `git -C <path> worktree add ...` still matches since -C is a flag between `git` and `worktree`, not a new command.
 #
 # PORT NOTE. The bash writes this pattern inside DOUBLE quotes, so `\\\$\\(` reaches grep as `\$\(` and the backtick is bare. Here the pattern is a raw Python string, so the same ERE is spelled once instead of twice.
 GIT_AT_CMD = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")

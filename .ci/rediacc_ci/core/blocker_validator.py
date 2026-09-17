@@ -102,8 +102,7 @@ from rediacc_ci.core import advisory, allowlist
 BLOCKER_VALIDATOR_RS = "\x1e"
 
 # `readonly BLOCKER_MIN_LENGTH=30` (blocker-validator.sh:167), as a REFERENCE.
-# The twin writes the literal because bash cannot import; this must not, or the
-# floor would exist twice and could drift once.
+# The twin writes the literal because bash cannot import; this must not, or the floor would exist twice and could drift once.
 BLOCKER_MIN_LENGTH = allowlist.MIN_REASON_LENGTH
 
 USAGE = """blocker_validator -- the `blocker-validator.sh` transport verbs.
@@ -134,8 +133,7 @@ class BrokenReaderError(RuntimeError):
 
     `blocker-validator.sh:205-209` prints two lines and returns 1 here, and every bash caller invokes `parse_blockered_list` bare, so under the `errexit` those gates run with the script dies. Raising is the same contract: a caller that wants the twin's non-errexit behaviour (carry on with empty tables) catches it, and has to write that down to get it.
 
-    THIS IS NOT THE MISSING-FILE CASE. A missing file is empty tables and
-    success, on purpose; see behaviour 1 in the module docstring.
+    THIS IS NOT THE MISSING-FILE CASE. A missing file is empty tables and success, on purpose; see behaviour 1 in the module docstring.
     """
 
 
@@ -156,9 +154,7 @@ def parse_blockered_list(file: str | pathlib.Path, comment_char: str = "#") -> T
     try:
         entries = allowlist.parse_file(path, comment_char)
     except (OSError, UnicodeDecodeError) as exc:
-        # `blocker-validator.sh:205-209`. The twin sees a non-zero exit from the
-        # canonical module; here the same failures (unreadable file, undecodable
-        # bytes) arrive as exceptions. The words are the twin's.
+        # `blocker-validator.sh:205-209`. The twin sees a non-zero exit from the canonical module; here the same failures (unreadable file, undecodable bytes) arrive as exceptions. The words are the twin's.
         advisory.ci_error(
             "blocker-validator: rediacc_ci.core.allowlist could not parse %s (%s)"
             % (path, type(exc).__name__)
@@ -184,9 +180,7 @@ def emit_message(message: str, *, out=None) -> None:
     """
     first = True
     # `while IFS= read -r line; do ... done <<<"$1"`. A here-string appends a
-    # newline, so a trailing newline in the message does NOT produce an extra
-    # empty line; splitting on "\n" and dropping one trailing empty is the same
-    # set of lines.
+    # newline, so a trailing newline in the message does NOT produce an extra empty line; splitting on "\n" and dropping one trailing empty is the same set of lines.
     lines = message.split("\n")
     if lines and lines[-1] == "":
         lines.pop()
@@ -217,9 +211,7 @@ def replay_frames(stream: str, *, out=None) -> bool:
 
     Reads exactly `count` lines per frame, so a BLOCKER reason that contains a line starting with RS cannot open a frame of its own.
     """
-    # `done <<<"$stream"`: the here-string's appended newline is why an EMPTY stream still yields one (empty, unframed) line. See behaviour 3 in the
-    # module docstring; this is the line that makes the zero-frame arm below
-    # unreachable, exactly as in the twin.
+    # `done <<<"$stream"`: the here-string's appended newline is why an EMPTY stream still yields one (empty, unframed) line. See behaviour 3 in the module docstring; this is the line that makes the zero-frame arm below unreachable, exactly as in the twin.
     lines = stream.split("\n")
     if lines and lines[-1] == "":
         lines.pop()
@@ -264,12 +256,10 @@ def replay_frames(stream: str, *, out=None) -> bool:
 def validate_blocker_quality(entry: str, reason: str, file: str, *, out=None) -> bool:
     """`validate_blocker_quality <id> <reason> <file>`. True when acceptable.
 
-    THE RULE AND THE WORDS ARE `allowlist.validate_reason`'s. The twin's third arm, `exit 2 is a usage error, not a verdict` (`blocker-validator.sh:284-290`), guards against a malformed CLI call and has
-    no counterpart across a function call with three required arguments; a caller
-    that gets the arity wrong gets a TypeError, which is the same refusal to fold a broken call into a finding about somebody's allowlist.
+    THE RULE AND THE WORDS ARE `allowlist.validate_reason`'s. The twin's third arm, `exit 2 is a usage error, not a verdict` (`blocker-validator.sh:284-290`), guards against a malformed CLI call and has no counterpart across a function call with three required arguments; a caller that gets the arity wrong gets a TypeError, which is the same refusal to fold a broken call into a
+    finding about somebody's allowlist.
 
-    UNFRAMED, and deliberately so. The single-reason answer is raw text; only the
-    batch path frames, because only the batch path has more than one message to delimit. Feeding this to `replay_frames` was the twin's first cut's bug.
+    UNFRAMED, and deliberately so. The single-reason answer is raw text; only the batch path frames, because only the batch path has more than one message to delimit. Feeding this to `replay_frames` was the twin's first cut's bug.
     """
     rejection = allowlist.validate_reason(entry, reason, file)
     if rejection is None:

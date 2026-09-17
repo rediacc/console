@@ -53,9 +53,7 @@ THE ANTI-VACUITY FLOOR IS 10 CALL SITES and it is the only thing standing betwee
 THE FOUR CONTROLS ARE BUILT BY CONCATENATION, never by substituting into a copy of the real file, and the twin's reason is kept with them: "a substitution silently yields an identical copy when the targeted line is later reworded, and the control then passes against unmutated source."
 
 COLOUR IS UNCONDITIONAL IN THE TWIN. It assigns `RED=$'\\033[0;31m'` with no tty
-test at all, so its `FAIL` lines carry escape sequences even into a pipe. The
-port uses the package logger's decision instead, which is a tty test; the
-difference is invisible to the differential because the comparator strips ANSI before it compares, and it is the better behaviour for a human piping the gate into a file. Named here so it is a decision rather than a drift.
+test at all, so its `FAIL` lines carry escape sequences even into a pipe. The port uses the package logger's decision instead, which is a tty test; the difference is invisible to the differential because the comparator strips ANSI before it compares, and it is the better behaviour for a human piping the gate into a file. Named here so it is a decision rather than a drift.
 """
 
 import os
@@ -67,8 +65,7 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# The subject, repo-relative. This gate reasons about ONE file's call sites; see
-# the header for what that deliberately excludes.
+# The subject, repo-relative. This gate reasons about ONE file's call sites; see the header for what that deliberately excludes.
 DEVBOX_REL = ".ci/lib/devbox.sh"
 
 # The bug shape: a variable holding devbox_docker's answer, expanded QUOTED in

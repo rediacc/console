@@ -20,9 +20,7 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-merge-with-unpushed.sh"
 ORDER = 28
 
-# On `main` there is no feature branch to strand, and /pr-merge deliberately
-# ends there; without this arm the guard refuses the last step of the sanctioned
-# landing sequence.
+# On `main` there is no feature branch to strand, and /pr-merge deliberately ends there; without this arm the guard refuses the last step of the sanctioned landing sequence.
 DEFECT = ('if branch == "main":', "if False:")
 
 # THE THREE GIT WORLDS THIS GUARD DISTINGUISHES, and it distinguishes none of them inside a feature worktree. Run against this checkout it fails open on every input, because no `origin/<branch>` ref exists here -- so the whole corpus would have compared two constants. `test_every_guard_discriminates` said so on the first run, which is what these are an answer to.

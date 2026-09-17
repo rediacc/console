@@ -2,9 +2,7 @@
 
 THE INCIDENT THIS EXISTS FOR. packages/cli/src/remote/vscode/bootstrap.ts held a 130-line Python program inside a template literal, executed on a remote host over SSH. No linter, formatter or type checker in this repo could see it, and it had grown a code-injection hole: four of the six values interpolated into it
 went in unescaped, so a universalUser of `'; import os; os.system('id'); x='`
-parsed cleanly and executed, under `sudo -u` on the user-switch path. CI now
-catches the class (check:ci-no-inline-python), but CI runs after the edit; this
-refuses it at the keystroke, which is what the operator asked for by name: "improve .claude/hooks/ to avoid future incidents".
+parsed cleanly and executed, under `sudo -u` on the user-switch path. CI now catches the class (check:ci-no-inline-python), but CI runs after the edit; this refuses it at the keystroke, which is what the operator asked for by name: "improve .claude/hooks/ to avoid future incidents".
 
 ONE RULE, TWO ENTRY POINTS, on purpose. The decision lives entirely in .ci/scripts/quality/check_inline_python.py, invoked here with --file. A hook
 with its own private regex would drift from the gate, and the direction of
@@ -24,9 +22,7 @@ streams into one, and the detector writes its findings to STDERR, so a port that
 the private helper below spells the merge as `stderr=STDOUT`, which is the same
 file-descriptor duplication the shell performs.
 
-PORT NOTE ON THE `case` WITH NO EMPTY ARM. Unlike block-suppressions.sh, this guard's `case` has no `"")` arm, so a payload naming no file exits 0 and the detector is never forked for it. That asymmetry between two neighbouring
-pre-edit guards is real and is preserved; it is also why the corpus's
-`edit_json` payloads cost this guard nothing.
+PORT NOTE ON THE `case` WITH NO EMPTY ARM. Unlike block-suppressions.sh, this guard's `case` has no `"")` arm, so a payload naming no file exits 0 and the detector is never forked for it. That asymmetry between two neighbouring pre-edit guards is real and is preserved; it is also why the corpus's `edit_json` payloads cost this guard nothing.
 """
 
 import contextlib
@@ -43,8 +39,7 @@ ORDER = 8
 # The documented escape. Removing it does not make the guard stricter in any useful way -- it makes it the guard "somebody deletes the first time it is wrong", which removes the protection permanently rather than for one edit.
 DEFECT = ('if ev.env("REDIACC_ALLOW_INLINE_PYTHON") == "1":', "if False:")
 
-# `case "$FILE" in *.ts | *.tsx | *.js | *.jsx | *.cjs | *.mjs) ;; *) exit 0`.
-# Narrower than block-suppressions.sh's list on purpose: .vue, .svelte and .astro are not places this incident can take the shape it took.
+# `case "$FILE" in *.ts | *.tsx | *.js | *.jsx | *.cjs | *.mjs) ;; *) exit 0`. Narrower than block-suppressions.sh's list on purpose: .vue, .svelte and .astro are not places this incident can take the shape it took.
 CODE_SUFFIXES = ("*.ts", "*.tsx", "*.js", "*.jsx", "*.cjs", "*.mjs")
 
 DETECTOR_REL = ".ci/scripts/quality/check_inline_python.py"
@@ -67,8 +62,7 @@ EDGE_CASES = [
         "the same program in a .mjs file",
         {"tool_input": {"file_path": "packages/cli/bundle.mjs", "content": _PROGRAM}},
     ),
-    # "Mentions Python" is far too wide, and the detector says so at length.
-    # Naming the interpreter is not a finding; shipping a program is.
+    # "Mentions Python" is far too wide, and the detector says so at length. Naming the interpreter is not a finding; shipping a program is.
     (
         "naming the interpreter is not shipping a program",
         {
@@ -169,8 +163,7 @@ def run(ev):
     # Judge the FRAGMENT, not the file on disk: the point is to refuse the content before it lands. The suffix matters because the detector selects rules by file type, so the temp file keeps the real one's extension.
     #
     # `${FILE##*.}` strips the longest `*.` prefix and yields the whole string
-    # when there is no dot at all; the `case` above means there always is one,
-    # but the fallback is spelled rather than assumed.
+    # when there is no dot at all; the `case` above means there always is one, but the fallback is spelled rather than assumed.
     extension = file_path[file_path.rfind(".") + 1 :] if "." in file_path else file_path
     handle, tmp = tempfile.mkstemp(
         prefix="inline-python-",

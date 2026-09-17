@@ -111,9 +111,7 @@ deliberately and says why: "Bash slice rather than `| head -c`: a summary is tho
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE TWO SHARED CONSTANTS MUST MATCH `review_report_replies.py`, and the bash pair duplicates them for the same reason: "That is what makes one reply clear both
-gates; test-review-status.sh parses both files and fails if they drift apart." So
-they are duplicated here rather than imported, and both ports assert the agreement.
+THE TWO SHARED CONSTANTS MUST MATCH `review_report_replies.py`, and the bash pair duplicates them for the same reason: "That is what makes one reply clear both gates; test-review-status.sh parses both files and fails if they drift apart." So they are duplicated here rather than imported, and both ports assert the agreement.
 
 `is_low_effort_reply` DEFAULTS TO 10 HERE AND TO 30 IN THE SIBLING. Same name, different default, on purpose: "min_chars defaults to 10, the floor a single inline thread has always used. A reply to the whole review summary answers many findings at once, so that caller passes a higher floor." A port that unified them would silently tighten one gate or loosen the other.
 
@@ -122,9 +120,7 @@ under `LC_ALL=C`, which `scripts/lib/shadow-gate.ts` pins. Both are reproduced b
 slicing the UTF-8 ENCODING rather than the string, so a multi-byte character is cut the same way on both sides. Decoding back uses "replace", which is what a shell would hand to a terminal.
 
 `"$COMMENTS" == "[]"` IS A STRING COMPARISON on gh's raw stdout, not a check that
-the parsed array is empty. `gh api --paginate` prints exactly `[]` for an empty
-list, so the two agree; a whitespace-formatted empty array would take the other
-branch on both sides, which is why the raw text is compared here as well.
+the parsed array is empty. `gh api --paginate` prints exactly `[]` for an empty list, so the two agree; a whitespace-formatted empty array would take the other branch on both sides, which is why the raw text is compared here as well.
 """
 
 import json
@@ -180,8 +176,7 @@ SUMMARY_LONGFORM_CHARS = 200
 
 TRAILING_PUNCT = re.compile(r"[.!?]*$")
 
-# The two summary keys. The fence is a PRODUCER CONSTANT; the heading is the
-# weaker second key for a pass that produced no fence.
+# The two summary keys. The fence is a PRODUCER CONSTANT; the heading is the weaker second key for a pass that produced no fence.
 FENCE_NEEDLE = "json:review-findings"
 VERDICT_HEADING = re.compile(r"^[ \t\n\r\f\v]*#{1,3}[ \t\n\r\f\v]*Review verdict", re.IGNORECASE)
 
@@ -571,9 +566,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Both directions on every rule this gate has.
 
-    THE TWO FLOORS ARE DIFFERENT AND BOTH ARE ASSERTED. The inline floor is 10 and
-    the summary floor is 30; a port that unified them would silently tighten one
-    gate or loosen the other, and no differential over one PR would notice.
+    THE TWO FLOORS ARE DIFFERENT AND BOTH ARE ASSERTED. The inline floor is 10 and the summary floor is 30; a port that unified them would silently tighten one gate or loosen the other, and no differential over one PR would notice.
     """
     low_effort_cases = [
         ("a stock acknowledgement is low effort", ("Acknowledged", INLINE_MIN_CHARS), True),

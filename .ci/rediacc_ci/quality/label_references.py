@@ -1,7 +1,6 @@
 r"""Every GitHub label the code names must be declared in `.github/labels.yml`.
 
-Ported from `.ci/scripts/quality/check-label-references.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-label-references.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHY THIS EXISTS, in the twin's own words, because the failure was silent:
 
@@ -51,9 +50,8 @@ A SECOND `|| true`, in the site listing, for the same reason and a different con
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE PATTERNS ARE PARALLEL LISTS, NOT A DICT, and the twin says why: "They are kept as parallel arrays because bash 4 associative arrays lose ordering and the self-test error should name the pattern that died." Python dicts preserve
-insertion order, so one ordered mapping expresses both halves; the ORDER is still
-the observable part, because the self-test reports the FIRST pattern that fails and stops.
+THE PATTERNS ARE PARALLEL LISTS, NOT A DICT, and the twin says why: "They are kept as parallel arrays because bash 4 associative arrays lose ordering and the self-test error should name the pattern that died." Python dicts preserve insertion order, so one ordered mapping expresses both halves; the ORDER is still the observable part, because the self-test reports the FIRST pattern
+that fails and stops.
 
 THE grep THAT RUNS THIS GATE IS GNU grep 3.12 AT `/usr/bin/grep`, which is what a SCRIPT resolves `grep` to on this host. Measured 2026-09-06 with a two-file specimen: `-r` does not descend a directory symlink, and a file containing a NUL byte contributes NOTHING TO STDOUT -- with `-o` GNU grep prints no matching text
 for it, only `grep: <path>: binary file matches` on STDERR, which every extractor
@@ -70,8 +68,7 @@ THE FILTERS RUN IN THE TWIN'S ORDER: blank lines first, then anything containing
 change it the day a pattern starts emitting a value that is blank AND templated.
 
 SITES ARE A DISPLAY-ONLY GREP AND ARE MATCHED AS A BASIC REGULAR EXPRESSION, not as a literal. A label containing `.` therefore matches any character in that position, which over-reports sites and under-reports nothing. Carried, because the value is only ever printed. The site grep also carries NO `--exclude`, unlike the ten extraction greps, so an instrument file can be listed as
-a site for a label it
-does not contribute; that asymmetry is the twin's and is reproduced.
+a site for a label it does not contribute; that asymmetry is the twin's and is reproduced.
 
 SITE ORDER IS FILESYSTEM STATE, NOT REPOSITORY CONTENT, AND THE TWO SIDES NEED NOT
 AGREE ON IT. `grep -rl` emits in the order its directory walk produces and `os.walk` does the same, and the two orders are NOT the same walk: measured 2026-09-06 over one directory of four files, ugrep 7.8.4 returned bravo, mike, zeta, alpha and `os.walk` returned bravo, mike, alpha, zeta. So a finding naming TWO OR MORE sites can differ between the implementations in the order of
@@ -88,8 +85,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The environment seams, spelled as the twin spells them. The test drives all
-# three; the defaults are the real surfaces.
+# The environment seams, spelled as the twin spells them. The test drives all three; the defaults are the real surfaces.
 LABELS_FILE_ENV = "LABEL_REFS_LABELS_FILE"
 SCAN_DIRS_ENV = "LABEL_REFS_SCAN_DIRS"
 MIN_DISTINCT_ENV = "LABEL_REFS_MIN_DISTINCT"
@@ -97,8 +93,7 @@ MIN_DISTINCT_ENV = "LABEL_REFS_MIN_DISTINCT"
 DEFAULT_LABELS_FILE = ".github/labels.yml"
 # Space-separated for the test seam; defaults to the real surfaces.
 DEFAULT_SCAN_DIRS = ".github .ci"
-# "The tree carries well over this many distinct referenced labels; finding fewer
-# means the sweep itself broke (wrong root, bad glob), not a clean tree."
+# "The tree carries well over this many distinct referenced labels; finding fewer means the sweep itself broke (wrong root, bad glob), not a clean tree."
 DEFAULT_MIN_DISTINCT = 8
 
 # Excluded by BASENAME, because both files carry planted sample lines that are instrument fixtures rather than label references.
@@ -148,9 +143,7 @@ PATTERNS: dict[str, dict[str, object]] = {
         "sample": "const ISSUE_LABELS = ['%s', OTHER];" % SELFTEST_LABEL,
     },
     "jq-arg-label": {
-        # autopilot-gate.sh passes the label under test as a jq argument named
-        # `l`. The twin's comment spells that shape out inline; this one does not,
-        # because the twin is excluded by basename and this file is not, and the spelled-out form matched itself and reported `...` as a label.
+        # autopilot-gate.sh passes the label under test as a jq argument named `l`. The twin's comment spells that shape out inline; this one does not, because the twin is excluded by basename and this file is not, and the spelled-out form matched itself and reported `...` as a label.
         "find": re.compile(r'--arg l "[A-Za-z0-9._:-]+"'),
         "capture": re.compile(r'.*"([^"]+)".*'),
         "sample": 'jq -e --arg l "%s" query' % SELFTEST_LABEL,
@@ -219,8 +212,7 @@ def walk_text(root: pathlib.Path, *, apply_excludes: bool = True):
 def extract(name: str, targets: list[pathlib.Path]) -> list[str]:
     """One pattern's labels, in first-seen order, WITH duplicates.
 
-    The twin's `extract` prints one label per line and the caller sorts and
-    deduplicates afterwards, so duplicates are the honest intermediate value; a
+    The twin's `extract` prints one label per line and the caller sorts and deduplicates afterwards, so duplicates are the honest intermediate value; a
     port that deduplicated here would make the self-test's `!= "selftest-label"`
     comparison pass for a pattern that matched twice.
     """
@@ -243,9 +235,7 @@ def extract(name: str, targets: list[pathlib.Path]) -> list[str]:
 def _capture(spec: dict, hit: str) -> str:
     """The `sed` stage of one pattern: a substitution, not a match.
 
-    THREE SHAPES, and they are not interchangeable. A capture group replaces the
-    whole matched text with group 1; a `strip` pattern deletes a prefix; and
-    `unquote` removes every quote character (`s/'//g`), which is what the `js-labels-array` pattern does after pulling quoted tokens off a line.
+    THREE SHAPES, and they are not interchangeable. A capture group replaces the whole matched text with group 1; a `strip` pattern deletes a prefix; and `unquote` removes every quote character (`s/'//g`), which is what the `js-labels-array` pattern does after pulling quoted tokens off a line.
     """
     if spec.get("unquote"):
         return hit.replace("'", "")
@@ -273,9 +263,7 @@ def declared_labels(text: str) -> list[str]:
 def sites_for(label: str, scan_dirs: list[str], base: pathlib.Path) -> str:
     """`grep -rln "$label" $SCAN_DIRS | head -5 | tr '\\n' ' '`.
 
-    DISPLAY ONLY. The label is used as a BASIC regular expression by the twin, so
-    a `.` in it matches any character; that over-reports sites and is carried
-    rather than corrected, because narrowing it would change printed text for no gain in what the gate rules on.
+    DISPLAY ONLY. The label is used as a BASIC regular expression by the twin, so a `.` in it matches any character; that over-reports sites and is carried rather than corrected, because narrowing it would change printed text for no gain in what the gate rules on.
     """
     needle = re.compile(label)
     found: list[str] = []
@@ -284,8 +272,7 @@ def sites_for(label: str, scan_dirs: list[str], base: pathlib.Path) -> str:
         absolute = root if root.is_absolute() else base / root
         # NO EXCLUSIONS HERE, and that asymmetry is the twin's. The extraction
         # greps carry `--exclude=check-label-references.sh --exclude=test-label-
-        # references.sh`; this one does not, so a label whose only mention is
-        # inside an excluded instrument file is still LISTED as a site while not counting as a reference. Reproduced, because the first draft applied the exclusions here too and dropped a site the twin prints.
+        # references.sh`; this one does not, so a label whose only mention is inside an excluded instrument file is still LISTED as a site while not counting as a reference. Reproduced, because the first draft applied the exclusions here too and dropped a site the twin prints.
         for path, text in walk_text(absolute, apply_excludes=False):
             if needle.search(text):
                 try:
@@ -303,9 +290,7 @@ def sites_for(label: str, scan_dirs: list[str], base: pathlib.Path) -> str:
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. 0 when every referenced label is declared, 1 otherwise.
 
-    `--selftest` is intercepted BEFORE any file is read. The twin runs its
-    pattern self-test inline on every invocation and takes no arguments; this
-    flag drives the same controls plus their mirrors.
+    `--selftest` is intercepted BEFORE any file is read. The twin runs its pattern self-test inline on every invocation and takes no arguments; this flag drives the same controls plus their mirrors.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
@@ -388,9 +373,8 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Every pattern fires on its own sample AND stays silent on a decoy.
 
-    THE TWIN HAS ONLY THE POSITIVE HALF. Its inline self-test proves each pattern
-    can match its planted sample; nothing proves a pattern does not match
-    everything. A pattern degraded to `[A-Za-z0-9._:-]+` would pass all ten of the twin's checks and then report every identifier in the tree as an undeclared label. So each pattern here is also run against a decoy line that names `selftest-label` in a shape it does not consume.
+    THE TWIN HAS ONLY THE POSITIVE HALF. Its inline self-test proves each pattern can match its planted sample; nothing proves a pattern does not match everything. A pattern degraded to `[A-Za-z0-9._:-]+` would pass all ten of the twin's checks and then report every identifier in the tree as an undeclared label. So each pattern here is also run against a decoy line that names
+    `selftest-label` in a shape it does not consume.
 
     THE FLOOR IS DERIVED from the pattern registry, so adding a consumption shape without a sample turns this red rather than quietly shrinking the suite.
     """

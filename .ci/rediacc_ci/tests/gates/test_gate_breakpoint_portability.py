@@ -22,9 +22,7 @@ WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `gates.lock.json` records `reads
 while another gate may be rewriting neither, but the lock is the contract and
 `real_tree_admission` refuses a twin in that set that does not declare `REAL_TREE_TWIN`.
 
-`check_subset` TAKES ITS EXTRACTOR AS AN ARGUMENT, which is the port's shape for the twin's function shadowing. The flaky-read control needs the SAME code path
-driven with a truncating reader; a control that re-implemented the comparison
-would prove only that it agrees with itself.
+`check_subset` TAKES ITS EXTRACTOR AS AN ARGUMENT, which is the port's shape for the twin's function shadowing. The flaky-read control needs the SAME code path driven with a truncating reader; a control that re-implemented the comparison would prove only that it agrees with itself.
 """
 
 import hashlib
@@ -220,9 +218,8 @@ def test_console_script_tree_is_optional(gate):
 
         # ...and in each of them the reference is guarded by an existence test, so a repo without those console scripts takes an explicit branch rather than dying obscurely.
         #
-        # BOTH IDIOMS COUNT, and that is a fix rather than a relaxation. The check used to demand the literal inline form, which only one of the three
-        # scripts happens to use; the other two assign the path to a variable
-        # first and test `[[ -x "$VAR" ]]`, which is the same guard. The old check therefore reported a guard as MISSING when it was present -- and nobody noticed, because the exact-set assertion above fails first and log_fail exits, so the loop had only ever run against one script.
+        # BOTH IDIOMS COUNT, and that is a fix rather than a relaxation. The check used to demand the literal inline form, which only one of the three scripts happens to use; the other two assign the path to a variable first and test `[[ -x "$VAR" ]]`, which is the same guard. The old check therefore reported a guard as MISSING when it was present -- and nobody noticed, because the
+        # exact-set assertion above fails first and log_fail exits, so the loop had only ever run against one script.
         for rel in ALLOWED_CONSOLE_HOOKS:
             body = (bp / rel).read_text(encoding="utf-8", errors="replace")
             guarded = '-x "$REPO_ROOT/.ci/scripts/' in body
@@ -322,9 +319,7 @@ def test_upstream_slug_is_configurable(gate):
 
     FINDING, reported rather than fixed, because `.ci/breakpoint/` is another owner's: code lines DO name the canonical slug. Some are
     `${BREAKPOINT_UPSTREAM_REPO:-...}` fallbacks (harmless: conf wins, and every
-    vendored copy ships a conf) and one is an `e.g.` in an error message. A
-    blanket zero-reference assertion is therefore false today; this pins the two
-    shapes that are safe so that a NEW, non-overridable hardcode is red.
+    vendored copy ships a conf) and one is an `e.g.` in an error message. A blanket zero-reference assertion is therefore false today; this pins the two shapes that are safe so that a NEW, non-overridable hardcode is red.
     """
     with harness.temp_dir() as tmp:
         bp = make_isolated(tmp)

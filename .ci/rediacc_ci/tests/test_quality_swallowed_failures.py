@@ -12,9 +12,7 @@ import pytest
 
 from rediacc_ci.quality import swallowed_failures as mod
 
-# The awk program, extracted from the twin at run time rather than copied. A
-# copy would drift; extracting it means this test breaks LOUDLY when the twin's
-# scanner is edited, which is exactly when it should be re-read.
+# The awk program, extracted from the twin at run time rather than copied. A copy would drift; extracting it means this test breaks LOUDLY when the twin's scanner is edited, which is exactly when it should be re-read.
 TWIN = pathlib.Path(".ci/scripts/quality/check-swallowed-failures.sh")
 
 
@@ -136,6 +134,5 @@ def test_a_one_liner_if_does_not_absorb_the_following_line() -> None:
 
 # WHAT THIS TEST DELIBERATELY DOES NOT CLAIM. I tried to add a second case asserting the bug flipped a real VERDICT, and it failed -- because
 # `window_has_escalation` (WINDOW = 12 logical lines) finds the escalation
-# anyway in the simple shape, so the absorption is masked at the verdict level. Making it visible needs a boundary-crossing construction where the absorbed
-# line falls outside that window; 89b2e140's author verified one, and I did not
-# reproduce it rather than ship an assertion I had not confirmed. The branch_of-level claim above is the durable guard: it pins the defect itself instead of one downstream consequence of it.
+# anyway in the simple shape, so the absorption is masked at the verdict level. Making it visible needs a boundary-crossing construction where the absorbed line falls outside that window; 89b2e140's author verified one, and I did not reproduce it rather than ship an assertion I had not confirmed. The branch_of-level claim above is the durable guard: it pins the defect itself
+# instead of one downstream consequence of it.

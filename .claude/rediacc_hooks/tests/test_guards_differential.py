@@ -42,9 +42,7 @@ ANTI-VACUITY. Three separate controls, because each covers a different way this 
      strings.
 
 RUNNING THE DEEP SWEEP. `REDIACC_GUARD_DIFF_FULL=1` feeds EVERY payload to
-EVERY guard instead of the cross sample. That is the full cross product and it
-is slow, so it is not the default; the number it produced is recorded in the
-phase report rather than asserted here, because a timing-shaped assertion in a feature worktree is inadmissible (driver contract section 5).
+EVERY guard instead of the cross sample. That is the full cross product and it is slow, so it is not the default; the number it produced is recorded in the phase report rather than asserted here, because a timing-shaped assertion in a feature worktree is inadmissible (driver contract section 5).
 """
 
 import ast
@@ -73,8 +71,7 @@ ARTIFACT_DIR = pathlib.Path(__file__).resolve().parent / ".artifacts"
 
 FULL = os.environ.get("REDIACC_GUARD_DIFF_FULL", "") not in ("", "0")
 
-# Section 5c of the driver contract. Docstrings count as comments; a module
-# docstring is the natural home for a file-header block.
+# Section 5c of the driver contract. Docstrings count as comments; a module docstring is the natural home for a file-header block.
 COMMENT_RATIO_FLOOR = 0.90
 
 # Every line of an original naming a DATE, an ISSUE, a REVIEW ROUND or a FILE:LINE. The ratio cannot see these -- prose can be padded while the one paragraph naming a dated incident is dropped -- so they are extracted mechanically and each must survive somewhere in the port.
@@ -91,9 +88,8 @@ ARCHAEOLOGY = (
 
 # `gh`, stubbed to the shape every guard here already treats as its fail-open path: nothing on stdout, a non-zero exit. Guards that need it to SUCCEED declare their own stub through `ENVS` on the port module, exactly as the suite's own `stub_gh` and `_gc_shim` helpers do for the same guards.
 #
-# WHY STUB AT ALL, since both sides would call the same real `gh`. Because they would not call it at the same MOMENT. The bash side runs the whole corpus
-# first and the Python side follows; a PR that changes state in between turns
-# into a field that differs, reported as a port defect. Measured cost of the real thing on one case: a network round trip per invocation, times several hundred cases, times two sides.
+# WHY STUB AT ALL, since both sides would call the same real `gh`. Because they would not call it at the same MOMENT. The bash side runs the whole corpus first and the Python side follows; a PR that changes state in between turns into a field that differs, reported as a port defect. Measured cost of the real thing on one case: a network round trip per invocation, times several
+# hundred cases, times two sides.
 DEFAULT_STUBS = {
     "gh": "#!/bin/sh\nexit 1\n",
 }
@@ -289,8 +285,7 @@ def build_cases(twinned=True):
     Only guards that have BEEN PORTED are included. That is not a way of excusing the rest: a port that does not exist has no twin to compare, and `test_every_ported_guard_is_registered` is what stops a module being written and then quietly left out of this list.
 
     `twinned=False` BUILDS THE COMPLEMENT: the cases for guards that were never
-    bash and therefore have no oracle. They are built by the SAME function against the SAME corpus, and the split is only about which side the bash driver can run. Keeping one builder means an untwinned guard is still cross-fed every other guard's payloads and every degenerate shape, which is
-    where over-blocking shows up; the only thing it loses is the comparison to
+    bash and therefore have no oracle. They are built by the SAME function against the SAME corpus, and the split is only about which side the bash driver can run. Keeping one builder means an untwinned guard is still cross-fed every other guard's payloads and every degenerate shape, which is where over-blocking shows up; the only thing it loses is the comparison to
     bash, and `TWIN = None` is what declares that loss out loud.
 
     THE INDEX ALIGNMENT IS WHY THIS IS A SPLIT AND NOT A FILTER AT USE TIME. The bash driver writes one case file per element of `CASES` and the comparison reads `bash_results["records"][i]`, so a single untwinned entry anywhere in that list would shift every record after it by one and the differential would compare each guard against its neighbour while reporting agreement.
@@ -677,9 +672,7 @@ DIVERGENCES = divergence_cases()
 #
 # `check:ci-pytest` refuses a skip on purpose ("pytest exited 0 but reports 8467 passed out of 8468 collected. A skipped or deselected test is not a passing one, and the difference is invisible in the exit code"), so the whole gate exited 1
 # while nothing was wrong. The honest empty state was being reported as an unrun
-# test. A sentinel row runs the SAME function, asserts the table really is empty,
-# and returns; the moment a port declares a divergence the sentinel disappears and
-# the real cases run.
+# test. A sentinel row runs the SAME function, asserts the table really is empty, and returns; the moment a port declares a divergence the sentinel disappears and the real cases run.
 NO_DIVERGENCE = (None, "no port declares a divergence", "", "")
 
 
@@ -794,8 +787,7 @@ def test_comment_ratio_and_archaeology(bash_results):
         if module.TWIN is None:
             # NO ORACLE MEANS NO RATIO, because the ratio is `port bytes / twin bytes` and the denominator does not exist. Stated as a skip with a reason rather than a `bash_bytes or 1` fallback, which would have scored every untwinned guard at a ratio of `py_bytes` and passed
             # for a reason nobody intended. The archaeology sweep is the twin's
-            # dated evidence surviving into the port; there is no twin, so there
-            # is nothing to have survived.
+            # dated evidence surviving into the port; there is no twin, so there is nothing to have survived.
             continue
         twin = ORACLES / module.TWIN
         port = pathlib.Path(module.__file__)

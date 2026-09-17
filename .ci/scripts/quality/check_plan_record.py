@@ -45,9 +45,8 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
       SCOPED TO EVERY PLAN, not to records: both real subjects in this tree carry
       `Status: draft`, so records-only would be a rule with no subject.
 
-THE ADVISORY CENSUS (W12 P3.5), AND WHY IT REFUSES NOTHING. R1..R9 are the rules
-this gate ENFORCES; the file's docstring has promised R1..R10 since it was
-written, and the missing rungs are named in "WHAT IS DELIBERATELY NOT ASSERTED" below rather than in the list above -- they are rules that were considered and declined. Turning one on is a one-way door: the day it blocks, it blocks every open branch at once, and nobody knows today how many records it would refuse.
+THE ADVISORY CENSUS (W12 P3.5), AND WHY IT REFUSES NOTHING. R1..R9 are the rules this gate ENFORCES; the file's docstring has promised R1..R10 since it was written, and the missing rungs are named in "WHAT IS DELIBERATELY NOT ASSERTED" below rather than in the list above -- they are rules that were considered and declined. Turning one on is a one-way door: the day it blocks, it
+blocks every open branch at once, and nobody knows today how many records it would refuse.
 
 So it is MEASURED first. Every real-tree run appends one row to `agent/census-plan-record.jsonl` recording what each CANDIDATE rule WOULD have refused, per record, with a UTC timestamp. After two weeks of rows, `--census-report` answers "has the window elapsed, and what would have been refused across it" from the rows alone -- not from anyone's memory of how the tree looked. The
 candidates:
@@ -156,17 +155,14 @@ except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-v
     )
     sys.exit(1)
 
-# Floor over the PLAN corpus, not over the records. Zero records is the correct
-# state today (phase 1 builds the machinery; no real plan is compacted yet), so a
-# floor on records would be a gate that cannot pass. A floor on the plans is what catches the glob losing the corpus -- the same number check_plan_boxes.py uses.
+# Floor over the PLAN corpus, not over the records. Zero records is the correct state today (phase 1 builds the machinery; no real plan is compacted yet), so a floor on records would be a gate that cannot pass. A floor on the plans is what catches the glob losing the corpus -- the same number check_plan_boxes.py uses.
 MIN_PLAN_FILES = int(os.environ.get("PLAN_RECORD_MIN_PLANS", "20"))
 
 # THE ADVISORY CENSUS. `agent/census-*.jsonl` is globbed by `--census-report` so that a future per-branch split (the shape `agent/reggate/<branch>.jsonl` already uses, to keep an append-only log out of merge conflicts) needs no reader change.
 CENSUS_REL = "agent/census-plan-record.jsonl"
 CENSUS_GLOB = "census-*.jsonl"
 
-# The POLICY window from the box this census exists to serve ("a two-week advisory census before any blocking rung"), not a floor. It is what `--census-report`
-# compares the recorded span against; it never gates this run.
+# The POLICY window from the box this census exists to serve ("a two-week advisory census before any blocking rung"), not a floor. It is what `--census-report` compares the recorded span against; it never gates this run.
 CENSUS_WINDOW_DAYS = int(os.environ.get("PLAN_RECORD_CENSUS_DAYS", "14"))
 
 # The candidate rules, keyed by the rung a future blocking version would carry. The text is the refusal that rung would print, kept HERE rather than at the three call sites so the census row, the report and the eventual rung cannot drift into describing three different rules.
@@ -444,9 +440,8 @@ def index_problems(root, rows, census="", update=False):
     with nothing compacted must not be forced to carry a generated table that
     says nothing -- that is the committed-lie shape `agent/README.md:11` names.
 
-    W12 P1.7: `census` IS THE SECOND HALF OF THE SAME FILE, and it is checked by the same equality for the same reason. `wl_planindex` renders a `## Plan
-    census` section that SessionStart reads INSTEAD of opening all 83 plans; the
-    hook's own freshness check is `stat` only (path set plus byte size), so a plan edited to the same length is invisible to it. This byte-equality against a full re-read is the half that catches that, which is the only reason the hook is allowed to trust the file at all.
+    W12 P1.7: `census` IS THE SECOND HALF OF THE SAME FILE, and it is checked by the same equality for the same reason. `wl_planindex` renders a `## Plan census` section that SessionStart reads INSTEAD of opening all 83 plans; the hook's own freshness check is `stat` only (path set plus byte size), so a plan edited to the same length is invisible to it. This byte-equality against a
+    full re-read is the half that catches that, which is the only reason the hook is allowed to trust the file at all.
 
     It defaults to "" so the R8 controls below, which run in a fixture whose plan set is not the one being censused, keep comparing exactly what they always compared. Only the real-tree call site at the bottom passes a census.
     """
@@ -491,8 +486,7 @@ def index_problems(root, rows, census="", update=False):
 
 
 # ---------------------------------------------------------------------------
-# THE ADVISORY CENSUS. Nothing below reaches a verdict about a record; the only
-# way any of it changes an exit code is by FAILING TO RECORD, which is exit 2.
+# THE ADVISORY CENSUS. Nothing below reaches a verdict about a record; the only way any of it changes an exit code is by FAILING TO RECORD, which is exit 2.
 
 
 def _prior_record_text(root, rel, current):
@@ -560,8 +554,8 @@ def candidate_findings(root, rel, text):
 
     # ---- C11 the Full-Text upgrade that never happened -------------------
     if rec["blob"] and not rec["full_text_sha"]:
-        # EVERY COMMIT THAT TOUCHED THE BLOB, not just the newest, and the difference is not a refinement. `--find-object` matches ADDITIONS and DELETIONS alike, so the newest hit for a compacted plan is usually the commit that REMOVED the plan text -- which may sit on an unmerged branch. Taking `-1` therefore answered "not landed" for a blob that
-        # landed twenty commits ago; the fixture caught it on the first run.
+        # EVERY COMMIT THAT TOUCHED THE BLOB, not just the newest, and the difference is not a refinement. `--find-object` matches ADDITIONS and DELETIONS alike, so the newest hit for a compacted plan is usually the commit that REMOVED the plan text -- which may sit on an unmerged branch. Taking `-1` therefore answered "not landed" for a blob that landed twenty commits ago; the
+        # fixture caught it on the first run.
         carried = _git(
             root, "log", "--format=%H", "-20", "--all", "--find-object=" + rec["blob"]
         ).split()
@@ -1447,9 +1441,8 @@ def main(argv):
         problems.extend(header_xref_problems(ROOT, rel, text))
 
     rows = R.index_rows(ROOT, recs)
-    # THIS DOES OPEN EVERY PLAN, and saying otherwise would be the wrong trade described the wrong way round. `recs` is reused so the directory is not walked twice, but `plan_box_census` reads all 83 files to count boxes. That cost is deliberately paid HERE, once per CI run, so that SessionStart and PostCompact -- which fire on every session and every compaction -- pay one
-    # file read instead. The point was never to stop reading the plans; it was to
-    # stop reading them on the interactive path.
+    # THIS DOES OPEN EVERY PLAN, and saying otherwise would be the wrong trade described the wrong way round. `recs` is reused so the directory is not walked twice, but `plan_box_census` reads all 83 files to count boxes. That cost is deliberately paid HERE, once per CI run, so that SessionStart and PostCompact -- which fire on every session and every compaction -- pay one file
+    # read instead. The point was never to stop reading the plans; it was to stop reading them on the interactive path.
     census = PI.render_census(
         PI.census_rows(ROOT, plan_records=lambda _r: recs, plan_box_census=CK.plan_box_census)
     )
@@ -1457,8 +1450,7 @@ def main(argv):
 
     # ---- THE ADVISORY CENSUS ------------------------------------------------- IT RUNS ON BOTH PATHS, red and green. A measurement window with a hole in it wherever some unrelated rule failed is a window nobody can reason about, and the candidates say nothing about R1..R8 either way.
     #
-    # `census_row` is computed from its OWN re-read of every plan; the two counts
-    # handed to `census_append` come from the verdict loop above. That is the two-readings floor, and it is why the counts are passed rather than shared.
+    # `census_row` is computed from its OWN re-read of every plan; the two counts handed to `census_append` come from the verdict loop above. That is the two-readings floor, and it is why the counts are passed rather than shared.
     census_ok, census_msg = census_append(ROOT, census_row(ROOT, recs), len(recs), n_records)
 
     if problems:

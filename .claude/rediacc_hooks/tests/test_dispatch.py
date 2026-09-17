@@ -19,9 +19,7 @@ from rediacc_hooks.tests import guardcorpus
 
 ROOT = guardcorpus.repo_root()
 
-# A floor, not a count. The port lands over several phases, so an exact number
-# would be wrong the day after it was written; a floor still catches the case
-# this exists for, which is the glob in `guards.stems()` collapsing to nothing and every assertion below passing over an empty set.
+# A floor, not a count. The port lands over several phases, so an exact number would be wrong the day after it was written; a floor still catches the case this exists for, which is the glob in `guards.stems()` collapsing to nothing and every assertion below passing over an empty set.
 MIN_PORTS = 5
 
 
@@ -189,9 +187,7 @@ def test_by_chain_covers_every_module():
 
 # --------------------------------------------------------------------------- The entry point ---------------------------------------------------------------------------
 
-# A payload nothing refuses, and one that at least one pre-bash guard does. The
-# second is `git push --force`, which block-git-force-push.sh exists for; the
-# assertion below does not name that guard, only that SOMETHING in the chain says no, so it stays true as the port set grows.
+# A payload nothing refuses, and one that at least one pre-bash guard does. The second is `git push --force`, which block-git-force-push.sh exists for; the assertion below does not name that guard, only that SOMETHING in the chain says no, so it stays true as the port set grows.
 BENIGN = '{"tool_input":{"command":"echo hello"}}'
 REFUSED = '{"tool_input":{"command":"git push --force origin main"}}'
 

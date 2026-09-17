@@ -4,9 +4,7 @@ Stops the Elite on-premise Docker Compose stack (`private/elite`) and force remo
 `|| { ... }` or `|| true`, so in practice the script never exits non-zero: this
 is a best-effort teardown for a CI/breakpoint job that is already finishing, never a validation, and the port preserves that -- it always returns 0.
 
-WHY THE TWO STEPS ARE UNCONDITIONAL ON EACH OTHER. The bash does not `exit` or
-`return` after a failed `docker compose ... down`; it prints one extra line and
-falls through to the force-removal loop regardless. A port that turned that warning into an early return would leave `rediacc-web` running whenever compose had already failed -- exactly the case force removal exists for.
+WHY THE TWO STEPS ARE UNCONDITIONAL ON EACH OTHER. The bash does not `exit` or `return` after a failed `docker compose ... down`; it prints one extra line and falls through to the force-removal loop regardless. A port that turned that warning into an early return would leave `rediacc-web` running whenever compose had already failed -- exactly the case force removal exists for.
 
 CONSOLE ROOT IS DERIVED FROM THIS FILE'S OWN LOCATION, matching the twin's `SCRIPT_DIR/../../..` (from `.ci/scripts/infra/`). This module lives one directory deeper (`.ci/rediacc_ci/infra/`), so it is `parents[3]` here where the twin's is `parents[2]` of ITS directory -- both land on the repository root. `rediacc_ci.paths.repo_root()` is deliberately not used: that resolver honours
 $REDIACC_CI_ROOT, and the twin has no such override, so a test pointing one at a fixture and not the other would silently diverge. The port stays on the same single input (the file's own path) as the twin (`BASH_SOURCE[0]`).
@@ -32,8 +30,7 @@ def _docker(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[st
     """`subprocess.run(["docker", *args], ...)`, treating a missing binary as
     bash's exit 127 rather than raising.
 
-    The twin never checks `command -v docker` first; a missing binary just makes
-    every `docker ...` invocation fail with bash's own "command not found" (127),
+    The twin never checks `command -v docker` first; a missing binary just makes every `docker ...` invocation fail with bash's own "command not found" (127),
     caught by the same `|| { ... }` / `|| true` guards that catch a real failure.
     `subprocess.run` raises `FileNotFoundError` for the same case instead of returning a completed process, so without this the port would crash where the twin degrades.
     """
@@ -44,9 +41,7 @@ def _docker(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[st
 
 
 # Kept in sync with the twin's `CONTAINERS=(rediacc-web)` array. A second entry
-# there without one here is exactly the drift a differential across BOTH
-# containers (not just the one currently listed) would catch; today there is
-# only the one.
+# there without one here is exactly the drift a differential across BOTH containers (not just the one currently listed) would catch; today there is only the one.
 CONTAINERS = ("rediacc-web",)
 
 

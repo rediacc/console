@@ -10,14 +10,10 @@ W5 P0 lists "a fork counter" among its delivered artifacts and W5 P6 records "45
 
 So W5's target of "2 processes per Bash tool call" was, for three days, a number
 with nothing on the other side of the comparison. A target with no baseline is
-unfalsifiable, and an unfalsifiable target is checked off by whoever gets tired first. `.claude/rediacc_hooks/execcount.py` is the counter and
-`.ci/policy/hook-exec-baseline.json` is the pin; this gate is what makes the pin
-mean something.
+unfalsifiable, and an unfalsifiable target is checked off by whoever gets tired first. `.claude/rediacc_hooks/execcount.py` is the counter and `.ci/policy/hook-exec-baseline.json` is the pin; this gate is what makes the pin mean something.
 
 WHY IT IS STATIC AND NOT strace. Three disqualifications, any one of them enough: strace is absent on macOS, it needs a ptrace capability containers routinely withhold, and it measures a RUN rather than the wiring, so its answer moves with whichever guard short-circuited that day. A baseline CI cannot recompute on demand is the same failure class as the baseline that vanished. The
-counter therefore reads `.claude/settings.json` and counts the processes the HARNESS starts, one per `hooks[].command`. That is a FLOOR on the true exec
-count and the module says so in as many words; in-guard forks are a different
-measurement and this gate does not pretend to make it.
+counter therefore reads `.claude/settings.json` and counts the processes the HARNESS starts, one per `hooks[].command`. That is a FLOOR on the true exec count and the module says so in as many words; in-guard forks are a different measurement and this gate does not pretend to make it.
 
 BOTH DIRECTIONS, AND THE SECOND ONE IS THE HALF THAT KEEPS IT SHRINKING. A count that GREW is refused, which is the obvious direction. A count that SHRANK is ALSO refused, with the new value printed ready to paste. A baseline that silently absorbs an improvement can no longer prove the next one, and D4's whole acceptance ("30 entries down to 11") is a statement about this file's
 numbers moving in a change that says it is moving them.
@@ -42,10 +38,8 @@ WHAT ELSE IS PINNED, because a table of tool costs is not by itself complete:
     either reading, is a matcher whose cost no row of the table carries. A table
     that only lists tools cannot notice that on its own.
 
-ANTI-VACUITY, FIVE REFUSALS AND EACH ITS OWN SENTENCE. A missing or unparseable
-baseline; a baseline with no probe tools; a baseline with no `measured` block; a
-settings file the counter cannot read; and a wiring that parses to zero hook
-commands. The last one is the shape of the failure that started this box: an instrument that stopped producing numbers and reported nothing rather than reporting that it had stopped.
+ANTI-VACUITY, FIVE REFUSALS AND EACH ITS OWN SENTENCE. A missing or unparseable baseline; a baseline with no probe tools; a baseline with no `measured` block; a settings file the counter cannot read; and a wiring that parses to zero hook commands. The last one is the shape of the failure that started this box: an instrument that stopped producing numbers and reported nothing rather
+than reporting that it had stopped.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
 
@@ -77,10 +71,9 @@ SETTINGS_REL = (".claude", "settings.json")
 
 # The counter lives in the `.claude` hook package, not here, and importing it costs one sys.path hop.
 #
-# ANCHORED ON THIS FILE, NOT ON `paths.from_root()`, and the difference is the whole of a bug this gate had for about twenty minutes on 2026-09-09. `from_root()` honours $REDIACC_CI_ROOT, which is the root of the tree being
-# JUDGED; the counter is part of the INSTRUMENT and travels with the gate.
-# Written the other way, pointing the gate at a fixture made it look for `rediacc_hooks` INSIDE the fixture and die with `ModuleNotFoundError` -- and the selftest did not catch it, because `selftest()` resolves the counter once before any fixture root is set. It was the first run against a scratch copy of the REAL tree that found it, which is the argument for doing that run.
-# `check_language_policy.py:120-133` makes the same distinction about its validator, in the same words, for the same reason.
+# ANCHORED ON THIS FILE, NOT ON `paths.from_root()`, and the difference is the whole of a bug this gate had for about twenty minutes on 2026-09-09. `from_root()` honours $REDIACC_CI_ROOT, which is the root of the tree being JUDGED; the counter is part of the INSTRUMENT and travels with the gate. Written the other way, pointing the gate at a fixture made it look for `rediacc_hooks`
+# INSIDE the fixture and die with `ModuleNotFoundError` -- and the selftest did not catch it, because `selftest()` resolves the counter once before any fixture root is set. It was the first run against a scratch copy of the REAL tree that found it, which is the argument for doing that run. `check_language_policy.py:120-133` makes the same distinction about its validator, in the
+# same words, for the same reason.
 #
 # THE COUNTER IS NOT COPIED HERE, deliberately. Two implementations of "how many processes does a Bash call cost" is exactly the drift this gate exists to stop, and it would be a drift the gate could not see.
 _HOOK_PKG_PARENT = pathlib.Path(
@@ -143,8 +136,7 @@ def _drift(label, pinned, live):
     """One finding line for a pinned scalar that moved, naming the direction.
 
     The direction is in the message on purpose. "12 != 11" tells a reader a
-    number changed; "SHRANK, paste 11" tells them which of the two completely
-    different things happened and what to do about it.
+    number changed; "SHRANK, paste 11" tells them which of the two completely different things happened and what to do about it.
     """
     if pinned == live:
         return None

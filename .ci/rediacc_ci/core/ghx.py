@@ -39,23 +39,20 @@ TRAP 3: EXIT 0 IS NOT A PROMISE THAT THE BODY IS WHAT YOU ASKED FOR.
 ------------------------------------------------------------------------------
 `common.sh:418-420`: "`gh api graphql` can exit 0 while returning a truncated or malformed body, so an exit-code check alone misses it." So `json()` parses and raises `GhBadOutputError` rather than returning whatever `json.loads` made of it, and `value()` refuses an EMPTY string where a scalar was expected.
 
-The reason that refusal is not paranoia is written down in this repository at `docs/dev-environments.md:102-110` and `scripts/gates/check-external-links.ts:174-186`: a documented one-liner piped an unchecked HTTP response into `ACCOUNT_ED25519_PUBLIC_KEY`. The URL had started answering 404. With `curl -f`
-the variable was assigned the EMPTY string; without `-f` the 404's HTML BODY was
-baked into `keys.ProductionPublicKey` via ldflags. Either way the build succeeded and every production-signed licence then failed as `invalid_signature`. An unchecked response became a signing key. Nothing in this module returns a caller-trusted value without first checking the status that produced it.
+The reason that refusal is not paranoia is written down in this repository at `docs/dev-environments.md:102-110` and `scripts/gates/check-external-links.ts:174-186`: a documented one-liner piped an unchecked HTTP response into `ACCOUNT_ED25519_PUBLIC_KEY`. The URL had started answering 404. With `curl -f` the variable was assigned the EMPTY string; without `-f` the 404's HTML BODY
+was baked into `keys.ProductionPublicKey` via ldflags. Either way the build succeeded and every production-signed licence then failed as `invalid_signature`. An unchecked response became a signing key. Nothing in this module returns a caller-trusted value without first checking the status that produced it.
 
 ------------------------------------------------------------------------------
 GITHUB SECRETS ARE WRITE-ONLY. THERE IS NO GETTER HERE, AND THERE CANNOT BE ONE.
 ------------------------------------------------------------------------------
 `secret_names()` lists names. `secret_value()` exists ONLY to raise, with the reason, because the failure this module is guarding against was somebody reaching for a value GitHub does not serve and settling for whatever a URL returned instead. `docs/dev-environments.md:112-116`: "GitHub secrets are write-only, so no command can fetch it, and the old one-liner was not merely
-pointing at a dead URL but at a shape of solution that cannot exist." `.ci/scripts/quality/check_bws_map.py:69-73` says the same from the write side: "`gh secret set` cannot re-supply a value it is forbidden to read". An `AttributeError` from a missing function sends the next reader to write their
-own `curl`; a raised sentence sends them to the operator.
+pointing at a dead URL but at a shape of solution that cannot exist." `.ci/scripts/quality/check_bws_map.py:69-73` says the same from the write side: "`gh secret set` cannot re-supply a value it is forbidden to read". An `AttributeError` from a missing function sends the next reader to write their own `curl`; a raised sentence sends them to the operator.
 
 ------------------------------------------------------------------------------
 READ ONLY, BY CONSTRUCTION WHERE IT MATTERS
 ------------------------------------------------------------------------------
-Every typed helper here is a read. `api_json()` takes no `method` argument at
-all, so it cannot be turned into a POST by adding one flag at a call site; a
-write goes through `gh()` explicitly, where a reviewer sees the verb. This is not a security boundary -- `gh()` runs whatever it is given -- it is the same argument the rest of this package makes about spelling: the dangerous thing should be the one that has to be typed out.
+Every typed helper here is a read. `api_json()` takes no `method` argument at all, so it cannot be turned into a POST by adding one flag at a call site; a write goes through `gh()` explicitly, where a reviewer sees the verb. This is not a security boundary -- `gh()` runs whatever it is given -- it is the same argument the rest of this package makes about spelling: the dangerous
+thing should be the one that has to be typed out.
 
 WHY `gh` IS RUN THROUGH `rediacc_ci.proc`: for the bounded, stdin-closed, streams-separate contract that module documents. `proc.run` closes stdin, which matters more for `gh` than for anything else in this tree -- an expired token is one of the three cases `proc`'s own docstring names as a command that decides to prompt a terminal nobody is watching.
 """
@@ -193,8 +190,7 @@ _ERROR_CLASSES = {
 class GhResult:
     """What a `gh` call did, with the success check in front of the output.
 
-    `.stdout` RAISES unless the call succeeded. See the module docstring; that
-    property is the whole mechanism, and every accessor below routes through it, so there is no second path that forgets to check.
+    `.stdout` RAISES unless the call succeeded. See the module docstring; that property is the whole mechanism, and every accessor below routes through it, so there is no second path that forgets to check.
     """
 
     __slots__ = ("argv", "duration", "returncode", "stderr", "stdout_raw", "timed_out")
@@ -211,9 +207,7 @@ class GhResult:
     ) -> None:
         self.argv = list(argv)
         self.returncode = returncode
-        # NAMED `stdout_raw`, not `_stdout`. A single leading underscore says "private", which invites a reader to use it anyway once they decide
-        # they know better; `stdout_raw` says what it is -- the bytes, unchecked
-        # -- so a call site that uses it reads as a deliberate choice.
+        # NAMED `stdout_raw`, not `_stdout`. A single leading underscore says "private", which invites a reader to use it anyway once they decide they know better; `stdout_raw` says what it is -- the bytes, unchecked -- so a call site that uses it reads as a deliberate choice.
         self.stdout_raw = stdout
         self.stderr = stderr
         self.timed_out = timed_out
@@ -267,9 +261,7 @@ class GhResult:
     def value(self, what: str = "value") -> str:
         """One stripped scalar. Refuses empty.
 
-        THE `invalid_signature` CLAUSE. An empty string is what an unchecked `curl -f` assigns, and a build that accepts it succeeds while producing artefacts that cannot work. Where a caller genuinely wants "maybe
-        nothing", `lines()` says so with a list; this one is for the case where
-        emptiness is a defect.
+        THE `invalid_signature` CLAUSE. An empty string is what an unchecked `curl -f` assigns, and a build that accepts it succeeds while producing artefacts that cannot work. Where a caller genuinely wants "maybe nothing", `lines()` says so with a list; this one is for the case where emptiness is a defect.
         """
         text = self.stdout.strip()
         if not text:
@@ -524,8 +516,7 @@ def secret_names(
 ) -> list[str]:
     """The NAMES of the configured secrets. Never their values -- see `secret_value`.
 
-    Sorted, so two enumerations are comparable; `check_bws_map.py` compares
-    exactly this kind of set and a caller diffing git's order against a Python set would see churn that is not there.
+    Sorted, so two enumerations are comparable; `check_bws_map.py` compares exactly this kind of set and a caller diffing git's order against a Python set would see churn that is not there.
     """
     if (org is None) == (repo is None):
         raise ValueError("secret_names needs exactly one of org= or repo=")

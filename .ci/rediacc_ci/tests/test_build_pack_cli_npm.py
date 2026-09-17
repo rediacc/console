@@ -231,8 +231,7 @@ def _run(
         # LC_ALL/LANG: see the module docstring. `ls | head -1` versus a code point sort agree under C and are not guaranteed to elsewhere.
         "LC_ALL": "C",
         "LANG": "C",
-        # The port imports `rediacc_ci.log` and `rediacc_ci.core.common`; the
-        # COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci.log` and `rediacc_ci.core.common`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     if version is not None:
@@ -422,9 +421,7 @@ def test_a_stale_tarball_is_aliased_over_this_runs_own(tmp_path):
 def test_a_missing_packages_cli_names_the_program_that_could_not_proceed(tmp_path):
     """DIVERGENCE 1, asserted in both directions with the prefix masked.
 
-    Both subjects fail the `cd` and exit 1. bash's diagnostic names the script
-    and its line; the port's names the port and its line. Everything after that
-    prefix -- `cd: <dir>: No such file or directory` -- is compared byte for byte, and the two paths are asserted to be DIFFERENT so this test still means something if someone ever makes the port print the twin's path.
+    Both subjects fail the `cd` and exit 1. bash's diagnostic names the script and its line; the port's names the port and its line. Everything after that prefix -- `cd: <dir>: No such file or directory` -- is compared byte for byte, and the two paths are asserted to be DIFFERENT so this test still means something if someone ever makes the port print the twin's path.
     """
     root_a = _fixture(tmp_path / "ma")
     shutil.rmtree(root_a / "packages")

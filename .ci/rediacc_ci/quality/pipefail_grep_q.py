@@ -36,9 +36,7 @@ THE EXEMPTION BELOW USED TO BE STATED AS SAFETY, AND THAT WAS WRONG. This block 
 `$QA` is 1129 bytes, far inside the 64 KB pipe buffer, and the match sits on line 23 of ~30. It still raced: the log carries `printf: write error: Broken pipe` and the branch took the else, reporting "quality_all has no failure path" against code whose `return 1` grep had just FOUND. EPIPE does not depend on the buffer filling. It depends on whether `grep -q` has already exited and
 CLOSED the read end when the write syscall lands, and that is pure scheduling. A bounded producer is less likely to lose the race, never immune to it.
 
-THE BOUNDED PRODUCERS STOPPED BEING EXEMPT ON 2026-09-16, and the deferral that used to sit here -- "a separate, larger, still-untriaged class" -- was closed by measuring it rather than by arguing about it. The measurement:
-`set -uo pipefail; if printf '%s' "$s" | grep -q NEEDLE; ...` with the NEEDLE on
-line 1, 40 trials per size, this host::
+THE BOUNDED PRODUCERS STOPPED BEING EXEMPT ON 2026-09-16, and the deferral that used to sit here -- "a separate, larger, still-untriaged class" -- was closed by measuring it rather than by arguing about it. The measurement: `set -uo pipefail; if printf '%s' "$s" | grep -q NEEDLE; ...` with the NEEDLE on line 1, 40 trials per size, this host::
 
       payload   printf MISSED   echo MISSED
       1,219 B       0/40           0/40
@@ -55,10 +53,8 @@ not SAFE.
 
 The mechanism differs and the effect does not: a BUILTIN takes EPIPE and returns non-zero, an EXTERNAL producer is SIGPIPE'd to 141, and under `pipefail` both make a pipeline that MATCHED report false. `printf` and `echo` are therefore in SCALING_PRODUCERS, and the eleven sites that widening found across eight files were converted in the same change.
 
-`.claude/oracles/**` IS EXCLUDED FROM THE CORPUS ON PURPOSE and holds eight of the shape. Those files are the FROZEN bash originals for `.claude/rediacc_hooks/guards/block_compacted_plan_edit.py` and
-`block_unlinked_commit_author.py`; `.claude/oracles/README.md:49-54` says "They
-are FROZEN. Do not fix a bug here; fix it in the port." Nothing registers them,
-the live code is Python and has no pipe, so the eight are not defects and must not be converted. Recorded here so the next sweep does not re-derive 47 files and 104 sites and have to work out again why they do not count.
+`.claude/oracles/**` IS EXCLUDED FROM THE CORPUS ON PURPOSE and holds eight of the shape. Those files are the FROZEN bash originals for `.claude/rediacc_hooks/guards/block_compacted_plan_edit.py` and `block_unlinked_commit_author.py`; `.claude/oracles/README.md:49-54` says "They are FROZEN. Do not fix a bug here; fix it in the port." Nothing registers them, the live code is Python
+and has no pipe, so the eight are not defects and must not be converted. Recorded here so the next sweep does not re-derive 47 files and 104 sites and have to work out again why they do not count.
 
 THE PIPEFAIL TEST IS PER-FILE, AND IT IS WRONG IN BOTH DIRECTIONS. It greps the whole file for `set -o pipefail` and cannot see an inner shell's options:
 
@@ -105,11 +101,8 @@ THREE CAVEATS ON THAT DROP-IN, each paid for by a site in the 2026-09-16 sweep:
 NO BASELINE, deliberately. The class was 13 sites and every one was converted, so this gate stands at zero with an anti-vacuity floor. A baseline here would have recorded ten provably-safe sites as debt and left three real risks sitting in a list that says "known, fine" -- and a stale baseline entry is a slot where the next regression hides.
 
 THE MECHANISM CONTROL ASKS THE OPERATING SYSTEM, not this gate's regex. Everything else here is pattern matching, and pattern matching cannot tell you the mechanism is real on the machine the gate runs on. If SIGPIPE-under-pipefail ever stops flipping the verdict, this gate is guarding a myth and should say so rather than keep passing. THE PRODUCER MUST BE ONE THAT DIES ON SIGPIPE,
-and not every command does. Measured on this host (uutils coreutils 0.8.0, ugrep 7.8.4):
-`grep -v`, `sed` and `awk` all exhibit the race; `cat` does NOT -- uutils cat
-reports success on a 300 KB producer that was killed mid-write. The first draft of this control used `cat` and therefore could not reproduce the very mechanism
-the gate exists for; the control refused to pass, which is what caught it.
-`grep -v` is used because that is literally what the defect's producer was: `advice_only()` in check-ci-watch-recipe.sh is a `grep -vE`.
+and not every command does. Measured on this host (uutils coreutils 0.8.0, ugrep 7.8.4): `grep -v`, `sed` and `awk` all exhibit the race; `cat` does NOT -- uutils cat reports success on a 300 KB producer that was killed mid-write. The first draft of this control used `cat` and therefore could not reproduce the very mechanism the gate exists for; the control refused to pass, which
+is what caught it. `grep -v` is used because that is literally what the defect's producer was: `advice_only()` in check-ci-watch-recipe.sh is a `grep -vE`.
 
 THE FIXTURE IS ASSEMBLED AT RUNTIME so this file's own TEXT never carries the racing shape contiguously. Written out literally, the gate flagged its own control fixture -- correctly, by its rule, since the fixture IS the bad shape on purpose. Self-exemption was the wrong answer: a gate that skips its own file stops policing the one script most likely to grow this bug next. The same
 runtime-concatenation convention test-hooks.sh uses for banned tokens.
@@ -135,9 +128,7 @@ THERE ARE TWO OF THEM SINCE 2026-09-16, AND THE SECOND IS NOT A DUPLICATE. The o
 
 THE SED IS THREE SUBSTITUTIONS IN ORDER, per line: strip from the first `#` to end of line, then blank single-quoted spans, then blank double-quoted spans. Order matters -- a `#` inside a string is removed before the string is blanked, which is the twin's behaviour and not obviously right, but changing it would change which lines are findings.
 
-`\\b` AND `[[:space:]]` are written out rather than abbreviated. `\\b` means the
-same thing in both engines for ASCII identifiers; `[[:space:]]` does not equal
-Python's `\\s`, which additionally matches U+00A0 and U+2028, so the class is spelled literally.
+`\\b` AND `[[:space:]]` are written out rather than abbreviated. `\\b` means the same thing in both engines for ASCII identifiers; `[[:space:]]` does not equal Python's `\\s`, which additionally matches U+00A0 and U+2028, so the class is spelled literally.
 
 SORT ORDER IS BYTEWISE IN BOTH. The twin pipes function names through `sort -u`
 with no locale pinned, and the differential harness exports LC_ALL=C; Python's
@@ -154,13 +145,11 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# The corpus, as git pathspecs. Handed to `git ls-files` verbatim; see the port
-# notes for why this is not rewritten as a glob walk. `:(glob)` IS LOAD-BEARING: without it git reads `**` as demanding a slash, so these matched nothing at depth 1 and the corpus silently skipped six tracked shell files. Measured 2026-09-08: 471 before, 477 after. Kept BYTE-EQUAL to the twin's spelling at `check-pipefail-grep-q.sh`, since the shadow ledger compares the two
-# verdicts and a corpus difference would read as a behavioural divergence.
+# The corpus, as git pathspecs. Handed to `git ls-files` verbatim; see the port notes for why this is not rewritten as a glob walk. `:(glob)` IS LOAD-BEARING: without it git reads `**` as demanding a slash, so these matched nothing at depth 1 and the corpus silently skipped six tracked shell files. Measured 2026-09-08: 471 before, 477 after. Kept BYTE-EQUAL to the twin's spelling
+# at `check-pipefail-grep-q.sh`, since the shadow ledger compares the two verdicts and a corpus difference would read as a behavioural divergence.
 #
-# THE LAST THREE ROOTS WERE ADDED 2026-09-16 and cost 26 files for two findings, both real: `.ci/lib/devbox.sh:1082` (a silent-miss detector, and the reason `.ci/lib/` is also in INHERITS_PIPEFAIL_PREFIXES) and `.devcontainer/start-kvm.sh:216`, which offended the rule as it stood and was invisible only because nothing looked there. `.ci/media/**` came in with them and
-# is clean; it is listed so the next shell script written there is covered rather
-# than discovered by the sweep after next.
+# THE LAST THREE ROOTS WERE ADDED 2026-09-16 and cost 26 files for two findings, both real: `.ci/lib/devbox.sh:1082` (a silent-miss detector, and the reason `.ci/lib/` is also in INHERITS_PIPEFAIL_PREFIXES) and `.devcontainer/start-kvm.sh:216`, which offended the rule as it stood and was invisible only because nothing looked there. `.ci/media/**` came in with them and is clean; it
+# is listed so the next shell script written there is covered rather than discovered by the sweep after next.
 PATHSPECS = (
     ":(glob).ci/scripts/**/*.sh",
     ":(glob)scripts/**/*.sh",
@@ -170,14 +159,11 @@ PATHSPECS = (
     ":(glob).ci/media/**/*.sh",
 )
 
-# A SOURCED LIBRARY INHERITS ITS SOURCER'S OPTIONS, and the per-file pipefail test cannot see that. These repo-relative prefixes are treated as pipefail-bearing
-# whatever the file itself sets; see the FALSE NEGATIVE note in the docstring. One
-# prefix, because one site in the whole repository needs it: building a source-graph analyser for `.ci/lib/devbox.sh:1082` would be the wrong size of answer.
+# A SOURCED LIBRARY INHERITS ITS SOURCER'S OPTIONS, and the per-file pipefail test cannot see that. These repo-relative prefixes are treated as pipefail-bearing whatever the file itself sets; see the FALSE NEGATIVE note in the docstring. One prefix, because one site in the whole repository needs it: building a source-graph analyser for `.ci/lib/devbox.sh:1082` would be the wrong
+# size of answer.
 INHERITS_PIPEFAIL_PREFIXES = (".ci/lib/",)
 
-# `grep -qE 'set -[a-z]*o pipefail|set -o pipefail'`. Only a script that actually
-# sets pipefail can have the bug; without it the pipeline reports grep's status
-# and the match stands.
+# `grep -qE 'set -[a-z]*o pipefail|set -o pipefail'`. Only a script that actually sets pipefail can have the bug; without it the pipeline reports grep's status and the match stands.
 PIPEFAIL_RE = re.compile(r"set -[a-z]*o pipefail|set -o pipefail")
 
 # A stripped line that ends in `|` is a pipeline continued on the next line.
@@ -311,8 +297,7 @@ def logical_lines(text: str) -> list[tuple[int, str]]:
 def producer_names(text: str) -> list[str]:
     """The producers worth searching for: this file's own functions, plus commands.
 
-    Both halves are "a producer whose output scales with its input"; the gate has
-    always said so and, until 2026-09-16, only implemented the first half.
+    Both halves are "a producer whose output scales with its input"; the gate has always said so and, until 2026-09-16, only implemented the first half.
     """
     return sorted(set(local_functions(text)) | set(SCALING_PRODUCERS))
 
@@ -320,9 +305,7 @@ def producer_names(text: str) -> list[str]:
 def offenders_in(text: str, rel: str | None = None) -> list[str]:
     """`offenders <file> [<rel>]` -- one `<line>:<text>` per racing pipeline.
 
-    Empty is clean. `rel` is the REPO-RELATIVE path, used only to ask
-    `inherits_pipefail()`; it is None for a fixture, which then takes the ordinary
-    per-file test.
+    Empty is clean. `rel` is the REPO-RELATIVE path, used only to ask `inherits_pipefail()`; it is None for a fixture, which then takes the ordinary per-file test.
 
     The order is the twin's: producer names in sorted order, and within each name the file's own line order, because the twin runs one `grep -n` per name. A line naming two different producers is therefore reported TWICE, which is real and is preserved.
     """
@@ -435,9 +418,7 @@ def mechanism_builtin_output(tmp: pathlib.Path) -> str:
 class _Report:
     """The twin's `fail` / `pass` pair, colours and streams included.
 
-    THE COLOUR CONDITION IS THE TWIN'S: `[ -t 1 ]` tests STDOUT while `fail`
-    writes to STDERR. `rediacc_ci.log` is deliberately not used; see the port
-    notes.
+    THE COLOUR CONDITION IS THE TWIN'S: `[ -t 1 ]` tests STDOUT while `fail` writes to STDERR. `rediacc_ci.log` is deliberately not used; see the port notes.
     """
 
     def __init__(self, *, colour: bool | None = None) -> None:
@@ -571,9 +552,7 @@ def main(argv: list[str] | None = None) -> int:
 
         # THE `tee` AND `docker` CASES, FROM THE SAME 2026-09-16 WIDENING, and here
         # for the same reason as the pair above: a widening whose revert is silent
-        # is a widening that will be reverted. `docker` had THREE live offenders in
-        # this repo, all under `.ci/lib/`'s inherited pipefail; `tee` had none here
-        # and one in private/renet, whose copy of this gate must stay a SUPERSET of this list, so losing `tee` here would also un-pin it there.
+        # is a widening that will be reverted. `docker` had THREE live offenders in this repo, all under `.ci/lib/`'s inherited pipefail; `tee` had none here and one in private/renet, whose copy of this gate must stay a SUPERSET of this list, so losing `tee` here would also un-pin it there.
         teeprod = 'set -o pipefail\nif cmd 2>&1 | tee "$LOG" | %s ok; then :; fi\n' % _GQ
         if offenders_in(teeprod):
             report.ok("control: a `tee` pass-through piped into grep -q is detected")
@@ -692,9 +671,7 @@ def selftest() -> int:
         ),
         [],
     )
-    # INVERTED 2026-09-16. This used to read "MIRROR: a bounded builtin producer is not flagged" and assert []. The builtins are in SCALING_PRODUCERS now, so the
-    # old assertion is the exact opposite of the shipped rule; keeping it would have
-    # made the port and the twin disagree at the first run.
+    # INVERTED 2026-09-16. This used to read "MIRROR: a bounded builtin producer is not flagged" and assert []. The builtins are in SCALING_PRODUCERS now, so the old assertion is the exact opposite of the shipped rule; keeping it would have made the port and the twin disagree at the first run.
     ctl.check(
         "CONTROL: a builtin producer (printf) is detected",
         len(offenders_in('set -o pipefail\nif printf "%%s" "$x" | %s y; then :; fi\n' % _GQ)),

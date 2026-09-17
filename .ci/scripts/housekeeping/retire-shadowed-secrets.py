@@ -190,9 +190,8 @@ def selftest() -> int:
     got2, ch2 = retire_in_text(live, {"DROP_ME"})
     check("CONTROL: a live consumer read is left alone", got2 == live and not ch2, ch2)
 
-    # NO LIVE-TREE ASSERTION HERE, deliberately, and the first draft had one. A
-    # selftest proves the INSTRUMENT on planted text; whether the anchor still matches
-    # the real tree is a fact about the tree, and main() owns that verdict. With both, a renamed step exited 2 with "control failed" and never reached the message that explains what actually happened -- one check made the clearer one unreachable.
+    # NO LIVE-TREE ASSERTION HERE, deliberately, and the first draft had one. A selftest proves the INSTRUMENT on planted text; whether the anchor still matches the real tree is a fact about the tree, and main() owns that verdict. With both, a renamed step exited 2 with "control failed" and never reached the message that explains what actually happened -- one check made the clearer
+    # one unreachable.
 
     # A caller's passthrough goes; a same-shaped line NOT under `secrets:` does not.
     call = (
@@ -234,9 +233,7 @@ def main(argv: list[str]) -> int:
 
     # THE ANCHOR, CHECKED BEFORE THE VERDICT. Every edit this tool makes is found by matching one literal step name, so a rename of that step turns the whole tool into a silent no-op -- and its own --selftest would keep passing, because that runs against planted fixtures rather than the tree.
     #
-    # This is the difference between "already retired" and "I can no longer see the thing I edit", which the report used to collapse into one ambiguous line. The
-    # operator runs this against production secrets; the two answers must not look
-    # alike.
+    # This is the difference between "already retired" and "I can no longer see the thing I edit", which the report used to collapse into one ambiguous line. The operator runs this against production secrets; the two answers must not look alike.
     anchors = sum(
         1 for f in files() if COMPARE_STEP in f.read_text(encoding="utf-8", errors="replace")
     )
@@ -264,9 +261,7 @@ def main(argv: list[str]) -> int:
         if apply:
             f.write_text(new, encoding="utf-8")
     # WHICH NAMES ARE ACTUALLY FREE, asked AFTER the rewrite rather than assumed from the argument list. This tool exists to stop a deletion from blanking a live read, and it was printing three delete lines while TWO of the names still had one: breakpoint.yml's app-token (that job hands a human a shell, so it deliberately never fetches from Bitwarden) and watchdog-monitor.yml's
-    # tier-1 classifier (its fetch cannot move ahead of the monitor without `continue-on-error`, which
-    # check-workflows.sh bans). Both survivals are correct and documented; printing
-    # `gh secret delete` for them was not.
+    # tier-1 classifier (its fetch cannot move ahead of the monitor without `continue-on-error`, which check-workflows.sh bans). Both survivals are correct and documented; printing `gh secret delete` for them was not.
     live = {}
     for f in files():
         text = f.read_text(encoding="utf-8", errors="replace")

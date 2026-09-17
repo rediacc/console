@@ -4,9 +4,7 @@
 REAL FILES, NOT STUBS, and that is the whole design of this differential. The deliverable of this script IS a mutated `package.json`, so every case builds a throwaway console tree per side with real manifests in it, runs the subject, and compares the resulting BYTES and the resulting FILE MODE. A stub could not show the root manifest being written when only the CLI one should be,
 nor jq's formatting drifting, nor the 0600 that `mktemp` + `mv` leaves behind.
 
-TWO MANIFESTS, AND THE ASYMMETRY IS THE SUBJECT. `package.json` at the root is
-READ for the current version and never written; `packages/cli/package.json` is
-the only entry in `VERSION_FILES_JSON` and the only file written. `test_the_root_manifest_is_read_and_never_written` pins both halves, because a port that wrote both would pass every other case here.
+TWO MANIFESTS, AND THE ASYMMETRY IS THE SUBJECT. `package.json` at the root is READ for the current version and never written; `packages/cli/package.json` is the only entry in `VERSION_FILES_JSON` and the only file written. `test_the_root_manifest_is_read_and_never_written` pins both halves, because a port that wrote both would pass every other case here.
 
 THE TWIN IS BROKEN FOR `--auto` AND `--patch` ON THIS REPOSITORY, and `test_the_live_defect_*` drives it rather than describing it: the placeholder version `0.0.0-dev` makes `$((patch + 1))` evaluate `0 - dev` under `set -u`. `test_minor_and_major_survive_the_placeholder_by_luck` drives the other half, which is the worse one: the same input yields a clean, plausible version for the
 two flags that never touch the patch field. Reproduced rather than repaired, on this box's contract.
@@ -414,13 +412,9 @@ def test_the_live_defect_every_bump_flag_dies_on_the_0_0_0_dev_placeholder(
 ) -> None:
     """THE DEFECT THIS PORT INHERITED, DRIVEN RATHER THAN DESCRIBED.
 
-    Every package.json in this repository carries `0.0.0-dev`, because the version source of truth is git tags. `increment_patch` splits that into
-    `0`, `0`, `0-dev` and asks bash for `$((0-dev + 1))`; `dev` is not a
-    variable and `set -u` kills the run. So `--auto` and `--patch` are broken on a clean checkout of this repo today.
+    Every package.json in this repository carries `0.0.0-dev`, because the version source of truth is git tags. `increment_patch` splits that into `0`, `0`, `0-dev` and asks bash for `$((0-dev + 1))`; `dev` is not a variable and `set -u` kills the run. So `--auto` and `--patch` are broken on a clean checkout of this repo today.
 
-    The exit code, the preceding "Current version" line and the message shape
-    agree; the script path and line number are each side's own, which is the
-    divergence and is asserted in both directions.
+    The exit code, the preceding "Current version" line and the message shape agree; the script path and line number are each side's own, which is the divergence and is asserted in both directions.
     """
     shape = re.compile(r"^\S+: line \d+: dev: unbound variable$")
     for flag in ("--auto", "--patch"):

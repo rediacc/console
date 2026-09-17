@@ -2,17 +2,13 @@
 """Port of `.ci/scripts/deploy/test-d1-migrations.sh`.
 
 Validates that the account D1 migrations apply cleanly against a CLONE of every regional production database, edge clones first. A migration that works on an empty schema can still fail on real data (a NOT NULL added to a populated column, a unique index over existing duplicates), and cloning is what surfaces that before a release touches production. Every clone is ephemeral and
-deleted
-by an EXIT trap, including on failure; no worker is deployed and no public URL
-is created.
+deleted by an EXIT trap, including on failure; no worker is deployed and no public URL is created.
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) is the only tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_test_d1_migrations.py`) puts a RECORDING FAKE
 for it on a scratch PATH with an on-disk D1 state file, and drives both sides
 through it. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE CALL LOG IS THE PRIMARY EVIDENCE. What the run PRINTS is `::group::`
-directives and one `log_info` line; the observable effect is the ordered set of
-`npx wrangler d1` invocations, one clone-d1.sh invocation per region, and the bytes of the generated `wrangler-migration-test.toml`.
+THE CALL LOG IS THE PRIMARY EVIDENCE. What the run PRINTS is `::group::` directives and one `log_info` line; the observable effect is the ordered set of `npx wrangler d1` invocations, one clone-d1.sh invocation per region, and the bytes of the generated `wrangler-migration-test.toml`.
 
 -----------------------------------------------------------------------------
 `clone-d1.sh`, `jq` AND `sed` ARE CALLED, NOT REIMPLEMENTED
@@ -191,9 +187,7 @@ def repo_root() -> str:
 def region_id(source_db: str) -> str:
     """`${SOURCE_DB#account-db-}` then `${REGION_ID#edge-account-db-}` (twin :90-91).
 
-    THE ORDER IS LOAD-BEARING AND IS ALSO WHY BOTH WORK. `edge-account-db-eu` does not start with `account-db-`, so the first strip is a no-op and the
-    second one does the work; `account-db-eu` is the mirror image. A single
-    combined pattern would have to be written carefully to get both.
+    THE ORDER IS LOAD-BEARING AND IS ALSO WHY BOTH WORK. `edge-account-db-eu` does not start with `account-db-`, so the first strip is a no-op and the second one does the work; `account-db-eu` is the mirror image. A single combined pattern would have to be written carefully to get both.
     """
     return source_db.removeprefix(STABLE_PREFIX).removeprefix(EDGE_PREFIX)
 
@@ -300,9 +294,8 @@ def require_env() -> None:
     Raises on the FIRST missing or empty one, because `: "${VAR:?}"` ends the
     shell there and the later guard never runs. `:?` is an UNSET-OR-EMPTY test, so an exported empty string refuses exactly as an absent one does.
 
-    EACH NAME IS READ FROM `os.environ` WITH A LITERAL KEY, and the repetition is deliberate rather than sloppy. `check:ci-python-env-registry` derives a module's declared inputs by walking the AST for `os.environ[...]` and
-    `os.environ.get(...)`; a loop over `REQUIRED_ENV` reading through a dict
-    parameter is invisible to that walk, so both variables would be inputs nobody declared. `REQUIRED_ENV` stays as the table a reader checks against the twin, and the two reads below are what the scanner can see. Asserted by `test_the_guard_table_and_the_literal_reads_cannot_drift`.
+    EACH NAME IS READ FROM `os.environ` WITH A LITERAL KEY, and the repetition is deliberate rather than sloppy. `check:ci-python-env-registry` derives a module's declared inputs by walking the AST for `os.environ[...]` and `os.environ.get(...)`; a loop over `REQUIRED_ENV` reading through a dict parameter is invisible to that walk, so both variables would be inputs nobody declared.
+    `REQUIRED_ENV` stays as the table a reader checks against the twin, and the two reads below are what the scanner can see. Asserted by `test_the_guard_table_and_the_literal_reads_cannot_drift`.
     """
     if not os.environ.get("CLOUDFLARE_API_TOKEN", ""):
         raise MissingEnvError(*REQUIRED_ENV[0])
@@ -419,9 +412,7 @@ def _one_region(
     if status:
         raise BashExitError(status)
 
-    # `cat >"$TMPCONFIG"` (twin :117), RELATIVE to the current directory. A
-    # redirection that cannot be opened is bash's own message and `set -e`; this
-    # prints its own sentence with the same stream and the same status, the same ruling as `_chdir`.
+    # `cat >"$TMPCONFIG"` (twin :117), RELATIVE to the current directory. A redirection that cannot be opened is bash's own message and `set -e`; this prints its own sentence with the same stream and the same status, the same ruling as `_chdir`.
     tmpconfig = os.path.join(*TMPCONFIG_RELATIVE)
     try:
         with open(tmpconfig, "w", encoding="utf-8") as handle:

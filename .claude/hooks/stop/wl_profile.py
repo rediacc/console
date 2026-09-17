@@ -1,8 +1,7 @@
 """wl_profile: derive STRUCTURAL findings from tree captures. Never blocks a stop.
 
-WHERE THIS LIVES AND WHY. A sibling of the judge, not a fourth marker in it. Two verified facts decide that: wl_checks.py:5352/5379 gate the judge on `(something_remains or reg_signals)`, so a session that ran the battery, got green and has a clean board never reaches it -- exactly the shape a resource verdict is
-about; and the judge fails CLOSED by contract (worklist.py:91-94) while this signal
-must never turn "we did not measure" into "you may not stop". Unjudgeable is silence here, always.
+WHERE THIS LIVES AND WHY. A sibling of the judge, not a fourth marker in it. Two verified facts decide that: wl_checks.py:5352/5379 gate the judge on `(something_remains or reg_signals)`, so a session that ran the battery, got green and has a clean board never reaches it -- exactly the shape a resource verdict is about; and the judge fails CLOSED by contract (worklist.py:91-94)
+while this signal must never turn "we did not measure" into "you may not stop". Unjudgeable is silence here, always.
 
 THE ONE RULE EVERY PREDICATE MUST PASS: DILATION INVARIANCE. A finding may be ENFORCED only if its verdict is unchanged when every duration in the capture is multiplied by k>0. The worklist suite measured ~4 min standalone and ~9 min under
 the full battery on identical code -- that is k=2.25 from machine load alone. And
@@ -10,25 +9,20 @@ load stretches WALL, not CPU, so `dilate()` scales timestamps and PSI and leaves
 (0.95 -> 0.42 at k=2.25), which is why "saturated" is an R-STATE FRACTION here: on
 Linux `R` covers running AND runnable-but-preempted, so a CPU-bound process starved of the CPU is still R. Every predicate below is a count, a ratio of counts, or a set relation. Nothing is expressed in seconds, and control D2 reads this file's own source to refuse any comparison of a duration field against a numeric literal.
 
-MEASUREMENT REFUTES; IT NEVER PROPOSES. A sampled fd table is a LOWER bound on a
-process's write set. A predicate whose safety depends on the ABSENCE of a shared write (E1) therefore requires POSITIVE evidence of disjointness -- every child must
-have an observed write set, and they must be pairwise disjoint; a child with nothing
-observed is unresolved and kills the finding. E4 is the safe direction: it needs positive evidence of a SHARED write and never certifies independence.
+MEASUREMENT REFUTES; IT NEVER PROPOSES. A sampled fd table is a LOWER bound on a process's write set. A predicate whose safety depends on the ABSENCE of a shared write (E1) therefore requires POSITIVE evidence of disjointness -- every child must have an observed write set, and they must be pairwise disjoint; a child with nothing observed is unresolved and kills the finding. E4 is
+the safe direction: it needs positive evidence of a SHARED write and never certifies independence.
 
 THE SILENCE PREDICATE, made computable. A class C may ENFORCE only while its fire
 rate over JUDGEABLE captures satisfies `admissible(F, J)`: J >= 20 AND the one-sided
 95% Wilson upper bound on F/J <= 0.05. Below J=20 the class is report-only "for lack
-of denominator", which is a different and more honest reason than "too noisy". The
-gate applies this per class; this module only emits findings with their class.
+of denominator", which is a different and more honest reason than "too noisy". The gate applies this per class; this module only emits findings with their class.
 
 Findings (see agent/PLAN-shell-resource-profiling.md sections 3 and 3b):
   E1  SEQUENTIAL INDEPENDENT FANOUT   enforceable
   E4  UNDECLARED CONCURRENT WRITER    enforceable  (two captures, one run id)
   E5  INTRA-SHAPE MEMORY OUTLIER      report-only until J>=20 (sibling-relative, not MemTotal)
   E6  ZOMBIES UNDER A LIVE PARENT     enforceable  (a count at an instant)
-Deliberately absent: anything in seconds; a poll-loop detector (fires on the
-sanctioned waiters wl_wait.py and ci-trace.py --wait); the ~880-spawn count (the
-process boundary IS the suite's fixture); fork depth (a fact, not a finding).
+Deliberately absent: anything in seconds; a poll-loop detector (fires on the sanctioned waiters wl_wait.py and ci-trace.py --wait); the ~880-spawn count (the process boundary IS the suite's fixture); fork depth (a fact, not a finding).
 """
 
 from __future__ import annotations
@@ -42,9 +36,7 @@ import sys
 from pathlib import Path
 
 # WHAT "WAITING ON MY OWN CHILD" ACTUALLY LOOKS LIKE ON THIS KERNEL, counted over the real corpus rather than guessed. The old set was three names and missed the single most common one: `do_sigtimedwait`, which is bashcov-sup waiting on the one child it supervises -- 4,422 samples, and the ROOT of every capture, which is why rank()'s blocked share below read 0% by construction.
-# `pipe_read` never occurs on
-# 6.18 at all; the kernel calls it `anon_pipe_read`. Symbol names move between
-# kernels, so this set is a LABEL, never the verdict on its own.
+# `pipe_read` never occurs on 6.18 at all; the kernel calls it `anon_pipe_read`. Symbol names move between kernels, so this set is a LABEL, never the verdict on its own.
 DEFERRING = {
     "do_wait",
     "do_sigtimedwait",
@@ -167,13 +159,9 @@ def aggregate(cap: Capture) -> dict[int, dict]:
             )
             a["first"] = min(a["first"], t)
             a["last"] = max(a["last"], t)
-            # THE TICK'S STATE IS THE PROCESS'S, NOT THE LEADER THREAD'S. Field 3 of
-            # /proc/<pid>/stat is the leader; measured over the real corpus, the go
-            # toolchain reads futex_do_wait for 59 of 62 ticks and biome for 66 of 82
+            # THE TICK'S STATE IS THE PROCESS'S, NOT THE LEADER THREAD'S. Field 3 of /proc/<pid>/stat is the leader; measured over the real corpus, the go toolchain reads futex_do_wait for 59 of 62 ticks and biome for 66 of 82
             # while tree CPU climbs 4 -> 18,227. A saturation predicate on the leader
-            # is blind to every multi-threaded tool here. `tstates` (per-thread) is
-            # authoritative when the sampler recorded it; older captures have no such
-            # field and fall back to the leader, which is why this reads rather than requires it -- a format change must never retro-invalidate a corpus.
+            # is blind to every multi-threaded tool here. `tstates` (per-thread) is authoritative when the sampler recorded it; older captures have no such field and fall back to the leader, which is why this reads rather than requires it -- a format change must never retro-invalidate a corpus.
             _ts = p.get("tstates") or {}
             _eff = p["state"]
             if _ts and (_ts.get("R") or _ts.get("D")):
@@ -390,9 +378,8 @@ E7_MIN_TICKS = 3
 def e7_stalled(c: Capture) -> list[dict]:
     """A tree that is not merely WAITING but STOPPED. Report-only, by construction.
 
-    THE CASE THIS MUST NOT CALL A HANG is the normal one. `test-hooks.sh` captures a whole suite through `$( )`, so the parent sits in `anon_pipe_read` with its stdout frozen BY DESIGN for minutes while its children cycle. Reading that as a hang cost two killed battery runs before walking /proc down the chain showed the children
-    working. So the predicate never asks "is the parent blocked"; it asks whether the
-    WHOLE TREE stopped moving, on four independent facts that must hold together for E7_MIN_TICKS consecutive samples:
+    THE CASE THIS MUST NOT CALL A HANG is the normal one. `test-hooks.sh` captures a whole suite through `$( )`, so the parent sits in `anon_pipe_read` with its stdout frozen BY DESIGN for minutes while its children cycle. Reading that as a hang cost two killed battery runs before walking /proc down the chain showed the children working. So the predicate never asks "is the parent
+    blocked"; it asks whether the WHOLE TREE stopped moving, on four independent facts that must hold together for E7_MIN_TICKS consecutive samples:
 
       1. the live pid set is unchanged  -- a set relation
       2. total tree CPU is unchanged    -- clock TICKS, so dilation cannot move it
@@ -406,9 +393,7 @@ def e7_stalled(c: Capture) -> list[dict]:
     if len(c.samples) < E7_MIN_TICKS:
         return []
     # THE DISCRIMINATOR NEEDS THE FIELDS IT DISCRIMINATES ON. Captures taken before the sampler recorded `pipes` and `tstates` carry neither, and without the pipe graph condition (4) is vacuously true -- so on that data E7 degenerates into exactly the weaker "the parent looks blocked" test that killed two battery runs. Measured: over 678 captures from the pre-change corpus it
-    # produced 2 findings
-    # that CANNOT be validated either way. Abstaining is the only honest answer; a
-    # verdict from an instrument that did not record the evidence is not a verdict.
+    # produced 2 findings that CANNOT be validated either way. Abstaining is the only honest answer; a verdict from an instrument that did not record the evidence is not a verdict.
     if not any("pipes" in pr for smp in c.samples for pr in (smp.get("p") or [])):
         return []
     runs = 0

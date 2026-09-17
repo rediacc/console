@@ -48,12 +48,9 @@ function resolveContainer(
   kubeCluster: string | undefined,
   requested: string | undefined
 ): string | undefined {
-  // An explicit choice is always honored; renet reports a bad name itself, and its
-  // error names the containers that DO exist, which is the message we would write.
+  // An explicit choice is always honored; renet reports a bad name itself, and its error names the containers that DO exist, which is the message we would write.
   if (requested) return requested;
-  // Undefined lets renet apply the single-container default. It knows the live
-  // container set; the CLI would have to round-trip to learn it, and the answer
-  // could change between the probe and the call anyway.
+  // Undefined lets renet apply the single-container default. It knows the live container set; the CLI would have to round-trip to learn it, and the answer could change between the probe and the call anyway.
   void repoKey;
   void machineName;
   void kubeCluster;

@@ -24,8 +24,7 @@ Read from the lock rather than guessed from the fixtures, because the fixtures m
 A battery step rewriting `scope-shadow.sh` or the engine mid-sweep is a divergence that would be blamed on this port.
 
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
-this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in
-`test_twin_parity.py`, where an own group makes the opt-in vacuous.
+this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, where an own group makes the opt-in vacuous.
 
 --------------------------------------------------------------------------
 DOES THE SUBJECT SELF-SCAN? NO, AND IT WAS MEASURED RATHER THAN ASSUMED
@@ -539,9 +538,8 @@ def test_job_name_leaf_must_match_exactly(gate):
     gate.log_pass("only an exact job leaf name is evidence, and only when it is unique")
 
 
-# --------------------------------------------------------------------------- ANTI-VACUITY on the closure table itself. A declared path that no longer
-# exists would be hashed by nobody and noticed by nothing; the table would
-# quietly stop covering the input it names. Assert the paths are real, and that both keys declare a non-trivial closure. ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ANTI-VACUITY on the closure table itself. A declared path that no longer exists would be hashed by nobody and noticed by nothing; the table would quietly stop covering the input it names. Assert the paths are real, and that both keys declare a non-trivial closure.
+# ---------------------------------------------------------------------------
 
 CLOSURE_PATHS_JS = r"""
 const { CLOSURES } = require(process.argv[1]);
@@ -585,9 +583,7 @@ def test_declared_closure_paths_exist(gate):
             ls_tree_lines(gate, path), 1, "closure path for %s must exist in HEAD: %s" % (key, path)
         )
         count += 1
-    # The floor sits JUST BELOW the real total (408 across 18 keys as of 2026-08-08), not at some token value: a `> 15` floor survived a table that had lost every key but one. At 400 a parse break reads as 0 and a dropped
-    # VM/E2E key costs 30 entries, both of which fire this; trimming a path or
-    # two during honest maintenance does not.
+    # The floor sits JUST BELOW the real total (408 across 18 keys as of 2026-08-08), not at some token value: a `> 15` floor survived a table that had lost every key but one. At 400 a parse break reads as 0 and a dropped VM/E2E key costs 30 entries, both of which fire this; trimming a path or two during honest maintenance does not.
     gate.assert_eq(
         1 if count > 400 else 0,
         1,
@@ -848,9 +844,8 @@ def test_key_order_is_cost_descending(gate):
     )
 
 
-# --------------------------------------------------------------------------- Case 13: THE TRAIL MUST STAY READABLE. The trail is the only thing that makes a non-greenlight diagnosable, and it is surfaced through a step summary with a
-# byte cap. At two keys the raw dump fitted; at eighteen keys against a
-# 25-candidate list it is ~450 rows and it truncated MID-LINE inside the second key, so sixteen keys' diagnostics were simply absent. scope-shadow.sh's greenlight_digest exists to condense it, and this case is what stops the digest silently dropping keys as the table grows again. ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Case 13: THE TRAIL MUST STAY READABLE. The trail is the only thing that makes a non-greenlight diagnosable, and it is surfaced through a step summary with a byte cap. At two keys the raw dump fitted; at eighteen keys against a 25-candidate list it is ~450 rows and it truncated MID-LINE inside the second
+# key, so sixteen keys' diagnostics were simply absent. scope-shadow.sh's greenlight_digest exists to condense it, and this case is what stops the digest silently dropping keys as the table grows again. ---------------------------------------------------------------------------
 
 
 def extract_digest_fn(gate) -> str:
@@ -1035,9 +1030,7 @@ def test_candidate_window_is_widened(gate):
             "window can silently close"
         )
 
-    # `sed -E 's/.*--limit +([0-9]+).*/\1/'` over the whole capture. The twin
-    # feeds it every surviving line at once; there is exactly one today, and a
-    # second would make the value ambiguous, so that is asserted rather than silently resolved by taking the first.
+    # `sed -E 's/.*--limit +([0-9]+).*/\1/'` over the whole capture. The twin feeds it every surviving line at once; there is exactly one today, and a second would make the value ambiguous, so that is asserted rather than silently resolved by taking the first.
     gate.assert_eq(len(lines), 1, "exactly one GREENLIGHT invocation may carry --limit: %r" % lines)
     match = LIMIT_VALUE_RE.match(lines[0])
     if match is None:

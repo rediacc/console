@@ -249,8 +249,7 @@ def apply_admission_verdict(ad, text):
 def process_admission(ad, text, worklist, session_id, me8, hits, sig, settled, add_item):
     """Apply a verdict and record it. ONE implementation, two callers.
 
-    The judge-ran path passes `verdict.get("admission")`; the judge-skipped path
-    passes the result of a standalone call. Duplicating this was the obvious shortcut and would have meant two places to keep the anti-hallucination check in step.
+    The judge-ran path passes `verdict.get("admission")`; the judge-skipped path passes the result of a standalone call. Duplicating this was the obvious shortcut and would have meant two places to keep the anti-hallucination check in step.
 
     `add_item` is injected rather than imported so this module stays testable without dragging the store in.
 
@@ -283,9 +282,7 @@ def process_admission(ad, text, worklist, session_id, me8, hits, sig, settled, a
 # WHAT IT COSTS TODAY, measured as a sequence rather than argued: a session announces in prose that it is going to ask the operator something, stops, the operator spends a turn saying "ask", and only THEN does .claude/hooks/pre-ask/block-settled-questions.sh refuse the question as already settled. The removable cost is the OPERATOR'S TURN, and a Stop hook that blocks is the only
 # place that reaches it: every other hook in the chain runs after the turn has already been yielded.
 #
-# IT LIVES HERE, NOT IN wl_checks, for a size reason that is not cosmetic. wl_checks is ~5,000 lines and is the file every stop-gate change has to be
-# read against; a detector with its own regex family and its own state
-# signature belongs beside its sibling in this module, and wl_checks gains one call site and one violation key.
+# IT LIVES HERE, NOT IN wl_checks, for a size reason that is not cosmetic. wl_checks is ~5,000 lines and is the file every stop-gate change has to be read against; a detector with its own regex family and its own state signature belongs beside its sibling in this module, and wl_checks gains one call site and one violation key.
 #
 # THREE CONDITIONS, ALL OF THEM, and each one is there to kill a specific false positive:
 #
@@ -447,9 +444,7 @@ def defer_created(state_doc, fold, session_id):
 def ask_announcement(last_msg):
     """The closing line that ANNOUNCES an ask, or "" -- the message half alone.
 
-    Quoted and backticked spans go first (wl_core.strip_quoted_spans), because
-    every message discussing this gate quotes its own triggers; that is the
-    lesson V_FOUND_NOT_FIXED and loop_finished_declared each paid for.
+    Quoted and backticked spans go first (wl_core.strip_quoted_spans), because every message discussing this gate quotes its own triggers; that is the lesson V_FOUND_NOT_FIXED and loop_finished_declared each paid for.
     """
     stripped = C.strip_quoted_spans(last_msg or "")
     if not stripped.strip():
@@ -471,9 +466,7 @@ def ask_announcement(last_msg):
 def pending_ask(last_msg, tool_names, deferred_this_turn):
     """(fired, the announcing line) -- an ask announced and never made.
 
-    All three conditions, in the cheapest-first order. `tool_names` is
-    turn_tools()'s first element; `deferred_this_turn` is defer_created()'s
-    verdict. Both are passed in rather than fetched, so this stays a pure
+    All three conditions, in the cheapest-first order. `tool_names` is turn_tools()'s first element; `deferred_this_turn` is defer_created()'s verdict. Both are passed in rather than fetched, so this stays a pure
     function the suite can drive without a transcript or a store.
     """
     if "AskUserQuestion" in (tool_names or []):
@@ -496,8 +489,7 @@ def ask_refusal_path(worklist):
 def ask_refusals(worklist, session_id):
     """(n_this_session, path) -- how many of MY questions the pre-ask hook ate.
 
-    Session-scoped because that is the number this session can act on; the file
-    keeps every session's rows so the operator reading it sees the whole denominator. Unreadable or absent is (0, path), never an exception: an advisory that can fail a stop is a worse bug than a missing advisory.
+    Session-scoped because that is the number this session can act on; the file keeps every session's rows so the operator reading it sees the whole denominator. Unreadable or absent is (0, path), never an exception: an advisory that can fail a stop is a worse bug than a missing advisory.
     """
     path = ask_refusal_path(worklist)
     sid = (session_id or "")[:8]
@@ -519,9 +511,7 @@ def ask_refusals(worklist, session_id):
     return n, path
 
 
-# The corpus fixture. Every case marked REAL is quoted from this repo's own
-# transcripts; the SYNTHETIC ones exist because the corpus had no example of the
-# evasive phrasing a cautious session would naturally reach for, and that is the
+# The corpus fixture. Every case marked REAL is quoted from this repo's own transcripts; the SYNTHETIC ones exist because the corpus had no example of the evasive phrasing a cautious session would naturally reach for, and that is the
 # class the whole model call exists to catch.
 #
 # This CANNOT be stubbed. A stub that answers "yes" proves nothing about whether the classifier can tell case 1 from case 7. That is why it is a separate gate run against the real model, not part of the per-stop path. Empirically-derived floor. Five positives: two correct in every measured run, three borderline and flaky at roughly two thirds each, so ~0.75 is the expected value

@@ -2,9 +2,8 @@
 
 Deletes the staging channel Docker tag after cd-v2.yml has retagged its images to the released semver. Non-critical by design: every outcome is written to the step summary and the script still exits 0, because a channel tag left behind in GHCR is harmless.
 
-THE `staging-` GUARD IS REPRODUCED, NOT ROUTED AROUND, and the twin's header is emphatic about why. `cleanup-staging.sh` accepts only `staging-*` tags
-deliberately, so a stray call cannot delete a real one; `CHANNEL` is `edge` or
-`stable`, so the guard rejects it every single release. That is a KNOWN GAP with its own summary text, not a token-scope problem, and a port that widened the guard to "make the cleanup work" would remove the safety rail the twin exists to respect. The first branch below therefore never calls anything at all, which is the branch production actually takes.
+THE `staging-` GUARD IS REPRODUCED, NOT ROUTED AROUND, and the twin's header is emphatic about why. `cleanup-staging.sh` accepts only `staging-*` tags deliberately, so a stray call cannot delete a real one; `CHANNEL` is `edge` or `stable`, so the guard rejects it every single release. That is a KNOWN GAP with its own summary text, not a token-scope problem, and a port that widened
+the guard to "make the cleanup work" would remove the safety rail the twin exists to respect. The first branch below therefore never calls anything at all, which is the branch production actually takes.
 
 THE THREE OUTCOMES ARE THREE DIFFERENT SUMMARY BLOCKS, and the summary file is the whole observable of this script: stdout and stderr carry only whatever `cleanup-staging.sh` itself prints. So the port appends line by line with an open-append-close per line, exactly as the twin's repeated `>>` redirects do, rather than buffering the block and writing once. `GITHUB_STEP_SUMMARY` is
 routinely pointed at `/dev/stdout` when this is run by hand, and a buffered write would reorder the block against the subprocess's own inherited output.
@@ -48,9 +47,7 @@ _FAILED_WHY = "The delete call failed; check that GH_TOKEN carries `delete:packa
 def _require_var(name: str) -> str:
     """`${NAME:?message}`: unset AND empty both refuse, with exit 1.
 
-    The wording differs from bash's own `<script>: line N: NAME: ...` prefix and
-    is not meant to match it; the exit code and the named variable are what the
-    differential compares, same as every sibling port in this package.
+    The wording differs from bash's own `<script>: line N: NAME: ...` prefix and is not meant to match it; the exit code and the named variable are what the differential compares, same as every sibling port in this package.
     """
     value = os.environ.get(name)
     if not value:
@@ -73,9 +70,7 @@ def is_staging_tag(channel: str) -> bool:
 def _delete_channel_tag(channel: str) -> bool:
     """Run the twin's `elif`: true when `cleanup-staging.sh --tag <channel>` exits 0.
 
-    A MISSING SCRIPT IS THE `else` BRANCH, not a traceback. Under bash a `command not found` inside an `elif` is a non-zero status like any other and
-    falls through to the failure summary; `FileNotFoundError` here would instead
-    abort before the summary was written, which is the one difference that would change what a reader of the step summary sees.
+    A MISSING SCRIPT IS THE `else` BRANCH, not a traceback. Under bash a `command not found` inside an `elif` is a non-zero status like any other and falls through to the failure summary; `FileNotFoundError` here would instead abort before the summary was written, which is the one difference that would change what a reader of the step summary sees.
     """
     try:
         proc = subprocess.run([_CLEANUP_STAGING, "--tag", channel], check=False)

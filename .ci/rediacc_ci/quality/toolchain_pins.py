@@ -35,9 +35,8 @@ A2 COVERS ONLY THE TOOLS A GATE DEPENDS ON. Editor tooling (gopls, dlv, staticch
 of them are watched by check-devcontainer-pin-freshness. They remain outside A2 because A2 asks a different question: does a SHELL SCRIPT acquire a gate tool without a version. A Dockerfile ARG is not that shape, and the freshness gate already owns it. The control therefore still earns its place: it proves this regex does not reach past the gate tools, using a synthetic fixture
 rather than the real Dockerfile, which no longer contains a version-less install to sample.
 
-A8 CATCHES UNPINNED USE, where A2 catches unpinned ACQUISITION. A workflow step that runs `shfmt -d .` itself, instead of running the gate script that resolves the tool at the pin, would silently lint with whatever the runner image happens
-to ship. Nothing does that today; this exists so nothing starts. NOTE ON SHAPE,
-because it is the opposite of what it may look like: a workflow invoking a gate SCRIPT directly (`run: .ci/scripts/security/shfmt.sh`) is the REQUIRED pattern here -- scripts/gates/check-ci-parity.ts enforces three-point wiring in which the workflow step names the script. It is invoking the TOOL that is forbidden, not invoking the script.
+A8 CATCHES UNPINNED USE, where A2 catches unpinned ACQUISITION. A workflow step that runs `shfmt -d .` itself, instead of running the gate script that resolves the tool at the pin, would silently lint with whatever the runner image happens to ship. Nothing does that today; this exists so nothing starts. NOTE ON SHAPE, because it is the opposite of what it may look like: a workflow
+invoking a gate SCRIPT directly (`run: .ci/scripts/security/shfmt.sh`) is the REQUIRED pattern here -- scripts/gates/check-ci-parity.ts enforces three-point wiring in which the workflow step names the script. It is invoking the TOOL that is forbidden, not invoking the script.
 
 THE A8 CONTROLS `mkdir` FIRST. The shared fixture dir is created in the controls section further down, and writing before it exists made these silently write nothing -- the control then reported DID NOT FIRE, which is the correct direction for that mistake to fail in.
 
@@ -49,9 +48,7 @@ PROSE IS NOT AN INVOCATION, and an echoed string is prose too. Measured 2026-08-
     echo "         # shellcheck extended-analysis=false"
     echo '# shellcheck extended-analysis=false'
 
-i.e. the directive it TELLS you to add. It never runs shellcheck at all, so demanding it acquire shellcheck at the pin was incoherent. Only a line whose FIRST word is echo/printf and that carries no command separator is dropped:
-`echo x; shfmt y` still gets scrutinised, so this narrows the false-positive
-without opening a bypass.
+i.e. the directive it TELLS you to add. It never runs shellcheck at all, so demanding it acquire shellcheck at the pin was incoherent. Only a line whose FIRST word is echo/printf and that carries no command separator is dropped: `echo x; shfmt y` still gets scrutinised, so this narrows the false-positive without opening a bypass.
 
 DATA IS NOT AN INVOCATION EITHER, the same reasoning one step over. A
 `NAME=(a b c)` array literal naming a gated tool as one of its elements is being
@@ -72,8 +69,7 @@ The 404 names GitHub, so the symptom points away from the cause. No textual asse
 THE A9 CONTROL IS A COPY PLUS AN APPENDED NO-OP OVERRIDE of toolchain_load. Appending cannot silently fail to apply the way a pattern substitution can when the targeted line is later reworded.
 
 A10 ASSERTS THE UNIT, not the parts. A3 proves the file is PARSEABLE by three readers. Nothing proved they still read it. Delete the `. toolchain.env` from constants.sh, or the COPY from the Dockerfile, or the --env step from the workflow, and every assertion above stays green while the pins go back to being decorative -- which is the exact state this whole file exists to end. The
-three-point wiring is the invariant; asserting the parts individually never
-asserted the unit. Each reader is checked for the mechanism it actually uses, not for the string "toolchain.env": a COMMENT mentioning the file would otherwise satisfy the rule, and every one of these three files has several such comments. The Actions reader is checked via `--env`, never a bare `cat`:
+three-point wiring is the invariant; asserting the parts individually never asserted the unit. Each reader is checked for the mechanism it actually uses, not for the string "toolchain.env": a COMMENT mentioning the file would otherwise satisfy the rule, and every one of these three files has several such comments. The Actions reader is checked via `--env`, never a bare `cat`:
 $GITHUB_ENV accepts only KEY=value and would choke on the comments, which is why
 the emitter exists at all.
 
@@ -83,13 +79,10 @@ THE BLIND SPOT, stated so a green is not read as more than it is: A1 is a LITERA
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-`set -uo pipefail` WITHOUT `-e` is the twin's mode, so a failing grep is a verdict rather than an abort. Every probe below therefore returns a value and
-nothing raises; the one place that would have raised in Python (a missing file)
-is guarded, because "unreadable" and "clean" have to stay distinguishable.
+`set -uo pipefail` WITHOUT `-e` is the twin's mode, so a failing grep is a verdict rather than an abort. Every probe below therefore returns a value and nothing raises; the one place that would have raised in Python (a missing file) is guarded, because "unreadable" and "clean" have to stay distinguishable.
 
-`grep -F "$value" file | grep -vE '^\s*#' | grep -qvF "$key"` IS A THREE-STAGE PIPELINE AND IS REPRODUCED STAGE BY STAGE. Read it as: the lines containing the
-VALUE, minus the comment lines, minus the lines that also name the KEY; if
-anything survives, that file restates the pin. Collapsing it into one pass over the file would be equivalent only by accident, because the second stage drops comment lines by their own shape rather than by the match's position.
+`grep -F "$value" file | grep -vE '^\s*#' | grep -qvF "$key"` IS A THREE-STAGE PIPELINE AND IS REPRODUCED STAGE BY STAGE. Read it as: the lines containing the VALUE, minus the comment lines, minus the lines that also name the KEY; if anything survives, that file restates the pin. Collapsing it into one pass over the file would be equivalent only by accident, because the second
+stage drops comment lines by their own shape rather than by the match's position.
 
 THE A9 SUBSHELL IS STILL A SUBSHELL. `bash -c "source toolchain.sh;
 toolchain_pin_for shfmt"` is what A9 exists to run, and re-reading `toolchain.env` in Python would test this module's idea of the loader rather than the loader. The twin swallows both a crash and an empty pin into the same "bad" answer, and says so in a `swallowed-failure-ok` waiver: "either a crash or a genuinely empty pin makes t bad on the next line, so the cause does not change
@@ -118,8 +111,7 @@ _ANSI = {"RED": "\033[0;31m", "GREEN": "\033[0;32m", "NC": "\033[0m"}
 
 PINS_REL = ".devcontainer/toolchain.env"
 
-# The tools a GATE depends on. Editor tooling is deliberately outside; see the
-# header for the reason, which CHANGED on 2026-09-06 without changing the list.
+# The tools a GATE depends on. Editor tooling is deliberately outside; see the header for the reason, which CHANGED on 2026-09-06 without changing the list.
 GATED_TOOLS = "shfmt|shellcheck|ruff|actionlint"
 
 # The pathspecs A1 and A2 scan. `.ci/*.sh` is the deliberate spelling.
@@ -130,14 +122,10 @@ CORPUS_PATHSPECS = (".github/workflows/*.yml", ".devcontainer/*", ".ci/*.sh", "r
 # `*.py` IS HERE, AND SO IS THIS GATE'S OWN PORT IN THE EXEMPT LIST BELOW. Both halves were spelled `.sh` only, which is worse than either alone: the scan could not see a ported gate that restates a pin, AND the exemption naming `check-toolchain-pins.sh` would stop covering this gate the moment W7 P5 deletes that twin -- leaving the port neither scanned nor excused, then scanned
 # and NOT excused as soon as the glob widened. Measured 2026-09-08: the registered gate is already `.ci/scripts/quality/check_toolchain_pins.py` (package.json:134), so the exemption was naming a file the registry no longer invokes. THE `.py` HALF IS MEASURED AND DELIBERATELY NOT ADDED YET. Driven 2026-09-08 with `.ci/scripts/quality/*.py` and `.ci/scripts/security/*.py` in this
 # tuple, A6 reported SEVENTEEN ported gates as trusting PATH instead of acquiring at the pin -- check_branch.py, check_python_lint.py, check_release_state.py and fourteen more. That is not obviously seventeen defects: A6 was written against bash call sites, and a Python gate reaching a tool through `rediacc_ci.proc.run(["git", ...])` presents the same way whether the tool is pinned
-# or is an unpinned system binary. Landing a red on
-# a shared tree to find out is the wrong order; triaging those seventeen is a wave, and
-# the widening lands with it. The EXEMPT lists below are widened NOW regardless, because they can only ever silence and never fire.
+# or is an unpinned system binary. Landing a red on a shared tree to find out is the wrong order; triaging those seventeen is a wave, and the widening lands with it. The EXEMPT lists below are widened NOW regardless, because they can only ever silence and never fire.
 GATE_PATHSPECS = (".ci/scripts/quality/*.sh", ".ci/scripts/security/*.sh")
 
-# Files that may legitimately restate a pin: the pins file itself, and anything whose job is to talk ABOUT pins (this gate, its test, the resolver). Both
-# spellings of this gate are listed while the twin is still on disk; invariant 5
-# keeps it there until W7 P5, and dropping the `.sh` name early would re-scan a file that is still the differential's other half.
+# Files that may legitimately restate a pin: the pins file itself, and anything whose job is to talk ABOUT pins (this gate, its test, the resolver). Both spellings of this gate are listed while the twin is still on disk; invariant 5 keeps it there until W7 P5, and dropping the `.sh` name early would re-scan a file that is still the differential's other half.
 EXEMPT_EXACT = (
     ".devcontainer/toolchain.env",
     ".ci/scripts/quality/check-toolchain-pins.sh",
@@ -371,8 +359,7 @@ A6_ACQUIRE_RE = re.compile(r"toolchain_acquire|toolchain_check|ensure_actionlint
 def invokes_gated_tool(lines: list[str]) -> bool:
     """Does this file RUN a gated tool, as opposed to naming one?
 
-    Three drops, then the invocation match. Each drop is a separate `grep -v` in
-    the twin and each has its own incident behind it; see the header.
+    Three drops, then the invocation match. Each drop is a separate `grep -v` in the twin and each has its own incident behind it; see the header.
     """
     kept = [line for line in lines if not A6_COMMENT_RE.match(line)]
     kept = [line for line in kept if not A6_PROSE_RE.match(line)]
@@ -477,8 +464,7 @@ def check_a10(report: Report, root: pathlib.Path) -> None:
         report.ok("A10. all three readers (bash, Docker, Actions) still read the pins")
     else:
         report.fail("A10. a pin reader went dark, so the pins are decorative for that lane:")
-        # STDOUT, with a nine-space indent. An inconsistency in the twin; see
-        # the port notes on streams.
+        # STDOUT, with a nine-space indent. An inconsistency in the twin; see the port notes on streams.
         for entry in bad:
             print("         %s" % entry)
 
@@ -486,9 +472,7 @@ def check_a10(report: Report, root: pathlib.Path) -> None:
 def run_a8_controls(report: Report, tmp: pathlib.Path) -> None:
     """The A8 controls, run INLINE right after A8, exactly where the twin runs them.
 
-    ORDER IS OUTPUT, and output is what the differential compares. These two
-    lines sit between A8 and A6 in `check-toolchain-pins.sh:181-197`; running
-    them from the tail block instead left both sides with the same 21 lines in a different order, which is a real disagreement and not a normalisation.
+    ORDER IS OUTPUT, and output is what the differential compares. These two lines sit between A8 and A6 in `check-toolchain-pins.sh:181-197`; running them from the tail block instead left both sides with the same 21 lines in a different order, which is a real disagreement and not a normalisation.
 
     THE MKDIR MOVED HERE WITH THEM. The twin's own comment at line 181 says "mkdir first": the shared fixture dir used to be created further down, and writing before it existed made these controls silently write nothing. Creating it here keeps that property while restoring the twin's order.
     """
@@ -594,9 +578,7 @@ def run_controls(report: Report, tmp: pathlib.Path) -> None:
     else:
         report.fail("A6 CONTROL DID NOT FIRE: an unpinned tool invocation went undetected")
 
-    # A6 SELF-PROSE CONTROL. A6 flagged check-shell-size.sh for two `echo` lines
-    # PRINTING the shellcheck directive it tells you to add; the gate invoked
-    # nothing. A detector that matches its own documentation cannot be satisfied
+    # A6 SELF-PROSE CONTROL. A6 flagged check-shell-size.sh for two `echo` lines PRINTING the shellcheck directive it tells you to add; the gate invoked nothing. A detector that matches its own documentation cannot be satisfied
     # except by deleting the explanation, so prove it does not.
     prose_gate = control_dir / "prose-gate.sh"
     prose_gate.write_text(

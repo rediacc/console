@@ -8,9 +8,7 @@ WHY NO EXISTING GATE CATCHES IT. Every gate here gets a tree where the submodule
 
 WHAT IT CHECKS. For every job in every workflow, it walks what that job can actually execute -- `run:` lines, the repo scripts they name, `npm run` keys resolved through package.json (root and workspaces), and, crucially, the TEST FILES a test runner would sweep. If anything reachable names a real submodule path and the job configures no submodule checkout, that is the finding.
 
-The test-runner hop is the load-bearing one and the reason this is not a grep.
-The defect was not in `run-unit.sh`; it was in a test file that script runs.
-A gate that only read the step's own text would have looked right at this bug and reported nothing, which is the failure mode this repo keeps paying for.
+The test-runner hop is the load-bearing one and the reason this is not a grep. The defect was not in `run-unit.sh`; it was in a test file that script runs. A gate that only read the step's own text would have looked right at this bug and reported nothing, which is the failure mode this repo keeps paying for.
 
 WHAT IT DOES NOT DO. It does not check that a submodule checkout is NEEDED -- an unnecessary one costs fetch time, not correctness, and pruning those is a performance question with a different owner.
 
@@ -119,9 +117,8 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
         seen_cmds.add(cmd)
         out.append(("<step run:>" if scannable else "<script body>", cmd, scannable))
 
-        # DEPTH-CAPPED. scripts/ci-runner/manifest.ts lists `npm run <key>` for every gate in the repo as DATA, so walking it once pulled in every gate and attributed account-config-auth to quality-static, which does not run it -- quality-go does, and that job checks out its submodules.
-        # A step and the script it runs are within two hops; a manifest reached
-        # through another script is further out and is a catalogue, not a call.
+        # DEPTH-CAPPED. scripts/ci-runner/manifest.ts lists `npm run <key>` for every gate in the repo as DATA, so walking it once pulled in every gate and attributed account-config-auth to quality-static, which does not run it -- quality-go does, and that job checks out its submodules. A step and the script it runs are within two hops; a manifest reached through another script is
+        # further out and is a catalogue, not a call.
         if depth <= NPM_RESOLVE_DEPTH:
             # An npm script IS executed, so its text is scannable -- BUT ONLY IF THE THING THAT NAMED IT WAS. `scannable`, not `True`, and the literal `True` here re-opened the exact hole the queue's own scannable flag was added to close.
             #
@@ -283,8 +280,7 @@ def scan(workflow_files: list[pathlib.Path], subs: list[str], scripts: dict[str,
         try:
             doc = yaml.safe_load(wf.read_text())
         except yaml.YAMLError as exc:
-            # A workflow this gate cannot parse is a build failure elsewhere; do
-            # not let it pass as "no violations found".
+            # A workflow this gate cannot parse is a build failure elsewhere; do not let it pass as "no violations found".
             findings.append((str(wf), "<unparseable>", f"cannot parse: {exc}"))
             continue
         if not isinstance(doc, dict):

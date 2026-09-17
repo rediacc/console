@@ -5,15 +5,11 @@
 This is the ONE function in the media pipeline whose behaviour depends on hardware, and it is therefore the one most likely to be edited on a machine that HAS a GPU and never exercised on one that does not. All four of its exits are driven here with no GPU, no CUDA toolkit, no torch and no PyPI: a scripted `python` fake answers the two questions the function asks it, `nvcc` is
 present or absent BY NAME, and `pip` records what it was asked to install without installing anything.
 
-THE OWNERSHIP ASSERTION IS THE OTHER HALF. It used to be byte-identity against
-run.sh's copy; run.sh has no copy any more, so what it asserts now is that this
-module is the ONLY definition of the function, that run.sh and media.sh no longer carry one, and that sourcing media-entry.sh resolves the name to this file's body. There is no verb that reaches this function -- it is called from venv.sh, three levels below `www tutorials generate` -- so the chain probe other media tests use does not apply here, and the mutation control instead
-re-runs a real behaviour
+THE OWNERSHIP ASSERTION IS THE OTHER HALF. It used to be byte-identity against run.sh's copy; run.sh has no copy any more, so what it asserts now is that this module is the ONLY definition of the function, that run.sh and media.sh no longer carry one, and that sourcing media-entry.sh resolves the name to this file's body. There is no verb that reaches this function -- it is called
+from venv.sh, three levels below `www tutorials generate` -- so the chain probe other media tests use does not apply here, and the mutation control instead re-runs a real behaviour
 case against a deliberately altered COPY of this module.
 
-WHY A SCRIPTED `python` AND NOT THE RECORDING FAKE. The function asks python two
-questions and both are `python -c`; the four exits differ ONLY in how those two
-answer, which a uniform fake cannot express. The scripted fake matches on the argument text, which is what makes "flash_attn imports but torch has no CUDA" a distinguishable state from "neither".
+WHY A SCRIPTED `python` AND NOT THE RECORDING FAKE. The function asks python two questions and both are `python -c`; the four exits differ ONLY in how those two answer, which a uniform fake cannot express. The scripted fake matches on the argument text, which is what makes "flash_attn imports but torch has no CUDA" a distinguishable state from "neither".
 
 NO `xdist_group`, and this one is worth stating rather than assuming, because the media harness is the part of this suite most likely to need one. `fake_bin` mutates PATH ON THIS PROCESS and restores it in a `finally`, so two of these running in ONE worker would be fine and two in two workers are independent processes. Nothing is bound, no fixed path is written (every case takes
 its own `mktemp -d`), and `MEDIA_MODULE_DIR` is a per-call ARGUMENT in the port rather than the environment variable it is in bash, which removes the one module-global the twin does mutate.
@@ -30,9 +26,7 @@ FUNCTION = "install_flash_attn_if_supported"
 
 # The spec every behaviour case runs under. `+uname` is REQUIRED rather than
 # tidy: common.sh runs `CI_OS="$(detect_os)"` at source time and detect_os shells
-# out to uname, so without it every run carries a stray "uname: command not
-# found" on stderr. `nvcc` is deliberately ABSENT from this spec; the cases that
-# want a compiler name it themselves.
+# out to uname, so without it every run carries a stray "uname: command not found" on stderr. `nvcc` is deliberately ABSENT from this spec; the cases that want a compiler name it themselves.
 BASE_SPEC = "python pip +cat +chmod +uname"
 
 
@@ -72,8 +66,7 @@ def test_the_ownership_assertion_can_fail(gate):
 
 def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate):
     gate.log_test("CONTROL FOR EVERY BEHAVIOUR CASE BELOW, and why the module seam exists")
-    # The four exits are asserted by their MESSAGES; this re-runs the no-CUDA exit
-    # against a copy of cuda.sh whose message has been changed, and requires the change to show up. If it did not, those four assertions would be reading something other than the module under test, and their green would mean nothing.
+    # The four exits are asserted by their MESSAGES; this re-runs the no-CUDA exit against a copy of cuda.sh whose message has been changed, and requires the change to show up. If it did not, those four assertions would be reading something other than the module under test, and their green would mean nothing.
     with harness.temp_dir() as d:
         mutant = d / "mutant"
         mutant.mkdir()

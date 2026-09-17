@@ -1,8 +1,6 @@
 """A plan file nobody has touched for delete_days must be dealt with.
 
-Ported from `.ci/scripts/quality/check-plan-housekeeping.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live until W7
-phase 5.
+Ported from `.ci/scripts/quality/check-plan-housekeeping.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until W7 phase 5.
 
 -----------------------------------------------------------------------------
 THE TWIN'S ARCHAEOLOGY, CARRIED. This is the half of a port that cannot be recovered from the code, so it is transliterated rather than summarised.
@@ -32,8 +30,7 @@ THE NUMBERS LIVE IN `.ci/config/plan-lifecycle.json` and are NOT inlined here, b
 
 W12: THE REMEDY IS NO LONGER "DELETE IT", AND THAT WORD IS GONE ON PURPOSE. The operator's standing rule is that nothing is deleted, so this gate spent its whole life demanding an act nobody was allowed to perform, and the only escape was the allowlist, which is a suppression rather than an answer. The third door is COMPACTION: `worklist.py --plan-compact` replaces a finished plan
 with an attested record that KEEPS ITS OWN PATH, so every citation still resolves, while the full text moves into a git blob (content-addressed, so `gh pr merge --rebase`
-cannot break the pointer; measured 2026-09-06, 37 of 71 commit-shaped tokens
-already cited in plans no longer resolve).
+cannot break the pointer; measured 2026-09-06, 37 of 71 commit-shaped tokens already cited in plans no longer resolve).
 
 A `Status: compacted` plan whose `Full-Text-Blob:` RESOLVES is exempt here and counted separately. The resolution test is the whole exemption: a record whose blob is missing is worse than the deleted plan it replaced, because it advertises a recovery command that silently returns nothing, so it is reported as an OFFENDER rather than waved through on the strength of its own header
 word. `Status: parked` -- a plan whose text is compacted while its work is NOT finished -- stays on the clock. Parking buys a smaller file, never an exemption.
@@ -51,16 +48,12 @@ which is the
 case that proves `PLAN_HK_ROOT` is not an escape hatch. So the control mints its
 own blob in a scratch repository it throws away. Nothing is written to the repository being judged, and the control holds whatever state that repository is in, which is the property a control needs most.
 
-`record_blob` IS ANCHORED AT END OF LINE, matching `wl_planrec.FULLTEXT_BLOB_RE`. A trailing `.*` accepted `Full-Text-Blob: <41 hex>` by reading the first 40 characters of it, so a value the strict gate REJECTS would have been exempted
-here; two readers of one header disagreeing is how a plan ends up exempt in one
-place and red in the other.
+`record_blob` IS ANCHORED AT END OF LINE, matching `wl_planrec.FULLTEXT_BLOB_RE`. A trailing `.*` accepted `Full-Text-Blob: <41 hex>` by reading the first 40 characters of it, so a value the strict gate REJECTS would have been exempted here; two readers of one header disagreeing is how a plan ends up exempt in one place and red in the other.
 
 `record_status` READS THE SAME 10-LINE WINDOW every status regex in this repo reads (`wl_checks.PLAN_HEADER_LINES`). The general status extractor below deliberately scans the whole file -- it is for DISPLAY and some plans put their header low -- but this one decides an EXEMPTION, so it must agree with `wl_planrec.parse` exactly. Otherwise a plan whose prose quotes `Status:
 compacted` routes into the compacted branch and is reported as an offender regardless of its age.
 
-THE SHALLOW REFUSAL. This is the one that stops the gate being a comment. HARD in
-CI because the answer would be wrong there; locally a LOUD skip of the age verdict
-only, so the floor and the allowlist checks still run and a partial run stays distinguishable from a clean one.
+THE SHALLOW REFUSAL. This is the one that stops the gate being a comment. HARD in CI because the answer would be wrong there; locally a LOUD skip of the age verdict only, so the floor and the allowlist checks still run and a partial run stays distinguishable from a clean one.
 
 `git rev-parse --is-shallow-repository` IS NOT THE TEST, and believing it cost a CI round. It answers on the EXISTENCE of `.git/shallow`, and `git fetch
 --unshallow` against a partial clone (`--filter=blob:none`, which every
@@ -85,31 +78,26 @@ THE FLOOR was measured 2026-09-03: 70 tracked plans, and 30 is well under it on 
 
 THE ALLOWLIST'S THREE LIVENESS RULES. Every entry must NAME something, must actually be suppressing something, and dies on its own stated date. Rule three alone is what stops this becoming a dumping ground: an entry cannot outlive the argument for it without being re-argued.
 
-A BROKEN RECORD IS STILL ALLOWLISTABLE. The first cut reported it and skipped past the allowlist branch, so remedy step 3 did not work for the one case where a session might genuinely need it (a blob this checkout does not have yet, e.g. mid-rebase or a partial clone), and that plan's allowlist entry was never
-liveness-checked either. An unexpired entry suppresses it; an expired one does
-not.
+A BROKEN RECORD IS STILL ALLOWLISTABLE. The first cut reported it and skipped past the allowlist branch, so remedy step 3 did not work for the one case where a session might genuinely need it (a blob this checkout does not have yet, e.g. mid-rebase or a partial clone), and that plan's allowlist entry was never liveness-checked either. An unexpired entry suppresses it; an expired
+one does not.
 
 THE COMPACTION EXEMPTION IS CHECKED BEFORE THE ALLOWLIST and before the age thresholds, because a compacted record is not being suppressed and is not waiting
 for a date: it has already been dealt with, and the age of a record is not a
-defect. `parked` deliberately does NOT appear there; its work is unfinished, so it
-falls through to the ordinary clock. The allowlist's third liveness rule reaches a compacted plan only from that branch, because compaction is a BETTER exemption than a dated suppression, so an entry that survives it is dead weight with an expiry date, and dead weight in a suppression file is how that file becomes a dumping ground.
+defect. `parked` deliberately does NOT appear there; its work is unfinished, so it falls through to the ordinary clock. The allowlist's third liveness rule reaches a compacted plan only from that branch, because compaction is a BETTER exemption than a dated suppression, so an entry that survives it is dead weight with an expiry date, and dead weight in a suppression file is how
+that file becomes a dumping ground.
 
-ONE PYTHON START FOR THE WHOLE CORPUS, not two per plan. The twin's first cut
-spawned `age_days` and a red-on date per file; on a 70-plan tree that is 140
-interpreter starts, and `check:ci-gate-manifest` caught the selftest at 33.5s because of it. The dates come out of a single `git log` per file (unavoidable) and one batch conversion, which took the gate-test from 33.5s to under a second.
+ONE PYTHON START FOR THE WHOLE CORPUS, not two per plan. The twin's first cut spawned `age_days` and a red-on date per file; on a 70-plan tree that is 140 interpreter starts, and `check:ci-gate-manifest` caught the selftest at 33.5s because of it. The dates come out of a single `git log` per file (unavoidable) and one batch conversion, which took the gate-test from 33.5s to under a
+second.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
 THE BATCH-CONVERSION OPTIMISATION IS THE ONE PIECE OF THE TWIN THAT DISAPPEARS
-ENTIRELY, and it is written down above precisely because it disappears. The twin
-shells out to `python3` for every date; this module IS Python, so there is no
-interpreter to start and the shape that cost 33.5 seconds cannot recur. A reader who deletes the paragraph will not know why the twin looked the way it did.
+ENTIRELY, and it is written down above precisely because it disappears. The twin shells out to `python3` for every date; this module IS Python, so there is no interpreter to start and the shape that cost 33.5 seconds cannot recur. A reader who deletes the paragraph will not know why the twin looked the way it did.
 
-`is_shallow()` IS NOT PORTED, BECAUSE IT IS DEAD IN THE TWIN. It is defined at `check-plan-housekeeping.sh:275` and called nowhere: the live logic reads `GRAFTS_FILE` directly, per plan, which is the third iteration described above.
-Porting it would import dead code into a new language; deleting it silently would
-lose the reasoning, which is why the reasoning is above and the function is not. Reported as a finding against the twin.
+`is_shallow()` IS NOT PORTED, BECAUSE IT IS DEAD IN THE TWIN. It is defined at `check-plan-housekeeping.sh:275` and called nowhere: the live logic reads `GRAFTS_FILE` directly, per plan, which is the third iteration described above. Porting it would import dead code into a new language; deleting it silently would lose the reasoning, which is why the reasoning is above and the
+function is not. Reported as a finding against the twin.
 
 THE CONTROLS RUN INLINE ON EVERY INVOCATION, exactly as the twin's do, and they print their two `✓ control:` lines to STDOUT on success. `--selftest` is an ADDITION on top.
 
@@ -144,9 +132,7 @@ ALLOWLIST_ENV = "PLAN_HK_ALLOWLIST"
 MIN_FILES_ENV = "PLAN_HK_MIN_FILES"
 
 DEFAULT_CONFIG_REL = ".ci/config/plan-lifecycle.json"
-# THROUGH THE SEAM (W4 P4a). `.ci/config/` above is configuration and joins
-# normally; the allowlist is POLICY, and every reader of a policy file goes
-# through `rediacc_ci.policy_paths` so that the directory is written down once.
+# THROUGH THE SEAM (W4 P4a). `.ci/config/` above is configuration and joins normally; the allowlist is POLICY, and every reader of a policy file goes through `rediacc_ci.policy_paths` so that the directory is written down once.
 DEFAULT_ALLOWLIST_REL = policy_rel(".plan-housekeeping-allowlist")
 
 # Floor. Measured 2026-09-03: 70 tracked plans. Well under it on purpose.
@@ -202,9 +188,8 @@ _BLOB_RE = re.compile(r"^Full-Text-Blob:[ \t]*([0-9a-f]{40})[ \t]*$")
 # It used to be `re.compile(r"^Status:[ \t]*(compacted|parked)[ \t]*$")`, and the bash twin carried the same alternation in a sed program, and the twin test carried a third copy of that sed verbatim. Three copies of one vocabulary: adding a state means finding all three, and missing one makes a plan a RECORD in one reader and an OFFENDER in the other, which is precisely the
 # disagreement `record_status`'s own docstring warns about one screen below.
 #
-# THE CONFIG IS A MIRROR, NOT THE ORIGIN. `wl_planrec.RECORD_STATES` (`.claude/hooks/stop/wl_planrec.py:155`) is canonical, and `.ci/scripts/quality/check_plan_record.py` imports it by name. This gate cannot: it must stay runnable in a checkout with no `.claude/`, which is the whole reason it reads a config file. So the mirror is compared against the origin in
-# BOTH directions by `test_quality_plan_housekeeping.py`; a mirror nobody
-# compares is just a fourth copy.
+# THE CONFIG IS A MIRROR, NOT THE ORIGIN. `wl_planrec.RECORD_STATES` (`.claude/hooks/stop/wl_planrec.py:155`) is canonical, and `.ci/scripts/quality/check_plan_record.py` imports it by name. This gate cannot: it must stay runnable in a checkout with no `.claude/`, which is the whole reason it reads a config file. So the mirror is compared against the origin in BOTH directions by
+# `test_quality_plan_housekeeping.py`; a mirror nobody compares is just a fourth copy.
 DEFAULT_RECORD_STATES = ("compacted", "parked")
 _STATUS_RE_CACHE: dict[tuple[str, ...], re.Pattern[str]] = {}
 
@@ -389,9 +374,7 @@ def inline_controls(delete_days: int) -> list[str]:
         )
         if record_blob(ctl) != self_blob:
             failures.append("control: record_blob did not read the blob out of a record header")
-        # blob_is_real reads the repository it is POINTED AT, so both directions are driven inside the scratch one. The twin uses subshells rather than a cd/cd-back pair, because an early exit between them would otherwise
-        # leave the whole gate judging the wrong tree; passing the root as an
-        # argument removes the hazard rather than working around it.
+        # blob_is_real reads the repository it is POINTED AT, so both directions are driven inside the scratch one. The twin uses subshells rather than a cd/cd-back pair, because an early exit between them would otherwise leave the whole gate judging the wrong tree; passing the root as an argument removes the hazard rather than working around it.
         if not blob_is_real(self_blob, root=ctldir):
             failures.append("control: blob_is_real refused a blob git demonstrably has")
         if blob_is_real("0" * 40, root=ctldir):
@@ -751,8 +734,7 @@ _REMEDY = """
 def _grafts_file(root: pathlib.Path) -> pathlib.Path | None:
     """`git rev-parse --git-path shallow`, when it exists and is NON-EMPTY.
 
-    Non-emptiness is the whole test; see the header on why
-    `--is-shallow-repository` is the wrong question.
+    Non-emptiness is the whole test; see the header on why `--is-shallow-repository` is the wrong question.
     """
     result = gitx.git(["rev-parse", "--git-path", "shallow"], root=root)
     if result.returncode != 0 or not result.stdout.strip():
@@ -818,8 +800,8 @@ def selftest() -> int:
     # `ignore_cleanup_errors` BECAUSE THE FAILURE IS JANITORIAL, NOT A VERDICT. This block runs `git init` and real commits inside the temp tree, and on a loaded runner the directory can still be gaining files when `TemporaryDirectory.__exit__` walks it, so `shutil.rmtree` raises `OSError: [Errno 39] Directory not empty` and the selftest reports a FAILURE that says nothing about
     # any control. Observed once in CI, job 104604932125.
     #
-    # SAFE HERE IN A WAY IT WOULD NOT BE ELSEWHERE, which is the reason this is fixed on a single observation while the control-vacuity flake next door is not: every `ctl.check` in this block has already RUN and been recorded by the time `__exit__` is reached. Tolerating undeleted scratch cannot hide a failing assertion -- it can only stop leftover bytes in /tmp from being
-    # reported as one. Nothing is suppressed; the verdict is unchanged.
+    # SAFE HERE IN A WAY IT WOULD NOT BE ELSEWHERE, which is the reason this is fixed on a single observation while the control-vacuity flake next door is not: every `ctl.check` in this block has already RUN and been recorded by the time `__exit__` is reached. Tolerating undeleted scratch cannot hide a failing assertion -- it can only stop leftover bytes in /tmp from being reported
+    # as one. Nothing is suppressed; the verdict is unchanged.
     #
     # The writer was NOT identified (no process is leaked -- every call here is a synchronous `subprocess.run`), so this tolerates the debris rather than claiming to have removed its cause.
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:

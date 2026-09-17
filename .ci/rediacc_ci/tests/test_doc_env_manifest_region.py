@@ -134,9 +134,7 @@ def cell(value: str) -> str:
 def expected_rows(manifest: dict) -> list[tuple[str, str, str]]:
     """(rendered variable, shard, residue) per name, in the order the region must hold.
 
-    Sorted by the NAME in code point order. The emitter sorts by UTF-16 code unit,
-    which differs from this only for characters outside the basic plane; an
-    environment variable name outside it would be a finding of its own, and the row comparison below would report the disagreement rather than hide it.
+    Sorted by the NAME in code point order. The emitter sorts by UTF-16 code unit, which differs from this only for characters outside the basic plane; an environment variable name outside it would be a finding of its own, and the row comparison below would report the disagreement rather than hide it.
     """
     collisions = {c["name"]: c for c in manifest.get("collisions", []) if "name" in c}
     notes = manifest.get("notes", {})

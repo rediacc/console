@@ -1,7 +1,6 @@
 """Go direct dependencies must be up to date across every Go submodule.
 
-Ported from `.ci/scripts/quality/check-go-deps.sh`, which is NOT deleted; see
-`rediacc_ci.quality.__init__` for why both copies live until W7 phase 5.
+Ported from `.ci/scripts/quality/check-go-deps.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until W7 phase 5.
 
 -----------------------------------------------------------------------------
 THE TWIN'S ARCHAEOLOGY, CARRIED. Everything down to PORT NOTES is the bash file's own prose, transliterated rather than summarised.
@@ -38,23 +37,18 @@ AN EMPTY MODULE LIST means the probe returned nothing usable. `go list -m` on a 
 THE FRESHNESS DEFERRAL holds a just-published update until the next UTC day after it ages 24h. An unparseable timestamp used to vanish into `|| echo ""`. The direction is safe (no deferral is applied, so the module is still reported as outdated and the gate stays red rather than going quiet), but silence still hides a real breakage: if the upstream timestamp format ever changed,
 EVERY module would silently lose its minimum-release-age deferral and the gate would start demanding bumps it should be holding back. So it warns on stderr, which does not disturb the machine-readable records the probe writes to stdout.
 
-A PROBE THAT COULD NOT RUN IS A HARD FAILURE, checked BEFORE the all-good path. Reporting "up-to-date" on the strength of a command that errored is the exact defect that guard replaces. One broken submodule still lets the others be
-checked, and the run then fails loudly at the end; it is never treated as
-up-to-date.
+A PROBE THAT COULD NOT RUN IS A HARD FAILURE, checked BEFORE the all-good path. Reporting "up-to-date" on the strength of a command that errored is the exact defect that guard replaces. One broken submodule still lets the others be checked, and the run then fails loudly at the end; it is never treated as up-to-date.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
 -----------------------------------------------------------------------------
 
 ZERO GO SUBMODULES EXITS 0, AND THAT IS THE TWIN'S BEHAVIOUR, NOT A CHOICE MADE
-HERE. `log_info "No Go submodules found to check"; exit 0` is a vacuity hole: a
-`private/` that lost its submodules, or a checkout where `git submodule update --init` was never run, reports a clean bill of health having probed nothing. This port reproduces it EXACTLY, because a port that fixes a bug changes the verdict and the differential would rule MISMATCH on the tree that proves the fix right. It is reported as a defect in the twin, and whoever retires the
-twin owns the fix. The `--selftest` below pins the current behaviour with a control that NAMES it as a hole, so the day it is closed the control fails and says why.
+HERE. `log_info "No Go submodules found to check"; exit 0` is a vacuity hole: a `private/` that lost its submodules, or a checkout where `git submodule update --init` was never run, reports a clean bill of health having probed nothing. This port reproduces it EXACTLY, because a port that fixes a bug changes the verdict and the differential would rule MISMATCH on the tree that
+proves the fix right. It is reported as a defect in the twin, and whoever retires the twin owns the fix. The `--selftest` below pins the current behaviour with a control that NAMES it as a hole, so the day it is closed the control fails and says why.
 
 `jq` BECOMES `json`, IN TWO PLACES, AND THE ERROR PATH IS KEPT. The twin runs `jq -rs 'length'` and then `jq -rs '.[] | select(...) | "..."'`, and reports a failure of the second as `__PROBE_FAILED__ jq failed to parse go-list output`. Python parses the same concatenated JSON stream itself, and a stream it cannot read produces the same sentinel with the same prefix, so the
-aggregation and the message a developer reads are unchanged. `-s` (slurp) over a stream of
-back-to-back objects is what `go list -json` emits; the reader below implements
-exactly that and nothing more general.
+aggregation and the message a developer reads are unchanged. `-s` (slurp) over a stream of back-to-back objects is what `go list -json` emits; the reader below implements exactly that and nothing more general.
 
 THE TIMESTAMP IS STILL PARSED BY `date -u -d`, DELIBERATELY. Python's `datetime.fromisoformat` accepts a different set of strings from GNU date, and this value comes from `go list`'s `.Update.Time`, i.e. from a tool this repo does not control. A port that parsed it differently would defer a module the twin demands, or demand one the twin defers, on some future Go release and
 nowhere in any fixture. Shelling out keeps ONE parser. It also keeps the twin's GNU-only dependency, which is worth stating out loud rather than discovering on macOS: `date -u -d` is not BSD date, and this gate has always been that way.
@@ -64,19 +58,14 @@ THE FRESHNESS RULE IS STILL `scripts/lib/release-age.ts`. The bash `release-age.
 with an integer, so a future Node that renames or drops the flag falls through to
 tsx instead of poisoning every verdict. That matters because the fail-closed policy turns an unreachable delegate into "deferred", and a freshness gate stuck on "deferred" is a gate that has gone quiet.
 
-THE 86400-SECOND FALLBACK IS THE CALLER'S POLICY AND STAYS ON THIS SIDE. The TypeScript `getMinReleaseAgeMs()` returns 0 (deferral disabled) when `.npmrc`
-carries no key; the bash shim has always fallen back to 24h. The divergence is
-preserved here rather than silently resolved in either direction. Unreachable today in any case: `check-npmrc.sh` gates the key's presence.
+THE 86400-SECOND FALLBACK IS THE CALLER'S POLICY AND STAYS ON THIS SIDE. The TypeScript `getMinReleaseAgeMs()` returns 0 (deferral disabled) when `.npmrc` carries no key; the bash shim has always fallen back to 24h. The divergence is preserved here rather than silently resolved in either direction. Unreachable today in any case: `check-npmrc.sh` gates the key's presence.
 
 THE MEMO CACHES SURVIVE, and the reason the twin spells them as globals written
 by `__..._ensure_*` helpers does not: a bash caller writing `x=$(f)` runs `f` in
-a SUBSHELL, so every cache line `f` wrote is discarded when the subshell exits. Written the obvious way, that file would have spawned the delegate on every call and the memo would have been decorative. Python has no such trap, so the caches
-here are plain dictionaries; the constraint is written down because its
-disappearance is invisible in the result.
+a SUBSHELL, so every cache line `f` wrote is discarded when the subshell exits. Written the obvious way, that file would have spawned the delegate on every call and the memo would have been decorative. Python has no such trap, so the caches here are plain dictionaries; the constraint is written down because its disappearance is invisible in the result.
 
-`emit_advisory` IS REPRODUCED, NOT IMPORTED. The twin's age check reaches `emit-advisory.sh`, whose contract is eight optional associative arrays keyed by advisory id plus the `::error::` / `::warning::` Actions form. This gate populates NONE of those arrays, so the only shape it can produce is `<id> (<name>)` on the error stream followed by ` Fix:` and ` Action:` on
-stdout. That narrow shape is what is implemented here; a general port of
-`emit_advisory` belongs with `audit.sh`, its other caller.
+`emit_advisory` IS REPRODUCED, NOT IMPORTED. The twin's age check reaches `emit-advisory.sh`, whose contract is eight optional associative arrays keyed by advisory id plus the `::error::` / `::warning::` Actions form. This gate populates NONE of those arrays, so the only shape it can produce is `<id> (<name>)` on the error stream followed by ` Fix:` and ` Action:` on stdout. That
+narrow shape is what is implemented here; a general port of `emit_advisory` belongs with `audit.sh`, its other caller.
 
 THE STREAM SPLIT IS THE TWIN'S AND IT IS ODD ON PURPOSE. `ci_error` writes the header to STDERR (through common.sh's `log_error`) while the ` Fix:` and ` Action:` continuation lines go to STDOUT via a bare `echo`. That is exactly what `emit-advisory.sh` does, and the 2026-09-06 deference rule in that file exists because an earlier version clobbered common.sh's TTY-gated logger and
 flipped `log_info` / `log_warn` / `log_success` from stderr to stdout, leaking colour escapes into anything that piped a gate's stdout for data. The split is reproduced rather than tidied.
@@ -86,8 +75,7 @@ THE BASH `read` FIELD SPLIT IS REPRODUCED, WART AND ALL. The aggregation loop is
 `__PROBE_FAILED__ go-list exit=2 <stderr text>` lands as
 path=`__PROBE_FAILED__`, current=`go-list`, latest=`exit=2` and kind=the whole
 remaining text, which the report then prints as `  <name>: go-list exit=2 ...`.
-That is not a data structure anyone designed; it is what the gate prints today,
-so `_read_fields` below implements bash's rule (leading and trailing delimiter runs stripped, the LAST variable takes the remainder verbatim) rather than `str.split()`, which would re-join the remainder with single spaces.
+That is not a data structure anyone designed; it is what the gate prints today, so `_read_fields` below implements bash's rule (leading and trailing delimiter runs stripped, the LAST variable takes the remainder verbatim) rather than `str.split()`, which would re-join the remainder with single spaces.
 
 EXIT CODES ARE UNCHANGED: 0 and 1 only. The twin has no setup-error code, and 77 is reserved by the W7 contract for cannot-run.
 """
@@ -146,9 +134,7 @@ def _in_ci() -> bool:
 def ci_error(message: str) -> None:
     """`::error::<m>` on stdout under CI, `log_error <m>` on stderr otherwise.
 
-    THE PREFIX IS THE ENVIRONMENT'S DECISION, NOT THE GATE'S. One finding, two
-    renderings; the shadow comparator strips both and keeps the severity, which
-    is why a port may not quietly settle on one of them.
+    THE PREFIX IS THE ENVIRONMENT'S DECISION, NOT THE GATE'S. One finding, two renderings; the shadow comparator strips both and keeps the severity, which is why a port may not quietly settle on one of them.
     """
     if _in_ci():
         print("::error::%s" % message)
@@ -229,8 +215,7 @@ class ReleaseAge:
     def _resolve_runner(self) -> list[str]:
         """The three-rung ladder, resolved ONCE, with the fast path PROVEN.
 
-        All three execute the SAME file, so they cannot answer differently; only
-        the loader varies. The probe runs a real query and accepts the runner only if it answers with an integer.
+        All three execute the SAME file, so they cannot answer differently; only the loader varies. The probe runs a real query and accepts the runner only if it answers with an integer.
         """
         if self._runner is not None:
             return self._runner
@@ -317,9 +302,7 @@ class ReleaseAge:
 def get_major(version: str) -> int:
     """`sed 's/^v//' | cut -d. -f1 | grep -o '^[0-9]*' || echo 0`.
 
-    Handles `v1.2.3` and `v1+incompatible`. `sed 's/^v//'` strips ONE leading
-    `v`; `cut -d. -f1` takes everything before the first dot, or the whole string
-    when there is none.
+    Handles `v1.2.3` and `v1+incompatible`. `sed 's/^v//'` strips ONE leading `v`; `cut -d. -f1` takes everything before the first dot, or the whole string when there is none.
 
     THE TWIN'S `|| echo "0"` IS DEAD CODE, measured rather than assumed. The pipeline ends in `grep -o '^[0-9]*'`, and `^[0-9]*` MATCHES a zero-length string at the start of any input, so GNU grep exits 0 while printing nothing:
 
@@ -356,9 +339,7 @@ def _read_fields(line: str, count: int) -> list[str]:
 def slurp_json(raw: str) -> list[dict]:
     """`jq -s` over a stream of back-to-back JSON objects.
 
-    `go list -json` emits objects one after another with no separator and no enclosing array, which is exactly what `-s` (slurp) is for. `raw_decode` in
-    a loop is the same rule and nothing more general; anything it cannot read
-    raises, and the caller turns that into the twin's parse-failure sentinel.
+    `go list -json` emits objects one after another with no separator and no enclosing array, which is exactly what `-s` (slurp) is for. `raw_decode` in a loop is the same rule and nothing more general; anything it cannot read raises, and the caller turns that into the twin's parse-failure sentinel.
     """
     decoder = json.JSONDecoder()
     items: list[dict] = []
@@ -377,8 +358,7 @@ def slurp_json(raw: str) -> list[dict]:
 def parse_date(value: str) -> str | None:
     """`date -u -d "<value>" +%s`, or None when GNU date refuses it.
 
-    Shelled out on purpose; see the PORT NOTES. The value comes from `go list`,
-    a tool this repo does not control, and two parsers would disagree about some future format on nobody's fixture.
+    Shelled out on purpose; see the PORT NOTES. The value comes from `go list`, a tool this repo does not control, and two parsers would disagree about some future format on nobody's fixture.
     """
     try:
         proc = subprocess.run(
@@ -496,8 +476,7 @@ def main(argv: list[str] | None = None) -> int:
     if blocklist_file.is_file():
         entries = allowlist.parse_file(blocklist_file, missing_ok=True)
         # `${!BLOCKED_MODULES[@]}` is a bash associative array, so a repeated
-        # entry appears ONCE and the LAST reason wins. `pairs()` is that
-        # projection; iterating `entries` would report a duplicate twice.
+        # entry appears ONCE and the LAST reason wins. `pairs()` is that projection; iterating `entries` would report a duplicate twice.
         blocked = allowlist.pairs(entries)
 
         failures = [

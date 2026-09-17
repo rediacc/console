@@ -1,8 +1,6 @@
 """Every pinned gate tool must have a RUNTIME guard, not just a definition.
 
-Ported from `.ci/scripts/quality/check-host-toolchain-coverage.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side
-until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-host-toolchain-coverage.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
 
 WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
@@ -120,13 +118,11 @@ def extract_array(text: str, name: str) -> list[str]:
 
     BOTH SPELLINGS, and the second one is not optional. W5 P7 made the runtime
     guard a PYTHON module, so `NPX_TOOLS = ("ruff", "go", ...)` is what this now
-    reads; the bash form is still here because this gate's own control fixtures
-    write it. Reading only the bash form made the port report "NPX_TOOLS or BARE_TOOLS could not be read" against a guard that plainly declares them,
+    reads; the bash form is still here because this gate's own control fixtures write it. Reading only the bash form made the port report "NPX_TOOLS or BARE_TOOLS could not be read" against a guard that plainly declares them,
     while the twin read them fine -- a MISMATCH_FINDINGS the shadow differential
     caught on the first re-record after the cutover, and which no amount of reading the diff would have shown, because the path constant had been updated and only the READER had not.
 
-    Space-separated or comma-separated; quotes are stripped. Anchored at column 1
-    and confined to one line, which is the blind spot the notes describe.
+    Space-separated or comma-separated; quotes are stripped. Anchored at column 1 and confined to one line, which is the blind spot the notes describe.
     """
     pattern = re.compile(r"^%s ?=[ ]?\(([^)]*)\)" % re.escape(name))
     tools: set[str] = set()
@@ -143,8 +139,7 @@ def extract_array(text: str, name: str) -> list[str]:
 def missing_from(gated: list[str], covered: list[str]) -> list[str]:
     """`comm -23 gated covered`: the members of `gated` that `covered` lacks.
 
-    A plain set difference, returned sorted so the printed order is the twin's.
-    `comm` would also require both inputs sorted; they are, by construction.
+    A plain set difference, returned sorted so the printed order is the twin's. `comm` would also require both inputs sorted; they are, by construction.
     """
     return sorted(set(gated) - set(covered))
 
@@ -415,8 +410,7 @@ def selftest() -> int:
             ),
             1,
         )
-        # ITS MIRROR: the guard covering MORE than GATED_TOOLS is fine. The
-        # direction is one-way on purpose; see SCOPE in the module docstring.
+        # ITS MIRROR: the guard covering MORE than GATED_TOOLS is fine. The direction is one-way on purpose; see SCOPE in the module docstring.
         ctl.check(
             "MIRROR: a guard superset passes (the documented `go` case)",
             write(

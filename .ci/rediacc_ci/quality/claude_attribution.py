@@ -1,7 +1,6 @@
 """Check for Claude attribution in a PR's commits and description.
 
-Ported from `.ci/scripts/quality/check-claude-attribution.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-claude-attribution.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 The twin's header:
 
@@ -67,8 +66,7 @@ from rediacc_ci.controls import Controls
 # The default repository, matching the twin's `${GITHUB_REPOSITORY:-rediacc/console}`.
 DEFAULT_REPO = "rediacc/console"
 
-# `[ \t\n\v\f\r]` is `[[:space:]]` spelled out; see the port notes for why
-# Python's `\s` is not the same set.
+# `[ \t\n\v\f\r]` is `[[:space:]]` spelled out; see the port notes for why Python's `\s` is not the same set.
 SPACE = "[ \t\n\v\f\r]"
 
 # The four alternatives of the twin's CLAUDE_PATTERN, one per line, in its order. Assembled rather than written as one literal for the reason in the port notes: the trailer cannot appear in a shell command in this repository.
@@ -94,8 +92,7 @@ GH_ATTEMPTS = 3
 def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
     """`gh_retry <what> -- <gh args...>`. Returns (ok, stdout).
 
-    Exit status is ALWAYS checked; the output may be anything, because
-    `gh api --jq` emits plain text and an empty result can be legitimate. On failure the caller must refuse, not substitute a default: that substitution is the defect this helper exists to end.
+    Exit status is ALWAYS checked; the output may be anything, because `gh api --jq` emits plain text and an empty result can be legitimate. On failure the caller must refuse, not substitute a default: that substitution is the defect this helper exists to end.
 
     Trailing newlines are stripped because the twin captures this through `$( )`, and every downstream test in the gate is written against the stripped value.
     """
@@ -108,9 +105,7 @@ def gh_retry(what: str, args: list[str]) -> tuple[bool, str]:
             stdout = proc.stdout.decode("utf-8", "replace")
             stderr = proc.stderr.decode("utf-8", "replace")
         except OSError:
-            # No gh on PATH. `command -v` would have caught it in a gate that
-            # probed; this one does not, so the spawn failure is the answer and
-            # 127 is the shell's own status for it.
+            # No gh on PATH. `command -v` would have caught it in a gate that probed; this one does not, so the spawn failure is the answer and 127 is the shell's own status for it.
             rc, stdout, stderr = 127, "", ""
         if rc == 0:
             return True, re.sub(r"\n+$", "", stdout)
@@ -205,9 +200,7 @@ def parse_rows(payload: str) -> list[dict]:
 def read_count(payload: str) -> int:
     """`grep -c .`: non-empty LINES, which is what the completeness check reads.
 
-    Separate from `split_commits` deliberately. That one mirrors the twin's word
-    splitting because it feeds the loop; this one mirrors the twin's `grep -c .`
-    because it feeds the refusal. They agree on a list of SHAs and would stop agreeing on anything else, which is the same coupling both implementations have and therefore the same one they would break on.
+    Separate from `split_commits` deliberately. That one mirrors the twin's word splitting because it feeds the loop; this one mirrors the twin's `grep -c .` because it feeds the refusal. They agree on a list of SHAs and would stop agreeing on anything else, which is the same coupling both implementations have and therefore the same one they would break on.
     """
     return len([line for line in payload.split("\n") if line != ""])
 

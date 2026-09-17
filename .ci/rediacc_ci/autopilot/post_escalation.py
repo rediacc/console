@@ -36,9 +36,8 @@ are handed to jq, with their stdout pointed at the same open handle.
   empty reason.
 
 -----------------------------------------------------------------------------
-THE FENCE IS SIZED TO THE CONTENT, and this is a security property, not a typographic one. A proposed patch touching a markdown file can itself contain a
-``` run; a fixed three-backtick fence would CLOSE early and the remainder of the
-patch -- untrusted, model-authored text -- would be promoted from a code block into live markdown. CommonMark closes a fence only on a run at least as long as the opening one, so the twin measures the longest backtick run in the patch and opens with one longer. `longest_backtick_run` below is that measurement, exported so the differential can drive it without a PR.
+THE FENCE IS SIZED TO THE CONTENT, and this is a security property, not a typographic one. A proposed patch touching a markdown file can itself contain a ``` run; a fixed three-backtick fence would CLOSE early and the remainder of the patch -- untrusted, model-authored text -- would be promoted from a code block into live markdown. CommonMark closes a fence only on a run at least
+as long as the opening one, so the twin measures the longest backtick run in the patch and opens with one longer. `longest_backtick_run` below is that measurement, exported so the differential can drive it without a PR.
 
   `{ grep -oE '`+' || true; }` IS NOT DECORATION: a patch with no backticks is
   the common case, grep exits 1 on no match, and `pipefail` would turn the
@@ -312,9 +311,7 @@ def build_body(handle, args: dict[str, str], klass: str) -> int:
                 + fence
                 + b"diff\n"
             )
-            # The twin runs jq a THIRD time here rather than reusing the
-            # captured value; the bytes are the same because `$( )` stripped
-            # only the trailing newlines jq's own `-r` added, and printing them back is what `jq -r ... >file` does.
+            # The twin runs jq a THIRD time here rather than reusing the captured value; the bytes are the same because `$( )` stripped only the trailing newlines jq's own `-r` added, and printing them back is what `jq -r ... >file` does.
             code = _jq_into(handle, PATCH_PROGRAM, verdict)
             if code != 0:
                 return code

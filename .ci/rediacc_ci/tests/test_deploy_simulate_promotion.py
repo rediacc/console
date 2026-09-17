@@ -1,9 +1,8 @@
 """Differential: `rediacc_ci.deploy.simulate_promotion` against its twin
 `.ci/scripts/deploy/simulate-promotion.sh`.
 
-RECORDING FAKES FOR `aws`, `curl` AND `sleep` ON A SCRATCH PATH, INSIDE A
-FIXTURE REPO. Nothing here reaches R2 or Cloudflare; every case pins a fixture
-endpoint, bucket and credential, and an on-disk directory stands in for the bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
+RECORDING FAKES FOR `aws`, `curl` AND `sleep` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2 or Cloudflare; every case pins a fixture endpoint, bucket and credential, and an on-disk directory stands in for the bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
+ledger is a separate, achievable piece of work. This is that piece.
 
 WHY `sleep` IS FAKED RATHER THAN WAITED ON, and why that is EVIDENCE rather than a shortcut. Both retry loops in the twin call `sleep` as an external program, and so does the port. Putting a recording fake on PATH turns the retry SCHEDULE into call-log lines, so `test_the_upload_retry_schedule_is_fifteen_thirty_forty_five_sixty` can assert `sleep 15`, `sleep 30`, `sleep 45`, `sleep
 60` in order instead of waiting 150 seconds to observe the same thing less precisely. A port that used `time.sleep` would make the schedule invisible here, which is exactly why the port does not.
@@ -42,11 +41,9 @@ if typing.TYPE_CHECKING:
 # `/tmp/config` is hard-coded in the twin; the group is what stops a concurrent
 # case in another module writing it.
 #
-# AND THE GROUP DID NOT DO THAT, measured 2026-09-15. The claim above is what the
-# group was believed to buy; what `--dist loadgroup` actually buys is that tests
-# SHARING A GROUP NAME land on one worker. A different module with a DIFFERENT name is therefore not merely unprotected, it is actively placed on another worker -- the opposite of the invariant the line above asserts. `test_deploy_promote_r2_to_stable_hotfix.py` drives the same `/tmp/config` (its own docstring lists it as a fixed twin path) under the group name
-# `deploy-promote-fixed-tmp`, so the two modules were scheduled CONCURRENTLY by construction. The failure that exposed it is the one this module's own comment at `FIXED_TMP_LOCK` predicts word for word: `/tmp/config` vanishing between the download that wrote it and the upload that reads it, surfacing as `HeadObject 404` and `exit diverged: 1 vs 0`. Serial in isolation: 50/50 pass.
-# Under `-n <jobs> --dist loadgroup`: 4-5 fail, and NOT THE SAME 4-5 twice.
+# AND THE GROUP DID NOT DO THAT, measured 2026-09-15. The claim above is what the group was believed to buy; what `--dist loadgroup` actually buys is that tests SHARING A GROUP NAME land on one worker. A different module with a DIFFERENT name is therefore not merely unprotected, it is actively placed on another worker -- the opposite of the invariant the line above asserts.
+# `test_deploy_promote_r2_to_stable_hotfix.py` drives the same `/tmp/config` (its own docstring lists it as a fixed twin path) under the group name `deploy-promote-fixed-tmp`, so the two modules were scheduled CONCURRENTLY by construction. The failure that exposed it is the one this module's own comment at `FIXED_TMP_LOCK` predicts word for word: `/tmp/config` vanishing between the
+# download that wrote it and the upload that reads it, surfacing as `HeadObject 404` and `exit diverged: 1 vs 0`. Serial in isolation: 50/50 pass. Under `-n <jobs> --dist loadgroup`: 4-5 fail, and NOT THE SAME 4-5 twice.
 #
 # ONE NAME ACROSS BOTH MODULES is the fix, because the name IS the mutex.
 pytestmark = pytest.mark.xdist_group("deploy-fixed-tmp")
@@ -85,9 +82,7 @@ DEFAULT_BUCKET = {
     ),
 }
 
-# A MODEL of the AWS CLI, not the AWS CLI. `aws` IS NOT INSTALLED IN THIS
-# SANDBOX, so nothing here is checked against the real tool; the differential's
-# evidence is independent of that, because both implementations go through the SAME fake and the argv, the streams and the exit codes are real evidence about the two callers.
+# A MODEL of the AWS CLI, not the AWS CLI. `aws` IS NOT INSTALLED IN THIS SANDBOX, so nothing here is checked against the real tool; the differential's evidence is independent of that, because both implementations go through the SAME fake and the argv, the streams and the exit codes are real evidence about the two callers.
 #
 # `FAKE_AWS_LS_EMPTY_EXITS` is the knob fact 3 needs: real `aws s3 ls` builds disagree about whether an empty prefix is an error, and the twin's floor is reachable only under the build that says it is not.
 FAKE_AWS = r'''#!/usr/bin/python3
@@ -461,8 +456,7 @@ def test_every_object_lands_under_the_promoted_prefix_and_none_is_doubled(tmp_pa
 
 def test_a_key_with_a_space_survives_the_awk_rejoin(tmp_path) -> None:
     """`aws s3 ls --recursive` prints date, time, size and then the key, and the
-    key may contain spaces. A field-3 split would truncate it; the twin's awk
-    rejoins fields 4..NF with OFS, and so does this port, because it runs the
+    key may contain spaces. A field-3 split would truncate it; the twin's awk rejoins fields 4..NF with OFS, and so does this port, because it runs the
     same awk."""
     _root, old, new = run_both(tmp_path)
     _agree(old, new, "space-in-key")

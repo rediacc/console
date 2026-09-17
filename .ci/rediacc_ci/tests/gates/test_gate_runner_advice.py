@@ -10,10 +10,8 @@ Every fire case has its control: the same fixture, one thing changed, and the op
 --------------------------------------------------------------------------
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP
 --------------------------------------------------------------------------
-Read from the lock, not from a guess about the fixtures. `gates.lock.json` declares `gate-test:runner-advice` with `reads: ["tree:repo"]`, and it is right to: `test_real_tree_seam_free` runs the gate with NO seams at all, so it reads the tracked `.ci/policy/runner-profile-baseline.json`, the real
-`.github/workflows` and the real allowlist; `test_awk_and_python_agree_on_the_verdict`
-runs the real `report.awk`; and `test_real_allowlist_blockers_are_substantive`
-runs the real `.ci/policy/.runner-advice-allowlist` through the real shared validator. A battery step rewriting any of those mid-sweep would be a divergence blamed on this port.
+Read from the lock, not from a guess about the fixtures. `gates.lock.json` declares `gate-test:runner-advice` with `reads: ["tree:repo"]`, and it is right to: `test_real_tree_seam_free` runs the gate with NO seams at all, so it reads the tracked `.ci/policy/runner-profile-baseline.json`, the real `.github/workflows` and the real allowlist; `test_awk_and_python_agree_on_the_verdict`
+runs the real `report.awk`; and `test_real_allowlist_blockers_are_substantive` runs the real `.ci/policy/.runner-advice-allowlist` through the real shared validator. A battery step rewriting any of those mid-sweep would be a divergence blamed on this port.
 
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
 this module declares no `XDIST_GROUP` of its own -- see `real_tree_admission` in `test_twin_parity.py`, where an own-group declaration makes the opt-in vacuous.
@@ -194,8 +192,7 @@ def edit_baseline(path, mutate) -> None:
 def digest(path) -> str:
     """`md5sum <file>`, spelled in a language that has hashlib.
 
-    The twin only needs "did anything change", so the algorithm is not
-    load-bearing; sha256 is used because nothing here wants md5.
+    The twin only needs "did anything change", so the algorithm is not load-bearing; sha256 is used because nothing here wants md5.
     """
     return hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
 
@@ -788,9 +785,7 @@ def test_stale_baseline_fails(gate):
         gate.assert_exit_code(1, result.rc, "a baseline older than the age limit must fail")
         gate.assert_contains(result.combined, "the baseline itself is stale", "names the staleness")
 
-        # A stamp that is PRESENT but not a date must not read as "fresh". This
-        # is the staleness path's own failure; a stamp that is missing entirely
-        # is caught one layer earlier by the structural validator, which is asserted separately in test_pristine_shape_is_exact.
+        # A stamp that is PRESENT but not a date must not read as "fresh". This is the staleness path's own failure; a stamp that is missing entirely is caught one layer earlier by the structural validator, which is asserted separately in test_pristine_shape_is_exact.
         def bad_stamp(data):
             data["refreshed_at"] = "some time last week"
 
@@ -978,8 +973,7 @@ def test_awk_and_python_agree_on_the_verdict(gate):
 def advise_once(gate, d, name, *args):
     """`advise_once <dir> <name> <synth_tsv args...>` -> `(advisory, row)`.
 
-    The twin sets two globals, `ADVISORY` and `ROW`; a Python function can hand
-    both back, which is the only difference.
+    The twin sets two globals, `ADVISORY` and `ROW`; a Python function can hand both back, which is the only difference.
     """
     result, machine = run_report_awk(gate, d, name, args)
     gate.assert_exit_code(0, result.rc, "report.awk must produce a clean profile for '%s'" % name)

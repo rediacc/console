@@ -201,9 +201,7 @@ describe('prepareCommand enforces proxyCapable (SEC-1)', () => {
     // config plane: returns the executor's OWN decrypted config in plaintext.
     ['config ssh show', {}], // the executor's SSH private key
     ['config show', {}],
-    // client-side transfer: the paths are the EXECUTOR's filesystem when proxied.
-    // (sync now takes a positional <ref>; the machine is derived, so only the
-    // client-side --local path remains as a flag.)
+    // client-side transfer: the paths are the EXECUTOR's filesystem when proxied. (sync now takes a positional <ref>; the machine is derived, so only the client-side --local path remains as a flag.)
     ['repo sync upload', { local: '/root/.ssh/id_rsa' }],
     ['repo sync download', { local: '/tmp/exfil' }],
     ['storage import', { file: '/etc/passwd' }],

@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
 """Entry point for the ported devcontainer-script-hygiene gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.devcontainer_scripts`, which pytest and the port's
-own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.devcontainer_scripts`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 8b). See DRIVEN, below.
 
 WHY AN ENTRY POINT AT ALL, rather than registering the module. `check_npmrc.py` states both measured reasons. A port cannot be run by path (nothing puts `.ci` on `sys.path`, hence the insert below), and `python3 -m rediacc_ci.quality.devcontainer_scripts` works but is the wrong registration: `check:ci-parity`'s tokenizer cannot read `-m` and resolves the leaves to `[python3]`.
 
-THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. It was extracted from `.ci/scripts/quality/check-devcontainer-scripts.sh` PROGRAMMATICALLY, de-commented, and diffed
-as an ordered list of WHOLE LINES against the block in this docstring; the diff
-is empty over 8 line(s). The twin carried exactly these fields, in this order: `step`, `emit`, `blocker`, `needs`, `selftest`, `lane`. NO `id:`, and that is checked rather than assumed: `derivedId` (`gate-header.ts:260`) strips the `check_` prefix and maps `_` to `-`, so this basename derives `check:ci-devcontainer-scripts`, which is the manifest id. The pilot lost `emit: false`
-plus a blocker off a header and SEVEN GATES PASSED ANYWAY, because `emit: false` suppresses only the three workflow-region checks (`gate-bind.ts:1724`) while the registration assertions above them still ran.
+THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. It was extracted from `.ci/scripts/quality/check-devcontainer-scripts.sh` PROGRAMMATICALLY, de-commented, and diffed as an ordered list of WHOLE LINES against the block in this docstring; the diff is empty over 8 line(s). The twin carried exactly these fields, in this order: `step`, `emit`, `blocker`, `needs`, `selftest`, `lane`. NO
+`id:`, and that is checked rather than assumed: `derivedId` (`gate-header.ts:260`) strips the `check_` prefix and maps `_` to `-`, so this basename derives `check:ci-devcontainer-scripts`, which is the manifest id. The pilot lost `emit: false` plus a blocker off a header and SEVEN GATES PASSED ANYWAY, because `emit: false` suppresses only the three workflow-region checks
+(`gate-bind.ts:1724`) while the registration assertions above them still ran.
 
-THE RESOLVED NEED SET DOES NOT MOVE, verified by CALLING `bind()` on both files and comparing every bound field except `file` and `run`, not by reading them.
-`bind()` unions declared needs with `inferredNeeds(source)`; the twin infers
-nothing from its body and this two-import entry point infers nothing, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both sides bind to `needs: []`, which is what `needs: none` declares.
+THE RESOLVED NEED SET DOES NOT MOVE, verified by CALLING `bind()` on both files and comparing every bound field except `file` and `run`, not by reading them. `bind()` unions declared needs with `inferredNeeds(source)`; the twin infers nothing from its body and this two-import entry point infers nothing, because `inferredNeeds` strips Python docstrings as prose
+(`gate-header.ts:301`). Both sides bind to `needs: []`, which is what `needs: none` declares.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -27,8 +23,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, 401 bytes, sha256 bf3c6dcf555f23e9...
     stderr: BYTE-IDENTICAL, EMPTY on both sides
 
-NO NORMALISATION WAS APPLIED and none was needed. The twin was run TWICE against an unchanged tree FIRST, to establish that its own output is byte-stable against
-itself; it is, on both streams.
+NO NORMALISATION WAS APPLIED and none was needed. The twin was run TWICE against an unchanged tree FIRST, to establish that its own output is byte-stable against itself; it is, on both streams.
 
 DRIVEN RED AS WELL, which is the half that matters. The plant is an UNTRACKED `.devcontainer/__gate_probe_devcontainer_scripts.sh` carrying `git clone ... 2>/dev/null`, i.e. rule A's exact shape: a PRIMARY operation whose stderr is discarded. Untracked is the right shape here because the gate's corpus is the glob `"$DC"/*.sh`, not `git ls-files`, so a probe the sweep never walks
 would have been a control failure rather than a gate failure. The plant was removed with `rm` and `git status --porcelain` diffed against its pre-plant capture with no difference, because a runner that writes into the real tree makes twin and port agree by both reading the same corrupted tree. Both sides -> exit 1, stdout 314 bytes, sha256 c83e1b98f1ba9d4a..., stderr 232 bytes,

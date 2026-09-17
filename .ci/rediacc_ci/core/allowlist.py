@@ -23,22 +23,18 @@ THE TWO PROJECTIONS, because the two readers do not return the same thing and a 
            bash ASSOCIATIVE ARRAYS and an associative array cannot hold two rows
            for one key.
 
-The difference is not academic. `.ci-parity-exempt` is direction-tagged, so its entry lines read `ci-only <path>` and the shared parsers both take the FIRST whitespace token as the key. Nine entry lines in that file collapse to ONE key
-under the bash reader; `scripts/gates/check-ci-parity.ts:751` carries a comment about
-having to correct for it. A caller that needs per-entry reasons must use `records`, and this module makes the choice visible instead of leaving it to whichever reader happened to be reachable from the language the gate was in.
+The difference is not academic. `.ci-parity-exempt` is direction-tagged, so its entry lines read `ci-only <path>` and the shared parsers both take the FIRST whitespace token as the key. Nine entry lines in that file collapse to ONE key under the bash reader; `scripts/gates/check-ci-parity.ts:751` carries a comment about having to correct for it. A caller that needs per-entry
+reasons must use `records`, and this module makes the choice visible instead of leaving it to whichever reader happened to be reachable from the language the gate was in.
 
 A MISSING LIST IS AN ERROR HERE, AND IT IS NOT IN EITHER READER. Both of them open with the same shape:
 
     [[ ! -f "$file" ]] && return 0                    (bash)
     if (!fs.existsSync(filePath)) return [];          (TypeScript)
 
-so a gate handed a path that does not exist gets an empty allowlist, suppresses nothing, finds nothing to complain about, and reports green. "Empty" and "absent" produce the same colour and only one of them is correct. `parse_file`
-raises `ListNotFoundError`; a caller that genuinely wants the permissive
+so a gate handed a path that does not exist gets an empty allowlist, suppresses nothing, finds nothing to complain about, and reports green. "Empty" and "absent" produce the same colour and only one of them is correct. `parse_file` raises `ListNotFoundError`; a caller that genuinely wants the permissive
 behaviour writes `missing_ok=True` at the call site, where a reviewer sees it.
 
-AND THE PATHS RESOLVE FROM THE REPO ROOT, NOT FROM cwd. `audit.sh` used to pass the bare string `".audit-prod-allowlist"`, which was only correct while the gate
-ran from the root; the same call from a subdirectory finds nothing and, per the
-paragraph above, that nothing is indistinguishable from an empty list. Use `load(name)`, which goes through `rediacc_ci.paths.from_root`.
+AND THE PATHS RESOLVE FROM THE REPO ROOT, NOT FROM cwd. `audit.sh` used to pass the bare string `".audit-prod-allowlist"`, which was only correct while the gate ran from the root; the same call from a subdirectory finds nothing and, per the paragraph above, that nothing is indistinguishable from an empty list. Use `load(name)`, which goes through `rediacc_ci.paths.from_root`.
 
 The lists themselves moved to `.ci/policy/` on 2026-09-06 at b80552370, and `audit.sh` now reads them through the seam. `load(name)` still takes the BARE name: the directory is the seam's business, not the caller's, which is the whole point of having one.
 
@@ -452,9 +448,7 @@ def validate_reason(entry: str, reason: str, file: str) -> Rejection | None:
 def missing_reason(entry: str, file: str) -> str:
     """The message `verify_all_blockers` prints for an entry with no reason.
 
-    The literal `'# BLOCKER: ...'` is hardcoded in both readers even when the file's comment character is `//`, so it is hardcoded here too. Reproducing a
-    wart is the job; diverging from it would make this module's output something
-    a gate could not adopt without changing its own expected text.
+    The literal `'# BLOCKER: ...'` is hardcoded in both readers even when the file's comment character is `//`, so it is hardcoded here too. Reproducing a wart is the job; diverging from it would make this module's output something a gate could not adopt without changing its own expected text.
     """
     return _render("missing", file=file, entry=entry)
 
@@ -507,9 +501,7 @@ def main(argv: list[str]) -> int:
         try:
             entries = parse_file(path, comment_char)
         except ListNotFoundError as exc:
-            # EXIT 2, NOT 1. A caller distinguishes "the list is dirty" (1) from
-            # "you pointed me at nothing" (2); collapsing them is how an absent
-            # list becomes a clean bill of health.
+            # EXIT 2, NOT 1. A caller distinguishes "the list is dirty" (1) from "you pointed me at nothing" (2); collapsing them is how an absent list becomes a clean bill of health.
             print(str(exc), file=sys.stderr)
             return 2
         if verb == "records":

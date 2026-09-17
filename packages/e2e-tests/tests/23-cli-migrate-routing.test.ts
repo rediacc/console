@@ -9,10 +9,8 @@ import { CliRunner } from '../src/utils/CliRunner';
 // falsifiable, not self-referential.
 //
 // NOT YET ON CI: the ct-tests.yml ubuntu leg does not set CLI_SUITE=1 yet. Before
-// enabling it, the exact create/datastore argv + the machine-registration/SSH wiring in beforeAll must be transcribed from the wave round-log transcript and
-// validated on a local two-worker fleet (plan phase 5; README "Deliberately not
-// in CI"). The scenario SHAPE and the falsifiable asserts below are final; the
-// argv marked TRANSCRIPT-CONFIRM is the best-derived form from the CLI source.
+// enabling it, the exact create/datastore argv + the machine-registration/SSH wiring in beforeAll must be transcribed from the wave round-log transcript and validated on a local two-worker fleet (plan phase 5; README "Deliberately not in CI"). The scenario SHAPE and the falsifiable asserts below are final; the argv marked TRANSCRIPT-CONFIRM is the best-derived form from the CLI
+// source.
 //
 // Gated on TWO worker VMs (machine-11 / machine-12).
 const workers = (process.env.VM_WORKERS ?? '').trim().split(/\s+/).filter(Boolean);
@@ -74,9 +72,7 @@ test.describe
     // GUIDs remembered at create time, so the residue check still works if a config entry is ever archived away.
     const guids: Record<string, string | undefined> = {};
 
-    // Bridge-side cross-check: does renet on <runner> report the repo present?
-    // The CLI claims placement; the bridge is ground truth (07 §9).
-    // TRANSCRIPT-CONFIRMED live: storage speaks GUID (#93) — the raw repository_list carries the GUID as the repo's name, never the config name — and with --debug the listing rides the logrus stream (stderr), so both channels are grepped.
+    // Bridge-side cross-check: does renet on <runner> report the repo present? The CLI claims placement; the bridge is ground truth (07 §9). TRANSCRIPT-CONFIRMED live: storage speaks GUID (#93) — the raw repository_list carries the GUID as the repo's name, never the config name — and with --debug the listing rides the logrus stream (stderr), so both channels are grepped.
     const repoPresentOnBridge = async (
       runner: BridgeTestRunner,
       name: string
@@ -176,8 +172,7 @@ test.describe
     });
 
     test('5. default migrate left NO repo on the source (machine-11), cross-checked on the bridge', async () => {
-      // The CLI removed the source copy; the bridge is ground truth so this is a
-      // real absence, not a config-only claim.
+      // The CLI removed the source copy; the bridge is ground truth so this is a real absence, not a config-only claim.
       expect(await repoPresentOnBridge(w1, APP)).toBe(false);
     });
 

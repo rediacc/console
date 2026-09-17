@@ -1,8 +1,6 @@
 """A gate test that WRITES INTO THE REAL TREE must be registered as a WRITER.
 
-Ported from `.ci/scripts/quality/check-pool-writer-safety.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live until a
-differential ledger row exists over K distinct trees. Its gate header registers it as step "Pool-registered tests do not write the real tree", needs none, selftest true.
+Ported from `.ci/scripts/quality/check-pool-writer-safety.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "Pool-registered tests do not write the real tree", needs none, selftest true.
 
 -----------------------------------------------------------------------------
 RETARGETED 2026-09-09 (W7P3-BAT): THE REGISTRATION IS THE LOCK, NOT THE RUNNER.
@@ -13,17 +11,13 @@ The registration used to live in `.ci/scripts/test/run-all.sh`, as the hand-main
 
 So the subject moved with the runner. Left parsing run-all.sh this gate would have gone one of two ways once that file was deleted, and both are worse than a red: it would REFUSE ("runner not found", exit 1) and read as a bug in the deletion, or -- had anyone "fixed" that by treating an absent runner as clean -- it would pass forever while policing nothing.
 
-THE RETARGET IS NOT A WEAKENING, MEASURED RATHER THAN ASSERTED. On this tree, 2026-09-09: the old parse over run-all.sh returned 4 names (`test-docs-gen.sh`, `test-gate-anti-vacuity.sh`, `test-gate-paths-exist.sh`, `test-generate-tag-inputs.sh`) and the lock's `mutex` set returns those 4 plus `test-shrink-only-composition.sh`. `old - new` is EMPTY, so nothing that was
-being demanded stopped being demanded; the one addition is a test the lock
-already serialises and the hand list had never been updated to carry, which is itself the argument against hand lists.
+THE RETARGET IS NOT A WEAKENING, MEASURED RATHER THAN ASSERTED. On this tree, 2026-09-09: the old parse over run-all.sh returned 4 names (`test-docs-gen.sh`, `test-gate-anti-vacuity.sh`, `test-gate-paths-exist.sh`, `test-generate-tag-inputs.sh`) and the lock's `mutex` set returns those 4 plus `test-shrink-only-composition.sh`. `old - new` is EMPTY, so nothing that was being
+demanded stopped being demanded; the one addition is a test the lock already serialises and the hand list had never been updated to carry, which is itself the argument against hand lists.
 
-`reads` IS DELIBERATELY NOT ACCEPTED as a registration. A scanner is released to
-run beside other scanners; only `mutex` puts a test in the serial W chain, so a
-writer declared `reads` is exactly the flake this gate exists to catch.
+`reads` IS DELIBERATELY NOT ACCEPTED as a registration. A scanner is released to run beside other scanners; only `mutex` puts a test in the serial W chain, so a writer declared `reads` is exactly the flake this gate exists to catch.
 
 -----------------------------------------------------------------------------
-THE TWIN'S HEADER, CARRIED WHOLE. These paragraphs are measurements and dated
-incidents; none of them can be recovered from the code.
+THE TWIN'S HEADER, CARRIED WHOLE. These paragraphs are measurements and dated incidents; none of them can be recovered from the code.
 -----------------------------------------------------------------------------
 
 THE DEFECT THIS COMES FROM, 2026-08-17. run-all.sh fans the gate battery out over the runner cores in three sets: W (writers, one serial chain, exclusive), S (scanners, read the real tree, released after W), and T (everything else, isolated by construction). test-generate-tag-inputs.sh swaps the REAL .ci/scripts/version/resolve-version.sh for a stub and restores it a second later,
@@ -49,16 +43,13 @@ Two candidate signals were measured against the real battery and DROPPED for pre
     shape.
 The surviving signal alone flags all three registered writers and nothing else across all 93 gate tests: measured false-positive rate zero.
 
-THE RULE IS ONE-DIRECTIONAL, deliberately. A file that writes must be declared; a
-file declared W that no longer writes is NOT reported. Over-declaring costs a little wall time, under-declaring manufactures a flake, and the gate should not push anybody toward the expensive side of that asymmetry.
+THE RULE IS ONE-DIRECTIONAL, deliberately. A file that writes must be declared; a file declared W that no longer writes is NOT reported. Over-declaring costs a little wall time, under-declaring manufactures a flake, and the gate should not push anybody toward the expensive side of that asymmetry.
 
 Exit codes:
   0 - every real-tree writer declares a `mutex` `tree:` resource in the lock
   1 - an unregistered writer, or the gate could not prove itself (see CONTROL)
 
-THE SCANNER, in the twin's own words. Two passes over each file. Pass 1 classifies every variable as REPO-ROOTED or TEMP-ROOTED and propagates that
-through assignment; pass 2 reports writes aimed at a repo-rooted target. Two
-passes rather than one because a function body can textually precede the assignment of a global it uses.
+THE SCANNER, in the twin's own words. Two passes over each file. Pass 1 classifies every variable as REPO-ROOTED or TEMP-ROOTED and propagates that through assignment; pass 2 reports writes aimed at a repo-rooted target. Two passes rather than one because a function body can textually precede the assignment of a global it uses.
 
 The taint SEED is the idiom, never the name: any variable assigned from `$(cd ... && pwd)`, `get_repo_root`, or `git rev-parse --show-toplevel`. That is what makes it self-maintaining -- 79 of the 93 gate tests spell it REPO_ROOT and 4 use get_repo_root, but a new file picking a different name is still caught. It also, correctly, taints SCRIPT_DIR: the gates directory is itself
 inside the real tree, so a write aimed there is a real-tree write.
@@ -211,8 +202,7 @@ def _lastarg(line: str) -> str:
 def _nonflagargs(line: str) -> str:
     """`nonflagargs`: every field from index 2 on that does not start with `-`.
 
-    Index 2 in awk is index 1 here. The awk quirk that this skips the leading empty field on an indented line, and therefore includes the command name, is
-    preserved; see the port notes.
+    Index 2 in awk is index 1 here. The awk quirk that this skips the leading empty field on an indented line, and therefore includes the command name, is preserved; see the port notes.
     """
     out = ""
     for field in _fields(line)[1:]:
@@ -374,9 +364,7 @@ def registered_writers(lock_text: str) -> list[str]:
 
     MEASURED AT THE RETARGET, and it is the reason this is not a weakening: the old parse returned 4 names and this one returns those same 4 plus test-shrink-only-composition.sh, which run-all.sh's hand list had never been updated to carry. Set difference in the other direction is empty.
 
-    An unparseable or non-list lock contributes NOTHING rather than raising,
-    which is `battery.classify_from_lock`'s documented behaviour; the CALLER
-    turns that into the anti-vacuity refusal, because "nothing is declared" and "the lock is broken" must not silently become "nothing needs isolating".
+    An unparseable or non-list lock contributes NOTHING rather than raising, which is `battery.classify_from_lock`'s documented behaviour; the CALLER turns that into the anti-vacuity refusal, because "nothing is declared" and "the lock is broken" must not silently become "nothing needs isolating".
     """
     try:
         entries = json.loads(lock_text)
@@ -518,8 +506,7 @@ def main(argv: list[str] | None = None) -> int:
             "battery.py schedules it in the pool alongside tests that read the same paths:"
             % (gate_file.name, lock_rel)
         )
-        # THE TWIN'S `printf ' %s\n' "$hits"` WITH ONE MULTI-LINE ARGUMENT: only
-        # the FIRST line is indented. Carried; see the port notes.
+        # THE TWIN'S `printf ' %s\n' "$hits"` WITH ONE MULTI-LINE ARGUMENT: only the FIRST line is indented. Carried; see the port notes.
         print("  %s" % hits, file=sys.stderr)
         violations += 1
 
@@ -735,9 +722,7 @@ def selftest() -> int:
         ),
         ["test-x.sh"],
     )
-    # THE ONE-DIRECTIONAL CLAIM STRENGTH. A scanner is released beside other
-    # scanners, so `reads` is NOT a writer registration; accepting it would
-    # silence exactly the flake this gate exists for.
+    # THE ONE-DIRECTIONAL CLAIM STRENGTH. A scanner is released beside other scanners, so `reads` is NOT a writer registration; accepting it would silence exactly the flake this gate exists for.
     ctl.check(
         "PARSE: a `reads` declaration is NOT a writer registration",
         registered_writers('[{"run": ".ci/scripts/test/gates/test-r.sh", "reads": ["tree:repo"]}]'),

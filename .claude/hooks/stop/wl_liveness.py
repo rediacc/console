@@ -92,8 +92,7 @@ def _proc_table_linux():
         try:
             with open("/proc/%s/stat" % name, "rb") as f:
                 stat = f.read().decode("utf-8", "replace")
-            # field 4 is ppid; the comm field (2) may contain spaces inside
-            # parens, so split after the LAST ')'.
+            # field 4 is ppid; the comm field (2) may contain spaces inside parens, so split after the LAST ')'.
             after = stat.rsplit(")", 1)[-1].split()
             ppid = int(after[1])
             with open("/proc/%s/cmdline" % name, "rb") as f:
@@ -156,9 +155,8 @@ def harness_ancestors(table):
 
 def _needle(command):
     """A distinctive, quote-free substring of a declared command, or ''.
-    The harness wraps the command in an eval with shell re-quoting, so quote
-    characters may be rewritten in the child cmdline; but re-quoting only
-    inserts or replaces QUOTE characters, so any maximal quote-free run of the original text survives contiguously. Segments, not whole lines: the CI-watch poll loop is one long line with a quoted middle, and requiring the whole line quote-free left exactly that worker unverifiable, which
+    The harness wraps the command in an eval with shell re-quoting, so quote characters may be rewritten in the child cmdline; but re-quoting only inserts or replaces QUOTE characters, so any maximal quote-free run of the original text survives contiguously. Segments, not whole lines: the CI-watch poll loop is one long line with a quoted middle, and requiring the whole line
+    quote-free left exactly that worker unverifiable, which
     let the pure-wait check-in call a healthy silent poll loop POSSIBLY
     STUCK (2026-07-31)."""
     best = ""
@@ -173,17 +171,13 @@ def _needle(command):
 def bg_output_facts(cwd, session_id, live_bg):
     """[(id, desc, age_min, size, stale)] for each running background task.
 
-    v15 (operator, 2026-07-31): a session whose only remaining work is waiting on background jobs is in a LEGITIMATE state, but the hook must still know whether those jobs are alive. The harness writes each task's
-    stream to <tmp>/<munged-cwd>/<session>/tasks/<id>.output; the mtime of
-    that file is direct evidence of progress no self-report can fake. age is minutes since the last write (None when the file does not exist, e.g. a
-    teammate agent that reports only at completion); stale is True when the
-    file exists and has not grown for BG_STALE_MIN minutes.
+    v15 (operator, 2026-07-31): a session whose only remaining work is waiting on background jobs is in a LEGITIMATE state, but the hook must still know whether those jobs are alive. The harness writes each task's stream to <tmp>/<munged-cwd>/<session>/tasks/<id>.output; the mtime of that file is direct evidence of progress no self-report can fake. age is minutes since the last
+    write (None when the file does not exist, e.g. a teammate agent that reports only at completion); stale is True when the file exists and has not grown for BG_STALE_MIN minutes.
     """
     base = os.environ.get("WORKLIST_BG_OUTPUT_DIR")
     if not base:
         munged = re.sub(r"[^A-Za-z0-9]", "-", str(cwd or ""))
-        # The harness scratch root is <tmp>/claude-<uid>/ on this platform,
-        # not <tmp>/ itself; the plain-gettempdir form is kept as a fallback
+        # The harness scratch root is <tmp>/claude-<uid>/ on this platform, not <tmp>/ itself; the plain-gettempdir form is kept as a fallback
         # for setups where TMPDIR already points inside the scratch root.
         # Found live on the check-in's FIRST real firing: a shell task with a growing output stream read as "no output stream yet" because the derivation missed the claude-<uid> segment.
         tails = [str(session_id or ""), "tasks"]
@@ -213,8 +207,7 @@ BG_REPORT_MIN = int(os.environ.get("WORKLIST_BG_REPORT_MIN", "15"))
 def verify_background(event_bg, table=None, ancestors=None):
     """{task_id: verdict} for RUNNING background tasks.
 
-    Verdicts: 'confirmed' (a live descendant-of-harness process carries the command), 'suspect' (shell task, OS visible, no matching process found), 'unverifiable' (teammate task, unusable needle, or no OS view). Only
-    ever ADDS information; existence remains the event's word.
+    Verdicts: 'confirmed' (a live descendant-of-harness process carries the command), 'suspect' (shell task, OS visible, no matching process found), 'unverifiable' (teammate task, unusable needle, or no OS view). Only ever ADDS information; existence remains the event's word.
     """
     if table is None:
         table = proc_table()
@@ -271,9 +264,7 @@ TEAMMATE_FRESH_MIN = float(os.environ.get("WORKLIST_TEAMMATE_FRESH_MIN", "15"))
 def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
     """How many in-process teammates have a transcript that is still growing.
 
-    THE ONLY AUTOMATIC LIVENESS SIGNAL THAT EXISTS FOR TEAMMATES, and it exists because `verify_background` cannot help: it returns `unverifiable` for anything whose type is not "shell", and a teammate has no OS process of its
-    own to find. A teammate that is working writes to its transcript; one that
-    stopped does not.
+    THE ONLY AUTOMATIC LIVENESS SIGNAL THAT EXISTS FOR TEAMMATES, and it exists because `verify_background` cannot help: it returns `unverifiable` for anything whose type is not "shell", and a teammate has no OS process of its own to find. A teammate that is working writes to its transcript; one that stopped does not.
 
     Deliberately a COUNT and not a mapping. There is no join from a background
     task id to an agent: the task carries only {id, type, status, description},
@@ -321,14 +312,10 @@ IDLE_STOP_REASONS = frozenset({"end_turn", "stop_sequence", "max_tokens"})
 # How far back to read for the last parseable record. A teammate transcript's final record is small, but a single record can be large (a pasted file, a long tool result), so this is generous rather than tight.
 TEAMMATE_TAIL_BYTES = int(os.environ.get("WORKLIST_TEAMMATE_TAIL_BYTES", "262144"))
 
-# Minutes a PROVEN-idle worker must stay quiet before the ladder escalates from
-# reporting to blocking. Operator-set, 2026-08-23; the plan proposed 15 and the
-# operator confirmed it. The report itself is non-blocking and fires on the FIRST stop the worker is idle, so this only governs the escalation.
+# Minutes a PROVEN-idle worker must stay quiet before the ladder escalates from reporting to blocking. Operator-set, 2026-08-23; the plan proposed 15 and the operator confirmed it. The report itself is non-blocking and fires on the FIRST stop the worker is idle, so this only governs the escalation.
 WORKER_IDLE_BLOCK_MIN = int(os.environ.get("WORKER_IDLE_BLOCK_MIN", "15"))
 
-# How far a transcript's mtime may sit AFTER a recorded idle edge and still count as "nothing was written since". Two different clocks-of-record are being
-# compared (the hook's time.time() against a filesystem mtime); the measured
-# delta on a genuinely idle agent was -0.1s, and a resume writes a whole turn.
+# How far a transcript's mtime may sit AFTER a recorded idle edge and still count as "nothing was written since". Two different clocks-of-record are being compared (the hook's time.time() against a filesystem mtime); the measured delta on a genuinely idle agent was -0.1s, and a resume writes a whole turn.
 IDLE_EDGE_EPSILON_S = float(os.environ.get("WORKLIST_IDLE_EDGE_EPSILON_S", "2"))
 
 
@@ -603,8 +590,7 @@ def worker_facts(event, session_id):
     CAPPED since v19, and the cap is ordered by usefulness rather than by arrival. A session running ~48 agents printed ~48 lines into EVERY ladder message and every bg-report, which is a context bill charged on the stop that can least afford it -- and the rows that matter are always the few that are suspect, quiet, or gone, never the forty that are streaming normally. So:
     actionable rows first and in full, ordinary ones only until the budget runs out, then ONE counted summary line.
 
-    The summary line is not decoration. A silent truncation reads as "that is
-    everything", which is the failure this file's own doctrine names; the
+    The summary line is not decoration. A silent truncation reads as "that is everything", which is the failure this file's own doctrine names; the
     count is what keeps a capped list honest."""
     live_bg = [b for b in (event.get("background_tasks") or []) if b.get("status") == "running"]
     verdicts = verify_background(live_bg)
@@ -653,8 +639,7 @@ def _age_min(stamp):
 def ladder(fold, session_id, event, state_doc):
     """(pings, investigates, resolves, gones, idles, doc_changed).
 
-    `gones` is kept apart from `investigates` because a verifiably dead worker
-    needs a different remedy than a merely quiet one; see the gone branch.
+    `gones` is kept apart from `investigates` because a verifiably dead worker needs a different remedy than a merely quiet one; see the gone branch.
 
     Subjects: my fresh [>] items (age = minutes since their last store
     event) and my in_progress harness tasks (age = minutes since the status
@@ -718,9 +703,8 @@ def ladder(fold, session_id, event, state_doc):
     for key, label, age, stampkey, gone, wid in subjects:
         rung_rec = fired.get(key) or {}
 
-        # The loop variables are bound as DEFAULTS, not closed over. B023 is a false positive at this particular site -- fire_once is only ever called inside the same iteration that defines it, never stored or deferred, so the late-binding bug it warns about cannot happen here. Binding them anyway is free and provably equivalent, and it keeps
-        # B023 enabled for the sites where the warning WOULD be real; turning
-        # the rule off to clear six known-safe uses is how the next genuine late-binding bug ships unnoticed.
+        # The loop variables are bound as DEFAULTS, not closed over. B023 is a false positive at this particular site -- fire_once is only ever called inside the same iteration that defines it, never stored or deferred, so the late-binding bug it warns about cannot happen here. Binding them anyway is free and provably equivalent, and it keeps B023 enabled for the sites where the
+        # warning WOULD be real; turning the rule off to clear six known-safe uses is how the next genuine late-binding bug ships unnoticed.
         def fire_once(rung, rung_rec=rung_rec, stampkey=stampkey, key=key):
             nonlocal changed
             if rung_rec.get(rung) == stampkey:
@@ -746,9 +730,7 @@ def ladder(fold, session_id, event, state_doc):
         if wid and wid not in now_bg:
             verdict, quiet, _ts, _aid = teammate_state(event.get("cwd") or "", session_id, wid)
             if verdict == "idle":
-                # REPORT ON THE FIRST STOP, block only after WORKER_IDLE_BLOCK_MIN. The report is the cheap half and it is
-                # what would have saved the 3.5 hours; the block is the
-                # escalation for when nobody read it.
+                # REPORT ON THE FIRST STOP, block only after WORKER_IDLE_BLOCK_MIN. The report is the cheap half and it is what would have saved the 3.5 hours; the block is the escalation for when nobody read it.
                 if fire_once("idle") if quiet >= WORKER_IDLE_BLOCK_MIN else True:
                     idles.append(
                         "%s   <- worker:%s has FINISHED ITS TURN (idle %dm, by its own transcript, "

@@ -1,13 +1,11 @@
 """Differential: `rediacc_ci.deploy.deploy_www` against its twin
 `.ci/scripts/deploy/deploy-www.sh`.
 
-A RECORDING FAKE FOR `npx`/`npm` ON A SCRATCH PATH, INSIDE A FIXTURE REPO.
-Nothing here reaches Cloudflare; every case pins a fixture token, account and
-D1 state file, and the fake `npx` is a MODEL of `wrangler d1` rather than wrangler. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
+A RECORDING FAKE FOR `npx`/`npm` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches Cloudflare; every case pins a fixture token, account and D1 state file, and the fake `npx` is a MODEL of `wrangler d1` rather than wrangler. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
+ledger is a separate, achievable piece of work. This is that piece.
 
-THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE. Everything the script prints goes through `log_step`/`log_info`, which any classifier reads as
-progress; the observable effect of a run is the ordered list of `npx wrangler`
-subcommands and the exact bytes of the `wrangler.preview.toml` the preview lane generates. The fake records both: every invocation as a `call: ` line in `$FAKE_CALL_LOG`, and the bytes of any `--config` file the deploy step is handed into `$FAKE_CONFIG_DUMP`.
+THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE. Everything the script prints goes through `log_step`/`log_info`, which any classifier reads as progress; the observable effect of a run is the ordered list of `npx wrangler` subcommands and the exact bytes of the `wrangler.preview.toml` the preview lane generates. The fake records both: every invocation as a `call: ` line in
+`$FAKE_CALL_LOG`, and the bytes of any `--config` file the deploy step is handed into `$FAKE_CONFIG_DUMP`.
 
 BOTH SIDES GET THEIR OWN D1 STATE FILE, because a run MUTATES it (a preview deploy deletes and recreates a database). Sharing one would make the second side read what the first side wrote, which is a different scenario rather than the same one.
 
@@ -331,9 +329,7 @@ def test_the_generated_toml_carries_the_twins_em_dash_and_backticks(tmp_path) ->
     """THE PORT SPELLS U+2014 AS AN ESCAPE, so this proves the emitted BYTES are
     the twin's rather than trusting the module docstring's claim.
 
-    Both halves matter. The backticks around `trailingSlash: 'never'` are `\\``
-    in the twin's UNQUOTED heredoc; a port that left the backslashes in would
-    emit a different file that no test comparing only the two ports would catch, because both sides would be equally wrong. Here the twin IS one of the two sides, so the comparison is against bash's own expansion.
+    Both halves matter. The backticks around `trailingSlash: 'never'` are `\\`` in the twin's UNQUOTED heredoc; a port that left the backslashes in would emit a different file that no test comparing only the two ports would catch, because both sides would be equally wrong. Here the twin IS one of the two sides, so the comparison is against bash's own expansion.
     """
     _root, old, new = run_both(tmp_path, "--name", "pr-1")
     _agree(old, new, "preview-toml-bytes")
@@ -425,8 +421,7 @@ def test_fact_a_non_pr_name_is_accepted_verbatim(tmp_path) -> None:
 def test_fact_the_production_database_guard_cannot_fire() -> None:
     """THE REFUSAL AT twin :69-72 IS UNREACHABLE, and both halves are asserted.
 
-    The guard itself works (`is_protected` says yes to both names); no output
-    `db_name_for` can produce ever reaches it, because the template carries a literal `-pr-` for every input including the empty string.
+    The guard itself works (`is_protected` says yes to both names); no output `db_name_for` can produce ever reaches it, because the template carries a literal `-pr-` for every input including the empty string.
     """
     assert port.PRODUCTION_GUARD_IS_UNREACHABLE is True
     assert port.is_protected("account-db") is True
@@ -531,9 +526,7 @@ def test_npm_install_runs_only_when_node_modules_is_absent(tmp_path) -> None:
 def test_a_flag_that_is_not_an_identifier_exits_two_on_both_sides(tmp_path) -> None:
     """THE ONE NAMED DIVERGENCE, and it is in text nobody parses.
 
-    `printf -v` refuses `ARG_FOO.BAR`, returns 2, and `set -e` takes the whole
-    script down. bash's message names `common.sh` and a line number; the port
-    prefixes the twin's own name. The EXIT CODE and the STREAM agree, which is the part a caller can observe.
+    `printf -v` refuses `ARG_FOO.BAR`, returns 2, and `set -e` takes the whole script down. bash's message names `common.sh` and a line number; the port prefixes the twin's own name. The EXIT CODE and the STREAM agree, which is the part a caller can observe.
     """
     root = fixture(tmp_path)
     old_proc, old_calls, _ = _run(root, "old", "--foo.bar=x")

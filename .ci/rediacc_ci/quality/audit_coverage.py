@@ -32,9 +32,8 @@ PHASE 4'S FILE ORDER IS NONDETERMINISTIC IN THE TWIN, AND SORTED HERE. The twin 
     commands/alpha.ts commands/zeta.ts commands/mike.ts commands/bravo.ts ...
     commands/bravo.ts commands/sub/yankee.ts commands/alpha.ts ...
 
-So there is no order to transliterate: two runs of the twin on ONE tree already disagree with each other. This port sorts, which is the only reproducible choice and is what phase 5 already does for its own two lists. `scripts/lib/shadow-gate.ts` compares findings as a MULTISET and fingerprints a SORTED list, so the two sides
-are ruled equivalent either way; the sorting is for the human reading a diff.
-Reported as a defect in the twin rather than treated as an ordering preference.
+So there is no order to transliterate: two runs of the twin on ONE tree already disagree with each other. This port sorts, which is the only reproducible choice and is what phase 5 already does for its own two lists. `scripts/lib/shadow-gate.ts` compares findings as a MULTISET and fingerprints a SORTED list, so the two sides are ruled equivalent either way; the sorting is for the
+human reading a diff. Reported as a defect in the twin rather than treated as an ordering preference.
 
 THE `/commands/` FILTER IN PHASE 4 IS DEAD CODE. `grep -rl` is rooted at `$CLI_SRC/commands/`, so every path it can possibly return already contains
 `/commands/`, and the `if [[ "$rel" != *"/commands/"* ]]; then continue; fi`
@@ -141,9 +140,8 @@ def _walk_files(
 ) -> list[pathlib.Path]:
     """`grep -r` over `root`, as a SORTED path list.
 
-    Sorted, unlike the twin's phase 4; see the port notes for the six runs that
-    produced six orders. `exclude_dirs` is `--exclude-dir`, which prunes by directory NAME at any depth, matching grep rather than matching a path prefix. `paths.walk_tree` applies it, and adds this package's standing prune of `.git`, `node_modules` and `.claude/worktrees` on top -- the last of which is a peer's sibling checkout of this same repository, invisible to git and not to
-    a raw `os.walk`.
+    Sorted, unlike the twin's phase 4; see the port notes for the six runs that produced six orders. `exclude_dirs` is `--exclude-dir`, which prunes by directory NAME at any depth, matching grep rather than matching a path prefix. `paths.walk_tree` applies it, and adds this package's standing prune of `.git`, `node_modules` and `.claude/worktrees` on top -- the last of which is a
+    peer's sibling checkout of this same repository, invisible to git and not to a raw `os.walk`.
     """
     out: list[pathlib.Path] = []
     if not root.is_dir():
@@ -159,9 +157,7 @@ def _walk_files(
 def sftp_importers(cli_src: pathlib.Path, repo_root: pathlib.Path) -> list[str]:
     """Phase 4: command files importing SFTPClient that are not on the known list.
 
-    Returns repo-relative paths. The `/commands/` filter the twin applies is dead
-    code (the grep is rooted there) and is not reproduced as a live branch; see
-    the port notes.
+    Returns repo-relative paths. The `/commands/` filter the twin applies is dead code (the grep is rooted there) and is not reproduced as a live branch; see the port notes.
     """
     out: list[str] = []
     for path in _walk_files(cli_src / "commands"):

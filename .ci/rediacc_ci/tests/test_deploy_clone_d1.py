@@ -1,9 +1,8 @@
 """Differential: `rediacc_ci.deploy.clone_d1` against its twin
 `.ci/scripts/deploy/clone-d1.sh`.
 
-RECORDING FAKES FOR `npx` AND `sqlite3` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Those two are the only programs in this script that can reach anything
-outside the machine or open a database; every other tool it uses (`grep`, `sed`,
-`wc`, `du`, `cut`, `jq`, `mktemp`, `rm`, `cat`) is the real binary symlinked into the same scratch directory, because both sides call the same one and that is the point of calling them at all.
+RECORDING FAKES FOR `npx` AND `sqlite3` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Those two are the only programs in this script that can reach anything outside the machine or open a database; every other tool it uses (`grep`, `sed`, `wc`, `du`, `cut`, `jq`, `mktemp`, `rm`, `cat`) is the real binary symlinked into the same scratch directory, because both sides call the same one and
+that is the point of calling them at all.
 
 `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece: no Cloudflare credential, no D1 database, nothing that leaves this host.
 
@@ -165,9 +164,8 @@ sys.stderr.write("fake wrangler: unmodelled subcommand %r\n" % (rest,))
 sys.exit(127)
 '''
 
-# A RECORDING, INSTANT `sleep`. The twin's retry waits 10 real seconds between
-# attempts and so does the port, because both exec the same program; replacing
-# it here does two things at once. It keeps this suite from spending 40 seconds asleep, and -- the reason it is a RECORDING stub rather than `true` -- it makes the wait OBSERVABLE, so the differential proves the retry slept rather than inferring it from a wall-clock gap it cannot see.
+# A RECORDING, INSTANT `sleep`. The twin's retry waits 10 real seconds between attempts and so does the port, because both exec the same program; replacing it here does two things at once. It keeps this suite from spending 40 seconds asleep, and -- the reason it is a RECORDING stub rather than `true` -- it makes the wait OBSERVABLE, so the differential proves the retry slept rather
+# than inferring it from a wall-clock gap it cannot see.
 FAKE_SLEEP = r"""#!/usr/bin/python3
 import os
 import sys

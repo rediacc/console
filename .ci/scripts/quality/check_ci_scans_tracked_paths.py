@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported CI-executes-only-tracked-paths gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.ci_scans_tracked_paths`, which
-pytest and the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.ci_scans_tracked_paths`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 5). See DRIVEN, below.
 
@@ -16,9 +14,7 @@ gate-bind's business (`gate-bind.ts:17`).
 
 The CI step exists and is HAND-WRITTEN, outside the `quality-static` gate-bind region (`ci-quality.yml:354`, region closes at 346), which is reported to the driver separately. That step's `run:` line is `npm run check:ci-scans-tracked-paths`, so unlike the OTLP one it follows the package.json registration and needs no workflow edit to cut over.
 
-`inferredNeeds` NOTE, since a headerless file makes the union moot but not the fact: `inferredNeeds(twin)` is `["node"]` (its scanner matches `npm `/`npx `/ `node ` command positions in the surfaces it greps) and `inferredNeeds(this
-file)` is `[]`. Nothing consumes either today; recorded so a future header is
-written with the measured value.
+`inferredNeeds` NOTE, since a headerless file makes the union moot but not the fact: `inferredNeeds(twin)` is `["node"]` (its scanner matches `npm `/`npx `/ `node ` command positions in the surfaces it greps) and `inferredNeeds(this file)` is `[]`. Nothing consumes either today; recorded so a future header is written with the measured value.
 
 DRIVEN, on this tree, both streams captured SEPARATELY:
 
@@ -30,8 +26,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY:
 DRIVEN RED AS WELL, and the plant carried its own negative control. A throwaway `.ci/scripts/__gate_probe_scans.sh` was written with TWO mentions of the same gitignored path: one in a comment (PROSE, which must NOT be reported) and one in command position (`bash private/growth/nope.sh`). Both sides exit 1, both print a byte-identical 136-byte stdout and a byte-identical 486-byte
 stderr naming `.ci/scripts/__gate_probe_scans.sh:3` and quoting the command -- line 3, not line 2, so the prose control fired on both sides too. The probe file was then deleted and both sides returned to exit 0.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-ci-scans-tracked-paths.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-ci-scans-tracked-paths.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 """
 
 import sys

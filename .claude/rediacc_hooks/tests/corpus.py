@@ -20,9 +20,7 @@ concatenated. Two deliberate limits, both stated rather than hidden:
     emulated, without a shell, because refusing to would drop the heredoc
     cases the `<<-` finding was reported on.
 
-Nothing here executes anything it harvests. The corpus is text handed to two
-implementations of a text scanner; the only requirement is that BOTH get the
-identical bytes, which is why every step above is deterministic.
+Nothing here executes anything it harvests. The corpus is text handed to two implementations of a text scanner; the only requirement is that BOTH get the identical bytes, which is why every step above is deterministic.
 """
 
 import pathlib
@@ -190,8 +188,7 @@ def _assignments(src):
 def harvest():
     """Every distinct `bash_json` / `bash_bg_json` payload in the suite.
 
-    Returns `(commands, stats)`; `stats` carries the call-site count and the
-    recovery ratio so the floor above can be checked against the same pass that produced the corpus.
+    Returns `(commands, stats)`; `stats` carries the call-site count and the recovery ratio so the floor above can be checked against the same pass that produced the corpus.
     """
     src = SUITE.read_text(encoding="utf-8")
     names = _assignments(src)
@@ -205,9 +202,7 @@ def harvest():
             word = names[bare.group(1)]
         if word == "":
             continue
-        # The differential streams results back framed by these two control characters, so a payload containing one would corrupt the frame
-        # rather than fail a comparison. None does today; the check is here so
-        # that a future one is dropped loudly instead of silently mis-parsed.
+        # The differential streams results back framed by these two control characters, so a payload containing one would corrupt the frame rather than fail a comparison. None does today; the check is here so that a future one is dropped loudly instead of silently mis-parsed.
         if "\x1e" in word or "\x1f" in word:
             continue
         commands.append(word)

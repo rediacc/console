@@ -1,8 +1,6 @@
 """A git-identity capture that reaches a conditional must be guarded first.
 
-Ported from `.ci/scripts/quality/check-git-op-conditionals.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side
-until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-git-op-conditionals.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
 
 WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
@@ -73,9 +71,7 @@ risky shapes verbatim as examples and its controls plant them in heredocs, and b
 for itself.
 
 A PORT CANNOT INHERIT THAT LINE, because `__file__` here is `.ci/rediacc_ci/quality/git_op_conditionals.py`, which is not in the scan set at all -- the globs cover `.sh` under `.claude/hooks/` and `.ci/scripts/quality/`. The file that still needs exempting is the BASH TWIN, which is in the scan set and does still contain the fixtures. So the exemption is written out BY NAME in
-`EXEMPT_PATHS` below, with the reason, and the gate PRINTS it on every run. A
-quiet exemption is how a gate stops meaning what its name says; this one cannot
-be forgotten because it is in the output.
+`EXEMPT_PATHS` below, with the reason, and the gate PRINTS it on every run. A quiet exemption is how a gate stops meaning what its name says; this one cannot be forgotten because it is in the output.
 
 WHEN THE TWIN IS FINALLY DELETED, `EXEMPT_PATHS` must be emptied in the same change. Left behind it would silently excuse a file that no longer exists, which costs nothing today and is exactly the kind of stale allowlist entry that survives for years.
 
@@ -115,8 +111,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, plant
 
-# POSIX [[:space:]], written out. grep works line by line, so the `\n` member
-# can never participate in a match; it is present so the class is the same set.
+# POSIX [[:space:]], written out. grep works line by line, so the `\n` member can never participate in a match; it is present so the class is the same set.
 SPACE = r"[ \t\n\v\f\r]"
 
 # The two pathspecs, handed to git unchanged. See the port notes on why the two spellings differ and why neither is a typo.
@@ -150,8 +145,7 @@ _GUARD_CONDITION = r"^%s*(if|elif|while)%s+!?%s*%s="
 # Guard 1: the assignment line itself ends in a failure handler.
 _GUARD_HANDLER = re.compile(r"\|\|%s*(exit|return|continue|true|:)(%s|$)" % (SPACE, SPACE))
 
-# The special case. `rev-parse --abbrev-ref HEAD` does not fail on a detached
-# checkout; it prints the literal string "HEAD".
+# The special case. `rev-parse --abbrev-ref HEAD` does not fail on a detached checkout; it prints the literal string "HEAD".
 _ABBREV_REF = re.compile(r"rev-parse%s+--abbrev-ref%s+HEAD" % (SPACE, SPACE))
 
 # SECOND SHAPE: a BARE statement, not an assignment at all -- `git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main"` as a function's last line, its stdout becoming the function's de facto return value at the
@@ -192,8 +186,7 @@ def scan_text(body: str, label: str) -> list[str]:
                 continue
             varname = name.group(1)
             # THE FULL SOURCE LINE, not the matched text. `sed -n "${lineno}p"`
-            # in the twin; see the port notes for the three false positives the
-            # truncated form produced.
+            # in the twin; see the port notes for the three false positives the truncated form produced.
             if re.search(_GUARD_CONDITION % (SPACE, SPACE, SPACE, re.escape(varname)), line):
                 continue
             if _GUARD_HANDLER.search(line):
@@ -247,8 +240,7 @@ def scan_text(body: str, label: str) -> list[str]:
 # returns to zero, the joiner swallows every statement below, and an identity token from far downstream gets attributed to the constant. It reported FOUR module-level constants that way -- ALLOW_EMPTY, DEFECT, COMMIT_AT_COMMAND_POS and _ENV_PREFIX -- none of which contains a git identity call at all. The bounded backward look has no such failure mode and mirrors into awk in ten
 # lines, which the twin needs.
 #
-# CONTROL AND FIXTURE BODIES ARE OUT OF SCOPE, and this is the twin's own reasoning rather than a new concession. The twin exempts ITS OWN FILE because "its header quotes the risky shapes as examples and its controls plant them in heredocs". A ported gate carries its controls INSIDE the module, so the same
-# exemption cannot be done by path; it is done by function. The names are
+# CONTROL AND FIXTURE BODIES ARE OUT OF SCOPE, and this is the twin's own reasoning rather than a new concession. The twin exempts ITS OWN FILE because "its header quotes the risky shapes as examples and its controls plant them in heredocs". A ported gate carries its controls INSIDE the module, so the same exemption cannot be done by path; it is done by function. The names are
 # measured, not guessed: across the 386 tracked `.ci/**/*.py` files the top-level control entry points are `selftest` (114), `run_controls` (10), `controls` (7) and `control` (5). Bodies end at the first non-blank line back in column 0, NOT at end of file, so a `main()` defined after the controls is still judged.
 #
 # TEST FILES ARE OUT OF SCOPE for the same reason, and the basename pattern accepts BOTH separators on purpose: this tree spells one `guards/test-block_unverified_push.py` with a HYPHEN, and a `test_` -only pattern would have missed it while looking correct.
@@ -263,9 +255,7 @@ PY_SCAN_GLOBS = (".claude/rediacc_hooks/*.py", ".ci/scripts/quality/*.py")
 # `git` as a WHOLE word, so it matches `"git"`, `git_out`, `_git` and `run_git` but not `github_api` or `gitlab`.
 _PY_GIT_TOKEN = re.compile(r"(?<![0-9A-Za-z])git(?![0-9A-Za-z])")
 
-# The identity subcommands. `rev-parse` and `symbolic-ref` carry a hyphen and so
-# cannot be Python identifiers; `branch` must be QUOTED, because an unquoted
-# `branch` is the name of a variable on nearly every line this gate cares about.
+# The identity subcommands. `rev-parse` and `symbolic-ref` carry a hyphen and so cannot be Python identifiers; `branch` must be QUOTED, because an unquoted `branch` is the name of a variable on nearly every line this gate cares about.
 _PY_IDENTITY = re.compile(r"\b(?:rev-parse|symbolic-ref)\b|['\"]branch['\"]")
 
 _PY_ASSIGN = re.compile(r"^[ \t]*([A-Za-z_][A-Za-z0-9_]*)[ \t]*(?::[^=]+)?=(?!=)")
@@ -417,8 +407,7 @@ def scan_files(root: pathlib.Path, globs: tuple[str, ...] = SCAN_GLOBS) -> list[
 
 # --- the control fixtures, byte for byte from the twin's heredocs -----------
 #
-# Each one is a shape that broke this gate, or the mirror that proves the fix did not break the correct shape. The `-C` and bare-statement fixtures are the
-# two REAL defects; the rest are their mirrors.
+# Each one is a shape that broke this gate, or the mirror that proves the fix did not break the correct shape. The `-C` and bare-statement fixtures are the two REAL defects; the rest are their mirrors.
 _CONTROLS: tuple[tuple[str, str, bool, str], ...] = (
     (
         "bad.sh",
@@ -836,9 +825,7 @@ def selftest() -> int:
         scan_text('B=$(git rev-parse --abbrev-ref HEAD)\n[ "$B" = "HEAD" ] && exit 0\n', "f"),
         [],
     )
-    # AND IT IS PER-VARIABLE. A HEAD check on a DIFFERENT name must not clear
-    # this one; that over-clearing is what the twin measured on
-    # check-submodule-branches.sh.
+    # AND IT IS PER-VARIABLE. A HEAD check on a DIFFERENT name must not clear this one; that over-clearing is what the twin measured on check-submodule-branches.sh.
     ctl.check(
         "SPECIAL: a HEAD check on ANOTHER variable does not clear it",
         scan_text('B=$(git rev-parse --abbrev-ref HEAD)\n[[ "$other" == "HEAD" ]]\n', "f"),

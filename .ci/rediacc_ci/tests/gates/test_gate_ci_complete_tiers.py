@@ -10,9 +10,7 @@ The contract under test:
     read as green -- but a genuine FAILURE of any job must still be red, and
     INITIALIZE must still be hard-required.
 
-Both directions matter: too strict and every fast-path run is red (the fast path
-is dead on arrival); too lax and a skipped build reads as green on a normal run,
-which is the exact DAG-breakage the hard tier exists to catch.
+Both directions matter: too strict and every fast-path run is red (the fast path is dead on arrival); too lax and a skipped build reads as green on a normal run, which is the exact DAG-breakage the hard tier exists to catch.
 
 THE ONE PLACE THE PORT IS DELIBERATELY NOT A TRANSLATION. The twin hand-types the 21 `RESULT_*` names of its all-green baseline, with a comment on three of them recording that each was added only after a job landed and the fixture caught the omission by accident. That is a hand-typed floor, and the failure it invites is the quiet one: a job added to the subject and NOT to the
 fixture is simply never exercised, and the suite stays green having stopped covering it.
@@ -96,8 +94,7 @@ def required_jobs() -> dict[str, list[str]]:
     source = SUT.read_text(encoding="utf-8")
     found: dict[str, list[str]] = {}
     for name, body in ARRAY_RE.findall(source):
-        # Comment lines inside the array are prose about individual jobs and are
-        # full of the very names being parsed; drop them before extracting.
+        # Comment lines inside the array are prose about individual jobs and are full of the very names being parsed; drop them before extracting.
         cleaned = "\n".join(ln for ln in body.splitlines() if not ln.strip().startswith("#"))
         found[name] = NAME_RE.findall(cleaned)
     return found

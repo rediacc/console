@@ -11,15 +11,13 @@ case it has and comparing exit codes alone would compare almost nothing:
   4. THE EXPORTED SET the caller is left holding, which is the whole point of a
      script whose two production callers `source` it.
 
-HOW THE EXPORTED SET IS COMPARED. The twin is sourced by a throwaway bash shell
-that then dumps `env -0`; the port's `inject()` is called and its mapping is
-dumped the same way. Only the four names the twin exports are compared, plus the FACT that nothing else changed -- a port that exported a fifth name would pass a four-name comparison. `_exports_twin` starts from a fixed environment so the diff is against a known baseline rather than against whatever the test runner happened to inherit.
+HOW THE EXPORTED SET IS COMPARED. The twin is sourced by a throwaway bash shell that then dumps `env -0`; the port's `inject()` is called and its mapping is dumped the same way. Only the four names the twin exports are compared, plus the FACT that nothing else changed -- a port that exported a fifth name would pass a four-name comparison. `_exports_twin` starts from a fixed
+environment so the diff is against a known baseline rather than against whatever the test runner happened to inherit.
 
 WHY THE RESOLVER IS A FIXTURE AND NOT THE REAL ONE. The twin resolves `resolve-version.sh` relative to its OWN directory, so a copy of the twin in a fixture finds the fixture's copy. That is the seam: `resolve-version.sh` here is a recording stub whose exit code and stdout are baked into its text, which makes the four fallback branches (fails / prints nothing / missing / not
 executable) reachable without inventing git history. The port derives the same path from its own `__file__`, so the fixture copy of the port finds the same stub -- asserted by `test_the_resolver_stub_is_actually_reached`, without which every case below could be "two programs that both fell back to 0.0.0-dev".
 
-TWO REAL DEFECTS IN THE TWIN ARE PINNED HERE, not fixed: `test_a_flag_swallowed_as_a_version_is_a_twin_defect` and `test_sourcing_the_twin_leaks_set_euo_pipefail_into_the_caller`. Both are
-reported to the campaign; the repair is a cutover-box decision.
+TWO REAL DEFECTS IN THE TWIN ARE PINNED HERE, not fixed: `test_a_flag_swallowed_as_a_version_is_a_twin_defect` and `test_sourcing_the_twin_leaks_set_euo_pipefail_into_the_caller`. Both are reported to the campaign; the repair is a cutover-box decision.
 """
 
 import json
@@ -286,9 +284,7 @@ def test_exported_set_port_and_twin_agree(tmp_path, fixture_kw, argv, env_extra)
     assert old_extra == [], (
         "the twin exported a name outside the four this port reproduces: %r" % old_extra
     )
-    # ANTI-VACUITY, per case rather than once. Roughly a third of the table is a
-    # refusal, where BOTH sides correctly export nothing; without this the other
-    # two thirds could quietly join them and every row would read "two empty dicts agree".
+    # ANTI-VACUITY, per case rather than once. Roughly a third of the table is a refusal, where BOTH sides correctly export nothing; without this the other two thirds could quietly join them and every row would read "two empty dicts agree".
     if old_code == 0:
         assert sorted(old_exports) == sorted(NAMES), (
             "a successful run exported %r, not the four names" % sorted(old_exports)

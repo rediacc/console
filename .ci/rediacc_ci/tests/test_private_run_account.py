@@ -15,9 +15,7 @@ THE CALL LOG IS ALSO WHERE THE TWIN'S ORDERING DEFECT STAYS VISIBLE.
 
 PATH IS REPLACED, NEVER PREPENDED, and this host HAS a real `npm`. A prepend would leave the "npm is missing" case silently consulting it, and `_binder` asserts the exclusion really took.
 
-THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming
-the file it is running; the port composes the same prefix from `sys.argv[0]` and
-its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
+THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming the file it is running; the port composes the same prefix from `sys.argv[0]` and its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
 """
 
 import pathlib
@@ -175,8 +173,7 @@ def _run(
         "PATH": binder,
         "HOME": str(tmp_path),
         "PYTHONDONTWRITEBYTECODE": "1",
-        # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci.log`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})
@@ -366,9 +363,7 @@ def test_the_stage_runs_when_the_submodule_is_there(tmp_path):
 def test_an_unknown_stage_still_pays_for_npm_ci(tmp_path):
     """A DEFECT IN THE TWIN, PINNED RATHER THAN FIXED.
 
-    `cd`, then `npm ci`, THEN the `case`. So `run-account.sh bogus` and `run-account.sh deploy` each perform a full clean install of the account server's dependency tree and only then refuse. Both subjects are asserted,
-    because the port must not quietly improve on it; the day the twin's
-    validation moves above the install, this goes red and names the decision.
+    `cd`, then `npm ci`, THEN the `case`. So `run-account.sh bogus` and `run-account.sh deploy` each perform a full clean install of the account server's dependency tree and only then refuse. Both subjects are asserted, because the port must not quietly improve on it; the day the twin's validation moves above the install, this goes red and names the decision.
     """
     binder = _binder(tmp_path)
     for stage in ("bogus", "deploy"):

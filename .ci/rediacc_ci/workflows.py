@@ -42,8 +42,7 @@ VALUES ARE STILL RESOLVED THE YAML 1.1 WAY, including `yes`/`no`/`on`/`off` as b
 import pathlib
 import re
 
-# YAML 1.1 boolean words, which is what PyYAML's safe_load resolves and therefore what every existing consumer in this tree already sees. YAML 1.2 dropped
-# yes/no/on/off; matching 1.1 is a compatibility decision, not an oversight.
+# YAML 1.1 boolean words, which is what PyYAML's safe_load resolves and therefore what every existing consumer in this tree already sees. YAML 1.2 dropped yes/no/on/off; matching 1.1 is a compatibility decision, not an oversight.
 _TRUE = frozenset(["true", "True", "TRUE", "yes", "Yes", "YES", "on", "On", "ON"])
 _FALSE = frozenset(["false", "False", "FALSE", "no", "No", "NO", "off", "Off", "OFF"])
 _NULL = frozenset(["", "~", "null", "Null", "NULL"])
@@ -176,9 +175,7 @@ def _strip_comment(text: str) -> str:
 def _parse_flow(text: str, line_no: int):
     """A single-line flow collection: `[a, b]` or `{a: b, c: d}`.
 
-    Nested flow is supported because `needs: [a, b]` and matrix `include:` both
-    appear; a flow collection spanning lines is not, and is refused rather than
-    silently truncated.
+    Nested flow is supported because `needs: [a, b]` and matrix `include:` both appear; a flow collection spanning lines is not, and is refused rather than silently truncated.
     """
     value, index = _flow_node(text, 0, line_no)
     rest = text[index:].strip()
@@ -437,9 +434,7 @@ def _parse_sequence(reader: _Reader, indent: int) -> list:
             reader.index += 1
             out.append(_parse_inline(body, line_no))
             continue
-        # REWRITE THE DASH AS SPACES and re-read the line as ordinary content. `- name: x` followed by ` run: y` is a mapping whose first key happens
-        # to share a line with the dash; blanking the dash makes that literally
-        # true and removes the need for a second, subtly different mapping parser. It also handles a nested sequence (`- - a`) for free.
+        # REWRITE THE DASH AS SPACES and re-read the line as ordinary content. `- name: x` followed by ` run: y` is a mapping whose first key happens to share a line with the dash; blanking the dash makes that literally true and removes the need for a second, subtly different mapping parser. It also handles a nested sequence (`- - a`) for free.
         item_indent = dash + 1 + (len(rest) - len(rest.lstrip(" ")))
         reader.lines[reader.index] = " " * item_indent + rest.lstrip(" ")
         out.append(_parse_node(reader, item_indent))
@@ -506,8 +501,7 @@ def _continue_plain(reader: _Reader, first: str, indent: int) -> str:
           || env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
 
     A parser that reads only the first line does not merely truncate the value -- the two orphaned continuation lines are more indented than the mapping, so the mapping ends there, and everything after it in the file is silently dropped. The differential against PyYAML measured the damage exactly: 13 steps parsed where 15 exist, with `Deploy account Worker` and `Set Worker secrets`
-    gone.
-    Nothing about the result looked wrong; there was simply less of it.
+    gone. Nothing about the result looked wrong; there was simply less of it.
 
     YAML folds these with a single space, which is why `${{ a\n&& b }}` and
     `${{ a && b }}` are the same expression to Actions and must be the same string
@@ -711,9 +705,7 @@ class LaneCapabilities:
 def lane_capabilities(workflow: "Workflow") -> list[LaneCapabilities]:
     """Per job, in file order. The structural twin of lanes.ts:61.
 
-    THE `str()` ON runs-on IS NOT COSMETIC. lanes.ts reads the raw token out of
-    the line, so `runs-on: ubuntu-slim` is the string "ubuntu-slim" there; the
-    structural parse of the same line is also a string, but a bare `runs-on: 22` would resolve to an int here and to "22" there. Coercing at the boundary keeps the two comparable without weakening the parser for everyone else.
+    THE `str()` ON runs-on IS NOT COSMETIC. lanes.ts reads the raw token out of the line, so `runs-on: ubuntu-slim` is the string "ubuntu-slim" there; the structural parse of the same line is also a string, but a bare `runs-on: 22` would resolve to an int here and to "22" there. Coercing at the boundary keeps the two comparable without weakening the parser for everyone else.
     """
     out = []
     for job in workflow.jobs:

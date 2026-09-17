@@ -59,19 +59,16 @@ categories and therefore EXCLUDES the nine ASCII symbols `$ + < = > ^ ` | ~`,
 which GNU grep and POSIX both include. Verified by running `grep -oE '[[:punct:]]'` over the printable ASCII range: ugrep returned
 `!"#%&'()*,-./:;?@[\]_{}` and nothing else.
 
-The port uses the WIDER, POSIX set. The difference is unobservable on every shape actually in use, because the character the pattern requires immediately before the `s` is the quote opening a sed expression (`sed 's/`, `sed "s/`), and a quote is punctuation under both readings. A file containing `sed $s/` would be
-flagged by the port and not by ugrep; no such file exists, and
+The port uses the WIDER, POSIX set. The difference is unobservable on every shape actually in use, because the character the pattern requires immediately before the `s` is the quote opening a sed expression (`sed 's/`, `sed "s/`), and a quote is punctuation under both readings. A file containing `sed $s/` would be flagged by the port and not by ugrep; no such file exists, and
 `tests/test_quality_control_vacuity.py` compares the port against the LIVE grep pipeline file by file across the whole gate directory so a future one would show up as a failing test rather than as a silent divergence.
 
 COLOUR IS DECIDED ON A DIFFERENT STREAM. The twin sets RED/GREEN on `[ -t 1 ]` -- stdout -- and then writes its coloured `✗` lines to STDERR. That is the 11-file variant `rediacc_ci.log`'s docstring documents as a bug: redirect one stream and not the other and the colour lands in the wrong place. `log.error` tests the stream it writes to. Under the differential neither stream is a
-terminal, so both produce the same bytes; on a developer's terminal with stdout
-redirected the twin emits escapes into a pipe and the port does not. Reported as a twin defect, not repaired in the twin.
+terminal, so both produce the same bytes; on a developer's terminal with stdout redirected the twin emits escapes into a pipe and the port does not. Reported as a twin defect, not repaired in the twin.
 
 THE BANNER AND THE GREEN LINE ARE STDOUT, the findings are stderr, and the split is the twin's. `echo` for the two summary lines, `>&2` for every `fail`. Carried exactly, because `scripts/lib/shadow-gate.ts` reads both streams and a moved line changes the chatter/finding split.
 
-`sed '/.../,+2d'` IS A RANGE, NOT A PER-LINE DELETE. It removes the matching line and the two after it, then RESUMES looking for a new start. A port that deleted only matching lines would leave the two lines after the guard behind and
-the control's stripped copy would still carry them; a port that stopped after the
-first range would miss a second guard. Both are wrong in the same direction: they make the control easier to pass.
+`sed '/.../,+2d'` IS A RANGE, NOT A PER-LINE DELETE. It removes the matching line and the two after it, then RESUMES looking for a new start. A port that deleted only matching lines would leave the two lines after the guard behind and the control's stripped copy would still carry them; a port that stopped after the first range would miss a second guard. Both are wrong in the same
+direction: they make the control easier to pass.
 """
 
 import glob
@@ -249,8 +246,7 @@ def audit(gate_dir: pathlib.Path, failures: Failures) -> tuple[int, int]:
                 "%s builds its control by pattern substitution but never proves "
                 "the plant landed." % base
             )
-            # STDERR, indented, so `scripts/lib/shadow-gate.ts` attaches these four lines to the finding above them. The twin prints them with
-            # bare `echo ... >&2`; the indent is the contract.
+            # STDERR, indented, so `scripts/lib/shadow-gate.ts` attaches these four lines to the finding above them. The twin prints them with bare `echo ... >&2`; the indent is the contract.
             print(
                 "      Reword the targeted line and its control passes against UNMUTATED source,",
                 file=sys.stderr,
@@ -336,9 +332,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # STDOUT, NOT log.info. The twin's last line is
     # `echo "${GREEN}\u2713${NC} $checked ..."`, which lands on stdout, and
-    # `rediacc_ci.log` writes every message to stderr by design. Both spellings are CHATTER to `scripts/lib/shadow-gate.ts`, so the differential would
-    # score the two as equivalent either way; that is exactly why it has to be
-    # got right by reading the twin rather than by watching the comparator.
+    # `rediacc_ci.log` writes every message to stderr by design. Both spellings are CHATTER to `scripts/lib/shadow-gate.ts`, so the differential would score the two as equivalent either way; that is exactly why it has to be got right by reading the twin rather than by watching the comparator.
     print(
         "\u2713 %d pattern-substitution control(s) prove their plant landed; %d built by "
         "construction (exempt); %d python gate(s) NOT scanned here -- check:ci-python-control-plants owns them"
@@ -509,9 +503,7 @@ def selftest() -> int:
         ctl.check("PLANT: a substitution control with no proof reds", run(), 1)
         (gate_dir / "check-bad.sh").unlink()
 
-        # THE VACUITY CASE. Remove every substituting gate and the corpus
-        # collapses; a gate that reported clean here would be reporting on
-        # nothing. The control gate stays so the CONTROL block still runs.
+        # THE VACUITY CASE. Remove every substituting gate and the corpus collapses; a gate that reported clean here would be reporting on nothing. The control gate stays so the CONTROL block still runs.
         (gate_dir / "check-good.sh").unlink()
         write(CONTROL_GATE, "#!/bin/bash\n# CONTROL DID NOT FIRE\necho hi\n")
         ctl.check("VACUITY: a corpus that collapsed to zero reds", run(), 1)

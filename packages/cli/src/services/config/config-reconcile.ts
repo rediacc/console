@@ -117,8 +117,7 @@ function classifyDeclaredMachine(
     }
     return { conflict };
   }
-  // R4: the declared machine holds a copy, but the grand GUID also lives on OTHER machines — stray copies (interrupted migrate, `--keep-source`, or a pushed backup left mounted). spec/04 §4.3 lists "same GUID on two machines"
-  // as a conflict class; this is its declared-plus-strays case.
+  // R4: the declared machine holds a copy, but the grand GUID also lives on OTHER machines — stray copies (interrupted migrate, `--keep-source`, or a pushed backup left mounted). spec/04 §4.3 lists "same GUID on two machines" as a conflict class; this is its declared-plus-strays case.
   if (machines.length > 1) {
     const strays = machines.filter((m) => m !== declared);
     return {
@@ -230,9 +229,7 @@ export async function reconcileState(
       pendingPlacement.set(fill.repository, fill.placement);
       placementsFilled.push(fill);
     }
-    // The unambiguous drift carries both `accept` and `conflict`. With the flag,
-    // resolve it (record the acceptance, suppress the conflict); without, report
-    // the conflict as usual. Duplicates have no `accept`, so they stay conflicts even under the flag.
+    // The unambiguous drift carries both `accept` and `conflict`. With the flag, resolve it (record the acceptance, suppress the conflict); without, report the conflict as usual. Duplicates have no `accept`, so they stay conflicts even under the flag.
     if (accept && options.acceptObserved) {
       pendingAccept.set(accept.repository, { machine: accept.to });
       placementsAccepted.push(accept);
@@ -241,8 +238,7 @@ export async function reconcileState(
     }
   }
 
-  // Rebuild state.machines observations. state.repos.networkId reconciliation requires the renet `network_id` field on RepositoryInfo (spec §1.3, §6.7,
-  // a P1 renet addition); until it lands, networkId is left as-is.
+  // Rebuild state.machines observations. state.repos.networkId reconciliation requires the renet `network_id` field on RepositoryInfo (spec §1.3, §6.7, a P1 renet addition); until it lands, networkId is left as-is.
   await deps.writeState((cfg) => {
     const state: RdcState = { ...(cfg.state ?? {}) };
     const machines: NonNullable<RdcState['machines']> = { ...(state.machines ?? {}) };
@@ -254,8 +250,7 @@ export async function reconcileState(
 
     const repositories = { ...(cfg.resources?.repositories ?? {}) };
     for (const [name, placement] of pendingPlacement) {
-      // pendingPlacement keys are family names observed this run, so the family
-      // is present; only fill when it still declares no placement.
+      // pendingPlacement keys are family names observed this run, so the family is present; only fill when it still declares no placement.
       const family = repositories[name];
       if (!family.placement) repositories[name] = { ...family, placement };
     }

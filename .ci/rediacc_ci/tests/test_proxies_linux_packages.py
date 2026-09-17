@@ -1,16 +1,13 @@
 """`rediacc_ci.proxies.linux_packages` against its bash twin
 `.ci/scripts/test/proxies/proxy-linux-packages.sh` (gate `check:ci-proxy-linux-packages`, `package.json:385`).
 
-Sibling of `test_proxies_ensure_nfpm.py`; see that file for why the two
-invocations are compared byte for byte rather than as a finding set.
+Sibling of `test_proxies_ensure_nfpm.py`; see that file for why the two invocations are compared byte for byte rather than as a finding set.
 
 MOST CASES BUILD NO PACKAGES. Only `test_real_tree_agrees_byte_for_byte` runs the genuine `test-linux-packages.sh --dry-run` (nfpm really builds four formats, build-pkg-repo.sh really generates APT/RPM/APK/Arch metadata, ~1 s on this host). The rest run against a fixture root whose SUBJECT is a stub with the same SHAPE -- `^run_test "` call sites, `TEST: ` banners on stderr,
 `[DRY-RUN] Would` stub lines, a `Results:` summary -- which is the only way to drive the marker-rename defect at all: the real subject cannot be asked to rename its own stub text.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-linux-packages.observations.jsonl` (6 rows,
-6 distinct trees, 5 distinct finding sets), re-recorded on 2026-09-10 after the
-marker-corroboration fix; the pre-fix rows were DISCARDED rather than appended
-to, because they record a verdict the code no longer gives.
+6 distinct trees, 5 distinct finding sets), re-recorded on 2026-09-10 after the marker-corroboration fix; the pre-fix rows were DISCARDED rather than appended to, because they record a verdict the code no longer gives.
 """
 
 from __future__ import annotations
@@ -413,8 +410,7 @@ def test_banners_above_stubs_matches_grep_b1() -> None:
         "[DRY-RUN] Would three\n"
         "[DRY-RUN] Would three again"
     )
-    # `two` and `three` each have a banner directly above a stub line; the
-    # SECOND stub line for `three` re-emits nothing new.
+    # `two` and `three` each have a banner directly above a stub line; the SECOND stub line for `three` re-emits nothing new.
     assert linux_packages.banners_above_stubs(text) == 2
     assert linux_packages.banners_above_stubs("no stubs at all") == 0
 

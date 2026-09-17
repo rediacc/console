@@ -156,8 +156,7 @@ def test_help_keeps_the_twins_dangling_backslash() -> None:
         ["--out", "/dev/null", "--interval", "-1"],
         ["--out", "/dev/null", "--interval", "1.5"],
         ["--out", "/dev/null", "--interval", ""],
-        # Dangling value flags. These SPUN FOREVER until 2026-09-10; see
-        # `test_a_dangling_value_flag_exits_on_both_sides` for the measurement.
+        # Dangling value flags. These SPUN FOREVER until 2026-09-10; see `test_a_dangling_value_flag_exits_on_both_sides` for the measurement.
         ["--out"],
         ["--interval"],
         ["--probe", "--out"],
@@ -174,12 +173,9 @@ def test_argument_refusals_are_byte_identical(args: list[str]) -> None:
 def test_the_meta_record_carries_the_normalised_interval(tmp_path: pathlib.Path) -> None:
     """FIXED 2026-09-10 in BOTH SIDES. This test used to assert `01`.
 
-    `01` is all digits, so `is_num` always accepted it, and the twin then echoed the RAW STRING into `#META` because it never converted `$INTERVAL` at all. The
-    first version of this port stored `int(raw)` and wrote `1`; the differential
-    caught that, reading the file did not. The twin now normalises with
+    `01` is all digits, so `is_num` always accepted it, and the twin then echoed the RAW STRING into `#META` because it never converted `$INTERVAL` at all. The first version of this port stored `int(raw)` and wrote `1`; the differential caught that, reading the file did not. The twin now normalises with
     `INTERVAL=$((10#$INTERVAL))` -- the fix for the `08` death two cases down --
-    which REASSIGNS the variable, so the raw string stops existing on that side and
-    both records read `1`. The pair is still the point; only the value moved.
+    which REASSIGNS the variable, so the raw string stops existing on that side and both records read `1`. The pair is still the point; only the value moved.
     """
     env = {
         "PROFILER_CGROUP_ROOT": str(_cgroup_v2(tmp_path)),
@@ -510,9 +506,8 @@ def test_an_octal_invalid_disk_cadence_now_runs_on_both_sides(
 def test_a_valid_octal_interval_is_now_one_number(tmp_path: pathlib.Path) -> None:
     """FIXED 2026-09-10. `010` used to be three numbers in one run.
 
-    `$((010))` is 8, so the disk-decimation divisor was 8; `read -t 010` waits 10
-    real seconds (measured on a fifo: 10.01s); `[ 010 -lt 1 ]` reads decimal 10; and
-    the `#META` record said `010`. One flag, four readings, three values. The quiet half of the `08` case, and the reason the fix normalises rather than merely rejecting a leading zero: `010` never errored, it just meant different things in different lines. It is `10` everywhere now.
+    `$((010))` is 8, so the disk-decimation divisor was 8; `read -t 010` waits 10 real seconds (measured on a fifo: 10.01s); `[ 010 -lt 1 ]` reads decimal 10; and the `#META` record said `010`. One flag, four readings, three values. The quiet half of the `08` case, and the reason the fix normalises rather than merely rejecting a leading zero: `010` never errored, it just meant
+    different things in different lines. It is `10` everywhere now.
 
     `_arith` stays and is driven directly here: it is still the correct model of `$(( ))`, and it is what makes the normalisation a choice rather than an accident of Python's `int()`.
     """
@@ -543,11 +538,9 @@ def test_a_non_numeric_max_seconds_is_refused_at_startup(tmp_path: pathlib.Path,
 
     The only use was `[ <elapsed> -ge "$MAX_SECONDS" ]`, and `test` prints `[: abc: integer expected` and evaluates FALSE on a non-numeric operand. So
     `PROFILER_MAX_SECONDS=abc` did not clamp the sampler to some default -- it
-    removed the self-termination ENTIRELY, on a process the production caller detaches and unrefs. Measured: 3 ticks in 4 seconds, three diagnostics, no stop, killed by `timeout`. The old version of this test asserted exactly that, and a port that stopped on its own would have been the safer program and the wrong
-    port; the fix had to land on both sides at once for that reason.
+    removed the self-termination ENTIRELY, on a process the production caller detaches and unrefs. Measured: 3 ticks in 4 seconds, three diagnostics, no stop, killed by `timeout`. The old version of this test asserted exactly that, and a port that stopped on its own would have been the safer program and the wrong port; the fix had to land on both sides at once for that reason.
 
-    REJECTED, not coerced to the 6-hour default: this file has both conventions (`--interval` refuses, `PROFILER_DISK_EVERY_S` falls back silently) and the line between them is what a wrong value costs. A wrong `df` cadence costs a sampling
-    rate; a wrong max-seconds costs a sampler running forever.
+    REJECTED, not coerced to the 6-hour default: this file has both conventions (`--interval` refuses, `PROFILER_DISK_EVERY_S` falls back silently) and the line between them is what a wrong value costs. A wrong `df` cadence costs a sampling rate; a wrong max-seconds costs a sampler running forever.
 
     NOT in the matrix: `""`. `${VAR:-default}` treats exported-empty as UNSET, so an
     empty value is the 21600 default and not a refusal at all;
@@ -583,8 +576,7 @@ def test_an_empty_max_seconds_is_the_default_not_a_refusal(tmp_path: pathlib.Pat
         "PROFILER_RUNNER_LABEL": "x",
     }
     old, new = run_both(["--probe"], env=env, timeout=30)
-    # NOT `assert_same`: a probe report carries the three live readings this file declares uncomparable (bash version, both `df ... used` figures, per-sample cost). `test_probe_agrees_on_everything_that_is_not_a_live_reading` owns that
-    # comparison; the subject here is only that neither side refuses.
+    # NOT `assert_same`: a probe report carries the three live readings this file declares uncomparable (bash version, both `df ... used` figures, per-sample cost). `test_probe_agrees_on_everything_that_is_not_a_live_reading` owns that comparison; the subject here is only that neither side refuses.
     for side, r in (("twin", old), ("port", new)):
         assert r[0] == 0, "%s refused an empty PROFILER_MAX_SECONDS:\n%s" % (side, r[2])
         assert "PROFILER_MAX_SECONDS" not in r[2]
@@ -932,8 +924,7 @@ def test_a_planted_regression_of_the_dangling_flag_guard_is_caught(
 def test_the_port_file_on_disk_is_untouched_by_this_module() -> None:
     """A last, cheap guard: the two plants above are the only mutations here.
 
-    Runs last by name ordering only as a courtesy; the real protection is the
-    hash assertion inside each plant. This one catches an EDIT made by a future
+    Runs last by name ordering only as a courtesy; the real protection is the hash assertion inside each plant. This one catches an EDIT made by a future
     case that forgets to copy first.
     """
     text = PORT.read_text(encoding="utf-8")

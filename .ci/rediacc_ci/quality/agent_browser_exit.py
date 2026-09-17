@@ -1,8 +1,6 @@
 r"""`agent-browser open`'s exit status must never decide control flow.
 
-Ported from `.ci/scripts/quality/check-agent-browser-exit.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live and for the
-phase-5 decision that retires the twin.
+Ported from `.ci/scripts/quality/check-agent-browser-exit.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live and for the phase-5 decision that retires the twin.
 
 THE TWIN'S OWN HEADER, carried over because the measurement IS the gate and a paraphrase of it would be a different gate:
 
@@ -46,8 +44,7 @@ PORT NOTES.
 
 THE LAST LINE OF A FILE WITH NO TRAILING NEWLINE IS NOT SCANNED, and that is
 the twin's behaviour rather than a shortcut taken here. `while IFS= read -r
-line; do ... done <"$f"` runs its body only when `read` SUCCEEDS, and `read`
-returns non-zero at EOF even though it has already assigned the partial line. Measured in this tree:
+line; do ... done <"$f"` runs its body only when `read` SUCCEEDS, and `read` returns non-zero at EOF even though it has already assigned the partial line. Measured in this tree:
 
     printf 'a\nb' > f; n=0
     while IFS= read -r l; do n=$((n+1)); echo "GOT[$n]=$l"; done < f
@@ -57,11 +54,9 @@ So `b` is invisible to the scanner. `_read_lines` reproduces exactly that by spl
 than silently repaired, because repairing it would change the verdict on a real file and the port's job is to keep the verdict.
 
 `set -o errexit` IS NOT SEEN, for the same reason. The eligibility test is `grep -qE '^[[:space:]]*set[[:space:]]+-[a-z]*e'`, which requires the `e` to sit inside the option CLUSTER: `-e`, `-euo` and `-ex` all match because `[a-z]*` can be empty or `u`/`x`-and-friends up to an `e`, while `-o errexit` puts a SPACE between the dash and the `e` and `[a-z]*` cannot cross it. A script
-written with the long form dies exactly the same way and this gate never looks at it. Carried
-unchanged; reported.
+written with the long form dies exactly the same way and this gate never looks at it. Carried unchanged; reported.
 
-`[[:space:]]` IS NOT `\s`. POSIX space is exactly [ \t\n\v\f\r]; Python's `\s`
-on a str pattern also matches U+00A0 and U+2028, so a line indented with a non-breaking space would be seen by the port and not by grep. The class is written out rather than abbreviated, the same way `rediacc_ci.quality.npmrc` does it and for the same reason.
+`[[:space:]]` IS NOT `\s`. POSIX space is exactly [ \t\n\v\f\r]; Python's `\s` on a str pattern also matches U+00A0 and U+2028, so a line indented with a non-breaking space would be seen by the port and not by grep. The class is written out rather than abbreviated, the same way `rediacc_ci.quality.npmrc` does it and for the same reason.
 
 THE SKIP LIST TESTS THE RAW LINE, NOT THE STRIPPED ONE. Only the comment test
 uses the leading-whitespace-stripped form (`${line#"${line%%[![:space:]]*}"}`);
@@ -96,18 +91,14 @@ SPACE = r"[ \t\n\v\f\r]"
 SET_E_RE = re.compile(r"^%s*set%s+-[a-z]*e" % (SPACE, SPACE))
 
 # The shell corpus: `--include='*.sh'`, with the twin itself removed by exact
-# filename. node_modules and .git USED TO BE LISTED HERE as the path substrings
-# `/node_modules/` and `/.git/`; they now come from `paths.walk_tree`, which
-# prunes them for every gate in this package rather than for the ones that remembered. Empty rather than deleted, because the JS corpus below still has a prune of its own and one parameter is clearer than two code paths.
+# filename. node_modules and .git USED TO BE LISTED HERE as the path substrings `/node_modules/` and `/.git/`; they now come from `paths.walk_tree`, which prunes them for every gate in this package rather than for the ones that remembered. Empty rather than deleted, because the JS corpus below still has a prune of its own and one parameter is clearer than two code paths.
 SH_SUFFIXES = (".sh",)
 SH_PRUNE: tuple[str, ...] = ()
 SELF_NAME = "check-agent-browser-exit.sh"
 
 # The JS corpus: `--include='*.js' --include='*.mjs' --include='*.cjs'
 # --include='*.ts'`, with `dist` pruned. `dist` is on this list and not on the
-# shell one, exactly as in the twin. A directory NAME now, not the path substring
-# `/dist/`, because that is what `walk_tree`'s `exclude_dirs` takes; the two agree
-# on every path (the substring only ever matched a whole component) and the name form is pruned before the subtree is entered rather than after it is read.
+# shell one, exactly as in the twin. A directory NAME now, not the path substring `/dist/`, because that is what `walk_tree`'s `exclude_dirs` takes; the two agree on every path (the substring only ever matched a whole component) and the name form is pruned before the subtree is entered rather than after it is read.
 JS_SUFFIXES = (".js", ".mjs", ".cjs", ".ts")
 JS_PRUNE = ("dist",)
 
@@ -117,9 +108,7 @@ NEEDLE = "agent-browser"
 # The throwing execs. A file that runs agent-browser through one of these and never mentions `.stdout` has thrown away the only evidence there was.
 THROWING_EXECS = ("execSync(", "execFileSync(")
 
-# The recovery marker. Its PRESENCE ANYWHERE IN THE FILE clears the whole file,
-# which is deliberately crude so the rule cannot false-positive on style; the
-# twin's comment says so and the crudeness is the reason it is trusted.
+# The recovery marker. Its PRESENCE ANYWHERE IN THE FILE clears the whole file, which is deliberately crude so the rule cannot false-positive on style; the twin's comment says so and the crudeness is the reason it is trusted.
 RECOVERY = ".stdout"
 
 
@@ -177,9 +166,7 @@ def _report(root: str, path: str, number: int, line: str) -> str:
 def scan(root: str) -> list[str]:
     """Shell scripts under `set -e` whose control flow trusts that exit status.
 
-    Returns the findings rather than a boolean, so a test can assert on the decision without capturing a stream. The twin's `[ "$hits" -eq 0 ]` becomes
-    `not scan(root)` at the call site; see the port notes for why the count is
-    never the return value on either side.
+    Returns the findings rather than a boolean, so a test can assert on the decision without capturing a stream. The twin's `[ "$hits" -eq 0 ]` becomes `not scan(root)` at the call site; see the port notes for why the count is never the return value on either side.
     """
     hits: list[str] = []
     for path in _corpus(root, SH_SUFFIXES, SH_PRUNE):
@@ -237,9 +224,7 @@ def scan_js(root: str) -> list[str]:
     return hits
 
 
-# The two blocks of advice, kept as heredocs were: one string each, printed to stderr under the finding they belong to. Reworded advice is allowed by the
-# differential; these are not reworded, because the JS snippet is the fix and a
-# paraphrase of a fix is not a fix.
+# The two blocks of advice, kept as heredocs were: one string each, printed to stderr under the finding they belong to. Reworded advice is allowed by the differential; these are not reworded, because the JS snippet is the fix and a paraphrase of a fix is not a fix.
 JS_ADVICE = """
 `execSync`/`execFileSync` THROW on a non-zero status, and agent-browser's status is not
 evidence (see below). Its verdict is JSON on STDOUT even when it exits 1, so catch the
@@ -270,8 +255,7 @@ def _write(path: pathlib.Path, *lines: str) -> None:
 def inline_controls() -> int:
     """The twin's own controls, run BEFORE the real scan. 0 green, 1 red.
 
-    A gate nobody has watched fail is not a gate. These are carried across unchanged, including the two `echo " PASS control: ..."` lines they print on stdout, because a harness reading this gate's output would notice their
-    absence. `--selftest` below is the ADDITION; this is the preserved half.
+    A gate nobody has watched fail is not a gate. These are carried across unchanged, including the two `echo " PASS control: ..."` lines they print on stdout, because a harness reading this gate's output would notice their absence. `--selftest` below is the ADDITION; this is the preserved half.
     """
     ctl = pathlib.Path(tempfile.mkdtemp())
     try:
@@ -293,9 +277,7 @@ def inline_controls() -> int:
             'agent-browser open "$URL" >/dev/null 2>&1',
         )
 
-        # A directory that does not exist. The twin drives this and throws the
-        # result away (`>/dev/null 2>&1 || true`), so it asserts nothing; it is
-        # carried because deleting it would be a change to the twin's behaviour under an unrelated port, and it is reported as dead code instead.
+        # A directory that does not exist. The twin drives this and throws the result away (`>/dev/null 2>&1 || true`), so it asserts nothing; it is carried because deleting it would be a change to the twin's behaviour under an unrelated port, and it is reported as dead code instead.
         scan(str(ctl / "bad.sh_dir"))
 
         one = ctl / "one"

@@ -90,9 +90,7 @@ def make_repo(path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
     assert_scratch(path)
     path.mkdir(parents=True, exist_ok=True)
     subprocess.run(["git", *GIT_FLAGS, "init", "-q", str(path)], check=True, capture_output=True)
-    # The guard again, this time on what git itself says the toplevel is. The
-    # first call guarded a path we chose; this one guards the path git chose,
-    # which is the one every destructive `git -C` below will act on.
+    # The guard again, this time on what git itself says the toplevel is. The first call guarded a path we chose; this one guards the path git chose, which is the one every destructive `git -C` below will act on.
     assert_scratch(_Path(git(path, "rev-parse", "--show-toplevel")))
     for name, body in files.items():
         target = path / name

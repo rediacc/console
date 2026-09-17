@@ -4,10 +4,7 @@ and STOP the push before it burns a CI round.
 WHY (operator, 2026-07-31): a babysat branch gets rebased on the REMOTE by GitHub's update-branch (strict_required_status_checks_policy keeps PR branches current with main), so a session's local branch silently falls behind its own remote. The session then watches a superseded run, or worse pushes its stale head, minting a non-fast-forward failure or an extra full CI round. One
 `git fetch` here is cheaper than either.
 
-Scope: plain `git push` in this superproject only. Submodule pushes name
-their own remotes and refs too many ways to second-guess; force-pushes are
-already blocked by block-git-force-push.sh; `--dry-run` is harmless.
-Fail-open on every environmental error (no network, no upstream, detached HEAD): a drift CHECK must never become a push outage.
+Scope: plain `git push` in this superproject only. Submodule pushes name their own remotes and refs too many ways to second-guess; force-pushes are already blocked by block-git-force-push.sh; `--dry-run` is harmless. Fail-open on every environmental error (no network, no upstream, detached HEAD): a drift CHECK must never become a push outage.
 
 ANOTHER REPO'S PUSH IS NOT THIS TREE'S DRIFT. Everything below reads THIS checkout's branch, HEAD and origin ref, so a `git -C <other> push` would be judged against console. Latent rather than live -- it only misfires when console's remote happens to be ahead -- but it is the same defect block-unverified-push.sh had for real, so it is closed the same way, with the shared resolver
 rather than a third hand-rolled copy.

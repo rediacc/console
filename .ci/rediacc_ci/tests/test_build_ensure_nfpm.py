@@ -9,9 +9,7 @@ for the same reason it states: run in this checkout and the warm
 
 NOTHING IS NORMALIZED. Neither side emits a timestamp, a pid or a tempdir path: `curl -sfL` is silent, `sha256sum`'s `<file>: FAILED` line goes to the stdout the twin redirects to /dev/null, and the fixture's own absolute path appears identically on both sides. Byte comparison, both streams, separately.
 
-THE NETWORK IS NEVER TOUCHED, including by the real-tree case. `curl` is shimmed
-on PATH in every case here; the shim serves a locally built tarball or refuses.
-A test that downloads 4 MB from github is a test that fails on a plane.
+THE NETWORK IS NEVER TOUCHED, including by the real-tree case. `curl` is shimmed on PATH in every case here; the shim serves a locally built tarball or refuses. A test that downloads 4 MB from github is a test that fails on a plane.
 
 K=5 LEDGER: `.ci/shadow/w7p6-ensure-nfpm.observations.jsonl` (5 rows, 5 distinct
 trees, 5 distinct finding sets).

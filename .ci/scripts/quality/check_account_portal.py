@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported account-portal typecheck-and-build gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.account_portal`, which pytest and
-the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.account_portal`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 3). See DRIVEN, below.
 
@@ -28,8 +26,7 @@ the same reason: rollup emits its `@__PURE__` annotation warnings in an order th
 DRIVEN RED TWICE, on a fixture root with PATH shims, because a seven-phase gate whose phases are ordered can agree on the clean path and still disagree on where it stops. Plant A fails `npx tsc` in phase 2: both sides exit 1 after "Frontend typecheck failed!", with identical stdout and stderr. Plant B lets all seven phases succeed and removes the build output: both sides run every
 phase in the twin's order and then exit 1 on "Expected build output not found", again identically. The second plant is the one that proves the ORDER survived the port.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-account-portal.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-account-portal.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Check account portal (typecheck + build) needs: node, submodules selftest: true lane: quality-packages ---- end gate ----
 """

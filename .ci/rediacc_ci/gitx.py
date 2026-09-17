@@ -34,9 +34,8 @@ TRAP 3: `rev-parse --abbrev-ref HEAD` PRINTS THE LITERAL STRING "HEAD" WHEN
 DETACHED, AND EXITS 0.
 ------------------------------------------------------------------------------
 So `branch="$(git rev-parse --abbrev-ref HEAD)" || branch=unknown` never takes
-its fallback, and neither does `... or "(detached or unknown)"`. 13 sites use
-that spelling; 6 are unguarded, including four in `scripts/dev/worktree.sh`
-(`:66,:488,:527,:567`) whose `|| echo unknown` / `|| echo ""` fallbacks are dead code. `.ci/lib/devbox.sh:151-156` records what it cost: the sanitised string `head.localhost` became one traefik router name shared by every detached worktree on the box.
+its fallback, and neither does `... or "(detached or unknown)"`. 13 sites use that spelling; 6 are unguarded, including four in `scripts/dev/worktree.sh` (`:66,:488,:527,:567`) whose `|| echo unknown` / `|| echo ""` fallbacks are dead code. `.ci/lib/devbox.sh:151-156` records what it cost: the sanitised string `head.localhost` became one traefik router name shared by every detached
+worktree on the box.
 
 `branch()` here uses `symbolic-ref --short -q HEAD`, which exits non-zero and prints nothing when detached, and returns None. The repo has already converged on "empty is the honest answer" twice independently -- `.ci/lib/devbox.sh:157` and `.claude/hooks/stop/wl_core.py:528-553` -- so this adopts rather than proposes. A gate already enforces the guard on the bad spelling:
 `.ci/scripts/quality/check-git-op-conditionals.sh:104-115`.
@@ -58,11 +57,8 @@ already returns tri-state and says so in its own words: "None is NOT False". Thi
 ------------------------------------------------------------------------------
 TRAP 6: A HARDCODED SUBMODULE LIST GOES BLIND TO THE FIFTH SUBMODULE.
 ------------------------------------------------------------------------------
-`.gitmodules` declares four (`private/renet`, `private/homebrew-tap`, `private/elite`, `private/account`) and three independent hardcoded copies exist -- `check-submodule-branches.sh:418` and `:457`, `.ci/scripts/ci/scope-map.cjs:123`, `.ci/scripts/ci/greenlight.cjs:270` -- plus a repo-name list at
-`.ci/scripts/autopilot/linked-sub-prs.sh:43`. They all AGREE today; two of the
-files already document that as a live defect rather than a state of grace
-(`wl_git.py:115-119`: "READ, NEVER HARDCODE"; `linked-sub-prs.sh:41-42`: "A
-submodule missing here is invisible to this scan"). `submodules()` reads `.gitmodules`, and `test_gitx.py` asserts the hardcoded lists still match it, so the day one of them drifts is the day something says so.
+`.gitmodules` declares four (`private/renet`, `private/homebrew-tap`, `private/elite`, `private/account`) and three independent hardcoded copies exist -- `check-submodule-branches.sh:418` and `:457`, `.ci/scripts/ci/scope-map.cjs:123`, `.ci/scripts/ci/greenlight.cjs:270` -- plus a repo-name list at `.ci/scripts/autopilot/linked-sub-prs.sh:43`. They all AGREE today; two of the files
+already document that as a live defect rather than a state of grace (`wl_git.py:115-119`: "READ, NEVER HARDCODE"; `linked-sub-prs.sh:41-42`: "A submodule missing here is invisible to this scan"). `submodules()` reads `.gitmodules`, and `test_gitx.py` asserts the hardcoded lists still match it, so the day one of them drifts is the day something says so.
 
 AND ITS BLIND SPOT, stated because reading `.gitmodules` does not remove it: `private/growth` and `private/generative` are independent git repositories under `private/` that are gitignored and are NOT submodules, so no enumeration of any kind sees them. `.claude/hooks/stop/wl_git.py:149` `sibling_repos()` exists for that, and `sibling_repos()` here is its counterpart.
 
@@ -100,8 +96,7 @@ _DOUBLESTAR = "**/"
 def pathspec_warning(spec: str) -> str | None:
     """Why `spec` is probably narrower than its author intended, or None.
 
-    Returned as a STRING rather than raised, because a pathspec can be deliberately narrow and this module is not the place to overrule that. A
-    caller that wants it fatal raises; a gate that wants it visible prints it.
+    Returned as a STRING rather than raised, because a pathspec can be deliberately narrow and this module is not the place to overrule that. A caller that wants it fatal raises; a gate that wants it visible prints it.
     """
     if _DOUBLESTAR in spec and not spec.startswith(":("):
         return (
@@ -173,11 +168,8 @@ def branch(root: os.PathLike[str] | str | None = None) -> str | None:
 def branch_from_ci(env: dict[str, str] | None = None) -> str | None:
     """The branch CI thinks we are on, from the environment, or None.
 
-    THE ORDER IS NOT ARBITRARY. `PR_HEAD_REF` first because this repo sets it
-    explicitly; `GITHUB_HEAD_REF` second because it is populated only for a
-    `pull_request` event and, per `check_pr_head_ref_completeness.py:11-13`, does
-    NOT reliably materialise down a `workflow_call` chain; `GITHUB_REF_NAME` last
-    because on a `pull_request` it is the artificial `<n>/merge`, which is a real ref and the wrong answer to this question.
+    THE ORDER IS NOT ARBITRARY. `PR_HEAD_REF` first because this repo sets it explicitly; `GITHUB_HEAD_REF` second because it is populated only for a `pull_request` event and, per `check_pr_head_ref_completeness.py:11-13`, does NOT reliably materialise down a `workflow_call` chain; `GITHUB_REF_NAME` last because on a `pull_request` it is the artificial `<n>/merge`, which is a real
+    ref and the wrong answer to this question.
 
     Deliberately does NOT fall through to `branch()`. On the merge-commit checkout CI uses, git's answer is a detached HEAD and therefore None, and a caller that silently blends the two cannot tell "CI did not tell me" from "we are detached". `branch_from_ci(...) or branch(...)` at the call site says which the caller prefers, in one readable line.
     """
@@ -210,8 +202,7 @@ def status_entries(root: os.PathLike[str] | str | None = None) -> list[tuple[str
     really half of a filename. `wl_git.py:643-647` handles the same thing;
     `.ci/scripts/autopilot/validate-handoff.cjs:106` documents the format.
 
-    None, NOT [], when git failed. An empty list means "clean"; a failed probe
-    means "I do not know", and collapsing the two is TRAP 5 in the dirt-check's clothing.
+    None, NOT [], when git failed. An empty list means "clean"; a failed probe means "I do not know", and collapsing the two is TRAP 5 in the dirt-check's clothing.
     """
     result = git(["status", "--porcelain=v1", "-z"], root=root)
     if not result.ok:
@@ -462,9 +453,7 @@ def parse_gitmodules(text: str) -> list[Submodule]:
 def submodules(root: os.PathLike[str] | str | None = None) -> list[Submodule]:
     """The declared submodules, read from `.gitmodules`. NEVER a hardcoded list.
 
-    Returns [] when the file is absent, which is the right answer for a repo with no submodules and is indistinguishable from a repo whose `.gitmodules` was
-    deleted. A caller that must tell those apart checks for the file; a gate that
-    must not go blind puts a floor under the count, which is what
+    Returns [] when the file is absent, which is the right answer for a repo with no submodules and is indistinguishable from a repo whose `.gitmodules` was deleted. A caller that must tell those apart checks for the file; a gate that must not go blind puts a floor under the count, which is what
     `check_scope_completeness.py:58` does with `MIN_SUBMODULES = 2`.
     """
     base = pathlib.Path(str(root)) if root is not None else pathlib.Path.cwd()

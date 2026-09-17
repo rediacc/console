@@ -83,9 +83,7 @@ def test_block_raw_pr_body_edit_body_files(tmp_path):
         bash_json("gh pr edit 42 --body-file %s" % with_md),
         "raw-pr-body: EDIT is refused even WITH the block -- it rewrites the whole body",
     )
-    # ONE COMMAND CAN DO BOTH, and reading the flags line-wide gets the scope wrong in
-    # both directions. hook_gh_pr_segment exists for exactly this; the first draft of
-    # the create arm did not use it, so a legal `create --body <with the block> && edit --add-label x` was refused for the edit's sake.
+    # ONE COMMAND CAN DO BOTH, and reading the flags line-wide gets the scope wrong in both directions. hook_gh_pr_segment exists for exactly this; the first draft of the create arm did not use it, so a legal `create --body <with the block> && edit --add-label x` was refused for the edit's sake.
     block.check(
         "check 2 guards/block_raw_pr_body_edit.py",
         bash_json("gh pr create --draft --fill && gh pr edit 42 --body-file %s" % with_md),
@@ -524,8 +522,7 @@ def test_block_premature_ready(tmp_path):
     )
     # AND DIRECTLY, for the reason spelled out at the one-open-PR cases above: after the cutover a helper body no longer names its guard, so the coverage reader credited
     # this guard with block=0 while `ready_case 2 FAILURE` was asserting the block
-    # direction on every run. The helper keeps the CI-conclusion matrix; this is the one
-    # line the gate can see.
+    # direction on every run. The helper keeps the CI-conclusion matrix; this is the one line the gate can see.
     block.check(
         "check 2 guards/block_premature_ready.py",
         bash_json("gh pr ready 42 --repo rediacc/console"),
@@ -700,8 +697,7 @@ def test_a_guard_judges_the_tree_the_command_touches(tmp_path):
 # --- block_untagged_commit: the id cases need a REAL epic to judge against ----- THE EPIC ID IS RESOLVED, NEVER FROZEN. An earlier read of this block hardcoded the id that happened to be in the tree the day it was written, which is the same class of defect as the branch resolution below: it passes on one machine and asserts something else everywhere else.
 #
 # AND RESOLVE THE BRANCH THE WAY CI ACTUALLY PRESENTS IT. `git rev-parse --abbrev-ref HEAD` prints the literal string "HEAD" in a detached checkout, which is EVERY pull_request run -- actions/checkout lands on refs/pull/N/merge. Measured 2026-08-27: this block looked for `agent/pr/HEAD.md`, did not find it, and failed the suite in CI while passing on every developer machine. The
-# precondition was right
-# to refuse a vacuous pass; it was wrong to treat CI's normal state as a broken one.
+# precondition was right to refuse a vacuous pass; it was wrong to treat CI's normal state as a broken one.
 EPIC_RE = re.compile(r"^`?PR-TASK:[ \t]*([0-9a-f]{6,32})`?$", re.MULTILINE)
 
 
@@ -752,9 +748,7 @@ def test_block_untagged_commit_reads_the_message_it_is_given(tmp_path):
         bash_json("git commit -F %s" % no_txt),
         "untagged-commit: -F <file> with no trailer is refused (was silently allowed)",
     )
-    # A TYPO IS WORSE THAN A MISSING TRAILER: it LOOKS tagged, so `git log --grep` finds no epic, the per-epic review never selects the commit, and nothing reports the
-    # gap. Shape alone cannot see this; the id is checked against the committed
-    # snapshot, so this case needs one.
+    # A TYPO IS WORSE THAN A MISSING TRAILER: it LOOKS tagged, so `git log --grep` finds no epic, the per-epic review never selects the commit, and nothing reports the gap. Shape alone cannot see this; the id is checked against the committed snapshot, so this case needs one.
     if epic:
         typo = epic[:-1] + "0123456789abcdef0"["0123456789abcdef".index(epic[-1]) + 1]
         block.check(
@@ -946,9 +940,7 @@ def test_remote_drift_and_the_round_log_guards(tmp_path):
         "roundlog: an UNRESOLVABLE target still fires (fail closed)",
         env=env,
     )
-    # PYTHON COPY AND MOVE ARE WRITES TOO. The shell half has refused `cp` and `mv` onto
-    # a round log since it was written; their python spelling was never covered, so
-    # shutil.copy and os.replace onto the log both returned 0 -- a one-line rename walked through a guard that read as thorough. Measured 2026-08-27.
+    # PYTHON COPY AND MOVE ARE WRITES TOO. The shell half has refused `cp` and `mv` onto a round log since it was written; their python spelling was never covered, so shutil.copy and os.replace onto the log both returned 0 -- a one-line rename walked through a guard that read as thorough. Measured 2026-08-27.
     block.check(
         "check 2 guards/block_roundlog_truncate.py",
         bash_json("python3 - <<PY\nimport shutil\nshutil.copy('/tmp/x', '%s')\nPY" % RLOG),
@@ -1111,8 +1103,7 @@ def test_remote_drift_and_the_round_log_guards(tmp_path):
 # THE DEADLOCK CHECK, and it is an INTERACTION -- which is why neither side's own cases could see it. Tested in isolation both parties were correct: `worklist.py --roundlog` refuses to create a log ("Write the wave header first"), and the guard refuses whole-file writes to a round log. Put them in sequence and there was NO DOOR AT ALL: the verb sends you to Write, and Write was
 # refused. A session following the documented path could not create a round log, which is exactly what happened on 2026-08-27 when one tried.
 #
-# So the assertion is about the PAIR: for a log that does not exist yet, the two must not BOTH refuse. Whichever way a future change moves the responsibility -- guard
-# exempts creation, or the verb learns to create -- this stays true; it only goes red
+# So the assertion is about the PAIR: for a log that does not exist yet, the two must not BOTH refuse. Whichever way a future change moves the responsibility -- guard exempts creation, or the verb learns to create -- this stays true; it only goes red
 # if a door closes with no other one open.
 DEADLOCK_BODY = (
     "run:      probe\n"

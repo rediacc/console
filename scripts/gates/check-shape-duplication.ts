@@ -94,12 +94,9 @@ const OPT_OUT = 'NOT ROUTED THROUGH';
 // held 42, because W5 ported the guards and this list still named only the bash spelling. That family is the one the docstring above calls 52% comments carrying the incident histories the guards exist for, and the gate scanned 1 of 43 and printed a confident tick every run. `refuseIfEmpty` in `tracked()` could not see it: it guards the WHOLE corpus, which the ~150-file
 // `scripts/gates/check-*.ts` family satisfies forever. One file is not empty and was still a dead family, so the floor is a COUNT.
 //
-// W7 P5 will delete the 77 `check-*.sh`, which is 6709 windows. With a floor on that
-// family the deletion must update this table in the same change or go red; without one it
-// leaves silently, exactly as family D did. THE QUALITY AND GATE-TEST PYTHON FAMILIES ARE NOT HERE YET, deliberately and with the cost measured. Adding `.ci/scripts/quality/check_*.py` and `.ci/rediacc_ci/tests/gates/test_gate_*.py` on 2026-09-08, once the coordinate fix made the corpus visible, reported 76 new shapes -- headed by a FORTY-FOUR copy span that is the shared
-// `sys.path` hop every ported entry point carries. That is one scaffold to extract, not 76 defects, and extracting it before widening is what makes the widening land at about eleven rather than seventy-six. The sequence is written down in
-// `agent/PLAN-extension-shaped-matchers.md`; this table gains those two rows in its
-// commit 3, after the extraction.
+// W7 P5 will delete the 77 `check-*.sh`, which is 6709 windows. With a floor on that family the deletion must update this table in the same change or go red; without one it leaves silently, exactly as family D did. THE QUALITY AND GATE-TEST PYTHON FAMILIES ARE NOT HERE YET, deliberately and with the cost measured. Adding `.ci/scripts/quality/check_*.py` and
+// `.ci/rediacc_ci/tests/gates/test_gate_*.py` on 2026-09-08, once the coordinate fix made the corpus visible, reported 76 new shapes -- headed by a FORTY-FOUR copy span that is the shared `sys.path` hop every ported entry point carries. That is one scaffold to extract, not 76 defects, and extracting it before widening is what makes the widening land at about eleven rather than
+// seventy-six. The sequence is written down in `agent/PLAN-extension-shaped-matchers.md`; this table gains those two rows in its commit 3, after the extraction.
 interface Family {
   readonly pathspec: string;
   readonly floor: number;
@@ -109,9 +106,8 @@ const FAMILIES: readonly Family[] = [
   { pathspec: 'scripts/gates/check-*.ts', floor: 100 },
   { pathspec: '.ci/scripts/quality/check-*.sh', floor: 50 },
   { pathspec: '.ci/scripts/test/gates/test-*.sh', floor: 100 },
-  // FLOOR 1 IS A SCAR, NOT A TARGET. This family held 43 guards; W5 ported 42 of them
-  // to `.claude/rediacc_hooks/guards/block_*.py` and one bash file remains, so the gate has been scanning 1 of 43. Adding the Python spelling on 2026-09-08 reported 26 new shapes -- the guards carry a shared scaffold of their own -- so the widening is an extraction job like the quality half above, not a line, and it belongs in the same commit 3. What this row buys TODAY is that
-  // the number is written down where the next reader sees it, instead of being a silent 1.
+  // FLOOR 1 IS A SCAR, NOT A TARGET. This family held 43 guards; W5 ported 42 of them to `.claude/rediacc_hooks/guards/block_*.py` and one bash file remains, so the gate has been scanning 1 of 43. Adding the Python spelling on 2026-09-08 reported 26 new shapes -- the guards carry a shared scaffold of their own -- so the widening is an extraction job like the quality half above,
+  // not a line, and it belongs in the same commit 3. What this row buys TODAY is that the number is written down where the next reader sees it, instead of being a silent 1.
   { pathspec: '.claude/hooks/pre-bash/block-*.sh', floor: 1 },
 ];
 
@@ -824,9 +820,7 @@ function scan(files: string[]): Map<string, { h: string; line: number }[]> {
   // Computed ONCE over the whole corpus, not per file: "already shared" is a property of the library's user count across the corpus, which no single file can see.
   const helpers = sharedHelperNames(files);
   for (const f of files) {
-    // `.py` SHARES THE `#` COMMENT ARM WITH SHELL AND ADDS ONE OF ITS OWN. It was normalised as 'sh' outright until 2026-09-08, on the argument that the two
-    // languages have the same lexical shape; they do not, because Python has a
-    // triple-quoted literal and its documentation lives inside one. See the `py` arm in `normalise`. Only `.ts` needs the `//` and `/* */` handling.
+    // `.py` SHARES THE `#` COMMENT ARM WITH SHELL AND ADDS ONE OF ITS OWN. It was normalised as 'sh' outright until 2026-09-08, on the argument that the two languages have the same lexical shape; they do not, because Python has a triple-quoted literal and its documentation lives inside one. See the `py` arm in `normalise`. Only `.ts` needs the `//` and `/* */` handling.
     const kind = f.endsWith('.ts') ? 'ts' : f.endsWith('.py') ? 'py' : 'sh';
     m.set(f, windows(normalise(readFileSync(path.join(ROOT, f), 'utf8'), kind), helpers));
   }
@@ -889,11 +883,9 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       ok: !isImportish('from_here = 1') && !isImportish('fromage = 2'),
     },
     {
-      // The wrapped-report exclusion. `isMessageish` catches shell's one-line `echo …`
-      // idiom; a formatter wraps the Python equivalent, so the continuations are bare
+      // The wrapped-report exclusion. `isMessageish` catches shell's one-line `echo …` idiom; a formatter wraps the Python equivalent, so the continuations are bare
       // `"S",` and `)` and `file=sys.stderr,` and they hash identically in every gate
-      // that reports anything. Eleven of the accepted BLOCKERs already argue this by
-      // hand; this is that argument made executable.
+      // that reports anything. Eleven of the accepted BLOCKERs already argue this by hand; this is that argument made executable.
       name: 'a wrapped report line carries no code and is not a copy',
       ok:
         isContentFree('"S"') &&
@@ -914,8 +906,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
     {
       // The bound. A repeated call to an already-shared helper is a DIFFERENT exclusion
       // with a different argument (seed entry 98b21fa52e5d states it and says it is not
-      // excluded yet); folding it in here would silence a class this predicate was never
-      // reasoned about. This control is what stops that happening by accident.
+      // excluded yet); folding it in here would silence a class this predicate was never reasoned about. This control is what stops that happening by accident.
       name: 'CONTROL: a harness helper call is not a message, and an assignment is not either',
       ok: !isMessageish('gate.log_fail("S")') && !isMessageish('x = sys.stderr'),
     },
@@ -985,9 +976,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       })(),
     },
     {
-      // THE DIRECTION THAT KEEPS THE SEED VALID. The 275 seeded shapes were measured over a
-      // ts-and-sh corpus; if the triple-quote arm reached `sh` it would rewrite what those
-      // files hash to and silently re-seed the gate. Bash has no triple-quoted string, so the arm is `py` only, and this asserts it.
+      // THE DIRECTION THAT KEEPS THE SEED VALID. The 275 seeded shapes were measured over a ts-and-sh corpus; if the triple-quote arm reached `sh` it would rewrite what those files hash to and silently re-seed the gate. Bash has no triple-quoted string, so the arm is `py` only, and this asserts it.
       name: 'CONTROL: the triple-quote arm is Python-only, so the shell corpus is untouched',
       ok: (() => {
         const src = '"""Doc.\n\nProse with "quoted" words.\n"""\nx = 1';
@@ -1014,9 +1003,8 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
       })(),
     },
     {
-      // THE GATE CAUGHT ITS AUTHOR ON THIS. String literals normalise to "S", so four consecutive stderr messages hash identically no matter what they SAY. It reported check-control-vacuity.sh, block-untagged-commit.sh and block-unverified-push.sh as
-      // one shape; they share only the ACT of printing, and consolidating them would
-      // delete three unrelated explanations -- the findings report this gate's own docstring promises never to count.
+      // THE GATE CAUGHT ITS AUTHOR ON THIS. String literals normalise to "S", so four consecutive stderr messages hash identically no matter what they SAY. It reported check-control-vacuity.sh, block-untagged-commit.sh and block-unverified-push.sh as one shape; they share only the ACT of printing, and consolidating them would delete three unrelated explanations -- the findings
+      // report this gate's own docstring promises never to count.
       name: 'CONTROL: four stderr messages are a report, not a shared shape',
       ok: (() => {
         const body =
@@ -1084,8 +1072,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
     },
     // --- the Python arm of the same exclusion -------------------------------------
     {
-      // `from A.B import c` is ambiguous between "the name c in module A.B" and "the SUBMODULE A.B.c", and only the filesystem knows which. Both candidates are
-      // emitted; resolution decides.
+      // `from A.B import c` is ambiguous between "the name c in module A.B" and "the SUBMODULE A.B.c", and only the filesystem knows which. Both candidates are emitted; resolution decides.
       name: 'a Python `from A.B import c, d` offers A.B and both submodule candidates',
       ok:
         JSON.stringify(importedModules('from rediacc_ci.tests.gates import harness, other')) ===
@@ -1227,8 +1214,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
           'const m = "don\'t";\nconst a = 1;\nconst b = 2;\nconst c = 3;\nconst d = "won\'t";',
           'ts'
         );
-        // The count is the catastrophe (the old arms returned TWO rows for this input); the
-        // text is the ordering, which is what actually fixes it -- the `"` opened first, so the apostrophe inside it is a character and not a quote.
+        // The count is the catastrophe (the old arms returned TWO rows for this input); the text is the ordering, which is what actually fixes it -- the `"` opened first, so the apostrophe inside it is a character and not a quote.
         return n.length === 5 && n[0].text === 'const m = "S";' && n[4].line === 5;
       })(),
     },
@@ -1409,9 +1395,7 @@ function loadSeed(): { silent: Set<string>; accepted: string[] } {
     for (const b of bad) console.error(b);
     process.exit(1);
   }
-  // THE IDS, not a count, because the caller has to prove each one is still LIVE. Returning
-  // the number was enough while the only question was "how many are silent"; it is not
-  // enough to answer "is this entry still buying anything", which is the half that makes the set shrink.
+  // THE IDS, not a count, because the caller has to prove each one is still LIVE. Returning the number was enough while the only question was "how many are silent"; it is not enough to answer "is this entry still buying anything", which is the half that makes the set shrink.
   return { silent, accepted: ok };
 }
 
@@ -1512,9 +1496,7 @@ function main(): void {
 
   const findings = judge(perFile, seed);
 
-  // MACHINE-READABLE, for the stop-hook rule that asks the judged half of this question.
-  // `wl_shapedup.py` needs the file:line spans as data; parsing them back out of the
-  // human report would be a second, undeclared interface to the same answer.
+  // MACHINE-READABLE, for the stop-hook rule that asks the judged half of this question. `wl_shapedup.py` needs the file:line spans as data; parsing them back out of the human report would be a second, undeclared interface to the same answer.
   if (argv.includes('--json')) {
     console.log(JSON.stringify({ n: N, window: WINDOW, seeded: seed.size, findings }));
     return;

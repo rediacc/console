@@ -6,9 +6,7 @@ WHY THIS MODULE EXISTS, AND WHY `test_core_allowlist.py` CANNOT DO ITS JOB. `tes
     Python canonical, because test_core_allowlist.py:370 generates its corpus
     FROM the Python list, making that direction structurally invisible.
 
-A CORPUS GENERATED FROM THE SUBJECT CANNOT SEE THE SUBJECT BEING SHORT. Drop a
-phrase from `LOW_EFFORT_PHRASES` and the golden suite loses one test case; the
-remaining cases all still agree, the counts all still match, and every test is green. The missing phrase is now silently allowed by every gate in the tree.
+A CORPUS GENERATED FROM THE SUBJECT CANNOT SEE THE SUBJECT BEING SHORT. Drop a phrase from `LOW_EFFORT_PHRASES` and the golden suite loses one test case; the remaining cases all still agree, the counts all still match, and every test is green. The missing phrase is now silently allowed by every gate in the tree.
 
 So this module asserts the OTHER direction, once per implementation:
 
@@ -67,9 +65,7 @@ TS_CLIENT = "scripts/lib/blocker-validator.ts"
 
 # Files that legitimately carry MANY of these phrases without being an implementation of the BLOCKER contract. Exempt BY NAME, with the reason, and kept visible in the inventory assertion's message rather than silently filtered: a quiet exemption is how a gate stops meaning what its name says.
 #
-# BLOCKER: `is_low_effort_reply` is a DIFFERENT rule with a deliberately different punctuation class (it strips only `.!?`, this one strips
-# `.!?,;:`). The two lists were written separately, the difference is real, and
-# unifying them would change one gate's verdicts to fix nothing. The bash validator's own header has cross-referenced this sibling since it was written.
+# BLOCKER: `is_low_effort_reply` is a DIFFERENT rule with a deliberately different punctuation class (it strips only `.!?`, this one strips `.!?,;:`). The two lists were written separately, the difference is real, and unifying them would change one gate's verdicts to fix nothing. The bash validator's own header has cross-referenced this sibling since it was written.
 SIBLING_LOW_EFFORT_REPLY_RULE: dict[str, str] = {
     ".ci/scripts/quality/check-review-comments.sh": "is_low_effort_reply, review replies",
     ".ci/scripts/quality/check-review-report-replies.sh": "is_low_effort_reply, report replies",
@@ -404,9 +400,7 @@ def test_the_python_clients_declare_no_rule_of_their_own():
         )
 
     # AND THE HOP THAT IS STILL THERE, recorded rather than asserted away. `check_language_policy.blocker_quality_problem` shells out to `.ci/scripts/lib/blocker-validator.sh` for the QUALITY rule, and that file now shells back to `rediacc_ci.core.allowlist`. Python -> bash -> Python for an answer the first Python could have computed. It is correct and it is wasteful, and the
-    # reason it was not changed in the same pass is that the shell-out is what its gate test's "the validator cannot be consulted"
-    # refusal exists to exercise; removing one without the other deletes a live
-    # control. Pinned so the hop cannot be forgotten.
+    # reason it was not changed in the same pass is that the shell-out is what its gate test's "the validator cannot be consulted" refusal exists to exercise; removing one without the other deletes a live control. Pinned so the hop cannot be forgotten.
     policy = _text(".ci/scripts/quality/check_language_policy.py")
     assert "blocker-validator.sh" in policy, (
         "check_language_policy no longer shells out for the BLOCKER quality rule. If "

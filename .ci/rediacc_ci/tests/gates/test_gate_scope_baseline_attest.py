@@ -18,9 +18,8 @@ Every planted defect is PAIRED with the control that proves the mechanism can st
 WHY THE HARNESS STAYS JAVASCRIPT, verbatim from the twin. It is not a fixture, it is a MODEL of git and gh: `rev-list` honours `--max-count` and `^fence` exclusion, and the branch run listing paginates at 100 per page exactly as the Actions API does. The mock used to return every candidate whatever the caller asked for, and walk depth was invisible to the entire suite until it
 stopped. Re-expressing that model in Python would be a SECOND model of the same two tools, and the expensive half of two models is that both look right. The port therefore writes the same `harness.js` into pytest's `tmp_path` and drives it with node, which also keeps every scenario's mutation string byte-identical to the twin's.
 
-WHAT THE PORT DOES CHANGE. The twin reads result fields through an `rget` helper that
-evaluates a JS expression in a nested `node`; here the harness's JSON is parsed by
-Python once per scenario and read as data. Streams stay SEPARATE, as the twin keeps them: two cases assert stderr is EMPTY, and an engine that throws instead of answering must be visible as an exit code rather than folded into stdout.
+WHAT THE PORT DOES CHANGE. The twin reads result fields through an `rget` helper that evaluates a JS expression in a nested `node`; here the harness's JSON is parsed by Python once per scenario and read as data. Streams stay SEPARATE, as the twin keeps them: two cases assert stderr is EMPTY, and an engine that throws instead of answering must be visible as an exit code rather than
+folded into stdout.
 """
 
 import json

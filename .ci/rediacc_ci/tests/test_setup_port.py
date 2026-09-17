@@ -1,11 +1,9 @@
 """`rediacc_ci.setup` against the bash it replaces, at the seams the ledger cannot see.
 
-WHAT THIS IS NOT. It is not the proof that the port is faithful; that is
-`.ci/shadow/e1-setup.observations.jsonl`, which compares 116 to 120 observations over five distinct clean trees and was recorded by `scripts/lib/shadow-gate.ts --record`. A differential over whole runs cannot isolate a helper, and a unit test over a helper cannot notice a phase that stopped running. This file covers the first half.
+WHAT THIS IS NOT. It is not the proof that the port is faithful; that is `.ci/shadow/e1-setup.observations.jsonl`, which compares 116 to 120 observations over five distinct clean trees and was recorded by `scripts/lib/shadow-gate.ts --record`. A differential over whole runs cannot isolate a helper, and a unit test over a helper cannot notice a phase that stopped running. This file
+covers the first half.
 
-THE BASH IS GONE, AND SO ARE THE CASES THAT RAN IT. `.ci/lib/setup.sh` was
-deleted by `1ae84c3e3`; six differential cases (17 with their parameters) were
-left behind guarded by `skipif(not TWIN.is_file())`, which is permanently true. They were removed 2026-09-15 rather than left skipping, and the reasoning is worth keeping because the original choice was deliberate and still wrong:
+THE BASH IS GONE, AND SO ARE THE CASES THAT RAN IT. `.ci/lib/setup.sh` was deleted by `1ae84c3e3`; six differential cases (17 with their parameters) were left behind guarded by `skipif(not TWIN.is_file())`, which is permanently true. They were removed 2026-09-15 rather than left skipping, and the reasoning is worth keeping because the original choice was deliberate and still wrong:
 
     skipping was chosen so that "a red here would be the migration succeeding"
 

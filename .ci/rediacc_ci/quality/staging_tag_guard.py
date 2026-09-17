@@ -1,8 +1,6 @@
 """A caller may not hand cleanup-staging.sh a tag it will refuse.
 
-Ported from `.ci/scripts/quality/check-staging-tag-guard.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live until a
-differential ledger row exists over K distinct trees. Its gate header registers it as step "Staging tag guard", needs none, lane quality-security.
+Ported from `.ci/scripts/quality/check-staging-tag-guard.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "Staging tag guard", needs none, lane quality-security.
 
 WHY THIS EXISTS, carried whole from the twin, dated incident included:
 
@@ -31,16 +29,13 @@ PORT NOTES.
 THE TALLY IS REPRODUCED, NOT REPLACED BY `rediacc_ci.controls.Controls`, and this is the one decision in the file worth arguing about. The twin sources `.ci/scripts/lib/gate-controls.sh`, whose own header records why that file exists: "Extracted 2026-09-06 after check:ci-shape-duplication caught the same ~5 lines at three copies (check-release-key-canonical,
 check-release-signing-coverage, check-staging-tag-guard) and was right to". The twin's line for it is "One copy of the tally, shared: check:ci-shape-duplication caught three."
 
-`Controls` prints `FAIL  <label>: got <got!r>, wanted <want!r>`; gate-controls.sh
-prints ` FAIL <label> (got '<got>' want '<want>')`. Both are findings to `scripts/lib/shadow-gate.ts` and their TEXT differs, so a port using `Controls`
+`Controls` prints `FAIL <label>: got <got!r>, wanted <want!r>`; gate-controls.sh prints ` FAIL <label> (got '<got>' want '<want>')`. Both are findings to `scripts/lib/shadow-gate.ts` and their TEXT differs, so a port using `Controls`
 for the gate's own output would disagree with the twin on every failing control
 and the differential would read MISMATCH_FINDINGS for a port that is behaving correctly. The tally below is therefore a faithful transliteration of the bash one, and `Controls` is used only for `--selftest`, where nothing compares text.
 
 That leaves a real duplication -- gate-controls.sh in bash and `_GateTally` here -- and the right home for it is a shared `rediacc_ci.gate_controls`, byte-compatible
 with the bash file, so the next port of a gate-controls consumer (there are three)
-does not make a third copy. That module is not created here because this change
-owns four files and none of them is a new shared module; it is named so the next
-writer does not have to rediscover it.
+does not make a third copy. That module is not created here because this change owns four files and none of them is a new shared module; it is named so the next writer does not have to rediscover it.
 
 THE ENVIRONMENT SEAMS ARE THE TWIN'S, UNCHANGED. `STAGING_GUARD_ROOT` and `STAGING_GUARD_TARGET` keep their names so one harness drives either implementation with one pair of variables. The twin's default for ROOT is `git rev-parse --show-toplevel 2>/dev/null || echo .`, which is NOT `rediacc_ci.paths.repo_root()`: it falls back to the CURRENT DIRECTORY outside a work tree, where
 `repo_root()` would answer with the package's own location. The twin's fallback is reproduced exactly, because a gate that silently judges a different tree than the operator is standing in is the failure the seam exists to avoid.
@@ -289,9 +284,8 @@ def main(argv: list[str] | None = None) -> int:
         rel = path[len(str(root)) + 1 :] if path.startswith(str(root) + "/") else path
         # A CALL FILE THAT CANNOT BE READ IS UNGUARDED, NOT A CRASH. `${hit%%:*}`
         # strips at the FIRST colon, so a scanned path containing one -- say `.ci/scripts/release/a:b.sh` -- yields the truncated `.../release/a`, which exists in neither implementation's tree. The twin hands that to `grep -qE ... "$f"`, grep prints `No such file or directory` and exits non-zero, `guarded` stays 0, and the gate still reaches a VERDICT. This port called `read_text`
-        # on it and died with an uncaught FileNotFoundError: same exit status by accident, no verdict, and a traceback that reads as environmental flake rather than as the control failure it replaced.
-        # Measured 2026-09-06 on a fixture whose only caller was `a:b.sh`; the
-        # twin reported `.ci/scripts/release/a guards its call ... (got '0' want '1')` and this port reported a stack trace. `grep -q`'s failure is the contract, so an unreadable file reads as empty and fails its control.
+        # on it and died with an uncaught FileNotFoundError: same exit status by accident, no verdict, and a traceback that reads as environmental flake rather than as the control failure it replaced. Measured 2026-09-06 on a fixture whose only caller was `a:b.sh`; the twin reported `.ci/scripts/release/a guards its call ... (got '0' want '1')` and this port reported a stack trace.
+        # `grep -q`'s failure is the contract, so an unreadable file reads as empty and fails its control.
         try:
             body = pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
         except OSError:
@@ -317,9 +311,7 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-# The subject, reduced to the one line this gate rules on. Used to build fixture
-# trees in the selftest; the real file is 100+ lines of GHCR plumbing that has
-# nothing to do with the assertion.
+# The subject, reduced to the one line this gate rules on. Used to build fixture trees in the selftest; the real file is 100+ lines of GHCR plumbing that has nothing to do with the assertion.
 RAIL_LINE = '[[ "$TAG" =~ ^staging- ]] || exit 1\n'
 
 

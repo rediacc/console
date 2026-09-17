@@ -1,8 +1,6 @@
 """wl_core: shared primitives for the worklist Stop hook.
 
-Stdlib-only, no sibling imports, no I/O beyond what each helper documents.
-Everything here is used by at least two sibling modules; single-consumer
-logic lives with its consumer. WHY comments for each check stay with the check, not here.
+Stdlib-only, no sibling imports, no I/O beyond what each helper documents. Everything here is used by at least two sibling modules; single-consumer logic lives with its consumer. WHY comments for each check stay with the check, not here.
 """
 
 import datetime
@@ -32,8 +30,7 @@ DEFAULT_TOKEN = re.compile(r"\bDEFAULT:[ \t]*\S")
 # v12 justification tokens (operator, 2026-07-30: "Too many '[?]'. This is an escape hatch... there should be a field in json like 'why' and possibly many"). A deferral now carries WHY (why THIS session cannot settle it right now) and HOW (the concrete action or evidence that would resolve it), plus optional TRIED / NEEDS / BLOCKED_ON. They live as inline tokens in the item text
 # (so the markdown inbox round-trips them) AND as a real `j` field on the store event (so nothing downstream re-parses prose it wrote itself).
 JUST_TOKEN = re.compile(r"\b(WHY|HOW|TRIED|NEEDS|BLOCKED_ON|DEFAULT):")
-# WHY values that describe avoidance rather than inability. Deliberately a SHORT list of unambiguous shapes: this regex is the cheap gate at creation
-# time; whether a why that passes it is actually TRUE is the judge's question.
+# WHY values that describe avoidance rather than inability. Deliberately a SHORT list of unambiguous shapes: this regex is the cheap gate at creation time; whether a why that passes it is actually TRUE is the judge's question.
 VAGUE_WHY_RE = re.compile(
     r"\b(did ?not get (to|around)|didn'?t get (to|around)|no time|not yet"
     r"|too busy|later|low priority|will (do|get to)|have?n'?t (had|gotten"
@@ -189,9 +186,7 @@ def same_session(a, b):
     """Two prefixes/ids denote one session when either is a prefix of the
     other. Symmetric, because CLI callers pass short prefixes while the Stop event carries the full id, and either side of a comparison can be either.
 
-    DELIBERATELY NOT LINEAGE-AWARE, and that is not an oversight. Its ~40 callers compare PEERS -- request routing, the brief roster, the dead-session sweep, the waiter -- and a predecessor is genuinely gone for every one of those purposes.
-    Widening this would silently change all forty; the ancestor branch belongs in
-    `owned_by_me`, which is about who may RESOLVE an item.
+    DELIBERATELY NOT LINEAGE-AWARE, and that is not an oversight. Its ~40 callers compare PEERS -- request routing, the brief roster, the dead-session sweep, the waiter -- and a predecessor is genuinely gone for every one of those purposes. Widening this would silently change all forty; the ancestor branch belongs in `owned_by_me`, which is about who may RESOLVE an item.
     """
     return bool(a) and bool(b) and (a.startswith(b) or b.startswith(a))
 
@@ -369,8 +364,8 @@ def project_start(event=None):
     3. The event's cwd, then getcwd(). Kept only as a floor for a copy of these
        hooks living somewhere that is not a repo.
 
-    THE FIX THAT LOOKS RIGHT AND IS NOT: teaching project_root() to skip a `.git` file pointing into `/modules/`. This repo is ITSELF a submodule (`gitdir: ../.git/modules/console`), so that walks PAST console, changes the store slug from home_muhammed_monorepo_console to home_muhammed_monorepo, and orphans every open item in one step. Tried and
-    reverted. Anchoring the START is the fix; the WALK is fine as it is.
+    THE FIX THAT LOOKS RIGHT AND IS NOT: teaching project_root() to skip a `.git` file pointing into `/modules/`. This repo is ITSELF a submodule (`gitdir: ../.git/modules/console`), so that walks PAST console, changes the store slug from home_muhammed_monorepo_console to home_muhammed_monorepo, and orphans every open item in one step. Tried and reverted. Anchoring the START is the
+    fix; the WALK is fine as it is.
     """
     env = os.environ.get("CLAUDE_PROJECT_DIR")
     if env:
@@ -482,8 +477,8 @@ def cron_next(schedule, now=None):
     """The next fire time (UTC datetime) of a 5-field cron expression after
     `now`, or None when the expression is unparseable or never fires within 60 days.
 
-    WHY THIS EXISTS (operator, 2026-07-30): the Stop event's `session_crons` carries the FULL expansion of every scheduled task -- id, schedule, and the exact prompt that will fire -- but the hook was ignoring it and reporting the loop from a hand-declared sidecar that goes stale. The truthful answer to "when does work resume, and what happens then?" is
-    computable from the event; this is the computing half.
+    WHY THIS EXISTS (operator, 2026-07-30): the Stop event's `session_crons` carries the FULL expansion of every scheduled task -- id, schedule, and the exact prompt that will fire -- but the hook was ignoring it and reporting the loop from a hand-declared sidecar that goes stale. The truthful answer to "when does work resume, and what happens then?" is computable from the event;
+    this is the computing half.
 
     Standard cron semantics including the one everyone forgets: when BOTH day-of-month and day-of-week are restricted, the entry fires when EITHER matches. dow accepts 0-7 with both 0 and 7 meaning Sunday. Python's
     weekday() has Monday=0, cron has Sunday=0; the +1 %% 7 below is that
@@ -560,8 +555,7 @@ def _resolve_tasks_dir(session_id, transcript_path=None):
     if os.path.isdir(d) and glob.glob(os.path.join(d, "*.json")):
         _TASKS_DIR_CACHE[key] = d
         return d
-    # Durable cache next: a previous process (with a transcript) may have resolved this already. Validated before trust -- the dir must still exist
-    # and still hold a task; a stale pointer is discarded, never followed.
+    # Durable cache next: a previous process (with a transcript) may have resolved this already. Validated before trust -- the dir must still exist and still hold a task; a stale pointer is discarded, never followed.
     try:
         cf = _taskdir_cache_file(key)
         if os.path.isfile(cf):
@@ -647,11 +641,8 @@ def actionable_tasks(session_id, transcript_path=None):
     """Pending harness tasks whose every recorded blocker is finished, as
     [(id, subject)] -- the tasks a waiting session could be working RIGHT NOW.
 
-    v19, operator directive 2026-08-08: a session sat in "pure background
-    wait" for hours while a fully-planned task was pending and unblocked; the
-    check-in kept saying "this is not a demand for other work" because the pure-wait state never consulted the harness queue. A pending task with an
-    unresolved `blockedBy` is legitimately parked; one without is not.
-    A blocker id whose file no longer exists counts as resolved (deleted
+    v19, operator directive 2026-08-08: a session sat in "pure background wait" for hours while a fully-planned task was pending and unblocked; the check-in kept saying "this is not a demand for other work" because the pure-wait state never consulted the harness queue. A pending task with an unresolved `blockedBy` is legitimately parked; one without is not. A blocker id whose file
+    no longer exists counts as resolved (deleted
     tasks vanish from the dir). Never raises."""
     if not session_id:
         return []

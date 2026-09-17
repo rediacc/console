@@ -3,10 +3,8 @@
 
 WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new code is correct", it is "the new code says what the old code said". Only running BOTH, on the same fixture, in the same run, can support that.
 
-NOTHING PRIVILEGED IS EVER INVOKED. The subject probes a filesystem type,
-MOUNTS bpffs and runs root-only eBPF tests; a suite that let any of that reach
-the real system would need root, would alter the host's mount table, and would SKIP wherever it could not, which is the exact vacuity this campaign exists to avoid. `stat`, `mount` and `go` are all recording fakes on a scratch PATH: each appends its cwd and full argv to one shared log and returns canned bytes and a canned status. That is also the only way to drive the two cases
-that matter most and cannot be produced on a developer machine at all: "bpffs is already mounted" and "the tests ran green having skipped every one of them".
+NOTHING PRIVILEGED IS EVER INVOKED. The subject probes a filesystem type, MOUNTS bpffs and runs root-only eBPF tests; a suite that let any of that reach the real system would need root, would alter the host's mount table, and would SKIP wherever it could not, which is the exact vacuity this campaign exists to avoid. `stat`, `mount` and `go` are all recording fakes on a scratch
+PATH: each appends its cwd and full argv to one shared log and returns canned bytes and a canned status. That is also the only way to drive the two cases that matter most and cannot be produced on a developer machine at all: "bpffs is already mounted" and "the tests ran green having skipped every one of them".
 
 WHAT IS COMPARED, AND WHY IT IS FOUR THINGS. Every case compares:
 
@@ -22,9 +20,8 @@ WHAT IS COMPARED, AND WHY IT IS FOUR THINGS. Every case compares:
 
 PATH IS REPLACED, NEVER PREPENDED. This host has a real `go`, a real `stat` and a real `mount`, and a prepend would leave the "not installed" cases silently consulting them. `_binder` builds the ENTIRE PATH out of named tools and asserts that what it was asked to exclude really is absent, because a probe that cannot fire looks exactly like a subject that cannot fail.
 
-THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming
-the file it is running; the port composes the same prefix from `sys.argv[0]`
-and its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides and compares everything after it byte for byte. `test_the_mask_does_not_hide_the_message` pins the mask so it cannot quietly grow into something that hides a real divergence.
+THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming the file it is running; the port composes the same prefix from `sys.argv[0]` and its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides and compares everything after it byte for byte. `test_the_mask_does_not_hide_the_message` pins the mask so it cannot
+quietly grow into something that hides a real divergence.
 """
 
 import os
@@ -211,8 +208,7 @@ def _run(
         "PATH": binder,
         "HOME": str(tmp_path),
         "PYTHONDONTWRITEBYTECODE": "1",
-        # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci.log`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     runner = "bash" if subject.suffix == ".sh" else "python3"
@@ -387,8 +383,7 @@ def test_the_guard_does_not_fire_on_a_real_pass(tmp_path):
 
 def test_the_em_dash_reaches_stdout_as_the_character(tmp_path):
     """The port spells U+2014 as an escape so no em dash is TYPED into a file
-    under `.ci/rediacc_ci`; the CHARACTER still has to be printed, because the
-    twin prints it and the whole claim is byte-identical output. Asserted on the
+    under `.ci/rediacc_ci`; the CHARACTER still has to be printed, because the twin prints it and the whole claim is byte-identical output. Asserted on the
     raw bytes so an escape that never got interpreted would show up."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, fstype=b"bpf_fs\n", out=ALL_SKIP)

@@ -236,9 +236,7 @@ function main(argv: string[]): number {
   return 0;
 }
 
-// THE IMPORT GUARD. This module exports `render` and `describeDrift` so the lock's
-// consumers and its tests can use them; without the guard, importing either would run the
-// whole gate and `process.exit` inside the importer.
+// THE IMPORT GUARD. This module exports `render` and `describeDrift` so the lock's consumers and its tests can use them; without the guard, importing either would run the whole gate and `process.exit` inside the importer.
 if (path.resolve(process.argv[1] ?? '') === path.resolve(fileURLToPath(import.meta.url))) {
   process.exit(main(process.argv.slice(2)));
 }

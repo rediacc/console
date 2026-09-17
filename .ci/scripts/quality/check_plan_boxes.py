@@ -108,9 +108,7 @@ MIN_PLAN_FILES = int(os.environ.get("PLAN_BOXES_MIN_PLANS", "20"))
 MIN_OPEN_BOXES = int(os.environ.get("PLAN_BOXES_MIN_OPEN", "1"))
 
 LIFECYCLE = ROOT / ".ci" / "config" / "plan-lifecycle.json"
-# FINISHED comes from the Stop hook, imported rather than restated: G-A3 INVERTS it
-# (there the status means "stop nagging"; here it means "this header switches the
-# advisory off over live boxes"), and the two halves must never drift apart.
+# FINISHED comes from the Stop hook, imported rather than restated: G-A3 INVERTS it (there the status means "stop nagging"; here it means "this header switches the advisory off over live boxes"), and the two halves must never drift apart.
 FINISHED = PF.FINISHED_STATES
 
 
@@ -137,8 +135,7 @@ def sig(task: str) -> str:
 
     UNCHANGED ON PURPOSE. The ledger committed at the base ref is keyed by this
     function, and G-A1's whole claim to be unforgeable is that it reads that
-    committed record; re-keying it would make every historical box look deleted
-    at once. Move tolerance lives in `loose_sig`, which is computed from git's own copy of the base plan TEXT, so it is exactly as unforgeable.
+    committed record; re-keying it would make every historical box look deleted at once. Move tolerance lives in `loose_sig`, which is computed from git's own copy of the base plan TEXT, so it is exactly as unforgeable.
     """
     return hashlib.sha256(PFID._norm(task)[:120].encode("utf-8")).hexdigest()[:8]
 
@@ -149,9 +146,7 @@ def loose_sig(task: str) -> str:
     A box's identity is the TASK, not the spelling of the paths in it. Without this, moving a cited file re-signs every box that cites it and G-A1 reports the move as a DELETION, offering three remedies (tick it, mark it `[?]`, archive the plan) of which none is true and all three falsify the record. Measured 2026-09-09: moving 125 gates from `scripts/` to `scripts/gates/` reddened
     four boxes across three plans that way.
 
-    `_norm` cannot do this itself -- it is shared with the Stop hook's task matching, where a cited directory is real evidence about which file a claim means. The discrimination lost here is two boxes whose first 120 normalised
-    characters differ ONLY by a directory prefix; the basename stays, so
-    everything else is kept.
+    `_norm` cannot do this itself -- it is shared with the Stop hook's task matching, where a cited directory is real evidence about which file a claim means. The discrimination lost here is two boxes whose first 120 normalised characters differ ONLY by a directory prefix; the basename stays, so everything else is kept.
     """
     return hashlib.sha256(
         PFID._norm(PATHISH_RE.sub(r"\1", task))[:120].encode("utf-8")
@@ -451,9 +446,7 @@ def transition_problems(scanned: dict, base: str) -> tuple[list[str], int]:
                 f"untouched into {ARCHIVE_DIR}/ ({where} that plan)"
             )
 
-    # G-A5: a plan may NEVER be deleted wholesale while deleting it loses a box. Age is reported for context and grants nothing. If every box it held survives
-    # in another plan, the file is a husk and removing it costs nothing; firing
-    # there would punish exactly the tidying this whole check wants.
+    # G-A5: a plan may NEVER be deleted wholesale while deleting it loses a box. Age is reported for context and grants nothing. If every box it held survives in another plan, the file is a husk and removing it costs nothing; firing there would punish exactly the tidying this whole check wants.
     for rel in sorted(set(base_plans) - set(scanned)):
         if _archived(rel):
             continue

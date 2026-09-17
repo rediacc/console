@@ -108,9 +108,7 @@ def test_the_multi_line_array_blind_spot_is_a_refusal_not_a_pass(tmp_path: pathl
     """THE BLIND SPOT, AND THE THING THAT SAVES IT.
 
     A `NPX_TOOLS=(` array written one tool per line is invisible to the
-    extractor. That could have made the gate report full coverage over a guard
-    it could not read; instead the empty result trips the "arrays moved or were
-    renamed" branch and the gate refuses. Both halves are asserted, because the second is the only reason the first is survivable.
+    extractor. That could have made the gate report full coverage over a guard it could not read; instead the empty result trips the "arrays moved or were renamed" branch and the gate refuses. Both halves are asserted, because the second is the only reason the first is survivable.
     """
     guard = "NPX_TOOLS=(\n  ruff\n)\nBARE_TOOLS=(ruff)\n"
     assert htc.extract_array(guard, "NPX_TOOLS") == []

@@ -35,9 +35,7 @@ export default {
       return new Response(POLICY, {
         headers: {
           'content-type': 'text/plain; charset=utf-8',
-          // RFC 8461 §3.3: receivers should respect cache-control. One week
-          // matches `max_age` in the policy body; longer values risk
-          // delivery breakage during emergency MX changes.
+          // RFC 8461 §3.3: receivers should respect cache-control. One week matches `max_age` in the policy body; longer values risk delivery breakage during emergency MX changes.
           'cache-control': 'public, max-age=604800',
         },
       });

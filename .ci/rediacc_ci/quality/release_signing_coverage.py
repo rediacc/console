@@ -1,7 +1,6 @@
 """Every release package format is SIGNED, or is declared unsigned on purpose.
 
-Ported from `.ci/scripts/quality/check-release-signing-coverage.sh`, which is
-not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-release-signing-coverage.sh`, which is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHY THE TWIN EXISTS, carried over from its own header because the incident IS the specification. On 2026-09-05 a deb shipped UNSIGNED and green: the signing
 setup was guarded by `[[ -n "${RELEASE_GPG_PRIVATE_KEY:-}" ]]`, the org secret
@@ -21,10 +20,8 @@ EVERY EXEMPTION STATES A TESTED CONSTRAINT, not a guess, because the first archl
 
 A reason that has not been run is a reason that can be wrong for months.
 
-AND THE OBVIOUS FIX FOR archlinux IS A BREAKING CHANGE, which no amount of local testing would have shown. pacman.conf(5) defines SigLevel Optional, what Arch
-ships as LocalFileSigLevel, as "Signatures are checked if present; absence of a
-signature is not an error. An invalid signature is a fatal error, as is a signature from a key not in the keyring." So publishing a detached .sig signed by a key no user holds converts a working `pacman -U` into a hard failure. The keyring rollout has to land BEFORE the first signed artifact, which is how Arch Linux ARM and Chaotic-AUR both do it. apk has no such trap: an unsigned
-.apk already needs --allow-untrusted, so signing it is strictly an improvement.
+AND THE OBVIOUS FIX FOR archlinux IS A BREAKING CHANGE, which no amount of local testing would have shown. pacman.conf(5) defines SigLevel Optional, what Arch ships as LocalFileSigLevel, as "Signatures are checked if present; absence of a signature is not an error. An invalid signature is a fatal error, as is a signature from a key not in the keyring." So publishing a detached .sig
+signed by a key no user holds converts a working `pacman -U` into a hard failure. The keyring rollout has to land BEFORE the first signed artifact, which is how Arch Linux ARM and Chaotic-AUR both do it. apk has no such trap: an unsigned .apk already needs --allow-untrusted, so signing it is strictly an improvement.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -33,8 +30,7 @@ PORT NOTES.
 THE EXEMPTION ORDER IS BASH'S HASH ORDER, MEASURED, NOT INVENTED. The twin
 iterates `"${!UNSIGNED_ON_PURPOSE[@]}"` over an associative array, and bash
 returns those keys in the order its hash table happens to hold them, which on GNU bash 5.3.9 is `archlinux`, then `apk` -- NOT the order the literal is written in. `UNSIGNED_ON_PURPOSE` below is a tuple in that measured order, so a human diffing the two implementations' stdout side by side sees the same four control lines in the same four places. The shadow comparator would score
-either
-order EQUIVALENT; a reviewer would stop reading.
+either order EQUIVALENT; a reviewer would stop reading.
 
 THE TALLY IS A LOCAL COPY OF `gate-controls.sh`, AND THAT IS DELIBERATE. `rediacc_ci.controls.Controls` counts the same things but prints a DIFFERENT contract: no two-space indent, no `✓ <subject>:` prefix on the verdict, and a different floor message ("the file is not being executed as written" versus "the battery is not being executed as written"). Those strings are the twin's
 observable output, and the differential compares output, so the port reproduces `gate-controls.sh` rather than reusing the class. `GateTally` below is the wanted helper: it belongs in the package next to `Controls`, and this port is not allowed to put it there.
@@ -42,9 +38,8 @@ observable output, and the differential compares output, so the port reproduces 
 THE ROOT IS RESOLVED THE TWIN'S WAY, AND `$REDIACC_CI_ROOT` IS NOT CONSULTED. The twin reads `$SIGNING_COVERAGE_ROOT`, then `git rev-parse --show-toplevel`, then the literal `.`. Honouring the package-wide override as well would let one environment point the two implementations at two different trees while a reviewer read one verdict, which is the exact failure
 `paths.repo_root()`'s docstring warns about from the other direction. One name, the twin's.
 
-THE PARSE IS THE GATE'S BLIND SPOT, AND IT IS PRESERVED. `formats_of` reads the
-FIRST line in the builder that looks like `<lowercase names>) ;;` and treats it
-as the validation case. That is a positional assumption: a builder that grew an earlier one-line case arm would have its format list read from the wrong place. The twin's floor (`MIN_FORMATS`) catches the collapse-to-nothing case and not this one. Carried unchanged, because widening it would change the verdict.
+THE PARSE IS THE GATE'S BLIND SPOT, AND IT IS PRESERVED. `formats_of` reads the FIRST line in the builder that looks like `<lowercase names>) ;;` and treats it as the validation case. That is a positional assumption: a builder that grew an earlier one-line case arm would have its format list read from the wrong place. The twin's floor (`MIN_FORMATS`) catches the collapse-to-nothing
+case and not this one. Carried unchanged, because widening it would change the verdict.
 """
 
 import os
@@ -91,14 +86,10 @@ UNSIGNED_ON_PURPOSE: tuple[tuple[str, str], ...] = (
     ),
 )
 
-# ANTI-VACUITY FLOOR. A sed that stopped matching would yield an empty format
-# list, and a loop over nothing passes. The builder documents four formats; a
-# floor at four catches a broken parse without firing on an addition.
+# ANTI-VACUITY FLOOR. A sed that stopped matching would yield an empty format list, and a loop over nothing passes. The builder documents four formats; a floor at four catches a broken parse without firing on an addition.
 MIN_FORMATS = 4
 
-# The control floor handed to `gate_finish`. Four formats plus two exemptions
-# times two controls each, plus the parse control, is nine today; six is the
-# twin's number and is carried unchanged rather than tightened, because a floor that tracks the current count fires on every legitimate addition.
+# The control floor handed to `gate_finish`. Four formats plus two exemptions times two controls each, plus the parse control, is nine today; six is the twin's number and is carried unchanged rather than tightened, because a floor that tracks the current count fires on every legitimate addition.
 MIN_CONTROLS = 6
 
 # The subject line the verdict names.
@@ -107,14 +98,10 @@ SUBJECT = "release signing coverage"
 # A reason shorter than this is not a reason. The twin's `-gt 30`.
 MIN_REASON_LEN = 30
 
-# The validation case arm: `    deb | rpm | apk | archlinux) ;;`. BRE
-# `^[[:space:]]*\([a-z |]*\))[[:space:]]*;;[[:space:]]*$` with the class spelled
-# out. Only lowercase letters, spaces and pipes are inside the group, which is what stops it matching an arm whose pattern contains a glob or a variable.
+# The validation case arm: ` deb | rpm | apk | archlinux) ;;`. BRE `^[[:space:]]*\([a-z |]*\))[[:space:]]*;;[[:space:]]*$` with the class spelled out. Only lowercase letters, spaces and pipes are inside the group, which is what stops it matching an arm whose pattern contains a glob or a variable.
 _CASE_ONELINE = re.compile(r"^%s*([a-z |]*)\)%s*;;%s*$" % (SPACE, SPACE, SPACE))
 
-# A multi-line case arm header: ` rpm | deb)` with nothing after it. The awk
-# program requires a leading `[a-z]`, so `) ;;`-style continuations and the
-# `*)` default arm are both excluded.
+# A multi-line case arm header: ` rpm | deb)` with nothing after it. The awk program requires a leading `[a-z]`, so `) ;;`-style continuations and the `*)` default arm are both excluded.
 _ARM_HEADER = re.compile(r"^%s*[a-z][a-z |]*\)%s*$" % (SPACE, SPACE))
 
 # The end of a case arm body.
@@ -152,8 +139,7 @@ def guarded_in(fmt: str, text: str) -> str:
 
     Returned as the twin's two strings rather than as a bool, because those strings are what the control compares and what a failure prints.
 
-    READING "IS RELEASE_SIGNING_REQUIRED ANYWHERE AFTER THE ARM" IS WHAT THE FIRST DRAFT DID, and it was wrong in BOTH directions: the guard sits INSIDE the arm, so the arm line is read before anything arms, and a later arm inherits an earlier arm's guard. The scan is scoped to the arm body,
-    `<formats>)` through `;;`.
+    READING "IS RELEASE_SIGNING_REQUIRED ANYWHERE AFTER THE ARM" IS WHAT THE FIRST DRAFT DID, and it was wrong in BOTH directions: the guard sits INSIDE the arm, so the arm line is read before anything arms, and a later arm inherits an earlier arm's guard. The scan is scoped to the arm body, `<formats>)` through `;;`.
     """
     inarm = False
     found = False
@@ -313,8 +299,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    # PRINT THE SHAPE, NOT JUST THE VERDICT. Two numbers that a reader can watch
-    # collapse; "OK" cannot be watched.
+    # PRINT THE SHAPE, NOT JUST THE VERDICT. Two numbers that a reader can watch collapse; "OK" cannot be watched.
     print("  (%d format(s), %d declared unsigned)" % (len(formats), len(UNSIGNED_ON_PURPOSE)))
     return 0
 

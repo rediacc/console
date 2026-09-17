@@ -3,15 +3,13 @@
 THE TWIN IS LIVE AND MERGE-BLOCKING. `.ci/scripts/review/review-status.sh:343` and `.ci/scripts/review/claude-review-gate.sh:858` both call `review_spend_total`, and `.github/workflows/review-status.yml:115` turns the first one's verdict into the required "Review Complete" check run. So these comparisons source the real file.
 
 THE AWK IS COMPARED AGAINST THE REAL AWK, EXTRACTED FROM THE TWIN AT TEST TIME.
-`review_attempt_states` cannot be driven end to end without `gh` and a live PR, but the interesting half of it is a pure awk program, and `_twin_awk()` below pulls that program out of the twin's own source rather than pasting a copy into
-this file. A copy would agree with itself forever; the extraction goes red when
-the twin's awk changes, which is exactly when a reader should look.
+`review_attempt_states` cannot be driven end to end without `gh` and a live PR, but the interesting half of it is a pure awk program, and `_twin_awk()` below pulls that program out of the twin's own source rather than pasting a copy into this file. A copy would agree with itself forever; the extraction goes red when the twin's awk changes, which is exactly when a reader should
+look.
 
 DEFECT 1 WAS FIXED 2026-09-10, IN THE TWIN, IN LOCKSTEP WITH THIS FILE.
 `review_report_count`, `review_attempt_states`, `review_spend_total` and `review_spent_attempt_count` now route through `gh_retry` (the exact fix their own file already carried 160 lines above them) and propagate a `gh` failure as a real nonzero return instead of `... || true`. `pr_diff_loc` is UNCHANGED and UNCHANGED ON PURPOSE: its own comment states failing to 0 is the
 deliberate, safe direction (an unreadable PR lands in the smallest review-cost tier), which is the opposite of the other three's problem (a swallowed failure zeroes the NUMERATOR, so the cap never arrives and every push pays for another review). `test_the_twin_now_fails_loudly_on_a_gh_failure` drives the TWIN with a failing `gh` on PATH and asserts the three fixed functions now
-exit nonzero while `pr_diff_loc` still answers `0` at exit 0. `test_the_port_refuses_rather_than_
-answering_zero` drives the PORT the same way; both sides now agree.
+exit nonzero while `pr_diff_loc` still answers `0` at exit 0. `test_the_port_refuses_rather_than_ answering_zero` drives the PORT the same way; both sides now agree.
 """
 
 import re
@@ -306,13 +304,9 @@ def test_head_is_exhausted_agrees_with_the_twin(name, states, sha):
     assert old == new, "%s: twin=%r port=%r" % (name, old, new)
 
 
-# Both operands non-empty ONLY. An empty operand makes the TWIN treat it as
-# "not provided" and attempt a network fetch (common.sh:757-759); the port's
-# `spend-total` CLI verb never fetches at all -- "THE FETCHING FORM IS DELIBERATELY NOT HERE" above -- so the two sides are not comparable on an empty operand. Before the DEFECT 1 fix this test happened to pass anyway,
+# Both operands non-empty ONLY. An empty operand makes the TWIN treat it as "not provided" and attempt a network fetch (common.sh:757-759); the port's `spend-total` CLI verb never fetches at all -- "THE FETCHING FORM IS DELIBERATELY NOT HERE" above -- so the two sides are not comparable on an empty operand. Before the DEFECT 1 fix this test happened to pass anyway,
 # for the wrong reason: the twin's failed fetch silently zeroed to the same
-# number the port's CLI produces by never fetching. The fix correctly broke
-# that coincidence (the twin now fails loudly instead); the real fetch-failure
-# behavior is covered by test_the_twin_now_fails_loudly_on_a_gh_failure and test_the_twin_now_fails_loudly_on_an_unbound_variable instead.
+# number the port's CLI produces by never fetching. The fix correctly broke that coincidence (the twin now fails loudly instead); the real fetch-failure behavior is covered by test_the_twin_now_fails_loudly_on_a_gh_failure and test_the_twin_now_fails_loudly_on_an_unbound_variable instead.
 SPEND_CASES = [("3", "4"), (" 3 ", " 4 "), ("0", "0"), ("10", "0")]
 
 
@@ -320,9 +314,7 @@ SPEND_CASES = [("3", "4"), (" 3 ", " 4 "), ("0", "0"), ("10", "0")]
 def test_spend_total_agrees_with_the_twin(posted, spent):
     """The pre-fetched form, which is the one both live callers pass.
 
-    `claude-review-gate.sh:858` passes both counts because it needs them
-    separately for its log line; `review-status.sh:343` does not, and that arm
-    goes through the network -- see DEFECT 1.
+    `claude-review-gate.sh:858` passes both counts because it needs them separately for its log line; `review-status.sh:343` does not, and that arm goes through the network -- see DEFECT 1.
     """
     old = twin("review_spend_total 1 P %s %s" % (_sh(posted), _sh(spent)), GITHUB_REPOSITORY="o/r")
     new = port(["spend-total", posted, spent])

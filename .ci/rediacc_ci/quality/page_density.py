@@ -36,8 +36,7 @@ TRAILING NEWLINES ARE STRIPPED THE WAY COMMAND SUBSTITUTION STRIPS THEM:
 `rstrip("\\n")`, not `.strip()`. `$(...)` removes trailing newlines and nothing
 else, so a version string with a leading space would keep it on both sides.
 
-`REPO_ROOT` is `paths.repo_root()`, which is `<file>/../../..` exactly as the twin's `SCRIPT_DIR/../../..` is, plus the package-wide `$REDIACC_CI_ROOT` override the twin has no equivalent for. That override is the only way the two roots can differ, and it exists so a harness can point the whole program at a
-fixture; see `paths.py`'s docstring.
+`REPO_ROOT` is `paths.repo_root()`, which is `<file>/../../..` exactly as the twin's `SCRIPT_DIR/../../..` is, plus the package-wide `$REDIACC_CI_ROOT` override the twin has no equivalent for. That override is the only way the two roots can differ, and it exists so a harness can point the whole program at a fixture; see `paths.py`'s docstring.
 
 K=5 LEDGER: `.ci/shadow/w7p6-page-density.observations.jsonl`.
 """
@@ -100,9 +99,7 @@ def _exec(argv: list[str]) -> int:
     try:
         os.execvp(argv[0], argv)  # noqa: S606 -- forwarding exec, same shape as the twin's
     except OSError:
-        # bash: `<script>: line NN: exec: npx: not found`, exit 127. The prefix
-        # carries a line number this port does not reproduce; see the module
-        # docstring's divergence 2.
+        # bash: `<script>: line NN: exec: npx: not found`, exit 127. The prefix carries a line number this port does not reproduce; see the module docstring's divergence 2.
         print("%s: exec: %s: not found" % (SELF, argv[0]), file=sys.stderr)
         return 127
     return 1  # unreachable: execvp replaces this process on success

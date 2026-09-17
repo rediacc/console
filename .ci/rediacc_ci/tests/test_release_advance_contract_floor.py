@@ -8,17 +8,12 @@ two the SAME answer:
     <fix>/.ci/scripts/release/advance-contract-floor.sh   ../../.. -> <fix>
     <fix>/.ci/rediacc_ci/release/advance_contract_floor.py  parents[3] -> <fix>
 
-`git` and `aws` are both RECORDING FAKES on a scratch PATH. Nothing reaches R2
-and nothing reaches a git remote; the assertions are on the recorded argv, the
-streams, the exit code and the bytes left in the floor file.
+`git` and `aws` are both RECORDING FAKES on a scratch PATH. Nothing reaches R2 and nothing reaches a git remote; the assertions are on the recorded argv, the streams, the exit code and the bytes left in the floor file.
 
 THE FLOOR FILE IS RESET BETWEEN THE TWO SIDES. The twin MUTATES it on an advance, so running the port afterwards against the twin's output would compare an advance to a no-op and call it a divergence. `run_both` restores the input state before the second side, and asserts the two sides left identical bytes behind -- which is the only place the write itself is observable.
 
-BOTH DEFECTS ARE PINNED. `test_defect_a_failed_aws_probe_is_reported_as_an_empty_bucket` drives an `aws` that exits 255 and asserts the twin says "no cli sentinels on
-R2" and exits 0; `test_defect_the_floor_file_is_written_before_git_runs` drives
-a failing `git` and asserts the tree is left modified. Reproduced because the
-acceptance rule for this wave is agreement with the live twin; if either is
-repaired, the test goes red and names the port that must follow.
+BOTH DEFECTS ARE PINNED. `test_defect_a_failed_aws_probe_is_reported_as_an_empty_bucket` drives an `aws` that exits 255 and asserts the twin says "no cli sentinels on R2" and exits 0; `test_defect_the_floor_file_is_written_before_git_runs` drives a failing `git` and asserts the tree is left modified. Reproduced because the acceptance rule for this wave is agreement with the live
+twin; if either is repaired, the test goes red and names the port that must follow.
 """
 
 from __future__ import annotations
@@ -83,8 +78,8 @@ if fail_on and argv[:1] == [fail_on]:
 sys.exit(0)
 """
 
-# common.sh needs `dirname` and `uname` at source time; the twin uses `grep`,
-# `head`, `sort` and `tail` (`printf` is a builtin), and release-state-validator.sh adds `tr` and `sed`. All of them must be reachable or the twin fails for a reason that has nothing to do with the subject -- `tail` was missing on the first run of this file and the twin died `line 61: tail: command not found`
+# common.sh needs `dirname` and `uname` at source time; the twin uses `grep`, `head`, `sort` and `tail` (`printf` is a builtin), and release-state-validator.sh adds `tr` and `sed`. All of them must be reachable or the twin fails for a reason that has nothing to do with the subject -- `tail` was missing on the first run of this file and the twin died `line 61: tail: command not
+# found`
 # with rc=127, which is exactly the shape of a harness bug wearing a gate
 # failure's clothes.
 PATH_MINIMUM = ("dirname", "uname", "tr", "sed", "grep", "head", "sort", "tail")
@@ -188,9 +183,7 @@ def _floor(fix: pathlib.Path) -> str | None:
 def run_both(tmp_path: pathlib.Path, floor_text: str | None, **kw):
     """Drive both sides from the SAME input state and return both outcomes.
 
-    The floor file is restored between the two runs because the twin mutates it
-    on an advance; without the reset the port would be handed the twin's output
-    as its input and every advance case would read as a divergence.
+    The floor file is restored between the two runs because the twin mutates it on an advance; without the reset the port would be handed the twin's output as its input and every advance case would read as a divergence.
     """
     fix = _fixture(tmp_path, floor_text)
     old, old_calls = _run(fix, tmp_path, "old", **kw)
@@ -356,9 +349,7 @@ def test_defect_a_failed_aws_probe_is_reported_as_an_empty_bucket(
 
         ::notice::no cli sentinels on R2; skipping ratchet advance
 
-    and exit 0 -- on the script whose entire reason for existing is to defend a high-water mark against a scrub. Reproduced because agreement with the live
-    twin is the deliverable; repaired, this test goes red and names the port
-    that must follow.
+    and exit 0 -- on the script whose entire reason for existing is to defend a high-water mark against a scrub. Reproduced because agreement with the live twin is the deliverable; repaired, this test goes red and names the port that must follow.
     """
     old, new, old_calls, new_calls, floor = run_both(
         tmp_path,
@@ -418,8 +409,7 @@ def test_missing_aws_is_refused_before_missing_git(tmp_path: pathlib.Path) -> No
 
 def test_each_required_variable_is_demanded_in_order(tmp_path: pathlib.Path) -> None:
     """DIVERGENCE 1 IS ASSERTED, NOT ASSUMED. `${VAR:?msg}` is a bash diagnostic
-    carrying the twin's path and line number; the port names itself instead.
-    The stream, the exit code, the order and the absence of any aws or git call
+    carrying the twin's path and line number; the port names itself instead. The stream, the exit code, the order and the absence of any aws or git call
     must all agree."""
     for name in port.REQUIRED_ENV:
         fix = _fixture(tmp_path, "v1.0.0\n")
@@ -455,8 +445,7 @@ def test_an_empty_variable_is_refused_like_an_unset_one(tmp_path: pathlib.Path) 
 
 def test_the_fixture_root_is_not_this_checkout(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY ON THE HARNESS ITSELF. Every case above asserts on a floor
-    file and on git calls; if either subject resolved its root back to this
-    checkout, those assertions would be about the real tree and the twin would have run `git push origin HEAD:main` against it. Both subjects are asked
+    file and on git calls; if either subject resolved its root back to this checkout, those assertions would be about the real tree and the twin would have run `git push origin HEAD:main` against it. Both subjects are asked
     where they think the root is, out of band."""
     fix = _fixture(tmp_path, "v1.0.0\n")
     twin_copy = fix / ".ci" / "scripts" / "release" / TWIN.name

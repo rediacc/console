@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/assert-job-succeeded.sh` (61 lines).
 
-The transitive-skip sentinel: assert an upstream job was not silently skipped by the GHA needs-chain skip propagation (finding J). The twin's header owns the
-state table and why only `skipped` fails; it is not restated here beyond what
-the code needs.
+The transitive-skip sentinel: assert an upstream job was not silently skipped by the GHA needs-chain skip propagation (finding J). The twin's header owns the state table and why only `skipped` fails; it is not restated here beyond what the code needs.
 
 LIVE CALLERS, not repointed: `.github/workflows/ci.yml:1937` and its siblings, one per sentinel job (`run: .ci/scripts/ci/assert-job-succeeded.sh
 <label> "${{ needs.<job>.result }}"`). The bash twin stays the registered gate;
@@ -18,9 +16,7 @@ Unlike its sibling `assert-channel-for-event.sh`, whose `*)` arm warns and ACCEP
 result, which is what `${{ needs.<job>.result }}` yields when the job name is
 misspelled in `needs:`. A renamed job therefore breaks loudly rather than passing, and that asymmetry between the two sentinels is deliberate on the twin's part.
 
-`$0` in the usage line is the program's own name, so bash prints the `.sh` path
-and this prints the `.py` path; the differential normalises that one token and
-compares the rest byte-for-byte.
+`$0` in the usage line is the program's own name, so bash prints the `.sh` path and this prints the `.py` path; the differential normalises that one token and compares the rest byte-for-byte.
 """
 
 from __future__ import annotations

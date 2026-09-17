@@ -6,14 +6,11 @@ when the scope step actually reduced this run (`SCOPE_MODE=reduced`), every
 way of failing to verify that reduction against the run's real per-job outcomes -- a missing plan artifact, an unreadable Jobs API, an absent `gh` or `node`, a reconciler that times out or disagrees -- is a HARD FAILURE (exit 1). Otherwise the same gaps are reported as gaps and the script exits 0. See the twin's own header for the measured argument for why this is safe across a
 rerun (the Jobs API's default `latest` filter materializes a complete job list per attempt) and for `PREEXISTING_CONDITIONS`.
 
-REQUIRED ENV: `GH_TOKEN`, `GITHUB_REPOSITORY`, `GITHUB_RUN_ID`, `SCOPE_MODE`.
-`GITHUB_STEP_SUMMARY` optional; falls back to stdout when running locally.
+REQUIRED ENV: `GH_TOKEN`, `GITHUB_REPOSITORY`, `GITHUB_RUN_ID`, `SCOPE_MODE`. `GITHUB_STEP_SUMMARY` optional; falls back to stdout when running locally.
 
 PORT NOTES.
 
-NO `errexit` TO REPLICATE. The twin runs under `set -uo pipefail`, with NO
-`-e`: every external call's success is checked EXPLICITLY (`if ! cmd; then
-...`), so this port's control flow is a direct, mechanical transliteration -- there is no implicit "the script dies here" behaviour hiding in a bare command the way there would be under `-e`.
+NO `errexit` TO REPLICATE. The twin runs under `set -uo pipefail`, with NO `-e`: every external call's success is checked EXPLICITLY (`if ! cmd; then ...`), so this port's control flow is a direct, mechanical transliteration -- there is no implicit "the script dies here" behaviour hiding in a bare command the way there would be under `-e`.
 
 `emit()` CAN DUPLICATE ITS OWN OUTPUT, and that is a property of the twin
 being ported faithfully, not a port defect. `SUMMARY="${GITHUB_STEP_SUMMARY:-
@@ -25,9 +22,8 @@ writes its lines TWICE. Measured directly: `printf 'hello\\n' | tee -a /dev/stdo
 `gap()` HAS EXACTLY ONE MEANING PER POLARITY, always: emit the caller's lines, then either the hard-failure block and exit 1 (`HARD_GATE`), or the soft-gap note and exit 0. Ported as a function that RETURNS the exit code rather than calling `sys.exit` itself, so `main()` can `return gap(...)` from any call site exactly where the twin would `gap ...` and fall off the end of the
 script -- the twin's `gap` never returns to its caller (it always `exit`s), and neither does a `return gap(...)` in `main`.
 
-THE TOOL PROBE EXITS ON THE FIRST MISSING TOOL, checked `gh` then `node`, and never checks the second if the first is already missing -- `gap` inside the
-twin's `for tool in gh node; do ... done` loop calls `exit` directly, ending
-the whole script, not just the loop. `return gap(...)` inside the `for tool in ("gh", "node")` loop reproduces that: `main` returns before the loop's next iteration.
+THE TOOL PROBE EXITS ON THE FIRST MISSING TOOL, checked `gh` then `node`, and never checks the second if the first is already missing -- `gap` inside the twin's `for tool in gh node; do ... done` loop calls `exit` directly, ending the whole script, not just the loop. `return gap(...)` inside the `for tool in ("gh", "node")` loop reproduces that: `main` returns before the loop's
+next iteration.
 
 `_head_bytes` TRANSLITERATES `"$(head -c N "$file" 2>/dev/null)"` AS CAPTURED INTO A SHELL ARGUMENT, which means ALL trailing newlines are stripped (command substitution strips every trailing newline, not one), matching `emit`'s subsequent `printf '%s\\n'` re-adding EXACTLY one. A missing file yields the empty string on both sides (`head`'s own stderr is redirected away and a
 `$(...)` around a command that printed nothing to stdout is simply `""`).

@@ -13,9 +13,7 @@ network while the comparison stayed green. `$HOME` has to be per side because bo
 THE 36-ATTEMPT BUDGET IS DRIVEN IN FULL, not shortened, because there is no knob to shorten it with and inventing one would be a feature wearing a port's clothes. It costs milliseconds only because both implementations resolve `sleep` through PATH (the port EXECS it rather than calling `time.sleep`), so one stub serves both.
 
 TWO REFUSALS DIVERGE IN TEXT AND ARE COMPARED BY SHAPE: `${VM_NET_BASE:?...}`
-and the `set -u` failure on `$USER`. Both are bash diagnostics carrying the
-twin's path and LINE NUMBER; exit code, stream, ordering and call sequence are
-compared exactly.
+and the `set -u` failure on `$USER`. Both are bash diagnostics carrying the twin's path and LINE NUMBER; exit code, stream, ordering and call sequence are compared exactly.
 
 K=5 LEDGER: `.ci/shadow/w7p6-wait-for-vm-ssh.observations.jsonl`, recorded
 against a disposable scratch git repository built outside this checkout.

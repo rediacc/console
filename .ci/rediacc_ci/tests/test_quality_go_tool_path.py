@@ -16,9 +16,7 @@ from rediacc_ci.tests import differential as diff
 
 TOOLS = gtp.GO_TOOLS
 
-# Every shape the three greps have to survive. The comment on each line is the
-# property it is there for; a case with no property is a case that will be
-# deleted the first time someone tidies this file.
+# Every shape the three greps have to survive. The comment on each line is the property it is there for; a case with no property is a case that will be deleted the first time someone tidies this file.
 BODIES = [
     "go install x@latest\n",  # the ordinary one
     "cd d; go install x@latest\n",  # after a separator

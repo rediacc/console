@@ -26,9 +26,7 @@ MUST_PASS = [
         f"cites bare-filename.md:12 first, then {REAL}",
     ),
     ("a single resolving citation is evidence", f"fixed it, see {REAL}"),
-    # Root dotfiles, 2026-09-06. 22 of 24 tracked root dotfiles were uncitable
-    # because CITE_RE demanded a `.<ext>` suffix; that set is every allowlist and
-    # blocklist this repo suppresses through, so the tick that most needs a record was the one that could not leave one.
+    # Root dotfiles, 2026-09-06. 22 of 24 tracked root dotfiles were uncitable because CITE_RE demanded a `.<ext>` suffix; that set is every allowlist and blocklist this repo suppresses through, so the tick that most needs a record was the one that could not leave one.
     ("an extensionless root dotfile resolves", "drained an entry, see .gitignore:9"),
     # RE-KEYED 2026-09-06, and the re-key is the finding. This case cited `.dead-bash-allowlist:19`, a root allowlist that W4's policy move (b80552370) relocated to `.ci/policy/.dead-bash-allowlist`. Nothing about CITE_RE changed, but the control went red and stayed red, so `test-hooks.sh` exited 1 at HEAD for a reason unrelated to any hook. A control keyed on a path that another
     # workstream is allowed to move is a control that reports its own staleness as a defect in the thing it guards.
@@ -75,9 +73,7 @@ def main() -> int:
 # =============================================================================
 # v22: the deferred-finding detector and the sweep prompt
 # =============================================================================
-# Added 2026-08-26 after an operator had to ask, by hand, for the findings a session had reported and not fixed. The pre-existing `found, not fixed` gate
-# matched ONE phrase at line-lead; every near-synonym the session actually used
-# walked past it.
+# Added 2026-08-26 after an operator had to ask, by hand, for the findings a session had reported and not fixed. The pre-existing `found, not fixed` gate matched ONE phrase at line-lead; every near-synonym the session actually used walked past it.
 #
 # Collects failures and RETURNS a code, matching main() above -- no bare `assert`, which ruff's S101 forbids in this tree and which would also vanish under `python -O`.
 

@@ -2,9 +2,8 @@ r"""Port of `.ci/scripts/test/gates/test-media-portable.sh`.
 
 `.ci/media/portable.sh`, the seams where this pipeline names a system tool that is spelled differently, or does not exist, off Linux.
 
-WHY A SEAM MODULE NEEDS A GATE MORE THAN MOST CODE DOES. Its whole value is in the branch that never runs here. `stat -c %Y` works on this host, so does `nproc`, so
-does `sha256sum`; a test that only calls the seams on this machine proves that the
-GNU spelling still works, which nobody doubted, and says nothing at all about the fallbacks that are the reason the file exists. So every seam is driven THREE ways: the platform spelling this host has, the fallback spelling with the first one hidden
+WHY A SEAM MODULE NEEDS A GATE MORE THAN MOST CODE DOES. Its whole value is in the branch that never runs here. `stat -c %Y` works on this host, so does `nproc`, so does `sha256sum`; a test that only calls the seams on this machine proves that the GNU spelling still works, which nobody doubted, and says nothing at all about the fallbacks that are the reason the file exists. So
+every seam is driven THREE ways: the platform spelling this host has, the fallback spelling with the first one hidden
 from PATH, and the case where NOTHING answers, which must produce a named refusal
 rather than an empty string. The third is the one that matters: the defect this module was written to close was `stat -c %Y` returning nothing into `$(( now - ))`, and "nothing" is what a fallback chain produces when its last link also fails silently.
 
@@ -15,15 +14,11 @@ THE SCAN IS REIMPLEMENTED, AND THAT IS THE INTERESTING PART OF THIS PORT. The tw
 it plants every one of the eleven spellings, requires each to be found, plants a COMMENT naming them and requires silence, and plants five near-miss portable forms and requires silence again. Both directions, on both spellings.
 
 There is a house reason to prefer Python here beyond tidiness. `grep -E` on this host is ugrep 7.5.0, which returns SILENT FALSE ZEROS when `^` is alternated with a negated character class -- exactly the shape of the twin's `grep -vE '^[^:]+:[0-9]+:\s*#'` comment filter. A comment filter that quietly matched nothing would make the scan report the seam module's own explanations as
-findings, which the twin's own control
-would catch; a filter that quietly matched EVERYTHING would suppress every finding,
-which nothing on the bash side is watching for. Python's `re` has no such behaviour, and the planted-spelling case pins it either way.
+findings, which the twin's own control would catch; a filter that quietly matched EVERYTHING would suppress every finding, which nothing on the bash side is watching for. Python's `re` has no such behaviour, and the planted-spelling case pins it either way.
 
 Nothing here needs docker, node, npm, nvcc, aws, ssh, a GPU or a network. The fallbacks are driven with scripted fakes on an emptied PATH, and the refusals with an emptied PATH and a meminfo path that points at nothing.
 
-NO `xdist_group`. `fake_bin` mutates PATH on this process and restores it in a
-`finally`; every case owns its own `mktemp -d`, and the real `.ci/media` folder is
-only ever READ or copied out of.
+NO `xdist_group`. `fake_bin` mutates PATH on this process and restores it in a `finally`; every case owns its own `mktemp -d`, and the real `.ci/media` folder is only ever READ or copied out of.
 """
 
 import re
@@ -189,8 +184,7 @@ def test_the_bsd_fallbacks_are_reachable(gate):
     gate.log_test("every seam must reach its BSD spelling when the GNU one refuses or is absent")
     with harness.temp_dir() as d:
         (d / "f").write_text("abc\n", encoding="utf-8")
-        # cut and bash are real; everything the seams reach for is either the scripted
-        # fake or deliberately absent. nproc, sha256sum and GNU stat are all gone from this PATH, which is the whole arrangement.
+        # cut and bash are real; everything the seams reach for is either the scripted fake or deliberately absent. nproc, sha256sum and GNU stat are all gone from this PATH, which is the whole arrangement.
         with harness.fake_bin("+bash +cut +cat +chmod") as fake:
             stage_bsd_host(fake.dir)
 
@@ -283,9 +277,7 @@ def test_every_seam_refuses_out_loud_when_nothing_answers(gate):
                 "the refusal must state the limitation rather than guess a number",
             )
 
-            # THE ONE SEAM THAT GUESSES, and it says so. One render at a time is a
-            # correct if slow answer; the asymmetry with the four above is deliberate
-            # and is documented at the seam.
+            # THE ONE SEAM THAT GUESSES, and it says so. One render at a time is a correct if slow answer; the asymmetry with the four above is deliberate and is documented at the seam.
             result = probe_portable(gate, "media_cpu_count")
             if result.rc != 0:
                 gate.log_fail("media_cpu_count must not fail, it must fall back to 1")

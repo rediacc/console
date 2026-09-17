@@ -7,8 +7,7 @@ THE HALF THAT CANNOT BE PORTED OUT OF PROCESS, SAID FIRST BECAUSE IT DECIDES
 WHAT THIS MODULE IS
 --------------------------------------------------------------------------
 `bws_env_load` exists to `export NAME=value` INTO THE CALLING SHELL. That is its
-entire product; the diagnostics are the by-product. A child process cannot mutate
-its parent's environment, so the shim pattern the rest of `rediacc_ci.core` uses -- bash function body becomes one `python3 -m` call -- CANNOT express this library. There are exactly three ways out and each has a cost that is not this module's to pay:
+entire product; the diagnostics are the by-product. A child process cannot mutate its parent's environment, so the shim pattern the rest of `rediacc_ci.core` uses -- bash function body becomes one `python3 -m` call -- CANNOT express this library. There are exactly three ways out and each has a cost that is not this module's to pay:
 
   1. AN EVAL-ABLE EMITTER. `eval "$(python3 -m rediacc_ci.core.bws_env export)"`.
      It works, it is what `direnv` and `aws configure export-credentials` do, and
@@ -28,9 +27,8 @@ its parent's environment, so the shim pattern the rest of `rediacc_ci.core` uses
      to stop.
 
 WHICH MAKES THE PRACTICAL ANSWER EASY TODAY, AND IT IS WORTH WRITING DOWN:
-`bws-env.sh` HAS ZERO PRODUCTION SOURCERS. Re-measured 2026-09-09 -- `grep -rlP '^\\s*(source|\\.)\\s.*/bws-env\\.sh'` over the tree returns nothing at
-all; every textual reference is the helper itself, its gate test, the manifest
-entry for that test, `.ci/config/` policy data, or a plan. The audit note at `agent/PLAN-env-to-bitwarden-v2.md:37` reached the same conclusion by a different route and said it plainly: "the fetcher has ZERO production callers". So route 2 is available for every future caller without breaking a single existing one, and route 1 never has to be argued.
+`bws-env.sh` HAS ZERO PRODUCTION SOURCERS. Re-measured 2026-09-09 -- `grep -rlP '^\\s*(source|\\.)\\s.*/bws-env\\.sh'` over the tree returns nothing at all; every textual reference is the helper itself, its gate test, the manifest entry for that test, `.ci/config/` policy data, or a plan. The audit note at `agent/PLAN-env-to-bitwarden-v2.md:37` reached the same conclusion by a
+different route and said it plainly: "the fetcher has ZERO production callers". So route 2 is available for every future caller without breaking a single existing one, and route 1 never has to be argued.
 
 --------------------------------------------------------------------------
 WHAT IS PORTED, AND WHAT IS PROVED
@@ -208,9 +206,7 @@ def load(
 ) -> tuple[dict[str, str], list[str], int]:
     """The twin's `bws_env_load`, minus the `export`. (resolved, missing, rc).
 
-    `resolved` maps NAME to value for every name that came back non-empty. The
-    caller decides what to do with it; nothing here writes it anywhere, prints
-    it, or puts it in `os.environ`.
+    `resolved` maps NAME to value for every name that came back non-empty. The caller decides what to do with it; nothing here writes it anywhere, prints it, or puts it in `os.environ`.
 
     `rc` is the twin's return code: 1 if anything was absent or empty, else 0. The four preconditions raise `RefusalError` instead of returning, because they are a different kind of answer -- the twin cannot say "0 exported" for them, it stops before the fetch.
     """

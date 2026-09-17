@@ -21,9 +21,7 @@ while the script fell back.
 WHY THE DRIVER PORTED THIS AND NOT AN AGENT. `agent/8f55d4f0/W7P3-batch5-brief.md` records six `test-breakpoint-*.sh` subjects as unportable by any agent under the standard brief and NOT on merit, because plant-verifying one means temporarily writing under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching. The brief's two ways out are to hand one batch owner
 that path explicitly or to exclude them in the derivation with the reason recorded, and it adds "Do not silently drop them a fourth time." This is the first option: `.ci/breakpoint` is the driver's path.
 
-NO `xdist_group`. Every case runs one short-lived `bash` with a replaced environment
-whose `HOME` and `RUNNER_TEMP` point into its own `mktemp -d`; the subjects are only
-ever READ.
+NO `xdist_group`. Every case runs one short-lived `bash` with a replaced environment whose `HOME` and `RUNNER_TEMP` point into its own `mktemp -d`; the subjects are only ever READ.
 """
 
 import os

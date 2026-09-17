@@ -2,9 +2,7 @@
 
 No git operation may quietly reshape the repository a later step measures, and no fixture may be built in a shape that measures nothing.
 
-WHAT THIS IS ABOUT, measured 2026-09-03 rather than reasoned about. `--depth` on a
-fetch is not a limit on what that fetch transfers; on a complete repository it WRITES
-A GRAFT and truncates the whole history. Against the real remote::
+WHAT THIS IS ABOUT, measured 2026-09-03 rather than reasoned about. `--depth` on a fetch is not a limit on what that fetch transfers; on a complete repository it WRITES A GRAFT and truncates the whole history. Against the real remote::
 
     $ git rev-list --count refs/remotes/pull/585/merge   # 2467
     $ git fetch --no-tags --depth=50 origin +refs/heads/main:refs/remotes/origin/main
@@ -14,9 +12,7 @@ The line that did it lived in `packages/www/scripts/lib/translation-freshness-gi
 
 THE DAMAGE IS ALWAYS SOMEBODY ELSE'S, which is what makes this class worth a gate: the script that truncates history is not the script that fails.
 
-A FLAT TWIN, so the parity floor is its runtime `PASS:` count rather than a case set.
-The twin prints ten; this module records at least ten controls, one per `pass` the
-twin emits, in the twin's order.
+A FLAT TWIN, so the parity floor is its runtime `PASS:` count rather than a case set. The twin prints ten; this module records at least ten controls, one per `pass` the twin emits, in the twin's order.
 
 WHERE THIS REIMPLEMENTS awk, grep AND sed, AND WHY THE ANSWERS AGREE. Two awk programs carry the whole sweep, and they are subtle enough to be worth spelling out.
 
@@ -61,8 +57,7 @@ BY NAME, beside the twin's, where a reader can see it.
 
 `node` IS REQUIRED and its absence is a loud failure carrying the fix, never a skip.
 
-NO `xdist_group`. Every git fixture is built under pytest's own `tmp_path`; nothing
-is written inside the checkout, and the two reads of it (`git ls-files` and `git rev-parse --is-shallow-repository`) do not mutate anything.
+NO `xdist_group`. Every git fixture is built under pytest's own `tmp_path`; nothing is written inside the checkout, and the two reads of it (`git ls-files` and `git rev-parse --is-shallow-repository`) do not mutate anything.
 """
 
 import os

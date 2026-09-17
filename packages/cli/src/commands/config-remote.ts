@@ -102,8 +102,7 @@ function startCallbackServer(): Promise<{
   });
 }
 
-// ─── Enable Flow ───────────────────────────────────────────────────────── (finalizeEnable / applyHandoff / storeHandoffCredentials live in
-// config-remote-enable.ts; this file keeps the transports.)
+// ─── Enable Flow ───────────────────────────────────────────────────────── (finalizeEnable / applyHandoff / storeHandoffCredentials live in config-remote-enable.ts; this file keeps the transports.)
 
 async function enableBrowser(
   apiUrl: string,
@@ -203,8 +202,7 @@ async function enableHeadless(
 
   const { deviceCode, userCode, interval, expiresIn } = initResult;
 
-  // Portal route: /account/config-remote (ConfigRemote.tsx) — the device-code
-  // leg of the same page enableBrowser drives; see the comment there.
+  // Portal route: /account/config-remote (ConfigRemote.tsx) — the device-code leg of the same page enableBrowser drives; see the comment there.
   const remoteUrl = `${apiUrl}/account/config-remote?code=${encodeURIComponent(userCode)}&key=${encodeURIComponent(pubBase64)}`;
 
   outputService.info(t('commands.config.remote.enable.openBrowser'));
@@ -405,16 +403,13 @@ export async function rotateCek(configName: string, apiUrl: string): Promise<voi
     return;
   }
 
-  // The rotation revoked this device's key. Re-acquire it over the same X25519
-  // handoff `config remote enable` uses; the pointer file is already correct, so
-  // only the stored token + wrapped CEK are replaced.
+  // The rotation revoked this device's key. Re-acquire it over the same X25519 handoff `config remote enable` uses; the pointer file is already correct, so only the stored token + wrapped CEK are replaced.
   const keyPair = await generateX25519KeyPair();
   const pubBase64 = await exportPublicKeyBase64(keyPair.publicKey);
   const { port, waitForPayload, close } = await startCallbackServer();
 
   const callbackUrl = `http://localhost:${port}`;
-  // Portal route: /account/config-remote (ConfigRemote.tsx) — the existing-store
-  // re-handoff leg; see the comment in enableBrowser.
+  // Portal route: /account/config-remote (ConfigRemote.tsx) — the existing-store re-handoff leg; see the comment in enableBrowser.
   const handoffUrl = `${apiUrl}/account/config-remote?callback=${encodeURIComponent(callbackUrl)}&key=${encodeURIComponent(pubBase64)}`;
 
   outputService.info(t('commands.config.rotateCek.resync'));
@@ -431,8 +426,7 @@ export async function rotateCek(configName: string, apiUrl: string): Promise<voi
 
     const payload = await decryptHandoff(encryptedBlob, keyPair.privateKey);
     const stored = await storeHandoffCredentials(payload, configName);
-    // The pointer file is already correct; a re-handoff may omit configId, so
-    // fall back to the enrolled pointer's.
+    // The pointer file is already correct; a re-handoff may omit configId, so fall back to the enrolled pointer's.
     const remote: RemoteConfig = {
       ...stored,
       configId: stored.configId ?? config.remote.configId,
@@ -454,8 +448,7 @@ export async function rotateCek(configName: string, apiUrl: string): Promise<voi
       t('commands.config.rotateCek.verified')
     );
 
-    // The rotation rewrote every blob server-side; the offline cache must
-    // follow, or a later offline read would serve pre-rotation content.
+    // The rotation rewrote every blob server-side; the offline cache must follow, or a later offline read would serve pre-rotation content.
     const { writeRemoteCache } = await import('../services/config/remote-cache.js');
     await writeRemoteCache(configName, verifiedConfig, version);
 

@@ -141,9 +141,7 @@ def render(root, rows, last_green):
         body.append("    %s  %s" % (sha, subject[:88]))
         body.extend("               %s" % p for p in paths)
     body.append("  Start here:  git log -p -1 %s -- %s" % (found[0][0], found[0][2][0]))
-    # THE SECOND LAYER OF THE SAME EVIDENCE (W12 P2.3). The commits above say what
-    # CHANGED in these files; a compacted plan record says why the plan wanted them
-    # that way, which is the half a `git log` cannot show. Appended here rather than at the wl_checks call site because the suspect paths only exist here.
+    # THE SECOND LAYER OF THE SAME EVIDENCE (W12 P2.3). The commits above say what CHANGED in these files; a compacted plan record says why the plan wanted them that way, which is the half a `git log` cannot show. Appended here rather than at the wl_checks call site because the suspect paths only exist here.
     #
     # DEGRADES TO SILENCE, matching this module's stated fail semantics: it can only ADD to a block already being emitted, so losing it loses a hint and can never grant an exit that was otherwise refused.
     try:

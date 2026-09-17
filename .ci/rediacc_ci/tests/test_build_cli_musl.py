@@ -13,9 +13,7 @@ instead, and the `FAKEBIN ` prefix is also what the K=5 ledger scopes
 
 `rediacc_ci` IS VENDORED INTO THE FIXTURE rather than reached through an absolute `PYTHONPATH`: it proves the port's dependency set, and `scripts/lib/shadow-gate.ts --record` refuses a command string naming an absolute path outside the recorded tree.
 
-`$0` IS MASKED TO `<SELF>`. bash names the script in its `set -u` death and in
-its `--help` usage; `sys.argv[0]` ends `.py`. Nothing else is masked, and stdout
-and stderr are compared SEPARATELY.
+`$0` IS MASKED TO `<SELF>`. bash names the script in its `set -u` death and in its `--help` usage; `sys.argv[0]` ends `.py`. Nothing else is masked, and stdout and stderr are compared SEPARATELY.
 
 K=5 LEDGER: `.ci/shadow/w7p6-build-cli-musl.observations.jsonl`.
 """
@@ -71,9 +69,7 @@ PATH_MINIMUM = (
     "wc",
 )
 
-# The two recording fakes. `docker` optionally WRITES the artifact the twin then
-# checks for, so the success path can be driven end to end; `sudo` records and
-# does nothing, exactly as a `chown` that is allowed to fail.
+# The two recording fakes. `docker` optionally WRITES the artifact the twin then checks for, so the success path can be driven end to end; `sudo` records and does nothing, exactly as a `chown` that is allowed to fail.
 FAKE_DOCKER = """#!/bin/bash
 {
     printf 'FAKEBIN docker'
@@ -103,8 +99,7 @@ FAKE_SUDO = """#!/bin/bash
 exit 0
 """
 
-# The version seam at `:82`. `--strict` refuses `0.0.0-dev`-shaped values; the
-# fake reproduces the decision by exit code alone, which is all the twin reads.
+# The version seam at `:82`. `--strict` refuses `0.0.0-dev`-shaped values; the fake reproduces the decision by exit code alone, which is all the twin reads.
 FAKE_INJECT_ENV = """#!/bin/bash
 {
     printf 'FAKEBIN inject-env'
@@ -484,9 +479,7 @@ def test_the_docker_argv_is_the_whole_point_of_the_script(tmp_path) -> None:
         cli_version="",
         release_build="",
     )
-    # The fake escapes newlines so a multi-line argument (the container script,
-    # which is the LAST one) survives a line-oriented call log; the expectation
-    # is escaped the same way rather than the log being made multi-line, because `shadow-gate.ts` reads findings line by line too.
+    # The fake escapes newlines so a multi-line argument (the container script, which is the LAST one) survives a line-oriented call log; the expectation is escaped the same way rather than the log being made multi-line, because `shadow-gate.ts` reads findings line by line too.
     assert recorded == ["FAKEBIN docker", *(a.replace("\n", "\\n") for a in expected[1:])]
     assert expected[expected.index("--platform") + 1] == "linux/arm64"
     assert "%s:/workspace" % root in expected

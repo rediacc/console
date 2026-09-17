@@ -36,8 +36,7 @@ absolute path, runs as root, and passes `-e CI=true`. `browser-smoke.sh` mounts
 at `/work`, drops to the invoking user with `-u "$(id -u):$(id -g)"`, and
 compensates for that non-root user with `-e HOME=/tmp` and
 `-e npm_config_cache=/tmp/.npm` (a non-root user cannot write root's `$HOME` or
-npm cache inside the image). Neither set is copied from the other here; each
-port reproduces exactly its own twin's argv.
+npm cache inside the image). Neither set is copied from the other here; each port reproduces exactly its own twin's argv.
 
 `exec`, NOT `subprocess.run`, ON BOTH FINAL BRANCHES. The twin's last statement is `exec` in every path, so argv, stdin, stdout, stderr, signals and the exit status all belong to the child. `os.execvp` is the same shape, for the same reason `rediacc_ci.deploy.upload_media_to_r2` gives: a subprocess wrapper is a second process watching the first, and it leaves a stray parent behind
 when the caller signals what it believes is the gate.
@@ -105,8 +104,7 @@ TRAILING NEWLINES ARE STRIPPED THE WAY COMMAND SUBSTITUTION STRIPS THEM:
 `rstrip("\\n")`, not `.strip()`. `$(...)` removes trailing newlines and nothing
 else, so a version string with a leading space would keep it on both sides.
 
-`REPO_ROOT` is `paths.repo_root()`, which is `<file>/../../..` exactly as the twin's `SCRIPT_DIR/../../..` is, plus the package-wide `$REDIACC_CI_ROOT` override the twin has no equivalent for. That override is the only way the two roots can differ, and it exists so a harness can point the whole program at a
-fixture; see `paths.py`'s docstring.
+`REPO_ROOT` is `paths.repo_root()`, which is `<file>/../../..` exactly as the twin's `SCRIPT_DIR/../../..` is, plus the package-wide `$REDIACC_CI_ROOT` override the twin has no equivalent for. That override is the only way the two roots can differ, and it exists so a harness can point the whole program at a fixture; see `paths.py`'s docstring.
 
 K=5 LEDGER: `.ci/shadow/w7p6-browser-smoke.observations.jsonl`.
 """
@@ -134,9 +132,7 @@ IMAGE_TEMPLATE = "mcr.microsoft.com/playwright:v%s-noble"
 
 PW_VERSION_EXPR = "require('playwright/package.json').version"
 
-# Where the workspace is bound inside the container. The twin hard-codes this rather than mirroring the host path (its sibling page-density.sh does the
-# opposite); `check-browser-smoke.ts` only ever prints `path.relative(ROOT, ...)`
-# so nothing host-meaningless escapes, but the two launchers do differ here.
+# Where the workspace is bound inside the container. The twin hard-codes this rather than mirroring the host path (its sibling page-density.sh does the opposite); `check-browser-smoke.ts` only ever prints `path.relative(ROOT, ...)` so nothing host-meaningless escapes, but the two launchers do differ here.
 WORKDIR = "/work"
 
 
@@ -178,9 +174,7 @@ def _exec(argv: list[str]) -> int:
     try:
         os.execvp(argv[0], argv)  # noqa: S606 -- forwarding exec, same shape as the twin's
     except OSError:
-        # bash: `<script>: line NN: exec: npx: not found`, exit 127. The prefix
-        # carries a line number this port does not reproduce; see the module
-        # docstring's divergence 2.
+        # bash: `<script>: line NN: exec: npx: not found`, exit 127. The prefix carries a line number this port does not reproduce; see the module docstring's divergence 2.
         print("%s: exec: %s: not found" % (SELF, argv[0]), file=sys.stderr)
         return 127
     return 1  # unreachable: execvp replaces this process on success

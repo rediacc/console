@@ -21,15 +21,13 @@ Console's list is read by IMPORTING the shipped port (`rediacc_ci.quality.pipefa
 NO `BASH_TWIN`, AND THAT IS NOT THE COEXISTENCE RULE BEING SKIPPED. This package's `__init__` says a bash original is deleted by a LATER change than the one that ports it, so both can be driven against each other for a while. There is no bash original here to keep. A `.ci/scripts/test/gates/test-renet-pipefail-grep-q.sh` existed for exactly one commit (eda35491a) before Ruling 7
 (2026-09-06) caught it -- `.ci` and `.claude` are Python trees and that surface may shrink but never grow -- so it was written in Python instead and the bash file deleted in the same change that added this one. Nothing was ported, so there is nothing to hold parity with, and this module joins the nine others here that carry no twin.
 
-WHY THE SUBJECT IS SOURCED RATHER THAN EXECUTED. Running the script outright runs the real gate over the real renet tree, which is renet's own stage's job, not this one's. Sourcing skips main and pulls `offenders`, `SCALING_PRODUCERS` and `RENET_EXTRA_PRODUCERS` into scope. A Python port has no shell to source into, so
-each case is one fresh `bash -c`; that is in the port's favour, since nothing a
+WHY THE SUBJECT IS SOURCED RATHER THAN EXECUTED. Running the script outright runs the real gate over the real renet tree, which is renet's own stage's job, not this one's. Sourcing skips main and pulls `offenders`, `SCALING_PRODUCERS` and `RENET_EXTRA_PRODUCERS` into scope. A Python port has no shell to source into, so each case is one fresh `bash -c`; that is in the port's favour,
+since nothing a
 case leaves behind can leak into the next.
 
 THE FIXTURES ARE ASSEMBLED AT RUNTIME, out of `GQ` and `PF`, for exactly the reason the renet script assembles its own that way: written out literally, this file's text would carry the racing shape contiguously. `.ci/**` is inside `check:ci-pipefail-grep-q`'s corpus, so a gate test that commits the defect it polices would be found by that gate -- correctly.
 
-NO `xdist_group`. Every case writes into pytest's own `tmp_path` and runs one
-short-lived `bash -c`; nothing is bound, no module global is mutated, and both
-subjects are only ever read.
+NO `xdist_group`. Every case writes into pytest's own `tmp_path` and runs one short-lived `bash -c`; nothing is bound, no module global is mutated, and both subjects are only ever read.
 """
 
 from rediacc_ci import paths
@@ -42,18 +40,14 @@ RENET_GATE = paths.from_root("private", "renet", ".ci", "scripts", "quality", "p
 GQ = "grep -q"
 PF = "set -o pipefail"
 
-# The floor under the IMPORT, not under the comparison. An import that returned nothing would make the superset assertion trivially true, which is the "a check that cannot fail" shape this whole directory exists to refuse. Console's
-# list was 18 names when this was written and 20 after the tee/docker widening; ten
-# is comfortably below either and well above zero.
+# The floor under the IMPORT, not under the comparison. An import that returned nothing would make the superset assertion trivially true, which is the "a check that cannot fail" shape this whole directory exists to refuse. Console's list was 18 names when this was written and 20 after the tee/docker widening; ten is comfortably below either and well above zero.
 MIN_CONSOLE_PRODUCERS = 10
 
 
 def source_and_run(gate, code: str) -> harness.RunResult:
     """Source the renet subject in a fresh bash and run one call, streams MERGED.
 
-    Merged because renet's `common.sh` writes its log lines to stderr while the
-    assertions here care only about what `offenders` printed on stdout; keeping
-    them apart would still work, but `.combined` is what makes a failure message show the log line that explains it.
+    Merged because renet's `common.sh` writes its log lines to stderr while the assertions here care only about what `offenders` printed on stdout; keeping them apart would still work, but `.combined` is what makes a failure message show the log line that explains it.
 
     A MISSING SUBJECT IS A FAILURE, NOT A SKIP. `check:ci-pytest` runs in `quality-security`, whose checkout sets `submodules: true`, so the absent submodule is not a state CI reaches -- and a case that could not run has not been checked.
     """

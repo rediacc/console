@@ -2,17 +2,13 @@
 `.ci/scripts/housekeeping/cleanup-stale-d1.sh`.
 
 A RECORDING FAKE `npx` ON A PREPENDED PATH, AND `npx` IS THE RIGHT THING TO STUB. Both call sites go through it -- `npx wrangler d1 list --json` and `npx wrangler d1 delete <name> --skip-confirmation` -- and `require_cmd` guards `npx`, never `wrangler`. Stubbing `wrangler` alone would leave both sides resolving the REAL npx, which would try to fetch the wrangler package from the
-network on a cold cache, so the fake answers as npx and dispatches the `wrangler d1 ...` shapes itself. A `wrangler` stub is installed beside it and records to the same log, purely so that a future call site that drops the `npx`
-prefix cannot silently reach the real CLI; `test_neither_side_can_reach_a_real_
-wrangler` asserts both resolutions.
+network on a cold cache, so the fake answers as npx and dispatches the `wrangler d1 ...` shapes itself. A `wrangler` stub is installed beside it and records to the same log, purely so that a future call site that drops the `npx` prefix cannot silently reach the real CLI; `test_neither_side_can_reach_a_real_ wrangler` asserts both resolutions.
 
 WHAT WOULD HAPPEN WITHOUT THE STUB IS NOT HYPOTHETICAL: this subject's entire purpose is `wrangler d1 delete --skip-confirmation`, against whatever Cloudflare account `CLOUDFLARE_ACCOUNT_ID` names, with no confirmation prompt to stop it. `CLOUDFLARE_API_TOKEN` is pinned to a fixture value in every case for the same reason, so even a leaked real wrangler would be unauthenticated.
 
 THE CALL LOG IS THE PRIMARY ARTIFACT, and the dry-run split is exactly why. A `--dry-run` that still deleted, or a real run that only listed, prints text that differs by one bracketed word and makes a call sequence that differs completely. Both paths are driven and both compare the log.
 
-`date`, `sed`, `jq` AND `wc` ARE THE REAL BINARIES ON BOTH SIDES. The port EXECUTES `date` (so the GNU/BSD probe and every unvalidated `--max-age` shape
-answer identically) and keeps `require_cmd jq` while parsing JSON natively; the
-twin uses jq, sed and wc for work this port does in Python. That asymmetry is the point of comparing outputs rather than implementations.
+`date`, `sed`, `jq` AND `wc` ARE THE REAL BINARIES ON BOTH SIDES. The port EXECUTES `date` (so the GNU/BSD probe and every unvalidated `--max-age` shape answer identically) and keeps `require_cmd jq` while parsing JSON natively; the twin uses jq, sed and wc for work this port does in Python. That asymmetry is the point of comparing outputs rather than implementations.
 
 TIME IS NOT PINNED, AND DOES NOT NEED TO BE. The two sides compute their cutoff milliseconds apart, so the `Cutoff: <ts>` line could legitimately differ by a second. Every fixture timestamp is therefore placed FAR from the boundary (hours, or the year 2000 against 2099), so no selection can turn on that difference, and `test_the_cutoff_line_is_the_only_clock_dependent_output`
 asserts that the cutoff line is the only place a clock appears.
@@ -486,9 +482,7 @@ def test_a_negative_max_age_reaches_into_the_future_and_selects_everything() -> 
         FAKE_LIST_STDOUT=_listing(("migration-test-brand-new", NEW)),
     )
     assert exit_code == 0
-    # NEW is the year 2099, so even a cutoff half an hour ahead does not reach
-    # it; what this pins is that the flag is passed through unvalidated and the
-    # two sides agree about the resulting window.
+    # NEW is the year 2099, so even a cutoff half an hour ahead does not reach it; what this pins is that the flag is passed through unvalidated and the two sides agree about the resulting window.
     assert "(databases older than -30m)" in stderr.decode()
 
 

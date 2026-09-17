@@ -51,8 +51,7 @@ file, on the dedup guard rather than on the cap:
             sed -n 's/.*claude-reviewed: \\([0-9a-f]\\{40\\}\\).*/\\1/p' | tail -n 1 || true
     }
 
-`pipefail` is on, so the pipeline DOES fail; `|| true` throws that away after
-`sed` has already printed nothing. An empty `last_sha` is indistinguishable from "this head was never reviewed", so the gate skips the `head already reviewed`
+`pipefail` is on, so the pipeline DOES fail; `|| true` throws that away after `sed` has already printed nothing. An empty `last_sha` is indistinguishable from "this head was never reviewed", so the gate skips the `head already reviewed`
 check, skips the submodule-pointer-bump check, and emits `go=true` with the
 INITIAL prompt for a PR that was fully reviewed minutes earlier. The call has no retry either, unlike the two budget reads immediately above it.
 
@@ -99,9 +98,7 @@ The findings scanner (twin :333-340) never clears `capturing`, so it takes every
     jq: parse error: Invalid numeric literal at line 3, column 0
     exit 5
 
-`! jq -e ...` is then true, and the arm prints `no parseable review-findings
-block; skipping inline comments` and exits 0. Every line-anchored comment is
-silently dropped, on the shape the prompt asks for, and the arm reports success.
+`! jq -e ...` is then true, and the arm prints `no parseable review-findings block; skipping inline comments` and exits 0. Every line-anchored comment is silently dropped, on the shape the prompt asks for, and the arm reports success.
 
 The last-closer rule was added to survive a fence NESTED inside a finding's `body`, and that case is not reachable through valid JSON: a JSON string cannot contain a raw newline, so an embedded fence never lands on a line of its own and never matches the closer. The rule buys nothing and costs everything. `test_defect4_*` drives it, its control and the anti-vacuity check that the
 prompt still asks for both fences in that order.
@@ -384,8 +381,7 @@ def gh_retry(what: str, args: list[str], *, sleep=time.sleep) -> tuple[int, str]
 def _jq(args: list[str], *, stdin: str | None = None, quiet: bool = False) -> tuple[int, str]:
     """`jq <args>` with stdout captured and trailing newlines stripped.
 
-    `stdin` is the twin's here-string, which appends a newline; `quiet` is
-    `2>/dev/null`, present on some call sites and pointedly absent from others.
+    `stdin` is the twin's here-string, which appends a newline; `quiet` is `2>/dev/null`, present on some call sites and pointedly absent from others.
     """
     proc = subprocess.run(
         ["jq", *args],
@@ -417,8 +413,7 @@ def sed_replacement(text: str) -> str:
 
     THE BUG THIS CLOSES, from the first epic-scoped review of PR #583 (run 33445357414, job 99663191041): `sed: -e expression #6, char 77: unterminated
     's' command`. Expression #6 is `{{EPIC_SCOPE}}` and the scope paragraph is
-    seven lines; a replacement may not contain a raw newline, so the whole review
-    died before it began on prose this script authors itself.
+    seven lines; a replacement may not contain a raw newline, so the whole review died before it began on prose this script authors itself.
 
     Four things are unsafe and all four are escaped: a backslash (starts an escape), the `|` delimiter (ends the command), `&` (expands to the whole match) and a newline (must be backslash-continued). Backslash goes FIRST or it re-escapes the escapes.
     """
@@ -544,8 +539,7 @@ def _arith_or_die(word: str, context: str) -> int:
 def last_marker_sha(repo: str, pr: str) -> str:
     """`last_marker_sha` (twin :120-124). SEE DEFECT 1: a gh failure reads empty.
 
-    `--paginate` runs `--jq` PER PAGE, so matching bodies stream out flat; the
-    SHA is then extracted from EVERY line and the last taken, never `tail` first.
+    `--paginate` runs `--jq` PER PAGE, so matching bodies stream out flat; the SHA is then extracted from EVERY line and the last taken, never `tail` first.
     """
     rc, out = _gh(
         [
@@ -619,8 +613,7 @@ def emit_review_turns(output_path: str, repo: str, pr: str) -> None:
     kloc = (n + 999) // 1000
     turns = kloc * TURNS_PER_KLOC
     # `[[ "$turns" -lt "$min_turns" ]] && turns="$min_turns"`, then the same for
-    # the ceiling. Spelled as clamps because ruff's PLR1730 requires it; the
-    # order is the twin's, so a MIN above a MAX would still resolve to the MAX.
+    # the ceiling. Spelled as clamps because ruff's PLR1730 requires it; the order is the twin's, so a MIN above a MAX would still resolve to the MAX.
     turns = max(turns, MIN_TURNS)
     turns = min(turns, MAX_TURNS)
     with open(output_path, "a", encoding="utf-8") as handle:
@@ -826,8 +819,7 @@ def run_gate() -> int:
             emit(output_path, "false", pr, "", "", "PR is a draft")
         head_sha = wr_head_sha
     elif event in ("pull_request", "workflow_dispatch"):
-        # pull_request: ready_for_review (console) or opened (submodules).
-        # workflow_dispatch: manual re-review; PR number arrives via input.
+        # pull_request: ready_for_review (console) or opened (submodules). workflow_dispatch: manual re-review; PR number arrives via input.
         pr = common.require_var("PR_NUMBER")
         head_sha = os.environ.get("PR_HEAD_SHA", "")
         if not head_sha:
@@ -875,8 +867,7 @@ def run_gate() -> int:
                 )
         else:
             # REQUIRED_CHECK empty = no green gate: the submodule repos have no
-            # PR CI of their own (validation lives in console CI), so there is no
-            # signal to wait for; marker dedup alone bounds re-review cost.
+            # PR CI of their own (validation lives in console CI), so there is no signal to wait for; marker dedup alone bounds re-review cost.
             log.info("no required check configured; green gate skipped")
     else:
         log.error("Unsupported EVENT_NAME: %s" % (event or "unset"))
@@ -943,9 +934,7 @@ def run_gate() -> int:
     if last_sha:
         if last_sha == head_sha:
             emit(output_path, "false", pr, head_sha, last_sha, "head already reviewed")
-        # Delta since the last ACTUALLY reviewed SHA (markers never advance on
-        # skips). The compare API needs no local history; on failure we fail OPEN
-        # into an incremental review rather than silently skipping. `files[]` caps at 300 entries, which cannot mask an all-gitlink diff.
+        # Delta since the last ACTUALLY reviewed SHA (markers never advance on skips). The compare API needs no local history; on failure we fail OPEN into an incremental review rather than silently skipping. `files[]` caps at 300 entries, which cannot mask an all-gitlink diff.
         rc, files_json = _gh(
             [
                 "api",

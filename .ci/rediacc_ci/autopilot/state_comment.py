@@ -15,10 +15,8 @@ The autopilot state comment: ONE comment per PR, authored by the autopilot app, 
 -----------------------------------------------------------------------------
 WHERE THE IDEMPOTENCY ACTUALLY LIVES, because it is NOT in this file
 -----------------------------------------------------------------------------
-The one-comment-per-PR property is a THREE-PART contract and only two parts are
-here. `select` finds the existing comment; `render` rebuilds its whole body from
-the old one; `update-state.sh` then POSTs or PATCHes depending on whether an id
-was found (`update_state.endpoint_for`). So the upsert is: select -> render -> patch, and this script owns the two halves that never touch the network.
+The one-comment-per-PR property is a THREE-PART contract and only two parts are here. `select` finds the existing comment; `render` rebuilds its whole body from the old one; `update-state.sh` then POSTs or PATCHes depending on whether an id was found (`update_state.endpoint_for`). So the upsert is: select -> render -> patch, and this script owns the two halves that never touch the
+network.
 
 That split is why `select`'s three cases are worth exhaustive coverage: a comment that exists, one that does not, and a LOOKUP THAT CANNOT BE BELIEVED. The third one is the interesting case and the twin has an answer for it that a reimplementation would lose --
 
@@ -123,8 +121,7 @@ USAGE_RENDER = (
 USAGE_FIELDS = "usage: state-comment.sh fields --body <file>"
 UNKNOWN_SUBCOMMAND = "unknown subcommand '%s' (select|render|fields)"
 
-# THE TRUST RULE, as jq, byte for byte from the twin. Author equality AND the
-# exact header prefix; newest id wins.
+# THE TRUST RULE, as jq, byte for byte from the twin. Author equality AND the exact header prefix; newest id wins.
 SELECT_PROGRAM = """
             [ .[]
               | select((.author == $bot) and (.body | startswith($header))) ]
@@ -191,9 +188,7 @@ def cap_line(line: bytes) -> bytes:
 
     LOCALE-DEPENDENT ON PURPOSE. See the module docstring: `${#line}` and
     `${line:0:400}` count characters under a UTF-8 LC_CTYPE and bytes under C.
-    Byte slicing can cut a multi-byte character in half, and that is what bash
-    does too; `surrogateescape` makes the halves round-trip so the port emits the
-    same bytes rather than a replacement character.
+    Byte slicing can cut a multi-byte character in half, and that is what bash does too; `surrogateescape` makes the halves round-trip so the port emits the same bytes rather than a replacement character.
     """
     if char_semantics():
         text = line.decode("utf-8", "surrogateescape")
@@ -210,8 +205,7 @@ def normalize_field(name: str, value: str) -> str:
     collapses to the field's sentinel.
 
     Raises `common.RefusalError(code=2)` on an unknown field name, which is the
-    twin's `log_error ...; exit 2`. See the module docstring for why that arm
-    exists at all.
+    twin's `log_error ...; exit 2`. See the module docstring for why that arm exists at all.
     """
     value = BASH_SPACE_RE.sub("", value)
     if name == "campaign":
@@ -230,11 +224,9 @@ def normalize_field(name: str, value: str) -> str:
 def _awk_read(path: str) -> tuple[bool, list[bytes]]:
     """gawk's handling of ONE file argument, as records. (ok, records).
 
-    A DIRECTORY is a WARNING and an empty read (gawk exits 0); anything else that
-    will not open is FATAL (gawk exits 2), which the caller turns into its own status. Both messages are gawk 5.3.2's, reproduced so the observable is the same string on both sides -- and asserted in the differential, so a gawk that rewords them turns the test red rather than diverging quietly.
+    A DIRECTORY is a WARNING and an empty read (gawk exits 0); anything else that will not open is FATAL (gawk exits 2), which the caller turns into its own status. Both messages are gawk 5.3.2's, reproduced so the observable is the same string on both sides -- and asserted in the differential, so a gawk that rewords them turns the test red rather than diverging quietly.
 
-    Records are newline-separated and the FINAL UNTERMINATED LINE IS A RECORD, which is awk's rule and NOT `while read`'s. The two appear in the same script and the difference is load-bearing: `append_entries` uses `read` and drops a
-    final unterminated line; this drops nothing.
+    Records are newline-separated and the FINAL UNTERMINATED LINE IS A RECORD, which is awk's rule and NOT `while read`'s. The two appear in the same script and the difference is load-bearing: `append_entries` uses `read` and drops a final unterminated line; this drops nothing.
     """
     try:
         with open(path, "rb") as handle:
@@ -258,9 +250,7 @@ def state_field_raw(records: list[bytes], name: str) -> str:
 
     Only the FIRST `state: ` line counts -- the twin's `exit` -- so a body carrying a second one (appended by anything other than this script) can never win. That is the same first-match discipline `select` applies to comments.
 
-    Every matching part of that line is printed, and `$( )` joins them with
-    newlines; `normalize_field` then strips the whitespace and validates, so two
-    `campaign: ` parts on one line collapse to the sentinel rather than to the first value. Reproduced rather than tidied.
+    Every matching part of that line is printed, and `$( )` joins them with newlines; `normalize_field` then strips the whitespace and validates, so two `campaign: ` parts on one line collapse to the sentinel rather than to the first value. Reproduced rather than tidied.
     """
     needle = (name + ": ").encode("utf-8", "surrogateescape")
     for record in records:
@@ -343,8 +333,7 @@ def read_entries(path: str) -> list[bytes]:
         (`[[ -z "${line//[[:space:]]/}" ]]`), so "this round ruled nothing out"
         does not render a stray bullet.
 
-    An absent or empty source contributes nothing (`[[ -n && -s ]] || return 0`), and a DIRECTORY passes that test and then fails to read -- which the twin reports as bash's own redirection error. Reproduced as an empty read plus
-    that message; see `_entries_or_error`.
+    An absent or empty source contributes nothing (`[[ -n && -s ]] || return 0`), and a DIRECTORY passes that test and then fails to read -- which the twin reports as bash's own redirection error. Reproduced as an empty read plus that message; see `_entries_or_error`.
     """
     return [
         line
@@ -379,9 +368,7 @@ def render_body(
 def compact(ledger: list[bytes]) -> list[bytes]:
     """The compactor (state-comment.sh:232-244).
 
-    Everything but the newest KEEP_FULL_ROUNDS lines collapses to a one-line
-    pointer; the run id keeps the full detail reachable in that round's workflow
-    logs. A line that does not carry the `r<n> | run <id>` shape is passed through untouched rather than mangled.
+    Everything but the newest KEEP_FULL_ROUNDS lines collapses to a one-line pointer; the run id keeps the full detail reachable in that round's workflow logs. A line that does not carry the `r<n> | run <id>` shape is passed through untouched rather than mangled.
 
     `total` is `grep -c .`, which counts NON-EMPTY lines, while `cut` is compared against awk's NR, which counts ALL of them. The two disagree the moment a blank line is in the ledger file -- which the carry-over parser cannot produce, since it only keeps `r<n> | run ` lines. Preserved as-is: the divergence is unreachable, and "fixing" it would change which rounds survive at the
     boundary.
@@ -432,8 +419,7 @@ def _render(args: dict[str, str]) -> int:
         log.error(USAGE_RENDER)
         return 2
 
-    # An explicit argument WINS; otherwise the value carried in the previous body
-    # survives. That is what makes a round with nothing to say about the campaign (a label-armed round, say) preserve it instead of silently closing it.
+    # An explicit argument WINS; otherwise the value carried in the previous body survives. That is what makes a round with nothing to say about the campaign (a label-armed round, say) preserve it instead of silently closing it.
     fields = {}
     for name, key in (
         ("campaign", "ARG_CAMPAIGN"),
@@ -502,9 +488,8 @@ def _append_entries(source: str, dest: list[bytes]) -> int:
 
         <path-as-invoked>: line 200: read: 0: read error: Is a directory
 
-    -- appends nothing, and carries on with exit 0. The message names the twin's own file and line number, which no port can reproduce without lying about where it came from, so this port appends nothing and carries on SILENTLY.
-    Exit code and stdout are identical; stderr differs by exactly that one line.
-    Pinned by `test_a_directory_as_an_entries_file_is_the_one_named_divergence`, which asserts the difference is that line and nothing else -- so if the twin ever starts REFUSING here, the test goes red rather than the port drifting.
+    -- appends nothing, and carries on with exit 0. The message names the twin's own file and line number, which no port can reproduce without lying about where it came from, so this port appends nothing and carries on SILENTLY. Exit code and stdout are identical; stderr differs by exactly that one line. Pinned by `test_a_directory_as_an_entries_file_is_the_one_named_divergence`,
+    which asserts the difference is that line and nothing else -- so if the twin ever starts REFUSING here, the test goes red rather than the port drifting.
     """
     try:
         entries = read_entries(source)

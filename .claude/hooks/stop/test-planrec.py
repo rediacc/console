@@ -395,9 +395,7 @@ raises(
     lambda: R.compact(ROOT, REL, "deadbeef", why="auto", park=True),
     "already a record",
 )
-# ORDER MATTERS HERE. A record just written by `--write` is BOTH a record and a
-# dirty path; if the dirty branch won, the message would say "commit the path
-# first", and doing that then compacts the RECORD -- pointing the new blob at the record instead of the plan. Pinned so the ordering cannot be shuffled back.
+# ORDER MATTERS HERE. A record just written by `--write` is BOTH a record and a dirty path; if the dirty branch won, the message would say "commit the path first", and doing that then compacts the RECORD -- pointing the new blob at the record instead of the plan. Pinned so the ordering cannot be shuffled back.
 (ROOT / REL).write_text(RECORD + "\nan uncommitted trailing line\n", encoding="utf-8")
 raises(
     "a record that is ALSO dirty still reports being a record, not being dirty",

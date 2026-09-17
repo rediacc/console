@@ -50,15 +50,12 @@ THE LOCAL ARM, AND THE HONEST STATEMENT OF ITS LIMIT. `private/account/.env` is 
     run, which is the whole of the "unknown is not fine" rule applied to an arm
     whose subject is legitimately absent half the time.
 
-When the file IS present -- on a developer machine, which is where the truncation actually happens -- the arm asserts set equality between the names it assigns and
-the `dotenv.names` table. A name assigned locally with no destination reds; a
-destination for a name the file no longer assigns reds as DRAINED. That second direction is the one that keeps the truncation moving instead of accumulating a table of names nobody has looked at since.
+When the file IS present -- on a developer machine, which is where the truncation actually happens -- the arm asserts set equality between the names it assigns and the `dotenv.names` table. A name assigned locally with no destination reds; a destination for a name the file no longer assigns reds as DRAINED. That second direction is the one that keeps the truncation moving instead
+of accumulating a table of names nobody has looked at since.
 
 NAMES ONLY, NEVER VALUES, and it is enforced by shape rather than by care: the only thing this module extracts from `.env` is the text to the LEFT of the first
 `=`. `.ci/lib/bws-env.sh:16-18` states the same rule for the fetch helper and the
-reason applies here with more force, because a gate's output is a log surface and this repository is public. The one opaque identifier this file does carry is the `ci-shared` project UUID, which `.ci/config/bws-secret-map.json` already holds in
-the clear; it is pinned so that a map regenerated against a DIFFERENT project
-reds instead of silently reshaping the residue.
+reason applies here with more force, because a gate's output is a log surface and this repository is public. The one opaque identifier this file does carry is the `ci-shared` project UUID, which `.ci/config/bws-secret-map.json` already holds in the clear; it is pinned so that a map regenerated against a DIFFERENT project reds instead of silently reshaping the residue.
 
 ANTI-VACUITY, and none of it is `n > 0` on a number that is supposed to fall.
 
@@ -82,10 +79,9 @@ file that carries no suppressions. Each residue entry names an `evidence` path;
 the gate requires that path to be TRACKED and to still mention the name. A deleted file reds, and so does a file that stopped talking about the name -- the reason has to keep being true, not merely have been true once. THE EVIDENCE IS A PATH AND NEVER A LINE NUMBER, for the reason this repo's baselines are keyed on text: a line number churns the moment a paragraph moves above it,
 and a citation that churns gets "fixed" wholesale, which is how a stale claim gets re-blessed.
 
-WHY `.ci/config/` AND NOT `.ci/policy/`, re-applying clause 1 of `.ci/policy/README.md` section 1 rather than re-deriving it. A policy file is a DECISION: a set of entries someone chose to EXEMPT, each carrying a BLOCKER reason that stops a gate firing. This file exempts nothing. Nothing in it
-suppresses a finding anywhere in the estate; deleting it makes this gate refuse,
-not pass. Its residue half is DERIVED wholesale from two other tracked files and then annotated, exactly as `language-policy-baseline.json` and `tracked-credentials-baseline.json` are, and it sits beside them. There is also the hard mechanical reason W8 P6 records: `.ci/policy/` is under four-way set equality (`check:ci-policy-inventory`), so a file landing there without matching
-edits to two `POLICY_FILES` tuples and the README reds on arrival.
+WHY `.ci/config/` AND NOT `.ci/policy/`, re-applying clause 1 of `.ci/policy/README.md` section 1 rather than re-deriving it. A policy file is a DECISION: a set of entries someone chose to EXEMPT, each carrying a BLOCKER reason that stops a gate firing. This file exempts nothing. Nothing in it suppresses a finding anywhere in the estate; deleting it makes this gate refuse, not
+pass. Its residue half is DERIVED wholesale from two other tracked files and then annotated, exactly as `language-policy-baseline.json` and `tracked-credentials-baseline.json` are, and it sits beside them. There is also the hard mechanical reason W8 P6 records: `.ci/policy/` is under four-way set equality (`check:ci-policy-inventory`), so a file landing there without matching edits
+to two `POLICY_FILES` tuples and the README reds on arrival.
 
 WHAT THIS GATE DOES NOT CLAIM, so nobody reads more into a green than is there:
 
@@ -330,9 +326,7 @@ def evaluate_dotenv(spec, vault: set[str], shard: set[str]) -> list[str]:
     names = spec["dotenv"]["names"]
     dests = spec["dotenv"]["destinations"]
     bootstrap = set(spec.get("bootstrap_names") or ())
-    # NOTES ARE OPTIONAL AND SPARSE ON PURPOSE. 49 machine-written sentences about destinations would be filler, and filler is how a required field stops being
-    # read; a note exists only where the destination is counter-intuitive. What is
-    # NOT optional is that a note names a row that exists -- a note for a drained name is a reason still arguing about something that left.
+    # NOTES ARE OPTIONAL AND SPARSE ON PURPOSE. 49 machine-written sentences about destinations would be filler, and filler is how a required field stops being read; a note exists only where the destination is counter-intuitive. What is NOT optional is that a note names a row that exists -- a note for a drained name is a reason still arguing about something that left.
     notes = spec["dotenv"].get("notes") or {}
     findings = []
     findings.extend(
@@ -385,8 +379,7 @@ def evaluate_dotenv(spec, vault: set[str], shard: set[str]) -> list[str]:
 def evaluate_local(spec, assigned: set[str]) -> list[str]:
     """Set equality between the real `.env` and the destination table.
 
-    Only reachable on a machine that HAS the file. The caller decides that; this
-    stays pure so the controls can drive both directions without one.
+    Only reachable on a machine that HAS the file. The caller decides that; this stays pure so the controls can drive both directions without one.
     """
     names = set(spec["dotenv"]["names"])
     findings = []
@@ -533,9 +526,7 @@ def blocked_rows(spec) -> list[tuple[str, list[str]]]:
 def report(spec, stats) -> None:
     """The shape, printed whether or not there were findings.
 
-    "251 gates, 2 workflow scopes, 8 exempt" lets a reader notice when a number
-    collapses; "OK" does not. The blocked names are printed IN FULL rather than
-    counted, for the same reason the landmark gate prints its two exempt pages every run.
+    "251 gates, 2 workflow scopes, 8 exempt" lets a reader notice when a number collapses; "OK" does not. The blocked names are printed IN FULL rather than counted, for the same reason the landmark gate prints its two exempt pages every run.
     """
     log.info(
         "  %d name(s) in the `%s` shard, %d in %s, so %d unstated; %d kind(s) used of "

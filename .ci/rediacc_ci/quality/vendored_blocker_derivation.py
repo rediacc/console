@@ -163,9 +163,7 @@ class Case:
 def parse_corpus(source: str) -> list[Case]:
     """The `<id>|<reason>|<ts>|<sh>|<bp>` heredoc, as rows.
 
-    THE HEREDOC IS THE RECORD AND THE PARSE MUST NOT BE CLEVER. The corpus gate states in its own header that no field may contain a `|`, so a five-way split
-    is exact; a row that does not split into five is returned to the caller as a
-    refusal rather than skipped, because a silently dropped row is a case this gate would then claim to have derived.
+    THE HEREDOC IS THE RECORD AND THE PARSE MUST NOT BE CLEVER. The corpus gate states in its own header that no field may contain a `|`, so a five-way split is exact; a row that does not split into five is returned to the caller as a refusal rather than skipped, because a silently dropped row is a case this gate would then claim to have derived.
     """
     # ANCHORED ON THE VARIABLE NAME AND TOLERANT OF WHAT FOLLOWS THE REDIRECT. The first draft matched `<<'EOF'\n` and found nothing, because the real line is `read -r -d '' CORPUS <<'EOF' || true` -- the `|| true` sits between the redirect and the newline. That parsed to zero rows, which the refusal caught and a laxer gate would have reported as a clean run over an empty corpus.
     match = re.search(r"CORPUS\s*<<'EOF'[^\n]*\n(.*?)\nEOF\n", source, re.DOTALL)
@@ -468,9 +466,7 @@ def main(argv: list[str] | None = None) -> int:
 
 # --------------------------------------------------------------------------- controls
 #
-# EVERY FIXTURE IS A COPY. The real `.ci/breakpoint/` is never a write target
-# here, which is invariant 8 and also the thing claim 5 asserts at run time; a
-# control that perturbed the original to prove the gate notices perturbation would be the one write nobody could defend. ---------------------------------------------------------------------------
+# EVERY FIXTURE IS A COPY. The real `.ci/breakpoint/` is never a write target here, which is invariant 8 and also the thing claim 5 asserts at run time; a control that perturbed the original to prove the gate notices perturbation would be the one write nobody could defend. ---------------------------------------------------------------------------
 
 
 def _fixture(tmp, *, vendored: str, corpus: str, manifest: str | None = None) -> pathlib.Path:
@@ -504,9 +500,7 @@ def selftest() -> bool:
 
     check = Checker()
 
-    # The REAL files are the fixture. An invented vendored copy and an invented corpus would prove the parsers agree with each other and nothing about the
-    # artifacts in this tree; the two defects a synthetic fixture cannot see are
-    # a comment shape the extractor mis-reads and a heredoc that moved.
+    # The REAL files are the fixture. An invented vendored copy and an invented corpus would prove the parsers agree with each other and nothing about the artifacts in this tree; the two defects a synthetic fixture cannot see are a comment shape the extractor mis-reads and a heredoc that moved.
     real_vendored = _real(VENDORED_REL)
     real_corpus = _real(CORPUS_REL)
 
@@ -588,9 +582,7 @@ def selftest() -> bool:
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        # THE COMPOSITION TRAP, in its exact shape: the divergence COUNT is unchanged and the membership is not. Adding `no fix` back to the
-        # vendored list turns banned-no-fix into agreement; the corpus still
-        # records a divergence there, so the model stops describing the file.
+        # THE COMPOSITION TRAP, in its exact shape: the divergence COUNT is unchanged and the membership is not. Adding `no fix` back to the vendored list turns banned-no-fix into agreement; the corpus still records a divergence there, so the model stops describing the file.
         mutant = plant(real_vendored, '    "none" "n/a"', '    "no fix" "none" "n/a"')
         root = _fixture(tmp, vendored=mutant, corpus=real_corpus)
         findings, _ = _run_at(root)

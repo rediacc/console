@@ -81,9 +81,7 @@ describe('renderReplicaSet (spec 05 §1 manifest plumbing)', () => {
 });
 
 function execMock() {
-  // datastore_fork is captured (--json) so provisionOneReplica can ferry the
-  // record to an off-control node via datastore_adopt (finding #36); every
-  // other step just needs success.
+  // datastore_fork is captured (--json) so provisionOneReplica can ferry the record to an off-control node via datastore_adopt (finding #36); every other step just needs success.
   return vi
     .spyOn(localExecutorService, 'execute')
     .mockImplementation((opts) =>
@@ -197,8 +195,7 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
       )
       .map((c) => c.functionName);
     expect(w1Seq).toEqual(['datastore_adopt', 'datastore_attach']);
-    // #40: after the off-control attach, the control's vestigial fork record is forgotten (registry-only) so a later re-fork of the same tag (refresh)
-    // does not collide. ONLY the off-control replica; on-control skips it.
+    // #40: after the off-control attach, the control's vestigial fork record is forgotten (registry-only) so a later re-fork of the same tag (refresh) does not collide. ONLY the off-control replica; on-control skips it.
     const forgets = calls.filter((c) => c.functionName === 'datastore_forget');
     expect(forgets.map((c) => c.machineName)).toEqual(['cp1']);
     expect(forgets[0].params?.name).toBe('ds-data:set1-r2');

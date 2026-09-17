@@ -14,9 +14,7 @@ from rediacc_ci import paths
 from rediacc_ci.quality import npmrc
 from rediacc_ci.tests import differential as diff
 
-# Every awkward shape the value pipeline has to survive. The comment on each
-# line is the property it is there for; a case with no property is a case that
-# will be deleted the first time someone tidies this file.
+# Every awkward shape the value pipeline has to survive. The comment on each line is the property it is there for; a case with no property is a case that will be deleted the first time someone tidies this file.
 VALUE_CASES = [
     ("ignore-scripts=true\n", "ignore-scripts"),  # the ordinary one
     ("ignore-scripts = true \n", "ignore-scripts"),  # spaces around the =
@@ -46,8 +44,7 @@ def test_value_pipeline_matches_bash(tmp_path: pathlib.Path, content: str, key: 
     ) % (key, key)
     code, out, err = diff.bash_streams(script, cwd=str(tmp_path))
     assert code == 0, err
-    # `$( )` strips trailing newlines; the shell fragment above is what the twin
-    # puts inside one, so the comparison is against the stripped form.
+    # `$( )` strips trailing newlines; the shell fragment above is what the twin puts inside one, so the comparison is against the stripped form.
     assert npmrc.setting_value(content, key) == out.rstrip("\n")
 
 

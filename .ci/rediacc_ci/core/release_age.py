@@ -41,21 +41,15 @@ Measured 2026-09-10 on bash 5.3.9, with a counting wrapper first on PATH and fiv
       5 x --eligible-epoch <epoch> 86400
       7 x --window-seconds
 
-Seven `--window-seconds` runs for one window: one real query plus SIX probes.
-With the memo working the same work is 7 node starts, not 12; wall clock 1.37s
-against a measured 0.111s per node start. Direct confirmation that the variable never survives:
+Seven `--window-seconds` runs for one window: one real query plus SIX probes. With the memo working the same work is 7 node starts, not 12; wall clock 1.37s against a measured 0.111s per node start. Direct confirmation that the variable never survives:
 
     $ bash -c 'source .ci/scripts/lib/release-age.sh
                is_release_deferred 1756000000 1756100000
                echo "runner=[$__RELEASE_AGE_RUNNER]"'
     runner=[]
 
-THIS PORT CACHES THE RUNNER, which is a DIVERGENCE and is why it is written down here in full rather than inherited quietly. Three reasons it is the right side to come down on: no verdict moves, because all three rungs execute the same file and
-the ladder is deterministic; the twin's stated intent is the cached behaviour, so
-reproducing the loss would be reproducing a comment's contradiction rather than a
-contract; and `go_deps.py:319` already caches it, so a port that did not would
-disagree with the Python sibling it is supposed to replace. `test_core_release_age.py` COUNTS the delegate invocations on both sides and pins the N+1 against the 1, so the divergence cannot quietly change size. THE BASH IS
-NOT FIXED HERE; it is not this box's file.
+THIS PORT CACHES THE RUNNER, which is a DIVERGENCE and is why it is written down here in full rather than inherited quietly. Three reasons it is the right side to come down on: no verdict moves, because all three rungs execute the same file and the ladder is deterministic; the twin's stated intent is the cached behaviour, so reproducing the loss would be reproducing a comment's
+contradiction rather than a contract; and `go_deps.py:319` already caches it, so a port that did not would disagree with the Python sibling it is supposed to replace. `test_core_release_age.py` COUNTS the delegate invocations on both sides and pins the N+1 against the 1, so the divergence cannot quietly change size. THE BASH IS NOT FIXED HERE; it is not this box's file.
 
 --------------------------------------------------------------------------
 DEFECT 2, MEASURED: `now` IS UNVALIDATED, AND ITS FAILURE IS FAIL-OPEN
@@ -71,8 +65,7 @@ delegate:
 and under the `set -u` the two real callers run with, `now="abc"` prints
 `abc: unbound variable` and also yields ELIGIBLE. So the one shape most likely to arrive from a broken date parse, a number with a stray suffix, resolves to the exact false "must upgrade" the fail-closed rule exists to prevent, and does it silently.
 
-LATENT, NOT LIVE, and the difference is worth stating: both real call sites pass one argument (`is_release_deferred "$epoch"` at `audit.sh:271` and `check-go-deps.sh:151`), so `now` is always `date -u +%s` today. THIS PORT TAKES `now` AS AN `int | None` AND REFUSES ANYTHING ELSE, which is a divergence on
-inputs no live caller produces; `test_core_release_age.py` drives the TWIN for
+LATENT, NOT LIVE, and the difference is worth stating: both real call sites pass one argument (`is_release_deferred "$epoch"` at `audit.sh:271` and `check-go-deps.sh:151`), so `now` is always `date -u +%s` today. THIS PORT TAKES `now` AS AN `int | None` AND REFUSES ANYTHING ELSE, which is a divergence on inputs no live caller produces; `test_core_release_age.py` drives the TWIN for
 each of the four rows above so the defect is pinned as a fact about the bash rather than as a claim in a docstring.
 
 --------------------------------------------------------------------------
@@ -151,8 +144,7 @@ class ReleaseAge:
         self._runner: list[str] | None = None
         self._window: int | None = None
         self._eligible: dict[tuple[int, int], int] = {}
-        # Not part of the twin. The count `test_core_release_age.py` compares
-        # against the twin's N+1 probes; see DEFECT 1.
+        # Not part of the twin. The count `test_core_release_age.py` compares against the twin's N+1 probes; see DEFECT 1.
         self.delegate_calls = 0
         self.probe_calls = 0
 
@@ -276,8 +268,7 @@ class ReleaseAge:
     ) -> bool:
         """`is_release_deferred <publish_epoch> [now] [window]`. True = deferred.
 
-        FAIL-CLOSED on an empty or unparseable `publish_epoch` and on a delegate that could not answer. The twin returns 0 for deferred and 1 for
-        eligible, which is the inverse of the boolean here; `main` does the flip.
+        FAIL-CLOSED on an empty or unparseable `publish_epoch` and on a delegate that could not answer. The twin returns 0 for deferred and 1 for eligible, which is the inverse of the boolean here; `main` does the flip.
 
         `now` IS AN `int | None` AND NOT A STRING. See DEFECT 2: the twin lets bash arithmetic decide, and one of the four shapes measured there is fail-OPEN.
         """

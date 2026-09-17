@@ -1,16 +1,13 @@
 """A calibrated rubric may not change without being re-calibrated.
 
-Ported from `.ci/scripts/quality/check-rubric-calibration.sh`, which is not
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-rubric-calibration.sh`, which is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
-THE GAP. Three prompt constants drive the stop judge's rules, and each has a fixture set in `.claude/hooks/stop/calibrate-judge-rules.py` that scores it against a REAL model: SWEEP_PROMPT (SWEEP_CASES), BRAVE_PROMPT (BRAVE_CASES), REGGATE_PROMPT, SHAPE_PROMPT (SHAPE_CASES). Nothing forced the two to move
-together. Editing a rubric is cheap and silent; re-calibrating costs 14 live model
-calls and several minutes, so the pressure is entirely toward skipping it -- and a rubric whose calibration describes an older text is a rubric nobody has measured.
+THE GAP. Three prompt constants drive the stop judge's rules, and each has a fixture set in `.claude/hooks/stop/calibrate-judge-rules.py` that scores it against a REAL model: SWEEP_PROMPT (SWEEP_CASES), BRAVE_PROMPT (BRAVE_CASES), REGGATE_PROMPT, SHAPE_PROMPT (SHAPE_CASES). Nothing forced the two to move together. Editing a rubric is cheap and silent; re-calibrating costs 14 live
+model calls and several minutes, so the pressure is entirely toward skipping it -- and a rubric whose calibration describes an older text is a rubric nobody has measured.
 
 `wl_classsweep`'s own docstring records that its examples ARE the calibration set the operator supplied. That session trimmed five of them to three, which is exactly the edit this gate exists to catch: it was re-calibrated by choice, not by machinery.
 
-WHAT THIS DOES NOT CLAIM. It cannot verify the calibration PASSED -- only that the recorded hash matches the text on disk, so a human or a session had the current text in front of the model. Recording a hash after a 12/14 run is possible and is
-a lie the gate cannot see; the run's own output is the evidence for that.
+WHAT THIS DOES NOT CLAIM. It cannot verify the calibration PASSED -- only that the recorded hash matches the text on disk, so a human or a session had the current text in front of the model. Recording a hash after a 12/14 run is possible and is a lie the gate cannot see; the run's own output is the evidence for that.
 
 THE SOURCE MAP, carried with its history intact:
 
@@ -19,13 +16,10 @@ THE SOURCE MAP, carried with its history intact:
   REGGATE_PROMPT  .claude/hooks/stop/worklist_messages.py
   SHAPE_PROMPT    .claude/hooks/stop/wl_shapedup.py
 
-SHAPE_PROMPT was added 2026-09-02. It had live fixtures (SHAPE_CASES) and was calibrated by the same runner, yet was absent from this map -- so its text could drift with nothing noticing, which is the one thing this gate exists to prevent.
-It was the only rubric in that state with fixtures already written; the remaining
-five (FOLLOWUP, DEFER_AUDIT, TRIAGE, ADMISSION, PLANFID) have neither fixtures nor a hash, and adding a hash without fixtures would freeze text nothing has ever proven correct.
+SHAPE_PROMPT was added 2026-09-02. It had live fixtures (SHAPE_CASES) and was calibrated by the same runner, yet was absent from this map -- so its text could drift with nothing noticing, which is the one thing this gate exists to prevent. It was the only rubric in that state with fixtures already written; the remaining five (FOLLOWUP, DEFER_AUDIT, TRIAGE, ADMISSION, PLANFID) have
+neither fixtures nor a hash, and adding a hash without fixtures would freeze text nothing has ever proven correct.
 
-THE OTHER DIRECTION, and it was missing until it was probed. The comparison walks
-the rubrics found in SOURCE and looks each up in the manifest; a manifest entry
-naming a rubric that no longer exists is never visited. Probed 2026-09-04 by planting NO_SUCH_RUBRIC_XYZ: the gate printed "all 4 calibrated rubric(s) match"
+THE OTHER DIRECTION, and it was missing until it was probed. The comparison walks the rubrics found in SOURCE and looks each up in the manifest; a manifest entry naming a rubric that no longer exists is never visited. Probed 2026-09-04 by planting NO_SUCH_RUBRIC_XYZ: the gate printed "all 4 calibrated rubric(s) match"
 while the file held five, so a calibration could outlive the rubric it measured
 and read as coverage. Its sibling `.ci/scripts/ci/shadow-compare.sh` already refuses the same shape ("is in SHADOW_EXPECTED_MISMATCH but not in SHADOW_NAMES -- it excuses nothing here").
 
@@ -40,8 +34,7 @@ THE SORT ORDER OF `bad` IS PRESERVED, AND IT IS NOT OBVIOUS. The twin's first
 heredoc prints `json.dumps(out, sort_keys=True)` and the second parses that back,
 so `live.items()` iterates in SORTED KEY order even though `SRC` is written in a different order. A port that iterated `SRC` would report the same findings in a different sequence -- which the shadow comparator would forgive, since it compares a multiset -- but a human diffing two logs would not. `live` is therefore built sorted.
 
-THE FLOOR SAYS THREE WHILE FOUR RUBRICS EXIST, and that is deliberate in the original: SHAPE_PROMPT was added later and the floor was not raised with it. It is carried at 3 unchanged. Raising it would be a behaviour change, and this file's
-job is to keep the verdict; it is reported as a finding instead.
+THE FLOOR SAYS THREE WHILE FOUR RUBRICS EXIST, and that is deliberate in the original: SHAPE_PROMPT was added later and the floor was not raised with it. It is carried at 3 unchanged. Raising it would be a behaviour change, and this file's job is to keep the verdict; it is reported as a finding instead.
 """
 
 import hashlib

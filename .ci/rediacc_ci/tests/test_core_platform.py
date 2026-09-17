@@ -214,8 +214,7 @@ def test_every_supported_system_string_maps(system: str) -> None:
 def test_the_uname_corpus_carries_no_bare_windows() -> None:
     """CONTROL for the corpus split, so the two lists cannot silently merge.
 
-    `uname -s` cannot print `Windows`; only a native CPython says that. If the
-    two corpora are ever unified, the frozen `case` differentials would be asked about an input no shell produces and would fail for the test's reason rather than the module's -- which is exactly how they DID fail once.
+    `uname -s` cannot print `Windows`; only a native CPython says that. If the two corpora are ever unified, the frozen `case` differentials would be asked about an input no shell produces and would fail for the test's reason rather than the module's -- which is exactly how they DID fail once.
     """
     assert "Windows" not in UNAME_SYSTEMS
     assert "Windows" in SYSTEMS
@@ -411,9 +410,7 @@ def test_uv_target_refuses_windows() -> None:
 
 # --------------------------------------------------------------------------- WSL: evidence, in both directions, with the signal named ---------------------------------------------------------------------------
 
-# Real banners. `/proc/version` here is the string a WSL2 kernel prints, and the
-# Debian one is a real non-WSL banner; neither is a shortened stand-in, because a
-# substring match is what is being tested.
+# Real banners. `/proc/version` here is the string a WSL2 kernel prints, and the Debian one is a real non-WSL banner; neither is a shortened stand-in, because a substring match is what is being tested.
 WSL_VERSION_BANNER = (
     "Linux version 5.15.167.4-microsoft-standard-WSL2 "
     "(root@f9c826d3017f) (gcc (GCC) 11.2.0, GNU ld (GNU Binutils) 2.37) "
@@ -625,8 +622,7 @@ def test_the_windows_launcher_really_re_enters_wsl() -> None:
 
 
 # ---------------------------------------------------------------------------
-# the fix in the bash, pinned; each pattern with the control that it would catch
-# a regression ---------------------------------------------------------------------------
+# the fix in the bash, pinned; each pattern with the control that it would catch a regression ---------------------------------------------------------------------------
 
 
 def _url_lines() -> list[str]:

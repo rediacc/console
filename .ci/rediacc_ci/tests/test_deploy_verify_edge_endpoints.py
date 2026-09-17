@@ -190,9 +190,7 @@ def drive(
 ) -> tuple[Run, Run]:
     """Run BOTH implementations against their own copy of the same fixture set.
 
-    EACH SIDE GETS ITS OWN FIXTURE DIRECTORY because the fake writes per-slug
-    counter files into it; sharing one would make whichever side ran second see
-    a different sequence of answers, which is a test artifact rather than a divergence.
+    EACH SIDE GETS ITS OWN FIXTURE DIRECTORY because the fake writes per-slug counter files into it; sharing one would make whichever side ran second see a different sequence of answers, which is a test artifact rather than a divergence.
     """
     binary_dir = make_bin(tmp_path)
     runs: list[Run] = []
@@ -432,8 +430,7 @@ def test_latest_json_absent_empty_and_malformed_all_read_as_unreadable(
     tmp_path: pathlib.Path,
 ) -> None:
     """`jq -re '.version'` answers with THREE different exit codes here (4 on
-    empty input, 1 on a JSON `null`, 5 on a parse error) and the twin folds all
-    three into one message. Each is driven; the parse-error case also proves
+    empty input, 1 on a JSON `null`, 5 on a parse error) and the twin folds all three into one message. Each is driven; the parse-error case also proves
     jq's stderr reaches the log unredirected on both sides."""
     for body in (None, "{}\n", "not json at all\n"):
 
@@ -800,9 +797,7 @@ def test_fetch_retry_exhausts_the_budget_exactly_once_per_attempt() -> None:
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:
     """Drop the HTML-comment stripper from a COPY of the port.
 
-    That `sed` is invisible on every failing run and on every run against a
-    non-Astro body; the only thing it changes is whether a HEALTHY deploy is
-    recognised. A port without it agrees with the twin on eight of the eleven assertions and disagrees exactly where the twin's own header says the subtlety lives.
+    That `sed` is invisible on every failing run and on every run against a non-Astro body; the only thing it changes is whether a HEALTHY deploy is recognised. A port without it agrees with the twin on eight of the eleven assertions and disagrees exactly where the twin's own header says the subtlety lives.
     """
     source = PORT_FILE.read_text(encoding="utf-8")
     anchor = 'comment = re.compile(r"<!--[^>]*-->")'

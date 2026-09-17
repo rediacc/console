@@ -1,7 +1,7 @@
 """The refuse-early half of `.ci/scripts/lib/common.sh`, the tree's base library.
 
-`.ci/scripts/lib/common.sh` is 772 lines and **208 files source it** (re-derived 2026-09-10 with `grep -rlP '^\\s*(source|\\.)\\s+.*lib/common\\.sh'`, excluding `node_modules` and `.git`, minus the one `.md` mention: 206 `.sh` plus two `.py` test files that emit a source line). The plan's "251" and the later "209"
-both counted files rather than real sourcers; the number to quote is 208.
+`.ci/scripts/lib/common.sh` is 772 lines and **208 files source it** (re-derived 2026-09-10 with `grep -rlP '^\\s*(source|\\.)\\s+.*lib/common\\.sh'`, excluding `node_modules` and `.git`, minus the one `.md` mention: 206 `.sh` plus two `.py` test files that emit a source line). The plan's "251" and the later "209" both counted files rather than real sourcers; the number to quote is
+208.
 
 It is NOT one library. It is seven, stacked in one file, and five of them were already ported by earlier waves under names that describe what they do:
 
@@ -49,8 +49,7 @@ fail-open arm intact and named -- `platform.os_name()` RAISES where this returns
 --------------------------------------------------------------------------
 THE ERROR MODEL, AND WHY IT IS NOT `sys.exit`
 --------------------------------------------------------------------------
-Every `require_*` in the twin ends `log_error ...; exit 1`, and because the twin
-is SOURCED that `exit` kills the caller's whole script. A Python library cannot do that: it is imported into a process that may have other work, and a module that calls `sys.exit` from a helper is untestable without catching SystemExit.
+Every `require_*` in the twin ends `log_error ...; exit 1`, and because the twin is SOURCED that `exit` kills the caller's whole script. A Python library cannot do that: it is imported into a process that may have other work, and a module that calls `sys.exit` from a helper is untestable without catching SystemExit.
 
 So each `require_*` here raises `RefusalError`, which carries the exact stderr lines the twin would have printed and the exit code it would have used, and `main()` prints them through `rediacc_ci.log.error` and returns that code. The bytes on stderr and the process exit status are therefore identical through the CLI -- which is what the differential compares -- while an importing
 caller gets an exception it can catch. `test_core_common.py` drives both halves.
@@ -67,9 +66,7 @@ QUIRK 1 -- `require_input` PASSES VACUOUSLY ON AN EMPTY PATH LIST, and it is the
 
 `for p in "$@"` over zero arguments runs zero times and the function returns 0. Two of the three call sites pass named scalars and cannot be empty. The third, `.ci/scripts/quality/check-no-app-admin-perm.sh:56-58`, passes
 `"${SCAN_DIRS[@]}"` -- an ARRAY -- and that array is two hard-coded literals
-today, so the defect is LATENT rather than live. It is exactly the shape that stops being latent the day someone builds that array from a glob or a `find`.
-`REQUIRE_INPUT_VACUOUS_IS_A_PASS` below records the twin's answer; this module's
-`require_input` refuses on an empty list, and both directions are pinned.
+today, so the defect is LATENT rather than live. It is exactly the shape that stops being latent the day someone builds that array from a glob or a `find`. `REQUIRE_INPUT_VACUOUS_IS_A_PASS` below records the twin's answer; this module's `require_input` refuses on an empty list, and both directions are pinned.
 
 QUIRK 2 -- `require_input` MISREPORTS A BAD TEST FLAG AS A MISSING FILE. `test -q /nope` writes "unary operator expected" and exits 2, `! test ...` reads that as true, and the caller is told its file is missing:
 
@@ -95,8 +92,7 @@ The lookahead is `[[ ! "$2" =~ ^-- ]]`, which only excludes long options:
     $ bash -c 'source common.sh; parse_args --verbose -x --other; ...'
     ARG_VERBOSE=[-x] ARG_OTHER=[true]
 
-`--verbose` was meant to be a boolean and ate `-x`. Reproduced exactly; a port
-that treated any leading `-` as the next flag would silently disagree with 53 callers.
+`--verbose` was meant to be a boolean and ate `-x`. Reproduced exactly; a port that treated any leading `-` as the next flag would silently disagree with 53 callers.
 
 QUIRK 5 -- `get_repo_root` LEAKS A `cd` INTO THE CALLER'S SHELL. Its last line is a bare `cd "$script_dir/../../.." && pwd`, not a subshell:
 
@@ -104,10 +100,8 @@ QUIRK 5 -- `get_repo_root` LEAKS A `cd` INTO THE CALLER'S SHELL. Its last line i
     /
     /home/developer/console
 
-LATENT, NOT LIVE, AND THAT WAS MEASURED RATHER THAN ASSUMED. 99 `.sh` files
-name `get_repo_root`; grepping for the command-substitution spelling finds 97
-occurrences of it, and a command substitution runs in a subshell, so the only three occurrences that are NOT are string literals inside two gates and one awk pattern (`test-breakpoint-portability.sh:174,176`, `check-pool-writer-safety.sh:188`). So there is no live caller that could be moved. `repo_root()` below delegates to `rediacc_ci.paths.repo_root()` and CANNOT chdir a process,
-which is a divergence stated rather than discovered.
+LATENT, NOT LIVE, AND THAT WAS MEASURED RATHER THAN ASSUMED. 99 `.sh` files name `get_repo_root`; grepping for the command-substitution spelling finds 97 occurrences of it, and a command substitution runs in a subshell, so the only three occurrences that are NOT are string literals inside two gates and one awk pattern (`test-breakpoint-portability.sh:174,176`,
+`check-pool-writer-safety.sh:188`). So there is no live caller that could be moved. `repo_root()` below delegates to `rediacc_ci.paths.repo_root()` and CANNOT chdir a process, which is a divergence stated rather than discovered.
 
 --------------------------------------------------------------------------
 THREE MORE DIVERGENCES THAT ARE DECISIONS RATHER THAN BUGS
@@ -209,8 +203,7 @@ def detect_os(system: str | None = None) -> str:
 
     FAILS OPEN, and that is the whole reason `core.platform` would not take it. An unrecognised `uname -s` yields the STRING `unknown`, which every caller then compares against as though it were an answer -- `sed_in_place` twelve
     lines down asks `== "macos"` and takes the GNU arm for `unknown`, which is
-    correct by luck rather than by decision. Reproduced verbatim; `core.platform`
-    is where a caller goes when it wants a refusal instead.
+    correct by luck rather than by decision. Reproduced verbatim; `core.platform` is where a caller goes when it wants a refusal instead.
     """
     raw = _stdlib_platform.system() if system is None else system
     for prefix, name in OS_PREFIXES:
@@ -235,9 +228,7 @@ def sed_in_place_argv(args: list[str], os_name: str | None = None) -> list[str]:
 
     The whole function is one branch: macOS `sed` REQUIRES a backup suffix after `-i` and GNU `sed` refuses one, so the twin inserts an empty `''` argument on macOS only. Exposed as an argv builder because that branch is the entire content, and asserting on a list is how a test on Linux can prove the macOS arm without a Mac.
 
-    `os_name` is `detect_os`'s answer. The twin calls `detect_os` -- and
-    therefore forks `uname` -- on EVERY invocation; this does not, which is a
-    cost difference and not a behaviour one.
+    `os_name` is `detect_os`'s answer. The twin calls `detect_os` -- and therefore forks `uname` -- on EVERY invocation; this does not, which is a cost difference and not a behaviour one.
 
     The comparison is `== "macos"`, so every other answer INCLUDING `unknown`
     takes the GNU arm. Reproduced, and named, because it is right by luck.
@@ -437,8 +428,7 @@ def parse_args(argv: list[str]) -> dict[str, str]:
     THE SECURITY PROPERTY IS THE REASON THIS FUNCTION IS WORTH PORTING AT ALL.
     common.sh:309-314 records it: the assignment used to be
     `eval "$key=\\"$value\\""`, and `eval` re-parses its argument as a command
-    line, so a value carrying backticks, `$(...)` or `;` was EXECUTED. Driven
-    again here on 2026-09-10 against the current twin, which uses `printf -v`:
+    line, so a value carrying backticks, `$(...)` or `;` was EXECUTED. Driven again here on 2026-09-10 against the current twin, which uses `printf -v`:
 
         parse_args '--foo=a"; PROOF=INJECTED; :"'
         ARG_FOO=[a"; PROOF=INJECTED; :"]   PROOF=[none]

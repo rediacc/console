@@ -169,17 +169,14 @@ const selftest = (): number => {
     judge([{ sha: 's1', message: 'feat: x\n\nPR-TASK: aaa999' }], known)[0].problem ===
       'unknown-epic'
   );
-  // Both trailers must be validated, not just the first. 'bbb111' is hex-shaped
-  // and unknown; a non-hex id would never have been read as a trailer at all,
-  // which is how the first version of this control passed vacuously.
+  // Both trailers must be validated, not just the first. 'bbb111' is hex-shaped and unknown; a non-hex id would never have been read as a trailer at all, which is how the first version of this control passed vacuously.
   check(
     'several trailers all validated',
     judge([{ sha: 's1', message: 'x\n\nPR-TASK: abc123\nPR-TASK: bbb111' }], known).length === 1
   );
   check('no commits yields no verdicts', judge([], known).length === 0);
 
-  // W12 P3.1b. THE LEDGER READER. These prove the helper; the plant that proves
-  // the FEATURE is driven through the real invocation with WORKLIST_EPICS_LEDGER and PR_HEAD_REF, and is recorded in the box. A selftest control alone would only show that a function nothing calls still works.
+  // W12 P3.1b. THE LEDGER READER. These prove the helper; the plant that proves the FEATURE is driven through the real invocation with WORKLIST_EPICS_LEDGER and PR_HEAD_REF, and is recorded in the box. A selftest control alone would only show that a function nothing calls still works.
   const oneEpic = '{"at":"t","by":"s","id":"aaa111","title":"x","covers":[]}';
   const twoEpic = '{"at":"t","by":"s","id":"bbb222","title":"y","covers":[]}';
   check('a ledger line yields its id', ledgerEpicIds(oneEpic)[0] === 'aaa111');
@@ -252,9 +249,7 @@ const selftest = (): number => {
     !canResolve('origin/zzz-no-such-ref-ever')
   );
 
-  // THE SYNTHETIC MERGE COMMIT, and why `--no-merges` did not save us from it. On PR #579 this gate reported GitHub's `refs/pull/N/merge` commit as an
-  // untagged commit. The reflex reading is "--no-merges is missing"; it was
-  // there. `--no-merges` counts PARENTS, and in a depth-1 checkout the merge commit's parents are grafted away, so git sees a parentless root.
+  // THE SYNTHETIC MERGE COMMIT, and why `--no-merges` did not save us from it. On PR #579 this gate reported GitHub's `refs/pull/N/merge` commit as an untagged commit. The reflex reading is "--no-merges is missing"; it was there. `--no-merges` counts PARENTS, and in a depth-1 checkout the merge commit's parents are grafted away, so git sees a parentless root.
   //
   // Both directions against real git, in a scratch repo: a two-parent commit IS excluded, and a parentless commit whose subject reads exactly like a merge is NOT. Without the second control the fix below (name the tip explicitly) looks like belt-and-braces instead of the actual repair.
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'prtask-'));
@@ -297,8 +292,7 @@ const selftest = (): number => {
       }
     };
     // A BARE `git fetch origin <branch>` DOES NOT ALWAYS CREATE origin/<branch>. It updates the remote-tracking ref only when the fetched ref matches remote.origin.fetch, and actions/checkout configures a NARROW refspec on a PR. Both directions against real git, because the whole tip fix rests on this: with a narrow refspec the bare form leaves the tracking ref absent, and the
-    // explicit form creates it. The scratch repo's commits were built with commit-tree, so no branch
-    // points at them yet; the fetch below needs a real refs/heads/main.
+    // explicit form creates it. The scratch repo's commits were built with commit-tree, so no branch points at them yet; the fetch below needs a real refs/heads/main.
     g('branch', '-f', 'main', b);
     const narrow = fs.mkdtempSync(path.join(os.tmpdir(), 'prtask-clone-'));
     try {
@@ -396,8 +390,7 @@ const mergeBaseAfterDeepen = (cwd: string, base: string, tip: string): boolean =
     try {
       execFileSync('git', ['fetch', '--no-tags', ...widen, 'origin'], { cwd, stdio: 'ignore' });
     } catch {
-      // --unshallow refuses on a complete repository; that is not a failure here,
-      // it means the history we need is already present and the next check decides.
+      // --unshallow refuses on a complete repository; that is not a failure here, it means the history we need is already present and the next check decides.
     }
     if (hasMergeBase()) return true;
   }
@@ -475,9 +468,8 @@ const main = (): number => {
   // Local range against origin/main; in CI the PR base is authoritative.
   const base = process.env.PR_BASE_REF || 'origin/main';
 
-  // THE BASE REF MUST EXIST, AND IN CI IT OFTEN DOES NOT. `PR_BASE_REF` was set correctly (`origin/main`) and the gate still died with `fatal: ambiguous argument 'origin/main..HEAD': unknown revision` -- because the PR checkout simply had not fetched that ref. Green on every developer
-  // machine, where origin/main is always present; red in CI for a reason that
-  // names the RANGE and not the missing fetch.
+  // THE BASE REF MUST EXIST, AND IN CI IT OFTEN DOES NOT. `PR_BASE_REF` was set correctly (`origin/main`) and the gate still died with `fatal: ambiguous argument 'origin/main..HEAD': unknown revision` -- because the PR checkout simply had not fetched that ref. Green on every developer machine, where origin/main is always present; red in CI for a reason that names the RANGE and not
+  // the missing fetch.
   //
   // So the gate carries its own precondition rather than trusting a workflow step to have arranged it: a future edit to the checkout cannot silently take this gate down with it. One fetch, best-effort, only when the ref is genuinely absent.
   const resolves = (ref: string): boolean => {

@@ -234,9 +234,7 @@ export async function readRemoteState(
 
 // --------------------------------------------------------------------------- Phase B — Compute desired units ---------------------------------------------------------------------------
 
-// SYNCHRONOUS since 2026-08-15. Its only await was configService.getStorage,
-// which existed to build rclone args; with the rclone path removed there is
-// nothing async left. The single caller (backup-schedule.ts:204) still awaits it, which is harmless, so the signature change needs no caller edit.
+// SYNCHRONOUS since 2026-08-15. Its only await was configService.getStorage, which existed to build rclone args; with the rclone path removed there is nothing async left. The single caller (backup-schedule.ts:204) still awaits it, which is harmless, so the signature change needs no caller edit.
 export function computeDesiredUnits(
   strategies: { name: string; config: BackupStrategyConfig }[],
   datastore: string,

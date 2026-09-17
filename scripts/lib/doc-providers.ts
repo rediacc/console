@@ -247,9 +247,7 @@ export const gatesSummaryProvider: Provider = {
       lanes.set(key, row);
     };
     for (const g of readGatesLock(root)) {
-      // The LANE, not the step. `gateWhere` renders "<job> / <step>" because a reader chasing
-      // one gate needs the step; folding on that would produce a row per gate and no summary
-      // at all. The job is the unit a reader schedules and reasons about.
+      // The LANE, not the step. `gateWhere` renders "<job> / <step>" because a reader chasing one gate needs the step; folding on that would produce a row per gate and no summary at all. The job is the unit a reader schedules and reasons about.
       const kind = g.ci.kind;
       const key =
         kind === 'step'
@@ -341,9 +339,7 @@ const reachability = (root: string, wired: Set<string>, files: string[]): Map<st
   const reached = new Map<string, string>();
   for (const w of wired) reached.set(w, 'settings.json');
 
-  // TWO KINDS OF EDGE THIS TEXTUAL CLOSURE CANNOT SEE, both of which would otherwise be reported as dead code. The comment above promises that over-admitting is the safe
-  // direction and that this table "never invents a false accusation"; without these two
-  // seeds it does exactly that, and the accusation lands on live guards.
+  // TWO KINDS OF EDGE THIS TEXTUAL CLOSURE CANNOT SEE, both of which would otherwise be reported as dead code. The comment above promises that over-admitting is the safe direction and that this table "never invents a false accusation"; without these two seeds it does exactly that, and the accusation lands on live guards.
   //
   // 1. GLOB DISCOVERY. `.claude/rediacc_hooks/dispatch.py` does not name a single guard. It globs `block_*.py`, `warn_*.py` and `require_*.py` under `guards/` and keeps the modules declaring a matching `CHAIN`. Measured 2026-09-07: `python3 .claude/rediacc_hooks/dispatch.py --list` prints `pre-bash warn_submodule_deletions ...`, while the closure reported that same file as reached
   // by nothing, because no reached file contains its name. 2. PYTEST COLLECTION. `pyproject.toml:237-241` names `.claude/rediacc_hooks/tests` in `testpaths`, so a `test_*.py` there is run by the suite, not by the wiring.
@@ -654,9 +650,7 @@ const tsPolicyNames = (root: string): string[] => {
     /const\s+POLICY_FILES\s*=\s*Object\.freeze\(\[\n([\s\S]*?)\n\]/.exec(text)?.[1] ?? '';
   const out: string[] = [];
   for (const line of block.split('\n')) {
-    // COMMENT LINES ARE SKIPPED FIRST. The array is annotated per entry, and
-    // several of those comments quote a filename; a bare quote scan would read
-    // the annotations back as members and report names that are not in the list.
+    // COMMENT LINES ARE SKIPPED FIRST. The array is annotated per entry, and several of those comments quote a filename; a bare quote scan would read the annotations back as members and report names that are not in the list.
     if (line.trim().startsWith('//')) continue;
     for (const m of line.matchAll(/'([^']+)'/g)) out.push(m[1] as string);
   }
@@ -1039,8 +1033,7 @@ export const bootstrapProvider: Provider = {
       },
     ];
 
-    // THE UNION, NOT EACH ROW. Zero ported verbs is the tree's real state; zero verbs
-    // ANYWHERE means the two dispatchers were both misparsed, and rendering that would publish "this repository has no entry points".
+    // THE UNION, NOT EACH ROW. Zero ported verbs is the tree's real state; zero verbs ANYWHERE means the two dispatchers were both misparsed, and rendering that would publish "this repository has no entry points".
     if (routerArms.length + ported.length + legacyArms.length === 0) {
       throw new Error(
         `${ROUTER_SEAM} and ${LEGACY_SEAM} between them yielded no verbs. One dispatcher can ` +
@@ -2049,8 +2042,8 @@ export const proseStyleProvider: Provider = {
     const doc = JSON.parse(fs.readFileSync(file, 'utf-8')) as { rules?: ProseRule[] };
     return (doc.rules ?? []).map((r) => {
       const patterns = r.patterns ?? [];
-      // NAME THE DETECTION RATHER THAN ENUMERATE THE KNOWN ONES. Testing for `measured` by name and sending everything else to a pattern count published R19 -- an ENFORCED error detected by a heuristic over a whole paragraph, carrying no patterns -- as `advisory`, the one word that tells a reader a rule is not enforced. This mirrors
-      // `prose_style.run_sync`, which had the identical bug and was fixed in the same change: the two are separate implementations of one decision over one rules file, which is the very shape the sibling-agreement test exists to catch.
+      // NAME THE DETECTION RATHER THAN ENUMERATE THE KNOWN ONES. Testing for `measured` by name and sending everything else to a pattern count published R19 -- an ENFORCED error detected by a heuristic over a whole paragraph, carrying no patterns -- as `advisory`, the one word that tells a reader a rule is not enforced. This mirrors `prose_style.run_sync`, which had the identical
+      // bug and was fixed in the same change: the two are separate implementations of one decision over one rules file, which is the very shape the sibling-agreement test exists to catch.
       const detection =
         patterns.length > 0 ? `${patterns.length} pattern(s)` : (r.detection ?? 'advisory');
       const undetected = (r.examples ?? []).filter((e) => e.expect === 'undetected').length;

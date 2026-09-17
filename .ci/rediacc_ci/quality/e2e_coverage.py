@@ -59,10 +59,8 @@ COMMENTS ARE SKIPPED in the raw-dispatch sweep. Both this gate's own explanation
 PORT NOTES. What changed in the translation, and what deliberately did not.
 -----------------------------------------------------------------------------
 
-THE FORWARD HALF IS STILL SHELLED OUT, and that is the port, not a shortcut. The twin runs `npx tsx scripts/gates/check-e2e-coverage.ts` from the repository root
-and keeps only its exit code; its output goes straight to the gate's own two
-streams. Reimplementing a playwright-config expansion in Python would be a SECOND forward half, and two implementations of one rule is the failure this whole workstream is trying to remove. So the subprocess inherits stdout and stderr rather than capturing them: the TypeScript half's findings must land on the same streams they land on today, or the differential would score a port
-that silently swallowed them as equivalent while a human saw nothing.
+THE FORWARD HALF IS STILL SHELLED OUT, and that is the port, not a shortcut. The twin runs `npx tsx scripts/gates/check-e2e-coverage.ts` from the repository root and keeps only its exit code; its output goes straight to the gate's own two streams. Reimplementing a playwright-config expansion in Python would be a SECOND forward half, and two implementations of one rule is the
+failure this whole workstream is trying to remove. So the subprocess inherits stdout and stderr rather than capturing them: the TypeScript half's findings must land on the same streams they land on today, or the differential would score a port that silently swallowed them as equivalent while a human saw nothing.
 
 THE TWO GREP SWEEPS BECOME `os.walk` PLUS `re`, AND FOUR PROPERTIES OF
 `grep -rn --include='*.ts'` ARE BEHAVIOUR RATHER THAN INCIDENT:
@@ -84,9 +82,8 @@ THE TWO GREP SWEEPS BECOME `os.walk` PLUS `re`, AND FOUR PROPERTIES OF
     the finding text is repo-relative. Both steps are reproduced, in that order,
     because the finding text is what the differential compares.
 
-RECURSION ORDER IS NOT PRESERVED, AND IT IS NOT PART OF THE VERDICT. GNU grep
-walks with fts and does not sort; `os.walk` yields in `os.scandir` order. The
-differential compares finding MULTISETS precisely so an ordering difference is not scored as a behaviour difference. The walk here sorts its directories and files anyway, so that a human diffing two runs of the PORT sees a stable list.
+RECURSION ORDER IS NOT PRESERVED, AND IT IS NOT PART OF THE VERDICT. GNU grep walks with fts and does not sort; `os.walk` yields in `os.scandir` order. The differential compares finding MULTISETS precisely so an ordering difference is not scored as a behaviour difference. The walk here sorts its directories and files anyway, so that a human diffing two runs of the PORT sees a
+stable list.
 
 THE VERB EXTRACTION IS GREEDY, ON PURPOSE. The twin pipes the matched line through `sed -E "s/.*function:[[:space:]]*'([a-z0-9_]+)'.*/\\1/"`. `sed`'s leading `.*` is greedy, so on a line carrying two `function: '...'` literals the LAST one is the verb extracted, and the first is invisible. That is a defect (reported, not fixed, see the report accompanying this port) and it is
 REPRODUCED here rather than corrected: a port that fixes a bug changes the verdict, and the differential would rule MISMATCH_FINDINGS on the very tree that would prove the fix right. Whoever retires the twin owns the fix.
@@ -335,9 +332,7 @@ def main(argv: list[str] | None = None) -> int:
 def _relative(root: pathlib.Path, path: str) -> str:
     """`${file#"$REPO_ROOT"/}`: a PREFIX STRIP, not a path computation.
 
-    The distinction matters for a file outside the root, which bash leaves untouched (the prefix does not match) where `os.path.relpath` would invent a
-    `../../..` chain. The sweep cannot reach outside the root today; the twin's
-    behaviour is reproduced anyway, because "cannot happen" is how a difference survives until it can.
+    The distinction matters for a file outside the root, which bash leaves untouched (the prefix does not match) where `os.path.relpath` would invent a `../../..` chain. The sweep cannot reach outside the root today; the twin's behaviour is reproduced anyway, because "cannot happen" is how a difference survives until it can.
     """
     prefix = str(root) + os.sep
     return path.removeprefix(prefix)

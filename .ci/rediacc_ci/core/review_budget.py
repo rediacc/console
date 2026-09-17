@@ -18,9 +18,8 @@ THE SECOND HALF OF THE TWIN. `.ci/scripts/lib/common.sh` is two libraries in one
 
 IT IS LIVE. `.ci/scripts/review/review-status.sh:343-347` and `.ci/scripts/review/claude-review-gate.sh:831-860` are the two callers, both wired into workflows: `.github/workflows/review-status.yml:115` (which creates the required "Review Complete" check run) and `.github/workflows/claude-review-reusable.yml:277`.
 
-THE FILE'S OWN COMMENT SAYS WHY IT IS ONE FILE, and it is worth quoting because it is also why this port keeps them together (common.sh:530-533): "THIS LIVES IN THE SHARED LIB ON PURPOSE. claude-review-gate.sh decides whether to run a review
-and review-status.sh reports whether the cap is reached; the two disagreeing
-about the cap resurrects exactly the deadlock review-status.sh was written to prevent. One table, one function, both callers."
+THE FILE'S OWN COMMENT SAYS WHY IT IS ONE FILE, and it is worth quoting because it is also why this port keeps them together (common.sh:530-533): "THIS LIVES IN THE SHARED LIB ON PURPOSE. claude-review-gate.sh decides whether to run a review and review-status.sh reports whether the cap is reached; the two disagreeing about the cap resurrects exactly the deadlock review-status.sh
+was written to prevent. One table, one function, both callers."
 
 ==========================================================================
 DEFECT 1 -- WAS THE HEADLINE, FIXED 2026-09-10 IN THE TWIN AND HERE IN LOCKSTEP
@@ -75,9 +74,8 @@ THE SWALLOW WAS NOT ONLY ABOUT `gh`. Driven the same day, with `gh` working but 
     common.sh: line 592: GITHUB_REPOSITORY: unbound variable
     4
 
-The numerator's fetch used to abort inside a command substitution, `posted` stayed empty, `$(( + 4))` was 4, and the function returned 4 with EXIT 0 -- an undercount produced by a hard abort. There was no `gh` in that path at all, so
-the `gh_retry` fix alone would not have closed it; it closed anyway, as a side
-effect of the new `|| return 1` on every assignment that captures one of these functions' output, which now propagates ANY failure of the command substitution, unbound-variable aborts included, not just a nonzero `gh` exit.
+The numerator's fetch used to abort inside a command substitution, `posted` stayed empty, `$(( + 4))` was 4, and the function returned 4 with EXIT 0 -- an undercount produced by a hard abort. There was no `gh` in that path at all, so the `gh_retry` fix alone would not have closed it; it closed anyway, as a side effect of the new `|| return 1` on every assignment that captures one
+of these functions' output, which now propagates ANY failure of the command substitution, unbound-variable aborts included, not just a nonzero `gh` exit.
 
 FIXED 2026-09-10, IN THE TWIN, IN LOCKSTEP WITH THIS PORT AND ITS TESTS.
 `review_report_count`, `review_attempt_states`, `review_spent_attempt_count` and `review_spend_total` now route their `gh` calls through `gh_retry` (the exact pattern `_gh_probe`'s own header already argued for) and propagate a failure as a real nonzero return via `|| return 1` on the capturing assignment, instead of `... || true`. Verified live, both before and after: the same
@@ -301,9 +299,7 @@ def chargeable_attempts(states: list[AttemptState]) -> int:
 
     Empty input answers 0 in both implementations, for different reasons: the twin because a here-string's trailing newline gives it one blank line its `[[ -n "$sha" ]] || continue` skips, this one because the list is empty.
 
-    DEFECT 2 lives here in the twin. `attempts` is an `int` on this side, so a
-    non-numeric count cannot reach the arithmetic at all; `attempts_from_tsv`
-    below is where it is rejected, with a message instead of `zz: unbound variable`.
+    DEFECT 2 lives here in the twin. `attempts` is an `int` on this side, so a non-numeric count cannot reach the arithmetic at all; `attempts_from_tsv` below is where it is rejected, with a message instead of `zz: unbound variable`.
     """
     total = 0
     for state in states:
@@ -342,9 +338,7 @@ def attempts_from_tsv(raw: str) -> list[AttemptState]:
 def head_attempt_state(states: list[AttemptState], sha: str) -> tuple[int, str]:
     """`review_head_attempt_state` (common.sh:723-729). LAST match wins.
 
-    The twin overwrites `out` on every match without breaking, so two rows for one sha give the second (driven). Its default is the literal two characters
-    `"0 "`, which the caller then splits into `0` and the empty class; the tuple
-    here says the same thing without the split.
+    The twin overwrites `out` on every match without breaking, so two rows for one sha give the second (driven). Its default is the literal two characters `"0 "`, which the caller then splits into `0` and the empty class; the tuple here says the same thing without the split.
     """
     found = (0, "")
     for state in states:
@@ -370,9 +364,8 @@ def spend_total(posted: str | int, spent: str | int) -> int:
     `echo $((${posted//[[:space:]]/} + ${spent//[[:space:]]/}))`. Both operands
     have ALL whitespace deleted before the addition, which is what makes `wc -l`'s leading spaces harmless on macOS. Reproduced.
 
-    THE FETCHING FORM IS DELIBERATELY NOT HERE. The twin's `review_spend_total` calls `review_report_count` and `review_spent_attempt_count` when its
-    optional third and fourth arguments are missing; both now propagate a `gh`
-    failure loudly since the DEFECT 1 fix, but a caller here still composes `report_count()` and `spent_attempt_count()` explicitly, so the two network calls stay visible at the call site rather than folded into one sum.
+    THE FETCHING FORM IS DELIBERATELY NOT HERE. The twin's `review_spend_total` calls `review_report_count` and `review_spent_attempt_count` when its optional third and fourth arguments are missing; both now propagate a `gh` failure loudly since the DEFECT 1 fix, but a caller here still composes `report_count()` and `spent_attempt_count()` explicitly, so the two network calls stay
+    visible at the call site rather than folded into one sum.
     """
     return _strip_ws_int(posted) + _strip_ws_int(spent)
 
@@ -456,8 +449,7 @@ def attempt_states(
 ) -> list[AttemptState]:
     """`review_attempt_states` (common.sh:681-703), WITHOUT the swallow.
 
-    Same shape as `report_count`: the fetch raises, and the parsing is `parse_attempt_states` above, which is the twin's awk exactly. The twin joins the bodies with the `---REVIEW-ATTEMPT-EOF---` sentinel because a marker body is multi-line and jq cannot express "the count and class are lines within
-    it"; this rebuilds the same stream so the two parsers see identical input.
+    Same shape as `report_count`: the fetch raises, and the parsing is `parse_attempt_states` above, which is the twin's awk exactly. The twin joins the bodies with the `---REVIEW-ATTEMPT-EOF---` sentinel because a marker body is multi-line and jq cannot express "the count and class are lines within it"; this rebuilds the same stream so the two parsers see identical input.
     """
     slug = _repo_slug(repo, env)
     comments = ghx.gh(

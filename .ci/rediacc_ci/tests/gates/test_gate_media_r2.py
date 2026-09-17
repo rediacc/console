@@ -2,9 +2,8 @@
 
 `.ci/media/r2.sh`, the tutorial-narration cache in R2.
 
-THE BEHAVIOUR THAT MATTERS IS THE ABSENT-CREDENTIALS ONE. Regenerating narration
-costs real TTS GPU time, which is why this cache exists at all; but a developer
-without R2 credentials must still be able to run the pipeline, so both functions WARN and RETURN 0 rather than failing. Get that backwards and a fresh checkout either cannot generate tutorials at all, or silently re-pays for every mp3.
+THE BEHAVIOUR THAT MATTERS IS THE ABSENT-CREDENTIALS ONE. Regenerating narration costs real TTS GPU time, which is why this cache exists at all; but a developer without R2 credentials must still be able to run the pipeline, so both functions WARN and RETURN 0 rather than failing. Get that backwards and a fresh checkout either cannot generate tutorials at all, or silently re-pays
+for every mp3.
 
 Both directions are driven here with aws, curl and the network absent, and the sync scripts replaced by RECORDERS at the fixture root. No bucket is touched and no credential is read: the three CLOUDFLARE_R2_MEDIA_* variables are set to obvious placeholders in the credentials-present case.
 
@@ -79,9 +78,7 @@ def test_the_ownership_assertion_can_fail(gate):
 
 def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate):
     gate.log_test("CONTROL FOR THE CASES BELOW: the module seam must be load-bearing")
-    # `--audio-only` is the flag that keeps this from syncing the whole media bucket, and the credentialed case asserts it BY NAME. Drop it in a copy of
-    # the module and that assertion must stop holding; if it still held, the case
-    # would be reading something other than the module under test.
+    # `--audio-only` is the flag that keeps this from syncing the whole media bucket, and the credentialed case asserts it BY NAME. Drop it in a copy of the module and that assertion must stop holding; if it still held, the case would be reading something other than the module under test.
     with harness.temp_dir() as d:
         mutant = d / "mutant"
         mutant.mkdir()

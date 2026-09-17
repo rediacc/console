@@ -12,9 +12,7 @@ environment variables:
 
 THE TWO SUBCOMMANDS ANSWER SEPARATELY, and that is not tidiness. A fake that echoed one body for both would feed the PR table back through `gh workflow run`, and a fake that logged its call line for both would feed the LOG LINE into the PR table -- which is Defect A, and which turns every decide
 case into a measurement of the fake. `FAKE_GH_ECHO=dispatch` logs only the
-uncaptured `gh workflow run` call, which is the mode the ledger uses; `none`
-logs nothing; `stderr` logs both, and exactly one case wants that, to prove the
-pollution is real rather than assumed.
+uncaptured `gh workflow run` call, which is the mode the ledger uses; `none` logs nothing; `stderr` logs both, and exactly one case wants that, to prove the pollution is real rather than assumed.
 
 The `call:` line is also what makes a shadow-gate ledger possible for this pair. `shadow-gate.ts` classifies `→ ` and `✓ ` as CHATTER before any `--finding-re` is consulted, and this script reports almost entirely through `log_info`, so no message-text regex could ever produce a finding. The ledger is recorded with `--finding-re '^(call: |decision: |DRY-RUN: )'`.
 

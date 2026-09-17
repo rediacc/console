@@ -44,14 +44,11 @@ BOTH DIRECTIONS, WHICH IS THE ACCEPTANCE THE BOX ASKS FOR:
     direction that rots, because nothing breaks when a variable stops being
     read, and a registry full of names nobody uses is a registry nobody trusts.
 
-THE EXCLUSIONS ARE IN THE REGISTRY, NOT IN THIS FILE, and the box is right to insist. `agent/` is live gated state under invariant 7 and is full of plans that
-NAME these variables in prose; admitting it would register every name any plan
-ever discussed and make "dead" unreportable forever. `docs/` is the same argument. Both are declared in the registry with their reasons, so the reason travels with the exclusion and this gate cannot quietly widen it. An exclusion prefix that excludes NOTHING is itself a finding.
+THE EXCLUSIONS ARE IN THE REGISTRY, NOT IN THIS FILE, and the box is right to insist. `agent/` is live gated state under invariant 7 and is full of plans that NAME these variables in prose; admitting it would register every name any plan ever discussed and make "dead" unreportable forever. `docs/` is the same argument. Both are declared in the registry with their reasons, so the
+reason travels with the exclusion and this gate cannot quietly widen it. An exclusion prefix that excludes NOTHING is itself a finding.
 
-ANTI-VACUITY, SIX REFUSALS. A missing or unparseable registry; a registry with
-no names; a registry with no exclusions; a corpus of zero tracked files; a
-corpus in which zero names are read; and a `git ls-files` that fails. Each exits
-1 with its own sentence. The success line prints the name count, the file count, the read-site count and the per-kind breakdown, so a collapse is visible.
+ANTI-VACUITY, SIX REFUSALS. A missing or unparseable registry; a registry with no names; a registry with no exclusions; a corpus of zero tracked files; a corpus in which zero names are read; and a `git ls-files` that fails. Each exits 1 with its own sentence. The success line prints the name count, the file count, the read-site count and the per-kind breakdown, so a collapse is
+visible.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
 
@@ -610,8 +607,7 @@ def selftest():
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        # ANTI-SILENCER, and it is the one that decides whether the exclusion is doing anything. WORKLIST_GHOST is named in agent/PLAN.md and
-        # nowhere else; it must NOT appear as a read, in either direction.
+        # ANTI-SILENCER, and it is the one that decides whether the exclusion is doing anything. WORKLIST_GHOST is named in agent/PLAN.md and nowhere else; it must NOT appear as a read, in either direction.
         root = _fixture(tmp)
         findings, _ = run(root)
         check(
@@ -620,9 +616,7 @@ def selftest():
         )
 
     with tempfile.TemporaryDirectory() as tmp:
-        # ANTI-SILENCER: a bash ASSIGNMENT is not a read. The fixture assigns
-        # WORKLIST_LIMIT in run.sh; if assignments counted, its default set
-        # would gain a spelling and the pin would red for the wrong reason.
+        # ANTI-SILENCER: a bash ASSIGNMENT is not a read. The fixture assigns WORKLIST_LIMIT in run.sh; if assignments counted, its default set would gain a spelling and the pin would red for the wrong reason.
         root = _fixture(tmp)
         findings, _ = run(root)
         check(

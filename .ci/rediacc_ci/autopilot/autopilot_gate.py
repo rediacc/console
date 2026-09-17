@@ -12,8 +12,7 @@ So the differential (`test_autopilot_gate.py`) walks EVERY refusal arm, in order
 -----------------------------------------------------------------------------
 THE SIXTEEN EXITS, ENUMERATED, because "I ported the script" is not a claim anyone can check and "these sixteen arms are each pinned by a case" is
 -----------------------------------------------------------------------------
-Six of them are LOUD (exit 2 or 1, a wiring bug must never read as a quiet
-no-go); ten print a decision line and exit 0.
+Six of them are LOUD (exit 2 or 1, a wiring bug must never read as a quiet no-go); ten print a decision line and exit 0.
 
   usage      1  `$1` is not `--classify`                      exit 2, 2 lines
              2  `--event` or `--pr` missing                   exit 2
@@ -183,8 +182,7 @@ EMIT_PROGRAM = """{decision: $decision, mode: $mode, reason: $reason, round: $ro
           armed_by: $armed_by, model: $model, rounds_max: $rounds_max, campaign: $campaign,
           dispatch_trusted: $dispatch_trusted, sig: $sig, sig_count: $sig_count}"""
 
-# The ledger line shape, from the twin's two greps. The first counts rounds; the
-# second is the (run_id, attempt) dedup and is built per invocation.
+# The ledger line shape, from the twin's two greps. The first counts rounds; the second is the (run_id, attempt) dedup and is built per invocation.
 LEDGER_ROUND_RE = r"^r[0-9]+ \| run "
 
 
@@ -253,9 +251,7 @@ def bash_arith(text: str) -> int | None:
             value = int(token, 10)
     except ValueError:
         if token.isdigit() or token[:2].lower() == "0x":
-            # bash: `((: 08: value too great for base (error token is "08")`. The twin's copy of this line carries the script path and line
-            # number; see the module docstring for why this prefix differs and
-            # nothing else does.
+            # bash: `((: 08: value too great for base (error token is "08")`. The twin's copy of this line carries the script path and line number; see the module docstring for why this prefix differs and nothing else does.
             print(
                 '%s: ((: %s: value too great for base (error token is "%s")' % (SELF, token, token),
                 file=sys.stderr,
@@ -409,9 +405,7 @@ def non_empty_file(path: str) -> bool:
 class Gate:
     """The gate's mutable state, in the twin's variable order.
 
-    A class rather than a pile of locals because `emit` reads eight of them and
-    the twin reads them as globals; passing eight arguments through every
-    refusal would be the place a port drops one.
+    A class rather than a pile of locals because `emit` reads eight of them and the twin reads them as globals; passing eight arguments through every refusal would be the place a port drops one.
     """
 
     def __init__(self) -> None:
@@ -429,9 +423,8 @@ class Gate:
         """`emit <decision> <mode> <reason>`, including the campaign hand-off.
 
         THE CAMPAIGN VALUE IS THE NEXT WRITE'S, NOT THIS ROUND'S. A
-        dispatch-armed go OPENS the campaign; reaching mode `done` CLOSES one
-        that exists; everything else carries the current value forward
-        untouched, so a label-armed round never closes a campaign it knows nothing about. Three arms, and the middle one has a guard that is easy to miss: `done` with campaign `none` stays `none` rather than becoming `closed`, because there was nothing to close.
+        dispatch-armed go OPENS the campaign; reaching mode `done` CLOSES one that exists; everything else carries the current value forward untouched, so a label-armed round never closes a campaign it knows nothing about. Three arms, and the middle one has a guard that is easy to miss: `done` with campaign `none` stays `none` rather than becoming `closed`, because there was
+        nothing to close.
         """
         campaign_next = self.campaign_state
         if mode == "done":
@@ -495,9 +488,7 @@ class Gate:
 def _classify(args: dict[str, str], gate: Gate) -> Decided:
     """Everything after the fixtures are validated. Raises nothing; returns.
 
-    Deliberately ONE function despite its length. The twin is one straight-line
-    script and its order IS the specification; splitting it into per-check
-    helpers would let a future edit move a check without the move being visible as a diff of this file's control flow.
+    Deliberately ONE function despite its length. The twin is one straight-line script and its order IS the specification; splitting it into per-check helpers would let a future edit move a check without the move being visible as a diff of this file's control flow.
     """
     event = args.get("ARG_EVENT", "")
     pr = args.get("ARG_PR", "")
@@ -603,9 +594,7 @@ def _classify(args: dict[str, str], gate: Gate) -> Decided:
     if is_dispatch and in_csv_allowlist(dispatch_actor, applier_allowlist):
         gate.dispatch_trusted = "true"
 
-    # Campaign fields, read back through state-comment.sh rather than parsed
-    # here. The metadata line therefore has exactly ONE writer and ONE reader; a
-    # second copy of the format in this file is how the two would drift apart silently. Every value it returns is already normalized there.
+    # Campaign fields, read back through state-comment.sh rather than parsed here. The metadata line therefore has exactly ONE writer and ONE reader; a second copy of the format in this file is how the two would drift apart silently. Every value it returns is already normalized there.
     campaign_fields = NO_STATE_FIELDS
     if non_empty_file(state):
         proc = _run([str(script_dir() / "state-comment.sh"), "fields", "--body", state])

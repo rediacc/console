@@ -13,9 +13,7 @@ TWO FLOORS, TWO SHAPES, and each is proven in both directions:
 The presence floor only applies to a FULL CHECKOUT, because the gate's own fixtures are deliberately partial. That predicate is the thing most likely to rot into a check that cannot fail, so it is asserted in BOTH directions: the same missing file must be red in a full-shaped root and silent in a partial one, with nothing else changed between the two runs.
 
 WHERE THE PORT REIMPLEMENTS THE TWIN, and it is one place worth naming. The twin reads the census back with two `awk` programs -- one summing the ` entries floor ` rows, one pulling the ` probe(s), ` roll-up -- and asserts the two agree. That self-consistency check is the reason the census cannot drift from the run it describes, and a hard-coded 87 would be a hand-typed floor that
-reds on the next legitimate edit. The port does the same arithmetic with two regexes over the same
-text. Both read the SAME two shapes out of the SAME output; neither knows the
-number in advance.
+reds on the next legitimate edit. The port does the same arithmetic with two regexes over the same text. Both read the SAME two shapes out of the SAME output; neither knows the number in advance.
 
 NO `xdist_group`. Each case builds a complete fixture root under `mkdtemp`, points `SUPPRESSION_LIVENESS_ROOT` at it, and removes it afterwards. The two cases that run against the real tree only READ it.
 """
@@ -61,8 +59,8 @@ def _require_tools(gate) -> None:
 def make_full_fixture(gate, base: pathlib.Path) -> pathlib.Path:
     """A fixture that is FULL-SHAPED and GREEN, so every case changes exactly one thing.
 
-    Each probe's file is present and satisfies its floor; the oracles are mostly
-    left unavailable on purpose (no `packages/`, no `go.mod`, not a git repo) so those probes SKIP rather than condemn copied entries whose supporting tree is not here. Two probes run for real -- `deps` against the root `package.json`, and `parity-exempt` against the copied workflow tree -- which is what keeps the run
+    Each probe's file is present and satisfies its floor; the oracles are mostly left unavailable on purpose (no `packages/`, no `go.mod`, not a git repo) so those probes SKIP rather than condemn copied entries whose supporting tree is not here. Two probes run for real -- `deps` against the root `package.json`, and `parity-exempt` against the copied workflow tree -- which is what
+    keeps the run
     from being vacuous and the baseline from being green for the wrong reason.
     """
     _require_tools(gate)
@@ -79,8 +77,7 @@ def make_full_fixture(gate, base: pathlib.Path) -> pathlib.Path:
 
     # Marker 1 of 3: package.json. Also the deps probe's oracle.
     shutil.copy2(paths.from_root("package.json"), root / "package.json")
-    # Marker 2 of 3: .ci/scripts/quality, created above; only its existence is read.
-    # Marker 3 of 3: .github/workflows, and the parity-exempt probe's oracle. The WHOLE directory, not just ci.yml: the exempt entries name gates stepped from ci-quality.yml, and copying one workflow would condemn them all.
+    # Marker 2 of 3: .ci/scripts/quality, created above; only its existence is read. Marker 3 of 3: .github/workflows, and the parity-exempt probe's oracle. The WHOLE directory, not just ci.yml: the exempt entries name gates stepped from ci-quality.yml, and copying one workflow would condemn them all.
     for workflow in sorted(paths.from_root(".github", "workflows").glob("*.yml")):
         shutil.copy2(workflow, root / ".github" / "workflows" / workflow.name)
     shutil.copy2(
@@ -116,9 +113,7 @@ def make_full_fixture(gate, base: pathlib.Path) -> pathlib.Path:
 def run_gate(root: pathlib.Path, *args: str) -> harness.RunResult:
     """The gate, with the actions vacuity floor set to the fixture's TRUE corpus size.
 
-    `ACTION_REFS_MIN_FILES` matches what this root really holds rather than
-    switching the floor off; counted by globbing rather than by a pipeline, because
-    a `find` that matched nothing would silently make the floor 0.
+    `ACTION_REFS_MIN_FILES` matches what this root really holds rather than switching the floor off; counted by globbing rather than by a pipeline, because a `find` that matched nothing would silently make the floor 0.
     """
     n = len(list((root / ".github" / "workflows").glob("*.yml"))) + len(
         list((root / ".github" / "actions").glob("*/action.yml"))
@@ -234,8 +229,7 @@ def test_missing_file_fails_in_a_full_checkout(gate):
 
 def test_missing_file_is_silent_in_a_partial_checkout(gate):
     gate.log_test("THE CONTROL FOR THE PREDICATE: the same deletion in a partial root")
-    # If this run ALSO failed, the gate's own fixtures could never be minimal; if
-    # the case above passed while this one did too, the predicate would be satisfied by everything and the presence floor would be decorative. Both directions have to hold, and the ONLY difference is one of the three full-checkout markers being taken away.
+    # If this run ALSO failed, the gate's own fixtures could never be minimal; if the case above passed while this one did too, the predicate would be satisfied by everything and the presence floor would be decorative. Both directions have to hold, and the ONLY difference is one of the three full-checkout markers being taken away.
     with harness.temp_dir() as base:
         root = make_full_fixture(gate, base)
         (root / ".ci" / "policy" / ".cli-i18n-orphan-allowlist").unlink()

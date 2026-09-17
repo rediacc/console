@@ -1,9 +1,8 @@
 """Differential: `rediacc_ci.deploy.promote_r2_to_stable` against its twin
 `.ci/scripts/deploy/promote-r2-to-stable.sh`.
 
-RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO, exactly as the hotfix sibling's differential does and for the same reasons.
-Nothing here reaches R2 or Cloudflare; every case pins a fixture endpoint,
-bucket and credential. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
+RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO, exactly as the hotfix sibling's differential does and for the same reasons. Nothing here reaches R2 or Cloudflare; every case pins a fixture endpoint, bucket and credential. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the
+mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG IS ALMOST THE ONLY EVIDENCE FOR THIS SCRIPT. It prints five `Promoting ...` lines and one closing line, none of them derived from what moved. The ENTIRE observable effect is twelve `aws` invocations and the ordered exclude/include lists they carry, and the ORDER of those invocations is the whole design: metadata after bytes, signatures after the metadata they hash. Two
 implementations can print identical stdout while uploading `Release*` before `Packages*`, so `test_the_phase_order_is_bytes_then_metadata_then_signatures` asserts the sequence directly rather than trusting the byte comparison to have covered it.
@@ -33,8 +32,7 @@ from rediacc_ci.quality import python_env_registry
 if typing.TYPE_CHECKING:
     import pathlib
 
-# SHARED WITH THE HOTFIX DIFFERENTIAL ON PURPOSE. Both drive scripts that
-# hard-code `/tmp/promote-<dir>`; the group is what stops them colliding.
+# SHARED WITH THE HOTFIX DIFFERENTIAL ON PURPOSE. Both drive scripts that hard-code `/tmp/promote-<dir>`; the group is what stops them colliding.
 #
 # WIDENED 2026-09-15 TO `deploy-fixed-tmp`, WHICH NOW ALSO COVERS test_deploy_simulate_promotion.py. Renaming only the other two modules would have split THIS pair and reintroduced, here, the exact collision being fixed there -- the group name is the mutex, so every module sharing a fixed /tmp path has to share one name. The three modules that do are this one, the hotfix
 # differential (`/tmp/promote-<dir>`, `/tmp/config`, `/tmp/script`) and the simulate differential (`/tmp/config`).
@@ -385,8 +383,7 @@ def test_the_phase_order_is_bytes_then_metadata_then_signatures(tmp_path) -> Non
 
 def test_the_rewrites_happen_before_phase_two_uploads_them(tmp_path) -> None:
     """THE CONTENT LOG IS THE ONLY WITNESS. The twin rewrites the LOCAL copy and
-    then uploads it once; a port that uploaded first and rewrote afterwards would
-    print the same six lines and reintroduce the second race the header names.
+    then uploads it once; a port that uploaded first and rewrote afterwards would print the same six lines and reintroduce the second race the header names.
 
     THE INVARIANT IS "BEFORE PHASE 2", NOT "BEFORE PHASE 1", and that was measured rather than assumed. Moving `_rewrite` to sit between phase 1 and phase 2 changes NOTHING observable, because all four rewrite targets (`install.sh`, `install.ps1`, `*.repo`, `*.conf`) are in the phase-1 exclude list and so were never going to be uploaded by phase 1. Driven 2026-09-13: that plant
     left all 25 cases green, and the plant that moves the rewrite past phase 2 reds eight of them. Written down because a reader could otherwise take this case for a guarantee about a position it does not constrain.
@@ -424,9 +421,8 @@ def test_an_absent_rewrite_target_does_not_end_the_run(tmp_path) -> None:
 def test_defect_phase_filtered_files_are_purged_but_never_uploaded(tmp_path) -> None:
     """A FILE EXCLUDED IN PHASE 1 AND NAMED BY NO PHASE-2 INCLUDE IS DROPPED.
 
-    THE LOAD-BEARING HALF IS THE ARGV, NOT THE FAKE'S FILE MOVING. `cli`'s phase-1 call carries `--exclude latest*.yml` and its single phase-2 call carries `--exclude *` followed by five `--include`s, none of which is a
-    `.yml`; `rpm`'s phase 1 carries `--exclude repodata/*` and neither phase-2
-    arm names `comps.xml`. Under ANY reading of the filter semantics those two files cannot be uploaded, and both are nonetheless in the purge body, which is built from the DOWNLOAD listing.
+    THE LOAD-BEARING HALF IS THE ARGV, NOT THE FAKE'S FILE MOVING. `cli`'s phase-1 call carries `--exclude latest*.yml` and its single phase-2 call carries `--exclude *` followed by five `--include`s, none of which is a `.yml`; `rpm`'s phase 1 carries `--exclude repodata/*` and neither phase-2 arm names `comps.xml`. Under ANY reading of the filter semantics those two files cannot
+    be uploaded, and both are nonetheless in the purge body, which is built from the DOWNLOAD listing.
     """
     assert port.PHASE_FILTERED_FILES_ARE_PURGED_BUT_NEVER_UPLOADED is True
     assert port.PURGE_LIST_IS_BUILT_FROM_THE_DOWNLOAD is True
@@ -476,9 +472,7 @@ def test_defect_stale_tmp_is_promoted(tmp_path) -> None:
 def test_defect_the_vacuity_floor_runs_after_the_uploads(tmp_path) -> None:
     """THE FLOOR NEEDS A LEFTOVER EMPTY DIRECTORY TO BE REACHABLE AT ALL.
 
-    Order is download, rewrite, phase 1, phase 2, THEN count. With `cli/edge/`
-    empty the download creates nothing and phase 1 is what fails; the floor's own
-    sentence never prints. Both halves are driven and both agree.
+    Order is download, rewrite, phase 1, phase 2, THEN count. With `cli/edge/` empty the download creates nothing and phase 1 is what fails; the floor's own sentence never prints. Both halves are driven and both agree.
     """
     assert port.VACUITY_FLOOR_RUNS_AFTER_THE_UPLOAD is True
 

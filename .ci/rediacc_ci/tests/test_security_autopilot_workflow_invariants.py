@@ -166,9 +166,7 @@ def test_the_real_repository_agrees() -> None:
 def test_an_empty_workflow_file_variable_falls_back_to_the_real_default() -> None:
     """`${WORKFLOW_FILE:-...}` is an empty-OR-unset default.
 
-    `os.environ.get(name, default)` would resolve an exported-empty value to
-    `""` and then report a missing workflow; this is the case that holds that
-    trap shut.
+    `os.environ.get(name, default)` would resolve an exported-empty value to `""` and then report a missing workflow; this is the case that holds that trap shut.
     """
     results = []
     for argv in (["bash", str(TWIN)], ["python3", str(PORT)]):
@@ -449,9 +447,7 @@ def test_colour_is_emitted_when_stderr_is_a_terminal(tmp_path: pathlib.Path) -> 
 def test_two_token_jobs_disagree_only_on_order(tmp_path: pathlib.Path) -> None:
     """`for (j in first_token)` IS UNORDERED IN AWK. Pinned, not papered over.
 
-    gawk 5.3.2 answers in internal hash order, which is stable run to run and
-    reproducible only from inside gawk; the port emits in insertion order. The
-    two therefore print the SAME SET of findings in a different sequence, and only when two or more jobs violate the same invariant. Every real violation is a single job, and the real workflow has none at all.
+    gawk 5.3.2 answers in internal hash order, which is stable run to run and reproducible only from inside gawk; the port emits in insertion order. The two therefore print the SAME SET of findings in a different sequence, and only when two or more jobs violate the same invariant. Every real violation is a single job, and the real workflow has none at all.
 
     This case asserts three things at once: the sets match, the exit codes match, and the twin's order really is neither insertion nor sorted -- the last one so that a future gawk whose iteration became insertion-ordered turns this test RED rather than letting the port's divergence note go quietly stale.
     """

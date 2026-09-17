@@ -3,10 +3,8 @@
 
 The first job of every CI run: validate the app token, decide whether the push came from a bot, initialise the private submodules, mint the three image tags, resolve the next version from the tag list, and ask the registry which of the three images already exist. Everything downstream reads its outputs, so a wrong answer here is a wrong answer everywhere.
 
-LIVE CALLER, not repointed. The bash twin stays the registered gate; this module
-is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step. The twin is also the subject of `.ci/scripts/test/gates/test-releaseversion-tag-fetch.sh`, which EXTRACTS its
-tag-fetch block by literal anchors; nothing here changes those anchors because
-nothing here touches the twin.
+LIVE CALLER, not repointed. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step. The twin is also the subject of `.ci/scripts/test/gates/test-releaseversion-tag-fetch.sh`, which EXTRACTS its tag-fetch block by literal anchors; nothing here changes those anchors because nothing here
+touches the twin.
 
 Ledger: `.ci/shadow/w7p6-initialize.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).
 
@@ -41,9 +39,8 @@ Step 1 validates `GITHUB_PAT` with four lines of prose naming the secret, the se
     <path>/initialize.sh: line 219: GITHUB_REPOSITORY: unbound variable
     exit=1
 
-By then the submodules are initialised, the token rewrite is written into the GLOBAL git config, three tags are minted and EIGHT outputs are already on stdout and in `$GITHUB_OUTPUT`. The diagnostic is bash's, names no fix, and arrives
-after the expensive half of the work. Reproduced verbatim; not repaired, because
-`.ci/scripts/ci/` is not this writer's to change. `UNCHECKED_REQUIRED_ENV` names it so a test can assert it by name.
+By then the submodules are initialised, the token rewrite is written into the GLOBAL git config, three tags are minted and EIGHT outputs are already on stdout and in `$GITHUB_OUTPUT`. The diagnostic is bash's, names no fix, and arrives after the expensive half of the work. Reproduced verbatim; not repaired, because `.ci/scripts/ci/` is not this writer's to change.
+`UNCHECKED_REQUIRED_ENV` names it so a test can assert it by name.
 
 Note the asymmetry the port has to preserve: `${GITHUB_REPOSITORY}` refuses an
 UNSET variable and accepts an EMPTY one, which yields `https://x-access-token:<pat>@github.com/.git` and a fetch failure three attempts and fifteen seconds later.
@@ -74,8 +71,7 @@ relative path -- resolved against the repo root, because step 0 has already `cd`
     $ GITHUB_PAT=x bash .ci/scripts/ci/initialize.sh --check-only --output
     ... exit=0, and a new file `./true` holding is_bot=false, pointer_bump_only=false
 
-Exit 0, no warning, and the outputs the caller asked for are in a file nobody
-will look in. Reproduced; not repaired. `EMPTY_OUTPUT_FLAG_WRITES_TRUE` names it.
+Exit 0, no warning, and the outputs the caller asked for are in a file nobody will look in. Reproduced; not repaired. `EMPTY_OUTPUT_FLAG_WRITES_TRUE` names it.
 
 -----------------------------------------------------------------------------
 DEFECT D -- THE REGISTRY PROBE FOLDS "COULD NOT ASK" INTO "DOES NOT EXIST"
@@ -103,9 +99,8 @@ Every point where the twin would die is reproduced as an early `return` with the
 -----------------------------------------------------------------------------
 ONE DELIBERATE DIVERGENCE, AND IT IS THE SAME ONE `common.repo_root` CARRIES
 -----------------------------------------------------------------------------
-`get_repo_root` resolves three directories up from `common.sh` and honours
-nothing; `common.repo_root()` delegates to `paths.repo_root()`, which honours
-`$REDIACC_CI_ROOT`. On every real run that variable is unset and the two land on the same directory, which is what the ledger records. The differential exploits the override deliberately: it points the port at a fixture tree whose `.ci/scripts/lib/common.sh` sends the twin to the same place, which is the only way to drive the five sibling calls without running the real ones.
+`get_repo_root` resolves three directories up from `common.sh` and honours nothing; `common.repo_root()` delegates to `paths.repo_root()`, which honours `$REDIACC_CI_ROOT`. On every real run that variable is unset and the two land on the same directory, which is what the ledger records. The differential exploits the override deliberately: it points the port at a fixture tree whose
+`.ci/scripts/lib/common.sh` sends the twin to the same place, which is the only way to drive the five sibling calls without running the real ones.
 """
 
 from __future__ import annotations
@@ -213,9 +208,7 @@ def bash_exec_failure(line: int, command: str, err: OSError, *, searched: bool) 
 
     Not defensive padding: without it a missing sibling is a Python traceback where the twin prints one line and carries on (step 4) or dies with 127 (everywhere else), and a traceback is a bigger divergence than any wording.
 
-    `searched` distinguishes the two messages bash uses. A name resolved through
-    PATH that is not there is `command not found`; a path containing a slash is
-    the operating system's own `No such file or directory`.
+    `searched` distinguishes the two messages bash uses. A name resolved through PATH that is not there is `command not found`; a path containing a slash is the operating system's own `No such file or directory`.
     """
     if isinstance(err, PermissionError):
         text, code = "Permission denied", 126
@@ -251,9 +244,7 @@ def run_inherit(
 def run_capture(argv: list[str], line: int) -> tuple[int, str]:
     """`VAR=$(cmd)`: stdout captured, stderr inherited, trailing newlines stripped.
 
-    UTF-8 STRICTLY, where bash passes bytes through. The only values captured here are a tag, a bump type and a version, all minted by siblings that
-    produce `[0-9a-z.-]`, so the two cannot differ on any real input; and if one
-    ever did, a decode error is a loud stop rather than a tag that silently differs by one byte from the one the twin would have used.
+    UTF-8 STRICTLY, where bash passes bytes through. The only values captured here are a tag, a bump type and a version, all minted by siblings that produce `[0-9a-z.-]`, so the two cannot differ on any real input; and if one ever did, a decode error is a loud stop rather than a tag that silently differs by one byte from the one the twin would have used.
     """
     sys.stdout.flush()
     try:
@@ -309,9 +300,8 @@ def redact(data: bytes, pat: str) -> bytes:
 
     BYTES, not text: this is git's stderr, and a decode step could raise on output the twin passes through untouched.
 
-    THE ONE PLACE THIS IS NOT SED. sed's pattern is a BASIC REGULAR EXPRESSION, so a token containing `.`, `*`, `[`, `\\`, `^` or `$` would match more (or
-    less) than itself; `bytes.replace` is literal. Every token this repository
-    issues is `[A-Za-z0-9_]`, for which the two are identical, and a literal replacement can only redact MORE conservatively than a regex that failed to match. Stated rather than hidden.
+    THE ONE PLACE THIS IS NOT SED. sed's pattern is a BASIC REGULAR EXPRESSION, so a token containing `.`, `*`, `[`, `\\`, `^` or `$` would match more (or less) than itself; `bytes.replace` is literal. Every token this repository issues is `[A-Za-z0-9_]`, for which the two are identical, and a literal replacement can only redact MORE conservatively than a regex that failed to
+    match. Stated rather than hidden.
     """
     needle = (pat or NO_PAT_SENTINEL).encode("utf-8", "surrogateescape")
     return data.replace(needle, REDACTION.encode("ascii"))
@@ -341,9 +331,7 @@ def release_decision(root_relative: str = DISPATCH_RELEASE) -> str:
         RELEASE_DECISION="$(GITHUB_OUTPUT='' <script> --decide-only 2>&1 \\
             | grep '^decision:' || true)"
 
-    `2>&1` merges the child's stderr INTO the pipe, so its diagnostics are
-    filtered out with everything else and never reach the log; `|| true`
-    swallows every non-zero status, the child's and grep's alike. A crashed, cancelled or missing decider therefore yields the empty string, and the
+    `2>&1` merges the child's stderr INTO the pipe, so its diagnostics are filtered out with everything else and never reach the log; `|| true` swallows every non-zero status, the child's and grep's alike. A crashed, cancelled or missing decider therefore yields the empty string, and the
     caller's `!= 'decision: skip'` then releases. That polarity is the twin's
     stated design, not an accident, so it is reproduced exactly.
     """

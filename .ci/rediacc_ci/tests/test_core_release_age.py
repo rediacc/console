@@ -206,9 +206,7 @@ def test_the_unreachable_delegate_is_loud_and_fails_closed(ft_broken):
 def test_a_failed_lookup_is_not_memoised(ft_broken):
     """`release-age.sh:190` writes the cache only AFTER the regex accepts.
 
-    A transient delegate failure must be retried on the next call rather than
-    frozen into the run; a port that cached `None` would make one network blip
-    defer every remaining version in the gate.
+    A transient delegate failure must be retried on the next call rather than frozen into the run; a port that cached `None` would make one network blip defer every remaining version in the gate.
     """
     shim = ra.ReleaseAge(ft_broken)
     assert shim.eligible_epoch(1756000000, 86400) is None
@@ -341,8 +339,7 @@ NOW_SHAPES = [
 def test_the_twin_lets_bash_arithmetic_decide_an_unvalidated_now(case, now, expected):
     """A FACT ABOUT THE BASH, pinned so it cannot change unnoticed.
 
-    LATENT, NOT LIVE: both real call sites pass one argument (`audit.sh:271`, `check-go-deps.sh:151`), so `now` is always `date -u +%s` today. `.ci/scripts/lib/` is not this box's to edit, so the twin is not fixed
-    here; the port refuses a non-integer `now` instead, which is the divergence.
+    LATENT, NOT LIVE: both real call sites pass one argument (`audit.sh:271`, `check-go-deps.sh:151`), so `now` is always `date -u +%s` today. `.ci/scripts/lib/` is not this box's to edit, so the twin is not fixed here; the port refuses a non-integer `now` instead, which is the divergence.
     """
     rc, out, err = diff.bash_streams(
         'source "$LIB"\nif is_release_deferred 1756000000 %s 86400 2>/dev/null; '

@@ -69,9 +69,7 @@ and the `echo "rc=$?"` NEVER RUNS: `command not found` is 127, errexit fires on
 it, and the function dies BEFORE its `rm -f "$err"` and before its `return 1`. So on that path the documented three-state contract collapses into a 127 abort plus a leaked `mktemp` file, and the caller is told nothing about R2 at all.
 
 BLAST RADIUS, MEASURED RATHER THAN GUESSED: 1 of the 11 sourcers does not source `common.sh` (`.ci/scripts/test/gates/test-release-state-consistency.sh`, a REGISTERED gate test), and it exercises only the two PURE assertion functions, which contain no `log_error`. So there are ZERO live paths today. It is latent, not exploitable, and it is the same shape as the `service.sh` /
-`check_docker` finding from this workstream's first wave. This port defines its own
-`_log_error` and therefore cannot inherit the defect; a test pins that the twin
-still has it, so the pin goes red the day the twin is fixed.
+`check_docker` finding from this workstream's first wave. This port defines its own `_log_error` and therefore cannot inherit the defect; a test pins that the twin still has it, so the pin goes red the day the twin is fixed.
 
 --------------------------------------------------------------------------
 DEFECT 2, REPRODUCED NOT FIXED: THE ONE PROBE THAT STILL CONFLATES "EMPTY" WITH "UNREACHABLE" IS THE ONE THE BLOCKER GATE'S VERDICT RESTS ON
@@ -85,9 +83,8 @@ this one was the odd one out". The odd one out is now `rsv_list_sentinels`, and 
 WHY IT IS NOT GREEN TODAY, and this is the part worth writing down because it is the difference between "latent" and "live": the RATCHET saves it. With `cli_versions` empty and `.ci/config/release-contract-floor.txt` holding `v1.2.21` (tracked in git, verified present 2026-09-10), `pre_contract_floor` returns the ratchet, every git tag at or above `v1.2.21` becomes `DRIFT <v>: git
 tag present, cli sentinel missing`, and the gate goes RED. The gate is protected by a one-line data file, not by the probe.
 
-DELETE OR EMPTY THAT FILE AND THE GATE GOES GREEN ON A DEAD PROBE: floor is "", `assert_bijection` short-circuits to `OK: release-state bijection holds - no cli sentinels yet (contract not in effect)` and returns 0. The port reproduces that short-circuit exactly, because
-changing it here would make the port disagree with the twin about a verdict; the
-finding is recorded and pinned in a test instead.
+DELETE OR EMPTY THAT FILE AND THE GATE GOES GREEN ON A DEAD PROBE: floor is "", `assert_bijection` short-circuits to `OK: release-state bijection holds - no cli sentinels yet (contract not in effect)` and returns 0. The port reproduces that short-circuit exactly, because changing it here would make the port disagree with the twin about a verdict; the finding is recorded and pinned
+in a test instead.
 
 --------------------------------------------------------------------------
 DEFECT 3, REPRODUCED NOT FIXED: A FUNCTION DEFINED INSIDE A FUNCTION IS STILL GLOBAL, AND THIS ONE CLOSES OVER A `local`
@@ -154,8 +151,7 @@ STRICT_SEMVER = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 # The sed at :109, deliberately LOOSER than STRICT_SEMVER: `v[0-9][0-9.]*`. The grep behind it is what tightens the result, so the two stages stay separate here exactly as they are two stages there. Folding them into one pattern would quietly change which keys are even considered.
 SENTINEL_LINE = r"^%s/(v[0-9][0-9.]*)/%s$"
 
-# `.ci/config/release-contract-floor.txt`, relative to the repository root. The
-# monotonic high-water mark; see DEFECT 2 for what it is currently load-bearing
+# `.ci/config/release-contract-floor.txt`, relative to the repository root. The monotonic high-water mark; see DEFECT 2 for what it is currently load-bearing
 # for.
 FLOOR_FILE_REL = ".ci/config/release-contract-floor.txt"
 
@@ -189,9 +185,8 @@ def _log_error(message: str) -> None:
 def bucket(env: dict[str, str] | None = None) -> str:
     """`${RELEASES_BUCKET:-rediacc-releases}`, read at CALL time.
 
-    Read per call rather than frozen at import, because the twin reads it at SOURCE time (`:72`) into a variable every function then interpolates, and a caller that exports `RELEASES_BUCKET` after sourcing gets the OLD value in bash and would get the NEW one from a module constant here. Neither
-    behaviour is better; they just have to be the same, and a function is the
-    only spelling a test can pin.
+    Read per call rather than frozen at import, because the twin reads it at SOURCE time (`:72`) into a variable every function then interpolates, and a caller that exports `RELEASES_BUCKET` after sourcing gets the OLD value in bash and would get the NEW one from a module constant here. Neither behaviour is better; they just have to be the same, and a function is the only spelling
+    a test can pin.
     """
     table = os.environ if env is None else env
     return table.get("RELEASES_BUCKET") or DEFAULT_BUCKET
@@ -248,8 +243,7 @@ def list_sentinels(product: str, endpoint: str | None = None) -> list[str]:
 
     THE AWS_ACCESS_KEY_ID CHECK IS AT CALL TIME, matching the twin's
     `: "${AWS_ACCESS_KEY_ID:?...}"` at :100 and the comment beside it. In bash
-    that `:?` EXITS a non-interactive shell; here it raises, because a module
-    that calls `sys.exit` from a library function takes the decision away from the one caller (`cleanup-versions.sh`) that loops over products.
+    that `:?` EXITS a non-interactive shell; here it raises, because a module that calls `sys.exit` from a library function takes the decision away from the one caller (`cleanup-versions.sh`) that loops over products.
 
     SEE DEFECT 2: a failed probe is indistinguishable from an empty bucket, and that is carried unchanged rather than improved, because improving it here would make this port disagree with the twin about a live gate's verdict.
     """
@@ -328,8 +322,7 @@ def prefix_nonempty(prefix: str, endpoint: str | None = None) -> Probe:
         _indent_stderr(proc.stderr)
         return Probe.UNKNOWN
     # `[[ "$count" != "0" && "$count" != "None" ]]`. `$(...)` strips trailing
-    # newlines, which is what the strip() reproduces; without it every real
-    # answer would compare unequal to "0" and the probe would always say YES.
+    # newlines, which is what the strip() reproduces; without it every real answer would compare unequal to "0" and the probe would always say YES.
     count = proc.stdout.strip("\n")
     return Probe.YES if count not in ("0", "None") else Probe.NO
 
@@ -480,15 +473,12 @@ def pre_contract_floor(
 
     floor_file = table.get("RSV_FLOOR_FILE") or ""
     if not floor_file:
-        # The twin's candidate list, IN ITS ORDER (:296-304). `$REPO_ROOT` is a
-        # shell variable the calling gate assigns; the port uses its own root
+        # The twin's candidate list, IN ITS ORDER (:296-304). `$REPO_ROOT` is a shell variable the calling gate assigns; the port uses its own root
         # for that slot, and falls back to the same two relative candidates.
         #
         # The twin's first candidate is `"${REPO_ROOT:-}/.ci/config/..."`, which
         # with REPO_ROOT unset is the ABSOLUTE path `/.ci/config/...` and passes
-        # the `-n "$candidate"` test. It fails `-f` on any sane filesystem, so
-        # it is a latent oddity rather than a bug; the port simply does not have
-        # a way to spell it, since `paths.repo_root()` never yields "".
+        # the `-n "$candidate"` test. It fails `-f` on any sane filesystem, so it is a latent oddity rather than a bug; the port simply does not have a way to spell it, since `paths.repo_root()` never yields "".
         for candidate in (
             (root or paths.repo_root()) / FLOOR_FILE_REL,
             paths.ci_dir(root) / "config" / "release-contract-floor.txt",
@@ -529,8 +519,7 @@ def assert_bijection(
 
     `rsv_assert_bijection` (:341-425). For every strict-semver version seen in either input, require BOTH (committed) or NEITHER (absent).
 
-    RETURNED RATHER THAN PRINTED, so a caller can assert on the decision without capturing a stream. The twin echoes to stdout and returns the same two
-    codes; the CLI below prints them in order and is what the differential runs.
+    RETURNED RATHER THAN PRINTED, so a caller can assert on the decision without capturing a stream. The twin echoes to stdout and returns the same two codes; the CLI below prints them in order and is what the differential runs.
 
     `in_flight` is the one version this CI run is building, excluded so the gate does not false-positive on its own in-flight release.
     """
@@ -612,8 +601,7 @@ def assert_channel_pointer_tagged(
     out: list[str] = []
     drift = 0
 
-    # An unreadable pointer is NOT a clean channel. Both files are written seconds apart by the same uploader, so a missing one means the read failed
-    # or the write tore; either way the question was not answered.
+    # An unreadable pointer is NOT a clean channel. Both files are written seconds apart by the same uploader, so a missing one means the read failed or the write tore; either way the question was not answered.
     if not latest_ver or not manifest_ver:
         out.append(
             "DRIFT %s: could not read the channel pointer (latest='%s' manifest='%s'); "

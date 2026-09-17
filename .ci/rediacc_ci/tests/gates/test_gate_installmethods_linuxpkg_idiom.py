@@ -9,14 +9,11 @@ WHY THIS EXISTS. That file carried the same unanchored-grep idiom that let a 1.2
 
 SEVERITY IS LOW and deliberately recorded as such: TEST_VERSION is hardcoded to 99.0.0 and the binary under test is a dummy shell script the same file writes, so no real version could drift out from under those checks. The point of the change, and of this file, is to stop the idiom being COPIED somewhere a real version is at stake -- and to keep it from creeping back in.
 
-The name carries the test-installmethods- prefix because that is the prefix the
-batch of gate tests was added under; the target is test-linux-packages.sh.
+The name carries the test-installmethods- prefix because that is the prefix the batch of gate tests was added under; the target is test-linux-packages.sh.
 
 WHY THE PORT STILL RUNS BASH for the first four cases: `version_token_re` and `assert_version_field` are the SUBJECT's own shell functions, and reimplementing either in Python would pin the port's idea of the regex rather than the subject's. The fifth case is a text census and is pure Python.
 
-ARGUMENT ORDER. The twin calls `assert_eq "0" "$(field ...)"`, EXPECTED first,
-which inverts `assert_eq`'s own contract. Same verdict, inverted diagnostic; one
-of the 67 known sites. The port uses the contract's order.
+ARGUMENT ORDER. The twin calls `assert_eq "0" "$(field ...)"`, EXPECTED first, which inverts `assert_eq`'s own contract. Same verdict, inverted diagnostic; one of the 67 known sites. The port uses the contract's order.
 """
 
 import pathlib
@@ -51,8 +48,7 @@ def prelude(gate, tmp_path: pathlib.Path) -> pathlib.Path:
         SUBJECT.shell_fn(gate, "assert_version_field"),
         'TEST_VERSION="%s"' % subject_version(gate),
         'TEST_VERSION_RE="$(version_token_re "$TEST_VERSION")"',
-        # dpkg-deb --info and rpm -qip lay the same field out differently; both
-        # shapes are what the two callers actually feed in.
+        # dpkg-deb --info and rpm -qip lay the same field out differently; both shapes are what the two callers actually feed in.
         (
             "deb_info() { printf ' Package: rediacc-cli\\n Version: %s\\n "
             'Architecture: amd64\\n Maintainer: x\\n\' "$1"; }'

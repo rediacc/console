@@ -1,12 +1,10 @@
 """Gate `gh pr ready` on green CI: a console PR may leave draft state ONLY when
 the single required check, "CI Complete", is SUCCESS on its current head. Flipping ready is what triggers the automated Claude review, and the review invariant is "non-draft AND green" -- this hook enforces the green half.
 
-`gh pr ready --undo` (back to draft) is always allowed: it can never expose an unreviewed/red PR. Network paths here are NOT covered by test-hooks.sh
-(only the pattern paths are); verification failures fail CLOSED.
+`gh pr ready --undo` (back to draft) is always allowed: it can never expose an unreviewed/red PR. Network paths here are NOT covered by test-hooks.sh (only the pattern paths are); verification failures fail CLOSED.
 
 PORT NOTE ON `${CONCLUSION:-verification failed}`. `:-` fires on an EMPTY value
-as well as an unset one, and empty is precisely what the network path yields when `gh` cannot answer -- so the fail-closed message reads "got: verification failed" rather than "got: ". The Python below therefore tests for the empty
-string, not for None; there is no unset case to distinguish.
+as well as an unset one, and empty is precisely what the network path yields when `gh` cannot answer -- so the fail-closed message reads "got: verification failed" rather than "got: ". The Python below therefore tests for the empty string, not for None; there is no unset case to distinguish.
 """
 
 from rediacc_hooks import hookio, shellscan
@@ -15,9 +13,7 @@ CHAIN = "pre-bash"
 TWIN = "pre-bash/block-premature-ready.sh"
 ORDER = 26
 
-# The `--undo` test read from the whole line instead of from this invocation:
-# `gh pr ready --undo 1; gh pr ready 531` then looks like an always-allowed
-# undo and the real flip skips the green gate entirely.
+# The `--undo` test read from the whole line instead of from this invocation: `gh pr ready --undo 1; gh pr ready 531` then looks like an always-allowed undo and the real flip skips the green gate entirely.
 DEFECT = ("hookio.grep_q_line(UNDO, seg)", "hookio.grep_q_line(UNDO, scan)")
 
 UNDO = r"--undo"
@@ -103,9 +99,7 @@ def run(ev):
 
     # Every field below is read from the SEGMENT that carries `gh pr ready`, never
     # from the whole bash line. Line-wide parsing let a sibling command donate its
-    # fields to this one: `gh pr ready --undo 1; gh pr ready 531` looked like an
-    # always-allowed undo, and `gh pr view 1 --repo rediacc/renet; gh pr ready 531`
-    # looked like a non-console flip -- both would have skipped the green gate entirely. See hook_gh_pr_segment.
+    # fields to this one: `gh pr ready --undo 1; gh pr ready 531` looked like an always-allowed undo, and `gh pr view 1 --repo rediacc/renet; gh pr ready 531` looked like a non-console flip -- both would have skipped the green gate entirely. See hook_gh_pr_segment.
     cwd = ev.field("cwd")
     segs = shellscan.gh_pr_segment(scan, "ready")
     records, _ = shellscan._records(shellscan._here_string(segs))
@@ -116,8 +110,7 @@ def run(ev):
         if hookio.grep_q_line(UNDO, seg):
             continue
 
-        # Only console has draft PRs (free plan, public repo). A --repo pointing
-        # elsewhere is a no-op flip; let gh handle it.
+        # Only console has draft PRs (free plan, public repo). A --repo pointing elsewhere is a no-op flip; let gh handle it.
         repo = shellscan.target_repo(seg, scan, cwd)
         if repo != "rediacc/console":
             continue

@@ -185,8 +185,7 @@ const ALLOWED_IDENTICAL = new Set([
   'Status',
   // Console table column headers (columnLabel_*) kept as loanwords/cognates by several locales for the same reasons documented alongside the mirror
   // entries in eslint.config.js's account-web extraUntranslatedPatterns:
-  // "Commit" has no established local translation in any of the 12 locales
-  // (every CLI translation keeps it untranslated); "Backend"/"Provider" are
+  // "Commit" has no established local translation in any of the 12 locales (every CLI translation keeps it untranslated); "Backend"/"Provider" are
   // loanwords in de/es/fr/it/pt matching packages/cli's own translations;
   // "Repository" is Italian's own established word for the concept (navRepos/reposEmpty in this same console.json use it identically).
   'Commit',
@@ -225,9 +224,7 @@ const ALLOWED_IDENTICAL = new Set([
   'Model',
   'Services',
   'services',
-  // French cognate (destination/destinations spelled identically in both
-  // languages); French CLI translations of the same backup-destination
-  // concept already keep it identical ("Destinations :").
+  // French cognate (destination/destinations spelled identically in both languages); French CLI translations of the same backup-destination concept already keep it identical ("Destinations :").
   'Destinations',
   'Accessible',
   'Grand',
@@ -347,9 +344,7 @@ const ALLOWED_IDENTICAL = new Set([
   // Plural forms of "Cluster"/"Datastore" (singular forms are already allowlisted above). fr/console.json's own body strings already treat both as untranslated loanwords in the singular (clustersEmpty: "Aucun cluster...", datastoresEmpty: "Aucun datastore...", columnLabel_cluster: "Cluster"), so the plural sidebar titles/nav labels follow the same established French convention.
   'Clusters',
   'Datastores',
-  // French cognate: "communication"/"communications" is spelled identically
-  // in French and English; settings.json's notificationsPageTitle uses the
-  // correct native French word, which happens to match.
+  // French cognate: "communication"/"communications" is spelled identically in French and English; settings.json's notificationsPageTitle uses the correct native French word, which happens to match.
   'Communications',
   // tr/admin.json already keeps "Lead Magnet" as an English loanword elsewhere in the same leadMagnets block (pageTitle: "Lead Magnet İndirmeleri", failedError: "Lead magnet indirmeleri yüklenemedi."), so the short magnetLabel column header ("Magnet") follows the same established convention rather than introducing a different Turkish term.
   'Magnet',

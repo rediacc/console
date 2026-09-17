@@ -47,9 +47,7 @@ import pathlib
 import re
 import subprocess
 
-# Re-exported so a guard does not grow a second spelling of the character
-# classes bash means by [[:space:]]. `shellscan` owns the definitions; a guard
-# that needs them imports them from here, and there is exactly one copy.
+# Re-exported so a guard does not grow a second spelling of the character classes bash means by [[:space:]]. `shellscan` owns the definitions; a guard that needs them imports them from here, and there is exactly one copy.
 from rediacc_hooks.shellscan import (  # noqa: F401
     BLANK,
     SPACE,
@@ -68,8 +66,7 @@ DENY = 2
 
 # The placeholders `rx` below understands. `{S}` is the whole `[[:space:]]`
 # class and `{B}` is the same class without the newline, matching the two
-# constants re-exported above; there is no third, because a guard needing a
-# third would be inventing a fourth spelling of the thing this module exists to have one of.
+# constants re-exported above; there is no third, because a guard needing a third would be inventing a fourth spelling of the thing this module exists to have one of.
 _RX_CLASSES = (("{S}", SPACE), ("{B}", BLANK))
 
 
@@ -89,9 +86,8 @@ def rx(pattern):
     Every line of that except the fragments is scaffolding, and the scaffolding is IDENTICAL in every guard that has one: `check:ci-shape-duplication` reported it as its two largest Python findings the moment the guards entered its corpus, ten copies of one six-line window and eight of another. There is nothing per-guard in those lines to preserve -- the regex fragments are the
     content, and they survive here verbatim inside a single readable string.
 
-    IT REFUSES A PATTERN WITH NO PLACEHOLDER, and that refusal is the point rather than tidiness. `rx(r"git push")` would return its argument unchanged and read, at every call site, as though the space class were involved when it
-    is not; the next edit would add `[ ]` by hand and the two spellings this
-    module exists to prevent would be back. A call that buys nothing is a mistake, so it says so.
+    IT REFUSES A PATTERN WITH NO PLACEHOLDER, and that refusal is the point rather than tidiness. `rx(r"git push")` would return its argument unchanged and read, at every call site, as though the space class were involved when it is not; the next edit would add `[ ]` by hand and the two spellings this module exists to prevent would be back. A call that buys nothing is a mistake, so
+    it says so.
     """
     if not any(token in pattern for token, _ in _RX_CLASSES):
         raise ValueError(
@@ -129,9 +125,8 @@ class Event:
             try:
                 self._doc = json.loads(self.payload)
             except (ValueError, TypeError):
-                # NOT `None`. A payload of the four characters `null` PARSES,
-                # and `jq -r .tool_input.command` on it prints `null`; a
-                # payload of `nonsense` does not parse and jq exits 5 with an empty stdout. Measured 2026-09-06, both shapes, and the first cut of this collapsed them onto None and got the second one wrong -- a broken payload read as the string "null", which 26 guards would then have scanned as a command.
+                # NOT `None`. A payload of the four characters `null` PARSES, and `jq -r .tool_input.command` on it prints `null`; a payload of `nonsense` does not parse and jq exits 5 with an empty stdout. Measured 2026-09-06, both shapes, and the first cut of this collapsed them onto None and got the second one wrong -- a broken payload read as the string "null", which 26 guards
+                # would then have scanned as a command.
                 self._doc = _BROKEN
         return self._doc
 

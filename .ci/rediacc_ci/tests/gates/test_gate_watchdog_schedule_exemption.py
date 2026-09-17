@@ -2,9 +2,8 @@
 
 The cancel-exemption in `.ci/scripts/ci/watchdog-monitor.cjs`.
 
-WHAT BROKE. Cancelling a run REWRITES ITS CONCLUSION. A run whose job genuinely
-failed reports `conclusion: failure`; the same run, force-cancelled by the
-watchdog, reports `conclusion: cancelled` -- and every reader treats `cancelled` as "superseded by a newer push, ignore me". On a PR that is survivable, because a human is watching and the next push supersedes the run anyway. On the NIGHTLY it
+WHAT BROKE. Cancelling a run REWRITES ITS CONCLUSION. A run whose job genuinely failed reports `conclusion: failure`; the same run, force-cancelled by the watchdog, reports `conclusion: cancelled` -- and every reader treats `cancelled` as "superseded by a newer push, ignore me". On a PR that is survivable, because a human is watching and the next push supersedes the run anyway. On
+the NIGHTLY it
 is fatal: `full_suite` is `github.event_name != 'push'`, so push-to-main runs no
 tests at all and the nightly is the ONLY thing validating main. Every one of the twelve measured nights had a real, fixable gate failure. None were noticed, because the rollup said `cancelled`, and that laundering is why they survived twelve days.
 
@@ -14,14 +13,12 @@ WHY A UNIT TEST AND NOT A MIRROR. Re-implementing the boolean here would prove n
 
 Both directions matter. Too quiet: the nightly keeps laundering failures into `cancelled`. Too loud: a PR run stops being cancellable, so one red would burn the full E2E fleet instead of being killed at the first failure.
 
-WHAT THE PORT REIMPLEMENTS. The twin locates the two ordering anchors with
-`grep -n ... | head -1 | cut -d: -f1` and counts chokepoints with `grep -c`; this
-enumerates the same anchors with Python line numbering. They agree because both are plain SUBSTRING searches over the same file with no anchors or alternation involved -- and Python is deliberate here, since the house note about ugrep's silent false zeros bites the alternated-anchor shape a hand-translation reaches
+WHAT THE PORT REIMPLEMENTS. The twin locates the two ordering anchors with `grep -n ... | head -1 | cut -d: -f1` and counts chokepoints with `grep -c`; this enumerates the same anchors with Python line numbering. They agree because both are plain SUBSTRING searches over the same file with no anchors or alternation involved -- and Python is deliberate here, since the house note
+about ugrep's silent false zeros bites the alternated-anchor shape a hand-translation reaches
 for, and a false zero in `test_single_chokepoint` would read as "the call site is
 gone" rather than as "nobody looked".
 
-NO `xdist_group`. Every case is a short-lived `node -e` subprocess or a file
-read; nothing is bound and no module global moves.
+NO `xdist_group`. Every case is a short-lived `node -e` subprocess or a file read; nothing is bound and no module global moves.
 """
 
 from rediacc_ci import paths

@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported baked-OTLP-credential gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.no_otlp_creds`, which pytest and
-the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.no_otlp_creds`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 5). See DRIVEN, below.
 
@@ -30,8 +28,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, and NOT vacuously: the t
 DRIVEN RED AS WELL, by appending one literal `Authorization: Basic <44-char base64>` assignment to `packages/cli/dist/cli-bundle.cjs` (a gitignored build artifact, backed up with `cp -p` first). Both sides exit 1, both print an EMPTY stdout, and their stderr is byte-identical at 746 bytes: the seven renet binaries still clear, the bundle line reds, and the tally reads `1 credential
 leak(s) detected`. The bundle was restored from the backup and verified by sha256 (2335043dd2b426247447c3f0cc3f2498a875fa13b7fd8ee7828ff03b5c3067b7), with the twin back at exit 0.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-no-otlp-creds.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-no-otlp-creds.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 """
 
 import sys

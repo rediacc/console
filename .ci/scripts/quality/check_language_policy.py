@@ -9,13 +9,10 @@ and W10 P5 hands the BLOCKER strings to W1, which owns the gate. Neither had any
 WHAT IT IS TODAY: ADVISORY AND SHRINK-ONLY, NOT A CLEAN-TREE DEMAND. Measured 2026-09-07, 520 tracked bash files under the covered trees are NOT exempt. A gate demanding zero would red the entire tree on the day it landed, and a gate that reds everything gets suppressed within a day -- which is the precise failure mode docs/agent-reference/suppressions.md exists to prevent. So the
 existing 520 are frozen as a SET and the only thing refused is GROWTH. The port then drains the set, and W1 P6 deletes the baseline file, at which point this same gate is strict with no code change (see STRICT MODE below).
 
-THE FLOOR IS A SET, NEVER A COUNT, and that is a programme requirement rather than a preference: "floors must be set-based or corpus-derived, never hand-typed counts". A count lets through the one change that matters most here -- delete one bash file and add another in the same commit, and the total is unchanged while the surface has
-grown a file nobody decided on. Composition is the claim; sizes are not that claim.
-The same reasoning is why `--write-baseline` refuses a reseed that would ABSORB a new path even when the total shrinks: see scripts/lib/shrink-only-baseline.ts, the TypeScript twin of the guard reimplemented below, whose header records a real drain that printed `2,189 -> 2,160` while quietly enshrining a violation created that hour.
+THE FLOOR IS A SET, NEVER A COUNT, and that is a programme requirement rather than a preference: "floors must be set-based or corpus-derived, never hand-typed counts". A count lets through the one change that matters most here -- delete one bash file and add another in the same commit, and the total is unchanged while the surface has grown a file nobody decided on. Composition is
+the claim; sizes are not that claim. The same reasoning is why `--write-baseline` refuses a reseed that would ABSORB a new path even when the total shrinks: see scripts/lib/shrink-only-baseline.ts, the TypeScript twin of the guard reimplemented below, whose header records a real drain that printed `2,189 -> 2,160` while quietly enshrining a violation created that hour.
 
-STRICT MODE, which is W1 P6 and needs no edit here. A MISSING baseline file is not
-"no debt recorded"; it is the strict state. Every non-exempt bash file is then a
-finding. That direction is deliberate and it is also the safe one: deleting the baseline to escape the gate makes the gate louder, not quieter.
+STRICT MODE, which is W1 P6 and needs no edit here. A MISSING baseline file is not "no debt recorded"; it is the strict state. Every non-exempt bash file is then a finding. That direction is deliberate and it is also the safe one: deleting the baseline to escape the gate makes the gate louder, not quieter.
 
 WHERE THE TWO DATA FILES LIVE, AND WHY THEY ARE NOT IN THE SAME PLACE.
 `.ci/policy/README.md` gives a four-clause predicate for what belongs in `.ci/policy/`, and the two files land on opposite sides of clause 1 ("it is a DECISION, not data") and clause 2 ("it is BLOCKER-gated"):
@@ -44,9 +41,7 @@ canonical `.ci/scripts/lib/blocker-validator.sh` and prints what it says.
 
 Exit 0 clean, 1 on a finding or a vacuous corpus, 2 on a failed control, 77 when the gate CANNOT RUN (no git, no bash, no validator). 77 is never a verdict.
 
----- gate ---- step: Language policy needs: none lane: quality-static selftest: true
-why: ruling 7 makes .ci and .claude Python; the bash surface there may shrink, never grow
----- end gate ----
+---- gate ---- step: Language policy needs: none lane: quality-static selftest: true why: ruling 7 makes .ci and .claude Python; the bash surface there may shrink, never grow ---- end gate ----
 """
 
 from __future__ import annotations
@@ -74,9 +69,8 @@ BASELINE = pathlib.Path(
 ALLOWLIST = pathlib.Path(
     os.environ.get("LANGUAGE_POLICY_ALLOWLIST") or policy_path(".language-policy-allowlist", ROOT)
 )
-# ANCHORED ON THIS FILE, NOT ON `ROOT`, and the difference is the whole point of the
-# seam. `ROOT` is the tree being JUDGED and a test points it at a fixture; the
-# validator is part of the INSTRUMENT and travels with the gate. Written the other way it read the fixture's non-existent copy and answered every fixture run with exit 77, which is a cannot-run that is really a bug in the gate. Caught 2026-09-07 by the gate test's very first case.
+# ANCHORED ON THIS FILE, NOT ON `ROOT`, and the difference is the whole point of the seam. `ROOT` is the tree being JUDGED and a test points it at a fixture; the validator is part of the INSTRUMENT and travels with the gate. Written the other way it read the fixture's non-existent copy and answered every fixture run with exit 77, which is a cannot-run that is really a bug in the
+# gate. Caught 2026-09-07 by the gate test's very first case.
 VALIDATOR = pathlib.Path(
     os.environ.get("LANGUAGE_POLICY_VALIDATOR")
     or pathlib.Path(__file__).resolve().parents[3]
@@ -147,8 +141,7 @@ def _looks_like_bash(path: pathlib.Path) -> bool:
 def is_bash(root: pathlib.Path, rel: str) -> bool:
     """Is this tracked path a shell script?
 
-    Extension first because it is free and covers 579 of the 584 files measured on
-    2026-09-07; the shebang probe is what stops the rule being evaded by renaming.
+    Extension first because it is free and covers 579 of the 584 files measured on 2026-09-07; the shebang probe is what stops the rule being evaded by renaming.
     """
     if rel.endswith((".sh", ".bash")):
         return True
@@ -181,9 +174,7 @@ def bash_corpus(root: pathlib.Path) -> list[str]:
 def effective_lines(root: pathlib.Path, rel: str) -> int:
     """How many lines of a shell script actually DO something.
 
-    The shebang, blank lines, comments and a bare `set -euo pipefail` are not the
-    program; a shim that is one line of work plus five lines of preamble is still a
-    one-line shim. This is the oracle behind a `shim:` allowlist entry, so it errs toward counting MORE: anything it is unsure about is a line.
+    The shebang, blank lines, comments and a bare `set -euo pipefail` are not the program; a shim that is one line of work plus five lines of preamble is still a one-line shim. This is the oracle behind a `shim:` allowlist entry, so it errs toward counting MORE: anything it is unsure about is a line.
     """
     try:
         text = (root / rel).read_text(encoding="utf-8", errors="replace")
@@ -358,9 +349,8 @@ def dead_entries(
 
 # --------------------------------------------------------------------------- The shrink-only guard ---------------------------------------------------------------------------
 #
-# This is a faithful port of the DECISION half of scripts/lib/shrink-only-baseline.ts (`baselineAdditions` and `writeBaselineVerdict`), kept in Python because ruling 7 puts this gate in `.ci`. There is no Python binding for that module today and building one under `.ci/rediacc_ci/` would collide with the port that is in flight
-# there this hour; see the report accompanying this gate, which names the resulting
-# coverage gap in gate-test:shrink-only-composition out loud rather than leaving it to be discovered.
+# This is a faithful port of the DECISION half of scripts/lib/shrink-only-baseline.ts (`baselineAdditions` and `writeBaselineVerdict`), kept in Python because ruling 7 puts this gate in `.ci`. There is no Python binding for that module today and building one under `.ci/rediacc_ci/` would collide with the port that is in flight there this hour; see the report accompanying this gate,
+# which names the resulting coverage gap in gate-test:shrink-only-composition out loud rather than leaving it to be discovered.
 #
 # ORDER IS LOAD-BEARING in `write_verdict`, exactly as it is in the twin: the missing baseline is decided FIRST, because every later rule reads the old set and with no file there is no old set. Deleting the baseline is otherwise the cheapest way to
 # switch the whole rule off.
@@ -664,9 +654,7 @@ def selftest() -> int:
     # -- the enumeration itself, on a repository built for the purpose ---------
     #
     # NOT AN ASSERTION ABOUT THE REAL TREE, deliberately. An earlier draft asserted `len(bash_corpus(ROOT)) > 0` here, which is true of the repository and ALSO true of the question `run()` already answers with a better message. Under a caller that pointed the gate at an empty tree it fired first, so the reader got "control failed, exit 2" instead of the VACUOUS refusal that names
-    # the cause.
-    # The corpus floor belongs to the verdict; what belongs here is proof that the
-    # ENUMERATION can tell a tree with bash in it from one without.
+    # the cause. The corpus floor belongs to the verdict; what belongs here is proof that the ENUMERATION can tell a tree with bash in it from one without.
     with tempfile.TemporaryDirectory() as tmp:
         repo = pathlib.Path(tmp)
         (repo / ".ci").mkdir()

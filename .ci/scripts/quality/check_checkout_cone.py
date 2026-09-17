@@ -8,9 +8,7 @@ WHY THIS EXISTS, and it cost a CI cycle on 2026-09-03. `Stripe Sandbox` failed w
 The compare logic used to be 18 inline lines and needed no file on disk. Extracting it to a script -- which check:ci-workflows was right to demand -- silently broke every job whose sparse-checkout cone stopped at `.ci/config`. Three jobs were affected and nothing in the tree could see it: the cone was well-formed, the script existed, the step was correctly written. Each fact was
 true and the combination was not.
 
-THAT IS THE CLASS. Existing gates check that a cone is well-formed and that a script
-exists; none corroborates the static claim ("this job checks out X") against what the
-job actually RUNS. This one does, and it generalises past shadow-compare to every repo-relative path any `run:` step invokes.
+THAT IS THE CLASS. Existing gates check that a cone is well-formed and that a script exists; none corroborates the static claim ("this job checks out X") against what the job actually RUNS. This one does, and it generalises past shadow-compare to every repo-relative path any `run:` step invokes.
 
 WHAT IT DELIBERATELY DOES NOT DO. It resolves only paths that look like a script INVOCATION at the start of a command or after a pipe/`&&` -- not every string that happens to look like a path. A mention inside an echo, a heredoc, or an argument is not an invocation, and flagging those would produce the kind of noise that gets a gate suppressed. Under-reporting is the safe direction
 here: a missed path fails loudly in CI with the exact message above, while a false positive blocks a correct workflow.

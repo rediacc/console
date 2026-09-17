@@ -42,9 +42,7 @@ The twin's own header, carried because the incident IS the gate:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE SUBJECT IS STILL BASH, SO THE PORT STILL SPAWNS BASH. `account_rustfs_alive`
-is a shell function; there is no way to exercise it that does not source the
-library. The port therefore keeps the twin's subshell verbatim, including both letters of `set +eu`, and the twin's paragraph explaining them is carried at the
+THE SUBJECT IS STILL BASH, SO THE PORT STILL SPAWNS BASH. `account_rustfs_alive` is a shell function; there is no way to exercise it that does not source the library. The port therefore keeps the twin's subshell verbatim, including both letters of `set +eu`, and the twin's paragraph explaining them is carried at the
 function that carries the flags rather than summarised here:
 
     `set +eu` is REQUIRED, and both letters were paid for separately while
@@ -61,24 +59,20 @@ function that carries the flags rather than summarised here:
     nothing at all. run.sh does not hit this because it does not source the
     library under strict flags.
 
-`CI_LIB_DIR` IS EXPORTED FOR THE CHILD, NOT FOR THIS PROCESS. The twin exports it
-into its own environment and the subshell inherits it; the port passes it in the
-child's env dict. Same value, `<root>/.ci/lib`, and the twin's reason is unchanged: "account.sh sources siblings through $CI_LIB_DIR (account.sh:12), so that MUST be exported before sourcing or the load half-fails and the function never exists."
+`CI_LIB_DIR` IS EXPORTED FOR THE CHILD, NOT FOR THIS PROCESS. The twin exports it into its own environment and the subshell inherits it; the port passes it in the child's env dict. Same value, `<root>/.ci/lib`, and the twin's reason is unchanged: "account.sh sources siblings through $CI_LIB_DIR (account.sh:12), so that MUST be exported before sourcing or the load half-fails and the
+function never exists."
 
 THE LOAD PROBE'S EXIT 3 IS LOAD-BEARING AND IS CARRIED AS A CONSTANT. The twin writes `declare -F account_rustfs_alive >/dev/null || exit 3` and then tests `load_rc -eq 3`. A port that collapsed that into "the probe returned non-zero" would delete the distinction between "the library did not load" and "the port is correctly reporting a closed port as dead", which is the whole
 reason the twin comments: "without the check below, a failed source makes `account_rustfs_alive` missing, the subshell returns non-zero, and 'not alive' reads as 'correctly dead' -- assertion 1 would pass while testing nothing at all. That is the exact vacuous-green this gate exists to prevent, and it happened while writing it."
 
-`command -v python3` IS SATISFIED BY CONSTRUCTION and has no counterpart below, the same way `require_cmd python3` is in the editorconfig port. The twin needs the probe because it shells out to a `python3` that may not exist to bind the
-control listener; this module IS that python3. Inventing a branch for it would
-be a check that cannot fail. What the port DOES still probe is `bash`, because that is the interpreter it now shells out to, and the twin's refusal wording is reused for it so a reader meets the same sentence: refusing "to report green
+`command -v python3` IS SATISFIED BY CONSTRUCTION and has no counterpart below, the same way `require_cmd python3` is in the editorconfig port. The twin needs the probe because it shells out to a `python3` that may not exist to bind the control listener; this module IS that python3. Inventing a branch for it would be a check that cannot fail. What the port DOES still probe is
+`bash`, because that is the interpreter it now shells out to, and the twin's refusal wording is reused for it so a reader meets the same sentence: refusing "to report green
 from a run where the control could not fire".
 
 `curl` IS NOT PROBED, ON PURPOSE, IN EITHER IMPLEMENTATION. Assertion 3 re-runs the historical capture through curl, and with no curl on PATH that capture yields the empty string plus the `|| echo 000` fallback, i.e. exactly `000`, which trips "PLANTED DEFECT NO LONGER REPRODUCES". That message is wrong about the cause and right about the verdict, and the port emits the same bytes
 because a clearer message here would be a finding the differential scores as a mismatch. Reported as a twin defect rather than repaired.
 
-THE THREE ASSERTIONS ARE INDEPENDENT AND ALL THREE RUN. The twin does not
-short-circuit after the first failure; it accumulates `failures` and reports the
-count. The port keeps that, because a run that stopped at assertion 1 would hide whether the CONTROL could still fire, and "the control could not fire" is the finding that matters most.
+THE THREE ASSERTIONS ARE INDEPENDENT AND ALL THREE RUN. The twin does not short-circuit after the first failure; it accumulates `failures` and reports the count. The port keeps that, because a run that stopped at assertion 1 would hide whether the CONTROL could still fire, and "the control could not fire" is the finding that matters most.
 
 THE LISTENER IS THE TWIN'S OWN `python3 -m http.server`, spawned as a child rather than served in-process. An in-process `http.server` thread would be tidier and would change what assertion 2 proves: the twin's control demonstrates that a REAL socket on a REAL port answers curl, and a same-process server shares the interpreter with the code asserting about it.
 
@@ -122,9 +116,7 @@ READY_DELAY = 0.1
 def free_port() -> int:
     """A port that is definitely free: bind :0, read what the kernel handed out, close.
 
-    The twin shells out to python3 for exactly this. The port is that python3, so
-    the three lines are inlined; the socket dance is identical, including the
-    close, which is what makes the port free again rather than merely known.
+    The twin shells out to python3 for exactly this. The port is that python3, so the three lines are inlined; the socket dance is identical, including the close, which is what makes the port free again rather than merely known.
     """
     sock = socket.socket()
     try:
@@ -161,9 +153,7 @@ def ci_lib_dir(root: pathlib.Path) -> str:
 def probe_rc(root: pathlib.Path, port: int) -> int:
     """Run the probe against `port` from `root`. Returns the subshell's status.
 
-    Zero means the probe said ALIVE, LOAD_FAILED_RC means the function was never defined, and anything else means it said DEAD. The caller must keep those
-    three apart; collapsing the last two is the vacuous green the twin's header
-    describes.
+    Zero means the probe said ALIVE, LOAD_FAILED_RC means the function was never defined, and anything else means it said DEAD. The caller must keep those three apart; collapsing the last two is the vacuous green the twin's header describes.
     """
     env = dict(os.environ)
     # account.sh sources siblings through $CI_LIB_DIR (account.sh:12).
@@ -189,9 +179,8 @@ def historical_capture(port: int) -> str:
 
         code=$(curl -s -o /dev/null -m 2 -w '%{http_code}' "$url" 2>/dev/null || echo 000)
 
-    THE CONCATENATION IS THE BUG AND IT IS REPRODUCED EXACTLY. Command substitution captures the stdout of the WHOLE `||` list, so on a refused connection curl's own `000` and the fallback's `000` are both captured and the value is `000000`. A port that returned a boolean here would have
-    discarded the evidence; the value is returned as a string because the twin
-    prints it, and a reader comparing `'000000'` against `'000'` is the point.
+    THE CONCATENATION IS THE BUG AND IT IS REPRODUCED EXACTLY. Command substitution captures the stdout of the WHOLE `||` list, so on a refused connection curl's own `000` and the fallback's `000` are both captured and the value is `000000`. A port that returned a boolean here would have discarded the evidence; the value is returned as a string because the twin prints it, and a
+    reader comparing `'000000'` against `'000'` is the point.
 
     Trailing newlines are stripped, which is what command substitution does. The `2>/dev/null` is reproduced as a discarded stderr, and the missing-curl case falls through to the same empty-plus-fallback value bash would produce.
     """
@@ -281,16 +270,13 @@ def main(argv: list[str] | None = None) -> int:
         log.error("failure, not a pass: a probe library that vanished cannot be verified.")
         return 1
 
-    # The twin probes python3 here because it shells out to one. This module is
-    # that python3; what it shells out to is bash, so bash is what is probed, in
-    # the twin's own words about refusing a green the control could not earn.
+    # The twin probes python3 here because it shells out to one. This module is that python3; what it shells out to is bash, so bash is what is probed, in the twin's own words about refusing a green the control could not earn.
     if shutil.which("bash") is None:
         log.error("bash is required to source the probe library. Refusing to report")
         log.error("green from a run where the control could not fire.")
         return 1
 
-    # Fail loudly if the library cannot be loaded at all: a gate that cannot reach its subject must not report on it. Port 1 is closed, so a HEALTHY
-    # probe returns non-zero here; only LOAD_FAILED_RC means the load failed.
+    # Fail loudly if the library cannot be loaded at all: a gate that cannot reach its subject must not report on it. Port 1 is closed, so a HEALTHY probe returns non-zero here; only LOAD_FAILED_RC means the load failed.
     if probe_rc(root, 1) == LOAD_FAILED_RC:
         log.error(
             "Could not load %s from %s (CI_LIB_DIR=%s)." % (PROBE_FN, PROBE_LIB, ci_lib_dir(root))

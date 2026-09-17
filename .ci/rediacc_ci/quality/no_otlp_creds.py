@@ -35,9 +35,8 @@ PORT NOTES.
 THE TWO SKIPS ARE WARNINGS, NOT REFUSALS, AND THAT IS THE TWIN'S DECISION. With no renet binary and no CLI bundle this gate prints four `log_warn` lines and exits 0, having inspected nothing. A fresh checkout is exactly that state. The port does not "improve" it into an anti-vacuity refusal: changing a green into a red is a different gate, and the shadow differential would score
 the improvement as NEW_SIDE_NOISY, correctly. It is reported as a twin finding instead.
 
-`go version -m` IS INVOKED, NOT REIMPLEMENTED. Parsing `.go.buildinfo` in Python would be a second implementation of a format the Go toolchain owns, and the two
-would drift the first time the format moved. The twin shells out; so does this.
-A MISSING `go` IS EXIT 2 AND A LOUD MESSAGE, which is the twin's behaviour and also the house rule: a missing tool is a failure with the fix in the message.
+`go version -m` IS INVOKED, NOT REIMPLEMENTED. Parsing `.go.buildinfo` in Python would be a second implementation of a format the Go toolchain owns, and the two would drift the first time the format moved. The twin shells out; so does this. A MISSING `go` IS EXIT 2 AND A LOUD MESSAGE, which is the twin's behaviour and also the house rule: a missing tool is a failure with the fix in
+the message.
 
 STDERR PASSTHROUGH KEEPS ITS INDENT. On a `go version -m` failure the twin does `sed 's/^/ /' "$buildinfo_err" >&2` -- four spaces, raw, NOT through log_error. That matters to `scripts/lib/shadow-gate.ts`: an indented line under a finding is compared as part of that finding, so re-routing it through the logger would add a `✗ ` and change the finding text. It is printed the same way
 here.
@@ -45,9 +44,8 @@ here.
 THE EMPTY-BUILDINFO CHECK IS `${buildinfo//[[:space:]]/}`, not `-z`. A Go binary
 always reports at least its module path, so output that is only whitespace means the probe returned nothing usable. Reproduced with an explicit POSIX space class rather than Python's `\\s`, which additionally matches U+00A0 and U+2028 and would therefore call a slightly different set of outputs "empty".
 
-`strings | grep -B1 -A1 | grep -Eq` IS DECOMPOSED, ON PURPOSE. `strings` is invoked as a subprocess because reimplementing it would change which byte runs
-count as printable; the two greps are done in Python over its output. The context
-window is one line either side of every `otlpUser`/`otlpPass` hit, unioned and de-duplicated the way grep does it, and the `--` group separators grep prints are
+`strings | grep -B1 -A1 | grep -Eq` IS DECOMPOSED, ON PURPOSE. `strings` is invoked as a subprocess because reimplementing it would change which byte runs count as printable; the two greps are done in Python over its output. The context window is one line either side of every `otlpUser`/`otlpPass` hit, unioned and de-duplicated the way grep does it, and the `--` group separators
+grep prints are
 irrelevant because they cannot match `^[A-Za-z0-9+/=]{20,}$`.
 
 A MISSING `strings` BINARY IS SILENT IN BOTH. The twin writes `2>/dev/null` and lets the pipeline produce nothing, so an absent `strings` turns check 2 off without a word. Reproduced (FileNotFoundError is swallowed to an empty output) and reported as a twin finding, because a security check that disables itself when a tool is missing is the "unknown folded into fine" shape.
@@ -89,9 +87,7 @@ OTLP_PASS_RE = re.compile(r"telemetry\.otlpPass")
 OTLP_SYMBOL_RE = re.compile(r"otlpUser|otlpPass")
 
 # `grep -Eq '^[A-Za-z0-9+/=]{20,}$'` -- a whole line of base64 alphabet, 20 or
-# more characters. Anchored at both ends, so a token embedded in a longer line
-# does not count; that is the twin's rule and it is what keeps this check from
-# firing on ordinary Go symbol tables.
+# more characters. Anchored at both ends, so a token embedded in a longer line does not count; that is the twin's rule and it is what keeps this check from firing on ordinary Go symbol tables.
 BASE64_LINE_RE = re.compile(r"^[A-Za-z0-9+/=]{20,}$")
 
 # `grep -qE '["\x27]Basic [A-Za-z0-9+/=]{20,}["\x27]'`. `\x27` is ugrep's spelling
@@ -110,8 +106,7 @@ NO_RENET_HINT = (
 def renet_binaries(root: pathlib.Path) -> list[pathlib.Path]:
     """Every renet binary the twin would inspect, in the twin's order.
 
-    `private/renet/bin/renet` first when it is a regular file, then `find private/bin -maxdepth 1 -type f -name 'renet-*'` in readdir order. Not
-    sorted; see the port notes.
+    `private/renet/bin/renet` first when it is a regular file, then `find private/bin -maxdepth 1 -type f -name 'renet-*'` in readdir order. Not sorted; see the port notes.
     """
     found: list[pathlib.Path] = []
     dev = root.joinpath(*DEV_RENET)
@@ -179,9 +174,7 @@ def strings_output(binary: pathlib.Path) -> str:
 def bundle_has_literal(path: pathlib.Path) -> bool:
     """Check 3's decision, streamed line by line rather than read whole.
 
-    The bundle is 16 MB in this tree. `grep -q` reads it a buffer at a time and
-    stops at the first hit; reading it into one string would work and would make
-    the gate's memory footprint a function of the artifact's size.
+    The bundle is 16 MB in this tree. `grep -q` reads it a buffer at a time and stops at the first hit; reading it into one string would work and would make the gate's memory footprint a function of the artifact's size.
     """
     with path.open("r", encoding="utf-8", errors="replace") as handle:
         return any(BASIC_LITERAL_RE.search(line) for line in handle)
@@ -270,8 +263,7 @@ def main(argv: list[str] | None = None) -> int:
             log.info("✓ CLI bundle: no literal credentials")
 
     if errors > 0:
-        # `log_error ""` prints a bare glyph with no message. Carried; the
-        # comparator drops an empty finding, so it costs nothing and removing it would change the bytes a human diffs.
+        # `log_error ""` prints a bare glyph with no message. Carried; the comparator drops an empty finding, so it costs nothing and removing it would change the bytes a human diffs.
         log.error("")
         log.error("%d credential leak(s) detected. Do NOT ship these artifacts." % errors)
         log.error("Check for accidentally-reintroduced build-time injection in")

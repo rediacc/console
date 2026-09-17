@@ -279,11 +279,8 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
     .command('autostart')
     .description(t('commands.repo.admin.autostart.description'));
 
-  // repo autostart enable [--name <name>] — per-repo if name given, all repos if omitted
-  // A ref targets ONE repo; -m with no ref targets every repo on the machine.
-  // Autostart is docker-only by nature (it installs a systemd unit that mounts the
-  // repo and runs its compose on boot); a kubernetes repo's workload is the
-  // cluster's job, not systemd's, so a cluster-placed ref is refused with the reason rather than silently doing nothing.
+  // repo autostart enable [--name <name>] — per-repo if name given, all repos if omitted A ref targets ONE repo; -m with no ref targets every repo on the machine. Autostart is docker-only by nature (it installs a systemd unit that mounts the repo and runs its compose on boot); a kubernetes repo's workload is the cluster's job, not systemd's, so a cluster-placed ref is refused with
+  // the reason rather than silently doing nothing.
   autostart
     .command('enable')
     .description(t('commands.repo.admin.autostart.enable.description'))

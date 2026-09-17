@@ -84,9 +84,7 @@ proc = subprocess.run(["jq", "-r", jq_expr, target], check=False)
 sys.exit(proc.returncode)
 """
 
-# Driven, not guessed. common.sh needs `dirname`/`uname` at source time; the
-# twin's own pipelines need `head`, `sed`, `wc` and `grep`; `git` and `jq` are
-# the two real tools both sides depend on.
+# Driven, not guessed. common.sh needs `dirname`/`uname` at source time; the twin's own pipelines need `head`, `sed`, `wc` and `grep`; `git` and `jq` are the two real tools both sides depend on.
 PATH_MINIMUM = ("dirname", "uname", "tr", "git", "jq", "head", "sed", "wc", "grep")
 
 

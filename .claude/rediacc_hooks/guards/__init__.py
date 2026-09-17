@@ -3,8 +3,7 @@
 WHY A SCAN AND NOT A LIST. Section 7 of `docs/ci-overhaul/08-driver-contract.md` gives "modular and dynamic" its only checkable meaning: "Adding a gate, an allowlist entry, or a hook guard requires no edit to any workflow file, any runner file, or any dispatcher file... the guard declares itself as a module in the hook registry." A hand-written tuple in this file would be exactly
 the second edit that rule forbids, and it would rot the same way the hook-coverage baseline rotted (`check-hook-integrity.sh` records five `gh_case` cases sitting in a gap list they had not been in for months).
 
-So `modules()` reads the directory. A file named `block_x.py` or `warn_x.py`
-that defines `run` IS a guard; nothing else has to be told.
+So `modules()` reads the directory. A file named `block_x.py` or `warn_x.py` that defines `run` IS a guard; nothing else has to be told.
 
 WHAT A GUARD MODULE DECLARES, and why each one is needed rather than derivable:
 
@@ -44,9 +43,7 @@ THIS REGISTRY IS WHAT `.claude/settings.json` RUNS, since the P7 cutover on 2026
     Before the cutover a broken glob here cost nothing, because settings.json
     named 38 bash files directly.
 
-The bash originals still exist, at `.claude/oracles/`, and `tests/test_guards_differential.py` still compares every port against its own one byte for byte. They are no longer registered anywhere and are no longer
-guards; see that directory's README for why they are kept and why they had to
-leave `.claude/hooks/`.
+The bash originals still exist, at `.claude/oracles/`, and `tests/test_guards_differential.py` still compares every port against its own one byte for byte. They are no longer registered anywhere and are no longer guards; see that directory's README for why they are kept and why they had to leave `.claude/hooks/`.
 """
 
 import importlib
@@ -105,9 +102,7 @@ def twin_of(module):
 
     SKIPPING THE ORACLE IS NOT A FREE PASS OUT OF HAVING EVIDENCE, and the harness now says so in one place rather than leaving it to authors:
     `test_every_port_has_a_present_twin` REQUIRES a guard declaring `TWIN = None`
-    to carry a dedicated `test-<stem>.py` beside it. A twinned guard is judged
-    against bash; an untwinned one is judged against a suite written for it. Both
-    are still judged.
+    to carry a dedicated `test-<stem>.py` beside it. A twinned guard is judged against bash; an untwinned one is judged against a suite written for it. Both are still judged.
     """
     return module.TWIN
 

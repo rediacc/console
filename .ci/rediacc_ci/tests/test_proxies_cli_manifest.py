@@ -8,9 +8,7 @@ hazard message is prose, not a real path), so `old == new` on the full
 `(exit, stdout, stderr)` tuple is the right assertion rather than a weaker finding-set comparison.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-cli-manifest.observations.jsonl`, recorded
-against a disposable scratch git repo built OUTSIDE this checkout (this
-repo's own working tree is not clean; `shadow-gate.ts --record` refuses a
-dirty tree). See that file's own header for the exact recording commands.
+against a disposable scratch git repo built OUTSIDE this checkout (this repo's own working tree is not clean; `shadow-gate.ts --record` refuses a dirty tree). See that file's own header for the exact recording commands.
 """
 
 from __future__ import annotations

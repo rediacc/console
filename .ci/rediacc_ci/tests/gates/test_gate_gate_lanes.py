@@ -12,13 +12,10 @@ HOW THE PORT DIFFERS FROM THE TWIN, and why the two agree.
 The twin runs ONE `npx tsx` heredoc that both derives and judges: thirteen `ck()` calls print `PASS<tab><label>` lines, bash re-emits them through `log_pass`, and a `TOTAL<tab><n>` line carries the failure count. That makes TypeScript the assertion language and bash a transcriber, and it has the property the twin's own comment worries about: a probe that dies before printing
 `TOTAL` would emit no FAIL lines at all, which is why the twin has to check for a missing TOTAL by hand.
 
-The port splits the two halves. ONE `tsx` process still does all the DERIVING -- the same `laneCapabilities`, `placeGate` and `satisfies` from the same module, on the same real workflow file -- and emits its results as JSON. Every JUDGEMENT then
-happens in Python, one recorded control each. The claims are identical; what
-changes is that a probe which produces nothing cannot be mistaken for a probe that found nothing, because `test_the_probe_really_ran` refuses an empty payload before any comparison is made.
+The port splits the two halves. ONE `tsx` process still does all the DERIVING -- the same `laneCapabilities`, `placeGate` and `satisfies` from the same module, on the same real workflow file -- and emits its results as JSON. Every JUDGEMENT then happens in Python, one recorded control each. The claims are identical; what changes is that a probe which produces nothing cannot be
+mistaken for a probe that found nothing, because `test_the_probe_really_ran` refuses an empty payload before any comparison is made.
 
-NO `xdist_group`. The probe is a short-lived subprocess that reads two files and
-writes nothing; nothing module-global is touched and no path in the tree is
-mutated.
+NO `xdist_group`. The probe is a short-lived subprocess that reads two files and writes nothing; nothing module-global is touched and no path in the tree is mutated.
 
 A MISSING `tsx` IS A LOUD FAILURE, not a skip. The gate under test is TypeScript;
 a run that could not execute it has checked nothing, and unchecked folded into fine is exactly what this directory refuses.
@@ -156,9 +153,8 @@ process.stdout.write(JSON.stringify({
 """
 
 
-# ONE derivation per process, memoised. The twin derives once and judges thirteen times off that single run, so memoising here matches it rather than strengthening it, and it keeps sixteen node startups from being charged to a gate that is already the slowest in the battery. The memo holds only the parsed JSON of a
-# read-only probe, so nothing a case does can reach another case through it; a
-# failed probe raises before the memo is written and the next case re-derives.
+# ONE derivation per process, memoised. The twin derives once and judges thirteen times off that single run, so memoising here matches it rather than strengthening it, and it keeps sixteen node startups from being charged to a gate that is already the slowest in the battery. The memo holds only the parsed JSON of a read-only probe, so nothing a case does can reach another case
+# through it; a failed probe raises before the memo is written and the next case re-derives.
 _PROBE_CACHE: dict = {}
 
 

@@ -9,9 +9,7 @@ THE TWIN'S HEADER, CARRIED ACROSS.
 
 Gate: every `## ` entry declares which instrument enforces it, that pointer resolves, and that instrument is LIVE.
 
-WHY THIS EXISTS. A trap that names no enforcement is indistinguishable from one that is fully mechanized, so the unprotected surface cannot be measured and the stop-hook judge briefs every session from headings it is already protected
-against. `agent/PLAN-trap-enforcement.md` section 3 is the specification; this
-is its W1.
+WHY THIS EXISTS. A trap that names no enforcement is indistinguishable from one that is fully mechanized, so the unprotected surface cannot be measured and the stop-hook judge briefs every session from headings it is already protected against. `agent/PLAN-trap-enforcement.md` section 3 is the specification; this is its W1.
 
 THE HAZARD THE PLAN NAMES, AND WHY LIVENESS IS THE POINT (plan section 3.2): "a gate that demands every trap name an enforced_by creates pressure to name one, and the cheapest thing to name is a grep that pattern-matches the trap's title." A gate that only checked PRESENCE would industrialize the corpus's own most expensive entry, manufacturing checks that cannot fail at a rate of
 one per trap and reporting 100% coverage while doing it. So every pointer is checked twice: it must RESOLVE (F4) and it must be LIVE (F5).
@@ -70,14 +68,12 @@ THE RATCHET MUST MOVE WITH THE CORPUS, and this is what it costs when it does no
 unratcheted floor does not merely lag; it disarms the check it belongs to.
 
 AND IT HAPPENED AGAIN, 2026-08-31, with the paragraph above already on the page: `mark-done-all-stale-is-a-bulk-verb` became the 50th entry and the floor stayed at 49, producing the identical CI line. `check:ci-trap-registry` was GREEN throughout -- a floor only fails when the corpus is below it, so an unratcheted floor is invisible to the gate and visible only to its own control.
-Adding an
-entry means bumping this number in the same commit; there is no other signal.
+Adding an entry means bumping this number in the same commit; there is no other signal.
 
 THAT IS ALSO WHY THE FLOOR IS NOT DERIVED FROM THE CORPUS. A floor computed
 from the file it guards cannot fail, which is the whole class of defect this
-estate exists to refuse. It is a written number, moved by hand, in the commit that adds an entry, and the twin and this port must carry the SAME number: it was 75, then 76, then 77 within one session on 2026-09-06 as two entries landed. Read `.ci/scripts/quality/check-trap-registry.sh` line 118 before changing it
-here; a differential over a fixture corpus cannot see a divergence in the
-default, because every fixture sets `TRAP_FLOOR` explicitly.
+estate exists to refuse. It is a written number, moved by hand, in the commit that adds an entry, and the twin and this port must carry the SAME number: it was 75, then 76, then 77 within one session on 2026-09-06 as two entries landed. Read `.ci/scripts/quality/check-trap-registry.sh` line 118 before changing it here; a differential over a fixture corpus cannot see a divergence in
+the default, because every fixture sets `TRAP_FLOOR` explicitly.
 
 -----------------------------------------------------------------------------
 THE OTHER INLINE NOTES, carried across.
@@ -92,27 +88,22 @@ US (0x1f) RATHER THAN TAB as the field separator: tab is IFS whitespace in bash,
 
 `hook_resolves` DEMANDS BOTH a definition and a listing in RULES. A defined-but-unlisted rule is dead code that never runs, which is the whole hazard.
 
-A SUITE CASE IS ATTRIBUTED TO A RULE when the string it asserts on appears in that rule's body: the needle is text the rule PRODUCES, so matching it is evidence the case exercises that rule and not a neighbour. Attribution by section order alone would credit any rule with its neighbour's coverage. Firing
-cases carry the needle as their last quoted argument; silent cases carry no
+A SUITE CASE IS ATTRIBUTED TO A RULE when the string it asserts on appears in that rule's body: the needle is text the rule PRODUCES, so matching it is evidence the case exercises that rule and not a neighbour. Attribution by section order alone would credit any rule with its neighbour's coverage. Firing cases carry the needle as their last quoted argument; silent cases carry no
 needle at all, so they are attributed to the most recent firing case that resolved to a rule. That is the file's actual layout (one rule per contiguous block) and it fails SAFE: an unattributable silent case credits nobody rather than crediting the wrong rule. The suite writes them across continuation lines, so an unjoined read would see every needle as belonging to no call at all.
 
-TWO HOPS IS THE WHOLE RULE for `file:` liveness, deliberately: hop 1 is a file named in settings.json or the manifest (registered hook, gate script,
-gate-test), so something runs it directly; hop 2 is a file named by a hop-1 file
-(a lib a guard sources, a case file a suite runner globs in, a gate a gate-test drives). A deeper closure would eventually call anything reachable from anything "live", which is how a liveness check stops meaning anything.
+TWO HOPS IS THE WHOLE RULE for `file:` liveness, deliberately: hop 1 is a file named in settings.json or the manifest (registered hook, gate script, gate-test), so something runs it directly; hop 2 is a file named by a hop-1 file (a lib a guard sources, a case file a suite runner globs in, a gate a gate-test drives). A deeper closure would eventually call anything reachable from
+anything "live", which is how a liveness check stops meaning anything.
 
 F1 IS CHECKED LAST so a truncated corpus reports its content problems too. Zero entries is a FAILURE, never a pass: a gate that saw nothing has verified nothing.
 
-NOT `return "$errors"`. A shell return is taken mod 256, so exactly 256 findings
-would return 0 and read as a clean scan. Only the STATUS is made boolean; the
-count itself is still printed with the findings.
+NOT `return "$errors"`. A shell return is taken mod 256, so exactly 256 findings would return 0 and read as a clean scan. Only the STATUS is made boolean; the count itself is still printed with the findings.
 
 A RED CONTROL MUST RED FOR THE RIGHT REASON. Three plants in a neighbouring session were themselves invalid and still "passed" as controls, so the needle is mandatory: a fixture that reds because its filler count is wrong proves nothing about the assertion it was written for.
 
 THE UNRATCHETED-FLOOR ADVISORY IS AN ADVISORY, NOT A FAILURE, because making it
 fatal means asserting `n_entries == TRAP_FLOOR`, and several of the control
-fixtures are deliberately built at floor+1 to exercise other rules. Tightening
-it means auditing every one of those first; the line costs nothing and puts the
-number in the sub-second lane where the mistake is made. Without it the signal arrives ~45 minutes later, from CI, as "a shrinking corpus must red (F1): expected 1, got 0", which names neither the floor nor the entry that moved.
+fixtures are deliberately built at floor+1 to exercise other rules. Tightening it means auditing every one of those first; the line costs nothing and puts the number in the sub-second lane where the mistake is made. Without it the signal arrives ~45 minutes later, from CI, as "a shrinking corpus must red (F1): expected 1, got 0", which names neither the floor nor the entry that
+moved.
 
 `--scan-only` EXISTS FOR THE GATE TEST and for debugging a single fixture: it runs the scan WITHOUT the controls. Nothing in package.json or CI uses it, deliberately. The controls are not an option on the real run.
 
@@ -135,14 +126,12 @@ commas and whitespace, and repeated separators collapse. `str.replace(",", " ")`
 `grep -qF "id: '$1'," MANIFEST && grep -qF "\"$1\":" PACKAGE_JSON` is a FIXED STRING search including the trailing comma and the closing quote-colon, so a prefix id cannot satisfy a longer one. Both halves are required, and that is F4
 for a `gate:` pointer.
 
-`wc -l <file` COUNTS NEWLINES, so a `file:path:N` pointing at the last line of a file with no final newline is out of range. That is the twin's arithmetic and it
-is preserved; see `rediacc_ci.quality.shell_size` for the same point.
+`wc -l <file` COUNTS NEWLINES, so a `file:path:N` pointing at the last line of a file with no final newline is out of range. That is the twin's arithmetic and it is preserved; see `rediacc_ci.quality.shell_size` for the same point.
 
 `[ -n "${text// /}" ]` STRIPS ONLY SPACES, not tabs, so a tab-only line counts
 as non-blank. Carried unchanged, because narrowing it would re-decide which `file:` pointers resolve.
 
-STREAMS. `err()` is `log_error` (stderr, `✗ <msg>`) plus a counter; the shape
-line and the ratchet advisory are `log_info` (stderr, `✓ <msg>`). `rediacc_ci.log` reproduces both.
+STREAMS. `err()` is `log_error` (stderr, `✗ <msg>`) plus a counter; the shape line and the ratchet advisory are `log_info` (stderr, `✓ <msg>`). `rediacc_ci.log` reproduces both.
 """
 
 import os
@@ -165,8 +154,7 @@ SEAMS = {
     "TRAP_FILE_ROOT": (),
 }
 
-# THE RATCHET. A written number, moved by hand; see the header for why it is not
-# derived and for the two occasions an unratcheted floor disarmed F1's control. Must equal `.ci/scripts/quality/check-trap-registry.sh` line 118.
+# THE RATCHET. A written number, moved by hand; see the header for why it is not derived and for the two occasions an unratcheted floor disarmed F1's control. Must equal `.ci/scripts/quality/check-trap-registry.sh` line 118.
 TRAP_FLOOR_DEFAULT = 88
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,48}$")
@@ -442,8 +430,7 @@ class Shape:
 def scan(registry: Registry, floor: int, shape: Shape, report=None) -> int:
     """Every finding, printed. Returns the finding COUNT.
 
-    NOT a boolean and not a shell return: a shell return is taken mod 256, so exactly 256 findings would read as a clean scan. The caller turns this into
-    a status; the count itself is printed with the findings.
+    NOT a boolean and not a shell return: a shell return is taken mod 256, so exactly 256 findings would read as a clean scan. The caller turns this into a status; the count itself is printed with the findings.
     """
     errors = 0
     emit = report if report is not None else log.error
@@ -981,8 +968,7 @@ def main(argv: list[str] | None = None) -> int:
     # captures in `found=$?` is a BOOLEAN, not the finding count -- deliberately,
     # because "a shell return is taken mod 256, so exactly 256 findings would
     # return 0 and read as a clean scan". But `main` then prints that boolean as
-    # `"$found trap-registry finding(s)"`, so the summary line says "1 finding(s)" no matter how many there are. The findings themselves are all
-    # printed above it, so nothing is hidden; the count is simply wrong.
+    # `"$found trap-registry finding(s)"`, so the summary line says "1 finding(s)" no matter how many there are. The findings themselves are all printed above it, so nothing is hidden; the count is simply wrong.
     #
     # A port that printed the real count would be NON-EQUIVALENT to the gate CI runs, and the shadow ledger would attest to a summary line the twin never emits. Measured: the first recording of this pair reported MISMATCH_FINDINGS on four of five fixture trees for exactly this line. Fixing it belongs in a change that touches BOTH files.
     found = 1 if count > 0 else 0
@@ -1009,8 +995,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
 
-    # THE UNRATCHETED FLOOR, SAID OUT LOUD WHERE THE AUTHOR IS LOOKING. An
-    # ADVISORY, not a failure; see the header for why.
+    # THE UNRATCHETED FLOOR, SAID OUT LOUD WHERE THE AUTHOR IS LOOKING. An ADVISORY, not a failure; see the header for why.
     if shape.entries > floor:
         log.info(
             "  ratchet: %d entries against a floor of %d. Bump TRAP_FLOOR to %d in this "

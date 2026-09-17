@@ -28,9 +28,7 @@ const computeIsActive = (
   if (!currentPath) return false;
   const normalizedHref = normalizePath(href);
   const normalizedPath = normalizePath(currentPath);
-  // A hash link is active only when the FRAGMENT matches too. Path alone was
-  // enough while every hash link pointed at a page of its own; once Solutions
-  // became `/<lang>#solutions` it shares a path with Home, and a path-only test
+  // A hash link is active only when the FRAGMENT matches too. Path alone was enough while every hash link pointed at a page of its own; once Solutions became `/<lang>#solutions` it shares a path with Home, and a path-only test
   // put aria-current="page" on two rows of the same drawer at once.
   if (href.includes('#')) {
     const hash = href.slice(href.indexOf('#'));

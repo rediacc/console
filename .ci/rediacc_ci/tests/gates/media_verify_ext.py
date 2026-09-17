@@ -3,9 +3,7 @@
 `media_chain_probe`, `media_chain_mutate`, `media_chain_run` and `media_assert_absent_from_origins`.
 
 WHY A SECOND MODULE RATHER THAN FOUR MORE FUNCTIONS IN `media_verify.py`. `media_verify.py` says in its own docstring that a later batch porting a chain test "adds those three here rather than building a second sandbox", and that is the right home. This batch is not allowed to edit tracked files under its brief, and `media_verify.py` is tracked and clean, so the three land beside
-it instead of inside it, and `media_chain_sandbox` is IMPORTED from there rather than copied. There is still exactly one sandbox builder, which is the property the
-note was protecting; only the file boundary differs. Fold this module into
-`media_verify.py` whenever that file is next opened for writing.
+it instead of inside it, and `media_chain_sandbox` is IMPORTED from there rather than copied. There is still exactly one sandbox builder, which is the property the note was protecting; only the file boundary differs. Fold this module into `media_verify.py` whenever that file is next opened for writing.
 
 WHAT THE CHAIN PROVES, restated from the bash header because it is the reason these three exist at all. A stub defined next to the call site would prove only that `media-entry.sh`'s case tree routes. A marker planted INSIDE THE MODULE FUNCTION'S OWN BODY proves the interpreter got as far as reading THAT FILE for THAT NAME, having crossed `./run.sh`'s `exec`. Nothing downstream of
 the marker runs, which is what keeps a probe of `www tutorials record` from wanting a VM.
@@ -135,15 +133,12 @@ def run(repo: pathlib.Path, script: str, *argv: str) -> harness.RunResult:
 def assert_absent_from_origins(gate, pattern: str, root: pathlib.Path, message: str) -> None:
     """`media_assert_absent_from_origins`. The non-function half of the cutover invariant.
 
-    TUTORIAL_COLS, `_BRIDGE_SSH_CONFIG` and the tutorials usage string are not
-    functions, so `media_assert_sole_owner` cannot see them; this asserts the same
-    thing for a PATTERN, over the same origin set, with the same refusal to treat a missing origin as a clean one.
+    TUTORIAL_COLS, `_BRIDGE_SSH_CONFIG` and the tutorials usage string are not functions, so `media_assert_sole_owner` cannot see them; this asserts the same thing for a PATTERN, over the same origin set, with the same refusal to treat a missing origin as a clean one.
 
     NO `-F` FLAG HERE, AND THAT IS THE POINT OF THE SIGNATURE. The bash version takes an optional `-F` and forwards it to grep, because one caller hunts a fixed string containing `[record|extract|...]`, which as a basic regular expression is a bracket expression matching ONE CHARACTER -- so the unflagged form would look
     for something else entirely and answer "not present" whatever the file held. In
-    Python the two cases are `re.search` and `in`, and rather than reproduce a flag whose omission is silent, the caller passes an already-escaped pattern (or `re.escape(...)`) and this always treats it as a regex. The fixed-string caller
-    therefore cannot get it wrong by forgetting a flag; it gets it wrong loudly, by
-    the pattern not compiling or by matching nothing where it should match.
+    Python the two cases are `re.search` and `in`, and rather than reproduce a flag whose omission is silent, the caller passes an already-escaped pattern (or `re.escape(...)`) and this always treats it as a regex. The fixed-string caller therefore cannot get it wrong by forgetting a flag; it gets it wrong loudly, by the pattern not compiling or by matching nothing where it should
+    match.
 
     `media_origins` returns the complaints about missing origins rather than raising, so this is where "a file nobody read" becomes a FAILURE.
     """

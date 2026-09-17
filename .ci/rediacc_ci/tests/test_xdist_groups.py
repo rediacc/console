@@ -127,8 +127,7 @@ def test_both_sources_absent_yields_an_empty_union_rather_than_an_exception(tmp_
 def test_the_real_join_is_not_empty() -> None:
     """ANTI-VACUITY, and it is the one floor that is honest today.
 
-    An empty union makes `test_no_ported_twin_is_a_real_tree_writer_or_scanner` admit every twin including the four that rewrite tracked files, and makes the group derivation unable to serialise anything. Zero GROUPS is the correct
-    answer on this tree; zero KNOWN REAL-TREE TESTS is a broken reader.
+    An empty union makes `test_no_ported_twin_is_a_real_tree_writer_or_scanner` admit every twin including the four that rewrite tracked files, and makes the group derivation unable to serialise anything. Zero GROUPS is the correct answer on this tree; zero KNOWN REAL-TREE TESTS is a broken reader.
     """
     assert xdist_groups.real_tree_twins(REAL_LOCK) != set()
 
@@ -144,9 +143,7 @@ def test_the_parity_test_and_the_scheduler_read_the_same_union() -> None:
 def test_the_ported_corpus_agrees_with_the_parity_test_about_who_is_unsafe() -> None:
     """SET-BASED, and green whether the answer is empty or not.
 
-    `test_twin_parity` fails the port when a ported module's twin is in the
-    union; the scheduler sends exactly those modules to one worker. The two sets
-    are computed here from opposite ends and must be equal -- so this stays true the day the first real-tree twin is ported, instead of being a hardcoded 0 that would have to be edited then.
+    `test_twin_parity` fails the port when a ported module's twin is in the union; the scheduler sends exactly those modules to one worker. The two sets are computed here from opposite ends and must be equal -- so this stays true the day the first real-tree twin is ported, instead of being a hardcoded 0 that would have to be edited then.
     """
     unsafe = xdist_groups.real_tree_twins(REAL_LOCK)
     from_parity = {

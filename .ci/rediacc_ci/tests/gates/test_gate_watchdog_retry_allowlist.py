@@ -8,14 +8,11 @@ retry branch only refused to retry on a CONFIDENT code-change verdict, so a conf
 
 WHY A UNIT TEST AND NOT A MIRROR. This calls the exported decision and reads WATCHDOG_RETRY_ALLOWLIST_PATTERNS out of the REAL watchdog-monitor.yml, so a rename of a pattern or a quiet widening of the list fails here.
 
-WHERE THE ALLOWLIST READER DIFFERS FROM THE TWIN, AND WHY THEY AGREE. The twin runs `sed -n "s/^ *WATCHDOG_RETRY_ALLOWLIST_PATTERNS: *'\\(.*\\)'$/\\1/p"`, which
-prints the capture of EVERY matching line; this module runs the same pattern as a
-MULTILINE Python regex and takes the first match. The two answers are the same string exactly while the workflow carries one such assignment, so this module also asserts that the count is one rather than assuming it: a second assignment would give the twin a two-line `$ALLOWLIST` (and therefore a broken `--patterns` argument) while this side quietly used the first, and a divergence
-that only shows up as a weird verdict is the kind this port exists not to introduce.
+WHERE THE ALLOWLIST READER DIFFERS FROM THE TWIN, AND WHY THEY AGREE. The twin runs `sed -n "s/^ *WATCHDOG_RETRY_ALLOWLIST_PATTERNS: *'\\(.*\\)'$/\\1/p"`, which prints the capture of EVERY matching line; this module runs the same pattern as a MULTILINE Python regex and takes the first match. The two answers are the same string exactly while the workflow carries one such assignment,
+so this module also asserts that the count is one rather than assuming it: a second assignment would give the twin a two-line `$ALLOWLIST` (and therefore a broken `--patterns` argument) while this side quietly used the first, and a divergence that only shows up as a weird verdict is the kind this port exists not to introduce.
 
-THE REFUSAL ON AN EMPTY ALLOWLIST IS KEPT AND MOVED. The twin exits 1 at load
-time; a module-level `sys.exit` in a pytest file aborts COLLECTION for the whole
-session, which would take out every other ported gate for a reason belonging to this one. So the refusal fires inside each case instead, through `gate.log_fail`, which is the same claim ("this could not be read, so nothing below was checked") delivered where a reader can attribute it.
+THE REFUSAL ON AN EMPTY ALLOWLIST IS KEPT AND MOVED. The twin exits 1 at load time; a module-level `sys.exit` in a pytest file aborts COLLECTION for the whole session, which would take out every other ported gate for a reason belonging to this one. So the refusal fires inside each case instead, through `gate.log_fail`, which is the same claim ("this could not be read, so nothing
+below was checked") delivered where a reader can attribute it.
 
 NO `xdist_group`. Every case shells out to a fresh `node -e`, writes nothing at all, and reads two tracked files without touching them. Nothing is bound and no module global is mutated.
 """
@@ -206,8 +203,7 @@ def test_classifier_down_fails_fast_for_deterministic_jobs(gate):
 
 
 def test_classifier_down_still_retries_known_flaky_jobs(gate):
-    # The other direction. These boot VMs or pull images; a network hiccup here
-    # is a real, observed, non-deterministic failure and deserves one retry.
+    # The other direction. These boot VMs or pull images; a network hiccup here is a real, observed, non-deterministic failure and deserves one retry.
     policy = Policy(gate)
     gate.assert_eq(
         policy.down("Tests + Infra / E2E Workers (opensuse-16.0)"),

@@ -8,9 +8,8 @@ suite for the coverage walker, the firing paths on synthetic schemas.
 WHY BOTH HALVES ARE HERE. Asserting only the green would pass against a gate that had stopped walking anything: `Schema coverage OK` over zero leaves reads exactly like `Schema coverage OK` over all of them. The `fires as uncovered` line is the gate's own statement that its control fired before it printed the verdict, and the vitest suite is the same claim proven against synthetic
 schemas the real tree cannot produce.
 
-WHERE THE PORT REIMPLEMENTS THE TWIN. It does not. The twin runs `npx tsx` and
-`npx vitest`; the port runs the same two commands through the repo-local binaries
-(`node_modules/.bin/tsx`, `node_modules/.bin/vitest`) so a missing install is a named refusal here rather than npx silently reaching for a registry it cannot reach. That is the only difference, and it changes which failure a reader sees, never which verdict.
+WHERE THE PORT REIMPLEMENTS THE TWIN. It does not. The twin runs `npx tsx` and `npx vitest`; the port runs the same two commands through the repo-local binaries (`node_modules/.bin/tsx`, `node_modules/.bin/vitest`) so a missing install is a named refusal here rather than npx silently reaching for a registry it cannot reach. That is the only difference, and it changes which failure
+a reader sees, never which verdict.
 
 NO `xdist_group`. Both cases are read-only subprocesses: one runs the gate over the real tree, the other runs a vitest file that builds its schemas in memory. Neither writes anything, so two of them side by side share nothing.
 """
@@ -77,8 +76,7 @@ def test_walker_fires_on_synthetic_unregistered_leaf(gate):
 
 def test_the_gate_reports_a_non_trivial_leaf_count(gate):
     """PORT-ONLY. `Schema coverage OK` is a string, and a walk that visited nothing
-    prints it just as happily as a walk that visited the whole schema. The gate
-    names its numbers; this reads one back and refuses a zero, so the green above
+    prints it just as happily as a walk that visited the whole schema. The gate names its numbers; this reads one back and refuses a zero, so the green above
     is a claim about a corpus rather than about a line of text."""
     gate.log_test("the green above covered a non-empty schema")
     result = harness.run([str(TSX), str(SUT)], cwd=paths.repo_root())

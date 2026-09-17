@@ -264,8 +264,7 @@ anchored to `.sh` would count zero cases for it. B would then report a fully cov
 
 `check` AND `check_out` THEMSELVES NAME THEIR GUARD THROUGH A VARIABLE, so they cannot match the helper-wrapper rule and do not need excluding by name. Carried verbatim from the twin, because it is the sort of exclusion a port adds "for safety" and thereby changes the answer.
 
-THE TWIN READS ITS SCOPE WITH `while read` AND A TRAILING `|| true`, and both halves of that are archaeology this port would otherwise lose. It said `mapfile`
-until 2026-09-06; the twin's own words for the change:
+THE TWIN READS ITS SCOPE WITH `while read` AND A TRAILING `|| true`, and both halves of that are archaeology this port would otherwise lose. It said `mapfile` until 2026-09-06; the twin's own words for the change:
 
     `while read` RATHER THAN `mapfile`, and it is not a style choice. `mapfile`
     is bash 4+ and `check:ci-shell-commands` rejects it as unavailable in the
@@ -314,9 +313,7 @@ FOLD_RE = re.compile(r"PASS=\$\(\(PASS \+ ([A-Za-z_][A-Za-z0-9_]*)\)\)")
 # Some count refusal standing between the count and the addition. A named `floor`, a literal minimum, or a zero-count refusal: all three are floors.
 GUARD_RE = re.compile(r"-lt[ \t]+(\"?\$?\{?floor|[0-9])|-gt[ \t]+0|-eq[ \t]+0|-le[ \t]+0")
 
-# How far back a fold's refusal may sit. Twelve lines, INCLUDING the fold line
-# itself; see the header for the same-line spelling that the exclusive window
-# reported as a defect.
+# How far back a fold's refusal may sit. Twelve lines, INCLUDING the fold line itself; see the header for the same-line spelling that the exclusive window reported as a defect.
 FOLD_WINDOW = 12
 
 # What makes a declared case source a FOLDING HARNESS: it folds an external count.

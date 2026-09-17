@@ -96,9 +96,7 @@ export function createContainerConfigLoader(
   ): Promise<RdcConfig> {
     pruneDeadSessions();
 
-    // A request that names its session (the console's X-Config-Session) gets
-    // THAT session's key, ownership-checked; one that does not falls back to
-    // the principal's latest grant (the CLI proxy path).
+    // A request that names its session (the console's X-Config-Session) gets THAT session's key, ownership-checked; one that does not falls back to the principal's latest grant (the CLI proxy path).
     const sessionId = sessions.sessionForExec(principal, configSessionId);
     if (!sessionId) {
       // Same message the store itself produces, so the client is told the one thing that will fix this rather than shown a stack trace.

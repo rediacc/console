@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported Go dependency-freshness gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.go_deps`, which pytest and the
-port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.go_deps`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 7). See DRIVEN, below.
 
@@ -34,9 +32,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, 404 bytes, sha256 13d96cbe6000b0fd...
     stderr: BYTE-IDENTICAL, 145 bytes, sha256 9fa3750b1d440e52...
 
-BOTH STREAMS CARRY CONTENT ON THIS PAIR, and both were captured separately. No
-normalisation was applied and none was needed; the twin was first run TWICE
-against an unchanged tree and is byte-stable against itself on both streams.
+BOTH STREAMS CARRY CONTENT ON THIS PAIR, and both were captured separately. No normalisation was applied and none was needed; the twin was first run TWICE against an unchanged tree and is byte-stable against itself on both streams.
 
 DRIVEN RED AS WELL. The plant appends `github.com/gate/probe` to `.ci/policy/.go-deps-upgrade-blocklist` with no `# BLOCKER:` reason, which is the suppression-without-a-reason shape the BLOCKER convention exists to refuse and which this gate enforces through `verify_all_blockers`.
 
@@ -51,8 +47,7 @@ The plant was reverted from a `cp` backup, verified back at its pre-plant sha256
 with `sha256sum -c`, and `git status --porcelain` diffed against its pre-plant
 capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-go-deps.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-go-deps.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Check Go dependency freshness needs: none selftest: true lane: quality-go
 `.ci/scripts/quality/check-go-deps.sh` by an awk range over its `env-EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}

@@ -42,9 +42,8 @@ WHAT IS AND IS NOT DIFFERENTIALLY PROVED
 --------------------------------------------------------------------------
 PROVED, against the live twin, on real `docker`: `service_status` in every shape its state file can take, and `service_logs` refusing an unknown service. Those run without a stack up, which is what makes them cheap enough to record five times.
 
-NOT PORTED AT ALL, and said out loud rather than left as an absence: `service_start` and `service_stop`. THERE IS NO `service_start` OR `service_stop` FUNCTION BELOW. `service_start` builds an image, sources `.ci/docker/service/env.sh` (which MINTS CREDENTIALS and writes a `.env`), and
-polls a health endpoint for up to 90 seconds; `service_stop` tears down a compose
-project and removes containers by name. Driving either twice per observation, five times over, would build the web image ten times and would leave real containers behind if a comparison were interrupted, so neither could be proved here, and a port nobody can compare is a second implementation rather than a replacement.
+NOT PORTED AT ALL, and said out loud rather than left as an absence: `service_start` and `service_stop`. THERE IS NO `service_start` OR `service_stop` FUNCTION BELOW. `service_start` builds an image, sources `.ci/docker/service/env.sh` (which MINTS CREDENTIALS and writes a `.env`), and polls a health endpoint for up to 90 seconds; `service_stop` tears down a compose project and
+removes containers by name. Driving either twice per observation, five times over, would build the web image ten times and would leave real containers behind if a comparison were interrupted, so neither could be proved here, and a port nobody can compare is a second implementation rather than a replacement.
 
 What IS here from those two is the set of pieces that are decidable without Docker and are therefore assertable: `parse_start_args` (the argument loop), `compose_argv` (`_service_compose`), `docker_available` / `check_docker`, `health_ok` (the poll's single probe) and `uptime_line`. THE LIFECYCLE BODIES ARE AN HONEST GAP, and whoever closes it owns finding a way to compare them.
 
@@ -124,8 +123,7 @@ def grep_cut(text: str, prefix: str) -> str:
     THE RAISE IS THE PORT OF `pipefail` + `errexit`, not an editorial choice.
     Zero matches is grep's exit 1, and the twin dies on it. `cut -d= -f2` takes
     the SECOND field only, so a value containing `=` is truncated in both
-    implementations; that is preserved rather than fixed for the same reason.
-    On several matches grep emits several lines and `cut` several fields, and the twin then assigns the whole multi-line string -- also preserved.
+    implementations; that is preserved rather than fixed for the same reason. On several matches grep emits several lines and `cut` several fields, and the twin then assigns the whole multi-line string -- also preserved.
     """
     hits = [line for line in text.splitlines() if line.startswith(prefix)]
     if not hits:
@@ -166,8 +164,7 @@ def parse_start_args(args: list[str]) -> tuple[str, bool]:
 def docker_available() -> tuple[bool, list[str]]:
     """`check_docker`, as `.ci/legacy/run-legacy.sh` defines it. See defect 3.
 
-    Returns (ok, lines-to-log). The twin `exit 1`s; returning lets the caller
-    decide, and the two call shapes are proved to agree in the tests rather than assumed.
+    Returns (ok, lines-to-log). The twin `exit 1`s; returning lets the caller decide, and the two call shapes are proved to agree in the tests rather than assumed.
     """
     if shutil.which("docker") is None:
         return False, [
@@ -222,9 +219,7 @@ def inspect(container: str, template: str, default: str | None = None) -> str:
 def health_ok(port: int | str, timeout: float = 5) -> bool:
     """`curl -sf "http://localhost:<port>/health" &>/dev/null`.
 
-    `curl` AND NOT `urllib`, deliberately. `-f` makes a 4xx a non-zero exit,
-    `-s` silences the progress meter, and both streams go to /dev/null; matching
-    that with urllib means matching curl's redirect policy, its proxy environment handling and its idea of a connection failure. The twin's behaviour IS curl's behaviour, so the port runs curl.
+    `curl` AND NOT `urllib`, deliberately. `-f` makes a 4xx a non-zero exit, `-s` silences the progress meter, and both streams go to /dev/null; matching that with urllib means matching curl's redirect policy, its proxy environment handling and its idea of a connection failure. The twin's behaviour IS curl's behaviour, so the port runs curl.
     """
     if shutil.which("curl") is None:
         raise StatusAbortedError(
@@ -244,8 +239,7 @@ def health_ok(port: int | str, timeout: float = 5) -> bool:
 def service_status(*, root: str | None = None, now: int | None = None, out=None) -> int:
     """`service_status`. Returns 0, or raises `StatusAbortedError` where the twin dies.
 
-    `now` is injectable ONLY so the uptime line can be asserted exactly; the
-    default is the wall clock, which is what the twin's `date +%s` reads.
+    `now` is injectable ONLY so the uptime line can be asserted exactly; the default is the wall clock, which is what the twin's `date +%s` reads.
     """
     stream = sys.stdout if out is None else out
     log.info("Service Status")
@@ -338,9 +332,8 @@ def main(argv: list[str]) -> int:
     verb, rest = argv[0], argv[1:]
     if verb == "status":
         check_docker()
-        # THE HARNESS SEAM FOR `now`, AND WHY IT IS AN ENVIRONMENT VARIABLE. `service_status` prints an uptime derived from the wall clock, so two runs a second apart disagree and no byte comparison against the twin is possible without freezing it on BOTH sides. The twin's seam is a fake `date` earlier on PATH, which is how `test-bws-env.sh` already fakes
-        # `bws`; this is the same trick spelled for a process that reads the
-        # clock directly. UNSET IN EVERY REAL RUN, so the default is the wall clock and nothing about production behaviour depends on it.
+        # THE HARNESS SEAM FOR `now`, AND WHY IT IS AN ENVIRONMENT VARIABLE. `service_status` prints an uptime derived from the wall clock, so two runs a second apart disagree and no byte comparison against the twin is possible without freezing it on BOTH sides. The twin's seam is a fake `date` earlier on PATH, which is how `test-bws-env.sh` already fakes `bws`; this is the same
+        # trick spelled for a process that reads the clock directly. UNSET IN EVERY REAL RUN, so the default is the wall clock and nothing about production behaviour depends on it.
         pinned = os.environ.get("SERVICE_STATUS_NOW", "")
         try:
             return service_status(now=int(pinned) if pinned else None)

@@ -21,9 +21,7 @@ it is two implementations agreeing to take turns". An imported module has no sec
   logger while appearing to measure this one.
 
 THE COLOUR RULE HERE IS NOT `rediacc_ci.log`'s, AND THE DIFFERENCE IS DELIBERATE. `log.py` colours on a tty and suppresses under CI or NO_COLOR. The twin tests `CI` AND NOTHING ELSE -- no `isatty`, no NO_COLOR -- so a developer piping a gate into `less` gets escape sequences. That is one of the nine files `log.py`'s header counts as the CI-only variant. Reproducing it is what makes
-this a PORT
-rather than an improvement; a port that quietly fixed the behaviour would
-disagree with the live twin on every non-CI invocation, which is every local run.
+this a PORT rather than an improvement; a port that quietly fixed the behaviour would disagree with the live twin on every non-CI invocation, which is every local run.
 
 TWO STREAMS, AND THE SPLIT IS LOAD-BEARING. `ci_error` off CI writes to STDERR. Every continuation line -- Affected, Summary, Fix, Action, Details -- is a plain `echo` and goes to STDOUT. So one advisory straddles both streams, and a caller that merges them with `2>&1` sees a coherent block while a caller that does not sees the header in one place and the body in another. That is
 the twin's behaviour, it is surprising, and it is pinned by a case rather than tidied, because `audit.sh` and `age-check.sh` are reading it as it stands.
@@ -40,17 +38,13 @@ import re
 import sys
 from typing import ClassVar
 
-# The escapes, from the twin's non-CI branch. YELLOW is `1;33`, matching
-# common.sh rather than `.ci/bootstrap.sh`'s `0;33`; the twin chose that and the
-# port does not get to re-choose it.
+# The escapes, from the twin's non-CI branch. YELLOW is `1;33`, matching common.sh rather than `.ci/bootstrap.sh`'s `0;33`; the twin chose that and the port does not get to re-choose it.
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 YELLOW = "\033[1;33m"
 NC = "\033[0m"
 
-# The six continuation prefixes, exactly as the twin spells them, INCLUDING the two leading spaces and the arrow. ` → Patched in:` carries two spaces on
-# each side of the arrow in the twin; a single space would be an invisible
-# difference that no reviewer catches and every differential does.
+# The six continuation prefixes, exactly as the twin spells them, INCLUDING the two leading spaces and the arrow. ` → Patched in:` carries two spaces on each side of the arrow in the twin; a single space would be an invisible difference that no reviewer catches and every differential does.
 AFFECTED = "  Affected: %s"
 PATCHED_SUFFIX = "  →  Patched in: %s"
 SUMMARY = "  Summary: %s"
@@ -61,8 +55,7 @@ DETAILS = "  Details: %s"
 # The twin's default when a range is unknown but a patched version is not. A literal rather than an empty string, because ` Affected: ` with nothing after it reads as a rendering bug to whoever sees it in a log.
 UNKNOWN_RANGE = "unknown"
 
-# `echo -e`'s escape table, less `\c` which is handled separately because it TRUNCATES rather than substitutes. `\e` and `\E` are the bash extension over
-# POSIX; both are accepted by the builtin.
+# `echo -e`'s escape table, less `\c` which is handled separately because it TRUNCATES rather than substitutes. `\e` and `\E` are the bash extension over POSIX; both are accepted by the builtin.
 _ECHO_E_SIMPLE = {
     "a": "\a",
     "b": "\b",
@@ -133,8 +126,7 @@ def _echo_e_parts(text: str) -> tuple[str, bool]:
 def _echo_e(text: str) -> str:
     """What `echo -e` writes for `text`, minus the trailing newline.
 
-    WHY A HAND-ROLLED TABLE AND NOT `codecs.decode(text, "unicode_escape")`. The two are not the same function and the difference is not academic. Bash interprets `\\0nnn` as OCTAL with a leading zero and leaves an unrecognised
-    `\\q` as the two literal characters; `unicode_escape` reads `\\nnn` without
+    WHY A HAND-ROLLED TABLE AND NOT `codecs.decode(text, "unicode_escape")`. The two are not the same function and the difference is not academic. Bash interprets `\\0nnn` as OCTAL with a leading zero and leaves an unrecognised `\\q` as the two literal characters; `unicode_escape` reads `\\nnn` without
     the zero, understands `\\uXXXX` and `\\N{...}` which bash does not, and
     mangles every non-ASCII character on the way through because it decodes latin-1. An advisory title containing `→` would come back as mojibake, which is precisely the kind of difference a differential is for and a convenience function is how it gets introduced.
     """
@@ -220,8 +212,7 @@ class Advisories:
     shell and reads them with `${ADV_X[$id]:-}`. Every one is optional and an
     absent entry is skipped, so the empty string and the missing key are the same thing here as there -- which is why `get` defaults to `""` rather than raising or returning None.
 
-    ONE OBJECT RATHER THAN SEVEN MODULE DICTS because seven globals is what the twin had to have and is the reason its `declare -A` failure mode existed at all. A caller can still keep a process-wide instance if it wants the twin's
-    lifetime exactly; `MODULE_ADVISORIES` below is that instance.
+    ONE OBJECT RATHER THAN SEVEN MODULE DICTS because seven globals is what the twin had to have and is the reason its `declare -A` failure mode existed at all. A caller can still keep a process-wide instance if it wants the twin's lifetime exactly; `MODULE_ADVISORIES` below is that instance.
     """
 
     TABLES: ClassVar[tuple[str, ...]] = (

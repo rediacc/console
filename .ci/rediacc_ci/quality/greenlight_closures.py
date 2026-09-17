@@ -1,8 +1,6 @@
 """Every path a greenlight closure names must exist on disk AND be tracked by git.
 
-Ported from `.ci/scripts/quality/check-greenlight-closures.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side
-until a committed differential ledger says otherwise.
+Ported from `.ci/scripts/quality/check-greenlight-closures.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live side by side until a committed differential ledger says otherwise.
 
 WHY THE TWIN EXISTS, AND IT IS NOT THE OBVIOUS REASON. Carried over from its header, because the archaeology is the half of a gate that cannot be recovered
 from the code:
@@ -52,22 +50,16 @@ and the fix. An unmarked, unindented line is chatter to `scripts/lib/shadow-gate
 
 `(see above)` IS A LIE IN BOTH IMPLEMENTATIONS. `scan`'s offender lines are captured into `$out` by the command substitution, so they are printed AFTER the header that points at them, not above it. Preserved, because moving them changes the output a human diff is read against, and reported.
 
-THE `-e` TEST FOLLOWS SYMLINKS, so a closure path that is a symlink to a deleted target reads as ON DISK and is then judged only on tracked-ness. That is the
-twin's behaviour and it is left alone; `Path.exists()` follows symlinks too, so
-the two agree by construction rather than by care.
+THE `-e` TEST FOLLOWS SYMLINKS, so a closure path that is a symlink to a deleted target reads as ON DISK and is then judged only on tracked-ness. That is the twin's behaviour and it is left alone; `Path.exists()` follows symlinks too, so the two agree by construction rather than by care.
 
 ONE `git ls-files` PER PATH, NOT ONE BATCHED CALL. The obvious optimisation -- read the whole index once and test membership in Python -- changes the answer
 for a closure path that names a DIRECTORY. `git ls-files --error-unmatch --
-<dir>` succeeds when the directory contains tracked files, because the pathspec
-matched something; a set-membership test on file paths would report the
-directory as untracked. Eighteen closures name `.github/actions/bws-secrets`, which is a directory, so this is the shape of the very incident the gate exists
+<dir>` succeeds when the directory contains tracked files, because the pathspec matched something; a set-membership test on file paths would report the directory as untracked. Eighteen closures name `.github/actions/bws-secrets`, which is a directory, so this is the shape of the very incident the gate exists
 for.
 
 THE COLOUR IS DECIDED BY `CI` ALONE in the twin -- `if [[ "${CI:-}" == "true" ]];
 then RED="" ...` -- with no tty test and no NO_COLOR test, which is the 9-file
-variant `rediacc_ci.log`'s docstring measures. So a developer piping this gate into `less` gets escape sequences. The port uses the house logger, which tests
-the stream it writes to and honours NO_COLOR. Reported, not reproduced; ANSI is
-stripped before the differential compares, so no verdict moves.
+variant `rediacc_ci.log`'s docstring measures. So a developer piping this gate into `less` gets escape sequences. The port uses the house logger, which tests the stream it writes to and honours NO_COLOR. Reported, not reproduced; ANSI is stripped before the differential compares, so no verdict moves.
 
 THE ANTI-VACUITY BRANCH IS THE ONE TO PROTECT. `[[ $n -gt 0 ]] || { echo "  no
 closure paths found -- this check is blind"; return 1; }` is what stops an empty
@@ -109,8 +101,7 @@ class ScanError(RuntimeError):
 def closure_paths(root: pathlib.Path) -> list[str]:
     """Every path named by any closure, sorted and de-duplicated, via node.
 
-    Raises ScanError when node cannot produce the list. The twin turns that into
-    `return 2`; see the port notes for what its caller then does with it.
+    Raises ScanError when node cannot produce the list. The twin turns that into `return 2`; see the port notes for what its caller then does with it.
     """
     cjs = root / GREENLIGHT_CJS
     try:
@@ -138,8 +129,7 @@ def closure_paths(root: pathlib.Path) -> list[str]:
 def is_tracked(root: pathlib.Path, rel: str) -> bool:
     """`git -C <root> ls-files --error-unmatch -- <rel>` succeeded.
 
-    One call per path; see the port notes for why the batched form is wrong for
-    a closure path that names a directory.
+    One call per path; see the port notes for why the batched form is wrong for a closure path that names a directory.
     """
     proc = subprocess.run(
         ["git", "-C", str(root), "ls-files", "--error-unmatch", "--", rel],
@@ -271,8 +261,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         path_list = closure_paths(root)
     except ScanError as exc:
-        # UNMARKED AND UNINDENTED, so `scripts/lib/shadow-gate.ts` reads it as chatter and the compared finding set is unchanged. This is the one line
-        # the port adds; see the port notes for the defect it names.
+        # UNMARKED AND UNINDENTED, so `scripts/lib/shadow-gate.ts` reads it as chatter and the compared finding set is unchanged. This is the one line the port adds; see the port notes for the defect it names.
         print(str(exc), file=sys.stderr)
         path_list = []
         code, lines, n = 1, ["  no closure paths found -- this check is blind"], 0
@@ -376,9 +365,7 @@ def selftest() -> int:
         ctl.check("PLANT: an untracked path reds", code, 1)
         ctl.check("PLANT: and names it as NOT TRACKED", "NOT TRACKED" in lines[0], True)
         ctl.check("PLANT: the untracked case prints its two-line explanation", len(lines), 2)
-        # THE INCIDENT'S OWN SHAPE: an untracked DIRECTORY. On disk, so the
-        # first test passes; not in the index, so the second catches it. This is
-        # `.github/actions/bws-secrets` on 2026-09-02.
+        # THE INCIDENT'S OWN SHAPE: an untracked DIRECTORY. On disk, so the first test passes; not in the index, so the second catches it. This is `.github/actions/bws-secrets` on 2026-09-02.
         (root / "newdir").mkdir()
         (root / "newdir" / "action.yml").write_text("x\n", encoding="utf-8")
         code, lines, _ = scan(root, ["newdir"])

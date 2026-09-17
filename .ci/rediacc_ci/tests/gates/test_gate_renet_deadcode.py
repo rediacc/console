@@ -4,9 +4,8 @@
 
 WHY THE SUBJECT IS SOURCED RATHER THAN EXECUTED. `deadcode.sh` guards its main
 block with `[[ "${BASH_SOURCE[0]}" == "${0}" ]]`, deliberately, so a gate test
-can pull `evaluate_deadcode`, `validate_blocker_reason` and renet's own `common.sh` logging helpers into scope without the analysis running. The twin
-sources it ONCE at file scope and calls the functions in-process; a Python port
-has no shell to source into, so each case is one fresh `bash -c` that sources the script and runs a single call. That is the only structural difference, and it is in the port's favour: a function that left state behind in the twin's one shell cannot leak into the next case here.
+can pull `evaluate_deadcode`, `validate_blocker_reason` and renet's own `common.sh` logging helpers into scope without the analysis running. The twin sources it ONCE at file scope and calls the functions in-process; a Python port has no shell to source into, so each case is one fresh `bash -c` that sources the script and runs a single call. That is the only structural difference,
+and it is in the port's favour: a function that left state behind in the twin's one shell cannot leak into the next case here.
 
 THE ONE DELIBERATE DIVERGENCE, and it is a verdict divergence, so it is stated rather than buried. The twin opens with
 
@@ -18,9 +17,7 @@ THE ONE DELIBERATE DIVERGENCE, and it is a verdict divergence, so it is stated r
 which is `exit 0` having asserted nothing. This port REFUSES instead. Two reasons, and the first is not a matter of taste: `.ci/scripts/test/run-all.sh` already scores an exit-0 run with no `PASS:` line as a FAILURE ("exited 0 but made no assertions"), so under the battery that actually runs these files the twin's skip is a red too -- it is only `bash <twin>` driven directly, which
 is what `test_twin_parity.py` does, that reads it as green. The second is the rule this whole directory is built on: a case that could not run has not been checked, and unchecked folded into fine is the shape being refused. `check:ci-pytest` runs in `quality-security`, which checks submodules out, so the absent-submodule state is not one CI reaches.
 
-NO `xdist_group`. Every case writes its fixtures into pytest's own `tmp_path` and
-runs one short-lived `bash -c`; nothing is bound, no module global is mutated, and
-the subject is only ever read.
+NO `xdist_group`. Every case writes its fixtures into pytest's own `tmp_path` and runs one short-lived `bash -c`; nothing is bound, no module global is mutated, and the subject is only ever read.
 """
 
 from rediacc_ci import paths

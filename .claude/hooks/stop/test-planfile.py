@@ -93,9 +93,7 @@ opens, dones = F.plan_boxes(body)
 control("an unticked box is OPEN", opens, [TASK_A])
 control("PAIR: a ticked box is DONE, not open", dones, [TASK_B])
 
-# The states wl_planfid deliberately does not count. They are bullets, so under
-# an action heading BULLET_RE would otherwise pull them in; the set-difference
-# split excludes them for free because they survive both deletions.
+# The states wl_planfid deliberately does not count. They are bullets, so under an action heading BULLET_RE would otherwise pull them in; the set-difference split excludes them for free because they survive both deletions.
 q = "# P\n\n## Tasks\n\n- [?] %s\n- [>] %s\n- [ ] %s\n" % (TASK_A, TASK_B, TASK_C)
 qo, qd = F.plan_boxes(q)
 control("CONTROL: `- [?]` is not an open task", TASK_A in qo, False)

@@ -320,9 +320,7 @@ export function findGermanContamination(root: string, layout: 'dir' | 'flat'): F
         // This filter was unconditional, and that hid 59 genuinely corrupted keys. Most of account-web's team.json was German across ar, ja, ru and zh IDENTICALLY, and "identical in four locales" is exactly what the filter reads as "language-neutral string". It is the wrong reading: a citation or a product name is shared because it belongs to no language, whereas shared CORRUPTION
         // is shared because one bad translation pass wrote the same German into all four. The two are told apart by asking whether the value looks German -- which is already computed above and was simply not consulted here.
         //
-        // The exemption therefore applies only when the value is NOT identifiable German.
-        // A citation ("Veeam Data Protection Trends Report 2021") still passes; a German
-        // sentence in four locales no longer does.
+        // The exemption therefore applies only when the value is NOT identifiable German. A citation ("Veeam Data Protection Trends Report 2021") still passes; a German sentence in four locales no longer does.
         if (!isGermanText) {
           const shared = targets.filter(
             (o) => o !== locale && data[o]?.[fileIn(o, file)]?.[key] === value

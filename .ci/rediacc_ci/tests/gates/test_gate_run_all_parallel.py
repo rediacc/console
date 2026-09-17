@@ -25,9 +25,7 @@ and passed, and on a uutils host it returned a number a million times larger and
 
 NO `xdist_group`. Every case owns its fixture directory under `tmp_path`, and `RUN_ALL_GATES_DIR` / `RUN_ALL_JOBS` / `RUN_ALL_WRITERS` / `RUN_ALL_SCANNERS` are passed as an ENV OVERLAY per invocation rather than exported onto this process. Two of these in one worker cannot see each other's fixtures or each other's schedule.
 
-IT IS SLOW ON PURPOSE. The concurrency control needs the serial arm to take longer
-than 8 seconds; a fixture set fast enough to be cheap would make the measurement
-unable to fail, which is the whole point of having a control.
+IT IS SLOW ON PURPOSE. The concurrency control needs the serial arm to take longer than 8 seconds; a fixture set fast enough to be cheap would make the measurement unable to fail, which is the whole point of having a control.
 """
 
 import re
@@ -108,9 +106,7 @@ def test_jobs_one_and_jobs_four_agree(gate, tmp_path):
     gates.mkdir()
     mk_fixture(gates, "test-a-green.sh", 'echo "PASS: green fixture asserted something"')
     mk_fixture(gates, "test-b-red.sh", 'echo "diagnostic line from the red fixture"', "exit 1")
-    # Exit 0 with no PASS: line at all. run-all.sh must score this as a FAILURE in
-    # both modes; a mode that scored it differently would mean the vacuity guard
-    # moved with the scheduler.
+    # Exit 0 with no PASS: line at all. run-all.sh must score this as a FAILURE in both modes; a mode that scored it differently would mean the vacuity guard moved with the scheduler.
     mk_fixture(gates, "test-c-vacuous.sh", 'echo "this fixture asserts nothing"', "exit 0")
     mk_fixture(
         gates, "test-d-green.sh", "sleep 1", 'echo "PASS: slow green fixture asserted something"'

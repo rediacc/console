@@ -5,9 +5,8 @@ Editing a shell script a process is RUNNING corrupts the running interpreter: ba
 THESE NEED A GENUINELY LIVE PROCESS, not a stubbed pgrep. Each guard's whole claim is that it reads the process table, and a stub would prove the arithmetic while leaving that claim untested. So the fixtures spawn real ones, and every block also carries the LIVENESS control -- the same payload once the process is gone -- because without it the guard could be keyed on the filename
 and every case would still pass.
 
-WHY THEY SHARE test_guards_differential's XDIST GROUP, and not one of their own.
-A group pins its own tests to ONE worker; it does NOT stop a DIFFERENT group running
-beside it on another. These fixtures are visible to every process on the machine, and `test_guards_differential` asks the process table the same question about the same two guards. Measured 2026-09-09: run concurrently, its anti-vacuity controls both went red --
+WHY THEY SHARE test_guards_differential's XDIST GROUP, and not one of their own. A group pins its own tests to ONE worker; it does NOT stop a DIFFERENT group running beside it on another. These fixtures are visible to every process on the machine, and `test_guards_differential` asks the process table the same question about the same two guards. Measured 2026-09-09: run
+concurrently, its anti-vacuity controls both went red --
 
     these guards answered identically on every case, so comparing them proves
     nothing: ['block_bash_write_to_running_script']
@@ -30,8 +29,7 @@ SPAWN_SETTLE_S = 0.3
 
 # GNU `timeout` is the whole point of the two blocks below -- they prove a hang is REALLY bounded by watching for its exit-124 convention, not by trusting a comment -- so it is shelled out to for real rather than reimplemented with
 # `subprocess.run(timeout=...)`, which raises instead of returning 124. That
-# binary does not ship on a bare macOS/BSD userland; `REDIACC_TIMEOUT_BIN` lets
-# a workstation with GNU coreutils installed under a different name (Homebrew's `coreutils` package installs `gtimeout`) point this file at it.
+# binary does not ship on a bare macOS/BSD userland; `REDIACC_TIMEOUT_BIN` lets a workstation with GNU coreutils installed under a different name (Homebrew's `coreutils` package installs `gtimeout`) point this file at it.
 TIMEOUT_BIN = os.environ.get("REDIACC_TIMEOUT_BIN", "timeout")
 
 
@@ -43,12 +41,9 @@ def path_json(path) -> str:
 def test_a_self_matching_pgrep_wait_really_does_hang():
     """THE PREMISE, MEASURED RATHER THAN ASSERTED.
 
-    Every control around block_self_matching_pgrep proves the GUARD fires; none
-    proved the hazard is real. This spawns the two loops for real and times them, so "a self-matching pgrep never exits" stops being a claim inherited from a comment.
+    Every control around block_self_matching_pgrep proves the GUARD fires; none proved the hazard is real. This spawns the two loops for real and times them, so "a self-matching pgrep never exits" stops being a claim inherited from a comment.
 
-    BOUNDED ON BOTH SIDES, deliberately. The deadlock case is capped at 3s, which is the whole reason this can live in a test suite at all -- an unbounded reproduction of a hang IS the hang. The remedy case is given the same 3s and must finish well
-    inside it; if the bracket form ever started hanging too, the guard's advice would
-    be worthless and this goes red.
+    BOUNDED ON BOTH SIDES, deliberately. The deadlock case is capped at 3s, which is the whole reason this can live in a test suite at all -- an unbounded reproduction of a hang IS the hang. The remedy case is given the same 3s and must finish well inside it; if the bracket form ever started hanging too, the guard's advice would be worthless and this goes red.
     """
     block = hookblocks.Block("self-pgrep")
     mark = "selfmatch-probe-%d" % os.getpid()
@@ -156,8 +151,7 @@ def test_block_edit_of_running_script(tmp_path):
             nonshell.wait()
 
         prose_name = "rs-prose-fixture-%d.sh" % os.getpid()
-        # stdin is a PIPE so `read x` blocks and the process stays alive; `with` is
-        # what closes that pipe. Killing the child and leaving the descriptor to the garbage collector raises an unraisable ResourceWarning that pytest turns into a failure of this test, for a reason that has nothing to do with the guard.
+        # stdin is a PIPE so `read x` blocks and the process stays alive; `with` is what closes that pipe. Killing the child and leaving the descriptor to the garbage collector raises an unraisable ResourceWarning that pytest turns into a failure of this test, for a reason that has nothing to do with the guard.
         with subprocess.Popen(
             [
                 "bash",
@@ -302,8 +296,7 @@ def test_block_bash_write_to_running_script(tmp_path):
         # THE THIRD ROUND OF THE SAME CLASS, 2026-08-28. Not inside a .write() argument this time -- the mention text is ITSELF shaped like an assignment,
         # `ROUTE="./x.sh ..."`, because it is genuine bash SOURCE TEXT being written out
         # as data. Fixed by requiring a space on both sides of `=`: every
-        # ruff-formatted real target assignment in this repo has one; a bash
-        # env-assignment never can.
+        # ruff-formatted real target assignment in this repo has one; a bash env-assignment never can.
         block.check(
             "check 0 guards/block_bash_write_to_running_script.py",
             bash_json(

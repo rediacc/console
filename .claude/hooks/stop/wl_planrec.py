@@ -4,9 +4,8 @@ keeps its own path, so the plan stops aging out and nothing that cites it breaks
 ------------------------------------------------------------------------------
 WHY THIS EXISTS, and it has a date on it.
 
-`.ci/scripts/quality/check-plan-housekeeping.sh` DEMANDS deletion of any plan whose file has not moved for `delete_days` (33, from `.ci/config/plan-lifecycle.json`). Measured 2026-09-06 on this tree: 81 tracked plans, **33 of them last touched on
-2026-08-21**, which goes red on **2026-09-23**; 13 more follow on 2026-10-06.
-The operator's standing rule is that NOTHING is deleted. Those two facts are a deadlock with a date, and this module is the third door: a plan that is finished is COMPACTED IN PLACE -- the file keeps its path and shrinks to a record whose full text lives in a git blob.
+`.ci/scripts/quality/check-plan-housekeeping.sh` DEMANDS deletion of any plan whose file has not moved for `delete_days` (33, from `.ci/config/plan-lifecycle.json`). Measured 2026-09-06 on this tree: 81 tracked plans, **33 of them last touched on 2026-08-21**, which goes red on **2026-09-23**; 13 more follow on 2026-10-06. The operator's standing rule is that NOTHING is deleted.
+Those two facts are a deadlock with a date, and this module is the third door: a plan that is finished is COMPACTED IN PLACE -- the file keeps its path and shrinks to a record whose full text lives in a git blob.
 
 Archiving is not that door and never was. The archive is `agent/archive/plans/`, and `.ci/config/plan-lifecycle.json`'s own `$comment` says the clock is CONTENT age precisely so a move cannot reset it. (The gate as written measures
 `git log -1 --format=%cI` -- last commit touching the path -- and its
@@ -319,9 +318,7 @@ def resolve(root, kind, token):
       plan      an `agent/PLAN-*.md` on disk.
       trap      a `Trap-Id:` in docs/agent-reference/TRAPS.md.
 
-    wl_checks IS IMPORTED INSIDE THE FUNCTION, not at module top. wl_checks is
-    6,100 lines and pulls in most of this directory; this module is imported by
-    a CI gate that only needs the parser, and paying that import to answer a question about a blob would make the gate slower than the thing it checks.
+    wl_checks IS IMPORTED INSIDE THE FUNCTION, not at module top. wl_checks is 6,100 lines and pulls in most of this directory; this module is imported by a CI gate that only needs the parser, and paying that import to answer a question about a blob would make the gate slower than the thing it checks.
     """
     token = (token or "").strip()
     if not token:
@@ -373,8 +370,7 @@ def launder(root, text):
     WHY THIS IS NOT OPTIONAL ON MODEL PROSE. A record is the durable artifact, read months later by someone who cannot check it. A model asked to summarise a plan will happily produce a sha-shaped token, and a decorative sha in a record is strictly worse than no sha: it costs the reader a `git show` and a wrong conclusion. The same reasoning is already in `completion_evidence`,
     which verifies hex tokens against real objects rather than accepting the shape.
 
-    Deliberately CONSERVATIVE about what it inspects. Only four shapes -- hex object ids, `file:line` citations, `check:` gate ids and `agent/PLAN-*.md` paths -- because those are the four a reader would try to follow. Prose is
-    left alone; this is not a fact-checker.
+    Deliberately CONSERVATIVE about what it inspects. Only four shapes -- hex object ids, `file:line` citations, `check:` gate ids and `agent/PLAN-*.md` paths -- because those are the four a reader would try to follow. Prose is left alone; this is not a fact-checker.
     """
     replaced = []
     out = text or ""
@@ -586,9 +582,8 @@ def record_sig(rec):
     raw line plus its signature plus its `done=` value. So a re-worded box, a
     swapped blob, a downgraded status or a forged `done=` all move the signature.
 
-    NOT covered: `## Why`, `## Outcome`, `## Lessons`, `## Record` and `## History`. Prose must stay editable -- `agent/README.md:57` puts durable
-    designs in the "sharpen; edit in place when wrong" lifetime, and a signature
-    that froze the prose would make the record the one document in this tree that cannot be corrected. `## History` is excluded for the same reason plus one more: it is append-only, so covering it would invalidate the signature on every append, which is a signature that fails routinely and is therefore ignored.
+    NOT covered: `## Why`, `## Outcome`, `## Lessons`, `## Record` and `## History`. Prose must stay editable -- `agent/README.md:57` puts durable designs in the "sharpen; edit in place when wrong" lifetime, and a signature that froze the prose would make the record the one document in this tree that cannot be corrected. `## History` is excluded for the same reason plus one more:
+    it is append-only, so covering it would invalidate the signature on every append, which is a signature that fails routinely and is therefore ignored.
 
     The `Record-Sig:` line itself is excluded by construction -- it is not part of the canonical string -- so the signature is computable before it is written.
     """
@@ -1041,8 +1036,7 @@ def why_first_line(text):
 def why_lines(root, path, index=None, limit=WHY_MAX_RECORDS):
     """([line, ...], state) -- what the compacted history says about `path`.
 
-    `state` is WHY_EDGES, WHY_NO_EDGE or WHY_NO_INDEX. The caller decides how
-    loudly to say each; this function never prints and never guesses.
+    `state` is WHY_EDGES, WHY_NO_EDGE or WHY_NO_INDEX. The caller decides how loudly to say each; this function never prints and never guesses.
 
     THE PATH IS NORMALISED TO THE REPO-RELATIVE SPELLING the index uses, because every caller has a different one: a hook gets an absolute path from the tool payload, a session types `./agent/...`, and the index stores neither. A lookup that missed on the prefix would return WHY_NO_EDGE -- a confident "nothing is recorded" about a file that has a record -- which is the one wrong
     answer this function must not produce.
@@ -1324,9 +1318,7 @@ def title_of(text, rel):
     """The record's `# ` heading.
 
     NOT `lines[0]`, which is what the first cut used and which is wrong on 9 of the 81 plans in this tree: they open with the `Status:` / `Owner:` header block and put the H1 underneath it. Taking line 0 there produced `# Status: partially implemented ...` as the record's title, which puts a SECOND `Status:`-shaped string inside the header window that
-    `wl_checks.PLAN_STATUS_INLINE_RE` -- the unanchored fallback -- can match.
-    The anchored regex wins today, so the bug was cosmetic; it is fixed anyway
-    because a header window with two status-shaped lines in it is one edit away
+    `wl_checks.PLAN_STATUS_INLINE_RE` -- the unanchored fallback -- can match. The anchored regex wins today, so the bug was cosmetic; it is fixed anyway because a header window with two status-shaped lines in it is one edit away
     from being read wrong, and the edit would be somewhere else entirely.
 
     Falls back to the slug, which always exists and always identifies the plan.
@@ -1363,9 +1355,7 @@ def clip(text, limit):
     TWO FAILURES IN ONE FUNCTION, and the second is the expensive one.
 
     A raw `[:limit]` cuts mid-line, which is ugly. It also cuts BETWEEN a ``` and its partner, which is not ugly at all -- it is a correctness bug. An odd fence count makes `wl_planfid.plan_tasks` treat everything after it as fenced, including `## Boxes`, so the record parses to ZERO boxes and `_assert_boxes_preserved` refuses the compaction while blaming the boxes. Reproduced
-    2026-09-06 on a synthetic `## Status` section of 1064 characters
-    of prose followed by a fenced block; no plan in this tree hits it today, and
-    `## Status` sections with fenced blocks are common here, so it is one plan edit away.
+    2026-09-06 on a synthetic `## Status` section of 1064 characters of prose followed by a fenced block; no plan in this tree hits it today, and `## Status` sections with fenced blocks are common here, so it is one plan edit away.
 
     Returns "" only for empty input: a clip that cannot keep a whole first line still keeps that line, because a truncated record is better than a record that silently lost a section.
     """
@@ -1428,9 +1418,7 @@ def compact(root, rel, me, why="author", park=False, now=None):
 
     `--park` records `parked` WHATEVER the box count, including zero. A plan can carry unfinished work in prose with no checkbox anywhere, and until 2026-09-06 that case silently produced `compacted` instead.
     """
-    # ARGUMENTS FIRST, before anything reads or hashes a file. A bad `--why` is
-    # the caller's typo and must be answered as one; validating it after the
-    # is-it-already-a-record check made `--why wishful` on a record report "already a record", which is true and is not the problem the caller has.
+    # ARGUMENTS FIRST, before anything reads or hashes a file. A bad `--why` is the caller's typo and must be answered as one; validating it after the is-it-already-a-record check made `--why wishful` on a record report "already a record", which is true and is not the problem the caller has.
     if why not in AUTO_SOURCES:
         raise RecordError("--why must be one of %s" % ", ".join(AUTO_SOURCES))
     root = pathlib.Path(root)
@@ -1637,9 +1625,7 @@ RECORDS_HEADER = "plan records on disk, %d of %d plan(s):"
 def dirty_paths(root, under="agent"):
     """The set of paths under `under` that git reports as changed.
 
-    ONE `git status --porcelain` for the whole directory, not one per plan.
-    `is_dirty` is the right shape for the single-plan path it guards; asking it
-    81 times to build a listing is 81 git processes to answer a question one call already answers.
+    ONE `git status --porcelain` for the whole directory, not one per plan. `is_dirty` is the right shape for the single-plan path it guards; asking it 81 times to build a listing is 81 git processes to answer a question one call already answers.
 
     `_git_raw`, NEVER `_git_out`, AND THE DIFFERENCE WAS A LIVE DEFECT. Porcelain format is two status characters then a space then the path, and for an unstaged modification the FIRST character is a space. `wl_core._git` ends in `.strip()`, which eats it -- so the first line of output loses one character and `ln[3:]` returns a truncated path. Measured 2026-09-06 in a fixture:
 
@@ -1724,8 +1710,7 @@ def records(root, plan_records):
 #     `done=<commit>` whose ledger AT THAT COMMIT attests the signature, or
 #     `done=abandoned` which the CURRENT ledger must NOT attest.
 #
-# Ticking in place can satisfy neither. Writing the ledger makes `abandoned` a
-# provable lie (R4's second direction fires immediately); not writing it makes
+# Ticking in place can satisfy neither. Writing the ledger makes `abandoned` a provable lie (R4's second direction fires immediately); not writing it makes
 # A0 red instead. And `done=<commit>` cannot name the commit that will carry the
 # tick, because that commit does not exist while the file is being written, and nothing here commits. The state is genuinely unrepresentable, so the verb says so and hands over the sequence that IS representable: revive, tick the plan, commit, compact again. That is the same sequence block-compacted-plan-edit.sh prints, which is not a coincidence -- both are the same constraint
 # seen from two sides.
@@ -1765,9 +1750,8 @@ def open_boxes(text):
 def select_box(boxes, selector):
     """The ONE box `selector` names. Raises RecordError on none and on several.
 
-    Two spellings, and both are needed. A signature is what the ledger and the
-    record speak, so it is what a machine will pass; a substring is what a person
-    has in front of them. AMBIGUITY IS A REFUSAL rather than a first-match, because the whole point of the verb is that it edits a file nobody is watching -- picking one of two candidates silently is how the wrong box gets ticked and the evidence lands under it.
+    Two spellings, and both are needed. A signature is what the ledger and the record speak, so it is what a machine will pass; a substring is what a person has in front of them. AMBIGUITY IS A REFUSAL rather than a first-match, because the whole point of the verb is that it edits a file nobody is watching -- picking one of two candidates silently is how the wrong box gets ticked
+    and the evidence lands under it.
     """
     sel = (selector or "").strip()
     if not sel:

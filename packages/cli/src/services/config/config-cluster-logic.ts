@@ -150,9 +150,7 @@ export async function removeClusterFromStore(configName: string, name: string): 
     const clusters = { ...(cfg.resources?.clusters ?? {}) };
     if (!(name in clusters)) throw new Error(`Cluster "${name}" not found`);
     delete clusters[name];
-    // BUG #22: also drop the parallel state.clusters entry. Leaving it stranded a dead cluster in state after destroy (B1 witnessed b1src/rdst twice), and — worse — a same-name recreate would inherit the old memberIds ledger and
-    // renumber onto the wrong VM ids. State is observation; when the cluster is
-    // gone, its state goes with it.
+    // BUG #22: also drop the parallel state.clusters entry. Leaving it stranded a dead cluster in state after destroy (B1 witnessed b1src/rdst twice), and — worse — a same-name recreate would inherit the old memberIds ledger and renumber onto the wrong VM ids. State is observation; when the cluster is gone, its state goes with it.
     const stateClusters = { ...(cfg.state?.clusters ?? {}) };
     delete stateClusters[name];
 
@@ -160,12 +158,11 @@ export async function removeClusterFromStore(configName: string, name: string): 
     // else the cluster owned kept its observation: state.datastores still named
     // `<cluster>-cp-1` as the holder of a datastore whose cluster was gone.
     //
-    // That is not untidiness, it is a routing hazard. `state.datastores[*].attachedTo` IS the derived-machine routing hint, and machine names are DETERMINISTIC — a same-name recreate re-mints `<cluster>-cp-1`, so the stale hint does not dangle harmlessly, it re-aims at a brand-new, same-named machine that has no such datastore. resolve-machine
-    // throws only when the hint is ABSENT; a hint that is merely WRONG is trusted.
+    // That is not untidiness, it is a routing hazard. `state.datastores[*].attachedTo` IS the derived-machine routing hint, and machine names are DETERMINISTIC — a same-name recreate re-mints `<cluster>-cp-1`, so the stale hint does not dangle harmlessly, it re-aims at a brand-new, same-named machine that has no such datastore. resolve-machine throws only when the hint is ABSENT;
+    // a hint that is merely WRONG is trusted.
     //
-    // So the observation goes, and the DECLARATION stays. That split is the whole rule:
-    // `resources.*` is what the operator declared and may well intend to recreate; a spec
-    // outliving its cluster is defensible. `state.*` is what we observed, and an observation of a world that no longer exists is a lie by construction. Do not "fix" this by also deleting the resources — that would discard the operator's intent.
+    // So the observation goes, and the DECLARATION stays. That split is the whole rule: `resources.*` is what the operator declared and may well intend to recreate; a spec outliving its cluster is defensible. `state.*` is what we observed, and an observation of a world that no longer exists is a lie by construction. Do not "fix" this by also deleting the resources — that would
+    // discard the operator's intent.
     const ownedDatastores = new Set(
       Object.entries(cfg.resources?.datastores ?? {})
         .filter(([, ds]) => ds.cluster === name)

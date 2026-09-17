@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported control-vacuity gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.control_vacuity`, which pytest and the
-port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.control_vacuity`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 7). See DRIVEN, below.
 
@@ -36,8 +34,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
 THAT SHAPE LINE IS THE ANTI-VACUITY EVIDENCE, and it is why the corpus check above matters: a green whose corpus had silently collapsed to zero would print a different set of numbers, and the twin refuses a zero corpus outright.
 
-No normalisation was applied and none was needed; the twin was first run TWICE
-against an unchanged tree and is byte-stable against itself on both streams.
+No normalisation was applied and none was needed; the twin was first run TWICE against an unchanged tree and is byte-stable against itself on both streams.
 
 DRIVEN RED AS WELL. The plant deletes ONE line, the
 `if [[ "$MUTANT_STATUS" == "$STATUS_SRC" ]]; then` proof-of-plant guard at
@@ -56,8 +53,7 @@ The plant was reverted from a `cp` backup, verified back at its pre-plant sha256
 with `sha256sum -c`, and `git status --porcelain` diffed against its pre-plant
 capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-control-vacuity.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-control-vacuity.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Control-first gates prove their plant landed emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code ---- end gate ----
 """

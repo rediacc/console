@@ -5,16 +5,14 @@ Controls for the devbox HOSTNAME: the branch-derived slug, its drift against a r
 WHY THIS EXISTS. The slug is not decoration. It is the Host header, it names the
 traefik ROUTERS (`traefik.http.routers.${slug}-code`), and it is baked into the
 container at `docker run` while the rest of the world recomputes it live. Every failure in this area presents as a CONFIDENT WRONG ANSWER rather than an error: a drifted hostname makes traefik answer 404 for an unmatched Host, and the pre-change catch-all printed that as "live (HTTP 404)" -- three live rows whose URLs all 404 in a browser. A detached HEAD under `rev-parse
---abbrev-ref` yields the literal string HEAD, which sanitises to the perfectly VALID hostname `head.localhost`, so every detached worktree on the machine converges on one name and one router. Neither is
-visible to a smoke test; both are visible here.
+--abbrev-ref` yields the literal string HEAD, which sanitises to the perfectly VALID hostname `head.localhost`, so every detached worktree on the machine converges on one name and one router. Neither is visible to a smoke test; both are visible here.
 
 HOW. Function bodies are LIFTED out of `.ci/lib/devbox.sh` so this cannot drift from the real code, and every control is built BY CONSTRUCTION -- a variant function written into a temp file and sourced -- never by substituting a live source line, which is the vacuity shape `check-control-vacuity.sh` exists to stop.
 
 THE LIFT IS THE ONE THING THE PORT RESPELLS. The twin runs
 `eval "$(sed -n '/^name() {/,/^}/p' "$LIB")"`, which pulls the body into the test's
-OWN shell; a Python process has no shell to eval into, so this module extracts the
-same line range with the same two anchors and hands it to a fresh `bash -c` per call. The extractor asserts what `sed` leaves implicit and the twin then re-checks with `declare -F`: a name that did not extract is a FAILURE here and never an empty string, because "the function is not defined" and "the function returned nothing" are the same observation once the body is missing, and
-the twin's own comment says every assertion below would then be vacuous.
+OWN shell; a Python process has no shell to eval into, so this module extracts the same line range with the same two anchors and hands it to a fresh `bash -c` per call. The extractor asserts what `sed` leaves implicit and the twin then re-checks with `declare -F`: a name that did not extract is a FAILURE here and never an empty string, because "the function is not defined" and "the
+function returned nothing" are the same observation once the body is missing, and the twin's own comment says every assertion below would then be vacuous.
 
 BLIND SPOTS, stated so a green here is not read as more than it is:
   1. It never starts a container, a proxy or traefik. That the LABELS this library
@@ -27,9 +25,7 @@ BLIND SPOTS, stated so a green here is not read as more than it is:
   3. It exercises the PURE functions. `devbox_up`'s rehost path and `devbox_status`'s
      probe loop are read by text-scan here, not executed.
 
-NO `xdist_group`. Every case runs one short-lived `bash -c` with an env overlay and
-writes only into its own `mktemp -d`; the library is only ever READ, and the one git
-repository built here lives entirely inside that temp directory.
+NO `xdist_group`. Every case runs one short-lived `bash -c` with an env overlay and writes only into its own `mktemp -d`; the library is only ever READ, and the one git repository built here lives entirely inside that temp directory.
 """
 
 import re
@@ -277,9 +273,7 @@ def test_the_hostname_rules_hold(gate):
         else:
             gate.no("slug: DEVBOX_SLUG override gave '%s', expected 'my-box-2'" % override)
 
-        # ----------------------------------------------------------------- 4. Identity and ports must NOT depend on the branch -----------------------------------------------------------------
-        # A branch is renamed; a path is not. If either of these ever consults the
-        # slug, a rename orphans the container or shuffles its port block.
+        # ----------------------------------------------------------------- 4. Identity and ports must NOT depend on the branch ----------------------------------------------------------------- A branch is renamed; a path is not. If either of these ever consults the slug, a rename orphans the container or shuffles its port block.
         gate.log_test("identity and ports stay path-derived")
         for name in ("devbox_container_id", "devbox_base_port"):
             body = body_of(name)

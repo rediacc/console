@@ -8,9 +8,7 @@ resolve to the
 same `{{.Manifest.Digest}}`, and an unreadable SOURCE falls THROUGH to the retag
 rather than skipping. Both halves are reproduced, and both have their own case in the differential, because either one inverted turns an idempotent retry into a silent no-op.
 
-`--image` VERSUS `--image-path` IS DECIDED BY A SLASH, INSIDE `retag_image`.
-The twin does not pass a mode through; it looks for `/` in the name it was
-handed. Two consequences it never states, both kept and both pinned:
+`--image` VERSUS `--image-path` IS DECIDED BY A SLASH, INSIDE `retag_image`. The twin does not pass a mode through; it looks for `/` in the name it was handed. Two consequences it never states, both kept and both pinned:
 
   * `--image ghcr.io/acme/thing` is treated as a FULL PATH, so `--image` does
     not always mean "relative to PUBLISH_DOCKER_REGISTRY".

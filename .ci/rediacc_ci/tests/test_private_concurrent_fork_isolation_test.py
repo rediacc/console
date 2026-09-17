@@ -6,8 +6,7 @@ WHY A DIFFERENTIAL AND NOT A UNIT TEST. The claim a port makes is not "the new c
 -----------------------------------------------------------------------------
 NOTHING REAL IS EVER INVOKED, AND THE VM IS NOT THE OBSTACLE PEOPLE EXPECT
 -----------------------------------------------------------------------------
-The twin drives a worker VM: `rdc machine setup`, `rdc repo create/fork/up`, a CRIU checkpoint, and eight `ssh` payloads that read `ss`, `bpftool` and per-repository docker sockets. None of that runs here, and skipping it costs less than it looks like it should, because EVERY FACT THE SCRIPT ACTS ON
-ARRIVES AS A CHILD PROCESS'S STDOUT. The VM decides what those strings ARE; it
+The twin drives a worker VM: `rdc machine setup`, `rdc repo create/fork/up`, a CRIU checkpoint, and eight `ssh` payloads that read `ss`, `bpftool` and per-repository docker sockets. None of that runs here, and skipping it costs less than it looks like it should, because EVERY FACT THE SCRIPT ACTS ON ARRIVES AS A CHILD PROCESS'S STDOUT. The VM decides what those strings ARE; it
 decides nothing about what the script DOES with them. So `ssh`, `rdc`, `sleep` and `whoami` are canned recording fakes, `cat`, `sort`, `head`, `tail`, `grep`, `tee` and `rm` are recording PASSTHROUGHS to the real tools (so a pipeline still behaves like a pipeline), and `mktemp` is a deterministic fake, because a random `tmp.XXXXXXXX` would put two different absolute paths into two
 subjects' call logs and read as a divergence.
 
@@ -35,17 +34,13 @@ The LEFT-hand members (`ssh`, `rdc`, `grep`) stay in the ordered list on purpose
 -----------------------------------------------------------------------------
 THE ONE KNOWN DIVERGENCE, ASSERTED RATHER THAN HIDDEN
 -----------------------------------------------------------------------------
-`common.sh` logs with `echo -e`, which INTERPRETS backslash escapes in the
-message; `rediacc_ci.log` formats the message as data. Nine of the twin's
-messages interpolate remote output, so a bind address containing `\\t` prints differently on the two sides. That is a pre-existing, deliberate ruling of this tree (`rediacc_ci/log.py`, "A SECOND DIVERGENCE, and this one is a bug being dropped rather than a decision"), and `test_backslashes_in_remote_output_are_the_one_known_divergence` asserts BOTH sides of it so nobody "fixes" the
-Python to match a bug.
+`common.sh` logs with `echo -e`, which INTERPRETS backslash escapes in the message; `rediacc_ci.log` formats the message as data. Nine of the twin's messages interpolate remote output, so a bind address containing `\\t` prints differently on the two sides. That is a pre-existing, deliberate ruling of this tree (`rediacc_ci/log.py`, "A SECOND DIVERGENCE, and this one is a bug being
+dropped rather than a decision"), and `test_backslashes_in_remote_output_are_the_one_known_divergence` asserts BOTH sides of it so nobody "fixes" the Python to match a bug.
 
 -----------------------------------------------------------------------------
 THE ONE MASK
 -----------------------------------------------------------------------------
-Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming the file it is
-running; the port composes the same prefix from `sys.argv[0]` and its own live
-frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
+Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming the file it is running; the port composes the same prefix from `sys.argv[0]` and its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
 """
 
 import json
@@ -126,9 +121,8 @@ with pathlib.Path(%(log)r).open("a", encoding="utf-8") as fh:
 os.execv(%(real)r, [%(name)r, *sys.argv[1:]])
 """
 
-# `mktemp` and `mktemp -d`, made deterministic. A real one returns a fresh random path per call, and the twin then puts it into `rdc repo sync upload
-# --local <path>` and `rm -rf <path>`; two subjects would record two different
-# absolute paths and the differential would fail on the randomness. `%(missing)s` makes it print a path it did NOT create, which is the only way to reach the heredoc-redirection failure arm.
+# `mktemp` and `mktemp -d`, made deterministic. A real one returns a fresh random path per call, and the twin then puts it into `rdc repo sync upload --local <path>` and `rm -rf <path>`; two subjects would record two different absolute paths and the differential would fail on the randomness. `%(missing)s` makes it print a path it did NOT create, which is the only way to reach the
+# heredoc-redirection failure arm.
 FAKE_MKTEMP = """#!/usr/bin/env python3
 import pathlib, sys
 with pathlib.Path(%(log)r).open("a", encoding="utf-8") as fh:
@@ -178,8 +172,7 @@ HEALTHY_RULES: dict[str, list[dict]] = {
 # sequence.
 DRIFTING_TOOLS = ("sort", "head", "tail", "tee")
 
-# A recorded call starts with one of these names followed by a TAB or a line
-# end; anything else is a continuation line of a multi-line `ssh` payload.
+# A recorded call starts with one of these names followed by a TAB or a line end; anything else is a continuation line of a multi-line `ssh` payload.
 RECORD_START = re.compile(
     r"^(%s)(\t|$)" % "|".join(sorted({*CANNED_TOOLS, *PASSTHROUGH_TOOLS, "mktemp"}))
 )
@@ -337,8 +330,7 @@ def _run(
         "HOME": str(tmp_path.resolve() / "home"),
         "USER": "harness-user",
         "PYTHONDONTWRITEBYTECODE": "1",
-        # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci.log`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     for name, value in (env_extra or {}).items():
@@ -814,9 +806,8 @@ def test_the_unbound_array_abort_runs_no_cleanup_whatsoever(tmp_path):
 def test_backslashes_in_remote_output_are_the_one_known_divergence(tmp_path):
     """A DELIBERATE, PRE-EXISTING RULING, ASSERTED SO NOBODY "FIXES" IT.
 
-    `common.sh` logs with `echo -e`, which interprets backslash escapes IN THE
-    MESSAGE; `rediacc_ci.log` formats the message as data. That decision is
-    recorded in `rediacc_ci/log.py` and pinned by `tests/test_log.py`. Nine of this script's messages interpolate remote output, so the difference is reachable here, and it is asserted from BOTH sides: the twin turns the `\\t` into a tab, the port keeps the two characters.
+    `common.sh` logs with `echo -e`, which interprets backslash escapes IN THE MESSAGE; `rediacc_ci.log` formats the message as data. That decision is recorded in `rediacc_ci/log.py` and pinned by `tests/test_log.py`. Nine of this script's messages interpolate remote output, so the difference is reachable here, and it is asserted from BOTH sides: the twin turns the `\\t` into a
+    tab, the port keeps the two characters.
 
     Nothing else in the file drives a backslash, which is why the parametrized cases above can compare stderr byte for byte.
     """
@@ -920,9 +911,8 @@ def test_the_mask_does_not_hide_the_message(tmp_path):
         assert "mktemp: command not found" in text, "%s said %r" % (name, text)
 
 
-# --------------------------------------------------------------------------- The arithmetic helper, exercised directly. These are the eight shapes the
-# module docstring names as the driven boundary; each was measured against bash
-# 5 on 2026-09-14 and the parametrized cases above drive five of them through both subjects end to end. ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The arithmetic helper, exercised directly. These are the eight shapes the module docstring names as the driven boundary; each was measured against bash 5 on 2026-09-14 and the parametrized cases above drive five of them through both subjects end to end.
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(

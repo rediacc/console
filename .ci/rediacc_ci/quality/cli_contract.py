@@ -30,9 +30,7 @@ BUILD FAILURE PROPAGATES THE BUILDER'S EXIT CODE, not 1. The twin runs under `se
 with npm's own status and the gate never reaches its comparison. Collapsing that
 to 1 would tell a reader "the contract is stale" when the truth is "the build did not happen", which is the difference between a finding and a cannot-run.
 
-STDOUT OF BOTH SUBPROCESSES IS DISCARDED AND STDERR IS NOT. `>/dev/null` in the
-twin redirects stdout only. A build's progress chatter is noise; its errors are
-the only thing that explains a non-zero status, and swallowing them is how a gate failure becomes unreadable.
+STDOUT OF BOTH SUBPROCESSES IS DISCARDED AND STDERR IS NOT. `>/dev/null` in the twin redirects stdout only. A build's progress chatter is noise; its errors are the only thing that explains a non-zero status, and swallowing them is how a gate failure becomes unreadable.
 
 WHAT THIS GATE CANNOT SEE, unchanged: whether the generator itself is correct. It proves the committed data equals what the generator produces TODAY, so a generator that started emitting nonsense would make the tree stale, get regenerated, and go green on the nonsense. That is the twin's blind spot and the port inherits it rather than growing a second opinion.
 """
@@ -198,9 +196,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
-# The shims the selftest puts ahead of the real binaries. `npm` does nothing and
-# succeeds; `npx` copies a golden directory into `--output`. Both are FILES on
-# PATH rather than Python mocks, because the subject resolves them through PATH and a mock inside this process would prove nothing about that.
+# The shims the selftest puts ahead of the real binaries. `npm` does nothing and succeeds; `npx` copies a golden directory into `--output`. Both are FILES on PATH rather than Python mocks, because the subject resolves them through PATH and a mock inside this process would prove nothing about that.
 _NPM_SHIM = "#!/bin/bash\nexit ${SHIM_NPM_EXIT:-0}\n"
 _NPX_SHIM = """#!/bin/bash
 # Reads the --output argument the way the real generator does, then copies the

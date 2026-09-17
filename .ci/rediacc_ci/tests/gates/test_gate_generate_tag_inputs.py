@@ -16,14 +16,10 @@ with a stub resolver and restore it a second later, because `generate-tag.sh`
 gives them no fixture seam to do it in (the closure mode invokes the resolver via `cd "$REPO_ROOT"`). A gate reading that script inside the window sees a half-written file: on 2026-08-17 that reddened `gate-test:claude-hooks` with a bash syntax error in a file that parses clean. The twin is in `WRITER_TESTS` in `run-all.sh` and carries `mutex: ["tree:repo"]` in `gates.lock.json`
 for exactly
 that reason, so the port must be serialised too. `REAL_TREE_TWIN = True` buys the
-serialisation, and it is honoured ONLY because this module declares no
-`XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`,
-which refuses that combination and refuses over-claiming in the other direction.
+serialisation, and it is honoured ONLY because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, which refuses that combination and refuses over-claiming in the other direction.
 
 WHAT THE PORT ADDS RATHER THAN DROPS. The twin restores the resolver with `cp` and then infers success from the tag coming back to baseline. This restores in a `finally` (so a raised assertion cannot strand the stub the way an `exit` from inside a bash function can) and additionally asserts the restored file is byte-identical by sha256 and keeps its mode. A tag that matches is good
-evidence
-the CONTENT came back; it says nothing about the permission bit, and a resolver
-left non-executable would fail somewhere else entirely.
+evidence the CONTENT came back; it says nothing about the permission bit, and a resolver left non-executable would fail somewhere else entirely.
 """
 
 import hashlib
@@ -185,8 +181,7 @@ def declared_array_body(gate) -> str:
 def test_declared_inputs_match_the_script(gate):
     """Anti-vacuity, and the first thing to break if someone extends the list.
 
-    Every case below is about DECLARED_INPUTS; if that drifts from the real
-    BUILD_CONFIG_FILES, the per-input control proof silently stops covering the new entry.
+    Every case below is about DECLARED_INPUTS; if that drifts from the real BUILD_CONFIG_FILES, the per-input control proof silently stops covering the new entry.
     """
     body = declared_array_body(gate)
     gate.assert_contains(
@@ -332,8 +327,7 @@ def test_other_modes_are_untouched(gate):
     with harness.temp_dir() as tmp:
         root = tmp / "repo"
         build_fixture_tree(gate, root)
-        # The nested fixture submodule makes git warn about an embedded repo; it
-        # is noise here, and the commit is only needed so --self has something to rev-parse.
+        # The nested fixture submodule makes git warn about an embedded repo; it is noise here, and the commit is only needed so --self has something to rev-parse.
         harness.run([git, "-C", os.fspath(root), "init", "-q", "."])
         harness.run([git, "-C", os.fspath(root), "add", "-A"])
         harness.run(

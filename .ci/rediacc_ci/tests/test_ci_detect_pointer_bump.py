@@ -345,9 +345,7 @@ def _mask(text: str) -> str:
 def _agree(old, new, label: str) -> None:
     """THE THREE STREAMS SEPARATELY, plus the `gh` call log.
 
-    The only normalisation is `_mask`, which collapses bash's own
-    `<file>: line <n>:` prefix; see its comment. Nothing else is masked, and the
-    commit shas are the SAME repository's, so a mask there could only hide a real difference.
+    The only normalisation is `_mask`, which collapses bash's own `<file>: line <n>:` prefix; see its comment. Nothing else is masked, and the commit shas are the SAME repository's, so a mask there could only hide a real difference.
     """
     old_proc, old_calls = old
     new_proc, new_calls = new
@@ -550,8 +548,7 @@ def test_defect_d_a_non_numeric_check_runs_answer_is_a_hard_exit_1(tmp_path) -> 
     """A BARE WORD IN A BASH ARITHMETIC CONTEXT IS A VARIABLE REFERENCE, and an
     unset one under `set -u` ends the script: exit 1, nothing on stdout, and no `pointer_bump_only` pair for the caller to read. Every other doubt in this file is exit 0 with a reason.
 
-    Not reachable through today's `gh --jq '... | length'`, which answers with a
-    number or fails; one shape change in that jq program away, and the same
+    Not reachable through today's `gh --jq '... | length'`, which answers with a number or fails; one shape change in that jq program away, and the same
     class as DEFECT C."""
     assert port.A_NON_NUMERIC_CHECK_RUNS_ANSWER_IS_A_HARD_EXIT_TOO
     _repo, old, new = run_both(tmp_path, fixture_kw={"merge_head": False}, FAKE_GREEN="null")

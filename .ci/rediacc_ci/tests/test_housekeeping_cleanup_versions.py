@@ -167,9 +167,7 @@ sys.exit(0)
 
 FAKES = {"gh": FAKE_GH, "curl": FAKE_CURL, "aws": FAKE_AWS, "sleep": FAKE_SLEEP}
 
-# What the twin needs on PATH before it can speak at all. `tr` is here because
-# `parse_args` -> `to_upper` forks it once PER FLAG (common.sh:302); without it
-# the twin dies at 127 before any validation runs.
+# What the twin needs on PATH before it can speak at all. `tr` is here because `parse_args` -> `to_upper` forks it once PER FLAG (common.sh:302); without it the twin dies at 127 before any validation runs.
 CURATED = ("dirname", "uname", "tr", "sed", "date", "cat", "sort", "head", "grep", "awk", "env")
 
 
@@ -197,8 +195,7 @@ def _stub_bin(base: pathlib.Path, *, drop: tuple[str, ...] = ()) -> str:
     return str(stub)
 
 
-# The python driver, which is `source cleanup-versions.sh <args>; <phase>` with
-# the words swapped. It exists so that ONE phase can be driven in isolation on the port exactly as the twin's own comment says a test drives one on the twin.
+# The python driver, which is `source cleanup-versions.sh <args>; <phase>` with the words swapped. It exists so that ONE phase can be driven in isolation on the port exactly as the twin's own comment says a test drives one on the twin.
 DRIVER = """
 import sys
 from rediacc_ci.core import common
@@ -760,9 +757,7 @@ def test_a_zero_padded_versions_value_is_octal_on_both_sides() -> None:
 def test_an_invalid_octal_versions_value_takes_the_same_branch_on_both_sides() -> None:
     """`--versions 08` is a bash arithmetic REFUSAL: a diagnostic and FALSE.
 
-    THE ONE NAMED DIVERGENCE. The decision, the exit code, the stdout and the
-    entire call log are identical; only the text of the diagnostic differs,
-    because bash names a file and a line number that this port cannot honestly claim. Asserted in both directions rather than skipped.
+    THE ONE NAMED DIVERGENCE. The decision, the exit code, the stdout and the entire call log are identical; only the text of the diagnostic differs, because bash names a file and a line number that this port cannot honestly claim. Asserted in both directions rather than skipped.
     """
     fixture = _releases(("v1.0.0", ago(0.5)))
     results = []
@@ -2220,9 +2215,7 @@ def test_phase_10_gives_the_watchdog_its_own_shorter_retention_by_path() -> None
                                 "path": ".github/workflows/watchdog-monitor.yml",
                                 "state": "active",
                             },
-                            # A DECOY whose NAME contains "Watchdog" and whose PATH is a different file. Without it a port that matched on the name would behave identically here
-                            # and this case would prove nothing; a planted
-                            # name-match defect stayed green until this row was added.
+                            # A DECOY whose NAME contains "Watchdog" and whose PATH is a different file. Without it a port that matched on the name would behave identically here and this case would prove nothing; a planted name-match defect stayed green until this row was added.
                             {
                                 "id": 22,
                                 "name": "Watchdog dispatcher",
@@ -2498,12 +2491,10 @@ def test_a_failed_cache_listing_kills_the_run_with_an_arithmetic_error() -> None
         total       = "0\n0"
         total_bytes = "0\n0"
 
-    `[[ "0\n0" -eq 0 ]]` is an arithmetic syntax error, so the "No Actions cache
-    entries found" early return is NOT taken; the next line's `$((total_bytes /
-    1024 / 1024))` is an arithmetic EXPANSION error, which unwinds every frame including `run_all_phases`. Phase 12 is last, so the visible damage is small -- the delete total and `Housekeeping complete` are lost and the run exits 1 -- but the nightly's only evidence is one line of bash arithmetic diagnostics naming no phase at all.
+    `[[ "0\n0" -eq 0 ]]` is an arithmetic syntax error, so the "No Actions cache entries found" early return is NOT taken; the next line's `$((total_bytes / 1024 / 1024))` is an arithmetic EXPANSION error, which unwinds every frame including `run_all_phases`. Phase 12 is last, so the visible damage is small -- the delete total and `Housekeeping complete` are lost and the run exits
+    1 -- but the nightly's only evidence is one line of bash arithmetic diagnostics naming no phase at all.
 
-    Compared side by side because the diagnostic text is the port's one named
-    divergence; the exit code, stdout and call log are identical.
+    Compared side by side because the diagnostic text is the port's one named divergence; the exit code, stdout and call log are identical.
     """
     fixture = {"gh": [rule("actions/caches", rc=1)]}
     results = []

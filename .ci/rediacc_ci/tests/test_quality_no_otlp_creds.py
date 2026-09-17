@@ -4,9 +4,7 @@ A bash child runs the REAL `.ci/scripts/quality/check-no-otlp-creds.sh` over a f
 from `get_repo_root`, i.e. from `.ci/scripts/lib/common.sh`'s own location -- so
 unlike `test_quality_staging_tag_guard.py` the twin has to be COPIED into the fixture. That is the same recipe the committed ledger uses (`.ci/shadow/w7p2-otlp-creds.observations.jsonl`), and it is what makes the tree id in those rows a claim about both implementations rather than about one.
 
-BOTH STREAMS ARE COMPARED BYTE FOR BYTE HERE. This gate writes everything through
-`log_*`, so every line is on stderr and stdout is empty; asserting on both is what
-would catch a stream swap, which is the 2026-09-06 incident `rediacc_ci.tests.differential` was shaped by.
+BOTH STREAMS ARE COMPARED BYTE FOR BYTE HERE. This gate writes everything through `log_*`, so every line is on stderr and stdout is empty; asserting on both is what would catch a stream swap, which is the 2026-09-06 incident `rediacc_ci.tests.differential` was shaped by.
 
 THE FIXTURES ARE ALL NON-CLEAN ON PURPOSE. A clean tree makes this gate print `✓` lines only, and two implementations that both print nothing have proved nothing about each other. Every case below produces at least one warning or one error on both sides.
 """
@@ -31,8 +29,7 @@ RUNTIME = "const h = `Basic ${this.authToken}`;\n"
 def build(tmp_path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
     """A specimen repo holding BOTH implementations plus `files`.
 
-    The bash library goes in whole because the twin sources `common.sh`; the
-    Python package goes in by named module rather than wholesale so a sibling agent's half-written file cannot change what this test runs.
+    The bash library goes in whole because the twin sources `common.sh`; the Python package goes in by named module rather than wholesale so a sibling agent's half-written file cannot change what this test runs.
     """
     src = pathlib.Path(diff.repo())
     root = tmp_path / "fixture"

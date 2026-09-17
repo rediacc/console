@@ -14,9 +14,7 @@ not agree. Counted by grepping the assignment and its guard:
 Read the first three rows next to the fourth and the disagreement is not cosmetic. The 11-file variant tests **stdout** for a tty and then writes its coloured message to **stderr**, so redirecting stdout to a file while watching stderr in a terminal produces uncoloured output, and the reverse produces escape sequences in the file. The 9-file variant tests CI and nothing else, so a
 developer piping a gate into `less` gets escapes. Only `common.sh` tests the stream it actually writes to, and it is the only one that ignores CI.
 
-The colour VALUES disagree too: `YELLOW` is `\\033[1;33m` in `common.sh` and
-`\\033[0;33m` in `.ci/bootstrap.sh`. Both are "yellow"; neither file knows the
-other exists.
+The colour VALUES disagree too: `YELLOW` is `\\033[1;33m` in `common.sh` and `\\033[0;33m` in `.ci/bootstrap.sh`. Both are "yellow"; neither file knows the other exists.
 
 THE INCIDENT THIS MODULE IS SHAPED BY (2026-09-06, recorded verbatim at `.ci/scripts/lib/emit-advisory.sh:22-50` and pinned by `.ci/scripts/test/gates/test-emit-advisory.sh:85-105`). `emit-advisory.sh` used to assign RED/GREEN/YELLOW/NC and define log_error / log_success / log_warn / log_info UNCONDITIONALLY. Four quality gates -- check-profiler-coverage.sh,
 check-swallowed-failures.sh, check-ci-job-aggregation.sh and check-go-deps.sh -- source `common.sh` first and then reach `emit-advisory.sh` transitively through `blocker-validator.sh:26`, so the later definitions won and silently replaced common.sh's TTY-gated logger. Two consequences:
@@ -30,9 +28,7 @@ check-swallowed-failures.sh, check-ci-job-aggregation.sh and check-go-deps.sh --
 `check-pool-writer-safety.sh` sources only common.sh, never reaches blocker-validator.sh, and so was never affected -- which is why nothing noticed.
 
 The fix there was a deference rule: every assignment guarded with `${RED+x}` and
-every definition guarded with `declare -F`. That is the correct repair for two
-libraries that must coexist. It is not a design; it is two implementations
-agreeing to take turns. THIS module is the design: one implementation, imported rather than sourced, so there is no second definition to defer to.
+every definition guarded with `declare -F`. That is the correct repair for two libraries that must coexist. It is not a design; it is two implementations agreeing to take turns. THIS module is the design: one implementation, imported rather than sourced, so there is no second definition to defer to.
 
 THE THREE RULES, and why each is not negotiable.
 
@@ -76,9 +72,8 @@ import io
 import os
 import sys
 
-# The escape sequences, taken from .ci/scripts/lib/common.sh:19-24, which is the only pre-existing variant that tests the stream it writes to and is therefore the one this module is differentially checked against. YELLOW is the bright
-# form (1;33) that common.sh uses, NOT the 0;33 in .ci/bootstrap.sh: a
-# differential cannot be run against both, so the one with more callers wins and the other is named here so the choice is visible rather than accidental.
+# The escape sequences, taken from .ci/scripts/lib/common.sh:19-24, which is the only pre-existing variant that tests the stream it writes to and is therefore the one this module is differentially checked against. YELLOW is the bright form (1;33) that common.sh uses, NOT the 0;33 in .ci/bootstrap.sh: a differential cannot be run against both, so the one with more callers wins and
+# the other is named here so the choice is visible rather than accidental.
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 YELLOW = "\033[1;33m"
@@ -114,8 +109,7 @@ def colour_allowed(stream=None, env=None) -> bool:
     a non-empty value). The one gap: `NO_COLOR=` (set but empty) is `-z` in bash
     and would be falsy here too, so the two agree by accident of the same rule.
 
-    A STREAM WITHOUT isatty IS NOT A TTY. io.StringIO has the method; a mock or
-    a file-like without it must not crash a logger, because the place a logger crashes is the place something has already gone wrong.
+    A STREAM WITHOUT isatty IS NOT A TTY. io.StringIO has the method; a mock or a file-like without it must not crash a logger, because the place a logger crashes is the place something has already gone wrong.
     """
     environ = os.environ if env is None else env
     if environ.get("NO_COLOR"):
@@ -133,8 +127,7 @@ def colour_allowed(stream=None, env=None) -> bool:
 class Logger:
     """A logger bound to one stream, with colour decided once at construction.
 
-    DECIDED ONCE, ON PURPOSE. Re-testing `isatty()` per message would be more "correct" and would make a long run's output inconsistent if something reopened the stream mid-flight. It would also make every message pay a
-    syscall. The bash originals decide once at source time; this matches them.
+    DECIDED ONCE, ON PURPOSE. Re-testing `isatty()` per message would be more "correct" and would make a long run's output inconsistent if something reopened the stream mid-flight. It would also make every message pay a syscall. The bash originals decide once at source time; this matches them.
 
     `colour=None` means decide; `True` and `False` force it, which is what the
     differential test needs in order to compare bytes without a pty for every
@@ -147,9 +140,8 @@ class Logger:
         #     self.stream = sys.stderr if stream is None else stream
         # which captured whatever `sys.stderr` happened to be at CONSTRUCTION. Under pytest's `capsys` that is a per-test CaptureIO which teardown then CLOSES, so a module-global logger built during one test kept writing to a dead file and every later `log.*` in the process raised `ValueError: I/O operation on closed file` from `emit`.
         #
-        # It was invisible serially because a later test in the same file happened
-        # to rebuild the global; xdist distributes a module across processes, so
-        # the healer and the poisoner land in different workers. It was then patched module-by-module with autouse fixtures -- test_log.py and two others -- which left every OTHER module unprotected and the class unfixed. This is the root: an explicit stream is still bound by value, exactly as callers expect, and only the None case follows sys.stderr.
+        # It was invisible serially because a later test in the same file happened to rebuild the global; xdist distributes a module across processes, so the healer and the poisoner land in different workers. It was then patched module-by-module with autouse fixtures -- test_log.py and two others -- which left every OTHER module unprotected and the class unfixed. This is the root:
+        # an explicit stream is still bound by value, exactly as callers expect, and only the None case follows sys.stderr.
         self._stream = stream
         self.env = os.environ if env is None else env
         self.colour = colour_allowed(self.stream, self.env) if colour is None else colour
@@ -172,8 +164,7 @@ class Logger:
     def emit(self, level: str, message: str) -> None:
         """Write one line and flush.
 
-        FLUSHED EVERY TIME. stderr is unbuffered only when it is a tty; redirected
-        to a file it is block-buffered, so a gate that dies mid-run loses exactly the messages that would say why. That is the one place a logger's output
+        FLUSHED EVERY TIME. stderr is unbuffered only when it is a tty; redirected to a file it is block-buffered, so a gate that dies mid-run loses exactly the messages that would say why. That is the one place a logger's output
         matters most, so the flush is not optional and there is no `flush=`
         argument to get wrong.
         """

@@ -1,7 +1,7 @@
 r"""check:ci-env-file-adoption -- `set -a; source <envfile>` must not come back.
 
-WHY THIS EXISTS. `set -a; source "$f"` does two things nobody at the call site
-asked for. It EXECUTES the file, so a `$(...)` in a value runs -- and these files hold ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, ACCOUNT_JWT_SECRET and ACCOUNT_SERVER_API_KEY. And it lets the FILE overwrite the SHELL, so every override this repo ships through the environment -- a workflow `env:` block, a
+WHY THIS EXISTS. `set -a; source "$f"` does two things nobody at the call site asked for. It EXECUTES the file, so a `$(...)` in a value runs -- and these files hold ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, ACCOUNT_JWT_SECRET and ACCOUNT_SERVER_API_KEY. And it lets the FILE overwrite the SHELL, so every override this repo ships through the environment -- a workflow
+`env:` block, a
 GITHUB_ENV append, `RUSTFS_PORT=9101 ./script` -- is discarded in favour of a line
 written to disk months ago, silently.
 
@@ -97,18 +97,12 @@ EXEMPT = (
     ),
 )
 
-# A `set -a` COMMAND, not the string. It may open a line or follow a `;`, `&&`,
-# `|` or `(` -- .ci/legacy/run-legacy.sh:185 is the `$(set -a && source ...)` form and an anchored pattern misses it entirely.
+# A `set -a` COMMAND, not the string. It may open a line or follow a `;`, `&&`, `|` or `(` -- .ci/legacy/run-legacy.sh:185 is the `$(set -a && source ...)` form and an anchored pattern misses it entirely.
 #
-# THE TRAILING BOUNDARY WAS `(?:\s|$)` AND THAT MISSED THE CANONICAL FORM. Inherited verbatim from the bash predecessor, where it had the same hole. A
-# one-liner spells it `set -a; source "$f"; set +a` -- the `;` binds directly to
-# the `-a` with no space -- so the single most likely spelling of the exact thing this gate exists to prevent went unmatched, as did `set -a|`, `set -a&&` and
-# `(set -a; . f)`. Found 2026-09-09 by PLANTING a reversion on the real tree and
-# noticing that only CHECK B fired: CHECK A, the sweep, said nothing. The selftest agreed with the bug, because all three of its fixtures used the spellings the pattern already matched.
+# THE TRAILING BOUNDARY WAS `(?:\s|$)` AND THAT MISSED THE CANONICAL FORM. Inherited verbatim from the bash predecessor, where it had the same hole. A one-liner spells it `set -a; source "$f"; set +a` -- the `;` binds directly to the `-a` with no space -- so the single most likely spelling of the exact thing this gate exists to prevent went unmatched, as did `set -a|`, `set -a&&`
+# and `(set -a; . f)`. Found 2026-09-09 by PLANTING a reversion on the real tree and noticing that only CHECK B fired: CHECK A, the sweep, said nothing. The selftest agreed with the bug, because all three of its fixtures used the spellings the pattern already matched.
 #
-# So the boundary is now a lookahead over the shell separators as well as
-# whitespace and end-of-line. It stays a LOOKAHEAD so a `;` cannot be consumed
-# and hide a second command on the same line from a future clause.
+# So the boundary is now a lookahead over the shell separators as well as whitespace and end-of-line. It stays a LOOKAHEAD so a `;` cannot be consumed and hide a second command on the same line from a future clause.
 SET_A_RE = re.compile(r"(?:^|[;&|(]|&&)\s*set -a(?=\s|[;&|)]|$)")
 COMMENT_RE = re.compile(r"^\s*#")
 

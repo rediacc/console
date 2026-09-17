@@ -307,9 +307,7 @@ async function executeUpLeg(plan: ForkPlan, renetSteps: TimelineStep[]): Promise
     functionName: 'repository_up',
     machineName: plan.options.machine,
     ...(plan.options.kubeCluster !== undefined && { kubeCluster: plan.options.kubeCluster }),
-    // Same declaration as the fork leg: the fork lives in the parent's datastore, and `repository_up` resolves its image from the vault too.
-    // (The standalone `rdc repo up` gets this from executeRepoFunction; this
-    // leg bypasses that path, so it has to say so itself.)
+    // Same declaration as the fork leg: the fork lives in the parent's datastore, and `repository_up` resolves its image from the vault too. (The standalone `rdc repo up` gets this from executeRepoFunction; this leg bypasses that path, so it has to say so itself.)
     ...(plan.datastoreMount !== undefined && { datastore: plan.datastoreMount }),
     params: {
       repository: plan.forkKey,
@@ -389,8 +387,7 @@ async function runForkLeg(
   let result = await executeForkLeg(plan, forkParams, renetSteps);
 
   if (compound && !result.success && isUpFlagUnsupported(result)) {
-    // Remote renet predates fork --up: retry as a plain fork; the caller
-    // chains the legacy up leg.
+    // Remote renet predates fork --up: retry as a plain fork; the caller chains the legacy up leg.
     outputService.warn(
       `Remote renet does not support fork --up; falling back to fork + up (${plan.forkKey})`
     );
@@ -495,9 +492,7 @@ export async function handleForkAction(
   // Rollback must only ever remove the row THIS invocation registered — a catch-all rollback would delete a pre-existing fork's config row (credential included) when registerFork fails with "already exists".
   let registered = false;
   try {
-    // Refuse the reserved birth tag `base` (exit 2) and enforce the fork-tag
-    // label grammar before any config mutation; `latest` stays reserved as the
-    // grand pointer that a fork must not clobber (#495).
+    // Refuse the reserved birth tag `base` (exit 2) and enforce the fork-tag label grammar before any config mutation; `latest` stays reserved as the grand pointer that a fork must not clobber (#495).
     validateTag(tagName);
     assertNonLatestForkTag(tagName, t('commands.repo.fork.tagReservedLatest'));
     assertForkOptions(options);
@@ -522,8 +517,7 @@ export async function handleForkAction(
     // Resolved BEFORE the lease: it is a config read, and anything between acquire() and the try/finally below escapes the release on a throw.
     const datastoreMount = await recordedDatastoreMount(parent);
 
-    // Outer lease: every SSH consumer below (key deploy, fork/up legs, identity refresh, cert sync, service URLs) shares this pooled
-    // connection; the last release closes it.
+    // Outer lease: every SSH consumer below (key deploy, fork/up legs, identity refresh, cert sync, service URLs) shares this pooled connection; the last release closes it.
     const lease = await machineConnections.acquire(options.machine);
     try {
       await orchestrateFork({

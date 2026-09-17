@@ -48,14 +48,11 @@ string, which is never equal to `97`, so the "Could not load drill_summary" mess
 
 The port reproduces the dead branch rather than repairing it, because repairing it would emit two lines the twin never emits and the differential would score that as a mismatch. It is named here and in the final report instead.
 
-THE RUNNER IS BASH, AND IT HAS TO BE. The subject is a bash function in `scripts/drills/lib.sh` that reads eight shell variables and writes a formatted
-table; there is nothing to reimplement in Python and reimplementing it would
-mean this gate no longer tested the harness the drills actually use. So the port drives the same subshell through `bash -c` and does the ASSERTIONS in Python.
+THE RUNNER IS BASH, AND IT HAS TO BE. The subject is a bash function in `scripts/drills/lib.sh` that reads eight shell variables and writes a formatted table; there is nothing to reimplement in Python and reimplementing it would mean this gate no longer tested the harness the drills actually use. So the port drives the same subshell through `bash -c` and does the ASSERTIONS in
+Python.
 
 THE COLOUR VARIABLES COME FROM common.sh IN BOTH, and the source is CONDITIONAL here for one reason: `drill_summary` interpolates `$RED`, `$GREEN`, `$YELLOW` and `$NC` through `printf %b`, and in the twin those are in scope because the gate itself sourced `common.sh` before defining `run_summary`. A `bash -c` child starts with none of them, and under `set +u` they would expand to
-empty, which is what a non-tty run produces anyway. Sourcing `common.sh` when it is present
-makes the two byte-identical on a terminal as well; making it conditional lets
-the selftest point the gate at a fixture root that has no `.ci` tree at all.
+empty, which is what a non-tty run produces anyway. Sourcing `common.sh` when it is present makes the two byte-identical on a terminal as well; making it conditional lets the selftest point the gate at a fixture root that has no `.ci` tree at all.
 
 `tr '\n' ' ' <<<"$out" | tail -c 200` IS A BYTE TAIL, and the herestring's own trailing newline becomes a trailing SPACE before the cut. Both details are reproduced: without the added space the 200-byte window lands one byte earlier and the two implementations print different text for the same failure.
 """
@@ -69,16 +66,13 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, plant
 
-# The harness under test, repo-relative. The twin `cd`s to the root and names it
-# bare; this is the same fact with the cd removed.
+# The harness under test, repo-relative. The twin `cd`s to the root and names it bare; this is the same fact with the cd removed.
 DRILL_LIB = "scripts/drills/lib.sh"
 
 # The logger the drill library expects to be in scope, sourced when present.
 COMMON_LIB = ".ci/scripts/lib/common.sh"
 
-# The exit code the subshell uses to say "the function is not there". Kept as a
-# named constant even though the branch that reads it is unreachable; see the
-# port notes, and deleting the name would delete the evidence.
+# The exit code the subshell uses to say "the function is not there". Kept as a named constant even though the branch that reads it is unreachable; see the port notes, and deleting the name would delete the evidence.
 UNDRIVABLE = "97"
 
 # How many bytes of the captured summary a failure message shows.
@@ -358,9 +352,7 @@ def selftest() -> int:
         # PLANT 1: the founding defect. 0 assertions printing PASSED.
         ctl.check("PLANT: a zero-assertion run that says PASSED is caught", run(_VACUOUS_LIB), 1)
 
-        # PLANT 2: a harness with no drill_summary at all. The subshell dies
-        # before its printf, so the capture is empty; this is the branch that
-        # actually catches an undrivable harness, the `97` probe having been unreachable since it was written.
+        # PLANT 2: a harness with no drill_summary at all. The subshell dies before its printf, so the capture is empty; this is the branch that actually catches an undrivable harness, the `97` probe having been unreachable since it was written.
         ctl.check(
             "PLANT: a harness with no drill_summary is refused",
             run("#!/bin/bash\necho nothing here\n"),
@@ -372,8 +364,7 @@ def selftest() -> int:
             "",
         )
 
-        # PLANT 3: a summary hard-wired to SKIPPED. Case 1 alone would pass; it
-        # is case 2, the control, that catches this.
+        # PLANT 3: a summary hard-wired to SKIPPED. Case 1 alone would pass; it is case 2, the control, that catches this.
         ctl.check(
             "PLANT: a summary hard-wired to SKIPPED is caught by the CONTROL case",
             run(

@@ -18,9 +18,7 @@ WHAT IS COMPARED, AND WHY THE CALL LOG IS THE IMPORTANT ONE. This script's whole
 case would report a false MISMATCH. The fake records its argv and prints a fixed
 listing, which makes the comparison about the argv -- the thing the port could actually get wrong -- rather than about the clock.
 
-PATH IS REPLACED, NEVER PREPENDED. This host has a real `npm`, and the subject
-`cd`s to a root it derives itself; a subject that mis-derived it would run a REAL
-`npm run build:cli` inside the live checkout. `_binder` builds the ENTIRE PATH
+PATH IS REPLACED, NEVER PREPENDED. This host has a real `npm`, and the subject `cd`s to a root it derives itself; a subject that mis-derived it would run a REAL `npm run build:cli` inside the live checkout. `_binder` builds the ENTIRE PATH
 from named tools plus the two fakes, and asserts every exclusion really took --
 a control on the control, because a probe that cannot fire looks exactly like a subject that cannot fail.
 
@@ -175,8 +173,7 @@ def _run(
         "PYTHONDONTWRITEBYTECODE": "1",
         "LC_ALL": "C",
         "LANG": "C",
-        # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci.log`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})
@@ -247,9 +244,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
     new = _run(PORT_REL, root_b, **run_kw)
 
     if run_kw.get("exclude"):
-        # The one case whose stderr carries the INTERPRETER's diagnostic rather than the script's. Compared with the `<path>: line <n>: ` prefix
-        # masked; `test_a_missing_npm_agrees_on_the_branch_and_not_on_the_
-        # diagnostic` is where that divergence is asserted in both directions.
+        # The one case whose stderr carries the INTERPRETER's diagnostic rather than the script's. Compared with the `<path>: line <n>: ` prefix masked; `test_a_missing_npm_agrees_on_the_branch_and_not_on_the_ diagnostic` is where that divergence is asserted in both directions.
         old = {**old, "stderr": LINE_PREFIX.sub("<prog>: line N: ", old["stderr"])}
         new = {**new, "stderr": LINE_PREFIX.sub("<prog>: line N: ", new["stderr"])}
 
@@ -312,8 +307,7 @@ def test_an_unknown_argument_is_a_full_build_in_both(tmp_path):
 def test_the_delegates_exit_code_is_thrown_away_in_both(tmp_path):
     """DEFECT 2, pinned in BOTH implementations.
 
-    npm exits 9; both subjects report 1. Every npm failure mode -- a failed
-    script, a missing one, a signal -- arrives at the workflow as the same number and the same sentence. Reported, not fixed.
+    npm exits 9; both subjects report 1. Every npm failure mode -- a failed script, a missing one, a signal -- arrives at the workflow as the same number and the same sentence. Reported, not fixed.
     """
     for subject in (TWIN_REL, PORT_REL):
         root = _fixture(tmp_path / ("e-%s" % subject.name))
@@ -342,9 +336,8 @@ def test_verify_only_checks_that_two_paths_exist(tmp_path):
 def test_a_missing_npm_agrees_on_the_branch_and_not_on_the_diagnostic(tmp_path):
     """THE ONE DELIBERATE DIVERGENCE, asserted in both directions.
 
-    With no `npm` on PATH, bash prints `<script>: line <n>: npm: command not found`, the `if` sees 127, and the `else` arm exits 1 with the script's own message. The port prints the same shape naming ITS path and line and takes the same branch. The BRANCH is what matters and is compared with the prefix
-    masked; the unmasked strings are asserted DIFFERENT so the mask cannot
-    quietly start hiding nothing.
+    With no `npm` on PATH, bash prints `<script>: line <n>: npm: command not found`, the `if` sees 127, and the `else` arm exits 1 with the script's own message. The port prints the same shape naming ITS path and line and takes the same branch. The BRANCH is what matters and is compared with the prefix masked; the unmasked strings are asserted DIFFERENT so the mask cannot quietly
+    start hiding nothing.
     """
     root_a = _fixture(tmp_path / "na")
     old = _run(TWIN_REL, root_a, exclude=("npm",))

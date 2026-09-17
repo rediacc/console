@@ -7,9 +7,7 @@ content and its executable bit.
 WHY THE CALL LOG IS NOT OPTIONAL HERE. Almost everything this script says it did is a `log_step` line, and `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before a `--finding-re` ever sees it. A port that printed all eighteen log lines correctly and never ran `strip`, or ran `sea-inject/cli.mjs` with the wrong sentinel fuse, would be byte-identical on
 both streams. The call log is where those live, and it is why every fake echoes its own argv under a `FAKEBIN ` prefix.
 
-RECORDED TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. The fake `node` is copied by the script under test and then EXECUTED as the built binary, whose stdout is parsed
-as JSON by `jq`; a fake that logged to stdout would corrupt the artifact it is
-standing in for. A prior wave lost a day to exactly that.
+RECORDED TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. The fake `node` is copied by the script under test and then EXECUTED as the built binary, whose stdout is parsed as JSON by `jq`; a fake that logged to stdout would corrupt the artifact it is standing in for. A prior wave lost a day to exactly that.
 
 THE PATH IS REPLACED, NOT PREPENDED, and `test_the_scratch_path_is_sealed` asserts it before anything is driven. A prepended PATH let a real system binary reach into the live checkout in an earlier wave.
 
@@ -204,9 +202,7 @@ def fixture(tmp_path: pathlib.Path, *, port_source: str | None = None) -> pathli
     else:
         (root / PORT_REL).write_text(port_source, encoding="utf-8")
 
-    # The sibling the twin shells out to, replaced by a recorder. Its real
-    # 200-line self has its own port and its own differential; running it here
-    # would be testing that file through this one.
+    # The sibling the twin shells out to, replaced by a recorder. Its real 200-line self has its own port and its own differential; running it here would be testing that file through this one.
     assets = root / ASSETS_REL
     assets.write_text(FAKE_ASSETS, encoding="utf-8")
     assets.chmod(0o755)

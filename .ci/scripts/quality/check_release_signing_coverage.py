@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported release-signing-coverage gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.release_signing_coverage`, which
-pytest and the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.release_signing_coverage`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 6). See DRIVEN, below.
 
@@ -16,9 +14,8 @@ NO `id:` IS CORRECT HERE, checked rather than assumed: `derivedId` (`gate-header
 
 `selftest: true` is inert for a `.py` gate (`headerLines` emits it only for `.ts`, `gate-bind.ts:598`) and is carried because the twin declared it and because `release_signing_coverage.main(["--selftest"])` exits 0 over a real control battery.
 
-THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files rather than by reading them. `bind()` unions declared needs with
-`inferredNeeds(source)`; the twin's sed/awk body infers nothing and this
-two-import entry point infers nothing, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both resolve to the empty set `needs: none` declares.
+THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files rather than by reading them. `bind()` unions declared needs with `inferredNeeds(source)`; the twin's sed/awk body infers nothing and this two-import entry point infers nothing, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both resolve to the empty set `needs: none`
+declares.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -41,9 +38,7 @@ sufficient mutation and is not.
 
 The fixture was restored from its `.orig` copy and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-release-signing-coverage.sh`
-is NOT deleted here. It stays on disk as the differential twin; deletion is
-W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-release-signing-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Release signing coverage needs: none selftest: true lane: quality-security ---- end gate ----
 """

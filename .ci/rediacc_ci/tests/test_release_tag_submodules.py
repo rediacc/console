@@ -11,14 +11,11 @@ ALL THREE ARMS ARE DRIVEN, not just the happy path, because the arm the twin's o
 from the port to prove the case can fire.
 
 ONE DOCUMENTED DIVERGENCE: a missing/empty `VERSION` is `${VERSION:?...}` in
-the twin, whose bash diagnostic carries a line number. Those two cases assert
-agreement on exit code, stream and substance; everything else here is
-byte-for-byte.
+the twin, whose bash diagnostic carries a line number. Those two cases assert agreement on exit code, stream and substance; everything else here is byte-for-byte.
 
 K=5 LEDGER: `.ci/shadow/w7p6-tag-submodules.observations.jsonl` -- five
-distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty
-tree; `--record` refuses one) through a `drive-tag.sh` fixture builder that
-makes the same throwaway parent/submodule/bare-remote this file makes, one mode per tree: fresh tag, reuse at HEAD, drift, unborn HEAD, and a missing origin. No real remote is ever contacted.
+distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty tree; `--record` refuses one) through a `drive-tag.sh` fixture builder that makes the same throwaway parent/submodule/bare-remote this file makes, one mode per tree: fresh tag, reuse at HEAD, drift, unborn HEAD, and a missing origin.
+No real remote is ever contacted.
 """
 
 from __future__ import annotations

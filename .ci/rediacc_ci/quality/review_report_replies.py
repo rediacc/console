@@ -1,7 +1,6 @@
 r"""The newest automated review REPORT (an issue comment) must have been answered.
 
-Ported from `.ci/scripts/quality/check-review-report-replies.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-review-report-replies.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHY THERE ARE TWO GATES ON ONE SURFACE, in the twin's own words, because this is the paragraph that stops someone deleting one of them:
 
@@ -123,13 +122,11 @@ WHAT COUNTS AS A REPLY, all four clauses, because clause (a) is the one that mak
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE TWO CONSTANTS MUST MATCH THEIR TWINS IN `review_comments.py`, and the twin says why: "THESE TWO MUST MATCH check-review-comments.sh's variables of the same names.
-That is what makes one reply clear both gates; test-review-status.sh parses both
-files and fails if they drift apart." They are therefore duplicated here rather than imported, exactly as the bash pair duplicates them, and both ports assert the agreement in their own tests.
+THE TWO CONSTANTS MUST MATCH THEIR TWINS IN `review_comments.py`, and the twin says why: "THESE TWO MUST MATCH check-review-comments.sh's variables of the same names. That is what makes one reply clear both gates; test-review-status.sh parses both files and fails if they drift apart." They are therefore duplicated here rather than imported, exactly as the bash pair duplicates them,
+and both ports assert the agreement in their own tests.
 
-THE SELF-INVOCATION BECOMES A RECURSIVE `main()` CALL, not a subprocess. The twin
-re-executes `"$0" "$@"` with `REVIEW_EPIC_PREFIX` set; the port sets the same
-variable in `os.environ` and calls `main` again. The recursion is bounded by the same condition -- the variable being set is what stops the fan-out -- so it is one level deep on both sides, and the printed output is identical because it is the same code path.
+THE SELF-INVOCATION BECOMES A RECURSIVE `main()` CALL, not a subprocess. The twin re-executes `"$0" "$@"` with `REVIEW_EPIC_PREFIX` set; the port sets the same variable in `os.environ` and calls `main` again. The recursion is bounded by the same condition -- the variable being set is what stops the fan-out -- so it is one level deep on both sides, and the printed output is
+identical because it is the same code path.
 
 `review_epic_ids` IS REIMPLEMENTED, INCLUDING ITS ROOT ANCHOR. The twin's helper resolves `agent/pr/<branch-with-slashes-dashed>.md` against the REPOSITORY ROOT and its comment says why: "It used to be a bare relative path, so the answer depended on the caller's CWD: a gate invoked from a subdirectory saw no epics and silently took the flat path, which looks exactly like a PR that
 declares none." `WORKLIST_PUBLISH_ROOT` overrides the root, and that override is honoured here too.
@@ -210,9 +207,7 @@ GQL = (
 def is_low_effort_reply(reply: str, min_chars: int = SUMMARY_MIN_CHARS) -> bool:
     """True when the reply is a stock acknowledgement or too short.
 
-    THE DEFAULT FLOOR HERE IS 30, NOT 10. `check-review-comments.sh`'s function of the same name defaults to 10, because a reply to ONE inline thread is allowed
-    to be short; a reply to a whole review report is not. Two functions with one
-    name and different defaults is exactly the kind of thing a port collapses by accident, so the difference is stated at both ends.
+    THE DEFAULT FLOOR HERE IS 30, NOT 10. `check-review-comments.sh`'s function of the same name defaults to 10, because a reply to ONE inline thread is allowed to be short; a reply to a whole review report is not. Two functions with one name and different defaults is exactly the kind of thing a port collapses by accident, so the difference is stated at both ends.
     """
     normalized = TRAILING_PUNCT.sub("", reply.lower().strip())
     if normalized in LOW_EFFORT_PATTERNS:
@@ -253,9 +248,7 @@ def newest_report(comments: list[dict], prefix: str) -> dict | None:
     ]
     if not matches:
         return None
-    # `sorted(...)[-1]`, NOT `max(...)`. jq's `sort_by(...) | last` takes the LAST of equal keys and Python's `sorted` is stable, so two reports sharing a
-    # created_at resolve the same way on both sides; `max` returns the FIRST of
-    # equal keys and would name a different comment id in the success line.
+    # `sorted(...)[-1]`, NOT `max(...)`. jq's `sort_by(...) | last` takes the LAST of equal keys and Python's `sorted` is stable, so two reports sharing a created_at resolve the same way on both sides; `max` returns the FIRST of equal keys and would name a different comment id in the success line.
     ordered = sorted(matches, key=lambda c: c.get("created_at") or "")
     return ordered[-1]
 

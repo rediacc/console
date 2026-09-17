@@ -1300,9 +1300,7 @@ function selftest(repoRoot: string): number {
     { verdict: dup.verdict, onlyOld: dup.onlyOld }
   );
 
-  // A LEDGER ROW THAT IS NOT A LEDGER ROW. Anything matching `.ci/shadow/*.observations.jsonl` is read as a shadow-pair ledger, so a
-  // foreign or truncated file lands here; before 2026-09-08 it threw a raw
-  // TypeError naming neither the pair nor the row.
+  // A LEDGER ROW THAT IS NOT A LEDGER ROW. Anything matching `.ci/shadow/*.observations.jsonl` is read as a shadow-pair ledger, so a foreign or truncated file lands here; before 2026-09-08 it threw a raw TypeError naming neither the pair nor the row.
   const malformed = assertEquivalent([{ subject: 'x', agreed: true } as unknown as LedgerRow], 1);
   ck(
     'MALFORMED: a row with no `tree` is REPORTED, not thrown',
@@ -1354,9 +1352,7 @@ function selftest(repoRoot: string): number {
     oneRefuses.verdict
   );
 
-  // The continuation rule. Both sides say "Found 2", and they disagree about
-  // both. A header-only comparator calls this EQUIVALENT; it is the single most
-  // likely way this module could launder a port, because the header is the only line carrying a severity marker.
+  // The continuation rule. Both sides say "Found 2", and they disagree about both. A header-only comparator calls this EQUIVALENT; it is the single most likely way this module could launder a port, because the header is the only line carrying a severity marker.
   const contOld =
     `echo "✗ Found 2 problem(s):" >&2; echo "    ${fx('a')}:3: bad thing" >&2; ` +
     `echo "    ${fx('b')}:9: other thing" >&2; exit 1`;

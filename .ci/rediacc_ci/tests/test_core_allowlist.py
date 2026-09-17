@@ -47,9 +47,8 @@ THE ANTI-VACUITY CONTRACT, because a golden suite is the easiest thing in this r
 THE DEFECT THIS SUITE FOUND ON THE WAY, AND ITS FIX. `validate_blocker_quality` in the bash reader used to normalize with `echo "$reason"`, and bash's `echo` builtin eats a word that is exactly `-n`, `-e` or `-E`. A BLOCKER reason of `-n` was therefore measured as ZERO characters by bash and TWO by TypeScript. Both still rejected it, so no gate was wrong, and this suite recorded
 the divergence and said the fix belonged in the bash file. It landed on 2026-09-09 with the collapse: neither shared reader normalizes anything any more, both ask this module, and `test_the_bash_echo_builtin_defect_is_gone_and_stays_gone` now asserts the agreement plus a reproduction of the old normalization proving the control still has something to detect.
 
-WHAT THIS SUITE NO LONGER HAS TO CARRY. It says below that the readers are
-separate implementations; since 2026-09-09 they are CLIENTS, which is why every
-comparison here still passes and why none of them would notice a phrase present in a reader's own table and absent from this module's. That direction is `.ci/rediacc_ci/tests/test_blocker_implementations.py`'s, and it exists because this file's reason corpus is generated FROM `LOW_EFFORT_PHRASES` at :370 and is structurally blind to the list being short.
+WHAT THIS SUITE NO LONGER HAS TO CARRY. It says below that the readers are separate implementations; since 2026-09-09 they are CLIENTS, which is why every comparison here still passes and why none of them would notice a phrase present in a reader's own table and absent from this module's. That direction is `.ci/rediacc_ci/tests/test_blocker_implementations.py`'s, and it exists
+because this file's reason corpus is generated FROM `LOW_EFFORT_PHRASES` at :370 and is structurally blind to the list being short.
 
 REGENERATING THE GOLDENS: `PYTHONPATH=.ci python3 .ci/rediacc_ci/tests/
 test_core_allowlist.py --record` from the repo root, with node_modules present. It re-freezes the corpus from the live sources and re-runs both readers.
@@ -300,8 +299,7 @@ def _corpus_text(slug: str) -> str:
 def _agree(label: str, left: str, right: str) -> None:
     """Byte equality, with BOTH-EMPTY treated as a MISMATCH.
 
-    If both sides are empty the comparison established nothing: an implementation that returned "" unconditionally would satisfy it, which is exactly the vacuous green this repository hunts. Cases that legitimately
-    have no rows are covered by a different control; see the module docstring.
+    If both sides are empty the comparison established nothing: an implementation that returned "" unconditionally would satisfy it, which is exactly the vacuous green this repository hunts. Cases that legitimately have no rows are covered by a different control; see the module docstring.
     """
     assert left or right, (
         "%s: both sides are empty, so this comparison proves nothing. An "
@@ -434,9 +432,7 @@ def test_the_goldens_taken_together_are_not_empty():
 def test_every_corpus_entry_line_becomes_exactly_one_entry():
     """The count is DERIVED from the corpus, so a zero here is a proved zero.
 
-    This is the control that keeps the entry-free files honest. An entry line is a line that is neither blank nor a comment, which is the grammar both readers
-    implement; if the parser dropped or invented rows, this diverges even for a
-    file whose golden payload is empty.
+    This is the control that keeps the entry-free files honest. An entry line is a line that is neither blank nor a comment, which is the grammar both readers implement; if the parser dropped or invented rows, this diverges even for a file whose golden payload is empty.
     """
     for slug in SLUGS:
         corpus = _corpus_text(slug)
@@ -545,9 +541,7 @@ def test_both_empty_is_refused_as_a_comparison():
 def _live_source(source: str) -> pathlib.Path | None:
     """Where git tracks the corpus source TODAY, found by basename.
 
-    Not a hardcoded second path. W4 P2 relocates these lists into `.ci/policy/`, and a differential that stopped comparing after the move would go quietly vacuous rather than red. Resolving through `git ls-files` follows the file
-    wherever it is tracked; a file that is genuinely gone returns None and the
-    caller counts it.
+    Not a hardcoded second path. W4 P2 relocates these lists into `.ci/policy/`, and a differential that stopped comparing after the move would go quietly vacuous rather than red. Resolving through `git ls-files` follows the file wherever it is tracked; a file that is genuinely gone returns None and the caller counts it.
     """
     base = os.path.basename(source)
     result = subprocess.run(
@@ -846,10 +840,8 @@ def _record() -> int:
     for directory in (CORPUS_DIR, BASH_PAIRS_DIR, TS_RECORDS_DIR, REASONS_DIR):
         directory.mkdir(parents=True, exist_ok=True)
 
-    # THROUGH `_live_source`, NOT `root / source`, and this is a FIX rather than a tidy-up. `SOURCES` names each list at its historical repo-root path, and `dee3ade8b` moved all fifteen into `.ci/policy/`. The live differential above
-    # already resolves by basename through `git ls-files` and kept working; only
-    # this recorder was left on the hardcoded path, so `--record` died on its first file with `FileNotFoundError` on `.ci/policy/.actions-upgrade-blocklist`, and every golden became unrefreshable. That is not a cosmetic outage: eight corpora were legitimately refreshed afterwards and their `corpus-sha256` headers could not follow, which is what
-    # `test_ts_records_golden_matches_the_python_records_projection` was reporting.
+    # THROUGH `_live_source`, NOT `root / source`, and this is a FIX rather than a tidy-up. `SOURCES` names each list at its historical repo-root path, and `dee3ade8b` moved all fifteen into `.ci/policy/`. The live differential above already resolves by basename through `git ls-files` and kept working; only this recorder was left on the hardcoded path, so `--record` died on its
+    # first file with `FileNotFoundError` on `.ci/policy/.actions-upgrade-blocklist`, and every golden became unrefreshable. That is not a cosmetic outage: eight corpora were legitimately refreshed afterwards and their `corpus-sha256` headers could not follow, which is what `test_ts_records_golden_matches_the_python_records_projection` was reporting.
     #
     # `SOURCES` is deliberately NOT path-qualified to fix this. `_slug` derives every golden's FILENAME from the source string, so adding `.ci/policy/` would rename all seventeen goldens -- a re-baseline of the whole suite wearing the costume of a one-line fix.
     frozen: list[str] = []

@@ -88,8 +88,8 @@ printf 'FAKECALL actionlint %s\\n' "$*" >>"$FAKE_LOG"
 exit "$(cat "$FAKE_DATA/rc" 2>/dev/null || echo 0)"
 """
 
-# A curl that records its argv and then does whatever `$FAKE_DATA/curl.mode` says. `fail` exits 22 SILENTLY: a real curl under `-fsSL` prints `curl: (22) ...` of its own, and the two sides route curl's stderr differently, so a talking fake would fail the differential for a reason that is not the port's. That routing difference is itself a finding this wave
-# reports; see the module note in actionlint.py.
+# A curl that records its argv and then does whatever `$FAKE_DATA/curl.mode` says. `fail` exits 22 SILENTLY: a real curl under `-fsSL` prints `curl: (22) ...` of its own, and the two sides route curl's stderr differently, so a talking fake would fail the differential for a reason that is not the port's. That routing difference is itself a finding this wave reports; see the module
+# note in actionlint.py.
 FAKE_CURL = """#!/bin/bash
 printf 'FAKECALL curl %s\\n' "$*" >>"$FAKE_LOG"
 out=""
@@ -153,9 +153,8 @@ def _env(fx: pathlib.Path, side: str, log: pathlib.Path, **extra: str) -> dict[s
     env["PATH"] = "%s%s%s" % (fx / "fake" / "bin", os.pathsep, env["PATH"])
     env["FAKE_DATA"] = str(data_dir(fx))
     env["FAKE_LOG"] = str(log)
-    # RUNNER_TEMP, so the acquisition cache is per-side scratch and a download in one case cannot satisfy the next one. NOT `CI_TEMP`, which the twin's line
-    # names and `common.sh:511` overwrites two lines earlier; setting CI_TEMP
-    # here would silently leave both sides pointed at the real /tmp cache and the download cases would never run. That is the defect, used as the test's own control.
+    # RUNNER_TEMP, so the acquisition cache is per-side scratch and a download in one case cannot satisfy the next one. NOT `CI_TEMP`, which the twin's line names and `common.sh:511` overwrites two lines earlier; setting CI_TEMP here would silently leave both sides pointed at the real /tmp cache and the download cases would never run. That is the defect, used as the test's own
+    # control.
     env["RUNNER_TEMP"] = str(fx / "cache" / side)
     if side == "new":
         env["PYTHONPATH"] = str(fx / ".ci")
@@ -248,8 +247,7 @@ def _warm_actionlint(env_extra: dict[str, str] | None = None) -> None:
 
     IT WARMS BY RUNNING A SUBJECT, NOT BY CALLING ensure_actionlint() IN-PROCESS, and the difference is the whole fix. The cache is
     `${CI_TEMP:-${RUNNER_TEMP:-/tmp}}/actionlint-<version>` (actionlint.sh:55,
-    and common.sh exports CI_TEMP from RUNNER_TEMP at source time). An in-process warm-up resolves that against PYTEST's environment, while the subjects get `differential.env_for`, which carries only PATH/HOME/LC_ALL/LANG. On a developer machine RUNNER_TEMP is unset in both, so the two agree by accident
-    and the warm-up worked; on a GitHub runner RUNNER_TEMP is set for pytest and
+    and common.sh exports CI_TEMP from RUNNER_TEMP at source time). An in-process warm-up resolves that against PYTEST's environment, while the subjects get `differential.env_for`, which carries only PATH/HOME/LC_ALL/LANG. On a developer machine RUNNER_TEMP is unset in both, so the two agree by accident and the warm-up worked; on a GitHub runner RUNNER_TEMP is set for pytest and
     absent from env_for, so the warm-up filled one cache and the subjects read another. That is exactly how this case still failed in run 35009582358 after a first attempt at fixing it -- the fix had the right idea and the wrong environment, which is the same mistake this file is full of.
 
     Running the port as a subprocess under the SAME env cannot get that wrong: the cache is resolved by the code under test, from the environment the measured runs will use, rather than recomputed here from a path this file would have to guess.
@@ -311,9 +309,7 @@ def test_the_real_repository_agrees_with_the_real_actionlint() -> None:
 def test_the_real_tree_argv_is_identical_including_order(tmp_path: pathlib.Path) -> None:
     """The 29 real paths, in the same sequence, with the same single flag.
 
-    THE ORDER IS THE ASSERTION. Both sides expand three separate globs and
-    concatenate them without re-sorting; a port that merged them into one
-    `sorted()` would hand actionlint a `.yaml` file before a later `.yml` one and still print an identical clean banner. Only the argv shows it.
+    THE ORDER IS THE ASSERTION. Both sides expand three separate globs and concatenate them without re-sorting; a port that merged them into one `sorted()` would hand actionlint a `.yaml` file before a later `.yml` one and still print an identical clean banner. Only the argv shows it.
     """
     bindir = tmp_path / "bin"
     bindir.mkdir()
@@ -372,8 +368,7 @@ def test_yaml_extension_is_collected_after_every_yml(fixture: pathlib.Path) -> N
 def test_the_out_of_tree_workflow_template_is_collected(fixture: pathlib.Path) -> None:
     """`.ci/*/workflow/*.yml`, the coverage every other workflow gate misses.
 
-    The fixture already carries one; a SECOND one under a different `.ci/*`
-    directory proves the middle `*` is expanded and sorted rather than hardcoded to `breakpoint`.
+    The fixture already carries one; a SECOND one under a different `.ci/*` directory proves the middle `*` is expanded and sorted rather than hardcoded to `breakpoint`.
     """
     _write(fixture / ".ci" / "aaa" / "workflow" / "vendored.yml", CLEAN_WORKFLOW % "vendored")
     old, _new, old_log, new_log = run_both(fixture)
@@ -408,8 +403,7 @@ def test_only_the_template_survives_and_it_is_still_linted(fixture: pathlib.Path
 def test_an_empty_template_glob_kills_the_twin_silently(fixture: pathlib.Path) -> None:
     """THE DEFECT THIS WAVE FOUND, reproduced on both sides. Port note 3.
 
-    `collect_targets` ends with `for f in "$ROOT"/.ci/*/workflow/*.yml; do
-    [[ -f "$f" ]] && echo "$f"; done`, so when that glob matches nothing the
+    `collect_targets` ends with `for f in "$ROOT"/.ci/*/workflow/*.yml; do [[ -f "$f" ]] && echo "$f"; done`, so when that glob matches nothing the
     function returns 1 and `set -e` kills the script at the assignment: exit 1,
     ZERO bytes on both streams, with two real workflow files sitting unlinted. Exit 1 is also the code for "actionlint reported findings", so the CI reader is sent looking for an expression error that does not exist.
     """

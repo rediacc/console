@@ -128,9 +128,7 @@ def test_head_literal_guard_matches_grep(body: str, tmp_path: pathlib.Path) -> N
 def test_two_captures_on_one_line_share_the_lines_guard(tmp_path: pathlib.Path) -> None:
     """`grep -o` emits both; the loop re-reads the FULL line for both.
 
-    So a single `|| exit 0` clears BOTH captures on that line. That is the
-    twin's behaviour and it is over-clearing on purpose; asserted here so a port
-    that judged the matched text instead would fail rather than look stricter.
+    So a single `|| exit 0` clears BOTH captures on that line. That is the twin's behaviour and it is over-clearing on purpose; asserted here so a port that judged the matched text instead would fail rather than look stricter.
     """
     line = "A=$(git rev-parse HEAD); B=$(git rev-parse HEAD~1) || exit 0"
     assert len(_bash_captures(line, tmp_path)) == 2

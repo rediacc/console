@@ -321,9 +321,7 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   configFileStorage.clearCache();
   configService.resetResourceView();
 
-  // The result of the LAST machine call the command made. A command can make
-  // several (fork then up); the caller cares about how the command as a whole
-  // ended, which is the final one, or a failure at any point.
+  // The result of the LAST machine call the command made. A command can make several (fork then up); the caller cares about how the command as a whole ended, which is the final one, or a failure at any point.
   let lastResult: ExecuteResult | undefined;
   let functionName: string | undefined;
   let machineName: string | undefined;
@@ -412,8 +410,7 @@ function toFailure(
   }
 
   if (error instanceof CommanderError) {
-    // Commander has already written the detail (which option was missing) into
-    // the captured stderr; its own message is a summary.
+    // Commander has already written the detail (which option was missing) into the captured stderr; its own message is a summary.
     return {
       success: false,
       exitCode: 1,

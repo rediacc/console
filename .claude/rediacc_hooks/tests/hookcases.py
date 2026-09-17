@@ -30,15 +30,11 @@ HOOKS = ROOT / ".claude" / "hooks"
 GUARD_DISPATCH = ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"
 GUARD_MODULES = ROOT / ".claude" / "rediacc_hooks" / "guards"
 
-# The suite derived this with `cd "$DIR/../.." && pwd`. Two cases used to hardcode /home/developer/console and therefore asserted "inside the repo" about a path that
-# is inside the repo only on the machine they were written on; in CI the tree is at
-# /home/runner/work/... and the guard CORRECTLY allowed the command, so the tests
+# The suite derived this with `cd "$DIR/../.." && pwd`. Two cases used to hardcode /home/developer/console and therefore asserted "inside the repo" about a path that is inside the repo only on the machine they were written on; in CI the tree is at /home/runner/work/... and the guard CORRECTLY allowed the command, so the tests
 # failed while the code was right. Measured: run 33133377611, PASS=1557 FAIL=2.
 TEST_REPO_ROOT = str(ROOT)
 
-# How long any single guard may take. The bash suite had no bound at all, so a guard
-# that hangs on stdin took the whole run down with it and reported nothing; this
-# turns that into one named failure.
+# How long any single guard may take. The bash suite had no bound at all, so a guard that hangs on stdin took the whole run down with it and reported nothing; this turns that into one named failure.
 GUARD_TIMEOUT_S = 60
 
 
@@ -69,9 +65,7 @@ def guard_cmd(key: str) -> list[str]:
 def _j(obj: object) -> str:
     """The suite's payloads, byte for byte.
 
-    `jq -Rn --arg c ... '$c'` emits COMPACT json and does not escape non-ASCII. Python's defaults do the opposite on both counts, and a guard that matches on
-    raw text (require-jq.sh greps stdin; several guards scan the command string
-    before parsing) would be handed different bytes than the suite handed it.
+    `jq -Rn --arg c ... '$c'` emits COMPACT json and does not escape non-ASCII. Python's defaults do the opposite on both counts, and a guard that matches on raw text (require-jq.sh greps stdin; several guards scan the command string before parsing) would be handed different bytes than the suite handed it.
     """
     return json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
 
@@ -143,8 +137,7 @@ def inject_killed(command: str, stdout: str, interrupted: bool) -> str:
 class Case:
     """One assertion: run `key` on `payload` and expect `expected`.
 
-    `spec` is kept verbatim because it is what `hook_integrity.covmap` reads; `verb`,
-    `expected` and `key` are parsed OUT of it rather than passed separately, so the two can never disagree.
+    `spec` is kept verbatim because it is what `hook_integrity.covmap` reads; `verb`, `expected` and `key` are parsed OUT of it rather than passed separately, so the two can never disagree.
     """
 
     spec: str
@@ -240,13 +233,10 @@ STATIC: list[Case] = [
         bash_json("gh pr edit 42 --body-file /nonexistent-body.md"),
         "raw-pr-body(edit with an unreadable body still blocked)",
     ),
-    # THE PRE-PUSH RECEIPT GUARD. A CI round costs ~15 minutes; three of the five
-    # reds on PR #579 were sub-2-second gates -- check:format 1.72s, check:ci-python-lint 0.59s, check:ci-parity 1.29s -- which cost roughly 45
-    # minutes of CI between them. The gates existed; nothing made anyone run them.
+    # THE PRE-PUSH RECEIPT GUARD. A CI round costs ~15 minutes; three of the five reds on PR #579 were sub-2-second gates -- check:format 1.72s, check:ci-python-lint 0.59s, check:ci-parity 1.29s -- which cost roughly 45 minutes of CI between them. The gates existed; nothing made anyone run them.
     #
-    # Only the ALLOW direction is pinned here, deliberately. The refusal arms need a receipt file planted at a specific tree sha, which is fixture work this
-    # suite's `check` helper cannot express; they live in the dedicated gate suite
-    # instead. What these four pin is the half that decides whether the guard is tolerable: a guard that refuses things it has no business refusing is a guard that gets bypassed, and every one of these ran green before the guard existed.
+    # Only the ALLOW direction is pinned here, deliberately. The refusal arms need a receipt file planted at a specific tree sha, which is fixture work this suite's `check` helper cannot express; they live in the dedicated gate suite instead. What these four pin is the half that decides whether the guard is tolerable: a guard that refuses things it has no business refusing is a
+    # guard that gets bypassed, and every one of these ran green before the guard existed.
     case(
         "check 0 guards/block_unverified_push.py",
         bash_json("git status"),
@@ -452,9 +442,8 @@ STATIC: list[Case] = [
         bash_json("echo 'git commit --amend'"),
         "git-amend CONTROL: quoting the rule is not amending",
     ),
-    # AND THE EVASION THAT CAME WITH IT. Stripping quoted spans to stop this guard matching prose ALSO removed `sh -c "git commit --amend"`, where the whole command lives inside a quoted span -- the guard returned 0 on a real amend. The comment shipped alongside that draft claimed the dedicated
-    # test-block-git-amend.py pinned the `sh -c` case; it did not, and the claim was
-    # never checked. One probe found the false comment and the hole together, which is why these live here now rather than in a sentence.
+    # AND THE EVASION THAT CAME WITH IT. Stripping quoted spans to stop this guard matching prose ALSO removed `sh -c "git commit --amend"`, where the whole command lives inside a quoted span -- the guard returned 0 on a real amend. The comment shipped alongside that draft claimed the dedicated test-block-git-amend.py pinned the `sh -c` case; it did not, and the claim was never
+    # checked. One probe found the false comment and the hole together, which is why these live here now rather than in a sentence.
     case(
         "check 2 guards/block_git_amend.py",
         bash_json('sh -c "git commit --amend"'),
@@ -470,8 +459,7 @@ STATIC: list[Case] = [
         bash_json("echo 'git commit --allow-empty -m x'"),
         "git-empty-commit CONTROL: echoing it is not committing",
     ),
-    # The quoted case above was pinned; the UNQUOTED one was not, and the guard
-    # blocked on it until 2026-08-28. hook_scan_target strips quoted spans, so an ordinary sentence survives it intact and reached a matcher that looked for the phrase ANYWHERE. A doc line or worklist note was refused as a command.
+    # The quoted case above was pinned; the UNQUOTED one was not, and the guard blocked on it until 2026-08-28. hook_scan_target strips quoted spans, so an ordinary sentence survives it intact and reached a matcher that looked for the phrase ANYWHERE. A doc line or worklist note was refused as a command.
     case(
         "check 0 guards/block_git_empty_commit.py",
         bash_json("echo never use git commit --allow-empty to retrigger CI"),
@@ -623,9 +611,7 @@ STATIC: list[Case] = [
         bash_json("ls -la"),
         "host-toolchain: an unrelated command",
     ),
-    # NPX CANNOT RESOLVE A NON-NPM BINARY. Measured 2026-08-28: `npx --yes ruff format ...` failed with an npm resolution error even though the real ruff
-    # binary was on PATH the whole time; the session read that as "no ruff
-    # resolves" and hand-patched two files instead. This fires on shape alone.
+    # NPX CANNOT RESOLVE A NON-NPM BINARY. Measured 2026-08-28: `npx --yes ruff format ...` failed with an npm resolution error even though the real ruff binary was on PATH the whole time; the session read that as "no ruff resolves" and hand-patched two files instead. This fires on shape alone.
     case(
         "check 2 guards/block_host_toolchain_run.py",
         bash_json("npx --yes ruff format file.py"),
@@ -641,8 +627,7 @@ STATIC: list[Case] = [
         bash_json("npx --yes tsx scripts/foo.ts"),
         "host-toolchain CONTROL: npx running an actual npm package is untouched",
     ),
-    # BARE TOOL INVOCATIONS. The NEEDS table above only matches a GATE KEY in the
-    # command; running the tool directly was invisible to it.
+    # BARE TOOL INVOCATIONS. The NEEDS table above only matches a GATE KEY in the command; running the tool directly was invisible to it.
     case(
         "check 0 guards/block_host_toolchain_run.py",
         bash_json("ruff format file.py"),
@@ -695,8 +680,7 @@ STATIC: list[Case] = [
         bash_json("git push origin +refs/heads/main"),
         "force-push: a leading + on a refspec forces that ref",
     ),
-    # THE SHORTHAND FORMS, which the +refs/ case above did NOT cover. A refspec does not have to be refs-qualified to force, and the first fix for this guard matched only the long form: `+main:main` and `+HEAD:main` both slipped past a guard whose commit message said the hole was closed. Caught in review on PR #571. The case
-    # above tested the REGEX; these test the THREAT.
+    # THE SHORTHAND FORMS, which the +refs/ case above did NOT cover. A refspec does not have to be refs-qualified to force, and the first fix for this guard matched only the long form: `+main:main` and `+HEAD:main` both slipped past a guard whose commit message said the hole was closed. Caught in review on PR #571. The case above tested the REGEX; these test the THREAT.
     case(
         "check 2 guards/block_git_force_push.py",
         bash_json("git push origin +main:main"),
@@ -707,9 +691,8 @@ STATIC: list[Case] = [
         bash_json("git push origin +HEAD:main"),
         "force-push: +HEAD:<branch> is the same force in shorthand",
     ),
-    # THE WRAPPER BYPASS, review-found on PR #579. Every sibling guard touched in that same PR (block-cli-bundle.sh, block-protected-files.sh, etc.) routes through lib/command-scan.sh's hook_scan_target, which unwraps eval/sh -c
-    # payloads; this guard matched $CMD directly, so wrapping the forbidden push
-    # left the push text preceded by a quote character instead of a line start or accepted separator, and the command-position anchor never fired. Same class as the worktree-add wrapper case above, on the one guard this file's own comment calls "the whole security story".
+    # THE WRAPPER BYPASS, review-found on PR #579. Every sibling guard touched in that same PR (block-cli-bundle.sh, block-protected-files.sh, etc.) routes through lib/command-scan.sh's hook_scan_target, which unwraps eval/sh -c payloads; this guard matched $CMD directly, so wrapping the forbidden push left the push text preceded by a quote character instead of a line start or
+    # accepted separator, and the command-position anchor never fired. Same class as the worktree-add wrapper case above, on the one guard this file's own comment calls "the whole security story".
     case(
         "check 2 guards/block_git_force_push.py",
         bash_json('eval "git push --force origin main"'),
@@ -1057,9 +1040,7 @@ STATIC: list[Case] = [
         bash_json("bash -eux -c 'gh pr merge 531 --admin'"),
         "admin-merge: multi-flag wrapper (bash -eux -c) bypass blocked",
     ),
-    # Round-40 review finding: GNU long options and value-taking short options
-    # before -c also defeated the round-40 flag-shape regex; fixed via
-    # token-scanning (any intervening token is skippable) instead of a 4th regex.
+    # Round-40 review finding: GNU long options and value-taking short options before -c also defeated the round-40 flag-shape regex; fixed via token-scanning (any intervening token is skippable) instead of a 4th regex.
     case(
         "check 2 guards/block_admin_merge.py",
         bash_json("bash --posix -c 'gh pr merge 531 --admin'"),
@@ -1112,8 +1093,7 @@ STATIC: list[Case] = [
         bash_json("sh -c 'gh pr create --title x --body y'"),
         "nondraft-create: sh -c wrapper bypass blocked",
     ),
-    # Round-46 (live during a real /pr-merge): fields were parsed from the WHOLE bash line, so sibling gh invocations donated fields to each other and only ONE invocation per line was ever examined. Each of these pairs a compliant
-    # invocation with a violating one; both must be judged on their own segment.
+    # Round-46 (live during a real /pr-merge): fields were parsed from the WHOLE bash line, so sibling gh invocations donated fields to each other and only ONE invocation per line was ever examined. Each of these pairs a compliant invocation with a violating one; both must be judged on their own segment.
     case(
         "check 2 guards/block_nondraft_pr_create.py",
         bash_json(
@@ -1350,9 +1330,7 @@ STATIC: list[Case] = [
         "agent-state: the legacy dotted path is blocked too",
         "worklist.py --state",
     ),
-    # --- should PASS (exit 0) --- NOTE: block-admin-merge.sh verifies live thread state over the network on its
-    # enforcement path; only its pattern paths (--auto, --draft flags, non-matching
-    # commands) are unit-tested here.
+    # --- should PASS (exit 0) --- NOTE: block-admin-merge.sh verifies live thread state over the network on its enforcement path; only its pattern paths (--auto, --draft flags, non-matching commands) are unit-tested here.
     #
     # block-premature-ready.sh USED to be in that sentence, and the network was the stated reason. It was not a good one: `gh` is stubbed for the second-open-PR cases a few lines below, and stubbing it here reaches the enforcement path in both directions (see ready_case). "Cannot be tested here" is a claim, and the command that would have disproved it took one minute to write.
     case(
@@ -1469,8 +1447,7 @@ STATIC: list[Case] = [
         bash_json("gh pr checks 531"),
         "admin-merge: non-merge command ignored",
     ),
-    # Round-46 cross-attribution, the exact live firing: a sibling `gh pr view` donated its --repo to the merge's PR number, resolving a DIFFERENT repo's PR #66 (long merged, one unresolved thread) and blocking a clean merge. With the segment fix this stays a foreign-repo no-op and never hits the
-    # network; with the bug it resolves rediacc/renet and blocks.
+    # Round-46 cross-attribution, the exact live firing: a sibling `gh pr view` donated its --repo to the merge's PR number, resolving a DIFFERENT repo's PR #66 (long merged, one unresolved thread) and blocking a clean merge. With the segment fix this stays a foreign-repo no-op and never hits the network; with the bug it resolves rediacc/renet and blocks.
     case(
         "check 0 guards/block_admin_merge.py",
         bash_json("gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo otherorg/tool"),
@@ -1679,9 +1656,7 @@ STATIC: list[Case] = [
     # this failure is LOUD (a blocked command naming its workaround) while every narrowing that would admit the doc edit fails SILENTLY -- a real long poll runs and nobody is told. Exempting heredoc bodies is the most tempting of those, and the worst: a heredoc is where a genuine long sleep would hide.
     #
     # So these two assert exit 2. If someone later "fixes" the false positive, these turn red and force the decision to be re-made deliberately rather than drifting. The workaround stays: write the file with the Write tool and pass it by path. The shapes below were probed, not assumed. A first draft of these cases asserted exit 2 on payloads that do not actually match either
-    # pattern
-    # ("sleeps 90s" is not `sleep +[0-9]+`; a `done;` sits between the sleep and the
-    # gh in the until-loop form), so they failed on correct code -- a test pinning a false positive that could not occur. These two are the real triggers.
+    # pattern ("sleeps 90s" is not `sleep +[0-9]+`; a `done;` sits between the sleep and the gh in the until-loop form), so they failed on correct code -- a test pinning a false positive that could not occur. These two are the real triggers.
     case(
         "check 2 guards/block_ci_polling.py",
         bash_json("cat > doc.md <<'EOF'\nPoll with sleep 20; gh run view $R --json status\nEOF"),
@@ -1692,9 +1667,7 @@ STATIC: list[Case] = [
         bash_json("git commit -F - <<'MSG'\nits sleep 20 arm precedes its sleep 90 arm\nMSG"),
         "long-sleep: a commit message quoting a literal long sleep is blocked on purpose (operator ruling 2026-08-25)",
     ),
-    # The BOUNDARY, and the reason the false positive is narrower than it sounds:
-    # prose showing the SANCTIONED until-loop is NOT blocked, because a `done;` sits
-    # between its sleep and its gh. Only an inline `sleep N; gh run view` trips it.
+    # The BOUNDARY, and the reason the false positive is narrower than it sounds: prose showing the SANCTIONED until-loop is NOT blocked, because a `done;` sits between its sleep and its gh. Only an inline `sleep N; gh run view` trips it.
     case(
         "check 0 guards/block_ci_polling.py",
         bash_json(
@@ -1715,9 +1688,7 @@ STATIC: list[Case] = [
         bash_json("git commit -F /tmp/commit-msg.txt"),
         "long-sleep: the documented workaround (message by path) passes",
     ),
-    # The self-matching pgrep waiter. The FIRE case is the literal shape that ran
-    # 70 minutes past its condition on 2026-08-26; the first control is the
-    # documented remedy, and it must pass BY CONSTRUCTION -- a bracket class does not match its own literal text, which is the same property the hook tests
+    # The self-matching pgrep waiter. The FIRE case is the literal shape that ran 70 minutes past its condition on 2026-08-26; the first control is the documented remedy, and it must pass BY CONSTRUCTION -- a bracket class does not match its own literal text, which is the same property the hook tests
     # with. The last two keep the scope honest: a one-shot diagnostic and an
     # artifact waiter are not this bug and must not be refused.
     case(
@@ -1730,8 +1701,7 @@ STATIC: list[Case] = [
         EMPTY_INPUT,
         "running-script CONTROL: no file_path names nothing",
     ),
-    # A VARIABLE EXPANSION IS NOT A FILENAME. `"$SP/mp-$ver.sh"` yielded the candidate `ver.sh` -- the tail of a variable name plus the suffix, naming a file that exists nowhere. The guard cannot know what $ver expands to, so it
-    # must not guess; both defects fired on one command while measuring this guard.
+    # A VARIABLE EXPANSION IS NOT A FILENAME. `"$SP/mp-$ver.sh"` yielded the candidate `ver.sh` -- the tail of a variable name plus the suffix, naming a file that exists nowhere. The guard cannot know what $ver expands to, so it must not guess; both defects fired on one command while measuring this guard.
     case(
         "check 0 guards/block_bash_write_to_running_script.py",
         bash_json('python3 - "$SP/mp-$ver.sh" "$SP/out-$ver.sh" && x.write_text(1)'),
@@ -1739,9 +1709,7 @@ STATIC: list[Case] = [
     ),
     # A HOOK-CHAIN SIBLING IS NOT A RUNNING JOB. Every pre-bash guard executes on every Bash call, so without this exclusion the guard blocked all four of the commands repairing it -- permanently, with no moment of quiet to wait for.
     #
-    # THE SUBJECT MOVED, the case did not. This named block-binary-deploy.sh until the W5 P7 cutover ported it to Python and moved the bash original out of the
-    # chain; the payload has to name a bash guard that is STILL registered in the
-    # pre-bash chain, or it stops being an instance of the exclusion it controls. block-pathspecless-git-commit.sh is the one that is left.
+    # THE SUBJECT MOVED, the case did not. This named block-binary-deploy.sh until the W5 P7 cutover ported it to Python and moved the bash original out of the chain; the payload has to name a bash guard that is STILL registered in the pre-bash chain, or it stops being an instance of the exclusion it controls. block-pathspecless-git-commit.sh is the one that is left.
     case(
         "check 0 guards/block_bash_write_to_running_script.py",
         bash_json("sed -i s/a/b/ %s/pre-bash/block-pathspecless-git-commit.sh" % HOOKS),
@@ -1916,8 +1884,7 @@ STATIC: list[Case] = [
         bash_json("git push gitlab refs/heads/main:refs/heads/main --follow-tags"),
         "force-push: the /pr-merge GitLab refspec push is NOT blocked",
     ),
-    # The `[^|;&]*` boundary, asserted rather than assumed: a forcing flag on the far
-    # side of a pipe belongs to a different command, so the scan must stop at the pipe instead of pairing it with the push.
+    # The `[^|;&]*` boundary, asserted rather than assumed: a forcing flag on the far side of a pipe belongs to a different command, so the scan must stop at the pipe instead of pairing it with the push.
     case(
         "check 0 guards/block_git_force_push.py",
         bash_json('echo "git push origin main" | grep -q -- --mirror'),
@@ -1949,9 +1916,7 @@ STATIC: list[Case] = [
         "suppressions: clean",
     ),
     # THE NEAR-MISS that `const x = 1;` never tested. block-suppressions' own header
-    # named this over-block class as a known risk and nothing asserted against it, so the guard refused documentation of the rule it enforces -- and then refused the edit repairing it, because the repair's comment named the tokens. A real
-    # suppression sits immediately after a comment opener; prose puts words in
-    # between, and those words are the whole difference.
+    # named this over-block class as a known risk and nothing asserted against it, so the guard refused documentation of the rule it enforces -- and then refused the edit repairing it, because the repair's comment named the tokens. A real suppression sits immediately after a comment opener; prose puts words in between, and those words are the whole difference.
     case(
         "check 0 guards/block_suppressions.py",
         wf_edit_json("docs/style.md", "Never write @ts-ignore; fix the type instead."),

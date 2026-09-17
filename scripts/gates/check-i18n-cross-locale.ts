@@ -329,9 +329,7 @@ function selftest(): void {
   check('German text sitting in the French file is reported', pairs(), ['fr<-de']);
   reseed();
 
-  // Control: es and pt legitimately share near-identical strings. The first version of
-  // this gate reported 136 of these; it must report none. Both are in CLEAN already, so
-  // the clean-tree control above covers it — this pins the specific pair.
+  // Control: es and pt legitimately share near-identical strings. The first version of this gate reported 136 of these; it must report none. Both are in CLEAN already, so the clean-tree control above covers it — this pins the specific pair.
   check(
     'es/pt near-identical strings are not reported (control)',
     findCrossLocaleContamination(root).filter((f) => f.locale === 'pt' || f.locale === 'es').length,
@@ -464,9 +462,7 @@ function selftest(): void {
   );
   reseed();
 
-  // The startup assertion, driven with doctored data so a REAL gap and a TEST gap take
-  // the identical code path. Removing a list must fail; this is the "we shipped a
-  // fourteenth locale and forgot its detection data" case, and it must be red on day one rather than the next time someone looks at a locale tree.
+  // The startup assertion, driven with doctored data so a REAL gap and a TEST gap take the identical code path. Removing a list must fail; this is the "we shipped a fourteenth locale and forgot its detection data" case, and it must be red on day one rather than the next time someone looks at a locale tree.
   const withoutKorean = Object.fromEntries(
     Object.entries(NATIVE_SCRIPT).filter(([l]) => l !== 'ko')
   );

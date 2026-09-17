@@ -11,9 +11,7 @@ THE DEFECT THIS CLOSES, paid for on 2026-08-23. `.claude/hooks/stop/ test-teamma
 
 Both answer "is what we declared wired up?". Neither answers "is there anything here we forgot to declare?" -- and that second question is the one an orphan fails. A test nobody runs is worse than no test: it reports 20/20 to whoever runs it by hand, and it is counted as coverage in review.
 
-WHAT COUNTS AS REACHED, deliberately generous. This gate is not trying to model
-the runner; it is trying to catch a file with NO path to CI at all. There are
-three ways in, and they are checked in this order:
+WHAT COUNTS AS REACHED, deliberately generous. This gate is not trying to model the runner; it is trying to catch a file with NO path to CI at all. There are three ways in, and they are checked in this order:
 
   1. the file sits under a pytest root the ini collects (collected_roots),
   2. a gate manifest entry NAMES it, read structurally from gates.lock.json
@@ -47,9 +45,7 @@ SEARCH_DIRS = (
 )
 NAME_RE = re.compile(r"^test[-_].*\.(py|sh|ts)$")
 
-# Files that legitimately run only by hand, each with a stated reason. Adding to
-# this list is a deliberate act; forgetting to wire a NEW test file is not,
-# which is the asymmetry that makes this gate work.
+# Files that legitimately run only by hand, each with a stated reason. Adding to this list is a deliberate act; forgetting to wire a NEW test file is not, which is the asymmetry that makes this gate work.
 EXEMPT = {
     # <basename>: reason
 }
@@ -58,8 +54,7 @@ EXEMPT = {
 # the bug was caught: a pathspec that is wrong in the narrowing direction produces FALSE POSITIVES here, so it announced itself. Had it been wrong the other way it would have gone quiet instead.
 #
 # `scripts/ci-runner` USED TO BE IN THIS TUPLE and was removed on 2026-09-06 (W2.4a). It was here for exactly one reason -- to text-match a basename inside the 5,700-line TypeScript literal in manifest.ts -- and registration is not a text fact, it is a structured one. See manifest_reached() below, which reads the committed JSON projection instead. The two were run side by side over
-# the
-# live tree before the swap; the evidence is in that function's docstring.
+# the live tree before the swap; the evidence is in that function's docstring.
 REF_DIRS = (
     ".claude/hooks",
     ".ci/scripts",
@@ -76,8 +71,7 @@ def manifest_tokens():
     """Every file path the gate manifest names, as a set of strings.
 
     THE THIRD WAY OF BEING REACHED, and the one this gate got by accident until 2026-09-06. `scripts/ci-runner` was simply a REF_DIR, so "wired into the gate manifest" was decided by whether the basename appeared as text anywhere in a 5,700-line TypeScript literal. That is the same shape of reader that shipped wrong twice in this repo -- see `_manifest_entries` in
-    .claude/hooks/stop/wl_reggate.py (259 of 261 entries seen, found 2026-08-20) and check-gate-id-convention.sh (373 of 420, found 2026-09-06). A text match
-    is not a registration; it happens to agree with one most of the time.
+    .claude/hooks/stop/wl_reggate.py (259 of 261 entries seen, found 2026-08-20) and check-gate-id-convention.sh (373 of 420, found 2026-09-06). A text match is not a registration; it happens to agree with one most of the time.
 
     PROVED EQUIVALENT BEFORE THE SWAP, which is the only thing that makes a drain a drain rather than a silent re-scoping. Both readers were run over the live tree at commit ac817a647 on 2026-09-06:
 
@@ -86,8 +80,7 @@ def manifest_tokens():
         SET EQUAL: True             per-file verdict differences: []
         reached ONLY via scripts/ci-runner text: 115, all 115 reached by the lock
 
-    115 of the 164 files depended on that directory alone, so this was not a
-    cosmetic swap; every one of them is covered structurally now.
+    115 of the 164 files depended on that directory alone, so this was not a cosmetic swap; every one of them is covered structurally now.
 
     THREE FIELDS, deliberately, and `ci.test` is the arguable one. It declares which CI job covers a gate rather than what the gate runs -- check-gate-id- convention.sh says so at length and refuses to police it. Including it here is still right, because this gate asks the strictly weaker question "does ANYTHING point at this file", and its own header calls that generosity a design
     choice: a reference from an unreachable caller is a manifest problem, which the other two wiring gates DO see.
@@ -178,8 +171,7 @@ def collected_roots():
 
     Adding the two pytest roots to SEARCH_DIRS on 2026-09-06 therefore reported all eight of them as orphans at once -- eight files that a green `check:ci-pytest` had just collected and passed. Eight simultaneous findings of the same shape is a gate being wrong, not a tree being broken.
 
-    Read from the ini rather than restated, so the two cannot drift; a root that
-    disappears from `testpaths` stops conferring reachability the same day.
+    Read from the ini rather than restated, so the two cannot drift; a root that disappears from `testpaths` stops conferring reachability the same day.
     """
     try:
         with (REPO / "pyproject.toml").open("rb") as fh:

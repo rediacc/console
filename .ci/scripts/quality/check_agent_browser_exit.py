@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported agent-browser exit-status gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.agent_browser_exit`, which pytest and the
-port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.agent_browser_exit`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 7). See DRIVEN, below.
 
@@ -16,9 +14,7 @@ NO `id:` IS CORRECT HERE, checked rather than assumed: `derivedId` (`gate-header
 
 `selftest: true` is inert for a `.py` gate (`headerLines` emits it only for `.ts`, `gate-bind.ts:598`) and is carried because the twin declared it and because `agent_browser_exit.main(["--selftest"])` exits 0.
 
-THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files.
-The twin infers `[]` and this entry point infers `[]`; both resolve to the empty
-set `needs: none` declares.
+THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files. The twin infers `[]` and this entry point infers `[]`; both resolve to the empty set `needs: none` declares.
 
 THIS ENTRY POINT IS INVISIBLE TO THE GATE IT REGISTERS, and that was checked rather than assumed, because a new file landing in the swept directory is exactly how a cutover changes a verdict by accident. The twin's sweep is
 `grep -rl --include='*.sh'` (`check-agent-browser-exit.sh:55`), so a `.py` file
@@ -31,9 +27,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, 368 bytes, sha256 8c4f209925a0a5bb...
     stderr: BYTE-IDENTICAL, EMPTY on both sides
 
-NO NORMALISATION WAS APPLIED and none was needed. The twin was first run TWICE
-against an unchanged tree to establish byte-stability against itself; it is
-stable on both streams.
+NO NORMALISATION WAS APPLIED and none was needed. The twin was first run TWICE against an unchanged tree to establish byte-stability against itself; it is stable on both streams.
 
 DRIVEN RED AS WELL, AND THE FIRST PLANT DID NOT FIRE. That is worth writing down because the CONTROL was wrong, not the gate, which is the same shape that cost batch 6 two plants. The first probe was a shell script under `.ci/scripts/` containing a bare `agent-browser open "$url"`, and BOTH sides stayed green. The cause is `check-agent-browser-exit.sh:31`: the sweep skips any file
 that does not match `^[[:space:]]*set[[:space:]]+-[a-z]*e`, deliberately, because only a script that would DIE on a non-zero status has a load-bearing exit code. The probe had no `set -e`, so it was never a subject. Suspecting the gate at that point would have been wrong in both directions: the gate was right, and the probe was not in its corpus.
@@ -51,8 +45,7 @@ satisfies the `set -e` test the sweep applies next.
 
 The plant was removed with `rm` and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-agent-browser-exit.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-agent-browser-exit.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: agent-browser exit status needs: none selftest: true `slow: true ---- end gate ----
 """

@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the prose-style gate (R1-R18). Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.prose_style`, which pytest and
-this file's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.prose_style`, which pytest and this file's own `--selftest` import directly.
 
 NOT A PORT. Every other guard and gate in this family was transliterated from a bash original and is judged against it by a differential. There is no bash original here and there never was: `.ci/scripts/quality/check_language_policy.py` freezes the SET of shell files under `.ci` and `.claude` and refuses a new one ("the surface may shrink and may never grow"), so a twin could not
 have been written even as a formality. The evidence this gate works is therefore its own, and it is of three kinds rather than one:
@@ -35,9 +33,7 @@ WHAT A GREEN HERE DOES AND DOES NOT MEAN, said plainly so nobody reads it as mor
   * `.sh` is not scanned and `packages/www` is excluded. Both are decisions
     recorded in the rules file, not oversights.
 
-ZERO INPUTS IS A FAILURE HERE, in two places rather than one. Zero files matched
-fails; so does a non-empty file set that yields ZERO extracted prose lines, which
-is the extractor breaking rather than the glob, and which would otherwise look exactly like a clean tree.
+ZERO INPUTS IS A FAILURE HERE, in two places rather than one. Zero files matched fails; so does a non-empty file set that yields ZERO extracted prose lines, which is the extractor breaking rather than the glob, and which would otherwise look exactly like a clean tree.
 
 ---- gate ---- step: Check prose style (the work, not the person) needs: none selftest: true lane: quality-content ---- end gate ----
 """

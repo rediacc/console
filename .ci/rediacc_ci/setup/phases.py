@@ -23,8 +23,7 @@ TWO READERS, ASKING DIFFERENT QUESTIONS, AND BOTH ARE NEEDED.
                       therefore the one that can be compared against a real
                       traced run of the bash.
 
-A gate that only ran the first would pass a port that dropped a conditional; a
-gate that only ran the second would pass a port that dropped a phase nobody's fixture happened to enable. `shadow_driver.py` runs both.
+A gate that only ran the first would pass a port that dropped a conditional; a gate that only ran the second would pass a port that dropped a phase nobody's fixture happened to enable. `shadow_driver.py` runs both.
 """
 
 from __future__ import annotations
@@ -47,9 +46,7 @@ class Phase:
     `key` is the bash callee's own name, or for the two phases the bash spells inline, the distinctive token of the command it runs. `fatal` records whether `setup()` writes `|| return 1` after it, which is not decoration: `setup_git_identity` is called WITHOUT it at `.ci/legacy/run-legacy.sh:650` while `setup_git_credentials` on the very next line has it, and that asymmetry is a
     decision the bash made on purpose.
 
-    `condition` names the thing that has to be true for the phase to run at all,
-    or "" for the unconditional ones. It is prose for the reader; `plan()` holds
-    the executable form, because a predicate expressed as a string is a predicate nobody can test.
+    `condition` names the thing that has to be true for the phase to run at all, or "" for the unconditional ones. It is prose for the reader; `plan()` holds the executable form, because a predicate expressed as a string is a predicate nobody can test.
     """
 
     key: str
@@ -94,8 +91,7 @@ PHASES: tuple[Phase, ...] = (
 PHASE_KEYS: tuple[str, ...] = tuple(phase.key for phase in PHASES)
 
 # `setup_docker_probe` IS NOT HERE ON PURPOSE. It is defined at `.ci/lib/setup.sh:575` and called from no file in the repository, measured 2026-09-09 by `grep -rn setup_docker_probe` over the whole tree: the only two occurrences are its own definition and a prose list in `docs/ci-overhaul/06-progress.md:5109`. `setup()` runs `ensure_docker_installed` instead. `host.docker_probe`
-# carries the port so the
-# code is not lost; this list carries the truth about what runs.
+# carries the port so the code is not lost; this list carries the truth about what runs.
 DEFINED_BUT_UNCALLED: tuple[str, ...] = ("setup_docker_probe",)
 
 
@@ -127,9 +123,7 @@ def function_body_python(text: str, name: str) -> str:
     blank nor indented. A shared implementation with a `language=` argument would
     be two functions wearing one name.
 
-    BY TEXT AND NOT BY `ast`, deliberately. The caller wants SOURCE ORDER of textual mentions inside a function, including the ones inside comments so it
-    can strip them itself; an AST has already thrown the comments away, so a
-    reader could not tell whether a comment-only mention was excluded on purpose or lost by the parser.
+    BY TEXT AND NOT BY `ast`, deliberately. The caller wants SOURCE ORDER of textual mentions inside a function, including the ones inside comments so it can strip them itself; an AST has already thrown the comments away, so a reader could not tell whether a comment-only mention was excluded on purpose or lost by the parser.
     """
     start = re.compile(r"^def %s\(" % re.escape(name))
     out: list[str] = []
@@ -158,8 +152,7 @@ def strip_comments(body: str) -> str:
 def from_source(root: pathlib.Path) -> list[str]:
     """The phase keys the bash `setup()` contains, in source order.
 
-    A key is counted at its FIRST occurrence, so a phase named again in a later line (a message that mentions `ensure_deps`, say) does not move it. Comments
-    are stripped first; see `strip_comments`.
+    A key is counted at its FIRST occurrence, so a phase named again in a later line (a message that mentions `ensure_deps`, say) does not move it. Comments are stripped first; see `strip_comments`.
     """
     path = root.joinpath(*SETUP_BODY_FILE)
     try:
@@ -194,9 +187,8 @@ def plan(
                                      [[ -f "$ROOT_DIR/private/account/.env" ]]`
         devbox_up                   `[[ "$do_start" != true ]]` returns early
 
-    NOTE THE THIRD IS A `return 0`, NOT A SKIP. Under `--no-start` the bash prints "Host prepared." and returns, so `devbox_up` is the only phase after the branch and dropping it is the whole of the difference. Written as a
-    conditional here because there is nothing after it; a phase added below
-    `devbox_up` later would have to become an early exit instead, and this comment is the warning.
+    NOTE THE THIRD IS A `return 0`, NOT A SKIP. Under `--no-start` the bash prints "Host prepared." and returns, so `devbox_up` is the only phase after the branch and dropping it is the whole of the difference. Written as a conditional here because there is nothing after it; a phase added below `devbox_up` later would have to become an early exit instead, and this comment is the
+    warning.
     """
     keys: list[str] = []
     for phase in PHASES:

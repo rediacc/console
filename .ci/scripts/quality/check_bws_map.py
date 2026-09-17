@@ -23,9 +23,7 @@ DELIBERATELY NOT ASSERTED
   - that a value is non-empty. sm-action exports "" without complaint and zod
     normalises "" to undefined; that is the deploy scripts' non-empty guards.
 
-CALLER FLOOR. The shadow-run wired 20 workflow files to the composite on 2026-09-02, so MIN_CALLERS is 20: an edit that silently drops the wiring from a file now fails here instead of quietly narrowing what the shadow compares.
-Raise it when a new workflow gains the composite; never lower it to get past
-a red.
+CALLER FLOOR. The shadow-run wired 20 workflow files to the composite on 2026-09-02, so MIN_CALLERS is 20: an edit that silently drops the wiring from a file now fails here instead of quietly narrowing what the shadow compares. Raise it when a new workflow gains the composite; never lower it to get past a red.
 
 COVERAGE, ADDED 2026-09-02, AND WHY ONE DIRECTION WAS NEVER ENOUGH.
 Assertion 1 is `requested SUBSET-OF map`. Measured on the real tree, 53 secrets were mapped and 35 requested, and the 18-name gap was an EXACT BIJECTION with "has no GitHub secret of that name" -- the shadow's left operand is a GitHub secret, so a name with no twin has nothing to compare against. That is one mechanical consequence, not eighteen decisions. But nothing said so, and
@@ -113,9 +111,8 @@ MIN_MAP_ENTRIES = int(os.environ.get("BWS_MIN_MAP_ENTRIES", "30"))
 # secrets it compared against were deleted, so every comparison read "EMPTY (github=unset)
 # -- nothing was compared" and took all of CI down with it. That job's own read stays on GitHub deliberately (CLAUDE_CODE_OAUTH_TOKEN is repo-scoped and survives), so nothing consumed the fetch any more.
 #
-# 20 since 2026-09-04, down from 22: the breakpoint session job's fetch was REMOVED on purpose (it exported four credentials into a job that hands a human a shell), and the frozen template counts as a second file. A floor that is lowered to match a deliberate
-# removal is honest; one lowered to match a finding is not, which is why the reason is
-# written here rather than in a commit nobody re-reads.
+# 20 since 2026-09-04, down from 22: the breakpoint session job's fetch was REMOVED on purpose (it exported four credentials into a job that hands a human a shell), and the frozen template counts as a second file. A floor that is lowered to match a deliberate removal is honest; one lowered to match a finding is not, which is why the reason is written here rather than in a commit
+# nobody re-reads.
 MIN_CALLERS = int(os.environ.get("BWS_MIN_CALLERS", "19"))  # files, not jobs; see the docstring
 
 # A BARE REFERENCE, not a whole expression. This used to demand the reference BE the
@@ -408,8 +405,7 @@ def preimage_problems(alias: dict[str, str], secrets: dict, read: set[str]) -> l
     return out
 
 
-# The gh CLI reads these from the environment; they are not shadow legs and never
-# were. Measured 2026-09-02: they are the ONLY two `GH_*` names across all 22 caller files that are not part of a shadow triple, which is what makes assertion 11 an equality rather than a subset.
+# The gh CLI reads these from the environment; they are not shadow legs and never were. Measured 2026-09-02: they are the ONLY two `GH_*` names across all 22 caller files that are not part of a shadow triple, which is what makes assertion 11 an equality rather than a subset.
 GH_CLI_ENV = frozenset({"TOKEN", "APP_TOKEN", "REPO"})
 SHADOW_NAMES_RE = re.compile(r"^\s*SHADOW_NAMES:\s*(.+)$", re.MULTILINE)
 GH_ENV_RE = re.compile(r"^\s*GH_([A-Z0-9_]+):", re.MULTILINE)
@@ -514,8 +510,7 @@ def shadow_triple_problems() -> tuple[list[str], int]:
     of the three places and not the others produces `GH_<new>` unset, which the step reports as "EMPTY ... nothing was compared". It fails LOUDLY, which is right, but it fails in CI, minutes after a push, on a defect that is a pure text property of the file.
 
     It cost a CI round to learn: a rename pass rewrote the bare `GITHUB_APP_PRIVATE_KEY` in SHADOW_NAMES but not the `GH_`/`BWS_`-prefixed forms, because its lookbehind treated the `_` in `GH_` as a word character. 104 lines across 15 files, and the first thing that noticed was run 33690518859. secret-rename.py's own pattern has carried an optional `(GH_|BWS_)` group for exactly
-    this reason since it was
-    written; the repair script did not, and nothing compared them.
+    this reason since it was written; the repair script did not, and nothing compared them.
 
     Set equality, not containment, in both directions: an orphan `GH_X` with no SHADOW_NAMES entry is a leg that will never be compared, which is the silent half.
 
@@ -669,14 +664,12 @@ def load_exemptions(path: Path | None = None) -> tuple[dict, list[str]]:
 def read_order_problems() -> tuple[list[str], int]:
     """Assertion 13: every `${{ env.BWS_X }}` read has a fetch of X EARLIER in its job.
 
-    THE CONVERSE OF ASSERTION 12, and the one the cutover can actually break. That one
-    asks whether a job that reads a GitHub secret also fetches its twin; this asks
-    whether a job that reads a BITWARDEN value ever fetched it. The failure it catches is silent by construction: `env.BWS_APP_PRIVATE_KEY` with no fetch is an EMPTY STRING, not an error, and app-token's complaint then names the App rather than the key.
+    THE CONVERSE OF ASSERTION 12, and the one the cutover can actually break. That one asks whether a job that reads a GitHub secret also fetches its twin; this asks whether a job that reads a BITWARDEN value ever fetched it. The failure it catches is silent by construction: `env.BWS_APP_PRIVATE_KEY` with no fetch is an EMPTY STRING, not an error, and app-token's complaint then
+    names the App rather than the key.
 
     ORDER, not just presence, because seven jobs on this branch had the fetch step AFTER app-token -- the shape that made the cutover a reordering rather than a substitution. A fetch that runs later supplies nothing to a read above it.
 
-    It matters most for what CI never runs. Nine of these files are cron- or dispatch-only (cd-deploy-*, promote-stable, housekeeping, edge-clone-d1,
-    cleanup-preview, backfill-release-sentinel); a mistake there ships and waits.
+    It matters most for what CI never runs. Nine of these files are cron- or dispatch-only (cd-deploy-*, promote-stable, housekeeping, edge-clone-d1, cleanup-preview, backfill-release-sentinel); a mistake there ships and waits.
     """
     problems: list[str] = []
     n = 0
@@ -1077,9 +1070,7 @@ jobs:
     if not ok10c:
         bad += 1
 
-    # Assertion 8's two pure-logic edges. The corpus scan itself shells out to
-    # git and is exercised against the real tree; what is pinned here is the
-    # underscore skip and the refusal to judge an empty name set -- together they are the only ways this assertion can go quiet without looking.
+    # Assertion 8's two pure-logic edges. The corpus scan itself shells out to git and is exercised against the real tree; what is pinned here is the underscore skip and the refusal to judge an empty name set -- together they are the only ways this assertion can go quiet without looking.
     only_underscore = represented_problems({"_PARKED_ON_PURPOSE": {"id": "x"}}, {})[0]
     ok5 = any("refusing to pass vacuously" in m for m in only_underscore)
     print(
@@ -1214,9 +1205,8 @@ def main() -> int:
     callers = 0
     workflows = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
     if not workflows:
-        # ZERO FILES is not "zero callers". Zero callers among real workflows is
-        # the pre-cutover state and passes with a note below; zero workflow files
-        # means the scan lost its subject entirely, and a gate that passes over an empty set is the failure mode this repo names most often. test-gate-anti-vacuity.sh caught exactly this on the first run: the map is copied into its empty tree, so without this clause the gate exited 0 there asserting nothing.
+        # ZERO FILES is not "zero callers". Zero callers among real workflows is the pre-cutover state and passes with a note below; zero workflow files means the scan lost its subject entirely, and a gate that passes over an empty set is the failure mode this repo names most often. test-gate-anti-vacuity.sh caught exactly this on the first run: the map is copied into its empty
+        # tree, so without this clause the gate exited 0 there asserting nothing.
         print(
             "✗ no workflow files under .github/workflows; refusing to pass vacuously",
             file=sys.stderr,

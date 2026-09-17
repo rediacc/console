@@ -1,9 +1,7 @@
 """`rediacc_ci.core.env` against real files, and against the bash it replaces.
 
-WHY THE COMPARISON IS AGAINST A LIVE `set -a; source` AND NOT A TABLE OF
-EXPECTED STRINGS. The module's contract is "what bash would have read, minus two named divergences". A table of hand-written expectations proves only that
-the author's belief about bash matches the author's code; running bash proves
-the belief. So the awkward cases go through `differential.bash_streams`, and the two DELIBERATE divergences (an unquoted `#`, and whitespace around a value) are the only places a case asserts a difference -- stated as a difference, with the bash answer written down next to it.
+WHY THE COMPARISON IS AGAINST A LIVE `set -a; source` AND NOT A TABLE OF EXPECTED STRINGS. The module's contract is "what bash would have read, minus two named divergences". A table of hand-written expectations proves only that the author's belief about bash matches the author's code; running bash proves the belief. So the awkward cases go through `differential.bash_streams`, and
+the two DELIBERATE divergences (an unquoted `#`, and whitespace around a value) are the only places a case asserts a difference -- stated as a difference, with the bash answer written down next to it.
 
 EVERY CASE HERE CARRIES ITS OTHER DIRECTION. That is not a style preference: a redaction test that only proves masking happens passes when the function returns the empty string, and a CRLF test that only proves no carriage return survives passes when the parser drops the value. Where the negative direction is not obvious from the assertion it is a separate `..._control_...` case,
 named so that deleting it is visible.
@@ -181,8 +179,7 @@ def test_an_unterminated_quote_is_taken_literally_not_raised() -> None:
 def test_a_hash_inside_an_unquoted_value_is_kept(tmp_path) -> None:
     """DIVERGENCE 1, asserted AS a divergence with bash's answer alongside.
 
-    bash ends the assignment at the space-preceded `#`; this keeps the whole
-    value. Writing the bash answer down here is what stops a future reader "fixing" the divergence back without knowing it was chosen.
+    bash ends the assignment at the space-preceded `#`; this keeps the whole value. Writing the bash answer down here is what stops a future reader "fixing" the divergence back without knowing it was chosen.
     """
     text = "A=val#frag\nB=val # note\n"
     path = _write(tmp_path, text)
@@ -215,9 +212,7 @@ def test_whitespace_around_a_value_is_stripped(tmp_path) -> None:
 def test_crlf_and_lf_files_parse_identically(tmp_path) -> None:
     """The CRLF requirement, with the LF file as its own control.
 
-    A parser that dropped every value would satisfy "no carriage return
-    survives"; it could not satisfy "identical to the LF answer, which is
-    non-empty".
+    A parser that dropped every value would satisfy "no carriage return survives"; it could not satisfy "identical to the LF answer, which is non-empty".
     """
     lf = env.read_pairs(_write(tmp_path, AWKWARD, "lf.env", newline="\n"))
     crlf = env.read_pairs(_write(tmp_path, AWKWARD, "crlf.env", newline="\r\n"))

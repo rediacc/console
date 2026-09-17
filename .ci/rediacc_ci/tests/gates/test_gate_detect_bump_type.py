@@ -5,17 +5,12 @@ Both-ways test for `.ci/scripts/version/detect-bump-type.sh`, the script that tu
 WHY THIS CLASS NEEDS A GATE. The thing being replaced was green forever while answering nothing: it resolved the PR by grepping `(#123)` out of the HEAD commit title, so on any merge whose title did not carry that shape it silently answered `patch`. Every case here that expects `patch` therefore also proves the API was REACHED, from a call log the fake `gh` appends to. A `patch`
 that came from a fallback is not the same verdict as a `patch` that came from a lookup, and without the call log the two are indistinguishable.
 
-THE FAKE `gh` IS THE TWIN'S, BYTE FOR BYTE. It is a routing shim over per-SHA fixture files that applies the caller's own `--jq`, and it is the thing the
-subject is actually driven against; translating it would mean the two sides drive
-different subjects.
+THE FAKE `gh` IS THE TWIN'S, BYTE FOR BYTE. It is a routing shim over per-SHA fixture files that applies the caller's own `--jq`, and it is the thing the subject is actually driven against; translating it would mean the two sides drive different subjects.
 
-WHERE THE FIXTURE BUILDER DIFFERS FROM THE TWIN, AND WHY THEY AGREE. The twin
-builds each PR object with `jq -nc` and each fixture array with `jq -s '.'`; this
-module builds the same structures with `json.dumps`. The consumer is `jq -r <expr> <file>` inside the fake, which parses the file, so only the PARSED structure is observable and formatting is not. `jq` is still required, by the fake and by the subject, and this module probes for it rather than letting a missing binary surface as an unrouted-path exit code.
+WHERE THE FIXTURE BUILDER DIFFERS FROM THE TWIN, AND WHY THEY AGREE. The twin builds each PR object with `jq -nc` and each fixture array with `jq -s '.'`; this module builds the same structures with `json.dumps`. The consumer is `jq -r <expr> <file>` inside the fake, which parses the file, so only the PARSED structure is observable and formatting is not. `jq` is still required, by
+the fake and by the subject, and this module probes for it rather than letting a missing binary surface as an unrouted-path exit code.
 
-NO `xdist_group`. Every case builds its own git repository, fixture directory and
-call log inside pytest's own `tmp_path`; nothing outside it is written, no port is
-bound and no module global is mutated. The two tracked files it reads (`.github/labels.yml` and the subject) are never written.
+NO `xdist_group`. Every case builds its own git repository, fixture directory and call log inside pytest's own `tmp_path`; nothing outside it is written, no port is bound and no module global is mutated. The two tracked files it reads (`.github/labels.yml` and the subject) are never written.
 """
 
 import json
@@ -203,9 +198,7 @@ class World:
         env.update(overrides)
         result = harness.run(["bash", str(UNDER_TEST), "--verbose"], cwd=self.repo, env=env)
         self.rc = result.rc
-        # The twin strips nothing but captures via `$(...)`, which drops trailing
-        # newlines; `.strip()` here is the same normalisation on the one-word
-        # verdict this script prints.
+        # The twin strips nothing but captures via `$(...)`, which drops trailing newlines; `.strip()` here is the same normalisation on the one-word verdict this script prints.
         self.out = result.out.strip()
         self.err = result.err
 

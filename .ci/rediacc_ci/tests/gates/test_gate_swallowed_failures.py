@@ -7,15 +7,12 @@ rather than paraphrased, so this file tests against the bytes that actually ship
 
 WHY THE TWO HISTORICAL CASES ARE THE CENTRE OF THIS FILE. A lint of this shape is only worth having if it fires on the real defect and stays quiet on the real fix. Everything else here is calibration: each remaining case pins one exemption, and an exemption that cannot be shown to be load-bearing is just an untested branch.
 
-CALIBRATION IS PART OF THE CONTRACT. `test_real_tree_is_clean` pins the count on
-the live tree at ZERO. The gate opened at 16 findings; all 16 were fixed, none
-waived. Pinning zero is what stops the class regrowing one call site at a time, which is how it reached 16 in the first place.
+CALIBRATION IS PART OF THE CONTRACT. `test_real_tree_is_clean` pins the count on the live tree at ZERO. The gate opened at 16 findings; all 16 were fixed, none waived. Pinning zero is what stops the class regrowing one call site at a time, which is how it reached 16 in the first place.
 
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Three cases drive the subject over the REAL tree: `test_silent_on_the_fixed_go_deps_probe` points it at the real `.ci/scripts/quality`, `test_real_tree_is_clean` runs it seam-free, and `test_the_repaired_sites_stay_repaired` greps nine real files. A battery step rewriting any of those mid-sweep is a divergence that would be blamed on
 this
 port. `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured only
-because this module declares no `XDIST_GROUP` of its own; see
-`real_tree_admission` in `test_twin_parity.py`.
+because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
 --------------------------------------------------------------------------
 IS THIS FILE VISIBLE TO THE SWEEP IT DRIVES? NO, AND IT IS CHECKED
@@ -51,9 +48,7 @@ GO_DEPS_REL = ".ci/scripts/quality/check-go-deps.sh"
 GO_DEPS = paths.from_root(*GO_DEPS_REL.split("/"))
 HERE_REL = ".ci/rediacc_ci/tests/gates"
 
-# `<file>.sh:<line>: $<var>` -- the finding line shape test_real_tree_is_clean
-# counts. `grep -cE '^.*\.sh:[0-9]+: \$'` in the twin; `-P`-equivalent here
-# because Python's `re` has no ugrep's alternated-anchor defect.
+# `<file>.sh:<line>: $<var>` -- the finding line shape test_real_tree_is_clean counts. `grep -cE '^.*\.sh:[0-9]+: \$'` in the twin; `-P`-equivalent here because Python's `re` has no ugrep's alternated-anchor defect.
 FINDING_RE = re.compile(r"^.*\.sh:[0-9]+: \$", re.MULTILINE)
 
 # The default scan scope, as this port expects to read it out of the subject.
@@ -542,9 +537,7 @@ def test_waiver_must_be_adjacent(gate):
 
 def test_empty_scope_is_blind_not_clean(gate):
     """Anti-vacuity. A gate that scans zero files reports clean forever. This is
-    the property the repo's test-gate-anti-vacuity.sh harness checks for other
-    validators; that harness cannot check this one, because its fixture COPIES
-    .ci/scripts into the empty tree, so this gate always has input there. The
+    the property the repo's test-gate-anti-vacuity.sh harness checks for other validators; that harness cannot check this one, because its fixture COPIES .ci/scripts into the empty tree, so this gate always has input there. The
     seam makes the same property testable directly."""
     with harness.temp_dir() as d:
         tree = d / "tree"

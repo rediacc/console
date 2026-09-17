@@ -16,9 +16,7 @@ from rediacc_ci.tests import differential as diff
 BASH_BLOCK_AWK = "/^```bash$/ { inblk=1; next } /^```$/ { if (inblk) exit } inblk { print }"
 ADVICE_GREP = "grep -vE '\"(command|cmd)\"[[:space:]]*:|^[[:space:]]*check [0-9]+ '"
 
-# The twin's two detectors, lifted from check-ci-watch-recipe.sh:101-113 into a
-# driver that exits 0 when they say yes. Nothing is reworded; the `advice_only`
-# body is the same grep -v as above.
+# The twin's two detectors, lifted from check-ci-watch-recipe.sh:101-113 into a driver that exits 0 when they say yes. Nothing is reworded; the `advice_only` body is the same grep -v as above.
 TWIN_DETECTORS = r"""
 advice_only() {
     grep -vE '"(command|cmd)"[[:space:]]*:|^[[:space:]]*check [0-9]+ ' "$1"
@@ -126,9 +124,7 @@ def test_scan_files_matches_git_ls_files() -> None:
     """
     root = paths.repo_root()
     # THE PATHSPECS COME FROM THE PORT'S OWN CONSTANT, not retyped here. Two reasons, and the second is why this changed on 2026-09-06. First, a copy can drift from the thing it is meant to check, which would leave this test asserting that the port agrees with a literal nobody runs. Second, `check:ci-pathspec-scope` reads every `git ls-files` call site and refuses a `**/` pathspec,
-    # correctly: `*` already crosses `/` under git's default semantics, so `**/` DEMANDS a slash and silently skips everything directly under the prefix. The twin carries that defect deliberately and the port
-    # carries it faithfully; spelling it a third time here made this file an
-    # independent instance of the defect rather than a check on it.
+    # correctly: `*` already crosses `/` under git's default semantics, so `**/` DEMANDS a slash and silently skips everything directly under the prefix. The twin carries that defect deliberately and the port carries it faithfully; spelling it a third time here made this file an independent instance of the defect rather than a check on it.
     specs = " ".join("'%s'" % s for s in cw.SCAN_PATHSPECS)
     code, out, _err = diff.bash_streams(
         'git -C %s ls-files %s | grep -v "^%s$"' % (root, specs, cw.EVIDENCE_FILE)

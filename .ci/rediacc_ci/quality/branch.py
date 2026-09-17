@@ -1,7 +1,6 @@
 """Report whether a PR branch is behind its base, and whether a rebase would conflict.
 
-Ported from `.ci/scripts/quality/check-branch.sh`, which is NOT deleted; see
-`rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-branch.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 DETECTION ONLY. This module never rewrites history, never moves a ref, and never publishes anything. The twin's header says why, and it is the reason the gate has the shape it has:
 
@@ -63,12 +62,10 @@ else means the probe itself could not run (e.g. unrelated histories), which is
 reported as UNKNOWN rather than silently as clean. Measured while porting: a `--orphan` branch against a populated base gives exit 128 and `fatal: refusing to merge unrelated histories`, which is the third arm and is therefore exercised by the differential rather than reasoned about.
 
 THE THIRD ARM'S DETAIL LINES GO TO STDERR AND ARE THEREFORE FINDINGS. The twin writes `sed 's/^/ /' "$MERGE_TREE_OUT" >&2` under a `log_warn`, so the indented git diagnostic attaches to the warning above it. The conflict arm's detail lines go to STDOUT under an `echo`, where nothing is carrying them, so they are progress rather than findings. That asymmetry is the twin's and is
-reproduced stream for stream; moving either one would change what the gate is
-understood to be objecting to.
+reproduced stream for stream; moving either one would change what the gate is understood to be objecting to.
 
 `git log --oneline ... | head -5` IS FIVE LINES, NOT A SIGPIPE DANCE. The twin runs it under `set -o pipefail`, which in principle means `head` exiting early could make the pipeline report 141 and abort the gate. Measured on a fixture eight commits behind: the producer finishes into the 64 KB pipe buffer long before `head` closes it, so the shape never fires at these sizes. It is
-named here because the same shape DID fire in check-ci-watch-recipe.sh, where the
-producer was megabytes; the port takes the first five lines and cannot race.
+named here because the same shape DID fire in check-ci-watch-recipe.sh, where the producer was megabytes; the port takes the first five lines and cannot race.
 
 THE PRINTED RECIPE IS DATA, NOT DECORATION. Sixteen lines of it name `/branch-rebase` and three `worklist.py --git` verbs. It is carried byte for byte, on stdout, because a reader following it is the whole point of the gate exiting 1 rather than rebasing anything itself.
 """
@@ -88,9 +85,7 @@ PR_EVENT = "pull_request"
 # The base branch when GitHub does not name one. `main`, matching the twin.
 DEFAULT_BASE = "main"
 
-# How many of the base's commits are echoed back, and how many merge-tree stage
-# lines. Both are the twin's numbers; they are display limits, not thresholds, so
-# a change here changes what a human reads and nothing the gate decides.
+# How many of the base's commits are echoed back, and how many merge-tree stage lines. Both are the twin's numbers; they are display limits, not thresholds, so a change here changes what a human reads and nothing the gate decides.
 RECENT_COMMITS = 5
 CONFLICT_LINES = 20
 
@@ -437,8 +432,8 @@ def selftest() -> int:
         (orphan / "only.txt").write_text("only\n", encoding="utf-8")
         _git(orphan, "add", "-A", "--", ".")
         _git(orphan, "commit", "-qm", "unrelated root")
-        # ORDER MATTERS HERE, and getting it wrong is instructive. Probing BEFORE the gate has fetched leaves `origin/main` unresolvable, and `git merge-tree` then exits 1 with "not something we can merge" -- which the twin's case statement reads as CONFLICTS, not as unknown. The real flow always fetches first, so the twin is never in that
-        # state; the control below runs the gate first for the same reason.
+        # ORDER MATTERS HERE, and getting it wrong is instructive. Probing BEFORE the gate has fetched leaves `origin/main` unresolvable, and `git merge-tree` then exits 1 with "not something we can merge" -- which the twin's case statement reads as CONFLICTS, not as unknown. The real flow always fetches first, so the twin is never in that state; the control below runs the gate
+        # first for the same reason.
         ctl.check(
             "PLANT: an unrelated history still reds rather than reporting clean",
             _run(orphan, GITHUB_EVENT_NAME=PR_EVENT, GITHUB_BASE_REF="main"),

@@ -5,13 +5,9 @@ Gathers the logs a failed drill needs but does not print itself: the account ser
 REQUIRES `--keep-work`: without it `drill_teardown` removes the work directory on exit before this ever runs, and no environment variable substitutes for
 that (`scripts/drills/lib.sh` sets `DRILL_KEEP_WORK=0` at script level).
 
-ALWAYS EXITS 0. This runs in an `if: always()` diagnostics step attached to an
-ALREADY-FAILED job; a non-zero exit here would bury the real failure under a
-complaint about collecting diagnostics for it. An empty collection is reported as a message, never as a failure -- see `main()`.
+ALWAYS EXITS 0. This runs in an `if: always()` diagnostics step attached to an ALREADY-FAILED job; a non-zero exit here would bury the real failure under a complaint about collecting diagnostics for it. An empty collection is reported as a message, never as a failure -- see `main()`.
 
-ORDERING, ARGUED RATHER THAN ASSUMED EQUIVALENT. The twin's first loop is a bash GLOB (`for work in .../rediacc-drill-*/`), and bash sorts glob matches
-lexicographically regardless of directory order; `sorted()` here reproduces
-that exactly -- a language guarantee (Python's `sorted()` on strings), not an accident of this filesystem, matching bash's own guarantee the same way.
+ORDERING, ARGUED RATHER THAN ASSUMED EQUIVALENT. The twin's first loop is a bash GLOB (`for work in .../rediacc-drill-*/`), and bash sorts glob matches lexicographically regardless of directory order; `sorted()` here reproduces that exactly -- a language guarantee (Python's `sorted()` on strings), not an accident of this filesystem, matching bash's own guarantee the same way.
 
 The twin's final listing is `find "$dest" -type f`, which is UNSORTED readdir order and, taken alone, filesystem-dependent. What makes it reproducible here is not the fixture size, it is that `find` and `os.walk` are both thin wrappers over the SAME kernel primitive (getdents, via readdir/scandir) reading the SAME directory: two different programs reading one unmodified directory
 get the SAME enumeration order from the kernel, sorted or not, because neither one imposes an order of its own. Measured directly: a plain `pathlib.glob()` over a hand-built tmpfs directory is NOT alphabetical for more than a couple of entries (confirmed while writing this port, on this filesystem), which is exactly why the FIRST loop does not rely on it and calls `sorted()`
@@ -50,8 +46,7 @@ def main(argv: list[str]) -> int:
             shutil.copytree(account_logs, dest / "account-logs", dirs_exist_ok=True)
 
     tmpdir = pathlib.Path(os.environ.get("TMPDIR") or "/tmp")
-    # Bash glob expansion sorts lexicographically; `sorted()` matches it, not a
-    # coincidence of iteration order.
+    # Bash glob expansion sorts lexicographically; `sorted()` matches it, not a coincidence of iteration order.
     for work in sorted(tmpdir.glob("rediacc-drill-*/")):
         if not work.is_dir():
             continue

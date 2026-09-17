@@ -105,9 +105,7 @@ def main(argv: list[str]) -> int:
         net_base = os.environ.get("VM_NET_BASE", "")
         if not net_base:
             # `${VM_NET_BASE:?...}`: a bash diagnostic carrying the twin's path
-            # and line number. Same stream, same exit, same position in the
-            # sequence; the prefix names this file instead. See verify_ssh.py's
-            # docstring, divergence 1, for why a line number is not reproduced.
+            # and line number. Same stream, same exit, same position in the sequence; the prefix names this file instead. See verify_ssh.py's docstring, divergence 1, for why a line number is not reproduced.
             print(
                 f"{SELF}: VM_NET_BASE: pass VM addresses as arguments, or set VM_NET_BASE",
                 file=sys.stderr,

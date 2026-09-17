@@ -6,8 +6,7 @@ WHY THIS GATE EXISTS, and it has a measurement rather than an opinion.
 `agent/` is where this repo keeps the reasoning behind its own machinery, and the value of a plan or a record is entirely in the pointers it carries: a file:line, a gate id, another plan, a commit or a blob. Measured 2026-09-06 while designing W12: of 71 commit-shaped tokens already cited across those files, **37 no longer resolve**. More than half of the durable pointers this tree
 relies on are dead, and nothing reported it -- not one of them.
 
-The cure is NOT a sweep of the 37. A sweep fixes a day; this gate fixes the
-slope. It judges ONLY the lines a change ADDS, so:
+The cure is NOT a sweep of the 37. A sweep fixes a day; this gate fixes the slope. It judges ONLY the lines a change ADDS, so:
 
   * the existing dead citations are not this change's problem and do not red it;
   * a change that adds a NEW dead pointer is red at the moment it is cheapest to
@@ -91,9 +90,7 @@ try:
     import wl_planfid as PFID
     import wl_planrec as R
 except ImportError as _exc:  # pragma: no cover -- exercised by test-gate-anti-vacuity.sh
-    # A check that cannot see must SAY it cannot see. Every resolver this gate
-    # uses lives in those modules on purpose; without them there is nothing to
-    # compare and no verdict to give.
+    # A check that cannot see must SAY it cannot see. Every resolver this gate uses lives in those modules on purpose; without them there is nothing to compare and no verdict to give.
     print(
         f"VACUOUS INPUT: cannot import the citation resolvers from "
         f"{ROOT / '.claude' / 'hooks' / 'stop'} ({_exc}). This gate resolves pointers ONLY "
@@ -366,17 +363,14 @@ def commit_is_reachable(root, token) -> bool:
     PRESENCE IS THE WRONG QUESTION FOR A COMMIT, and asking it has now cost two CI rounds. A rewrite -- `filter-branch`, a rebase, `gh pr merge --rebase` -- leaves the pre-rewrite commits sitting in the object database, reachable from reflogs and `refs/original`. `git cat-file -t` happily answers `commit` for every one of them on the machine that did the rewrite, and a FRESH CLONE
     has none of them. So a citation to an orphan passes locally and fails in CI, which is the worst of both: green where it is cheap to fix, red where it is expensive.
 
-    Round 43 of this wave recorded exactly this after the operator-authorised history rewrite -- 149 stale shas all resolved locally while not one was an ancestor of HEAD -- and named `git merge-base --is-ancestor` as the honest
-    test. It was written down and not wired in; measured 2026-09-15, six orphaned
-    citations in agent/PLAN-b2-emit-matrix.md passed this gate locally and reddened `Quality / Branch` in CI.
+    Round 43 of this wave recorded exactly this after the operator-authorised history rewrite -- 149 stale shas all resolved locally while not one was an ancestor of HEAD -- and named `git merge-base --is-ancestor` as the honest test. It was written down and not wired in; measured 2026-09-15, six orphaned citations in agent/PLAN-b2-emit-matrix.md passed this gate locally and
+    reddened `Quality / Branch` in CI.
 
     ONLY COMMITS GET THIS TEST, and the asymmetry is the design rather than an exception. A blob or tree is CONTENT-addressed: it is an ancestor of nothing, `--is-ancestor` is meaningless for it, and demanding reachability would flag every correctly-cited blob. That is also precisely why this gate's own advice
     for a rewritten commit is "cite the blob id instead" -- a blob survives the
     rewrite the commit does not.
 
-    SAFE ON THIS REPOSITORY'S CI because `quality-branch` checks out with `fetch-depth: 0` (full COMMIT history) and `filter: blob:none` (blobs lazily
-    fetched). Ancestry needs commits, which are all present; it never needs a
-    blob.
+    SAFE ON THIS REPOSITORY'S CI because `quality-branch` checks out with `fetch-depth: 0` (full COMMIT history) and `filter: blob:none` (blobs lazily fetched). Ancestry needs commits, which are all present; it never needs a blob.
     """
     if not R.resolve(root, "commit", token)[0]:
         return False
@@ -395,8 +389,7 @@ def unresolved(root, kind, token):
     `object` is the one kind with THREE acceptable answers, so it is asked up to three times. Demanding a blob would flag every legitimate commit, demanding a commit would flag every blob, and a record is entitled to carry any of the three -- a `tree` is rare (a citation into a `git filter-branch`/rewrite control naming a tree id directly) but a real, correctly-cited object that
     neither `blob` nor `commit` resolves.
 
-    A COMMIT MUST ALSO BE REACHABLE FROM HEAD; a blob or tree need only exist.
-    See `commit_is_reachable` for why the two differ.
+    A COMMIT MUST ALSO BE REACHABLE FROM HEAD; a blob or tree need only exist. See `commit_is_reachable` for why the two differ.
     """
     if kind == "object":
         if (
@@ -426,9 +419,8 @@ def unresolved(root, kind, token):
     if ok:
         return False, why
     if kind == "fileline":
-        # A SUBMODULE-RELATIVE PATH IS STILL A FINDING, but not the one the plain message describes. A plan about renet naturally writes `pkg/chunkstore/uploader.go:71`, which is a real file -- inside private/renet, and unreachable from the console root where every reader of the plan is standing. "Does not exist" sends them looking for a
-        # deleted file; naming the submodule turns the same red into a one-word
-        # fix. Measured 2026-09-06 over the whole plan corpus: 40 of the unresolvable file:line citations, and this class is most of them.
+        # A SUBMODULE-RELATIVE PATH IS STILL A FINDING, but not the one the plain message describes. A plan about renet naturally writes `pkg/chunkstore/uploader.go:71`, which is a real file -- inside private/renet, and unreachable from the console root where every reader of the plan is standing. "Does not exist" sends them looking for a deleted file; naming the submodule turns the
+        # same red into a one-word fix. Measured 2026-09-06 over the whole plan corpus: 40 of the unresolvable file:line citations, and this class is most of them.
         head = token.split(":", 1)[0]
         for sub in submodule_paths(root):
             if (pathlib.Path(root) / sub / head).is_file():
@@ -695,9 +687,7 @@ def selftest(root):
         "CONTROL: the same 12 hex characters WITHOUT the UUID dashes ARE",
         any(k == "object" for k, _t in citations("Stripe secret 3fda6dabc123 leaked")),
     )
-    # THE FLOOR, both directions. An 8-hex session prefix must not be judged and
-    # a 9-hex sha must be; a floor that silently drifted to 7 would red on every
-    # session id in every STATE.md, which is how a gate gets switched off.
+    # THE FLOOR, both directions. An 8-hex session prefix must not be judged and a 9-hex sha must be; a floor that silently drifted to 7 would red on every session id in every STATE.md, which is how a gate gets switched off.
     ck(
         "an 8-hex session prefix is NOT treated as an object",
         not any(k == "object" for k, _t in citations("session d1589e0b wrote this")),
@@ -756,9 +746,7 @@ def main(argv):
 
     base = base_ref()
     if base is None:
-        # NOT a failure and not a pass-by-default. With no base there is no set of ADDED lines, which is the only thing this gate judges. Saying so is
-        # the honest answer; inventing a base would judge the whole corpus and
-        # red on the 37 dead pointers this gate deliberately does not own.
+        # NOT a failure and not a pass-by-default. With no base there is no set of ADDED lines, which is the only thing this gate judges. Saying so is the honest answer; inventing a base would judge the whole corpus and red on the 37 dead pointers this gate deliberately does not own.
         print(
             f"✓ plan citations: no merge base against origin/main or main, so there are no "
             f"ADDED lines to judge. The corpus is {n_files} file(s) carrying {n_cites} "

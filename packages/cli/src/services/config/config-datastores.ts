@@ -181,9 +181,7 @@ export async function reposInDatastore(ref: string): Promise<string[]> {
   const families = cfg?.resources?.repositories ?? {};
   const found: string[] = [];
   for (const [name, family] of Object.entries(families)) {
-    // Placement is a property of the FAMILY (every tag of a repo lives in the same
-    // datastore; a fork that moved is a different family). Report each tag so the
-    // operator sees exactly what a --force delete would take with it.
+    // Placement is a property of the FAMILY (every tag of a repo lives in the same datastore; a fork that moved is a different family). Report each tag so the operator sees exactly what a --force delete would take with it.
     const placement = family.placement;
     if (!placement || !('datastore' in placement) || placement.datastore !== ref) continue;
     for (const tag of Object.keys(family.tags)) {

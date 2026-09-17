@@ -12,9 +12,7 @@ a whole-second clock, so if a second boundary falls between them the FIRST itera
 So every loop case here sets `FAKE_LIST_THEN_EMPTY=1` and a generous timeout:
 the first listing returns the fixture, every later one returns an empty array, and the loop leaves through the clean door after exactly one round. The timeout arm is exercised separately with `--timeout 0`, which is the one value that cannot race.
 
-WHAT IS NORMALISED. Two arms print bash's own arithmetic diagnostic, which begins `<program>: line <N>:`. The program NAME necessarily differs between a
-`.sh` and a module file; `strip_prog` replaces that one token and the line
-NUMBER is compared, because a drifting line number is what this pinning exists to catch.
+WHAT IS NORMALISED. Two arms print bash's own arithmetic diagnostic, which begins `<program>: line <N>:`. The program NAME necessarily differs between a `.sh` and a module file; `strip_prog` replaces that one token and the line NUMBER is compared, because a drifting line number is what this pinning exists to catch.
 
 The K=5 ledger is `.ci/shadow/w7p6-cancel-older-runs.observations.jsonl`
 (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-cancel-older-runs --assert --k 5`).
@@ -201,9 +199,7 @@ def listing_call(workflow: str = "ci.yml", branch: str = "main") -> str:
 
 RUN_CALL = "FAKEGH| api repos/rediacc/console/actions/runs/9\n"
 
-# What every LOOP case passes. `--poll-interval 0` because the sleep is not what
-# is under test and a real second per case is a real second; the timeout is
-# generous because these cases leave through the clean door, never through it.
+# What every LOOP case passes. `--poll-interval 0` because the sleep is not what is under test and a real second per case is a real second; the timeout is generous because these cases leave through the clean door, never through it.
 LOOP_ARGS = ("--timeout", "30", "--poll-interval", "0")
 
 
@@ -519,9 +515,7 @@ def test_quirk_2_a_numeric_prefix_timeout_disables_the_timeout_entirely(
 ) -> None:
     """`1abc` is an arithmetic SYNTAX error, so `[[ ]]` answers false, forever.
 
-    Driven with no older runs so the loop can still exit through its other
-    door; with an older run always present the twin runs until something else
-    kills it (measured: `timeout 4` returned 124). The observable half here is that the diagnostic is printed and the script CONTINUES past it.
+    Driven with no older runs so the loop can still exit through its other door; with an older run always present the twin runs until something else kills it (measured: `timeout 4` returned 124). The observable half here is that the diagnostic is printed and the script CONTINUES past it.
     """
     old, new, calls = run_both(tmp_path, "--timeout", "1abc")
     assert old[0] == 0
@@ -590,8 +584,7 @@ def test_a_missing_gh_reads_as_a_pass_because_the_twin_has_no_require_cmd(
 ) -> None:
     """The missing-tool arm, and it is GREEN. Pinned in both directions.
 
-    Every other script in this batch guards with `require_cmd gh`; this one does
-    not, so `gh: command not found` is captured by the `2>&1` on line 57 INTO the run body and reported as "Failed to fetch current run info", exit 0. A CI runner without the GitHub CLI would therefore cancel nothing and say nothing that reads as a failure.
+    Every other script in this batch guards with `require_cmd gh`; this one does not, so `gh: command not found` is captured by the `2>&1` on line 57 INTO the run body and reported as "Failed to fetch current run info", exit 0. A CI runner without the GitHub CLI would therefore cancel nothing and say nothing that reads as a failure.
 
     The port raised `FileNotFoundError` and exited 1 here until `not_found` was written, which is the divergence this case exists to keep out.
     """

@@ -19,12 +19,9 @@ TWO PLACES WHERE `$0` HAD TO BECOME "THIS MODULE", and they are not cosmetic:
     without handling the state. Two files do that now, the twin and this module,
     so both are excluded BY PATH and the exclusion is printed in the pass line.
 
-THE SWEEP IS A READ, NEVER A WRITE. The twin records that an earlier version wrote a probe file under `.ci/scripts/quality/` to exercise the untracked half of
-the enumeration and that check-pool-writer-safety correctly rejected it; the
-probe lives in a temp directory here for the same reason.
+THE SWEEP IS A READ, NEVER A WRITE. The twin records that an earlier version wrote a probe file under `.ci/scripts/quality/` to exercise the untracked half of the enumeration and that check-pool-writer-safety correctly rejected it; the probe lives in a temp directory here for the same reason.
 
-NO `xdist_group`. Shims and probes are written into pytest's own `tmp_path`; the
-tree is read (git ls-files, and the two subject files) and never written.
+NO `xdist_group`. Shims and probes are written into pytest's own `tmp_path`; the tree is read (git ls-files, and the two subject files) and never written.
 """
 
 import os
@@ -270,8 +267,7 @@ def test_every_caller_handles_the_no_pr_state(gate):
             continue
         if "ci_rollup(" not in text:
             continue
-        # A DEFINITION IS NOT A CALLER. Skipping by filename would need a new
-        # hardcoded entry per stub; skipping by shape is self-maintaining.
+        # A DEFINITION IS NOT A CALLER. Skipping by filename would need a new hardcoded entry per stub; skipping by shape is self-maintaining.
         if definition.search(text):
             continue
         # This gate's own fixtures call it deliberately without the state.
@@ -348,9 +344,7 @@ def test_dispatched_run_is_traced_by_id(gate, tmp_path):
     gate.log_test("--run reads a dispatched run, which a branch rollup CANNOT see")
     # WHY THIS EXISTS, measured 2026-08-26 on Release run 32968110599 (head 1c006e53). A branch's statusCheckRollup does NOT contain a workflow_dispatch run's check runs, so `--wait --ref main` printed GREEN and exited 0 while the release was mid-flight, twice, and /pr-merge step 5 instructed exactly that.
     #
-    # The four exit codes below are the whole contract. `in_progress -> 2` is the
-    # one that was broken; `unreadable -> 2` matters just as much, because a run
-    # nobody could read must never read as a pass.
+    # The four exit codes below are the whole contract. `in_progress -> 2` is the one that was broken; `unreadable -> 2` matters just as much, because a run nobody could read must never read as a pass.
     require_subjects(gate)
     shim = run_shim_dir(tmp_path)
     expected = (

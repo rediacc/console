@@ -7,9 +7,8 @@ THE CONFIG WAS NOT THE CAUSE, and that decides the whole design. Measured in tha
 So those 30 came from an override at commit time -- `-c user.email=`, `--author=`,
 GIT_AUTHOR_EMAIL, or a different HOME. A guard that only read `git config` would have watched all 30 go past.
 
-WHY THIS DOES NOT PATTERN-MATCH THE COMMAND TEXT. The author identity is not IN
-the command; it comes from git's ident resolution. That is why this guard cannot
-repeat the failure recorded in block-commit-meta.sh's header, where a phrase check fired on prose and even on `grep -rn 'co-authored-by' docs/` -- its own audit. A command that merely MENTIONS an address is not a commit and is never scanned here.
+WHY THIS DOES NOT PATTERN-MATCH THE COMMAND TEXT. The author identity is not IN the command; it comes from git's ident resolution. That is why this guard cannot repeat the failure recorded in block-commit-meta.sh's header, where a phrase check fired on prose and even on `grep -rn 'co-authored-by' docs/` -- its own audit. A command that merely MENTIONS an address is not a commit and
+is never scanned here.
 
 `git var GIT_AUTHOR_IDENT` implements git's entire precedence chain except
 `--author=`, so this does not reimplement it. Verified:
@@ -27,9 +26,8 @@ A NAME COLLISION WORTH STATING. The bash calls its captured environment override
 
 `set -uo pipefail` HAS NO PORT. It makes an unset variable fatal and a pipeline inherit its first failure, both of which are properties of the shell rather than of this guard, and neither has a Python analogue that would change any answer. Recorded rather than dropped, because its absence in a port is the kind of detail a later reader reasonably wonders about.
 
-THE TWO SEDS ARE ONE EXPRESSION LIST APPLIED IN ORDER, which matters for
-`OVERRIDE`: `sed -nE 's/A/\\1/p; s/B/\\1/p'` runs A over the line, prints if it
-substituted, and then runs B over WHAT A LEFT. `head -1` after it takes the first line either printed. Written out here rather than collapsed into one regex, because collapsing them would be a different program that happens to agree on today's inputs.
+THE TWO SEDS ARE ONE EXPRESSION LIST APPLIED IN ORDER, which matters for `OVERRIDE`: `sed -nE 's/A/\\1/p; s/B/\\1/p'` runs A over the line, prints if it substituted, and then runs B over WHAT A LEFT. `head -1` after it takes the first line either printed. Written out here rather than collapsed into one regex, because collapsing them would be a different program that happens to
+agree on today's inputs.
 """
 
 import json
@@ -154,8 +152,7 @@ def run(ev):
     if root == "":
         return hookio.ALLOW
 
-    # WHICH REPO IS JUDGED, and this deliberately DIFFERS from block-untagged-commit.sh. That guard exits on ANY foreign root because epics are console's business alone. Three submodules carried this exact defect, so a commit into one of them IS in
-    # scope here; only a repo outside this tree is somebody else's identity policy.
+    # WHICH REPO IS JUDGED, and this deliberately DIFFERS from block-untagged-commit.sh. That guard exits on ANY foreign root because epics are console's business alone. Three submodules carried this exact defect, so a commit into one of them IS in scope here; only a repo outside this tree is somebody else's identity policy.
     target = shellscan.target_root(scan, root)
     if target != "":
         if not hookio.case_glob(target, "%s/*" % root):
@@ -257,9 +254,7 @@ def run(ev):
         )
         # NO ORIGINS MEANS NO LINE AT ALL, and the `else " \n"` that used to be here emitted an indented blank one. The twin is a PIPELINE -- `git ... | sed 's/^/ /'` (block-unlinked-commit-author.sh:152) -- and sed given no input writes no output, so bash prints nothing whatsoever.
         #
-        # It took a CI runner to see it. `git config --get-all user.email` is empty
-        # only where no identity is configured at any scope; every developer machine
-        # here has a global one, so the two sides agreed locally and diverged by one blank line in run 34970782616, taking three `block_unlinked_commit_author` cases of test_guards_differential.py with it.
+        # It took a CI runner to see it. `git config --get-all user.email` is empty only where no identity is configured at any scope; every developer machine here has a global one, so the two sides agreed locally and diverged by one blank line in run 34970782616, taking three `block_unlinked_commit_author` cases of test_guards_differential.py with it.
         if origins:
             ev.warn_raw(hookio.sed_sub(r"^", "    ", hookio._printf_line(origins)))
         if cflags:

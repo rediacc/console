@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """Controls for wl_judge: which objects the judge MUST return, and the class-sweep rule.
 
-Two rules live here. The first is judge_schema_for's marker contract; the second is
-wl_classsweep, the "sweep the class, not the instance" rule, whose controls start at PART 2 and carry their own argument.
+Two rules live here. The first is judge_schema_for's marker contract; the second is wl_classsweep, the "sweep the class, not the instance" rule, whose controls start at PART 2 and carry their own argument.
 
 Why this exists. The fix-signal is a separate prompt section (M.REGGATE_PROMPT, appended as `extra`), while v7 deliberately shipped ONE schema in which `regression_gate` is optional at the top level. Those two facts together let the model satisfy the schema while omitting the object, after which wl_reggate reports
 
     regression_gate missing or incomplete: None
 
-and the stop hook blocks by the no-escape-hatch rule. The block is correct; what is wrong
-is that the session is blocked by a JUDGE error rather than by anything it did. Observed live on 2026-08-28, on a turn whose fix was already gated.
+and the stop hook blocks by the no-escape-hatch rule. The block is correct; what is wrong is that the session is blocked by a JUDGE error rather than by anything it did. Observed live on 2026-08-28, on a turn whose fix was already gated.
 
 Every control is a PAIR, because asserting that the signal makes the field required proves nothing on its own: a builder that always required it would pass that half and would break every ordinary stop. The paired assertion is that WITHOUT the signal it stays optional.
 
@@ -113,8 +111,7 @@ control(
 
 FIXSIG = "\n\n%s, so ALSO fill the `regression_gate` object.\n" % wl_judge._REGGATE_MARKER
 
-# The marker is a real file; keep every control out of the developer's own
-# outstanding-demand state, which is keyed by TMPDIR and cwd.
+# The marker is a real file; keep every control out of the developer's own outstanding-demand state, which is keyed by TMPDIR and cwd.
 _TMP = tempfile.TemporaryDirectory()
 os.environ["TMPDIR"] = _TMP.name
 MARKER = pathlib.Path(_TMP.name) / "sweep-marker.json"
@@ -261,9 +258,7 @@ control(
 )
 wl_classsweep.clear_outstanding(MARKER)
 
-# -- 2e2. THE JUDGE'S OWN COMMAND IS VALIDATED, and both real misfires. ----- Both strings below were handed to a live session on consecutive stops and
-# both were unrunnable; the first printed grep's error line, which the session
-# read as a finding. The demand must survive validation failing -- dropping the block would turn a bad command into an escape hatch.
+# -- 2e2. THE JUDGE'S OWN COMMAND IS VALIDATED, and both real misfires. ----- Both strings below were handed to a live session on consecutive stops and both were unrunnable; the first printed grep's error line, which the session read as a finding. The demand must survive validation failing -- dropping the block would turn a bad command into an escape hatch.
 BAD_PATH = "grep -rn 'export.*worker' packages/workers/ --include='*.ts' | wc -l"
 TRUNCATED = (
     "find workers -type f \\( -name '*.ts' -o -name '*.tsx' \\) | xargs -I {} sh -c 'grep -q {"
@@ -591,9 +586,7 @@ wl_classsweep.clear_outstanding()
 # ===========================================================================
 # PART 4 -- wl_bravedefault: "a DEFAULT that does nothing is not a DEFAULT".
 #
-# Same discipline as PART 2: every case is a pair. The planted defect is a
-# deferral that defaults to the status quo; the controls beside it are a
-# default that commits to an action, and a hold that is genuinely justified by irreversibility. Holding is sometimes right, so a rule that rejected every hold would be wrong, not strict.
+# Same discipline as PART 2: every case is a pair. The planted defect is a deferral that defaults to the status quo; the controls beside it are a default that commits to an action, and a hold that is genuinely justified by irreversibility. Holding is sometimes right, so a rule that rejected every hold would be wrong, not strict.
 #
 # The judgement is still haiku's; these controls pin the seam.
 # ===========================================================================
@@ -834,10 +827,8 @@ control(
     ("git clean", "git clean"),
 )
 
-# -- The STANDING-ORDER threshold, which is not the safety one. ------------- CLAUDE.md's first standing order: the deliverable is an uncommitted working
-# tree; committing, branching, pushing and opening a PR need the operator's ask.
-# On 2026-09-02 wl_bravedefault's own next_action read "Rename ... then commit to the open branch", the session did the rename and silently dropped the commit, and a rule that must be quietly disobeyed is a broken rule. Both directions are controlled: the version-control sense must fire and the ORDINARY ENGLISH sense must not, because "commit to option A" means DECIDE and is the
-# exact bravery the rule it guards exists to encourage.
+# -- The STANDING-ORDER threshold, which is not the safety one. ------------- CLAUDE.md's first standing order: the deliverable is an uncommitted working tree; committing, branching, pushing and opening a PR need the operator's ask. On 2026-09-02 wl_bravedefault's own next_action read "Rename ... then commit to the open branch", the session did the rename and silently dropped the
+# commit, and a rule that must be quietly disobeyed is a broken rule. Both directions are controlled: the version-control sense must fire and the ORDINARY ENGLISH sense must not, because "commit to option A" means DECIDE and is the exact bravery the rule it guards exists to encourage.
 for text, want in [
     ("Rename it across every reader, then commit to the open branch", "commit to the open branch"),
     ("finish it and leave it committed on the branch", "leave it committed"),
@@ -863,8 +854,7 @@ for text in [
     )
 
 
-# -- The CLASS-SWEEP reserved path, the sibling of 4c3. `instruction` is model prose that reaches the session verbatim whenever `search` is empty, so it can carry "commit them" as easily as "git clean". Both were verified by hand when
-# the branch landed; only the destructive half had a test.
+# -- The CLASS-SWEEP reserved path, the sibling of 4c3. `instruction` is model prose that reaches the session verbatim whenever `search` is empty, so it can carry "commit them" as easily as "git clean". Both were verified by hand when the branch landed; only the destructive half had a test.
 _CS_BASE = {
     "applicable": True,
     "swept": False,
@@ -979,9 +969,7 @@ control("CONTROL: a different deferral is not capped", kind, "fire")
 control("CONTROL: and its count starts again", fires(BMARKER), 1)
 wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
 
-# -- 4g. apply_order: a judge that already said continue is not overwritten.
-# Its own order is not less important than a rule's; clobbering it would trade
-# one true instruction for another and hide the trade.
+# -- 4g. apply_order: a judge that already said continue is not overwritten. Its own order is not less important than a rule's; clobbering it would trade one true instruction for another and hide the trade.
 out = bd_answer()
 out["verdict"] = "continue"
 out["reason"] = "three items are open"
@@ -1120,8 +1108,7 @@ control(
     True,
 )
 
-# 5e. Order independence. `wanted` is built marker by marker; a builder that
-# appended to a list it also read from could produce a different schema depending on which marker came first in the prompt.
+# 5e. Order independence. `wanted` is built marker by marker; a builder that appended to a list it also read from could produce a different schema depending on which marker came first in the prompt.
 control(
     "marker order does not change the result",
     sorted(wl_judge.judge_schema_for(brave_sig + sweep_sig + FIXSIG)["required"]),
@@ -1285,8 +1272,7 @@ control(
 _capped = _sd()
 wl_shapedup.apply_verdict(_capped, ["a.ts:1", "b.ts:1", "c.ts:1"], "sh1", path=SMARK)
 control("CONTROL: a capped shape places no order", _capped.get("verdict"), None)
-# THE KEYING IS IN THE PATH, so a control that passes one explicit `path` for two shapes overrides the very thing it claims to test -- and did, reporting the second shape as capped. In production `path` is None and `demand_for(hash).path()` derives one file per
-# shape; these two controls test that derivation directly and then use per-shape markers.
+# THE KEYING IS IN THE PATH, so a control that passes one explicit `path` for two shapes overrides the very thing it claims to test -- and did, reporting the second shape as capped. In production `path` is None and `demand_for(hash).path()` derives one file per shape; these two controls test that derivation directly and then use per-shape markers.
 control(
     "each shape gets its own marker file",
     wl_shapedup.demand_for("sh1").path() != wl_shapedup.demand_for("sh2").path(),
@@ -1301,8 +1287,7 @@ control(
 wl_shapedup.demand_for("sh1").clear(SMARK)
 wl_shapedup.demand_for("sh2").clear(SMARK2)
 
-# 6f. The driver never fails closed. A counter that cannot answer loses a demand; it can
-# never grant an exit that was otherwise refused, and it can never wedge a stop.
+# 6f. The driver never fails closed. A counter that cannot answer loses a demand; it can never grant an exit that was otherwise refused, and it can never wedge a stop.
 _orig_counter = wl_shapedup.counter_findings
 try:
     wl_shapedup.counter_findings = lambda _root: ([], "counter exploded")
@@ -1483,8 +1468,8 @@ finally:
 # Five call sites reach the CLI with a schema -- TRIAGE_SCHEMA, PLANFID_SCHEMA (through _run_structured), ADMISSION_SCHEMA, judge_schema_for(), and wl_shapedup's wrapper. Four were module constants and one was a dict literal written inline in the argv, and that fifth was the one that drifted: it alone omitted `additionalProperties: False`, so it accepted top-level keys the other
 # four refuse. SHAPE_SCHEMA inside it was correctly constrained the whole time.
 #
-# NO PER-SITE TEST CAN CATCH THAT. Each schema is individually plausible; the
-# defect only exists in the COMPARISON. So this iterates the set, and the set is built from the modules rather than retyped here -- a sixth site added to SCHEMA_SITES gets the same assertions with no new control to write, and one added to the code and NOT to this list is what the corpus floor below catches. ---------------------------------------------------------------------------
+# NO PER-SITE TEST CAN CATCH THAT. Each schema is individually plausible; the defect only exists in the COMPARISON. So this iterates the set, and the set is built from the modules rather than retyped here -- a sixth site added to SCHEMA_SITES gets the same assertions with no new control to write, and one added to the code and NOT to this list is what the corpus floor below catches.
+# ---------------------------------------------------------------------------
 
 # EVERY SCHEMA DEFINITION IN THE HOOK TREE, not just the five that reach the CLI as a payload. The first version of this listed the five call sites, and that was too narrow twice over: CLASS_SWEEP_SCHEMA and BRAVE_DEFAULT_SCHEMA are composed INTO judge_schema_for's output rather than passed directly, and JUDGE_SCHEMA is the reference that judge_schema_for deep-copies. A drift in
 # any of those is a drift in what the model is actually held to, and none of them was covered.
@@ -1530,9 +1515,7 @@ for _n, _p, _sub in _ALL_SUBS:
 for _name, _sch in SCHEMA_SITES.items():
     control(f"{_name} is an object schema", _sch.get("type"), "object")
     control(f"{_name} declares properties", bool(_sch.get("properties")), True)
-    # The additionalProperties clause lives in the RECURSIVE walk above, which
-    # covers each root as well as its nested objects; asserting it twice here
-    # would just inflate the count. It has to survive json.dumps, because that is literally the next thing the call site does with it, and a TypeError there raises inside a Stop hook.
+    # The additionalProperties clause lives in the RECURSIVE walk above, which covers each root as well as its nested objects; asserting it twice here would just inflate the count. It has to survive json.dumps, because that is literally the next thing the call site does with it, and a TypeError there raises inside a Stop hook.
     try:
         json.dumps(_sch)
         _ser = True
@@ -1553,9 +1536,7 @@ control(
 # THE HOLE PART 6 LEAVES, and it is real. SCHEMA_SITES enumerates schemas by NAME, so it can only check schemas that are reachable as module attributes. A SIXTH site added as a dict literal inside an argv would not appear in that dict at all, and every assertion above would pass while the new literal drifted -- which is exactly how the wl_shapedup wrapper stayed the odd one out: it
 # was invisible to anything but a reader of that call.
 #
-# So this clause is SOURCE-LEVEL, not value-level. It reads the hook sources and requires the payload handed to `--json-schema` to be a NAMED reference. A name
-# is something a test can enumerate and a reader can find; a literal is visible
-# only to whoever is already reading that call.
+# So this clause is SOURCE-LEVEL, not value-level. It reads the hook sources and requires the payload handed to `--json-schema` to be a NAMED reference. A name is something a test can enumerate and a reader can find; a literal is visible only to whoever is already reading that call.
 #
 # It is deliberately NOT a second copy of 74de73ca's check_schema_call_sites.py, which enforces the neighbouring invariant over the same corpus (that each site ROUTES THROUGH retry_schema_exhaustion). Theirs is about behaviour, this is about definition shape. If the two are merged later this clause should move there rather than be duplicated.
 # ---------------------------------------------------------------------------
@@ -1604,9 +1585,7 @@ shutil.rmtree(_tmp, ignore_errors=True)
 # THE FAILURE THIS PINS, paid for on 2026-09-08. `_explain_failed_exit` opened
 # with "judge exited 143" and the surrounding narrative read as an unreachable
 # model, whose offered remedy is `WORKLIST_JUDGE=off` -- disabling a HEALTHY gate.
-# The child had been SIGTERMed because the outer Stop-hook deadline was shorter
-# than JUDGE_TIMEOUT_S; the model answered fine minutes later for $0.0165. A
-# monitor that infers CAUSE from a non-zero exit without asking whether a signal killed the process will misdirect every reader who trusts it, and this one misdirects them toward switching the gate off.
+# The child had been SIGTERMed because the outer Stop-hook deadline was shorter than JUDGE_TIMEOUT_S; the model answered fine minutes later for $0.0165. A monitor that infers CAUSE from a non-zero exit without asking whether a signal killed the process will misdirect every reader who trusts it, and this one misdirects them toward switching the gate off.
 
 
 class _Killed:
@@ -1794,8 +1773,7 @@ kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
 control("CONTROL: a genuine hand-written fix never fires", kind, "silent")
 control("CONTROL: it keeps its stop", out["verdict"], "stop")
 
-# -- 3d. THE ASSERTION CASE, the point of the whole rule. -------------------
-# "884 files changed" or "ran the formatter" with proof_kind still `none` must
+# -- 3d. THE ASSERTION CASE, the point of the whole rule. ------------------- "884 files changed" or "ran the formatter" with proof_kind still `none` must
 # fire even when the model marks proof_attached=true, because the override in
 # read_verdict is what stops a bare assertion from counting as proof.
 out = proof_answer(proof_attached=True, proof_kind="none", evidence="884 files changed")
@@ -1823,8 +1801,7 @@ control(
     "degraded",
 )
 
-# -- 3f. THE SAFETY DOOR: a destructive or operator-reserved instruction is
-# dropped, never handed to the session as a runnable command. -------------
+# -- 3f. THE SAFETY DOOR: a destructive or operator-reserved instruction is dropped, never handed to the session as a runnable command. -------------
 out = proof_answer(instruction="git clean -xdf")
 kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
 control("a destructive instruction still fires the rule", kind, "fire")

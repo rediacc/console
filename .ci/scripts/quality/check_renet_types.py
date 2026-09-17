@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported renet generated-types freshness gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.renet_types`, which pytest and
-the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.renet_types`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 3). See DRIVEN, below.
 
@@ -28,8 +26,7 @@ first. With the temp path normalised, twin and port produce the same six lines, 
 
 DRIVEN RED AS WELL, against a fixture root holding a copy of `.ci`, a copy of `packages/shared/src/renet-contract/data` with a line appended to `vault.generated.ts`, and a symlink to the real renet submodule. Both sides exit 1, both name `vault.generated.ts` as the one stale file, and their stdout (normalised for the temp path) and stderr are identical.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-renet-types.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-renet-types.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Check renet types freshness needs: go, submodules selftest: true ---- end gate ----
 """

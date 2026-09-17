@@ -1,7 +1,6 @@
 """GO_VERSION, NODE_VERSION and NODE_VERSION_MIN must agree across four files.
 
-Ported from `.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh`, which
-is NOT deleted; see `rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__`.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS.
@@ -12,8 +11,7 @@ Gate: GO_VERSION and NODE_VERSION in toolchain.env and the devcontainer Dockerfi
 WHY THIS EXISTS. check-toolchain-pins.sh's A1 (one definition per pin) deliberately EXEMPTS GO_VERSION and NODE_VERSION from its single-source check, because both also appear as bare majors in third-party action inputs and go.mod -- values this repo does not own and must not try to unify. That exemption is correct for THOSE call sites, but it has a side effect: it also removes ANY
 check between the two files that ARE supposed to carry the identical value on purpose -- .devcontainer/toolchain.env (the pin) and .devcontainer/Dockerfile's
 `ARG GO_VERSION=`/`ARG NODE_VERSION=` (consumed at image-build time). Nothing
-currently asserts these two stay equal; a bump to one without the other would
-build a devcontainer image running a DIFFERENT Go/Node than the pin file claims, silently.
+currently asserts these two stay equal; a bump to one without the other would build a devcontainer image running a DIFFERENT Go/Node than the pin file claims, silently.
 
 WHAT THIS CHECKS. For GO_VERSION and NODE_VERSION: the value in
 .devcontainer/toolchain.env must equal the value of the matching `ARG <KEY>=`
@@ -26,14 +24,11 @@ NODE_VERSION_MIN is the repo's Node FLOOR, and it has three copies by necessity,
 
 It is the same failure this gate already exists for, one file further out, and it had already happened: .ci/config/constants.sh COMPOSED the floor as
 "${NODE_VERSION}.0.0" -> 22.0.0, while both manifests said ">=22.13.0". Nothing
-compared them, so for the whole life of that line ./run.sh setup accepted hosts that npm then rejected. Composing a value from another pin passes a
-single-source scan and still drifts; only an equality check catches it.
+compared them, so for the whole life of that line ./run.sh setup accepted hosts that npm then rejected. Composing a value from another pin passes a single-source scan and still drifts; only an equality check catches it.
 
 CONTROL-FIRST. Builds fixtures by construction (a temp toolchain.env + temp Dockerfile with a deliberately mismatched value), never by substituting into real source, so rewording a real file cannot silently void the control.
 
-THE MANIFESTS ARE READ AND NEVER WRITTEN. This gate reports the drift and names
-the file to edit; it does not reach into package.json, because the two manifests
-are owned by npm tooling that rewrites them wholesale and a gate that edits one is a gate that loses a race with `npm pkg set`.
+THE MANIFESTS ARE READ AND NEVER WRITTEN. This gate reports the drift and names the file to edit; it does not reach into package.json, because the two manifests are owned by npm tooling that rewrites them wholesale and a gate that edits one is a gate that loses a race with `npm pkg set`.
 
 EVERY, NOT "A". `check_engines_pair` compares the floor against EVERY manifest it is given, because the failure mode worth catching is one of the two moving alone: packages/cli/package.json ships to npm as its own artifact, so a floor that is right in the root and stale in the CLI is invisible in this repo and wrong for everyone who installs the published package.
 
@@ -129,8 +124,7 @@ def env_value(key: str, path: pathlib.Path) -> str:
 def arg_value(key: str, path: pathlib.Path) -> str:
     """The value of the first `ARG KEY=` line in a Dockerfile, or "".
 
-    Anchored, so an indented ARG is not read; one-or-more spaces or tabs after
-    `ARG`, matching `[[:space:]]+`; first match wins, matching `head -1`.
+    Anchored, so an indented ARG is not read; one-or-more spaces or tabs after `ARG`, matching `[[:space:]]+`; first match wins, matching `head -1`.
     """
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -327,9 +321,7 @@ def run_controls(report: Report) -> None:
         else:
             report.fail("control: a cli-only floor drift went undetected or unnamed -- %s" % out)
 
-        # CONTROL: a `"node"` key OUTSIDE engines must not decide the verdict.
-        # This is why engines_node parses instead of grepping; a first-match grep
-        # would read the volta pin here and report a mismatch against a correct manifest.
+        # CONTROL: a `"node"` key OUTSIDE engines must not decide the verdict. This is why engines_node parses instead of grepping; a first-match grep would read the volta pin here and report a mismatch against a correct manifest.
         decoy = tmpdir / "decoy.json"
         decoy.write_text(
             '{"volta":{"node":"18.0.0"},"engines":{"node":">=22.44.0"}}\n', encoding="utf-8"

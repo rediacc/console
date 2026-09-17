@@ -1,8 +1,6 @@
 """rediacc_ci -- the Python home of this repository's CI machinery.
 
-WHAT THIS BECOMES. The tooling transformation moves the CI programs off bash and
-into one importable package. Phase 2 of W1 fills it in; the modules already
-arbitrated in docs/ci-overhaul/08-driver-contract.md are:
+WHAT THIS BECOMES. The tooling transformation moves the CI programs off bash and into one importable package. Phase 2 of W1 fills it in; the modules already arbitrated in docs/ci-overhaul/08-driver-contract.md are:
 
   rediacc_ci.core.env      env-file loading, taken over from .ci/lib/local-common.sh
   rediacc_ci.core.output   the one place a gate formats a verdict

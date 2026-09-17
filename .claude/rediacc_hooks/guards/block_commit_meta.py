@@ -16,9 +16,7 @@ The line anchoring on `Generated with` stays. A guard whose only failure mode is
 
 PORT NOTE ON A BYTE-VERSUS-CHARACTER DIFFERENCE. `[^[:alnum:]]{0,4}` is
 counted by grep in BYTES under LC_ALL=C, and by Python in CHARACTERS. The one
-prefix this clause exists for is a single emoji, which is four bytes and one
-character, so both sides admit it; a prefix of two emoji would be eight bytes
-and two characters and the two sides would disagree. No corpus case has one, the widening is in the direction of matching more, and narrowing it here would be a behaviour change made for tidiness rather than from a finding.
+prefix this clause exists for is a single emoji, which is four bytes and one character, so both sides admit it; a prefix of two emoji would be eight bytes and two characters and the two sides would disagree. No corpus case has one, the widening is in the direction of matching more, and narrowing it here would be a behaviour change made for tidiness rather than from a finding.
 """
 
 from rediacc_hooks import hookio
@@ -36,9 +34,7 @@ DEFECT = ("if not hookio.grep_q(AUTHORS_A_MESSAGE, cmd):", "if False:")
 #
 # git log --oneline | grep commit | grep <the trailer>
 #
-# -- a `git log` in one clause and the word `commit` in another, read as a
-# commit that carries a trailer. Excluding `;|&` from the gap tokens keeps the
-# verb and its subcommand in one clause, which is the same fix block-protected-files needed for the same reason on the same day.
+# -- a `git log` in one clause and the word `commit` in another, read as a commit that carries a trailer. Excluding `;|&` from the gap tokens keeps the verb and its subcommand in one clause, which is the same fix block-protected-files needed for the same reason on the same day.
 AUTHORS_A_MESSAGE = hookio.rx(
     r"(^|[;&|(]|[{S}])git[{S}]+([^{S};|&]+[{S}]+)*(commit|tag)\b|(^|[;&|(]|[{S}])gh[{S}]+pr[{S}]+(create|edit)\b"
 )

@@ -4,9 +4,7 @@
 THE COMPARISON IS BYTE FOR BYTE ON BOTH STREAMS, with exactly one exemption (the traceback case, which names a different file on each side and says so in its own docstring). That standard is affordable because 103 of the twin's 224 lines were ALREADY Python inside a `python3 - <<'PY'` heredoc (`:66-168`), so anything short of byte equality would be a transcription error rather than
 a legitimate rewrite.
 
-NO FAKES, AND THAT IS A MEASURED CLAIM RATHER THAN AN ASSUMPTION. The twin
-shells out to exactly one binary, `python3`, and only to run the heredoc; there
-is no `yq`, no `jq`, no `gh`, no network.
+NO FAKES, AND THAT IS A MEASURED CLAIM RATHER THAN AN ASSUMPTION. The twin shells out to exactly one binary, `python3`, and only to run the heredoc; there is no `yq`, no `jq`, no `gh`, no network.
 
     $ grep -nE '(^|[^a-z-])(yq|jq|gh|curl|wget|git) ' \\
         .ci/scripts/security/check-ci-workflow-invariants.sh
@@ -198,9 +196,7 @@ def _path_without_python(tmp_path: pathlib.Path) -> pathlib.Path:
 def assert_red(old: tuple, token: str) -> None:
     """Anti-vacuity for one case: the twin really did fail, for the reason meant.
 
-    Two implementations that both print nothing and both exit 0 agree perfectly
-    and prove nothing; `scripts/lib/shadow-gate.ts` calls that VACUOUS_BOTH_EMPTY
-    and refuses it, and this is the same refusal inside the differential.
+    Two implementations that both print nothing and both exit 0 agree perfectly and prove nothing; `scripts/lib/shadow-gate.ts` calls that VACUOUS_BOTH_EMPTY and refuses it, and this is the same refusal inside the differential.
     """
     assert old[0] == 1, "expected the twin to fail, got exit %s\n%s" % (old[0], old[2])
     assert token in old[2], "expected %r in the twin's stderr, got:\n%s" % (token, old[2])
@@ -403,8 +399,7 @@ def test_a_scalar_document_crashes_the_analysis_on_both_sides(tmp_path: pathlib.
     """THE ONE EXEMPTED CASE, and the exemption is one block of text, not a rule.
 
     `(doc or {}).get("jobs")` on a string raises AttributeError. The twin's
-    heredoc prints a traceback naming `<stdin>` and exits 1; the port prints one
-    naming its own file. Exit code and stdout are still compared byte for byte, and the stderr is compared with the traceback elided -- so the INVARIANT-FAIL line, its `(exit 1)` and their ORDER relative to the traceback are all still asserted.
+    heredoc prints a traceback naming `<stdin>` and exits 1; the port prints one naming its own file. Exit code and stdout are still compared byte for byte, and the stderr is compared with the traceback elided -- so the INVARIANT-FAIL line, its `(exit 1)` and their ORDER relative to the traceback are all still asserted.
     """
     old, new = run_both(write(tmp_path, "just a string\n"))
     assert_red(old, "analysis of")

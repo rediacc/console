@@ -133,9 +133,7 @@ def main():
     settings_file = machine_dir / "settings.json"
     machine_settings = {}
     if settings_file.exists():
-        # OSError: unreadable. ValueError: not JSON (UnicodeDecodeError is a
-        # subclass). Either way the file is replaced; anything else is a defect
-        # here and must not be swallowed.
+        # OSError: unreadable. ValueError: not JSON (UnicodeDecodeError is a subclass). Either way the file is replaced; anything else is a defect here and must not be swallowed.
         with contextlib.suppress(OSError, ValueError):
             machine_settings = json.loads(settings_file.read_text())
     machine_settings["terminal.integrated.defaultProfile.linux"] = "bash"

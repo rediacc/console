@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """A Python script a workflow RUNS must have its third-party imports installed.
 
-WHY THIS EXISTS. check_workflow_submodule_deps.py imported PyYAML, ran green on the author's machine, and died on the runner with ModuleNotFoundError. The
-author's environment had the module; a clean Ubuntu runner does not. Nothing
-compared what a script imports against what its job installs, so the gap was invisible until the job crashed -- and it crashed in the commit that added a gate against checks which silently do not run.
+WHY THIS EXISTS. check_workflow_submodule_deps.py imported PyYAML, ran green on the author's machine, and died on the runner with ModuleNotFoundError. The author's environment had the module; a clean Ubuntu runner does not. Nothing compared what a script imports against what its job installs, so the gap was invisible until the job crashed -- and it crashed in the commit that added
+a gate against checks which silently do not run.
 
 WHY A DOCUMENT WAS NOT ENOUGH. The obvious remedy is a line in TRAPS.md saying "install your dependencies". A document an agent can skip is not a control, and this repo has the receipts: the stop-hook suite's own setup() carried a comment recording that 30 cases were once lost to an inherited GITHUB_ACTIONS, and a new call site was still added without the pin. The lesson was
 written down and then walked past. This asserts the property instead.
@@ -56,17 +55,13 @@ PIP_RE = re.compile(r"pip\s+install[^\n]*", re.IGNORECASE)
 
 
 # Directory names a script puts on sys.path, so its cross-directory imports can be recognised as first-party. THE NAMED-VARIABLE FORM. `[^)]*?` could not cross the `)` of a nested call, so `sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))` matched NOTHING and the wl_* modules those five scripts import read as third-party dependencies the gate would demand somebody pip
-# install. Same defect as PARENTS_RE's first draft,
-# in the line right above it. `.*?` spans the call; the variable is still required
-# to be an ALL-CAPS name, which is what keeps this from matching arbitrary text.
+# install. Same defect as PARENTS_RE's first draft, in the line right above it. `.*?` spans the call; the variable is still required to be an ALL-CAPS name, which is what keeps this from matching arbitrary text.
 #
-# TWO SPELLINGS, NOT ONE, since PRE-A1. `rediacc_ci.paths.on_sys_path(d)` is the
-# canonical hop now and a bare `sys.path.insert` is the residue; both put a
-# directory on the path and this gate has to read either. Leaving the resolver form out is not a cosmetic gap: the day `check_gate_reachability_coverage.py` and `check_agent_hint_liveness.py` were cut over, this gate reported their `wl_reggate` and `wl_agents` imports as third-party dependencies nobody could pip install, on a change that added no dependency at all.
+# TWO SPELLINGS, NOT ONE, since PRE-A1. `rediacc_ci.paths.on_sys_path(d)` is the canonical hop now and a bare `sys.path.insert` is the residue; both put a directory on the path and this gate has to read either. Leaving the resolver form out is not a cosmetic gap: the day `check_gate_reachability_coverage.py` and `check_agent_hint_liveness.py` were cut over, this gate reported their
+# `wl_reggate` and `wl_agents` imports as third-party dependencies nobody could pip install, on a change that added no dependency at all.
 HOP = r"(?:sys\.path\.(?:insert|append)|paths\.on_sys_path)"
 SYS_PATH_RE = re.compile(HOP + r"\(.*?([A-Z_]+)\b")
-# `sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[N]))`, the
-# inline form; the capture is N.
+# `sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[N]))`, the inline form; the capture is N.
 PARENTS_RE = re.compile(HOP + r"\(.*?parents\[(\d+)\]")
 # `paths.hooks_stop_dir(ROOT)` -- a hop whose directory is named by a FUNCTION and so carries no literal and no ALL-CAPS variable for the two patterns above to find. The mapping from helper to directory is not copied here: the helper is CALLED, against this repo's root, so `paths.py` stays the one place the `.claude/hooks/stop` literal lives. That is the whole reason those call
 # sites were moved onto it.
@@ -80,9 +75,7 @@ def _imported_roots(body: str) -> set[str]:
     NOT a line regex, and the difference is not cosmetic. IMPORT_RE matches the word `import` or `from` at the start of ANY line, docstrings and comments included, so a sentence beginning "from the comparison" or "from one tail block" was read as an import of a module named `the` or `one`. Four such sentences were live in .ci/scripts/quality on 2026-09-08 and this gate reported all
     four as uninstalled dependencies, naming words that are not modules. A parser cannot make that mistake, and a gate whose findings are unbelievable stops being read.
 
-    A FILE THAT DOES NOT PARSE FALLS BACK to the regex rather than going quiet. Returning an empty set on SyntaxError would turn a broken file into a silent
-    pass here, which is the vacuity this estate has rules about; the over-reporting
-    regex is the safer wrong answer.
+    A FILE THAT DOES NOT PARSE FALLS BACK to the regex rather than going quiet. Returning an empty set on SyntaxError would turn a broken file into a silent pass here, which is the vacuity this estate has rules about; the over-reporting regex is the safer wrong answer.
 
     RELATIVE IMPORTS ARE SKIPPED (`node.level > 0`): `from . import x` is first-party by construction and has no top-level name to install.
     """
@@ -242,8 +235,7 @@ def scan(workflow_files: list[pathlib.Path]):
                 run = str(step.get("run") or "")
                 if not run:
                     continue
-                # A step may install and then use in one block, so its own pip lines count for itself. Order within a step is the author's
-                # problem; order across steps is what this checks.
+                # A step may install and then use in one block, so its own pip lines count for itself. Order within a step is the author's problem; order across steps is what this checks.
                 here = "\n".join(PIP_RE.findall(run))
                 for script in scripts_a_step_runs(run):
                     steps_scanned += 1

@@ -34,9 +34,7 @@ import { NIS2_SNAPSHOT_LANGS, type Nis2SnapshotLang } from '../lib/nis2-langs.js
 const CELEX = '32022L2555';
 const NORMALISATION_VERSION = 1;
 
-// EU languages where the directive is officially published AND that we
-// translate the surrounding content into. ISO 639-1 codes; EUR-Lex uses
-// the uppercase form in URLs (EN, DE, ES, FR, ET, IT, PT).
+// EU languages where the directive is officially published AND that we translate the surrounding content into. ISO 639-1 codes; EUR-Lex uses the uppercase form in URLs (EN, DE, ES, FR, ET, IT, PT).
 const SUPPORTED_LANGS = NIS2_SNAPSHOT_LANGS;
 type SupportedLang = Nis2SnapshotLang;
 
@@ -61,8 +59,7 @@ function pathsForLang(lang: SupportedLang) {
 }
 
 function eliUrl(lang: SupportedLang): string {
-  // ELI URL uses the 3-letter language code in lowercase; map ISO 639-1 -> ISO 639-3-ish slug used by EUR-Lex.
-  // Examples observed: en -> /eli/dir/2022/2555/oj/eng de -> /eli/dir/2022/2555/oj/deu es -> /eli/dir/2022/2555/oj/spa fr -> /eli/dir/2022/2555/oj/fra et -> /eli/dir/2022/2555/oj/est it -> /eli/dir/2022/2555/oj/ita pt -> /eli/dir/2022/2555/oj/por
+  // ELI URL uses the 3-letter language code in lowercase; map ISO 639-1 -> ISO 639-3-ish slug used by EUR-Lex. Examples observed: en -> /eli/dir/2022/2555/oj/eng de -> /eli/dir/2022/2555/oj/deu es -> /eli/dir/2022/2555/oj/spa fr -> /eli/dir/2022/2555/oj/fra et -> /eli/dir/2022/2555/oj/est it -> /eli/dir/2022/2555/oj/ita pt -> /eli/dir/2022/2555/oj/por
   const map: Record<SupportedLang, string> = {
     en: 'eng',
     de: 'deu',
@@ -157,8 +154,7 @@ function normalise(rawText: string): string {
   s = s.replace(/…/g, '...');
   s = s.replace(/ /g, ' ');
 
-  // OJ page header is "Official Journal of the European Union" in English; in
-  // other locales it is the localised equivalent ("Journal officiel de l'Union européenne", "Diario Oficial de la Unión Europea", etc.). We keep the language-specific variants narrow to avoid stripping body text.
+  // OJ page header is "Official Journal of the European Union" in English; in other locales it is the localised equivalent ("Journal officiel de l'Union européenne", "Diario Oficial de la Unión Europea", etc.). We keep the language-specific variants narrow to avoid stripping body text.
   s = s.replace(/Official Journal of the European Union[^\n]*\n/g, '\n');
   s = s.replace(/Amtsblatt der Europäischen Union[^\n]*\n/g, '\n'); // de
   s = s.replace(/Diario Oficial de la Unión Europea[^\n]*\n/g, '\n'); // es

@@ -14,9 +14,8 @@ BOTH SIDES RUN IN A THROWAWAY TREE for a second reason: the twin `cd`s to `get_r
 
 THE ARGV IS THE COMPARISON, not the stdout. Everything this script decides ends up in one `gh` invocation: the tag, the title, the target sha, the repo and the asset list IN ORDER. stdout is whatever `gh` prints. So the call log is asserted element by element, and the ordering case below is the one that matters most -- see `test_glob_order_is_bytewise_not_a_directory_walk`.
 
-THE ORDERING CASE, spelled out because it is the one place a plausible port is
-wrong. `shopt -s globstar; dist/cli/**/*` sorts each pattern's matches
-bytewise, so with `dist/cli/v1/a.bin`, `dist/cli/v1-x` and `dist/cli/v1.y` present, bash emits `v1`, `v1-x`, `v1.y`, `v1/a.bin`: `-` (0x2D) and `.` (0x2E) both sort BELOW `/` (0x2F). A directory walk emitting each directory's children immediately after the directory would give `v1`, `v1/a.bin`, `v1-x`, `v1.y`.
+THE ORDERING CASE, spelled out because it is the one place a plausible port is wrong. `shopt -s globstar; dist/cli/**/*` sorts each pattern's matches bytewise, so with `dist/cli/v1/a.bin`, `dist/cli/v1-x` and `dist/cli/v1.y` present, bash emits `v1`, `v1-x`, `v1.y`, `v1/a.bin`: `-` (0x2D) and `.` (0x2E) both sort BELOW `/` (0x2F). A directory walk emitting each directory's children
+immediately after the directory would give `v1`, `v1/a.bin`, `v1-x`, `v1.y`.
 Both orders are defensible; only one matches. `LC_ALL=C` is pinned on both
 sides, because bash sorts glob results with `strcoll` and the port sorts by codepoint, which is the same thing only in the C locale.
 """
@@ -269,8 +268,7 @@ def test_the_full_invocation_is_byte_identical(tmp_path: pathlib.Path) -> None:
 def test_the_asset_paths_are_relative_to_the_repo_root(tmp_path: pathlib.Path) -> None:
     """The twin globs after `cd "$(get_repo_root)"`, so `gh` sees `dist/...`.
 
-    Absolute paths would still upload, so nothing would look wrong; they would
-    just make the two sides' argv differ, which is the whole comparison.
+    Absolute paths would still upload, so nothing would look wrong; they would just make the two sides' argv differ, which is the whole comparison.
     """
     old, new = run_both(tmp_path, assets=("dist/cli/rdc-mac-arm64",))
     assert _assets_of(old[3][0]) == ["dist/cli/rdc-mac-arm64"]

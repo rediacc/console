@@ -199,8 +199,7 @@ const StorageConfigSchema = z.object({
 
 // Per-repo secrets. Two delivery modes:
 //   env  → injected as REDIACC_SECRET_<KEY> in the renet shell (compose `${VAR}`).
-// file → tmpfs file at /var/run/rediacc/secrets/<networkId>/<KEY> on the target machine, referenced by Docker compose `secrets:` block.
-// Fork isolation: registerFork does NOT copy `secrets`; a fork's map is empty.
+// file → tmpfs file at /var/run/rediacc/secrets/<networkId>/<KEY> on the target machine, referenced by Docker compose `secrets:` block. Fork isolation: registerFork does NOT copy `secrets`; a fork's map is empty.
 const SECRET_KEY_REGEX = /^[A-Z][A-Z0-9_]*$/;
 
 // Size caps (gate C11, merged with spec 05). The config file is atomically rewritten and remote-pushed WHOLE on every mutation, and each mode materializes as one k8s Secret object per repo namespace (~1 MiB apiserver cap), so anything larger is a file the data plane should carry.
@@ -395,8 +394,7 @@ const ClusterCephRefSchema = z.object({
   pool: z.string().optional(),
 });
 
-// Local KVM topology. `renet ops` addresses VMs by numeric id; `memberIds` (the
-// booted-VM allocation ledger) has moved to `state.clusters[*].memberIds` (R2-F2) so per-boot allocation churn no longer bumps the version counter.
+// Local KVM topology. `renet ops` addresses VMs by numeric id; `memberIds` (the booted-VM allocation ledger) has moved to `state.clusters[*].memberIds` (R2-F2) so per-boot allocation churn no longer bumps the version counter.
 const ClusterKvmSchema = z.object({
   netName: z.string().min(1),
   netBase: z.string().min(1),
@@ -511,9 +509,7 @@ const AccountSchema = z.object({
   e2ePublicKey: z.string().optional(), // server X25519 SPKI, discovered or seeded
   updateChannel: z.string().optional(), // free-form R2 channel segment (edge, stable, pr-N)
   releasesUrl: z.string().optional(), // on-prem releases base URL override
-  // team/region are retired cloud-adapter residue (R2-F9). The v2→v3 migration
-  // strips them and nothing repopulates them; kept optional only so the dead
-  // `config set/clear team|region` command surface compiles until P4 removes it.
+  // team/region are retired cloud-adapter residue (R2-F9). The v2→v3 migration strips them and nothing repopulates them; kept optional only so the dead `config set/clear team|region` command surface compiles until P4 removes it.
   team: z.string().optional(),
   region: z.string().optional(),
 });

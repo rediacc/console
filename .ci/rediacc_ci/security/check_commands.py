@@ -7,15 +7,12 @@ REGISTERED CI GATE: `check:ci-shell-commands`, `ci-quality.yml:351`.
 
 PORT NOTES.
 
-TWO REAL BUGS, FIXED 2026-09-10 IN THE TWIN AND HERE IN LOCKSTEP. Until this date, both the `$(` branch of the wide per-file filter and the narrow per-command check, and the narrow check's missing `if` branch, were dead code in both the twin and this port (deliberately reproduced here to stay byte-for-byte behind the still-buggy twin). The twin's source used to read
-`\\$\\(` inside a double-quoted grep argument; bash's double-quote rules strip
-the backslash before `$` (one of the five characters double quotes treat specially) while leaving the backslash before `(` untouched, so the byte sequence grep actually received was `$\\(` -- an UNESCAPED `$` immediately followed by a literal `(`. `.ci` runs on ugrep (7.5.0 measured), whose `-E` mode treats that `$` as a real end-of-line anchor even mid-pattern inside an
-alternation, exactly the class of silent breakage this repo's own house rule documents for an alternated `^` (`grep -cE '(^|[^a-z-])ease'` printing 0 where `-P` printed 26). An anchor that cannot be followed by anything within the same match makes the whole alternative unmatchable.
+TWO REAL BUGS, FIXED 2026-09-10 IN THE TWIN AND HERE IN LOCKSTEP. Until this date, both the `$(` branch of the wide per-file filter and the narrow per-command check, and the narrow check's missing `if` branch, were dead code in both the twin and this port (deliberately reproduced here to stay byte-for-byte behind the still-buggy twin). The twin's source used to read `\\$\\(` inside
+a double-quoted grep argument; bash's double-quote rules strip the backslash before `$` (one of the five characters double quotes treat specially) while leaving the backslash before `(` untouched, so the byte sequence grep actually received was `$\\(` -- an UNESCAPED `$` immediately followed by a literal `(`. `.ci` runs on ugrep (7.5.0 measured), whose `-E` mode treats that `$` as
+a real end-of-line anchor even mid-pattern inside an alternation, exactly the class of silent breakage this repo's own house rule documents for an alternated `^` (`grep -cE '(^|[^a-z-])ease'` printing 0 where `-P` printed 26). An anchor that cannot be followed by anything within the same match makes the whole alternative unmatchable.
 
 Consequence, before the fix: `x=$(shuf -n1 file.txt)` -- a disallowed command
-hidden inside a command substitution -- was invisible to this gate. A SECOND, INDEPENDENT GAP: the narrow per-command check lacked the wide filter's `^[[:space:]]*if[[:space:]]+` branch entirely (four branches against five), so
-`if seq 1 10; then` passed the file-level candidate test but matched no
-per-command narrow regex and was never reported.
+hidden inside a command substitution -- was invisible to this gate. A SECOND, INDEPENDENT GAP: the narrow per-command check lacked the wide filter's `^[[:space:]]*if[[:space:]]+` branch entirely (four branches against five), so `if seq 1 10; then` passed the file-level candidate test but matched no per-command narrow regex and was never reported.
 
 FIXED 2026-09-10: `.ci/scripts/security/check-commands.sh:70,84` now read `\\\\$\\(` (an escaped `$` that survives bash's double-quote stripping) and line 84 carries all five alternatives, matching line 70. This module's `_WIDE_RE`/`_narrow_re` mirror the same fix: `\\$\\(` (Python raw-string escaping, not bash quoting, but the identical effect -- `re.search(r"\\$\\(", "a$(b")`
 matches where the old bare-`$` form did not). Applying the fix surfaced **46 real, previously-invisible findings** across the tracked corpus, verified live and all fixed in the same change (mostly
@@ -57,8 +54,7 @@ DISALLOWED: list[tuple[str, str]] = [
 
 _CMD_ALTERNATION = "|".join(r"\b%s\b" % re.escape(cmd) for cmd, _alt in DISALLOWED)
 
-# `(^[[:space:]]*|[|&;]\s*|\$\(|^[[:space:]]*if\s+)($pattern)`. Fixed
-# 2026-09-10 in lockstep with the twin -- see module docstring.
+# `(^[[:space:]]*|[|&;]\s*|\$\(|^[[:space:]]*if\s+)($pattern)`. Fixed 2026-09-10 in lockstep with the twin -- see module docstring.
 _WIDE_RE = re.compile(r"(^[ \t]*|[|&;]\s*|\$\(|^[ \t]*if\s+)(" + _CMD_ALTERNATION + ")")
 
 
@@ -97,9 +93,7 @@ def _find_sh_files(root: Path, subdir: str) -> list[str]:
 
 def _line_finding(line_content: str) -> tuple[str, str] | None:
     """Returns `(cmd, alt)` for the first disallowed command that fires on
-    this line and is not skipped, or `None` if none does. Mirrors the twin's
-    inner `for entry in DISALLOWED; do ... continue/break ... done` exactly:
-    a narrow-regex match that is SKIPPED (comment/assignment/yaml-key) moves on to the NEXT disallowed command on the SAME line, it does not abandon
+    this line and is not skipped, or `None` if none does. Mirrors the twin's inner `for entry in DISALLOWED; do ... continue/break ... done` exactly: a narrow-regex match that is SKIPPED (comment/assignment/yaml-key) moves on to the NEXT disallowed command on the SAME line, it does not abandon
     the line."""
     for cmd, alt in DISALLOWED:
         if not _narrow_re(cmd).search(line_content):

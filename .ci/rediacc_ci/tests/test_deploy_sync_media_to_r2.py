@@ -4,9 +4,8 @@
 A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches Cloudflare R2: the fake logs its exact argv, answers from the environment, and the only real credential name in the file is an environment KEY, never a value. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a
 separate, achievable piece of work. This is that piece.
 
-THE CALL LOG IS COMPARED AS WELL AS THE TWO STREAMS, and for an UPLOAD script it is the half that matters. What gets printed is three `Syncing ...` lines and a
-three-line closing recipe, none of it derived from what moved; the entire
-observable effect is which local directory went to which prefix, with which headers. A port that dropped `--cache-control` would print identical output and exit 0 while publishing objects that expire in an hour instead of a year, and a port that appended `--delete` in the wrong position would look identical too. `test_planted_defect_is_caught` plants the first of those.
+THE CALL LOG IS COMPARED AS WELL AS THE TWO STREAMS, and for an UPLOAD script it is the half that matters. What gets printed is three `Syncing ...` lines and a three-line closing recipe, none of it derived from what moved; the entire observable effect is which local directory went to which prefix, with which headers. A port that dropped `--cache-control` would print identical
+output and exit 0 while publishing objects that expire in an hour instead of a year, and a port that appended `--delete` in the wrong position would look identical too. `test_planted_defect_is_caught` plants the first of those.
 
 `--cache-control` IS ONE ARGV ELEMENT CONTAINING A SPACE, so the fake records argv tab-separated and echoes it `shlex.quote`d. A space-joined log cannot tell
 `--cache-control 'public, max-age=31536000'` from `--cache-control public,`
@@ -276,9 +275,7 @@ def test_dry_run_and_delete_keep_their_order_in_both_the_log_and_the_argv(
     tmp_path: pathlib.Path,
 ) -> None:
     """TWO ORDERINGS AT ONCE, and neither is arbitrary. On stderr the dry-run
-    line precedes the delete warning because the twin's two `if` blocks are in
-    that order; in the argv `--dryrun` precedes `--delete` for the same reason.
-    A port that emitted either pair the other way round would be reporting a
+    line precedes the delete warning because the twin's two `if` blocks are in that order; in the argv `--dryrun` precedes `--delete` for the same reason. A port that emitted either pair the other way round would be reporting a
     different program."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--delete", "--dry-run"])
     assert old.returncode == 0

@@ -162,9 +162,7 @@ async function main(): Promise<number> {
   );
 
   if (!dkim) {
-    // No dkim-notify entry yet — the rotation tool hasn't been run at least
-    // once. Phase 1 of the SES BYODKIM migration should seed this; until it
-    // does, the check is a no-op (otherwise CI fails before the migration even starts).
+    // No dkim-notify entry yet — the rotation tool hasn't been run at least once. Phase 1 of the SES BYODKIM migration should seed this; until it does, the check is a no-op (otherwise CI fails before the migration even starts).
     process.stdout.write('SKIP: no dkim-notify credential in manifest yet (pre-migration state)\n');
     return 0;
   }

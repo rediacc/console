@@ -6,9 +6,8 @@ Builds the review payload the model is allowed to see out of the raw review thre
 THE FILTER IS ON THE ROOT COMMENT'S AUTHOR, AND ONLY THE ROOT'S. A thread is STARTED by whoever raised the finding, and on a public repository anyone can REPLY into it. So a thread whose root author does not match is dropped whole, and a matching thread keeps every comment including replies, deliberately, as data. The port changes neither half. `select_threads` below is the whole
 control, exported so a test can drive it without a subprocess.
 
-NO `jq` SUBPROCESS, UNLIKE `update_state.py`. This module's twin runs exactly
-one jq program and its result is the product; reproducing it in Python is the
-port. `update_state.py` shells out because its jq calls sit in the middle of a pipeline whose failure text is load-bearing. Here the failure text is reproduced by hand instead, which is the harder half of this file and is documented under THE JQ ERROR SURFACE below.
+NO `jq` SUBPROCESS, UNLIKE `update_state.py`. This module's twin runs exactly one jq program and its result is the product; reproducing it in Python is the port. `update_state.py` shells out because its jq calls sit in the middle of a pipeline whose failure text is load-bearing. Here the failure text is reproduced by hand instead, which is the harder half of this file and is
+documented under THE JQ ERROR SURFACE below.
 
 THREE jq BEHAVIOURS A NAIVE PYTHON PORT GETS WRONG, all three found by driving jq 1.8.1 rather than by reading its manual:
 
@@ -29,8 +28,7 @@ THREE jq BEHAVIOURS A NAIVE PYTHON PORT GETS WRONG, all three found by driving j
      measures about a third of the bytes it occupies. Python's `len` on a `str`
      has exactly the same defect, so the port measures `len(s.encode())`.
 
-THE BYTE CAP SHEDS OLDEST-FIRST, and the twin's `reduce range(0; length)` is
-reproduced as a bounded loop rather than a `while`: it runs at most `length`
+THE BYTE CAP SHEDS OLDEST-FIRST, and the twin's `reduce range(0; length)` is reproduced as a bounded loop rather than a `while`: it runs at most `length`
 times, so it CAN end with zero threads and `dropped == length`. A `while
 over_cap` loop would be the same thing here only by accident, and a bounded loop is what the twin actually wrote.
 
@@ -67,8 +65,7 @@ USAGE = (
 )
 
 # `${ARG_AUTHOR_FILTER-github-actions}` -- the `-` form, NOT `:-`. An explicitly
-# EMPTY --author-filter is a wiring bug and must reach the guard below; `:-`
-# would substitute the safe default and make that guard unreachable.
+# EMPTY --author-filter is a wiring bug and must reach the guard below; `:-` would substitute the safe default and make that guard unreachable.
 DEFAULT_AUTHOR_FILTER = "github-actions"
 
 # `${ARG_MAX_BYTES:-49152}` -- 48 KiB.
@@ -135,9 +132,7 @@ JQ_ERRBUF = 15
 def _dump_trunc(value: Any) -> str:
     """`jv_dump_string_trunc`: the value as jq quotes it inside an error.
 
-    Sliced on BYTES, because jq's is a `strncpy` into a byte buffer. The one place this can still differ is a multi-byte character straddling the cut,
-    where jq emits the partial bytes and this emits U+FFFD; that is an error
-    message about an already-malformed fixture, and it is named here rather than papered over.
+    Sliced on BYTES, because jq's is a `strncpy` into a byte buffer. The one place this can still differ is a multi-byte character straddling the cut, where jq emits the partial bytes and this emits U+FFFD; that is an error message about an already-malformed fixture, and it is named here rather than papered over.
     """
     raw = compact(value).encode("utf-8")
     if len(raw) >= JQ_ERRBUF:
@@ -251,9 +246,8 @@ def build_payload(data: list[Any], author_filter: str, max_bytes: int) -> dict[s
 def jq_error_line(raw: bytes) -> int:
     """The `(at <file>:<n>)` offset jq prints for a whole-file value.
 
-    MEASURED, not assumed: a one-line fixture with no trailing newline reports `:0` and a four-line fixture reports `:4`, i.e. the newline count of the text jq has consumed, which for a single top-level value read in one buffer
-    is the whole file. The differential pins this against real jq; a file large
-    enough to be read in several buffers is outside what this script is ever handed (its input is one gate's thread fetch).
+    MEASURED, not assumed: a one-line fixture with no trailing newline reports `:0` and a four-line fixture reports `:4`, i.e. the newline count of the text jq has consumed, which for a single top-level value read in one buffer is the whole file. The differential pins this against real jq; a file large enough to be read in several buffers is outside what this script is ever handed
+    (its input is one gate's thread fetch).
     """
     return raw.count(b"\n")
 
@@ -330,8 +324,7 @@ def main(argv: list[str]) -> int:
             with open(out_path, "w", encoding="utf-8") as handle:
                 handle.write(text + "\n")
         except OSError as exc:
-            # `>"$OUT"` failing is a bash redirection diagnostic carrying the
-            # twin's own path and line number; only the text differs.
+            # `>"$OUT"` failing is a bash redirection diagnostic carrying the twin's own path and line number; only the text differs.
             print("%s: %s" % (SELF, exc), file=sys.stderr, flush=True)
             return 1
     else:

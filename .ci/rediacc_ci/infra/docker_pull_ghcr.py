@@ -9,8 +9,8 @@ INVENTED HERE
 -----------------------------------------------------------------------------
 `.ci/scripts/infra/ci-pull-images.sh` (ported beside this file as `rediacc_ci.infra.ci_pull_images`) runs the same login/pull/logout dance. The duplication is REAL and it is not shared today: `.ci/scripts/lib/common.sh` is 772 lines and contains no `ghcr`, no `docker login`, and no registry helper at all (grepped 2026-09-13, zero hits). Both twins open-code it.
 
-So this port open-codes it too. Factoring a `core.ghcr` on the Python side only would give the port a structure its twin does not have, and the differential would then be comparing two differently-shaped programs -- which is how a port starts "agreeing" for reasons unrelated to the subject. Naming the duplication
-is the deliverable; removing it is a cutover decision for a later box.
+So this port open-codes it too. Factoring a `core.ghcr` on the Python side only would give the port a structure its twin does not have, and the differential would then be comparing two differently-shaped programs -- which is how a port starts "agreeing" for reasons unrelated to the subject. Naming the duplication is the deliverable; removing it is a cutover decision for a later
+box.
 
 FOUR LIVE DIFFERENCES BETWEEN THE TWO TWINS, none of them cosmetic, all of them preserved on both Python sides:
 
@@ -61,12 +61,9 @@ ARGUMENT PARSING IS common.sh's `parse_args`, QUIRKS INCLUDED
 ONE LATENT PORTABILITY HAZARD IN THE TWIN, REPORTED RATHER THAN REPAIRED
 -----------------------------------------------------------------------------
 `PULL_ARGS=()` followed by `docker pull "${PULL_ARGS[@]}" "$IMAGE"` expands an
-EMPTY array under `set -u`. bash 4.4+ treats that as zero words; bash 4.3 and
-earlier (which is what ships as `/bin/bash` on stock macOS, 3.2) raise `PULL_ARGS[@]: unbound variable` and the script dies before pulling anything. Every CI runner here is bash 5, so it is latent. Not repaired: the twin stays live and a one-for-one port does not get to change the twin's argv.
+EMPTY array under `set -u`. bash 4.4+ treats that as zero words; bash 4.3 and earlier (which is what ships as `/bin/bash` on stock macOS, 3.2) raise `PULL_ARGS[@]: unbound variable` and the script dies before pulling anything. Every CI runner here is bash 5, so it is latent. Not repaired: the twin stays live and a one-for-one port does not get to change the twin's argv.
 
-Exit: 0 on a completed pull; 1 for a missing `--image`, a `:latest` violation, a
-missing token, a missing actor, or a missing `docker`; otherwise docker's own
-status from login, pull or logout.
+Exit: 0 on a completed pull; 1 for a missing `--image`, a `:latest` violation, a missing token, a missing actor, or a missing `docker`; otherwise docker's own status from login, pull or logout.
 
 K=5 LEDGER: `.ci/shadow/w7p6-docker-pull-ghcr.observations.jsonl`.
 """
@@ -104,8 +101,7 @@ LATEST_TAIL = "Image requested: %s"
 
 LATEST_ALLOWED_WARNING = "Using :latest tag (builds were skipped due to no private repo access)"
 
-# S105 fires on the NAME (`TOKEN`), not the value. This is the twin's error text
-# at line 58 and must stay byte-identical; nothing here is a credential.
+# S105 fires on the NAME (`TOKEN`), not the value. This is the twin's error text at line 58 and must stay byte-identical; nothing here is a credential.
 MISSING_TOKEN = "GitHub token required (--token or GITHUB_TOKEN environment variable)"  # noqa: S105
 MISSING_ACTOR = "GitHub actor required (--actor or GITHUB_ACTOR environment variable)"
 
@@ -144,9 +140,7 @@ def pull_argv(image: str, quiet: str) -> list[str]:
     """`docker pull "${PULL_ARGS[@]}" "$IMAGE"` (lines 73-75).
 
     `[[ "$QUIET" == "true" ]] && PULL_ARGS+=("--quiet")` compares against the
-    exact literal, so `--quiet yes`, `--quiet 1` and `--quiet TRUE` all leave
-    the flag OFF. Reproduced; a port that accepted any truthy spelling would
-    pull with a different argv than the twin on the same command line.
+    exact literal, so `--quiet yes`, `--quiet 1` and `--quiet TRUE` all leave the flag OFF. Reproduced; a port that accepted any truthy spelling would pull with a different argv than the twin on the same command line.
     """
     if quiet == USE_CI_TRUE:
         return ["docker", "pull", "--quiet", image]
@@ -161,9 +155,7 @@ def _not_found(binary: str) -> int:
 def docker_login(token: str, actor: str) -> int:
     """`echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin`.
 
-    Under `pipefail` the pipeline's status is docker's, so `set -e` ends the
-    script with docker's code. `echo` appends the newline; it is reproduced so
-    the bytes on docker's stdin match.
+    Under `pipefail` the pipeline's status is docker's, so `set -e` ends the script with docker's code. `echo` appends the newline; it is reproduced so the bytes on docker's stdin match.
     """
     sys.stdout.flush()
     try:

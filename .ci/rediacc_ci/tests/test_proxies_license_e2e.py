@@ -6,9 +6,7 @@ UNLIKE EVERY OTHER PROXY IN THIS PACKAGE, there is no synthetic fixture here: bo
 twice per CI run is already the cost this proxy accepts, and a second real invocation buys nothing a fixture-driven test cannot check more cheaply. The counting logic (`_count`) is covered separately, against synthetic text, with no subprocess at all.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-license-e2e.observations.jsonl`, recorded
-against a disposable scratch git repo built OUTSIDE this checkout (this
-repo's own working tree is not clean; `shadow-gate.ts --record` refuses a
-dirty tree).
+against a disposable scratch git repo built OUTSIDE this checkout (this repo's own working tree is not clean; `shadow-gate.ts --record` refuses a dirty tree).
 """
 
 from __future__ import annotations

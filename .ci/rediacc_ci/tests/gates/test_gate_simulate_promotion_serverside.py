@@ -8,9 +8,7 @@ the raised 60-minute ceiling). That cancellation failed CI Complete and Pipeline
 A PR CANNOT EXERCISE THE REAL PATH: PR runs promote a tiny per-PR channel in minutes, only `main` promotes the full `edge` channel. So this does not try to prove the timing. It pins the SHAPE that caused the timing: the bytes must not travel through the runner. A regression to download-and-reupload is invisible to every other check in the repo and would simply be slow again.
 
 WHY THE ABSENT `aws` DOES NOT MAKE THIS VACUOUS, and it is worth saying because a sibling gate test was dropped from this batch for exactly the opposite reason. `aws` is NOT installed on this machine. It does not matter here, because the transfers are driven through a STUB `aws` that this fixture WRITES onto PATH and that records its argv: the assertions read what the script
-actually invoked. A gate test whose subject takes a tool-absent branch has two unreachable cases and
-cannot be plant-verified; this one shims the tool rather than probing for it, so
-every case runs on any machine.
+actually invoked. A gate test whose subject takes a tool-absent branch has two unreachable cases and cannot be plant-verified; this one shims the tool rather than probing for it, so every case runs on any machine.
 
 WHERE THE PORT REIMPLEMENTS THE TWIN. Nowhere behaviourally. The fixture tree, the `aws` stub and the `cf-purge-urls.sh` stub are written from Python instead of from heredocs, byte for byte the same scripts, and the `rogue` flag is baked into the stub at write time exactly as the twin's unquoted heredoc bakes it. `get_repo_root()` resolves from the SCRIPT's own path
 (`.ci/scripts/lib` -> up 3), so the fixture still mirrors the tree layout rather than just holding the script.
@@ -72,8 +70,7 @@ def build_fixture(gate, base: pathlib.Path, *, rogue: bool = False) -> Fixture:
     shutil.copy2(SUT, fx.target)
     shutil.copy2(COMMON, base / "repo" / ".ci" / "scripts" / "lib" / "common.sh")
 
-    # The purge step shells out to this; keep it inert but present. It RECORDS the
-    # URLs it is handed, so the purge assertions read what the script actually asked to be purged rather than a proxy for it.
+    # The purge step shells out to this; keep it inert but present. It RECORDS the URLs it is handed, so the purge assertions read what the script actually asked to be purged rather than a proxy for it.
     _write_exec(
         base / "repo" / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh",
         '#!/bin/bash\ncat >"%s"\n' % fx.purged,
@@ -219,9 +216,7 @@ def test_cache_control_is_still_applied(gate, tmp_path: pathlib.Path):
 
 def test_purge_urls_come_from_the_listing_and_survive_spaces(gate, tmp_path: pathlib.Path):
     gate.log_test("purge URLs are enumerated by listing, and a space survives")
-    # The old code walked the local tmp tree to build purge URLs. That tree is
-    # gone, so the listing replaces it; a key containing a space must round-trip
-    # intact rather than being split into two bogus URLs.
+    # The old code walked the local tmp tree to build purge URLs. That tree is gone, so the listing replaces it; a key containing a space must round-trip intact rather than being split into two bogus URLs.
     fx = build_fixture(gate, tmp_path)
     promote_or_fail(gate, fx)
     gate.assert_contains(

@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported label-inventory gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.label_inventory`, which pytest and the
-port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.label_inventory`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 8a, the broad tree-scanning nine). See DRIVEN, below.
 
@@ -53,9 +51,7 @@ THAT RUN READS THE NETWORK, which is worth saying because a network read is the 
 DRIVEN RED AS WELL, and the red run is deliberately OFFLINE, through the twin's own two injection seams which the port reads under the same names: `LABEL_INVENTORY_LABELS_FILE` for the declaration file and `LABEL_INVENTORY_LIVE_FILE` for the live list. Removing the network from the comparison is the point: a red that depended on a live read would be a claim about GitHub as much as
 about the gate.
 
-THE CONTROL WAS PROVED IN BOTH DIRECTIONS BEFORE THE PLANT RAN. A clean copy of `.github/labels.yml` paired with a 29-name live list exits 0 on the twin, which
-proves the two seams are not themselves what reds; the planted copy is the same
-file with exactly ONE label block deleted (`wontfix`), so the declared side carries 28 against a live 29.
+THE CONTROL WAS PROVED IN BOTH DIRECTIONS BEFORE THE PLANT RAN. A clean copy of `.github/labels.yml` paired with a 29-name live list exits 0 on the twin, which proves the two seams are not themselves what reds; the planted copy is the same file with exactly ONE label block deleted (`wontfix`), so the declared side carries 28 against a live 29.
 
     both sides -> exit 1, stdout EMPTY on both, stderr BYTE-IDENTICAL
     (473 bytes, sha256 71a9416aaf582a5c...):
@@ -64,15 +60,12 @@ file with exactly ONE label block deleted (`wontfix`), so the declared side carr
       <fixture>. ... Declare it ... or delete it: gh label delete 'wontfix'
     ✗ 1 label inventory mismatch(es)
 
-THE REAL TREE WAS NEVER WRITTEN TO for this gate; `.github/labels.yml` is
-untouched and the edited copy lives only at a scratch path.
+THE REAL TREE WAS NEVER WRITTEN TO for this gate; `.github/labels.yml` is untouched and the edited copy lives only at a scratch path.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-label-inventory.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-label-inventory.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
----- gate ---- kind: test test: .ci/scripts/test/gates/test-label-inventory.sh
-blocker: BLOCKER: test-label-inventory.sh:191 runs the gate seam-free over the REAL .github/labels.yml inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") with the live list injected, so the real parse, the declared floor and the create-on-demand allowlist verification execute every CI run, and the two controls beside it drop a real label and add an undeclared one to prove both fire directions; the live GitHub read is the one part that cannot run in that lane because it holds no label-read token, and it runs on the local npm invocation
-needs: none ---- end gate ----
+---- gate ---- kind: test test: .ci/scripts/test/gates/test-label-inventory.sh blocker: BLOCKER: test-label-inventory.sh:191 runs the gate seam-free over the REAL .github/labels.yml inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests") with the live list injected, so the real parse, the declared floor and the create-on-demand allowlist verification execute
+every CI run, and the two controls beside it drop a real label and add an undeclared one to prove both fire directions; the live GitHub read is the one part that cannot run in that lane because it holds no label-read token, and it runs on the local npm invocation needs: none ---- end gate ----
 """
 
 import sys

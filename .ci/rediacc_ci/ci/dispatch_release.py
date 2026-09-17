@@ -156,9 +156,7 @@ def run_gh_pulls(repository: str, sha: str) -> tuple[int, str]:
 def decide(repository: str, sha: str) -> bool:
     """Does this commit earn a release? True = yes (the twin's `return 0`).
 
-    Logs its reasoning and emits the same GHA notices in whichever mode it
-    runs. It does NOT touch $GITHUB_OUTPUT; that is `main`'s job, and only for
-    the skip verdict.
+    Logs its reasoning and emits the same GHA notices in whichever mode it runs. It does NOT touch $GITHUB_OUTPUT; that is `main`'s job, and only for the skip verdict.
     """
     status, rows = run_gh_pulls(repository, sha)
     if status != 0:

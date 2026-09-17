@@ -9,15 +9,12 @@ THE DEFECT THIS CLOSES (W12 P1.7). `wl_checks.plans_block` is the SessionStart a
     wall_ms         = 56.9
     listing lines   = 56
 
-Two megabytes and 166 opens, on every session start, to print 56 lines. Nothing
-in those 2 MB reaches the session; only the per-plan status, line count and box
-counts do, and those are five small integers per plan.
+Two megabytes and 166 opens, on every session start, to print 56 lines. Nothing in those 2 MB reaches the session; only the per-plan status, line count and box counts do, and those are five small integers per plan.
 
 WHAT THIS MODULE ADDS. A `## Plan census` section in `agent/INDEX.md` carrying exactly those integers, one row per plan, plus the plan's byte size. The hook reads that ONE file and stats the plan directory. No plan file is opened.
 
-WHY THE CENSUS LIVES IN agent/INDEX.md AND NOT IN A SIDECAR. `agent/INDEX.md` is already compared for EQUALITY against its render by `check:ci-plan-record`'s R8, so a stale index is RED IN CI rather than quietly wrong. A sidecar nothing checks would be a cache that can lie, which is the shape this repo refuses. R8 was
-taught about the census in the same change that added this module; without that
-edit the census section would red R8 as "disagrees with the records on disk", which is why the two land together and not one before the other.
+WHY THE CENSUS LIVES IN agent/INDEX.md AND NOT IN A SIDECAR. `agent/INDEX.md` is already compared for EQUALITY against its render by `check:ci-plan-record`'s R8, so a stale index is RED IN CI rather than quietly wrong. A sidecar nothing checks would be a cache that can lie, which is the shape this repo refuses. R8 was taught about the census in the same change that added this
+module; without that edit the census section would red R8 as "disagrees with the records on disk", which is why the two land together and not one before the other.
 
 ------------------------------------------------------------------------------
 THE FRESHNESS SIGNAL IS `stat`, AND ITS ONE BLIND SPOT IS NAMED HERE.
@@ -31,9 +28,8 @@ The whole point is to avoid reading the plans, so the hook's own check cannot ha
 
 THE BLIND SPOT, named with its most likely instance rather than left abstract: an edit that rearranges a plan's bytes WITHOUT changing their count is invisible here, and `Status: draft` -> `Status: ready` is exactly that -- two five-letter words, one of this repo's commonest plan edits. So a plan can read `[draft]` in the SessionStart listing for a while after it went `ready`.
 
-That is a real gap and it is accepted, because the hook's check is the CHEAP half of a two-part answer, not the whole one. The authoritative half is R8's byte-equality against a full re-read, which runs in CI on every branch and reds until the index is regenerated. The hook can be behind the truth between an edit
-and the next CI run; it cannot be wrong for longer than that, and the listing is
-never SHORT or EMPTY as a result -- only, briefly, one field stale.
+That is a real gap and it is accepted, because the hook's check is the CHEAP half of a two-part answer, not the whole one. The authoritative half is R8's byte-equality against a full re-read, which runs in CI on every branch and reds until the index is regenerated. The hook can be behind the truth between an edit and the next CI run; it cannot be wrong for longer than that, and the
+listing is never SHORT or EMPTY as a result -- only, briefly, one field stale.
 
 Closing it in the hook would mean opening the plans, which is the entire cost this module removes: reading ten header lines each still costs 83 opens.
 
@@ -50,8 +46,7 @@ slow-and-correct and never to fast-and-blind.
 `banner()` is what makes the states visible. It is prefixed `!!` and names the regeneration command, because a stale index that nobody regenerates is a permanent slow path nobody knows they are on.
 
 ------------------------------------------------------------------------------
-WHAT THIS MODULE DOES NOT DO. It never writes `agent/INDEX.md`. `render_census` returns text and `check_plan_record.py --update` is the only writer, for the reason two writers of one generated file always give: they disagree, and the disagreement shows up as a gate that flaps. `--render` on the command line prints
-to stdout for a human or a test; it does not touch the tree.
+WHAT THIS MODULE DOES NOT DO. It never writes `agent/INDEX.md`. `render_census` returns text and `check_plan_record.py --update` is the only writer, for the reason two writers of one generated file always give: they disagree, and the disagreement shows up as a gate that flaps. `--render` on the command line prints to stdout for a human or a test; it does not touch the tree.
 """
 
 from __future__ import annotations
@@ -165,8 +160,7 @@ def render_census(rows):
 
     "" matches `wl_planrec.render_index`'s own empty answer, and for the same reason it gives: a generated table with no rows is a committed document that says nothing. It also keeps R8's zero-record controls working unchanged -- a fixture with no plans renders no census, so `render_index(rows) + census` is `render_index(rows)`.
 
-    Rows are sorted by PATH here, not by mtime, because this text is committed and mtime is not stable across a clone. The hook re-imposes mtime order from
-    its own `stat` pass; see `plan_stats`.
+    Rows are sorted by PATH here, not by mtime, because this text is committed and mtime is not stable across a clone. The hook re-imposes mtime order from its own `stat` pass; see `plan_stats`.
     """
     if not rows:
         return ""
@@ -237,8 +231,7 @@ def index_census(root, stats=None):
 
     `stats` is the `plan_stats` result when the caller already has it. It is not an optimisation for its own sake: `plans_block` needs the same list to restore mtime order, and computing it twice would stat 83 files twice on the FAST path, which is the path this whole module exists to keep cheap.
 
-    `rows` is [] for every state except CENSUS_FRESH; a caller must not use the
-    rows of a stale index, because a stale row is a confident wrong number and the fallback is cheap enough to always be right. `detail` is the `census_diff` triple for CENSUS_STALE and () otherwise.
+    `rows` is [] for every state except CENSUS_FRESH; a caller must not use the rows of a stale index, because a stale row is a confident wrong number and the fallback is cheap enough to always be right. `detail` is the `census_diff` triple for CENSUS_STALE and () otherwise.
 
     A directory with NO plans at all answers ([], CENSUS_FRESH, ()): there is nothing to index, the empty census agrees with the empty directory, and forcing a project without plans onto the fallback would make it pay a directory walk to be told nothing. That is the one case where [] rows and CENSUS_FRESH travel together.
     """

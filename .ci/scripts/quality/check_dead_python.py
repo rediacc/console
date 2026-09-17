@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the dead-Python scanner. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.dead_python`, which pytest and the
-gate's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.dead_python`, which pytest and the gate's own `--selftest` import directly.
 
 NEW GATE, 2026-09-08 (U4). It has no bash twin and never had one: Go has `deadcode`, TypeScript has knip, bash has `scripts/gates/check-dead-bash.ts`, and the 592 Python files in this tree had nothing at all. The instrument the tooling transformation needs is specifically the one that notices a PORT that shadowed green and was then forgotten: the shadow protocol lands the new side
 before the old side is deleted, so between those two commits a file can stop being run by anything while every other gate stays green, because the bash twin is still registered and still passes.

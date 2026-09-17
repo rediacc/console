@@ -22,21 +22,17 @@ the refusal too, which looks surprising until you notice that a `skip` reaching 
 
 WHY A WRAPPER AND NOT `continue-on-error`: `check-workflows.sh` bans that key repo-wide, and the repo's precedent for non-blocking behaviour is a script-level soft-fail (`scripts/gates/check-embed-asset-freshness.ts`, "FAIL SOFT"). This is that precedent factored out once instead of re-implemented inside every external gate.
 
-NOT A REGISTERED GATE ITSELF; it is a transparent PREFIX on four registered
-ones. `grep -n run-external-gate package.json` matches nothing, and `scripts/gates/check-ci-parity.ts:262-268` special-cases it precisely so a gate wrapped in it still counts as CI-covered -- the leaf is the wrapped `npm run check:...`, not the wrapper. Live call sites: `ci-quality.yml:1084` (check:actions), `:1289` (check:ci-external-links), `:1299` (check:ci-dkim-notify), `:2083`
-(check:ci-go-deps), `:2150` (check:ci-embed-asset-freshness), `:2163` (check:ci-devcontainer-pins). Its own coverage is the bash gate test `.ci/scripts/test/gates/test-external-gate-wrapper.sh`, which still drives the twin.
+NOT A REGISTERED GATE ITSELF; it is a transparent PREFIX on four registered ones. `grep -n run-external-gate package.json` matches nothing, and `scripts/gates/check-ci-parity.ts:262-268` special-cases it precisely so a gate wrapped in it still counts as CI-covered -- the leaf is the wrapped `npm run check:...`, not the wrapper. Live call sites: `ci-quality.yml:1084`
+(check:actions), `:1289` (check:ci-external-links), `:1299` (check:ci-dkim-notify), `:2083` (check:ci-go-deps), `:2150` (check:ci-embed-asset-freshness), `:2163` (check:ci-devcontainer-pins). Its own coverage is the bash gate test `.ci/scripts/test/gates/test-external-gate-wrapper.sh`, which still drives the twin.
 
 THE CHILD IS EXECUTED, NOT SHELLED. `"$@"` runs the argument vector directly, so `run-external-gate.sh 'a b'` looks for a program literally named `a b` rather than running `a` with an argument. `subprocess.run(argv)` without
 `shell=True` is the same thing, and using `shell=True` here would be a
 behavioural change disguised as a convenience.
 
-STDOUT AND STDERR ARE INHERITED, never captured. The wrapped gate's output IS
-the step's output; buffering it to re-emit later would reorder it against this
-wrapper's own `::warning::` and would hide a gate that hangs after printing.
+STDOUT AND STDERR ARE INHERITED, never captured. The wrapped gate's output IS the step's output; buffering it to re-emit later would reorder it against this wrapper's own `::warning::` and would hide a gate that hangs after printing.
 
 EXIT-CODE TRANSLATION IS THE ONE PLACE THIS PORT HAS TO DO WORK BASH GETS FREE.
-`subprocess` reports a signalled child as a NEGATIVE returncode; the shell
-reports `128 + N`. A port that passed the negative number through would exit 0
+`subprocess` reports a signalled child as a NEGATIVE returncode; the shell reports `128 + N`. A port that passed the negative number through would exit 0
 for SIGKILL (`-9 & 0xff`... after Python's own exit-code masking) or otherwise
 lie about a killed gate, which in `hard` mode is the difference between a red and a green. `_shell_status` does the conversion, and the differential drives a real SIGTERM through both sides. The two spawn failures are translated the same way, to bash's own codes: 127 not-found, 126 found-but-not-executable.
 

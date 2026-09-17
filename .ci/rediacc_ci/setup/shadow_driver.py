@@ -11,9 +11,8 @@ return value. This module is the printer, and it can print either side:
     python3 .ci/rediacc_ci/setup/shadow_driver.py --side new
         drives the PYTHON: `rediacc_ci.setup.machine` and `.host`.
 
-ONE FILE AND NOT TWO, and the reason is a gate rather than tidiness. `.ci/rediacc_ci/quality/dead_python.py:280` admits a pre-cutover port as alive
-only when it is "named as the NEW side of a `.ci/shadow/*.jsonl` record"; the OLD
-side's command is scanned for a live `.sh` TWIN, never for a Python file. A separate `shadow_old.py` would therefore be reported dead the day it landed. One module, named on the new side, imports everything else in this package, and the `imported` route carries the rest.
+ONE FILE AND NOT TWO, and the reason is a gate rather than tidiness. `.ci/rediacc_ci/quality/dead_python.py:280` admits a pre-cutover port as alive only when it is "named as the NEW side of a `.ci/shadow/*.jsonl` record"; the OLD side's command is scanned for a live `.sh` TWIN, never for a Python file. A separate `shadow_old.py` would therefore be reported dead the day it landed.
+One module, named on the new side, imports everything else in this package, and the `imported` route carries the rest.
 
 WHY IT IS DRIVEN AGAINST THE FUNCTION BODIES AND NEVER THROUGH `./run.sh setup`. `.ci/scripts/test/gates/test-run-sh.sh:279-290` emits `overlap <verb>` when a verb sits in both `PORTED_VERBS` and the legacy dispatcher, so the flip has to be
 atomic: `PORTED_VERBS=(setup)` lands in the SAME change that deletes the legacy
@@ -184,9 +183,7 @@ def emit(group: str, text: str) -> None:
 def emit_block(group: str, text: str) -> None:
     """A multi-line blob as numbered observations, blank lines included.
 
-    NUMBERED, and every line kept including the empty ones. `setup --check` prints two deliberate blank lines and the bash's own `printf` column widths
-    are part of what a person reads; a comparison that dropped blanks would
-    pass a port that lost them.
+    NUMBERED, and every line kept including the empty ones. `setup --check` prints two deliberate blank lines and the bash's own `printf` column widths are part of what a person reads; a comparison that dropped blanks would pass a port that lost them.
     """
     lines = text.split("\n")
     # A trailing newline yields one empty final element that no side "printed".
@@ -271,9 +268,7 @@ def _emit_idem(name: str, first: tuple[int, str, str], second: tuple[int, str, s
     """Both runs of one function, plus the stability verdict.
 
     BOTH RUNS ARE PRINTED, not just the verdict. A single `stable=yes` line would
-    be one bit, and one bit is exactly what a broken port can accidentally get
-    right; printing both runs means the comparison is over the CONTENT of each
-    run as well as over whether they matched.
+    be one bit, and one bit is exactly what a broken port can accidentally get right; printing both runs means the comparison is over the CONTENT of each run as well as over whether they matched.
     """
     for label, (rc, out, err) in (("run1", first), ("run2", second)):
         emit("idem/%s" % name, "%s rc=%d" % (label, rc))
@@ -492,9 +487,7 @@ def main(argv: list[str] | None = None) -> int:
 
     root = pathlib.Path(args.root).resolve() if args.root else paths.repo_root()
     env = dict(os.environ)
-    # DETERMINISM PINS, applied to BOTH sides. `shadow-gate.ts:buildEnv` already
-    # sets LC_ALL and TZ for the processes it spawns; these are the two this
-    # comparison needs on top and they are set here so the driver behaves the same when a person runs it by hand.
+    # DETERMINISM PINS, applied to BOTH sides. `shadow-gate.ts:buildEnv` already sets LC_ALL and TZ for the processes it spawns; these are the two this comparison needs on top and they are set here so the driver behaves the same when a person runs it by hand.
     env["NO_COLOR"] = "1"
     env["REDIACC_DOCKER_GROUP_REEXEC"] = "1"
 

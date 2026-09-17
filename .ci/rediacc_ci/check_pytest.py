@@ -20,13 +20,11 @@ disappears,
 the corpus is 0, the derived floor is 0, and `0 >= 0` reports green. Floor 1 is
 the base case under that recursion: a constant is the only thing that can catch the corpus itself vanishing. It is stated here, with its size argued, rather than being the whole design.
 
-WHY `MIN_TESTS` IS 150 AND NOT 1. Sized to roughly two thirds of the corpus, so a legitimate consolidation has room and a HALF-broken glob does not. It read 40
-against phase 2's 65 test functions; phase 3 landed `log`, `proc`, `gitx` and
-`workflows` with their differentials and the corpus is 187 across six modules, so the floor is re-sized in the same commit rather than left behind at a number that one module's tests would satisfy on their own. That is the whole hazard a constant floor exists for: it only works while it is proportionate.
+WHY `MIN_TESTS` IS 150 AND NOT 1. Sized to roughly two thirds of the corpus, so a legitimate consolidation has room and a HALF-broken glob does not. It read 40 against phase 2's 65 test functions; phase 3 landed `log`, `proc`, `gitx` and `workflows` with their differentials and the corpus is 187 across six modules, so the floor is re-sized in the same commit rather than left behind
+at a number that one module's tests would satisfy on their own. That is the whole hazard a constant floor exists for: it only works while it is proportionate.
 
 This is the same reasoning, and the same shape, as `MIN_PY_FILES=10` in
-check-python-lint.sh. Raise it when the suite grows; a deliberate REMOVAL of most
-of this package's tests should have to edit this line and say why.
+check-python-lint.sh. Raise it when the suite grows; a deliberate REMOVAL of most of this package's tests should have to edit this line and say why.
 
 EXIT CODES, AND THE ONE DISTINCTION THAT MATTERS.
 
@@ -35,9 +33,7 @@ EXIT CODES, AND THE ONE DISTINCTION THAT MATTERS.
     77  pytest is NOT AVAILABLE, so no verdict was reached at all
 
 77 is this repo's "could not run", classified by the ci-runner as BLOCKED -- counted, named and warned about, but never a judgement on the code. It exists because exit 1 here would say "the tests failed", which is false, and which made a pre-push lane refuse every push on a machine that simply lacked the tool. It is NOT a skip and NOT softer: under CI the bootstrap has run, so 77
-never fires
-there; if it ever did, the workflow sees a plain non-zero and the lane is broken,
-which is correct.
+never fires there; if it ever did, the workflow sees a plain non-zero and the lane is broken, which is correct.
 
 A CONFIG ERROR IS NOT A 77. pytest exiting 4 (usage error) means this repo's own `[tool.pytest.ini_options]` is wrong, which is a defect in the tree and gets a 1. The line between the two is "is the tool here", not "did the tool complain".
 
@@ -77,9 +73,7 @@ MIN_TESTS = 150
 # 2400 -> 3600 on 2026-09-08, and the CAUSE is named because the number alone would look like drift. `test-claude-hooks.sh` became portable that day (`TWIN_TIMEOUT` in `.ci/rediacc_ci/tests/gates/test_twin_parity.py` replaced a hardcoded 600s that had made any slow twin unportable by construction). It runs 2 229 offline cases in 13m31s and now costs this suite THREE times: the
 # ported module itself, plus `test_twin_parity` driving the bash twin, plus the same parity case driving the port. Measured immediately after: 1879s against a 2400s kill timer -- 78% of it, where the previous baseline was 381s.
 #
-# RAISING THE KILL TIMER IS NOT THE FIX, and must not be mistaken for one. It
-# stops a spurious kill reporting as a gate failure; it does nothing about a
-# 31-minute gate. The real options are to re-tier the claude-hooks parity case into its own lane, or to split that harness so no single subject is billed three times. Both are larger than this line and are tracked as findings.
+# RAISING THE KILL TIMER IS NOT THE FIX, and must not be mistaken for one. It stops a spurious kill reporting as a gate failure; it does nothing about a 31-minute gate. The real options are to re-tier the claude-hooks parity case into its own lane, or to split that harness so no single subject is billed three times. Both are larger than this line and are tracked as findings.
 #
 # 3600 -> 1080 THE SAME DAY, because 3600 COULD NOT FIRE. This gate runs as the `Python package tests` step of `quality-security` in `ci-quality.yml`, and that job declares `timeout-minutes: 20` -- 1200s. An in-script kill timer above its own job's ceiling is dead code in CI: GitHub cancels the job first, and a cancelled job's only clue is `The operation was canceled.` with no
 # verdict, no KILLED line, and no named cause. That is the exact chain `check_job_timeout_headroom.py` was written for, one level down, where that gate cannot see it -- it reads workflow ceilings, never in-script timers.
@@ -102,9 +96,7 @@ RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 1800)
 #
 # `-n` AND `weight` MOVE TOGETHER. `pool.ts:242` caps effective weight at the pool size, so `weight: 8` reads as "the whole pool" on a 2-slot CI runner and as 8 of 22 locally. An `-n` larger than the declared weight is an undeclared claim on the machine, which is how a parallel gate makes a lane SLOWER.
 #
-# WHY 8 AND NOT MORE, measured on the full corpus: serial 823.93s; `-n 8` with
-# working groups 381.41s (2.16x); `-n 16` 377.18s. Sixteen buys nothing, because
-# the floor is now the 294.65s guards fixture pinned to a single worker. Raising this number is pointless until that driver is parallelised internally.
+# WHY 8 AND NOT MORE, measured on the full corpus: serial 823.93s; `-n 8` with working groups 381.41s (2.16x); `-n 16` 377.18s. Sixteen buys nothing, because the floor is now the 294.65s guards fixture pinned to a single worker. Raising this number is pointless until that driver is parallelised internally.
 PYTEST_JOBS_CAP = 8
 
 
@@ -137,9 +129,8 @@ TEST_DEF_RE = re.compile(r"^def (test_\w+)\s*\(", re.MULTILINE)
 # THE SERIAL LINE IS NOT MERELY MOVED, IT IS GONE: an `-n` run prints no `collected` line anywhere. Matching only the first spelling therefore returns None the moment the gate is parallelised, `verdict` says "pytest printed no collection line", and the gate fails naming a problem that does not exist while a perfectly healthy suite is running. That is the exact mystery red this
 # union exists to prevent, and it is why the second alternative landed BEFORE any `-n` reached the argv.
 #
-# The worker alternative is ANCHORED with re.MULTILINE and the serial one is not. The serial spelling was unanchored before this change and stays that way, so
-# nothing that used to parse stops parsing; the worker spelling has to be
-# anchored, because `\d+ workers \[` is a shape a traceback or a failure message could easily contain mid-line, and a count read out of prose is worse than no count at all.
+# The worker alternative is ANCHORED with re.MULTILINE and the serial one is not. The serial spelling was unanchored before this change and stays that way, so nothing that used to parse stops parsing; the worker spelling has to be anchored, because `\d+ workers \[` is a shape a traceback or a failure message could easily contain mid-line, and a count read out of prose is worse than
+# no count at all.
 COLLECTED_RE = re.compile(
     r"collected (\d+) items?"
     r"|^(\d+) workers? \[(\d+) items?\]",
@@ -204,8 +195,7 @@ def corpus_test_count(tests_dir: pathlib.Path) -> int:
 
     PARSED WHEN IT PARSES, MATCHED WHEN IT DOES NOT. The old objection to an AST walk was sound -- "a floor that needs an AST walk to compute is a floor that can fail for its own reasons" -- and it is answered by falling back rather than by staying inexact: a file that will not parse is counted by the regex exactly as before, so the floor still cannot fail for its own reasons,
     while every file that DOES parse is counted exactly. Reading the file is still the
-    point; only the way the text is read has changed, so nothing here asks pytest
-    anything and the comparison stays a real one.
+    point; only the way the text is read has changed, so nothing here asks pytest anything and the comparison stays a real one.
     """
     total = 0
     for path in sorted(tests_dir.glob(TEST_GLOB)):
@@ -249,9 +239,7 @@ def parse_counts(text: str) -> tuple[int | None, int | None]:
     """
     collected = COLLECTED_RE.search(text)
     passed = PASSED_RE.search(text)
-    # WHICHEVER ALTERNATIVE MATCHED. Group 1 is the serial count, group 3 the
-    # worker-header one; group 2 is the worker COUNT and is deliberately not
-    # returned here, because this function answers "how many tests", not "how many processes".
+    # WHICHEVER ALTERNATIVE MATCHED. Group 1 is the serial count, group 3 the worker-header one; group 2 is the worker COUNT and is deliberately not returned here, because this function answers "how many tests", not "how many processes".
     #
     # `is not None` rather than `or`, and that is not style: a genuine collection of ZERO makes group(1) the string "0", which is falsy, so `group(1) or group(3)` would fall through to None and crash int() -- turning the single most important refusal this gate makes (exit 0 having collected nothing) into a traceback.
     count = None
@@ -347,9 +335,7 @@ def resolve_pytest(root: pathlib.Path) -> str | None:
     #
     # `start_new_session=True` puts the bootstrap in its own process group so the
     # kill reaches every descendant; `stdin=DEVNULL` closes the other way this can
-    # hang, a child that decides to read from the terminal. THROUGH `proc.run`, WHICH ALREADY SOLVES THIS. The first fix here hand-rolled
-    # a process-group kill beside `subprocess.run`; `.ci/rediacc_ci/proc.py` had
-    # carried one since it was written (`_kill(proc, group)` at :199,
+    # hang, a child that decides to read from the terminal. THROUGH `proc.run`, WHICH ALREADY SOLVES THIS. The first fix here hand-rolled a process-group kill beside `subprocess.run`; `.ci/rediacc_ci/proc.py` had carried one since it was written (`_kill(proc, group)` at :199,
     # `start_new_session=kill_group` at :256), and a second copy is how the two
     # drift. `proc.run` gives stdin=DEVNULL, a bounded wait, and a group kill that
     # reaches the grandchild still holding the read end.
@@ -402,9 +388,7 @@ def cannot_run(reason: str) -> int:
 def run_pytest(pytest_bin: str, cwd: pathlib.Path, args: list[str] | None = None):
     """(returncode, combined output). Args default to none, so `testpaths` applies.
 
-    STDERR IS FOLDED INTO STDOUT deliberately. pytest writes its summary to stdout and its internal errors to stderr, and this function's caller needs to
-    parse one text for both; splitting them here would mean a collection error
-    that never reached the summary was parsed out of the wrong stream and read as "no collection line", which is a true statement about the wrong reason.
+    STDERR IS FOLDED INTO STDOUT deliberately. pytest writes its summary to stdout and its internal errors to stderr, and this function's caller needs to parse one text for both; splitting them here would mean a collection error that never reached the summary was parsed out of the wrong stream and read as "no collection line", which is a true statement about the wrong reason.
     """
     # THROUGH THE SHARED RUNNER, and for this call site that is the whole point: the main invocation passes `-n <jobs>`, so pytest forks xdist workers that
     # inherit the capture pipes. `subprocess.run(capture_output=True, timeout=...)`
@@ -441,9 +425,8 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
 
     Uses the package's own Controls runner rather than a private tally, which is the point of having one: the gate that proves the suite runs is itself a consumer of the thing the suite tests.
     """
-    # FLOOR RAISED WITH THE SUITE, 16 -> 25 -> 29 -> 35 (six corpus-counter
-    # controls, then two more for class methods). It was 16 against 19 controls; the
-    # parallel-header work adds nine (six string fixtures and three against a real two-worker run), so 19 -> 28. A floor left at 16 would keep passing with the entire parallel block deleted, which is precisely the "the file is not being executed as written" failure the floor exists for. Slack is kept at three, the same margin the previous pair carried.
+    # FLOOR RAISED WITH THE SUITE, 16 -> 25 -> 29 -> 35 (six corpus-counter controls, then two more for class methods). It was 16 against 19 controls; the parallel-header work adds nine (six string fixtures and three against a real two-worker run), so 19 -> 28. A floor left at 16 would keep passing with the entire parallel block deleted, which is precisely the "the file is not
+    # being executed as written" failure the floor exists for. Slack is kept at three, the same margin the previous pair carried.
     c = Controls("check_pytest", floor=44, verbose=verbose)
 
     # A CORPUS SIZE THAT IS COMFORTABLY ABOVE THE FLOOR, DERIVED FROM IT. These controls used to write 65 as a literal, and raising MIN_TESTS from 40 to 120 in phase 3 turned the first one -- the SANITY control, the one that asserts a healthy run is green -- red for a reason that had nothing to do with the thing under test. A literal that must be edited in step with another literal
@@ -587,9 +570,7 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
         "a non-zero pytest exit is reported",
         verdict(corpus=healthy, collected=healthy, passed=healthy - 1, returncode=1),
     )
-    # A KILLED RUN IS NOT A FAILING TEST, and this gate is the likeliest in the estate to be killed: ~1900s against a 3600s RUN_TIMEOUT_S. Reporting a signal as a plain exit sends the reader hunting a red test that does not
-    # exist. Verified ad-hoc when the fix landed; PERSISTED here because an
-    # ad-hoc check survives nothing and CI never sees it.
+    # A KILLED RUN IS NOT A FAILING TEST, and this gate is the likeliest in the estate to be killed: ~1900s against a 3600s RUN_TIMEOUT_S. Reporting a signal as a plain exit sends the reader hunting a red test that does not exist. Verified ad-hoc when the fix landed; PERSISTED here because an ad-hoc check survives nothing and CI never sees it.
     c.check(
         "a SIGTERMed run says KILLED, not exited",
         "KILLED by signal 15"
@@ -768,18 +749,14 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     )
     c.truthy("HANG: the usage text names the kill timer", "PYTEST_RUN_TIMEOUT_S" in USAGE)
 
-    # THE KILLER ITSELF, driven against the exact shape that hung: a child whose GRANDCHILD holds the read end open. Killing only the child blocks forever
-    # here; `proc.run` kills the GROUP, so it returns. Driven through the shared
-    # runner rather than a local copy, because the copy was the first mistake.
+    # THE KILLER ITSELF, driven against the exact shape that hung: a child whose GRANDCHILD holds the read end open. Killing only the child blocks forever here; `proc.run` kills the GROUP, so it returns. Driven through the shared runner rather than a local copy, because the copy was the first mistake.
     t0 = time.monotonic()
     blocked = proc.run(
         ["bash", "-c", "tail -f /dev/null & echo spawned; tail -f /dev/null"],
         timeout=3,
     )
     elapsed = time.monotonic() - t0
-    # THE THRESHOLD IS MEASURED, NOT ROUND. With the group kill: 3.0s and stdout 'spawned'. Without it: 13.1s and stdout EMPTY -- the fallback drain times out and the child's own words are lost. A loose `< 20` passed both, so it
-    # proved nothing; 8 separates them and the stdout check below is sharper
-    # still, because losing the diagnostic is the part that actually hurts.
+    # THE THRESHOLD IS MEASURED, NOT ROUND. With the group kill: 3.0s and stdout 'spawned'. Without it: 13.1s and stdout EMPTY -- the fallback drain times out and the child's own words are lost. A loose `< 20` passed both, so it proved nothing; 8 separates them and the stdout check below is sharper still, because losing the diagnostic is the part that actually hurts.
     c.truthy(
         "HANG: proc.run bounds a child whose grandchild holds the pipe "
         "(returned in %.1fs; without the group kill this is 13s)" % elapsed,

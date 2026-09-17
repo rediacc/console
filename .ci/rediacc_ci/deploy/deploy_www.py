@@ -64,8 +64,7 @@ THREE FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL THREE ARE REPRODUCED
      `account-db-pr-staging` and deploys a worker named `staging`. There is no
      validation; the `pr-` stripping is a convenience, not a contract.
 
-None is repaired here. This wave's acceptance rule is agreement with the live
-twin; changing what a deploy creates is a cutover-box decision.
+None is repaired here. This wave's acceptance rule is agreement with the live twin; changing what a deploy creates is a cutover-box decision.
 
 -----------------------------------------------------------------------------
 THE UUID IS LOOKED UP TWICE AND THE SECOND LOOKUP IS THE LOAD-BEARING ONE
@@ -111,8 +110,7 @@ PREVIEW_CONFIG = "wrangler.preview.toml"
 NAME_PREFIX = "pr-"
 DB_NAME_TEMPLATE = "account-db-pr-%s"
 
-# `--location eeur` (twin :82). Hard-coded in the twin; every preview database
-# lands in the same region.
+# `--location eeur` (twin :82). Hard-coded in the twin; every preview database lands in the same region.
 D1_LOCATION = "eeur"
 
 # The two names twin :69 refuses to delete. Unreachable, which is fact 1.
@@ -129,9 +127,7 @@ A_NON_PR_NAME_IS_ACCEPTED_VERBATIM = True
 
 # The generated preview config (twin :90-133), byte for byte after expansion.
 #
-# THE U+2014 ON THE `trailingSlash` COMMENT IS THE TWIN'S, written as an escape rather than as the character itself, for the reason in the module docstring. THE BACKTICKS on the `trailingSlash` line are `\`` in the
-# twin's UNQUOTED heredoc, which bash renders as bare backticks; there is no
-# command substitution in the emitted bytes.
+# THE U+2014 ON THE `trailingSlash` COMMENT IS THE TWIN'S, written as an escape rather than as the character itself, for the reason in the module docstring. THE BACKTICKS on the `trailingSlash` line are `\`` in the twin's UNQUOTED heredoc, which bash renders as bare backticks; there is no command substitution in the emitted bytes.
 #
 # `%s` three times, in the twin's order: the worker name, then the database name and its UUID at the bottom.
 PREVIEW_TOML = """name = "%s"
@@ -201,9 +197,7 @@ def db_name_for(worker_name: str) -> str:
 def is_protected(db_name: str) -> bool:
     """`[[ "$DB_NAME" == "account-db" || "$DB_NAME" == "edge-account-db" ]]` (twin :69).
 
-    Exact string comparison against two literals. Unreachable from
-    `db_name_for`, which is fact 1; exported so the differential can assert both
-    halves rather than assert the sentence.
+    Exact string comparison against two literals. Unreachable from `db_name_for`, which is fact 1; exported so the differential can assert both halves rather than assert the sentence.
     """
     return db_name in PROTECTED_DATABASES
 
@@ -307,8 +301,7 @@ def get_d1_uuid(db_name: str) -> str:
 def _run(argv: list[str]) -> int:
     """One child with BOTH streams inherited, as the twin leaves them.
 
-    wrangler's own output is the entire visible result of a good run; capturing
-    it would move it out of the workflow log. Python's buffers are flushed first so the `log_step` line that precedes a call cannot land after the call's output.
+    wrangler's own output is the entire visible result of a good run; capturing it would move it out of the workflow log. Python's buffers are flushed first so the `log_step` line that precedes a call cannot land after the call's output.
     """
     sys.stdout.flush()
     sys.stderr.flush()

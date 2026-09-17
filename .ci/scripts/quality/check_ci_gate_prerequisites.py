@@ -5,13 +5,10 @@ WHY THIS EXISTS. Run 33125687081 on 0827-1: `Quality / Code` died with `sh: 1: t
 
 The job did `actions/checkout` and nothing else, which was correct for years: every step in it was a shell script needing no node. Two tsx gates were added to it and nothing noticed that the job could not run them.
 
-WHY NO EXISTING GATE CATCHES IT. Every developer tree already has node_modules, so both gates pass locally and in the lane. The dependency only fails where the tree is built from scratch, which is the one place nobody watches interactively.
-check:ci-parity proves a gate is WIRED into a workflow; it says nothing about
-whether the job it landed in can execute it. That is the gap: wired and runnable are different claims, and only the first was checked.
+WHY NO EXISTING GATE CATCHES IT. Every developer tree already has node_modules, so both gates pass locally and in the lane. The dependency only fails where the tree is built from scratch, which is the one place nobody watches interactively. check:ci-parity proves a gate is WIRED into a workflow; it says nothing about whether the job it landed in can execute it. That is the gap:
+wired and runnable are different claims, and only the first was checked.
 
-This is the mirror image of the GOPATH/bin defect fixed two commits earlier --
-there a script installed a tool it could not then find; here a job was handed a
-tool it never installed. Both are invisible in the environment where they are written and fatal in the one where they run.
+This is the mirror image of the GOPATH/bin defect fixed two commits earlier -- there a script installed a tool it could not then find; here a job was handed a tool it never installed. Both are invisible in the environment where they are written and fatal in the one where they run.
 
 A SECOND, DIFFERENT INSTANCE OF THE SAME CLASS surfaced 2026-08-30: run 33[...] (Quality/Packages -> "Tutorial player release gate") died with "agent-browser is not installed or not accessible in PATH". The gate had been tested only on a devbox that already carries agent-browser globally, and this was its first run in CI ever -- ci-quality.yml never installed one. The node check
 above would have stayed silent: agent-browser is not node, npx, or tsx, and the missing resource was a separate CLI tool, not a missing dependency tree. Rather than write a second, parallel script for "does the agent-browser CLI have a setup step before its gate", this file generalises: it now tracks a LIST of resources, each with its own "does this step need it" / "does this step
@@ -22,9 +19,7 @@ WHAT IT CHECKS. For every job in every workflow, steps IN ORDER, per tracked RES
 ORDER IS THE POINT, not mere presence: a setup step placed after the gate it serves looks correct in a diff and fails identically at runtime.
 
 WHAT THIS DOES NOT CLAIM. This is not "every gate's dependencies are verified" -- it tracks the resources named in RESOURCES below, chosen because each one has already caused a real CI red once. Adding a new externally- acquired tool to a gate should mean adding a resource entry here, the same way adding a pinned binary means adding a row to check-toolchain-pins.sh's registry. A
-fully general "infer any tool any script might need" scanner is
-not this gate's job; toolchain.sh and check-toolchain-pins.sh already own the
-pinned-binary half of that problem (ruff/go/shfmt/shellcheck/actionlint), and this owns the "job never set the resource up at all" half for anything else.
+fully general "infer any tool any script might need" scanner is not this gate's job; toolchain.sh and check-toolchain-pins.sh already own the pinned-binary half of that problem (ruff/go/shfmt/shellcheck/actionlint), and this owns the "job never set the resource up at all" half for anything else.
 
 ---- gate ---- id: check:ci-gate-prerequisites step: Gate prerequisites emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none lane: quality-code ---- end gate ----
 """
@@ -51,9 +46,7 @@ def _load_package_json(path: pathlib.Path) -> dict:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        # Unreadable or malformed package.json. check-npmrc.sh and the
-        # lockfile gates own the "package.json is broken" verdict; this gate
-        # just resolves one less hop and falls back to the direct-invocation check, which still fires on a literal match in the `run:` text.
+        # Unreadable or malformed package.json. check-npmrc.sh and the lockfile gates own the "package.json is broken" verdict; this gate just resolves one less hop and falls back to the direct-invocation check, which still fires on a literal match in the `run:` text.
         return {}
 
 
@@ -92,9 +85,8 @@ def _needs_via_run_pattern(
     through the right workspace's package.json, then one more hop into the resolved script FILE's own source if the command hands off to one.
 
     TWO PATTERNS ON PURPOSE. `run_pattern` matches shell COMMAND text and must stay anchored to command position (`echo agent-browser` in a run: block is prose, not an invocation -- the exact mention-vs-target shape check-toolchain-pins.sh's A6 rule already paid for). `file_pattern` matches arbitrary FILE SOURCE once resolution reaches one (a JS string literal argument to
-    execFileSync is not at "command position" in any shell sense), so it is deliberately the looser of the two -- a stray comment mentioning the tool costs one over-suggested install step, which is a fix a reader
-    dismisses at a glance; a missed real invocation is the defect class this
-    whole file exists to catch. Defaults to `run_pattern` when a resource's shell and file shapes are close enough not to need the split (node's npx/tsx/node keywords do not appear as bare comment prose the way a tool name like "agent-browser" does).
+    execFileSync is not at "command position" in any shell sense), so it is deliberately the looser of the two -- a stray comment mentioning the tool costs one over-suggested install step, which is a fix a reader dismisses at a glance; a missed real invocation is the defect class this whole file exists to catch. Defaults to `run_pattern` when a resource's shell and file shapes are
+    close enough not to need the split (node's npx/tsx/node keywords do not appear as bare comment prose the way a tool name like "agent-browser" does).
 
     Shared by every resource below so this resolution path -- workflow step text -> package.json script -> script file content -- is identical for node, agent-browser, or anything added later, rather than reinvented per resource.
     """
@@ -149,8 +141,7 @@ def _step_provides_node(step: dict) -> bool:
 # --- agent-browser CLI -------------------------------------------------------- A real, separately-acquired CLI (npm-global-installed, not a devDependency), unrelated to the node_modules tree above -- a job can have node fully set up and still lack this. Found live 2026-08-30 on check:test:tutorial-player's first-ever CI run: "agent-browser is not installed or not accessible in
 # PATH". Provided by the exact install line .claude/agents/browser-probe.md documents ("Install it from $HOME, never from inside the console repo").
 #
-# COMMAND-POSITION ANCHORED for shell text: `[;&|(]` are genuine command
-# separators, plain whitespace is NOT one of them, or `echo agent-browser` in a run: block's prose would fire as an invocation -- the exact mention-vs- target class check-toolchain-pins.sh's A6 rule already learned to exempt.
+# COMMAND-POSITION ANCHORED for shell text: `[;&|(]` are genuine command separators, plain whitespace is NOT one of them, or `echo agent-browser` in a run: block's prose would fire as an invocation -- the exact mention-vs- target class check-toolchain-pins.sh's A6 rule already learned to exempt.
 _BROWSER_NEEDS_RE = re.compile(r"(^|[\n;&|(])\s*agent-browser(\s|$)")
 # UNANCHORED for file content: the real call site is a JS string literal (execFileSync('agent-browser', ...)), which is not at "command position" in any shell sense. See _needs_via_run_pattern's docstring for the asymmetry.
 _BROWSER_NEEDS_FILE_RE = re.compile(r"\bagent-browser\b")

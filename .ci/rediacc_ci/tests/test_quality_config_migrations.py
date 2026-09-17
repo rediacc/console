@@ -104,9 +104,7 @@ def test_coverage_loop_matches_bash(
 ) -> None:
     """`for ((v = 1; v < CURRENT; v++))` and the `[[ ! -f ... ]]` inside it.
 
-    BOTH DIRECTIONS. Four of these rows are complete chains that must report
-    nothing; a table of only-broken chains would pass against a gate that
-    reported every version.
+    BOTH DIRECTIONS. Four of these rows are complete chains that must report nothing; a table of only-broken chains would pass against a gate that reported every version.
     """
     for v in present:
         (tmp_path / ("v%d-to-v%d.ts" % (v, v + 1))).write_text("x\n", encoding="utf-8")
@@ -169,9 +167,7 @@ def test_an_empty_and_an_absent_fixtures_dir_are_both_empty(tmp_path: pathlib.Pa
 def test_the_embedded_tsx_is_byte_identical_to_the_heredoc() -> None:
     """The port's `TSX_SOURCE` against the twin's quoted heredoc, byte for byte.
 
-    THIS IS THE ONE PLACE A PORT MAY NOT REWORD. Everything else in this gate is
-    a message a port is allowed to rephrase; the heredoc is a PROGRAM whose
-    output the gate then re-emits line by line, so a single changed character changes the findings. Read out of the shell file at test time rather than pasted here, so the assertion cannot rot into a comparison of two stale copies.
+    THIS IS THE ONE PLACE A PORT MAY NOT REWORD. Everything else in this gate is a message a port is allowed to rephrase; the heredoc is a PROGRAM whose output the gate then re-emits line by line, so a single changed character changes the findings. Read out of the shell file at test time rather than pasted here, so the assertion cannot rot into a comparison of two stale copies.
     """
     sh = (
         (

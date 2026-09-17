@@ -7,9 +7,7 @@ THE THING BEING REPLACED is `.ci/scripts/lib/common.sh:18-55`: the colour block 
 HOW EQUIVALENCE IS PROVEN. Not by reading both and agreeing they look alike. A bash child runs the REAL common.sh, with stdout and stderr captured SEPARATELY and, where the case needs one, a real pseudo-terminal on stderr. The bytes it produced are compared against the bytes `rediacc_ci.log` produces under the same conditions. That is the shape
 `.ci/scripts/quality/check-python-lint.sh` uses for its own control: build a specimen, run the instrument, compare.
 
-WHY THE STREAMS ARE NEVER MERGED. The defect these tests exist to prevent is a stream swap -- `emit-advisory.sh` moved log_info from stderr to stdout on 2026-09-06 and nothing noticed. `test-emit-advisory.sh:100-102` says it plainly:
-"The defect is a stream swap; the `2>&1` used by every case above merges the two
-streams back together and would hide it completely."
+WHY THE STREAMS ARE NEVER MERGED. The defect these tests exist to prevent is a stream swap -- `emit-advisory.sh` moved log_info from stderr to stdout on 2026-09-06 and nothing noticed. `test-emit-advisory.sh:100-102` says it plainly: "The defect is a stream swap; the `2>&1` used by every case above merges the two streams back together and would hide it completely."
 
 THE TWO DIVERGENCES ARE ASSERTED, NOT AVOIDED. A differential that only tests where two implementations agree is a differential that will be quietly broken by the first person who "fixes" a difference nobody wrote down. Both places where this module deliberately differs from common.sh have a test asserting the difference in both directions.
 """
@@ -30,13 +28,9 @@ def _no_global_logger_leak():
     THE LEAK THIS CLOSES, and it is a real order-dependence bug that predates any parallelism. `log.reset()` binds `sys.stderr` BY VALUE into `_default` (log.py:266). Called from a test where pytest's `capsys` has replaced `sys.stderr`, the global keeps a reference to that test's `CaptureIO`. Teardown closes it, and every later `log.*` in the same PROCESS then raises `ValueError:
     I/O operation on closed file` at log.py:209 -- `emit` suppresses ValueError around `flush()` but not around `write()`.
 
-    It was invisible serially for a reason that is pure luck: a later test in this same file, `test_reset_replaces_the_default_and_returns_it`, has no `capsys` and happened to heal the global on its way past. Reproduced with no xdist at
-    all, two tests in order -- `1 failed, 1 passed`; insert the healer between them
-    and it is `3 passed`.
+    It was invisible serially for a reason that is pure luck: a later test in this same file, `test_reset_replaces_the_default_and_returns_it`, has no `capsys` and happened to heal the global on its way past. Reproduced with no xdist at all, two tests in order -- `1 failed, 1 passed`; insert the healer between them and it is `3 passed`.
 
-    `None` rather than a stream is the correct reset, because `default()` is
-    documented to build LAZILY against the live `sys.stderr`; handing it a stream
-    here would just move the same stale binding one step later.
+    `None` rather than a stream is the correct reset, because `default()` is documented to build LAZILY against the live `sys.stderr`; handing it a stream here would just move the same stale binding one step later.
     """
     yield
     log._default = None
@@ -99,9 +93,7 @@ def test_off_tty_stdout_stays_empty_on_both_sides():
 def test_on_a_stderr_tty_bytes_are_identical():
     """A real pseudo-terminal on stderr: both sides colour, with the same codes.
 
-    This is the case that proves the palette matches. RED/GREEN/YELLOW/BLUE are
-    each compared as raw bytes, so the `\\033[1;33m` versus `\\033[0;33m`
-    disagreement between common.sh and .ci/bootstrap.sh cannot be inherited silently -- picking the wrong one turns this red.
+    This is the case that proves the palette matches. RED/GREEN/YELLOW/BLUE are each compared as raw bytes, so the `\\033[1;33m` versus `\\033[0;33m` disagreement between common.sh and .ci/bootstrap.sh cannot be inherited silently -- picking the wrong one turns this red.
     """
     rc, out, err = diff.bash_streams(
         BASH_CALLS, env=diff.env_for(CI=None, NO_COLOR=None), tty="stderr"
@@ -175,8 +167,7 @@ def test_ci_true_off_a_tty_agrees():
 def test_ci_true_is_the_one_deliberate_divergence():
     """CI=true WITH a tty: common.sh colours, this module does not. On purpose.
 
-    common.sh tests only `-t 2` and NO_COLOR; it has no CI clause at all. This
-    module has one, because GitHub's log viewer renders escape sequences as literal text (`emit-advisory.sh:22` states exactly that), and because a
+    common.sh tests only `-t 2` and NO_COLOR; it has no CI clause at all. This module has one, because GitHub's log viewer renders escape sequences as literal text (`emit-advisory.sh:22` states exactly that), and because a
     devbox with CI=true exported is a real place where a tty and CI coexist.
 
     BOTH SIDES ARE ASSERTED so the divergence is a recorded decision. If someone later adds a CI clause to common.sh, this test fails and the two can be reconciled deliberately rather than drifting into agreement unnoticed.
@@ -301,8 +292,7 @@ def test_the_coloured_form_wraps_only_the_glyph():
     """common.sh:43 is `${RED}✗${NC} $*` -- the message is NOT inside the colour.
 
     emit-advisory.sh:71 wraps the whole message instead (`${RED}✗ $*${NC}`), and
-    that difference is exactly how the two libraries produced different bytes for the same call. This module follows common.sh, and the differential above
-    would catch a change; this states it locally so the reason is readable.
+    that difference is exactly how the two libraries produced different bytes for the same call. This module follows common.sh, and the differential above would catch a change; this states it locally so the reason is readable.
     """
     logger = log.Logger(stream=io.StringIO(), colour=True)
     assert logger.format("error", "boom") == log.RED + "\u2717" + log.NC + " boom"

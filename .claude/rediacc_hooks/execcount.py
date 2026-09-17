@@ -18,9 +18,8 @@ baseline that went missing. So this counts the wiring, statically, out of `.clau
 WHAT IT COUNTS, STATED NARROWLY SO NOBODY QUOTES IT FOR SOMETHING ELSE. One `hooks[].command` entry in `.claude/settings.json` is one process the HARNESS starts. That is the number here. It is a floor on the true exec count, never the whole of it: `bash x.sh` that pipes through `jq` costs three more, and the in-guard forks are exactly what `dispatch.py --chain` was built to
 collapse. Those are a separate measurement and this module does not pretend to make it. The distinction is the reason the printed column is called `harness processes` and not `execs`.
 
-THE MATCHER SEMANTICS ARE NOT DOCUMENTED ANYWHERE IN THIS TREE, so both readings are computed rather than one being assumed. `.claude/settings.json` carries three PreToolUse matchers and they are not written in one style: `^(Edit|MultiEdit|Write|NotebookEdit)$` is anchored, `Bash` and `AskUserQuestion` are bare. Under a `re.search` reading a bare `Bash` also
-matches the tool `BashOutput`; under `re.fullmatch` it does not. Nothing in the
-repository settles which the harness does, and guessing would bake a number in that is either three or twelve depending on a fact nobody checked. So:
+THE MATCHER SEMANTICS ARE NOT DOCUMENTED ANYWHERE IN THIS TREE, so both readings are computed rather than one being assumed. `.claude/settings.json` carries three PreToolUse matchers and they are not written in one style: `^(Edit|MultiEdit|Write|NotebookEdit)$` is anchored, `Bash` and `AskUserQuestion` are bare. Under a `re.search` reading a bare `Bash` also matches the tool
+`BashOutput`; under `re.fullmatch` it does not. Nothing in the repository settles which the harness does, and guessing would bake a number in that is either three or twelve depending on a fact nobody checked. So:
 
   * both counts are computed for every probe tool,
   * a tool where they DISAGREE is an ambiguity, reported by name,
@@ -39,14 +38,10 @@ import pathlib
 import re
 import sys
 
-# The events that fire per TOOL CALL. Their cost depends on which tool, so they
-# are the only two the probe table applies to; everything else in settings.json
-# fires once per lifecycle moment and is counted per event.
+# The events that fire per TOOL CALL. Their cost depends on which tool, so they are the only two the probe table applies to; everything else in settings.json fires once per lifecycle moment and is counted per event.
 TOOL_EVENTS = ("PreToolUse", "PostToolUse")
 
-# A matcher spelling that means "every tool". `None` is the key being absent, which is how every wildcard row in this repository's settings.json is written
-# today; the other two are accepted because the harness's own documentation uses
-# them and a future edit may.
+# A matcher spelling that means "every tool". `None` is the key being absent, which is how every wildcard row in this repository's settings.json is written today; the other two are accepted because the harness's own documentation uses them and a future edit may.
 WILDCARD_MATCHERS = (None, "", "*")
 
 
@@ -124,9 +119,7 @@ def matches(matcher, tool, *, anchored):
     """Does `matcher` select `tool`, under one of the two readings.
 
     `anchored=True` is `re.fullmatch`, `anchored=False` is `re.search`. Both are
-    offered because the harness's rule is not written down anywhere in this
-    repository; see the module docstring. An invalid regex is a WiringError and
-    not a False, because a matcher the harness cannot compile is a matcher whose real behaviour this module has no opinion about.
+    offered because the harness's rule is not written down anywhere in this repository; see the module docstring. An invalid regex is a WiringError and not a False, because a matcher the harness cannot compile is a matcher whose real behaviour this module has no opinion about.
     """
     if matcher in WILDCARD_MATCHERS:
         return True

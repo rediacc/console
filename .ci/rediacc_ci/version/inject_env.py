@@ -57,9 +57,7 @@ import re
 import subprocess
 import sys
 
-# The four names the twin exports, in the order it exports them. `TAG` is the
-# legacy name renet/build.sh and some Docker builds still read; it is last in
-# the twin and last here, because a caller that dumps the mapping in insertion order should produce the twin's own order.
+# The four names the twin exports, in the order it exports them. `TAG` is the legacy name renet/build.sh and some Docker builds still read; it is last in the twin and last here, because a caller that dumps the mapping in insertion order should produce the twin's own order.
 EXPORTED_NAMES = ("APP_VERSION", "VITE_APP_VERSION", "CLI_VERSION", "TAG")
 
 # The local-dev fallback, and the exact string `--strict` refuses.

@@ -15,9 +15,7 @@ All three are now failures. Each is asserted against the CURRENT code and agains
 
 NOTHING TOUCHES THE NETWORK: `curl` is shimmed inside `tmp_path` and PATH is overlaid for the subprocess only, never for this process. jq is required rather than tolerated -- without it `test_update_check` returns 77 (skip) and this module would run green having exercised nothing.
 
-ARGUMENT ORDER. The twin calls `assert_eq "0" "$(check ...)"`, EXPECTED first,
-inverting `assert_eq`'s contract. Same verdict, inverted diagnostic; the port
-uses the contract's order.
+ARGUMENT ORDER. The twin calls `assert_eq "0" "$(check ...)"`, EXPECTED first, inverting `assert_eq`'s contract. Same verdict, inverted diagnostic; the port uses the contract's order.
 """
 
 import os

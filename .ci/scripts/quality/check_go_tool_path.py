@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported go-tool-PATH gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.go_tool_path`, which pytest and
-the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.go_tool_path`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 2). Measured that day:
 
@@ -20,8 +18,7 @@ WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port
 
 THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, including `emit: false`, its `blocker:`, `needs: none`, `selftest: true`, `lane:` and the whole `why:` block.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-go-tool-path.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-go-tool-path.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5.
 
 ---- gate ---- step: Go tool PATH emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails. needs: none selftest: true lane: quality-code why: Console's own scripts already use the right shape -- toolchain.sh
 installs

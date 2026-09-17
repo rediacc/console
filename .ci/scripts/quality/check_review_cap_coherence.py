@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported review-cap coherence gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.review_cap_coherence`, which pytest and the
-port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.review_cap_coherence`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 7). See DRIVEN, below.
 
@@ -18,9 +16,7 @@ NO `id:` IS CORRECT HERE, checked rather than assumed: `derivedId` (`gate-header
 
 `selftest: true` is inert for a `.py` gate (`headerLines` emits it only for `.ts`, `gate-bind.ts:598`) and is carried because the twin declared it and because `review_cap_coherence.main(["--selftest"])` exits 0.
 
-THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files.
-`bind()` unions declared needs with `inferredNeeds(source)`; the twin infers `[]`
-and this entry point infers `[]`, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both resolve to the empty set.
+THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files. `bind()` unions declared needs with `inferredNeeds(source)`; the twin infers `[]` and this entry point infers `[]`, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both resolve to the empty set.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -29,17 +25,14 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, 207 bytes, sha256 852736e57b260bfe...
     stderr: BYTE-IDENTICAL, EMPTY on both sides
 
-NO NORMALISATION WAS APPLIED and none was needed. The twin was first run TWICE
-against an unchanged tree to establish byte-stability against itself; it is
-stable on both streams, and the port then matched it byte for byte including the ANSI colour both emit to a redirected stream.
+NO NORMALISATION WAS APPLIED and none was needed. The twin was first run TWICE against an unchanged tree to establish byte-stability against itself; it is stable on both streams, and the port then matched it byte for byte including the ANSI colour both emit to a redirected stream.
 
 DRIVEN RED AS WELL. The plant is the actual 2026-08-07 defect, inserted into the real `.ci/scripts/review/review-status.sh` as one added line:
 
     review_count="$(review_report_count "$pr")"
 
-THE CONTROL WAS PROVED IN BOTH DIRECTIONS BEFORE EITHER SIDE RAN, and the second direction is the one that earns its keep here. This gate carries its own control, which builds a mutant by substituting the ORIGINAL
-`review_spend_total` assignment; had the plant REPLACED that line, the gate
-would have aborted early with "the control could not plant its defect" and the red would have proved only that the gate refuses a broken control. So the plant ADDS a line and leaves the anchor intact, and both facts were verified with `grep -F` first: the forbidden shape present once, the control's anchor still present once.
+THE CONTROL WAS PROVED IN BOTH DIRECTIONS BEFORE EITHER SIDE RAN, and the second direction is the one that earns its keep here. This gate carries its own control, which builds a mutant by substituting the ORIGINAL `review_spend_total` assignment; had the plant REPLACED that line, the gate would have aborted early with "the control could not plant its defect" and the red would have
+proved only that the gate refuses a broken control. So the plant ADDS a line and leaves the anchor intact, and both facts were verified with `grep -F` first: the forbidden shape present once, the control's anchor still present once.
 
     both sides -> exit 1, stdout BYTE-IDENTICAL, stderr BYTE-IDENTICAL
     (516 bytes, sha256 68263412a70c2fbf...):
@@ -50,8 +43,7 @@ would have aborted early with "the control could not plant its defect" and the r
 
 The plant was reverted by restoring the file from a `cp` backup, verified back at its pre-plant sha256 with `sha256sum -c`, and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-review-cap-coherence.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-review-cap-coherence.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Review cap is measured coherently needs: none selftest: true ---- end gate ----
 """

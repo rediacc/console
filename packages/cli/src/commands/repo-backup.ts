@@ -173,9 +173,7 @@ async function narrowRemoteToDataPlane(
  * refusal.
  */
 // STATIC KEYS, not `t(`commands.repo.${kind}.storageRetired`)`. The template
-// literal read fine and defeated check:ci-i18n-cli-key-usage, which finds a key by searching for its literal in the source: both keys were reported as orphans in en/cli.json while being very much in use. The allowlist exists for
-// keys that are GENUINELY dynamic; these two are not, and suppressing a gate to
-// keep a nicety is how the gate stops meaning anything.
+// literal read fine and defeated check:ci-i18n-cli-key-usage, which finds a key by searching for its literal in the source: both keys were reported as orphans in en/cli.json while being very much in use. The allowlist exists for keys that are GENUINELY dynamic; these two are not, and suppressing a gate to keep a nicety is how the gate stops meaning anything.
 function refuseRetiredStorage(kind: 'push' | 'pull'): never {
   throw new ValidationError(
     kind === 'push'
@@ -285,9 +283,7 @@ async function preparePush(
   attachSeedLineage(params, repoConfig);
   if (options.bwlimit) params.bwlimit = options.bwlimit;
 
-  // Deterministic CoW-delta push (machine target only; rclone/storage has no
-  // FIEMAP base). Resolves a base (explicit or hands-free) and retains a fresh
-  // immutable base on both ends; returns the GUID to record on success.
+  // Deterministic CoW-delta push (machine target only; rclone/storage has no FIEMAP base). Resolves a base (explicit or hands-free) and retains a fresh immutable base on both ends; returns the GUID to record on success.
   const retainBase =
     resolvedType === 'machine'
       ? await applyPushDeltaParams(params, options, repoConfig, targetName)
@@ -334,8 +330,7 @@ async function pushRepo(ref: string, options: Record<string, unknown>): Promise<
   if (ok) {
     reportPushStats(name, targetName, resolvedType, local, !!execOptions.json);
   }
-  // retainBase is set only for machine targets; finalizePush also syncs commit
-  // metadata to the target when the pushed object is an immutable commit.
+  // retainBase is set only for machine targets; finalizePush also syncs commit metadata to the target when the pushed object is an immutable commit.
   if (ok && resolvedType === 'machine') {
     await finalizePush(
       repoKey,

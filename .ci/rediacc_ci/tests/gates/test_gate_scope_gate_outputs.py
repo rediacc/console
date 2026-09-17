@@ -14,8 +14,7 @@ EVERY CASE CARRIES ITS CONTROL. An emitter that writes nothing at all passes cas
 
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `build_fixture` reads the real `.ci/scripts/ci` tree wholesale and every case runs against that copy, so a battery step rewriting `scope-shadow.sh`, `scope-map.cjs` or `skip-plan-reconcile.cjs`
 mid-copy is a divergence that would be blamed on this port. `REAL_TREE_TWIN = True`
-buys the serialisation, and it is honoured only because this module declares no
-`XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
+buys the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
 
 THE SUBJECT DOES NOT SELF-SCAN. `scope-shadow.sh` classifies a git delta inside the fixture repository and never walks `.ci` looking for samples, so no fixture string in this file needs the `%s` template treatment `test_gate_label_references.py` owes its own self-scanning subject. Checked before any fixture was written, not assumed.
 
@@ -216,9 +215,7 @@ class Fixture:
         return self._run([self.node, "-e", script, *args]).out
 
     def _write_gh_responses(self) -> None:
-        # The baseline plan C1's run attested. Built THROUGH the real buildPlan so
-        # its 18 keys cannot drift from scope-map's; a hand-written key list here
-        # would silently stop being a full plan the day a surface is added, and the test would then pass for the wrong reason.
+        # The baseline plan C1's run attested. Built THROUGH the real buildPlan so its 18 keys cannot drift from scope-map's; a hand-written key list here would silently stop being a full plan the day a surface is added, and the test would then pass for the wrong reason.
         self.baseline_plan = self.work / "baseline-plan.json"
         self._node_eval(
             """
@@ -390,8 +387,7 @@ process.stdout.write(Object.keys(JOB_SURFACES).map((k) => `run_${k}`).join("\\n"
             env_replace=True,
             timeout=300,
         )
-        # The twin redirects `>gate.log 2>&1`; keeping the file means a failure
-        # message can point a reader at bytes on disk rather than only at a string.
+        # The twin redirects `>gate.log 2>&1`; keeping the file means a failure message can point a reader at bytes on disk rather than only at a string.
         (outdir / "gate.log").write_text(result.combined, encoding="utf-8")
         return GateRun(result.rc, outdir, outfile, result.combined)
 
@@ -455,9 +451,7 @@ def test_the_fixture_carries_a_real_engine(gate, fixture):
 
 def test_emitted_names_match_the_workflow_contract(gate, fixture):
     """The emitter can only ever produce `run_<key>` for a key in scope-map's
-    JOB_SURFACES, so comparing that table to the literal list above is the whole contract: same 18 names, same spelling. A key added to scope-map without a
-    matching ci.yml output would be emitted and dropped on the floor; a key renamed
-    in ci.yml without scope-map would be read as empty forever, which reads as "run
+    JOB_SURFACES, so comparing that table to the literal list above is the whole contract: same 18 names, same spelling. A key added to scope-map without a matching ci.yml output would be emitted and dropped on the floor; a key renamed in ci.yml without scope-map would be read as empty forever, which reads as "run
     it" and is safe but silently free of any saving at all."""
     from_map = fixture.surface_keys()
     gate.assert_eq(
@@ -536,8 +530,7 @@ def test_quiet_wire_values_do_not_trip_the_kill_switch(gate, fixture):
 
 def test_the_deciding_plan_is_the_baseline_plan(gate, fixture):
     """The reduction above can only come from `--resolve-baseline`: the merge-base
-    classify over B..C2 also touches docs/a.md, and would classify identically here, so the two are told apart by WHICH artifact plan.json was built from. plan.json
-    carries the baseline walk's own fields; a plan.json written from
+    classify over B..C2 also touches docs/a.md, and would classify identically here, so the two are told apart by WHICH artifact plan.json was built from. plan.json carries the baseline walk's own fields; a plan.json written from
     scope-classify.json cannot have them."""
     run = fixture.run_gate("deciding")
     gate.assert_exit_code(0, run.rc, "the gate must always exit 0")

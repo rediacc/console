@@ -1,9 +1,7 @@
 """Differential: `rediacc_ci.deploy.test_d1_migrations` against its twin
 `.ci/scripts/deploy/test-d1-migrations.sh`.
 
-A RECORDING FAKE FOR `npx` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing
-here reaches Cloudflare; every case pins a fixture token, account and D1 state
-file. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
+A RECORDING FAKE FOR `npx` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches Cloudflare; every case pins a fixture token, account and D1 state file. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 `clone-d1.sh` IS THE REAL SCRIPT, COPIED INTO THE FIXTURE AND RUN BY BOTH SIDES. It is not stubbed, because the twin invokes it and so does the port, and running the same bytes on both sides is what makes the comparison about the two callers rather than about a stub. It reaches `npx wrangler d1 export` and `d1 execute`, which the same fake `npx` models: an export writes a small SQL
 file, an execute reports success, and `PRAGMA foreign_key_check` answers with an
@@ -160,9 +158,7 @@ sys.stderr.write("fake wrangler: unmodelled subcommand %r\n" % (rest,))
 sys.exit(127)
 '''
 
-# `clone-d1.sh` reaches for all of these, plus the ones the script under test
-# needs. `du`, `wc` and `cut` are the export size report; `grep` is the R2 URL
-# redaction; `mktemp` is its scratch directory.
+# `clone-d1.sh` reaches for all of these, plus the ones the script under test needs. `du`, `wc` and `cut` are the export size report; `grep` is the R2 URL redaction; `mktemp` is its scratch directory.
 PATH_MINIMUM = (
     "cat",
     "jq",

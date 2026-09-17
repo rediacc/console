@@ -12,9 +12,7 @@ WHAT IS COMPARED. Exit code, stdout bytes, stderr bytes, and the `gh` call log, 
 the byte comparison, because "the two sides agree" and "the two sides are right" are different claims and only the second one catches a shared misreading of the twin.
 
 ONE STDERR LINE DIVERGES, IN ONE CASE, AND IT IS PINNED RATHER THAN HIDDEN.
-`((08 > 0))` is a bash arithmetic ERROR whose diagnostic carries the script path
-and line number; see `autopilot_gate.py`'s docstring. `test_an_invalid_octal_round_cap`
-compares exit code, stdout and the `gh` log byte for byte, and compares stderr
+`((08 > 0))` is a bash arithmetic ERROR whose diagnostic carries the script path and line number; see `autopilot_gate.py`'s docstring. `test_an_invalid_octal_round_cap` compares exit code, stdout and the `gh` log byte for byte, and compares stderr
 with that single line filtered out of both sides. Nothing else in this file
 filters anything.
 
@@ -328,8 +326,7 @@ def test_a_fixture_that_is_not_json() -> None:
 
 def test_an_event_missing_its_run_identity() -> None:
     """Exit 2, AFTER the stage flag: a wiring bug is loud, but a disabled stage
-    is still a no-go, so the ORDER of these two decides which one a
-    misconfigured stage sees. The twin checks the flag first; both cases here
+    is still a no-go, so the ORDER of these two decides which one a misconfigured stage sees. The twin checks the flag first; both cases here
     pin that."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["event.json"] = json.dumps({"workflow_run": {"id": 1}}) + "\n"
@@ -1056,9 +1053,7 @@ def test_an_octal_round_cap_is_enforced_as_octal_and_reported_as_decimal() -> No
 def test_an_invalid_octal_round_cap() -> None:
     """`08` is a bash arithmetic ERROR that evaluates as false.
 
-    THE ONE FILTERED CASE IN THIS FILE. Exit code, stdout and the gh log are
-    compared byte for byte; the bash diagnostic (which carries the twin's script
-    path and line number, unreproducible from Python) is dropped from BOTH sides and its presence on the twin's side is asserted, so the filter cannot become a way of hiding a divergence that is not this one.
+    THE ONE FILTERED CASE IN THIS FILE. Exit code, stdout and the gh log are compared byte for byte; the bash diagnostic (which carries the twin's script path and line number, unreproducible from Python) is dropped from BOTH sides and its presence on the twin's side is asserted, so the filter cannot become a way of hiding a divergence that is not this one.
 
     THE DIRECTION MATTERS: the error reads as FALSE, so the cap is not reached and the round RUNS. A malformed cap fails open, which is a finding about the
     twin rather than about this port."""
@@ -1084,8 +1079,7 @@ def test_an_invalid_octal_round_cap() -> None:
 
 def test_a_mistyped_state_path_is_silently_no_state() -> None:
     """HAZARD 1, PRESERVED AND PINNED. `--state` is `[[ -n && -s ]]`, never
-    `require_file`, so a typo reads as "no state comment yet": the round counter resets to 1 and an exhausted campaign is invisible. Fail OPEN, which is the
-    wrong direction for this file; fixing it changes a live workflow step's
+    `require_file`, so a typo reads as "no state comment yet": the round counter resets to 1 and an exhausted campaign is invisible. Fail OPEN, which is the wrong direction for this file; fixing it changes a live workflow step's
     contract, so it is the cutover box's call."""
     fixtures = dict(BASE_FIXTURES)
     fixtures["pr.json"] = pr_json(labels=[])
@@ -1117,9 +1111,7 @@ def test_the_allowlist_strips_interior_whitespace() -> None:
     whitespace character rather than trimming the ends, so `a b` allowlists `ab`. GitHub logins cannot contain a space, so this cannot admit a real
     account today; it is pinned because it guards a model invocation."""
     fixtures = dict(BASE_FIXTURES)
-    # Both trust checks read the same list here (APPLIER falls back to AUTHOR),
-    # so both names have to be the one the entry collapses to; setting only the
-    # author gets `applier-not-allowlisted` and proves nothing about hazard 2.
+    # Both trust checks read the same list here (APPLIER falls back to AUTHOR), so both names have to be the one the entry collapses to; setting only the author gets `applier-not-allowlisted` and proves nothing about hazard 2.
     fixtures["pr.json"] = pr_json(author="ab", label_applier="ab")
     env = {"AUTOPILOT_ENABLED": "true", "AUTOPILOT_AUTHOR_ALLOWLIST": "a b"}
     _, out, _, _ = _sides("interior-space", EVENT_ARGS, fixtures=fixtures, env=env)

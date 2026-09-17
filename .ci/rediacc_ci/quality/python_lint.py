@@ -1,7 +1,6 @@
 r"""Lint every tracked Python file with ruff, under the repo's root pyproject.toml.
 
-Ported from `.ci/scripts/quality/check-python-lint.sh`, which is NOT deleted; see
-`rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-python-lint.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHY THIS EXISTS, in the twin's own words, because the incident is the design:
 
@@ -166,9 +165,7 @@ import time
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# "The floor is a real number, not 1. The interesting failure is a glob that
-# half-breaks and still returns something. Raise it when the tree grows; a
-# deliberate REMOVAL of Python from this repo should have to edit this line."
+# "The floor is a real number, not 1. The interesting failure is a glob that half-breaks and still returns something. Raise it when the tree grows; a deliberate REMOVAL of Python from this repo should have to edit this line."
 MIN_PY_FILES = 10
 
 # The literal that overwrites the pins-file value. See the port notes.
@@ -177,13 +174,11 @@ RUFF_VERSION = "0.16.1"
 # The twin's exit statuses. 77 is CANNOT RUN and is never a verdict.
 EXIT_CANNOT_RUN = 77
 
-# ruff colours its output even through a pipe; the `-->` lines arrive wrapped in
-# escapes and an anchored match without this strip silently falls back to naming every file.
+# ruff colours its output even through a pipe; the `-->` lines arrive wrapped in escapes and an anchored match without this strip silently falls back to naming every file.
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 UNFORMATTED = re.compile(r"^ *--> ([^:]*):.*$")
 
-# The planted control file. Its three assertions pin three different facts; see
-# the module docstring for the measured three-way table.
+# The planted control file. Its three assertions pin three different facts; see the module docstring for the measured three-way table.
 CONTROL_SOURCE = """def planted(unused_arg):
     # ARG001 on `unused_arg`: only reachable via `select = ["ALL"]`.
     # ANN001 on `unused_arg` too, and it must NOT be reported: the ignore list
@@ -238,9 +233,7 @@ def enumerate_py(root: str) -> list[str]:
 def resolve_ruff() -> list[str] | None:
     """The three-rung resolver, as an argv list. None means neither ruff nor uvx.
 
-    RUNG TWO IS "AT THE PIN", NOT "PRESENT". A host carrying 0.5.0 must not decide
-    this repo's verdict; see the module docstring for the sibling tools where the
-    same defect was already fixed.
+    RUNG TWO IS "AT THE PIN", NOT "PRESENT". A host carrying 0.5.0 must not decide this repo's verdict; see the module docstring for the sibling tools where the same defect was already fixed.
     """
     explicit = os.environ.get("RUFF_BIN")
     if explicit:

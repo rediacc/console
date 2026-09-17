@@ -125,9 +125,7 @@ export function createSessionManager(opts: {
     const width: SessionWidth = spec.width ?? DEFAULT_SESSION_WIDTH;
     const { w, h } = paneSize(width);
     const scale = spec.recordScale && spec.recordScale > 1 ? spec.recordScale : 1;
-    // Record at the (possibly reduced) viewport size — Playwright never
-    // upscales frames into a larger canvas, it pads them; downstream ffmpeg
-    // filters do the upscale.
+    // Record at the (possibly reduced) viewport size — Playwright never upscales frames into a larger canvas, it pads them; downstream ffmpeg filters do the upscale.
     const viewport = { width: Math.round(w / scale), height: Math.round(h / scale) };
     const { url, proc } = await resolvePageSource(spec, `session ${name} (scene ${sceneId})`);
     const wallCreateMs = Date.now();

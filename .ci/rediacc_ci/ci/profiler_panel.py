@@ -20,9 +20,7 @@ PORT NOTES -- the quirks below are REPRODUCED, not repaired. The acceptance for 
 THE SUMMARY IS A PATH THE TWIN OPENS IN APPEND MODE, including when that path is `/dev/stdout`. So this port opens it the same way rather than writing through `sys.stdout`: `>>` sets `O_APPEND`, which is what keeps the panel and the annotations that follow it in order on one fd. `sys.stdout` is flushed either side of every summary write, because Python fully buffers a pipe while a
 second open file description does not, and out-of-order output would be a port defect invisible on a terminal.
 
-THE MESSAGE TEXT STILL SAYS `panel.sh:`. Two of the three refusals name the
-script in their own text; changing them to `profiler_panel.py:` would change
-which strings a log scraper (or this port's differential) sees, so the twin's wording is kept verbatim until the cutover renames both sides at once.
+THE MESSAGE TEXT STILL SAYS `panel.sh:`. Two of the three refusals name the script in their own text; changing them to `profiler_panel.py:` would change which strings a log scraper (or this port's differential) sees, so the twin's wording is kept verbatim until the cutover renames both sides at once.
 
 `while IFS= read -r line` DROPS AN UNTERMINATED FINAL LINE. `read` returns
 non-zero at EOF, so the loop body never runs for a last line with no `\n`, and that finding is silently not annotated. `_read_lines` reproduces it by keeping only newline-terminated records. Unreachable in production -- `report.awk` writes findings with `print`, which always terminates -- and reproduced anyway, because "the port emits one more annotation than the twin" is exactly

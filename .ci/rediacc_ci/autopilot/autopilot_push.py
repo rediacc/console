@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/autopilot/autopilot-push.sh`.
 
-THE SECURITY BOUNDARY OF THE AUTOPILOT (03-v2-autonomy.md section 0). The model
-never holds a write token; this script, run AFTER the model exits, is the only
-path from a handoff file to a commit and a push. Review any change to this file, or to this port, as a change to the security boundary itself.
+THE SECURITY BOUNDARY OF THE AUTOPILOT (03-v2-autonomy.md section 0). The model never holds a write token; this script, run AFTER the model exits, is the only path from a handoff file to a commit and a push. Review any change to this file, or to this port, as a change to the security boundary itself.
 
 Its whole job is REFUSING pushes it should not make, so the interesting surface is not the happy path -- it is the twenty-odd refusal branches below, each of which is a thing that has to stay refused. Every one is enumerated in `test_autopilot_push.py` with a case that drives it, because an incomplete port here is a security regression rather than a missed edge case.
 
@@ -29,16 +27,14 @@ same bug here as in console.
 -----------------------------------------------------------------------------
 THE THREE OUTCOMES ARE ALL FIRST-CLASS
 -----------------------------------------------------------------------------
-`push` stages and commits; `escalate` and `no-change` are ROUND RESULTS, not
-failures -- the handoff was valid, the model reached a legitimate conclusion, and the script exits 0 having staged nothing. Exiting 1 on them (as the twin did until 2026-08-09) made every escalating round paint the job red, which fired the generic failure latch and LOST the model's reason. `--verdict-out` is published BEFORE any outcome branching, so the post-boundary steps see the
-same validated object on every accepted round.
+`push` stages and commits; `escalate` and `no-change` are ROUND RESULTS, not failures -- the handoff was valid, the model reached a legitimate conclusion, and the script exits 0 having staged nothing. Exiting 1 on them (as the twin did until 2026-08-09) made every escalating round paint the job red, which fired the generic failure latch and LOST the model's reason. `--verdict-out`
+is published BEFORE any outcome branching, so the post-boundary steps see the same validated object on every accepted round.
 
 -----------------------------------------------------------------------------
 WHAT IS SPAWNED RATHER THAN REIMPLEMENTED, AND THIS LIST IS THE POINT
 -----------------------------------------------------------------------------
-`git`, `node validate-handoff.cjs`, `node exfil-tripwire.cjs`, `jq` and `diff` are all spawned exactly as the twin spawns them, with the same argv. Two of
-those are the actual security controls; re-implementing either would create a
-SECOND validator whose disagreements with the first are the hole. `diff -u` is spawned too, because its output goes to fd 2 and is the operator's evidence for a staged-set mismatch.
+`git`, `node validate-handoff.cjs`, `node exfil-tripwire.cjs`, `jq` and `diff` are all spawned exactly as the twin spawns them, with the same argv. Two of those are the actual security controls; re-implementing either would create a SECOND validator whose disagreements with the first are the hole. `diff -u` is spawned too, because its output goes to fd 2 and is the operator's
+evidence for a staged-set mismatch.
 
   `git ls-files -s` + `awk '{print $1}'` IS REPRODUCED AS A FIELD SPLIT, and the
   vacuous case is handled the way the twin's comment says: an unstaged submodule
@@ -101,8 +97,7 @@ USAGE = (
     "[--remote <name>] [--failed-jobs <file>] [--verdict-out <file>] [--dry-run]"
 )
 
-# The write gate. Absent is OFF; only the exact string `true` arms it. A dry run
-# needs no flag because it never writes the remote.
+# The write gate. Absent is OFF; only the exact string `true` arms it. A dry run needs no flag because it never writes the remote.
 ALLOW_PUSH_ENV = "AUTOPILOT_ALLOW_PUSH"
 ALLOW_SUBMODULES_ENV = "AUTOPILOT_ALLOW_SUBMODULES"
 ALLOW_VALUE = "true"
@@ -126,8 +121,7 @@ COUNT_RE = re.compile(r"^[0-9]+$")
 class _Exit(Exception):  # noqa: N818
     """One `exit N` from anywhere in the twin, including inside a function.
 
-    Bash's `exit` inside a shell function ends the whole script; a Python
-    `return` from a helper does not, and the two staging functions here are called from three places. Modelling it as an exception keeps the control flow the twin's rather than threading a status back through every caller.
+    Bash's `exit` inside a shell function ends the whole script; a Python `return` from a helper does not, and the two staging functions here are called from three places. Modelling it as an exception keeps the control flow the twin's rather than threading a status back through every caller.
     """
 
     def __init__(self, code: int) -> None:
@@ -335,9 +329,7 @@ class Push:
         if self.verdict_out:
             # `cat "$workdir/verdict.json" >"$VERDICT_OUT"`, and it is a PLAIN OPEN-AND-WRITE rather than `shutil.copyfile` on purpose: `copyfile` raises `SpecialFileError` on a fifo, so `--verdict-out /dev/stdout` -- which is what a workflow step does when it wants the verdict in the log -- would have died where the twin happily writes. Found by driving exactly that argument.
             #
-            # A target that cannot be opened is bash's own redirection error and
-            # exit 1; the code is reproduced, the message is Python's, because
-            # bash's names the twin's own line number. Named, not hidden.
+            # A target that cannot be opened is bash's own redirection error and exit 1; the code is reproduced, the message is Python's, because bash's names the twin's own line number. Named, not hidden.
             try:
                 with open(self.w("verdict.json"), "rb") as source:
                     payload = source.read()
@@ -392,9 +384,8 @@ class Push:
             )
             raise _Exit(1)
 
-        # THE BASE IS CURRENT HEAD, NOT origin/main. Section 5's anti-rollback rule is ancestry: only a descendant of the pointer the parent recorded may ever be committed. Branching at the recorded pointer makes that
-        # true by construction; branching at origin/main would silently rebase
-        # the round's work onto a different base, which is precisely the "stale checkout" case the design says must commit nothing.
+        # THE BASE IS CURRENT HEAD, NOT origin/main. Section 5's anti-rollback rule is ancestry: only a descendant of the pointer the parent recorded may ever be committed. Branching at the recorded pointer makes that true by construction; branching at origin/main would silently rebase the round's work onto a different base, which is precisely the "stale checkout" case the design
+        # says must commit nothing.
         sub_branch = _capture_or_exit(["git", "-C", subdir, "rev-parse", "--abbrev-ref", "HEAD"])
         if self.branch in FORBIDDEN_BRANCHES:
             log.error(
@@ -465,9 +456,7 @@ class Push:
             )
             raise _Exit(1)
 
-        # THE PATHS ARE REWRITTEN PARENT-RELATIVE. Without the prefixes the tripwire would see `pkg/x.go`, match no module prefix, and treat every
-        # byte as out of scope; with them it sees `private/renet/pkg/x.go` and
-        # the same scope map that governs a console fix governs this one.
+        # THE PATHS ARE REWRITTEN PARENT-RELATIVE. Without the prefixes the tripwire would see `pkg/x.go`, match no module prefix, and treat every byte as out of scope; with them it sees `private/renet/pkg/x.go` and the same scope map that governs a console fix governs this one.
         with open(self.w("sub-staged.diff"), "wb") as handle:
             proc = _run(
                 [
@@ -500,9 +489,7 @@ class Push:
             raise _Exit(proc.returncode)
         sub_sha = _capture_or_exit(["git", "-C", subdir, "rev-parse", "HEAD"])
 
-        # Ancestry, ASSERTED rather than assumed. It holds by construction
-        # today; it is checked so that a future change to the base above cannot
-        # quietly publish a pointer that rolls the submodule backwards.
+        # Ancestry, ASSERTED rather than assumed. It holds by construction today; it is checked so that a future change to the base above cannot quietly publish a pointer that rolls the submodule backwards.
         anc = _run(["git", "-C", subdir, "merge-base", "--is-ancestor", sub_base, sub_sha])
         if anc.returncode != 0:
             log.error(
@@ -533,8 +520,7 @@ class Push:
     def sub_shas(self) -> list[tuple[str, str, str]]:
         """`while read -r sub sub_sha sub_base` over sub-shas.txt.
 
-        Three whitespace-separated fields; the last one absorbs the remainder,
-        which is `read`'s rule and matters not at all for shas but is preserved.
+        Three whitespace-separated fields; the last one absorbs the remainder, which is `read`'s rule and matters not at all for shas but is preserved.
         """
         rows = []
         for line in read_lines(self.w("sub-shas.txt")):
@@ -567,9 +553,7 @@ class Push:
         # THE POINTER ADVANCE, VERIFIED IN THE INDEX rather than trusted. `git add` on a submodule path stages whatever the submodule's HEAD happens to be, so this proves the console commit about to be minted names exactly the SHA this round produced, at mode 160000 -- a gitlink, not a directory of files someone flattened into the parent.
         for sub, sub_sha, _base in self.sub_shas():
             _, entry = _capture(["git", "ls-files", "-s", "--", sub])
-            # A VACUOUS `git ls-files` -- the submodule not staged at all -- is already fatal two lines down: staged_mode is empty, the 160000 test fails, and the error prints "<absent>". The floor is that
-            # test; naming it here so a reader (and check:ci-enumeration-vacuity)
-            # can see the empty case is handled.
+            # A VACUOUS `git ls-files` -- the submodule not staged at all -- is already fatal two lines down: staged_mode is empty, the 160000 test fails, and the error prints "<absent>". The floor is that test; naming it here so a reader (and check:ci-enumeration-vacuity) can see the empty case is handled.
             fields = entry.split()
             staged_mode = fields[0] if fields else ""
             staged_sha = fields[1] if len(fields) > 1 else ""
@@ -606,9 +590,8 @@ class Push:
         only a human can unpick, so the harness rebuilds its work on top of the orphan instead -- but only when the orphan is
         PROVABLY OURS.
 
-        "Ours" is two independent facts, BOTH REQUIRED: the tip's committer email is the autopilot identity, and the tip shares its merge-base with origin/main with the base we branched from. The first says the autopilot
-        wrote it; the second says it is a continuation of this line of work
-        rather than an unrelated branch that happens to sit at the same name. A tip failing either is somebody else's work and the round stops rather than rewriting it.
+        "Ours" is two independent facts, BOTH REQUIRED: the tip's committer email is the autopilot identity, and the tip shares its merge-base with origin/main with the base we branched from. The first says the autopilot wrote it; the second says it is a continuation of this line of work rather than an unrelated branch that happens to sit at the same name. A tip failing either is
+        somebody else's work and the round stops rather than rewriting it.
         """
         log.warn(
             "submodule '%s': push rejected as non-fast-forward; inspecting the remote tip "
@@ -840,8 +823,7 @@ def _drive(push: Push) -> int:
         )
         return 0
     if outcome != "push":
-        # Unreachable while the schema pins the enum; kept so a schema widening
-        # cannot silently reach the staging code below.
+        # Unreachable while the schema pins the enum; kept so a schema widening cannot silently reach the staging code below.
         log.error("outcome-unknown: handoff outcome is '%s'; refusing to stage anything" % outcome)
         return 1
 

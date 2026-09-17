@@ -3,19 +3,15 @@
 
 Two modes. `--posttool` is the live one, running the misread-outcome rules below. `--probe-payload` is a retired diagnostic, kept because the next rule that wants a payload field should re-run it rather than trust this docstring.
 
-THE PROBE CAME FIRST, AND THAT ORDER WAS THE POINT. No hook in this repo had ever
-read `tool_response`; the only evidence it arrives was a docstring
-(`wl_wait.py:139-143`) recording a payload someone captured. That is a ruling
+THE PROBE CAME FIRST, AND THAT ORDER WAS THE POINT. No hook in this repo had ever read `tool_response`; the only evidence it arrives was a docstring (`wl_wait.py:139-143`) recording a payload someone captured. That is a ruling
 from an artifact, which is itself a trap in this corpus, so it was probed before
 anything depended on it (plan section 7.1). Writing the rules first would have been building a check on an unverified payload shape, which is how a check that cannot fire ships believing it works.
 
-WHAT THE PROBE ANSWERED, on real payloads, 2026-08-09: the field arrives as a
-dict; a planted nonce reached the hook, so it carries actual output rather than
-merely existing; and hooks fire for subagents. It also corrected that docstring
-twice -- `isImage` and `noOutputExpected` were undocumented, and `agent_id` and `agent_type` are ABSENT on main-loop calls, appearing only for subagents, so a rule keyed on them would have silently never matched in the main loop.
+WHAT THE PROBE ANSWERED, on real payloads, 2026-08-09: the field arrives as a dict; a planted nonce reached the hook, so it carries actual output rather than merely existing; and hooks fire for subagents. It also corrected that docstring twice -- `isImage` and `noOutputExpected` were undocumented, and `agent_id` and `agent_type` are ABSENT on main-loop calls, appearing only for
+subagents, so a rule keyed on them would have silently never matched in the main loop.
 
-WHAT THE PROBE RECORDS, AND WHAT IT REFUSES TO. Key names, lengths and booleans only. No tool output is ever written to disk: a hook that logged tool responses would be a durable copy of everything every session reads. The single exception is a nonce planted deliberately, matched by pattern rather than stored. It is
-unregistered in settings.json; a diagnostic on every tool call is a standing cost.
+WHAT THE PROBE RECORDS, AND WHAT IT REFUSES TO. Key names, lengths and booleans only. No tool output is ever written to disk: a hook that logged tool responses would be a durable copy of everything every session reads. The single exception is a nonce planted deliberately, matched by pattern rather than stored. It is unregistered in settings.json; a diagnostic on every tool call is
+a standing cost.
 
 NEVER FAILS A TOOL CALL. PostToolUse runs after the tool has already executed, so nothing here can deny anything, and a hook that broke a session's turn because a log directory was read-only would be a self-inflicted outage. Every path exits 0.
 """
@@ -59,12 +55,9 @@ def _response_facts(resp):
 
 # ---- the misread-outcome rules ----------------------------------------------
 #
-# These read `tool_response` and INJECT context; they cannot deny, because the
-# command already ran. That is the correct semantics: in both traps below the command was fine and only the READING of its output was wrong, which is exactly the failure no other surface can catch. A CI gate is far too late and a PreToolUse hook is too early: at request time neither trap is visible.
+# These read `tool_response` and INJECT context; they cannot deny, because the command already ran. That is the correct semantics: in both traps below the command was fine and only the READING of its output was wrong, which is exactly the failure no other surface can catch. A CI gate is far too late and a PreToolUse hook is too early: at request time neither trap is visible.
 #
-# Each rule is (applies, verdict). `applies` narrows on the command so the
-# response is not scanned for every tool call; `verdict` keys on the RESPONSE,
-# never on the command alone, because a command is not wrong here, an inference
+# Each rule is (applies, verdict). `applies` narrows on the command so the response is not scanned for every tool call; `verdict` keys on the RESPONSE, never on the command alone, because a command is not wrong here, an inference
 # from its output is.
 
 STAT_DELETIONS = re.compile(r"(\d+) deletions?\(-\)")
@@ -144,8 +137,7 @@ def rule_phantom_deletion_diff(cmd, out, root, _resp):
     TWO TESTS, AND THE FIRST ONE ALONE WAS WRONG. This rule briefly shipped keyed on "the file still exists", which fires on ANY deletions-only change to a tracked file. It false-positived within the hour on `git diff --stat package-lock.json`, a peer's ordinary 27-line removal. A rule that fires on common, correct shapes trains sessions to discount it, which is worse than not
     having it.
 
-    Existence narrows; TRACKED-NESS decides. The phantom exists because the file
-    is untracked relative to HEAD, so git compares against an index with no entry for it and calls the whole thing removed. A tracked file losing lines is just a diff. Cost is one stat plus one `git ls-files` per named path, and
+    Existence narrows; TRACKED-NESS decides. The phantom exists because the file is untracked relative to HEAD, so git compares against an index with no entry for it and calls the whole thing removed. A tracked file losing lines is just a diff. Cost is one stat plus one `git ls-files` per named path, and
     if git cannot answer the rule stays silent rather than guessing.
     """
     if not re.search(r"\bgit\s+(-[A-Za-z-]+\s+\S+\s+)*diff\b", cmd):
@@ -291,9 +283,7 @@ def rule_history_rewrite_controls(cmd, _out, root, _resp):
     WAS TAKEN, not that damage occurred -- it cannot know the callback's contents, and it is firing on every callback run on purpose, because the damage is invisible to `size-pack` AND invisible to the
     `main^{tree}` identity control that catches arm 1's class.
 
-    CONSIDERED AND DECLINED, so it is not re-proposed: firing on `--path` WITHOUT `--invert-paths`. That is keep-mode, where the paths named are the
-    survivors and everything else goes; it is a different (and much larger)
-    hazard whose warning would be about what is ABSENT from the list, which `git ls-files` cannot enumerate usefully.
+    CONSIDERED AND DECLINED, so it is not re-proposed: firing on `--path` WITHOUT `--invert-paths`. That is keep-mode, where the paths named are the survivors and everything else goes; it is a different (and much larger) hazard whose warning would be about what is ABSENT from the list, which `git ls-files` cannot enumerate usefully.
     """
     cmd = strip_heredocs(cmd)
     if not HISTORY_REWRITE.search(cmd):
@@ -371,8 +361,7 @@ def rule_rebase_unverified(cmd, out, _root, _resp):
     WHY A COUNT IS THE WRONG CHECK, and why the hint is worth printing: all five repos are rebase-merge only, so merging a parent PR REWRITES its SHAs. When a stacked branch then re-rebases, git correctly drops the commits whose patches are already upstream and `rev-list --count` legitimately FALLS. Eyeballing that against a `--skip` that ate a commit is exactly the judgement the
     check should be making for you.
 
-    NOT A REFUSAL. trapguard never blocks; this is a note on a stop that already
-    happened. Silent when the command was not a rebase, or when the output shows no rebase actually ran (a no-op `git rebase` on an up-to-date branch prints nothing to match).
+    NOT A REFUSAL. trapguard never blocks; this is a note on a stop that already happened. Silent when the command was not a rebase, or when the output shows no rebase actually ran (a no-op `git rebase` on an up-to-date branch prints nothing to match).
     """
     if not REBASE_CMD.search(cmd):
         return None

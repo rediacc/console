@@ -210,9 +210,7 @@ def test_arithmetic():
             r["source"],
         )
         # POLICY REVERSED ON 2026-08-24, and the reversal is the point. This used to assert that a 200K model with a 900K pin inherits the 200K cap, so the hook could not sit silent through a compaction at 167,000. It was the wrong trade: the transcript reports `claude-opus-5` for a 1M session too, so that rule fired the LATE band at 181,419 tokens on a session that was 21% full,
-        # and went on doing it every turn for hours.
-        # A hook that cries wolf changes behaviour on every turn; a hook that
-        # goes quiet is covered by the PreCompact snapshot. So the pin wins, and the bet is DECLARED rather than hidden.
+        # and went on doing it every turn for hours. A hook that cries wolf changes behaviour on every turn; a hook that goes quiet is covered by the PreCompact snapshot. So the pin wins, and the bet is DECLARED rather than hidden.
         r200 = B.resolve_threshold("claude-opus-5", str(sb.project))
         check(
             "a pin overrules a model cap that was only ASSUMED",
@@ -288,9 +286,7 @@ def test_bands(hooks_dir):
             "early text names STATE.md",
             bool(ctx) and ("agent/%s/STATE.md" % SLUG) in ctx,
         )
-        # DIRECTION, not just presence. 670,000 of 867,000 is 77.3% used and
-        # 22.7% remaining; both are one decimal place, so a check that merely
-        # looked for "%" would pass either way. The status line counts DOWN, so the notice must quote 22.7 and must not quote 77.3 anywhere.
+        # DIRECTION, not just presence. 670,000 of 867,000 is 77.3% used and 22.7% remaining; both are one decimal place, so a check that merely looked for "%" would pass either way. The status line counts DOWN, so the notice must quote 22.7 and must not quote 77.3 anywhere.
         check(
             "early text quotes the REMAINING percentage",
             bool(ctx) and "22.7% until auto-compact" in ctx,
@@ -379,9 +375,8 @@ def test_bands(hooks_dir):
         check("bands fire again after the backstop reset", fired(p) is not None)
         sb2.cleanup()
 
-        # THE MODEL CAP YIELDS TO THE PIN, which is what the deleted cap-disproof mechanism used to achieve the long way round. A session reporting `claude-opus-5` while carrying 395,590 tokens is on the 1M variant whatever the transcript says, and the 167,000 threshold that id implies is not merely imprecise, it is already behind us. This was a live bug
-        # caught on a real session; it is now prevented by resolution order
-        # rather than detected after the fact.
+        # THE MODEL CAP YIELDS TO THE PIN, which is what the deleted cap-disproof mechanism used to achieve the long way round. A session reporting `claude-opus-5` while carrying 395,590 tokens is on the 1M variant whatever the transcript says, and the 167,000 threshold that id implies is not merely imprecise, it is already behind us. This was a live bug caught on a real session;
+        # it is now prevented by resolution order rather than detected after the fact.
         sb6 = Sandbox(hooks_dir)
         sb6.write_state_md()
         sb6.write_transcript(395_590, model="claude-opus-5")

@@ -55,9 +55,8 @@ SCOPE = (".ci/rediacc_ci/quality/*.py", ".ci/scripts/quality/check_*.py")
 
 HARNESS_MODULE = "rediacc_ci.controls"
 HARNESS_NAMES = ("plant", "plant_re")
-# ONLY `.replace`. For `.sub`/`.subn` the RECEIVER is a compiled regex, not the fixture -- `SPACE_RE.sub("", " \t\n")` exercises the pattern itself and is not a plant at all. Measured: including them produced two false positives in `no_otlp_creds.py` on the first real run. `re.sub(pattern, repl, X)` would need
-# the THIRD ARGUMENT checked, not the receiver; no control region in this corpus
-# uses that shape today, so it is deliberately not guessed at.
+# ONLY `.replace`. For `.sub`/`.subn` the RECEIVER is a compiled regex, not the fixture -- `SPACE_RE.sub("", " \t\n")` exercises the pattern itself and is not a plant at all. Measured: including them produced two false positives in `no_otlp_creds.py` on the first real run. `re.sub(pattern, repl, X)` would need the THIRD ARGUMENT checked, not the receiver; no control region in this
+# corpus uses that shape today, so it is deliberately not guessed at.
 SUBSTITUTORS = ("replace",)
 
 RED = "\033[0;31m"
@@ -298,9 +297,7 @@ def selftest(verbose: bool = False) -> int:
         [],
     )
     c.check("the clean module earns harness credit", harness_sites(ast.parse(_CLEAN)), 1)
-    # THE FALSE NEGATIVE THIS GATE WOULD OTHERWISE HAVE. A module with its own
-    # `def plant` calls something that is not the harness; counting the token
-    # would score it as compliant.
+    # THE FALSE NEGATIVE THIS GATE WOULD OTHERWISE HAVE. A module with its own `def plant` calls something that is not the harness; counting the token would score it as compliant.
     c.check("a LOCAL def plant earns no harness credit", harness_sites(ast.parse(_SHADOWED)), 0)
     c.check("...because the import is shadowed", has_harness(ast.parse(_SHADOWED)), False)
     c.check("...while the unshadowed import counts", has_harness(ast.parse(_CLEAN)), True)

@@ -5,9 +5,7 @@ Pushes twenty-four runtime secrets into the www Worker (stable or edge) in ONE `
 
 THIS SCRIPT MARSHALS, IT DOES NOT DECIDE. Which Stripe and SES credentials land here is `cd-deploy-worker.yml`'s choice (sandbox on edge, live EU on stable), and the twin says so at :10-12 and again at :36-38: there is no region indirection anywhere in it. The port keeps that property, which is why there is no channel argument and no lookup table here either.
 
-SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS. `argv` is visible
-in `ps` and in some log surfaces; a value travels env -> `jq --arg` -> the pipe
-into `wrangler` and nowhere else.
+SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS. `argv` is visible in `ps` and in some log surfaces; a value travels env -> `jq --arg` -> the pipe into `wrangler` and nowhere else.
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` is the only external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_set_www_worker_secrets.py`) puts a RECORDING FAKE `npx` on a scratch PATH that logs its exact argv AND THE BYTES ON ITS STDIN. The stdin log is the main evidence here, and on this script it is the ONLY evidence on the happy
 path: unlike its preview sibling, this twin prints NOTHING of its own when it succeeds (there is no closing `log_info` at :141), so a port that sent an empty document would produce byte-identical streams. What distinguishes success from doing nothing is entirely the document.
@@ -83,9 +81,8 @@ KEYS: tuple[tuple[str, str], ...] = (
 
 # The thirteen `_require_nonempty` calls (:77-89), in order. The FIRST empty one ends the run, so the order is observable in the message a caller reads.
 #
-# WHY THESE THIRTEEN, in the twin's own words (:56-76): the Worker schema marks several of them optional() and normalises "" to undefined, so an empty value
-# deploys cleanly and SILENTLY turns the feature off; `required: true` on the
-# GitHub side used to be the guard and a job-start Bitwarden fetch has no equivalent. The six env.ts declares NON-optional are demanded here too, because zod does catch those, but only inside the deployed Worker as an EnvConfigError 500 on every request afterwards.
+# WHY THESE THIRTEEN, in the twin's own words (:56-76): the Worker schema marks several of them optional() and normalises "" to undefined, so an empty value deploys cleanly and SILENTLY turns the feature off; `required: true` on the GitHub side used to be the guard and a job-start Bitwarden fetch has no equivalent. The six env.ts declares NON-optional are demanded here too, because
+# zod does catch those, but only inside the deployed Worker as an EnvConfigError 500 on every request afterwards.
 #
 # STRIPE IS UNCONDITIONAL HERE and is not on the preview sibling's list: edge gets the sandbox key and stable the live one, so it is never legitimately empty for www.
 REQUIRED_NONEMPTY: tuple[str, ...] = (

@@ -1,8 +1,7 @@
 """The autopilot's hold-open debug session COPIES three dispatch inputs from
 breakpoint. This gate holds the copies to the original.
 
-Ported from `.ci/scripts/quality/check-autopilot-breakpoint-alignment.sh`, which
-is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-autopilot-breakpoint-alignment.sh`, which is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHY A GATE AND NOT A COMMENT. `.github/workflows/autopilot.yml`'s model job can hold its runner open with a tmate shell behind a Cloudflare tunnel, driven by the vendored scripts in `.ci/breakpoint/scripts/`. The inputs that drive it (`hold-duration`, `debug-shell`, `send-email`) are hand-copied from `.ci/breakpoint/workflow/breakpoint.yml`, because breakpoint.yml is FROZEN in
 MANIFEST.sha256 and cannot grow an autopilot-shaped variant, and GitHub has no include mechanism for workflow inputs. Hand-copied shapes drift silently, and the drift is worst exactly where it matters: `send-email` defaulting to false in one file and true in the other would mean one of the two tools prints a bearer-credential URL into a world-readable log while the operator
@@ -37,9 +36,7 @@ for `workflows.load`.
 
 `if (ind < 6) exit` IS THE END OF THE INPUTS BLOCK, and it is an `exit` in awk -- the whole program stops, not just the loop. Reproduced as an early `return`, which is the same thing for a function that has already found nothing.
 
-VALUES ARE READ AS WRITTEN, then normalized by the caller. An inline flow list
-(`['5', '10']`) is the shape both files use; a block list would return empty here
-and be caught by the anti-vacuity check rather than silently comparing nothing.
+VALUES ARE READ AS WRITTEN, then normalized by the caller. An inline flow list (`['5', '10']`) is the shape both files use; a block list would return empty here and be caught by the anti-vacuity check rather than silently comparing nothing.
 
 `normalize_options` IS `tr -d "[]'\\" "` FOLLOWED BY `sed 's/,$//'`. Character deletion, not tokenisation: the comparison is over the VALUES, not over the YAML author's spacing. Reproduced as `str.translate` plus one trailing-comma strip, because a "cleaner" split-and-rejoin would silently normalise `5,,10` into `5,10` and stop the gate noticing a malformed list.
 
@@ -72,8 +69,7 @@ INPUT_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+:[ \t]*$")
 INPUT_INDENT = 6
 FIELD_INDENT = 8
 
-# FLOOR. A one- or two-entry list means the extractor matched something that is
-# not the option list at all; the real one has always carried the full ladder.
+# FLOOR. A one- or two-entry list means the extractor matched something that is not the option list at all; the real one has always carried the full ladder.
 MIN_DURATION_OPTIONS = 5
 
 # The two booleans, and the two fields of each, that must agree. A list rather than four hand-written comparisons so a fifth copied input is one row.

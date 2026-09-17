@@ -1,11 +1,9 @@
 """The bump-none decision must EMIT ITS SIGNAL, and only on the skip path.
 
-Ported from `.ci/scripts/quality/check-release-bump-skip.sh`, which is not
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-release-bump-skip.sh`, which is not deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHY THIS EXISTS. Two gates already cover neighbouring ground and neither touches this: `check-ci-workflow-invariants.sh` asserts the WIRING in ci.yml (that the decision is declared once, threaded, and not re-decided in finalize-release-sentinel), and `test-skip-release-channel-pointer.sh` proves the UPLOAD script's guard branches correctly. Nothing drove `dispatch-release.sh`'s own
-decision branch, so "Finalize Release emitted the skip signal for the right reason" was unobservable by construction. Release gates could say a release succeeded or
-was absent; they could not say WHY.
+decision branch, so "Finalize Release emitted the skip signal for the right reason" was unobservable by construction. Release gates could say a release succeeded or was absent; they could not say WHY.
 
 That distinction is not academic here. A bump-none merge and a broken decision both produce "no release". They are indistinguishable from the outside, and the only thing that tells them apart is the signal this script emits:
 
@@ -27,12 +25,9 @@ THIS GATE MERGES STDOUT AND STDERR, AND THAT IS DELIBERATE RATHER THAN LAZY.
 `rediacc_ci.proc.run` refuses to merge -- its docstring says "never merges streams", for the 2026-09-06 stream-swap reason recorded in `.ci/scripts/lib/emit-advisory.sh:22-52` -- so this module reaches for `subprocess` directly instead of quietly weakening the shared helper. The reason is that the SUBJECT here is a blob: the twin runs `bash "$SUT" --decide-only 2>&1` and every
 assertion below is a `grep` over the combined text, because `dispatch-release.sh` splits the same decision across both streams (the notice on stdout, the reasoning on stderr) and an assertion on one stream alone would pass
 while the signal went to the other. Reproducing the merge is reproducing the
-contract; using `proc.run` and concatenating afterwards would produce a
-DIFFERENT interleaving, which the failure path prints as its first six lines and the shadow comparator would then read as a genuine finding difference.
+contract; using `proc.run` and concatenating afterwards would produce a DIFFERENT interleaving, which the failure path prints as its first six lines and the shadow comparator would then read as a genuine finding difference.
 
-THE GH SHIM IS BUILT AS A FILE, NOT AS A PYTHON MOCK. The subject is a bash
-script that resolves `gh` through PATH; a mock inside this process would test
-nothing about it. The shim's text is carried over byte for byte, including the heredoc quoting, because `rows` reaches it as heredoc BODY and a change in quoting would start expanding `$` in a label.
+THE GH SHIM IS BUILT AS A FILE, NOT AS A PYTHON MOCK. The subject is a bash script that resolves `gh` through PATH; a mock inside this process would test nothing about it. The shim's text is carried over byte for byte, including the heredoc quoting, because `rows` reaches it as heredoc BODY and a change in quoting would start expanding `$` in a label.
 
 THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the one archaeology token this file would otherwise drop. Its two `# shellcheck
 source=` / `# BLOCKER:` lines record that `log_error`, `log_info` and
@@ -72,8 +67,7 @@ FAILURE_EXCERPT_LINES = 6
 def _write_shim(bin_dir: pathlib.Path, rows: str) -> None:
     """The `gh` the subject will find on PATH.
 
-    `rows` is what the API would return, one PR per line as
-    "<number> <labels,csv>"; the literal FAIL makes the shim exit non-zero.
+    `rows` is what the API would return, one PR per line as "<number> <labels,csv>"; the literal FAIL makes the shim exit non-zero.
     """
     shim = bin_dir / "gh"
     if rows == "FAIL":

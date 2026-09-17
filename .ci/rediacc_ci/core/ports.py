@@ -23,9 +23,8 @@ The bash file carried `_sha256sum_portable`, which chose `sha256sum` when presen
 
 `_sha256sum_portable` also carried a correction worth keeping, because it records a comment that was WRONG and was fixed by measurement. It said the
 function must not depend on `local-common.sh` because find-port.sh is sourced
-standalone by `check-account-probes.sh`. It is not. The gate that sourced it standalone was `.ci/scripts/quality/check-setup-idempotency.sh`, whose control C
-ran `bash -c "source '$fp'; derive_slot ..."`; check-account-probes.sh sources
-`.ci/lib/account.sh`, and account.sh was what pulled find-port.sh in. Both call sites now run this module directly (control C through PYTHONPATH, which is what the shim was setting anyway) and the shim is deleted. The constraint is real either way -- this module must stay importable on its own -- and the misattribution is recorded so nobody re-derives it from the wrong gate.
+standalone by `check-account-probes.sh`. It is not. The gate that sourced it standalone was `.ci/scripts/quality/check-setup-idempotency.sh`, whose control C ran `bash -c "source '$fp'; derive_slot ..."`; check-account-probes.sh sources `.ci/lib/account.sh`, and account.sh was what pulled find-port.sh in. Both call sites now run this module directly (control C through PYTHONPATH,
+which is what the shim was setting anyway) and the shim is deleted. The constraint is real either way -- this module must stay importable on its own -- and the misattribution is recorded so nobody re-derives it from the wrong gate.
 
 --------------------------------------------------------------------------
 WHY THE PROBE STILL SHELLS OUT TO ss / lsof / netstat
@@ -34,8 +33,7 @@ This is the one place where a "pure Python" port would have been a behaviour cha
 
 The obvious Python spelling is to bind a socket and see whether it fails. That
 asks a DIFFERENT QUESTION. `ss -tlnH "sport = :N"` reports a listener on ANY
-address; a bind probe on 127.0.0.1 succeeds while something listens on
-0.0.0.0, and a bind probe on 0.0.0.0 fails against a listener on 127.0.0.1 on some platforms and not others. Either direction produces a devbox that starts and then cannot be reached, which is precisely the failure the block allocator exists to prevent.
+address; a bind probe on 127.0.0.1 succeeds while something listens on 0.0.0.0, and a bind probe on 0.0.0.0 fails against a listener on 127.0.0.1 on some platforms and not others. Either direction produces a devbox that starts and then cannot be reached, which is precisely the failure the block allocator exists to prevent.
 
 So the probe order is preserved exactly as the original had it:
 
@@ -86,8 +84,7 @@ DIGEST_HEX_DIGITS = 8
 def derive_slot(key: str, slots: int = DEFAULT_SLOTS) -> int:
     """A stable slot index in [0, slots) derived from an arbitrary key.
 
-    sha256 of the key; the first 8 hex digits are plenty of entropy for fewer
-    than a thousand slots. Identical in result to the bash `printf '%s' "$key" | sha256sum | cut -c1-8` followed by `$((0x... % n))`: no trailing newline is hashed, the digest is lowercase hex, and the modulo is taken over the truncated value rather than the whole digest.
+    sha256 of the key; the first 8 hex digits are plenty of entropy for fewer than a thousand slots. Identical in result to the bash `printf '%s' "$key" | sha256sum | cut -c1-8` followed by `$((0x... % n))`: no trailing newline is hashed, the digest is lowercase hex, and the modulo is taken over the truncated value rather than the whole digest.
     """
     digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:DIGEST_HEX_DIGITS]
     return int(digest, 16) % slots
@@ -99,8 +96,7 @@ def is_port_in_use(port: int) -> bool:
     See the module docstring for why this is not a socket bind. The final rung -- no tool available -- returns False, i.e. assume free, matching the bash `return 1`.
     """
     if proc.which("ss"):
-        # -H suppresses the header so a match is a real row rather than the
-        # column titles; the bash form piped to `grep -q .` for the same reason.
+        # -H suppresses the header so a match is a real row rather than the column titles; the bash form piped to `grep -q .` for the same reason.
         result = proc.run(["ss", "-tlnH", f"sport = :{port}"])
         return bool(result.stdout.strip())
     if proc.which("lsof"):
@@ -133,9 +129,7 @@ def find_preferred_port(
 ) -> int | None:
     """`preferred_port` when it is free, otherwise the first free fallback.
 
-    The bash defaults for the fallback window were `preferred+1` and
-    `preferred+999`, computed at call time from the preferred port; they are
-    reproduced here rather than turned into constants, because they are RELATIVE to the argument.
+    The bash defaults for the fallback window were `preferred+1` and `preferred+999`, computed at call time from the preferred port; they are reproduced here rather than turned into constants, because they are RELATIVE to the argument.
     """
     if fallback_start is None:
         fallback_start = preferred_port + 1

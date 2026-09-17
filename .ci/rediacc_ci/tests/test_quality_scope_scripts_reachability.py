@@ -222,9 +222,7 @@ def test_the_extractor_separates_invocation_from_mention(tmp_path):
 def test_dispatch_attribution_is_by_nearest_top_level_label():
     """Neither a fixed window nor a block scan; both of those were wrong.
 
-    A window of 12 lines missed scripts/drills/license.sh at run.sh:1995, and a
-    scan to the closing `;;` ran past `account)` because run.sh's arms terminate
-    inline.
+    A window of 12 lines missed scripts/drills/license.sh at run.sh:1995, and a scan to the closing `;;` ran past `account)` because run.sh's arms terminate inline.
     """
     text = (
         "case $1 in\n"

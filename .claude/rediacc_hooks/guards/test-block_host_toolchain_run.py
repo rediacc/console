@@ -69,8 +69,7 @@ WITH_SHIM = f"{shim}:{REAL}"
 _bash_which = shutil.which("bash", path=REAL)
 BASH_DIR = os.path.dirname(_bash_which) if _bash_which else None
 
-# Does a devbox exist? The refusal arm requires one; without it the guard
-# correctly downgrades to a note, and asserting exit 2 would be asserting the wrong thing on a machine with no container.
+# Does a devbox exist? The refusal arm requires one; without it the guard correctly downgrades to a note, and asserting exit 2 would be asserting the wrong thing on a machine with no container.
 box_name = subprocess.run(
     ["docker", "ps", "--filter", "label=com.rediacc.devbox.worktree", "--format", "{{.Names}}"],
     capture_output=True,
@@ -151,10 +150,8 @@ else:
         )
     )
 
-# --- BARE TOOL: the same class, for a directly-typed command ---------------- The NEEDS table above matches a GATE KEY string in the command
-# (`check:ci-python-lint`); it is blind to `go build ./...`, which names no gate
-# at all. BARE_TOOLS exists to catch exactly that shape. Constructed rather than ambient: whether THIS host happens to have `go` on PATH must not decide which branch of the guard gets exercised. Strip every PATH entry that actually resolves `go`, so the REFUSE branch runs deterministically instead of silently degrading to a no-op CONTROL assertion on a host that has go (which is
-# exactly what happened the first time this case was written: it passed while testing nothing, because `go` was on this host's PATH the whole time).
+# --- BARE TOOL: the same class, for a directly-typed command ---------------- The NEEDS table above matches a GATE KEY string in the command (`check:ci-python-lint`); it is blind to `go build ./...`, which names no gate at all. BARE_TOOLS exists to catch exactly that shape. Constructed rather than ambient: whether THIS host happens to have `go` on PATH must not decide which branch
+# of the guard gets exercised. Strip every PATH entry that actually resolves `go`, so the REFUSE branch runs deterministically instead of silently degrading to a no-op CONTROL assertion on a host that has go (which is exactly what happened the first time this case was written: it passed while testing nothing, because `go` was on this host's PATH the whole time).
 NOGO = os.pathsep.join(
     d for d in REAL.split(os.pathsep) if d == BASH_DIR or not os.path.isfile(os.path.join(d, "go"))
 )
@@ -190,9 +187,7 @@ cases.append(
     )
 )
 
-# --- NPX MISUSE: fires on shape, independent of host tool state -------------
-# npx resolves its argument as an npm package name; none of ruff/go/shfmt/
-# shellcheck/actionlint are npm packages, so this fails whether or not the tool is on PATH. Measured 2026-08-28: this exact shape, with ruff genuinely present on PATH the whole time.
+# --- NPX MISUSE: fires on shape, independent of host tool state ------------- npx resolves its argument as an npm package name; none of ruff/go/shfmt/ shellcheck/actionlint are npm packages, so this fails whether or not the tool is on PATH. Measured 2026-08-28: this exact shape, with ruff genuinely present on PATH the whole time.
 cases.append(
     (2, run("npx --yes ruff format file.py", REAL), "npx cannot run a pinned non-npm tool")
 )
@@ -203,9 +198,9 @@ cases.append(
 
 # --------------------------------------------------------------------------- Submodule / non-submodule split, and the credential file. Both added 2026-08-28 after each failed for real.
 #
-# The property that decides routing is NOT "is this a submodule". It is whether the target owns a HOST-BUILT toolchain. private/renet is a submodule with neither a .venv nor node_modules, so it routes like the root repo. private/account is a submodule WITH node_modules, and private/growth/video_pipeline is not a submodule
-# at all but carries its own .venv; neither can run in the container. Routing
-# video_pipeline into the devbox produced ModuleNotFoundError: anyio. THE ROOT-REPO EXPECTATION IS DERIVED, NEVER HARDCODED. This case asserted a literal 2 for private/renet and went red on 2026-08-28 the moment `ruff` was installed on this host -- the guard then correctly declined to route, exactly as its own comment says it should ("THE HOST IS ASKED, NOT ASSUMED").
+# The property that decides routing is NOT "is this a submodule". It is whether the target owns a HOST-BUILT toolchain. private/renet is a submodule with neither a .venv nor node_modules, so it routes like the root repo. private/account is a submodule WITH node_modules, and private/growth/video_pipeline is not a submodule at all but carries its own .venv; neither can run in the
+# container. Routing video_pipeline into the devbox produced ModuleNotFoundError: anyio. THE ROOT-REPO EXPECTATION IS DERIVED, NEVER HARDCODED. This case asserted a literal 2 for private/renet and went red on 2026-08-28 the moment `ruff` was installed on this host -- the guard then correctly declined to route, exactly as its own comment says it should ("THE HOST IS ASKED, NOT
+# ASSUMED").
 #
 # The property under test is the one the section header states: a submodule with no host toolchain routes LIKE THE ROOT REPO. So compare it to the root repo's verdict rather than to a constant, which holds in both worlds and keeps the
 # case meaningful on a machine that has ruff and on one that does not.
@@ -253,9 +248,8 @@ if os.path.exists(os.path.join(REPO, "private/account/.env")):
                 " ./run.sh --publish-www --langs en",
                 REAL,
             ),
-            # THE FORM THIS GUARD NOW ADVISES. Pinned here because the message and the predicate are in different functions and nothing else holds them together: a guard that recommends a command it then blocks is worse than one that
-            # recommends nothing. `set -a; .` stays accepted above -- it is still a real
-            # way to get the credentials into the shell, it is just no longer the one to print, because it EXECUTES a file holding two private keys.
+            # THE FORM THIS GUARD NOW ADVISES. Pinned here because the message and the predicate are in different functions and nothing else holds them together: a guard that recommends a command it then blocks is worse than one that recommends nothing. `set -a; .` stays accepted above -- it is still a real way to get the credentials into the shell, it is just no longer the one to
+            # print, because it EXECUTES a file holding two private keys.
             "CONTROL: the form the message now advises is accepted",
         )
     )
@@ -267,9 +261,8 @@ if os.path.exists(os.path.join(REPO, "private/account/.env")):
         )
     )
 
-# --------------------------------------------------------------------------- EVERY TOOL IN THE ARRAY, NOT JUST TWO OF FIVE. check-host-toolchain-coverage.sh
-# proves NPX_TOOLS/BARE_TOOLS LIST the same tools GATED_TOOLS pins; it says
-# nothing about whether the ROUTING REGEX actually FIRES for each of them at runtime. A tool could sit in the array and still be unreachable -- a name containing a regex metacharacter, a word-boundary edge case on a two-letter name like `go` -- and list-membership coverage would not catch it. Before this, npx-misuse was exercised for ruff and shfmt only, and bare-tool routing
+# --------------------------------------------------------------------------- EVERY TOOL IN THE ARRAY, NOT JUST TWO OF FIVE. check-host-toolchain-coverage.sh proves NPX_TOOLS/BARE_TOOLS LIST the same tools GATED_TOOLS pins; it says nothing about whether the ROUTING REGEX actually FIRES for each of them at runtime. A tool could sit in the array and still be unreachable -- a name
+# containing a regex metacharacter, a word-boundary edge case on a two-letter name like `go` -- and list-membership coverage would not catch it. Before this, npx-misuse was exercised for ruff and shfmt only, and bare-tool routing
 # for ruff and go only: 2 of 5 tools on each path, with shellcheck, actionlint
 # (both paths) and go/shfmt (npx path) never actually invoked.
 #

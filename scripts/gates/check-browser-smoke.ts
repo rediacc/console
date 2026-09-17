@@ -130,9 +130,7 @@ async function main(): Promise<void> {
       // page carrying `<video preload="metadata">` pointed at media.rediacc.com issues a
       // request that never completes in a sandboxed container, and then the gate reports `page.goto: Timeout 45000ms exceeded` -- a crash, on the FIRST route, with none of its three real assertions ever run. That happened on 2026-08-24 while the same job had passed on the previous commit with identical page code.
       //
-      // So: try for quiet, and on timeout fall back to `load` and keep going. A hanging
-      // third-party request can no longer mask the checks; a broken island still fails
-      // them. The fallback is COUNTED and printed, because a gate that silently lowers its own bar is worse than one that fails.
+      // So: try for quiet, and on timeout fall back to `load` and keep going. A hanging third-party request can no longer mask the checks; a broken island still fails them. The fallback is COUNTED and printed, because a gate that silently lowers its own bar is worse than one that fails.
       let resp = null;
       try {
         resp = await page.goto(base + route, { waitUntil: 'networkidle', timeout: 30_000 });
@@ -147,9 +145,7 @@ async function main(): Promise<void> {
           // The beat islands would have had under networkidle. They hydrate from module scripts, so this is what stands in for the quiet that never came.
           await page.waitForTimeout(3_000);
         } catch (e) {
-          // THIRD FAILURE IS A FINDING, NOT A CRASH. A gate that dies reports nothing
-          // about the other five routes; a gate that records "this route would not load"
-          // still checks them and still fails. That distinction cost two CI rounds.
+          // THIRD FAILURE IS A FINDING, NOT A CRASH. A gate that dies reports nothing about the other five routes; a gate that records "this route would not load" still checks them and still fails. That distinction cost two CI rounds.
           findings.push({
             route,
             kind: 'nav-timeout',

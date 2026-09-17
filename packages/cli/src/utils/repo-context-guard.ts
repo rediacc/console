@@ -223,9 +223,7 @@ export interface FileWriteMatch {
 export const FILE_WRITE_PATTERNS: FileWriteMatch[] = [
   // `tee somefile` — but not `tee -a`, `tee --help`, `tee /dev/null`
   { label: 'tee', pattern: /\btee\s+(?!-)(?!\/dev\/null\b)\S/ },
-  // `cat > file`, `echo "x" > out`, `printf '%s' > f`, `base64 -d > /tmp/x`
-  // The [^|;&]* stops at pipe/semicolon so `echo hi | grep x` doesn't match.
-  // (?!\/dev\/null) and (?!&) exclude `>/dev/null` and `>&` (fd redirects).
+  // `cat > file`, `echo "x" > out`, `printf '%s' > f`, `base64 -d > /tmp/x` The [^|;&]* stops at pipe/semicolon so `echo hi | grep x` doesn't match. (?!\/dev\/null) and (?!&) exclude `>/dev/null` and `>&` (fd redirects).
   {
     label: 'redirect',
     pattern: /\b(cat|echo|printf|base64)\b[^|;&]*>>?\s*(?!\/dev\/null\b)(?!&)\S/,

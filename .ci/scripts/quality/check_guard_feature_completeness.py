@@ -13,10 +13,8 @@ see agent/e580532b/STATE.md for the session that found this.
 
 WHAT IT CHECKS. Every guard under .claude/hooks/**/*.sh that sources a `lib/*.sh` file
 via the repo's one sourcing idiom (`source "$(dirname "${BASH_SOURCE[0]}")/lib/X.sh"`)
-must have every identifier it calls as a bare statement -- `name ...` at the start of a
-line or after `&&`/`||`/`;`/`$(` -- resolve to a function DEFINED either in the guard
-itself or in a lib it actually sources. An identifier that is not locally resolvable but IS a function name defined SOMEWHERE ELSE in the .claude/hooks tree is flagged: a coincidental collision with an ordinary shell word is vanishingly unlikely given this tree's function names (`hook_scan_target`, `_hook_wrapper_payload`, ...), and a real typo/rename/dropped-source produces
-exactly that shape.
+must have every identifier it calls as a bare statement -- `name ...` at the start of a line or after `&&`/`||`/`;`/`$(` -- resolve to a function DEFINED either in the guard itself or in a lib it actually sources. An identifier that is not locally resolvable but IS a function name defined SOMEWHERE ELSE in the .claude/hooks tree is flagged: a coincidental collision with an ordinary
+shell word is vanishingly unlikely given this tree's function names (`hook_scan_target`, `_hook_wrapper_payload`, ...), and a real typo/rename/dropped-source produces exactly that shape.
 
 WHAT IT DOES NOT DO. It does not execute anything, and it follows sourcing ONE level (the guard's own file plus whatever it directly sources) -- the same honest scoping disclosure check_python_gate_deps.py makes for Python imports.
 
@@ -28,9 +26,7 @@ import re
 import sys
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
-# W5 P7 CUTOVER. The bash guards moved to `.claude/oracles/`, frozen, and the live guards are Python modules. This gate reads BASH function calls, so its corpus is
-# the oracle tree; the ported guards' equivalent check is the import graph, which
-# Python raises on by itself.
+# W5 P7 CUTOVER. The bash guards moved to `.claude/oracles/`, frozen, and the live guards are Python modules. This gate reads BASH function calls, so its corpus is the oracle tree; the ported guards' equivalent check is the import graph, which Python raises on by itself.
 HOOKS_DIR = REPO_ROOT / ".claude" / "oracles"
 
 DEF_RE = re.compile(r"^\s*(?:function\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*\(\)\s*\{", re.MULTILINE)
@@ -98,9 +94,8 @@ HEREDOC_OPEN_RE = re.compile(r"<<-?\s*(['\"]?)(\w+)\1")
 def strip_noise(text: str) -> str:
     """Drop heredoc bodies and full-line comments before scanning for calls.
 
-    PROVEN NECESSARY, not precautionary: this gate's own first real run flagged warn-remote-drift.sh over the word "fail" inside the comment `# Bounded fetch of
-    just this branch; fail open on timeout or any error.` -- the `;` mid-comment read
-    as a statement separator. Heredoc bodies are the same risk (human prose, not bash), so both are stripped the same way rather than patched as one-off exceptions.
+    PROVEN NECESSARY, not precautionary: this gate's own first real run flagged warn-remote-drift.sh over the word "fail" inside the comment `# Bounded fetch of just this branch; fail open on timeout or any error.` -- the `;` mid-comment read as a statement separator. Heredoc bodies are the same risk (human prose, not bash), so both are stripped the same way rather than patched as
+    one-off exceptions.
     """
     lines = text.split("\n")
     out = []
@@ -146,9 +141,8 @@ def find_offenders() -> list[str]:
         f for f in hook_files if not f.name.startswith("test-") and "worklist-cases" not in f.parts
     ]
 
-    # ANTI-VACUITY, AND IT HAD NONE UNTIL 2026-09-07. This gate scanned `.claude/hooks/**/*.sh` and reported "every called feature resolves" on a corpus that had just lost 46 of its 80 files to the W5 cutover. It stayed GREEN across that, because a scan of a third of a tree finds no broken call
-    # in the two thirds it no longer looks at. The move is what surfaced it; a
-    # deletion or a moved directory would have done the same thing silently.
+    # ANTI-VACUITY, AND IT HAD NONE UNTIL 2026-09-07. This gate scanned `.claude/hooks/**/*.sh` and reported "every called feature resolves" on a corpus that had just lost 46 of its 80 files to the W5 cutover. It stayed GREEN across that, because a scan of a third of a tree finds no broken call in the two thirds it no longer looks at. The move is what surfaced it; a deletion or a
+    # moved directory would have done the same thing silently.
     #
     # SET-BASED, NOT A TYPED COUNT: the floor is "the directory this gate names contains guards at all". Driver contract section 6 forbids a hand-typed number, and a number here would have to be re-keyed by every port anyway.
     if not hook_files:
@@ -233,9 +227,7 @@ def selftest() -> int:
         "git" not in defined_functions(lib_text) and "git" not in defined_functions(caller_text),
     )
 
-    # REGRESSION: this gate's own first real run flagged warn-remote-drift.sh over
-    # the word "fail" inside a comment ("...branch; fail open on timeout..."). The
-    # `;` mid-comment read as a statement separator before strip_noise() existed.
+    # REGRESSION: this gate's own first real run flagged warn-remote-drift.sh over the word "fail" inside a comment ("...branch; fail open on timeout..."). The `;` mid-comment read as a statement separator before strip_noise() existed.
     comment_text = "echo start\n# just a fetch; fail open on timeout or any error.\n"
     check(
         "a word following a semicolon INSIDE A COMMENT is not treated as a call",

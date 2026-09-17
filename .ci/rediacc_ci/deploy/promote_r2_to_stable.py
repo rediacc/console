@@ -4,9 +4,7 @@
 The soak-gated promotion: copies every R2 release channel from `edge/` to `stable/` with a two-phase, metadata-last upload. Driven by `promote-stable.yml` after the 7-day soak. The hotfix lane that skips the soak is a different, single-phase script, ported beside this one as `rediacc_ci.deploy.promote_r2_to_stable_hotfix`.
 
 WHY TWO PHASES, carried over from the twin's header because it is the reason this file exists rather than a second copy of the hotfix: a package manager decides "there is a new version" from METADATA and then fetches the bytes that metadata names. Uploading everything at once lets a client see the new-version signal minutes before the binaries land, which surfaces as 404s and
-"Mirror sync
-in progress?". Phase 1 uploads bytes; phase 2 uploads metadata, and within phase
-2 the signing/hashing metadata goes AFTER the metadata it hashes, so a Release/InRelease hash can never disagree with the bytes on R2.
+"Mirror sync in progress?". Phase 1 uploads bytes; phase 2 uploads metadata, and within phase 2 the signing/hashing metadata goes AFTER the metadata it hashes, so a Release/InRelease hash can never disagree with the bytes on R2.
 
 -----------------------------------------------------------------------------
 THE SIBLING SHARES REAL LOGIC WITH THIS FILE AND IT IS DELIBERATELY NOT
@@ -21,9 +19,8 @@ NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST
 `aws` and (through `cf-purge-urls.sh`) `curl` are the two external tools that carry a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py`) puts RECORDING FAKES for both on a scratch PATH, with an on-disk fixture standing in for the bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says
 in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE CALL LOG IS THE PRIMARY EVIDENCE FOR THIS SCRIPT, more than for most. Everything it prints is five `Promoting ...` lines plus one closing line, none
-of which is derived from what moved; the ENTIRE observable effect is the twelve
-`aws` invocations and the exclude/include lists they carry. Two implementations can print identical stdout while uploading `Release*` before `Packages*`, which is precisely the ordering the twin's design is about.
+THE CALL LOG IS THE PRIMARY EVIDENCE FOR THIS SCRIPT, more than for most. Everything it prints is five `Promoting ...` lines plus one closing line, none of which is derived from what moved; the ENTIRE observable effect is the twelve `aws` invocations and the exclude/include lists they carry. Two implementations can print identical stdout while uploading `Release*` before
+`Packages*`, which is precisely the ordering the twin's design is about.
 
 -----------------------------------------------------------------------------
 `find` AND `sed` ARE CALLED, NOT REIMPLEMENTED
@@ -32,9 +29,7 @@ of which is derived from what moved; the ENTIRE observable effect is the twelve
 for the reason `upload_repos_to_r2.py` gives: agreement with the live twin
 includes that script's exact bytes.
 
-`$EP` IS UNQUOTED IN THE TWIN, so bash word-splits it into `--endpoint-url` and the endpoint. `endpoint_args` reproduces the split rather than hard-coding two
-elements; pathname expansion on that same unquoted word is not reproduced and is
-unreachable for an https URL. Same ruling and same wording as the sibling.
+`$EP` IS UNQUOTED IN THE TWIN, so bash word-splits it into `--endpoint-url` and the endpoint. `endpoint_args` reproduces the split rather than hard-coding two elements; pathname expansion on that same unquoted word is not reproduced and is unreachable for an https URL. Same ruling and same wording as the sibling.
 
 -----------------------------------------------------------------------------
 FOUR FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FOUR ARE REPRODUCED
@@ -216,9 +211,7 @@ PHASE_TWO: dict[str, tuple[tuple[str, ...], ...]] = {
     ),
 }
 
-# The per-directory channel rewrites (twin :74-92), applied to the LOCAL copy
-# before phase 2. `cli` rewrites two files with two expressions each; `rpm` and
-# `archlinux` rewrite one file with one expression. A directory absent from this table rewrites nothing, which is `apt` and `apk`.
+# The per-directory channel rewrites (twin :74-92), applied to the LOCAL copy before phase 2. `cli` rewrites two files with two expressions each; `rpm` and `archlinux` rewrite one file with one expression. A directory absent from this table rewrites nothing, which is `apt` and `apk`.
 INSTALL_SED = (
     "s|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g",
     's|} else { "edge" }|} else { "stable" }|g',
@@ -274,8 +267,7 @@ class BashExitError(Exception):
 def script_dir() -> str:
     """`SCRIPT_DIR` (twin :56), by location rather than by cwd.
 
-    The twin resolves `.ci/scripts/deploy` from its own `BASH_SOURCE`; this file
-    sits at `.ci/rediacc_ci/deploy/`, three directories under the same root, so the arithmetic is identical and neither side depends on the caller's cwd. `abspath`, NOT `realpath`: bash's `cd` is logical, so a checkout reached through a symlink keeps the symlinked spelling on both sides.
+    The twin resolves `.ci/scripts/deploy` from its own `BASH_SOURCE`; this file sits at `.ci/rediacc_ci/deploy/`, three directories under the same root, so the arithmetic is identical and neither side depends on the caller's cwd. `abspath`, NOT `realpath`: bash's `cd` is logical, so a checkout reached through a symlink keeps the symlinked spelling on both sides.
     """
     here = os.path.dirname(os.path.abspath(__file__))
     root = os.path.abspath(os.path.join(here, "..", "..", ".."))
@@ -285,10 +277,8 @@ def script_dir() -> str:
 def environment() -> dict[str, str]:
     """Every variable this module reads, ONE `os.environ.get` PER NAME.
 
-    NOT `dict(os.environ)`, AND THE DIFFERENCE IS A GATE RATHER THAN A STYLE. `check:ci-python-env-registry` derives a module's declared inputs by walking
-    its AST for literal `os.environ` subscripts and `.get` calls; a read that
-    goes through a materialised copy or a local alias is INVISIBLE to it, and the module then reports zero inputs while depending on five. Measured 2026-09-13 against the gate's own `derive`: with `dict(os.environ)` here this file contributed only `CLOUDFLARE_ZONE_ID`, the one name read at its own call
-    site; with this function it contributes all five.
+    NOT `dict(os.environ)`, AND THE DIFFERENCE IS A GATE RATHER THAN A STYLE. `check:ci-python-env-registry` derives a module's declared inputs by walking its AST for literal `os.environ` subscripts and `.get` calls; a read that goes through a materialised copy or a local alias is INVISIBLE to it, and the module then reports zero inputs while depending on five. Measured 2026-09-13
+    against the gate's own `derive`: with `dict(os.environ)` here this file contributed only `CLOUDFLARE_ZONE_ID`, the one name read at its own call site; with this function it contributes all five.
 
     `require_env` still takes a dict, so the guard logic stays a pure helper the differential can drive without an environment.
     """
@@ -339,8 +329,7 @@ def download_argv(dir_name: str, tmp: str, endpoint: str) -> list[str]:
 def sync_argv(dir_name: str, tmp: str, endpoint: str, filters: tuple[str, ...]) -> list[str]:
     """One `aws s3 sync <tmp>/ s3://<bucket>/<dir>/stable/ ...` (twin :108-158).
 
-    Phase 1 passes `META_EXCLUDES`; each phase-2 arm passes its own fragment.
-    The two are the SAME call shape with a different filter tail, which is why they share a builder here even though the twin writes them out separately: the difference between the phases is entirely the tail, and a reader comparing the call log should see that.
+    Phase 1 passes `META_EXCLUDES`; each phase-2 arm passes its own fragment. The two are the SAME call shape with a different filter tail, which is why they share a builder here even though the twin writes them out separately: the difference between the phases is entirely the tail, and a reader comparing the call log should see that.
     """
     return [
         "aws",
@@ -396,9 +385,7 @@ def read_lines(text: str) -> list[str]:
 def _flush() -> None:
     """Empty Python's own buffers before a child inherits the descriptor.
 
-    NOT HOUSEKEEPING, A REAL DIVERGENCE THIS REPAIRS. bash `echo` writes through
-    immediately; Python block-buffers stdout when it is a pipe and flushes at
-    exit, so without this the `Promoting ...` lines land after the purge script's output instead of before it, on the same stream, with byte-identical content in a different order.
+    NOT HOUSEKEEPING, A REAL DIVERGENCE THIS REPAIRS. bash `echo` writes through immediately; Python block-buffers stdout when it is a pipe and flushes at exit, so without this the `Promoting ...` lines land after the purge script's output instead of before it, on the same stream, with byte-identical content in a different order.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -436,8 +423,7 @@ def _rewrite(dir_name: str, tmp: str) -> None:
 
     `[[ -f "$f" ]] || continue` for `cli`, and `[[ -f ... ]] && sed_in_place ...`
     for the other two. An absent file is skipped by both spellings and does NOT
-    end the run; see the module docstring, where that was driven rather than
-    assumed.
+    end the run; see the module docstring, where that was driven rather than assumed.
     """
     for name, expressions in REWRITES.get(dir_name, ()):
         target = os.path.join(tmp, name)
@@ -505,9 +491,7 @@ def _purge(urls: list[str], zone: str) -> None:
     try:
         status = _run(argv, input=payload, text=True)
     except OSError as exc:
-        # A MISSING OR UNRUNNABLE PURGE SCRIPT. bash reports this itself, with
-        # its own line number and status 127; Python raises. Same stream, same
-        # status, different sentence.
+        # A MISSING OR UNRUNNABLE PURGE SCRIPT. bash reports this itself, with its own line number and status 127; Python raises. Same stream, same status, different sentence.
         print("%s: %s: %s" % (SELF, argv[0], exc.strerror), file=sys.stderr)
         raise BashExitError(127) from exc
     if status:

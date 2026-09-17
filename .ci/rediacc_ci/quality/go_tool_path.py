@@ -50,18 +50,15 @@ THE FLOOR IS 50 AND IT IS COUNTED FROM THE TRACKED LIST, not from the filesystem
 `grep -n` NUMBERS THE FILTERED STREAM, NOT THE FILE, and the port reproduces that faithfully. The twin pipes the body through `grep -vE '^[[:space:]]*#'` BEFORE `grep -nE`, so every comment line is removed and the numbers that reach the operator count only the surviving lines. In a file with a 40-line header the reported number is off by 40. That is a real defect in the twin -- the
 numbers look like file line numbers and are not -- and it is REPORTED rather than repaired here, because repairing it would change the finding text and the port's job is to keep the verdict.
 
-THE COLOUR IS UNCONDITIONAL IN THE TWIN, unlike every sibling gate. `pass` and
-`fail` here `printf` raw `\033[0;31m` and `\033[0;32m` with no `[ -t 1 ]` test,
-no `NO_COLOR` test and no `CI` test, so this gate writes escape sequences into every CI log and every pipe. check-git-op-conditionals.sh and check-host-toolchain-coverage.sh, written by the same hand, both gate their
+THE COLOUR IS UNCONDITIONAL IN THE TWIN, unlike every sibling gate. `pass` and `fail` here `printf` raw `\033[0;31m` and `\033[0;32m` with no `[ -t 1 ]` test, no `NO_COLOR` test and no `CI` test, so this gate writes escape sequences into every CI log and every pipe. check-git-op-conditionals.sh and check-host-toolchain-coverage.sh, written by the same hand, both gate their
 colour on `[ -t 1 ] && [ -z "${NO_COLOR:-}" ]`. Carried unchanged and reported;
 `scripts/lib/shadow-gate.ts` strips ANSI before comparing, so this costs the differential nothing and costs a human reading a log a little.
 
 FINDINGS GO TO STDOUT IN THE TWIN. `fail()` has no `>&2`, so every finding, the floor refusal and the final `N finding(s).` line all land on stdout. That is the opposite of `rediacc_ci.log`'s rule (messages on stderr, stdout is data), so the port uses `print()` for exactly these lines and says so at each call site rather than silently moving a stream. A stream swap is precisely the
 2026-09-06 emit-advisory incident, and moving one during a port is how it would happen again.
 
-`[[:space:]]` IS NOT `\\s`. POSIX space is exactly [ \\t\\n\\v\\f\\r]; Python's
-`\\s` on a str pattern additionally matches U+00A0 and friends, so a line indented with a non-breaking space would be seen by the port and not by grep. The class is written out rather than abbreviated. grep also works line by line, so the `\\n` member can never participate in a match -- stated because its presence in the class otherwise looks like a bug when read next to
-`re.MULTILINE`.
+`[[:space:]]` IS NOT `\\s`. POSIX space is exactly [ \\t\\n\\v\\f\\r]; Python's `\\s` on a str pattern additionally matches U+00A0 and friends, so a line indented with a non-breaking space would be seen by the port and not by grep. The class is written out rather than abbreviated. grep also works line by line, so the `\\n` member can never participate in a match -- stated because
+its presence in the class otherwise looks like a bug when read next to `re.MULTILINE`.
 
 WHAT THIS GATE STILL CANNOT SEE, unchanged by the port and worth knowing before anyone trusts a green: the analysis is per-FILE, so a GOBIN mention anywhere in a file clears every bare invocation in it, including ones on a code path the GOBIN line never runs on. That is the twin's deliberate trade -- the install and the invocation are usually several lines apart, and a PATH fix
 anywhere above the call site is what actually makes it work -- and widening it would flag correct code, which is how a gate gets suppressed.
@@ -97,8 +94,7 @@ NC = "\033[0m"
 # Does the file provision a go tool at all? `(^|[[:space:];&|])` in the twin.
 _INSTALLS = re.compile(r"(^|[ \t;&|])go[ \t]+install[ \t]")
 
-# An explicit GOBIN, or a PATH that includes GOPATH/bin, is the fix. Either
-# anywhere in the file clears it; see the per-FILE note in the module docstring.
+# An explicit GOBIN, or a PATH that includes GOPATH/bin, is the fix. Either anywhere in the file clears it; see the per-FILE note in the module docstring.
 _FIXED = re.compile(r"GOBIN=|go env GOPATH.*bin|GOPATH_BIN|_go_bin")
 
 # A comment line, dropped before the numbering grep. This is the filter that makes the reported numbers count the surviving lines rather than the file's.
@@ -127,8 +123,7 @@ def has_path_fix(body: str) -> bool:
 def bare_invocations(body: str) -> list[str]:
     """The twin's `hits`: `<n>:<line>` for each bare invocation, numbers and all.
 
-    THE NUMBERS COUNT THE FILTERED STREAM. Comment lines are removed first and the numbering starts after that, so these are NOT file line numbers. See the
-    port notes; this is a defect being preserved, not introduced.
+    THE NUMBERS COUNT THE FILTERED STREAM. Comment lines are removed first and the numbering starts after that, so these are NOT file line numbers. See the port notes; this is a defect being preserved, not introduced.
 
     `printf '%s' "$body"` in the twin drops the trailing newline, so a file ending in `\\n` does not contribute a final empty line. `split("\\n")` would produce one, and an empty string matches neither pattern, so the two agree without a guard -- stated because the absence of one looks like an oversight.
     """
@@ -146,9 +141,7 @@ def bare_invocations(body: str) -> list[str]:
 def scan_file(path: pathlib.Path, label: str) -> list[str]:
     """The twin's `scan_file`, as the lines it would print. Empty means clean.
 
-    Returned rather than printed so `main` owns every stream decision in one place and a test can assert on the decision without capturing anything. The
-    first line is the finding header; the rest are its continuation, which is
-    what `scripts/lib/shadow-gate.ts` folds into the same finding.
+    Returned rather than printed so `main` owns every stream decision in one place and a test can assert on the decision without capturing anything. The first line is the finding header; the rest are its continuation, which is what `scripts/lib/shadow-gate.ts` folds into the same finding.
 
     An unreadable file is NOT a finding. The twin's `cat "$f" 2>/dev/null ||
     return 0` swallows it, and a port that turned it into an error would report
@@ -172,8 +165,7 @@ def scan_file(path: pathlib.Path, label: str) -> list[str]:
         "%s installs a go tool and then invokes one by bare name, "
         "with no GOBIN and no GOPATH/bin on PATH:" % label
     ]
-    # `head -3`: only the first three hits are shown, so a file with thirty bad lines prints three. The count is not printed either, which means the
-    # operator cannot tell three from thirty. Carried; reported.
+    # `head -3`: only the first three hits are shown, so a file with thirty bad lines prints three. The count is not printed either, which means the operator cannot tell three from thirty. Carried; reported.
     lines.extend("         " + hit for hit in hits[:3])
     lines.append(
         '         FIX: GOBIN="$dir" go install ... then run "$dir/tool", '
@@ -213,9 +205,7 @@ def main(argv: list[str] | None = None) -> int:
     root = paths.repo_root()
     failures = 0
 
-    # STDOUT, deliberately, for every line below. The twin's `fail()` carries no
-    # `>&2`; see the port notes. `log.error` would be the house style and would
-    # be a stream swap.
+    # STDOUT, deliberately, for every line below. The twin's `fail()` carries no `>&2`; see the port notes. `log.error` would be the house style and would be a stream swap.
     def fail(message: str) -> None:
         nonlocal failures
         print("%s✗%s   %s" % (RED, NC, message))
@@ -270,9 +260,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
-# The twin's four control fixtures, byte for byte. `bad.sh` is the defect the
-# 2026-08-27 renet incident wore four times; the three `good`/`unrelated` files
-# are the mirrors that stop this gate from flagging the correct shape.
+# The twin's four control fixtures, byte for byte. `bad.sh` is the defect the 2026-08-27 renet incident wore four times; the three `good`/`unrelated` files are the mirrors that stop this gate from flagging the correct shape.
 _CONTROL_FIXTURES = {
     "bad.sh": (
         "#!/usr/bin/env bash\n"

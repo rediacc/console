@@ -40,17 +40,14 @@ BASH_TWIN = ".ci/scripts/test/gates/test-gate-anti-vacuity.sh"
 # Three cases plant inside the tracked tree and every registry case copies it.
 REAL_TREE_TWIN = True
 
-# The 42 registry entries each cost a fixture copy plus one gate invocation, and
-# several of those gates are `npx tsx`. Measured 2026-09-09 on this tree; the
-# default 600s would be tight if half a dozen more entries land.
+# The 42 registry entries each cost a fixture copy plus one gate invocation, and several of those gates are `npx tsx`. Measured 2026-09-09 on this tree; the default 600s would be tight if half a dozen more entries land.
 TWIN_TIMEOUT = 900
 
 ROOT = paths.repo_root()
 
 # REGISTRY -- one entry per line: `(<script>, <expected substring>)`. The substring pins the DIAGNOSTIC, not just the exit code: a validator that fails for an unrelated reason (a crashed import, a missing dependency) is not evidence that it detects a missing input.
 #
-# `.sh` and `.py` entries are repo-root-relative; `.ts` entries are relative to
-# `scripts/`. TRANSCRIBED FROM THE TWIN, and kept equal to it by `test_the_registry_agrees_with_the_twins`.
+# `.sh` and `.py` entries are repo-root-relative; `.ts` entries are relative to `scripts/`. TRANSCRIBED FROM THE TWIN, and kept equal to it by `test_the_registry_agrees_with_the_twins`.
 REGISTRY: tuple[tuple[str, str], ...] = (
     ("check-translation-hashes.ts", "locale"),
     ("check-translation-completeness.ts", "locale"),
@@ -58,9 +55,8 @@ REGISTRY: tuple[tuple[str, str], ...] = (
     # not fire.
     (".ci/scripts/quality/check_account_probes.py", "nothing to check"),
     # NOT registered: .ci/scripts/quality/check-drill-verdicts.sh. Its sibling above IS, and the asymmetry is real rather than an oversight. The probe gate's subject is .ci/lib/account.sh, which this harness's fixture does NOT copy, so an empty tree genuinely starves it. The drill-verdict gate's subject is scripts/drills/lib.sh, and the fixture DOES copy scripts/ -- so on the
-    # "empty" tree its subject is present, all four verdict assertions run for real, and it correctly exits 0. Registering it asserted that a
-    # gate must fail when its input exists, which is backwards; the meta-gate
-    # caught exactly that on the first run. Its own missing-subject branch is real but unreachable from here. Against an empty tree every oracle is unavailable, so the run is vacuous and must FAIL rather than report "every entry is still load-bearing".
+    # "empty" tree its subject is present, all four verdict assertions run for real, and it correctly exits 0. Registering it asserted that a gate must fail when its input exists, which is backwards; the meta-gate caught exactly that on the first run. Its own missing-subject branch is real but unreachable from here. Against an empty tree every oracle is unavailable, so the run is
+    # vacuous and must FAIL rather than report "every entry is still load-bearing".
     ("check-suppression-liveness.ts", "vacuous"),
     # A mutation gate: it copies packages/cli into a sandbox, breaks the source, and requires the tests to fail. On an empty tree there is nothing to mutate, and "no source to mutate" must be a hard error - a mutation gate that reports success having mutated nothing is the purest form of the
     # class this meta-gate exists to catch.
@@ -71,9 +67,8 @@ REGISTRY: tuple[tuple[str, str], ...] = (
     # function registry. The CLI now derives its licence-issuance class from
     # that map, so a vacuous green here would launder a console defect too.
     (".ci/scripts/quality/check_renet_tier_map.py", "required"),
-    # REPOINTED 2026-09-08 BY THE W7 P4 CUTOVER, both entries above and below. These pins name a gate BY PATH, and after a cutover the path names the twin rather than the registered gate. Nothing goes red when that happens: the harness keeps exercising the .sh, keeps passing, and silently stops covering
-    # the thing CI actually runs. Found by the batch-4 writer for tier-map; the
-    # types entry is the same defect left behind by batch 3 and was swept here. Same shape again: `require_submodule ... || exit 0` becomes a hard fail
+    # REPOINTED 2026-09-08 BY THE W7 P4 CUTOVER, both entries above and below. These pins name a gate BY PATH, and after a cutover the path names the twin rather than the registered gate. Nothing goes red when that happens: the harness keeps exercising the .sh, keeps passing, and silently stops covering the thing CI actually runs. Found by the batch-4 writer for tier-map; the types
+    # entry is the same defect left behind by batch 3 and was swept here. Same shape again: `require_submodule ... || exit 0` becomes a hard fail
     # under CI=true (which this harness sets), so an empty tree is a loud
     # "required in CI but missing" rather than a green diff of nothing.
     (".ci/scripts/quality/check_renet_types.py", "required"),
@@ -113,8 +108,7 @@ REGISTRY: tuple[tuple[str, str], ...] = (
     ("check-dead-bash.ts", "dead shell symbol"),
     # Both of its checks walk .github/workflows. The empty tree has no workflow YAML, so every invariant it asserts is over an empty set. It used to `exit 0` on a missing directory, which meant renaming the workflow tree would silently retire the gate.
     (".ci/scripts/security/check-workflow-gates.sh", "blind"),
-    # The empty tree has no package.json and no .github/workflows, so there is no gate census on either side and every one of its seven assertions would be over an empty set. It replaced check-ci-chain-parity.ts and check-gate-reachability.ts, which were registered here separately for the
-    # same property; both are gone.
+    # The empty tree has no package.json and no .github/workflows, so there is no gate census on either side and every one of its seven assertions would be over an empty set. It replaced check-ci-chain-parity.ts and check-gate-reachability.ts, which were registered here separately for the same property; both are gone.
     ("check-ci-parity.ts", "Refusing to run"),
     # The scope engine's workflow closure is computed by ITERATING `uses: ./.github/workflows/*` at runtime, never by matching names, so the test asserts a real closure over the real tree. On the empty fixture that
     # closure is {} and the assertion must fail: registering it pins the fact
@@ -150,10 +144,8 @@ REGISTRY: tuple[tuple[str, str], ...] = (
     #
     # NOT registered here either: .ci/scripts/test/gates/test-scope-baseline-attest.sh,
     # for the same reason and measured the same way: all 75 assertions pass
-    # against the empty tree (exit 0), because it too builds every fixture it needs. It drives the real createRepoIo with an INJECTED `run`, so it makes
-    # no git call, no gh call and no network call; the only repo files it reads
-    # are the three .ci/scripts/ci/*.cjs modules this harness copies in anyway. Passing with the source tree absent is CORRECT for it, so an entry here would assert nothing. Its controls are inline instead, one per planted defect, plus three engine mutants run by hand during authoring (drop the `delete plan.reconciled`, drop the cheap-first mode gate, restore the
-    # one-green-run-per-sha pick) each of which flips a different case red.
+    # against the empty tree (exit 0), because it too builds every fixture it needs. It drives the real createRepoIo with an INJECTED `run`, so it makes no git call, no gh call and no network call; the only repo files it reads are the three .ci/scripts/ci/*.cjs modules this harness copies in anyway. Passing with the source tree absent is CORRECT for it, so an entry here would
+    # assert nothing. Its controls are inline instead, one per planted defect, plus three engine mutants run by hand during authoring (drop the `delete plan.reconciled`, drop the cheap-first mode gate, restore the one-green-run-per-sha pick) each of which flips a different case red.
     #
     # NOT registered here either: .ci/scripts/test/gates/test-scope-gate-outputs.sh, measured the same way and with the same result: all 6 cases pass against the empty tree (exit 0). It BUILDS the tree it needs -- it copies .ci/scripts/ci into a temp dir, `git init`s a repository there with the branch shape a baseline walk requires, and shims `gh` on PATH -- so the only repo input
     # it has is the .ci/scripts/ tree this harness copies in anyway. It reads no packages/, no private/, no .github/. Passing with the source tree absent is CORRECT for it, so an entry here could never fail. Its controls are inline, one per case, and the emitter control was proven
@@ -190,9 +182,7 @@ def run_against_empty_tree(script: str) -> harness.RunResult:
             source = ROOT / ".ci" / optional
             if source.is_dir():
                 shutil.copytree(source, tmp / ".ci" / optional, symlinks=True)
-        # node_modules resolution walks upward from the script, so link the real
-        # one in; the point of the fixture is an empty SOURCE tree, not a broken
-        # runtime.
+        # node_modules resolution walks upward from the script, so link the real one in; the point of the fixture is an empty SOURCE tree, not a broken runtime.
         (tmp / "node_modules").symlink_to(ROOT / "node_modules")
 
         env = {"CI": "true"}
@@ -237,9 +227,8 @@ def registry_verdict(script: str, needle: str) -> str | None:
 def registry_path(script: str) -> pathlib.Path:
     """Where a registry entry's file lives.
 
-    `.sh` and `.py` are repo-root-relative. A `.ts` lives under `scripts/gates/` OR `scripts/`, and BOTH are tried in step with the twin: W9 P2 moved 125 gate bodies into `scripts/gates/` on 2026-09-09 while this resolver hard-coded the old home, so every moved validator read as a stale registry entry -- a staleness check reporting
-    staleness it had caused itself. Trying both is not a weakening; an entry present in
-    NEITHER still resolves to the `scripts/` path and fails, which is the real finding.
+    `.sh` and `.py` are repo-root-relative. A `.ts` lives under `scripts/gates/` OR `scripts/`, and BOTH are tried in step with the twin: W9 P2 moved 125 gate bodies into `scripts/gates/` on 2026-09-09 while this resolver hard-coded the old home, so every moved validator read as a stale registry entry -- a staleness check reporting staleness it had caused itself. Trying both is not
+    a weakening; an entry present in NEITHER still resolves to the `scripts/` path and fails, which is the real finding.
     """
     if script.endswith((".sh", ".py")):
         return ROOT / script
@@ -269,13 +258,11 @@ def test_fixture_can_import_package(gate):
     """THE COPY LIST IS AN INPUT TO EVERY GATE RUN IN HERE, so it needs a control
     of its own.
 
-    `import rediacc_ci` must work INSIDE the fixture; if it does not, a gate that
-    uses the package fails here for a reason that has nothing to do with what the gate asserts, and that failure looks exactly like the empty-tree rejection this file is built to observe.
+    `import rediacc_ci` must work INSIDE the fixture; if it does not, a gate that uses the package fails here for a reason that has nothing to do with what the gate asserts, and that failure looks exactly like the empty-tree rejection this file is built to observe.
 
     RED-THEN-GREEN, run in that order rather than assumed: delete the `rediacc_ci` leg of the copy list in `run_against_empty_tree` and this case goes red with `ModuleNotFoundError: No module named 'rediacc_ci'`.
 
-    The probe is planted under `.ci/scripts/` specifically because that is a directory the fixture copies -- a probe outside the copy list could not be run in there at all. And it must resolve to the fixture's OWN copy of the package rather than the repo's, or the case would stay green with the copy-list leg
-    deleted; hence the last assertion.
+    The probe is planted under `.ci/scripts/` specifically because that is a directory the fixture copies -- a probe outside the copy list could not be run in there at all. And it must resolve to the fixture's OWN copy of the package rather than the repo's, or the case would stay green with the copy-list leg deleted; hence the last assertion.
     """
     probe_rel = ".ci/scripts/.rediacc-ci-import-probe.%d.py" % os.getpid()
     probe = ROOT / probe_rel

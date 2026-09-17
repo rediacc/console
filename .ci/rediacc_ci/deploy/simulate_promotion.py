@@ -7,9 +7,7 @@ NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST. `aws` and (through `cf-purge-ur
 for both on a scratch PATH, with an on-disk fixture standing in for the bucket.
 `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-THE CALL LOG IS THE PRIMARY EVIDENCE. The run prints six or seven `log_info`
-lines, none of them derived from what moved; the ENTIRE observable effect is the
-`aws` invocations, the exact `--key`/`--copy-source` pairs they carry, and the URL list handed to `cf-purge-urls.sh`.
+THE CALL LOG IS THE PRIMARY EVIDENCE. The run prints six or seven `log_info` lines, none of them derived from what moved; the ENTIRE observable effect is the `aws` invocations, the exact `--key`/`--copy-source` pairs they carry, and the URL list handed to `cf-purge-urls.sh`.
 
 -----------------------------------------------------------------------------
 `awk`, `sed`, `sleep` AND `cf-purge-urls.sh` ARE CALLED, NOT REIMPLEMENTED
@@ -117,9 +115,7 @@ CC_MUTABLE = "no-cache"
 # exercise.
 CHANNEL_DIRS = ("apt", "rpm", "apk", "archlinux")
 
-# `aws configure set ...` (twin :62-64), in order. R2's S3 API drops multi-MB streams under the CLI's default 10-way parallelism, so the transfer profile is
-# tamed before anything moves. THESE MUTATE `~/.aws/config`; that is the twin's
-# behaviour and it is not sandboxed here either.
+# `aws configure set ...` (twin :62-64), in order. R2's S3 API drops multi-MB streams under the CLI's default 10-way parallelism, so the transfer profile is tamed before anything moves. THESE MUTATE `~/.aws/config`; that is the twin's behaviour and it is not sandboxed here either.
 AWS_CONFIGURE: tuple[tuple[str, str], ...] = (
     ("default.s3.max_concurrent_requests", "3"),
     ("default.s3.multipart_threshold", "64MB"),
@@ -127,8 +123,7 @@ AWS_CONFIGURE: tuple[tuple[str, str], ...] = (
 )
 
 # `awk '{ for (i = 4; i <= NF; i++) printf "%s%s", $i, (i < NF ? OFS : ORS) }'`
-# (twin :187), verbatim. Fields 1..3 of `aws s3 ls --recursive` are date, time
-# and size; everything after is the key.
+# (twin :187), verbatim. Fields 1..3 of `aws s3 ls --recursive` are date, time and size; everything after is the key.
 KEY_AWK = '{ for (i = 4; i <= NF; i++) printf "%s%s", $i, (i < NF ? OFS : ORS) }'
 
 # `xargs -P 8` (twin :198) and the two retry loops (twin :80, :160).
@@ -150,9 +145,7 @@ SED_FIX_FILES = ("rpm/%s/rediacc.repo", "archlinux/%s/rediacc.conf")
 # `.ci/scripts/deploy/cf-purge-urls.sh` (twin :226). RELATIVE in the twin, and reached from the repository root the script `cd`s to at :36.
 PURGE_SCRIPT_RELATIVE = ".ci/scripts/deploy/cf-purge-urls.sh"
 
-# `export BUCKET CC_MUTABLE CLOUDFLARE_R2_ENDPOINT SRC_PREFIX DST_PREFIX` (twin :145, :183). The exports exist so the `bash -c` children xargs spawns
-# can see them; nothing `aws` reads is among them. Reproduced anyway, because
-# the environment a child sees is part of what the two implementations are being compared on.
+# `export BUCKET CC_MUTABLE CLOUDFLARE_R2_ENDPOINT SRC_PREFIX DST_PREFIX` (twin :145, :183). The exports exist so the `bash -c` children xargs spawns can see them; nothing `aws` reads is among them. Reproduced anyway, because the environment a child sees is part of what the two implementations are being compared on.
 EXPORTED_FOR_CHILDREN = (
     "BUCKET",
     "CC_MUTABLE",
@@ -191,9 +184,7 @@ def endpoint_args(endpoint: str) -> list[str]:
     """`EP=(--endpoint-url "$CLOUDFLARE_R2_ENDPOINT")` (twin :52).
 
     AN ARRAY, expanded as `"${EP[@]}"`, so it is EXACTLY TWO elements even when
-    the endpoint contains whitespace. Contrast `promote-r2-to-stable.sh`, whose
-    `$EP` is unquoted and word-splits; the two twins genuinely differ here and
-    the ports differ with them.
+    the endpoint contains whitespace. Contrast `promote-r2-to-stable.sh`, whose `$EP` is unquoted and word-splits; the two twins genuinely differ here and the ports differ with them.
     """
     return ["--endpoint-url", endpoint]
 
@@ -435,8 +426,7 @@ def _copy_directory(
 def _sed_fix(channel: str, promoted: str, endpoint: str, purge_urls: list[str]) -> None:
     """The two config rewrites (twin :208-216).
 
-    THE DOWNLOAD IS THE CONDITION: `if aws s3 cp ... 2>/dev/null; then`, so a
-    file that is not in the promoted channel is skipped in silence. Everything after it is unguarded.
+    THE DOWNLOAD IS THE CONDITION: `if aws s3 cp ... 2>/dev/null; then`, so a file that is not in the promoted channel is skipped in silence. Everything after it is unguarded.
     """
     for template in SED_FIX_FILES:
         key = template % promoted
@@ -467,8 +457,7 @@ def _purge(purge_urls: list[str], zone: str) -> None:
     try:
         status = _run(argv, input=payload.encode("utf-8", "surrogateescape"))
     except OSError as exc:
-        # A MISSING OR UNRUNNABLE PURGE SCRIPT. bash reports this itself with
-        # its own line number and status 127; Python raises.
+        # A MISSING OR UNRUNNABLE PURGE SCRIPT. bash reports this itself with its own line number and status 127; Python raises.
         print("%s: %s: %s" % (SELF, argv[0], exc.strerror), file=sys.stderr, flush=True)
         raise BashExitError(127) from exc
     if status:
@@ -513,8 +502,7 @@ def main(argv: list[str]) -> int:
     promoted = promoted_channel(channel)
 
     # `[[ -n "${GITHUB_ENV:-}" ]] && echo "PROMOTED=..." >>"$GITHUB_ENV"`
-    # (twin :55). An AND-list, so an UNSET variable is not a failure; a set one
-    # whose file cannot be appended to IS, because the append is the command after the final `&&`.
+    # (twin :55). An AND-list, so an UNSET variable is not a failure; a set one whose file cannot be appended to IS, because the append is the command after the final `&&`.
     github_env = os.environ.get("GITHUB_ENV", "")
     if github_env:
         try:

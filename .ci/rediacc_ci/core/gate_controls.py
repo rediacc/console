@@ -115,9 +115,7 @@ class GateTally:
         return 0
 
 
-# The bash globals, in the one shape bash has. `source gate-controls.sh` puts
-# GATE_FAILS and GATE_N in the shell; importing this module puts MODULE_TALLY in
-# the interpreter. Same lifetime, same sharing, same hazard.
+# The bash globals, in the one shape bash has. `source gate-controls.sh` puts GATE_FAILS and GATE_N in the shell; importing this module puts MODULE_TALLY in the interpreter. Same lifetime, same sharing, same hazard.
 MODULE_TALLY = GateTally()
 
 

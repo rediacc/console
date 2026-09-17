@@ -1,9 +1,8 @@
 """Differential: `rediacc_ci.build.buildx_push_web` against its twin
 `.ci/scripts/build/buildx-push-web.sh`.
 
-THE REAL SCRIPT PUSHES TO ghcr.io. `--push` is unconditional and there is no
-dry-run branch, so one real invocation is a registry write; every case here runs
-against a RECORDING FAKE `docker` on a PATH that REPLACES the caller's rather than prepending to it, and `test_the_scratch_path_cannot_reach_a_real_docker` asserts the real binary is unreachable before anything is driven. A prepended PATH is not good enough: it still resolves whatever the developer has installed.
+THE REAL SCRIPT PUSHES TO ghcr.io. `--push` is unconditional and there is no dry-run branch, so one real invocation is a registry write; every case here runs against a RECORDING FAKE `docker` on a PATH that REPLACES the caller's rather than prepending to it, and `test_the_scratch_path_cannot_reach_a_real_docker` asserts the real binary is unreachable before anything is driven. A
+prepended PATH is not good enough: it still resolves whatever the developer has installed.
 
 THE CALL LOG IS THE EVIDENCE. The fake prints nothing that depends on its arguments, so a port that swapped two `--build-arg` values, dropped `--push`, or built the wrong `--target` would produce identical stdout, identical stderr and an identical exit code. `test_a_planted_defect_is_caught_only_by_the_call_log` plants exactly that and asserts the three streams agree while the log
 does not.
@@ -93,8 +92,7 @@ def fixture(tmp_path: pathlib.Path, *, port_source: str | None = None) -> pathli
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
     else:
         (root / PORT_REL).write_text(port_source, encoding="utf-8")
-    # The twin's build context is `.` with `--file Dockerfile`; a Dockerfile at
-    # the fixture root is what a correctly-invoked run would find.
+    # The twin's build context is `.` with `--file Dockerfile`; a Dockerfile at the fixture root is what a correctly-invoked run would find.
     (root / "Dockerfile").write_text("FROM scratch\n", encoding="utf-8")
     return root
 
@@ -355,9 +353,7 @@ def test_with_nothing_set_the_first_expansion_is_the_one_reported(tmp_path) -> N
 
 def test_dockers_own_exit_status_is_propagated_not_flattened(tmp_path) -> None:
     """`set -e` lets docker's 17 through unchanged, and the success line is not
-    printed. This is the OPPOSITE of `build-www.sh`, which flattens npm's status
-    to 1; the two twins are inconsistent with each other and this is the correct
-    half, so a port that normalised it would be wrong here and right there.
+    printed. This is the OPPOSITE of `build-www.sh`, which flattens npm's status to 1; the two twins are inconsistent with each other and this is the correct half, so a port that normalised it would be wrong here and right there.
     """
     root = fixture(tmp_path)
     old, new, old_calls, new_calls = run_both(root, FAKE_DOCKER_RC="17")
@@ -450,9 +446,7 @@ def test_arch_of_matches_the_shells_own_parameter_expansion() -> None:
 def test_a_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     """A gate that has never been seen to fail is not a gate.
 
-    The plant drops `--push`, which is the single most consequential argument in the file: without it the build succeeds locally and nothing reaches the registry, while the script still prints `✓ Pushed ...` and exits 0. All
-    three streams agree; only the recorded argv disagrees, which is why the log
-    is compared at all.
+    The plant drops `--push`, which is the single most consequential argument in the file: without it the build succeeds locally and nothing reaches the registry, while the script still prints `✓ Pushed ...` and exits 0. All three streams agree; only the recorded argv disagrees, which is why the log is compared at all.
     """
     source = (ROOT / PORT_REL).read_text(encoding="utf-8")
     planted = source.replace('        "--push",\n', "")

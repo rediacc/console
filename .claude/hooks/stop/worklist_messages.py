@@ -27,9 +27,7 @@ WHAT IS DELIBERATELY NOT HERE:
     a two-line string behind a name saves nothing and costs a hop.
 
 FAILURE MODE (decided, not accidental): worklist.py imports this module inside a try/except. On ImportError or any load-time breakage it installs a shim whose every attribute access raises, so query modes that use no messages (--path, --brief, --poll on an empty inbox) keep working, while the first message USE on the Stop path raises and is caught by the __main__ crash handler,
-which BLOCKS with the traceback. A broken catalogue therefore
-fails closed and names itself; it can never fail open (a top-level crash
-used to read as ALLOW) and never wedges the path-query plumbing.
+which BLOCKS with the traceback. A broken catalogue therefore fails closed and names itself; it can never fail open (a top-level crash used to read as ALLOW) and never wedges the path-query plumbing.
 """
 
 # ---- stop-path violations (the block body, one constant per check) ---------
@@ -71,9 +69,7 @@ V_OPEN_ITEMS = (
     "state that actually applies:\n%s"
 )
 
-# ---- v21: the idle-stall gate (see wl_checks.idle_stall) -------------------- Stated POSITIVELY on purpose. A refusal that only says "no" teaches the next
-# session to hunt for a wording that gets past it; the rule it is enforcing --
-# what a turn may legitimately end on -- is the thing worth carrying forward.
+# ---- v21: the idle-stall gate (see wl_checks.idle_stall) -------------------- Stated POSITIVELY on purpose. A refusal that only says "no" teaches the next session to hunt for a wording that gets past it; the rule it is enforcing -- what a turn may legitimately end on -- is the thing worth carrying forward.
 
 V_IDLE_STALL = (
     "YOU ARE STOPPING WITH ACTIONABLE WORK IN HAND. %d open item(s) are yours, "
@@ -644,9 +640,7 @@ V_NO_WAITER = (
     "predates it, so keep the hourly cron as the backlog backstop."
 )
 
-# THE LAPSE, which used to be invisible. wl_wait.wait() unlinked its heartbeat on both exits, so "my waiter died 40 minutes ago" and "I have never listened" left the filesystem in the same state -- and the hook is far more lenient
-# about the second. The tombstone makes the difference readable; this message
-# is what the difference is FOR, so it names which of the two exits happened.
+# THE LAPSE, which used to be invisible. wl_wait.wait() unlinked its heartbeat on both exits, so "my waiter died 40 minutes ago" and "I have never listened" left the filesystem in the same state -- and the hook is far more lenient about the second. The tombstone makes the difference readable; this message is what the difference is FOR, so it names which of the two exits happened.
 V_WAITER_LAPSED = (
     "YOUR WAITER LAPSED (%s) %d MINUTE(S) AGO AND YOU HAVE NOT RELAUNCHED IT. "
     "%d live peer(s) can address you and nothing here is listening. This is not "
@@ -660,10 +654,8 @@ V_WAITER_LAPSED = (
     "one."
 )
 
-# THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it already is. The four boxes are read off `.claude/commands/pr-babysit.md`
-# ("The console PR rides as a draft until green; stops at green +
-# Claude-reviewed + threads-resolved PRs; never merges") rather than invented
-# here, and the two the hook cannot observe are backed by ticked worklist items, which is the same evidence discipline every other tick carries.
+# THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it already is. The four boxes are read off `.claude/commands/pr-babysit.md` ("The console PR rides as a draft until green; stops at green + Claude-reviewed + threads-resolved PRs; never merges") rather than invented here, and the two the hook cannot observe are backed by ticked worklist items, which is the
+# same evidence discipline every other tick carries.
 V_PR_FINISH = (
     "THE WAVE IS NOT FINISHED. A pr-babysit round log is live for this branch "
     "(%s) and PR #%s has not reached the finish line stated in "
@@ -678,9 +670,8 @@ V_PR_FINISH = (
     "Never merge, and never push main: that stays the operator's call."
 )
 
-# ONE LINE PER INVARIANT that was not quoted in full. The tier's value is that
-# it cannot be rotated away; it is NOT a licence to print five long blocks,
-# because "a prompt that fires always is a prompt that gets skimmed" and a skimmed invariant is a rotated one with extra steps. So the excess is NAMED, never dropped: key plus its opening line, which is the line every one of these messages puts its verdict on.
+# ONE LINE PER INVARIANT that was not quoted in full. The tier's value is that it cannot be rotated away; it is NOT a licence to print five long blocks, because "a prompt that fires always is a prompt that gets skimmed" and a skimmed invariant is a rotated one with extra steps. So the excess is NAMED, never dropped: key plus its opening line, which is the line every one of these
+# messages puts its verdict on.
 R_ALWAYS_COLLAPSED = "ALSO BLOCKING, IN BRIEF (quoted in full on a later stop):\n%s"
 
 N_UNREAD_REPORTS = (
@@ -864,15 +855,11 @@ N_CADENCE_PAUSE = (
     "same checks are waiting at the next stop.%s"
 )
 
-# A PAUSE SPENDS THE DEMAND, NOT THE INFORMATION -- and until 2026-08-27 it
-# spent both. The pause named the check CATEGORIES ("open-items; requests") and
-# nothing else, so a session paused over a `requests` check was told a label
+# A PAUSE SPENDS THE DEMAND, NOT THE INFORMATION -- and until 2026-08-27 it spent both. The pause named the check CATEGORIES ("open-items; requests") and nothing else, so a session paused over a `requests` check was told a label
 # while ANOTHER session sat blocked on an answer it could have given in
 # seconds. Reported by the operator watching exactly that happen.
 #
-# Cross-session obligations are carried through the pause in full, because they are the one class where the cost of staying quiet lands on somebody else. A
-# session may reasonably defer its own open items for a turn; it cannot
-# reasonably defer a peer without knowing the peer is there.
+# Cross-session obligations are carried through the pause in full, because they are the one class where the cost of staying quiet lands on somebody else. A session may reasonably defer its own open items for a turn; it cannot reasonably defer a peer without knowing the peer is there.
 N_CADENCE_PAUSE_CARRIED = (
     "\n\nCARRIED THROUGH THE PAUSE, because another session is waiting on you "
     "and cannot see that you stood down:\n%s"
@@ -992,9 +979,7 @@ CLI_STATE_NO_DIR = (
     "    mkdir -p agent/%s\n"
 )
 
-# v18 replaces N_WAKEUPS, which printed every scheduled task's next firing on every stop. The operator deleted that section outright ("we don't need to
-# print next wakeup times... let's go for efficient ai context usage"); this is
-# the one row of it that was ever actionable, and it is silent unless a schedule is genuinely broken.
+# v18 replaces N_WAKEUPS, which printed every scheduled task's next firing on every stop. The operator deleted that section outright ("we don't need to print next wakeup times... let's go for efficient ai context usage"); this is the one row of it that was ever actionable, and it is silent unless a schedule is genuinely broken.
 V_BROKEN_SCHEDULE = (
     "%d scheduled task(s) carry a schedule this hook CANNOT PARSE:\n%s\n"
     "    An unparseable schedule is invisible to every other check here -- it "
@@ -1145,8 +1130,7 @@ V_NO_REMAINING = (
 )
 
 # ---- v11: the store-derived stop guide -------------------------------------- WHY (operator, 2026-07-30): "--list should be used always on stop hook to output enforced guided instructions." The v10 store stamped every item and the hand-authored Remaining prose ignored all of it, so the report is now derived from the store on EVERY stop, allow and block alike. The per-line bodies
-# are assembled in wl_checks.guided_slice (structural, one format per
-# item state); these three carry the surrounding prose.
+# are assembled in wl_checks.guided_slice (structural, one format per item state); these three carry the surrounding prose.
 
 GUIDE_HEADER = (
     "WORKLIST GUIDE (derived from the store, not from memory; base your Remaining section on THIS):"
@@ -1332,9 +1316,7 @@ N_LADDER_PING = (
     "(this becomes a block at 90 minutes; --update resets the clock)"
 )
 
-# ---- the allow-report output queue ------------------------------------------
-# The judge stamp is the bare confirmation that a paid call happened; the FULL
-# form carries the reason and is reserved for a stop whose context was just rebuilt or whose reason changed (operator, 2026-07-31: the approval reason was reprinted on every single stop).
+# ---- the allow-report output queue ------------------------------------------ The judge stamp is the bare confirmation that a paid call happened; the FULL form carries the reason and is reserved for a stop whose context was just rebuilt or whose reason changed (operator, 2026-07-31: the approval reason was reprinted on every single stop).
 
 N_JUDGE_STAMP = "Stop-gate judge (%s) %s."
 
@@ -1346,8 +1328,8 @@ N_OUTQ_MORE = (
     "WORKLIST_REPORT_PER_STOP to drain faster.)"
 )
 
-# THE QUEUE DRAINS ON THE ALLOW PATH ONLY, so a session blocked at every stop never sees a word of it. That starves the advisories in exactly the sessions doing the most work, and the plan-task census is the one it hurts most, because a plan's open boxes are invisible for as long as the session stays productive. Measured 2026-09-17: ten parsed boxes in a freshly written
-# plan stayed unseen across roughly twenty consecutive blocked stops, which the operator noticed and the hook never said. Only the COUNT rides along on a blocked stop, never the bodies, because a body here would displace the focused violation the block exists to deliver -- the same trade `ci_report` and `queue_note` already make.
+# THE QUEUE DRAINS ON THE ALLOW PATH ONLY, so a session blocked at every stop never sees a word of it. That starves the advisories in exactly the sessions doing the most work, and the plan-task census is the one it hurts most, because a plan's open boxes are invisible for as long as the session stays productive. Measured 2026-09-17: ten parsed boxes in a freshly written plan stayed
+# unseen across roughly twenty consecutive blocked stops, which the operator noticed and the hook never said. Only the COUNT rides along on a blocked stop, never the bodies, because a body here would displace the focused violation the block exists to deliver -- the same trade `ci_report` and `queue_note` already make.
 N_OUTQ_BLOCKED = (
     "%d advisory section(s) are queued and CANNOT be shown while stops keep blocking -- the "
     "queue drains only on a clean stop. A plan's open task boxes are surfaced this way, so a "
@@ -1688,9 +1670,8 @@ CLI_TRIAGE_SELF = (
 
 # ---- SessionStart / PostCompact additionalContext ---------------------------
 
-# HONEST ABOUT WHAT IT IS. This used to open "those documents are the starting context for the work", which is a claim about YOUR task that the hook has no way to know: it fires for every session in the repo, and a session working on something unrelated was told to go read a program it has
-# nothing to do with. The docs are standing material for one surface; say so,
-# name the surface, and let the session decide whether it is in it.
+# HONEST ABOUT WHAT IT IS. This used to open "those documents are the starting context for the work", which is a claim about YOUR task that the hook has no way to know: it fires for every session in the repo, and a session working on something unrelated was told to go read a program it has nothing to do with. The docs are standing material for one surface; say so, name the surface,
+# and let the session decide whether it is in it.
 CTX_SESSION_START = (
     "STANDING PROGRAM DOCS (background, not an assignment): this project "
     "keeps the design of its %s surface in %s. READ ALL OF THEM before you "

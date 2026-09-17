@@ -1,9 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import worker, { normalizePath, detectLanguage } from '../index';
 
-// Minimal Env stub. DB is only needed when /account/api/* is exercised
-// against the embedded accountApp (PR previews); ACCOUNT is the service
-// binding that proxies marketing-form endpoints on stable/edge. Both are optional — omit to mirror the corresponding deploy target.
+// Minimal Env stub. DB is only needed when /account/api/* is exercised against the embedded accountApp (PR previews); ACCOUNT is the service binding that proxies marketing-form endpoints on stable/edge. Both are optional — omit to mirror the corresponding deploy target.
 function mkFetcher(responder: (req: Request) => Response): Fetcher {
   return {
     fetch: vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -304,9 +302,7 @@ describe('fetch handler — static asset paths (case-preserving)', () => {
 });
 
 describe('fetch handler — /account/api/* routing', () => {
-  // On stable / edge, env.DB is unbound. Public marketing endpoints (contact submit, newsletter subscribe) must forward via the ACCOUNT
-  // service binding so the forms keep working; everything else 410s so
-  // the SPA region picker can route authenticated traffic.
+  // On stable / edge, env.DB is unbound. Public marketing endpoints (contact submit, newsletter subscribe) must forward via the ACCOUNT service binding so the forms keep working; everything else 410s so the SPA region picker can route authenticated traffic.
 
   test('contact submit forwards to ACCOUNT binding when present', async () => {
     const env = mkEnv(

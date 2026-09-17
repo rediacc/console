@@ -325,9 +325,7 @@ function main(): number {
     const sha = head();
 
     // --- 1. FAIL OPEN, real manifest, a change set of the WHOLE TRACKED TREE --- THE CHANGE SET IS FED THROUGH A SHIM RATHER THAN TAKEN FROM THE AMBIENT DIFF, and that is a correctness requirement, not a convenience. On push-to-main the merge base IS HEAD, so the ambient diff is empty and the runner correctly REFUSES -- which would turn this gate red on the one event where
-    // nothing is wrong. The assertion therefore rides a change set this gate constructs and
-    // knows the answer for; the ambient path is asserted separately, below, as a
-    // disjunction that is true in every state.
+    // nothing is wrong. The assertion therefore rides a change set this gate constructs and knows the answer for; the ambient path is asserted separately, below, as a disjunction that is true in every state.
     const allBin = fakeGit(path.join(tmp, 'all'), sha, tracked);
     const all = runRunner(['--list', '--changed'], { CI_RUNNER_BASE: 'HEAD' }, allBin);
     const chosen = selectedIds(all.out);
@@ -435,10 +433,8 @@ function main(): number {
       `rc=${oneReal.rc} selected=${selectedIds(oneReal.out).size} err=${oneReal.err.slice(0, 200)}`
     );
 
-    // --- 5. THE AMBIENT PATH, asserted as a disjunction true in every state -----
-    // The real differ against the real base. On a PR it answers with files; on
-    // push-to-main the merge base is HEAD and it correctly refuses; on a shallow
-    // clone it cannot resolve. All three are legitimate, and ANYTHING ELSE is not: a green whose selection has lost an unscoped gate, or a red carrying neither refusal, both mean the real path has stopped behaving like the shimmed one.
+    // --- 5. THE AMBIENT PATH, asserted as a disjunction true in every state ----- The real differ against the real base. On a PR it answers with files; on push-to-main the merge base is HEAD and it correctly refuses; on a shallow clone it cannot resolve. All three are legitimate, and ANYTHING ELSE is not: a green whose selection has lost an unscoped gate, or a red carrying
+    // neither refusal, both mean the real path has stopped behaving like the shimmed one.
     const ambient = runRunner(['--list', '--changed']);
     const ambientIds = selectedIds(ambient.out);
     const ambientOk =

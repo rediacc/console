@@ -6,9 +6,7 @@ back on stdout as `RENET_BINARY=<path>` (plus an append to `$GITHUB_ENV` when
 running under GitHub Actions).
 
 WHAT "THE SAME WAY" MEANS, AND WHY IT IS NOT `-f bin/renet`. The twin's own comment (build-renet.sh:44-63) records the incident: this used to be a bare existence test, ten CI steps call the script, and a job that had built `--nolicense` handed its binary to a later job that wanted an enforcing one, so that job's licence assertions passed for free. The identity string
-`<mode>|<sha256(ACCOUNT_ED25519_PUBLIC_KEY)[:16]>` covers everything that changes the BYTES, and it is stamped into `bin/.renet-build-identity` only AFTER the produced binary has been seen on disk. Both halves are reproduced here
-exactly; `build_identity()` and `build_args()` are exported so a test can drive
-them without a build.
+`<mode>|<sha256(ACCOUNT_ED25519_PUBLIC_KEY)[:16]>` covers everything that changes the BYTES, and it is stamped into `bin/.renet-build-identity` only AFTER the produced binary has been seen on disk. Both halves are reproduced here exactly; `build_identity()` and `build_args()` are exported so a test can drive them without a build.
 
 -----------------------------------------------------------------------------
 WHAT IS SHELLED OUT TO, AND WHAT IS NOT
@@ -40,9 +38,8 @@ This port keeps the key half. Both halves are asserted by `test_a_missing_sha256
 -----------------------------------------------------------------------------
 CONSOLE ROOT COMES FROM THIS FILE'S OWN LOCATION
 -----------------------------------------------------------------------------
-Matching the twin's `SCRIPT_DIR/../../..`. This module sits one directory deeper than the twin, so it is `parents[3]` here where the twin's is `parents[2]` of
-ITS directory; both land on the repository root. `rediacc_ci.paths.repo_root()`
-is deliberately not used, on the `ci_stop_elite.py` precedent: that resolver honours `$REDIACC_CI_ROOT` and the twin has no such override, so a differential pointing one at a fixture and not the other would diverge for a reason that has nothing to do with the port.
+Matching the twin's `SCRIPT_DIR/../../..`. This module sits one directory deeper than the twin, so it is `parents[3]` here where the twin's is `parents[2]` of ITS directory; both land on the repository root. `rediacc_ci.paths.repo_root()` is deliberately not used, on the `ci_stop_elite.py` precedent: that resolver honours `$REDIACC_CI_ROOT` and the twin has no such override, so a
+differential pointing one at a fixture and not the other would diverge for a reason that has nothing to do with the port.
 
 -----------------------------------------------------------------------------
 ENVIRONMENT IS READ AT THE CALL SITE, ONE NAME AT A TIME
@@ -163,9 +160,7 @@ def main(argv: list[str]) -> int:
         have = stamp.read_text(encoding="utf-8", errors="replace")
     except OSError:
         have = ""
-    # Command substitution strips ALL trailing newlines, and the stamp is
-    # written without one; stripping here keeps a hand-edited stamp with a
-    # trailing newline comparing equal, exactly as bash would.
+    # Command substitution strips ALL trailing newlines, and the stamp is written without one; stripping here keeps a hand-edited stamp with a trailing newline comparing equal, exactly as bash would.
     have = have.rstrip("\n")
 
     if renet_bin.is_file() and stamp.is_file() and have == want:
@@ -178,9 +173,7 @@ def main(argv: list[str]) -> int:
             )
             # THE TWIN DELETES BEFORE IT CHECKS FOR go, and this port keeps that order. It is a real defect (a host without go loses a working binary and gets exit 1), reported rather than repaired: reordering here would make the port's filesystem effect differ from the twin's on the exact input that exposes the bug, and the differential would then be certifying the wrong script.
             #
-            # `rm -f` is silent on a file it cannot remove only when the file is
-            # absent; a permission error does print and fail. That sub-case is
-            # not reachable from any caller in this tree (bin/ is created by build.sh as the invoking user), so the twin's `rm -f` is matched on its common path and no message is invented for the other.
+            # `rm -f` is silent on a file it cannot remove only when the file is absent; a permission error does print and fail. That sub-case is not reachable from any caller in this tree (bin/ is created by build.sh as the invoking user), so the twin's `rm -f` is matched on its common path and no message is invented for the other.
             with contextlib.suppress(OSError):
                 renet_bin.unlink()
 
@@ -190,8 +183,7 @@ def main(argv: list[str]) -> int:
             log.error("Install Go from: https://go.dev/dl/")
             return 1
 
-        # Step 4: delegate. build.sh owns the licence decision; the flags are
-        # only forwarded when one was passed, matching the twin's guarded
+        # Step 4: delegate. build.sh owns the licence decision; the flags are only forwarded when one was passed, matching the twin's guarded
         # expansion `${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"}`.
         log.step("Building renet from source...")
         try:
@@ -218,9 +210,7 @@ def main(argv: list[str]) -> int:
         stamp.write_text(want, encoding="utf-8")
         log.info("Renet built successfully: %s" % renet_bin)
 
-    # `export RENET_BINARY` in the twin is inert for a child process and is not
-    # reproduced as an export; the two OBSERVABLE consequences are, and they are
-    # the ones every caller actually reads.
+    # `export RENET_BINARY` in the twin is inert for a child process and is not reproduced as an export; the two OBSERVABLE consequences are, and they are the ones every caller actually reads.
     github_env = os.environ.get("GITHUB_ENV", "")
     if github_env:
         with pathlib.Path(github_env).open("a", encoding="utf-8") as handle:

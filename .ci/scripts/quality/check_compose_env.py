@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported docker-compose env-var completeness gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.compose_env`, which pytest and
-the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.compose_env`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 3). See DRIVEN, below.
 
@@ -14,9 +12,7 @@ it here would be a new assertion, not a carried one. The batch before this lost 
 
 `selftest: true` IS INERT HERE and is carried anyway: `headerLines` emits that field only for `.ts` (`gate-bind.ts:598`), so for a `.py` gate it decides nothing. It is true of the port regardless.
 
-THE RESOLVED NEED SET DOES NOT MOVE. `bind()` unions the declared needs with
-`inferredNeeds(source)`; the twin is pure grep/sed and inferred nothing, and
-this two-import entry point infers nothing either, so both resolve to the empty set `needs: none` declares.
+THE RESOLVED NEED SET DOES NOT MOVE. `bind()` unions the declared needs with `inferredNeeds(source)`; the twin is pure grep/sed and inferred nothing, and this two-import entry point infers nothing either, so both resolve to the empty set `needs: none` declares.
 
 DRIVEN, on this tree, both streams captured SEPARATELY:
 
@@ -26,8 +22,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY:
 
 and driven RED as well, against a fixture root whose compose file references a variable `ci-env.sh` does not persist: both sides exit 1 with byte-identical stdout, the two-line fix advice plus the `See:` pointer. THE RED DRIVE IS THE LOAD-BEARING ONE for this pair, because the clean stdout is empty and an empty comparison proves only that neither side crashed.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-compose-env.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-compose-env.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Compose env needs: none selftest: true ---- end gate ----
 """

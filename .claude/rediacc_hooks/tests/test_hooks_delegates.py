@@ -22,9 +22,7 @@ from rediacc_hooks.tests import hookcases, hooklabels
 
 HOOKS = hookcases.HOOKS
 
-# A sub-suite may take minutes (test-worklist-v5.sh drives ~940 cases), so the bound
-# is generous; it exists so a hung child is a named failure rather than a job that
-# GitHub eventually cancels with no artefact at all.
+# A sub-suite may take minutes (test-worklist-v5.sh drives ~940 cases), so the bound is generous; it exists so a hung child is a named failure rather than a job that GitHub eventually cancels with no artefact at all.
 SUITE_TIMEOUT_S = 1800
 
 # `^ PASS ` -- the shape the wl_* selftests print.
@@ -80,9 +78,7 @@ COUNTED = [
         "control",
     ),
     ("stop/test-judge-schema.py", [], SUMMARY_N, 1, "stop/test-judge-schema.py", "control"),
-    # The resource recorder runs at the exit of EVERY hook process, so its selftest
-    # belongs beside the others; it carries the leak plant (a secret-shaped argv token
-    # must never reach a record) and the two silence controls.
+    # The resource recorder runs at the exit of EVERY hook process, so its selftest belongs beside the others; it carries the leak plant (a secret-shaped argv token must never reach a record) and the two silence controls.
     ("stop/wl_resprofile.py", ["--selftest"], PASS_LOOSE, 1, "stop/wl_resprofile.py", "control"),
     # The forkless /proc tree sampler: spawns a known tree and asserts shape, symbolic wchan, and that a planted secret-shaped argv never reaches a sample.
     ("stop/wl_ressample.py", ["--selftest"], PASS_LOOSE, 1, "stop/wl_ressample.py", "control"),
@@ -90,8 +86,8 @@ COUNTED = [
     ("stop/wl_profile.py", ["--selftest"], PASS_LOOSE, 1, "stop/wl_profile.py", "control"),
 ]
 
-# ONE PASS EACH, on exit status, and that is deliberate rather than lazy. These print in several different formats ("73 checks, 0 failures", "✓ ... 15 blocked, 13 allowed", "FAILURES: 0"), so counting their assertions here would couple this file to that many output shapes and go quietly to zero the moment one reworded a line.
-# The child owns its assertions; this asserts that the child RAN and SUCCEEDED.
+# ONE PASS EACH, on exit status, and that is deliberate rather than lazy. These print in several different formats ("73 checks, 0 failures", "✓ ... 15 blocked, 13 allowed", "FAILURES: 0"), so counting their assertions here would couple this file to that many output shapes and go quietly to zero the moment one reworded a line. The child owns its assertions; this asserts that the
+# child RAN and SUCCEEDED.
 #
 # Empty output still fails: a suite that prints nothing has not demonstrated it did anything, and exit 0 alone is what a stub returns.
 #
@@ -110,9 +106,8 @@ TAILED = [
     "stop/test-reggate-ledger.py",
 ]
 
-# The two bash sub-suites. The stop gate carries its own because its cases need
-# fixtures rather than the single-JSON-on-stdin shape every guard case uses; the
-# report-inbox suite covers the whole cross-session waiter/nudge mechanism and this aggregate runner did NOT run it until a sub-agent found 125 invisible cases in it. relative | the npm key that also reaches it, or None when the harness is its only route. NOT EXECUTED HERE -- see test_a_delegated_bash_suite_is_reachable.
+# The two bash sub-suites. The stop gate carries its own because its cases need fixtures rather than the single-JSON-on-stdin shape every guard case uses; the report-inbox suite covers the whole cross-session waiter/nudge mechanism and this aggregate runner did NOT run it until a sub-agent found 125 invisible cases in it. relative | the npm key that also reaches it, or None when
+# the harness is its only route. NOT EXECUTED HERE -- see test_a_delegated_bash_suite_is_reachable.
 BASH_SUITES = [
     ("stop/test-worklist-v5.sh", "check:ci-hook-worklist-suite"),
     ("stop/test-report-inbox.sh", None),

@@ -96,9 +96,7 @@ def _jq_length(text):
     """`jq 'length' 2>/dev/null || echo 0`, with jq's own type rules.
 
     Empty input is the empty string (jq reads no value and prints nothing);
-    unparseable input is the literal `0` supplied by the `|| echo 0`; an array,
-    object or string is its length; `null` is 0 and a number is its absolute
-    value, which is jq's definition and not an approximation of it.
+    unparseable input is the literal `0` supplied by the `|| echo 0`; an array, object or string is its length; `null` is 0 and a number is its absolute value, which is jq's definition and not an approximation of it.
     """
     if text == "":
         return ""

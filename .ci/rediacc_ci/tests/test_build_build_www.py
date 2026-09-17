@@ -10,9 +10,7 @@ NEITHER SIDE TAKES A ROOT OVERRIDE, so both are COPIED into a throwaway fixture 
 `rediacc_ci` IS VENDORED INTO THE FIXTURE rather than reached through an absolute `PYTHONPATH`. Two reasons: it proves the port needs only the six modules listed in `VENDORED`, and `scripts/lib/shadow-gate.ts --record` refuses any command string naming an absolute path outside the recorded tree, so the
 K=5 ledger needs this shape anyway.
 
-`$0` IS MASKED TO `<SELF>` and nothing else is. bash names the script it was
-invoked with in its `command not found` line and `sys.argv[0]` ends `.py`; two
-files cannot share one name. Everything else is compared byte-for-byte on both streams SEPARATELY, plus the fake's call log.
+`$0` IS MASKED TO `<SELF>` and nothing else is. bash names the script it was invoked with in its `command not found` line and `sys.argv[0]` ends `.py`; two files cannot share one name. Everything else is compared byte-for-byte on both streams SEPARATELY, plus the fake's call log.
 
 K=5 LEDGER: `.ci/shadow/w7p6-build-www.observations.jsonl`.
 """
@@ -287,8 +285,7 @@ def test_defect_the_green_tick_precedes_every_verification(tmp_path) -> None:
 
 def test_a_missing_npm_reads_as_a_failed_build_with_bashs_line_above_it(tmp_path) -> None:
     """The shell's own diagnostic is the ONLY evidence the tool was absent, so
-    the port forges it rather than tracebacking. `$0` differs and is masked; the
-    line number, the binary name and the reason are compared exactly.
+    the port forges it rather than tracebacking. `$0` differs and is masked; the line number, the binary name and the reason are compared exactly.
     """
     root = fixture(tmp_path)
     old, new, old_calls, new_calls = run_both(root, drop_npm=True)

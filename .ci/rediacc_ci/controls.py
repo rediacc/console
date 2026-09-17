@@ -18,9 +18,7 @@ WHY THE FLOOR IS A REQUIRED ARGUMENT AND NOT A DEFAULT. A default of 0 is a floo
 written to close. `Controls("name", floor=0)` is still writable -- for a suite
 genuinely built at runtime -- but it has to be typed, at the call site, where a reviewer sees it.
 
-WHY IT IS NOT pytest. It nearly is, and pytest is the runner this repo now
-provisions. But these are not test files in a testpath; they are programs the
-Stop hook and `.claude/hooks/test-hooks.sh` invoke directly, whose output shape ("N control(s) passed") the harness reads. This class keeps that contract exactly
+WHY IT IS NOT pytest. It nearly is, and pytest is the runner this repo now provisions. But these are not test files in a testpath; they are programs the Stop hook and `.claude/hooks/test-hooks.sh` invoke directly, whose output shape ("N control(s) passed") the harness reads. This class keeps that contract exactly
 while removing the copies. A file migrated to it is a `python3 file.py` away from
 behaving as it always did -- and it is also, being an ordinary object with no global state, directly assertable FROM pytest, which is how it is proven below in `.ci/rediacc_ci/tests/test_controls.py`.
 
@@ -65,11 +63,8 @@ class Checker:
     IT IS CALLABLE SO THE CALL SITES DO NOT MOVE. `check = Checker()` then
     `check("label", cond)` is exactly what the four files already write, at roughly a hundred call sites between them. `harness.py` makes the same argument for the ported bash vocabulary: "rewriting them all is not a consolidation, it is a rewrite with its own defect budget".
 
-    WHY NOT `Controls` ABOVE, which is the same idea. Two reasons, and the second is the real one. `Controls` is a got/want tally whose failure line is
-    `FAIL  <label>: got <got!r>, wanted <want!r>`; these four assert a BOOLEAN, for
-    which that message would read `got False, wanted 'something truthy'` -- the contradiction `Controls.falsy` exists to avoid, one level up. And these four print ` PASS <label>` on the way past, two spaces indented, which is what a
-    reader watching `--selftest` scroll sees; `Controls` prints a count at the end.
-    Migrating the output shape is a separate change with its own argument, and folding it in here would smuggle it past review as tidying.
+    WHY NOT `Controls` ABOVE, which is the same idea. Two reasons, and the second is the real one. `Controls` is a got/want tally whose failure line is `FAIL <label>: got <got!r>, wanted <want!r>`; these four assert a BOOLEAN, for which that message would read `got False, wanted 'something truthy'` -- the contradiction `Controls.falsy` exists to avoid, one level up. And these four
+    print ` PASS <label>` on the way past, two spaces indented, which is what a reader watching `--selftest` scroll sees; `Controls` prints a count at the end. Migrating the output shape is a separate change with its own argument, and folding it in here would smuggle it past review as tidying.
     """
 
     def __init__(self) -> None:
@@ -100,9 +95,7 @@ def controls_first(name: str, selftest) -> int:
             )
             return 2
 
-    The refusal sentence is word-for-word the same in all seven, because it says
-    the same thing in all seven; only the subject is per-gate, and it stays at the
-    call site as an argument. `check:ci-shape-duplication` reported the block as two overlapping findings, seven copies and three, once the Python quality family entered its corpus.
+    The refusal sentence is word-for-word the same in all seven, because it says the same thing in all seven; only the subject is per-gate, and it stays at the call site as an argument. `check:ci-shape-duplication` reported the block as two overlapping findings, seven copies and three, once the Python quality family entered its corpus.
 
     `selftest` IS A CALLABLE, NOT A RESULT, so the banner is printed before the controls run rather than after. That ordering is the point of the idiom: a reader watching a gate scroll past sees which gate is talking before it says anything, and a control that hangs or crashes has already been attributed.
 
@@ -128,9 +121,7 @@ class VacuousPlantError(AssertionError):
 def plant(text: str, old: str, new: str, count: int = -1) -> str:
     """The clean fixture with `old` replaced by `new`, or raise.
 
-    WHY THIS EXISTS RATHER THAN `str.replace`. A control proves a gate can fail
-    by feeding it a mutated fixture; if the mutation silently does nothing, the
-    gate is handed the CLEAN input, stays green, and the control reports a pass
+    WHY THIS EXISTS RATHER THAN `str.replace`. A control proves a gate can fail by feeding it a mutated fixture; if the mutation silently does nothing, the gate is handed the CLEAN input, stays green, and the control reports a pass
     for an assertion it never made. That is the vacuous-control class, and
     `.ci/scripts/quality/check-control-vacuity.sh` exists to catch it -- but only on the bash side. Its own comment recorded that no Python gate built a mutant by substitution and that "what must not happen is that changing silently". It changed, from 21 gates to 50, and the alarm was a count printed inside a SUCCESS message, which nothing reads. Measured 2026-09-08: 71
     substitution sites across 12 Python gate modules, three proofs between them, and one already-vacuous mutant in the tree.
@@ -208,9 +199,7 @@ class Controls:
         self.floor = floor
         self.verbose = verbose
         self.count = 0
-        # The LABELS of what failed, not just how many. A count tells the reader
-        # a suite is red; the labels tell them which control, which is the whole
-        # value of naming every assertion in the first place.
+        # The LABELS of what failed, not just how many. A count tells the reader a suite is red; the labels tell them which control, which is the whole value of naming every assertion in the first place.
         self.failures: list[str] = []
 
     # -- the assertions ------------------------------------------------------

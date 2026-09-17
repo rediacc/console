@@ -409,9 +409,7 @@ export const P = () => <h1>{t(\`\${ns}.hero.title\`)}</h1>;`;
     reach("const o = to('pages.company.mission');", 'pages.company.mission.belief')
   );
 
-  // SUBTREE NARROWING. The blind spot that let a whole deleted section keep 184 translated
-  // leaves alive. `o` above is declared and never read, so it stays a whole subtree; the
-  // moment a file READS properties off it, only those properties are vouched for.
+  // SUBTREE NARROWING. The blind spot that let a whole deleted section keep 184 translated leaves alive. `o` above is declared and never read, so it stays a whole subtree; the moment a file READS properties off it, only those properties are vouched for.
   const NARROW = `const content = to(\`pages.solutionPages.\${config.contentKey}\`);
 const title = (content as any).hero?.title;
 const body = (content as any).problem;`;

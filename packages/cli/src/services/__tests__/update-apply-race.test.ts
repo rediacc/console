@@ -197,9 +197,7 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
   });
 
   it('does NOT print a redundant "Updated to ..." success message when short-circuiting', async () => {
-    // The autoApplied message is printed by applyPendingUpdate to stderr at
-    // startup; the update command should print "up to date" rather than
-    // re-emitting an "Updated to ..." line, which was the duplicate the user observed.
+    // The autoApplied message is printed by applyPendingUpdate to stderr at startup; the update command should print "up to date" rather than re-emitting an "Updated to ..." line, which was the duplicate the user observed.
     bgMocks.getAppliedAtStartup.mockReturnValue('1.0.7');
     updaterMocks.checkForUpdate.mockResolvedValue({
       updateAvailable: true,
@@ -225,8 +223,7 @@ describe('handleUpdate short-circuit on appliedAtStartup', () => {
     registerUpdateCommand(program);
     await program.parseAsync(['node', 'rdc', 'update', '--force']);
 
-    // --force is the operator override; we do still run the check/download
-    // flow even when an apply just happened.
+    // --force is the operator override; we do still run the check/download flow even when an apply just happened.
     expect(updaterMocks.checkForUpdate).toHaveBeenCalled();
     expect(updaterMocks.performUpdate).toHaveBeenCalled();
   });

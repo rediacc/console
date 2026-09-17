@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
 """Entry point for the ported toolchain-pins single-source gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.toolchain_pins`, which pytest and the port's
-own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.toolchain_pins`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 8b). See DRIVEN, below.
 
 WHY AN ENTRY POINT AT ALL, rather than registering the module. `check_npmrc.py` states both measured reasons. A port cannot be run by path (nothing puts `.ci` on `sys.path`, hence the insert below), and `python3 -m rediacc_ci.quality.toolchain_pins` works but is the wrong registration: `check:ci-parity`'s tokenizer cannot read `-m` and resolves the leaves to `[python3]`.
 
-THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. It was extracted from `.ci/scripts/quality/check-toolchain-pins.sh` PROGRAMMATICALLY, de-commented, and diffed
-as an ordered list of WHOLE LINES against the block in this docstring; the diff
-is empty over 8 line(s). The twin carried exactly these fields, in this order: `step`, `emit`, `blocker`, `needs`, `selftest`, `lane`. NO `id:`: the basename derives `check:ci-toolchain-pins`, the manifest id. The `blocker:` is 233 characters and moved byte for byte, because it is a live suppression reason under the BLOCKER convention and a reason lost in a file move is a quiet
-exemption. The pilot lost `emit: false` plus a blocker off a header and SEVEN GATES PASSED ANYWAY, because `emit: false` suppresses only the three workflow-region checks (`gate-bind.ts:1724`) while the registration assertions above them still ran.
+THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD. It was extracted from `.ci/scripts/quality/check-toolchain-pins.sh` PROGRAMMATICALLY, de-commented, and diffed as an ordered list of WHOLE LINES against the block in this docstring; the diff is empty over 8 line(s). The twin carried exactly these fields, in this order: `step`, `emit`, `blocker`, `needs`, `selftest`, `lane`. NO `id:`:
+the basename derives `check:ci-toolchain-pins`, the manifest id. The `blocker:` is 233 characters and moved byte for byte, because it is a live suppression reason under the BLOCKER convention and a reason lost in a file move is a quiet exemption. The pilot lost `emit: false` plus a blocker off a header and SEVEN GATES PASSED ANYWAY, because `emit: false` suppresses only the three
+workflow-region checks (`gate-bind.ts:1724`) while the registration assertions above them still ran.
 
-THE RESOLVED NEED SET DOES NOT MOVE, verified by CALLING `bind()` on both files and comparing every bound field except `file` and `run`, not by reading them.
-`bind()` unions declared needs with `inferredNeeds(source)`; the twin infers
-nothing from its body and this two-import entry point infers nothing, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both sides bind to `needs: []`, which is what `needs: none` declares.
+THE RESOLVED NEED SET DOES NOT MOVE, verified by CALLING `bind()` on both files and comparing every bound field except `file` and `run`, not by reading them. `bind()` unions declared needs with `inferredNeeds(source)`; the twin infers nothing from its body and this two-import entry point infers nothing, because `inferredNeeds` strips Python docstrings as prose
+(`gate-header.ts:301`). Both sides bind to `needs: []`, which is what `needs: none` declares.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -27,8 +23,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, 1468 bytes, sha256 0a001d688585d832...
     stderr: BYTE-IDENTICAL, EMPTY on both sides
 
-NO NORMALISATION WAS APPLIED and none was needed. The twin was run TWICE against an unchanged tree FIRST, to establish that its own output is byte-stable against
-itself; it is, on both streams.
+NO NORMALISATION WAS APPLIED and none was needed. The twin was run TWICE against an unchanged tree FIRST, to establish that its own output is byte-stable against itself; it is, on both streams.
 
 DRIVEN RED AS WELL, which is the half that matters. The plant is an UNTRACKED `.ci/scripts/quality/__gate_probe_toolchain_pins.sh` that runs `shellcheck` without ever resolving it at the pin, which is A6's shape. Untracked is deliberate and is what the plant is FOR: A6 unions `git ls-files` with `ls-files --others --exclude-standard` precisely because a gate not yet committed was
 once invisible to it. THE CONTROL WAS PROVED BEFORE EITHER SIDE RAN, by running that same `--others` enumeration and confirming the probe appears in it. The plant was removed with `rm` and `git status --porcelain` diffed against its pre-plant capture with no difference.

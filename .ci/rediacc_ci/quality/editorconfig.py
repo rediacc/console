@@ -14,10 +14,8 @@ WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the li
     Respects .gitignore and only checks git-tracked files.
     Skips binary files. Includes submodule files.
 
-THE TEXT-EXTENSION LIST AND WHY CHECK 4 CANNOT FALSE-POSITIVE, in the twin's
-own words: "Extensions that must always be text; a NUL byte inside one is
-corruption, not content -- e.g. a literal NUL typed in a shell/TS source file where a `\\0` escape sequence was meant (check-ci-parity.ts:163, found 2026-08-01). A real binary asset (png, woff, so, ...) never matches this list, which is what makes check 4 unable to false-positive on legitimate binaries: only a file `file --mime-encoding` calls binary AND whose extension says it
-must be text gets flagged, and normal binary assets never have such extensions."
+THE TEXT-EXTENSION LIST AND WHY CHECK 4 CANNOT FALSE-POSITIVE, in the twin's own words: "Extensions that must always be text; a NUL byte inside one is corruption, not content -- e.g. a literal NUL typed in a shell/TS source file where a `\\0` escape sequence was meant (check-ci-parity.ts:163, found 2026-08-01). A real binary asset (png, woff, so, ...) never matches this list, which
+is what makes check 4 unable to false-positive on legitimate binaries: only a file `file --mime-encoding` calls binary AND whose extension says it must be text gets flagged, and normal binary assets never have such extensions."
 
 THE TWO CONTROLS THE TWIN RUNS BEFORE IT SCANS ANYTHING, both carried:
 
@@ -36,8 +34,7 @@ THE TWO CONTROLS THE TWIN RUNS BEFORE IT SCANS ANYTHING, both carried:
 
 THE BATCHING, and why it is not an optimisation to be "cleaned up": "The previous shape was a while-read loop that spawned `file`, `tail`, `head|od|grep` and `grep -P` PER FILE. Measured on this repo: 6,595 tracked files at ~87ms of
 process spawns each = ~573s, i.e. the gate looked hung and could not finish
-inside a 10-minute local run. Nothing was wrong with the checks; the cost was
-fork/exec." And: "`file` is still the ONLY binary oracle, called with the same flags, so its heuristics cannot drift -- it is just invoked in batches via xargs instead of once per path."
+inside a 10-minute local run. Nothing was wrong with the checks; the cost was fork/exec." And: "`file` is still the ONLY binary oracle, called with the same flags, so its heuristics cannot drift -- it is just invoked in batches via xargs instead of once per path."
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -45,9 +42,8 @@ PORT NOTES.
 
 THE TWIN'S SCANNING PASS IS ALREADY PYTHON, and that is the happiest part of this port: `check-editorconfig.sh:112-168` is a heredoc'd `python3 -` program. Its four rules, its symlink comment and its `.hash` skip are carried here as code rather than re-derived, so the byte-exact half of this gate is the same program with the heredoc removed.
 
-THE `--recurse-submodules` DEFECT IS PORTED, NOT FIXED. The twin enumerates with `git ls-files -z --recurse-submodules` while its manifest lane checks out WITHOUT submodules, so in that lane the flag adds nothing and the gate silently narrows
-to the superproject. That mismatch is a KNOWN, REPORTED defect; a port that
-quietly dropped the flag or quietly added a submodule check would change the corpus and therefore the verdict, and the differential would have nothing to compare. It is carried as-is and named here so nobody has to rediscover it.
+THE `--recurse-submodules` DEFECT IS PORTED, NOT FIXED. The twin enumerates with `git ls-files -z --recurse-submodules` while its manifest lane checks out WITHOUT submodules, so in that lane the flag adds nothing and the gate silently narrows to the superproject. That mismatch is a KNOWN, REPORTED defect; a port that quietly dropped the flag or quietly added a submodule check would
+change the corpus and therefore the verdict, and the differential would have nothing to compare. It is carried as-is and named here so nobody has to rediscover it.
 
 `require_cmd python3` IS SATISFIED BY CONSTRUCTION and has no counterpart below.
 The twin needs the probe because it shells out to a `python3` that may not exist;
@@ -55,15 +51,12 @@ this module IS that python3. There is no branch to port, and inventing one would
 
 A MISSING `file` STILL FAILS THROUGH THE NUL CONTROL, deliberately with the twin's own message rather than a clearer one. `file --mime-encoding X 2>/dev/null`
 with no `file` on PATH produces nothing, the `grep -q binary` fails, and the twin
-reports "NUL-byte control did not fire ... The detection logic is broken; do not
-trust this gate." That message is wrong about the cause and right about the verdict, and the port emits the same bytes because a better message here is a finding the differential would score as a mismatch. Reported as a twin defect instead of repaired.
+reports "NUL-byte control did not fire ... The detection logic is broken; do not trust this gate." That message is wrong about the cause and right about the verdict, and the port emits the same bytes because a better message here is a finding the differential would score as a mismatch. Reported as a twin defect instead of repaired.
 
 `file` PADS THE FILENAME COLUMN when it is given more than one path, so a batch prints `a.sh: us-ascii` while a single file prints `a.sh: binary`. The awk classifier strips `: [^:]*$` and is immune to the padding, which is why batching changes performance and not results. Reproduced rather than assumed: `tests/test_quality_editorconfig.py` compares the port's classifier against the
 real awk on padded and unpadded input.
 
-THE ARRAYS ARE REPORTED IN CORPUS ORDER, not sorted. `git ls-files` already
-emits sorted paths, so the four lists come out sorted anyway; the port does not
-add a sort, because a sort would hide a future change in enumeration order that the twin would show.
+THE ARRAYS ARE REPORTED IN CORPUS ORDER, not sorted. `git ls-files` already emits sorted paths, so the four lists come out sorted anyway; the port does not add a sort, because a sort would hide a future change in enumeration order that the twin would show.
 """
 
 import os
@@ -85,9 +78,7 @@ TEXT_EXTENSIONS_RE = (
 # The one extension exempted from the three byte-exact checks. Hash sidecars are generated, single-line and deliberately newline-free.
 HASH_SUFFIX = ".hash"
 
-# How many paths go into one `file` invocation. xargs sizes its batches by the
-# kernel's argument limit; the exact number is invisible in the result because
-# the awk classifier strips `file`'s padding, so a round number is honest here rather than a reverse-engineered ARG_MAX.
+# How many paths go into one `file` invocation. xargs sizes its batches by the kernel's argument limit; the exact number is invisible in the result because the awk classifier strips `file`'s padding, so a round number is honest here rather than a reverse-engineered ARG_MAX.
 BATCH = 2000
 
 
@@ -118,8 +109,7 @@ def mime_encodings(root: pathlib.Path, rel_paths: list[str]) -> list[str]:
     if not rel_paths:
         return []
     if shutil.which("file") is None:
-        # The NUL control has already refused in this case; reaching here means
-        # a caller drove this function directly. An empty list is the same shape `xargs -r` produces with nothing to run.
+        # The NUL control has already refused in this case; reaching here means a caller drove this function directly. An empty list is the same shape `xargs -r` produces with nothing to run.
         return []
     out: list[str] = []
     for start in range(0, len(rel_paths), BATCH):
@@ -206,9 +196,7 @@ SECTIONS: tuple[tuple[str, str], ...] = (
     ("NUL", "Text source files with an embedded NUL byte"),
 )
 
-# The extra line the NUL section prints after its list. Written with an explicit escape because the twin passes it through `echo -e`, which turns the source's
-# `\\\\0` into a literal backslash-zero on the wire; a Python `"\0"` here would
-# emit an actual NUL byte into the gate's own output.
+# The extra line the NUL section prints after its list. Written with an explicit escape because the twin passes it through `echo -e`, which turns the source's `\\\\0` into a literal backslash-zero on the wire; a Python `"\0"` here would emit an actual NUL byte into the gate's own output.
 NUL_ADVICE = (
     "  A NUL byte makes git treat the file as binary: diffs go unreviewable and it "
     "silently stops being 'text' to every downstream tool. Replace it with the "

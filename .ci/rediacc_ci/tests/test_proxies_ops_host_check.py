@@ -1,15 +1,12 @@
 """`rediacc_ci.proxies.ops_host_check` against its bash twin
 `.ci/scripts/test/proxies/proxy-ops-host-check.sh` (gate `check:ci-proxy-ops-host-check`, `package.json:389`).
 
-Sibling of `test_proxies_linux_packages.py`; see that file for why the two
-invocations are compared byte for byte rather than as a finding set.
+Sibling of `test_proxies_linux_packages.py`; see that file for why the two invocations are compared byte for byte rather than as a finding set.
 
 ONE CASE DRIVES THE REAL 213 MB renet binary. The rest point the twin's own `RENET_BINARY` override (`:144`) at a two-line shim that prints a canned report, which is the only way to drive a malformed one: the Go type `Checks []HostCheckResult` (`private/renet/cmd/renet/ops_host.go:29`) cannot emit anything else.
 
 K=5 LEDGER: `.ci/shadow/w7p6-proxy-ops-host-check.observations.jsonl` (9 rows,
-9 distinct trees, 9 distinct finding sets), re-recorded on 2026-09-10 after the
-jq-abort fix; the pre-fix rows were DISCARDED rather than appended to, because
-two of them recorded the exit 0 the twin no longer gives.
+9 distinct trees, 9 distinct finding sets), re-recorded on 2026-09-10 after the jq-abort fix; the pre-fix rows were DISCARDED rather than appended to, because two of them recorded the exit 0 the twin no longer gives.
 """
 
 from __future__ import annotations
@@ -295,8 +292,7 @@ def test_a_checks_array_of_non_objects_is_now_a_named_refusal(tmp_path: pathlib.
     assert 'jq said: jq: error (at <stdin>:0): Cannot index number with string "name"' in (
         old.stderr
     )
-    # The tally still collapses VISIBLY beside the refusal; it was the only
-    # trace before the fix and it is kept, because printing the shape is not the same as asserting it.
+    # The tally still collapses VISIBLY beside the refusal; it was the only trace before the fix and it is kept, because printing the shape is not the same as asserting it.
     assert "3 probe(s) reported --  ok,  warn,  fail on this host" in old.stdout
     assert old.stderr.count('Cannot index number with string "status"') == 3
     assert_same(old, new)

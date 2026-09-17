@@ -9,10 +9,7 @@ Tests for the Wave C autopilot harness (`.ci/scripts/autopilot/`), the determini
      `.claude/hooks/**` still execute, so `restore-trusted-config.sh` is the only thing
      standing between PR-authored hook code and a shell.
 
-House doctrine throughout: controls in BOTH directions. Every rejection class is
-asserted by its pinned diagnostic AND paired with the passing control; the tripwire
-must FIRE on a planted exfiltration shape AND stay quiet on a legitimate fix; the
-restore assert must go red WITHOUT restore and green with it. A validator proven only on valid input proves nothing.
+House doctrine throughout: controls in BOTH directions. Every rejection class is asserted by its pinned diagnostic AND paired with the passing control; the tripwire must FIRE on a planted exfiltration shape AND stay quiet on a legitimate fix; the restore assert must go red WITHOUT restore and green with it. A validator proven only on valid input proves nothing.
 
 TWO THINGS THE PORT CHANGES, both forced by pytest and both in the safe direction.
 
@@ -60,8 +57,7 @@ SCOPE_MAP = paths.from_root(".ci", "scripts", "ci", "scope-map.cjs")
 
 HEADSHA = "1234567890abcdef1234567890abcdef12345678"
 
-# Every stage flag and knob the harness reads. Pinned to "" on every invocation so a
-# developer's shell cannot arm one; see the module docstring.
+# Every stage flag and knob the harness reads. Pinned to "" on every invocation so a developer's shell cannot arm one; see the module docstring.
 AUTOPILOT_VARS = (
     "AUTOPILOT_ENABLED",
     "AUTOPILOT_ALLOW_PUSH",
@@ -137,8 +133,7 @@ def require_subjects(gate, *subjects: pathlib.Path) -> None:
             )
 
 
-# --------------------------------------------------------------------------- The scratch checkout: shaped like the monorepo surface the validator polices.
-# Never the real tree; nothing here touches the repo.
+# --------------------------------------------------------------------------- The scratch checkout: shaped like the monorepo surface the validator polices. Never the real tree; nothing here touches the repo.
 # ---------------------------------------------------------------------------
 
 
@@ -232,8 +227,7 @@ class Checkout:
         """`run_validate`. Streams captured SEPARATELY: an escalation is a stderr claim."""
         status = self.work / "status.z"
         # BYTES, not text. `--porcelain=v1 -z` is NUL-separated and can carry a path
-        # that is not valid UTF-8; decoding and re-encoding it would be a second
-        # transformation the subject never sees.
+        # that is not valid UTF-8; decoding and re-encoding it would be a second transformation the subject never sees.
         raw = subprocess.run(
             [git_bin(), "-C", str(self.repo), "status", "--porcelain=v1", "-z"],
             capture_output=True,
@@ -3329,8 +3323,7 @@ def test_compose_prompt_refuses_a_blind_review_round(gate, tmp_path):
     gate.assert_not_contains(
         fix_text, "<review_payload>", "and no review payload it never asked for"
     )
-    # FIRES: a review round with no payload would answer findings it never read. The gate treats a failed thread fetch as a warning so one GraphQL hiccup cannot stop fix
-    # rounds; the cost of that choice is paid here.
+    # FIRES: a review round with no payload would answer findings it never read. The gate treats a failed thread fetch as a warning so one GraphQL hiccup cannot stop fix rounds; the cost of that choice is paid here.
     blind = compose("review-response.md", "review-response", tmp_path / "compose" / "blind.md")
     gate.assert_eq(blind.rc, 1, "a review round with no payload refuses")
     gate.assert_contains(blind.err, "refusing to run a review round blind", "saying why")
@@ -3551,8 +3544,7 @@ def test_post_escalation_says_what_stopped(gate, tmp_path):
     )
     gate.assert_eq(result.rc, 1, "an escalation write without AUTOPILOT_ALLOW_STATE refuses")
     gate.assert_contains(result.err, "stage-flag-disabled", "naming the flag")
-    # The model's reason and proposed patch are the payload of an escalation; losing them
-    # to a red job and a wordless label was the whole problem.
+    # The model's reason and proposed patch are the payload of an escalation; losing them to a red job and a wordless label was the whole problem.
     verdict = tmp_path / "pe-verdict.json"
     verdict.write_text(
         json.dumps(

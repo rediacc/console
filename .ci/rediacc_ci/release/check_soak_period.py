@@ -13,9 +13,8 @@ assignment, so its exit status is the exit status of the last command substituti
 Measured directly: `EDGE_DATE=not-a-date SOAK_DAYS=7 bash check-soak-period.sh`
 exits 1 with nothing on stdout, nothing on stderr, and `$GITHUB_OUTPUT` untouched. This port raises `SystemExit(1)` at the same point with the same silence, rather than "fixing" it with an error message the twin never printed.
 
-INTEGER ARITHMETIC MATCHES BASH'S TRUNCATION, NOT PYTHON'S FLOOR. Bash `$(())`
-trutruncates toward zero; Python's `//` floors toward negative infinity. The
-two differ only when `EDGE_DATE` is in the future (a negative age), which the scripts do not defend against either way, so this port uses `int(delta / 86400)` -- `int()` on a float also truncates toward zero -- to keep that (mis)behaviour identical rather than accidentally fixing it here.
+INTEGER ARITHMETIC MATCHES BASH'S TRUNCATION, NOT PYTHON'S FLOOR. Bash `$(())` trutruncates toward zero; Python's `//` floors toward negative infinity. The two differ only when `EDGE_DATE` is in the future (a negative age), which the scripts do not defend against either way, so this port uses `int(delta / 86400)` -- `int()` on a float also truncates toward zero -- to keep that
+(mis)behaviour identical rather than accidentally fixing it here.
 """
 
 from __future__ import annotations

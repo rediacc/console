@@ -24,9 +24,7 @@ for tok in re.split(r"[,\\s]+", m.group(1)):
         print(tok)
 """
 
-# Every shape the docstring has taken or could take. The comment on each is the
-# property it is here for; a case with no property gets deleted the first time
-# someone tidies this file.
+# Every shape the docstring has taken or could take. The comment on each is the property it is here for; a case with no property gets deleted the first time someone tidies this file.
 DOCSTRINGS = [
     '"""The sidecars (.requests, .sessions)"""',  # the ordinary one
     '"""The sidecars (.a,\n.b,\n.c)"""',  # spans lines: re.S is required

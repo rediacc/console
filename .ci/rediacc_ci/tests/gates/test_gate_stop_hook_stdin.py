@@ -10,9 +10,7 @@ WHY THIS EXISTS. On 2026-08-07 the harness reported::
 `_read_event` caught only JSONDecodeError and ValueError. EAGAIN arrives as BlockingIOError -- an OSError -- so it sailed past, the hook CRASHED, and every stop check silently did not run for that stop. The hook is the thing that enforces the other checks, so when it dies the whole guard layer goes quiet at once, and nothing in CI notices: the checks cannot validate the health of
 the process running them.
 
-THE OBVIOUS FIX WAS WORSE. `os.set_blocking(fd, True)` makes `read()` wait forever
-when the writer holds the pipe open and sends nothing; that version had to be
-SIGKILLed. A hook that HANGS is worse than one that crashes, because it stalls the session instead of failing it. So this file asserts BOTH properties, and a fix that trades one for the other fails here.
+THE OBVIOUS FIX WAS WORSE. `os.set_blocking(fd, True)` makes `read()` wait forever when the writer holds the pipe open and sends nothing; that version had to be SIGKILLed. A hook that HANGS is worse than one that crashes, because it stalls the session instead of failing it. So this file asserts BOTH properties, and a fix that trades one for the other fails here.
 
 WHAT IT DOES NOT DO, stated honestly and carried over from the twin unchanged. It does not exercise the checks' logic. And it does NOT reproduce the original EAGAIN crash against the real hook: mutating `_read_event` back to its pre-fix shape leaves this GREEN, because CPython's buffered `TextIOWrapper.read()` returns `""` rather than raising on a non-blocking empty pipe, so the
 old code fell through to a JSONDecodeError it already caught. That is measured, not assumed, and it is recorded here so nobody reads a green run as proof the EAGAIN case is covered.
@@ -27,9 +25,7 @@ The real hook cannot crash to stderr. Its last twelve lines wrap `main()` in `ex
     printf '{not json at all' | python3 .claude/hooks/stop/worklist.py
 
 exits 0 with an EMPTY stderr and `{"systemMessage": "Stop hook CRASHED; ...` plus the
-whole traceback on stdout. The twin ran GREEN over that tree. Its crash arm therefore
-cannot see a crash in the subject it is pointed at; it passes only because its
-control points at a bare stand-in that HAS no such handler, which is exactly the "a control that fires for a reason unrelated to the subject" shape.
+whole traceback on stdout. The twin ran GREEN over that tree. Its crash arm therefore cannot see a crash in the subject it is pointed at; it passes only because its control points at a bare stand-in that HAS no such handler, which is exactly the "a control that fires for a reason unrelated to the subject" shape.
 
 So `drive()` below reads BOTH streams. On this tree that changes no verdict -- the hook does not crash, both sides are green, and the parity driver compares verdicts -- and the divergence appears only in the state where the twin is wrong. That is the same argument `test_gate_renet_deadcode.py` records for its own divergence, and if a future change ever does make the hook crash, the
 two will disagree and the parity driver will say so. That is the intended alarm, not a regression to suppress.
@@ -60,8 +56,7 @@ BASH_TWIN = ".ci/scripts/test/gates/test-stop-hook-stdin.sh"
 ROOT = paths.repo_root()
 HOOK = ROOT / ".claude" / "hooks" / "stop" / "worklist.py"
 
-# The twin's budget. A real run finishes in well under a second; 40 is the ceiling
-# above which "slow" has become "hung".
+# The twin's budget. A real run finishes in well under a second; 40 is the ceiling above which "slow" has become "hung".
 BUDGET = 40.0
 
 # The pre-fix shape: only JSONDecodeError/ValueError caught, so a BlockingIOError
@@ -156,9 +151,7 @@ def _require_hook(gate) -> str:
 
 
 def test_never_written_payload_does_not_crash_or_hang(gate):
-    # The founding case: a non-blocking pipe whose payload never arrives. Crashing
-    # here is the 2026-08-07 bug; hanging here is the fix that was nearly shipped in
-    # its place.
+    # The founding case: a non-blocking pipe whose payload never arrives. Crashing here is the 2026-08-07 bug; hanging here is the fix that was nearly shipped in its place.
     observed = drive(_require_hook(gate), "never", BUDGET)
     gate.assert_contains(
         observed,

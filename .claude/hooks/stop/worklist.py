@@ -1,34 +1,23 @@
 #!/usr/bin/env python3
 """Stop hook: refuse to end a turn while tracked work remains unhandled.
 
-WHY: the failure this prevents is stopping to REPORT a discovery instead of acting on it. The full design history (v1-v9: the [ ]/[x]/[?]/[>] state machine, the harness task queue, cross-session requests, the regression gate, the poll fast path) lives in the sibling modules beside each piece of
-logic; this file is only the ENTRY POINT: the recursion guard, the CLI
-dispatch, and the fail-closed wrapper.
+WHY: the failure this prevents is stopping to REPORT a discovery instead of acting on it. The full design history (v1-v9: the [ ]/[x]/[?]/[>] state machine, the harness task queue, cross-session requests, the regression gate, the poll fast path) lives in the sibling modules beside each piece of logic; this file is only the ENTRY POINT: the recursion guard, the CLI dispatch, and the
+fail-closed wrapper.
 
-v10 (2026-07-30, operator request): the item store moved from the markdown file to an append-only JSONL event log (wl_store: the markdown stays as a
-synced INBOX, so nothing written there is ever silently ignored); every item
-carries start and last-update stamps; in-flight claims are verified against
-the OS and walked up a 45/90/120-minute ladder (wl_liveness); deferrals
-execute their DEFAULT after an autonomy window instead of nagging forever
-(wl_checks); the compact-recovery document is agent/<me>/STATE.md with world-keyed
-staleness; and the judge caches identical verdicts (wl_judge). The one
-3600-line file became nine modules; worklist_messages.py remains the
-catalogue of user-facing prose.
+v10 (2026-07-30, operator request): the item store moved from the markdown file to an append-only JSONL event log (wl_store: the markdown stays as a synced INBOX, so nothing written there is ever silently ignored); every item carries start and last-update stamps; in-flight claims are verified against the OS and walked up a 45/90/120-minute ladder (wl_liveness); deferrals execute
+their DEFAULT after an autonomy window instead of nagging forever (wl_checks); the compact-recovery document is agent/<me>/STATE.md with world-keyed staleness; and the judge caches identical verdicts (wl_judge). The one 3600-line file became nine modules; worklist_messages.py remains the catalogue of user-facing prose.
 
 v12 (2026-07-30, operator request: "Too many '[?]'. This is an escape hatch."): a deferral must EARN its seat. --defer validates WHY:/HOW: (plus optional TRIED:/NEEDS:/BLOCKED_ON:) at creation and stores them as real
 fields; an aged [?] without them is demanded, bounded per stop (wl_checks);
-a justified one faces the judge's audit riding the existing judge call, and a rejected justification REOPENS the item as [ ] (wl_judge.apply_defer_audit
-fails closed); and a session whose only in-flight work is a CI watch is
-FORCED onto the aged backlog by id and verb (wl_ci.ci_watch_only). Every demand's exit is completable alone in one turn: do it and tick with evidence, execute the DEFAULT, or answer the WHY/HOW honestly.
+a justified one faces the judge's audit riding the existing judge call, and a rejected justification REOPENS the item as [ ] (wl_judge.apply_defer_audit fails closed); and a session whose only in-flight work is a CI watch is FORCED onto the aged backlog by id and verb (wl_ci.ci_watch_only). Every demand's exit is completable alone in one turn: do it and tick with evidence, execute
+the DEFAULT, or answer the WHY/HOW honestly.
 
-v17 (2026-08-04, operator report: "normally there is exponential backoff for the stop hook. It seems it's running every 5 mins."): it WAS, and the cause was scope, not cadence. wl_store.world_sig hashed the BYTES of the shared markdown, event log and requests file, so any teammate's --add or --tick broke
-every other session's poll baseline and invalidated its judge cache; measured
+v17 (2026-08-04, operator report: "normally there is exponential backoff for the stop hook. It seems it's running every 5 mins."): it WAS, and the cause was scope, not cadence. wl_store.world_sig hashed the BYTES of the shared markdown, event log and requests file, so any teammate's --add or --tick broke every other session's poll baseline and invalidated its judge cache; measured
 on the live store, 32 of 32 events in a three-hour window were foreign and polluted half the five-minute windows. The signature is this session's own world now (wl_store.world_sig, wl_store.my_requests_sig). Two smaller fixes ride with it: the background check-in's clock is cleared when the wait ENDS (it used to freeze, so re-entering a wait fired the roster demand on arrival), and
 it prints its last-fired and next-earliest stamps so the latch it claims is checkable from the message. New: the NO-OP WAKE LADDER (wl_checks .quiet_wake_sig / quiet_wake_bump / quiet_wake_note) counts wakes on which nothing measurably moved and, after three, collapses the whole stop to one line asking for the next rung of the 5/10/20/40/60 poll ladder. It suppresses ADVISORY
 output only: every violation that can block still blocks.
 
-v18 (2026-08-04, operator: "we don't need to print next wakeup times. We should just track the hook moments and notify/warn when needed. let's go for efficient ai context usage"): two standing sections that printed on every full stop are DELETED rather than shortened. The NEXT WAKEUPS list (every scheduled
-task's next firing plus its prompt label) is gone; the schedules are still
+v18 (2026-08-04, operator: "we don't need to print next wakeup times. We should just track the hook moments and notify/warn when needed. let's go for efficient ai context usage"): two standing sections that printed on every full stop are DELETED rather than shortened. The NEXT WAKEUPS list (every scheduled task's next firing plus its prompt label) is gone; the schedules are still
 tracked by the cron-shape checks, the backoff ladder, the loop-death detector and the judge's loop line, and the one actionable thing the list carried is now its own silent-until-broken warning (wl_checks.broken_schedules, V_BROKEN_SCHEDULE). The empty WORKLIST GUIDE line ("no actionable items in the store") is gone too, which lets a clean stop with nothing queued exit with zero
 bytes the way the poll fast path does. Both supersede earlier deliberate choices ("a short honest line, never ambiguous silence"): silence is no longer ambiguous now that the fast path is silent many times an hour. The rule going forward is silent when there is nothing to act on, one focused message when there is.
 
@@ -61,9 +50,8 @@ INVARIANTS THAT MUST NOT MOVE:
     malformed output BLOCKS. A block you can fix is a bug report with
     teeth, not a deadlock.
 
-SIBLING IMPORTS ARE PROBED, NOT ASSUMED. A top-level ImportError would crash before the fail-closed wrapper exists, print nothing to stdout, and
-read as ALLOW. So every sibling is imported inside a probe; a broken one is
-replaced by a shim whose every attribute access raises, naming EVERY broken module. Query modes that need no sibling (--path, --help) keep working, and the Stop path blocks loudly instead of failing open.
+SIBLING IMPORTS ARE PROBED, NOT ASSUMED. A top-level ImportError would crash before the fail-closed wrapper exists, print nothing to stdout, and read as ALLOW. So every sibling is imported inside a probe; a broken one is replaced by a shim whose every attribute access raises, naming EVERY broken module. Query modes that need no sibling (--path, --help) keep working, and the Stop
+path blocks loudly instead of failing open.
 
 What still allows a stop:
   1. An empty world: no open items, no pending tasks, no obligations.
@@ -136,9 +124,7 @@ J = _MODS["wl_judge"]
 M = _MODS["worklist_messages"]
 RL = _MODS["wl_roundlog"]
 
-# Re-exported for direct importers (the suite drives these two as library
-# functions; keeping them on this module is part of the compatibility
-# surface). Absent when their module is broken, which is correct: a caller gets an AttributeError naming this module instead of a silent stub.
+# Re-exported for direct importers (the suite drives these two as library functions; keeping them on this module is part of the compatibility surface). Absent when their module is broken, which is correct: a caller gets an AttributeError naming this module instead of a silent stub.
 if "wl_checks" not in _BROKEN:
     cited_excerpts = _MODS["wl_checks"].cited_excerpts
     citation_state = _MODS["wl_checks"].citation_state
@@ -636,12 +622,9 @@ def _item_cli(argv, worklist):
             # The same actionable slice the Stop hook emits (v11), so a human and the hook are never looking at different views. An optional prefix scopes ownership and binds the printed verbs.
             #
             # full=True: the hook's GUIDE_MAX cap bounds a payload nobody
-            # asked for; this command IS the ask, and it is the command
-            # GUIDE_TRUNCATED sends people to "for the full slice". Inheriting the cap here made that advice a loop.
+            # asked for; this command IS the ask, and it is the command GUIDE_TRUNCATED sends people to "for the full slice". Inheriting the cap here made that advice a loop.
             me = argv[2] if len(argv) > 2 else ""
-            # Checked even though it is OPTIONAL and read-only. The incident's
-            # writes were wrong and its reads were right; the next one could be
-            # the other way round, and a session reading the wrong half's slice sees an empty, reassuring, false picture.
+            # Checked even though it is OPTIONAL and read-only. The incident's writes were wrong and its reads were right; the next one could be the other way round, and a session reading the wrong half's slice sees an empty, reassuring, false picture.
             if me:
                 _identity_or_die(me, die)
             root = C.project_root(C.project_start())
@@ -694,9 +677,8 @@ def _item_cli(argv, worklist):
     if mode == "--tick":
         if not rest or not CK.completion_evidence(root, rest):
             die(M.CLI_TICK_NO_EVIDENCE % item_id)
-        # v16 THE DOOR GATE. completion_evidence passes on ANY URL by shape, so a bare issue link closed a finding: filing WAS a resolution, in code, whatever the prose said. An issue now settles an item only when the tick names the last-resort door that made filing the right
-        # answer. Shape-only; whether the door is TRUE is the judge's
-        # question, and every tick already flows into that path.
+        # v16 THE DOOR GATE. completion_evidence passes on ANY URL by shape, so a bare issue link closed a finding: filing WAS a resolution, in code, whatever the prose said. An issue now settles an item only when the tick names the last-resort door that made filing the right answer. Shape-only; whether the door is TRUE is the judge's question, and every tick already flows into
+        # that path.
         if CK.issue_only_evidence(root, rest):
             die(M.CLI_TICK_ISSUE_DOOR % item_id)
         S.set_state(worklist, me, item_id, "x", rest)
@@ -708,8 +690,7 @@ def _item_cli(argv, worklist):
                 "a [?] without a DEFAULT: is a note, not a decision; append "
                 "'DEFAULT: <what you will do if unanswered>'"
             )
-        # v12: a deferral must EARN its seat at creation time, the same way --tick refuses evidence-free completion. The cheap shape gate lives
-        # here; whether the WHY is TRUE is the judge audit's question later.
+        # v12: a deferral must EARN its seat at creation time, the same way --tick refuses evidence-free completion. The cheap shape gate lives here; whether the WHY is TRUE is the judge audit's question later.
         just = C.parse_justification(rest)
         why, how = just.get("why", ""), just.get("how", "")
         if not why or not how:
@@ -730,8 +711,8 @@ def _item_cli(argv, worklist):
         # v17 THE VANISHING DEFAULT. An --update on a `- [?]` silently dropped its DEFAULT:, because the rendered line carries only the MOST RECENT update (CK scans rec["line"]). So the deferral's default stopped being visible the instant any progress landed, and the next stop blocked on a [?] that demonstrably HAD a default when it was written. Hit live, by the session that wrote
         # this.
         #
-        # REFUSING was the first fix and it was WRONG, caught by case 141: a refresh is documented as "the exit is always available", and the aged-deferral rung tells a session to refresh. Blocking it removes the only exit the rung offers -- the same shape as the --lease release comment below. So the default is carried forward VERBATIM and
-        # the carry is announced. Silence was the defect; the exit is not.
+        # REFUSING was the first fix and it was WRONG, caught by case 141: a refresh is documented as "the exit is always available", and the aged-deferral rung tells a session to refresh. Blocking it removes the only exit the rung offers -- the same shape as the --lease release comment below. So the default is carried forward VERBATIM and the carry is announced. Silence was the
+        # defect; the exit is not.
         _cur = next((r for r in fold.items if r["id"] == item_id), None)
         if _cur is not None and _cur["state"] == "?" and not C.DEFAULT_TOKEN.search(rest):
             _src = _cur.get("text") or ""
@@ -753,9 +734,8 @@ def _item_cli(argv, worklist):
     if mode == "--lease":
         if len(argv) < 4:
             die(M.CLI_ITEM_USAGE)
-        # RELEASE, the missing third exit. The quiet-worker rung tells a session to "finish the item, re-delegate with a new worker id, or RECLASSIFY it" -- and until this existed the third option had no verb. --lease
-        # could only ever set [>]; nothing moved an item back to open. So a
-        # session whose worker had legitimately finished, with the item NOT done and no honest successor to lease, had exactly two false choices: tick work that was not finished, or lease a worker that was not measuring it. Both are the stale claim the rung exists to prevent, arrived at by following the rung's own instructions.
+        # RELEASE, the missing third exit. The quiet-worker rung tells a session to "finish the item, re-delegate with a new worker id, or RECLASSIFY it" -- and until this existed the third option had no verb. --lease could only ever set [>]; nothing moved an item back to open. So a session whose worker had legitimately finished, with the item NOT done and no honest successor to
+        # lease, had exactly two false choices: tick work that was not finished, or lease a worker that was not measuring it. Both are the stale claim the rung exists to prevent, arrived at by following the rung's own instructions.
         if argv[3] in ("release", "none", "-"):
             # `item_id`, NOT a second read of argv[2]. Review finding on PR #551: this branch used the raw argument while every other verb in this
             # function goes through the `.lstrip("#")` at the top, so
@@ -801,8 +781,8 @@ def _item_cli(argv, worklist):
                 % (until, C.MAX_LEASE_MIN)
             )
         wid = wm.split(":", 1)[1]
-        # v14 gap 3: validate the worker id against the harness's last event AT LEASE TIME. The hook verifies leases against OS-visible task ids, and an Agent's NAME is not its task id: a lease on the name reads as unverifiable forever, which cost a false "worker is gone" round. A warning, not a refusal, because the sidecar can lag a just-started
-        # task; a genuinely wrong id still gets caught by the hook's verifier.
+        # v14 gap 3: validate the worker id against the harness's last event AT LEASE TIME. The hook verifies leases against OS-visible task ids, and an Agent's NAME is not its task id: a lease on the name reads as unverifiable forever, which cost a false "worker is gone" round. A warning, not a refusal, because the sidecar can lag a just-started task; a genuinely wrong id still
+        # gets caught by the hook's verifier.
         verified = ""
         try:
             _ev = json.loads(
@@ -886,9 +866,7 @@ def _migrate_cli(argv):
 
     THE VERB BEHIND /migrate. Its whole reason to exist is a machine switch: the event log now travels in git, so a session's remaining work arrives on the new machine, but it arrives OWNED BY A SESSION THAT IS NOT RUNNING THERE -- visible, and blocking nobody. This re-tags it to the session in front of the operator.
 
-    RE-TAG, chosen by the operator over an alias, and the consequence is the point: after the move the items are MINE, so the Stop hook blocks on them exactly as it would on work I typed myself. The originals are ticked with a
-    note naming the new id; nothing is deleted, and the log still says who did
-    the work.
+    RE-TAG, chosen by the operator over an alias, and the consequence is the point: after the move the items are MINE, so the Stop hook blocks on them exactly as it would on work I typed myself. The originals are ticked with a note naming the new id; nothing is deleted, and the log still says who did the work.
 
     NOTHING MOVES WITHOUT A NAMED PREDECESSOR. There is no `--all`: the listing is one command and the move is another, because "continue everything you find" is precisely the shape that would sweep up a colleague's session.
     """
@@ -1088,9 +1066,8 @@ def _adopt_cli(argv):
     THE SIBLING OF --reassign, AND ITS OPPOSITE. --reassign repairs a FICTION and is proven by ABSENCE: an identity that wrote events and never stopped. --adopt joins two REAL identities and is proven by PRESENCE: harness-written evidence that both transcripts belong to one conversation. Merging them would mean one verb whose evidence test flips depending on its argument, so they
     stay apart.
 
-    There is deliberately NO --force. The whole value of the edge is that it was
-    proven; an unprovable one recorded anyway would let any session claim any
-    other's items, which is precisely what the ownership rule exists to prevent. When the evidence is genuinely absent the operator's WORKLIST_SESSION_ID override remains, and that is recorded as a human's declaration rather than as a derived fact.
+    There is deliberately NO --force. The whole value of the edge is that it was proven; an unprovable one recorded anyway would let any session claim any other's items, which is precisely what the ownership rule exists to prevent. When the evidence is genuinely absent the operator's WORKLIST_SESSION_ID override remains, and that is recorded as a human's declaration rather than as
+    a derived fact.
     """
     if len(argv) < 3:
         sys.stderr.write(M.CLI_ADOPT_USAGE)
@@ -1163,8 +1140,7 @@ def _reassign_cli(argv):
       the phantom really did write those events, and a log that lies about that
       is worse than one that is untidy.
 
-    Appends `reassign` events; nothing is ever rewritten. Both logs are
-    append-only and fold-derived, which is what makes the lock-free design sound, and the fold arms that read these events live beside the events they interpret (wl_store._fold_events, wl_requests.read_requests).
+    Appends `reassign` events; nothing is ever rewritten. Both logs are append-only and fold-derived, which is what makes the lock-free design sound, and the fold arms that read these events live beside the events they interpret (wl_store._fold_events, wl_requests.read_requests).
     """
     if len(argv) < 3:
         sys.stderr.write(M.CLI_REASSIGN_USAGE)
@@ -1183,8 +1159,7 @@ def _reassign_cli(argv):
     # AGE GATE, and without it the guarantee above is not delivered. The `.lastevent-` file is written exactly once, when the Stop hook first runs
     # for a session. A session that is mid-turn -- it has added items but has
     # not yet reached its first stop -- has no such file either, so the check above cannot tell it from a genuine phantom. Any session can read a peer's prefix out of `--list --open` output, and concurrent sessions in one tree are routine here, so without this a peer's OPEN items and request routing could be moved onto the caller WHILE that peer was actively working on them. The
-    # docstring and the refusal message both promise this cannot
-    # happen; this is the code that makes the promise true.
+    # docstring and the refusal message both promise this cannot happen; this is the code that makes the promise true.
     #
     # Same threshold and same derivation as the advisory backstop (wl_checks.phantom_identities), deliberately: two different answers to "is this identity a phantom" is how the two drift apart. BOTH the writer and the owner, via the derivation shared with the backstop. Scanning `by` alone made this gate refuse every phantom in a store that had ever been compacted, because compact()
     # rewrites the writer of the whole history to "compact" and keeps only the owner -- and the selection three statements below matches on `owner`. The two disagreed, so the repair verb reported "has written no events at all" about items it could see and would have moved.
@@ -1294,8 +1269,7 @@ def _teammate_idle_cli():
 
 
 def main():
-    # FIRST STATEMENT, DELIBERATELY. `claude -p` runs this hook again; the guard
-    # is the only thing that works (--settings with empty hooks does not).
+    # FIRST STATEMENT, DELIBERATELY. `claude -p` runs this hook again; the guard is the only thing that works (--settings with empty hooks does not).
     if os.environ.get("STOPHOOK_CHILD"):
         sys.exit(0)
 
@@ -1364,9 +1338,7 @@ def main():
         if S.AGENT_STATE_HEAD_RE.search(body):
             sys.stderr.write(M.CLI_STATE_WHOLE_DOC % prefix)
             sys.exit(2)
-        # Refuse a section the Stop check would reject, with the SAME rule. Accept-then-reject leaves the one artifact designed to survive
-        # compaction broken while the session believes it is fine; refusing
-        # leaves the previous good document untouched.
+        # Refuse a section the Stop check would reject, with the SAME rule. Accept-then-reject leaves the one artifact designed to survive compaction broken while the session believes it is fine; refusing leaves the previous good document untouched.
         verdict, detail = S.agent_state_shape(body)
         if verdict == "waitled":
             # Its own message: the generic one talks about char limits, which says nothing about why leading with a watch is refused, and a refusal a session cannot act on is a refusal it routes around.
@@ -1381,9 +1353,7 @@ def main():
             )
             sys.exit(2)
         target = S.agent_state_path(root, prefix)
-        # Session-scoped since the tree split: with one STATE.md per session a shared slot lets a PEER's write destroy the only copy of my replaced body. It used to carry the branch as well (findings
-        # 3688784930/3688787780, when the document itself was per branch); the
-        # branch left the document's path, so it left the slot's name with it.
+        # Session-scoped since the tree split: with one STATE.md per session a shared slot lets a PEER's write destroy the only copy of my replaced body. It used to carry the branch as well (findings 3688784930/3688787780, when the document itself was per branch); the branch left the document's path, so it left the slot's name with it.
         backup = S.agent_state_backup_path(wl, prefix)
         reaped_path = S.agent_state_reaped_path(wl, prefix)
         pdir = C.projects_dir(root)
@@ -1447,8 +1417,7 @@ def main():
                     max(0.0, (time.time() - mine["ts"]) / 60.0)
                 )
                 mine["tail"] = stamp
-                # AFTER `replaced` above, which deliberately reports the age of the section being replaced. Without this line the kept_rows confirmation below re-uses the OLD ts and tells the writer its freshly-written section is minutes old, which is exactly the kind of thing this whole change exists to stop a session
-                # believing. The on-disk document was always right; only the
+                # AFTER `replaced` above, which deliberately reports the age of the section being replaced. Without this line the kept_rows confirmation below re-uses the OLD ts and tells the writer its freshly-written section is minutes old, which is exactly the kind of thing this whole change exists to stop a session believing. The on-disk document was always right; only the
                 # confirmation lied. Caught in review of PR #565.
                 mine["ts"] = time.time()
                 mine["body"] = body.strip()
@@ -1483,9 +1452,7 @@ def main():
                 replaced += "; previous document saved to %s" % backup
             else:
                 replaced += "; WARNING: the backup copy FAILED, the replaced body is gone"
-            # W12 P2.6: the POINTER STAMP for the outgoing document. The .prev
-            # slot above lives under TMPDIR and does not survive a reboot; this
-            # file is tracked, so when its outgoing bytes were committed they are in the object database and stay reachable through history for as long as the repository exists. Computed BEFORE os.replace, above.
+            # W12 P2.6: the POINTER STAMP for the outgoing document. The .prev slot above lives under TMPDIR and does not survive a reboot; this file is tracked, so when its outgoing bytes were committed they are in the object database and stay reachable through history for as long as the repository exists. Computed BEFORE os.replace, above.
             #
             # It says which case holds rather than always printing a hash: `git hash-object` STORES NOTHING, so an id over uncommitted bytes is not a promise of recovery, and advertising `git show` for bytes git does not have is the same quiet lie the record gate refuses.
             if outgoing_stamp:
@@ -1678,8 +1645,7 @@ def main():
     if sys.argv[1:2] == ["--loop"]:
         # ARITY VALIDATED INSIDE, matched on argv[1] ALONE. The old guard was
         # `len(sys.argv) > 3 and sys.argv[1] == "--loop"`, so `--loop x` did not
-        # merely fail: it fell through to the Stop battery below, which ran every check against an empty event, returned a real "decision": "block" at exit 0, and wrote six `*-unknown` sidecars. Same shape and same fix as
-        # the `--state` guard above; verified by running it.
+        # merely fail: it fell through to the Stop battery below, which ran every check against an empty event, returned a real "decision": "block" at exit 0, and wrote six `*-unknown` sidecars. Same shape and same fix as the `--state` guard above; verified by running it.
         if len(sys.argv) <= 3:
             sys.stderr.write(M.CLI_LOOP_USAGE)
             sys.exit(2)
@@ -1790,8 +1756,7 @@ def main():
             __file__,
         )
         return
-    # ONE CLI DOOR. Everything a session is told to run goes through this file, so the report inbox and the waiter are reachable here too rather than by
-    # remembering two more script names. Both delegate; neither reimplements.
+    # ONE CLI DOOR. Everything a session is told to run goes through this file, so the report inbox and the waiter are reachable here too rather than by remembering two more script names. Both delegate; neither reimplements.
     if sys.argv[1:2] == ["--reap"]:
         # `worklist.py --reap <me> <task-id>...` -- retire roster entries this session knows are finished. Validated against the LAST EVENT the hook saw, so a typo cannot silently suppress a live worker, and a compacted session (which remembers nothing) can still see the id list.
         me = sys.argv[2] if len(sys.argv) > 2 else ""
@@ -1912,16 +1877,14 @@ def main():
         _item_cli(sys.argv[1:], C.worklist_for(C.project_start()))
         return
 
-    # THE CLASS FIX. Per-verb arity guards close the three verbs anyone has
-    # noticed; this closes the shape. ANY unrecognised flag reaching this point
-    # used to be handed to the Stop battery, which reads its event from stdin -- so `worklist.py --tpyo` emitted a genuine block verdict at exit 0 with stdin closed, and hung forever with stdin open. Both measured, not theorised. A bare invocation (no argv) is the real hook and passes through untouched, which is why this tests for a LEADING DASH and not for "unmatched".
+    # THE CLASS FIX. Per-verb arity guards close the three verbs anyone has noticed; this closes the shape. ANY unrecognised flag reaching this point used to be handed to the Stop battery, which reads its event from stdin -- so `worklist.py --tpyo` emitted a genuine block verdict at exit 0 with stdin closed, and hung forever with stdin open. Both measured, not theorised. A bare
+    # invocation (no argv) is the real hook and passes through untouched, which is why this tests for a LEADING DASH and not for "unmatched".
     if sys.argv[1:2] and str(sys.argv[1]).startswith("-"):
         sys.stderr.write(M.CLI_UNKNOWN_VERB % sys.argv[1])
         sys.exit(2)
 
-    # CI NO-OP, and it is placed HERE rather than beside the STOPHOOK_CHILD guard on purpose. Everything above this line is a query or write mode that a
-    # runner may legitimately want (`--path`, `--state`); exiting at the top of
-    # main() would break those silently. The thing that must not happen on a runner is the BLOCK below: CLAUDE.md tells a session to track items and this hook refuses to end a turn while any remain, so an unattended model in Actions burns its turn budget against a gate no human will ever answer. Required by the autopilot design (docs/ci-overhaul/03-v2-autonomy.md).
+    # CI NO-OP, and it is placed HERE rather than beside the STOPHOOK_CHILD guard on purpose. Everything above this line is a query or write mode that a runner may legitimately want (`--path`, `--state`); exiting at the top of main() would break those silently. The thing that must not happen on a runner is the BLOCK below: CLAUDE.md tells a session to track items and this hook
+    # refuses to end a turn while any remain, so an unattended model in Actions burns its turn budget against a gate no human will ever answer. Required by the autopilot design (docs/ci-overhaul/03-v2-autonomy.md).
     if os.environ.get("GITHUB_ACTIONS") == "true":
         sys.exit(0)
 
@@ -1951,8 +1914,7 @@ def main():
 # GUARDED, so the module can be imported and its re-exported helpers tested directly: a bare main() call once meant `import worklist` ran the whole Stop path against whatever happened to be on stdin.
 if __name__ == "__main__":
     # FAIL CLOSED ON CRASH. This was the hook's global escape hatch and nobody put it there on purpose: an unhandled exception prints a traceback to stderr and NOTHING to stdout, the harness sees no decision, and the stop is ALLOWED. So any bug anywhere in this file silently disabled EVERY check at once, which is the exact opposite of the no-escape-hatch rule the rest of it is
-    # built on. It is not hypothetical: a v8 cut crashed on a tuple unpack
-    # and the stop sailed through; only a suite needle assertion caught it.
+    # built on. It is not hypothetical: a v8 cut crashed on a tuple unpack and the stop sailed through; only a suite needle assertion caught it.
     #
     # A crash is now a BLOCK carrying the traceback, because a hook that cannot decide must not be the way out, and the session that hits it is the one positioned to fix it. Deliberately outside main() so it covers every mode.
     try:

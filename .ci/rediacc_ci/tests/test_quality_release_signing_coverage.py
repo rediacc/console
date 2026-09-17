@@ -16,8 +16,7 @@ import pytest
 from rediacc_ci.quality import release_signing_coverage as rsc
 from rediacc_ci.tests import differential as diff
 
-# The `formats_of` pipeline, verbatim from the twin with `"$1"` replaced by the
-# fixture path. Four stages; the comment on each is in the port's docstring.
+# The `formats_of` pipeline, verbatim from the twin with `"$1"` replaced by the fixture path. Four stages; the comment on each is in the port's docstring.
 _FORMATS_PIPELINE = (
     r"""sed -n 's/^[[:space:]]*\([a-z |]*\))[[:space:]]*;;[[:space:]]*$/\1/p' builder.sh |"""
     """ head -1 | tr -d ' ' | tr '|' '\\n' | grep -v '^$' || true"""
@@ -40,9 +39,7 @@ _GUARDED_AWK = r"""awk -v fmt="%s" '
         END { print (found ? "yes" : "no") }
     ' builder.sh"""
 
-# Every shape the format parse has to survive. The comment on each line is the
-# property it is there for; a case with no property is a case that will be
-# deleted the first time someone tidies this file.
+# Every shape the format parse has to survive. The comment on each line is the property it is there for; a case with no property is a case that will be deleted the first time someone tidies this file.
 FORMAT_CASES = [
     "    deb | rpm | apk | archlinux) ;;\n",  # the real builder's line
     "    deb|rpm|apk|archlinux) ;;\n",  # no spaces at all

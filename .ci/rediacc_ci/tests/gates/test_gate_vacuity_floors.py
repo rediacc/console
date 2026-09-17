@@ -12,13 +12,10 @@ WHAT A GREEN HERE DOES NOT COVER, stated so it is not read as more than it is: o
 EXIT 77 IS "CANNOT RUN", NOT A VERDICT, and the twin's header records what conflating the two cost: `.ci/scripts/security/shfmt.sh` exits 77 when it cannot obtain shfmt at the pin, and in the `quality-security` lane `go install shfmt` fails. A first version read any non-zero exit as "refused" and then demanded the word VACUOUS, so CI reported `FAIL: shfmt: refused (exit 77) but
 never said VACUOUS` about a floor it never reached. A tool that is absent proves nothing either way -- and a run where EVERY case skipped has verified nothing, which is what the exercised-count refusal below is for.
 
-WHERE THE PORT REIMPLEMENTS THE TWIN. The twin greps its captured output with
-`grep -qi 'vacuous'`; the port lowercases the combined streams and asks for the
-substring. Same predicate, one fewer subprocess, and it reads both streams rather than a merge decided by the shell.
+WHERE THE PORT REIMPLEMENTS THE TWIN. The twin greps its captured output with `grep -qi 'vacuous'`; the port lowercases the combined streams and asks for the substring. Same predicate, one fewer subprocess, and it reads both streams rather than a merge decided by the shell.
 
-THE EXERCISED COUNTER IS NOT MODULE STATE, and that is deliberate. The twin
-increments `EXERCISED` across a straight-line script; a Python module doing the
-same would be shared mutable state across test functions, which under `-n 8 --dist loadgroup` is exactly the thing that forces an `xdist_group`. Keeping the four floors and their count inside ONE test function removes the need for the group instead of declaring one, so this module has NO `xdist_group`: every case is a subprocess writing only into its own `mkdtemp` directory.
+THE EXERCISED COUNTER IS NOT MODULE STATE, and that is deliberate. The twin increments `EXERCISED` across a straight-line script; a Python module doing the same would be shared mutable state across test functions, which under `-n 8 --dist loadgroup` is exactly the thing that forces an `xdist_group`. Keeping the four floors and their count inside ONE test function removes the need
+for the group instead of declaring one, so this module has NO `xdist_group`: every case is a subprocess writing only into its own `mkdtemp` directory.
 """
 
 import pathlib
@@ -115,8 +112,7 @@ def test_every_impossible_floor_is_refused_and_says_vacuous(gate):
         gate.assertions += 1
         gate.log_pass("action-refs refuses an empty .github tree, and says VACUOUS")
 
-    # ANTI-VACUITY FOR THIS TEST ITSELF. Skipping is legitimate per tool; a run
-    # where every case skipped has verified nothing and must not print a green.
+    # ANTI-VACUITY FOR THIS TEST ITSELF. Skipping is legitimate per tool; a run where every case skipped has verified nothing and must not print a green.
     if exercised < MIN_EXERCISED:
         gate.log_fail(
             "VACUOUS: only %d floor(s) were actually exercised, floor %d"

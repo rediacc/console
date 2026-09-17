@@ -98,9 +98,7 @@ FAILURE_FAILED = "failed"
 # Every state in which the answer is "no verdict was reached". `docker frobnicate` is deliberately NOT here: the engine answered and the command was wrong, which is a finding.
 CANNOT_RUN_STATES = frozenset({STATE_ABSENT, STATE_UNREACHABLE, STATE_DENIED, STATE_UNKNOWN})
 
-# Matched case-insensitively against STDERR. The first entry is docker 29's
-# current wording, captured verbatim on 2026-09-06; the second and third are the
-# older phrasings, kept because a CI runner or a developer laptop may be on an older CLI and a classifier that only knows today's string silently degrades every one of those machines to FAILED.
+# Matched case-insensitively against STDERR. The first entry is docker 29's current wording, captured verbatim on 2026-09-06; the second and third are the older phrasings, kept because a CI runner or a developer laptop may be on an older CLI and a classifier that only knows today's string silently degrades every one of those machines to FAILED.
 _UNREACHABLE_MARKERS = (
     "failed to connect to the docker api",
     "cannot connect to the docker daemon",
@@ -252,8 +250,7 @@ class DockerResult:
         """One stripped scalar, and an empty one is refused.
 
         `docker info --format '{{.ServerVersion}}'` against a dead engine prints
-        NOTHING and exits 1 (measured). The exit code catches that here; this
-        refusal catches the version of it where a future docker exits 0 with an empty field, which is the same class of bug that put an empty signing key into a production build (docs/dev-environments.md:102-110).
+        NOTHING and exits 1 (measured). The exit code catches that here; this refusal catches the version of it where a future docker exits 0 with an empty field, which is the same class of bug that put an empty signing key into a production build (docs/dev-environments.md:102-110).
         """
         text = self.stdout.strip()
         if not text:
@@ -371,9 +368,7 @@ def client_version(env: dict[str, str] | None = None) -> str:
 def state(env: dict[str, str] | None = None, *, host: str | None = None) -> str:
     """Which of the four situations this machine is in. One probe, four answers.
 
-    `docker version` rather than `docker info` as the probe, for two reasons. It is what `.ci/lib/local-common.sh:633`, `.ci/lib/devbox.sh:76` and `.ci/legacy/run-legacy.sh:766` already use, so this reports the same thing
-    they act on; and `docker info` is the slower call, which matters when the
-    engine is dead and the timeout is what you are waiting for.
+    `docker version` rather than `docker info` as the probe, for two reasons. It is what `.ci/lib/local-common.sh:633`, `.ci/lib/devbox.sh:76` and `.ci/legacy/run-legacy.sh:766` already use, so this reports the same thing they act on; and `docker info` is the slower call, which matters when the engine is dead and the timeout is what you are waiting for.
 
     STATE_UNKNOWN is real and is not a synonym for unreachable: a timeout, or a stderr this module cannot classify, means the question was not answered. It is grouped into CANNOT_RUN_STATES because acting on an unanswered probe is the failure this whole module exists to prevent, but it is REPORTED separately so a message can say "I could not tell" instead of inventing a cause.
     """

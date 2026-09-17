@@ -106,9 +106,7 @@ def run(ev):
     # Drop the bodies of cat/tee heredocs before matching.
     scan = shellscan._command_substitution(_strip_cat_heredocs(cmd))
 
-    # QUOTED SPANS GO TOO, on top of the heredoc stripping above. The awk pass
-    # handles a documented heredoc; it does nothing for `echo 'git commit
-    # --amend'` or a commit message quoting the rule, both of which were refused as if they were amends.
+    # QUOTED SPANS GO TOO, on top of the heredoc stripping above. The awk pass handles a documented heredoc; it does nothing for `echo 'git commit --amend'` or a commit message quoting the rule, both of which were refused as if they were amends.
     #
     # BUT STRIPPING QUOTES ALONE OPENS AN EVASION, and the first draft of this shipped it: `sh -c "git commit --amend"` has the whole command inside a quoted span, so removing quotes removed the amend and the guard returned 0. The comment written alongside that draft claimed the dedicated test file pinned the `sh -c` case. It does not -- the file has no such case, and the claim was
     # never checked. One probe found both the false comment and the hole.

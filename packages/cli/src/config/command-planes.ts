@@ -52,8 +52,7 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // schedule/run/status/cancel/list/restore all reach a machine (systemd timers, renet, SSH). Only the `strategy` subgroup is config-only (see below).
   backup: { plane: 'machine' },
   config: { plane: 'config' },
-  // Mostly CRUD over the local storage list; only `prune` reaches a machine and
-  // only `browse` shells out to a local rclone.
+  // Mostly CRUD over the local storage list; only `prune` reaches a machine and only `browse` shells out to a local rclone.
   storage: { plane: 'config' },
   // login/logout/status are account-server HTTPS; the -m subcommands are not.
   subscription: { plane: 'other' },
@@ -64,11 +63,8 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   update: { plane: 'other' },
   mcp: { plane: 'other' },
 
-  // ── machine: config-CRUD leaves only touch the config file ─────────────
-  // add/remove/list write or read the config record; provider add/remove/list
-  // register cloud-provider credentials in the config; `infra set`/`show` edit
-  // the machine's infra block in the config; `infra cert status`/`clear` read
-  // and clear the LOCAL cert cache. All would produce the CALLER's answer, so they must stay config-plane inside a machine-default domain (spec/03 §4.9). `setup`, `scan-keys`, `infra push`, `infra cert pull`/`push`, provision, deprovision, prune, health, status all reach the machine via the default.
+  // ── machine: config-CRUD leaves only touch the config file ───────────── add/remove/list write or read the config record; provider add/remove/list register cloud-provider credentials in the config; `infra set`/`show` edit the machine's infra block in the config; `infra cert status`/`clear` read and clear the LOCAL cert cache. All would produce the CALLER's answer, so they must
+  // stay config-plane inside a machine-default domain (spec/03 §4.9). `setup`, `scan-keys`, `infra push`, `infra cert pull`/`push`, provision, deprovision, prune, health, status all reach the machine via the default.
   'machine list': { plane: 'config' },
   'machine add': { plane: 'config' },
   'machine remove': { plane: 'config' },
@@ -78,8 +74,7 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   'machine infra cert status': { plane: 'config' },
   'machine infra cert clear': { plane: 'config' },
 
-  // ── backup: named strategy records are config-only; the rest reach a machine ─
-  // `backup strategy set/remove/list/show` edit strategy records in the config (backup-strategy.ts imports no executor or SSH).
+  // ── backup: named strategy records are config-only; the rest reach a machine ─ `backup strategy set/remove/list/show` edit strategy records in the config (backup-strategy.ts imports no executor or SSH).
   'backup strategy': { plane: 'config' },
   // `backup usage`/`backup manifests` are account-tunnel READS (accountServerFetch), not machine executor commands — control-plane, so `other` (like `subscription`). `backup verify` DOES reach a machine (backup_verify verb), so it keeps the backup-domain machine default.
   'backup usage': { plane: 'other' },
@@ -111,9 +106,7 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // Lists a bucket by spawning the operator's local rclone against the vault credentials — it reaches the storage backend, never a machine.
   'storage browse': { plane: 'other' },
 
-  // ── cluster ───────────────────────────────────────────────────────────
-  // Prints the cluster's config block (configService.listClusters); it does not
-  // query the live cluster, so it is the one config-plane leaf in the domain.
+  // ── cluster ─────────────────────────────────────────────────────────── Prints the cluster's config block (configService.listClusters); it does not query the live cluster, so it is the one config-plane leaf in the domain.
   'cluster status': { plane: 'config' },
 
   // ── config: machine/provider/infra/cert-cache moved to the `machine` noun ─ (their planes now live under `machine …` above). `config reconcile` reaches every machine (renet list all) to rebuild state, so it is honestly machine-plane — and it is config's ONLY machine leaf, which keeps Rule 2 satisfied now that the machine/infra leaves left. It is barred
@@ -132,9 +125,7 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // watchFile-based follow; never exits on its own.
   'config audit tail': { interactive: true },
 
-  // ── vscode: only connect and the remote code-server lifecycle are remote ─
-  // list/cleanup edit the local ~/.ssh/config block; check probes the local
-  // VS Code install. (`vscode serve status`/`stop` inherit machine: they drive the remote code-server over SSH.)
+  // ── vscode: only connect and the remote code-server lifecycle are remote ─ list/cleanup edit the local ~/.ssh/config block; check probes the local VS Code install. (`vscode serve status`/`stop` inherit machine: they drive the remote code-server over SSH.)
   'vscode list': { plane: 'config' },
   'vscode cleanup': { plane: 'config' },
   'vscode check': { plane: 'other' },

@@ -8,9 +8,8 @@ THE REAL `ci-env.sh` IS COPIED IN AND SOURCED FOR REAL, with every secret it
 would otherwise generate pre-set so both sides take its `${VAR:-...}` arms and
 the result is byte-deterministic.
 
-ONLY THE SLEEPS ARE REWRITTEN IN THE COPIES. The twin polls for 180s at a 3s
-interval and then sleeps a further 2s; nulling those three sleeps keeps every
-constant, so both sides still perform all 60 probes, still print the progress line on the same multiples of 15, and the comparison is over the real arithmetic instead of a miniature of it. `test_the_null_sleep_anchors_still_exist` and `test_the_probe_count_is_the_real_one` are the controls on that rewrite.
+ONLY THE SLEEPS ARE REWRITTEN IN THE COPIES. The twin polls for 180s at a 3s interval and then sleeps a further 2s; nulling those three sleeps keeps every constant, so both sides still perform all 60 probes, still print the progress line on the same multiples of 15, and the comparison is over the real arithmetic instead of a miniature of it.
+`test_the_null_sleep_anchors_still_exist` and `test_the_probe_count_is_the_real_one` are the controls on that rewrite.
 
 ONE LINE IS NORMALIZED: ` load average (1m 5m 15m): ...`, which both sides read
 from the real `/proc/loadavg` seconds apart. `test_the_load_line_is_really_there`
@@ -448,8 +447,7 @@ def test_the_progress_line_fires_only_on_multiples_of_fifteen() -> None:
 def test_planted_defect_is_caught_by_this_differential() -> None:
     """ "Fix" the substring match in a COPY of the port and watch it diverge.
 
-    Turning `grep -q "healthy"` into an equality test is the change a reader would make on sight, and it is a real behaviour change against the twin.
-    This mutates an in-memory copy; the file on disk is never touched.
+    Turning `grep -q "healthy"` into an equality test is the change a reader would make on sight, and it is a real behaviour change against the twin. This mutates an in-memory copy; the file on disk is never touched.
     """
     source = PORT.read_text(encoding="utf-8")
     anchor = '    return any("healthy" in line for line in inspect_stdout.splitlines())\n'

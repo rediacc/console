@@ -4,8 +4,8 @@ Collects every PR the 2-hourly sweeper should re-dispatch: LABEL-ARMED UNION CAM
 
 THE UNION IS THE FIX, in the twin's words: the sweep used to list label-armed PRs only, and its own comment admitted the gap. A PR armed only by an open campaign carries no label, so campaign rounds rode their own `workflow_run` events -- and those events are exactly what a sweeper exists to survive the loss of. The sweep was reaching the arming path that needs it least.
 
-READ-ONLY. Listing PRs and reading comments needs no app token; the dispatch
-that follows is a separate step with a separate credential. Trust in a campaign comes from `sweep-campaigns.sh`, which this script SHELLS OUT TO rather than reimplements (see below), because console is public and a lookalike comment claiming `campaign: open` is the obvious way to make the sweeper dispatch rounds nobody armed.
+READ-ONLY. Listing PRs and reading comments needs no app token; the dispatch that follows is a separate step with a separate credential. Trust in a campaign comes from `sweep-campaigns.sh`, which this script SHELLS OUT TO rather than reimplements (see below), because console is public and a lookalike comment claiming `campaign: open` is the obvious way to make the sweeper dispatch
+rounds nobody armed.
 
 -----------------------------------------------------------------------------
 WHAT IS PORTED AND WHAT IS DELIBERATELY STILL A SUBPROCESS
@@ -56,8 +56,7 @@ The label-armed half still works, which is what makes it look plausible. `gh_jso
 
 DEFECT 2: `--out` IN AN UNWRITABLE PLACE IS ANNOUNCED AS AN EMPTY SWEEP. The final pipeline carries `|| true`, which swallows a REDIRECTION failure just as happily as `grep`'s no-match exit 1. The count then comes from `$(grep -c . "$OUT" || true)` on a file that does not exist, so the summary
 line reads `sweeper:  armed PR(s) = ...` with an empty number where the total
-should be. Both halves are reproduced; only bash's own diagnostic text for the
-failed redirection differs, which the differential compares by shape.
+should be. Both halves are reproduced; only bash's own diagnostic text for the failed redirection differs, which the differential compares by shape.
 
 K=5 LEDGER: `.ci/shadow/w7p6-sweep-collect.observations.jsonl`.
 """
@@ -88,9 +87,7 @@ DEFAULT_LABEL = "autopilot"
 GH_ATTEMPTS = 3
 GH_BACKOFF_SECONDS = 3
 
-# The comment transform, verbatim. `--slurp` wrapped the pages, `.[][]`
-# flattens them back; see the twin's comment on why `--paginate --jq` cannot be
-# used here (the runner's gh refuses `--slurp` with `--jq`, proven live on the first canary dispatch 2026-08-09).
+# The comment transform, verbatim. `--slurp` wrapped the pages, `.[][]` flattens them back; see the twin's comment on why `--paginate --jq` cannot be used here (the runner's gh refuses `--slurp` with `--jq`, proven live on the first canary dispatch 2026-08-09).
 COMMENT_FILTER = "[.[][] | {id, author: .user.login, body}]"
 
 # The PR number extractor for the loop.
@@ -369,8 +366,7 @@ def main(argv: list[str], *, sleeper=time.sleep) -> int:
     try:
         _write(out_path, b"".join(line + b"\n" for line in union))
     except OSError as exc:
-        # DEFECT 2: `|| true` swallows this. bash's diagnostic carries the
-        # twin's path and line number; this one carries the same errno.
+        # DEFECT 2: `|| true` swallows this. bash's diagnostic carries the twin's path and line number; this one carries the same errno.
         print(
             "%s: %s: %s" % (SELF, out_path, os.strerror(exc.errno) if exc.errno else str(exc)),
             file=sys.stderr,

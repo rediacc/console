@@ -9,9 +9,7 @@ advances, without any of it leaving the process tree.
 WHAT IS COMPARED: exit code, stdout bytes, stderr bytes, the `gh` CALL LOG, and the CONTENT OF `--out`. The last two are the artifact. This script's entire effect on the world is which GraphQL requests it makes and what array it leaves behind, and a port that fetched the right threads from the wrong repository, or dropped the `repo`/`pr` tags that let a reply be routed back, would
 print an identical summary line. The call log therefore carries the full argv INCLUDING the query text, so a reflowed query is a failure here rather than a surprise in production.
 
-THE OUT FILE IS CHECKED FOR ABSENCE ON EVERY FAILURE PATH, not for emptiness.
-"No threads" and "could not ask" must not share an output; an empty file is a
-value a reader could act on, absence is not.
+THE OUT FILE IS CHECKED FOR ABSENCE ON EVERY FAILURE PATH, not for emptiness. "No threads" and "could not ask" must not share an output; an empty file is a value a reader could act on, absence is not.
 
 ONE CASE COSTS EIGHTEEN SECONDS PER SIDE. `_gh_probe` sleeps 3 then 6 between its three attempts, and it is the only way to prove the retry loop, the final `gh failed after 3 attempts` line and the exit code agree. It is named `test_slow_...` so it can be deselected by name, and it is not skipped by default, because a retry loop nobody drives is a retry loop nobody has seen.
 
@@ -251,8 +249,7 @@ def test_a_single_page_of_threads() -> None:
     assert len(calls) == 1, calls
     argv = calls[0]
     assert argv[:2] == ["api", "graphql"]
-    # THE REQUEST, field by field. `-F pr` is the typed form; `-f` the string
-    # form; the query travels whole, leading newline and all.
+    # THE REQUEST, field by field. `-F pr` is the typed form; `-f` the string form; the query travels whole, leading newline and all.
     assert argv[2] == "-f"
     assert argv[3].startswith("query=\nquery($owner: String!, $repo: String!, $pr: Int!")
     assert "comments(first: 20)" in argv[3], "the ONE way this query differs from its sibling"
@@ -323,8 +320,7 @@ def test_the_page_limit_stops_a_runaway() -> None:
 
 def test_a_graphql_error_object_is_not_an_empty_thread_set() -> None:
     """THE CHECK THAT MATTERS MOST HERE. A GraphQL error is valid JSON and exits
-    0, so `gh_json` is happy with it; without this per-page check a permission
-    error would read as "this PR has no threads" and a review round would
+    0, so `gh_json` is happy with it; without this per-page check a permission error would read as "this PR has no threads" and a review round would
     resolve everything it could not see."""
     body = json.dumps({"errors": [{"message": "Resource not accessible by integration"}]})
     code, _, err, _calls, written = _sides("graphql-error", script=[ok(body)])
@@ -407,8 +403,7 @@ def test_linked_submodule_prs_are_fetched_and_tagged() -> None:
 
 def test_a_linked_target_that_cannot_be_read() -> None:
     """BEST EFFORT, AND LOUD. The gate holds no cross-repo token, so a private
-    submodule's PR is simply unreadable from here; killing the round over it
-    would take fix rounds down with it. The annotation is on STDOUT because an
+    submodule's PR is simply unreadable from here; killing the round over it would take fix rounds down with it. The annotation is on STDOUT because an
     Actions workflow command has to be, and console's own threads survive."""
     code, out, err, _calls, written = _sides(
         "linked-denied",
@@ -465,8 +460,7 @@ def test_a_body_naming_no_known_submodule() -> None:
 
 def test_a_mistyped_body_path_is_silent() -> None:
     """`[[ -n && -s ]]`, never `require_file`. A typo reads as "no linked PRs",
-    which is the same silence the LINKED SUBMODULE paragraph exists to prevent,
-    reached by a typo rather than by a missing token. Preserved; fixing it
+    which is the same silence the LINKED SUBMODULE paragraph exists to prevent, reached by a typo rather than by a missing token. Preserved; fixing it
     changes a live workflow step's contract."""
     code, _, err, calls, _written = _sides(
         "body-typo",

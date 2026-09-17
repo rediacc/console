@@ -8,9 +8,7 @@ WHY THIS CLASS NEEDS A TEST. Every failure mode of a credential fetcher is quiet
 
 THE FAKE ASSERTS ITS OWN CALLER. `bws 2.1.0` wraps `--output json` in truecolor escapes unless `--color no` is passed, and no JSON parser survives that. A fake that ignored the flag would let a regression in the caller go unnoticed, so this one exits 3 with a message naming the omission.
 
-WHY THE HELPER IS SOURCED IN A SUBPROCESS. `bws_env_load` EXPORTS into the shell
-that sourced it; that is its entire purpose. A Python port cannot be that shell,
-so each case runs one `bash -c` that sources the helper, calls it, and prints
+WHY THE HELPER IS SOURCED IN A SUBPROCESS. `bws_env_load` EXPORTS into the shell that sourced it; that is its entire purpose. A Python port cannot be that shell, so each case runs one `bash -c` that sources the helper, calls it, and prints
 `rc=<code>` on the last line -- which is exactly the shape the twin's `run_load`
 produces, so the assertions transfer unchanged.
 """

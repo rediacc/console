@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported host-toolchain runtime-coverage gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.host_toolchain_coverage`, which
-pytest and the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.host_toolchain_coverage`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 5). See DRIVEN, below.
 
@@ -45,8 +43,7 @@ port.err)` is empty. Named exactly: the ONLY normalisation applied is collapsing
 
 The plant was reverted by its exact inverse and `check-toolchain-pins.sh` verified byte-identical to its pre-plant state, with both sides back at exit 0.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-host-toolchain-coverage.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-host-toolchain-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Host toolchain runtime coverage emit: false blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it. needs: node selftest: true ---- end gate ----
 """

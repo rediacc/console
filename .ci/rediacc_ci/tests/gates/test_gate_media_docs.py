@@ -69,8 +69,7 @@ COMMIT_TOKEN_RE = re.compile(r"`([0-9a-f]{7,12})`")
 def media_owned_files() -> list[pathlib.Path]:
     """EVERY FILE THIS FOLDER OWNS, including the two shims that live outside it.
 
-    The shims exist only to describe a move, so their prose is the most likely in
-    the change to go stale; leaving them out would exempt the highest-risk prose.
+    The shims exist only to describe a move, so their prose is the most likely in the change to go stale; leaving them out would exempt the highest-risk prose.
     """
     fixed = [
         ROOT / "media.sh",
@@ -84,9 +83,7 @@ def media_owned_files() -> list[pathlib.Path]:
 def dangling_ci_paths(*files: pathlib.Path) -> list[str]:
     """Every `.ci/...` path a file names that does not exist, as `<file>: <path>`.
 
-    GLOBS ARE NOT PATHS. `test-media-*.sh` appears in several headers as the NAME OF
-    A SET; a token containing `*` is dropped rather than resolved, because the
-    alternative is either a false finding on every one of them or an exception list that grows with the prose.
+    GLOBS ARE NOT PATHS. `test-media-*.sh` appears in several headers as the NAME OF A SET; a token containing `*` is dropped rather than resolved, because the alternative is either a false finding on every one of them or an exception list that grows with the prose.
     """
     findings = []
     for path in files:

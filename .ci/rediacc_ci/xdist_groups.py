@@ -8,9 +8,8 @@ WITHOUT `--dist loadgroup` THE MARKER DOES NOTHING AT ALL. That is what makes it
 --------------------------------------------------------------------------
 THE DERIVATION, AND WHY IT YIELDS NOTHING TODAY
 --------------------------------------------------------------------------
-`.ci/rediacc_ci/tests/gates/test_gate_*.py` modules each declare a `BASH_TWIN`, and `test_twin_parity.py` RUNS that twin against the real tree on every pytest run. A twin that writes or scans the real tree therefore makes `check:ci-pytest`
-a participant in the battery's isolation contract; two such twins running in two
-workers at once is the `cp: cannot stat` flake nobody can reproduce.
+`.ci/rediacc_ci/tests/gates/test_gate_*.py` modules each declare a `BASH_TWIN`, and `test_twin_parity.py` RUNS that twin against the real tree on every pytest run. A twin that writes or scans the real tree therefore makes `check:ci-pytest` a participant in the battery's isolation contract; two such twins running in two workers at once is the `cp: cannot stat` flake nobody can
+reproduce.
 
 Which twins those are is already recorded, in two places, and this reads both rather than becoming a third copy:
 
@@ -23,9 +22,8 @@ Which twins those are is already recorded, in two places, and this reads both ra
 MEASURED 2026-09-07 AND STATED SO NOBODY CALLS IT A BUG: 29 of 29 ported modules resolve, and ZERO of them are in `mutex | reads`. **The derivation returns no groups today.** That is the correct answer and not a broken reader, and there is deliberately NO "at least one group must exist" floor here: such a floor would be red on the day it was written and would be suppressed within
 the week. The anti-vacuity claim that IS available is one directory up -- `real_tree_twins` must not return an empty UNION, because an empty union would make `test_no_ported_twin_is_a_real_tree_writer_or_scanner` admit every twin including the four that rewrite tracked files. `test_xdist_groups.py` asserts that, and `test_twin_parity.py` already refuses on it at runtime.
 
-Note also which direction an empty derivation errs in. It was tempting to read
-"no groups" as "no parallelism"; the opposite is true. Ungrouped items are the
-freely distributable ones, so a derivation that returns nothing produces MAXIMUM spread. The failure it could hide is a real-tree twin going undeclared in BOTH sources, which is a defect in the declarations rather than in this file.
+Note also which direction an empty derivation errs in. It was tempting to read "no groups" as "no parallelism"; the opposite is true. Ungrouped items are the freely distributable ones, so a derivation that returns nothing produces MAXIMUM spread. The failure it could hide is a real-tree twin going undeclared in BOTH sources, which is a defect in the declarations rather than in this
+file.
 
 --------------------------------------------------------------------------
 ONE GROUP FOR ALL REAL-TREE TWINS, NOT ONE PER CLAIM

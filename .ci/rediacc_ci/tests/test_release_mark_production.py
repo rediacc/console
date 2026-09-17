@@ -13,9 +13,8 @@ BOTH LOGGING WORLDS ARE DRIVEN. `source common.sh 2>/dev/null || { ... }` gives
 the script a second, private logger whose `log_info` writes to STDOUT with no glyph. `test_the_fallback_logger_world_...` copies each subject into a fixture tree that has no `.ci/scripts/lib/`, which is the only way to reach that branch, and compares the streams there too.
 
 THE ONE DELIBERATE DIVERGENCE IS ASSERTED, NOT HIDDEN.
-`test_divergence_common_sh_interprets_backslash_escapes_in_gh_error_text` drives a `gh` failure whose text contains a literal backslash-n and asserts that the twin (via `echo -e`) renders a newline while the port renders two characters.
-`rediacc_ci.log`'s module docstring already rules on this class; this pins it on
-the one script in the box that interpolates API text into a log message.
+`test_divergence_common_sh_interprets_backslash_escapes_in_gh_error_text` drives a `gh` failure whose text contains a literal backslash-n and asserts that the twin (via `echo -e`) renders a newline while the port renders two characters. `rediacc_ci.log`'s module docstring already rules on this class; this pins it on the one script in the box that interpolates API text into a log
+message.
 """
 
 from __future__ import annotations
@@ -310,8 +309,7 @@ def test_a_lightweight_tag_is_not_dereferenced(tmp_path: pathlib.Path) -> None:
 
 def test_an_annotated_tag_is_dereferenced_to_its_commit(tmp_path: pathlib.Path) -> None:
     """THE STEP A PORT WOULD SILENTLY DROP. An annotated tag's ref names a TAG
-    object; without the extra lookup `production` would point at the annotation
-    and `git show production` would print the message instead of the code. The
+    object; without the extra lookup `production` would point at the annotation and `git show production` would print the message instead of the code. The
     only evidence is the call log and the sha in the message."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["v1.3.1"], FAKE_GH_REF_TYPE="tag")
     assert old.returncode == 0
@@ -500,9 +498,7 @@ def test_pure_helpers() -> None:
 
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the annotated-tag dereference -- the one step
-    whose omission changes nothing a reader would notice. The mutant skips it,
-    so `production` would point at the tag ANNOTATION; the message text is the
-    same shape, only the sha differs, and the call log loses one entry. Driven
+    whose omission changes nothing a reader would notice. The mutant skips it, so `production` would point at the tag ANNOTATION; the message text is the same shape, only the sha differs, and the call log loses one entry. Driven
     red, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace('    if obj_type == "tag":', "    if False:")

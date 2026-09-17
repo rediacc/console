@@ -38,9 +38,8 @@ constants exist, and that refusal is recorded in the row's own note.
 --------------------------------------------------------------------------
 WHAT THIS MODULE DELIBERATELY DOES NOT DO
 --------------------------------------------------------------------------
-IT NEVER RUNS AN INSTALLER. It prints one. Every install line here needs root or mutates a developer's machine, and a gate that can `sudo apt-get install` as a side effect of being run is a gate nobody can run. `./run.sh setup` remains the
-thing that acts; this is the thing that KNOWS, and the separation is the same one
-`.ci/scripts/lib/toolchain.sh` already draws between `toolchain_check` (answers) and `toolchain_acquire` (gets).
+IT NEVER RUNS AN INSTALLER. It prints one. Every install line here needs root or mutates a developer's machine, and a gate that can `sudo apt-get install` as a side effect of being run is a gate nobody can run. `./run.sh setup` remains the thing that acts; this is the thing that KNOWS, and the separation is the same one `.ci/scripts/lib/toolchain.sh` already draws between
+`toolchain_check` (answers) and `toolchain_acquire` (gets).
 
 IT DOES NOT OWN A VERSION. Every pin lives in `.devcontainer/toolchain.env` and is reached through `rediacc_ci.core.toolchain`. A row names a KEY, never a value, so this file cannot become a second place a version is written down. A3 asserts every key a row names actually exists in the pins file, which is what makes the indirection checkable rather than decorative.
 
@@ -96,8 +95,7 @@ from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import toolchain
 
-# The twin's exit statuses. 77 is CANNOT RUN and is never a verdict; see the
-# module docstring for the single condition that returns it.
+# The twin's exit statuses. 77 is CANNOT RUN and is never a verdict; see the module docstring for the single condition that returns it.
 EXIT_OK = 0
 EXIT_FINDINGS = 1
 EXIT_CANNOT_RUN = 77
@@ -117,9 +115,7 @@ class Tool:
 
     `install` maps a manager name to the command a human pastes. It is prose, not something this module executes, so it may carry a `sudo` and a `&&`.
 
-    `provenance` is `file:line` for where this row's knowledge lived before this table existed, or the file that owns it now. It is checked for shape by A7
-    rather than for truth, which is the honest limit of a mechanical check; a
-    reviewer confirms the lines, and the audit's job is to stop a row appearing
+    `provenance` is `file:line` for where this row's knowledge lived before this table existed, or the file that owns it now. It is checked for shape by A7 rather than for truth, which is the honest limit of a mechanical check; a reviewer confirms the lines, and the audit's job is to stop a row appearing
     with no citation at all.
     """
 
@@ -130,9 +126,7 @@ class Tool:
     provenance: str
     probe: tuple[str, ...] | None = None
     note: str = ""
-    # A python DISTRIBUTION rather than an executable on PATH. PyYAML is the only
-    # one today; it is pinned, it is needed by gates that parse workflow YAML, and
-    # `shutil.which("PyYAML")` will never find it. Flagged so `--report` asks the interpreter instead of PATH, and so A4/A5 still apply to it.
+    # A python DISTRIBUTION rather than an executable on PATH. PyYAML is the only one today; it is pinned, it is needed by gates that parse workflow YAML, and `shutil.which("PyYAML")` will never find it. Flagged so `--report` asks the interpreter instead of PATH, and so A4/A5 still apply to it.
     python_dist: str = ""
     aliases: tuple[str, ...] = field(default_factory=tuple)
 
@@ -799,8 +793,7 @@ def audit(
         if not any(m in row.install for m in (*LINUX_MANAGERS, REPO_MANAGER))
     )
 
-    # -- A6. THE pytest ROW, BY NAME. ---------------------------------------- Redundant with A2 today, and deliberately so: see the module docstring. A2
-    # goes quiet if pytest ever leaves TOOL_KEYS; this does not.
+    # -- A6. THE pytest ROW, BY NAME. ---------------------------------------- Redundant with A2 today, and deliberately so: see the module docstring. A2 goes quiet if pytest ever leaves TOOL_KEYS; this does not.
     pytest_row = by_name.get("pytest")
     if pytest_row is None:
         findings.append(
@@ -857,9 +850,7 @@ def audit(
 def report(table: tuple[Tool, ...] = TOOLS) -> int:
     """Print what this host has beside what the table says it needs. Always 0.
 
-    NOT A VERDICT, and it returns 0 even when everything is missing. A developer
-    on a fresh machine runs this to find out what to do; making it red would give
-    a number to a question that has not been asked yet. `audit` is the verdict.
+    NOT A VERDICT, and it returns 0 even when everything is missing. A developer on a fresh machine runs this to find out what to do; making it red would give a number to a question that has not been asked yet. `audit` is the verdict.
     """
     manager = detect_manager()
     print(
@@ -945,9 +936,7 @@ def selftest(*, verbose: bool = True) -> int:
 
     THE FLOOR IS NOT A HAND-TYPED COUNT OF ASSERTIONS. It is `len(cases)` plus the three controls declared after the loop, so adding a case raises the floor in the same edit. A hand-typed number is one nobody re-derives, and the driver contract's section 6 refuses those for exactly that reason.
 
-    `verbose` is False on the leg `main` runs BEFORE every real scan, where 16
-    `ok` lines would bury the verdict. The controls still run; only their
-    per-control chatter is suppressed, and a failure still prints every FAIL.
+    `verbose` is False on the leg `main` runs BEFORE every real scan, where 16 `ok` lines would bury the verdict. The controls still run; only their per-control chatter is suppressed, and a failure still prints every FAIL.
     """
     fake_pins = {"WIDGET_VERSION": "1.0", "PYTEST_VERSION": "9.1.1"}
     fake_keys = {"widget": "WIDGET_VERSION", "pytest": "PYTEST_VERSION"}
@@ -1051,9 +1040,7 @@ def selftest(*, verbose: bool = True) -> int:
             ctl.check(label, any(f.startswith(want) for f in found), True)
 
     # THE SHIPPED TABLE IS DELIBERATELY NOT A CONTROL HERE, and it was one until a plant showed why it must not be. A control asking "does the real table audit clean" makes the instrument's health and the TREE's health the same question, so a genuine finding in the table came back as "the controls did not pass, so this gate has NOT judged the tree" -- which is false, and sends the
-    # reader to the harness instead of to the row. The
-    # controls below are synthetic only; the shipped table is judged by the audit
-    # leg in `main`, which runs immediately after them, and by `test_the_shipped_table_audits_clean` in the pytest suite.
+    # reader to the harness instead of to the row. The controls below are synthetic only; the shipped table is judged by the audit leg in `main`, which runs immediately after them, and by `test_the_shipped_table_audits_clean` in the pytest suite.
 
     # Two host-shape controls that do not depend on what is installed here.
     ctl.check(
@@ -1138,8 +1125,7 @@ def main(argv: list[str]) -> int:
         )
         return EXIT_FINDINGS
 
-    # PRINT THE SHAPE, NOT JUST THE VERDICT. A reader who sees these four numbers
-    # can notice one of them collapsing; "ok" cannot be noticed at all.
+    # PRINT THE SHAPE, NOT JUST THE VERDICT. A reader who sees these four numbers can notice one of them collapsing; "ok" cannot be noticed at all.
     print(
         "ok   install table: %d row(s), %d pinned, %d pinned tool(s) in the "
         "toolchain corpus, %d pin(s) in %s, controls passed"

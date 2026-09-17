@@ -8,9 +8,8 @@ work a PREPENDED scratch PATH let one probe fall through to it, which ran `npm i
 
 ALL FIVE EXTERNALS ARE RECORDING FAKES: `rdc`, `ssh`, `date`, `sleep`, `whoami`. Each appends its full argv to a shared JSONL log and returns canned bytes and a canned status.
 
-THE CLOCK AND THE SLEEP ARE FAKES FOR A SECOND REASON, not just isolation. The twin's window is `TIMEOUT_SECS` seconds of real time with a real `sleep 5`
-between probes; a differential that honoured that would take minutes per case
-and would be switched off. `date` here is a STEPPED COUNTER driven from a fixture list, so "the healthcheck converged on the third probe" and "the window closed with the container still starting" are both exact, instant and reproducible.
+THE CLOCK AND THE SLEEP ARE FAKES FOR A SECOND REASON, not just isolation. The twin's window is `TIMEOUT_SECS` seconds of real time with a real `sleep 5` between probes; a differential that honoured that would take minutes per case and would be switched off. `date` here is a STEPPED COUNTER driven from a fixture list, so "the healthcheck converged on the third probe" and "the
+window closed with the container still starting" are both exact, instant and reproducible.
 
 WHAT IS COMPARED, AND WHY THE CALL LOG IS THE MOST IMPORTANT OF THE FOUR. Every
 case compares exit code, stdout, stderr AND the recorded argv of every external.
@@ -18,9 +17,7 @@ Almost everything this script does is a side effect on a remote machine, and non
 a `2>/dev/null`, or word-split `sudo ss -tlnp 'sport = :5432' 2>&1` into three
 arguments would produce byte-identical output and talk to the VM differently. `test_the_four_remote_programs_survive_as_single_arguments` compares them character for character.
 
-THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming
-the file it is running; the port composes the same prefix from `sys.argv[0]` and
-its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides, and `test_the_mask_does_not_hide_the_message` pins that it collapses nothing else.
+THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming the file it is running; the port composes the same prefix from `sys.argv[0]` and its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides, and `test_the_mask_does_not_hide_the_message` pins that it collapses nothing else.
 """
 
 import json
@@ -248,8 +245,7 @@ def _run(
         "HOME": str(tmp_path.resolve()),
         "USER": "labuser",
         "PYTHONDONTWRITEBYTECODE": "1",
-        # The port imports `rediacc_ci.log`; the COPY under the fixture is what
-        # runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci.log`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})
@@ -729,9 +725,7 @@ def test_a_zero_padded_timeout_is_read_as_octal_and_that_is_a_defect(tmp_path):
     count goes wrong: filtering on that string alone silently adds one to every
     total. The poll program is the one WITHOUT the `=== $sock ===` echo.
 
-    A caller who writes `060` for tidiness gets a window 20 percent shorter than the one the transcript claims, and the transcript will not say so. Both
-    subjects are asserted; the day the twin quotes the variable or validates it,
-    this goes red and names the decision.
+    A caller who writes `060` for tidiness gets a window 20 percent shorter than the one the transcript claims, and the transcript will not say so. Both subjects are asserted; the day the twin quotes the variable or validates it, this goes red and names the decision.
     """
     root = _fixture(tmp_path)
     ticks = tuple((str(1000 + i * 10), 0) for i in range(40))

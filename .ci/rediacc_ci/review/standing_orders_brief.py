@@ -10,8 +10,7 @@ LIVE CALLER OF THE TWIN, not repointed by this port:
     the permission matcher will accept. Repointing the caller therefore means
     editing two lines that must stay in lockstep, and it is not this port's job.
 
-READ-ONLY BY CONSTRUCTION, on both sides. Nothing here writes to the worklist
-store; `worklist.py` is invoked only with `--list` and `--poll`.
+READ-ONLY BY CONSTRUCTION, on both sides. Nothing here writes to the worklist store; `worklist.py` is invoked only with `--list` and `--poll`.
 
 EVERY PATH IS RELATIVE TO THE PROCESS'S CURRENT DIRECTORY, deliberately. The twin uses `.claude/hooks/stop/worklist.py`, `agent/...` and a bare `pwd`, so it reports on whatever checkout it is run from. `paths.repo_root()` is NOT used: that resolver honours $REDIACC_CI_ROOT and would make the port describe a different tree from the twin when the two are compared side by side.
 
@@ -124,9 +123,7 @@ def resolve_tasks_dir(me: str, cwd: str) -> str:
     )
     if not root.is_dir():
         return ""
-    # `for d in "$root"/"$ME"*` iterates in the shell's glob order, which is the
-    # collation order of the current locale; `break` on the FIRST match makes
-    # that order load-bearing. `sorted()` is byte order, which is what bash's glob gives under the C collation this runs in.
+    # `for d in "$root"/"$ME"*` iterates in the shell's glob order, which is the collation order of the current locale; `break` on the FIRST match makes that order load-bearing. `sorted()` is byte order, which is what bash's glob gives under the C collation this runs in.
     for d in sorted(root.glob("%s*" % me)):
         if (d / "tasks").is_dir():
             return str(d / "tasks")
@@ -310,8 +307,7 @@ def main(argv: list[str]) -> int:
 def _state_age(path: pathlib.Path) -> str:
     """`stat -c %y <path> | cut -d. -f1 || echo MISSING`, under `pipefail`.
 
-    `%y` is a local-time timestamp `YYYY-MM-DD HH:MM:SS.nnnnnnnnn +ZZZZ`; `cut`
-    takes everything before the first `.`.
+    `%y` is a local-time timestamp `YYYY-MM-DD HH:MM:SS.nnnnnnnnn +ZZZZ`; `cut` takes everything before the first `.`.
     """
     try:
         mtime = path.stat().st_mtime

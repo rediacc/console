@@ -8,9 +8,7 @@ THE MECHANISM, because the error never points at it. Bash reads a script LAZILY,
 checker cannot reproduce is not in the file, it is in the READER.
 
 HOOK-CHAIN SIBLINGS ARE NOT A RUNNING JOB. Every guard in a chain executes on every tool call in that chain, including the call carrying your edit -- so editing a pre-edit guard finds that guard "running", permanently, with no moment of quiet to wait for. Its Bash-side sibling hit this on 2026-08-27 and blocked four commands including its own repair. A chain evaluator lives for
-milliseconds and is re-read from scratch next call, so the lazy-read window
-below does not exist for it; a suite or background job running for minutes,
-which is what this guard is for, still matches and still blocks.
+milliseconds and is re-read from scratch next call, so the lazy-read window below does not exist for it; a suite or background job running for minutes, which is what this guard is for, still matches and still blocks.
 
 SCOPE: shell scripts only, and only while something is actually running one. A .ts or .py file is read once into memory by its interpreter, so editing it mid-run is merely confusing rather than corrupting. Narrow on purpose -- a guard that refused every edit to any file with a live process would be the over-matching this repo has switched guards off for.
 
@@ -99,8 +97,7 @@ def _running_world(_unused):
     """Two live `bash <script>` processes and one script nobody runs.
 
     `start_new_session=True` puts each in its own process group so the whole
-    group can be killed; `atexit` does that when the test interpreter exits, and
-    the 600-second `sleep` is the backstop if it never gets the chance.
+    group can be killed; `atexit` does that when the test interpreter exits, and the 600-second `sleep` is the backstop if it never gets the chance.
     """
     os.makedirs(WORLD, exist_ok=True)
     for path in (LIVE_SCRIPT, SIBLING_SCRIPT, IDLE_SCRIPT):
@@ -128,9 +125,8 @@ def _spawn(argv):
     )
 
 
-# One session at a time in this world. TWO pytest runs of this suite were live on this machine at once on 2026-09-06 (a peer agent's and this one's), and they fought: each `_kill_stale` killed the other's shells, and the case that names a running script reported different pids on the two sides of one differential. The world has to sit at a FIXED path -- a static payload names
-# it -- so it cannot be made per-process; an advisory lock held for the life of
-# the interpreter makes the second run wait instead.
+# One session at a time in this world. TWO pytest runs of this suite were live on this machine at once on 2026-09-06 (a peer agent's and this one's), and they fought: each `_kill_stale` killed the other's shells, and the case that names a running script reported different pids on the two sides of one differential. The world has to sit at a FIXED path -- a static payload names it --
+# so it cannot be made per-process; an advisory lock held for the life of the interpreter makes the second run wait instead.
 _LOCK_FDS = []
 
 
@@ -149,9 +145,7 @@ def _hold_world_lock(world):
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
             if time.monotonic() >= deadline:
-                # A five-minute wait means the other run is wedged, not busy.
-                # Proceeding is better than a suite that never finishes; the
-                # differential will say so loudly if the worlds then collide.
+                # A five-minute wait means the other run is wedged, not busy. Proceeding is better than a suite that never finishes; the differential will say so loudly if the worlds then collide.
                 break
             time.sleep(0.2)
             continue
@@ -211,8 +205,7 @@ def _pause():
 
 FIXTURES = {"running-scripts": _running_world}
 
-# The variable is never read by this guard; resolving the token is what starts
-# the world. Its Bash-side sibling names the same token.
+# The variable is never read by this guard; resolving the token is what starts the world. Its Bash-side sibling names the same token.
 ENVS = [("running", {"REDIACC_RUNNING_WORLD": "{FIXTURE:running-scripts}"}, {})]
 
 EDGE_CASES = [
@@ -239,8 +232,7 @@ def pattern_for(base):
 
     ESCAPE THE DOTS, same defect and same fix as the Bash-side twin. `.` is a regex wildcard and the basename was interpolated raw, so a one-letter name plus the shell suffix produced `[x].sh` -- which for `b` matches **/bin/bash**, i.e. every bash process alive. Measured on the twin 2026-09-01: an edit was refused naming `/bin/bash --init-file ...` as the job it would corrupt,
     with no such script running.
-    Found here by sweeping the class rather than by being bitten a second time; the two
-    guards build this pattern identically, so a fix to one that skipped the other would have left the same hole open on the Edit door.
+    Found here by sweeping the class rather than by being bitten a second time; the two guards build this pattern identically, so a fix to one that skipped the other would have left the same hole open on the Edit door.
     """
     esc = re.sub(META, r"\\\1", base[1:])
     return hookio.rx(r"(^|[/{S}])[") + base[:1] + r"]" + esc

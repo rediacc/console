@@ -79,18 +79,14 @@ PORT NOTES.
 
 COLOUR IS UNCONDITIONAL IN THIS GATE, and that is carried rather than corrected.
 The twin assigns `RED=$'\033[31m'` and friends with NO tty test and NO `NO_COLOR`
-test, unlike `.ci/scripts/lib/common.sh:18`, which it never sources. So this gate writes escapes into a CI log and into a pipe, always. `rediacc_ci.log` decides colour by `isatty`, so using it here would change the bytes on every non-tty run and the differential would score a mismatch on every tree. The port therefore
-prints raw, with the twin's exact sequences: `31m`/`32m`/`33m`, NOT the `0;31m`
-form `common.sh` uses. Reported as an inconsistency in the twin rather than fixed here.
+test, unlike `.ci/scripts/lib/common.sh:18`, which it never sources. So this gate writes escapes into a CI log and into a pipe, always. `rediacc_ci.log` decides colour by `isatty`, so using it here would change the bytes on every non-tty run and the differential would score a mismatch on every tree. The port therefore prints raw, with the twin's exact sequences: `31m`/`32m`/`33m`,
+NOT the `0;31m` form `common.sh` uses. Reported as an inconsistency in the twin rather than fixed here.
 
 EVERYTHING GOES TO STDOUT, INCLUDING THE FAILURES. The twin's `echo` calls carry no `>&2`, so a caller redirecting stdout to a file sees nothing on the terminal even when the gate fails. Carried, and reported.
 
-THE ENUMERATION IS `git ls-files` PLUS A PYTHON REGEX, NOT `git grep -nP`. Shelling out to `git grep` would make the port trivially equivalent and would
-also make it a wrapper rather than a port; the risk of reimplementing is that
-git's pathspec and binary handling differ from Python's. Both are pinned here: the pathspecs are passed to `git ls-files` UNCHANGED, so git still decides which files are in scope (a bare `*.sh` pathspec matches at any depth, because git does not set FNM_PATHNAME), and a file containing a NUL byte is skipped, which is what `git grep` does when it reports `Binary file X matches`
-instead of lines. `git grep` is git's own matcher and is NOT affected by which `grep` is on PATH, which is worth stating because an interactive Claude Code shell replaces `grep` with a
-FUNCTION wrapping a bundled ugrep and a script sees GNU grep 3.12; that
-substitution produced two wrong port notes elsewhere in this wave and cannot reach this gate.
+THE ENUMERATION IS `git ls-files` PLUS A PYTHON REGEX, NOT `git grep -nP`. Shelling out to `git grep` would make the port trivially equivalent and would also make it a wrapper rather than a port; the risk of reimplementing is that git's pathspec and binary handling differ from Python's. Both are pinned here: the pathspecs are passed to `git ls-files` UNCHANGED, so git still decides
+which files are in scope (a bare `*.sh` pathspec matches at any depth, because git does not set FNM_PATHNAME), and a file containing a NUL byte is skipped, which is what `git grep` does when it reports `Binary file X matches` instead of lines. `git grep` is git's own matcher and is NOT affected by which `grep` is on PATH, which is worth stating because an interactive Claude Code
+shell replaces `grep` with a FUNCTION wrapping a bundled ugrep and a script sees GNU grep 3.12; that substitution produced two wrong port notes elsewhere in this wave and cannot reach this gate.
 
 MEASURED END TO END ON THE REAL TREE, 2026-09-06: `git grep -nP` returns 830 hit lines, the twin's shell pipeline resolves them to 102 distinct paths, and the port's own enumeration returns the SAME 102, compared as sorted files. That is the check worth repeating after any change here, because a green run on a clean tree proves only that both sides found nothing.
 
@@ -135,8 +131,7 @@ EXIT_REFUSE = 2
 def _git(root: str, *args: str) -> subprocess.CompletedProcess:
     """`git -C <root> ...`, never interactive, output captured.
 
-    A missing `git` is a LOUD failure with the fix in the message rather than a
-    traceback that reads as flake; see `refuse_missing_git`.
+    A missing `git` is a LOUD failure with the fix in the message rather than a traceback that reads as flake; see `refuse_missing_git`.
     """
     return subprocess.run(
         ["git", "-C", root, *args],
@@ -192,9 +187,7 @@ def enumerate_hits(root: str) -> list[tuple[str, int, str]]:
         try:
             data = (pathlib.Path(root) / name).read_bytes()
         except OSError:
-            # Tracked but absent from the working tree, or unreadable. `git grep`
-            # skips it too; a deletion that is real on disk and not in the index
-            # is a different gate's subject.
+            # Tracked but absent from the working tree, or unreadable. `git grep` skips it too; a deletion that is real on disk and not in the index is a different gate's subject.
             continue
         if b"\0" in data:
             # `git grep` reports `Binary file X matches` instead of lines, which carries no line number and therefore contributes no reference.
@@ -351,9 +344,7 @@ def main(argv: list[str] | None = None) -> int:
 def selftest() -> int:
     """Both directions on the extraction, the resolution and the comment filter.
 
-    THE PLANT AND ITS MIRROR FOR EVERY RULE. A gate that only ever fires flags the
-    whole tree; a gate that never fires reports every tree clean. So each rule
-    below carries a case it must catch and a case it must ignore, and the floor is DERIVED from the corpus rather than typed, so a case that stops running turns the suite red instead of quietly shortening it.
+    THE PLANT AND ITS MIRROR FOR EVERY RULE. A gate that only ever fires flags the whole tree; a gate that never fires reports every tree clean. So each rule below carries a case it must catch and a case it must ignore, and the floor is DERIVED from the corpus rather than typed, so a case that stops running turns the suite red instead of quietly shortening it.
     """
     # (label, source path, line text, expected resolved path or None)
     extraction = [

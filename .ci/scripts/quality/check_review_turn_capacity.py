@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported review-turn-capacity gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.review_turn_capacity`, which pytest and the
-port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.review_turn_capacity`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 7). See DRIVEN, below.
 
@@ -31,8 +29,7 @@ DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
     stdout: BYTE-IDENTICAL, 237 bytes, sha256 469b7e8e03e1b912...
     stderr: BYTE-IDENTICAL, EMPTY on both sides
 
-No normalisation was applied and none was needed; the twin was first run TWICE
-against an unchanged tree and is byte-stable against itself on both streams, ANSI colour included.
+No normalisation was applied and none was needed; the twin was first run TWICE against an unchanged tree and is byte-stable against itself on both streams, ANSI colour included.
 
 DRIVEN RED AS WELL. The plant lowers the turn ceiling in the real
 `.ci/scripts/review/claude-review-gate.sh:171`, `max_turns=140` to
@@ -56,8 +53,7 @@ The plant was reverted from a `cp` backup, verified back at its pre-plant sha256
 with `sha256sum -c`, and `git status --porcelain` diffed against its pre-plant
 capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-review-turn-capacity.sh` is NOT deleted
-here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-review-turn-capacity.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Review turn budget cannot starve a routed review needs: none selftest: true ---- end gate ----
 """

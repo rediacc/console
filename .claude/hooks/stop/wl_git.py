@@ -15,8 +15,7 @@ WHY THIS EXISTS. The two operations that fix a diverged tree -- a submodule merg
 WHY THIS CAN RUN A FORCE-PUSH AT ALL. The pre-bash hooks inspect the Bash tool's COMMAND LINE. This module runs git through subprocess, which no pre-bash hook ever sees. Verified: `worklist.py --git force-push --execute` is allowed while `git push --force-with-lease origin x` is blocked. So raw force-push stays blocked exactly as before and this is simply a path the block regex
 does not match. NOBODY SHOULD "FIX" THAT BY ADDING AN ALLOW-LIST TO THE HOOK: the hook staying strict is the whole security story, and this module's safety comes from its own checks, not from permission.
 
-WHAT IT IS NOT. It does not prove operator approval and does not try to. The operator's ruling is "AI authorized, just be safe", so the checks here are about
-CORRECTNESS, not authority. Everything is dry-run by default; --execute writes.
+WHAT IT IS NOT. It does not prove operator approval and does not try to. The operator's ruling is "AI authorized, just be safe", so the checks here are about CORRECTNESS, not authority. Everything is dry-run by default; --execute writes.
 
 THE TWO ORACLES, and they are the whole design. This repo has exactly two correctness tests for a gitlink, and both are ANCESTRY. Every incident above is a case of someone reaching for a third, worse one ("is this mine?", "is this newer-looking?"):
 
@@ -48,9 +47,7 @@ class RefusalError(Exception):
     """A safety check said no. Carries the reason shown to the caller."""
 
 
-# NON-INTERACTIVE BY CONSTRUCTION, and this was paid for. `git rebase
-# --continue` opens $EDITOR for the commit message; on a machine where that is
-# a real editor and there is no tty, it BLOCKS. Measured in CI 2026-08-27: the executor's --continue sat until run_git's 120-second timeout and the failure read `rebase --continue failed -- timed out after 120s`, which names the
+# NON-INTERACTIVE BY CONSTRUCTION, and this was paid for. `git rebase --continue` opens $EDITOR for the commit message; on a machine where that is a real editor and there is no tty, it BLOCKS. Measured in CI 2026-08-27: the executor's --continue sat until run_git's 120-second timeout and the failure read `rebase --continue failed -- timed out after 120s`, which names the
 # symptom and hides the cause. A developer machine with EDITOR=true or a
 # configured core.editor never sees it, so the defect is invisible exactly where the tests run.
 #
@@ -89,8 +86,7 @@ def run_git(args, cwd, timeout=TIMEOUT_S):
 def parse_gitmodules(text):
     """[(path, branch)] from .gitmodules text.
 
-    READ, NEVER HARDCODE. check-submodule-branches.sh hardcodes the four paths and is therefore blind to a fifth and to the non-submodule siblings under
-    private/; detect-pointer-bump.sh and worktree.sh read this file instead.
+    READ, NEVER HARDCODE. check-submodule-branches.sh hardcodes the four paths and is therefore blind to a fifth and to the non-submodule siblings under private/; detect-pointer-bump.sh and worktree.sh read this file instead.
     """
     out, path, branch = [], None, None
     for raw in text.splitlines():
@@ -124,9 +120,7 @@ def submodules(root):
 def sibling_repos(root):
     """Independent git repos under private/ that are NOT submodules.
 
-    They are gitignored and invisible to `git status` and `git submodule`. Agents have repeatedly assumed everything under private/ is a submodule and
-    walked past uncommitted work in them. This module never touches them; it
-    only REPORTS them.
+    They are gitignored and invisible to `git status` and `git submodule`. Agents have repeatedly assumed everything under private/ is a submodule and walked past uncommitted work in them. This module never touches them; it only REPORTS them.
     """
     known = {p for p, _ in submodules(root)}
     found = []
@@ -167,8 +161,7 @@ def rebase_state(root):
     for d in ("rebase-merge", "rebase-apply"):
         base = os.path.join(root, ".git", d)
         if os.path.isdir(base):
-            # `base` is bound as a DEFAULT, not captured. The closure is correct today only because this function returns inside the same
-            # iteration; binding it makes that independent of control flow.
+            # `base` is bound as a DEFAULT, not captured. The closure is correct today only because this function returns inside the same iteration; binding it makes that independent of control flow.
             def read(name, base=base):
                 try:
                     with open(os.path.join(base, name), encoding="utf-8") as fh:
@@ -209,9 +202,7 @@ def classify_conflict(_root, path, stages):
     THE TAXONOMY IS MEASURED, not invented. Ten conflicts across two real rebases of this branch on 2026-08-26/27: one gitlink (an oracle already decides it), six mechanical unions of append-only registries, two genuine design collisions (`run.sh setup()`, and a test suite that one wave had refactored from a monolith into 22 case files). Refusing all ten to protect the two is the
     trade this classifier exists to stop making.
 
-    Conservative by construction: anything it cannot place is 'judgement', which
-    means untouched. A wrong 'judgement' costs a human a look; a wrong
-    'registry' silently corrupts a file, which is the failure mode that shipped a glued stopword seam today.
+    Conservative by construction: anything it cannot place is 'judgement', which means untouched. A wrong 'judgement' costs a human a look; a wrong 'registry' silently corrupts a file, which is the failure mode that shipped a glued stopword seam today.
     """
     if any(mode == "160000" for _sha, mode in stages.values()):
         return "gitlink", "a submodule pointer; resolve_gitlink_target decides it by ancestry"
@@ -346,9 +337,7 @@ def json_union(base_text, ours_text, theirs_text):
         return None, "the merged registry carries duplicate identities"
 
     text = json.dumps(merged, indent=2) + "\n"
-    # RE-READ WHAT WE ARE ABOUT TO WRITE. Every check above ran against
-    # in-memory objects; this one runs against the BYTES, which is the only
-    # thing the next reader sees.
+    # RE-READ WHAT WE ARE ABOUT TO WRITE. Every check above ran against in-memory objects; this one runs against the BYTES, which is the only thing the next reader sees.
     try:
         reread = json.loads(text)
     except ValueError as exc:
@@ -397,9 +386,7 @@ def resolve_halt(root):
 
     Returns (resolved, blocked). `resolved` maps path -> ("gitlink", sha) or ("text", merged). `blocked` is a list of (path, kind, why).
 
-    ONE resolver, two verbs. rebase-resolve reports it and rebase-continue acts
-    on it; had each grown its own copy, the one that reports and the one that
-    writes would eventually disagree about what is safe -- which is the failure mode where a dry run and its --execute do different things.
+    ONE resolver, two verbs. rebase-resolve reports it and rebase-continue acts on it; had each grown its own copy, the one that reports and the one that writes would eventually disagree about what is safe -- which is the failure mode where a dry run and its --execute do different things.
     """
     resolved, blocked = {}, []
     paths = conflicted_paths(root)
@@ -519,8 +506,7 @@ def classify(repo, gitlink, base_ref="origin/main"):
 def staged_deletions(repo):
     """Paths staged for deletion inside a submodule.
 
-    THE CURRENTLY-UNGUARDED GAP. The parent reports only `m private/<sub>` for a dirty submodule and `git status` in the parent never shows what is staged INSIDE one. A staged rm of the entire homebrew-tap contents once sat
-    unnoticed for hours; committing it would have deleted the published formula.
+    THE CURRENTLY-UNGUARDED GAP. The parent reports only `m private/<sub>` for a dirty submodule and `git status` in the parent never shows what is staged INSIDE one. A staged rm of the entire homebrew-tap contents once sat unnoticed for hours; committing it would have deleted the published formula.
     """
     rc, out, _ = run_git(["diff", "--cached", "--name-only", "--diff-filter=D"], cwd=repo)
     if rc != 0:
@@ -577,9 +563,7 @@ def classify_dirt(paths):
 def dirt_verdict(repo, me=None):
     """One line saying whether a rebase can start here, and who must act.
 
-    Deliberately does NOT decide for the caller. A refusal that says only "not
-    clean" is what sent a session hunting; a refusal naming the sessions whose
-    documents are in the way is actionable by the only people who can act.
+    Deliberately does NOT decide for the caller. A refusal that says only "not clean" is what sent a session hunting; a refusal naming the sessions whose documents are in the way is actionable by the only people who can act.
     """
     paths = dirty_paths(repo)
     if paths is None:
@@ -678,8 +662,7 @@ FORBIDDEN_PUSH_FLAGS = ("--force", "-f", "--mirror")
 def validate_push_args(args):
     """Refuse anything but --force-with-lease, and refuse pushing main.
 
-    --force overwrites blindly; --force-with-lease refuses to clobber a push
-    somebody else made. --mirror and a leading + on a refspec force too, and both were holes in the pre-bash guard's regex before they were closed.
+    --force overwrites blindly; --force-with-lease refuses to clobber a push somebody else made. --mirror and a leading + on a refspec force too, and both were holes in the pre-bash guard's regex before they were closed.
     """
     for a in args:
         if a in FORBIDDEN_PUSH_FLAGS or a.startswith("--force="):
@@ -750,9 +733,7 @@ class Plan:
         THIS DID NOT EXIST UNTIL 2026-08-26, and its absence was the module's worst defect. `--execute` flipped one word in render() and nothing else: the tool printed `force-push (EXECUTE)`, five `[run] git ... push` lines and NO "Nothing was written" footer, then wrote nothing. A session reading that transcript reports a completed five-repo force-push. Demonstrated before the
         fix: origin/0826-2 byte-identical across the run.
 
-        HALT ON FIRST FAILURE IS LOAD-BEARING, not tidiness. The steps are ordered submodules-then-console precisely because a console push naming
-        an unpushed submodule commit is how PR #541 broke; continuing past a
-        failed submodule push would publish exactly that.
+        HALT ON FIRST FAILURE IS LOAD-BEARING, not tidiness. The steps are ordered submodules-then-console precisely because a console push naming an unpushed submodule commit is how PR #541 broke; continuing past a failed submodule push would publish exactly that.
 
         `runner` is injectable so the controls can prove ordering and halting without a remote.
         """
@@ -839,9 +820,7 @@ def main(argv):
             for path, _ in submodules(root):
                 repo = os.path.join(root, path)
                 # A SUBMODULE WITHOUT THIS BRANCH HAS NOTHING TO PUBLISH, and pushing it anyway does not merely waste a call -- it fails with "src refspec <branch> does not match any" and HALTS the whole plan before the console push. Measured 2026-08-28 on branch 0827-1: private/renet and private/account both carried the branch and were pushed, then private/homebrew-tap, which this
-                # wave never touched, killed the run and left the console unpublished. The halt itself is correct and deliberate (the console is last so it can never name an unpublished submodule
-                # commit); what was wrong is treating "has no such branch" as a
-                # failure rather than as nothing to do.
+                # wave never touched, killed the run and left the console unpublished. The halt itself is correct and deliberate (the console is last so it can never name an unpublished submodule commit); what was wrong is treating "has no such branch" as a failure rather than as nothing to do.
                 rc_b, _, _ = run_git(
                     ["rev-parse", "--verify", "--quiet", "refs/heads/%s" % branch], repo
                 )
@@ -872,9 +851,7 @@ def main(argv):
                 "matches the new head, so the PR needs a fresh review pass"
             )
         elif sub == "rebase-preflight":
-            # THE CONSOLE ROOT WAS NEVER COVERED. rebase-submodules rebases
-            # submodules; the deadlock on 2026-08-28 was in the parent, where
-            # this module planned nothing at all, so a session hit git's own bare refusal and had to work out the owner by hand.
+            # THE CONSOLE ROOT WAS NEVER COVERED. rebase-submodules rebases submodules; the deadlock on 2026-08-28 was in the parent, where this module planned nothing at all, so a session hit git's own bare refusal and had to work out the owner by hand.
             me = args[1] if len(args) > 1 else None
             ok_root, why_root = dirt_verdict(root, me)
             plan.check("console: %s" % why_root, ok_root)
@@ -1171,9 +1148,7 @@ def main(argv):
                 raise RefusalError(
                     "the snapshot names no repo; refusing to report a pass over nothing"
                 )
-            # PER-REPO BASE, not one base for all. The console rebases onto
-            # whatever it was told; a SUBMODULE always rebases onto its own
-            # main, read from .gitmodules. Passing the console's base to a submodule asks it to compare against a ref it has never heard of, and the first live run did exactly that: "REFUSED: private/account: could not compare 3e79b391..5f55c91d".
+            # PER-REPO BASE, not one base for all. The console rebases onto whatever it was told; a SUBMODULE always rebases onto its own main, read from .gitmodules. Passing the console's base to a submodule asks it to compare against a ref it has never heard of, and the first live run did exactly that: "REFUSED: private/account: could not compare 3e79b391..5f55c91d".
             console_base = args[2] if len(args) > 2 else "origin/main"
             # A BARE BRANCH NAME MEANS THE REMOTE ONE. Found on this verb's second live run: `verify-rebase <snap> main` compared against the LOCAL `main`, which in this checkout is 2048 commits divergent -- a pre-history-rewrite main that nothing updated after the 2026-08-23 SHA rewrite. It reported "78 carried, 0 absorbed" with no complaint, when the truth was 28 carried and 20
             # absorbed.
@@ -1248,15 +1223,12 @@ def main(argv):
     # the whole reason this module exists.
     #
     # A REBASE EXECUTOR IS DELIBERATELY NOT BUILT. A conflicting rebase halts mid-list and needs a human before --continue, and Plan is a flat list with no resume, no rollback and no way to say "step 3 of 7 stopped, the tree is mid-rebase". Conflict is the NORMAL case here, so executing that flow would be a re-implementation of git's own state machine in a tree where stash and
-    # restore are banned, i.e. where its worst failure has no
-    # recovery. Refusing is honest; half-executing is not.
-    # WHICH VERBS MAY WRITE, and why these two and not the rest.
+    # restore are banned, i.e. where its worst failure has no recovery. Refusing is honest; half-executing is not. WHICH VERBS MAY WRITE, and why these two and not the rest.
     #
     # force-push: the one command Bash genuinely cannot run, because block-git-force-push refuses it unconditionally. Irreversible, so it prints an UNDO block first. resolve-gitlinks: local and reversible -- a `checkout <sha>` inside a submodule and an `add -- <path>` in the parent, both undone by `git rebase --abort`. The CHOICE is made by an oracle, not a guess, and verified by
     # the containment check afterwards. Proven in anger twice on branch 0826-3, where it named a commit in NEITHER conflict stage.
     #
-    # Everything else still refuses. A rebase halts mid-list and needs a
-    # decision this module cannot make; see agent/PLAN-resumable-rebase-executor.md.
+    # Everything else still refuses. A rebase halts mid-list and needs a decision this module cannot make; see agent/PLAN-resumable-rebase-executor.md.
     if sub not in EXECUTABLE:
         sys.stderr.write(
             "\nREFUSED: --execute is implemented for %s only.\n"
@@ -1301,9 +1273,8 @@ def main(argv):
         # The loop ALREADY executed each halt's steps as it went -- it has to, because the next conflict cannot be known until this --continue has run. Nothing is left for the shared tail below, and that tail is force-push's.
         return 0
 
-    # EVERY EXECUTABLE VERB MUST CLAIM ITS OWN TAIL. This used to fall through unguarded, so adding "rebase-continue" to EXECUTABLE silently routed it into force-push's UNDO block, which reads args[1] as a branch name and died with IndexError AFTER the rebase had already completed successfully.
-    # A loud refusal here costs the next verb one line; a fall-through costs it
-    # a crash on the far side of real work.
+    # EVERY EXECUTABLE VERB MUST CLAIM ITS OWN TAIL. This used to fall through unguarded, so adding "rebase-continue" to EXECUTABLE silently routed it into force-push's UNDO block, which reads args[1] as a branch name and died with IndexError AFTER the rebase had already completed successfully. A loud refusal here costs the next verb one line; a fall-through costs it a crash on the
+    # far side of real work.
     if sub != "force-push":
         sys.stderr.write(
             "\nINTERNAL: `%s` is declared executable but has no execute branch.\n"
@@ -1532,9 +1503,7 @@ def selftest():
         r is not None and len(r[0]) == 28 and len(r[1]) == 20 and r[2] == [],
     )
 
-    # AND THE COUNT MUST NOT RESCUE A REAL LOSS. The old version zeroed `missing`
-    # whenever carried+absorbed reached the old count; here the totals match and
-    # a commit is still gone.
+    # AND THE COUNT MUST NOT RESCUE A REAL LOSS. The old version zeroed `missing` whenever carried+absorbed reached the old count; here the totals match and a commit is still gone.
     r = equivalent(
         "/r",
         "BASE",
@@ -1640,9 +1609,7 @@ def selftest():
         ok is None and "identifies an entry" in why,
     )
 
-    # THE GLUED-SEAM CASE, required by the plan by name. The defect that shipped
-    # was a TEXTUAL union of two token lists; the point of doing this
-    # structurally is that the same inputs cannot produce it. Union the two additions and assert both tokens survive as SEPARATE entries -- the concatenation that killed them is not even expressible here.
+    # THE GLUED-SEAM CASE, required by the plan by name. The defect that shipped was a TEXTUAL union of two token lists; the point of doing this structurally is that the same inputs cannot produce it. Union the two additions and assert both tokens survive as SEPARATE entries -- the concatenation that killed them is not even expressible here.
     ok, _ = u('["fixed"]', '["fixed","touched"]', '["fixed","see"]')
     merged = json.loads(ok) if ok else []
     check(
@@ -1678,8 +1645,7 @@ def selftest():
     #
     # The fix is to stop depending on ambient repo state at all. Build one throwaway git repo as the sole "submodule", with a branch name this control controls end to end, and monkeypatch `submodules`/`repo_root` to point at it -- the same isolation `_ed` already uses a few blocks above
     # for the editor-blocking control. `staged_deletions` is monkeypatched the
-    # same way it always was; `execute` stays False, so `plan.cmd()` only
-    # records steps and never runs a real push against the fixture.
+    # same way it always was; `execute` stays False, so `plan.cmd()` only records steps and never runs a real push against the fixture.
     _branch = "selftest-force-push-branch"
     _fixture_root = tempfile.mkdtemp()
     try:

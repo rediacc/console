@@ -19,17 +19,14 @@ run" clause and says in as many words that the mocked parity ledger is a separat
 THE CALL LOG IS THE EVIDENCE, MORE THAN THE STREAMS. The three `Promoting ...` lines are printed BEFORE the call they announce and are derived from the loop index rather than from anything docker returns, so a port that promoted `ghcr.io/rediacc/renet:latest` would print byte-identical stdout, byte-identical stderr and exit 0. Only the recorded argv sees the difference, which is
 why the fake's own stdout line is constant and why the differential plants exactly that defect.
 
-`docker` INHERITS BOTH STREAMS. The twin never captures it, so `imagetools` progress interleaves with this script's own `echo` lines in real time. A port
-that captured and replayed would reorder them; a port that used `print()`
-without flushing would ALSO reorder them, because Python block-buffers stdout against a pipe while the child writes straight to the inherited descriptor. `_flush` exists for that and is called before every spawn.
+`docker` INHERITS BOTH STREAMS. The twin never captures it, so `imagetools` progress interleaves with this script's own `echo` lines in real time. A port that captured and replayed would reorder them; a port that used `print()` without flushing would ALSO reorder them, because Python block-buffers stdout against a pipe while the child writes straight to the inherited descriptor.
+`_flush` exists for that and is called before every spawn.
 
 THE VACUITY FACT, AND IT IS THE INTERESTING PART OF THIS FILE. THERE IS NO
 VERIFICATION THAT THE `:edge` TAGS EXIST OR THAT THE `:stable` TAGS MOVED. `docker buildx imagetools create` is trusted to fail loudly, and it is the only thing standing between "three images promoted" and "the closing line printed". Because every call is unguarded under `set -e` the twin cannot report a half-promotion either: renet succeeding and rdc failing leaves renet:stable
 ADVANCED and server:stable BEHIND, and the run says only what docker said. `NO_POST_PROMOTION_VERIFICATION` names it so a test can assert it by name. Reproduced rather than repaired, because the acceptance rule for this wave is agreement with the live twin.
 
-NO ARGUMENTS, NO ENVIRONMENT. The twin parses neither, so `--dry-run` is
-silently ignored by both sides rather than refused; the differential drives that
-so the agreement is recorded rather than assumed.
+NO ARGUMENTS, NO ENVIRONMENT. The twin parses neither, so `--dry-run` is silently ignored by both sides rather than refused; the differential drives that so the agreement is recorded rather than assumed.
 
 K=5 LEDGER: `.ci/shadow/w7p6-promote-docker-to-stable-hotfix.observations.jsonl`.
 """
@@ -110,10 +107,7 @@ def announce(image: str) -> str:
 def _flush() -> None:
     """Empty Python's own buffers before a child inherits the descriptor.
 
-    NOT HOUSEKEEPING, A REAL DIVERGENCE THIS REPAIRS. bash `echo` writes through
-    immediately; Python block-buffers stdout when it is a pipe and flushes at
-    exit, so without this the three `Promoting ...` lines land AFTER every line docker wrote, on the same stream, with byte-identical content in a different
-    order. Both exits agree and the call log agrees; only a byte comparison of
+    NOT HOUSEKEEPING, A REAL DIVERGENCE THIS REPAIRS. bash `echo` writes through immediately; Python block-buffers stdout when it is a pipe and flushes at exit, so without this the three `Promoting ...` lines land AFTER every line docker wrote, on the same stream, with byte-identical content in a different order. Both exits agree and the call log agrees; only a byte comparison of
     stdout sees it.
     """
     sys.stdout.flush()

@@ -3,9 +3,8 @@
 THERE IS NO SINGLE BASH ORIGINAL to run beside this one, and that is itself the finding: `.ci/scripts/lib/` and `.ci/lib/` contain no git helper at all. The 36 functions in `common.sh` include exactly ONE line that shells out to git (`common.sh:582`). So the differential here is against RAW GIT -- the same commands the 23 `ls-files` sites, 22 branch sites, 21 dirt sites and 7
 ancestry sites run inline -- and against the specific WRONG spellings this module refuses.
 
-EVERY TRAP CASE IS ASSERTED IN BOTH DIRECTIONS. It is not enough to show that
-`gitx.branch()` returns None on a detached HEAD; the case also runs
-`rev-parse --abbrev-ref HEAD` and asserts it prints the literal "HEAD" and exits 0, because that is the behaviour 13 call sites in this tree depend on not happening. If a future git changes it, this file says so instead of the trap quietly evaporating and taking the reason for the module with it.
+EVERY TRAP CASE IS ASSERTED IN BOTH DIRECTIONS. It is not enough to show that `gitx.branch()` returns None on a detached HEAD; the case also runs `rev-parse --abbrev-ref HEAD` and asserts it prints the literal "HEAD" and exits 0, because that is the behaviour 13 call sites in this tree depend on not happening. If a future git changes it, this file says so instead of the trap
+quietly evaporating and taking the reason for the module with it.
 
 THE FIXTURES ARE REAL REPOSITORIES, built per test in a tmpdir with the ambient git configuration switched off. A fixture that inherited the developer's `~/.gitconfig` would pick up their `init.defaultBranch`, their commit template and their gpg signing, and would then pass or fail per machine.
 """
@@ -196,9 +195,8 @@ def test_double_star_slash_silently_skips_files_at_the_top_level(repo):
     (repo / "a" / "deep" / "nested.sh").write_text("#!/bin/sh\n")
     sh("git add -A && git commit -q -m more", repo)
 
-    # THE NARROWING SPELLING IS ASSEMBLED, NOT WRITTEN. This test's whole subject is that `a/**/*.sh` under git's DEFAULT matching DEMANDS a literal slash and so silently drops the top-level file, which is exactly what check_pathspec_scope.py refuses everywhere else in the tree. Written as a literal it is an instance of the
-    # defect and that gate reds on it, correctly; it cannot be spelled `:(glob)a/**/*.sh`
-    # either, because that opts into the semantics this test exists to show we do NOT get. Assembling it keeps the behaviour identical and keeps the gate honest, which is the same treatment check-em-dash-surfaces.ts and check-typecheck-scope-coverage.ts already use for their own deliberately-bad fixtures.
+    # THE NARROWING SPELLING IS ASSEMBLED, NOT WRITTEN. This test's whole subject is that `a/**/*.sh` under git's DEFAULT matching DEMANDS a literal slash and so silently drops the top-level file, which is exactly what check_pathspec_scope.py refuses everywhere else in the tree. Written as a literal it is an instance of the defect and that gate reds on it, correctly; it cannot be
+    # spelled `:(glob)a/**/*.sh` either, because that opts into the semantics this test exists to show we do NOT get. Assembling it keeps the behaviour identical and keeps the gate honest, which is the same treatment check-em-dash-surfaces.ts and check-typecheck-scope-coverage.ts already use for their own deliberately-bad fixtures.
     narrowing = "a/" + "**" + "/*.sh"
     wide = gitx.ls_files("a/*.sh", root=repo)
     narrow = gitx.ls_files(narrowing, root=repo)
@@ -224,9 +222,7 @@ def test_pathspec_warning_names_the_narrowing_spelling():
 def test_a_staged_change_is_dirty_but_git_diff_quiet_calls_it_clean(repo):
     """THE ASYMMETRY, in both directions.
 
-    `scripts/dev/worktree.sh` pairs `diff --quiet` with `diff --cached --quiet` at
-    four sites; a tree with only staged changes needs the second to be seen at
-    all.
+    `scripts/dev/worktree.sh` pairs `diff --quiet` with `diff --cached --quiet` at four sites; a tree with only staged changes needs the second to be seen at all.
     """
     (repo / "tracked.txt").write_text("two\n")
     sh("git add tracked.txt", repo)
@@ -393,9 +389,7 @@ def test_submodules_is_empty_and_not_an_exception_without_a_gitmodules(tmp_path)
 def test_sibling_repos_finds_gitignored_checkouts_that_are_not_submodules(tmp_path):
     """The blind spot no enumeration in the tree covers.
 
-    `private/growth` holds the media pipeline whose publish gate console CI cannot
-    run; `git status`, `git submodule` and `.gitmodules` all report nothing about
-    it.
+    `private/growth` holds the media pipeline whose publish gate console CI cannot run; `git status`, `git submodule` and `.gitmodules` all report nothing about it.
     """
     (tmp_path / ".gitmodules").write_text('[submodule "a"]\n\tpath = private/declared\n')
     for name in ("declared", "sibling", "plain"):

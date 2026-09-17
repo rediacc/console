@@ -19,15 +19,12 @@ WHAT MOVES AND WHAT DOES NOT. The orchestration moves to Python: the `.env` writ
 
 PORT NOTES, each driven before it was written down.
 
-ONLY EXPORTED VARIABLES SURVIVE THE SOURCE, and that is exact rather than
-approximate. `env -0` lists the exported set; ci-env.sh's `WORKFLOW_TAG`,
-`WORKFLOW_CI_MODE`, `WORKFLOW_WEB_TAG`, `KEYS`, `X25519_KEYS` and `PERSISTED_ENV` are plain shell variables, and the twin reads none of them after the `source` on :23. The four names the twin does interpolate into `.env` (`DOCKER_REGISTRY`, `TAG`, `WEB_TAG`, `SYSTEM_DOMAIN`) are all `export`ed by ci-env.sh (:32, :44, :45, :106).
+ONLY EXPORTED VARIABLES SURVIVE THE SOURCE, and that is exact rather than approximate. `env -0` lists the exported set; ci-env.sh's `WORKFLOW_TAG`, `WORKFLOW_CI_MODE`, `WORKFLOW_WEB_TAG`, `KEYS`, `X25519_KEYS` and `PERSISTED_ENV` are plain shell variables, and the twin reads none of them after the `source` on :23. The four names the twin does interpolate into `.env`
+(`DOCKER_REGISTRY`, `TAG`, `WEB_TAG`, `SYSTEM_DOMAIN`) are all `export`ed by ci-env.sh (:32, :44, :45, :106).
 
 FOUR NAMES ARE DELIBERATELY NOT IMPORTED BACK: `_`, `SHLVL`, `PWD`, `OLDPWD`. Those describe the bash that did the sourcing, not the configuration it produced, and `SHLVL` in particular differs between a bash parent and a Python parent no matter how faithful the rest is.
 
-A FAILING `source` KILLS THE SCRIPT, and the port reproduces the exit status
-rather than a status of its own. ci-env.sh runs `set -e`; sourced into a caller
-that also runs `set -e` (:9), any failing command inside it exits the whole script right there. `source_ci_env` therefore returns bash's own rc and `main` returns it unchanged.
+A FAILING `source` KILLS THE SCRIPT, and the port reproduces the exit status rather than a status of its own. ci-env.sh runs `set -e`; sourced into a caller that also runs `set -e` (:9), any failing command inside it exits the whole script right there. `source_ci_env` therefore returns bash's own rc and `main` returns it unchanged.
 
 THE `.env` REDIRECT IS THE FIRST THING THAT CAN DIE ON A HOST WITHOUT THE
 SUBMODULE. `{ ... } >"$ELITE_DIR/.env"` (:36-45) fails when `private/elite` is
@@ -46,9 +43,7 @@ clock the probes themselves consume is not counted. Reproduced with the same ari
 {{.Names}}\t{{.Status}}\t{{.Ports}}"` passes docker a format string containing
 two backslash-t sequences, which docker's own `table` directive then expands. A Python `"\t"` would have handed docker a real tab and quietly changed the column layout of a diagnostic nobody reads closely. The argument is a raw string here for that reason.
 
-`curl` MISSING IS A FAILED PROBE, NOT A CRASH. The twin never checks for the
-binary; bash turns a missing one into 127 which the `if` treats as "not ready".
-`subprocess.run` raises `FileNotFoundError` for that case, so it is caught and folded into the same "not ready" arm.
+`curl` MISSING IS A FAILED PROBE, NOT A CRASH. The twin never checks for the binary; bash turns a missing one into 127 which the `if` treats as "not ready". `subprocess.run` raises `FileNotFoundError` for that case, so it is caught and folded into the same "not ready" arm.
 
 Exit: 0 when the web service came up; the twin's own non-zero status otherwise.
 """
@@ -224,8 +219,7 @@ def main(argv: list[str]) -> int:
     if not wait_for_web():
         print("Elite startup failed: Web", flush=True)
         logs = subprocess.run(["./run.sh", "logs", "web"], check=False, cwd=str(elite_dir))
-        # THE `exit 1` ON :111 IS UNREACHABLE WHEN THIS COMMAND FAILS. See the
-        # module docstring; `set -e` is not relaxed inside the `||` group.
+        # THE `exit 1` ON :111 IS UNREACHABLE WHEN THIS COMMAND FAILS. See the module docstring; `set -e` is not relaxed inside the `||` group.
         return logs.returncode if logs.returncode != 0 else 1
 
     print(flush=True)  # the twin's bare `echo ""`

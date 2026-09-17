@@ -1,8 +1,6 @@
 """`rediacc_ci.battery` against `.ci/scripts/test/run-all.sh`, the runner it replaces.
 
-WHAT IS WORTH TESTING HERE, and it is not "does it run 148 shell scripts". The
-scheduling is the cheap part; the VERDICT is where a runner goes silently wrong, and
-run-all.sh's header is a list of the ways it did:
+WHAT IS WORTH TESTING HERE, and it is not "does it run 148 shell scripts". The scheduling is the cheap part; the VERDICT is where a runner goes silently wrong, and run-all.sh's header is a list of the ways it did:
 
   * a test the scheduler lost, reported as a shorter green run rather than a red one,
   * a test that exits 0 having asserted nothing, indistinguishable from a good one,
@@ -132,8 +130,7 @@ def test_isolation_is_read_from_the_lock_in_both_directions(tmp_path):
     assert schedule.bucket("test-w.sh") == "W"
     assert schedule.bucket("test-s.sh") == "S"
     assert schedule.bucket("test-t.sh") == "T"
-    # A mutex that is not a `tree:` resource is about something else entirely
-    # (renet-bin, the account vitest state); it must not make a real-tree writer.
+    # A mutex that is not a `tree:` resource is about something else entirely (renet-bin, the account vitest state); it must not make a real-tree writer.
     assert schedule.bucket("test-n.sh") == "T"
     # And a non-gate-test entry contributes nothing here even when it claims a tree.
     assert "check:other" not in schedule.writers
@@ -152,8 +149,7 @@ def test_an_undeclared_lock_degrades_to_serial_and_says_so(tmp_path):
         gates_dir=gates, root=tmp_path, lock_path=lock, jobs=8, check_tree=False
     )
     assert report.schedule_source == "undeclared"
-    # THE POINT: a requested 8 is IGNORED while the contract is unknown. Serial is
-    # the only safe choice; classifying every test as fixture-isolated is a guess.
+    # THE POINT: a requested 8 is IGNORED while the contract is unknown. Serial is the only safe choice; classifying every test as fixture-isolated is a guess.
     assert report.jobs == 1
     assert any("manifest.ts" in line for line in report.notices)
     assert report.ok
@@ -293,9 +289,8 @@ def test_the_selftest_writes_nothing_to_stderr(tmp_path):
 def test_the_selftest_is_hermetic_against_an_ambient_env_seam():
     """THE DEFECT THIS PINS, found 2026-09-07 by the runner refusing to report.
 
-    `battery.py` was driven on a shell that had exported RUN_ALL_WRITERS for the bash twin. `build_schedule` read os.environ directly, so four controls asserting on the SOURCE of a schedule got "env" where they wanted "lock" or "undeclared", and the runner declared its own controls broken rather than judging the battery.
-    That refusal was correct; a control whose verdict depends on an ambient variable
-    is a control that passes or fails for reasons the reader cannot see.
+    `battery.py` was driven on a shell that had exported RUN_ALL_WRITERS for the bash twin. `build_schedule` read os.environ directly, so four controls asserting on the SOURCE of a schedule got "env" where they wanted "lock" or "undeclared", and the runner declared its own controls broken rather than judging the battery. That refusal was correct; a control whose verdict depends on
+    an ambient variable is a control that passes or fails for reasons the reader cannot see.
     """
     poisoned = {"RUN_ALL_WRITERS": "test-poison.sh", "RUN_ALL_SCANNERS": "test-poison2.sh"}
     proc = _run_program(["--selftest"], env=poisoned)

@@ -294,9 +294,7 @@ def test_age_days_reports_over_and_under_and_refuses_a_bad_date() -> None:
 def test_is_shallow_is_dead_in_the_twin_and_therefore_absent_here() -> None:
     """A finding about the twin, pinned so it is not silently re-imported.
 
-    `is_shallow()` is defined at `check-plan-housekeeping.sh:275` and called
-    nowhere; the live logic reads the graft list per plan, which is the third
-    iteration the header describes. If a future edit gives it a caller, this test fails and whoever ports the twin next has to decide deliberately.
+    `is_shallow()` is defined at `check-plan-housekeeping.sh:275` and called nowhere; the live logic reads the graft list per plan, which is the third iteration the header describes. If a future edit gives it a caller, this test fails and whoever ports the twin next has to decide deliberately.
     """
     text = TWIN.read_text(encoding="utf-8")
     assert "is_shallow()" in text, "the twin no longer defines is_shallow"
@@ -321,9 +319,8 @@ def test_selftest_passes() -> None:
 def test_the_config_mirror_equals_wl_planrec_record_states_both_directions() -> None:
     """`.ci/config/plan-lifecycle.json` mirrors `wl_planrec.RECORD_STATES`.
 
-    THE ORIGIN IS THE HOOK CONSTANT, not the config. `check_plan_record.py`
-    imports `R.RECORD_STATES` by name (`:1405`) and cannot drift; the
-    housekeeping pair CANNOT import it, because that gate must stay runnable in a checkout with no `.claude/`, which is the only reason a config exists at all. So the config is a mirror, and this is the comparison that makes it one rather than a fourth copy.
+    THE ORIGIN IS THE HOOK CONSTANT, not the config. `check_plan_record.py` imports `R.RECORD_STATES` by name (`:1405`) and cannot drift; the housekeeping pair CANNOT import it, because that gate must stay runnable in a checkout with no `.claude/`, which is the only reason a config exists at all. So the config is a mirror, and this is the comparison that makes it one rather than a
+    fourth copy.
 
     BOTH DIRECTIONS, and the reverse is the interesting one: a state added to the hook and not to the config makes a plan a record in `check:ci-plan-record` and an OFFENDER in `check:ci-plan-housekeeping`, on a clock, with no way for the author to tell which reader is wrong.
 

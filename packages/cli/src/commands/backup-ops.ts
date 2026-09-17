@@ -54,9 +54,7 @@ async function triggerAdhocBackup(
   const { _testing } = await import('../services/backup/backup-schedule.js');
 
   const enabledDests = config.destinations.filter((d) => d.enabled !== false);
-  // INVERTED 2026-08-15. This used to require the rclone `storage` kind and
-  // refuse hosted-service; the rclone path has been removed, so the chunk store
-  // is the only destination an ad-hoc run can drive. Left as-is, this function would now refuse every destination there is.
+  // INVERTED 2026-08-15. This used to require the rclone `storage` kind and refuse hosted-service; the rclone path has been removed, so the chunk store is the only destination an ad-hoc run can drive. Left as-is, this function would now refuse every destination there is.
   for (const dest of enabledDests) {
     if (dest.kind !== 'hosted-service') {
       throw new Error(

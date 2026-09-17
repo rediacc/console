@@ -450,9 +450,7 @@ const PROBES: Probe[] = [
     entries: (root) => blockeredEntries(inputPath(root, '.dead-bash-allowlist')),
     universe: (root) => {
       if (!fs.existsSync(path.join(root, '.ci'))) return null;
-      // A glob: root is live if the directory still exists; a dispatch: prefix
-      // is live if some shell function still starts with it; a manual: file is
-      // live if the script is still there.
+      // A glob: root is live if the directory still exists; a dispatch: prefix is live if some shell function still starts with it; a manual: file is live if the script is still there.
       const names = new Set<string>();
       const shDirs: string[] = [];
       const walk = (d: string): void => {
@@ -526,8 +524,7 @@ const PROBES: Probe[] = [
       //
       // ONLY THE ci-only DIRECTION IS ORACLED HERE. A local-only entry is live when the LOCAL gate set still runs it, which is a different question
       // with a different oracle (scripts/ci-runner/manifest.ts). There are no
-      // local-only entries today; the day one appears, this probe must grow the
-      // second oracle rather than judge it against the workflow tree, which would condemn it for the very asymmetry it declares.
+      // local-only entries today; the day one appears, this probe must grow the second oracle rather than judge it against the workflow tree, which would condemn it for the very asymmetry it declares.
       const dir = path.join(root, '.github', 'workflows');
       if (!fs.existsSync(dir)) return null;
       const files = fs.readdirSync(dir).filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'));
@@ -793,8 +790,7 @@ function main(): void {
     }
   }
 
-  // An override whose reason opens with "preventive" is a deliberate forward
-  // guard, not rot; honour that annotation instead of re-litigating it monthly.
+  // An override whose reason opens with "preventive" is a deliberate forward guard, not rot; honour that annotation instead of re-litigating it monthly.
   const preventive = new Set<string>();
   const pkgPath = path.join(CONSOLE_ROOT, 'package.json');
   if (fs.existsSync(pkgPath)) {

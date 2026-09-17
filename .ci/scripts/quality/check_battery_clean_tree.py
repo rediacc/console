@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported battery clean-tree guard gate.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.battery_clean_tree`, which pytest
-and the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.battery_clean_tree`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 5). See DRIVEN, below.
 
@@ -29,8 +27,7 @@ reduced to a bare `grep -v '^??'`, which under `set -euo pipefail` aborts the sn
 `rc=1 out=` while BOTH controls still pass, so the instrument is shown intact.
 Reverted by its exact inverse and the file verified byte-identical to its pre-plant state (it carried an unrelated modification from another session at baseline, so the comparison was against a `cp` taken immediately before the plant, not against HEAD), with the twin back at exit 0.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-battery-clean-tree.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-battery-clean-tree.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
 
 ---- gate ---- step: Battery clean-tree guard needs: none selftest: true ---- end gate ----
 """

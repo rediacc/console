@@ -38,8 +38,7 @@ Read from the lock rather than inferred from the fixtures, which would mislead: 
 Every temp-world case also RUNS the real `review-status.sh`, `check-review-comments.sh`, `check-review-report-replies.sh` and `claude-review-gate.sh` off the tracked tree. A battery step rewriting any of those mid-sweep is a divergence that would be blamed on this port.
 
 `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
-this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in
-`test_twin_parity.py`, where an own group silently makes the opt-in vacuous.
+this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, where an own group silently makes the opt-in vacuous.
 
 NO `TWIN_TIMEOUT`. The twin was MEASURED at 75s on this machine (most of it wall-clock spent in `common.sh`'s retry backoff on the deliberately-unreadable-API cases, `user` time is only 7s), which is inside the driver's 600s default even
 with the port driven serially after it. A declaration here would be a guess
@@ -86,9 +85,8 @@ REAL_GATE_REL = ".ci/scripts/review/claude-review-gate.sh"
 REAL_GATE = paths.from_root(*REAL_GATE_REL.split("/"))
 COMMON_REL = ".ci/scripts/lib/common.sh"
 COMMON = paths.from_root(*COMMON_REL.split("/"))
-# TWO POINTERS PER GATE, and the split is the W7 P4 pin rule. Each of these was used three ways: to RUN the gate, to read it for a behavioural needle, and to parse a numeric threshold out of it. After the cutover those want different files. A harness that RUNS the gate takes the ENTRY POINT, because that is what
-# CI invokes; one that reads the gate's own text takes the MODULE, because the
-# entry point is a three-line shim carrying no needles and no constants.
+# TWO POINTERS PER GATE, and the split is the W7 P4 pin rule. Each of these was used three ways: to RUN the gate, to read it for a behavioural needle, and to parse a numeric threshold out of it. After the cutover those want different files. A harness that RUNS the gate takes the ENTRY POINT, because that is what CI invokes; one that reads the gate's own text takes the MODULE,
+# because the entry point is a three-line shim carrying no needles and no constants.
 REVIEW_COMMENTS_GATE_REL = ".ci/scripts/quality/check_review_comments.py"
 REVIEW_COMMENTS_GATE = paths.from_root(*REVIEW_COMMENTS_GATE_REL.split("/"))
 REVIEW_COMMENTS_SRC_REL = ".ci/rediacc_ci/quality/review_comments.py"
@@ -264,9 +262,7 @@ echo "fake gh: unrouted: $*" >&2
 exit 3
 """
 
-# THE PORTS. `review-status.sh` enumerates these three by name, and W7 P4 cut it
-# over on 2026-09-08; a stub written under the old name is a file the pipeline no
-# longer looks for, which is a hard abort, not a green.
+# THE PORTS. `review-status.sh` enumerates these three by name, and W7 P4 cut it over on 2026-09-08; a stub written under the old name is a file the pipeline no longer looks for, which is a hard abort, not a green.
 HYGIENE_NAMES = (
     "check_resolved_threads.py",
     "check_review_comments.py",
@@ -589,8 +585,7 @@ def test_gitlink_only_succeeds(gate):
 def test_cancelled_review_run_is_not_a_failure(gate):
     with harness.temp_dir() as t:
         setup(gate, t)
-        # The PR handoff Claude Review now uploads; without it the resolver is
-        # correctly silent, so every workflow_run test needs it to reach the behaviour it is actually asserting.
+        # The PR handoff Claude Review now uploads; without it the resolver is correctly silent, so every workflow_run test needs it to reach the behaviour it is actually asserting.
         write_json(
             t / "fixtures" / "run-artifacts.json",
             {"artifacts": [{"id": 42, "name": "review-target"}]},
@@ -690,8 +685,7 @@ def test_wrong_marker_prefix_is_seen_as_unreviewed(gate):
 def test_failed_review_run_fails(gate):
     with harness.temp_dir() as t:
         setup(gate, t)
-        # The PR handoff Claude Review now uploads; without it the resolver is
-        # correctly silent, so every workflow_run test needs it to reach the behaviour it is actually asserting.
+        # The PR handoff Claude Review now uploads; without it the resolver is correctly silent, so every workflow_run test needs it to reach the behaviour it is actually asserting.
         write_json(
             t / "fixtures" / "run-artifacts.json",
             {"artifacts": [{"id": 42, "name": "review-target"}]},
@@ -901,9 +895,7 @@ def test_below_cap_the_same_state_fails(gate):
 def test_anchors_to_current_head_not_event_sha(gate):
     with harness.temp_dir() as t:
         setup(gate, t)
-        # The event carries the OLD sha (a late-finishing run for a superseded
-        # push); the PR has moved on. The verdict must be posted against the PR's
-        # CURRENT head, and must report that head as unreviewed.
+        # The event carries the OLD sha (a late-finishing run for a superseded push); the PR has moved on. The verdict must be posted against the PR's CURRENT head, and must report that head as unreviewed.
         write_json(t / "fixtures" / "comments.json", [marker_comment(OLD_SHA)])
         write_json(
             t / "fixtures" / "compare.json",
@@ -1153,9 +1145,7 @@ def test_workflow_run_with_artifact_posts_the_check(gate):
 def test_workflow_run_with_unhonourable_artifact_is_loud(gate):
     with harness.temp_dir() as t:
         setup(gate, t)
-        # The artifact EXISTS but carries no PR number. Under the old code every
-        # failure to resolve exited 0; here presence makes it binding, so this
-        # must be a non-zero exit rather than another silent success.
+        # The artifact EXISTS but carries no PR number. Under the old code every failure to resolve exited 0; here presence makes it binding, so this must be a non-zero exit rather than another silent success.
         write_json(
             t / "fixtures" / "run-artifacts.json",
             {"artifacts": [{"id": 78, "name": "review-target"}]},
@@ -1590,9 +1580,7 @@ def test_unreadable_issue_comments_fail_closed(gate):
 # ===========================================================================
 # check-review-report-replies.sh -- the pipeline's REPORT WRAPPER.
 #
-# The second half of the same blind spot. That gate matched the report by its "**Claude finished" header AND-ed with "carries the findings fence or a
-# '### Review' heading". The header is a producer constant; the second clause is
-# a guess about WORDING that no producer emits. On #551 the wrapper (5189238220) carried neither marker, so the gate found no report and exited 0 vacuously
+# The second half of the same blind spot. That gate matched the report by its "**Claude finished" header AND-ed with "carries the findings fence or a '### Review' heading". The header is a producer constant; the second clause is a guess about WORDING that no producer emits. On #551 the wrapper (5189238220) carried neither marker, so the gate found no report and exited 0 vacuously
 # while an 8141-char verdict sat unanswered -- it passed that PR silently for the
 # same reason check-review-comments.sh did.
 #
@@ -1714,8 +1702,7 @@ def test_per_epic_fanout_gates_every_epic_not_just_the_newest(gate):
             "### first task\nPR-TASK: aaa111\n\n### second task\nPR-TASK: bbb222\n",
             encoding="utf-8",
         )
-        # aaa111's report is answered; bbb222's is not. Newest-overall would look
-        # at bbb222 alone and, if it were answered, excuse aaa111 silently. Here the UNANSWERED one is newest, so the assertion that matters is that the output names the per-epic accounting rather than a single global report.
+        # aaa111's report is answered; bbb222's is not. Newest-overall would look at bbb222 alone and, if it were answered, excuse aaa111 silently. Here the UNANSWERED one is newest, so the assertion that matters is that the output names the per-epic accounting rather than a single global report.
         comments_fixture(
             t,
             epic_report_comment(801, "aaa111", "2026-08-26T10:00:00Z"),
@@ -2083,9 +2070,8 @@ def test_review_report_count_is_shared_and_unqualified(gate):
     body = "".join(line + "\n" for line in body_lines)
     if not body:
         gate.log_fail("could not extract review_report_count() from common.sh")
-    # The per-epic review PARAMETERISES the header, so the constant no longer sits literally inside startswith(). What must still hold is that the key IS the producer constant: the base needle is the bare header, the epic form EXTENDS that same header with its id, and startswith() keys on that
-    # variable and nothing else. Extending by DIMENSION is allowed here; ANDing a
-    # guess about the body's prose is what the next check forbids.
+    # The per-epic review PARAMETERISES the header, so the constant no longer sits literally inside startswith(). What must still hold is that the key IS the producer constant: the base needle is the bare header, the epic form EXTENDS that same header with its id, and startswith() keys on that variable and nothing else. Extending by DIMENSION is allowed here; ANDing a guess about
+    # the body's prose is what the next check forbids.
     if 'needle="**Claude finished"' not in body:
         gate.log_fail(
             "review_report_count()'s base needle is no longer the bare **Claude finished "
@@ -2445,8 +2431,7 @@ def test_gate_refuses_an_exhausted_head(gate):
 
 def test_head_exhaustion_does_not_deadlock_the_pr(gate):
     """THE #553 SHAPE, ONE LEVEL DOWN. The free attempts are not charged, so a
-    head can exhaust its ceiling while the PR sits well under its cap. The gate
-    then refuses this head; if review-status could not see that, it would post a
+    head can exhaust its ceiling while the PR sits well under its cap. The gate then refuses this head; if review-status could not see that, it would post a
     required FAILURE and leave a green PR permanently unmergeable."""
     with harness.temp_dir() as t:
         setup(gate, t)

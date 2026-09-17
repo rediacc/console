@@ -1,14 +1,12 @@
 r"""Catch a GATE that cannot tell a failed probe from a clean tree.
 
-Ported from `.ci/scripts/quality/check-swallowed-failures.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-swallowed-failures.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__`.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS.
 -----------------------------------------------------------------------------
 
-THE CLASS. A gate captures a probe's output, discards the probe's exit status AND its stderr, and then reads the captured value. When the probe fails the value is empty, and empty is byte-identical to "nothing to report". The gate then prints its success message and exits 0. It is not reporting that things
-are fine; it is reporting nothing, in the voice of success.
+THE CLASS. A gate captures a probe's output, discards the probe's exit status AND its stderr, and then reads the captured value. When the probe fails the value is empty, and empty is byte-identical to "nothing to report". The gate then prints its success message and exits 0. It is not reporting that things are fine; it is reporting nothing, in the voice of success.
 
 THE LIVE SPECIMEN, fixed 2026-07-28 in .ci/scripts/quality/check-go-deps.sh:
 
@@ -65,8 +63,7 @@ WAIVER. Put `# swallowed-failure-ok: <reason>` on the line above. The reason
 is held to the same bar as a BLOCKER (>= 30 characters, no banned filler
 phrase), because a waiver here re-opens the exact hole this gate closes.
 
-TEST SEAM. SWALLOWED_SCAN_ROOT overrides the repo root; SWALLOWED_SCAN_DIRS
-overrides the scanned directories (space-separated, root-relative).
+TEST SEAM. SWALLOWED_SCAN_ROOT overrides the repo root; SWALLOWED_SCAN_DIRS overrides the scanned directories (space-separated, root-relative).
 
 Exits 0 on no findings, 1 on any finding.
 
@@ -75,8 +72,7 @@ indistinguishable from the empty output of a clean scan. It committed the defect
 
 AND THE SCANNER MUST BE FATAL IN THE CALLER, not inside the scan function. The first version ran it inside `< <(scan_file "$f")`, and an `exit` inside a process substitution kills only that subshell: the gate carried on and reported a clean scan over files it had never read. That is the same shape as the defect being policed, which is why the caller checks the return value instead.
 
-SCOPE. quality/ and security/ are where gates live; lib/ is where they get their
-helpers, and a helper that swallows a failure lies on every caller's behalf (r2_count_objects in lib/common.sh is exactly that shape, which is why lib/ is not optional).
+SCOPE. quality/ and security/ are where gates live; lib/ is where they get their helpers, and a helper that swallows a failure lies on every caller's behalf (r2_count_objects in lib/common.sh is exactly that shape, which is why lib/ is not optional).
 
 THE FUNCTION BOUNDARY IS PART OF THE WINDOW. Letting the 12-logical-line window run past the closing brace made a `log_error` in the NEXT function count as handling for this one, which silently cleared r2_count_objects in lib/common.sh: a genuine finding, and the one the sibling gate recommends as a remedy.
 
@@ -125,9 +121,8 @@ STDERR OTHERWISE. Both are reproduced, because `scripts/lib/shadow-gate.ts` stri
 is stable across machines. `sorted()` under `LC_ALL=C` is byte order, which is
 what `sort` gives.
 
-STREAMS. The banner, the quoted source line under each finding and the advice
-block are bare `echo` on STDOUT; the finding identity lines are `log_error` on
-stderr. The twin's own comment about this split is in `shadow-gate.ts`: "the stderr half carries the `<path>:<line>: <var>: <reason>` identity, which is the half that decides equivalence, so the split costs precision rather than soundness."
+STREAMS. The banner, the quoted source line under each finding and the advice block are bare `echo` on STDOUT; the finding identity lines are `log_error` on stderr. The twin's own comment about this split is in `shadow-gate.ts`: "the stderr half carries the `<path>:<line>: <var>: <reason>` identity, which is the half that decides equivalence, so the split costs precision rather
+than soundness."
 """
 
 import json
@@ -185,8 +180,7 @@ BOUNDARY_CLOSE_RE = re.compile(r"^\}")
 BOUNDARY_DEF_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\(\)[ \t]*\{")
 BOUNDARY_FUNCTION_RE = re.compile(r"^function[ \t]")
 
-# `if` recognition for `branch_of`. awk's [[:space:]] inside a single line is
-# space and tab; the class is written out for the reason npmrc records.
+# `if` recognition for `branch_of`. awk's [[:space:]] inside a single line is space and tab; the class is written out for the reason npmrc records.
 IF_RE = re.compile(r"(^|[ \t])if[ \t]")
 THEN_RE = re.compile(r";[ \t]*then")
 FI_RE = re.compile(r"(^|[ \t])fi([ \t]|;|$)")
@@ -294,9 +288,7 @@ def test_pattern(var: str) -> re.Pattern[str]:
 def branch_of(lines: list[Logical], j: int) -> str:
     """The body governed by the test on logical line `j` (0-based here).
 
-    For an `if`, everything up to the matching else/elif/fi; for a one-line `&&`
-    or `||` form, the rest of that same line. Index arithmetic is 0-based where
-    awk's is 1-based; the shape is otherwise identical.
+    For an `if`, everything up to the matching else/elif/fi; for a one-line `&&` or `||` form, the rest of that same line. Index arithmetic is 0-based where awk's is 1-based; the shape is otherwise identical.
     """
     n = len(lines)
     if not IF_RE.search(lines[j].line) and not THEN_RE.search(lines[j].line):
@@ -425,9 +417,7 @@ def ci_error(message: str) -> None:
 def validate_blocker_quality(entry_id: str, reason: str, file: str) -> bool:
     """True when the waiver reason clears the bar. Prints why when it does not.
 
-    THE RULE IS NOT HERE. `rediacc_ci.core.allowlist.validate_reason` decides and
-    supplies the words; what stays in this module is the STREAM SPLIT, which is
-    the twin's and not the rule's: the first line goes through `ci_error`, so it becomes a `::error::` annotation under CI, and the rest is plain stdout.
+    THE RULE IS NOT HERE. `rediacc_ci.core.allowlist.validate_reason` decides and supplies the words; what stays in this module is the STREAM SPLIT, which is the twin's and not the rule's: the first line goes through `ci_error`, so it becomes a `::error::` annotation under CI, and the rest is plain stdout.
     """
     rejection = allowlist.validate_reason(entry_id, reason, file)
     if rejection is None:

@@ -12,10 +12,7 @@ TWO ASSERTIONS, and the second one is three subprocesses:
     HYGIENE   `check_resolved_threads.py`, `check_review_comments.py` and
               `check_review_report_replies.py` must all pass, unchanged.
 
-FOUR CONCLUSIONS. `success` when current and clean; `success` WITH A WARNING
-when the review budget is exhausted and the marker is stale; `neutral` for a
-draft; `failure` for a stale head, a failed triggering review run, or a failing
-hygiene script.
+FOUR CONCLUSIONS. `success` when current and clean; `success` WITH A WARNING when the review budget is exhausted and the marker is stale; `neutral` for a draft; `failure` for a stale head, a failed triggering review run, or a failing hygiene script.
 
 THE EXIT CODE IS NOT THE VERDICT. The script exits 0 after posting a `failure` conclusion, because the verdict lives in the check-run and a red JOB would be a second, confusing signal on the same head. A non-zero exit always means the REPORTER broke.
 
@@ -51,9 +48,7 @@ TWO DIFFERENCES THE REUSE BUYS, both named rather than hidden:
 -----------------------------------------------------------------------------
 `jq -n --arg ...` is what produces the bytes that go up to GitHub, including jq's own two-space indentation and key order, and `jq 'del(.head_sha)'` is what strips the one field a PATCH rejects. Those bytes are the product. They are handed to the same jq here, so a differential can compare the payload byte for byte -- which it does, on every case that writes.
 
-`--arg` ALSO KEEPS MODEL- AND USER-AUTHORED TEXT OUT OF THE SHELL. The summary
-carries hygiene-script output verbatim; nothing is interpolated into a command
-line on either side.
+`--arg` ALSO KEEPS MODEL- AND USER-AUTHORED TEXT OUT OF THE SHELL. The summary carries hygiene-script output verbatim; nothing is interpolated into a command line on either side.
 
 -----------------------------------------------------------------------------
 THE CONSTANTS ARE READ OUT OF `claude-review-gate.sh`, NOT COPIED
@@ -75,8 +70,7 @@ ONE HAZARD, REPORTED RATHER THAN REPAIRED
 The `workflow_run` arm requires `WR_RUN_ID` but the other four events require only `PR_NUMBER`, and `PR_NUMBER` is used verbatim in an API path. A non-numeric `PR_NUMBER` therefore reaches `gh api repos/<repo>/pulls/<junk>` and dies with gh's own 404 message and gh's exit code, after `require_var` has already passed -- there is no numeric validation anywhere. Nothing is
 interpolated into a shell on either side, so this is a bad-input path with a confusing diagnostic rather than a security hole, and tightening it changes a live workflow step's contract. Pinned by `test_a_non_numeric_pr_number_reaches_the_api_unvalidated`.
 
-Exit: 0 whatever the conclusion, including `failure`; non-zero only when the
-reporter itself could not do its job.
+Exit: 0 whatever the conclusion, including `failure`; non-zero only when the reporter itself could not do its job.
 
 K=5 LEDGER: `.ci/shadow/w7p6-review-status.observations.jsonl`.
 """
@@ -105,8 +99,7 @@ HYGIENE_SCRIPTS = (
     "check_review_report_replies.py",
 )
 
-# The five events this reporter answers to. `workflow_run` resolves the PR from
-# an artifact; the other four are handed a number.
+# The five events this reporter answers to. `workflow_run` resolves the PR from an artifact; the other four are handed a number.
 EVENT_WORKFLOW_RUN = "workflow_run"
 EVENTS_WITH_PR_NUMBER = (
     "pull_request_review",
@@ -200,9 +193,7 @@ def last_marker_sha(repo: str, pr: str, prefix: str) -> str:
 
     Same shape as `claude-review-gate.sh`'s reader: the marker BODY is multi-line, so the SHA is extracted from EVERY line and the last is taken -- never `tail` first.
 
-    `2>/dev/null ... || true`: a `gh` failure is indistinguishable from "no marker", and the currency assertion then fails CLOSED, which is the right
-    direction here. That swallow is the twin's and is preserved; note it is the
-    only one in this file, and unlike the budget's (which was fixed on 2026-09-10 because it moved the CAP NUMERATOR) this one can only make the check stricter.
+    `2>/dev/null ... || true`: a `gh` failure is indistinguishable from "no marker", and the currency assertion then fails CLOSED, which is the right direction here. That swallow is the twin's and is preserved; note it is the only one in this file, and unlike the budget's (which was fixed on 2026-09-10 because it moved the CAP NUMERATOR) this one can only make the check stricter.
     """
     code, body = _gh(
         ["api", "repos/%s/issues/%s/comments" % (repo, pr), "--paginate"],
@@ -405,8 +396,7 @@ def artifact_pr(repo: str, run_id: str) -> str:
         except OSError:
             proc = None
         if proc is None or proc.returncode != 0:
-            # The redirection has already created (or truncated) the file on the
-            # twin's side; the message and the exit code are what matter.
+            # The redirection has already created (or truncated) the file on the twin's side; the message and the exit code are what matter.
             log.error(
                 "review-target artifact %s exists on run %s but could not be downloaded"
                 % (art_id, run_id)
@@ -493,9 +483,7 @@ def _currency(repo: str, head_sha: str, last_sha: str) -> tuple[bool, str]:
             % head_sha
         )
 
-    # FAIL CLOSED ON A COMPARE FAILURE. `claude-review-gate.sh` fails OPEN there
-    # (worst case: one extra review); here failing open would ASSERT a head was
-    # reviewed when nothing proved it.
+    # FAIL CLOSED ON A COMPARE FAILURE. `claude-review-gate.sh` fails OPEN there (worst case: one extra review); here failing open would ASSERT a head was reviewed when nothing proved it.
     code, body = _gh(
         [
             "api",
@@ -701,8 +689,7 @@ def run() -> int:
             review_budget.spent_attempt_count(pr, attempt_prefix, repo=repo),
         )
     except (ghx.GhError, ValueError) as exc:
-        # `|| return 1` in the twin, then `set -e`. The words differ (see the
-        # module docstring); the exit code does not.
+        # `|| return 1` in the twin, then `set -e`. The words differ (see the module docstring); the exit code does not.
         log.error("review budget could not be read for PR #%s: %s" % (pr, exc))
         raise ReporterError(1) from None
 

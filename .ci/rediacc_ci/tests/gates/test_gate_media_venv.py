@@ -59,9 +59,7 @@ def test_every_moved_function_is_solely_owned_by_this_module(gate):
 def test_the_ownership_assertion_can_fail(gate):
     """CONTROL. An assertion nobody has watched fail is one nobody has checked.
 
-    "Nothing defines it, so nothing else defines it either" is the specific way this one could go quiet -- the same vacuity the byte-identity helper it replaced was
-    built around. The shared control drives all four arms; see `media_verify.py` for
-    what they are and why the fourth, a MISSING origin, was the one nothing covered.
+    "Nothing defines it, so nothing else defines it either" is the specific way this one could go quiet -- the same vacuity the byte-identity helper it replaced was built around. The shared control drives all four arms; see `media_verify.py` for what they are and why the fourth, a MISSING origin, was the one nothing covered.
     """
     gate.log_test("CONTROL: every way the ownership assertion could go quiet")
     with harness.temp_dir() as d:
@@ -70,9 +68,7 @@ def test_the_ownership_assertion_can_fail(gate):
 
 def test_a_planted_mutation_is_visible_to_the_behaviour_cases(gate):
     """CONTROL FOR THE BEHAVIOUR CASES BELOW, which assert diagnoses by their exact
-    wording. Change one of those messages in a COPY of the module and the assertion
-    naming it must stop holding; if it still held, the cases would be reading
-    something other than the module under test.
+    wording. Change one of those messages in a COPY of the module and the assertion naming it must stop holding; if it still held, the cases would be reading something other than the module under test.
     """
     gate.log_test("CONTROL: a one-line mutation must change what the behaviour cases see")
     with harness.temp_dir() as d:
@@ -199,8 +195,7 @@ def test_install_generative_python_deps_drives_pip_and_stamps(gate):
     gate.log_test("the four pip installs, the cuda.sh hand-off, and the content-hash stamp")
     with harness.temp_dir() as d:
         (d / "gen").mkdir()
-        # `cat` is admitted so the module can read the stamp file back; python and pip
-        # are fakes. No network, no PyPI, no wheel is built.
+        # `cat` is admitted so the module can read the stamp file back; python and pip are fakes. No network, no PyPI, no wheel is built.
         with harness.fake_bin("python pip +cat +uname") as fake:
             result = run_venv(
                 d, "install_generative_python_deps '%s/gen' '%s/stamp' 'HASH123'" % (d, d)

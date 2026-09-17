@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/ci/assert-channel-for-event.sh` (65 lines).
 
-Asserts the resolved R2 staging CHANNEL matches the GitHub event type. The twin's own header carries the contract and the history (finding G, the
-dryrun-<sha> fallthrough, ~5 GB of orphan R2 bytes per schedule trigger); none
-of it is restated here.
+Asserts the resolved R2 staging CHANNEL matches the GitHub event type. The twin's own header carries the contract and the history (finding G, the dryrun-<sha> fallthrough, ~5 GB of orphan R2 bytes per schedule trigger); none of it is restated here.
 
 LIVE CALLER, not repointed: `.github/workflows/ci.yml:295`
 `run: .ci/scripts/ci/assert-channel-for-event.sh "${{ github.event_name }}"
 "${{ steps.staging.outputs.channel }}"`. The bash twin stays the registered
-gate; this module is its verified-equivalent alternative, and the cutover is a
-separate, later, driver-only step.
+gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
 Ledger: `.ci/shadow/w7p6-assert-channel-for-event.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-channel-for-event --assert --k 5`).
 
@@ -50,9 +47,7 @@ from rediacc_ci import log
 # `re.match(... + "$")` because Python's `$` also matches before a trailing newline while bash's does not -- `pr-1\n` must fail on both sides.
 PR_CHANNEL = re.compile(r"pr-[0-9]+")
 
-# The two events that must produce NO R2 bytes at all. `workflow_dispatch` is
-# the nightly rehearsal (ci.yml, guarded to main); the twin spells out at
-# :44-53 why it needs an explicit arm rather than falling into `*)`.
+# The two events that must produce NO R2 bytes at all. `workflow_dispatch` is the nightly rehearsal (ci.yml, guarded to main); the twin spells out at :44-53 why it needs an explicit arm rather than falling into `*)`.
 EMPTY_CHANNEL_EVENTS = {
     "schedule": "  schedule must not produce R2 uploads.",
     "workflow_dispatch": "  The nightly rehearsal must not produce R2 uploads.",

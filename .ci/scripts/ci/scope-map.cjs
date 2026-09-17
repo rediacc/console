@@ -1,14 +1,10 @@
 // The path-to-module classification table for the CI scope engine, plus the pure classify() that applies it. PURE on purpose: no network, no git, no GitHub API, no fs. Everything context-dependent (the workflow closure) is computed by the caller and passed in, so this file is a lookup table that a unit test can exercise offline in milliseconds.
 //
-// THE ONE RULE THAT MATTERS: every ambiguous case resolves to FULL CI. A false
-// full run costs 70 minutes; a false reduced run merges untested code. So the
-// table only names paths whose job surface is actually known, and everything
+// THE ONE RULE THAT MATTERS: every ambiguous case resolves to FULL CI. A false full run costs 70 minutes; a false reduced run merges untested code. So the table only names paths whose job surface is actually known, and everything
 // else falls through to `unclassified:<path>` = full. A new top-level tree, a
 // new package, a new submodule: all full until someone classifies them here.
 //
-// Design source: docs/ci-overhaul/02-v1-economics.md B1/B2 and the Wave B
-// edge-case matrix (cases 17-24 are implemented here; the case number is cited
-// at each site). This chunk is deliberately consumer-free: nothing in CI reads these outputs yet, so landing it cannot change CI behaviour.
+// Design source: docs/ci-overhaul/02-v1-economics.md B1/B2 and the Wave B edge-case matrix (cases 17-24 are implemented here; the case number is cited at each site). This chunk is deliberately consumer-free: nothing in CI reads these outputs yet, so landing it cannot change CI behaviour.
 
 'use strict';
 
@@ -85,11 +81,9 @@ const SUBMODULES = {
 };
 
 // ---------------------------------------------------------------------------
-// The rule table. First match wins; a rule either names modules or forces
-// full with a reason prefix. Order is load-bearing where prefixes nest (.ci/scripts/lib before .ci, tutorial docs before packages/www). ---------------------------------------------------------------------------
+// The rule table. First match wins; a rule either names modules or forces full with a reason prefix. Order is load-bearing where prefixes nest (.ci/scripts/lib before .ci, tutorial docs before packages/www). ---------------------------------------------------------------------------
 
-// matchPrefix('a/') matches 'a/x' but never 'ab/x'; matchExactOrPrefix('a')
-// matches 'a' itself (a gitlink) and 'a/x' (expanded submodule content).
+// matchPrefix('a/') matches 'a/x' but never 'ab/x'; matchExactOrPrefix('a') matches 'a' itself (a gitlink) and 'a/x' (expanded submodule content).
 const matchPrefix = (prefix) => (p) => p.startsWith(prefix);
 const matchExactOrPrefix = (base) => (p) => p === base || p.startsWith(`${base}/`);
 
@@ -97,22 +91,17 @@ const matchExactOrPrefix = (base) => (p) => p === base || p.startsWith(`${base}/
 const TUTORIAL_DOC_RE = /^packages\/www\/src\/content\/docs\/[^/]+\/tutorial-/;
 
 const RULES = [
-  // Case 23: .ci/scripts/lib is sourced by ~150 scripts across every lane.
-  // A change here invalidates everything; distinct reason so the test can pin
-  // it apart from the generic harness bucket.
+  // Case 23: .ci/scripts/lib is sourced by ~150 scripts across every lane. A change here invalidates everything; distinct reason so the test can pin it apart from the generic harness bucket.
   { name: 'ci-lib', match: matchPrefix('.ci/scripts/lib/'), full: 'ci-lib' },
 
   // Tutorial runner scripts: consumed only by the ops tutorial-sequence job.
   { name: 'ci-tutorials', match: matchPrefix('.ci/tutorials/'), modules: ['tutorials'] },
 
-  // The rest of .ci is harness: build/test/release scripts whose per-subtree
-  // job surface is not yet mapped. Conservative full; refining this into a
-  // per-subtree map (with a gate cross-checking workflow references) is a later, separately-tested step.
+  // The rest of .ci is harness: build/test/release scripts whose per-subtree job surface is not yet mapped. Conservative full; refining this into a per-subtree map (with a gate cross-checking workflow references) is a later, separately-tested step.
   { name: 'ci-harness', match: matchPrefix('.ci/'), full: 'harness' },
 
-  // Case 24: workflows. The closure is computed at RUNTIME by the caller (scope-engine.cjs walks `uses: ./.github/workflows/` from ci.yml), never by a name pattern: ci.yml calls cd-stage.yml, so a `cd-*` exclusion would wrongly drop a workflow that IS inside the CI closure. Both branches are
-  // full in v1; the distinct reasons keep the closure live and observable, and
-  // are the hook for later precision on non-closure workflows.
+  // Case 24: workflows. The closure is computed at RUNTIME by the caller (scope-engine.cjs walks `uses: ./.github/workflows/` from ci.yml), never by a name pattern: ci.yml calls cd-stage.yml, so a `cd-*` exclusion would wrongly drop a workflow that IS inside the CI closure. Both branches are full in v1; the distinct reasons keep the closure live and observable, and are the hook
+  // for later precision on non-closure workflows.
   {
     name: 'workflows',
     match: matchPrefix('.github/workflows/'),
@@ -150,8 +139,7 @@ const RULES = [
   // unclassified = full, which is what keeps a new sibling tree from inheriting
   // this tree's zero-job answer by accident.
   { name: 'agent-notes', match: matchPrefix('agent/'), modules: ['agent'] },
-  // .claude/.vscode cannot affect CI (the CI action restores .claude from
-  // origin/main regardless); editor metadata likewise.
+  // .claude/.vscode cannot affect CI (the CI action restores .claude from origin/main regardless); editor metadata likewise.
   { name: 'agent-docs', match: matchPrefix('.claude/'), modules: ['docs'] },
   { name: 'vscode-docs', match: matchPrefix('.vscode/'), modules: ['docs'] },
 
@@ -162,12 +150,9 @@ const RULES = [
   // THE OLD COMMENT HERE GAVE THE WRONG REASON, and a conservative rule defended by a wrong reason is one that gets removed for bad reasons later. It said quality lanes "must stay immune to scoping by construction" and concluded `full`. Gate immunity is real but the engine already guarantees it independently: ci-quality.yml contains ZERO `run_` references, so no quality lane is
   // among the 18 keys the engine can switch off. A scripts/ rule cannot scope out a gate because gates are not scopeable at all.
   //
-  // The load-bearing half was the second clause -- "these also feed hooks and dev flows whose surface is unmapped" -- so the surface was mapped (2026-08-06, tracing execution rather than reading names). Exactly two
-  // subsets are reachable from a gated job; they are carved out below and the
-  // rest becomes a zero-job module.
+  // The load-bearing half was the second clause -- "these also feed hooks and dev flows whose surface is unmapped" -- so the surface was mapped (2026-08-06, tracing execution rather than reading names). Exactly two subsets are reachable from a gated job; they are carved out below and the rest becomes a zero-job module.
   //
-  // scripts/drills/*.sh are EXECUTED by the gated Drills job: ct-tests.yml:1730 -> ./run.sh drill universe|transfer|backup -> run.sh:1987,:1991 -> these files. Mapping them to a module would need `drills` in a surface, and that surface (cli, shared, account) would drag
-  // the whole VM matrix in anyway; full is both cheaper and honest.
+  // scripts/drills/*.sh are EXECUTED by the gated Drills job: ct-tests.yml:1730 -> ./run.sh drill universe|transfer|backup -> run.sh:1987,:1991 -> these files. Mapping them to a module would need `drills` in a surface, and that surface (cli, shared, account) would drag the whole VM matrix in anyway; full is both cheaper and honest.
   { name: 'scripts-drills', match: matchPrefix('scripts/drills/'), full: 'harness' },
 
   // The GATE BINDER, which is executed by a gated job and also WRITES ci-quality.yml. It is the one file under scripts/ that both runs as a gate and generates the workflow other gates are stepped from, so a delta touching only it changes what every lane runs. check:ci-scope-scripts-reachability caught it as 'reduced'.
@@ -197,9 +182,7 @@ const RULES = [
   { name: 'root-manifest', match: (p) => ROOT_MANIFESTS.has(p), full: 'root-manifest' },
 ];
 
-// --------------------------------------------------------------------------- Job surfaces: which modules each scoped job consumes. The eventual consumer
-// derives run_<job> from these; nothing reads them yet. Keys are the future
-// run_* names.
+// --------------------------------------------------------------------------- Job surfaces: which modules each scoped job consumes. The eventual consumer derives run_<job> from these; nothing reads them yet. Keys are the future run_* names.
 //
 // migration-test is DELIBERATELY absent: it stays unconditional (edge case 26, and the standing comment in ct-tests.yml explains why it must run on the exact path that deploys migrations).
 //
@@ -310,9 +293,7 @@ function classify(paths, ctx = {}) {
   };
 }
 
-// buildPlan(classification) -> the JSON plan --classify prints. In full mode
-// every job runs; in reduced mode a job runs iff its surface intersects the
-// touched modules.
+// buildPlan(classification) -> the JSON plan --classify prints. In full mode every job runs; in reduced mode a job runs iff its surface intersects the touched modules.
 function buildPlan(classification) {
   const { modules, reasons, mode, full_reasons } = classification;
   const jobs = {};

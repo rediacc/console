@@ -3,9 +3,7 @@
 
 THE FIXTURE SHAPE follows `test_build_build_www.py` and `test_build_build_json.py`:
 neither side takes a root override, so both are copied into a throwaway root;
-PATH is REPLACED rather than prepended; `rediacc_ci` is vendored so no absolute
-path outside the fixture appears in any command; `$0` is masked to `<SELF>` and
-nothing else is.
+PATH is REPLACED rather than prepended; `rediacc_ci` is vendored so no absolute path outside the fixture appears in any command; `$0` is masked to `<SELF>` and nothing else is.
 
 WHAT THIS FILE ADDS is that the subject's whole output surface is FILESYSTEM, not text. `build-pages.sh` prints eleven chatter lines on a successful run and says nothing about what it copied, so a port that assembled a different package would agree on every byte of stderr. Every case therefore compares the RESULTING TREE as well: `_state` walks the fixture and hashes every file the
 run produced, and `_agree` fails when the two trees differ even by one path.
@@ -47,10 +45,7 @@ VENDORED = (
 
 BASH = shutil.which("bash") or "/bin/bash"
 
-# Plain symlinks. `dirname` for `get_repo_root` (common.sh:207) and for the
-# twin's own `SCRIPT_DIR` (:16); `uname` because sourcing common.sh runs
-# `detect_os`/`detect_arch`; `tr` because `parse_args` folds each flag name
-# through `to_upper` (common.sh:302). Anything not listed here or below is ABSENT.
+# Plain symlinks. `dirname` for `get_repo_root` (common.sh:207) and for the twin's own `SCRIPT_DIR` (:16); `uname` because sourcing common.sh runs `detect_os`/`detect_arch`; `tr` because `parse_args` folds each flag name through `to_upper` (common.sh:302). Anything not listed here or below is ABSENT.
 PLAIN = ("dirname", "uname", "tr")
 
 # Recorded wrappers around the real binaries. These three ARE the ported logic.
@@ -561,8 +556,7 @@ def test_defect_2_nothing_in_the_tree_writes_the_manifest_path_this_reads() -> N
 
     Asserted against the real tree rather than a fixture, because the claim is about the tree. If a producer is ever added this test goes red and the docstring's defect 2 has to be rewritten, which is the intent.
 
-    The expected set is THREE files, not one. It was written as `[TWIN_REL]` and was therefore red from the commit that introduced it (`7c926bd63`): the port reproduces the twin's dead read, as the campaign requires, and this file names the path in its own `git grep` argument, so it matches itself. Counting
-    mentions is a PROXY for "nothing writes this path"; the proxy has to know
+    The expected set is THREE files, not one. It was written as `[TWIN_REL]` and was therefore red from the commit that introduced it (`7c926bd63`): the port reproduces the twin's dead read, as the campaign requires, and this file names the path in its own `git grep` argument, so it matches itself. Counting mentions is a PROXY for "nothing writes this path"; the proxy has to know
     about the non-producers that the proxy itself created, or it only ever reports its own existence.
     """
     self_rel = str(pathlib.Path(__file__).resolve().relative_to(ROOT))

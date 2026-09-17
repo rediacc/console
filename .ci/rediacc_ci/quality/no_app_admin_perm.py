@@ -1,8 +1,6 @@
 """No workflow may ask the GitHub App for the `administration` permission.
 
-Ported from `.ci/scripts/quality/check-no-app-admin-perm.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live until a
-differential ledger row exists over K distinct trees. Its gate header registers it as step "App admin permission", id `check:ci-app-admin-perm`, lane quality-code.
+Ported from `.ci/scripts/quality/check-no-app-admin-perm.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live until a differential ledger row exists over K distinct trees. Its gate header registers it as step "App admin permission", id `check:ci-app-admin-perm`, lane quality-code.
 
 WHY THIS EXISTS, carried from the twin because the rationale IS the gate:
 
@@ -42,10 +40,8 @@ BINARY FILES. GNU grep prints `Binary file <path> matches` and suppresses the li
 
 THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the one archaeology token this file would otherwise drop. `log_step`, `log_error`, `log_info` and `get_repo_root` are the gate's only dependency on the shared bash library, which is what makes the twin cheap to retire.
 
-THE ONE PLACE THIS IS DELIBERATELY STRONGER, and it is the failure this whole
-programme is named after. `if grep -rn ... 2>/dev/null; then` cannot distinguish
-"no workflow requests the permission" from "there are no workflows". Rename `.github/workflows`, move the tree, run the gate from a fixture that copied the gate but not its subject, and grep exits 2 into a suppressed stderr while the twin prints its green line. This port counts the files it read and REFUSES when that count is zero, so its green always carries evidence that it saw
-the tree. The count is printed on the success line for the same reason.
+THE ONE PLACE THIS IS DELIBERATELY STRONGER, and it is the failure this whole programme is named after. `if grep -rn ... 2>/dev/null; then` cannot distinguish "no workflow requests the permission" from "there are no workflows". Rename `.github/workflows`, move the tree, run the gate from a fixture that copied the gate but not its subject, and grep exits 2 into a suppressed stderr
+while the twin prints its green line. This port counts the files it read and REFUSES when that count is zero, so its green always carries evidence that it saw the tree. The count is printed on the success line for the same reason.
 """
 
 import os
@@ -56,9 +52,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The two directory arguments, in the twin's order, with their trailing slashes.
-# The slash is carried because it is part of the twin's command line; it is
-# stripped again when a finding is printed, which is what GNU grep does.
+# The two directory arguments, in the twin's order, with their trailing slashes. The slash is carried because it is part of the twin's command line; it is stripped again when a finding is printed, which is what GNU grep does.
 SCAN_DIRS = (".github/workflows/", ".github/actions/")
 
 # The literal the whole gate is about. One spelling, used as both the needle and the message, because two spellings is how one of them stops being exercised.
@@ -86,8 +80,7 @@ def scan(root: pathlib.Path) -> tuple[list[str], int]:
                 try:
                     data = path.read_bytes()
                 except OSError:
-                    # grep reports and skips; the file was not read, so it is not
-                    # counted either.
+                    # grep reports and skips; the file was not read, so it is not counted either.
                     continue
                 files_read += 1
                 rel = path.relative_to(base).as_posix()
@@ -221,9 +214,7 @@ def selftest() -> int:
         1,
     )
 
-    # The finding text itself, asserted rather than assumed. This is the byte
-    # shape `shadow-gate.ts` classifies as a finding; get it wrong and every
-    # finding silently becomes chatter.
+    # The finding text itself, asserted rather than assumed. This is the byte shape `shadow-gate.ts` classifies as a finding; get it wrong and every finding silently becomes chatter.
     with tempfile.TemporaryDirectory() as tmp:
         root = _tree(
             pathlib.Path(tmp),

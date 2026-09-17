@@ -6,9 +6,8 @@ WHAT WENT WRONG, measured 2026-08-26: `Cleanup PR Preview` run 32903006150 died 
 checkout, so neither of its two cleanups ran. Phase 5 backstops the Pages side;
 nothing backstopped `wrangler delete --name pr-<n>` (cleanup-preview.yml:60), so the Worker leaked with nothing to reap it -- one per failed cleanup, forever.
 
-THIS GATE IS MOSTLY ABOUT WHAT MUST **NOT** BE DELETED. A reaping phase that
-works is easy; a reaping phase that cannot over-reach is the whole risk, since it
-runs unattended at 03:00 with production Cloudflare credentials. So the selector is tested against names chosen to break it: the production and bench Workers, a pr-prefixed name that is not a PR number, and an open PR's Worker.
+THIS GATE IS MOSTLY ABOUT WHAT MUST **NOT** BE DELETED. A reaping phase that works is easy; a reaping phase that cannot over-reach is the whole risk, since it runs unattended at 03:00 with production Cloudflare credentials. So the selector is tested against names chosen to break it: the production and bench Workers, a pr-prefixed name that is not a PR number, and an open PR's
+Worker.
 
 FAIL-CLOSED IS AN ASSERTION HERE, not a comment. Phase 4 (Pages) falls back to keep-N when the open-PR lookup fails, because its worst case is retaining too much. Phase 5b's worst case is deleting a LIVE preview, so an unreadable PR list must SKIP the phase. The two phases must not be "made consistent".
 

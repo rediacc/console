@@ -18,9 +18,8 @@
 // Required env vars: WATCHDOG_EXCLUDE_PATTERNS - Comma-separated job name patterns to exclude from monitoring WATCHDOG_NO_RETRY_PATTERNS - Comma-separated job name patterns that should never auto-retry WATCHDOG_INSTALL_VALIDATION_PATTERNS - Comma-separated job name patterns identifying install-validation jobs WATCHDOG_RETRY_ALLOWLIST_PATTERNS - Comma-separated job name patterns
 // retryable when the classifier is down
 //
-// Optional env vars (chained mode; when unset the script monitors its own run,
-// reading PR context from the event payload as it always did): WATCHDOG_TARGET_RUN_ID - CI run to monitor (a dispatched generation's own context.runId is the watchdog run, not the target) WATCHDOG_PR_NUMBER - PR number for live label reads WATCHDOG_DEADLINE_SECONDS - hand off to the next generation after this long WATCHDOG_PENDING_RERUN - 'true' when a prior generation classified
-// a
+// Optional env vars (chained mode; when unset the script monitors its own run, reading PR context from the event payload as it always did): WATCHDOG_TARGET_RUN_ID - CI run to monitor (a dispatched generation's own context.runId is the watchdog run, not the target) WATCHDOG_PR_NUMBER - PR number for live label reads WATCHDOG_DEADLINE_SECONDS - hand off to the next generation after
+// this long WATCHDOG_PENDING_RERUN - 'true' when a prior generation classified a
 //                                 failure as transient; wait + rerun mode
 // WATCHDOG_SKIP_RERUN - 'true' when check-rerun-attempt.sh (the dumb, deterministic attempt-cap backstop, run as a separate workflow step) refused the rerun
 //
@@ -35,8 +34,7 @@
 // Usage (from actions/github-script):
 //   script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 
-// A downloaded release binary that will not execute is normally a truncated or stale CDN download (transient). It is a corrupt build only when no platform's install validation survives it. The classifier prompt says as much, but a
-// prompt is advice; this signature + cross-job check is the enforcement.
+// A downloaded release binary that will not execute is normally a truncated or stale CDN download (transient). It is a corrupt build only when no platform's install validation survives it. The classifier prompt says as much, but a prompt is advice; this signature + cross-job check is the enforcement.
 const BINARY_EXEC_FAILURE_RE =
   /is not a valid application for this OS platform|cannot execute binary file|Exec format error/i;
 
@@ -244,9 +242,8 @@ function evaluateRetryEligibility({
   //
   // Why the allowlist is the safer authority HERE specifically: membership is a hand-curated statement that a leg boots VMs or pulls images across the network, which is a claim about the JOB and cannot be wrong about a given failure the way a model's reading of a log can. The cost is bounded and small: MAX_ATTEMPTS caps this at ONE extra attempt.
   //
-  // guardForced is the one thing that still wins, and it must. The binary-exec guard synthesises `code-change` at confidence 1 precisely to BLOCK a retry
-  // of a job that downloads and executes a released binary; letting a pattern
-  // match override that would silently defeat a deliberate safety check. No install-validation job matches the current allowlist, so this is defence in depth rather than a live conflict, and it stays correct if either list moves.
+  // guardForced is the one thing that still wins, and it must. The binary-exec guard synthesises `code-change` at confidence 1 precisely to BLOCK a retry of a job that downloads and executes a released binary; letting a pattern match override that would silently defeat a deliberate safety check. No install-validation job matches the current allowlist, so this is defence in depth
+  // rather than a live conflict, and it stays correct if either list moves.
   const allowlistOverridesVerdict =
     Boolean(isFailure) && !guardForced && matchesPatterns(jobName, retryAllowlistPatterns || []);
 
@@ -507,9 +504,7 @@ const monitor = async ({ github, context, core }) => {
 
   // A no-retry (quality) failure has been seen and its force-cancel is being held until the sibling no-retry jobs finish, so one round reports every failing lane. See pendingNoRetryJobs for why.
   let pendingQualityCancel = false;
-  // The drain has a DEADLINE. Waiting for every sibling no-retry lane to settle
-  // buys a full roster, but only when a sibling is actually about to fail; when
-  // nothing else does it is dead time on a run already known to be red.
+  // The drain has a DEADLINE. Waiting for every sibling no-retry lane to settle buys a full roster, but only when a sibling is actually about to fail; when nothing else does it is dead time on a run already known to be red.
   //
   // Measured on run 30470189106: Quality/Go failed at 16:25:10 and the cancel was
   // held on Quality/Security. Every OTHER Quality lane had finished by 16:25;
@@ -617,14 +612,10 @@ const monitor = async ({ github, context, core }) => {
       const stripped = lines.map((l) =>
         l.replace(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s?/, '').replace(ANSI_SGR_RE, '')
       );
-      // Persist the WHOLE log, not the excerpt below. The excerpt is tuned for
-      // the classifier's context window; a human debugging afterwards wants
-      // everything, and this is the last moment it exists.
+      // Persist the WHOLE log, not the excerpt below. The excerpt is tuned for the classifier's context window; a human debugging afterwards wants everything, and this is the last moment it exists.
       persistJobLog(job, stripped.join('\n'));
       // Anchor the excerpt at the FIRST failure marker, not the end of the log: a failed job keeps logging through its if:always() cleanup and post-steps, so a plain tail shows successful teardown instead of the error. Run 29931338016 is the receipt: a deterministic `sudo: renet: command not found` sat hundreds of lines before the tail, the classifier was shown post-checkout
-      // git-config scrubbing, and it honestly called that "no explicit error messages" -> transient (0.8).
-      // The first marker is the root cause; later ones are cascade (failed
-      // cleanup). Consecutive ##[error] lines belong to the same annotation. No marker (rare) falls back to the tail. The binary-exec guard reads this same excerpt, so the anchor un-blinds it too.
+      // git-config scrubbing, and it honestly called that "no explicit error messages" -> transient (0.8). The first marker is the root cause; later ones are cascade (failed cleanup). Consecutive ##[error] lines belong to the same annotation. No marker (rare) falls back to the tail. The binary-exec guard reads this same excerpt, so the anchor un-blinds it too.
       let end = stripped.findIndex((l) => l.startsWith('##[error]'));
       if (end >= 0) {
         do {
@@ -650,9 +641,7 @@ const monitor = async ({ github, context, core }) => {
     }
   }
 
-  // One parser for every provider. Each returns text that must be the same JSON
-  // verdict; validation is deliberately strict, because an unparseable or
-  // out-of-contract answer must count as NO ANSWER (fall through to the next tier) rather than as a low-confidence one.
+  // One parser for every provider. Each returns text that must be the same JSON verdict; validation is deliberately strict, because an unparseable or out-of-contract answer must count as NO ANSWER (fall through to the next tier) rather than as a low-confidence one.
   function parseClassifierVerdict(rawText) {
     try {
       const cleaned = String(rawText)
@@ -707,8 +696,7 @@ const monitor = async ({ github, context, core }) => {
         return null;
       }
       const data = await response.json();
-      // Reasoning models put their thinking in message.reasoning_content; the
-      // verdict must come from content only.
+      // Reasoning models put their thinking in message.reasoning_content; the verdict must come from content only.
       //
       // TWO SHAPES ON PURPOSE. The /ai/run route wraps everything in `result`,
       // while the OpenAI-compatible /ai/v1 route does not. Accepting both means
@@ -736,9 +724,7 @@ const monitor = async ({ github, context, core }) => {
   // WHY A SECOND PROVIDER AT ALL. Tier 1 has been returning HTTP 402 (billing) continuously, which is not a transient outage: it is an unavailable tier. With only one model, every failure fell through to the allowlist, so a judgment nobody made decided whether to spend a ~500-machine-minute retry. The allowlist is a safety net, not a classifier, and it cannot tell a real break in
   // an E2E job from a flake in one.
   //
-  // AUTH. ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN, which is the credential this org has. The
-  // OAuth path needs the oauth beta header; without it the API rejects a Bearer
-  // token. If it is not set this tier is simply absent and the chain moves on, which is why a missing secret degrades to today's behaviour instead of breaking the watchdog.
+  // AUTH. ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN, which is the credential this org has. The OAuth path needs the oauth beta header; without it the API rejects a Bearer token. If it is not set this tier is simply absent and the chain moves on, which is why a missing secret degrades to today's behaviour instead of breaking the watchdog.
   //
   // There was an ANTHROPIC_API_KEY branch here, preferred when set. It was removed on 2026-09-02: the operator ruled out pay-as-you-go API billing, so that key will never exist, and a branch nobody can reach is a branch that invites someone to make it reachable. Behaviour is unchanged -- the key was never set, so the OAuth branch is the one that always ran.
   async function callClaudeClassifier(logTail, systemPrompt) {
@@ -900,9 +886,8 @@ const monitor = async ({ github, context, core }) => {
   // RETURNS true when the run was actually cancelled, false when the cancel was suppressed by the event exemption. Callers use it to decide whether to end the generation: a real cancel is terminal, a suppressed one is not, and the watchdog must keep monitoring an exempt run so later failures still get their logs captured. `await forceCancel(...)` without checking the result would
   // end the chain at the first failure on the nightly, which is precisely the under-diagnosis this wave exists to fix.
   async function forceCancel(failureMsg) {
-    // Re-fetch the job list so the cancellation names EVERY job that has failed by now, not only the one that drove the decision. Between the poll that detected the first failure and this call (AI classification + the critical-job wait below both take time) sibling jobs can also flip to
-    // failure; without this an operator or agent reading the cancelled run
-    // re-scans every job to find failures the watchdog already saw. Best-effort:
+    // Re-fetch the job list so the cancellation names EVERY job that has failed by now, not only the one that drove the decision. Between the poll that detected the first failure and this call (AI classification + the critical-job wait below both take time) sibling jobs can also flip to failure; without this an operator or agent reading the cancelled run re-scans every job to find
+    // failures the watchdog already saw. Best-effort:
     // if the refetch fails we fall back to the driving job's message.
     try {
       const jobsNow = await github.paginate(
@@ -1167,9 +1152,8 @@ const monitor = async ({ github, context, core }) => {
       return;
     }
 
-    // Distinguish stuck-job timeouts from normal cancellations. A cancelled job that ran longer than STUCK_THRESHOLD_MIN almost certainly hit its declared timeout-minutes (or GitHub's 6h default), not a manual / supersession / watchdog cancel -- those happen within minutes of the job starting. The classifier path treats all cancellations as
-    // potentially transient and auto-retries; that's how we ended up with
-    // a 4-hour debian-13 hang retried automatically before any human noticed. Stuck jobs go straight to force-cancel with no retry. (STUCK_THRESHOLD_MIN + jobElapsedMin hoisted above the loop as loop-invariants.)
+    // Distinguish stuck-job timeouts from normal cancellations. A cancelled job that ran longer than STUCK_THRESHOLD_MIN almost certainly hit its declared timeout-minutes (or GitHub's 6h default), not a manual / supersession / watchdog cancel -- those happen within minutes of the job starting. The classifier path treats all cancellations as potentially transient and auto-retries;
+    // that's how we ended up with a 4-hour debian-13 hang retried automatically before any human noticed. Stuck jobs go straight to force-cancel with no retry. (STUCK_THRESHOLD_MIN + jobElapsedMin hoisted above the loop as loop-invariants.)
     const stuckCancellations = cancelled.filter((j) => jobElapsedMin(j) >= STUCK_THRESHOLD_MIN);
     const normalCancellations = cancelled.filter((j) => jobElapsedMin(j) < STUCK_THRESHOLD_MIN);
 
@@ -1207,9 +1191,7 @@ const monitor = async ({ github, context, core }) => {
       : failedOrCancelled.filter((j) => !handledJobs.has(j.name));
 
     // The binary-exec guard can defer an install-validation failure whose sibling platforms are still running: until the matrix settles, the same log cannot be told apart from a CDN flake and a corrupt build, and both a retry and a cancellation would be premature. Deferring must not starve the other failures in this poll, so pick the first candidate the guard does not defer
-    // instead of always taking newFailures[0]. Deferred jobs are
-    // left out of handledJobs so a later poll reconsiders them; the 3h watchdog
-    // timeout is the backstop.
+    // instead of always taking newFailures[0]. Deferred jobs are left out of handledJobs so a later poll reconsiders them; the 3h watchdog timeout is the backstop.
     let job = null;
     let jobGuard = null;
     for (const candidate of newFailures) {
@@ -1287,9 +1269,7 @@ const monitor = async ({ github, context, core }) => {
           `"${job.name}" matches no-retry pattern${noRetryVerdict.noDrain ? ' (no drain)' : ''}`
         );
 
-        // Drain before cancelling (see pendingNoRetryJobs). No-drain jobs keep
-        // the instant kill; everything else waits for its siblings so one round
-        // reports every failing lane instead of the first one.
+        // Drain before cancelling (see pendingNoRetryJobs). No-drain jobs keep the instant kill; everything else waits for its siblings so one round reports every failing lane instead of the first one.
         const stillRunning = noRetryVerdict.noDrain
           ? []
           : pendingNoRetryJobs({ jobs: monitoredJobs, noRetryPatterns, excludePatterns });
@@ -1309,8 +1289,7 @@ const monitor = async ({ github, context, core }) => {
         if (await forceCancel(failureMsg)) return;
 
         // Cancel-exempt run: recorded, not cancelled, and this branch has already reached its verdict -- a no-retry job never retries, by definition. Falling through would hand it to branch 4, which independently re-derives "no retry" for a real failure and so reaches the same answer, but only after paying for a classifyFailure call (a billed Workers AI request) and emitting
-        // duplicate log lines. Same outcome, wasted work, noisier log. Flagged as a non-blocking nit in
-        // review of PR #541; skipping is both cheaper and clearer.
+        // duplicate log lines. Same outcome, wasted work, noisier log. Flagged as a non-blocking nit in review of PR #541; skipping is both cheaper and clearer.
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
         continue;
       }
@@ -1332,16 +1311,14 @@ const monitor = async ({ github, context, core }) => {
         const ai = await classifyFailure(job, jobGuard);
         const eligibility = evaluateRetryEligibility({
           jobName: job.name,
-          // Failures and non-stuck cancellations both reach this branch; only
-          // the former is a verdict about the code. See evaluateRetryEligibility.
+          // Failures and non-stuck cancellations both reach this branch; only the former is a verdict about the code. See evaluateRetryEligibility.
           isFailure: failed.includes(job),
           classification: ai.classification,
           confidence: ai.confidence,
           classifierAvailable: ai.classifierAvailable !== false,
           threshold: AI_CONFIDENCE_THRESHOLD,
           retryAllowlistPatterns,
-          // The binary-exec guard SYNTHESISES a code-change verdict to block a
-          // retry deliberately; the allowlist override must never undo that.
+          // The binary-exec guard SYNTHESISES a code-change verdict to block a retry deliberately; the allowlist override must never undo that.
           guardForced: ai.guardForced === true,
         });
 

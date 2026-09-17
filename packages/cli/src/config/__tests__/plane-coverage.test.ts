@@ -93,9 +93,8 @@ describe('command plane coverage', () => {
     //
     // 162 -> 157 in the w2b subscription flatten (§5.11): `activation status`, `repo status`, `refresh activation`, `refresh repos`, `refresh repo` (5 leaves) collapse into `status [-m]` and `refresh [-m] [--repo]`. Their two parent nouns go with them. `subscription status` becomes machine-plane (its -m form SSHes), which is why machine only drops 93 -> 89 and other 21 -> 20.
     //
-    // 157 -> 162 (machine 89 -> 94) in the w2b datastore batch (#34): the family
-    // was a facade (init dispatched a renet verb that does not exist; fork/unfork
-    // were leaves whose whole body was a throw). It becomes the real 10-leaf surface over P1's named registry: create/list/status/attach/detach/fork/ snapshot create|list/resize/delete. All machine-plane: every one dispatches a datastore_* bridge verb at the machine holding the pool.
+    // 157 -> 162 (machine 89 -> 94) in the w2b datastore batch (#34): the family was a facade (init dispatched a renet verb that does not exist; fork/unfork were leaves whose whole body was a throw). It becomes the real 10-leaf surface over P1's named registry: create/list/status/attach/detach/fork/ snapshot create|list/resize/delete. All machine-plane: every one dispatches a
+    // datastore_* bridge verb at the machine holding the pool.
     //
     // 162 -> 164 (machine 94 -> 96): the two NEW leaves `repo logs` and `repo exec` (R2-F14). They are what let `term connect` drop its container side door (--container/--log-lines/--follow) and be honestly excluded from MCP: an agent asks for a log line or a command run, not for a shell to type into.
     //
@@ -109,9 +108,8 @@ describe('command plane coverage', () => {
     // the relocation into `repo` handed them repo's MACHINE default, and no entry was written. They import no executor and no SSH — they only read and write the config's archive map — so the machine plane was a false claim, and it made them proxy-capable: a proxied `archive purge` would have permanently deleted the PROXY HOST's archived records rather than the caller's (§4.9). 164
     // -> 166, config 51 -> 53: the two NEW leaves `backup strategy bind` and `unbind`. `machine.backupStrategies[]` decides which strategies `backup schedule` deploys, and nothing could write it — the only writer was config-refs-prune, which only removes — so completing a strategy rename required hand-editing the config file. They inherit the `backup strategy` subtree's config
     // plane, which is correct and deliberate: both only read-modify-write the local config and import no executor or SSH. The machine-plane default of the `backup` domain would have been a false claim. 166 -> 167, config 53 -> 54: the new `config current` leaf, a read-only config-plane command that reports the resolved server/channel/token state. 167 -> 170, machine 93 -> 94,
-    // other 20 -> 22: the chunk-store backup reads. `backup verify` reaches a machine (backup_verify verb) so it keeps the backup
-    // domain's machine default; `backup usage` and `backup manifests` are
-    // account-tunnel reads (accountServerFetch), so `other` like `subscription`. 170 -> 171: `backup snapshot`, the chunk-store WRITE verb. 171 -> 174, other 22 -> 25: `backup retention` and its `set`/`clear` children — the CLI half of retention enforcement, without which the policy was enforceable server-side but UNDECLARABLE. They are `other`
+    // other 20 -> 22: the chunk-store backup reads. `backup verify` reaches a machine (backup_verify verb) so it keeps the backup domain's machine default; `backup usage` and `backup manifests` are account-tunnel reads (accountServerFetch), so `other` like `subscription`. 170 -> 171: `backup snapshot`, the chunk-store WRITE verb. 171 -> 174, other 22 -> 25: `backup retention` and
+    // its `set`/`clear` children — the CLI half of retention enforcement, without which the policy was enforceable server-side but UNDECLARABLE. They are `other`
     // for the same reason `usage` and `manifests` are: accountServerFetch
     // against the control plane, never a machine. Inheriting the backup domain's machine default would have made them proxyCapable, offering the command that decides what gets DELETED for remote execution.
     expect(COMMANDS.length).toBe(175);
@@ -138,9 +136,7 @@ describe('command plane coverage', () => {
   });
 
   it('records the machine-plane commands a remote executor could run', () => {
-    // These are the candidates for proxying. The contract narrows them further via PROXY_EXCLUSIONS in generate-cli-contract.ts (client-side transfers,
-    // and commands whose effect lands in the caller's own config); the exclusion
-    // set itself is asserted in the shared cli-contract tests.
+    // These are the candidates for proxying. The contract narrows them further via PROXY_EXCLUSIONS in generate-cli-contract.ts (client-side transfers, and commands whose effect lands in the caller's own config); the exclusion set itself is asserted in the shared cli-contract tests.
     const machineNonInteractive = COMMANDS.filter(
       (c) => getCommandPlane(c.pathKey) === 'machine' && !isInteractiveCommand(c.pathKey)
     ).map((c) => c.pathKey);

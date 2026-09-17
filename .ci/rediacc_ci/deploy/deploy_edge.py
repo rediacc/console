@@ -19,9 +19,8 @@ IT IS NOT `deploy-account.sh` WITH THE MIGRATIONS REMOVED, and the differences a
   * The config path is a LITERAL, `wrangler.edge.toml`, not composed from
     anything, so there is no missing-region case and no config-name family.
 
-NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` and `npm` are the only external
-tools; the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_edge.py`) puts
-RECORDING FAKES for both on a scratch PATH and points both sides at a fixture repo root. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is separate, achievable work. This is that piece.
+NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` and `npm` are the only external tools; the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_edge.py`) puts RECORDING FAKES for both on a scratch PATH and points both sides at a fixture repo root. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the
+mocked parity ledger is separate, achievable work. This is that piece.
 
 THE FAILURE THIS SCRIPT CANNOT REPORT, named because it is the vacuity class: `CLOUDFLARE_ACCOUNT_ID` is required and then never used by anything in this file. It is `require_var`'d at :24 and read only by wrangler itself, out of the environment. A caller who exports the WRONG account id passes every check here and finds out from Cloudflare.
 

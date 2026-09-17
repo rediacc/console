@@ -79,14 +79,11 @@ THREE MORE FACTS ABOUT THE TWIN, ALL REPRODUCED
 =============================================================================
 TWO DIVERGENCES, STATED RATHER THAN DISCOVERED LATER
 =============================================================================
-`command -v` VERSUS `shutil.which`. `command -v rdc` also answers for shell
-functions, aliases and builtins; `shutil.which` sees only files on PATH.
-`core.common.require_cmd` records the same gap at its own call site. Nothing installs `rdc` as a shell function, so the difference is not reachable from this script -- but it is a difference, and it is here rather than nowhere.
+`command -v` VERSUS `shutil.which`. `command -v rdc` also answers for shell functions, aliases and builtins; `shutil.which` sees only files on PATH. `core.common.require_cmd` records the same gap at its own call site. Nothing installs `rdc` as a shell function, so the difference is not reachable from this script -- but it is a difference, and it is here rather than nowhere.
 
 A `parse_args` KEY THAT IS NOT A VALID IDENTIFIER (`--foo.bar`) makes bash's `printf -v` fail with a message that names `common.sh` and a line number, then `set -e` ends the run with 2. `core.common.parse_args` raises `RefusalError`
 with the message text but no file-and-line prefix, so the exit code matches and
-the stderr bytes do not. That quirk belongs to `core.common` (its QUIRK 3) and
-is not re-litigated here; no caller of this script passes such a flag.
+the stderr bytes do not. That quirk belongs to `core.common` (its QUIRK 3) and is not re-litigated here; no caller of this script passes such a flag.
 """
 
 from __future__ import annotations
@@ -124,8 +121,7 @@ def package_dir(argv: list[str]) -> str:
 
     `common.parse_args` is the ported `common.sh:324-353`, so all of its rules
     apply unchanged: `--package-dir=X` splits on the first `=`; `--package-dir X`
-    consumes the next token unless it starts with `--`; a bare `--package-dir` at
-    the end of the argv stores the STRING `true`, which then fails `require_dir`
+    consumes the next token unless it starts with `--`; a bare `--package-dir` at the end of the argv stores the STRING `true`, which then fails `require_dir`
     with `Required directory 'true' does not exist`. That last one reads like a
     bug in the port the first time it is seen and is the twin exactly.
     """
@@ -152,9 +148,8 @@ def choose_tarball() -> str | None:
 def remove_tarball(name: str) -> None:
     """`rm -f "$TARBALL"` (install-cli-global.sh:55).
 
-    `missing_ok` is what `-f` means. Any OTHER `OSError` -- a read-only directory, a permission problem -- would make `rm` exit non-zero and `set -e` end the
-    twin, so it must not become a Python traceback here; the caller turns it into
-    a non-zero return. That is the one place the two cannot print the same bytes, because the twin's bytes are `rm`'s own message and this port never runs `rm`.
+    `missing_ok` is what `-f` means. Any OTHER `OSError` -- a read-only directory, a permission problem -- would make `rm` exit non-zero and `set -e` end the twin, so it must not become a Python traceback here; the caller turns it into a non-zero return. That is the one place the two cannot print the same bytes, because the twin's bytes are `rm`'s own message and this port never
+    runs `rm`.
     """
     try:
         os.unlink(name)
@@ -165,9 +160,7 @@ def remove_tarball(name: str) -> None:
 def npm(args: list[str], **kwargs) -> int:
     """One `npm` child with BOTH streams inherited, as the twin leaves them.
 
-    `npm pack` writes the filename it created to stdout and its progress to
-    stderr; the twin captures neither, and a port that captured either would
-    change what a CI log contains and would hold a minutes-long global install silent until it finished.
+    `npm pack` writes the filename it created to stdout and its progress to stderr; the twin captures neither, and a port that captured either would change what a CI log contains and would hold a minutes-long global install silent until it finished.
     """
     return subprocess.run(["npm", *args], check=False, **kwargs).returncode
 
@@ -200,8 +193,7 @@ def main(argv: list[str]) -> int:
 
     tarball = choose_tarball()
     if tarball is None:
-        # THE DEAD BRANCH. The twin dies at the assignment with exit 2 and zero
-        # bytes; `UNREACHABLE_NO_TARBALL` is the line it never gets to print.
+        # THE DEAD BRANCH. The twin dies at the assignment with exit 2 and zero bytes; `UNREACHABLE_NO_TARBALL` is the line it never gets to print.
         return LS_CANNOT_STAT_EXIT
 
     log.step("Installing %s globally..." % tarball)
@@ -212,9 +204,7 @@ def main(argv: list[str]) -> int:
     try:
         remove_tarball(tarball)
     except OSError as exc:
-        # `rm -f` failed for a reason `-f` does not cover. The twin's `set -e`
-        # ends with 1 and rm's message; this ends with 1 and Python's. Named in
-        # the docstring as the one byte-level divergence in the file.
+        # `rm -f` failed for a reason `-f` does not cover. The twin's `set -e` ends with 1 and rm's message; this ends with 1 and Python's. Named in the docstring as the one byte-level divergence in the file.
         log.error(str(exc))
         return 1
 

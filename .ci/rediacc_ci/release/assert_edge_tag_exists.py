@@ -9,9 +9,8 @@ Usage: assert_edge_tag_exists.py --version 1.3.0 (or a bare `v1.3.0`)
 THREE INDEPENDENT ORACLES, AND THE PORT KEEPS THEM INDEPENDENT. `gh api repos/<repo>/git/ref/tags/<tag>` answers for the git tag, `gh release view` answers for the Release, and `aws s3api head-object` answers for the R2 sentinel. Each has its own failure mode and its own probe function, and all three run even after one of them has already failed (`judge ... || true`), so one run
 names every missing piece rather than the first one.
 
-"COULD NOT TELL" IS A FAILURE, NOT A PASS, and that is the whole design. A 404
-CONFIRMS absence; a 403, a 5xx, a DNS failure or `NoCredentials` mean the check
-did NOT RUN. `FAILED` and `COULD_NOT_TELL` are tracked separately here exactly as they are there, because the two states need OPPOSITE advice: the twin's own comment records the cost of conflating them, when a NoCredentials failure printed "cut the release, then Backfill Release Sentinel" at an operator whose sentinel was already fine.
+"COULD NOT TELL" IS A FAILURE, NOT A PASS, and that is the whole design. A 404 CONFIRMS absence; a 403, a 5xx, a DNS failure or `NoCredentials` mean the check did NOT RUN. `FAILED` and `COULD_NOT_TELL` are tracked separately here exactly as they are there, because the two states need OPPOSITE advice: the twin's own comment records the cost of conflating them, when a NoCredentials
+failure printed "cut the release, then Backfill Release Sentinel" at an operator whose sentinel was already fine.
 
 THE THREE PROBE VERDICTS ARE STRINGS, NOT AN ENUM, and `judge()` still carries the twin's unreachable `*)` INTERNAL arm. `core.release_state_validator.Probe` exists and is deliberately NOT used: it collapses to three states with no detail, and the detail (`unknown:<one-line of the tool's own output>`) is the only thing that tells an operator WHICH way the probe failed. Reproducing
 the string protocol is also what keeps the INTERNAL arm reachable-in-principle, so a future edit that invents a fourth verdict is reported rather than silently treated as a pass.
@@ -100,8 +99,7 @@ GH_API_ABSENT = re.compile(r"HTTP 404|Not Found")
 GH_RELEASE_ABSENT = re.compile(r"HTTP 404|Not Found|release not found|^release not found")
 R2_ABSENT = re.compile(r"\(404\)|Not Found|NoSuchKey")
 
-# The three verdicts a probe may answer with. `unknown` carries a detail after
-# the colon; the other two are bare.
+# The three verdicts a probe may answer with. `unknown` carries a detail after the colon; the other two are bare.
 PRESENT = "present"
 ABSENT = "absent"
 UNKNOWN_PREFIX = "unknown:"
@@ -113,9 +111,7 @@ SHIFT2_UNDERFLOW_IS_SILENT_EXIT_1 = True
 def one_line(text: str) -> str:
     """`tr '\\n' ' ' | sed 's/  */ /g'` fed by `<<<"$out"` (:99).
 
-    THE TRAILING SPACE IS PART OF THE ANSWER. The here-string appends a newline
-    that `tr` turns into a space; `sed` collapses runs of spaces to one, and
-    command substitution strips trailing NEWLINES, not spaces. So every `unknown:` detail ends with exactly one space, including the empty case, where the answer is a single space and nothing else.
+    THE TRAILING SPACE IS PART OF THE ANSWER. The here-string appends a newline that `tr` turns into a space; `sed` collapses runs of spaces to one, and command substitution strips trailing NEWLINES, not spaces. So every `unknown:` detail ends with exactly one space, including the empty case, where the answer is a single space and nothing else.
 
     `s/ */ /g` is "one space then zero or more" -- i.e. any run of one or more spaces -- so a single space is rewritten to itself and nothing changes.
     """
@@ -237,8 +233,7 @@ class Verdicts:
 def _require_cmd(cmd: str) -> bool:
     """`require_cmd` (common.sh:141-147), inline so the message is this file's.
 
-    `core.common.require_cmd` raises; this script's twin exits, and folding a
-    raise into the two-line main() below would put a try/except around the whole body for a branch that prints one line.
+    `core.common.require_cmd` raises; this script's twin exits, and folding a raise into the two-line main() below would put a try/except around the whole body for a branch that prints one line.
     """
     if shutil.which(cmd) is not None:
         return True
@@ -249,8 +244,7 @@ def _require_cmd(cmd: str) -> bool:
 def parse_argv(argv: list[str]) -> tuple[str | None, int | None, str | None]:
     """The twin's `while [[ $# -gt 0 ]]` loop (:47-66).
 
-    Returns `(version, exit_code, stdout_text)`. Exactly one of `version` and
-    `exit_code` is meaningful; `stdout_text` is the `--help` output.
+    Returns `(version, exit_code, stdout_text)`. Exactly one of `version` and `exit_code` is meaningful; `stdout_text` is the `--help` output.
 
     FOUR ARMS, and the third and fourth are easy to get backwards:
 
@@ -322,8 +316,7 @@ def main(argv: list[str]) -> int:
             print("%s: %s must be set" % (SELF, name), file=sys.stderr, flush=True)
             return 1
 
-    # :90-91. The aws CLI reads AWS_*; the workflow passes CLOUDFLARE_R2_*.
-    # Without this bridge `head-object` dies on NoCredentials and the sentinel probe answers `unknown` -- which is what broke promote-stable for 7 runs.
+    # :90-91. The aws CLI reads AWS_*; the workflow passes CLOUDFLARE_R2_*. Without this bridge `head-object` dies on NoCredentials and the sentinel probe answers `unknown` -- which is what broke promote-stable for 7 runs.
     os.environ["AWS_ACCESS_KEY_ID"] = os.environ["CLOUDFLARE_R2_ACCESS_KEY_ID"]
     os.environ["AWS_SECRET_ACCESS_KEY"] = os.environ["CLOUDFLARE_R2_SECRET_ACCESS_KEY"]
     endpoint = os.environ["CLOUDFLARE_R2_ENDPOINT"]

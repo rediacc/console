@@ -14,9 +14,8 @@ NOTHING HERE REACHES R2 IN A TEST
 for the "one real run" clause and says in as many words that the mocked parity
 ledger is a SEPARATE, achievable piece of work. This is that piece.
 
-THE CALL LOG IS THE PRIMARY EVIDENCE FOR THIS SCRIPT. Everything it prints is three `Restoring ...` lines plus at most one closing line, none of which is
-derived from what actually moved; the entire observable effect is the argv of
-the `aws s3 sync` calls, in order, with their filter flags. Two implementations can print identical output while syncing a different prefix, omitting `--dryrun`, or reordering the three legs.
+THE CALL LOG IS THE PRIMARY EVIDENCE FOR THIS SCRIPT. Everything it prints is three `Restoring ...` lines plus at most one closing line, none of which is derived from what actually moved; the entire observable effect is the argv of the `aws s3 sync` calls, in order, with their filter flags. Two implementations can print identical output while syncing a different prefix, omitting
+`--dryrun`, or reordering the three legs.
 
 -----------------------------------------------------------------------------
 `mkdir` IS CALLED, NOT REIMPLEMENTED
@@ -54,9 +53,7 @@ THREE FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL THREE ARE REPRODUCED
      write from a flag documented as read-only.
      `DRY_RUN_STILL_CREATES_THE_LOCAL_DIRECTORIES` names it.
 
-None is repaired here. This wave's acceptance rule is agreement with the live
-twin; changing what a credential guard accepts is a cutover-box decision rather
-than a port's.
+None is repaired here. This wave's acceptance rule is agreement with the live twin; changing what a credential guard accepts is a cutover-box decision rather than a port's.
 
 -----------------------------------------------------------------------------
 THE ONE DIVERGENCE: WHAT `set -u` PRINTS
@@ -208,9 +205,7 @@ def repo_root() -> str:
 def environment() -> dict[str, str | None]:
     """Every variable this module reads, ONE `os.environ.get` PER NAME.
 
-    NOT `dict(os.environ)`, AND THE DIFFERENCE IS A GATE RATHER THAN A STYLE. `check:ci-python-env-registry` derives a module's declared inputs by walking
-    its AST for literal `os.environ` subscripts, `.get` calls and `in` tests; a
-    read that goes through a materialised copy or a local alias is INVISIBLE to it, and the module then reports zero inputs while depending on three.
+    NOT `dict(os.environ)`, AND THE DIFFERENCE IS A GATE RATHER THAN A STYLE. `check:ci-python-env-registry` derives a module's declared inputs by walking its AST for literal `os.environ` subscripts, `.get` calls and `in` tests; a read that goes through a materialised copy or a local alias is INVISIBLE to it, and the module then reports zero inputs while depending on three.
 
     `None` MEANS UNSET AND `""` MEANS SET-BUT-EMPTY, and the distinction is the whole of fact 2 in the module docstring: `set -u` fires on the first and not on the second, so a helper that folded them together would refuse a run the twin performs.
     """
@@ -255,9 +250,7 @@ def require_endpoint(env: dict[str, str | None]) -> str:
 def sync_args(endpoint: str, *, dry_run: bool) -> list[str]:
     """`SYNC_ARGS` (twin :93-97). ORDER IS OBSERVABLE, so it is pinned.
 
-    `--dryrun` is APPENDED, so it trails `--no-progress` rather than leading the
-    list. `aws` does not care; the recorded argv does, and the argv is the
-    evidence this port is judged on.
+    `--dryrun` is APPENDED, so it trails `--no-progress` rather than leading the list. `aws` does not care; the recorded argv does, and the argv is the evidence this port is judged on.
     """
     args = ["--endpoint-url", endpoint, "--no-progress"]
     if dry_run:

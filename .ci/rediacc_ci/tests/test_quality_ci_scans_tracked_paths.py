@@ -100,17 +100,14 @@ def test_alternation_matches_paste() -> None:
         % " ".join("'%s'" % n for n in names)
     )
     assert code == 0
-    # `paste` ends its output with a newline; the twin captures it in a `$( )`,
-    # which strips it. Compared against the value the twin actually holds.
+    # `paste` ends its output with a newline; the twin captures it in a `$( )`, which strips it. Compared against the value the twin actually holds.
     assert st.roots_pattern(names) == out.rstrip("\n")
 
 
 def test_check_ignore_skips_tracked_paths(tmp_path: pathlib.Path) -> None:
     """The reason a force-added fixture silently stops being a plant.
 
-    Both directions: untracked, the directory reads as ignored and the gate finds
-    the offender; tracked, `git check-ignore` says nothing and the same tree is
-    reported clean. Pinned because the failure looks exactly like a gate that cannot fail.
+    Both directions: untracked, the directory reads as ignored and the gate finds the offender; tracked, `git check-ignore` says nothing and the same tree is reported clean. Pinned because the failure looks exactly like a gate that cannot fail.
     """
     root = st.build_control_tree(tmp_path)
     assert st.ignored_roots(root) == ["ignoredir"]

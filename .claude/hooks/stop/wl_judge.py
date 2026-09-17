@@ -21,9 +21,7 @@ import worklist_messages as M
 
 # v5: no cap. Kept as a name so the counter file (used only to TELL the judge it is repeating itself) reads clearly.
 JUDGE_MODEL = os.environ.get("WORKLIST_JUDGE_MODEL", "claude-haiku-4-5-20251001")
-# Measured on 2026-07-29 with --json-schema: haiku warm $0.011-$0.026 per call
-# at 4.9-20.0s; sonnet $0.231 at 12.1s for the same judgement. Haiku it is.
-# MEASURED, not guessed (2026-08-05): at $0.10 the judge died mid-run with
+# Measured on 2026-07-29 with --json-schema: haiku warm $0.011-$0.026 per call at 4.9-20.0s; sonnet $0.231 at 12.1s for the same judgement. Haiku it is. MEASURED, not guessed (2026-08-05): at $0.10 the judge died mid-run with
 # subtype=error_max_budget_usd at cost $0.1025, and reported it as the
 # unactionable "judge exited 1: " because the envelope goes to stdout, which the failure path was not reading (see _explain_failed_exit). The cap is a post-hoc between-turns stop, not a ceiling, so it must sit clear of the real cost rather than at it: a trivial prompt in a project cwd already reached $0.1025, while the same prompt in the judge's isolated workdir cost $0.0205. $0.25
 # leaves room for the real prompt (finding + context) without being open-ended.
@@ -153,8 +151,7 @@ TRIAGE_VERDICTS = ("inline", "plan-subagent", "operator-only")
 def _budget_headroom(env_out):
     """True when this call ended well inside its budget, so a retry is not a re-wander.
 
-    A budget-exhausted call that produced nothing will exhaust it again; asking twice
-    just doubles the bill for the same silence. Below 80% of the cap, whatever went wrong was not the cap.
+    A budget-exhausted call that produced nothing will exhaust it again; asking twice just doubles the bill for the same silence. Below 80% of the cap, whatever went wrong was not the cap.
     """
     cost = (env_out or {}).get("total_cost_usd")
     if not isinstance(cost, (int, float)):
@@ -255,9 +252,8 @@ def _explain_failed_exit(label, proc):
     sits behind returncode == 0. A judge that cannot say why it failed is an
     escape hatch wearing a gate's clothes -- the same swallowed-failure class the repo scans for, inside the thing that audits it.
     """
-    # A SIGNAL IS NOT A FAILURE TO ANSWER, and conflating the two cost a full turn on 2026-09-08. The child was SIGTERMed because the outer Stop-hook deadline
-    # was shorter than this judge's own; the gate reported "exited 143" with empty
-    # stdout, the operator-facing text read as an unreachable model, and the remedy it offered was to DISABLE the gate. The model was healthy -- the real schema-constrained call answered in 2 turns for $0.0165 minutes later. So a killed child says so, and points at the deadline rather than the model.
+    # A SIGNAL IS NOT A FAILURE TO ANSWER, and conflating the two cost a full turn on 2026-09-08. The child was SIGTERMed because the outer Stop-hook deadline was shorter than this judge's own; the gate reported "exited 143" with empty stdout, the operator-facing text read as an unreachable model, and the remedy it offered was to DISABLE the gate. The model was healthy -- the real
+    # schema-constrained call answered in 2 turns for $0.0165 minutes later. So a killed child says so, and points at the deadline rather than the model.
     sig = (
         -proc.returncode
         if proc.returncode < 0
@@ -293,9 +289,7 @@ def _explain_failed_exit(label, proc):
 def run_triage(finding, context):
     """(verdict_dict, error_string). Exactly one is non-None.
 
-    Modeled on run_judge down to the recursion guard and the workdir, because the transport is the same and a second copy that drifts is a second bug.
-    The CALLER decides what an error means; here every failure is simply
-    reported, never swallowed, so a degraded triage can name what broke.
+    Modeled on run_judge down to the recursion guard and the workdir, because the transport is the same and a second copy that drifts is a second bug. The CALLER decides what an error means; here every failure is simply reported, never swallowed, so a degraded triage can name what broke.
     """
     exe = resolve_claude()
     if not exe or not os.path.exists(exe):
@@ -322,10 +316,8 @@ def run_triage(finding, context):
                 json.dumps(TRIAGE_SCHEMA),
                 "--model",
                 JUDGE_MODEL,
-                # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed
-                # Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of
-                # 21 sweep verdicts were DROPPED for naming paths that do not exist; a model
-                # that cannot look must be told the paths instead of inventing them.
+                # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a
+                # model that cannot look must be told the paths instead of inventing them.
                 #
                 # WHAT THIS IS NOT: a fix for the no-output failure. That theory was that the model spent turn 1 on a tool call and ended on turn 2. Probed 2026-09-04 against the real CLI -- `--tools ""` with `--json-schema` returns a valid
                 # verdict and STILL reports turns=2. So turn 2 is the normal shape here and
@@ -416,10 +408,8 @@ def _run_structured(label, prompt, schema, extract):
                 json.dumps(schema),
                 "--model",
                 JUDGE_MODEL,
-                # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed
-                # Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of
-                # 21 sweep verdicts were DROPPED for naming paths that do not exist; a model
-                # that cannot look must be told the paths instead of inventing them.
+                # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a
+                # model that cannot look must be told the paths instead of inventing them.
                 #
                 # WHAT THIS IS NOT: a fix for the no-output failure. That theory was that the model spent turn 1 on a tool call and ended on turn 2. Probed 2026-09-04 against the real CLI -- `--tools ""` with `--json-schema` returns a valid
                 # verdict and STILL reports turns=2. So turn 2 is the normal shape here and
@@ -520,10 +510,8 @@ def run_admission(message):
                 json.dumps(ADMISSION_SCHEMA),
                 "--model",
                 JUDGE_MODEL,
-                # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed
-                # Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of
-                # 21 sweep verdicts were DROPPED for naming paths that do not exist; a model
-                # that cannot look must be told the paths instead of inventing them.
+                # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a
+                # model that cannot look must be told the paths instead of inventing them.
                 #
                 # WHAT THIS IS NOT: a fix for the no-output failure. That theory was that the model spent turn 1 on a tool call and ended on turn 2. Probed 2026-09-04 against the real CLI -- `--tools ""` with `--json-schema` returns a valid
                 # verdict and STILL reports turns=2. So turn 2 is the normal shape here and
@@ -562,9 +550,8 @@ def run_admission(message):
 def apply_defer_audit(rows, batch):
     """(kind, valids, orders) from the judge's defer_audit answer.
 
-    kind is 'ok' or 'malformed'; valids is [(id, upd_stamp, reason)] to bank,
-    orders is [(id, order_text)] to enforce. STRICT by contract: every audited item must come back with a usable verdict, and anything else -- no array, a non-dict entry, an invalid verdict, a batch id missing -- is 'malformed', which the caller turns into a fail-closed block. An id the judge invented is ignored rather than acted on: reopening an item nobody audited would let a
-    hallucination edit the store.
+    kind is 'ok' or 'malformed'; valids is [(id, upd_stamp, reason)] to bank, orders is [(id, order_text)] to enforce. STRICT by contract: every audited item must come back with a usable verdict, and anything else -- no array, a non-dict entry, an invalid verdict, a batch id missing -- is 'malformed', which the caller turns into a fail-closed block. An id the judge invented is
+    ignored rather than acted on: reopening an item nobody audited would let a hallucination edit the store.
     """
     if not isinstance(rows, list):
         return "malformed", [], []
@@ -623,8 +610,7 @@ def bank_stop_verdict(state_doc, sig, message, reason):
 # The fix-signal is a SEPARATE prompt section (M.REGGATE_PROMPT, appended as `extra`), but v7 shipped ONE schema in which `regression_gate` is optional at the top level. So on a fix-signal stop the model could satisfy the schema while omitting the object entirely, and `wl_reggate` then reports "regression_gate missing or incomplete: None" and blocks by the no-escape-hatch rule.
 # That is the gate refusing to be bypassed, which is correct, but the session is blocked by a JUDGE error rather than by anything it did. Observed live 2026-08-28.
 #
-# The fix is upstream of the failure: when the prompt ASKS for the object, the schema
-# REQUIRES it. Nothing here weakens the fail-closed path; a malformed object still blocks.
+# The fix is upstream of the failure: when the prompt ASKS for the object, the schema REQUIRES it. Nothing here weakens the fail-closed path; a malformed object still blocks.
 _REGGATE_MARKER = "A FIX LANDED THIS TURN"
 
 
@@ -735,9 +721,8 @@ def run_judge(
     proof_extra = PF.prompt_section(_REGGATE_MARKER in (extra or ""), proof_outstanding)
     # THE BRAVE-DEFAULT rule rides the same call on its own trigger: a parked decision whose DEFAULT does nothing. Its trigger is the remaining list, not `extra`, so the two rules are independent and either may be asked alone.
     #
-    # NOT ON A FIX STOP. A regression-gate stop is already asking the judge to
-    # rule on a fix's test coverage AND its sibling sweep; adding "and by the
-    # way, is that parked question's DEFAULT brave enough" makes one call carry three unrelated judgements, and the parked question is the one least connected to what the session just did. It is not dropped, only deferred: the trigger is the remaining list, which does not go away, so the same item is asked about on the next stop that is not a fix stop.
+    # NOT ON A FIX STOP. A regression-gate stop is already asking the judge to rule on a fix's test coverage AND its sibling sweep; adding "and by the way, is that parked question's DEFAULT brave enough" makes one call carry three unrelated judgements, and the parked question is the one least connected to what the session just did. It is not dropped, only deferred: the trigger is
+    # the remaining list, which does not go away, so the same item is asked about on the next stop that is not a fix stop.
     brave_extra = "" if is_fix_stop(extra) else BD.prompt_section(remaining_lines)
     extra = (extra or "") + sweep_extra + proof_extra + brave_extra
     prompt = M.JUDGE_PROMPT % {
@@ -750,8 +735,7 @@ def run_judge(
         "traps": "\n".join("  - " + h for h in (traps or [])) or "  (none recorded)",
     } + (extra or "")
     env = dict(os.environ)
-    # THE RECURSION GUARD. `claude -p` fires this very hook; --settings does not
-    # suppress it. Without this line the hook forks itself forever.
+    # THE RECURSION GUARD. `claude -p` fires this very hook; --settings does not suppress it. Without this line the hook forks itself forever.
     env["STOPHOOK_CHILD"] = "1"
     argv = [
         exe,
@@ -763,10 +747,8 @@ def run_judge(
         json.dumps(judge_schema_for(extra)),
         "--model",
         JUDGE_MODEL,
-        # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed
-        # Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of
-        # 21 sweep verdicts were DROPPED for naming paths that do not exist; a model
-        # that cannot look must be told the paths instead of inventing them.
+        # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a model that
+        # cannot look must be told the paths instead of inventing them.
         #
         # WHAT THIS IS NOT: a fix for the no-output failure. That theory was that the model spent turn 1 on a tool call and ended on turn 2. Probed 2026-09-04 against the real CLI -- `--tools ""` with `--json-schema` returns a valid
         # verdict and STILL reports turns=2. So turn 2 is the normal shape here and
@@ -870,9 +852,8 @@ def run_judge(
     return sanitize_next_action(out), None
 
 
-# The judge advises; it does not get to order the three things reserved to the
-# operator. On 2026-08-09 it read a session sitting on four green stacked PRs and returned next_action "merge PRs 563, 565 and 566". The session declined, which is the right outcome but the wrong MECHANISM: it survived on the model's judgment at the moment of reading, and the whole point of this program is that judgment at the moment of reading is the faculty that fails. A later
-# session, or a more tired one, reads an authoritative-sounding instruction from its own stop gate and complies.
+# The judge advises; it does not get to order the three things reserved to the operator. On 2026-08-09 it read a session sitting on four green stacked PRs and returned next_action "merge PRs 563, 565 and 566". The session declined, which is the right outcome but the wrong MECHANISM: it survived on the model's judgment at the moment of reading, and the whole point of this program is
+# that judgment at the moment of reading is the faculty that fails. A later session, or a more tired one, reads an authoritative-sounding instruction from its own stop gate and complies.
 #
 # WHY SANITISE RATHER THAN RE-ASK. The deferral's default said reject and re-ask once. Re-asking buys a second sample from the same model that just produced the offending text, at another call's latency and cost, and it needs a loop bound to stay safe. Rewriting the field is deterministic, cannot loop, and is strictly safer than any second sample. The VERDICT is deliberately left
 # untouched: stop or continue is the judge's actual job, the offence is only ever in the instruction, and altering the verdict here would collide with the no-escape-hatch invariant.

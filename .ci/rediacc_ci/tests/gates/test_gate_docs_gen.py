@@ -25,9 +25,7 @@ WHAT IS PROVED, and why each case is here rather than assumed:
      instrument that can catch a port silently dropping rows, and it is worthless
      if it is absent, truncated, or quietly re-baselined.
 
-WHAT IS DELIBERATELY NOT ASSERTED: that the live sets still equal the snapshot.
-They are SUPPOSED to diverge as the ports land; `--diff-snapshot` is where that
-comparison belongs, run by the wave that does the porting.
+WHAT IS DELIBERATELY NOT ASSERTED: that the live sets still equal the snapshot. They are SUPPOSED to diverge as the ports land; `--diff-snapshot` is where that comparison belongs, run by the wave that does the porting.
 
 THE TWIN IS FLAT -- it declares no `test_*()` functions -- so `test_twin_parity.py` has no case set to compare and falls back to the twin's runtime `PASS:` count as the floor on this port's recorded controls. The five cases below are therefore split so that each of the twin's six PASS lines has a control of its own, plus the two the port adds.
 

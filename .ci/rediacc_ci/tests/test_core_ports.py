@@ -1,9 +1,7 @@
 """`rediacc_ci.core.ports` against the bash it replaced, and against its callers.
 
 THE TWIN IS FROZEN IN THIS FILE, and that needs saying out loud because it looks like duplication. `.ci/lib/find-port.sh` stopped containing an implementation in W7 phase 1 and is DELETED outright as of W7P5-b, so running "the bash original" against the port cannot mean sourcing that file any more. `FROZEN_DERIVE_SLOT` below is the pre-port body, copied verbatim out of the commit
-that preceded the port, and it is the thing the differential runs. A frozen twin keeps working
-after the shim lands AND after it is deleted, which a live one does not; the
-cost is that it can rot, and the answer to that is that its output is pinned by every case here.
+that preceded the port, and it is the thing the differential runs. A frozen twin keeps working after the shim lands AND after it is deleted, which a live one does not; the cost is that it can rot, and the answer to that is that its output is pinned by every case here.
 
 WHAT THE CASES ACTUALLY GUARD.
 
@@ -312,12 +310,9 @@ def test_devbox_delegation_is_real_not_a_reimplementation(tmp_path) -> None:
 
     This used to assert that a shim was a shim. `find-port.sh` is gone (W7P5-b), so the same claim now points at the caller that inherited its job, and it is MORE load-bearing there than it was on the shim: deleting a shim is only safe while its callers reach the module for real, and a caller that quietly grew a local copy of the digest is exactly the regression this catches.
 
-    `.ci/rediacc_ci/quality/setup_idempotency.py` check C makes the neighbouring
-    assertion against the gate; this one is here so the package's own suite sees
-    a devbox that stopped delegating.
+    `.ci/rediacc_ci/quality/setup_idempotency.py` check C makes the neighbouring assertion against the gate; this one is here so the package's own suite sees a devbox that stopped delegating.
     """
-    # Built ONCE. The randomisation is in the planted line, which re-runs on
-    # every invocation; re-copying per sample would only re-plant the same line.
+    # Built ONCE. The randomisation is in the planted line, which re-runs on every invocation; re-copying per sample would only re-plant the same line.
     broken = _broken_package_root(tmp_path)
     seen = {_devbox_slot(broken)[1] for _ in range(6)}
     assert len(seen) > 1, "devbox.sh answered stably from a randomised module"

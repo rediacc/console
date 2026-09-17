@@ -45,9 +45,7 @@ import { githubToken } from '../lib/github-token.js';
 // Every markdown tree whose external links are load-bearing. Each root is guarded independently below: a root that matches zero files is a moved or renamed path, never a legitimate state, and it fails the run rather than silently shrinking the corpus (root pattern 1 in .ci/scripts/test/gates/test-gate-anti-vacuity.sh).
 //
 // packages/www/src/content/{docs,blog} are published to the website; docs/,
-// .ci/docs/ and .github/ are the operator-facing runbooks whose links get
-// followed under time pressure; packages/cli/README.md ships in the npm
-// tarball. Measured at the time of writing: 781 + 66 + 66 + 2 + 2 + 3 files.
+// .ci/docs/ and .github/ are the operator-facing runbooks whose links get followed under time pressure; packages/cli/README.md ships in the npm tarball. Measured at the time of writing: 781 + 66 + 66 + 2 + 2 + 3 files.
 const SCAN_ROOTS = [
   'packages/www/src/content/docs',
   'packages/www/src/content/blog',
@@ -75,9 +73,7 @@ const ALLOWLISTED_DOMAINS = new Set([
   // billauer.co.il - the MIRROR IMAGE of every other entry here, which is why it is in this list rather than KNOWN_BROKEN. Measured 2026-09-16 from three vantage points: a GitHub runner fetched it fine (the liveness audit reported `1 sampled URL(s) all returned 2xx` and told us to drop the KNOWN_BROKEN entry), while this dev network answered HTTP 000 with no TCP connect at all --
   // three times from the host and twice more from a container on a separate egress path. So the host is selectively reachable BY SOURCE NETWORK, and "fixed upstream" is not what happened.
   //
-  // Deleting the KNOWN_BROKEN entry on the runner's word alone would have traded a CI warning for a permanent local red: verified by doing it, after which the gate reported `BROKEN [fetch failed]` and exit 1 here while CI was
-  // green. An IP-dependent block is what this list is for; KNOWN_BROKEN means
-  // the link is broken, and it is not.
+  // Deleting the KNOWN_BROKEN entry on the runner's word alone would have traded a CI warning for a permanent local red: verified by doing it, after which the gate reported `BROKEN [fetch failed]` and exit 1 here while CI was green. An IP-dependent block is what this list is for; KNOWN_BROKEN means the link is broken, and it is not.
   //
   // Cited once, docs/code-signing-guide.md:309, as attribution for the eSigner overage claim -- a citation, not an instruction, so the URL stays in prose.
   'billauer.co.il',
@@ -91,25 +87,20 @@ const ALLOWLISTED_DOMAINS = new Set([
   // MEASURED, AND THE MEASUREMENT IS THE POINT: from a non-datacenter IP the same URL answered 200 once and then 000 six times running (three HEAD, three GET, 20s timeouts). Not "live" and not "dead" -- INTERMITTENT, which is why one probe would have justified either verdict. docs/ci-overhaul/ 06-progress.md:3201 records the same host answering 000 from two networks on 2026-07-30,
   // so this is a standing property of gnupg.org rather than one bad afternoon.
   //
-  // Two things I checked before believing any of it, because both would have made the reading a lie: this sandbox has NO IPv6 egress at all (v6 to debian.org and cloudflare.com also answers 000), so nothing here can be
-  // concluded about gnupg's AAAA record; and the IPv4 path is the one all the
-  // numbers above come from. Recheck by removing this line -- if the host starts answering CI reliably the gate passes without it.
+  // Two things I checked before believing any of it, because both would have made the reading a lie: this sandbox has NO IPv6 egress at all (v6 to debian.org and cloudflare.com also answers 000), so nothing here can be concluded about gnupg's AAAA record; and the IPv4 path is the one all the numbers above come from. Recheck by removing this line -- if the host starts answering CI
+  // reliably the gate passes without it.
   'www.gnupg.org',
-  // Debian securing-debian-manual - `fetch failed` from GitHub-hosted runners on 2026-08-05 (run 30990002964), after this checker's own two retries AND its last-chance GET, so not a one-shot blip. Measured rather than assumed: the same URL answers 200 six times out of six (three HEAD, three GET) from
-  // a non-datacenter IP, in ~0.6s. The page is live; debian.org simply does not
+  // Debian securing-debian-manual - `fetch failed` from GitHub-hosted runners on 2026-08-05 (run 30990002964), after this checker's own two retries AND its last-chance GET, so not a one-shot blip. Measured rather than assumed: the same URL answers 200 six times out of six (three HEAD, three GET) from a non-datacenter IP, in ~0.6s. The page is live; debian.org simply does not
   // answer this runner. Recheck by removing this line -- if the host starts answering CI again the gate will pass without it.
   'www.debian.org',
   // Apple's D-U-N-S enrolment page - returns HTTP 500 to GitHub-hosted runners (run 33463..., Quality/Content 'External links'), and 403 to a HEAD request
   // from anywhere. Measured rather than assumed, with this file's own browser
-  // User-Agent from a non-datacenter IP: HEAD 403/403/403, GET 200/200/200, all in ~0.7-0.95s. So the page is live and Apple simply refuses HEAD outright and refuses datacenter IPs with a server error rather than a 403 -- the same shape as www.sectigo.com below, where a 500 reads as "the page is broken"
-  // instead of "you are a bot". The link is correct; it is cited three times in
+  // User-Agent from a non-datacenter IP: HEAD 403/403/403, GET 200/200/200, all in ~0.7-0.95s. So the page is live and Apple simply refuses HEAD outright and refuses datacenter IPs with a server error rather than a 403 -- the same shape as www.sectigo.com below, where a 500 reads as "the page is broken" instead of "you are a bot". The link is correct; it is cited three times in
   // docs/code-signing-guide.md as the free route to a D-U-N-S number. Recheck by removing this line -- if the host starts answering CI the gate passes without it.
   'developer.apple.com',
   // Sectigo code-signing product page - returns HTTP 500 to GitHub-hosted runners (run 31916185063, Quality/Content), which is a server error rather than a 403, so it reads as "the page is broken" instead of "you are a bot". Measured rather than assumed: the same URL answers 200 six times out of six
   // from a non-datacenter IP -- three HEAD in ~1.8s, three GET in ~0.2s -- with
-  // this file's own browser User-Agent. The link is correct and the page is
-  // live. It predates this wave (b8e332b73, on main); nothing here changed it.
-  // Recheck by removing this line: the liveness audit below already warns when an allowlisted domain starts answering CI again, so the exemption cannot outlive its reason quietly.
+  // this file's own browser User-Agent. The link is correct and the page is live. It predates this wave (b8e332b73, on main); nothing here changed it. Recheck by removing this line: the liveness audit below already warns when an allowlisted domain starts answering CI again, so the exemption cannot outlive its reason quietly.
   'www.sectigo.com',
   'www.dataprotection.ie', // Ireland DPC - whole domain unreachable from CI/datacenter IPs (connection fails at site root, not just deep links); the Meta-fine press release resolves from browsers
   // Brazil Planalto (LGPD, Lei 13.709/2018 full text) - ECONNRESET to GitHub-hosted runners, reported by this checker as `fetch failed`. Measured rather than assumed: the SAME request, using this file's own buildHeaders() UA and Accept, returns 200 six times out of six (three HEAD, three GET) from a non-datacenter IP. Without a browser UA the same host times out, and the domain
@@ -119,14 +110,12 @@ const ALLOWLISTED_DOMAINS = new Set([
   // separate things are true and only one of them is fixable here: the page does not implement HEAD (fixed generally by the GET fallback), and the host is unreachable from runner IPs (not fixable, hence this entry). Same class as www.planalto.gov.br above.
   'azure.microsoft.com',
   // VS Code Marketplace extension pages - BROKEN [503] on run 32000731266 (Quality/Content), after this checker's own two retries and its last-chance GET. Measured rather than assumed, with this file's own browser User-Agent: HEAD answers 404 three times out of three (~0.2s) and GET times out at 20s three times out of three, while the domain ROOT answers 503 -- so this is the
-  // whole host refusing automated clients, not a dead item page. An unauthenticated GET without the UA returned 200 once and 503 twice in the same minute, which is the same refusal arriving non-deterministically. The URL itself is correct: ms-vscode-remote.remote-ssh is the canonical Remote-SSH extension id, referenced from the cli-contract i18n data in all
-  // 13 locales. It predates this wave; nothing in 09654cc45 touched those files.
-  // Same class as azure.microsoft.com above -- HEAD unimplemented AND the host unreachable from automated clients, and only the first half is fixable here. Recheck by removing this line: the liveness audit below warns when an allowlisted domain starts answering again, so the exemption cannot outlive its reason quietly.
+  // whole host refusing automated clients, not a dead item page. An unauthenticated GET without the UA returned 200 once and 503 twice in the same minute, which is the same refusal arriving non-deterministically. The URL itself is correct: ms-vscode-remote.remote-ssh is the canonical Remote-SSH extension id, referenced from the cli-contract i18n data in all 13 locales. It predates
+  // this wave; nothing in 09654cc45 touched those files. Same class as azure.microsoft.com above -- HEAD unimplemented AND the host unreachable from automated clients, and only the first half is fixable here. Recheck by removing this line: the liveness audit below warns when an allowlisted domain starts answering again, so the exemption cannot outlive its reason quietly.
   'marketplace.visualstudio.com',
   // Own infrastructure -- only available after releases, not during CI
   'releases.rediacc.com',
-  // SSL.com's reseller site. Surfaced by widening the scan to docs/. Measured 2026-07-29 with this file's own headers: BOTH the deep resource page and the bare domain root answer 403, so it is a whole-domain WAF block on the
-  // client rather than a dead page; it renders in a browser.
+  // SSL.com's reseller site. Surfaced by widening the scan to docs/. Measured 2026-07-29 with this file's own headers: BOTH the deep resource page and the bare domain root answer 403, so it is a whole-domain WAF block on the client rather than a dead page; it renders in a browser.
   'signmycode.com',
 ]);
 
@@ -374,9 +363,7 @@ async function checkUrl(
       return checkUrl(url, retries + 1);
     }
 
-    // LAST-CHANCE GET, and it is not belt-and-braces. The status-based fallback
-    // above only fires when HEAD *answers*; a HEAD that hangs or is refused
-    // throws, lands here, and never tries GET at all -- so a host that simply does not serve HEAD is reported as a broken link.
+    // LAST-CHANCE GET, and it is not belt-and-braces. The status-based fallback above only fires when HEAD *answers*; a HEAD that hangs or is refused throws, lands here, and never tries GET at all -- so a host that simply does not serve HEAD is reported as a broken link.
     //
     // Measured on https://azure.microsoft.com/pricing/calculator/, which failed this checker in CI with TIMEOUT: from a residential IP the same URL answers 404 to HEAD three times out of three and 200 to GET, with and without a browser UA. On the runner the HEAD hung instead of 404ing, so even the status fallback could not save it. The page is live either way.
     //
@@ -394,8 +381,7 @@ async function checkUrl(
       await getResponse.text().catch(() => {});
       if (getResponse.ok) return { ok: true, status: getResponse.status };
     } catch {
-      // Fall through to the original diagnosis below; a failed rescue must not
-      // replace the real error with its own.
+      // Fall through to the original diagnosis below; a failed rescue must not replace the real error with its own.
     }
 
     const message = err instanceof Error ? err.message : String(err);
@@ -440,8 +426,7 @@ async function probeOnce(url: string): Promise<ProbeOutcome> {
   } catch (err) {
     const cause = (err as { cause?: { code?: string } })?.cause;
     const code = cause?.code ?? '';
-    // A name that no longer resolves is categorically different from a name that resolves and refuses us. The allowlist claims "reachable from a
-    // browser"; NXDOMAIN says nothing is reachable from anywhere.
+    // A name that no longer resolves is categorically different from a name that resolves and refuses us. The allowlist claims "reachable from a browser"; NXDOMAIN says nothing is reachable from anywhere.
     if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
       return { kind: 'gone', detail: code };
     }
@@ -524,9 +509,7 @@ async function auditAllowlist(
       const outcomes = await Promise.all(sample.map(probeOnce));
       report.probed += sample.length;
       report.domainProbes += sample.length;
-      // `[].every(...)` is true for BOTH branches below, so an empty sample would report a domain as vanished AND crash on outcomes[0]. Found by
-      // planting slice(0, 0) here; the vacuity guard in main() is what makes
-      // an empty sample a failure rather than a silent all-clear.
+      // `[].every(...)` is true for BOTH branches below, so an empty sample would report a domain as vanished AND crash on outcomes[0]. Found by planting slice(0, 0) here; the vacuity guard in main() is what makes an empty sample a failure rather than a silent all-clear.
       if (sample.length === 0) return;
       if (outcomes.every((o) => o.kind === 'gone')) {
         report.vanished.push({ domain, detail: (outcomes[0] as { detail: string }).detail });

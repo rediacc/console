@@ -31,14 +31,10 @@ the container fingerprint and the runner environment. The first real harvest (20
 came back `tier=PROC_HOST runner_label=unknown verdict=NONE`, since
 setup-workspace does not thread runner-label and the advisor refused to speak. The fix was in report.awk (a github-hosted VM with no container fingerprint is an exclusive machine, so its /proc numbers are the job's own), not here: this file simply stopped being handed NONE for the majority of the fleet.
 
-KNOWN COUPLING. classify() uses the DEFAULT thresholds report.awk assumes (840 s declared, 900 s hard cap). panel.sh can forward per-job overrides via PROFILER_DECLARED_S / PROFILER_HARD_S, and a job that does so would have its row computed against different numbers than this file re-derives. Nothing
-forwards them today; the --refresh disagreement warning is what would surface
-it on the day something does.
+KNOWN COUPLING. classify() uses the DEFAULT thresholds report.awk assumes (840 s declared, 900 s hard cap). panel.sh can forward per-job overrides via PROFILER_DECLARED_S / PROFILER_HARD_S, and a job that does so would have its row computed against different numbers than this file re-derives. Nothing forwards them today; the --refresh disagreement warning is what would surface it
+on the day something does.
 
-THE BOOTSTRAP, in one line each: a PRISTINE baseline (refreshed_at null, zero
-jobs) warns and passes, because there is provably nothing to check; any other
-below-floor shape is a hard VACUOUS refusal; and --refresh will not write a
-baseline below the floor. See is_pristine() for why those three are one argument rather than three conveniences.
+THE BOOTSTRAP, in one line each: a PRISTINE baseline (refreshed_at null, zero jobs) warns and passes, because there is provably nothing to check; any other below-floor shape is a hard VACUOUS refusal; and --refresh will not write a baseline below the floor. See is_pristine() for why those three are one argument rather than three conveniences.
 
 WHAT IT DOES NOT DO. It does not predict cost or duration, and it never edits a workflow. It asserts one thing: that a measured, repeatedly-observed fit is either taken or justified.
 
@@ -231,9 +227,8 @@ def is_pristine(baseline):
     WHY AN EXCEPTION AT ALL. The bootstrap is otherwise structurally impossible. The gate goes red on an unseeded baseline, and the baseline can only be seeded from a run whose profiled jobs finished -- but the run that would supply them contains this gate, which fails ~5 minutes in and takes the slow lanes down with it. Two rounds of that yielded 3 harvestable jobs against a floor
     of 5. So the floor made its own precondition unreachable.
 
-    WHY IT IS SHAPE-EXACT. "Below the floor" and "never seeded" are different states and only the second one is innocent. A baseline with 1-4 jobs is evidence that a harvest ran and produced too little, or that somebody
-    deleted rows; a refreshed_at with no jobs is evidence that a write went
-    wrong halfway. Forgiving those would turn the exception into a way to silence a real finding by truncating a file. So this matches the committed shape and only that: the key PRESENT and null, and jobs PRESENT and empty. A missing refreshed_at key is not this shape either -- it is a file somebody has edited.
+    WHY IT IS SHAPE-EXACT. "Below the floor" and "never seeded" are different states and only the second one is innocent. A baseline with 1-4 jobs is evidence that a harvest ran and produced too little, or that somebody deleted rows; a refreshed_at with no jobs is evidence that a write went wrong halfway. Forgiving those would turn the exception into a way to silence a real finding
+    by truncating a file. So this matches the committed shape and only that: the key PRESENT and null, and jobs PRESENT and empty. A missing refreshed_at key is not this shape either -- it is a file somebody has edited.
 
     The other half of the argument lives in refresh(), which refuses to WRITE below the floor. Together they make "seeded" and "enforced" the same state, which is what stops this from being a permanent hole.
     """
@@ -320,8 +315,7 @@ def classify(rec):
     if tier == "PROC_HOST" and "slim" in label:
         return "NONE"
 
-    # A label is a claim; an enforced quota is a fact, and the fact wins. See
-    # the long comment above advise() in report.awk for why this is restricted to cgroup tiers.
+    # A label is a claim; an enforced quota is a fact, and the fact wins. See the long comment above advise() in report.awk for why this is restricted to cgroup tiers.
     on_slim = "slim" in label or (
         tier != "PROC_HOST"
         and 0 < cpu_ceil <= SLIM_CPU_CEIL_MILLI
@@ -571,9 +565,7 @@ def parse_row(message):
 def usable(fields):
     """Whether a harvested row may enter the baseline.
 
-    THE VERDICT IS THE TRUST DECISION, so this defers to it rather than re-litigating it. report.awk decides what is measurable from the tier, the
-    label, the container fingerprint and RUNNER_ENVIRONMENT; a github-hosted VM
-    now yields a real verdict, which is the whole point of the hosted-VM arm, and that is how PROC_HOST rows reach the baseline.
+    THE VERDICT IS THE TRUST DECISION, so this defers to it rather than re-litigating it. report.awk decides what is measurable from the tier, the label, the container fingerprint and RUNNER_ENVIRONMENT; a github-hosted VM now yields a real verdict, which is the whole point of the hosted-VM arm, and that is how PROC_HOST rows reach the baseline.
 
     What this deliberately does NOT do is accept verdict=NONE when
     env=github-hosted. That reads like the same rule and is a fail-open: the
@@ -737,10 +729,8 @@ def refresh(root, baseline_path, workflow_dir, branch, event, limit):
         )
         return 1
 
-    # ALL OR NOTHING, and this is what makes the pristine exception in main() honest rather than a hole. The gate lets a PRISTINE baseline through with
-    # a warning because there is provably nothing to check yet; that reasoning
-    # only holds if "seeded" and "at or above the floor" are the same state. A partial harvest -- which is the normal outcome of a run that went red before the slow lanes finished -- would otherwise write a 2-job baseline that is neither pristine nor enforceable, and the gate would then refuse every run until somebody noticed. Leaving the file untouched keeps it in a state the gate
-    # has a defined answer for.
+    # ALL OR NOTHING, and this is what makes the pristine exception in main() honest rather than a hole. The gate lets a PRISTINE baseline through with a warning because there is provably nothing to check yet; that reasoning only holds if "seeded" and "at or above the floor" are the same state. A partial harvest -- which is the normal outcome of a run that went red before the slow
+    # lanes finished -- would otherwise write a 2-job baseline that is neither pristine nor enforceable, and the gate would then refuse every run until somebody noticed. Leaving the file untouched keeps it in a state the gate has a defined answer for.
     if len(merged) < MIN_BASELINE_JOBS:
         print(
             "harvest yielded %d job(s), below the %d-job floor; baseline left untouched.\n"

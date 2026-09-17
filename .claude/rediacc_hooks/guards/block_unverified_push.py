@@ -238,9 +238,7 @@ def run(ev):
         return hookio.ALLOW
     cmd, scan = state
 
-    # Command position, so prose about pushing is not a push. Same anchor as
-    # block-untagged-commit.sh; see lib/command-scan.sh for why the raw string is
-    # never matched directly.
+    # Command position, so prose about pushing is not a push. Same anchor as block-untagged-commit.sh; see lib/command-scan.sh for why the raw string is never matched directly.
     if not hookio.grep_q(PUSH_AT_COMMAND_POS, scan):
         return hookio.ALLOW
 
@@ -252,15 +250,12 @@ def run(ev):
     if root == "":
         return hookio.ALLOW
 
-    # ANOTHER REPO'S PUSH IS NOT THIS TREE'S BUSINESS, and it was being refused as though it were. Reproduced 2026-09-01: `git -C <scratch-repo> push origin main` exited 2 here, because the gate-run stamp compared below belongs to CONSOLE and the scratch tree can never match it. The message then reads as "your gates are stale" about a repo the gates
-    # were never run against. Same class as block-untagged-commit.sh:52-69; the resolution now
-    # lives in lib/command-scan.sh rather than being written a third time.
+    # ANOTHER REPO'S PUSH IS NOT THIS TREE'S BUSINESS, and it was being refused as though it were. Reproduced 2026-09-01: `git -C <scratch-repo> push origin main` exited 2 here, because the gate-run stamp compared below belongs to CONSOLE and the scratch tree can never match it. The message then reads as "your gates are stale" about a repo the gates were never run against. Same
+    # class as block-untagged-commit.sh:52-69; the resolution now lives in lib/command-scan.sh rather than being written a third time.
     if shellscan.target_root(scan, root) != "":
         return hookio.ALLOW
 
-    # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately. They advance no console
-    # branch and trigger no console CI; cancel-old-ci.sh draws the same line for the
-    # same reason. The pointer-bump commit that DOES advance console is covered by the ordinary path.
+    # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately. They advance no console branch and trigger no console CI; cancel-old-ci.sh draws the same line for the same reason. The pointer-bump commit that DOES advance console is covered by the ordinary path.
     if hookio.case_glob(
         cmd,
         "*-C %s/private/*" % root,
@@ -312,9 +307,7 @@ def run(ev):
         )
 
     if r_exit != "0":
-        # A RED RECEIPT MAY STILL AUTHORISE A PUSH, but only when every failure is named and justified in .ci/config/carried-reds.json. All-or-nothing is the
-        # shape that gets a guard routed around; naming the exception keeps the
-        # refusal informative and leaves the excuse in git where it can be reviewed.
+        # A RED RECEIPT MAY STILL AUTHORISE A PUSH, but only when every failure is named and justified in .ci/config/carried-reds.json. All-or-nothing is the shape that gets a guard routed around; naming the exception keeps the refusal informative and leaves the excuse in git where it can be reviewed.
         carried_file = "%s/.ci/config/carried-reds.json" % root
         carried = []
         if pathlib.Path(carried_file).is_file():
@@ -367,9 +360,7 @@ def run(ev):
     # A GATE THAT COULD NOT RUN WARNS, IT DOES NOT REFUSE (operator decision, 2026-08-27). Measured that day: twelve reds on a normal developer tree, ten of them ambient, several purely "this machine has no ruff / no workers-types". A missing toolchain is not evidence about the code, and refusing on it would make the receipt unobtainable -- an unobtainable receipt is a guard people
     # route around, which costs more than the rounds it saves.
     #
-    # Never silent, though. "A linter that cannot run is a gate that cannot fail"
-    # stays true; this makes that state loud instead of forgiving it, and CI still
-    # runs those gates for real.
+    # Never silent, though. "A linter that cannot run is a gate that cannot fail" stays true; this makes that state loud instead of forgiving it, and CI still runs those gates for real.
     if r_blocked:
         ev.warn("NOTE: these gates could NOT RUN locally, so nothing here judged what they cover:")
         ev.warn("  %s" % r_blocked)

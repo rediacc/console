@@ -6,9 +6,8 @@
 # CGROUP-FIRST, deliberately. ubuntu-slim runs in an UNPRIVILEGED CONTAINER, not a VM. Inside a container `nproc` and /proc/meminfo report the HOST, so an advisor fed from /proc would read 4 cores / 16 GB on a 1-core / 5 GB runner and be confidently wrong in the one direction that matters. Every sample therefore carries the tier it was resolved at (CGROUP_V2 | CGROUP_V1 |
 # PROC_HOST), and the report refuses to advise from PROC_HOST numbers.
 #
-# NO FORKS IN THE SAMPLE LOOP. Every reading is a `read < file` builtin plus
-# $(( )) arithmetic; timestamps come from $EPOCHREALTIME, and the inter-sample
-# wait is a `read -t` on a fifo rather than /bin/sleep. On 1 vCPU the fork-free loop costs ~1 ms per sample against 15-30 ms for a $(cat)+awk equivalent, and a profiler that perturbs a 1-core runner is measuring itself. Disk is the one exception: `df` is an external command, so it is sampled on a decimated cadence (about once a minute) rather than every tick.
+# NO FORKS IN THE SAMPLE LOOP. Every reading is a `read < file` builtin plus $(( )) arithmetic; timestamps come from $EPOCHREALTIME, and the inter-sample wait is a `read -t` on a fifo rather than /bin/sleep. On 1 vCPU the fork-free loop costs ~1 ms per sample against 15-30 ms for a $(cat)+awk equivalent, and a profiler that perturbs a 1-core runner is measuring itself. Disk is the
+# one exception: `df` is an external command, so it is sampled on a decimated cadence (about once a minute) rather than every tick.
 #
 # Usage: .ci/scripts/ci/profiler/sampler-linux.sh --out <file> [--interval <sec>] .ci/scripts/ci/profiler/sampler-linux.sh --probe
 #
@@ -50,11 +49,8 @@ deliberately off (`:54-57` explains why), so `while (($# > 0))` never terminated
 100% of one core, no output on either stream, no exit. On ubuntu-slim that is the whole machine, and the production caller spawns the sampler `detached: true` with `child.unref()`, so nothing would reap it before the job's 6-hour ceiling. `PROFILER_MAX_SECONDS` could not help: it is evaluated inside the sample loop, which the spin never reached.
 
 BLAST RADIUS, COUNTED NOT ESTIMATED, AND THE FIRST COUNT WAS AN UNDERCOUNT. The twin has 14 real invocation sites (docstrings, this file and the ledgers excluded). TWELVE pass a value after `--out`/`--interval`: `.github/actions/profiler/index.js:117`, `.ci/scripts/test/profiler-control.sh:121`, `.ci/scripts/test/gates/test-profiler-report.sh:398,409,421,478,506` and its Python
-port `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:548,568,592,656,703`. TWO use `--probe` only, `.github/workflows/profiler-probe.yml:54,72`. ZERO were
-reachable; the defect was one hand-typed invocation away, and it failed SILENTLY,
-which is what made it worth fixing rather than noting. (A first pass wrote "8 and
-2", having missed the five sites in the gate-test port; re-derived by enumerating
-every match rather than by recalling the earlier grep.) Every arm of the loop now consumes at least one argument, and a missing value is the exit 2 every other bad argument already got. `test_a_dangling_value_flag_exits_on_both_sides` pins it.
+port `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:548,568,592,656,703`. TWO use `--probe` only, `.github/workflows/profiler-probe.yml:54,72`. ZERO were reachable; the defect was one hand-typed invocation away, and it failed SILENTLY, which is what made it worth fixing rather than noting. (A first pass wrote "8 and 2", having missed the five sites in the gate-test port;
+re-derived by enumerating every match rather than by recalling the earlier grep.) Every arm of the loop now consumes at least one argument, and a missing value is the exit 2 every other bad argument already got. `test_a_dangling_value_flag_exits_on_both_sides` pins it.
 
 (2) `--interval 08` KILLED THE SAMPLER. `DISK_EVERY=$(((DISK_EVERY_S + INTERVAL -
 1) / INTERVAL))` and `$(( ))` reads a leading `0` as OCTAL. `08` is not a valid octal constant, so bash refused the whole expression, left `DISK_EVERY` unassigned, and the next line died on `set -u`:
@@ -75,12 +71,10 @@ own convention of falling back to 60 without a word, because a wrong `df` cadenc
 
 (4) A NON-NUMERIC `PROFILER_MAX_SECONDS` DISABLED THE GUARD IT BELONGS TO. The only use was `[ $(((NOW_US - START_US) / 1000000)) -ge "$MAX_SECONDS" ]`, and `test` answers a non-numeric right-hand side with `[: abc: integer expected` and status 2, which `if` reads as FALSE. So the orphan protection the variable exists for was switched off by the same typo that looks like it would
 tighten it. Measured: 3 ticks in 4 seconds, three diagnostics, no stop. Now REJECTED LOUDLY at startup with exit 2, the way `--interval` already was, rather than coerced to the 6-hour default: the line between this file's two conventions is what a wrong value costs, and this one costs a sampler running forever on a runner that has moved on. `sampler-linux.sh` carries the same
-argument next to the code, including why the check sits BEFORE the `--probe` branch. The `_test_int` helper that modelled the false comparison was deleted with the
-bug; a model of a branch that cannot be taken is dead code beside a live one.
+argument next to the code, including why the check sits BEFORE the `--probe` branch. The `_test_int` helper that modelled the false comparison was deleted with the bug; a model of a branch that cannot be taken is dead code beside a live one.
 
-`$INTERVAL` USED TO BE ECHOED RAW into the `#META` record (`:528`, `:575`), so `--interval 01` recorded `01`. The first version of this port stored `int(raw)` and
-wrote `1`; the differential caught it, reading the file did not. That divergence is
-gone in the other direction as of fix (2): the twin REASSIGNS `$INTERVAL` to the base-10 value, so both sides now record the normalised number and `test_the_meta_record_carries_the_normalised_interval` is what keeps them together.
+`$INTERVAL` USED TO BE ECHOED RAW into the `#META` record (`:528`, `:575`), so `--interval 01` recorded `01`. The first version of this port stored `int(raw)` and wrote `1`; the differential caught it, reading the file did not. That divergence is gone in the other direction as of fix (2): the twin REASSIGNS `$INTERVAL` to the base-10 value, so both sides now record the normalised
+number and `test_the_meta_record_carries_the_normalised_interval` is what keeps them together.
 
 PORT NOTES -- the rest of the quirks, each driven before it was written down.
 
@@ -99,12 +93,9 @@ A FAILED REDIRECTION PRINTS A bash DIAGNOSTIC AND IS NOT AN ERROR.
 `read_mem_bytes:314` guards `$CG/memory.current` with `[ "$MEM_MODE" = "V2" ]`
 and NOT with `-r`, so a cgroup tree exposing `memory.max` but not `memory.current` makes real bash write `<path>: line 314: <CG>/memory.current: No such file or directory` to stderr on
 EVERY TICK (measured: `bash -c 'read -r p < missing'` -> that text, rc=1). This
-port does NOT forge a bash diagnostic carrying the twin's own path and line
-number; it matches the observable decision (fall through to the next branch) and
-`test_missing_memory_current_is_a_bash_diagnostic_only` pins the twin's divergence as still real rather than silently fixing it.
+port does NOT forge a bash diagnostic carrying the twin's own path and line number; it matches the observable decision (fall through to the next branch) and `test_missing_memory_current_is_a_bash_diagnostic_only` pins the twin's divergence as still real rather than silently fixing it.
 
-`$(( ))` TRUNCATES TOWARD ZERO, `//` FLOORS. `_idiv` is C truncation. Every division in the twin is guarded to non-negative operands today, so the two agree
-on the real tree; the helper exists so a future negative cannot drift silently.
+`$(( ))` TRUNCATES TOWARD ZERO, `//` FLOORS. `_idiv` is C truncation. Every division in the twin is guarded to non-negative operands today, so the two agree on the real tree; the helper exists so a future negative cannot drift silently.
 
 `is_num` IS `case $1 in '' | *[!0-9]*)`, which rejects `-1`, `+1`, ` 1`, `1.0` and the empty string. cgroup v1 spells "unlimited" as `-1` in `cpu.cfs_quota_us`, and that is exactly why the division at `:160` can never see a negative divisor.
 
@@ -119,9 +110,8 @@ DID. The assumption was that bash's `read -t` returns the moment a trapped signa
     twin  rc=0  latency=3.80s
     port  rc=0  latency=0.043s   (with the self-pipe)
 
-bash defers the trap until the `read -t` finishes its timeout, so the twin dies one FULL INTERVAL after the signal, not immediately. That is not cosmetic: the production stopper (`.github/actions/profiler/index.js:148-166`) SIGTERMs the sampler, waits, and then SIGKILLs it, annotating the panel with "the sampler had
-to be SIGKILLed; the final sample may be truncated". A port that died faster
-would silently change which of those two notes a job's panel carries. The self-pipe is therefore GONE: plain `select` retries with the RECOMPUTED remaining timeout under PEP 475, which is exactly bash's behaviour, and `test_sigterm_latency_matches_the_twin` measures both sides rather than asserting either.
+bash defers the trap until the `read -t` finishes its timeout, so the twin dies one FULL INTERVAL after the signal, not immediately. That is not cosmetic: the production stopper (`.github/actions/profiler/index.js:148-166`) SIGTERMs the sampler, waits, and then SIGKILLs it, annotating the panel with "the sampler had to be SIGKILLed; the final sample may be truncated". A port that
+died faster would silently change which of those two notes a job's panel carries. The self-pipe is therefore GONE: plain `select` retries with the RECOMPUTED remaining timeout under PEP 475, which is exactly bash's behaviour, and `test_sigterm_latency_matches_the_twin` measures both sides rather than asserting either.
 
 `EPOCHREALTIME` CANNOT BE ABSENT HERE. `:122-125` refuses bash < 5.0. Python has `time.time()` unconditionally, so that refusal is unreachable in the port and is the one branch with no differential coverage. Named rather than pretended.
 
@@ -402,8 +392,7 @@ class Sampler:
                 try:
                     ok2, (p,) = _read_fields(v1_period, 1)
                 except OSError:
-                    # bash prints its own redirection diagnostic here; see the
-                    # module docstring for why this port does not forge one.
+                    # bash prints its own redirection diagnostic here; see the module docstring for why this port does not forge one.
                     ok2, p = False, ""
                 if ok2 and is_num(q) and is_num(p) and int(p) > 0:
                     self.cpu_ceil_milli = _idiv(int(q) * 1000, int(p))
@@ -574,8 +563,7 @@ class Sampler:
                 if ok and is_num(ns):
                     self.cpu_usec = _idiv(int(ns), 1000)
                     return True
-        # /proc/stat is in USER_HZ jiffies; 100 Hz is the value every Ubuntu
-        # runner kernel ships, and this branch only feeds a PROC_HOST report.
+        # /proc/stat is in USER_HZ jiffies; 100 Hz is the value every Ubuntu runner kernel ships, and this branch only feeds a PROC_HOST report.
         try:
             ok, fields = _read_fields("/proc/stat", 10)
         except OSError:
@@ -667,8 +655,7 @@ class Sampler:
         try:
             ok, fields = _read_fields(path, 1)
         except OSError:
-            # bash writes its own diagnostic naming the twin's path and line; see
-            # the module docstring. The DECISION -- condition false -- matches.
+            # bash writes its own diagnostic naming the twin's path and line; see the module docstring. The DECISION -- condition false -- matches.
             return False, ""
         return ok, fields[0]
 
@@ -891,8 +878,7 @@ class Sampler:
 
         self.host_leak_msg = ""
         if not self.check_host_leak():
-            # `: >"$OUT" || true` then `printf ... >>"$OUT"`. Both may fail with a
-            # bash diagnostic; the exit code is 3 either way.
+            # `: >"$OUT" || true` then `printf ... >>"$OUT"`. Both may fail with a bash diagnostic; the exit code is 3 either way.
             try:
                 with open(self.out, "w", encoding="utf-8"):
                     pass
@@ -944,8 +930,7 @@ class Sampler:
             with contextlib.suppress(OSError, ValueError):  # non-main thread
                 previous[sig] = signal.signal(sig, stop)
 
-        # NO WAKEUP FD, DELIBERATELY. bash defers a trap until `read -t` has run out its timeout, so the twin keeps waiting after a SIGTERM and dies at the end of the interval. PEP 475 makes plain `select` do the same thing: the handler runs, then the call is retried with the remaining
-        # timeout. Measured, both sides; see the module docstring.
+        # NO WAKEUP FD, DELIBERATELY. bash defers a trap until `read -t` has run out its timeout, so the twin keeps waiting after a SIGTERM and dies at the end of the interval. PEP 475 makes plain `select` do the same thing: the handler runs, then the call is retried with the remaining timeout. Measured, both sides; see the module docstring.
 
         # Fork-free wait: a fifo held open read-write never delivers and never EOFs, so a timed read on it is a pure sleep.
         sleep_mode = "fifo"
@@ -1080,8 +1065,7 @@ class Sampler:
 
 
 def main(argv: list[str]) -> int:
-    # --- carried verbatim from sampler-linux.sh, lines 60-63 -------------------
-    # EPOCHREALTIME renders its fraction with the LOCALE's radix character; under a
+    # --- carried verbatim from sampler-linux.sh, lines 60-63 ------------------- EPOCHREALTIME renders its fraction with the LOCALE's radix character; under a
     # comma locale "1690000000,123456" would break the ${x%.*} split below and every
     # timestamp with it.
     # (the twin's next line is `export LC_ALL=C`; this is it.)

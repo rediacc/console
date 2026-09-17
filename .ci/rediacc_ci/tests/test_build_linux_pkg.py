@@ -12,12 +12,9 @@ masking hook of its own -- gets the identical normalisation. `$TMPDIR` is pointe
 
 RECORDED TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. The fake `gpg`'s stdout IS the colon-format key listing the script parses.
 
-THE PATH IS REPLACED, NOT PREPENDED. `test_the_scratch_path_is_sealed` asserts
-there is no reachable real `nfpm` or `gpg` before anything is driven; a real
-`gpg --import` reaching a developer's keyring would be a genuine accident.
+THE PATH IS REPLACED, NOT PREPENDED. `test_the_scratch_path_is_sealed` asserts there is no reachable real `nfpm` or `gpg` before anything is driven; a real `gpg --import` reaching a developer's keyring would be a genuine accident.
 
-`$0` IS MASKED TO `<SELF>`; the `line <n>: ` in a `set -u` death is masked in the
-one test that drives it. Nothing else.
+`$0` IS MASKED TO `<SELF>`; the `line <n>: ` in a `set -u` death is masked in the one test that drives it. Nothing else.
 
 K=5 LEDGER: `.ci/shadow/w7p6-build-linux-pkg.observations.jsonl`.
 """
@@ -135,9 +132,7 @@ exit "${FAKE_NFPM_RC:-0}"
 """
 )
 
-# `gpg --show-keys --with-colons --with-fingerprint FILE`. The colon format the
-# twin's awk reads; driven by the FILE's own content so a fixture can hand the
-# two calls different answers without a second env var.
+# `gpg --show-keys --with-colons --with-fingerprint FILE`. The colon format the twin's awk reads; driven by the FILE's own content so a fixture can hand the two calls different answers without a second env var.
 FAKE_GPG = (
     """#!/bin/bash
 __self=gpg
@@ -638,8 +633,7 @@ def test_output_directory_is_honoured_relative_and_absolute(tmp_path) -> None:
 def test_an_output_directory_blocked_by_a_file_fails_the_way_mkdir_does(tmp_path) -> None:
     """`mkdir -p` under `set -e`, at BOTH of its call sites.
 
-    The twin runs the real `mkdir`; a port using `Path.mkdir` exits 1 as well but
-    prints a PYTHON TRACEBACK where the twin prints one `mkdir:` line, which is the difference between a diagnosable release failure and a scary one. Driven on the dry-run site (`:148`) too, because that one runs BEFORE any validation and would otherwise never be reached in this file.
+    The twin runs the real `mkdir`; a port using `Path.mkdir` exits 1 as well but prints a PYTHON TRACEBACK where the twin prints one `mkdir:` line, which is the difference between a diagnosable release failure and a scary one. Driven on the dry-run site (`:148`) too, because that one runs BEFORE any validation and would otherwise never be reached in this file.
     """
     root = fixture(tmp_path)
     for extra in ((), ("--dry-run",)):

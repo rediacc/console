@@ -1,7 +1,6 @@
 r"""Every review thread must be RESOLVED, and nobody may be requesting changes.
 
-Ported from `.ci/scripts/quality/check-resolved-threads.sh`, which is NOT
-deleted; see `rediacc_ci.quality.__init__` for why both copies live.
+Ported from `.ci/scripts/quality/check-resolved-threads.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__` for why both copies live.
 
 WHAT IT IS, in the twin's own words:
 
@@ -57,9 +56,7 @@ THE SLEEPS ARE REAL. A retry loop with the sleeps removed would be a different p
 
 jq IS REIMPLEMENTED IN PYTHON, and three of its behaviours are load-bearing here: `//` yields its right side when the left is null OR false (so `.line // "N/A"`
 covers a null line but would also cover a `false`, which cannot occur);
-`group_by` SORTS its groups by key, so the reviewers named in the failure block
-come out in login order rather than in reply order; and `sort_by` is stable, so
-two reviews with the same `submitted_at` keep their input order and `last` picks the later of them. A port that used a Python `set` or an unsorted `groupby` would print the same reviewers in a different order and diverge.
+`group_by` SORTS its groups by key, so the reviewers named in the failure block come out in login order rather than in reply order; and `sort_by` is stable, so two reviews with the same `submitted_at` keep their input order and `last` picks the later of them. A port that used a Python `set` or an unsorted `groupby` would print the same reviewers in a different order and diverge.
 
 THE RE-WRAP IS PRESERVED. The twin rebuilds the paginated node list into the original single-response shape "so every consumer below is unchanged". The port has no such consumer, but the SHAPE is what the failure messages are phrased against, so the intermediate is kept as a named value rather than optimised away.
 """
@@ -77,8 +74,7 @@ from rediacc_ci.controls import Controls
 # The three variables `require_var` insists on, in the twin's order.
 REQUIRED_VARS = ("PR_NUMBER", "GH_TOKEN", "GITHUB_REPOSITORY")
 
-# "50 pages is 5000 threads. A real PR never approaches it, so hitting this means
-# the cursor stopped advancing; fail closed rather than spin forever."
+# "50 pages is 5000 threads. A real PR never approaches it, so hitting this means the cursor stopped advancing; fail closed rather than spin forever."
 MAX_PAGES = 50
 
 # `_gh_probe` in `.ci/scripts/lib/common.sh`: three attempts, sleeping attempt * 3 seconds between them.
@@ -118,9 +114,7 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 def gh_json(what: str, argv: list[str], *, sleeper=time.sleep, binary: str = "gh") -> str | None:
     """`gh_json <what> -- <args>`: status checked AND body must parse as JSON.
 
-    Returns the body, or None after three failed attempts. `sleeper` is injectable
-    so a test can exercise the retry ladder without waiting nine seconds; the
-    DEFAULT sleeps, because a retry loop that does not wait is a different program under a rate limit.
+    Returns the body, or None after three failed attempts. `sleeper` is injectable so a test can exercise the retry ladder without waiting nine seconds; the DEFAULT sleeps, because a retry loop that does not wait is a different program under a rate limit.
     """
     attempt = 1
     rc = 0

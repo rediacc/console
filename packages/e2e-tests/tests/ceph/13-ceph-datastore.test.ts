@@ -119,10 +119,7 @@ test.describe
     });
 
     test('4. the registry reports the ceph backend for the named datastore', async () => {
-      // Ask the REGISTRY (the layer that owns backend identity), scoped to the exact record. The previous form — `datastore status <name> --json` —
-      // passed the name POSITIONALLY; `status` only knows --path, and cobra
-      // silently swallowed the stray arg, so the assert ran against the DEFAULT
-      // base pool (caught in CI; renet now rejects stray positionals outright).
+      // Ask the REGISTRY (the layer that owns backend identity), scoped to the exact record. The previous form — `datastore status <name> --json` — passed the name POSITIONALLY; `status` only knows --path, and cobra silently swallowed the stray arg, so the assert ran against the DEFAULT base pool (caught in CI; renet now rejects stray positionals outright).
       const list = await worker.executeViaBridge('sudo renet datastore list --json');
       expect(list.code, `datastore list: ${list.stderr.slice(-200)}`).toBe(0);
       const records = JSON.parse(
@@ -136,9 +133,7 @@ test.describe
         `sudo renet datastore status --path ${dsPath} --json`
       );
       expect(status.code, `status --path: ${status.stderr.slice(-200)}`).toBe(0);
-      // Parse, never substring-match: renet emits COMPACT one-line JSON since
-      // the clean-stdout change (atomic relay units; helpers.go), so the old
-      // pretty-printed '"mounted": true' probe matched formatting, not fact.
+      // Parse, never substring-match: renet emits COMPACT one-line JSON since the clean-stdout change (atomic relay units; helpers.go), so the old pretty-printed '"mounted": true' probe matched formatting, not fact.
       const statusJson = JSON.parse(
         status.stdout.slice(status.stdout.indexOf('{'), status.stdout.lastIndexOf('}') + 1)
       ) as { mounted?: boolean };
@@ -262,8 +257,7 @@ test.describe
       await worker.executeViaBridge(
         `sudo umount ${dsPath} 2>/dev/null || sudo umount -l ${dsPath} 2>/dev/null || true`
       );
-      // Unmap by image spec (rbd resolves the device); avoids awk $NF, which the
-      // two-hop SSH shell would clobber.
+      // Unmap by image spec (rbd resolves the device); avoids awk $NF, which the two-hop SSH shell would clobber.
       await worker.executeViaBridge(`sudo rbd unmap ${pool}/${image} 2>/dev/null || true`);
       await worker.executeViaBridge(`sudo rbd rm ${pool}/${image} 2>/dev/null || true`);
       const poolDel = await ceph.cephPoolDelete(pool);

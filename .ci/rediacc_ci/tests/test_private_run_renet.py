@@ -16,9 +16,7 @@ NO `cd` HAPPENS IN EITHER SUBJECT, so the recorded cwd is the CALLER's, and the 
 
 THE THREE ARMS OF THE SUBMODULE GUARD ARE ALL DRIVEN. Present, absent-under-CI (three errors, exit 1) and absent-locally (one warning, exit 0). The middle one is the arm that stops this gate from reporting success while checking nothing, and `test_the_ci_arm_is_the_reason_the_guard_exists` fails if it ever stops exiting non-zero.
 
-THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming
-the file it is running; the port composes the same prefix from `sys.argv[0]` and
-its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
+THE ONE MASK. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming the file it is running; the port composes the same prefix from `sys.argv[0]` and its own live frame. Those can never be equal, so `_mask` collapses exactly that prefix on both sides. `test_the_mask_does_not_hide_the_message` pins it.
 """
 
 import pathlib
@@ -148,8 +146,7 @@ def _run(
         "PATH": binder,
         "HOME": str(tmp_path),
         "PYTHONDONTWRITEBYTECODE": "1",
-        # The port imports `rediacc_ci.log` and `rediacc_ci.core.common`; the
-        # COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
+        # The port imports `rediacc_ci.log` and `rediacc_ci.core.common`; the COPY under the fixture is what runs, so the package has to come from the real checkout. This is the only thing the fixture borrows from outside itself.
         "PYTHONPATH": str(ROOT / ".ci"),
     }
     env.update(env_extra or {})

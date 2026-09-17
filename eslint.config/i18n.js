@@ -267,20 +267,15 @@ export default [
       '^CERT-\\d{4}-\\d{4}$',
       // Recovery-code format placeholder (config-unlock input hint) — a literal format mask (RC1 prefix + four 8-char groups), product syntax with nothing to translate, identical in every locale by design. Same case as the CERT- placeholder above.
       '^RC1-X{8}-X{8}-X{8}-X{8}$',
-      // Passkey: the WebAuthn/FIDO product term. German keeps the loanword
-      // ("der Passkey"), used throughout the de configStorage strings; other
-      // locales that coin a native term differ and are unaffected by this exempt.
+      // Passkey: the WebAuthn/FIDO product term. German keeps the loanword ("der Passkey"), used throughout the de configStorage strings; other locales that coin a native term differ and are unaffected by this exempt.
       '^Passkey$',
-      // Tag: the fork/git tag label. German keeps "Tag" (also used in
-      // "Fork-Tag"); locales that translate it differ and stay checked.
+      // Tag: the fork/git tag label. German keeps "Tag" (also used in "Fork-Tag"); locales that translate it differ and stay checked.
       '^Tag$',
       // Plan tier proper names (product names used as-is internationally)
       '^(Business|Community|Enterprise|Professional)$',
       // Certificate level designation ("Pro" certificate): a product-level label kept as the word "Pro" in every locale by design
       '^Pro$',
-      // Clustering track label: an IT anglicism retained by several locales
-      // (de/es/fr/it/pt); mirrors ALLOWED_IDENTICAL in
-      // scripts/gates/check-translation-completeness.ts
+      // Clustering track label: an IT anglicism retained by several locales (de/es/fr/it/pt); mirrors ALLOWED_IDENTICAL in scripts/gates/check-translation-completeness.ts
       '^Clustering$',
       // Words that are legitimately identical in many target languages (borrowed/shared vocabulary across European languages and international tech terms)
       '^(Plan|Type|Newsletter|Name|Limit|Source|Admin|Total|Team|Status|Magnet|Machines|Code|Permissions|General|Description|Date|Dashboard|Contact|Activations|Actions)$',
@@ -294,20 +289,15 @@ export default [
       // "Repository" — Italian keeps this identical (singular = plural,
       // invariant loanword), matching this same console.json file's own navRepos/reposEmpty wording ("Repository").
       '^Repository$',
-      // "Destinations"/"Services" — genuine French cognates (backup destinations, Docker services), spelled identically in French and
-      // English; French CLI translations of the same concepts already keep
-      // them identical ("Destinations :", "Services :").
+      // "Destinations"/"Services" — genuine French cognates (backup destinations, Docker services), spelled identically in French and English; French CLI translations of the same concepts already keep them identical ("Destinations :", "Services :").
       '^(Destinations|Services)$',
-      // "Mode" — genuine French cognate (le mode), spelled identically in
-      // both languages; no distinct native alternative in common use.
+      // "Mode" — genuine French cognate (le mode), spelled identically in both languages; no distinct native alternative in common use.
       '^Mode$',
       // "Port" (network port) — de/fr keep this as the standard technical term (no distinct native alternative in common IT usage).
       '^Port$',
       // "Pools" (resource/storage pools) — de/es/fr/pt keep the loanword "pool" and pluralize it as "Pools", matching packages/cli's own translation of the same datastore concept ("Nombre del pool", "Nom du pool", "Nome do pool").
       '^Pools$',
-      // "Region"/"Image"/"Cluster"/"Datastore" — genuine German/French/ Italian cognates or established loanwords for these cloud/storage
-      // nouns; already allowlisted for the same reason in the broader
-      // scripts/gates/check-translation-completeness.ts ALLOWED_IDENTICAL set.
+      // "Region"/"Image"/"Cluster"/"Datastore" — genuine German/French/ Italian cognates or established loanwords for these cloud/storage nouns; already allowlisted for the same reason in the broader scripts/gates/check-translation-completeness.ts ALLOWED_IDENTICAL set.
       '^(Region|Image|Cluster|Datastore)$',
       // IEC binary storage-unit symbols (KiB/MiB/GiB/TiB/PiB/EiB). This same file's storageQuotaHelperText key already keeps "GiB" verbatim, embedded in an otherwise fully-translated sentence, for every one of these locales (ar "بوحدة GiB. ...", de "GiB. Leer lassen ...", es "GiB. Deja en blanco ...", et "GiB. Jäta tühjaks ...", fr "GiB. Laissez vide ...", it "GiB. Lascia vuoto
       // ...", ja "GiB単位。...", ko "GiB 단위. ...", pt "GiB. Deixe em branco ...", tr "GiB. Plan varsayılanını ...", zh "以 GiB 为单位。..."). This exemption lets the standalone storageQuotaUnit label match that established sibling-key choice instead of inventing a different rendering for the same unit. ru is the one locale that transliterates to native Cyrillic ("ГиБ") in both keys,
@@ -377,8 +367,7 @@ export default [
       '**/*.generated.ts',
       '**/*.generated.tsx',
       '**/api-schema.zod.ts',
-      // renet contract Zod schemas emitted by `renet functions generate-types`
-      // (DO NOT EDIT headers); they grow past max-lines as functions are added.
+      // renet contract Zod schemas emitted by `renet functions generate-types` (DO NOT EDIT headers); they grow past max-lines as functions are added.
       '**/renet-contract/data/*.schema.ts',
     ],
     rules: {

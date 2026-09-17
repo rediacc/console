@@ -44,21 +44,18 @@ folded into a single pass.
 NOT UNDER A UTF-8 LOCALE. `${#p}` counts characters when the locale is UTF-8 and
 BYTES when it is C, so the em dash pattern (U+2014, one character, three bytes)
 is length 1 or length 3 depending on an environment variable. Both are <= 3, so
-the live pattern set classifies identically either way and nothing observable turns on it today. A future two-character non-ASCII pattern would be 2 under UTF-8 and 4 or 6 under C, and the twin would take a different branch on two
-machines. That is a defect in the twin, reported rather than repaired; the port
+the live pattern set classifies identically either way and nothing observable turns on it today. A future two-character non-ASCII pattern would be 2 under UTF-8 and 4 or 6 under C, and the twin would take a different branch on two machines. That is a defect in the twin, reported rather than repaired; the port
 follows the C-locale reading because `scripts/lib/shadow-gate.ts` pins LC_ALL=C
 and that is the behaviour the differential compares against.
 
 THE FAST PATH IS CASE SENSITIVE AND THE SLOW PATH IS NOT. `[[ "$line" == *"$p"* ]]`
-is a literal substring test; `grep -iqE "$p"` is case insensitive. So a line that
-grep matched case-insensitively against a SHORT pattern can fall through the fast path, be re-tested by the slow path (which skips short patterns), and be reported as "(unknown)". That is real twin behaviour and it is preserved: a port that "fixed" it would print a different Pattern: line for the same finding.
+is a literal substring test; `grep -iqE "$p"` is case insensitive. So a line that grep matched case-insensitively against a SHORT pattern can fall through the fast path, be re-tested by the slow path (which skips short patterns), and be reported as "(unknown)". That is real twin behaviour and it is preserved: a port that "fixed" it would print a different Pattern: line for the same
+finding.
 
 TRUNCATION IS BYTE TRUNCATION. `${line_text:0:117}` slices bytes under LC_ALL=C
 and can cut a UTF-8 sequence in half. The port encodes, slices, and decodes with `surrogateescape`, so the same bytes come out and a half-character stays half a character rather than becoming a replacement glyph the twin never printed.
 
-MESSAGES ON STDERR, DATA ON STDOUT, exactly as the twin splits them: `log_error` and `log_warn` write to stderr while the two indented `Pattern:` / `Line:` lines are bare `echo` and land on stdout. `rediacc_ci.log` refuses to put messages on
-stdout, which is right for messages; these two are the copy-paste payload, so
-they go through `print()` and the split survives.
+MESSAGES ON STDERR, DATA ON STDOUT, exactly as the twin splits them: `log_error` and `log_warn` write to stderr while the two indented `Pattern:` / `Line:` lines are bare `echo` and land on stdout. `rediacc_ci.log` refuses to put messages on stdout, which is right for messages; these two are the copy-paste payload, so they go through `print()` and the split survives.
 
 WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it reads only the two content directories, so a slop phrase in `README.md`, in a component's JSX, or in a translation JSON is invisible to it. The allowlist is also a FILE-level opt-out with no expiry and no liveness check, so an allowlisted path stays unscanned forever. Both are limits of the twin, preserved rather than
 widened, because widening either would change the verdict.
@@ -82,13 +79,11 @@ def _joined(*rows: str) -> str:
     return "\n".join(rows)
 
 
-# The two configuration files, repo-relative. The twin `cd`s to the root and
-# names them bare; this is the same fact with the cd removed.
+# The two configuration files, repo-relative. The twin `cd`s to the root and names them bare; this is the same fact with the cd removed.
 PATTERNS_FILE = ".ci/config/content-quality-patterns.conf"
 ALLOWLIST_FILE = ".ci/config/content-quality-allowlist.txt"
 
-# The scanned roots, in the twin's order. A directory that does not exist is skipped silently, which is how the twin behaves and is also how this gate can
-# go quiet; see the anti-vacuity note on `main`.
+# The scanned roots, in the twin's order. A directory that does not exist is skipped silently, which is how the twin behaves and is also how this gate can go quiet; see the anti-vacuity note on `main`.
 CONTENT_DIRS = (
     "packages/www/src/content/docs",
     "packages/www/src/content/blog",
@@ -355,16 +350,13 @@ def main(argv: list[str] | None = None) -> int:
 
     WARNINGS DO NOT BLOCK, and that is deliberate in the twin: the WARN section of the patterns file holds structural tells ("^(First|Second|Third|Finally),") that are frequently correct prose. They are counted, printed, and ignored by the exit code.
 
-    `--selftest` is intercepted BEFORE any real scan. The twin takes FILE ARGUMENTS, so a twin invoked with this string would try to scan a file named
-    `--selftest`; no caller does that, and the differential never passes it.
+    `--selftest` is intercepted BEFORE any real scan. The twin takes FILE ARGUMENTS, so a twin invoked with this string would try to scan a file named `--selftest`; no caller does that, and the differential never passes it.
     """
     args = list(argv or [])
     if args and args[0] == "--selftest":
         return selftest()
 
-    # Byte-exact output. The gate prints content it read from disk, so its own
-    # streams must be able to carry every byte back out; without this a
-    # surrogate from `surrogateescape` raises UnicodeEncodeError in the middle of a failure report, which is the worst place for a traceback.
+    # Byte-exact output. The gate prints content it read from disk, so its own streams must be able to carry every byte back out; without this a surrogate from `surrogateescape` raises UnicodeEncodeError in the middle of a failure report, which is the worst place for a traceback.
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is not None:

@@ -1,12 +1,9 @@
 """Refuse a commit message or a PR body whose prose breaks the house style.
 
-THE OTHER HALF OF `block_prose_style_edit`. That guard sees the bytes going into
-a FILE; this one sees the bytes going into a COMMIT or a PULL REQUEST, which
-never touch the working tree and which no file-scoped hook can reach. A style enforced on documents and not on the messages describing them is enforced on the half nobody reads.
+THE OTHER HALF OF `block_prose_style_edit`. That guard sees the bytes going into a FILE; this one sees the bytes going into a COMMIT or a PULL REQUEST, which never touch the working tree and which no file-scoped hook can reach. A style enforced on documents and not on the messages describing them is enforced on the half nobody reads.
 
 TWIN = None, the same sentinel and for the same reason as its sibling. The
-argument is written out once, in `block_prose_style_edit.py`; the short version
-is that no bash original exists, `check_language_policy.py` refuses a new shell file under `.claude`, and the evidence that replaces the oracle is a dedicated per-guard suite plus the planted DEFECT below.
+argument is written out once, in `block_prose_style_edit.py`; the short version is that no bash original exists, `check_language_policy.py` refuses a new shell file under `.claude`, and the evidence that replaces the oracle is a dedicated per-guard suite plus the planted DEFECT below.
 
 =============================================================================
 WHAT IT READS OUT OF A COMMAND LINE
@@ -34,11 +31,8 @@ WHAT IT READS OUT OF A COMMAND LINE
 THE COMMIT SUBJECT IS EXEMPT FROM R11's IMPERATIVE ARM, and that exemption is in the rules file rather than here: R11 lists `ai_output`, `pr` and `markdown` as its scopes and omits `commit` entirely. This repository's subjects are Conventional-Commits-shaped and imperative by house convention -- measured over the last 200 commits, median 71 characters, p90 84, max 98 -- so a guard
 that refused `fix(ci): widen the trigger` would refuse the convention itself. The brief's own text carves this out, and compatibility with what is already in the tree wins.
 
-PRE-EXISTING DEBT DOES NOT APPLY HERE, unlike the edit side. A commit message is
-written fresh every time; there is nothing carried through from a previous
-version of it, so there is nothing to consult the baseline about and the guard does not. The exception is `--amend`, where the message may be an older one being
-lightly edited; that is still treated as new, deliberately, because an amend is
-the one moment somebody is already looking at the words.
+PRE-EXISTING DEBT DOES NOT APPLY HERE, unlike the edit side. A commit message is written fresh every time; there is nothing carried through from a previous version of it, so there is nothing to consult the baseline about and the guard does not. The exception is `--amend`, where the message may be an older one being lightly edited; that is still treated as new, deliberately, because
+an amend is the one moment somebody is already looking at the words.
 
 IT FAILS OPEN, LOUDLY, on a missing engine, exactly as its sibling does and for the reason `block_settled_questions.py` gives about a missing jq: the message says the text went UNEXAMINED rather than letting a green read as a pass.
 """
@@ -67,8 +61,8 @@ UNEXAMINED = (
 # `git commit`, with anything between the two words (`-C dir`, `--no-pager`).
 #
 # `re.MULTILINE`, so `^` also anchors after a `\n` and not only at the start of the whole payload. Found live by review 2026-09-16: a `git commit` sitting on the SECOND line of a multi-line command (e.g. a `set -e` guard line before it) has a `\n` immediately to its left, which is neither position 0 nor one of `;&|(` -- `_is_target` returned False and the message went unexamined.
-# `block_worktree_add.py` does not have this bug because it matches per LINE via `hookio.grep_q`; this guard keeps its single-regex-over-the-whole-command shape and fixes the anchor instead, which is the smaller change for the same result.
-# The `[^;&|\n]*` gap between the verb and `commit`/`pr` already never crosses a line, so `MULTILINE` cannot make the middle of the pattern bleed across lines -- only `^` changes meaning.
+# `block_worktree_add.py` does not have this bug because it matches per LINE via `hookio.grep_q`; this guard keeps its single-regex-over-the-whole-command shape and fixes the anchor instead, which is the smaller change for the same result. The `[^;&|\n]*` gap between the verb and `commit`/`pr` already never crosses a line, so `MULTILINE` cannot make the middle of the pattern bleed
+# across lines -- only `^` changes meaning.
 GIT_COMMIT = re.compile(r"(?:^|[;&|(])\s*(?:\S*/)?git\b[^;&|\n]*\bcommit\b", re.MULTILINE)
 GH_PR = re.compile(
     r"(?:^|[;&|(])\s*(?:\S*/)?gh\b[^;&|\n]*\bpr\b[^;&|\n]*\b(?:create|edit|comment|review)\b",

@@ -34,8 +34,7 @@ Discovery is `find workers -maxdepth 2 -name tsconfig.json -type f | sort`, and 
 DEFECT A -- AN UNKNOWN ARGUMENT IS SILENTLY A FULL RUN
 -----------------------------------------------------------------------------
 The twin reads `${1:-}` twice and has no `*)` arm. `--list` and `--install` are
-recognised; ANYTHING else -- `--help`, `--isntall`, `-l`, a stray path -- falls
-through to the default branch and runs the whole install-and-typecheck. Driven 2026-09-14 against the twin in a one-worker fixture whose `npx` is a stub that prints `tsc ok`:
+recognised; ANYTHING else -- `--help`, `--isntall`, `-l`, a stray path -- falls through to the default branch and runs the whole install-and-typecheck. Driven 2026-09-14 against the twin in a one-worker fixture whose `npx` is a stub that prints `tsc ok`:
 
     $ PATH=<fixture>/bin bash <fixture>/.ci/scripts/quality/typecheck-workers.sh --isntall
     typecheck-workers: workers/a/tsconfig.json
@@ -62,8 +61,7 @@ chmod 000 (a real permission denial, not a stubbed find):
     typecheck-workers: 1 worker project(s) typechecked clean
     rc=0
 
-find's status says 1; nothing reads it. The gate prints its count, which is the
-right instinct, but nothing compares that count against anything. Reproduced here, not repaired: an anti-vacuity floor is a cutover-box decision.
+find's status says 1; nothing reads it. The gate prints its count, which is the right instinct, but nothing compares that count against anything. Reproduced here, not repaired: an anti-vacuity floor is a cutover-box decision.
 
 -----------------------------------------------------------------------------
 DEFECT C -- A PRESENT-BUT-STALE `node_modules` IS NEVER REFRESHED
@@ -94,8 +92,7 @@ SELF = "typecheck-workers"
 # `find workers -maxdepth 2 -name tsconfig.json -type f` (twin :41), verbatim. `-maxdepth 2` is what keeps `workers/<x>/node_modules/**/tsconfig.json` out of the set, and it is also why a worker whose tsconfig sits deeper is invisible.
 FIND_ARGV = ("find", "workers", "-maxdepth", "2", "-name", "tsconfig.json", "-type", "f")
 
-# The two recognised arguments (twin :52, :64). There is deliberately no third
-# entry and no `*)` arm; see DEFECT A.
+# The two recognised arguments (twin :52, :64). There is deliberately no third entry and no `*)` arm; see DEFECT A.
 LIST_FLAG = "--list"
 INSTALL_FLAG = "--install"
 
@@ -177,9 +174,7 @@ def discover(root: str) -> list[str]:
 def dirname(path: str) -> str:
     """`dirname "$config"` (twin :67), which is NOT `os.path.dirname`.
 
-    POSIX `dirname` answers `.` for a path with no slash and for the empty
-    string; `os.path.dirname` answers the empty string for both. `find` only
-    ever emits `workers/<x>/tsconfig.json` here, so the difference is unreachable through the twin's own discovery -- and an unreachable difference is still a difference, which is why it is spelled out rather than assumed away.
+    POSIX `dirname` answers `.` for a path with no slash and for the empty string; `os.path.dirname` answers the empty string for both. `find` only ever emits `workers/<x>/tsconfig.json` here, so the difference is unreachable through the twin's own discovery -- and an unreachable difference is still a difference, which is why it is spelled out rather than assumed away.
     """
     head = os.path.dirname(path)
     return head or "."

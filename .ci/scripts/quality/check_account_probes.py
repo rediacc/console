@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Entry point for the ported dev-stack liveness-probe gate. Logic is in the package.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can
-see it; the logic lives in `rediacc_ci.quality.account_probes`, which pytest and
-the port's own `--selftest` import directly.
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.account_probes`, which pytest and the port's own `--selftest` import directly.
 
 CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 6). See DRIVEN, below.
 
@@ -16,9 +14,7 @@ NO `id:` IS CORRECT HERE, checked rather than assumed: `derivedId` (`gate-header
 
 `selftest: true` is inert for a `.py` gate (`headerLines` emits it only for `.ts`, `gate-bind.ts:598`) and is carried because the twin declared it and because `account_probes.main(["--selftest"])` exits 0, including a control that asserts a VANISHED probe library is a failure rather than a pass.
 
-THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files rather than by reading them. `bind()` unions declared needs with
-`inferredNeeds(source)`; the twin infers nothing and this two-import entry point
-infers nothing, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both resolve to the empty set `needs: none` declares.
+THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files rather than by reading them. `bind()` unions declared needs with `inferredNeeds(source)`; the twin infers nothing and this two-import entry point infers nothing, because `inferredNeeds` strips Python docstrings as prose (`gate-header.ts:301`). Both resolve to the empty set `needs: none` declares.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 
@@ -40,10 +36,8 @@ and their stderr agrees on all eight lines under the same port normalisation:
 
 The plant was reverted by its exact inverse, `.ci/lib/account.sh` verified back at sha256 6aef42c5c6120cbf... and `git status --porcelain` diffed against its pre-plant capture with no difference.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-account-probes.sh` is NOT
-deleted here. It stays on disk as the differential twin; deletion is W7 P5's
-job, and there is a second reason to leave it exactly where it is: it is PINNED BY PATH at `.ci/scripts/test/gates/test-gate-anti-vacuity.sh:64`, which asserts the diagnostic substring "nothing to check" against an empty tree. That row goes on exercising the bash twin after this cutover and goes on passing, so the registry flip alone does not move it. Repointing it is the driver's
-call and belongs on the MODULE, not on this three-line entry point, because the needle it pins is behavioural.
+INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-account-probes.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job, and there is a second reason to leave it exactly where it is: it is PINNED BY PATH at `.ci/scripts/test/gates/test-gate-anti-vacuity.sh:64`, which asserts the diagnostic substring "nothing to check" against an empty tree. That
+row goes on exercising the bash twin after this cutover and goes on passing, so the registry flip alone does not move it. Repointing it is the driver's call and belongs on the MODULE, not on this three-line entry point, because the needle it pins is behavioural.
 
 ---- gate ---- step: Dev-stack liveness probes needs: none selftest: true ---- end gate ----
 """

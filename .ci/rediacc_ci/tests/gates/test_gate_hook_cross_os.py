@@ -8,9 +8,8 @@ reason and checks the exemption in BOTH directions, so the moment this file NAME
 THE RUNNER'S FILENAME IS NOT SPELLED ANYWHERE IN THIS FILE, and that is not squeamishness. The `mentioned` route is a path-SUFFIX match over the text of anything already reached, so writing the name even in a comment is what confers it. Deleting the plant and leaving the sentence behind fixed nothing, and that is how the second half of this paragraph came to exist. A test that
 gives its plant target a false life signal corrupts the dead-code census in order to prove something about a scanner.
 
-Creating and removing a file is also the more realistic defect. Nobody adds a
-`/proc` read to a file that has been there for months; somebody adds a new
-guard. The scan root is walked with `rglob`, not `git ls-files`, so a file that exists for the length of one case is in the corpus for exactly that case. It is removed in a `finally`, and a later case asks `git status` whether anything was left behind.
+Creating and removing a file is also the more realistic defect. Nobody adds a `/proc` read to a file that has been there for months; somebody adds a new guard. The scan root is walked with `rglob`, not `git ls-files`, so a file that exists for the length of one case is in the corpus for exactly that case. It is removed in a `finally`, and a later case asks `git status` whether
+anything was left behind.
 """
 
 import contextlib
@@ -23,9 +22,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# THE PLANT IS A FIXED PATH IN THE REAL TREE, so these cases cannot run beside each other. One writes `__gate_test_plant.py` into `.claude/rediacc_hooks/`
-# and expects the gate to red on it; two others scan that same directory and
-# expect it CLEAN. Without a group `--dist loadgroup` is free to put them on different workers, and measured 2026-09-15 it did:
+# THE PLANT IS A FIXED PATH IN THE REAL TREE, so these cases cannot run beside each other. One writes `__gate_test_plant.py` into `.claude/rediacc_hooks/` and expects the gate to red on it; two others scan that same directory and expect it CLEAN. Without a group `--dist loadgroup` is free to put them on different workers, and measured 2026-09-15 it did:
 #
 # clean tree (stderr: ✗ .claude/rediacc_hooks/__gate_test_plant.py:7 pgrep (proc-tool) is platform-sensitive ...): expected 0, got 1
 #
@@ -49,9 +46,7 @@ PLANTED = (
 )
 
 
-# THE GROUP IS NOT ENOUGH, and the demonstration is why this lock exists.
-# `xdist_group` serialises these cases WITHIN one pytest run; it does nothing
-# about a SECOND run in the same tree, and this repository runs concurrent gate batteries as a matter of course. Measured 2026-09-15, one process looping the plant case against another looping the two scanning cases:
+# THE GROUP IS NOT ENOUGH, and the demonstration is why this lock exists. `xdist_group` serialises these cases WITHIN one pytest run; it does nothing about a SECOND run in the same tree, and this repository runs concurrent gate batteries as a matter of course. Measured 2026-09-15, one process looping the plant case against another looping the two scanning cases:
 #
 # clean-tree scans that FAILED while a planter ran concurrently: 12 of 12
 #

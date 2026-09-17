@@ -38,9 +38,7 @@ PORT NOTES.
 -----------------------------------------------------------------------------
 
 THE COMPARISON IS OVER BYTES, NOT OVER PARSED JSON, and that is carried across deliberately even though the sibling port `regions_sync` does the opposite. The difference is what the file IS. `regions.json` is maintained by two humans and a reformat is not drift, so that gate compares parsed content. THIS file is written by ONE program, `export-command-tree.ts`, and re-run through
-the same program a
-minute later; if the bytes differ, the exporter's output differs, and that IS the
-finding. Comparing parsed JSON here would hide a serialization change that every downstream reader of the file would see.
+the same program a minute later; if the bytes differ, the exporter's output differs, and that IS the finding. Comparing parsed JSON here would hide a serialization change that every downstream reader of the file would see.
 
 THE BUILD IS PART OF THE SUBJECT, not a precondition to be skipped. The twin's comment says why: "The exporter imports the live CLI, which resolves @rediacc/shared and @rediacc/provisioning through their dist builds." A port that skipped `npm run build:packages` to be fast would compare the committed tree against an exporter reading a stale dist, which is the same fail-open the
 gate exists to close.
@@ -56,9 +54,7 @@ with the twin about every line of a diff they both computed correctly. `head -40
 
 THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the one archaeology token this file would otherwise drop. `log_step`, `log_error`, `log_info` and `get_repo_root` are the gate's only dependency on the shared bash library, which is what makes the twin cheap to retire.
 
-THREE PLACES THIS IS DELIBERATELY STRONGER, all of them "the gate ran and verified nothing". None can fire on a tree where the exporter works, so none is
-reachable from the differential ledger; they are stated here so the divergence is
-on the record.
+THREE PLACES THIS IS DELIBERATELY STRONGER, all of them "the gate ran and verified nothing". None can fire on a tree where the exporter works, so none is reachable from the differential ledger; they are stated here so the divergence is on the record.
 
   1. THE EXPORTER PRODUCED NOTHING. `npx tsx ... --output X` that exits 0 having
      written no file leaves the twin diffing the committed tree against nothing.
@@ -93,8 +89,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The committed snapshot, relative to the repo root. One spelling; it is both the
-# subject and the thing the fix message tells the reader to regenerate.
+# The committed snapshot, relative to the repo root. One spelling; it is both the subject and the thing the fix message tells the reader to regenerate.
 COMMITTED_REL = "packages/cli/scripts/command-tree.json"
 
 # The two child commands, as the twin spells them. Lists rather than strings because there is no shell here and nothing needs word splitting.
@@ -125,9 +120,7 @@ def _run(argv: list[str], cwd: pathlib.Path) -> int:
 def diff_lines(committed: pathlib.Path, live: pathlib.Path) -> list[str]:
     """`diff a b | head -40 | sed 's/^/    /'`, byte for byte.
 
-    Shelling out to `diff` rather than reaching for difflib is a decision, not an
-    oversight; see the port notes. `diff` exits 1 when the files differ, which is
-    the expected case here and is not an error.
+    Shelling out to `diff` rather than reaching for difflib is a decision, not an oversight; see the port notes. `diff` exits 1 when the files differ, which is the expected case here and is not an error.
     """
     completed = subprocess.run(
         ["diff", str(committed), str(live)],

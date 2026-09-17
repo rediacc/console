@@ -1,8 +1,7 @@
 """`rediacc_ci.quality.release_key_canonical` against its bash twin.
 
-A bash child runs the REAL `.ci/scripts/quality/check-release-key-canonical.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. The twin's own `RELEASE_KEY_ROOT` seam points both
-implementations at the fixture; the twin is copied in anyway, because the
-committed ledger (`.ci/shadow/w7p2-release-key.observations.jsonl`) records a tree id that has to be a claim about BOTH implementations.
+A bash child runs the REAL `.ci/scripts/quality/check-release-key-canonical.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes are compared against the port's. The twin's own `RELEASE_KEY_ROOT` seam points both implementations at the fixture; the twin is copied in anyway, because the committed ledger (`.ci/shadow/w7p2-release-key.observations.jsonl`)
+records a tree id that has to be a claim about BOTH implementations.
 
 EACH SIDE GENERATES ITS OWN THROWAWAY KEY, so the two runs are NOT byte-identical in general: the fingerprint differs. Every fixture below is therefore built so that the controls naming a fingerprint PASS (and are printed as ` ok ...` without the value), and only the two `grep`-counting controls fail. That is what makes a byte comparison meaningful here rather than merely noisy.
 
@@ -66,9 +65,7 @@ def run_both(root: pathlib.Path) -> tuple[tuple[int, str, str], tuple[int, str, 
 @pytest.mark.parametrize(
     ("guards", "calls", "failures", "must_contain"),
     [
-        # THE ASYMMETRY OVER A MISSING FILE. The guard control is a PIPELINE
-        # whose second grep reads an empty stdin and prints "0"; the call control
-        # is a DIRECT grep that never opens a stream and prints nothing. A port that returned 0 for both would disagree on one compared line.
+        # THE ASYMMETRY OVER A MISSING FILE. The guard control is a PIPELINE whose second grep reads an empty stdin and prints "0"; the call control is a DIRECT grep that never opens a stream and prints nothing. A port that returned 0 for both would disagree on one compared line.
         pytest.param(None, 0, 2, "(got '' want '1')", id="no-build-script-at-all"),
         pytest.param(0, 1, 1, "guards that non-zero exit (got '0' want '1')", id="no-guard"),
         pytest.param(2, 0, 2, "guards that non-zero exit (got '2' want '1')", id="two-guards"),

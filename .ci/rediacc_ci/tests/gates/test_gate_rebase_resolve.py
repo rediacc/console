@@ -7,10 +7,8 @@ oracle that wanted bare shas, and unpacked a `(target, why)` return as if it wer
 
 The five kinds are the taxonomy measured across two real rebases of branch 0826-3 on 2026-08-26/27: ten conflicts, one gitlink, six registry unions, two genuine judgement calls.
 
-THE FIXTURE LIBRARY IS DRIVEN, NOT REIMPLEMENTED. `git_fixture_rebase <kind>` and `git_fixture_cleanup <dir>` live in `.ci/scripts/test/lib/git-fixture.sh` and
-build a real repository with a real halted rebase in it; this module calls them
-through `bash -c 'source ...; git_fixture_rebase <kind>'` and reads the directory
-off stdout. Reimplementing a hundred lines of git plumbing in Python would be a second fixture, and two fixtures that are supposed to be one is how the two sides stop testing the same thing.
+THE FIXTURE LIBRARY IS DRIVEN, NOT REIMPLEMENTED. `git_fixture_rebase <kind>` and `git_fixture_cleanup <dir>` live in `.ci/scripts/test/lib/git-fixture.sh` and build a real repository with a real halted rebase in it; this module calls them through `bash -c 'source ...; git_fixture_rebase <kind>'` and reads the directory off stdout. Reimplementing a hundred lines of git plumbing in
+Python would be a second fixture, and two fixtures that are supposed to be one is how the two sides stop testing the same thing.
 
 WHY ONE PYTEST FUNCTION PER KIND rather than the twin's accumulate-and-summarise loop. The twin uses `soft_fail` and a counter because `log_fail` EXITS, and eight independent kinds stopping at the first would hide seven behind one fixture problem. pytest gives that property natively: each case is its own function, so a failure in one leaves the other seven still driven and still
 reported. The twin's `ran < 8` anti-vacuity counter is therefore replaced by something stronger, not dropped: `test_every_kind_ran` asserts the case table itself still holds the eight it is supposed to, so a case deleted from the table is a finding rather than a smaller green.
@@ -82,9 +80,7 @@ def fixture_cleanup(directory: pathlib.Path) -> None:
 def wl_git(directory: pathlib.Path, *args: str) -> harness.RunResult:
     """`python3 wl_git.py <args>` inside the fixture repo, streams MERGED.
 
-    Merged because the twin captures `2>&1` and every needle below is asserted
-    against that one text; splitting them here would change which stream a needle
-    is looked for on.
+    Merged because the twin captures `2>&1` and every needle below is asserted against that one text; splitting them here would change which stream a needle is looked for on.
     """
     return harness.run([sys.executable, str(WL), *args], cwd=directory)
 

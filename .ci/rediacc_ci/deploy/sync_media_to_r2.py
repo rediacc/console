@@ -3,9 +3,8 @@
 
 The UPLOAD direction of the media sync: three `aws s3 sync` calls that push
 `packages/www/public/assets/{tutorials/video,videos,tutorials/audio}` into the
-R2 bucket `rediacc-www-media`. Its download counterpart is `sync-media-from-r2.sh`, ported beside this file as `rediacc_ci.deploy.sync_media_from_r2`. Same bucket, same three prefixes, same
-flag vocabulary; the differences between the two ports are exactly the
-differences between reading a bucket and writing one, and they are named where they occur rather than factored into a shared helper (see the last section).
+R2 bucket `rediacc-www-media`. Its download counterpart is `sync-media-from-r2.sh`, ported beside this file as `rediacc_ci.deploy.sync_media_from_r2`. Same bucket, same three prefixes, same flag vocabulary; the differences between the two ports are exactly the differences between reading a bucket and writing one, and they are named where they occur rather than factored into a
+shared helper (see the last section).
 
 INCREMENTAL BY DESIGN, which is the twin's own headline and the reason there is no "changed files" logic to port: `aws s3 sync` uploads only what is new or whose size/mtime differs, so re-running after re-recording a handful of tutorials pushes those and not the whole 5GB+ tree.
 
@@ -18,9 +17,8 @@ NOTHING HERE REACHES R2 IN A TEST
 for the "one real run" clause and says in as many words that the mocked parity
 ledger is a SEPARATE, achievable piece of work. This is that piece.
 
-THE CALL LOG IS THE PRIMARY EVIDENCE. What this script prints is three `Syncing ...` lines plus a three-line closing recipe, none of it derived from
-what actually moved; the entire observable effect is the argv of the `aws s3
-sync` calls. A port that dropped `--cache-control`, or appended `--delete` in the wrong position, would print byte-identical output and exit 0 while publishing objects with the wrong headers.
+THE CALL LOG IS THE PRIMARY EVIDENCE. What this script prints is three `Syncing ...` lines plus a three-line closing recipe, none of it derived from what actually moved; the entire observable effect is the argv of the `aws s3 sync` calls. A port that dropped `--cache-control`, or appended `--delete` in the wrong position, would print byte-identical output and exit 0 while
+publishing objects with the wrong headers.
 
 -----------------------------------------------------------------------------
 FOUR FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FOUR ARE REPRODUCED
@@ -58,9 +56,7 @@ FOUR FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FOUR ARE REPRODUCED
      closed, with a diagnosis that names the wrong thing, and `os.path.isdir`
      reproduces it exactly.
 
-None is repaired here. This wave's acceptance rule is agreement with the live
-twin; changing what a credential guard accepts, or making a no-op run non-zero,
-is a cutover-box decision rather than a port's.
+None is repaired here. This wave's acceptance rule is agreement with the live twin; changing what a credential guard accepts, or making a no-op run non-zero, is a cutover-box decision rather than a port's.
 
 -----------------------------------------------------------------------------
 THE ONE DIVERGENCE: WHAT `set -u` PRINTS
@@ -117,8 +113,7 @@ ENDPOINT_ENV = "CLOUDFLARE_R2_MEDIA_ENDPOINT"
 AWS_DEFAULT_REGION = "auto"
 
 # The closing recipe (twin :120-124), three `log_info` calls rather than one multi-line message, so it is three `✓ ` lines and the two indented ones keep their two leading spaces. `\$CLOUDFLARE_R2_MEDIA_ENDPOINT` in the twin is an ESCAPED dollar inside double quotes, so it reaches the terminal as a literal `$CLOUDFLARE_R2_MEDIA_ENDPOINT` for the reader to paste, NOT as the endpoint
-# this run used. Reproduced literally; a port that interpolated it would leak
-# the endpoint into a log that is often shared.
+# this run used. Reproduced literally; a port that interpolated it would leak the endpoint into a log that is often shared.
 CLOSING_LINES = (
     "Sync complete. Verify with:",
     "  aws s3 sync --dryrun <local-dir> s3://%s/<prefix>/ --endpoint-url "
@@ -240,9 +235,7 @@ def repo_root() -> str:
 def environment() -> dict[str, str | None]:
     """Every variable this module reads, ONE `os.environ.get` PER NAME.
 
-    NOT `dict(os.environ)`, AND THE DIFFERENCE IS A GATE RATHER THAN A STYLE. `check:ci-python-env-registry` derives a module's declared inputs by walking
-    its AST for literal `os.environ` subscripts, `.get` calls and `in` tests; a
-    read that goes through a materialised copy or a local alias is INVISIBLE to it, and the module then reports zero inputs while depending on three.
+    NOT `dict(os.environ)`, AND THE DIFFERENCE IS A GATE RATHER THAN A STYLE. `check:ci-python-env-registry` derives a module's declared inputs by walking its AST for literal `os.environ` subscripts, `.get` calls and `in` tests; a read that goes through a materialised copy or a local alias is INVISIBLE to it, and the module then reports zero inputs while depending on three.
 
     `None` MEANS UNSET AND `""` MEANS SET-BUT-EMPTY, and the distinction is the whole of fact 3 in the module docstring: `set -u` fires on the first and not on the second, so a helper that folded them together would refuse a run the twin performs.
     """
@@ -287,9 +280,7 @@ def require_endpoint(env: dict[str, str | None]) -> str:
 def sync_args(endpoint: str, *, dry_run: bool, delete: bool) -> list[str]:
     """`SYNC_ARGS` (twin :86-95). ORDER IS OBSERVABLE, so it is pinned.
 
-    Base, then `--dryrun`, then `--delete`, because that is the order the twin
-    appends them in. `aws` does not care; the recorded argv does, and the argv is
-    the evidence this port is judged on. `--cache-control` is ONE element carrying a space (see `CACHE_CONTROL`).
+    Base, then `--dryrun`, then `--delete`, because that is the order the twin appends them in. `aws` does not care; the recorded argv does, and the argv is the evidence this port is judged on. `--cache-control` is ONE element carrying a space (see `CACHE_CONTROL`).
     """
     args = ["--endpoint-url", endpoint, "--cache-control", CACHE_CONTROL, "--no-progress"]
     if dry_run:
@@ -317,8 +308,7 @@ def _run(argv: list[str], env: dict[str, str]) -> None:
 def sync_dir(local_dir: str, remote_prefix: str, args: list[str], env: dict[str, str]) -> bool:
     """`sync_dir` (twin :98-105). True when it uploaded, False when it skipped.
 
-    THE SKIP IS `return 0`, NOT AN ERROR, and nothing downstream counts the Falses. That is fact 1 in the module docstring. The boolean exists so the differential can assert the skip happened without parsing the warning, and
-    so a future cutover has a value to build a floor on; the twin discards it.
+    THE SKIP IS `return 0`, NOT AN ERROR, and nothing downstream counts the Falses. That is fact 1 in the module docstring. The boolean exists so the differential can assert the skip happened without parsing the warning, and so a future cutover has a value to build a floor on; the twin discards it.
 
     `os.path.isdir` FOLLOWS SYMLINKS, exactly as `[[ -d ]]` does, and answers False for a regular file, which is fact 4.
 

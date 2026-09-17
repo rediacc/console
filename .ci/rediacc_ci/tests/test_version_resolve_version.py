@@ -8,9 +8,7 @@ THE ONE BASH-SEMANTICS CASE WORTH A DEDICATED TEST: a tag with more than three d
 directions (a component present, and PATCH bumped on top of it).
 
 K=5 LEDGER: `.ci/shadow/w7p6-resolve-version.observations.jsonl`, recorded
-against a disposable scratch git repo built OUTSIDE this checkout (this repo's
-own working tree is not clean; `shadow-gate.ts --record` refuses a dirty
-tree). See that file's own header for the exact recording commands.
+against a disposable scratch git repo built OUTSIDE this checkout (this repo's own working tree is not clean; `shadow-gate.ts --record` refuses a dirty tree). See that file's own header for the exact recording commands.
 """
 
 from __future__ import annotations
@@ -101,8 +99,7 @@ def test_prerelease_suffix_is_stripped_before_current_and_bump(
 
 
 def test_newest_tag_by_version_sort_wins_not_creation_order(tmp_path: pathlib.Path) -> None:
-    # v2.0.0 is tagged AFTER v10.0.0 so creation order and version order
-    # disagree; both sides must pick the higher version, not the newer tag.
+    # v2.0.0 is tagged AFTER v10.0.0 so creation order and version order disagree; both sides must pick the higher version, not the newer tag.
     repo = _make_repo(tmp_path, tags=["v10.0.0", "v2.0.0"])
     old, new = run_both(repo, "--current")
     assert old == (0, "10.0.0\n", "")

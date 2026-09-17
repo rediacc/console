@@ -245,9 +245,7 @@ describe('sync/pathConverter', () => {
   });
 
   describe('prepareRsyncPaths', () => {
-    // These assertions only exercise the non-Windows branch. The Windows branch
-    // calls windowsToUnixPath and is covered elsewhere; here we just assert that
-    // array and string source inputs both round-trip unchanged on Linux/macOS.
+    // These assertions only exercise the non-Windows branch. The Windows branch calls windowsToUnixPath and is covered elsewhere; here we just assert that array and string source inputs both round-trip unchanged on Linux/macOS.
     it('returns a single string source unchanged', () => {
       const [src, dest] = prepareRsyncPaths('/local/dir/', 'user@host:/remote/');
       expect(src).toBe('/local/dir/');

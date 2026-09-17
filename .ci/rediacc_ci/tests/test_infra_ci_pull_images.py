@@ -22,9 +22,7 @@ while making different calls: a port that pulled `renet` from the hard-coded
 `ghcr.io/rediacc` instead of `$DOCKER_REGISTRY`, or that logged out before the config scrub, prints exactly what a correct one prints. Every case compares the log, and the login case compares the BYTES ON DOCKER'S STDIN as well, because `--password-stdin` is where the token goes and `echo` appends a newline.
 
 THE CREDENTIAL-CLEANUP HAZARD IS PINNED, NOT FIXED.
-`test_a_failing_pull_skips_the_credential_cleanup_on_both_sides` asserts that BOTH sides walk away from a failed pull with no `docker logout` and no config
-scrub. That is the twin's behaviour and the port reproduces it; the test exists
-so that the day someone adds the missing `trap ... EXIT` they have to change this file and read the reason.
+`test_a_failing_pull_skips_the_credential_cleanup_on_both_sides` asserts that BOTH sides walk away from a failed pull with no `docker logout` and no config scrub. That is the twin's behaviour and the port reproduces it; the test exists so that the day someone adds the missing `trap ... EXIT` they have to change this file and read the reason.
 
 ONE NAMED DIVERGENCE, and it is the missing-docker case. The twin has no `require_cmd docker`, so bash itself prints `<script>: line 49: docker: command not found` -- a message naming a line number the port does not have. `test_a_missing_docker_is_127_on_both_sides_with_a_named_text_divergence` asserts the exit STATUS is 127 on both, that both say `command not found`, and that the
 texts differ only in that prefix.
@@ -164,8 +162,7 @@ def _sides(name: str, *, seed=None, **extra: str):
                 old[i],
                 new[i],
             )
-        # Read the config back INSIDE the context manager; the directory is gone
-        # after it.
+        # Read the config back INSIDE the context manager; the directory is gone after it.
         configs = [(b / ".docker" / "config.json") for b in bases]
         blobs = [c.read_text(encoding="utf-8") if c.is_file() else None for c in configs]
         assert blobs[0] == blobs[1], "%s: ~/.docker/config.json diverged:\n twin: %r\n port: %r" % (
@@ -346,9 +343,7 @@ def test_the_subshells_exit_status_is_dockers_own() -> None:
 
 def test_a_failing_pull_skips_the_credential_cleanup_on_both_sides() -> None:
     """THE HAZARD, PINNED. No `trap`, so a failed pull leaves the GHCR
-    credential in `~/.docker/config.json` and the job continues into whatever
-    comes next. Both sides do it; neither is allowed to quietly start being
-    better than the other. Fixing it is a change to the TWIN, out of scope for a
+    credential in `~/.docker/config.json` and the job continues into whatever comes next. Both sides do it; neither is allowed to quietly start being better than the other. Fixing it is a change to the TWIN, out of scope for a
     one-for-one port, and reported to the driver instead."""
     exit_code, stdout, stderr, calls, _ = _sides("pull-fails", FAKE_DOCKER_FAIL_ON="pull")
     assert exit_code == 1

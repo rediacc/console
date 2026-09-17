@@ -99,8 +99,7 @@ export function findRegressions(errors, backlog, fileOf = (e) => e.file, noun = 
     }
   }
 
-  // An entry with NO matching violation this run. Reported separately from the count cases
-  // above because the file may be clean OR gone entirely; either way the entry is dead weight
+  // An entry with NO matching violation this run. Reported separately from the count cases above because the file may be clean OR gone entirely; either way the entry is dead weight
   // and, left in place, silently re-authorises ${allowed} future violations in that path.
   for (const [file, allowed] of Object.entries(backlog)) {
     if (!byFile.has(file)) {
@@ -135,9 +134,8 @@ export function writeBacklog(baselinePath, errors, fileOf = (e) => e.file) {
   // Guarded HERE rather than in each caller because this is the single point all four share, and because one of them was under another session's hand when this was written. Growth in a COUNT table wears two faces and a set-only check catches one: a file absent
   // from the old table, and a file whose allowance goes UP.
   //
-  // WHY process.exit RATHER THAN A THROW OR A RETURN CODE. Callers destructure the return
-  // value and log it; none of them can act on a refusal, and none should have to learn to.
-  // A throw would surface as an unhandled stack trace, which reads as a flake rather than as a decision. Exiting non-zero with the reason printed is the behaviour every other gate in this repo already has, and it needs no change in any caller.
+  // WHY process.exit RATHER THAN A THROW OR A RETURN CODE. Callers destructure the return value and log it; none of them can act on a refusal, and none should have to learn to. A throw would surface as an unhandled stack trace, which reads as a flake rather than as a decision. Exiting non-zero with the reason printed is the behaviour every other gate in this repo already has, and
+  // it needs no change in any caller.
   const had = fs.existsSync(baselinePath);
   const previous = had ? loadBacklog(baselinePath) : {};
   const verdict = writeBaselineVerdict({

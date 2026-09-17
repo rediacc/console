@@ -51,12 +51,10 @@ USAGE = (
 # The only efforts the CLI accepts, as one string rather than a list, because the twin interpolates this exact CSV into both notice messages and a reader greps the log for it.
 EFFORT_ALLOWED = "low,medium,high,xhigh,max"
 
-# The dispatch input's way of saying "do not pass --effort at all". NOT a member
-# of EFFORT_ALLOWED; see the docstring.
+# The dispatch input's way of saying "do not pass --effort at all". NOT a member of EFFORT_ALLOWED; see the docstring.
 EFFORT_DEFAULT = "default"
 
-# Turn budgets. `fix` rounds get more because they iterate against CI; a
-# review-response round answers a bounded list of threads.
+# Turn budgets. `fix` rounds get more because they iterate against CI; a review-response round answers a bounded list of threads.
 TURNS_DEFAULT = 60
 TURNS_FIX = 80
 MODE_FIX = "fix"
@@ -79,9 +77,7 @@ def resolve_effort(effort: str, effort_var: str) -> tuple[str, str, list[str]]:
 
     PURE, and separated from `main` exactly so the differential can drive the whole input cross-product without a subprocess: two sources, each of which can be absent, empty, `default`, a member, or junk, is 25 combinations, and every one of them has a defined answer here.
 
-    The notices are RETURNED rather than printed so the caller decides the
-    stream. The twin puts them on stdout; see the docstring for why that is
-    preserved rather than corrected.
+    The notices are RETURNED rather than printed so the caller decides the stream. The twin puts them on stdout; see the docstring for why that is preserved rather than corrected.
     """
     notices: list[str] = []
     resolved = ""

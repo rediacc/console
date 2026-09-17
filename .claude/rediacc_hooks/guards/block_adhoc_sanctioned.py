@@ -14,9 +14,7 @@ PORT NOTE ON THE FORK THAT IS NOT ONE. The bash spells the lookup as `python3 -c
     guard exited 0 for every command in both directions -- a guard that cannot
     fail. Caught only because the controls assert the BLOCK direction too.
 
-Here the registry is imported into this interpreter instead, so there is no
-argument to misplace; what survives from that finding is the shape of the
-failure it names, which is why every step below still fails open and why the differential asserts the block direction on its own cases.
+Here the registry is imported into this interpreter instead, so there is no argument to misplace; what survives from that finding is the shape of the failure it names, which is why every step below still fails open and why the differential asserts the block direction on its own cases.
 """
 
 import importlib.util

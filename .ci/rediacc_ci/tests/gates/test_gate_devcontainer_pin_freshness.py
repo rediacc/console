@@ -19,14 +19,11 @@ The gate therefore takes a Dockerfile PATH and the test hands it a copy.
 WHERE THE PORT DIFFERS, and it removes a whole class of coupling. The twin builds ONE fixture directory at file scope and calls `restore_dockerfile` between the two `--upgrade` cases, because the second must not see the first one's `9999.1.0`. Here every case builds its own fixture set under pytest's `tmp_path`, so there is nothing to restore and no ordering between cases at all:
 an `--upgrade` case cannot leave a mutated Dockerfile for its neighbour, because its neighbour has a different one. The `chmod u+w` the twin needs survives for the same reason it exists there -- `shutil.copy2` copies the source's mode, and `--upgrade` must be able to rewrite.
 
-WHY THE ONE-HOUR TIMESTAMP IS COMPUTED HERE. The twin spells it
-`date -u -d '1 hour ago'` with a BSD `date -u -v-1H` fallback; the port uses
+WHY THE ONE-HOUR TIMESTAMP IS COMPUTED HERE. The twin spells it `date -u -d '1 hour ago'` with a BSD `date -u -v-1H` fallback; the port uses
 `datetime.now(UTC) - timedelta(hours=1)` and formats it with the same
 `%Y-%m-%dT%H:%M:%SZ`. Same instant, same wire format, and no dependence on which `date` the host ships -- which is the exact portability trap `.ci/media/portable.sh` exists for elsewhere in this tree.
 
-NO `xdist_group`. Every case owns its whole fixture set under `tmp_path` and the
-tracked Dockerfile is only ever READ; nothing is bound and no module global is
-mutated.
+NO `xdist_group`. Every case owns its whole fixture set under `tmp_path` and the tracked Dockerfile is only ever READ; nothing is bound and no module global is mutated.
 """
 
 import datetime

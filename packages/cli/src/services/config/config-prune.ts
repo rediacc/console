@@ -282,9 +282,7 @@ export async function analyzeConfigPrune(
   const clone = JSON.parse(JSON.stringify(config)) as RdcConfig;
   const graceDays = options.graceDays ?? clone.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 
-  // Apply archive removal to the clone FIRST so cert anchors are computed
-  // against the post-prune resource set; otherwise certs whose anchor is in
-  // expiredArchives would be classified as live and survive the run.
+  // Apply archive removal to the clone FIRST so cert anchors are computed against the post-prune resource set; otherwise certs whose anchor is in expiredArchives would be classified as live and survive the run.
   const arch = wantArchives
     ? mutateAndExtractArchives(clone, graceDays, Boolean(options.purgeArchived))
     : { expired: [] as ArchivedRepository[], inGrace: [] as ArchiveGraceEntry[] };

@@ -299,9 +299,7 @@ def test_the_floor_is_a_reference_and_not_a_copy():
 def test_the_port_carries_no_phrase_table():
     """A tenth copy of the banned-phrase list must not appear here.
 
-    `test_blocker_implementations.py:207` fails by name on any TRACKED file
-    carrying ten or more of them as quoted literals; this asserts it locally so
-    the failure arrives when the file is written rather than when it is added.
+    `test_blocker_implementations.py:207` fails by name on any TRACKED file carrying ten or more of them as quoted literals; this asserts it locally so the failure arrives when the file is written rather than when it is added.
     """
     text = pathlib.Path(paths.from_root(PORT)).read_text(encoding="utf-8")
     hits = sum(
@@ -310,8 +308,7 @@ def test_the_port_carries_no_phrase_table():
         if any(q + phrase + q in text for q in ("'", '"', "`"))
     )
     assert hits < 10, "the port carries %d canonical phrase(s) as quoted literals" % hits
-    # PROSE MAY NAME THE MIRROR; CODE MAY NOT RE-DECLARE IT. The port's docstring
-    # explains at length why the twin keeps `LOW_EFFORT_BLOCKER_PATTERNS` and why that argument does not travel, so a bare substring test fails on the explanation. What must not exist is an ASSIGNMENT.
+    # PROSE MAY NAME THE MIRROR; CODE MAY NOT RE-DECLARE IT. The port's docstring explains at length why the twin keeps `LOW_EFFORT_BLOCKER_PATTERNS` and why that argument does not travel, so a bare substring test fails on the explanation. What must not exist is an ASSIGNMENT.
     for name in ("LOW_EFFORT_BLOCKER_PATTERNS", "LOW_EFFORT_BLOCKER_SUBSTRINGS"):
         assert ("%s = " % name) not in text, "the port re-declares %s" % name
         assert ("%s: " % name) not in text, "the port re-declares %s" % name
@@ -429,9 +426,7 @@ def test_the_twin_leaks_a_python_traceback_and_the_port_cannot(tmp_path):
 def test_the_broken_reader_raises_rather_than_returning_empty_tables(tmp_path):
     """The port's in-process signal for the twin's `return 1`.
 
-    Every bash caller invokes `parse_blockered_list` bare, under the `errexit` those gates run with, so `return 1` takes the script down. An exception is
-    the same contract; returning empty tables would be the vacuity the twin's own
-    "Refusing to report zero entries" line exists to refuse.
+    Every bash caller invokes `parse_blockered_list` bare, under the `errexit` those gates run with, so `return 1` takes the script down. An exception is the same contract; returning empty tables would be the vacuity the twin's own "Refusing to report zero entries" line exists to refuse.
     """
     target = tmp_path / "bad-utf8"
     target.write_bytes(b"# BLOCKER: %s\n\xff\xfe-entry\n" % GOOD.encode())
