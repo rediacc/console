@@ -32,7 +32,7 @@ A plan about eliminating duplication had duplicated an existing plan. The rule t
 - [x] Add a per-family COUNT floor to the pair registry so an unregistered new sibling fails rather than going quiet
 - [x] Write the shape-cluster diff as a reusable script: normalise every changed line to its shape, cluster, diff per-cluster counts against HEAD
 - [x] Wire the missing-proof refusal into the stop judge, matching the enforcement shape wl_classsweep.py already uses
-- [ ] Wire the same refusal into the pre-bash commit, push and gh guards, so the proof is demanded where the change leaves the tree
+- [x] Wire the same refusal into the pre-bash commit, push and gh guards, so the proof is demanded where the change leaves the tree
 - [ ] Add the pre-bash staged-files-only duplication probe against a cached index, budget 200ms, failing OPEN and LOUD when the cache is stale
 - [ ] Record the batch-size-scales-with-proof rule in docs/agent-reference/TRAPS.md with a Trap-Id and an Enforced-By pointer
 The two family-widening boxes this plan started with are GONE rather than ticked-by-doing, and that is the fold. `agent/PLAN-extension-shaped-matchers.md` owns commit 3, has re-checked its sequencing three times, and has deliberately not started it; carrying a duplicate box here would be this plan committing the defect it was written to detect. The operator's question about
