@@ -37,7 +37,8 @@ OTLP endpoints use per-region Basic auth. Traefik's basicauth middleware on Allo
 | Renet          | Received as `REDIACC_OTLP_USER` / `REDIACC_OTLP_PASS` env vars, injected by the CLI when spawning `renet execute` via SSH. Renet never contacts the account server itself — it's the CLI's job to fetch and pass through. |
 | Account Server | Read from the `OTLP_CLIENT_CREDENTIALS` Worker secret on each regional deployment. |
 
-**Default-deny**: if the regional worker has no `OTLP_CLIENT_CREDENTIALS` secret, the fetch fails, or the CLI is running with `REDIACC_TELEMETRY_DISABLED=1` / `CI=...`, telemetry is completely disabled — no unauthenticated requests, no metadata leakage. When the user opts out via env var, the CLI skips the credential fetch AND injects `REDIACC_TELEMETRY_DISABLED=1` into the remote renet environment via SSH, so the remote renet process also takes its default-deny branch.
+**Default-deny**: if the regional worker has no `OTLP_CLIENT_CREDENTIALS` secret, the fetch fails, or the CLI is running with `REDIACC_TELEMETRY_DISABLED=1` / `CI=...`, telemetry is completely disabled — no unauthenticated requests, no metadata leakage. When the user opts out via env var, the CLI skips the credential fetch AND injects `REDIACC_TELEMETRY_DISABLED=1` into the remote
+renet environment via SSH, so the remote renet process also takes its default-deny branch.
 
 ### Rotation
 

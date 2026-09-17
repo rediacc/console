@@ -1,14 +1,9 @@
 # 07. The master checklist
 
-One checklist, for every box in every one of the twelve workstreams. It is short on purpose:
-these are the questions that have actually caught damage in this program, not a general theory
-of good practice.
+One checklist, for every box in every one of the twelve workstreams. It is short on purpose: these are the questions that have actually caught damage in this program, not a general theory of good practice.
 
-**It contains no phase list and no status column, and that is deliberate.** The phase list
-lives in the plan; a second copy here would be a hand-maintained artifact that goes stale, which
-is the exact defect [07-tooling-decisions.md](07-tooling-decisions.md) T-5 exists to abolish.
-Status is answered by running something, never by reading a tick somebody typed. Where a row
-below can be answered by a command, the command is given and the command is the answer.
+**It contains no phase list and no status column, and that is deliberate.** The phase list lives in the plan; a second copy here would be a hand-maintained artifact that goes stale, which is the exact defect [07-tooling-decisions.md](07-tooling-decisions.md) T-5 exists to abolish. Status is answered by running something, never by reading a tick somebody typed. Where a row below can
+be answered by a command, the command is given and the command is the answer.
 
 ---
 
@@ -94,18 +89,13 @@ below can be answered by a command, the command is given and the command is the 
 
 ## The four ways a green has lied in this program
 
-Kept here because each one was found by asking what the instrument would print if it had not
-worked, and none of them was found by reading the code.
+Kept here because each one was found by asking what the instrument would print if it had not worked, and none of them was found by reading the code.
 
 1. **The check that cannot fail.** `--list` returned 0 unconditionally, so a provider that
-   scanned the tree and found nothing printed `gates 0` and exited clean. Fixed by refusing a
-   vacuous provider.
+scanned the tree and found nothing printed `gates 0` and exited clean. Fixed by refusing a vacuous provider.
 2. **The comparison that only inspects survivors.** `--diff-snapshot` looped over the LIVE
-   providers, so a provider deleted from the code was never compared to its record at all.
-   Fixed by comparing over the union.
+providers, so a provider deleted from the code was never compared to its record at all. Fixed by comparing over the union.
 3. **The count that cannot see a swap.** A floor of 300 passes over 388 rows that lost 88, and
-   count-equality passes when 88 are swapped for 88 others. Fixed by recording membership.
+count-equality passes when 88 are swapped for 88 others. Fixed by recording membership.
 4. **The instrument broken by its own workaround.** A `.git/index` copy taken while another
-   session was writing came out with 12 entries instead of 4,720, and running `ci:quick` under
-   it turned 45 gates red at once. That has the shape of a tree-wide regression and is not one.
-   Validate the copy against the real index before using it (08 section 5b).
+session was writing came out with 12 entries instead of 4,720, and running `ci:quick` under it turned 45 gates red at once. That has the shape of a tree-wide regression and is not one. Validate the copy against the real index before using it (08 section 5b).

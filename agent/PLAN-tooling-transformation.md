@@ -1,36 +1,22 @@
 # PLAN: Tooling Transformation
-Status: ready
-Owner: 8f55d4f0
-Updated: 2026-09-07
+Status: ready Owner: 8f55d4f0 Updated: 2026-09-07
 
-ONE plan, not two. Round 1 was drafted into `~/.claude/plans/` where nothing
-tracked it; Round 2 was then written as a SECOND document, which made it worse.
-Both are now here, in one tracked file: Round 2 is the live plan, Round 1 is
-kept below in full because its 83 ticked boxes are the
-only record of what was actually done and why.
+ONE plan, not two. Round 1 was drafted into `~/.claude/plans/` where nothing tracked it; Round 2 was then written as a SECOND document, which made it worse. Both are now here, in one tracked file: Round 2 is the live plan, Round 1 is kept below in full because its 83 ticked boxes are the only record of what was actually done and why.
 
-Round 1's 48 still-open boxes are de-checkboxed on purpose. Every one is
-carried by a Round 2 box above, and leaving both checked would count the same
-work twice in `.ci/config/plan-boxes.json`. Their text is preserved verbatim.
+Round 1's 48 still-open boxes are de-checkboxed on purpose. Every one is carried by a Round 2 box above, and leaving both checked would count the same work twice in `.ci/config/plan-boxes.json`. Their text is preserved verbatim.
 
-READ THE ROUND 1 NUMBERS WITH CARE: fifteen counts it pins were re-measured on
-2026-09-07 and were stale, and four of its premises were false. The corrections
-are in the Round 2 section; where the two disagree, Round 2 was measured.
+READ THE ROUND 1 NUMBERS WITH CARE: fifteen counts it pins were re-measured on 2026-09-07 and were stale, and four of its premises were false. The corrections are in the Round 2 section; where the two disagree, Round 2 was measured.
 
 ## Read this first: three axes, never collapsed
 
-The programme's headline was "quality gates ported: 77 of 77 (100%)". That number is true and
-it is not progress. It describes artifacts existing. Every workstream reports three numbers:
+The programme's headline was "quality gates ported: 77 of 77 (100%)". That number is true and it is not progress. It describes artifacts existing. Every workstream reports three numbers:
 
 - **PORTED** a Python twin exists
 - **LIVE** CI actually invokes it
 - **DELETED** the bash twin is gone
 
-For the `.ci` quality gates those are **78 / 0 / 0**. Zero references to `rediacc_ci/quality`
-exist in `package.json`, `scripts/ci-runner/manifest.ts`, `.github/workflows/ci-quality.yml` or
-`scripts/ci-runner/gates.lock.json`. What CI runs is 69 bash gates plus 43 Python gates that
-were never part of the port. That is the design (invariant 5 forbids deleting a twin in the
-change that ports it), but "100%" as a headline reads as finished, and it is not.
+For the `.ci` quality gates those are **78 / 0 / 0**. Zero references to `rediacc_ci/quality` exist in `package.json`, `scripts/ci-runner/manifest.ts`, `.github/workflows/ci-quality.yml` or `scripts/ci-runner/gates.lock.json`. What CI runs is 69 bash gates plus 43 Python gates that were never part of the port. That is the design (invariant 5 forbids deleting a twin in the change
+that ports it), but "100%" as a headline reads as finished, and it is not.
 
 ---
 
@@ -58,19 +44,14 @@ Cite the command, not the number. A box that pins a count is wrong by constructi
 | Plan boxes ticked | 81 of 131 | -- |
 | Milestones met | **2 of 12** (M2, M4) | -- |
 
-**The honest headline: 0 of 521 bash files deleted, 23% twinned, 2 of 12 milestones.** The 62%
-box figure measures drafting, not shipping. By eventual-Python volume the programme is roughly
-41-55% through; by deletion it is at zero.
+**The honest headline: 0 of 521 bash files deleted, 23% twinned, 2 of 12 milestones.** The 62% box figure measures drafting, not shipping. By eventual-Python volume the programme is roughly 41-55% through; by deletion it is at zero.
 
 ---
 
 ## M-1: the wave is unlanded, and it precedes everything
 
-Branch `0906-1` (upstream `origin/tooling-transformation-w0`) is **115 commits ahead of
-origin/main and 0 behind**, **1,198 files changed, +174,362 / -25,205**, with **no open PR**
-(`gh pr list --state open` returns `[]`). Every measurement above describes a tree nobody has
-reviewed or merged. Land it first: the longer it sits, the worse the merge, and every number
-here drifts under it.
+Branch `0906-1` (upstream `origin/tooling-transformation-w0`) is **115 commits ahead of origin/main and 0 behind**, **1,198 files changed, +174,362 / -25,205**, with **no open PR** (`gh pr list --state open` returns `[]`). Every measurement above describes a tree nobody has reviewed or merged. Land it first: the longer it sits, the worse the merge, and every number here drifts
+under it.
 
 ---
 
@@ -102,76 +83,36 @@ Nine pinned counts were stale, four premises false, three prerequisites missing.
 
 ### P-A. A header on a port is a CUTOVER, not a registration
 
-`derivedId()` (`scripts/lib/gate-header.ts:235-238`) maps `.ci/rediacc_ci/quality/npmrc.py` to
-`check:ci-npmrc`, the id its live bash twin already owns (`package.json:121`).
-**CORRECTED 2026-09-07 BY MEASUREMENT: the split is 59 colliding / 18 not, NOT "all 77,
-zero do not".** Two independent runs of `derivedId()` over `.ci/rediacc_ci/quality/*.py`
-agree on it. The overstatement is worth keeping visible because the CONCLUSION survives it
-while the obvious go/no-go test does NOT: an agent told "all of them collide" writes no
-header, but an agent told "18 are free" needs to know that those 18 are ALSO unwritable, for
-three different reasons. Seven have twins under an ABBREVIATED id `derivedId` never produces
-(`label_references` -> `check:ci-label-refs`, `no_app_admin_perm` -> `check:ci-app-admin-perm`,
-and five more), so they look free to any lock-keyed grep. Nine are invoked straight from a
-workflow with no `package.json` key at all, a registration shape gate-bind's verifier does not
-model. Two are referenced nowhere.
+`derivedId()` (`scripts/lib/gate-header.ts:235-238`) maps `.ci/rediacc_ci/quality/npmrc.py` to `check:ci-npmrc`, the id its live bash twin already owns (`package.json:121`). **CORRECTED 2026-09-07 BY MEASUREMENT: the split is 59 colliding / 18 not, NOT "all 77, zero do not".** Two independent runs of `derivedId()` over `.ci/rediacc_ci/quality/*.py` agree on it. The overstatement is
+worth keeping visible because the CONCLUSION survives it while the obvious go/no-go test does NOT: an agent told "all of them collide" writes no header, but an agent told "18 are free" needs to know that those 18 are ALSO unwritable, for three different reasons. Seven have twins under an ABBREVIATED id `derivedId` never produces (`label_references` -> `check:ci-label-refs`,
+`no_app_admin_perm` -> `check:ci-app-admin-perm`, and five more), so they look free to any lock-keyed grep. Nine are invoked straight from a workflow with no `package.json` key at all, a registration shape gate-bind's verifier does not model. Two are referenced nowhere.
 
-**AND THE AUTHORITY IS `package.json`, NOT THE LOCK.** `release_state.py` derives
-`check:ci-release-state`, which is ABSENT from `gates.lock.json` and PRESENT in
-`package.json`. A go/no-go test of "confirm the id is absent from the lock" passes it and
-produces a red gate. That test was mine, and it was wrong.
+**AND THE AUTHORITY IS `package.json`, NOT THE LOCK.** `release_state.py` derives `check:ci-release-state`, which is ABSENT from `gates.lock.json` and PRESENT in `package.json`. A go/no-go test of "confirm the id is absent from the lock" passes it and produces a red gate. That test was mine, and it was wrong.
 
-`gate-bind`'s check arm is fail-closed on all of this. The binder already scans the
-package (`scripts/gate-bind.ts:98`, `inScope` at `:201-202`, self-control at `:1069`), so this is not a
-tooling gap -- it means the 78 headers cannot land as a cheap preparatory box. **They ARE
-W7 P4 for the quality tree**, one atomic commit per gate. This is the largest re-ordering here.
+`gate-bind`'s check arm is fail-closed on all of this. The binder already scans the package (`scripts/gate-bind.ts:98`, `inScope` at `:201-202`, self-control at `:1069`), so this is not a tooling gap -- it means the 78 headers cannot land as a cheap preparatory box. **They ARE W7 P4 for the quality tree**, one atomic commit per gate. This is the largest re-ordering here.
 
 ### P-B. A gate cannot declare `env:` -- or an extra `if:` conjunct
 
-`scripts/ci-runner/gate-spec.ts` has no `env` field (complete list: noProfile, id, run, gate,
-needs, mutex, reads, weight, heavy, paths, slow, qualityGateTest, leaves, ci) and
-`emitStep` (`scripts/gate-bind.ts:408-419`) hardcodes
-`if: ${{ !cancelled() && steps.${guard}.outcome == 'success' }}` with no extension point.
-**Six gate files already carry the literal blocker string `gate-bind cannot emit one`** and sit
-at `emit: false` for that reason alone; ~14 steps carry an extra `if:` conjunct. All 26 `env:`
-blocks sit outside the regions, which is why 126 of 276 steps are hand-written. Fixing `env`
-alone leaves those unshardable. This is W2.4's missing `reads?: string[]` recurring, and it
-violates the programme's own acceptance test at `docs/ci-overhaul/08-driver-contract.md:377-385`.
+`scripts/ci-runner/gate-spec.ts` has no `env` field (complete list: noProfile, id, run, gate, needs, mutex, reads, weight, heavy, paths, slow, qualityGateTest, leaves, ci) and `emitStep` (`scripts/gate-bind.ts:408-419`) hardcodes `if: ${{ !cancelled() && steps.${guard}.outcome == 'success' }}` with no extension point. **Six gate files already carry the literal blocker string
+`gate-bind cannot emit one`** and sit at `emit: false` for that reason alone; ~14 steps carry an extra `if:` conjunct. All 26 `env:` blocks sit outside the regions, which is why 126 of 276 steps are hand-written. Fixing `env` alone leaves those unshardable. This is W2.4's missing `reads?: string[]` recurring, and it violates the programme's own acceptance test at
+`docs/ci-overhaul/08-driver-contract.md:377-385`.
 
 Two further holes in the same machinery:
 - `scripts/gate-bind.ts:1567-1569` filters `dropped` to `claimed` and refuses only on `claimed`. Bare
-  `dropped` is never printed on the write path and never asserted empty -- the 2026-09-05
-  four-deleted-steps shape, still open.
+`dropped` is never printed on the write path and never asserted empty -- the 2026-09-05 four-deleted-steps shape, still open.
 - **Nothing in the tree checks a step's `env:` at all.** `scripts/gates/check-ci-parity.ts:29` states as a
-  design rule that an `env:` value is not an invocation. Strip `DOCKERHUB_TOKEN` from
-  `.github/workflows/ci-quality.yml:1159` in a scratch copy today and the whole battery stays green.
+design rule that an `env:` value is not an invocation. Strip `DOCKERHUB_TOKEN` from `.github/workflows/ci-quality.yml:1159` in a scratch copy today and the whole battery stays green.
 
 ### P-C. 142 of the 521 files are named by no plan box
 
-**VERIFIED INDEPENDENTLY 2026-09-07, and the first attempt to check it was WRONG in the
-plan's favour.** Sampling the directories this section lists as examples gives 99, not 142,
-which looks like a refutation and is not: the set is the COMPLEMENT, so it also holds
-`.ci/scripts/test` (32 files, `run-all.sh` among them) which no example directory names.
-Computing it properly -- baseline 521, minus the quality twins, the gate tests, deploy,
-release, the bash libs and the `.claude` trees, all of which a box does name -- leaves
-**142 exactly**. Recorded because the narrow sample is the check a hurried reader would run,
-and it would have produced a confident false correction.
+**VERIFIED INDEPENDENTLY 2026-09-07, and the first attempt to check it was WRONG in the plan's favour.** Sampling the directories this section lists as examples gives 99, not 142, which looks like a refutation and is not: the set is the COMPLEMENT, so it also holds `.ci/scripts/test` (32 files, `run-all.sh` among them) which no example directory names. Computing it properly --
+baseline 521, minus the quality twins, the gate tests, deploy, release, the bash libs and the `.claude` trees, all of which a box does name -- leaves **142 exactly**. Recorded because the narrow sample is the check a hurried reader would run, and it would have produced a confident false correction.
 
-**29,057 lines, 22% of the backlog**, unexamined since the baseline was generated today:
-`.ci/scripts/test` non-gate infra 32, `ci` 17, `build` 17, `autopilot` 16, `infra` 11,
-`private` 9, `security` 9, `housekeeping` 6, `review` 4, `version` 4, `.ci/docker` 8, `setup` 3,
-`env`/`pr`/`signal` 3, `.ci/bootstrap.sh`, `.ci/config/constants.sh`,
-`.claude/lib/standing-orders-brief.sh`.
+**29,057 lines, 22% of the backlog**, unexamined since the baseline was generated today: `.ci/scripts/test` non-gate infra 32, `ci` 17, `build` 17, `autopilot` 16, `infra` 11, `private` 9, `security` 9, `housekeeping` 6, `review` 4, `version` 4, `.ci/docker` 8, `setup` 3, `env`/`pr`/`signal` 3, `.ci/bootstrap.sh`, `.ci/config/constants.sh`, `.claude/lib/standing-orders-brief.sh`.
 
-**A new shim is illegal.** `.ci/scripts/quality/check_language_policy.py:143` sets `SHIM_MAX_LINES = 1`. The two
-existing shims are 127 and 145 lines and survive only because both are grandfathered INSIDE the
-baseline; any new one is an addition that `write_verdict` (`:441`) refuses even when the total
-shrinks. Only **3 files repo-wide** have a one-line effective body. So the allowlist is not an
-escape route: **~500 of the 521 must be deleted, not exempted.** Defensible exemptions are the
-chicken-and-egg and container-entrypoint classes -- `.ci/bootstrap.sh` (395 lines; it exists
-because these hosts have no pip, uv or pytest), the five `.ci/docker` entrypoints, and
-`.ci/config/constants.sh`. Roughly 8 files. **The allowlist has no slot for a 395-line
-exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:` entry, or add
-a third kind. Naming it now avoids an unresolvable red at the strict flip.
+**A new shim is illegal.** `.ci/scripts/quality/check_language_policy.py:143` sets `SHIM_MAX_LINES = 1`. The two existing shims are 127 and 145 lines and survive only because both are grandfathered INSIDE the baseline; any new one is an addition that `write_verdict` (`:441`) refuses even when the total shrinks. Only **3 files repo-wide** have a one-line effective body. So the
+allowlist is not an escape route: **~500 of the 521 must be deleted, not exempted.** Defensible exemptions are the chicken-and-egg and container-entrypoint classes -- `.ci/bootstrap.sh` (395 lines; it exists because these hosts have no pip, uv or pytest), the five `.ci/docker` entrypoints, and `.ci/config/constants.sh`. Roughly 8 files. **The allowlist has no slot for a 395-line
+exemption** -- either move `bootstrap.sh` into `.ci/bootstrap/` and use a `tree:` entry, or add a third kind. Naming it now avoids an unresolvable red at the strict flip.
 
 ---
 
@@ -6199,23 +6140,19 @@ W9 P2.0 -> W9 P2  LAST, alone in its wave
 
 **Why `.github/workflows/**` goes W8 P1 -> W3 P3 -> W7 P4, in that order:**
 1. W8 P1's drain deletes `workflow_call` inputs, and ~14 emitted-class steps carry `if:`
-   conjuncts referencing `inputs.external_quality` / `inputs.media_quality`. A1's `when` field
-   must be declared against the FINAL input set or the declarations are wrong the moment W8 lands.
+conjuncts referencing `inputs.external_quality` / `inputs.media_quality`. A1's `when` field must be declared against the FINAL input set or the declarations are wrong the moment W8 lands.
 2. W8 P1 is days; W3 P3 and W7 P4 are weeks. Taking the two-day job first costs the rewrite two
-   days; taking it second costs W8 P1 a fortnight during which nobody may touch the secret graph.
+days; taking it second costs W8 P1 a fortnight during which nobody may touch the secret graph.
 3. B2 is the cheapest possible base for W7 P4's 348 flips -- after it, a flip is a header edit
-   plus one `--write`, mechanically verified, with A2's `dropped` guard live.
+plus one `--write`, mechanically verified, with A2's `dropped` guard live.
 
-**Other hard constraints:** P-B before W3 P3 and W2.3 (both run a `--write` first, and a `--write`
-today re-strips 11 env lines). P-A before W7 P4 -- it IS W7 P4. W12 P2.7a and P2.7b before the
-compaction wave. W12 P3.3 and P3.4b after it. W7 P5's deletions last. W9 P2 last and alone.
+**Other hard constraints:** P-B before W3 P3 and W2.3 (both run a `--write` first, and a `--write` today re-strips 11 env lines). P-A before W7 P4 -- it IS W7 P4. W12 P2.7a and P2.7b before the compaction wave. W12 P3.3 and P3.4b after it. W7 P5's deletions last. W9 P2 last and alone.
 
 ---
 
 ## Driver-only collision map
 
-One writer in flight programme-wide. A writer agent authors a PATCH FRAGMENT; the driver applies
-it in the same commit as the gate file (invariant 13).
+One writer in flight programme-wide. A writer agent authors a PATCH FRAGMENT; the driver applies it in the same commit as the gate file (invariant 13).
 
 | File | Claimants | Rule |
 |---|---|---|
@@ -6252,15 +6189,10 @@ it in the same commit as the gate file (invariant 13).
 | T-DOCS | ~35 | W12 P2.8 (~14, calendar-driven); W9 P2 + P2.0 (4.5, but whole-wave exclusivity) |
 | **Total** | **~125-135 agent-sessions** | |
 
-**Cheapest high-value boxes, in order:** A2 (three files; closes the hole through which `--write`
-deleted four steps and stripped 11 env lines, neither catchable today); W8 P4 (the code exists,
-proven, and needs consumers); W9 P2.0 (turns a 15.5 KB document into an enforced partition and
-closes the layout-admission gap); U4 (the only instrument that would catch a port that shadows
+**Cheapest high-value boxes, in order:** A2 (three files; closes the hole through which `--write` deleted four steps and stripped 11 env lines, neither catchable today); W8 P4 (the code exists, proven, and needs consumers); W9 P2.0 (turns a 15.5 KB document into an enforced partition and closes the layout-admission gap); U4 (the only instrument that would catch a port that shadows
 green and is then forgotten).
 
-**Genuinely operator-blocked, three boxes only:** W0.0-B (mint), W0.1 (transitively), W8 P5's
-seeding clause. Plus W11 P6a and U2, which need an operator decision on `private/account`'s
-512-line lockfile deletion. Everything else is merely unstarted.
+**Genuinely operator-blocked, three boxes only:** W0.0-B (mint), W0.1 (transitively), W8 P5's seeding clause. Plus W11 P6a and U2, which need an operator decision on `private/account`'s 512-line lockfile deletion. Everything else is merely unstarted.
 
 ---
 
@@ -6270,9 +6202,11 @@ Status: READY. Twelve workstreams drafted by Plan agents, attacked by two advers
 
 ## Context
 
-The tooling surface is about 245k lines: `.ci/` 122k (91% bash), `.claude/` 62k, `scripts/` 52k TypeScript, `eslint-rules/` 6.4k JavaScript, and a 2,640-line `run.sh`. Discovery found three verbatim duplications and hundreds of copied helpers, five divergent tool-install lists, a half-built gate registry, a GitHub quality tier that runs 131 gate tests in one step and is floored by a single 785 s hook suite, 1,014 environment variable names across ten sources of truth, Linux-only bash with four live macOS bugs, sixteen allow/block lists at the repo root read by cwd-relative code, and an `agent/` history whose pointers mostly do not resolve.
+The tooling surface is about 245k lines: `.ci/` 122k (91% bash), `.claude/` 62k, `scripts/` 52k TypeScript, `eslint-rules/` 6.4k JavaScript, and a 2,640-line `run.sh`. Discovery found three verbatim duplications and hundreds of copied helpers, five divergent tool-install lists, a half-built gate registry, a GitHub quality tier that runs 131 gate tests in one step and is floored by
+a single 785 s hook suite, 1,014 environment variable names across ten sources of truth, Linux-only bash with four live macOS bugs, sixteen allow/block lists at the repo root read by cwd-relative code, and an `agent/` history whose pointers mostly do not resolve.
 
-Goal: one enforced language rule, one shared Python core, a declaration-driven gate registry that emits both the local runner input and the CI shard matrix, a bootstrap that installs everything hooks and gates need, centralized environment with Bitwarden as the only credential path, an `agent/` history that is trustworthy and pushed to agents rather than remembered, and measurable parallelism gains. Testing and parallelization are the top priorities. Implementation runs under ultracode: a root driver, ten sub-drivers, agents in worktrees.
+Goal: one enforced language rule, one shared Python core, a declaration-driven gate registry that emits both the local runner input and the CI shard matrix, a bootstrap that installs everything hooks and gates need, centralized environment with Bitwarden as the only credential path, an `agent/` history that is trustworthy and pushed to agents rather than remembered, and measurable
+parallelism gains. Testing and parallelization are the top priorities. Implementation runs under ultracode: a root driver, ten sub-drivers, agents in worktrees.
 
 ## Measured baseline (2026-09-06, branch point c6d3af163)
 
@@ -6310,22 +6244,12 @@ The Bitwarden shadow retirement already landed at 7343ae9dc: the comparator, its
 
 ## A grammar addition landed 2026-09-07: `needs-not:`
 
-`inferredNeeds` deliberately OVER-infers, and that asymmetry is correct: over-inferring
-only blocks a declaration, while under-inferring kills a gate on a clean runner. But it
-reads ORDINARY STRING LITERALS after `stripProse` has removed the docstrings, and a
-control's own description routinely names a tool it never runs. Measured:
-`ctl.check("TOOLING: an absent npx yields 127, not an exception")` infers `node` for a
-pure-Python gate.
+`inferredNeeds` deliberately OVER-infers, and that asymmetry is correct: over-inferring only blocks a declaration, while under-inferring kills a gate on a clean runner. But it reads ORDINARY STRING LITERALS after `stripProse` has removed the docstrings, and a control's own description routinely names a tool it never runs. Measured: `ctl.check("TOOLING: an absent npx yields 127, not
+an exception")` infers `node` for a pure-Python gate.
 
-Tightening the pattern was REJECTED ON MEASUREMENT rather than taste: requiring command
-position for `npx`/`tsx`, as the code already does for `node`, drops the inference on 24
-files, and at least one of them (`.ci/rediacc_ci/tests/gates/test_gate_policy_path.py:48`) really does execute
-`node_modules/.bin/tsx`.
+Tightening the pattern was REJECTED ON MEASUREMENT rather than taste: requiring command position for `npx`/`tsx`, as the code already does for `node`, drops the inference on 24 files, and at least one of them (`.ci/rediacc_ci/tests/gates/test_gate_policy_path.py:48`) really does execute `node_modules/.bin/tsx`.
 
-So the safe default STAYS and the escape is ARGUED: `needs-not:` subtracts one inferred
-capability and REQUIRES a `blocker:` reason, refusing without one. Proven both ways, and
-it took `.ci/scripts/quality` from 48 of 49 Python gates declaring to **49 of 49** --
-`check_checkout_cone.py` had been the sole holdout, and this was why.
+So the safe default STAYS and the escape is ARGUED: `needs-not:` subtracts one inferred capability and REQUIRES a `blocker:` reason, refusing without one. Proven both ways, and it took `.ci/scripts/quality` from 48 of 49 Python gates declaring to **49 of 49** -- `check_checkout_cone.py` had been the sole holdout, and this was why.
 
 ## Invariants every box must respect
 
@@ -6528,7 +6452,9 @@ Targets: local full-run floor 785 s to 273 s (then lower once the hooks are port
 - [x] P6 Cutover: harness calls the dispatcher, `settings.json` collapses from 65 command entries to 22, shims deleted, key space migrated.  **DONE 2026-09-07 (166623039):** settings.json 73 command entries to 30, 456 execs per Bash call to 35. Twins MOVED to .claude/oracles/, not deleted: they are what test_guards_differential compares against.
 - (round 1, SUPERSEDED by a Round 2 box above) P7 Cross-OS, the `WORKLIST_*` registry, suite sharding, lifecycle collapse to 11 entries.
 
-Targets: 2 processes per Bash tool call. **THE BASELINE THIS IS MEASURED AGAINST DOES NOT EXIST IN THE TREE, found 2026-09-07.** `git ls-files | grep -iE 'strace|exec-baseline'` returns ZERO, and there is no `GUARD_PASS` or fork-counter artifact anywhere, so W5 P0's stated deliverable (a fork counter) and the "456 execs to 35" figure in P6's note are both unreproducible today. A target defined against a missing baseline cannot be checked off, and that is the first thing P7 must fix. Measured directly instead: a Bash tool call currently fires **12 hook processes** before any in-guard forks (PreToolUse/Bash 4, PostToolUse 5 on the Bash matcher plus 3 on `*`), against the target of 2. All 374 `check` and 21 `check_out` assertions stay green throughout; `worklist-cases` is untouched.
+Targets: 2 processes per Bash tool call. **THE BASELINE THIS IS MEASURED AGAINST DOES NOT EXIST IN THE TREE, found 2026-09-07.** `git ls-files | grep -iE 'strace|exec-baseline'` returns ZERO, and there is no `GUARD_PASS` or fork-counter artifact anywhere, so W5 P0's stated deliverable (a fork counter) and the "456 execs to 35" figure in P6's note are both unreproducible today. A
+target defined against a missing baseline cannot be checked off, and that is the first thing P7 must fix. Measured directly instead: a Bash tool call currently fires **12 hook processes** before any in-guard forks (PreToolUse/Bash 4, PostToolUse 5 on the Bash matcher plus 3 on `*`), against the target of 2. All 374 `check` and 21 `check_out` assertions stay green throughout;
+`worklist-cases` is untouched.
 
 ### W6: Bootstrap, run.sh router and cross-OS (5 phases)
 - [x] P1 Prerequisites, router split, launchers, entry tests. Two prerequisite defects land in wave 1 because everything depends on them: `scripts/gates/check-dead-bash.ts:152` has no `py` alternative in its TEXTUAL regex, and `scripts/ci-runner/run.ts:940` computes `whole` from only `--only`/`--skip`, so a `--changed` receipt currently authorises a push.  **DONE 2026-09-06:** W6 P1 router split: run.sh 120 lines, run-legacy.sh 1334, run.ps1/run.cmd
@@ -6541,35 +6467,25 @@ Targets: 2 processes per Bash tool call. **THE BASELINE THIS IS MEASURED AGAINST
 - [x] P0 Seams, baselines and counts that every later box is measured against.  **DONE 2026-09-06:** W7 P0 baselines as SETS; corrected three contract counts
 - [x] P1 JS relocation out of `.ci`, and the two bash libs ported into `core` behind delegating shims.  **DONE 2026-09-06:** W7 P1(b) two bash libs behind fail-closed shims. P1(a) JS relocation REFUSED on measurement: 22 of 23 files drop from full to reduced CI
 - [x] P2 Port the 74 `check-*.sh` plus 5 wrappers behind `@gate`, each with a `--selftest` control and a committed differential artifact over K distinct trees.  **PARTIAL 2026-09-06: 14 of 77 ported, 13 of 14 PROVEN (891b6ae87). Superseding an earlier 4-of-14 reading:**, refuted by running the comparator over every ledger: only npmrc, go-module-sync, cli-contract and compose-env reach `equivalence holds over 5 distinct trees`. TEN fail, not the six I named: the six earlier ports report 0 distinct clean trees, and batch A never reached K=5 either (peerdeps 3, appadmin 3, cmdtree 4). stagingtag has 6 clean trees but 3 are DISQUALIFIED by MISMATCH_FINDINGS rows, which is a recorded BEHAVIOURAL divergence rather than a bookkeeping gap. Original note follows: batch A (peer-deps, no-app-admin-perm, command-tree, staging-tag-guard) and batch B (npmrc, go-module-sync, cli-contract, compose-env) landed at 412c2ee78 and 939f6afc1, each EQUIVALENT over 5 distinct committed HEAD^{tree} ids. THE FIRST SIX ARE NOT ACTUALLY PROVEN: every one of their 34 rows carries clean:false against ONE shared tree id, so --assert reports 0 distinct clean trees and invariant 5 is unmet for all six. The cure found in batch B is to make each specimen its own committed git repo, and to run the new side under PYTHONDONTWRITEBYTECODE=1, since __pycache__ dirties the tree before treeIdentity is computed.  **"77 of 77" MEANS PORTED, NOT LIVE AND NOT DELETED. Re-measured 2026-09-07 after the operator asked why so many .sh files remain, which was the right question.** `rediacc_ci/quality` is referenced ZERO times in `package.json`, `manifest.ts` and `ci-quality.yml`, while `manifest.ts` still names `.ci/scripts/quality` 143 times: CI runs the BASH. 581 `.sh` files are still tracked under `.ci`/`.claude`, all 82 bash quality gates and all 149 bash gate tests are present, and nothing has been deleted. That is the DESIGN (invariant 5 forbids deleting a twin in the porting change; wiring is W7 P4 and deletion is W7 P5, both open), but quoting "100%" as a headline reads as finished and is not. Report three axes from now on: PORTED, LIVE, DELETED. They were 77, 0, 0. **RE-MEASURED 2026-09-08 after NINE W7 P4 cutover waves: 77, 73, 0.** Wave 9 took
-the last ten twins that had a registration to repoint -- release_state, branch,
-claude_attribution, commit_identity, pr_description, resolved_threads,
-review_comments, review_report_replies, submodule_branches, plus the earlier
-scope_scripts_reachability step rename -- each byte-identical to its twin on both
-streams with the same exit code on this tree, and each already asserting
+the last ten twins that had a registration to repoint -- release_state, branch, claude_attribution, commit_identity, pr_description, resolved_threads, review_comments, review_report_replies, submodule_branches, plus the earlier scope_scripts_reachability step rename -- each byte-identical to its twin on both streams with the same exit code on this tree, and each already asserting
 equivalence over 5 to 14 distinct trees.
 
-THREE OF THE LAST THIRTEEN CANNOT BECOME LIVE BY REPOINTING, and finding out why
-was the wave's real yield. `check-autopilot-no-bypass.sh`,
-`check-ci-job-aggregation.sh` and `check-swallowed-failures.sh` are invoked by
-NOTHING: no `package.json` key, no `manifest.ts` entry, no workflow `run:` line,
-no wrapper. CI runs their gate TESTS and never the gates, so each one's logic is
-exercised against fixtures while it never judges the real repository.
-`check:ci-parity` cannot see this, because a gate absent from BOTH sides is
-absent from the comparison. Two of the three exit 0 against this tree; the third
-refuses without an organisation variable. Tracked, with the registration decision
-parked, rather than folded into a cutover it is not.
+THREE OF THE LAST THIRTEEN CANNOT BECOME LIVE BY REPOINTING, and finding out why was the wave's real yield. `check-autopilot-no-bypass.sh`, `check-ci-job-aggregation.sh` and `check-swallowed-failures.sh` are invoked by NOTHING: no `package.json` key, no `manifest.ts` entry, no workflow `run:` line, no wrapper. CI runs their gate TESTS and never the gates, so each one's logic is
+exercised against fixtures while it never judges the real repository. `check:ci-parity` cannot see this, because a gate absent from BOTH sides is absent from the comparison. Two of the three exit 0 against this tree; the third refuses without an organisation variable. Tracked, with the registration decision parked, rather than folded into a cutover it is not.
 
-`staging_tag_guard` is the fourth and is excluded for cause: its ledger is the
-programme's one permanent red.
+`staging_tag_guard` is the fourth and is excluded for cause: its ledger is the programme's one permanent red.
 
-AND THE CUTOVER FOUND A MATCHER THAT HAD GONE EXTENSION-SHAPED, the same class as
-the `paths:` glob trap. `scripts/gates/check-ci-parity.ts` spelled its gate matcher
-`check-[\w.-]+\.sh` and expanded a path exemption to its package.json key only
-`if (e.entry.endsWith('.sh'))`. Both stopped applying the instant a gate was
-repointed at its `.py` port: rules R2 and R3 quietly stopped judging it, and
-`check:ci-release-state` reported as an unregistered gate although its exemption
-named it. Both now accept `check_name.py` as well, with three controls that fail
-against the old spelling. The pilot took LIVE from 0 to 1 (`check:ci-npmrc`), and TWELVE more followed in two waves -- apbp, cli-doc-coverage, regions-sync, release-bump-skip, rubric-calibration, www-build-token, then script-exec-bit, pipefail-grep-q, tracked-sidecars, go-tool-path, git-op-conditionals and probe-parity -- each on a shadow ledger asserting equivalence over 5-15 distinct trees, with both directions driven byte-identical and a violation planted through every seam. DELETED is still 0 and all 77 `.sh` twins are on disk, which is invariant 5 working, not a shortfall. TWO MEASUREMENT TRAPS PAID FOR HERE. `grep -c rediacc_ci/quality gates.lock.json` is NOT the LIVE count, because the lock names ENTRY POINTS and never the module path. **The old wording here said it "reads 0 and always will", and that was falsified on 2026-09-08 by my own edits: it read 2, then 3, and every move was mine.** The three hits, re-measured 2026-09-08 at `scripts/ci-runner/gates.lock.json:1125`, `scripts/ci-runner/gates.lock.json:1147` and `scripts/ci-runner/gates.lock.json:3126`, are `toolchain_pins.py` and `account_portal.py` in `paths` entries I added so those gates select under `--changed` when their port changes, plus `git_op_conditionals.py` in a `leaves` path. A probe whose value I move myself every wave is a progress meter measuring my own edits. A probe described as permanently zero is one a later reader trusts without running; it drifts, and then it reads as progress. LIVE must be counted as registered `.py` entry points that import a port. And `gate:bind --write` alone leaves the lock STALE -- `npm run gen:gates-lock` is what moves the number. Do not read the 41 `check:ci-*` keys pointing at a `.ci/scripts/quality/check_*.py` as progress on this axis: I mis-measured that way once this session. Most of those are gates that were ALWAYS Python and never had a bash twin. Only SEVEN `.py` entry points import a `rediacc_ci.quality` module at all (autopilot_breakpoint_alignment, cli_doc_coverage, npmrc, regions_sync, release_bump_skip, rubric_calibration, www_build_token), each still has its `check-*.sh` twin on disk, and for six of the seven `package.json` still names the `.sh`. The shim exists; the cutover has not happened. DELETED remains 0 and all 77 bash quality twins are present. **AND THE REASON LIVE IS 0 IS STRUCTURAL, not scheduling, measured 2026-09-07: ZERO of the 78 ported modules carries a `---- gate ----` header** (`grep -l -- '---- gate ----' .ci/rediacc_ci/quality/*.py | wc -l` -> 0). In this repo REGISTRATION IS THE HEADER, since `gate:bind` reads it, so W7 P4 cannot begin as a registration change: 78 headers must be written first, and no box costs that work. Five of the six entry points under `.ci/scripts/quality/` that import a port are referenced by nothing at all, and `check-dead-bash.ts` is bash-only so it cannot see them: there is NO dead-Python gate. **DONE 2026-09-06 (1a1d7e445): 77 of 77 ported. RE-MEASURED 2026-09-07 over every ledger in .ci/shadow, which now holds 78 pairs, not 77: 77 of 78 assert `equivalence holds` at K=5.** The one red is w7p2-stagingtag and it is permanent: three tree ids disqualified by rows recorded through a hole since closed, 12 qualifying trees over 9 finding sets, so the claim is evidenced and only the assert cannot express it. No twin deleted: that is W7 P5.
+AND THE CUTOVER FOUND A MATCHER THAT HAD GONE EXTENSION-SHAPED, the same class as the `paths:` glob trap. `scripts/gates/check-ci-parity.ts` spelled its gate matcher `check-[\w.-]+\.sh` and expanded a path exemption to its package.json key only `if (e.entry.endsWith('.sh'))`. Both stopped applying the instant a gate was repointed at its `.py` port: rules R2 and R3 quietly stopped
+judging it, and `check:ci-release-state` reported as an unregistered gate although its exemption named it. Both now accept `check_name.py` as well, with three controls that fail against the old spelling. The pilot took LIVE from 0 to 1 (`check:ci-npmrc`), and TWELVE more followed in two waves -- apbp, cli-doc-coverage, regions-sync, release-bump-skip, rubric-calibration,
+www-build-token, then script-exec-bit, pipefail-grep-q, tracked-sidecars, go-tool-path, git-op-conditionals and probe-parity -- each on a shadow ledger asserting equivalence over 5-15 distinct trees, with both directions driven byte-identical and a violation planted through every seam. DELETED is still 0 and all 77 `.sh` twins are on disk, which is invariant 5 working, not a
+shortfall. TWO MEASUREMENT TRAPS PAID FOR HERE. `grep -c rediacc_ci/quality gates.lock.json` is NOT the LIVE count, because the lock names ENTRY POINTS and never the module path. **The old wording here said it "reads 0 and always will", and that was falsified on 2026-09-08 by my own edits: it read 2, then 3, and every move was mine.** The three hits, re-measured 2026-09-08 at
+`scripts/ci-runner/gates.lock.json:1125`, `scripts/ci-runner/gates.lock.json:1147` and `scripts/ci-runner/gates.lock.json:3126`, are `toolchain_pins.py` and `account_portal.py` in `paths` entries I added so those gates select under `--changed` when their port changes, plus `git_op_conditionals.py` in a `leaves` path. A probe whose value I move myself every wave is a progress meter
+measuring my own edits. A probe described as permanently zero is one a later reader trusts without running; it drifts, and then it reads as progress. LIVE must be counted as registered `.py` entry points that import a port. And `gate:bind --write` alone leaves the lock STALE -- `npm run gen:gates-lock` is what moves the number. Do not read the 41 `check:ci-*` keys pointing at a
+`.ci/scripts/quality/check_*.py` as progress on this axis: I mis-measured that way once this session. Most of those are gates that were ALWAYS Python and never had a bash twin. Only SEVEN `.py` entry points import a `rediacc_ci.quality` module at all (autopilot_breakpoint_alignment, cli_doc_coverage, npmrc, regions_sync, release_bump_skip, rubric_calibration, www_build_token), each
+still has its `check-*.sh` twin on disk, and for six of the seven `package.json` still names the `.sh`. The shim exists; the cutover has not happened. DELETED remains 0 and all 77 bash quality twins are present. **AND THE REASON LIVE IS 0 IS STRUCTURAL, not scheduling, measured 2026-09-07: ZERO of the 78 ported modules carries a `---- gate ----` header** (`grep -l -- '---- gate
+----' .ci/rediacc_ci/quality/*.py | wc -l` -> 0). In this repo REGISTRATION IS THE HEADER, since `gate:bind` reads it, so W7 P4 cannot begin as a registration change: 78 headers must be written first, and no box costs that work. Five of the six entry points under `.ci/scripts/quality/` that import a port are referenced by nothing at all, and `check-dead-bash.ts` is bash-only so it
+cannot see them: there is NO dead-Python gate. **DONE 2026-09-06 (1a1d7e445): 77 of 77 ported. RE-MEASURED 2026-09-07 over every ledger in .ci/shadow, which now holds 78 pairs, not 77: 77 of 78 assert `equivalence holds` at K=5.** The one red is w7p2-stagingtag and it is permanent: three tree ids disqualified by rows recorded through a hole since closed, 12 qualifying trees over 9
+finding sets, so the claim is evidenced and only the assert cannot express it. No twin deleted: that is W7 P5.
 - (round 1, SUPERSEDED by a Round 2 box above) P3 Gate tests to pytest: harness ported once, tests in subject batches, `battery.py` replaces `run-all.sh` and reads isolation from the lock. **FIRST STAGE IN FLIGHT 2026-09-07, and every "blocked" note on this box was STALE:** headers landed on all 148 under W2.3, isolation went onto the lock under W2.4, and W1 P2 put pytest in a lane that installs it, so nothing was ever holding it. On disk now: `.ci/rediacc_ci/tests/gates/` with `harness.py`, `conftest.py`, `test_harness.py`, `test_twin_parity.py` and, after batch 4 on 2026-09-07, NINETY-TWO ported subjects of 149 after batches 5 through 9 on 2026-09-07 (batch 4 was the first to run under the new `-n 8` concurrency, so a port that binds a fixed port or mutates a module global now flakes where it used to pass; batch 5 needed no `xdist_group` at all and each module records WHY in its docstring). **BATCH 5 FOUND A HOLE IN THE PARITY DRIVER ITSELF, now fixed:** `test_twin_parity.bash_cases()` counted a case as called only when the call was a BARE NAME on its own line, so a twin invoking `test_x "$D/y"` or `with_temp_dir test_x` matched nothing. Measured across the 130 twins that declare cases, 43 had at least one case invisible and 16 saw ZERO, falling through to the weaker flat-twin PASS-count floor -- so the SET comparison that module exists to perform silently did not happen for those 16, `test-ci-parity.sh` (22 cases) among them. That is failing OPEN. Widened to a word match excluding the declaration line and whole-line comments: 0 seeing zero, 0 with any miss, and zero newly-required cases missing from any of the 53 ports, so it strengthens the check without reclassifying existing work. **`check:ci-pytest` IS NOW DECLARED `slow: true`**, not as a regression but as the truth: the tier oracle measured its FLOOR at 367.9s, the gate runs all 9165 Python tests, and each batch adds roughly 200 more, ruff clean. Batch 2's ten were set-derived, not chosen: 148 minus the 6 already done, minus the 4 W and 21 S real-tree members, minus every twin naming a basename that appears in any of the 78 shadow ledgers (159 basenames), leaving 98 admissible; `test-toolchain.sh` was then excluded BY HAND because `w6p2-toolchain`'s ledger points at `.ci/shadow-drivers/`, a directory that NO LONGER EXISTS, so the filename filter cannot see what that pair covered. Every port planted a defect in the REAL subject and drove both sides; all ten restored byte-identical by sha256. Batch 3 read the W/S exclusion set FROM THE LOCK rather than from the bash arrays, which only became possible when W2.4's declarations landed hours earlier, and its parity driver asserts it every run: `none of the 29 ported twins is among the 25 real-tree test(s)`. **BATCH 3 ALSO SURFACED THE PROGRAMME'S NEXT BOTTLENECK, and it is now an operator order.** `check:ci-pytest` measured 810s for 8944 tests and IS the whole local wall time: run 3 was 675.3s wall of which that one gate was 675.3s, with 356 other gates finishing inside it. It runs SERIALLY on a 24-core box -- `import xdist` raises ModuleNotFoundError and pyproject.toml addopts carries no `-n` -- and the corpus grows about 200 tests per batch, so porting makes it worse. Tracked as worklist #d76fa6de under the operator's ordered sequence: plan, implement, validate, optimise again, validate. All 148 bash originals are still present, which is invariant 5 working as intended: a twin is never deleted in the change that ports it. The 148 `gate-test:*` manifest entries are the largest patch fragment in the programme and must be batched, or the driver becomes the bottleneck.
 - (round 1, SUPERSEDED by a Round 2 box above) P4 Workflow-invoked wrappers behind one-line shims, then flip the call sites.
 - (round 1, SUPERSEDED by a Round 2 box above) P5 `deploy/` and `release/` last, behind golden dry-run parity plus one real run each; bash libs deleted; language gate blocking for `.ci`.
@@ -6611,9 +6527,11 @@ Every new test passes with docker, node, npm, nvcc, aws, ssh, GPU and network ab
 
 ### W12: agent/ history as attested records (variant A, lean cliff)
 
-Forcing function: the housekeeping gate demands deletion of 33 plans on 2026-09-23 and 13 more on 2026-10-06. Phase 1 must be on main by 2026-09-20. Investigation facts: 79 plans and 2.0 MB; 37 of 71 commit citations dangle; 67% of judge-recorded artifact paths do not exist; no worklist event records a commit; `agent/archive/plans/` is named by config but does not exist; SessionStart opens all 79 plans to print 49 filenames.
+Forcing function: the housekeeping gate demands deletion of 33 plans on 2026-09-23 and 13 more on 2026-10-06. Phase 1 must be on main by 2026-09-20. Investigation facts: 79 plans and 2.0 MB; 37 of 71 commit citations dangle; 67% of judge-recorded artifact paths do not exist; no worklist event records a commit; `agent/archive/plans/` is named by config but does not exist;
+SessionStart opens all 79 plans to print 49 filenames.
 
-Record grammar: header lines within the first 10 (`Status: compacted|parked`, `Full-Text: <sha9> <path>` optional when `Full-Text-Blob:` is present, `Record-Sig`), then `## Why`, `## Outcome`, `## Lessons` (trap and decision ids), `## Boxes` (box lines byte-identical, each followed by a 4-space `(record) sig=.. done=<sha9>|open|abandoned item=.. epic=..` line that `BULLET_RE` and `plan_tasks` ignore), `## Record` trailer in the TRAPS grammar including a `Read-History` line carrying the `git show` and `git log --find-object` commands, and `## History` bullets appended only. Record at most 6 KB plus 160 B per box, and the pointed blob at least twice the record.
+Record grammar: header lines within the first 10 (`Status: compacted|parked`, `Full-Text: <sha9> <path>` optional when `Full-Text-Blob:` is present, `Record-Sig`), then `## Why`, `## Outcome`, `## Lessons` (trap and decision ids), `## Boxes` (box lines byte-identical, each followed by a 4-space `(record) sig=.. done=<sha9>|open|abandoned item=.. epic=..` line that `BULLET_RE` and
+`plan_tasks` ignore), `## Record` trailer in the TRAPS grammar including a `Read-History` line carrying the `git show` and `git log --find-object` commands, and `## History` bullets appended only. Record at most 6 KB plus 160 B per box, and the pointed blob at least twice the record.
 
 #### W12.P1 Compaction that survives rebase (on main by 2026-09-20)
 - [x] P1.1 `wl_planrec.py`: parse and render the grammar; `resolve()` for commit, ancestor-of-origin/main, blob, file:line, gate, plan, trap, decision, reusing the four existing verification idioms; `derive()` computing Full-Text, blob, Epics from PR-TASK trailers, Touches from `plan_orientation`, Gates, and `done=` per sig by walking the ledger's history; `record_sig`; `launder()` replacing unresolved tokens with `[unresolved]`; `render_index`.  **DONE 2026-09-06:** W12 P1.1: wl_planrec.py, 2214 lines
@@ -6674,9 +6592,11 @@ Ten sub-drivers, each owning a worktree pool. Sustained ceiling 10 to 12 concurr
 | T10 Docs and records | W11 | 6 to 8, then 1 per shared-file phase |
 | T11 agent/ history | W12 | 2, 4 for the compaction wave batches |
 
-The root driver writes no code and owns three things: the registry merge queue (`package.json`, `manifest.ts`, `ci-quality.yml` have exactly one writer in flight; every sub-driver hands over a branch whose gate file and registry entry are in the same commit, and only the root driver runs `gate:bind --write`, once per wave, pasting the `dropped` list into the wave record); the machine mutex (at most one docker, account or traefik box in flight, because worktrees do not isolate the daemon, `~/.rediacc`, port 4800 or the router namespace); and the reference worktree that produces every timing number.
+The root driver writes no code and owns three things: the registry merge queue (`package.json`, `manifest.ts`, `ci-quality.yml` have exactly one writer in flight; every sub-driver hands over a branch whose gate file and registry entry are in the same commit, and only the root driver runs `gate:bind --write`, once per wave, pasting the `dropped` list into the wave record); the
+machine mutex (at most one docker, account or traefik box in flight, because worktrees do not isolate the daemon, `~/.rediacc`, port 4800 or the router namespace); and the reference worktree that produces every timing number.
 
-Wave shape: wave 1 is T1 in full, T6's two prerequisite fixes, T10's generator and seam widening, T7's decisions and the first passthrough box, T9's preflight. Wave 2 is T3's bootstrap and skeleton, T2's binder and loader, T8's prep, T4's skeleton through pre-keying, T9's extraction. Waves 3 to 5 are the four cutovers, independent of each other after M4: hooks, quality, Bitwarden, and registry then .ci port. The final wave is the language gate flip plus the records close-out.
+Wave shape: wave 1 is T1 in full, T6's two prerequisite fixes, T10's generator and seam widening, T7's decisions and the first passthrough box, T9's preflight. Wave 2 is T3's bootstrap and skeleton, T2's binder and loader, T8's prep, T4's skeleton through pre-keying, T9's extraction. Waves 3 to 5 are the four cutovers, independent of each other after M4: hooks, quality, Bitwarden,
+and registry then .ci port. The final wave is the language gate flip plus the records close-out.
 
 ## Milestones
 
@@ -6697,7 +6617,8 @@ Critical path, **RE-DERIVED 2026-09-07 and different from the original in two wa
 
 The original read: W0.2 to W1:P1 to W1:P2 to W2.0 to W2.1 to W2.3 to W2.4 to W7:P0 to W7:P1 to W7:P2 to W7:P3 to W7:P4 to W7:P5 to W11:P6.
 
-**W2.3 HAS FALLEN OFF THE PATH**, proven empirically rather than argued: 41 subjects are ported and running with NO manifest region and no manifest entries at all, under the single `check:ci-pytest` entry (`scripts/ci-runner/manifest.ts:5573`), because `testpaths` already covers `.ci/rediacc_ci/tests/gates`. So W7 P3 needs no registration and no driver involvement, and W2.3's open half blocks nothing.
+**W2.3 HAS FALLEN OFF THE PATH**, proven empirically rather than argued: 41 subjects are ported and running with NO manifest region and no manifest entries at all, under the single `check:ci-pytest` entry (`scripts/ci-runner/manifest.ts:5573`), because `testpaths` already covers `.ci/rediacc_ci/tests/gates`. So W7 P3 needs no registration and no driver involvement, and W2.3's open
+half blocks nothing.
 
 **A PREREQUISITE IS MISSING FROM THE PATH ENTIRELY**: W7 P5's third clause is "language gate blocking for `.ci`", and that gate does not exist (see the Gaps section). It has to be BUILT before W7 P5 can be flipped.
 
@@ -6705,68 +6626,40 @@ Live path: **W7 P3 (107 of 148 remaining) to W7 P4 (201 unique scripts, 334 call
 
 ## The control-plant class is enforced in ONE language, swept 2026-09-09
 
-`check:ci-python-control-plants` refuses a control mutant built by raw substitution: if the
-needle has gone, `str.replace` returns the fixture UNCHANGED and the control then scans the
-same text as its neighbour while asserting the opposite verdict, passing for free. The
-sanctioned helper is `rediacc_ci.controls.plant`, which raises `VacuousPlantError` instead.
+`check:ci-python-control-plants` refuses a control mutant built by raw substitution: if the needle has gone, `str.replace` returns the fixture UNCHANGED and the control then scans the same text as its neighbour while asserting the opposite verdict, passing for free. The sanctioned helper is `rediacc_ci.controls.plant`, which raises `VacuousPlantError` instead.
 
 **That gate covers Python only, and the sweep found the other two surfaces uneven:**
 
 * **Python** -- one live instance, `.ci/rediacc_ci/quality/git_op_conditionals.py:1114`,
-  fixed; the gate is rc=0 so the language is clean by its own instrument.
+fixed; the gate is rc=0 so the language is clean by its own instrument.
 * **TypeScript** -- no gate, two candidates. `scripts/gates/check-guard-mutations.ts:193-199`
-  already counts occurrences and throws unless exactly one, which is `plant`'s contract
-  inlined and correct. `scripts/gates/check-backup-bucket-conformance.ts:149` had no check; a
-  vanished needle there fails LOUDLY rather than passing, because the assertion's polarity
-  happens to run the other way, but it fails with a message about the wrong thing. Given
-  the same occurrence check.
+already counts occurrences and throws unless exactly one, which is `plant`'s contract inlined and correct. `scripts/gates/check-backup-bucket-conformance.ts:149` had no check; a vanished needle there fails LOUDLY rather than passing, because the assertion's polarity happens to run the other way, but it fails with a message about the wrong thing. Given the same occurrence check.
 * **Bash -- the real gap, and it is not small.** Gate tests plant with `sed -i` and almost
-  none verify the plant landed: `grep -rn 'CONTROL PLANT DID NOT LAND'` finds **2 sites in
-  the whole repository**, against `sed -i` plants spread across the gate-test corpus. A
-  bash plant that silently fails to apply is exactly the failure this class describes, and
-  `.ci/scripts/test/gates/test-run-sh.sh` already proved the shape is live when its own
-  control printed "CONTROL PLANT DID NOT LAND ... plants nothing and passes for free".
+none verify the plant landed: `grep -rn 'CONTROL PLANT DID NOT LAND'` finds **2 sites in the whole repository**, against `sed -i` plants spread across the gate-test corpus. A bash plant that silently fails to apply is exactly the failure this class describes, and `.ci/scripts/test/gates/test-run-sh.sh` already proved the shape is live when its own control printed "CONTROL PLANT DID
+NOT LAND ... plants nothing and passes for free".
 
-**The fix is to extend the gate, not to hand-audit the corpus** -- one instrument covering
-all three languages, with the bash arm requiring a post-plant assertion. Sized as writer
-work and deliberately not started inline; recorded here so it is not rediscovered.
+**The fix is to extend the gate, not to hand-audit the corpus** -- one instrument covering all three languages, with the bash arm requiring a post-plant assertion. Sized as writer work and deliberately not started inline; recorded here so it is not rediscovered.
 
 ## A green that proved nothing, found 2026-09-09 by fixing one half of a pair
 
-`test_gate_doc_region_parity` builds a fixture by copying tracked paths and running the
-real `gen-docs` inside it. Both the Python port and its bash twin
-(`.ci/scripts/test/gates/test-doc-region-parity.sh`) carried the SAME hand-written
-six-item list, and both had fallen behind the providers: each new seam produced either a
-node `ENOENT` inside the generator or its anti-vacuity refusal, neither of which reads as
-"the fixture is stale".
+`test_gate_doc_region_parity` builds a fixture by copying tracked paths and running the real `gen-docs` inside it. Both the Python port and its bash twin (`.ci/scripts/test/gates/test-doc-region-parity.sh`) carried the SAME hand-written six-item list, and both had fallen behind the providers: each new seam produced either a node `ENOENT` inside the generator or its anti-vacuity
+refusal, neither of which reads as "the fixture is stale".
 
-**`test_twin_parity` was GREEN throughout, because it compares verdicts and both sides
-were red.** It logged `twin and port agree (both red)`. Two broken things agreeing is a
-green that proves nothing, and nothing could expose it until one side was repaired --
-fixing the port turned parity RED, which is that gate working for the first time on this
-pair.
+**`test_twin_parity` was GREEN throughout, because it compares verdicts and both sides were red.** It logged `twin and port agree (both red)`. Two broken things agreeing is a green that proves nothing, and nothing could expose it until one side was repaired -- fixing the port turned parity RED, which is that gate working for the first time on this pair.
 
-Both sides are now DERIVED rather than enumerated: every quoted literal in
-`scripts/gen-docs.ts` and its two libraries that resolves to a tracked path IS the input
-set, so a provider has to name the seam it opens and the literal is the declaration. Both
-independently produce **38 pathspecs**. The port walks the import closure and refuses a
-closure of one; the twin takes the three closure files literally and refuses a set under
-ten.
+Both sides are now DERIVED rather than enumerated: every quoted literal in `scripts/gen-docs.ts` and its two libraries that resolves to a tracked path IS the input set, so a provider has to name the seam it opens and the literal is the declaration. Both independently produce **38 pathspecs**. The port walks the import closure and refuses a closure of one; the twin takes the three
+closure files literally and refuses a set under ten.
 
 Three traps paid for in the repair, all measured:
 
 * **`tar -c` needs `--no-recursion`.** The derived set includes the four `private/*`
-  GITLINKS, and tar recurses a directory name by default, walking each submodule's on-disk
-  tree with its `.git` included.
+GITLINKS, and tar recurses a directory name by default, walking each submodule's on-disk tree with its `.git` included.
 * **A file is not a literal inside itself.** The deriver reads the three closure files for
-  quoted paths, so it can never yield their own names; omitting them gives
-  `Cannot find module <fixture>/scripts/gen-docs.ts`, which reads as a broken copy rather
-  than a missing input.
+quoted paths, so it can never yield their own names; omitting them gives `Cannot find module <fixture>/scripts/gen-docs.ts`, which reads as a broken copy rather than a missing input.
 * **Copying the whole tracked tree was measured and rejected:** 5431 files / 2.0 GB,
-  because the `private/*` gitlinks dominate, times seven fixtures per run.
+because the `private/*` gitlinks dominate, times seven fixtures per run.
 
-Now: twin rc=0 with 9 PASS, port rc=0 with 9 controls, and `test_twin_parity` reports
-`twin and port agree (both green)`.
+Now: twin rc=0 with 9 PASS, port rc=0 with 9 controls, and `test_twin_parity` reports `twin and port agree (both green)`.
 
 ## Verification
 

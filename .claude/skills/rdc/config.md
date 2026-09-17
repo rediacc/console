@@ -4,10 +4,7 @@ For full command syntax and options, see [reference.md](reference.md).
 
 Manage config files, machine inventory, SSH keys, and machine setup.
 
-**Where things live now**: machine inventory and setup are under the `machine` noun
-(`rdc machine add|remove|list|scan-keys|setup|provider|infra`), not under `config`.
-`rdc config` keeps config-file concerns: `init`, `list`, `show`, `set`, `edit`, `ssh`,
-`remote`, `field`, `audit`, `prune`, `reconcile`.
+**Where things live now**: machine inventory and setup are under the `machine` noun (`rdc machine add|remove|list|scan-keys|setup|provider|infra`), not under `config`. `rdc config` keeps config-file concerns: `init`, `list`, `show`, `set`, `edit`, `ssh`, `remote`, `field`, `audit`, `prune`, `reconcile`.
 
 ## Machine management
 
@@ -62,8 +59,7 @@ Pass `--config <name>` to any `rdc` command.
 
 ## Infrastructure (Traefik proxy)
 
-Infra lives under `rdc machine infra` (`set`, `show`, `push`, and `cert {pull,push,status,clear}`).
-Each takes the machine positionally.
+Infra lives under `rdc machine infra` (`set`, `show`, `push`, and `cert {pull,push,status,clear}`). Each takes the machine positionally.
 
 ### Configure infra
 `rdc machine infra set <machine> ...`
@@ -109,14 +105,11 @@ rdc machine provision prod-1 --provider my-linode
 
 ## Backup strategy
 
-Backup strategies moved to the `backup` noun: `rdc backup strategy {set,remove,list,show}`.
-See [backup.md](backup.md).
+Backup strategies moved to the `backup` noun: `rdc backup strategy {set,remove,list,show}`. See [backup.md](backup.md).
 
 ## Repository records
 
-Repository records live in the config and are managed by the repo lifecycle commands
-(`rdc repo create` / `rdc repo delete`). List them with `rdc repo list`. Archived records
-(from `repo delete --archive-config`) are handled by `rdc repo admin archive {list,restore,purge}`.
+Repository records live in the config and are managed by the repo lifecycle commands (`rdc repo create` / `rdc repo delete`). List them with `rdc repo list`. Archived records (from `repo delete --archive-config`) are handled by `rdc repo admin archive {list,restore,purge}`.
 
 ## Workflow: New machine from scratch
 

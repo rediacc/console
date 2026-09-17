@@ -24,8 +24,7 @@ Edit `.env` to customize:
 - `MARIADB_USER`: Application user name (default: appuser)
 - `MARIADB_PASSWORD`: Application user password (default: changeme)
 
-**Custom Configuration**: Place `.cnf` files in `./config/` directory
-**Initialization Scripts**: Place SQL or shell scripts in `./init/` directory (executed alphabetically on first startup)
+**Custom Configuration**: Place `.cnf` files in `./config/` directory **Initialization Scripts**: Place SQL or shell scripts in `./init/` directory (executed alphabetically on first startup)
 
 ## Access
 - **Port**: 3306 (Docker auto-assigns host port)

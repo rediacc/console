@@ -1,83 +1,34 @@
 # 08 — P2 Gate Review (cluster layer: anchor+rejoin fork/migrate, membership, node lifecycle)
 
-Reviewer: Fable gate agent, 2026-07-11 ~02:45-03:30. Fully-autonomous mode (this review
-stands in for the user per the approved plan). Subject: the entire P2 phase against
-`09-implementation-phases.md` §P2, `04-cluster-fork-migrate.md`, and specs 00-07.
-Evidence root: scratchpad `checkpoints/` + `reports/` + live-run logs. Every cheap
-check was re-run by me, not trusted.
+Reviewer: Fable gate agent, 2026-07-11 ~02:45-03:30. Fully-autonomous mode (this review stands in for the user per the approved plan). Subject: the entire P2 phase against `09-implementation-phases.md` §P2, `04-cluster-fork-migrate.md`, and specs 00-07. Evidence root: scratchpad `checkpoints/` + `reports/` + live-run logs. Every cheap check was re-run by me, not trusted.
 
 ## VERDICT: **PASS-WITH-NOTES** — the composed fork/migrate orchestration + e2e rewrite fold into P3 as its mandatory first wave
 
-**Final status: all three pre-P3 blockers identified below were resolved and
-re-verified during the review itself** (the F1 fork-verb hazard closed by
-p2-forkmigrate, the gate re-greened after two lint rounds, the evidence files
-recovered). The only bookkeeping still owed is the checkpoint re-cut. P3 may start.
+**Final status: all three pre-P3 blockers identified below were resolved and re-verified during the review itself** (the F1 fork-verb hazard closed by p2-forkmigrate, the gate re-greened after two lint rounds, the evidence files recovered). The only bookkeeping still owed is the checkpoint re-cut. P3 may start.
 
-The P2 **primitive layer is done and strongly proven**: the F1-F8 fork PKI re-mint
-(the program's F1 blocker) is implemented with a fail-loud CA-fingerprint refusal and
-unit-tested against a real sqlite kine DB; the anchor model (`ds-control-<cluster>`
-embedded control plane) is proven live end-to-end (p2b create exit 0, battery ran
-kubectl against it); the node-label seam and evict's Node-object deletion are proven
-live — join re-adopt and evict's backref-clear are **unit-proven only** (the author
-corrected their initial claims when I challenged the evidence; see criterion 4); the
-node lifecycle units exist with the re-entrancy deadlock (bug #6) verified fixed;
-all four claimed bug fixes are in the diff; gates re-ran green (after two rounds of
-lint fixes made during this review); the i18n baseline grew only by the one
-sanctioned D3-R2 batch; no commits were made.
+The P2 **primitive layer is done and strongly proven**: the F1-F8 fork PKI re-mint (the program's F1 blocker) is implemented with a fail-loud CA-fingerprint refusal and unit-tested against a real sqlite kine DB; the anchor model (`ds-control-<cluster>` embedded control plane) is proven live end-to-end (p2b create exit 0, battery ran kubectl against it); the node-label seam and
+evict's Node-object deletion are proven live — join re-adopt and evict's backref-clear are **unit-proven only** (the author corrected their initial claims when I challenged the evidence; see criterion 4); the node lifecycle units exist with the re-entrancy deadlock (bug #6) verified fixed; all four claimed bug fixes are in the diff; gates re-ran green (after two rounds of lint
+fixes made during this review); the i18n baseline grew only by the one sanctioned D3-R2 batch; no commits were made.
 
-What the evidence **contradicts** in the brief: the composed new-model cluster fork
-(04 §2 group-snap → clone → attach → fork-rewrite → rejoin) and the new-model migrate
-(04 §3 in-Ceph fenced remap; health-gate + rollback pipeline) do **not** exist in
-product code. They exist as renet primitives plus the staged battery script
-(`scratchpad/p2a-fork-battery.sh`). The user-facing `rdc cluster fork`/`cluster
-migrate` verbs still run the pre-program S2 recipe — and `forkCluster` calls
-`kube_identity_rewrite` **without** `operation=fork`, which now defaults to the
-CA-preserving migrate arm: the verb named "fork" produces a fork carrying the parent
-CA, the exact F1 hazard this program exists to close (P1's explicit fork-arm REFUSAL
-was effectively replaced by a silent default). *(This hazard was CLOSED during the
-review — blocking item 1 below records the verified fix; the paragraph stands as the
-review-time finding.)* The phase's own gate letter ("2-node
-fork AND migrate proven locally with timings; rewritten multinode e2e suite passes")
-is therefore unmet — partly by sanctioned descope (RAM exhaustion), partly because
-the p2-e2e wave never ran.
+What the evidence **contradicts** in the brief: the composed new-model cluster fork (04 §2 group-snap → clone → attach → fork-rewrite → rejoin) and the new-model migrate (04 §3 in-Ceph fenced remap; health-gate + rollback pipeline) do **not** exist in product code. They exist as renet primitives plus the staged battery script (`scratchpad/p2a-fork-battery.sh`). The user-facing `rdc
+cluster fork`/`cluster migrate` verbs still run the pre-program S2 recipe — and `forkCluster` calls `kube_identity_rewrite` **without** `operation=fork`, which now defaults to the CA-preserving migrate arm: the verb named "fork" produces a fork carrying the parent CA, the exact F1 hazard this program exists to close (P1's explicit fork-arm REFUSAL was effectively replaced by a
+silent default). *(This hazard was CLOSED during the review — blocking item 1 below records the verified fix; the paragraph stands as the review-time finding.)* The phase's own gate letter ("2-node fork AND migrate proven locally with timings; rewritten multinode e2e suite passes") is therefore unmet — partly by sanctioned descope (RAM exhaustion), partly because the p2-e2e wave
+never ran.
 
-Ruling rationale: FAIL would mandate doing this work before P3 starts; but P3's
-features (rehearse, replicate) ARE compositions over fork/migrate, so the same work
-happens either way — blocking adds no safety. What must not survive into P3 is the
-CA-carrying `cluster fork` verb (cheap fix) and a red gate. Hence PASS-WITH-NOTES
-with hard conditions.
+Ruling rationale: FAIL would mandate doing this work before P3 starts; but P3's features (rehearse, replicate) ARE compositions over fork/migrate, so the same work happens either way — blocking adds no safety. What must not survive into P3 is the CA-carrying `cluster fork` verb (cheap fix) and a red gate. Hence PASS-WITH-NOTES with hard conditions.
 
 ### Must be fixed BEFORE P3 work begins (blocking, all cheap)
 
 1. **Close the `cluster fork` F1 hazard** — **RESOLVED during review, re-verified by
-   me**: (i) `renet kube identity-rewrite --operation` is now REQUIRED — empty errors
-   with "a fork rewritten as migrate would ship the parent CA key"
-   (kube_identity.go:28,60-62; the backward-compat migrate default is gone, per this
-   review's recommendation); (ii) `forkCluster` REFUSES with a teaching error pointing
-   at the P3 anchor+rejoin rebuild and dispatches NOTHING — the new test asserts both
-   the rejection and `exec.mock.calls.length === 0` (cluster-kube.test.ts:143-156);
-   (iii) `migrateCluster` passes `operation: 'migrate'` explicitly
-   (cluster-kube.ts:398). One baseline entry added for the new required-operation
-   error-wrap (tool-count 2845; my entry-diff confirms exactly +1 = 2620) —
-   **sanctioned by this gate as blocker-1 remediation** (same internal error-wrap
-   class as D3-R2); baseline frozen again after it. Post-fix gates re-verified by me:
-   check:ci-renet EXIT=0 (gate08-ci-renet4.log), tsc 0, vitest 1432/1432 (the old
-   fork-path test replaced by the refusal test).
+me**: (i) `renet kube identity-rewrite --operation` is now REQUIRED — empty errors with "a fork rewritten as migrate would ship the parent CA key" (kube_identity.go:28,60-62; the backward-compat migrate default is gone, per this review's recommendation); (ii) `forkCluster` REFUSES with a teaching error pointing at the P3 anchor+rejoin rebuild and dispatches NOTHING — the new test
+asserts both the rejection and `exec.mock.calls.length === 0` (cluster-kube.test.ts:143-156); (iii) `migrateCluster` passes `operation: 'migrate'` explicitly (cluster-kube.ts:398). One baseline entry added for the new required-operation error-wrap (tool-count 2845; my entry-diff confirms exactly +1 = 2620) — **sanctioned by this gate as blocker-1 remediation** (same internal
+error-wrap class as D3-R2); baseline frozen again after it. Post-fix gates re-verified by me: check:ci-renet EXIT=0 (gate08-ci-renet4.log), tsc 0, vitest 1432/1432 (the old fork-path test replaced by the refusal test).
 2. **check:ci-renet green** — **RESOLVED during review, in two rounds**: (i) my first
-   re-run was RED on one golangci `modernize` finding in the bug-#3 fix
-   (`pkg/infra/ceph/provisioner.go:197`) — p2-forkmigrate fixed it; (ii) the freshly
-   pinned golangci-lint v2.9.0 then surfaced nolintlint drift (unused
-   `//nolint:ireturn` directives in P1-wave `kubevolume/provisioner.go`,
-   `reporuntime/factory.go`, `reporuntime_dispatch.go`) — the lead fixed it
-   idiomatically (ireturn `allow` list in `.golangci.yml` + directive removal).
-   My final confirmation run: **EXIT=0 GREEN** (gate08-ci-renet3.log).
+re-run was RED on one golangci `modernize` finding in the bug-#3 fix (`pkg/infra/ceph/provisioner.go:197`) — p2-forkmigrate fixed it; (ii) the freshly pinned golangci-lint v2.9.0 then surfaced nolintlint drift (unused `//nolint:ireturn` directives in P1-wave `kubevolume/provisioner.go`, `reporuntime/factory.go`, `reporuntime_dispatch.go`) — the lead fixed it idiomatically (ireturn
+`allow` list in `.golangci.yml` + directive removal). My final confirmation run: **EXIT=0 GREEN** (gate08-ci-renet3.log).
 3. **Bookkeeping**: re-cut `checkpoints/phase-2-{console,renet}.patch` — now stale by
-   the two lint-fix rounds AND the blocker-1 fix (provisioner.go, kubevolume, factory,
-   reporuntime_dispatch, `.golangci.yml`, kube_identity.go, cluster-kube.ts + its
-   test, baseline.json). **Still owed** — the only remaining pre-P3 item. The missing
-   membership evidence files are **RESOLVED**: the author had written them to the
-   console repo's `reports/` by mistake and has copied all three into the scratchpad
-   evidence root, with claims CORRECTED (see criterion 4).
+the two lint-fix rounds AND the blocker-1 fix (provisioner.go, kubevolume, factory, reporuntime_dispatch, `.golangci.yml`, kube_identity.go, cluster-kube.ts + its test, baseline.json). **Still owed** — the only remaining pre-P3 item. The missing membership evidence files are **RESOLVED**: the author had written them to the console repo's `reports/` by mistake and has copied all
+three into the scratchpad evidence root, with claims CORRECTED (see criterion 4).
 
 ## Per-criterion evidence table
 
@@ -119,102 +70,55 @@ with hard conditions.
 
 ## Descope rulings
 
-**(a1) Live ceph group-snap cluster fork (P2-FOLLOW-UP #1): LEGITIMATE.** The blocker
-was infrastructure (host RAM exhausted, 14 VMs / 54G, ceph mon OOM-killed, no quorum),
-not code; the escalation valve was followed, not unilateral. The non-live evidence is
-adequate FOR THE LAYER DESCOPED: F1-F8 unit-proven against a real kine DB including
-the decisive /bootstrap trap; the fail-loud fingerprint assert makes a silent parent-CA
-fork impossible by construction; anchor create proven live; the battery is staged,
-syntax-clean, with both ceph gotchas folded in. **Condition**: the battery MUST run
-and pass (parent-vs-fork fingerprints, old-cred 401, secret absence, parent liveness,
-timings, migrate leg) before the P3 gate closes, and before `cluster rehearse` — which
-composes fork — is declared done. It needs a RAM-adequate host + healthy ceph.
+**(a1) Live ceph group-snap cluster fork (P2-FOLLOW-UP #1): LEGITIMATE.** The blocker was infrastructure (host RAM exhausted, 14 VMs / 54G, ceph mon OOM-killed, no quorum), not code; the escalation valve was followed, not unilateral. The non-live evidence is adequate FOR THE LAYER DESCOPED: F1-F8 unit-proven against a real kine DB including the decisive /bootstrap trap; the
+fail-loud fingerprint assert makes a silent parent-CA fork impossible by construction; anchor create proven live; the battery is staged, syntax-clean, with both ceph gotchas folded in. **Condition**: the battery MUST run and pass (parent-vs-fork fingerprints, old-cred 401, secret absence, parent liveness, timings, migrate leg) before the P3 gate closes, and before `cluster
+rehearse` — which composes fork — is declared done. It needs a RAM-adequate host + healthy ceph.
 
-**(a2) Live node graceful shutdown/boot (P2-FOLLOW-UP #2): LEGITIMATE.** The hang was
-root-caused to a genuine product hazard (reconcile timer would wedge ANY real cluster),
-fixed as a safety fix, and the fix is structural (re-entrancy removed) + unit/golden
-covered. Live validation (unit install/ordering, ExecStop→ExecStart cycle, ReattachAll
-on already-mounted re-attach — the D-state secondary suspect) folds into the same
-fresh-session follow-up as (a1). Lower risk than (a1); does not gate P3 features.
+**(a2) Live node graceful shutdown/boot (P2-FOLLOW-UP #2): LEGITIMATE.** The hang was root-caused to a genuine product hazard (reconcile timer would wedge ANY real cluster), fixed as a safety fix, and the fix is structural (re-entrancy removed) + unit/golden covered. Live validation (unit install/ordering, ExecStop→ExecStart cycle, ReattachAll on already-mounted re-attach — the
+D-state secondary suspect) folds into the same fresh-session follow-up as (a1). Lower risk than (a1); does not gate P3 features.
 
-**(b) Are the follow-ups precise enough to execute later? YES for both** — #1 has a
-runnable script with exact preconditions; #2 names the three specific things to
-validate. Both are anchored here and in the manifest.
+**(b) Are the follow-ups precise enough to execute later? YES for both** — #1 has a runnable script with exact preconditions; #2 names the three specific things to validate. Both are anchored here and in the manifest.
 
 **(c) What the evidence contradicts** — recorded honestly:
 - The brief's "cluster fork orchestration exists in code" and "migrate … in code":
-  true only at the primitive layer; the 04 §2/§3 compositions are battery-script-only
-  (criteria 2/3 above). The `cluster fork` verb is actively hazardous (blocking item 1).
+true only at the primitive layer; the 04 §2/§3 compositions are battery-script-only (criteria 2/3 above). The `cluster fork` verb is actively hazardous (blocking item 1).
 - The manifest cited `reports/p2-membership-vm.md`, `-tests.txt`, and
-  `p2b-battery-steps0-3.log` which did not exist at review start — **RESOLVED**: the
-  author had written them to the console repo's `reports/` by mistake; all three are
-  now in the scratchpad evidence root.
+`p2b-battery-steps0-3.log` which did not exist at review start — **RESOLVED**: the author had written them to the console repo's `reports/` by mistake; all three are now in the scratchpad evidence root.
 - The partial battery log did not show the agent node back after JOIN, and the
-  backref-cleared check was grep-by-machine-name (matches regardless). **CONFIRMED
-  REAL by the author**: join re-adopt FAILED live (battery env gap — missing
-  `REDIACC_SKIP_MACHINE_ACTIVATION=1` → license issuance failure; join code
-  unit-proven) and the backref live check was invalid. The manifest's original
-  "steps 2-3 PROVEN LIVE (join re-adopt: node back)" was overstated; the author's
-  updated report now states the honest evidence level, which criterion 4 reflects.
+backref-cleared check was grep-by-machine-name (matches regardless). **CONFIRMED REAL by the author**: join re-adopt FAILED live (battery env gap — missing `REDIACC_SKIP_MACHINE_ACTIVATION=1` → license issuance failure; join code unit-proven) and the backref live check was invalid. The manifest's original "steps 2-3 PROVEN LIVE (join re-adopt: node back)" was overstated; the
+author's updated report now states the honest evidence level, which criterion 4 reflects.
 - `p2a-create2.log` (cited for the p2afork anchor proof) ends `CREATE2 EXIT=1` at the
-  agent step; the anchor portion succeeded in-log, the "Ready" verification was
-  interactive. Cured by p2b's clean end-to-end create.
+agent step; the anchor portion succeeded in-log, the "Ready" verification was interactive. Cured by p2b's clean end-to-end create.
 - `checkpoints/phase-2-renet.patch` is stale by the during-review lint fix (re-cut).
 
 ## AUTHORITATIVE P3 carry-in list
 
-P3 = feature layer (replicate, rehearse, release rung 0+1, thin CSI) **plus, as its
-mandatory first wave**:
+P3 = feature layer (replicate, rehearse, release rung 0+1, thin CSI) **plus, as its mandatory first wave**:
 
 1. **New-model cluster fork orchestrator in product code** (04 §2: group snap →
-   clone-per-member → attach `--writes` → `kube_identity_rewrite --operation fork` →
-   fresh agent joins → stale-Node cleanup; mount-path stability; kills the
-   `dstAgents >= srcAgents` constraint). Promote the battery's sequence into
-   `forkCluster`/its successor. `cluster rehearse` is a thin wrapper over this — build
-   it first.
+clone-per-member → attach `--writes` → `kube_identity_rewrite --operation fork` → fresh agent joins → stale-Node cleanup; mount-path stability; kills the `dstAgents >= srcAgents` constraint). Promote the battery's sequence into `forkCluster`/its successor. `cluster rehearse` is a thin wrapper over this — build it first.
 2. **New-model cluster migrate**: in-Ceph fenced remap (detach/attach via the P1
-   fencing primitives, networkID kept), cross-site 03 §4 pipeline, per-repo
-   **health-gate composition** over `RepoRuntime.Health`/`repository_health`
-   (+ `--health-window`/`--health-timeout` per spec 03) with rollback = intact source.
+fencing primitives, networkID kept), cross-site 03 §4 pipeline, per-repo **health-gate composition** over `RepoRuntime.Health`/`repository_health` (+ `--health-window`/`--health-timeout` per spec 03) with rollback = intact source.
 3. **Live ceph group-snap fork battery** (FOLLOW-UP #1) — pass before the P3 gate;
-   script `scratchpad/p2a-fork-battery.sh`; needs RAM headroom + healthy ceph.
+script `scratchpad/p2a-fork-battery.sh`; needs RAM headroom + healthy ceph.
 4. **Live membership + node-lifecycle validation** (FOLLOW-UP #2, one fresh p2b
-   session with `REDIACC_SKIP_MACHINE_ACTIVATION=1` set for the whole battery):
-   (i) join re-adopt end-to-end (agent Ready + backref SET); (ii) evict backref-clear
-   verified by reading the machine's config object, not a name grep; (iii) unit
-   install/ordering via kube_install, graceful reboot ExecStop→ExecStart re-attach
-   cycle, ReattachAll on already-mounted datastores (the D-state secondary suspect).
+session with `REDIACC_SKIP_MACHINE_ACTIVATION=1` set for the whole battery): (i) join re-adopt end-to-end (agent Ready + backref SET); (ii) evict backref-clear verified by reading the machine's config object, not a name grep; (iii) unit install/ordering via kube_install, graceful reboot ExecStop→ExecStart re-attach cycle, ReattachAll on already-mounted datastores (the D-state
+secondary suspect).
 5. **E2E suites 15/16/17 rewrite per spec 06** (owed 09 §P2 gate item) + the
-   DatastoreMethods harness additions + carry-in 8 (live fencing race) folded into the
-   multinode suite; multinode suite passing locally gates P3.
+DatastoreMethods harness additions + carry-in 8 (live fencing race) folded into the multinode suite; multinode suite passing locally gates P3.
 6. **Attach-time auto node-label wiring** (carry-in 1 remainder) — decide P3 (CSI
-   topology needs it?) vs P4 porcelain; until wired, local-PV pods on cluster-attached
-   datastores need the manual primitive.
+topology needs it?) vs P4 porcelain; until wired, local-PV pods on cluster-attached datastores need the manual primitive.
 7. **Overlay-fill auto-grow wiring** (carry-in 9; spike-f recommendation) alongside the
-   maintain/reconcile timer generalization.
+maintain/reconcile timer generalization.
 8. **`--secrets-encryption` guidance** → P7 docs (`k3s secrets-encrypt rotate-keys`
-   post-fork); revisit as a scrub step only if the flag becomes a v1 default.
+post-fork); revisit as a scrub step only if the flag becomes a v1 default.
 9. **Minor sweeps**: `cluster evict --force` is accepted but unused (wire to a
-   drain-force/skip-drain path or drop it); stale self-heal comment
-   `node_lifecycle_unit.go:87`; reconsider the `--operation` default (blocking item 1
-   recommends required-no-default); `installCeph`'s 2-OSD test-topology pool
-   accommodation (`size 2/min_size 1`) stays test-only, never product default;
-   probe the `rdc cluster kubeconfig` success:false observation (p2b-kubeconfig.err
-   — possibly a broken product verb, the battery worked around it via the control
-   node's embedded k3s); teaching errors for the two recurring KVM-topology footguns
-   (license issuance should name `REDIACC_SKIP_MACHINE_ACTIVATION=1` — it has now
-   bitten three separate agents; worker `VM_DSK` vs 20G node repo sizing).
+drain-force/skip-drain path or drop it); stale self-heal comment `node_lifecycle_unit.go:87`; reconsider the `--operation` default (blocking item 1 recommends required-no-default); `installCeph`'s 2-OSD test-topology pool accommodation (`size 2/min_size 1`) stays test-only, never product default; probe the `rdc cluster kubeconfig` success:false observation (p2b-kubeconfig.err —
+possibly a broken product verb, the battery worked around it via the control node's embedded k3s); teaching errors for the two recurring KVM-topology footguns (license issuance should name `REDIACC_SKIP_MACHINE_ACTIVATION=1` — it has now bitten three separate agents; worker `VM_DSK` vs 20G node repo sizing).
 
-P4 reminders unchanged from spec 07 (latest-magic resolver, composite-key view,
-takeover→promote CLI rename, D3 baseline re-keying in P7).
+P4 reminders unchanged from spec 07 (latest-magic resolver, composite-key view, takeover→promote CLI rename, D3 baseline re-keying in P7).
 
 ## Checkpoint integrity
 
-`phase-2-console.patch` (323K), `phase-2-renet.patch` (481K), `phase-2-untracked.tar.gz`
-(282K) exist; the untracked list correctly captures the new P2 files (fork_remint,
-node.go, node_lifecycle_unit.go, cluster-membership.ts, ceph_config.go, preflight,
-label, kube_node_label_test). One staleness: the checkpoints predate the two
-during-review lint-fix rounds (`pkg/infra/ceph/provisioner.go`,
-`pkg/kubevolume/provisioner.go`, `pkg/reporuntime/factory.go`,
-`cmd/renet/reporuntime_dispatch.go`, `.golangci.yml`) — re-cut before P3
-(blocking item 3).
+`phase-2-console.patch` (323K), `phase-2-renet.patch` (481K), `phase-2-untracked.tar.gz` (282K) exist; the untracked list correctly captures the new P2 files (fork_remint, node.go, node_lifecycle_unit.go, cluster-membership.ts, ceph_config.go, preflight, label, kube_node_label_test). One staleness: the checkpoints predate the two during-review lint-fix rounds
+(`pkg/infra/ceph/provisioner.go`, `pkg/kubevolume/provisioner.go`, `pkg/reporuntime/factory.go`, `cmd/renet/reporuntime_dispatch.go`, `.golangci.yml`) — re-cut before P3 (blocking item 3).

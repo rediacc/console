@@ -1,103 +1,60 @@
 # W7 P3 batch 5: the brief, and the shadow filter corrected
 
-Written 2026-09-07. This file exists because batch 5 is the first batch whose
-selection predicate is written down. Batches 2, 3 and 4 each re-derived it from
-memory, and batch 2 got it wrong in a way that only a human caught.
+Written 2026-09-07. This file exists because batch 5 is the first batch whose selection predicate is written down. Batches 2, 3 and 4 each re-derived it from memory, and batch 2 got it wrong in a way that only a human caught.
 
 ## Where the port stands
 
-Do not trust the numbers below; re-run the derivation. They are recorded so a
-reader can tell whether the tree has moved, not so anyone can cite them.
+Do not trust the numbers below; re-run the derivation. They are recorded so a reader can tell whether the tree has moved, not so anyone can cite them.
 
-At the time of writing: 148 bash gate tests under `.ci/scripts/test/gates/`,
-41 ported under `.ci/rediacc_ci/tests/gates/`, 75 admissible for batch 5.
+At the time of writing: 148 bash gate tests under `.ci/scripts/test/gates/`, 41 ported under `.ci/rediacc_ci/tests/gates/`, 75 admissible for batch 5.
 
-Invariant 5 holds and must keep holding: all 148 bash originals are still
-present. A twin is never deleted in the change that ports it. Deletion is W7 P5.
+Invariant 5 holds and must keep holding: all 148 bash originals are still present. A twin is never deleted in the change that ports it. Deletion is W7 P5.
 
 ## What a batch may contain, and why each exclusion exists
 
 A gate test is ADMISSIBLE for a batch when it is none of the following.
 
 1. **Already ported.** Membership is read from the `BASH_TWIN` declaration in
-   each `test_gate_*.py`, never from a filename guess. The declaration is what
-   `test_twin_parity.py` itself uses, so the two agree by construction.
+each `test_gate_*.py`, never from a filename guess. The declaration is what `test_twin_parity.py` itself uses, so the two agree by construction.
 
 2. **A real-tree test.** Read FROM `scripts/ci-runner/gates.lock.json`, not from
-   the hand-maintained W/S arrays in `run-all.sh`. This only became possible when
-   W2.4 landed the `tree:` isolation declarations; before that the lock carried
-   no `reads` key at all and the arrays were the only source. Batch 3 was the
-   first to read the lock, and its parity driver asserts the disjointness on
-   every run.
+the hand-maintained W/S arrays in `run-all.sh`. This only became possible when W2.4 landed the `tree:` isolation declarations; before that the lock carried no `reads` key at all and the arrays were the only source. Batch 3 was the first to read the lock, and its parity driver asserts the disjointness on every run.
 
-   The lock names a gate test only by id, so the twin path is `test-<name>.sh` by
-   convention. The derivation ASSERTS that convention: every derived name must
-   exist on disk, and it refuses rather than continuing if one does not. A
-   convention that had silently drifted would otherwise subtract nothing and
-   quietly admit a real-tree test into a batch.
+The lock names a gate test only by id, so the twin path is `test-<name>.sh` by convention. The derivation ASSERTS that convention: every derived name must exist on disk, and it refuses rather than continuing if one does not. A convention that had silently drifted would otherwise subtract nothing and quietly admit a real-tree test into a batch.
 
 3. **Covered by a shadow ledger.** W7 P2 ported 78 gate/twin pairs, each with a
-   differential ledger under `.ci/shadow/`. A gate test whose subject is already
-   under a shadow pair is excluded, because porting it would put two mechanisms
-   on the same subject.
+differential ledger under `.ci/shadow/`. A gate test whose subject is already under a shadow pair is excluded, because porting it would put two mechanisms on the same subject.
 
 ## THE CORRECTION, which is the point of this file
 
-The batch 2 predicate mapped a ledger to the basenames it covers by reading the
-paths recorded in each row's `old.cmd` and `new.cmd`. That is right for 77 of
-the 78 ledgers and silently wrong for one:
+The batch 2 predicate mapped a ledger to the basenames it covers by reading the paths recorded in each row's `old.cmd` and `new.cmd`. That is right for 77 of the 78 ledgers and silently wrong for one:
 
     w6p2-toolchain: .ci/shadow-drivers/toolchain-old.sh
                     .ci/shadow-drivers/toolchain-new.py
 
-`.ci/shadow-drivers/` NO LONGER EXISTS. So the filter resolved nothing for that
-ledger, contributed no basenames, and reported a clean derivation. Nobody was
-told. `test-toolchain.sh` had to be excluded BY HAND, and a hand exclusion is
-exactly the kind of knowledge that does not survive a compaction, which is why
-batch 5 nearly repeated it.
+`.ci/shadow-drivers/` NO LONGER EXISTS. So the filter resolved nothing for that ledger, contributed no basenames, and reported a clean derivation. Nobody was told. `test-toolchain.sh` had to be excluded BY HAND, and a hand exclusion is exactly the kind of knowledge that does not survive a compaction, which is why batch 5 nearly repeated it.
 
-A filter that goes quiet on the one input it cannot resolve is worse than no
-filter, because it reports success. The correction has two halves:
+A filter that goes quiet on the one input it cannot resolve is worse than no filter, because it reports success. The correction has two halves:
 
 - A ledger whose recorded paths all resolve contributes its basenames, as before.
 - A ledger with NO resolvable recorded path at all is NOT trusted to have
-  contributed anything. Its pair slug is used as a fallback instead, and every gate
-  test whose name contains that slug token is excluded. Such ledgers are PRINTED, so
-  the fallback is visible rather than silent.
+contributed anything. Its pair slug is used as a fallback instead, and every gate test whose name contains that slug token is excluded. Such ledgers are PRINTED, so the fallback is visible rather than silent.
 
-**CORRECTED AGAIN 2026-09-07, by the batch 5 writer, and the first correction was
-too aggressive.** The rule above originally said ANY unresolvable path made a ledger
-untrusted. That is wrong, because a recorded command can name a FIXTURE path that
-was always relative to a temp dir and never existed in the repo. `w7p2-rbs` is
-exactly that: its unresolvable token is `fx/decide.sh`, a fixture, while the same
-ledger also records the perfectly resolvable `check-release-bump-skip.sh` and
-`check_release_bump_skip.py`. Under the old rule those REAL contributions were
-discarded, and the slug fallback then excluded nothing either, because the token
-`rbs` matches no gate-test filename. Net exclusions from that ledger: ZERO, silently
--- the same shape of failure the first correction was written to fix, one level in.
+**CORRECTED AGAIN 2026-09-07, by the batch 5 writer, and the first correction was too aggressive.** The rule above originally said ANY unresolvable path made a ledger untrusted. That is wrong, because a recorded command can name a FIXTURE path that was always relative to a temp dir and never existed in the repo. `w7p2-rbs` is exactly that: its unresolvable token is `fx/decide.sh`,
+a fixture, while the same ledger also records the perfectly resolvable `check-release-bump-skip.sh` and `check_release_bump_skip.py`. Under the old rule those REAL contributions were discarded, and the slug fallback then excluded nothing either, because the token `rbs` matches no gate-test filename. Net exclusions from that ledger: ZERO, silently -- the same shape of failure the
+first correction was written to fix, one level in.
 
-Nothing was wrongly admitted on the day it was found (there is no
-`test-release-bump-skip.sh` on disk), but the fallback was inert for that ledger and
-would not have protected a future gate test for that subject.
+Nothing was wrongly admitted on the day it was found (there is no `test-release-bump-skip.sh` on disk), but the fallback was inert for that ledger and would not have protected a future gate test for that subject.
 
-The distinction that matters is ALL versus ANY: a ledger with some resolvable paths
-is telling you what it covers, and a fixture path beside them does not make it a
-liar. Only a ledger where NOTHING resolves has genuinely lost its subject, which is
-`w6p2-toolchain` and its vanished `.ci/shadow-drivers/`.
+The distinction that matters is ALL versus ANY: a ledger with some resolvable paths is telling you what it covers, and a fixture path beside them does not make it a liar. Only a ledger where NOTHING resolves has genuinely lost its subject, which is `w6p2-toolchain` and its vanished `.ci/shadow-drivers/`.
 
-Run today, the fallback fires on `w6p2-toolchain` and excludes
-`test-toolchain.sh` on its own. That is the hand exclusion, derived.
+Run today, the fallback fires on `w6p2-toolchain` and excludes `test-toolchain.sh` on its own. That is the hand exclusion, derived.
 
-One more trap worth keeping: the path regex must require a slash. Without it,
-`python3 -m rediacc_ci.quality.python_lint` matches as the "path"
-`rediacc_ci.quality.py`, which resolves to nothing and drags three healthy
-ledgers into the fallback for no reason.
+One more trap worth keeping: the path regex must require a slash. Without it, `python3 -m rediacc_ci.quality.python_lint` matches as the "path" `rediacc_ci.quality.py`, which resolves to nothing and drags three healthy ledgers into the fallback for no reason.
 
 ## The derivation
 
-Self-contained. Run it from the repo root. It prints the counts, every
-unresolvable ledger with its offending paths, what the fallback excluded, and the
-admissible list.
+Self-contained. Run it from the repo root. It prints the counts, every unresolvable ledger with its offending paths, what the fallback excluded, and the admissible list.
 
 ```python
 """Derive W7 P3 batch 5's admissible set, with the shadow filter CORRECTED.
@@ -218,77 +175,42 @@ for g in admissible[:60]:
 
 ## Lane facts a later batch needs, corrected 2026-09-07
 
-`check:ci-pytest` MOVED from `quality-static` to `quality-security`. The old lane
-ran no `setup-workspace`, so it had neither node nor submodules, while 23 of the
-ported modules shell out to npx/tsx/npm run and 6 reference a submodule path.
-Driven with node hidden from PATH exactly as that runner sees it, three of those
-modules gave 24 failed / 1 passed; with node, 25 passed. They do not skip, they
-fail. CI never caught it because every port is still UNTRACKED.
+`check:ci-pytest` MOVED from `quality-static` to `quality-security`. The old lane ran no `setup-workspace`, so it had neither node nor submodules, while 23 of the ported modules shell out to npx/tsx/npm run and 6 reference a submodule path. Driven with node hidden from PATH exactly as that runner sees it, three of those modules gave 24 failed / 1 passed; with node, 25 passed. They
+do not skip, they fail. CI never caught it because every port is still UNTRACKED.
 
-**Two consequences for selection.** First, a subject needing node or a submodule is
-now fine, where before it was a latent CI red. Second, and specifically:
-`test-renet-deadcode.sh` was dropped by batch 6 on the reasoning that its twin
-skips when `private/renet` is absent and quality-static gives no submodule
-checkout. That premise is now FALSE: `quality-security` checks submodules out, so
-that subject is admissible again. Re-screen it rather than inheriting the drop.
+**Two consequences for selection.** First, a subject needing node or a submodule is now fine, where before it was a latent CI red. Second, and specifically: `test-renet-deadcode.sh` was dropped by batch 6 on the reasoning that its twin skips when `private/renet` is absent and quality-static gives no submodule checkout. That premise is now FALSE: `quality-security` checks submodules
+out, so that subject is admissible again. Re-screen it rather than inheriting the drop.
 
 ## Two branches that are UNEXERCISED on this machine (batch 8)
 
-`test_gate_profiler_report.py`'s `test_sampler_reads_a_real_containers_ceiling` takes
-its DOCKER branch here, because `/sys/fs/cgroup/memory.max` is unreadable on this box.
-The NATIVE branch is present and structurally faithful but has never run, and it is
-the one that will be live on ubuntu-slim. The same case's `SKIP`-shaped `log_pass`
-arms (no docker, or the container run failing) are carried verbatim from the twin and
-are likewise unexercised. **If that port ever reds in CI and passes here, this is why**
--- look at the branch, not at the assertion.
+`test_gate_profiler_report.py`'s `test_sampler_reads_a_real_containers_ceiling` takes its DOCKER branch here, because `/sys/fs/cgroup/memory.max` is unreadable on this box. The NATIVE branch is present and structurally faithful but has never run, and it is the one that will be live on ubuntu-slim. The same case's `SKIP`-shaped `log_pass` arms (no docker, or the container run
+failing) are carried verbatim from the twin and are likewise unexercised. **If that port ever reds in CI and passes here, this is why** -- look at the branch, not at the assertion.
 
-By contrast, one thing batch 8 named as unverified is NOT: it worried the `-n 8`
-interaction was inherited rather than measured for its twelve. `check_pytest.py:671`
-puts `-n <jobs> --dist loadgroup` on argv with `PYTEST_JOBS_CAP = 8`, so the
-`check:ci-pytest` run it drove to exit 0 IS the xdist sweep. No separate run is owed.
+By contrast, one thing batch 8 named as unverified is NOT: it worried the `-n 8` interaction was inherited rather than measured for its twelve. `check_pytest.py:671` puts `-n <jobs> --dist loadgroup` on argv with `PYTEST_JOBS_CAP = 8`, so the `check:ci-pytest` run it drove to exit 0 IS the xdist sweep. No separate run is owed.
 
 ## Residues from batch 7 that a later batch must not rediscover
 
-**Six `test-breakpoint-*.sh` subjects are UNPORTABLE by any agent under the standard
-brief, and not on merit.** Plant-verifying them means temporarily writing under
-`.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching and which every
-batch brief lists as must-not-touch. They stay admissible in the derivation, so each
-batch will keep selecting and then dropping them. Either give one batch owner that path
-explicitly, with the vendored-copy drift gate re-run afterwards, or exclude them in the
-derivation with this reason. Do not silently drop them a fourth time.
+**Six `test-breakpoint-*.sh` subjects are UNPORTABLE by any agent under the standard brief, and not on merit.** Plant-verifying them means temporarily writing under `.ci/breakpoint/**`, which invariant 8 forbids any sweep from touching and which every batch brief lists as must-not-touch. They stay admissible in the derivation, so each batch will keep selecting and then dropping
+them. Either give one batch owner that path explicitly, with the vendored-copy drift gate re-run afterwards, or exclude them in the derivation with this reason. Do not silently drop them a fourth time.
 
-**`test-scrub-sentinel-empty.sh` stays dropped** while `aws` is absent: the twin takes
-its tool-absent branch, so both real cases are unreachable and no plant can turn either
-side red. A port would be green-but-unproven. Admissible on a machine with `aws`.
+**`test-scrub-sentinel-empty.sh` stays dropped** while `aws` is absent: the twin takes its tool-absent branch, so both real cases are unreachable and no plant can turn either side red. A port would be green-but-unproven. Admissible on a machine with `aws`.
 
-**`test_gate_renet_deadcode.py` DELIBERATELY DIVERGES from its twin in one state.** When
-`private/renet` is absent the twin exits 0 with a "skipping" echo; the port refuses
-loudly. The argument, recorded in its module docstring, is that `run-all.sh` already
-scores an exit-0-with-no-`PASS:`-line run as a FAILURE, so under the battery that
-actually runs these files the twin's skip is red too, and only `bash <twin>` driven
-directly reads it as green. **That branch is UNEXERCISED here and in `quality-security`,
-because the submodule is present in both.** If a future lane ever runs without
-submodules, twin and port disagree and the parity driver will say so; that is the
-intended alarm, not a regression to suppress.
+**`test_gate_renet_deadcode.py` DELIBERATELY DIVERGES from its twin in one state.** When `private/renet` is absent the twin exits 0 with a "skipping" echo; the port refuses loudly. The argument, recorded in its module docstring, is that `run-all.sh` already scores an exit-0-with-no-`PASS:`-line run as a FAILURE, so under the battery that actually runs these files the twin's skip is
+red too, and only `bash <twin>` driven directly reads it as green. **That branch is UNEXERCISED here and in `quality-security`, because the submodule is present in both.** If a future lane ever runs without submodules, twin and port disagree and the parity driver will say so; that is the intended alarm, not a regression to suppress.
 
 ## What a batch 5 writer must do per subject
 
 Unchanged from batches 2 to 4, and none of it is optional:
 
 - Plant a defect in the REAL subject, drive BOTH sides, and confirm the port goes
-  red where the twin goes red. A port that has never been seen red has not been
-  shown to assert anything.
+red where the twin goes red. A port that has never been seen red has not been shown to assert anything.
 - Restore the subject and prove it byte-identical by sha256. Not "looks right".
 - Declare `BASH_TWIN`. It is what makes the port discoverable to
-  `test_twin_parity.py`; a port without it is invisible and silently uncompared.
+`test_twin_parity.py`; a port without it is invisible and silently uncompared.
 - Declare an `xdist_group` if the port binds a port or mutates a module global.
-  Batch 4 was the first to run under `-n 8`, so a port that was safe serially can
-  flake now.
+Batch 4 was the first to run under `-n 8`, so a port that was safe serially can flake now.
 - Do NOT delete the twin (invariant 5).
 
 ## Registration
 
-The 148 `gate-test:*` manifest entries are the largest patch fragment in the
-programme. A writer authors its registration as a patch FRAGMENT and the driver
-applies it in the same commit as the gate file (invariant 13). Batch registration
-must stay batched, or the driver becomes the bottleneck.
+The 148 `gate-test:*` manifest entries are the largest patch fragment in the programme. A writer authors its registration as a patch FRAGMENT and the driver applies it in the same commit as the gate file (invariant 13). Batch registration must stay batched, or the driver becomes the bottleneck.

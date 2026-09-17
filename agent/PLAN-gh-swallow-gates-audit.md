@@ -1,8 +1,6 @@
 # PLAN: gh Swallow-Failure Sweep Across `.ci/scripts` — Registered-Gate False-Green Risks
 
-Status: done
-Owner: f4da5c2e
-Updated: 2026-09-10
+Status: done Owner: f4da5c2e Updated: 2026-09-10
 
 Sections: Problem, Full verified instance list, Fix design per REGISTERED-GATE instance (literal diffs), Test plan, Execution recommendation.
 
@@ -17,32 +15,15 @@ Sections: Problem, Full verified instance list, Fix design per REGISTERED-GATE i
 
 ## COMPLETE 2026-09-10: all 4 fixes done inline by the driver
 
-Both writer slots stayed occupied the whole time this plan was queued, and per this
-session's standing lesson (paid for twice already on check-commands.sh) "queued" is not a
-reason to sit idle -- the driver implemented all 4 fixes directly. Every fix landed in BOTH
-the bash twin and the live Python port (per the plan's own headline finding: 3 of 4 named
-gates are actually Python-live now), plus a matching test change. `bash -n` clean on all 5
-touched bash files; `python3 -m ast` clean on all 6 touched Python files.
+Both writer slots stayed occupied the whole time this plan was queued, and per this session's standing lesson (paid for twice already on check-commands.sh) "queued" is not a reason to sit idle -- the driver implemented all 4 fixes directly. Every fix landed in BOTH the bash twin and the live Python port (per the plan's own headline finding: 3 of 4 named gates are actually
+Python-live now), plus a matching test change. `bash -n` clean on all 5 touched bash files; `python3 -m ast` clean on all 6 touched Python files.
 
-**Full verification**: `check:ci-language-policy` unaffected (509, 0 added -- edits only, no
-new/deleted bash file); `check:ci-python-lint` and `check:ci-dead-python` show zero findings
-in any of the 6 Python files touched; the full pytest suites for all three touched test
-files pass (14/14 pr_description, 20/20 label_inventory, 35/35 submodule_branches); the
-bash-side `test-mark-production.sh` battery passes 7/7 including the 2 new anti-regression
-cases. **The live registered gate itself was re-run against the real tree, not just the
-fixture harness**: `npm run check:ci-label-inventory` -> `✓ label inventory reconciled: 29
-declared, 29 live (source: GitHub API); names, descriptions and colours all agree` --
-confirms the fix does not break the real, authenticated `gh` path in this environment.
-`git status` scoped to exactly the 11 intended files, nothing else.
+**Full verification**: `check:ci-language-policy` unaffected (509, 0 added -- edits only, no new/deleted bash file); `check:ci-python-lint` and `check:ci-dead-python` show zero findings in any of the 6 Python files touched; the full pytest suites for all three touched test files pass (14/14 pr_description, 20/20 label_inventory, 35/35 submodule_branches); the bash-side
+`test-mark-production.sh` battery passes 7/7 including the 2 new anti-regression cases. **The live registered gate itself was re-run against the real tree, not just the fixture harness**: `npm run check:ci-label-inventory` -> `✓ label inventory reconciled: 29 declared, 29 live (source: GitHub API); names, descriptions and colours all agree` -- confirms the fix does not break the
+real, authenticated `gh` path in this environment. `git status` scoped to exactly the 11 intended files, nothing else.
 
-**One implementation deviation from the plan's literal diff, noted for the record**: the
-`console_pr_body` Python fix uses `gh_probe(False, ..., [..., "--jq", ".body // empty"])`
-directly (matching the bash twin's own `gh_retry ... --jq '.body // empty'` call exactly)
-rather than the plan's suggested manual `json.loads(...).get("body")` parsing -- simpler and
-more faithful to the twin's actual behavior, verified equivalent. Also added `.rstrip("\n")`
-on the `gh_probe` output (not in the plan's diff) since `gh_probe` doesn't strip trailing
-newlines the way bash's `$(...)` command substitution does, matching this file's own
-established convention (`.strip()` used at 4 other call sites in the same module).
+**One implementation deviation from the plan's literal diff, noted for the record**: the `console_pr_body` Python fix uses `gh_probe(False, ..., [..., "--jq", ".body // empty"])` directly (matching the bash twin's own `gh_retry ... --jq '.body // empty'` call exactly) rather than the plan's suggested manual `json.loads(...).get("body")` parsing -- simpler and more faithful to the
+twin's actual behavior, verified equivalent. Also added `.rstrip("\n")` on the `gh_probe` output (not in the plan's diff) since `gh_probe` doesn't strip trailing newlines the way bash's `$(...)` command substitution does, matching this file's own established convention (`.strip()` used at 4 other call sites in the same module).
 
 ---
 
@@ -57,17 +38,20 @@ established convention (`.strip()` used at 4 other call sites in the same module
 | `.ci/scripts/quality/check-submodule-branches.sh` | `.ci/rediacc_ci/quality/submodule_branches.py` (entry: `check_submodule_branches.py`) | `.github/workflows/ci-quality.yml` job "Submodule Branches", step "Validate submodule branches" runs `check_submodule_branches.py` directly |
 | `.ci/scripts/quality/check-label-inventory.sh` | `.ci/rediacc_ci/quality/label_inventory.py` (entry: `check_label_inventory.py`) | `manifest.ts` id `check:ci-label-inventory` -> `npm run check:ci-label-inventory` -> this file |
 
-Each port was built to be **byte-for-byte behaviourally equivalent** to its bash twin (verified with `shadow-gate.ts --assert`), and in three of the four cases the swallow found by the grep sweep **was carried over faithfully into the live Python gate**, because "port it exactly, fix it later" was the explicit invariant (`INVARIANT 5`, stated in every port's docstring: the twin is not edited in the change that ports it).
+Each port was built to be **byte-for-byte behaviourally equivalent** to its bash twin (verified with `shadow-gate.ts --assert`), and in three of the four cases the swallow found by the grep sweep **was carried over faithfully into the live Python gate**, because "port it exactly, fix it later" was the explicit invariant (`INVARIANT 5`, stated in every port's docstring: the twin is
+not edited in the change that ports it).
 
 Consequence for this plan: fixing only the bash twin is cosmetic. Every REGISTERED-GATE fix below must land in **both** the twin (to keep the differential comparison meaningful and per invariant-5-compatible sequencing) **and** the live Python module (to actually change gate behaviour), plus whatever test exists on each side.
 
-I also found the check-swallowed-failures.sh / `check_swallowed_failures.py` gate itself — the automated scanner that is supposed to catch exactly this defect class — was **only first registered and run in CI on 2026-09-08**, and its `DEFAULT_SCAN_DIRS` is `(".ci/scripts/quality", ".ci/scripts/security", ".ci/scripts/lib")`. It does **not** scan `.ci/scripts/housekeeping` or `.ci/scripts/release` at all, and even inside `.ci/scripts/quality` its heuristic has real, demonstrated blind spots (documented in section 1).
+I also found the check-swallowed-failures.sh / `check_swallowed_failures.py` gate itself — the automated scanner that is supposed to catch exactly this defect class — was **only first registered and run in CI on 2026-09-08**, and its `DEFAULT_SCAN_DIRS` is `(".ci/scripts/quality", ".ci/scripts/security", ".ci/scripts/lib")`. It does **not** scan `.ci/scripts/housekeeping` or
+`.ci/scripts/release` at all, and even inside `.ci/scripts/quality` its heuristic has real, demonstrated blind spots (documented in section 1).
 
 ---
 
 ## 1. Problem
 
-`gh` calls of the shape `gh (api|pr|run|release|workflow) ... 2>/dev/null || echo <default>` (or `|| true`) turn a `gh` failure (rate limit, expired token, network blip) into a value indistinguishable from "nothing to report." Earlier this session four such call sites in `.ci/scripts/lib/common.sh` (`review_report_count`, `review_attempt_states`, `review_spent_attempt_count`, `review_spend_total`) were fixed by routing through the file's own `gh_retry` helper, because they fed a merge-blocking check (`review-status.yml`) and a swallow there once made a capped PR permanently unmergeable (PR #553, 2026-08-07).
+`gh` calls of the shape `gh (api|pr|run|release|workflow) ... 2>/dev/null || echo <default>` (or `|| true`) turn a `gh` failure (rate limit, expired token, network blip) into a value indistinguishable from "nothing to report." Earlier this session four such call sites in `.ci/scripts/lib/common.sh` (`review_report_count`, `review_attempt_states`, `review_spent_attempt_count`,
+`review_spend_total`) were fixed by routing through the file's own `gh_retry` helper, because they fed a merge-blocking check (`review-status.yml`) and a swallow there once made a capped PR permanently unmergeable (PR #553, 2026-08-07).
 
 A stop-hook judge required the same sweep repo-wide. Re-running and hand-verifying the grep (not trusting the background bullet list) found:
 
@@ -115,7 +99,9 @@ Legend: **H** = HOUSEKEEPING/BEST-EFFORT (leave as is), **G** = REGISTERED-GATE 
 
 ### 2.5 A gap in the swallow-scanner itself, found while tracing #2
 
-`check_swallowed_failures.py` / `check-swallowed-failures.sh` classify a captured probe as safe once *anything* matching `ESCALATE_RE` (which includes `log_warn`) appears in the branch guarding the empty case — **even if that same branch also does `exit 0` / `return 0` right after the warning**. That is exactly instance #2's shape: `log_warn "..."; exit 0`. The scanner sees `log_warn` and stops looking, so it never flags this site, and the live tree currently self-reports "0 findings" despite carrying this real defect. This is not something this plan proposes to fix (the swallow-scanner is out of this sweep's declared scope and is itself a registered, tested gate with its own change-control), but it explains why re-deriving the list by hand (rather than trusting `check-swallowed-failures.sh`'s own "OK" verdict) was necessary, and it should be called out to whoever owns that scanner next.
+`check_swallowed_failures.py` / `check-swallowed-failures.sh` classify a captured probe as safe once *anything* matching `ESCALATE_RE` (which includes `log_warn`) appears in the branch guarding the empty case — **even if that same branch also does `exit 0` / `return 0` right after the warning**. That is exactly instance #2's shape: `log_warn "..."; exit 0`. The scanner sees
+`log_warn` and stops looking, so it never flags this site, and the live tree currently self-reports "0 findings" despite carrying this real defect. This is not something this plan proposes to fix (the swallow-scanner is out of this sweep's declared scope and is itself a registered, tested gate with its own change-control), but it explains why re-deriving the list by hand (rather
+than trusting `check-swallowed-failures.sh`'s own "OK" verdict) was necessary, and it should be called out to whoever owns that scanner next.
 
 ### 2.6 `.ci/scripts/release/mark-production.sh` (not a manifest-registered gate — a release/production-tagging script, run from `promote-stable.yml`)
 
@@ -140,7 +126,8 @@ Legend: **H** = HOUSEKEEPING/BEST-EFFORT (leave as is), **G** = REGISTERED-GATE 
 
 ### 2.9 HOUSEKEEPING/BEST-EFFORT — `.ci/scripts/housekeeping/cleanup-versions.sh` (runs from `housekeeping.yml`, a nightly job, not merge-blocking, not a manifest gate)
 
-All 21 verified `gh`-swallow sites below sit inside per-item loops over hundreds of tags/releases/packages/deployments/branches/runs/artifacts/caches. In every case, "this one lookup failed" degrades to "skip/keep this one item, keep going" — never to "report the whole nightly sweep succeeded when it silently did nothing" (the two calls that *could* have that shape, lines 547 and 967, are separately verified ALREADY SAFE below). A wrong skip here is corrected on the next nightly run; it does not corrupt a merge decision, a production pointer, or a deployment. Leave as is.
+All 21 verified `gh`-swallow sites below sit inside per-item loops over hundreds of tags/releases/packages/deployments/branches/runs/artifacts/caches. In every case, "this one lookup failed" degrades to "skip/keep this one item, keep going" — never to "report the whole nightly sweep succeeded when it silently did nothing" (the two calls that *could* have that shape, lines 547 and
+967, are separately verified ALREADY SAFE below). A wrong skip here is corrected on the next nightly run; it does not corrupt a merge decision, a production pointer, or a deployment. Leave as is.
 
 | Line(s) | What it guards | Default | Why leaving it is fine |
 |---|---|---|---|
@@ -198,7 +185,8 @@ Style note: every fix below matches an idiom **already present in the same file*
  fi
 ```
 
-The swallow (`|| echo ""`) is deliberately **kept** — it already matches this file's own idiom two sections above for `PR_DATA` (fetch into a sentinel, then check the sentinel explicitly), and `""` cannot be produced legitimately here (§2.1 reasoning: `COMMIT_COUNT >= 3` is already proven). Only the consequence of hitting the sentinel changes, from "warn and pass" to "error and fail."
+The swallow (`|| echo ""`) is deliberately **kept** — it already matches this file's own idiom two sections above for `PR_DATA` (fetch into a sentinel, then check the sentinel explicitly), and `""` cannot be produced legitimately here (§2.1 reasoning: `COMMIT_COUNT >= 3` is already proven). Only the consequence of hitting the sentinel changes, from "warn and pass" to "error and
+fail."
 
 **Live gate**, `.ci/rediacc_ci/quality/pr_description.py` (lines 287-291 today):
 
@@ -432,7 +420,8 @@ Both flow through `test_differential`, which already asserts byte-identical stdo
 
 ### 4.2 `check-submodule-branches.sh` / `submodule_branches.py`
 
-There is currently **no executable test at all** for `console_pr_body`'s `gh`-calling behaviour on either side — `test_quality_submodule_branches.py`'s own docstring says so explicitly ("The gh call sites cannot be exercised locally... covered end to end by [a one-time shadow-gate ledger]"). This sweep needs to add one, following the closest existing convention (`GH_STUB` from `test_quality_pr_description.py`):
+There is currently **no executable test at all** for `console_pr_body`'s `gh`-calling behaviour on either side — `test_quality_submodule_branches.py`'s own docstring says so explicitly ("The gh call sites cannot be exercised locally... covered end to end by [a one-time shadow-gate ledger]"). This sweep needs to add one, following the closest existing convention (`GH_STUB` from
+`test_quality_pr_description.py`):
 
 - **Python**: add a small stub-`gh`-on-`PATH` test to `test_quality_submodule_branches.py` (or a new `test_gate_submodule_branches_gh.py` if the existing file's pure-function focus argues for separation) that:
   1. builds a temp dir with a `gh` script that exits 1 for `pr view <n> --json body` (matching the fake-gh convention already used elsewhere),
@@ -480,9 +469,11 @@ Sequencing note for Writer A: land each pair (twin + port + test) as its own com
 - `.ci/scripts/release/mark-production.sh`
 - `.ci/scripts/test/gates/test-mark-production.sh`
 
-**No writer needed for the housekeeping files** (`cleanup-versions.sh`, `cleanup-pr-environments.sh`, `retry-failed-runs.sh`) or for `check-commit-identity.sh` — this plan document *is* the record that they were considered and deliberately left as-is, satisfying the "so a future reader sees they were considered and deliberately not changed, not missed" requirement without spending a writer's turn on a no-op diff. `resolve-ci-run.sh`'s documented-but-silent `$GITHUB_SHA` fallback (§2.7 instance #14) is likewise left out of the writers' scope — it's a genuine, if minor, observability gap, but treating it as a hard-fail is a CD-behaviour change this plan should flag rather than make unilaterally.
+**No writer needed for the housekeeping files** (`cleanup-versions.sh`, `cleanup-pr-environments.sh`, `retry-failed-runs.sh`) or for `check-commit-identity.sh` — this plan document *is* the record that they were considered and deliberately left as-is, satisfying the "so a future reader sees they were considered and deliberately not changed, not missed" requirement without spending
+a writer's turn on a no-op diff. `resolve-ci-run.sh`'s documented-but-silent `$GITHUB_SHA` fallback (§2.7 instance #14) is likewise left out of the writers' scope — it's a genuine, if minor, observability gap, but treating it as a hard-fail is a CD-behaviour change this plan should flag rather than make unilaterally.
 
-Why not fold Writer B into Writer A: `mark-production.sh` shares no source file, no test harness convention (bash-only `gate-test:` battery vs. Writer A's pytest differential harness), and no manifest wiring with the three quality gates — a genuine second, fully disjoint stream of work, which is what the "max 2 writers, disjoint file sets" rule is for. Why not split Writer A further into 3: the three gates share one recurring risk (each fix must land symmetrically in a twin/port pair or the differential/shadow-gate proof breaks), and that risk is best managed by one person landing all three sequentially with the same mental model, not three independent writers who could each get the twin/port symmetry subtly wrong in a different way.
+Why not fold Writer B into Writer A: `mark-production.sh` shares no source file, no test harness convention (bash-only `gate-test:` battery vs. Writer A's pytest differential harness), and no manifest wiring with the three quality gates — a genuine second, fully disjoint stream of work, which is what the "max 2 writers, disjoint file sets" rule is for. Why not split Writer A
+further into 3: the three gates share one recurring risk (each fix must land symmetrically in a twin/port pair or the differential/shadow-gate proof breaks), and that risk is best managed by one person landing all three sequentially with the same mental model, not three independent writers who could each get the twin/port symmetry subtly wrong in a different way.
 
 ### Critical Files for Implementation
 

@@ -1,10 +1,8 @@
 # Handoff checklist: www-round5
 
-Status: done
-Owner: a68f3ab4
+Status: done Owner: a68f3ab4
 
-Source session `a68f3ab4` (`console-39`), 2026-08-23, planned in `~/monorepo/console`
-before the repo moved to `~/console`. Branch at handoff time: `0823-1`.
+Source session `a68f3ab4` (`console-39`), 2026-08-23, planned in `~/monorepo/console` before the repo moved to `~/console`. Branch at handoff time: `0823-1`.
 
 ## Deliverables
 
@@ -33,14 +31,11 @@ before the repo moved to `~/console`. Branch at handoff time: `0823-1`.
       Ticking the box for what shipped, with the remainder named here, because an
       overstating handoff is worse than an incomplete one.
 
-NOTE (promote when started): a follow-up wave for item 12's optional additions, which are
-listed in the README's Scope but deliberately not waved yet.
+NOTE (promote when started): a follow-up wave for item 12's optional additions, which are listed in the README's Scope but deliberately not waved yet.
 
 ## Operator decisions, answered 2026-08-23 (executing session b7baf3ee)
 
-Both open decision points from README.md were asked in one round, before any
-file was read for writing, and both are now closed. The four locked ones are
-untouched and must not be relitigated.
+Both open decision points from README.md were asked in one round, before any file was read for writing, and both are now closed. The four locked ones are untouched and must not be relitigated.
 
 **5. Player cap (item 8): RECOMMENDED, as proposed.**
 
@@ -48,181 +43,96 @@ untouched and must not be relitigated.
 
     1920 -> 960px (ceiling)   1440 -> 688px (= prose)   1280 -> 688px
 
-The invariant to gate on is `player >= paragraph at every width`, which is the
-thing plain `min(960px, 80%)` broke at 1440 (612px, narrower than the 688px
-paragraph above it and narrower than today).
+The invariant to gate on is `player >= paragraph at every width`, which is the thing plain `min(960px, 80%)` broke at 1440 (612px, narrower than the 688px paragraph above it and narrower than today).
 
 **6. Reference parity (item 9): the recommended set PLUS two additions.**
 
-SHIP: category eyebrow, grouped sidebar, What's next cards, `Ctrl/Cmd+K`,
-inline language picker, **nested collapsible TOC**, **copy-page dropdown**.
+SHIP: category eyebrow, grouped sidebar, What's next cards, `Ctrl/Cmd+K`, inline language picker, **nested collapsible TOC**, **copy-page dropdown**.
 
-OMIT: the persistent question composer, on the README's own reasoning that Ask
-Assistant already covers that job without a floating element -- and a floating
-element cuts against items 3 and 6, whose theme is reducing visual noise.
+OMIT: the persistent question composer, on the README's own reasoning that Ask Assistant already covers that job without a floating element -- and a floating element cuts against items 3 and 6, whose theme is reducing visual noise.
 
-The operator widened this beyond the README's recommendation: the two additions
-are self-contained and neither competes with Ask Assistant. Wave C is therefore
-wider than the README scoped it, and wave D's docs-surface gate must cover both.
+The operator widened this beyond the README's recommendation: the two additions are self-contained and neither competes with Ask Assistant. Wave C is therefore wider than the README scoped it, and wave D's docs-surface gate must cover both.
 
 ### Amendment to decision 5, same session: fullscreen already exists
 
-The operator corrected the framing: the player already has a fullscreen button
-and users are expected to use it. **Verified rather than taken on trust** -- the
-docs player is a native `<video controls>` emitted by
-`src/plugins/remark-video-embed.ts:66`, and native controls carry a fullscreen
-button in every major browser. It is free and already shipped.
+The operator corrected the framing: the player already has a fullscreen button and users are expected to use it. **Verified rather than taken on trust** -- the docs player is a native `<video controls>` emitted by `src/plugins/remark-video-embed.ts:66`, and native controls carry a fullscreen button in every major browser. It is free and already shipped.
 
-The chosen formula does not change; its JUSTIFICATION gets stronger and the
-alternative gets clearly worse. If fullscreen is the real "watch it properly"
-path, the inline player is an ILLUSTRATION IN THE READING FLOW and should never
-fight the prose for width. `max(80%, var(--docs-prose))` is exactly "never
-narrower than the text it illustrates, and no wider than it needs to be". The
-x1.4 alternative would push the player wider than the prose at mid widths,
-adding visual disruption to partially substitute for something fullscreen
-already does completely -- and this round's theme (items 3 and 6) is reducing
-visual noise.
+The chosen formula does not change; its JUSTIFICATION gets stronger and the alternative gets clearly worse. If fullscreen is the real "watch it properly" path, the inline player is an ILLUSTRATION IN THE READING FLOW and should never fight the prose for width. `max(80%, var(--docs-prose))` is exactly "never narrower than the text it illustrates, and no wider than it needs to be".
+The x1.4 alternative would push the player wider than the prose at mid widths, adding visual disruption to partially substitute for something fullscreen already does completely -- and this round's theme (items 3 and 6) is reducing visual noise.
 
 ### Two premises in the README that did NOT survive first contact
 
 Flagged here before wave C starts, because item 8 is scoped against them:
 
 1. **`--docs-prose` is `34rem`** (`DocsLayout.astro:704`), which is **544px** at
-   a 16px root, not the **688px** the decision text quotes. Every width in
-   decision 5's table is therefore wrong in absolute terms. The INVARIANT
-   ("player is never narrower than the prose") is unaffected, because the
-   formula is expressed in the token rather than in pixels -- which is why it
-   was written that way.
+a 16px root, not the **688px** the decision text quotes. Every width in decision 5's table is therefore wrong in absolute terms. The INVARIANT ("player is never narrower than the prose") is unaffected, because the formula is expressed in the token rather than in pixels -- which is why it was written that way.
 2. **The tutorial container is not capped today.** `DocsLayout.astro:1060-1064`
-   sets `max-inline-size: none` on `.tutorial-video-container` (and `.cs-cards`,
-   `.print-page-header`), so it spans the full article width. The claim that
-   `min(960px, 80%)` would be "narrower than today" needs re-measuring against
-   an UNCAPPED baseline, not against a 960/80% one.
+sets `max-inline-size: none` on `.tutorial-video-container` (and `.cs-cards`, `.print-page-header`), so it spans the full article width. The claim that `min(960px, 80%)` would be "narrower than today" needs re-measuring against an UNCAPPED baseline, not against a 960/80% one.
 
-Neither changes the decision. Both change what wave D's gate must assert, and
-both are exactly the drift `01-verified-context.md` warns about: the
-measurements were taken in `~/monorepo/console` before the repo moved.
+Neither changes the decision. Both change what wave D's gate must assert, and both are exactly the drift `01-verified-context.md` warns about: the measurements were taken in `~/monorepo/console` before the repo moved.
 
 ### Decision 5's arithmetic does not survive `01-verified-context.md` either
 
-The choice stands; the reason given for it was wrong in both directions, and the
-correction is recorded so wave C is not built on it.
+The choice stands; the reason given for it was wrong in both directions, and the correction is recorded so wave C is not built on it.
 
-`01` measures prose at **544px (34rem) at BOTH 1440 and 1920**, and
-`.docs-content` at 765px / 1245px. So under plain `min(960px, 80%)`:
+`01` measures prose at **544px (34rem) at BOTH 1440 and 1920**, and `.docs-content` at 765px / 1245px. So under plain `min(960px, 80%)`:
 
     1440:  0.80 x 765  = 612px   vs 544px prose  -> WIDER, not narrower
     1920:  min(960, 996)= 960px  vs 544px prose  -> wider
 
-The decision text's "612px at 1440, **narrower than the 688px paragraph**" is
-false twice: the paragraph is 544px, not 688px, and 612 > 544. The invariant it
-was protecting was never actually violated by the simple formula.
+The decision text's "612px at 1440, **narrower than the 688px paragraph**" is false twice: the paragraph is 544px, not 688px, and 612 > 544. The invariant it was protecting was never actually violated by the simple formula.
 
-**Keep the chosen formula anyway.** It is a strict superset: it holds the
-invariant by construction rather than by arithmetic coincidence at two specific
-viewport widths, and it keeps holding if `--docs-prose` or the column ever
-changes. A formula that is correct for a stated reason beats one that happens to
-be correct at the two widths somebody measured.
+**Keep the chosen formula anyway.** It is a strict superset: it holds the invariant by construction rather than by arithmetic coincidence at two specific viewport widths, and it keeps holding if `--docs-prose` or the column ever changes. A formula that is correct for a stated reason beats one that happens to be correct at the two widths somebody measured.
 
-**The real behaviour change is the opposite of the one described.** Today the
-container is UNCAPPED (`max-inline-size: none`, `DocsLayout.astro:1060-1064`),
-so the player renders 1245px at 1920 and 765px at 1440 -- `01` measures exactly
-that, "a 1245px player above 544px-wide text in the same 1245px column". Item 8
-therefore makes the player **substantially narrower than today at every width**
-(1245 -> 960 at 1920, 765 -> 612 at 1440), which is the point: prose uses 43.7%
-of its column while the player uses 100%.
+**The real behaviour change is the opposite of the one described.** Today the container is UNCAPPED (`max-inline-size: none`, `DocsLayout.astro:1060-1064`), so the player renders 1245px at 1920 and 765px at 1440 -- `01` measures exactly that, "a 1245px player above 544px-wide text in the same 1245px column". Item 8 therefore makes the player **substantially narrower than today at
+every width** (1245 -> 960 at 1920, 765 -> 612 at 1440), which is the point: prose uses 43.7% of its column while the player uses 100%.
 
-That is also precisely why the operator's fullscreen hint matters, and it is
-consistent with the choice: shrinking the inline player is acceptable because
-watching it properly was never the inline player's job.
+That is also precisely why the operator's fullscreen hint matters, and it is consistent with the choice: shrinking the inline player is acceptable because watching it properly was never the inline player's job.
 
 ### Correction to my own amendment, from the wave C writer
 
-My fullscreen note above cited the WRONG element and the writer caught it.
-`remark-video-embed.ts:66` builds `.video-container`, a plain
-`<video controls>` used for blog embeds. The DOCS player is
-`.tutorial-video-container`, produced by `remark-tutorial-embed.ts` and rendered
-by `TutorialVideoPlayer.tsx`, whose `<video>` has **no `controls` attribute at
-all** -- Plyr supplies the chrome.
+My fullscreen note above cited the WRONG element and the writer caught it. `remark-video-embed.ts:66` builds `.video-container`, a plain `<video controls>` used for blog embeds. The DOCS player is `.tutorial-video-container`, produced by `remark-tutorial-embed.ts` and rendered by `TutorialVideoPlayer.tsx`, whose `<video>` has **no `controls` attribute at all** -- Plyr supplies the
+chrome.
 
-**The operator's rationale survives intact; only my citation was wrong.**
-`fullscreen` is in Plyr's control list (`TutorialVideoPlayer.tsx:316`) and
-exactly one `[data-plyr="fullscreen"]` button renders live. Verified here, not
-taken from the report.
+**The operator's rationale survives intact; only my citation was wrong.** `fullscreen` is in Plyr's control list (`TutorialVideoPlayer.tsx:316`) and exactly one `[data-plyr="fullscreen"]` button renders live. Verified here, not taken from the report.
 
 ### Deviation accepted: `max-inline-size`, not `width`
 
-Written literally as `width:`, the operator's formula is a FLOOR as well as a
-cap, and the writer measured what that costs: at 390x844 the column is 359 but
-the player computes 544, giving `scrollWidth` 552 against `clientWidth` 390 --
-**162px of mobile overflow**. As `max-inline-size` the rule simply stops
-applying below the cap. Identical at every width where the column exceeds the
-cap, so the decision is unchanged in substance and the invariant still holds.
+Written literally as `width:`, the operator's formula is a FLOOR as well as a cap, and the writer measured what that costs: at 390x844 the column is 359 but the player computes 544, giving `scrollWidth` 552 against `clientWidth` 390 -- **162px of mobile overflow**. As `max-inline-size` the rule simply stops applying below the cap. Identical at every width where the column exceeds
+the cap, so the decision is unchanged in substance and the invariant still holds.
 
-Independently re-measured at 1440 rather than taken on trust: column 765, prose
-544, player 612, computed rule `min(960px, max(80%, 544px))`.
-**1280 is where the formula earns its keep**: 80% of 605 is 484, so plain
-`min(960px, 80%)` would have gone narrower than the 544px paragraph there --
-the failure decision 5 was written to prevent, at a width nobody had measured.
+Independently re-measured at 1440 rather than taken on trust: column 765, prose 544, player 612, computed rule `min(960px, max(80%, 544px))`. **1280 is where the formula earns its keep**: 80% of 605 is 484, so plain `min(960px, 80%)` would have gone narrower than the 544px paragraph there -- the failure decision 5 was written to prevent, at a width nobody had measured.
 
 ### DEFERRED, needs an operator decision: `--docs-prose` 34rem -> 43rem
 
-The other half of item 8 is deliberately NOT in this change, and it should be
-re-decided rather than executed. `DocsLayout.astro:700-704` justifies 34rem by
-measurement: the 765px column is ~101 characters, so 544px is ~72, inside the
-65-75 target. **43rem = 688px is ~91 characters, outside it.** A pure token bump
-therefore contradicts the reason the token has its value; the type scale would
-have to move with it. DEFAULT if unanswered: leave 34rem as it is.
+The other half of item 8 is deliberately NOT in this change, and it should be re-decided rather than executed. `DocsLayout.astro:700-704` justifies 34rem by measurement: the 765px column is ~101 characters, so 544px is ~72, inside the 65-75 target. **43rem = 688px is ~91 characters, outside it.** A pure token bump therefore contradicts the reason the token has its value; the type
+scale would have to move with it. DEFAULT if unanswered: leave 34rem as it is.
 
 ## Carried forward past this program, named rather than dropped
 
 Two pieces are NOT done and have no owner. Both have ready-to-run briefs.
 
 1. **Wave D gates 2, 4 and 5** -- `05-gates.md` carries the wiring path
-   (`quality-www-build` already builds; `browser-smoke.sh` is the harness), the
-   deliberate dark-band exemption gate 4 needs, and the correction that gate 5's
-   shrink-only baseline must seed after ALL waves. Gate 5 additionally cannot
-   start until item 4 below exists.
+(`quality-www-build` already builds; `browser-smoke.sh` is the harness), the deliberate dark-band exemption gate 4 needs, and the correction that gate 5's shrink-only baseline must seed after ALL waves. Gate 5 additionally cannot start until item 4 below exists.
 
 2. **Operator item 4, the sentence-wrapping copy fixes.** Needs the `<Sentences>`
-   mechanism designed in `agent/PLAN-sentence-aware-wrapping.md`, which nobody has
-   built. Gate 1 already enforces its precondition and is baselined at 51
-   unwrapped renders, so the mechanism can land piecemeal without the gate being
-   either useless or blocking.
+mechanism designed in `agent/PLAN-sentence-aware-wrapping.md`, which nobody has built. Gate 1 already enforces its precondition and is baselined at 51 unwrapped renders, so the mechanism can land piecemeal without the gate being either useless or blocking.
 
-Six decisions are parked for the operator in the sections above; none block
-anything, and every one has a stated default.
+Six decisions are parked for the operator in the sections above; none block anything, and every one has a stated default.
 
 ## Operator answers, 2026-08-24. All four CONFIRM the shipped state.
 
-Asked after the wave closed. No code changed as a result; each answer ratifies a
-choice already made, which is why they are recorded here rather than acted on.
+Asked after the wave closed. No code changed as a result; each answer ratifies a choice already made, which is why they are recorded here rather than acted on.
 
 1. **Difference section height: KEEP AS SHIPPED.** Four illustrated rows,
-   532 -> 1139px desktop, 810 -> 1565px mobile. The `--alt-row-visual-max` and
-   `--alt-rows-gap` knobs stay available but are NOT to be turned down on
-   somebody's later instinct that the section looks tall: the height is the
-   accepted price of every row having a visual, and the section it replaced was
-   532px of H2 plus two bordered text cards with no image, icon or diagram.
+532 -> 1139px desktop, 810 -> 1565px mobile. The `--alt-row-visual-max` and `--alt-rows-gap` knobs stay available but are NOT to be turned down on somebody's later instinct that the section looks tall: the height is the accepted price of every row having a visual, and the section it replaced was 532px of H2 plus two bordered text cards with no image, icon or diagram.
 
 2. **The education/nonprofit FAQ item: LEAVE CUT.** The operator applied their
-   own locked criterion against their own content: routing is not a price, so
-   "Yes. Email us." cannot carry a buying decision. **Accepted consequence: the
-   site now says nothing about education or nonprofit pricing anywhere.** The
-   English and all 12 translations remain at `scratchpad/waveB2/` if that is ever
-   revisited. Do not restore it without a new decision.
+own locked criterion against their own content: routing is not a price, so "Yes. Email us." cannot carry a buying decision. **Accepted consequence: the site now says nothing about education or nonprofit pricing anywhere.** The English and all 12 translations remain at `scratchpad/waveB2/` if that is ever revisited. Do not restore it without a new decision.
 
 3. **RTL illustrations: SHIP AS-IS, follow-up.** The rows mirror correctly on
-   `/ar` (measured 801/181); the drawings still point left-to-right. The blanket
-   `[dir="rtl"] svg { transform: scaleX(-1) }` remains WRONG and must not be
-   applied: three of the four drawings carry a clock face or circular arrow whose
-   direction is intrinsic. The real fix is per-illustration variants following the
-   `instant-recovery.mobile.svg` convention, and it touches the solution pages
-   too, so it is an asset project rather than a patch.
+`/ar` (measured 801/181); the drawings still point left-to-right. The blanket `[dir="rtl"] svg { transform: scaleX(-1) }` remains WRONG and must not be applied: three of the four drawings carry a clock face or circular arrow whose direction is intrinsic. The real fix is per-illustration variants following the `instant-recovery.mobile.svg` convention, and it touches the solution
+pages too, so it is an asset project rather than a patch.
 
 4. **`--docs-prose`: LEAVE AT 34rem.** The 43rem half of item 8 is dropped, not
-   deferred. 544px is ~72 characters, inside the 65-75 band the token's own
-   comment at `DocsLayout.astro:700-704` justifies it by; 688px would be ~91,
-   outside it. The player cap is expressed in the TOKEN
-   (`min(960px, max(80%, var(--docs-prose)))`), so it follows automatically if
-   this value ever moves for a properly reasoned cause.
+deferred. 544px is ~72 characters, inside the 65-75 band the token's own comment at `DocsLayout.astro:700-704` justifies it by; 688px would be ~91, outside it. The player cap is expressed in the TOKEN (`min(960px, max(80%, var(--docs-prose)))`), so it follows automatically if this value ever moves for a properly reasoned cause.

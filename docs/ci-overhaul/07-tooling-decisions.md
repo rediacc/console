@@ -1,24 +1,13 @@
 # 07. Tooling-transformation decisions
 
-[04-decisions.md](04-decisions.md) is the CI-overhaul record: what the operator locked, what
-was taken on recommendation, what is still open. This file is its sibling for the twelve
-workstream tooling transformation, and it exists for one reason.
+[04-decisions.md](04-decisions.md) is the CI-overhaul record: what the operator locked, what was taken on recommendation, what is still open. This file is its sibling for the twelve workstream tooling transformation, and it exists for one reason.
 
-[08-driver-contract.md](08-driver-contract.md) records the conflicts found BEFORE the program
-started, when twelve independently drafted plans were compared. It cannot record what is
-decided DURING it. Those decisions were landing in code comments, where the next agent reads
-the comment, disagrees with a sentence rather than with a decision, and quietly reverses it.
-That has already happened once in this repository and cost a real oscillation: the
-`package-lock.json` npm 10 versus npm 11 flip described in CLAUDE.md was reverted back and
-forth by successive sessions for weeks, because each one read the prose, believed the tree was
-wrong, and fixed it.
+[08-driver-contract.md](08-driver-contract.md) records the conflicts found BEFORE the program started, when twelve independently drafted plans were compared. It cannot record what is decided DURING it. Those decisions were landing in code comments, where the next agent reads the comment, disagrees with a sentence rather than with a decision, and quietly reverses it. That has
+already happened once in this repository and cost a real oscillation: the `package-lock.json` npm 10 versus npm 11 flip described in CLAUDE.md was reverted back and forth by successive sessions for weeks, because each one read the prose, believed the tree was wrong, and fixed it.
 
 So: a decision that a later agent could reasonably reverse goes here, with the evidence, once.
 
-Rules for using this file. A row is added when a decision is MADE, not when it is proposed.
-Every row names the check that would refute it, because a decision with no refutation is a
-preference. A row is never edited to say something else; it is superseded by a new row that
-names the one it replaces, so the reasoning that was overturned stays readable.
+Rules for using this file. A row is added when a decision is MADE, not when it is proposed. Every row names the check that would refute it, because a decision with no refutation is a preference. A row is never edited to say something else; it is superseded by a new row that names the one it replaces, so the reasoning that was overturned stays readable.
 
 ---
 

@@ -2,9 +2,7 @@
 
 # Secret coverage map — Bitwarden vault vs GitHub Actions vs private/account/.env
 
-NAMES ONLY. No secret value has been read, printed, or stored here.
-Generated 2026-09-01 from: bw item c38d82bb (36 custom fields), gh secret list,
-grep of secrets.* across .github/workflows + .github/actions, and .env key names.
+NAMES ONLY. No secret value has been read, printed, or stored here. Generated 2026-09-01 from: bw item c38d82bb (36 custom fields), gh secret list, grep of secrets.* across .github/workflows + .github/actions, and .env key names.
 
 ## Counts
 - 44 migratable GitHub secrets (45 referenced minus auto-provided GITHUB_TOKEN)
@@ -65,10 +63,7 @@ grep of secrets.* across .github/workflows + .github/actions, and .env key names
 
 ## The rename layer (why exact matching undercounts)
 
-Cloudflare Workers hold the same credentials under SHORT names; GitHub Actions uses
-prefixed and region-suffixed names. `.ci/scripts/deploy/set-account-worker-secrets.sh`
-is the translation table. The vault mixes BOTH conventions, which is why a name-equality
-diff missed real matches.
+Cloudflare Workers hold the same credentials under SHORT names; GitHub Actions uses prefixed and region-suffixed names. `.ci/scripts/deploy/set-account-worker-secrets.sh` is the translation table. The vault mixes BOTH conventions, which is why a name-equality diff missed real matches.
 
 | GitHub Actions secret | Cloudflare Worker secret | in vault as |
 |---|---|---|
@@ -82,60 +77,39 @@ diff missed real matches.
 | OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA} | OTLP_CLIENT_CREDENTIALS | OTLP_AUTH_{USERNAME,PASSWORD,TOKEN} |
 | BACKUP_S3_* | BACKUP_S3_* | not present |
 
-`private/account/.env` uses the WORKER names, confirming it is one single-region instance
-of the same shape rather than a mirror of the CI side.
+`private/account/.env` uses the WORKER names, confirming it is one single-region instance of the same shape rather than a mirror of the CI side.
 
 ## DEFECT: two org secrets are set, passed, and then discarded
 
-`set-account-worker-secrets.sh:79-87` reads `SES_KEY_ASIA`/`SES_SECRET_ASIA` and then
-overwrites both with the EU values:
+`set-account-worker-secrets.sh:79-87` reads `SES_KEY_ASIA`/`SES_SECRET_ASIA` and then overwrites both with the EU values:
 
     # Asia uses EU SES while ap-northeast-1 production access is pending
     if [[ "$SUFFIX" == "ASIA" ]]; then
         SECRET_SES_ACCESS_KEY_ID="${SES_KEY_EU:-}"
 
-Yet `cd-deploy-account.yml:59,61` declares AWS_SES_ACCESS_KEY_ID_ASIA and
-AWS_SES_SECRET_ACCESS_KEY_ASIA as `required: true`, and `:285,288` pass them.
-So both org secrets are dead weight today, and the rotation manifest still carries a
-`ses-asia` slug rotating a credential production ignores.
+Yet `cd-deploy-account.yml:59,61` declares AWS_SES_ACCESS_KEY_ID_ASIA and AWS_SES_SECRET_ACCESS_KEY_ASIA as `required: true`, and `:285,288` pass them. So both org secrets are dead weight today, and the rotation manifest still carries a `ses-asia` slug rotating a credential production ignores.
 
 ## Recoverability — what you can re-mint, and what you cannot
 
-Blast radius grounded in: `CLAUDE.md:569` (ED25519 public key compiled into every shipped
-renet via ldflags -> `keys.ProductionPublicKey`), `docs/PLAN-multi-region.md:236-239`
-(ED25519 = subscription/license signing, same across regions; JWT = session tokens;
-SERVER_API_KEY = admin API), `docs/SECURITY-CONFIG-STORAGE.md:37,65,130` (X25519 = CEK
-member-key distribution), `docs/code-signing-guide.md:558-560` (GPG, no backup, revocation
-cert unticked).
+Blast radius grounded in: `CLAUDE.md:569` (ED25519 public key compiled into every shipped renet via ldflags -> `keys.ProductionPublicKey`), `docs/PLAN-multi-region.md:236-239` (ED25519 = subscription/license signing, same across regions; JWT = session tokens; SERVER_API_KEY = admin API), `docs/SECURITY-CONFIG-STORAGE.md:37,65,130` (X25519 = CEK member-key distribution),
+`docs/code-signing-guide.md:558-560` (GPG, no backup, revocation cert unticked).
 
 ### D. NOT WIRED TODAY, but KEPT — operator ruling 2026-09-02 (2)
-AWS_SES_ACCESS_KEY_ID_ASIA, AWS_SES_SECRET_ACCESS_KEY_ASIA
-  -> declared required, passed, then overwritten with EU (set-account-worker-secrets.sh:84).
-  This file called them "DEAD -- do not migrate". **That was overruled**: the operator
-  said "we must keep the ASIA for the future. AWS didn't allow us to use it but we keep
-  it anyway." They are held for when AWS grants ap-northeast-1 production access, so they
-  MIGRATE with the rest. Unwired is not dead.
+AWS_SES_ACCESS_KEY_ID_ASIA, AWS_SES_SECRET_ACCESS_KEY_ASIA -> declared required, passed, then overwritten with EU (set-account-worker-secrets.sh:84). This file called them "DEAD -- do not migrate". **That was overruled**: the operator said "we must keep the ASIA for the future. AWS didn't allow us to use it but we keep it anyway." They are held for when AWS grants ap-northeast-1
+production access, so they MIGRATE with the rest. Unwired is not dead.
 
 ### C. IRRECOVERABLE if lost — regenerating is customer-visible (4)
-ACCOUNT_ED25519_PRIVATE_KEY  IN VAULT  public half is compiled into every shipped renet
-ACCOUNT_ED25519_PUBLIC_KEY   IN VAULT  binary; regenerating invalidates every issued licence
-GPG_PRIVATE_KEY              NOWHERE   signs the apt/yum repos; users pin the public key
-GPG_PASSPHRASE               NOWHERE   and NO revocation certificate exists
+ACCOUNT_ED25519_PRIVATE_KEY IN VAULT public half is compiled into every shipped renet ACCOUNT_ED25519_PUBLIC_KEY IN VAULT binary; regenerating invalidates every issued licence GPG_PRIVATE_KEY NOWHERE signs the apt/yum repos; users pin the public key GPG_PASSPHRASE NOWHERE and NO revocation certificate exists
 
 ### B. Regenerable, real but bounded blast radius (4)
-ACCOUNT_X25519_PRIVATE_KEY   IN VAULT  breaks config-storage CEK member-key distribution
-ACCOUNT_X25519_PUBLIC_KEY    IN VAULT
-ACCOUNT_JWT_SECRET           IN VAULT  every session invalidated; users log in again
-ACCOUNT_SERVER_API_KEY       IN VAULT  update admin consumers
+ACCOUNT_X25519_PRIVATE_KEY IN VAULT breaks config-storage CEK member-key distribution ACCOUNT_X25519_PUBLIC_KEY IN VAULT ACCOUNT_JWT_SECRET IN VAULT every session invalidated; users log in again ACCOUNT_SERVER_API_KEY IN VAULT update admin consumers
 
 ### A. Safe to re-mint from a console you can log into (33)
 Cloudflare: CLOUDFLARE_API_TOKEN, R2_{ACCESS_KEY_ID,SECRET_ACCESS_KEY,ENDPOINT},
             R2_MEDIA_*(vault), TURNSTILE_SECRET_KEY, BREAKPOINT_TUNNEL_TOKEN(vault)
-AWS IAM:    AWS_SES_{ACCESS_KEY_ID,SECRET_ACCESS_KEY}_{EU,US}, BACKUP_S3_*
-Stripe:     STRIPE_SECRET_KEY_{EU,US,ASIA}, STRIPE_SANDBOX_SECRET_KEY(vault),
+AWS IAM: AWS_SES_{ACCESS_KEY_ID,SECRET_ACCESS_KEY}_{EU,US}, BACKUP_S3_* Stripe: STRIPE_SECRET_KEY_{EU,US,ASIA}, STRIPE_SANDBOX_SECRET_KEY(vault),
             STRIPE_WEBHOOK_SECRET_{EU,US,ASIA}, STRIPE_SANDBOX_WEBHOOK_SECRET(vault)
-GitHub App: APP_PRIVATE_KEY(vault), AUTOPILOT_PRIVATE_KEY(vault) - generate new, revoke old
-Other:      DOCKERHUB_{TOKEN,USERNAME}, ANTHROPIC_API_KEY, CLAUDE_CODE_OAUTH_TOKEN,
+GitHub App: APP_PRIVATE_KEY(vault), AUTOPILOT_PRIVATE_KEY(vault) - generate new, revoke old Other: DOCKERHUB_{TOKEN,USERNAME}, ANTHROPIC_API_KEY, CLAUDE_CODE_OAUTH_TOKEN,
             OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA}
 
 ### E. Never migrate (1)

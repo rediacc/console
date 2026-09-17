@@ -47,7 +47,8 @@ gh secret set CLOUDFLARE_R2_ENDPOINT --org rediacc --body "https://fa51e4a18d553
 
 ## 5. Cloudflare Cache Rule (critical)
 
-The `rediacc.com` zone has `cache_level: aggressive` and `browser_cache_ttl: 14400` (4 h), which causes CF to OVERRIDE origin `Cache-Control: no-cache` with `max-age=14400` on GET responses for binary content served from this R2 custom domain. That is fine for `www.rediacc.com` (HTML served by Workers), but on `releases.rediacc.com` it broke package-manager signature checks: apt / apk / pacman fetched a fresh APKINDEX / InRelease referencing one sha256, then got the previous release's cached body with a different sha256, and aborted with `BAD signature` / `File has unexpected size`.
+The `rediacc.com` zone has `cache_level: aggressive` and `browser_cache_ttl: 14400` (4 h), which causes CF to OVERRIDE origin `Cache-Control: no-cache` with `max-age=14400` on GET responses for binary content served from this R2 custom domain. That is fine for `www.rediacc.com` (HTML served by Workers), but on `releases.rediacc.com` it broke package-manager signature checks: apt /
+apk / pacman fetched a fresh APKINDEX / InRelease referencing one sha256, then got the previous release's cached body with a different sha256, and aborted with `BAD signature` / `File has unexpected size`.
 
 A zone-level Cache Rule forces BYPASS for every request to `releases.rediacc.com`, so origin `Cache-Control` passes through unmodified and CF never caches the body. R2 is colocated with CF POPs, so bypassing the edge cache has negligible latency impact.
 

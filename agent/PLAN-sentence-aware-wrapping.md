@@ -1,15 +1,8 @@
 # PLAN: sentence-aware wrapping for packages/www
 
-Status: draft
-Author: plan agent (session a68f3ab4)
-Date: 2026-08-23
-Intended path: `/home/muhammed/console/agent/PLAN-sentence-aware-wrapping.md`
-Actual path: this file. Plan mode restricted this session to a single writable file,
-so the deliverable could not be written to `agent/`. Copy it across before implementing.
+Status: draft Author: plan agent (session a68f3ab4) Date: 2026-08-23 Intended path: `/home/muhammed/console/agent/PLAN-sentence-aware-wrapping.md` Actual path: this file. Plan mode restricted this session to a single writable file, so the deliverable could not be written to `agent/`. Copy it across before implementing.
 
-Every number below was measured live against `http://localhost:4321` with
-`agent-browser` (headless Chromium 145) in session `plan-typo`. Nothing was guessed
-and nothing in the repo was modified.
+Every number below was measured live against `http://localhost:4321` with `agent-browser` (headless Chromium 145) in session `plan-typo`. Nothing was guessed and nothing in the repo was modified.
 
 ---
 
@@ -17,14 +10,10 @@ and nothing in the repo was modified.
 
 The operator's words: "a line must not both end one sentence and begin another".
 
-Applied literally that rule is unsatisfiable, and the measurement proves it.
-`.sp-slice-winner-description` is five sentences rendered on two lines at 1440x900.
-Any line that carries two whole sentences "ends one and begins another", so the
-literal rule forces one line per sentence and turns that paragraph from two lines
-into five. That is not what the operator is complaining about.
+Applied literally that rule is unsatisfiable, and the measurement proves it. `.sp-slice-winner-description` is five sentences rendered on two lines at 1440x900. Any line that carries two whole sentences "ends one and begins another", so the literal rule forces one line per sentence and turns that paragraph from two lines into five. That is not what the operator is complaining
+about.
 
-What the operator is actually pointing at is a sentence that is **broken across a
-line boundary while sharing a line with its neighbour**:
+What the operator is actually pointing at is a sentence that is **broken across a line boundary while sharing a line with its neighbour**:
 
 ```
 Most tools copy one          <- line 1 ends mid-sentence
@@ -36,23 +25,17 @@ So the enforced rule is:
 > **A sentence that occupies more than one line must not share either of those lines
 > with an adjacent sentence.**
 
-Two whole sentences sitting on one line is fine and stays fine. A long sentence
-wrapping onto several lines of its own is fine and stays fine. The defect is
-precisely the mixed case above.
+Two whole sentences sitting on one line is fine and stays fine. A long sentence wrapping onto several lines of its own is fine and stays fine. The defect is precisely the mixed case above.
 
-This is the rule the detector implements and the rule the gate enforces.
-Everything in this plan depends on that distinction, so do not "simplify" the rule
-back to the literal wording later.
+This is the rule the detector implements and the rule the gate enforces. Everything in this plan depends on that distinction, so do not "simplify" the rule back to the literal wording later.
 
 ---
 
 ## 2. Mechanism decision
 
-**Chosen: (a) wrap each sentence in `<span class="sentence">` with
-`display: inline-block`, produced at build time.**
+**Chosen: (a) wrap each sentence in `<span class="sentence">` with `display: inline-block`, produced at build time.**
 
-An inline-block is an atomic line-breaking unit: it starts on a new line when it
-does not fit on the current one, which is exactly the guarantee the rule needs.
+An inline-block is an atomic line-breaking unit: it starts on a new line when it does not fit on the current one, which is exactly the guarantee the rule needs.
 
 ### 2.1 The browser evidence that decided it
 
@@ -65,17 +48,12 @@ Same page, same viewport (1440x900), same detector, three mechanisms:
 | `text-wrap: balance !important` on `p,li,h1..h6` | **8** |
 | sentence spans, `display:inline-block` | **0** (see 2.2 for the single residual) |
 
-`pretty` moves nothing because it only rescues a single-word last line. `balance`
-recovers 3 of 11 by accident, not by respecting sentences, and browsers cap it at
-around six lines. Neither is a mechanism; both are heuristics that happen to help
-sometimes. That kills candidates (b) and (c). Candidate (c), binding the last two
-words with a non-breaking space, addresses orphans and has no bearing on sentence
-boundaries.
+`pretty` moves nothing because it only rescues a single-word last line. `balance` recovers 3 of 11 by accident, not by respecting sentences, and browsers cap it at around six lines. Neither is a mechanism; both are heuristics that happen to help sometimes. That kills candidates (b) and (c). Candidate (c), binding the last two words with a non-breaking space, addresses orphans and
+has no bearing on sentence boundaries.
 
 ### 2.2 The rendered lines, before and after
 
-Extracted by reconstructing visual lines from per-character `Range` rects, so this
-is what the browser actually painted, not a model of it.
+Extracted by reconstructing visual lines from per-character `Range` rects, so this is what the browser actually painted, not a model of it.
 
 ```
 #not-a-slice h2            BEFORE  | Most tools copy one
@@ -101,13 +79,9 @@ is what the browser actually painted, not a model of it.
                                    | Run the risky change on real data. Production never feels it.
 ```
 
-The last AFTER line is the residual class from section 1: two whole sentences share
-line 3, neither is broken, and that is correct output.
+The last AFTER line is the residual class from section 1: two whole sentences share line 3, neither is broken, and that is correct output.
 
-The one defect still reported after the probe ran is
-`.newsletter-footer-desc`, which the probe deliberately excluded (it lives inside
-the `<footer>` React island). It is a limitation of the probe, not of the mechanism.
-See 3.3.
+The one defect still reported after the probe ran is `.newsletter-footer-desc`, which the probe deliberately excluded (it lives inside the `<footer>` React island). It is a limitation of the probe, not of the mechanism. See 3.3.
 
 ### 2.3 Every failure mode, measured
 
@@ -133,14 +107,9 @@ See 3.3.
 
 ## 3. Where the split happens: build time, three renderers, one helper
 
-`t()` returns a `string` and 55 `.astro` files interpolate it as text. It cannot be
-made to return markup without turning every call site into `set:html`, which is both
-an escaping hazard and a type break. So the split does not go in the translator.
+`t()` returns a `string` and 55 `.astro` files interpolate it as text. It cannot be made to return markup without turning every call site into `set:html`, which is both an escaping hazard and a type break. So the split does not go in the translator.
 
-There are 818 multi-sentence English catalog leaves out of 6,230 (13.1%), reached
-from 80 call sites across 34 source files. Hand-wrapping 818 values is not on the
-table; hand-wrapping 80 call sites is, and markdown prose needs no call-site work
-at all.
+There are 818 multi-sentence English catalog leaves out of 6,230 (13.1%), reached from 80 call sites across 34 source files. Hand-wrapping 818 values is not on the table; hand-wrapping 80 call sites is, and markdown prose needs no call-site work at all.
 
 ### 3.1 Files to create
 
@@ -161,132 +130,81 @@ at all.
 
 ### 3.3 Why not a `dist/**/*.html` rewrite
 
-An `astro:build:done` integration over the 1,842 built HTML files is tempting: zero
-call-site edits, covers everything. It was rejected for three measured reasons.
+An `astro:build:done` integration over the 1,842 built HTML files is tempting: zero call-site edits, covers everything. It was rejected for three measured reasons.
 
 1. **Islands would fight it.** `/en` mounts six hydrated islands
-   (`Navigation.tsx:idle`, `ContactModal.tsx:load`, `RegionPickerModal.tsx:load`,
-   `NewsletterReturnPopup.tsx:load`, `LeadMagnetModal.tsx:idle`,
-   `Footer.tsx:visible`). Spans injected into their server-rendered HTML are a
-   hydration mismatch and React drops them on mount. Measured: 5 multi-sentence
-   blocks per page live inside islands, on every page checked
-   (`/en`, `/en/pricing`, `/en/docs`, `/en/disaster-recovery`). Those are exactly
-   where the one unfixed residual sits.
+(`Navigation.tsx:idle`, `ContactModal.tsx:load`, `RegionPickerModal.tsx:load`, `NewsletterReturnPopup.tsx:load`, `LeadMagnetModal.tsx:idle`, `Footer.tsx:visible`). Spans injected into their server-rendered HTML are a hydration mismatch and React drops them on mount. Measured: 5 multi-sentence blocks per page live inside islands, on every page checked (`/en`, `/en/pricing`,
+`/en/docs`, `/en/disaster-recovery`). Those are exactly where the one unfixed residual sits.
 2. **It needs an HTML parser the repo does not have.** No `parse5`, `linkedom`,
-   `cheerio`, `jsdom` or `node-html-parser` is a dependency today, and `.npmrc`
-   carries `minimum-release-age=1440` plus `ignore-scripts=true`. Adding one for
-   this is a supply-chain cost for a problem the component route solves without it.
+`cheerio`, `jsdom` or `node-html-parser` is a dependency today, and `.npmrc` carries `minimum-release-age=1440` plus `ignore-scripts=true`. Adding one for this is a supply-chain cost for a problem the component route solves without it.
 3. **It would not show up in `npm run dev`.** `astro:build:done` never runs on the
-   dev server, so the operator would not see the fix while working.
+dev server, so the operator would not see the fix while working.
 
 An `astro:server:setup` + middleware variant fixes (3) but not (1) or (2).
 
-The chosen split gives markdown prose the zero-call-site treatment it deserves
-(the rehype plugin covers 1,015 docs files across 13 locales; `/en/docs/quick-start`
-alone measures 29 defects today) and pays the call-site cost only where the text is
-authored in a component.
+The chosen split gives markdown prose the zero-call-site treatment it deserves (the rehype plugin covers 1,015 docs files across 13 locales; `/en/docs/quick-start` alone measures 29 defects today) and pays the call-site cost only where the text is authored in a component.
 
 ---
 
 ## 4. The sweep
 
-Measurement-driven, not a grep. A block is defective only if it actually wraps that
-way at a real viewport.
+Measurement-driven, not a grep. A block is defective only if it actually wraps that way at a real viewport.
 
 ### 4.1 The instrument
 
-`packages/www/scripts/measure-sentence-lines.ts`, Playwright + `node:http` static
-server over `packages/www/dist`, copying the skeleton of
-`scripts/gates/check-browser-smoke.ts` (`chromium.launch()` at `:142`, in-process server
-at `:24`). Per candidate block it:
+`packages/www/scripts/measure-sentence-lines.ts`, Playwright + `node:http` static server over `packages/www/dist`, copying the skeleton of `scripts/gates/check-browser-smoke.ts` (`chromium.launch()` at `:142`, in-process server at `:24`). Per candidate block it:
 
 1. flattens the block's text nodes into one string plus an index map;
 2. computes a line top per non-space character with a one-character `Range`
-   (`getClientRects()`), which is inline-block agnostic, unlike a `Range` over the
-   whole element whose rects include the inline-block boxes;
+(`getClientRects()`), which is inline-block agnostic, unlike a `Range` over the whole element whose rects include the inline-block boxes;
 3. segments with `Intl.Segmenter(pageLang)`;
 4. reports a finding when a sentence spans more than one line top AND its first line
-   top equals the previous sentence's last, or its last equals the next sentence's
-   first.
+top equals the previous sentence's last, or its last equals the next sentence's first.
 
-Candidate blocks are elements whose children are all `inline` / `inline-block` /
-`contents`, with at least 12 characters of text and at least one client rect, not
-under `script`/`style`/`svg`/`noscript`, and not `display:none` or
-`visibility:hidden`.
+Candidate blocks are elements whose children are all `inline` / `inline-block` / `contents`, with at least 12 characters of text and at least one client rect, not under `script`/`style`/`svg`/`noscript`, and not `display:none` or `visibility:hidden`.
 
-**Do not filter on opacity.** `.reveal` sections are `opacity: 0` until scrolled and
-still have full layout. Filtering them out would silently drop `.closing-cta-subtitle`
-and every other revealed block. This bit me during measurement: element screenshots
-of `#not-a-slice` came back blank white for exactly this reason while the numeric
-measurement was correct.
+**Do not filter on opacity.** `.reveal` sections are `opacity: 0` until scrolled and still have full layout. Filtering them out would silently drop `.closing-cta-subtitle` and every other revealed block. This bit me during measurement: element screenshots of `#not-a-slice` came back blank white for exactly this reason while the numeric measurement was correct.
 
 ### 4.2 The matrix, and why
 
-Cost measured at roughly **0.5 s per (route, viewport)** against the dev server;
-a static file server over `dist` is faster.
+Cost measured at roughly **0.5 s per (route, viewport)** against the dev server; a static file server over `dist` is faster.
 
 - **Viewports: 1440x900 and 390x844.** Two, not three. 1440 is the operator's own
-  reference and where the quoted defects live. 390 is where the count is worst
-  (`/en` 18 vs 11, `/ja` 20 vs 12), because narrow containers produce more wraps.
-  768x1024 was measured and is dominated: it found 5 on every locale, all of which
-  also appear at one of the other two. Dropping it removes a third of the runtime
-  and no coverage.
+reference and where the quoted defects live. 390 is where the count is worst (`/en` 18 vs 11, `/ja` 20 vs 12), because narrow containers produce more wraps. 768x1024 was measured and is dominated: it found 5 on every locale, all of which also appear at one of the other two. Dropping it removes a third of the runtime and no coverage.
 - **Locales: all 13.** Not negotiable. The defect count is locale-specific
-  (`/en` 11, `/de` 12, `/ja` 12, `/tr` 11, `/ar` 8, `/zh` 4 at 1440x900) because
-  word lengths and sentence lengths differ. Checking English only would ship the
-  defect in twelve languages, which is the failure class
-  `check-em-dash-surfaces.ts:105-111` already documents for this pipeline.
+(`/en` 11, `/de` 12, `/ja` 12, `/tr` 11, `/ar` 8, `/zh` 4 at 1440x900) because word lengths and sentence lengths differ. Checking English only would ship the defect in twelve languages, which is the failure class `check-em-dash-surfaces.ts:105-111` already documents for this pipeline.
 - **Routes: 6 page families, not 1,842 pages.** Every page is generated from a
-  template, so a family is fully represented by one member. The six:
-  `/{lang}` (home), `/{lang}/pricing`, `/{lang}/docs` (index),
-  `/{lang}/docs/quick-start` (markdown article, the rehype path),
-  `/{lang}/for-devops` (persona template), `/{lang}/disaster-recovery`
-  (solution/FAQ template). Measured defect counts at 1440x900 today: 11, 26, 16, 29,
-  20, 19.
+template, so a family is fully represented by one member. The six: `/{lang}` (home), `/{lang}/pricing`, `/{lang}/docs` (index), `/{lang}/docs/quick-start` (markdown article, the rehype path), `/{lang}/for-devops` (persona template), `/{lang}/disaster-recovery` (solution/FAQ template). Measured defect counts at 1440x900 today: 11, 26, 16, 29, 20, 19.
 
 13 x 6 x 2 = **156 measurements**.
 
 ### 4.3 How results feed the fix
 
-The measurement run emits a JSON report keyed by
-`route|locale|viewport|selector|sentence`. Each finding maps to source three ways:
+The measurement run emits a JSON report keyed by `route|locale|viewport|selector|sentence`. Each finding maps to source three ways:
 
 1. selector under a docs article route -> the rehype plugin covers it, no edit;
 2. selector inside an `astro-island` subtree -> `Sentences.tsx` in that component;
 3. everything else -> the static gate's call-site list (section 5.1) names the file
-   and line.
+and line.
 
-Drive the loop to zero on the six families, then run the instrument once over a
-wider route list as a one-off audit before declaring the sweep done. The wider run
-is not part of CI.
+Drive the loop to zero on the six families, then run the instrument once over a wider route list as a one-off audit before declaring the sweep done. The wider run is not part of CI.
 
 ---
 
 ## 5. The CI gate: hybrid, two gates
 
-A static gate alone cannot know whether a block wraps. A browser gate alone cannot
-tell a future author that they forgot `<Sentences>` on a string that happens not to
-wrap today at the two measured viewports. Both, wired separately so a failure names
-the right thing.
+A static gate alone cannot know whether a block wraps. A browser gate alone cannot tell a future author that they forgot `<Sentences>` on a string that happens not to wrap today at the two measured viewports. Both, wired separately so a failure names the right thing.
 
 ### 5.1 Static gate: `check:ci-sentence-wrapping`
 
 `scripts/gates/check-sentence-wrapping.ts`, source-level, sub-second, runs on every PR.
 
-**Asserts:** every text-position render of a catalog value whose English is
-multi-sentence and longer than 25 characters goes through `<Sentences>`.
+**Asserts:** every text-position render of a catalog value whose English is multi-sentence and longer than 25 characters goes through `<Sentences>`.
 
-Resolution: parse `.astro` and `.tsx` under `packages/www/src` for
-`t(...)` / `ta(...)` / `to(...)` calls in text position, resolve the key against
-`en.json`, count sentences with `Intl.Segmenter`, and require the enclosing
-expression to be a `Sentences` element.
+Resolution: parse `.astro` and `.tsx` under `packages/www/src` for `t(...)` / `ta(...)` / `to(...)` calls in text position, resolve the key against `en.json`, count sentences with `Intl.Segmenter`, and require the enclosing expression to be a `Sentences` element.
 
-Shrink-only baseline at `scripts/data/sentence-wrapping-baseline.json` via
-`scripts/lib/shrink-only-baseline.ts` (the 8th consumer). Finding id is
-`<file>:<translation-key>`, deliberately **not** carrying a line number, so the
-baseline survives a line move (`check-em-dash-surfaces.ts:434-435`). Surface floor
-`minFiles: 50` on `packages/www/src` so a collapsed glob fails instead of passing
-(`check-em-dash-surfaces.ts:89-104`).
+Shrink-only baseline at `scripts/data/sentence-wrapping-baseline.json` via `scripts/lib/shrink-only-baseline.ts` (the 8th consumer). Finding id is `<file>:<translation-key>`, deliberately **not** carrying a line number, so the baseline survives a line move (`check-em-dash-surfaces.ts:434-435`). Surface floor `minFiles: 50` on `packages/www/src` so a collapsed glob fails instead of
+passing (`check-em-dash-surfaces.ts:89-104`).
 
 **Control (`--selftest`), four legs against a fixture tree under `--root`:**
 
@@ -297,23 +215,16 @@ baseline survives a line move (`check-em-dash-surfaces.ts:434-435`). Surface flo
 | 3 | `.astro` rendering `{t('single')}` raw, one sentence | NOT reported |
 | 4 | **mutant:** leg 1 re-run with the sentence counter stubbed to always return 1 | leg 1 must flip to NOT reported, and the gate must declare itself broken |
 
-Leg 4 is the one that matters. It mutates the sentence counter, not the fixture,
-which proves the finding in leg 1 is produced by sentence detection and not by the
-file merely existing. Without it this gate is in the
-`check-jq-boolean-default.ts` class recorded at `check-ci-parity.ts:35-41`:
-named by a test, never actually exercised.
+Leg 4 is the one that matters. It mutates the sentence counter, not the fixture, which proves the finding in leg 1 is produced by sentence detection and not by the file merely existing. Without it this gate is in the `check-jq-boolean-default.ts` class recorded at `check-ci-parity.ts:35-41`: named by a test, never actually exercised.
 
 **Wiring**, per `EXPLORE-chrome.md` 4.1-4.3:
 
 - `package.json`:
-  `"check:ci-sentence-wrapping": "tsx scripts/gates/check-sentence-wrapping.ts --selftest && tsx scripts/gates/check-sentence-wrapping.ts"`
-  (control-first form, matching `check:ci-dead-css` and `check:ci-layout-overflow`).
+`"check:ci-sentence-wrapping": "tsx scripts/gates/check-sentence-wrapping.ts --selftest && tsx scripts/gates/check-sentence-wrapping.ts"` (control-first form, matching `check:ci-dead-css` and `check:ci-layout-overflow`).
 - `scripts/ci-runner/manifest.ts`: `GateSpec` with
-  `leaves: ['scripts/gates/check-sentence-wrapping.ts']`, no `needs` (source-level, does
-  not read `dist`), `ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml',
-  job: 'quality-content', step: 'Sentence wrapping' }`.
+`leaves: ['scripts/gates/check-sentence-wrapping.ts']`, no `needs` (source-level, does not read `dist`), `ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-content', step: 'Sentence wrapping' }`.
 - `.github/workflows/ci-quality.yml`, job `quality-content` (`:734`), beside the
-  existing "Dead CSS" / "CSS DOM references" steps:
+existing "Dead CSS" / "CSS DOM references" steps:
 
   ```yaml
         - name: Sentence wrapping
@@ -321,27 +232,17 @@ named by a test, never actually exercised.
           run: npm run check:ci-sentence-wrapping
   ```
 
-  The step `name:` must match the manifest `step` byte for byte or
-  `check:ci-parity` fails.
+The step `name:` must match the manifest `step` byte for byte or `check:ci-parity` fails.
 
 ### 5.2 Browser gate: `check:ci-sentence-lines`
 
-`scripts/check-sentence-lines.ts`, the section 4.1 instrument run as a gate over
-`packages/www/dist`. **Asserts zero findings** across the 156-measurement matrix.
+`scripts/check-sentence-lines.ts`, the section 4.1 instrument run as a gate over `packages/www/dist`. **Asserts zero findings** across the 156-measurement matrix.
 
-Anti-vacuity floor, mandatory: each (route, locale, viewport) must have inspected at
-least 8 multi-sentence candidate blocks. A route that 404s, renders empty, or loses
-its content to a layout change reports zero defects and would otherwise pass. This
-is the same shape as `MIN_MANIFEST_GATES` in
-`.ci/scripts/quality/check_gate_reachability_coverage.py`.
+Anti-vacuity floor, mandatory: each (route, locale, viewport) must have inspected at least 8 multi-sentence candidate blocks. A route that 404s, renders empty, or loses its content to a layout change reports zero defects and would otherwise pass. This is the same shape as `MIN_MANIFEST_GATES` in `.ci/scripts/quality/check_gate_reachability_coverage.py`.
 
-Also force `prefers-reduced-motion: reduce` on the context so reveal animations
-settle deterministically, and assert `document.fonts.ready` before measuring:
-line breaks depend on the actual font, and measuring before webfonts land measures
-the fallback face.
+Also force `prefers-reduced-motion: reduce` on the context so reveal animations settle deterministically, and assert `document.fonts.ready` before measuring: line breaks depend on the actual font, and measuring before webfonts land measures the fallback face.
 
-**Control (`--selftest`), three legs against an in-memory fixture page served by the
-same `node:http` server, no `dist` required:**
+**Control (`--selftest`), three legs against an in-memory fixture page served by the same `node:http` server, no `dist` required:**
 
 | Leg | Fixture | Required verdict |
 |---|---|---|
@@ -349,15 +250,10 @@ same `node:http` server, no `dist` required:**
 | 2 | identical copy and width, sentences wrapped in `.sentence` inline-blocks | 0 findings |
 | 3 | **mutant:** leg 2 re-served with `.sentence { display: inline-block }` stripped from the fixture stylesheet | must go back to at least 1 finding |
 
-Leg 3 mutates the mechanism, not the content. It proves the measurement responds to
-inline-block atomicity and not to page identity, which is the failure the two blind
-browser overflow hunts in `check-layout-overflow.ts:19-25` are the local precedent for.
+Leg 3 mutates the mechanism, not the content. It proves the measurement responds to inline-block atomicity and not to page identity, which is the failure the two blind browser overflow hunts in `check-layout-overflow.ts:19-25` are the local precedent for.
 
-**Wiring:** same three points, but job `quality-www-build` (`:1208`) and
-`needs: ['build:www']` in the manifest, which is required and not an optimisation
-(`manifest.ts:1626`): these gates refuse rather than self-skip when `dist` is absent.
-Note also `EXPLORE-chrome.md` finding 5.1, that `check:ci-landmarks` and
-`check:ci-browser-smoke` are both missing that `needs` today. Do not copy that bug.
+**Wiring:** same three points, but job `quality-www-build` (`:1208`) and `needs: ['build:www']` in the manifest, which is required and not an optimisation (`manifest.ts:1626`): these gates refuse rather than self-skip when `dist` is absent. Note also `EXPLORE-chrome.md` finding 5.1, that `check:ci-landmarks` and `check:ci-browser-smoke` are both missing that `needs` today. Do not
+copy that bug.
 
 ### 5.3 Runtime budget
 
@@ -366,10 +262,7 @@ Note also `EXPLORE-chrome.md` finding 5.1, that `check:ci-landmarks` and
 | `check:ci-sentence-wrapping` | `quality-content` (ubuntu-latest, 15 min) | under 2 s. It parses the same file set as `check:ci-dead-css` and does no I/O beyond it. | fits with margin |
 | `check:ci-sentence-lines` | `quality-www-build` (ubuntu-latest) | 156 x 0.5 s = 78 s, plus roughly 15 s for Chromium launch and the static server. Budget **120 s**. | `quality-www-build` already carries `build:www`; 2 min is comparable to `check:ci-browser-smoke` beside it |
 
-Neither lands on the ubuntu-slim `quality-static` job, so the 15-minute slim cap is
-not the binding constraint. If the browser gate ever exceeds 180 s, drop to one
-viewport (1440x900) before dropping locales: the locale axis is where the defects
-differ, the viewport axis is where they merely multiply.
+Neither lands on the ubuntu-slim `quality-static` job, so the 15-minute slim cap is not the binding constraint. If the browser gate ever exceeds 180 s, drop to one viewport (1440x900) before dropping locales: the locale axis is where the defects differ, the viewport axis is where they merely multiply.
 
 ---
 
@@ -377,13 +270,13 @@ differ, the viewport axis is where they merely multiply.
 
 1. `sentences.ts` + `Sentences.astro` + `Sentences.tsx` + the `main.css` rule.
 2. `rehype-sentence-wrap.ts` + `astro.config.mjs`. Re-measure `/en/docs/quick-start`
-   (29 -> expect 0) to confirm the markdown path alone before touching call sites.
+(29 -> expect 0) to confirm the markdown path alone before touching call sites.
 3. `check:ci-sentence-wrapping` with its control, seeded at the current call-site
-   count. It generates the authoritative work list for step 4.
+count. It generates the authoritative work list for step 4.
 4. Drain the call-site list to zero, in two disjoint halves at most
-   (`.astro` pages vs `.tsx` islands), per the two-writer cap.
+(`.astro` pages vs `.tsx` islands), per the two-writer cap.
 5. `check:ci-sentence-lines` with its control, wired only once step 4 is at zero,
-   so the gate is born green.
+so the gate is born green.
 6. Run the wider one-off audit of section 4.3 and report what it finds.
 
 ---
@@ -391,49 +284,25 @@ differ, the viewport axis is where they merely multiply.
 ## 7. Risks
 
 1. **Copy/paste across inline-block boundaries.** Chromium can insert a newline
-   when copying across inline-block elements. `textContent` is provably unchanged,
-   but the clipboard is a separate path. Verify by hand on one paragraph in Chrome
-   and Firefox before merging. If it bites, the fallback is
-   `.sentence { display: inline-block; }` scoped away from body copy and applied
-   only to headings and short blocks, which loses most of the value; say so out loud
-   rather than shipping a silent downgrade.
+when copying across inline-block elements. `textContent` is provably unchanged, but the clipboard is a separate path. Verify by hand on one paragraph in Chrome and Firefox before merging. If it bites, the fallback is `.sentence { display: inline-block; }` scoped away from body copy and applied only to headings and short blocks, which loses most of the value; say so out loud rather
+than shipping a silent downgrade.
 2. **`-webkit-line-clamp` at `src/styles/docs-browse.css:289-290`.** The only
-   `display: -webkit-box` on the site. Inline-block children inside a `-webkit-box`
-   are fragile. One selector, verify directly.
+`display: -webkit-box` on the site. Inline-block children inside a `-webkit-box` are fragile. One selector, verify directly.
 3. **Vertical growth on dense pages.** Worst measured case is +1.2% page height, but
-   that is an average over a whole page. A specific card with a fixed height and four
-   sentences can overflow. The 390x844 pass in the browser gate is what catches it;
-   do not drop the mobile viewport from the matrix.
+that is an average over a whole page. A specific card with a fixed height and four sentences can overflow. The 390x844 pass in the browser gate is what catches it; do not drop the mobile viewport from the matrix.
 4. **818 catalog leaves, 80 call sites, and the gap between them.** The static gate
-   resolves keys through literal `t('a.b')` calls. Config-driven pages
-   (`src/config/solution-pages.ts`) and `to()` calls returning arrays iterated in a
-   template resolve to the template, not to each item. That is correct for the fix
-   (one `<Sentences>` in the template covers every item) but it means the static
-   gate's count is not a count of rendered blocks. The browser gate is what closes
-   that gap, which is the reason the design is a hybrid and not just the cheap half.
+resolves keys through literal `t('a.b')` calls. Config-driven pages (`src/config/solution-pages.ts`) and `to()` calls returning arrays iterated in a template resolve to the template, not to each item. That is correct for the fix (one `<Sentences>` in the template covers every item) but it means the static gate's count is not a count of rendered blocks. The browser gate is what
+closes that gap, which is the reason the design is a hybrid and not just the cheap half.
 5. **Locale drift.** A future English edit that adds a sentence to a value already
-   wrapped is caught. A future *translation* that adds a sentence English does not
-   have is caught only by the browser gate, and only if that locale is in the matrix.
-   All 13 are, deliberately.
+wrapped is caught. A future *translation* that adds a sentence English does not have is caught only by the browser gate, and only if that locale is in the matrix. All 13 are, deliberately.
 6. **`Intl.Segmenter` and product strings.** Verified safe on "e.g." and "v1.2.".
-   Not verified on every string in the catalog. The static gate should print the
-   segmentation for any value it reports, so a bad split is visible at review time
-   rather than at render time.
+Not verified on every string in the catalog. The static gate should print the segmentation for any value it reports, so a bad split is visible at review time rather than at render time.
 
 ---
 
 ## 8. Out of scope, stated so it is not mistaken for an oversight
 
-**The `/en/docs` card title "Creating Your / First Repository" is not a
-sentence-boundary defect and this mechanism does nothing for it.** Measured: it is
-an `<a class="docs-card-link">` in a 124px-wide container, carrying `text-wrap:
-balance`, holding exactly **one** sentence. It wraps because the container is narrow,
-not because a sentence straddles a break. Fixing it is a width, font-size or
-card-layout change on `.docs-card-link`, and it belongs to a separate finding.
-The team lead's brief listed it among the failing examples; on measurement it is a
-different bug.
+**The `/en/docs` card title "Creating Your / First Repository" is not a sentence-boundary defect and this mechanism does nothing for it.** Measured: it is an `<a class="docs-card-link">` in a 124px-wide container, carrying `text-wrap: balance`, holding exactly **one** sentence. It wraps because the container is narrow, not because a sentence straddles a break. Fixing it is a width,
+font-size or card-layout change on `.docs-card-link`, and it belongs to a separate finding. The team lead's brief listed it among the failing examples; on measurement it is a different bug.
 
-**Incidental finding, unrelated to this plan.** On `/zh`, the footer newsletter
-description renders the English string "Product news and self-hosting tips."
-(selector `p.newsletter-footer-desc`). That is an untranslated value, not a wrapping
-defect. It is inside the `Footer.tsx` island. Worth a worklist item on its own.
+**Incidental finding, unrelated to this plan.** On `/zh`, the footer newsletter description renders the English string "Product news and self-hosting tips." (selector `p.newsletter-footer-desc`). That is an untranslated value, not a wrapping defect. It is inside the `Footer.tsx` island. Worth a worklist item on its own.

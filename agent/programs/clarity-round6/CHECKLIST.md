@@ -1,10 +1,8 @@
 # Handoff checklist: clarity-round6
 
-Status: done
-Owner: e580532b
+Status: done Owner: e580532b
 
-Source session `e580532b`, 2026-08-27, planned in `/home/developer/console` on branch `0827-1`.
-Program state: `~/.claude/projects/-home-developer-console/programs/clarity-round6/`
+Source session `e580532b`, 2026-08-27, planned in `/home/developer/console` on branch `0827-1`. Program state: `~/.claude/projects/-home-developer-console/programs/clarity-round6/`
 
 ## Deliverables
 - [x] d1 file:agent/programs/clarity-round6/README.md

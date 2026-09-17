@@ -1,26 +1,14 @@
 # Derived registry (generated)
 
-Every table below is rewritten from the tree by `scripts/gen-docs.ts`. Nothing in a region is
-typed by hand, and `npx tsx scripts/gen-docs.ts` (no flags) fails if any of it has drifted.
+Every table below is rewritten from the tree by `scripts/gen-docs.ts`. Nothing in a region is typed by hand, and `npx tsx scripts/gen-docs.ts` (no flags) fails if any of it has drifted.
 
-`npm run gen:docs` runs the VERIFY mode, not the writer. Regenerating is
-`npx tsx scripts/gen-docs.ts --write`, spelled out rather than given a key, because a one-word
-way to overwrite every generated region is a way to overwrite them without reading the diff.
-The gate that runs all of this in CI is `gate-test:docs-gen`
-(`.ci/scripts/test/gates/test-docs-gen.sh`), which drives the generator in both directions:
-green on the tree as it stands, and red over a single perturbed row.
+`npm run gen:docs` runs the VERIFY mode, not the writer. Regenerating is `npx tsx scripts/gen-docs.ts --write`, spelled out rather than given a key, because a one-word way to overwrite every generated region is a way to overwrite them without reading the diff. The gate that runs all of this in CI is `gate-test:docs-gen` (`.ci/scripts/test/gates/test-docs-gen.sh`), which drives the
+generator in both directions: green on the tree as it stands, and red over a single perturbed row.
 
-This file is the phase 0 home for those regions. It is deliberately NOT one of the documents a
-reader is sent to: `CLAUDE.md`, `docs/agent-reference/ci-gates.md`,
-`docs/agent-reference/suppressions.md` and `docs/agent-reference/TRAPS.md` each have exactly one
-writer during the tooling transformation, and phase 0 is not that writer. Those documents opt in
-later by carrying the same markers, which needs no change to the generator: targets are
-discovered by scanning for the marker, not from a list.
+This file is the phase 0 home for those regions. It is deliberately NOT one of the documents a reader is sent to: `CLAUDE.md`, `docs/agent-reference/ci-gates.md`, `docs/agent-reference/suppressions.md` and `docs/agent-reference/TRAPS.md` each have exactly one writer during the tooling transformation, and phase 0 is not that writer. Those documents opt in later by carrying the same
+markers, which needs no change to the generator: targets are discovered by scanning for the marker, not from a list.
 
-The frozen companion to this file is `scripts/data/doc-registry-preport.json`, which records the
-row SET of every provider as it stood before the ports began. A count floor cannot catch a
-silent drop -- a floor of 300 still passes after 88 of 388 rows vanish, and count equality still
-passes when 88 are swapped for 88 others -- so membership is the only instrument that names what
+The frozen companion to this file is `scripts/data/doc-registry-preport.json`, which records the row SET of every provider as it stood before the ports began. A count floor cannot catch a silent drop -- a floor of 300 still passes after 88 of 388 rows vanish, and count equality still passes when 88 are swapped for 88 others -- so membership is the only instrument that names what
 was lost, and it only works if it was recorded first.
 
 ## Gates
@@ -869,9 +857,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 <!-- <<< gen-docs -->
 ## Hook wiring, folded
 
-The per-file detail is the `hook-guards` table above; this is the same wiring folded to one
-row per event. It moved here from CLAUDE.md in W11 P5b: the detail and the summary belong
-beside each other, and CLAUDE.md keeps a pointer rather than a second table.
+The per-file detail is the `hook-guards` table above; this is the same wiring folded to one row per event. It moved here from CLAUDE.md in W11 P5b: the detail and the summary belong beside each other, and CLAUDE.md keeps a pointer rather than a second table.
 
 <!-- >>> gen-docs: hook-summary -->
 
@@ -896,9 +882,7 @@ Scans: the `hooks` wiring in .claude/settings.json, folded to one row per event,
 
 ## Entry points
 
-Which implementation serves which `./run.sh` verb. `PORTED_VERBS` is the seam the tooling
-port moves a verb across, so this table is the port's progress and prose would be stale
-within a week of the first move.
+Which implementation serves which `./run.sh` verb. `PORTED_VERBS` is the seam the tooling port moves a verb across, so this table is the port's progress and prose would be stale within a week of the first move.
 
 <!-- >>> gen-docs: bootstrap -->
 
@@ -917,8 +901,7 @@ Scans: `run.sh`, its `PORTED_VERBS` table, the legacy dispatcher and the pins `.
 
 ## The CI/CD job graph
 
-Every non-reusable workflow that calls a reusable one, folded to one row per topological
-stage of its `needs:` graph. This is the chain CLAUDE.md used to draw by hand.
+Every non-reusable workflow that calls a reusable one, folded to one row per topological stage of its `needs:` graph. This is the chain CLAUDE.md used to draw by hand.
 
 <!-- >>> gen-docs: job-graph -->
 
@@ -954,8 +937,7 @@ Scans: every `.github/workflows/*.yml` that calls a reusable workflow, folded to
 
 ## Media directories and their R2 prefixes
 
-The union of both sync scripts and `packages/www/.gitignore`. A directory that is gitignored
-and named by NEITHER script is the row to read: it is in no checkout and in no bucket.
+The union of both sync scripts and `packages/www/.gitignore`. A directory that is gitignored and named by NEITHER script is the row to read: it is in no checkout and in no bucket.
 
 <!-- >>> gen-docs: media -->
 
@@ -975,16 +957,10 @@ Scans: the two R2 sync scripts and `packages/www/.gitignore`, one row per media 
 
 ## The `.json` inventory
 
-Requirement 15 asked for the `.json` files to be "organised", which is unfalsifiable until
-somebody says what organised means. `docs/ci-overhaul/08-driver-contract.md` supplied a
-predicate and three counts, and two of the three counts were wrong within a day. The counts
-below are derived, so they cannot be.
+Requirement 15 asked for the `.json` files to be "organised", which is unfalsifiable until somebody says what organised means. `docs/ci-overhaul/08-driver-contract.md` supplied a predicate and three counts, and two of the three counts were wrong within a day. The counts below are derived, so they cannot be.
 
-`Discovered by` is the highest-priority non-prose file that WRITES the path down, in a fixed
-order, not the full reader set: `suppressions` above records why a grep-derived reader column
-was removed. `(convention)` is the interesting residue and the driver contract's KEEP case --
-nothing in the tree names the file, so the only thing that can be finding it is a third-party
-tool's own convention.
+`Discovered by` is the highest-priority non-prose file that WRITES the path down, in a fixed order, not the full reader set: `suppressions` above records why a grep-derived reader column was removed. `(convention)` is the interesting residue and the driver contract's KEEP case -- nothing in the tree names the file, so the only thing that can be finding it is a third-party tool's
+own convention.
 
 <!-- >>> gen-docs: json-inventory -->
 <!-- Prose is excluded from the namer corpus, and so are the three data homes themselves: a -->
@@ -1063,24 +1039,14 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 
 ## Environment variables
 
-Every environment variable this repository reads or supplies, and which shard it belongs to.
-The shards are keyed on WHO SUPPLIES THE VALUE and WHO MAY READ IT. Their definitions run to
-a paragraph apiece and stay in `.ci/config/env-manifest.json` rather than being copied into a
-column that would repeat one of them on every row.
+Every environment variable this repository reads or supplies, and which shard it belongs to. The shards are keyed on WHO SUPPLIES THE VALUE and WHO MAY READ IT. Their definitions run to a paragraph apiece and stay in `.ci/config/env-manifest.json` rather than being copied into a column that would repeat one of them on every row.
 
-The manifest is not typed by hand either: `check:ci-env-manifest` re-derives the union from
-five sources (tracked env files, workflow and action `KEY:` maps, `process.env`,
-`os.environ` by AST rather than by regex, and the Bitwarden secret map) and reds when the
-file and the tree disagree in either direction. So this table is a projection of a
-projection, and neither hop has a hand-kept list in it.
+The manifest is not typed by hand either: `check:ci-env-manifest` re-derives the union from five sources (tracked env files, workflow and action `KEY:` maps, `process.env`, `os.environ` by AST rather than by regex, and the Bitwarden secret map) and reds when the file and the tree disagree in either direction. So this table is a projection of a projection, and neither hop has a
+hand-kept list in it.
 
-One row per NAME, never a value. A row per shard carrying that shard's count would be
-smaller and would go blind to exactly the change worth catching: one variable leaving as
-another arrives keeps every count identical.
+One row per NAME, never a value. A row per shard carrying that shard's count would be smaller and would go blind to exactly the change worth catching: one variable leaving as another arrives keeps every count identical.
 
-`Also recorded` is the manifest's residue, hung off the variable it is about: a collision (two
-variables that share one spelling), a note recording a contradiction the gate cannot resolve,
-and the test files that hold a tombstone down. A `-` means the manifest says nothing further.
+`Also recorded` is the manifest's residue, hung off the variable it is about: a collision (two variables that share one spelling), a note recording a contradiction the gate cannot resolve, and the test files that hold a tombstone down. A `-` means the manifest says nothing further.
 
 <!-- >>> gen-docs: env-manifest -->
 <!-- Names, shards and residue only. Not one value is read or printed: the secret shard is -->

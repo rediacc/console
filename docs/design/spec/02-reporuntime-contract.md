@@ -1,13 +1,9 @@
 # Spec 02 — The `RepoRuntime` Contract, Shared Contract-Test Suite, and Placement Dispatch
 
-P0 implementation spec for design 02 §9 (runtime abstraction), 02 §4/§8 (the policy
-invariants the contract enforces), 03 §2 (hygiene + convergence rules), 04 §4 (lifecycle
-health gate), 09 §P1 (interface skeleton + contract tests land first). Everything marked
-[P0-DECIDED] is a decision this spec makes; everything else restates a decision the design
-suite already made, with the file/section reference.
+P0 implementation spec for design 02 §9 (runtime abstraction), 02 §4/§8 (the policy invariants the contract enforces), 03 §2 (hygiene + convergence rules), 04 §4 (lifecycle health gate), 09 §P1 (interface skeleton + contract tests land first). Everything marked [P0-DECIDED] is a decision this spec makes; everything else restates a decision the design suite already made, with the
+file/section reference.
 
-All renet paths are relative to `private/renet/`; all CLI paths relative to
-`packages/cli/`.
+All renet paths are relative to `private/renet/`; all CLI paths relative to `packages/cli/`.
 
 ---
 
@@ -15,31 +11,20 @@ All renet paths are relative to `private/renet/`; all CLI paths relative to
 
 ### 1.1 Where it lives
 
-[P0-DECIDED] New package **`pkg/reporuntime`** (import path
-`github.com/rediacc/renet/pkg/reporuntime`).
+[P0-DECIDED] New package **`pkg/reporuntime`** (import path `github.com/rediacc/renet/pkg/reporuntime`).
 
 - Not `pkg/runtime` (shadows the stdlib import in every file that touches goroutines or
-  GC knobs).
+GC knobs).
 - Not inside `pkg/repository` (that package is the docker/LUKS storage lifecycle, which
-  the runtime explicitly must NOT touch) and not inside `pkg/kube` (one implementation
-  cannot own the contract).
+the runtime explicitly must NOT touch) and not inside `pkg/kube` (one implementation cannot own the contract).
 - Single package holding the interface plus both implementations
-  (`reporuntime.go`, `env.go`, `leak.go`, `docker.go`, `kube.go`, `factory.go`),
-  following the repo's established one-package-many-backends precedent:
-  `pkg/datastore` (`backend_local.go` / `backend_ceph.go` under one `DatastoreBackend`
-  interface, `backend.go:109`) and `pkg/kube/distro` (`k3s.go` / `external.go` under one
-  `Distro` interface, `distro.go:119`).
+(`reporuntime.go`, `env.go`, `leak.go`, `docker.go`, `kube.go`, `factory.go`), following the repo's established one-package-many-backends precedent: `pkg/datastore` (`backend_local.go` / `backend_ceph.go` under one `DatastoreBackend` interface, `backend.go:109`) and `pkg/kube/distro` (`k3s.go` / `external.go` under one `Distro` interface, `distro.go:119`).
 - Dependency direction: `reporuntime` imports `pkg/orchestration`, `pkg/kube`,
-  `pkg/kube/distro`, `pkg/list`. Nothing under those packages imports `reporuntime`
-  (callers are `cmd/renet` and `pkg/functions/commands`). The existing
-  `orchestration.Runtime` string type ("compose" | "kube", `pkg/orchestration/
-  rediaccfile.go:497`) stays as the in-image `.rediacc.json` declaration; it is a
-  different (demoted, lint-only) concept — see §3.4.
+`pkg/kube/distro`, `pkg/list`. Nothing under those packages imports `reporuntime` (callers are `cmd/renet` and `pkg/functions/commands`). The existing `orchestration.Runtime` string type ("compose" | "kube", `pkg/orchestration/ rediaccfile.go:497`) stays as the in-image `.rediacc.json` declaration; it is a different (demoted, lint-only) concept — see §3.4.
 
 ### 1.2 The interface, verbatim-ready
 
-Names refine the 02 §9 list (`Deploy/Teardown/Fork/Status/InjectSecrets/Health/
-ProvisionVolumes/ApplyIsolation` — all eight kept, signatures decided here).
+Names refine the 02 §9 list (`Deploy/Teardown/Fork/Status/InjectSecrets/Health/ ProvisionVolumes/ApplyIsolation` — all eight kept, signatures decided here).
 
 ```go
 package reporuntime
@@ -288,34 +273,22 @@ var (
 )
 ```
 
-`orchestration.ErrFunctionNotDefined` (`pkg/orchestration/rediaccfile.go:23`, the exit-42
-sentinel) stays where it is; `Health` consumes it internally and maps it to
-`HealthUnknown`.
+`orchestration.ErrFunctionNotDefined` (`pkg/orchestration/rediaccfile.go:23`, the exit-42 sentinel) stays where it is; `Health` consumes it internally and maps it to `HealthUnknown`.
 
-CLI exit-code mapping (gate G1): the authoritative four-row table lives in spec 03 §1;
-this spec concurs with the review's proposal — `ErrRoleViolation` → 2,
-`ErrNotDeployed` → 5, `ErrWrongRuntime` → the state-mismatch code,
-`ErrHoldersPresent` → the busy code, with spec 03 fixing the exact numbers.
+CLI exit-code mapping (gate G1): the authoritative four-row table lives in spec 03 §1; this spec concurs with the review's proposal — `ErrRoleViolation` → 2, `ErrNotDeployed` → 5, `ErrWrongRuntime` → the state-mismatch code, `ErrHoldersPresent` → the busy code, with spec 03 fixing the exact numbers.
 
 ### 1.3 Rules restated as enforceable statements
 
 1. **No storage access.** The runtime's constructors take `RepoHandle` +
-   injected tool seams only; no `datastore.DatastoreBackend`, no `pkg/luks`, no
-   `pkg/loop`, no `pkg/rbd` imports in `docker.go`/`kube.go`. Enforced by (a) the
-   compile-time absence of those imports (checked by the dead-code/lint gate diff in
-   `check:ci-renet`) and (b) CT-10's recording fixture.
+injected tool seams only; no `datastore.DatastoreBackend`, no `pkg/luks`, no `pkg/loop`, no `pkg/rbd` imports in `docker.go`/`kube.go`. Enforced by (a) the compile-time absence of those imports (checked by the dead-code/lint gate diff in `check:ci-renet`) and (b) CT-10's recording fixture.
 2. **Policy at the interface.** The fork/migrate/env/teardown invariants are
-   documented on the interface (above) and asserted once by the shared suite (§2), not
-   re-derived per implementation.
+documented on the interface (above) and asserted once by the shared suite (§2), not re-derived per implementation.
 3. **Idempotency.** `ProvisionVolumes`, `ApplyIsolation`, `InjectSecrets`, `Deploy`,
-   `Teardown` are all safe to re-run against half-broken state and must converge
-   (03 §2 rule 4, R2-F15 table). CT-8/CT-9.
+`Teardown` are all safe to re-run against half-broken state and must converge (03 §2 rule 4, R2-F15 table). CT-8/CT-9.
 
 ### 1.4 Lifecycle env: the shared injection helper
 
-[P0-DECIDED] One pure function in `pkg/reporuntime/env.go` builds the policy env for
-every lifecycle hook (up/down/health), used by BOTH implementations so the contract test
-asserts a single source:
+[P0-DECIDED] One pure function in `pkg/reporuntime/env.go` builds the policy env for every lifecycle hook (up/down/health), used by BOTH implementations so the contract test asserts a single source:
 
 ```go
 // LifecycleEnv returns the policy environment injected into every Rediaccfile
@@ -332,37 +305,21 @@ func LifecycleEnv(h RepoHandle) map[string]string
 Wiring with minimal churn:
 
 - **Docker**: `UpOptions`/`DownOptions` gain one field, `ExtraEnv map[string]string`;
-  `UpServices`/`DownServices` fold it into the existing `executor.SetEnv` block
-  (`up_down_workflows.go:209` and `:345`). `DockerRuntime.Deploy` passes
-  `LifecycleEnv(h)`. The docker-specific vars (`DOCKER_HOST`, `DOCKER_SOCKET`,
-  service `*_IP` exports, `REDIACC_NETWORK_ID`) stay exactly where they are.
+`UpServices`/`DownServices` fold it into the existing `executor.SetEnv` block (`up_down_workflows.go:209` and `:345`). `DockerRuntime.Deploy` passes `LifecycleEnv(h)`. The docker-specific vars (`DOCKER_HOST`, `DOCKER_SOCKET`, service `*_IP` exports, `REDIACC_NETWORK_ID`) stay exactly where they are.
 - **Kube**: the same map goes into the Rediaccfile executor env (kube repos already run
-  their lifecycle through Rediaccfile `up()`, deploy comment at `pkg/kube/deploy.go:94`),
-  with `KUBECONFIG` instead of `DOCKER_HOST`. Additionally `Deploy` converges a
-  **per-namespace ConfigMap** pods can `envFrom` (02 §4):
+their lifecycle through Rediaccfile `up()`, deploy comment at `pkg/kube/deploy.go:94`), with `KUBECONFIG` instead of `DOCKER_HOST`. Additionally `Deploy` converges a **per-namespace ConfigMap** pods can `envFrom` (02 §4):
 
-  [P0-DECIDED] ConfigMap name **`rediacc-role`**, in the repo namespace, data =
-  exactly the three policy keys (`REDIACC_ROLE`, `REDIACC_WRITES`,
-  `REDIACC_DATASTORE`). `Fork` rewrites it (otherwise a fork boots claiming
-  role=primary — F2). Applied via the same `kubectl apply` path as manifests
-  (`Wrapper.applyBytes`, `pkg/kube/deploy.go:194`), so it needs no new plumbing.
+[P0-DECIDED] ConfigMap name **`rediacc-role`**, in the repo namespace, data = exactly the three policy keys (`REDIACC_ROLE`, `REDIACC_WRITES`, `REDIACC_DATASTORE`). `Fork` rewrites it (otherwise a fork boots claiming role=primary — F2). Applied via the same `kubectl apply` path as manifests (`Wrapper.applyBytes`, `pkg/kube/deploy.go:194`), so it needs no new plumbing.
 
 - `EnsureEnvrc` (`up_down_workflows.go:455`) adds the same three keys to the managed
-  `.envrc` block so interactive sessions see the role too.
+`.envrc` block so interactive sessions see the role too.
 - **Registry env (gate G3)**: a kube repo that opts into the per-repo image registry
-  (spec 05 §5: one `rediacc-registry-<networkID>` zot unit, store at
-  `repos/<repo>/registry/`) additionally receives `REDIACC_REGISTRY_HOST`
-  (`registry.<repo>.rediacc.internal`) and `REDIACC_REGISTRY` (`<host>:<port>`, port
-  allocated at repo create and recorded in v3 `state.repos` next to the networkId —
-  spec 04 owns the field) in its lifecycle env. Not part of `LifecycleEnv`'s policy
-  trio; injected by `KubeRuntime.Deploy` alongside `KUBECONFIG`. Unset for docker
-  repos and for kube repos without the registry opt-in.
+(spec 05 §5: one `rediacc-registry-<networkID>` zot unit, store at `repos/<repo>/registry/`) additionally receives `REDIACC_REGISTRY_HOST` (`registry.<repo>.rediacc.internal`) and `REDIACC_REGISTRY` (`<host>:<port>`, port allocated at repo create and recorded in v3 `state.repos` next to the networkId — spec 04 owns the field) in its lifecycle env. Not part of `LifecycleEnv`'s
+policy trio; injected by `KubeRuntime.Deploy` alongside `KUBECONFIG`. Unset for docker repos and for kube repos without the registry opt-in.
 
 ### 1.5 `DockerRuntime`: wrapping existing behavior (method-by-method map)
 
-`DockerRuntime` is a thin adapter over code that already works; P1 explicitly builds it
-first to prove the contract against reality (09 §P1). Struct holds an
-`*orchestration.Orchestrator` factory plus the tool seams.
+`DockerRuntime` is a thin adapter over code that already works; P1 explicitly builds it first to prove the contract against reality (09 §P1). Struct holds an `*orchestration.Orchestrator` factory plus the tool seams.
 
 | Method | Wraps (existing code path) | Delta needed |
 |---|---|---|
@@ -377,12 +334,8 @@ first to prove the contract against reality (09 §P1). Struct holds an
 
 ### 1.6 `TeardownLeak`: generalizing `NamespaceTeardownLeak`
 
-Today's `kube.NamespaceTeardownLeak` (`pkg/kube/ceph_backend.go:46`) carries
-Ceph-specific fields (`RadosNamespace`, `Pool`, `Images`) that the delete ledger removes
-(02 §6). The generalized type keeps its two proven semantics — **non-fatal reporting**
-("the k8s namespace is already gone by then, so failing would strand the caller",
-`namespace.go:38-42`) and **keep-state-so-a-re-run-converges** (`cleanupNamespaceState`,
-`namespace.go:58`) — and drops the Ceph vocabulary:
+Today's `kube.NamespaceTeardownLeak` (`pkg/kube/ceph_backend.go:46`) carries Ceph-specific fields (`RadosNamespace`, `Pool`, `Images`) that the delete ledger removes (02 §6). The generalized type keeps its two proven semantics — **non-fatal reporting** ("the k8s namespace is already gone by then, so failing would strand the caller", `namespace.go:38-42`) and
+**keep-state-so-a-re-run-converges** (`cleanupNamespaceState`, `namespace.go:58`) — and drops the Ceph vocabulary:
 
 ```go
 // TeardownLeak names the state a teardown could not remove. nil = clean.
@@ -406,15 +359,11 @@ type TeardownLeak struct {
 }
 ```
 
-`notef`-style accumulation (whitespace-collapsed multi-step reasons) is carried over
-verbatim from `ceph_backend.go:62`.
+`notef`-style accumulation (whitespace-collapsed multi-step reasons) is carried over verbatim from `ceph_backend.go:62`.
 
 ### 1.7 `KubeRuntime` on the repo-as-folder model
 
-`KubeRuntime` wraps `kube.Wrapper` (`pkg/kube/wrapper.go:28`) after the delete ledger has
-run (02 §6: `CephPool`/`CephCluster` fields, `EnsureCephBackend`, `resolvePVBackend`,
-`.rbd-backend.json` markers, `forkNamespaceRBD` all deleted; the wrapper keeps
-`KubeconfigPath`/`Namespace`/`Cluster`/`Datastore`/sandbox/`applyBytes`).
+`KubeRuntime` wraps `kube.Wrapper` (`pkg/kube/wrapper.go:28`) after the delete ledger has run (02 §6: `CephPool`/`CephCluster` fields, `EnsureCephBackend`, `resolvePVBackend`, `.rbd-backend.json` markers, `forkNamespaceRBD` all deleted; the wrapper keeps `KubeconfigPath`/`Namespace`/`Cluster`/`Datastore`/sandbox/`applyBytes`).
 
 | Method | Implementation on the new model |
 |---|---|
@@ -427,61 +376,37 @@ run (02 §6: `CephPool`/`CephCluster` fields, `EnsureCephBackend`, `resolvePVBac
 | `Status` | Namespace workload summary via wrapper kubectl (`get deploy,sts,ds,pods -o json`), mapped to `WorkloadStatus`. |
 | `Health` | Layered (04 §4): (1) Rediaccfile `health()` if defined; (2) else k8s readiness: all namespace workloads Available/Ready within a timeout ⇒ Healthy; (3) the control plane itself is NOT this method's job — that is `distro.Healthcheck` (`pkg/kube/distro/distro.go:150`, bridge `kube_health`, `pkg/functions/commands/kube.go:134`), called by the cluster layer before per-repo gates. |
 
-Note on `ManifestsDir`: today manifests persist at `{datastore}/manifests/<cluster>/<ns>`
-(`deploy.go:15`), OUTSIDE the repo's own tree — under repo-as-folder they move to
-`<ds-mount>/repos/<repo>/manifests/` so a repo folder is self-contained and a reflink
-fork carries its manifests by construction. [P0-DECIDED] (Without this move, `Fork`
-would need the old cross-tree manifest copy and the "fork carries everything by
-construction" claim of 04 §2.8 would be false at repo scope.)
+Note on `ManifestsDir`: today manifests persist at `{datastore}/manifests/<cluster>/<ns>` (`deploy.go:15`), OUTSIDE the repo's own tree — under repo-as-folder they move to `<ds-mount>/repos/<repo>/manifests/` so a repo folder is self-contained and a reflink fork carries its manifests by construction. [P0-DECIDED] (Without this move, `Fork` would need the old cross-tree manifest
+copy and the "fork carries everything by construction" claim of 04 §2.8 would be false at repo scope.)
 
-**Cluster-level boundary.** `RepoRuntime.Fork` is repo-scope. The whole-cluster fork
-(04 §2) is a CLUSTER-layer composition: group snap → clones → attach → **CP identity
-rewrite with fork-mode PKI regeneration + kine secret scrub + ROLE rewrite** (the F1/F2
-step, specced in the fork-scrub P0 spec; today's migrate-shaped seam is
-`K3sDistro.RewriteIdentity`, `pkg/kube/distro/identity.go:63`, which preserves the CA —
-correct for migrate only) → per-repo `runtime.Deploy` + `runtime.Health`. The
-CONTRACT-level invariants (CT-1..CT-4) still name the cluster case: the kube legs of
-CT-1/CT-2 are verified end-to-end at cluster-fork scope (§2.5), because that is where
-kine rides the snapshot and where the parent's CA would otherwise survive.
+**Cluster-level boundary.** `RepoRuntime.Fork` is repo-scope. The whole-cluster fork (04 §2) is a CLUSTER-layer composition: group snap → clones → attach → **CP identity rewrite with fork-mode PKI regeneration + kine secret scrub + ROLE rewrite** (the F1/F2 step, specced in the fork-scrub P0 spec; today's migrate-shaped seam is `K3sDistro.RewriteIdentity`,
+`pkg/kube/distro/identity.go:63`, which preserves the CA — correct for migrate only) → per-repo `runtime.Deploy` + `runtime.Health`. The CONTRACT-level invariants (CT-1..CT-4) still name the cluster case: the kube legs of CT-1/CT-2 are verified end-to-end at cluster-fork scope (§2.5), because that is where kine rides the snapshot and where the parent's CA would otherwise survive.
 
 #### 1.5a Secret label convention (gate C4: spec 05's convention rules)
 
-The CONTRACT label is **`rediacc.io/injected: "true"`**, stamped on EVERY
-renet-generated object (Secrets, the `rediacc-role` ConfigMap, NetworkPolicy, VAP, PV
-objects) — this is what the fork scrub (spec 05 F4.1) and teardown enumerate.
-`app.kubernetes.io/managed-by: renet` and `rediacc.io/repo: <repo>` may ride along as
-informational labels; nothing keys on them. Unlabeled third-party Secrets are scrubbed
-by default under fork/rehearsal (02 §4).
+The CONTRACT label is **`rediacc.io/injected: "true"`**, stamped on EVERY renet-generated object (Secrets, the `rediacc-role` ConfigMap, NetworkPolicy, VAP, PV objects) — this is what the fork scrub (spec 05 F4.1) and teardown enumerate. `app.kubernetes.io/managed-by: renet` and `rediacc.io/repo: <repo>` may ride along as informational labels; nothing keys on them. Unlabeled
+third-party Secrets are scrubbed by default under fork/rehearsal (02 §4).
 
 ### 1.8 The health() contract (04 §4; reconciled at the gate, C5)
 
-A dedicated optional **`health()`** Rediaccfile function, NOT an `info()` exit-code
-convention — this half was decided independently and identically by spec 02 and spec 05
-and is CONFIRMED. Rationale: `info()` is an existing informational hook with established
-semantics in shipped Rediaccfiles; overloading its exit code would make today's
-decorative failures suddenly gate migrations. Mechanics are the gate-ruled merge
-(spec 05 base + this spec's sentinel carve-out):
+A dedicated optional **`health()`** Rediaccfile function, NOT an `info()` exit-code convention — this half was decided independently and identically by spec 02 and spec 05 and is CONFIRMED. Rationale: `info()` is an existing informational hook with established semantics in shipped Rediaccfiles; overloading its exit code would make today's decorative failures suddenly gate
+migrations. Mechanics are the gate-ruled merge (spec 05 base + this spec's sentinel carve-out):
 
 - exit 0 ⇒ Healthy.
 - **exit 75 (EX_TEMPFAIL) ⇒ Warming**: the app is still starting; the gate caller
-  retries. The gate runs right after cutover/boot where warm-up is the common case; a
-  single-shot probe would force every app to implement its own retry loop inside
-  health().
+retries. The gate runs right after cutover/boot where warm-up is the common case; a single-shot probe would force every app to implement its own retry loop inside health().
 - any other nonzero ⇒ Unhealthy immediately (stderr tail becomes `Detail`); the gate
-  fails without waiting out the window.
+fails without waiting out the window.
 - **exit 42 is reserved** (the executor's function-not-defined sentinel,
-  `rediaccfile.go:220`) ⇒ treated as "health() undefined" ⇒ runtime-readiness fallback
-  ⇒ Unknown when no signal. A user health() must not return 42.
+`rediaccfile.go:220`) ⇒ treated as "health() undefined" ⇒ runtime-readiness fallback ⇒ Unknown when no signal. A user health() must not return 42.
 - Per-attempt timeout **30 s**; a timeout counts as one Warming (75). The retry LOOP and
-  the gate window (default **300 s**; flags per spec 03, gate G6) live in the gate
-  caller (cluster/migrate layer) — `RepoRuntime.Health` is ONE evaluation returning
-  the `Warming` disposition (§1.2 `HealthState`).
+the gate window (default **300 s**; flags per spec 03, gate G6) live in the gate caller (cluster/migrate layer) — `RepoRuntime.Health` is ONE evaluation returning the `Warming` disposition (§1.2 `HealthState`).
 - Layering per spec 05 §6: distro `/readyz` (cluster layer, before per-repo gates) →
-  runtime readiness / container-health default → health().
+runtime readiness / container-health default → health().
 - Runs with the full lifecycle env (`LifecycleEnv` + runtime env), sandboxed exactly like
-  up()/down() (same executor, CT-5 asserts the env).
+up()/down() (same executor, CT-5 asserts the env).
 - Multi-Rediaccfile repos: health() runs in discovery order; first Unhealthy wins;
-  any Warming (with no Unhealthy) ⇒ Warming; all-undefined ⇒ fallback.
+any Warming (with no Unhealthy) ⇒ Warming; all-undefined ⇒ fallback.
 
 ---
 
@@ -489,9 +414,7 @@ decorative failures suddenly gate migrations. Mechanics are the gate-ruled merge
 
 ### 2.1 Shape: one suite, two fixtures, two levels
 
-**Level A — pure-Go contract tests** (run in plain `go test ./...`, no VM, no root):
-the suite is a set of numbered subtests driven through a fixture interface, executed
-twice — once per implementation — from `pkg/reporuntime/contract_test.go`:
+**Level A — pure-Go contract tests** (run in plain `go test ./...`, no VM, no root): the suite is a set of numbered subtests driven through a fixture interface, executed twice — once per implementation — from `pkg/reporuntime/contract_test.go`:
 
 ```go
 func TestDockerRuntimeContract(t *testing.T) { runContract(t, newDockerFixture) }
@@ -503,11 +426,8 @@ func TestKubeRuntimeContract(t *testing.T)   { runContract(t, newKubeFixture) }
 func runContract(t *testing.T, nf func(t *testing.T) contractFixture)
 ```
 
-[P0-DECIDED] In-package private suite (`contract_test.go` + `contract_fixture_*.go`),
-not an exported `contracttest` subpackage: both implementations live in
-`pkg/reporuntime` (§1.1), so nothing outside the package needs to import the suite. If a
-third runtime ever lands out-of-package (RKE2 is gated far away, 02 §10b), promote the
-suite to `pkg/reporuntime/contracttest` then — mechanical move.
+[P0-DECIDED] In-package private suite (`contract_test.go` + `contract_fixture_*.go`), not an exported `contracttest` subpackage: both implementations live in `pkg/reporuntime` (§1.1), so nothing outside the package needs to import the suite. If a third runtime ever lands out-of-package (RKE2 is gated far away, 02 §10b), promote the suite to `pkg/reporuntime/contracttest` then —
+mechanical move.
 
 Fixture contract:
 
@@ -544,26 +464,19 @@ type contractFixture interface {
 }
 ```
 
-**Level B — e2e legs** (real VMs): the same numbered invariants asserted against real
-machines, living in `packages/e2e-tests` (that is where `check:ci-e2e-coverage` greps
-bridge-function usage, 09 §3). Suite files after the P1/P2 rewrite:
+**Level B — e2e legs** (real VMs): the same numbered invariants asserted against real machines, living in `packages/e2e-tests` (that is where `check:ci-e2e-coverage` greps bridge-function usage, 09 §3). Suite files after the P1/P2 rewrite:
 
 - `tests/04-repository-lifecycle.test.ts`, `tests/05-rediaccfiles-updown.test.ts` —
-  docker Deploy/Teardown/env legs (extend with CT tags).
+docker Deploy/Teardown/env legs (extend with CT tags).
 - `tests/13-postgres-fork-isolation.test.ts` — docker fork legs (CT-1/2/3 docker).
 - `tests/kube/15-k8s-repo.test.ts` — kube Deploy/ProvisionVolumes/Teardown legs on the
-  folder model (rewritten in P1).
+folder model (rewritten in P1).
 - `tests/kube/16-k8s-ceph.test.ts` loses its subject (ceph-csi deleted); its replacement
-  `16-datastore-cluster.test.ts` keeps the multinode fork/migrate proof shape (09 §P1)
-  and carries the cluster-scope CT-1/2/4 kube legs.
+`16-datastore-cluster.test.ts` keeps the multinode fork/migrate proof shape (09 §P1) and carries the cluster-scope CT-1/2/4 kube legs.
 - `tests/migrate/18-dual-group-migrate.test.ts` — CT-4 migrate legs.
 
-Naming convention binding the levels: every e2e assertion that discharges a contract
-invariant carries the CT id in its test title (`test('CT-02k fork cannot auth against
-parent CA', ...)`), and Level A tests that cannot fully discharge an invariant say so:
-`t.Log("e2e leg: CT-02k in 16-datastore-cluster.test.ts")`. A one-page matrix
-(`pkg/reporuntime/CONTRACT.md`) lists CT id → Level A test name → e2e test title, and
-the P1 gate reviews it for holes.
+Naming convention binding the levels: every e2e assertion that discharges a contract invariant carries the CT id in its test title (`test('CT-02k fork cannot auth against parent CA', ...)`), and Level A tests that cannot fully discharge an invariant say so: `t.Log("e2e leg: CT-02k in 16-datastore-cluster.test.ts")`. A one-page matrix (`pkg/reporuntime/CONTRACT.md`) lists CT id →
+Level A test name → e2e test title, and the P1 gate reviews it for holes.
 
 ### 2.2 The numbered invariants
 
@@ -589,29 +502,19 @@ Legend: D = docker leg, K = kube leg; [A] pure-Go, [B] e2e, [A+B] both.
 
 ### 2.3 What is mockable vs what needs a VM (the explicit split)
 
-Mockable (Level A): everything policy-shaped. Real bash + temp dirs give true env
-propagation; `toolexec.MockExecutor` gives true argv assertions; redirecting the
-`SecretsBaseDir` var gives true file materialization. No dockerd, no k3s, no LUKS, no
-root.
+Mockable (Level A): everything policy-shaped. Real bash + temp dirs give true env propagation; `toolexec.MockExecutor` gives true argv assertions; redirecting the `SecretsBaseDir` var gives true file materialization. No dockerd, no k3s, no LUKS, no root.
 
 VM-required (Level B), and WHY:
 - CT-02 K cluster scope: only a real k3s can prove "parent CA rejected" AND the
-  CA-fingerprint difference (spike d transcript
-  `reports/spikes/spike-d-pki-remint.md` is the precursor — it caught the kine
-  `/bootstrap` byte-identical CA restore that a mock could never surface; the e2e leg
-  keeps both assertions true forever).
+CA-fingerprint difference (spike d transcript `reports/spikes/spike-d-pki-remint.md` is the precursor — it caught the kine `/bootstrap` byte-identical CA restore that a mock could never surface; the e2e leg keeps both assertions true forever).
 - CT-01 K cluster scope: kine actually riding a group snapshot needs real Ceph
-  (`playwright.k8s-multinode.config.ts` fleet).
+(`playwright.k8s-multinode.config.ts` fleet).
 - CT-04 identity halves: real `RewriteIdentity` against a booted k3s.
 - CT-08/CT-13 real-holder legs: real kubelet/loop/dm behavior (lazy-umount lies are
-  precisely what mocks cannot reproduce).
+precisely what mocks cannot reproduce).
 - Anything touching per-volume LUKS mounts, fencing, or `--writes` dispositions.
 
-Renet-side root-tagged Go tests (`//go:build root`, precedent
-`pkg/repository/state_test.go`; vet gate runs `-tags "root ebpf_e2e"`) are NOT used for
-the contract suite: the e2e legs live CLI-side in `packages/e2e-tests` where the
-coverage gate and the fleet harness already are. Root-tagged Go tests stay for
-storage-layer units only.
+Renet-side root-tagged Go tests (`//go:build root`, precedent `pkg/repository/state_test.go`; vet gate runs `-tags "root ebpf_e2e"`) are NOT used for the contract suite: the e2e legs live CLI-side in `packages/e2e-tests` where the coverage gate and the fleet harness already are. Root-tagged Go tests stay for storage-layer units only.
 
 ### 2.4 File locations and naming (summary)
 
@@ -633,14 +536,8 @@ packages/cli/src/commands/__tests__/repo-fork-contract.test.ts   # §2.5
 
 ### 2.5 The CLI-side sliver (vitest)
 
-Two docker fork invariants are enforced in TypeScript, not Go — the keypair mint and the
-secrets omission both happen in `registerFork` (`src/commands/repo-fork.ts:152-179`)
-before renet is ever invoked. They get a dedicated vitest file
-(`repo-fork-contract.test.ts`, named CT-01d-cli / CT-02d-cli) asserting: fork record has
-fresh `sshPrivateKey`/`sshPublicKey` differing from the parent's, carries NO `secrets`
-key, and preserves `credential` (deliberate: the cloned LUKS image needs the parent
-passphrase — this is bytes-access the fork already has, not an effect credential).
-The Go suite cannot see this layer; the matrix in `CONTRACT.md` records the delegation.
+Two docker fork invariants are enforced in TypeScript, not Go — the keypair mint and the secrets omission both happen in `registerFork` (`src/commands/repo-fork.ts:152-179`) before renet is ever invoked. They get a dedicated vitest file (`repo-fork-contract.test.ts`, named CT-01d-cli / CT-02d-cli) asserting: fork record has fresh `sshPrivateKey`/`sshPublicKey` differing from the
+parent's, carries NO `secrets` key, and preserves `credential` (deliberate: the cloned LUKS image needs the parent passphrase — this is bytes-access the fork already has, not an effect credential). The Go suite cannot see this layer; the matrix in `CONTRACT.md` records the delegation.
 
 ---
 
@@ -649,26 +546,16 @@ The Go suite cannot see this layer; the matrix in `CONTRACT.md` records the dele
 ### 3.1 Today's seam (what gets deleted)
 
 - TS: repo verbs take `-m` XOR `--cluster`; `resolveRepoTarget`
-  (`src/utils/repo-target.ts:27`) → `resolveExecutionTarget`
-  (`src/services/cluster/cluster-target.ts`) maps a cluster to its control node +
-  `kubeCluster` marker; local-executor injects KUBECONFIG when set. Docker-only verbs
-  refuse via `assertDockerOnly` (`repo-target.ts:43`). The whole-cluster fork is a
-  separate TS orchestration, `forkCluster`
-  (`src/services/cluster/cluster-kube.ts:218`), still drain-and-stop shaped with the
-  `dstAgents >= srcAgents` refusal (both die in P2 per 04).
+(`src/utils/repo-target.ts:27`) → `resolveExecutionTarget` (`src/services/cluster/cluster-target.ts`) maps a cluster to its control node + `kubeCluster` marker; local-executor injects KUBECONFIG when set. Docker-only verbs refuse via `assertDockerOnly` (`repo-target.ts:43`). The whole-cluster fork is a separate TS orchestration, `forkCluster`
+(`src/services/cluster/cluster-kube.ts:218`), still drain-and-stop shaped with the `dstAgents >= srcAgents` refusal (both die in P2 per 04).
 - Go: the repo's in-image `.rediacc.json` `runtime` field ("compose" | "kube",
-  `orchestration.Runtime`, `rediaccfile.go:497`) read by `repoRuntime()`
-  (`up_down_workflows.go:105`) and enforced only as a LINT on Rediaccfile content
-  (`ValidateRuntime`). Deploys reach kube through separate bridge functions
-  (`kube_deploy`, `kube_namespace_*`, `kube_pv_*` — `pkg/functions/commands/kube.go`)
-  rather than through `repository_up`.
+`orchestration.Runtime`, `rediaccfile.go:497`) read by `repoRuntime()` (`up_down_workflows.go:105`) and enforced only as a LINT on Rediaccfile content (`ValidateRuntime`). Deploys reach kube through separate bridge functions (`kube_deploy`, `kube_namespace_*`, `kube_pv_*` — `pkg/functions/commands/kube.go`) rather than through `repository_up`.
 
 This is exactly the "flag-routing seam with no enforced contract" 02 §9 names.
 
 ### 3.2 The new rule: placement decides, nothing else
 
-Config schema v3 stores `placement: { datastore: <name> } | { machine: <name> }` per
-repo (02 §11 R2-F1). Resolution:
+Config schema v3 stores `placement: { datastore: <name> } | { machine: <name> }` per repo (02 §11 R2-F1). Resolution:
 
 ```
 placement.machine    ⇒ that machine's implicit default datastore ⇒ TypeDocker
@@ -677,23 +564,14 @@ placement.datastore  ⇒ datastore registry record:
                          record.cluster unset ⇒ TypeDocker (named tiering datastore)
 ```
 
-[P0-DECIDED] **One-world datastores**: a named datastore is either cluster-attached
-(hosts ONLY kube repos) or plain (hosts ONLY docker repos), fixed at
-`datastore create` (`--cluster <name>` sets the backref) and immutable afterwards
-(change = create new + `repo push`, consistent with "moving = a copy", 02 §7).
-Rationale: without this rule the runtime cannot be derived from placement and would
-need a per-repo runtime field that can drift — the exact disease 02 §9 diagnoses. It
-also extends R2-F12 symmetrically: `repo create --machine M` refuses when M carries a
-cluster membership backref (02 §7); `repo create --datastore D` onto a cluster
-datastore IS the k8s repo form and needs no extra flag.
+[P0-DECIDED] **One-world datastores**: a named datastore is either cluster-attached (hosts ONLY kube repos) or plain (hosts ONLY docker repos), fixed at `datastore create` (`--cluster <name>` sets the backref) and immutable afterwards (change = create new + `repo push`, consistent with "moving = a copy", 02 §7). Rationale: without this rule the runtime cannot be derived from
+placement and would need a per-repo runtime field that can drift — the exact disease 02 §9 diagnoses. It also extends R2-F12 symmetrically: `repo create --machine M` refuses when M carries a cluster membership backref (02 §7); `repo create --datastore D` onto a cluster datastore IS the k8s repo form and needs no extra flag.
 
-The repo record stores NO runtime field. Runtime is always derived at use, so it can
-never disagree with placement.
+The repo record stores NO runtime field. Runtime is always derived at use, so it can never disagree with placement.
 
 ### 3.3 Where resolution lives
 
-**CLI side** [P0-DECIDED]: one resolver module
-`packages/cli/src/services/config/placement.ts`:
+**CLI side** [P0-DECIDED]: one resolver module `packages/cli/src/services/config/placement.ts`:
 
 ```ts
 export interface ResolvedPlacement {
@@ -705,58 +583,26 @@ export interface ResolvedPlacement {
 export async function resolvePlacement(repoName: string): Promise<ResolvedPlacement>;
 ```
 
-It subsumes `resolveRepoTarget` (which dies with the `--cluster`/`-m` repo flags in P4,
-06 §6) and performs the R2-F2 verification: the state bucket's attach record is a
-ROUTING HINT — before returning, the resolver's caller path verifies the datastore is
-mounted where state claims (piggybacked on the SSH session's first renet call) and
-errors with the `config reconcile` suggestion on mismatch, never deploying to a wrong
-host. `assertDockerOnly` generalizes into a per-verb capability table keyed on
-`runtime` (06 owns the table; e.g. takeover/tunnel/autostart = docker-only in v1).
+It subsumes `resolveRepoTarget` (which dies with the `--cluster`/`-m` repo flags in P4, 06 §6) and performs the R2-F2 verification: the state bucket's attach record is a ROUTING HINT — before returning, the resolver's caller path verifies the datastore is mounted where state claims (piggybacked on the SSH session's first renet call) and errors with the `config reconcile` suggestion
+on mismatch, never deploying to a wrong host. `assertDockerOnly` generalizes into a per-verb capability table keyed on `runtime` (06 owns the table; e.g. takeover/tunnel/autostart = docker-only in v1).
 
-**renet side** [P0-DECIDED]: renet re-derives the runtime from ON-MACHINE truth rather
-than trusting a CLI flag, following the established detect-from-disk pattern
-(`datastore.DetectBackend`, `pkg/datastore/backend.go:30`; `distro.DetectDistro`,
-`pkg/kube/distro/distro.go:242`):
+**renet side** [P0-DECIDED]: renet re-derives the runtime from ON-MACHINE truth rather than trusting a CLI flag, following the established detect-from-disk pattern (`datastore.DetectBackend`, `pkg/datastore/backend.go:30`; `distro.DetectDistro`, `pkg/kube/distro/distro.go:242`):
 
 - `datastore create`/`attach` write a descriptor **`<ds-mount>/.rediacc/datastore.json`**
-  (path per gate C6 — `.rediacc/` is the established metadata-directory convention,
-  matching the repo-scoped `.rediacc/` and the k3s data-dir at `<mount>/.rediacc/k3s`)
-  recording `{ name, backend: local|ceph, cluster?: <name>, writes?: ceph|local,
-  k3sVersion, k3sVersionWrittenAt }` (the one file carries the F14 skew metadata and
-  the `--writes` disposition, so attach preflight and `LifecycleEnv` read one source).
+(path per gate C6 — `.rediacc/` is the established metadata-directory convention, matching the repo-scoped `.rediacc/` and the k3s data-dir at `<mount>/.rediacc/k3s`) recording `{ name, backend: local|ceph, cluster?: <name>, writes?: ceph|local, k3sVersion, k3sVersionWrittenAt }` (the one file carries the F14 skew metadata and the `--writes` disposition, so attach preflight and
+`LifecycleEnv` read one source).
 - `reporuntime.Detect(dsMount, repoName) (RepoHandle, error)` reads the descriptor +
-  repo state and `factory.go`'s `ForHandle(h, deps)` constructs the right
-  implementation. `deps` carries the seams: orchestrator factory, kube wrapper builder,
-  `VolumeProvisioner`, distro handle.
+repo state and `factory.go`'s `ForHandle(h, deps)` constructs the right implementation. `deps` carries the seams: orchestrator factory, kube wrapper builder, `VolumeProvisioner`, distro handle.
 - The bridge functions become runtime-generic (this model WON gate C2):
-  `repository_up/down/fork/status` dispatch through the factory, and
-  **`repository_health` is ADDED as the new bridge surface** fronting
-  `RepoRuntime.Health` (no health function exists on the bridge today; the gate's
-  callers — `repo migrate`, `cluster migrate/rehearse`, `backup restore --up` — all
-  consume it). `repo logs`/`repo exec` likewise need a runtime-generic surface (docker
-  side maps to today's `container_logs`/`container_exec`). The `kube_deploy` /
-  `kube_namespace_create` / `kube_namespace_fork` / `kube_namespace_delete` /
-  `kube_pv_*` functions retire (their bodies become `KubeRuntime` internals). The
-  exact rename/add/delete ledger is spec 01 §4's (reworked per C2); this spec fixes
-  the direction. Per renamed function: regenerate types into `packages/shared`, update
-  `packages/e2e-tests` references (`check:ci-e2e-coverage` greps per function name and
-  WILL red otherwise, 09 §P1). Cluster-layer functions (`kube_identity_rewrite`,
-  `kube_join`, `kube_node_remove`, `kube_prep_fork`, `kube_health` as the DISTRO
-  healthcheck) stay separate, per the boundary below.
+`repository_up/down/fork/status` dispatch through the factory, and **`repository_health` is ADDED as the new bridge surface** fronting `RepoRuntime.Health` (no health function exists on the bridge today; the gate's callers — `repo migrate`, `cluster migrate/rehearse`, `backup restore --up` — all consume it). `repo logs`/`repo exec` likewise need a runtime-generic surface (docker
+side maps to today's `container_logs`/`container_exec`). The `kube_deploy` / `kube_namespace_create` / `kube_namespace_fork` / `kube_namespace_delete` / `kube_pv_*` functions retire (their bodies become `KubeRuntime` internals). The exact rename/add/delete ledger is spec 01 §4's (reworked per C2); this spec fixes the direction. Per renamed function: regenerate types into
+`packages/shared`, update `packages/e2e-tests` references (`check:ci-e2e-coverage` greps per function name and WILL red otherwise, 09 §P1). Cluster-layer functions (`kube_identity_rewrite`, `kube_join`, `kube_node_remove`, `kube_prep_fork`, `kube_health` as the DISTRO healthcheck) stay separate, per the boundary below.
 
-**Conflict rule (§3.4).** The in-image `.rediacc.json` `runtime` field is demoted to a
-cross-check: if present and it contradicts the placement-derived runtime, every verb
-refuses with `ErrWrongRuntime` and a teaching error naming both sources ("this repo's
-image declares runtime=compose but datastore ds-alpha belongs to cluster main — a repo
-cannot change worlds; repo push to a docker datastore instead"). Covered by CT-11.
-Absent field = no check (docker legacy default, unchanged).
+**Conflict rule (§3.4).** The in-image `.rediacc.json` `runtime` field is demoted to a cross-check: if present and it contradicts the placement-derived runtime, every verb refuses with `ErrWrongRuntime` and a teaching error naming both sources ("this repo's image declares runtime=compose but datastore ds-alpha belongs to cluster main — a repo cannot change worlds; repo push to a
+docker datastore instead"). Covered by CT-11. Absent field = no check (docker legacy default, unchanged).
 
-**Cluster verbs are not dispatched through RepoRuntime.** `cluster fork/migrate/
-rehearse` are cluster-layer orchestrations (04) that compose: StorageBackend group
-snap/clone/attach + `distro` identity rewrite (+ fork PKI/secret scrub) + per-repo
-`RepoRuntime.Deploy`/`Health` for each repo the moved datastores contain. The runtime
-interface deliberately has no cluster verbs; that keeps the third-runtime path (RKE2,
-02 §10b) a pure `RepoRuntime`+`Distro` implementation exercise.
+**Cluster verbs are not dispatched through RepoRuntime.** `cluster fork/migrate/ rehearse` are cluster-layer orchestrations (04) that compose: StorageBackend group snap/clone/attach + `distro` identity rewrite (+ fork PKI/secret scrub) + per-repo `RepoRuntime.Deploy`/`Health` for each repo the moved datastores contain. The runtime interface deliberately has no cluster verbs; that
+keeps the third-runtime path (RKE2, 02 §10b) a pure `RepoRuntime`+`Distro` implementation exercise.
 
 ---
 
@@ -765,60 +611,40 @@ interface deliberately has no cluster verbs; that keeps the third-runtime path (
 Checked every identifier this spec and design 02 §9 cite; mismatches found:
 
 1. **`StorageBackend` does not exist under that name.** 02 §9 says it "exists
-   half-formed in `pkg/datastore`"; the actual interface is **`DatastoreBackend`**
-   (`pkg/datastore/backend.go:109`, methods Initialize/Mount/Unmount/Expand/Resize/
-   Cleanup/IsInitialized/GetInfo/Validate/Type). P1 may rename it to `StorageBackend`
-   or keep the name; this spec refers to the real one.
+half-formed in `pkg/datastore`"; the actual interface is **`DatastoreBackend`** (`pkg/datastore/backend.go:109`, methods Initialize/Mount/Unmount/Expand/Resize/ Cleanup/IsInitialized/GetInfo/Validate/Type). P1 may rename it to `StorageBackend` or keep the name; this spec refers to the real one.
 2. **`pkg/kube/deploy.go:94`** — the cited comment line is the comment block's start;
-   `func (w *Wrapper) Apply` is at `:100`. Same seam, off-by-six.
+`func (w *Wrapper) Apply` is at `:100`. Same seam, off-by-six.
 3. **The docker fork's "new SSH keypair" is CLI-side, not renet-side**: minted in
-   `registerFork` (`packages/cli/src/commands/repo-fork.ts:167`), deployed at up time by
-   `deployRepoKeyIfNeeded` (`src/services/repo/repo-key-deployment.ts`). Hence the
-   vitest sliver (§2.5). Renet's own fork path never handles SSH keys.
+`registerFork` (`packages/cli/src/commands/repo-fork.ts:167`), deployed at up time by `deployRepoKeyIfNeeded` (`src/services/repo/repo-key-deployment.ts`). Hence the vitest sliver (§2.5). Renet's own fork path never handles SSH keys.
 4. **A `Runtime` name already exists**: `orchestration.Runtime` ("compose"/"kube",
-   `rediaccfile.go:497`) — the in-image declaration this spec demotes to a lint
-   (§3.4). The new package avoids the identifier (`reporuntime.Type`).
+`rediaccfile.go:497`) — the in-image declaration this spec demotes to a lint (§3.4). The new package avoids the identifier (`reporuntime.Type`).
 5. **`pkg/health` is taken**: it is the container-healthcheck drift registry
-   (`pkg/health/registry.go`), unrelated to the `Health` verb; no new package named
-   `health` may be introduced, and `DockerRuntime.Health`'s fallback READS this
-   registry.
+(`pkg/health/registry.go`), unrelated to the `Health` verb; no new package named `health` may be introduced, and `DockerRuntime.Health`'s fallback READS this registry.
 6. Verified as cited: `NamespaceTeardownLeak` (`pkg/kube/ceph_backend.go:46`) and its
-   non-fatal + keep-dirs semantics (`pkg/kube/namespace.go:33`, `:58`);
-   `forkCluster` at `packages/cli/src/services/cluster/cluster-kube.ts:218` including
-   the drain-first shape and `dstAgents >= srcAgents` refusal 04 replaces;
-   `kube_identity_rewrite` / `kube_prep_fork` bridge functions
-   (`pkg/functions/commands/kube.go:61`, `:77`); `K3sDistro.RewriteIdentity`
-   (CA-preserving, `pkg/kube/distro/identity.go:63`) and `PrepFork`
-   (`distro/prepfork.go`); `materializeAndBindPVs` (`pkg/kube/deploy.go:58`),
-   `resolvePVBackend` (`namespace.go:157`), `.rbd-backend.json` marker
-   (`ceph_backend.go:71`) — all on the 02 §6 delete ledger; secrets plumbing
-   (`state.ts:215`, `local-executor.ts:581/1128`, `appendSecretFileFlags`
-   `repository.go:18`, `SecretsBaseDir` `secret_files.go:19`);
-   `toolexec.MockExecutor` (`pkg/toolexec/executor.go:157`); e2e suites named in §2.1
-   all exist under `packages/e2e-tests/tests/`.
+non-fatal + keep-dirs semantics (`pkg/kube/namespace.go:33`, `:58`); `forkCluster` at `packages/cli/src/services/cluster/cluster-kube.ts:218` including the drain-first shape and `dstAgents >= srcAgents` refusal 04 replaces; `kube_identity_rewrite` / `kube_prep_fork` bridge functions (`pkg/functions/commands/kube.go:61`, `:77`); `K3sDistro.RewriteIdentity` (CA-preserving,
+`pkg/kube/distro/identity.go:63`) and `PrepFork` (`distro/prepfork.go`); `materializeAndBindPVs` (`pkg/kube/deploy.go:58`), `resolvePVBackend` (`namespace.go:157`), `.rbd-backend.json` marker (`ceph_backend.go:71`) — all on the 02 §6 delete ledger; secrets plumbing (`state.ts:215`, `local-executor.ts:581/1128`, `appendSecretFileFlags` `repository.go:18`, `SecretsBaseDir`
+`secret_files.go:19`); `toolexec.MockExecutor` (`pkg/toolexec/executor.go:157`); e2e suites named in §2.1 all exist under `packages/e2e-tests/tests/`.
 7. **No k8s secret injection exists today** (no Secret-object creation anywhere in
-   `pkg/kube`) — `KubeRuntime.InjectSecrets` is green-field, consistent with 02 §4
-   calling it new work.
+`pkg/kube`) — `KubeRuntime.InjectSecrets` is green-field, consistent with 02 §4 calling it new work.
 
 ## 5. Cross-spec items (status after the gate review, 00-gate-review.md)
 
 Resolved at the gate:
 - Volume image/mount layout: spec 05 §2 WON (C1) — adopted throughout this file
-  (§1.2 interface comment, §1.7 `ProvisionVolumes` row, CT-09).
+(§1.2 interface comment, §1.7 `ProvisionVolumes` row, CT-09).
 - Secret label convention: `rediacc.io/injected=true` per spec 05 (C4) — §1.5a, CT-01.
 - health() mechanics: reconciled contract (C5) — §1.8, `HealthState.Warming`, CT-14.
 - Descriptor path: `<ds-mount>/.rediacc/datastore.json` per spec 05 (C6) — §3.3.
 - Bridge dispatch: this spec's unified model WON (C2); the reworked ledger including
-  `repository_health` and runtime-generic logs/exec is spec 01 §4's returning item.
+`repository_health` and runtime-generic logs/exec is spec 01 §4's returning item.
 - `datastore create --cluster <name>` flag (the one-world backref's CLI source) and
-  the top-level `cluster` field: spec 03/04 fixes (C7); this spec's §3.2 unchanged.
+the top-level `cluster` field: spec 03/04 fixes (C7); this spec's §3.2 unchanged.
 
 Still open elsewhere (this spec only consumes them):
 - NetworkPolicy + VAP template bodies and the F9 proxy-datapath verdict (spec 05,
-  PENDING-SPIKE e; apply-site is `ApplyIsolation`, §1.7).
+PENDING-SPIKE e; apply-site is `ApplyIsolation`, §1.7).
 - The authoritative fork PKI scrub is spec 05 §7's 8-step sequence (spike d PASSED
-  with correction: tls/ removal alone lets k3s restore the parent CA byte-identically
-  from the kine `/bootstrap` entry — hence CT-02's fingerprint-difference assertion).
+with correction: tls/ removal alone lets k3s restore the parent CA byte-identically from the kine `/bootstrap` entry — hence CT-02's fingerprint-difference assertion).
 - Exit-code numbers for the sentinel mapping (spec 03 §1 table, G1 — §1.2 concurs).
 - The `state.repos` registry-port field (spec 04, G3 — env note in §1.4).
 - The per-verb docker-only/kube-only capability table (spec 03 / 06).

@@ -1,13 +1,8 @@
 # Removed production backup units (hostinger), 2026-08-15
 
-Deleted on the operator's instruction as part of the OneDrive/rclone decommission.
-Captured verbatim BEFORE deletion because the code that generated them
-(`buildDestinationCommand`) is gone, so the schedule-push command can no longer
-recreate them: restoring these means writing the files by hand.
+Deleted on the operator's instruction as part of the OneDrive/rclone decommission. Captured verbatim BEFORE deletion because the code that generated them (`buildDestinationCommand`) is gone, so the schedule-push command can no longer recreate them: restoring these means writing the files by hand.
 
-Both pinned slot `0.0.0-dev`, which `./rdc.sh` overwrites on every invocation,
-so they were already running the locally-built renet rather than an insulated
-release binary.
+Both pinned slot `0.0.0-dev`, which `./rdc.sh` overwrites on every invocation, so they were already running the locally-built renet rather than an insulated release binary.
 
 ```ini
 ===== rediacc-backup-weekly-cold.timer

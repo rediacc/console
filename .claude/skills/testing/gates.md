@@ -1,12 +1,10 @@
 # Static gates — `check:ci-*`
 
-For defects visible without running the product: wiring, source invariants,
-content shape, a rule that must hold across a corpus.
+For defects visible without running the product: wiring, source invariants, content shape, a rule that must hold across a corpus.
 
 ## Where the file goes
 
-`scripts/gates/check-*.ts`, `packages/*/scripts/check-*.ts` (a gate about www belongs
-beside www), `.ci/scripts/quality/check-*.sh` or `check_*.py`.
+`scripts/gates/check-*.ts`, `packages/*/scripts/check-*.ts` (a gate about www belongs beside www), `.ci/scripts/quality/check-*.sh` or `check_*.py`.
 
 ## Three-point wiring, all three required
 
@@ -25,25 +23,17 @@ beside www), `.ci/scripts/quality/check-*.sh` or `check_*.py`.
 
 ## The trap that costs a whole gate
 
-An assertion that re-asks a question the code already answered cannot fire.
-Real case, 2026-08-24: `units.length && SHELL_LANGS[lang] !== 1`, where the
-function already returned `[]` for a non-shell language. The two halves were the
-same question, the conjunction was dead, and the planted defect came back green.
+An assertion that re-asks a question the code already answered cannot fire. Real case, 2026-08-24: `units.length && SHELL_LANGS[lang] !== 1`, where the function already returned `[]` for a non-shell language. The two halves were the same question, the conjunction was dead, and the planted defect came back green.
 
-Judge the code against something the code does not own — the gate's own list,
-an independent corpus, a separate oracle.
+Judge the code against something the code does not own — the gate's own list, an independent corpus, a separate oracle.
 
 ## Anti-vacuity
 
-Discovering zero inputs must FAIL, not pass. Print the counts on success so a
-collapse is visible in the log instead of inferred from an absent complaint.
+Discovering zero inputs must FAIL, not pass. Print the counts on success so a collapse is visible in the log instead of inferred from an absent complaint.
 
 ## Before you write the 3rd one
 
-Twice this repo reached this by hand and wrote it down: `shrink-only-baseline.ts:25-31`
-(*"a class, not an instance … seven chances to drift"*) and
-`block-adhoc-sanctioned.sh:4-8` (a new class is *"a row rather than a 22nd copy"*).
-Nothing asks on its own. Measured 2026-09-01, already past a third copy:
+Twice this repo reached this by hand and wrote it down: `shrink-only-baseline.ts:25-31` (*"a class, not an instance … seven chances to drift"*) and `block-adhoc-sanctioned.sh:4-8` (a new class is *"a row rather than a 22nd copy"*). Nothing asks on its own. Measured 2026-09-01, already past a third copy:
 
 | shape | copies | the harness that should own it |
 |---|---|---|
@@ -52,9 +42,5 @@ Nothing asks on its own. Measured 2026-09-01, already past a third copy:
 | `mktemp -d` + hand-written `trap` | **28** | `with_temp_dir` (`test-helpers.sh:73`), used by 26 |
 | colour constants | **28** inline, **7** redeclared | `scripts/lib/console.ts`, TTY-gated, imported by 10 |
 
-Not hypothetical: five copies inline unconditional `\x1b[…` and pipe raw escape bytes into
-non-TTY CI logs, while `scripts/lib/console.ts:8-15` TTY-gates them for its ten importers.
-Copying is sometimes right, and the answer is a **named divergence**, not a shrug:
-`run_gate()` is duplicated 23× with three incompatible return contracts. Say which.
-Never the findings report — 10 gates, 10 distinct hashes. Count duplication in the
-scaffolding, never in the reasons.
+Not hypothetical: five copies inline unconditional `\x1b[…` and pipe raw escape bytes into non-TTY CI logs, while `scripts/lib/console.ts:8-15` TTY-gates them for its ten importers. Copying is sometimes right, and the answer is a **named divergence**, not a shrug: `run_gate()` is duplicated 23× with three incompatible return contracts. Say which. Never the findings report — 10
+gates, 10 distinct hashes. Count duplication in the scaffolding, never in the reasons.

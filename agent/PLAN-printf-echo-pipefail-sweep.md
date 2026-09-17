@@ -1,26 +1,15 @@
 # PLAN: the printf/echo half of the pipefail/grep -q class
 
-Status: done
-Owner: d778be9d
-Updated: 2026-09-16
+Status: done Owner: d778be9d Updated: 2026-09-16
 
-Successor to the 2026-09-16 widening in `3a7c1bcda`, which added 16 scaling
-COMMAND producers and `join_logical()`/`logical_lines()` to
-`.ci/scripts/quality/check-pipefail-grep-q.sh` and its port
-`.ci/rediacc_ci/quality/pipefail_grep_q.py`, and converted 21 sites across 14
-files. Both files' headers state, in as many words, that `printf`/`echo` are
-"deliberately absent ... NOT proven safe ... a separate, larger, still-untriaged
-class". The operator has overruled that deferral. This plan closes it.
+Successor to the 2026-09-16 widening in `3a7c1bcda`, which added 16 scaling COMMAND producers and `join_logical()`/`logical_lines()` to `.ci/scripts/quality/check-pipefail-grep-q.sh` and its port `.ci/rediacc_ci/quality/pipefail_grep_q.py`, and converted 21 sites across 14 files. Both files' headers state, in as many words, that `printf`/`echo` are "deliberately absent ... NOT
+proven safe ... a separate, larger, still-untriaged class". The operator has overruled that deferral. This plan closes it.
 
-Whoever implements this commits under `PR-TASK: e87fa3ce` (the same epic the
-widening rode) and does not open a second PR.
+Whoever implements this commits under `PR-TASK: e87fa3ce` (the same epic the widening rode) and does not open a second PR.
 
 ## 1. The count is 11, not ~33, and the sweep's shape is the opposite of the estimate
 
-Measured, not estimated. Every number below came from running the SHIPPED
-`logical_lines()` from `.ci/rediacc_ci/quality/pipefail_grep_q.py` with
-`SCALING_PRODUCERS` monkey-patched to include `printf` and `echo`, over
-`git ls-files`. No regex was reinvented.
+Measured, not estimated. Every number below came from running the SHIPPED `logical_lines()` from `.ci/rediacc_ci/quality/pipefail_grep_q.py` with `SCALING_PRODUCERS` monkey-patched to include `printf` and `echo`, over `git ls-files`. No regex was reinvented.
 
 | Population | Sites | Files | Verdict |
 |---|---|---|---|
@@ -36,39 +25,27 @@ Measured, not estimated. Every number below came from running the SHIPPED
 The ~33 estimate and the 11-file same-line sweep were wrong in both directions:
 
 - **Over**-counted, because the same-line sweep did not strip comments and string
-  literals. `.ci/scripts/test/gates/test-run-sh.sh:77`, `.ci/scripts/test/test-linux-packages.sh:49`,
-  `.ci/scripts/test/gates/test-verify-version.sh:17`, `.ci/scripts/housekeeping/cleanup-versions.sh:1488` and four hits in
-  `check-pipefail-grep-q.sh` itself are PROSE describing the bug;
-  `.ci/scripts/quality/check-label-references.sh:159` is a fixture inside a single-quoted string.
-  The gate's existing `strip_code()` already rejects all nine — the
-  mention-as-execution class its header documents.
+literals. `.ci/scripts/test/gates/test-run-sh.sh:77`, `.ci/scripts/test/test-linux-packages.sh:49`, `.ci/scripts/test/gates/test-verify-version.sh:17`, `.ci/scripts/housekeeping/cleanup-versions.sh:1488` and four hits in `check-pipefail-grep-q.sh` itself are PROSE describing the bug; `.ci/scripts/quality/check-label-references.sh:159` is a fixture inside a single-quoted string. The
+gate's existing `strip_code()` already rejects all nine — the mention-as-execution class its header documents.
 - **Under**-counted, because it did not join multi-line pipelines (the
-  `check-control-vacuity.sh` lesson) and, more importantly, because it only
-  looked where the gate already looks. Three of the eleven sites are outside the
-  corpus entirely.
+`check-control-vacuity.sh` lesson) and, more importantly, because it only looked where the gate already looks. Three of the eleven sites are outside the corpus entirely.
 
 ### Enumeration methodology (reuse, do not rebuild)
 
-Do not write a new scanner. The three primitives already exist and are tested:
-`rediacc_ci.quality.pipefail_grep_q.logical_lines()`, `.strip_code()`, and
-`.offenders_in()`. Enumerate by importing the module and substituting
-`SCALING_PRODUCERS`; that is exactly how the numbers above were produced, and it
-guarantees the sweep and the gate cannot disagree.
+Do not write a new scanner. The three primitives already exist and are tested: `rediacc_ci.quality.pipefail_grep_q.logical_lines()`, `.strip_code()`, and `.offenders_in()`. Enumerate by importing the module and substituting `SCALING_PRODUCERS`; that is exactly how the numbers above were produced, and it guarantees the sweep and the gate cannot disagree.
 
 Three corpora must be swept, because the gate's pathspecs cover only the first:
 
 1. `git ls-files ':(glob).ci/scripts/**/*.sh' ':(glob)scripts/**/*.sh' ':(glob).claude/hooks/**/*.sh'`
 2. every other tracked file that is a shell file by extension OR shebang
 3. each submodule's own `git ls-files` (`private/renet`, `private/homebrew-tap`,
-   `private/elite`, `private/account`) — only `renet` has hits, verified.
+`private/elite`, `private/account`) — only `renet` has hits, verified.
 
 ## 2. The safety criterion, measured on this host
 
-The header's claim ("a bounded producer is less likely to lose the race, never
-immune") is true but not actionable. It was made actionable by measurement.
+The header's claim ("a bounded producer is less likely to lose the race, never immune") is true but not actionable. It was made actionable by measurement.
 
-`bash -c 'set -uo pipefail; if printf "%s" "$s" | grep -q NEEDLE; ...'` with
-NEEDLE on line 1, 40 trials per size, this host, 2026-09-16:
+`bash -c 'set -uo pipefail; if printf "%s" "$s" | grep -q NEEDLE; ...'` with NEEDLE on line 1, 40 trials per size, this host, 2026-09-16:
 
 | payload | printf MISSED | echo MISSED |
 |---|---|---|
@@ -81,24 +58,13 @@ NEEDLE on line 1, 40 trials per size, this host, 2026-09-16:
 | 65,556 B | **39/40** | **40/40** |
 | 300,078 B | **40/40** | — |
 
-So the shell BUILTINS reproduce the class, and the knee is between 32 KB and
-48 KB — below the nominal 64 KB pipe buffer, because grep exits after its first
-read. This also re-confirms the header's 2026-08-31 datum from the other side:
-a 1,129-byte `printf` is 0/80 here and still lost the race once in CI under
-load, so sub-knee is *rare*, not *safe*.
+So the shell BUILTINS reproduce the class, and the knee is between 32 KB and 48 KB — below the nominal 64 KB pipe buffer, because grep exits after its first read. This also re-confirms the header's 2026-08-31 datum from the other side: a 1,129-byte `printf` is 0/80 here and still lost the race once in CI under load, so sub-knee is *rare*, not *safe*.
 
 ### The classifier, two axes, applied per site
 
-**Axis A — can the payload reach ~32 KB?** UNBOUNDED if it interpolates captured
-command output, a file's contents, a heredoc, or is emitted in a loop; BOUNDED if
-it is a fixed format string plus short scalars, or a value a preceding assertion
-has already capped.
+**Axis A — can the payload reach ~32 KB?** UNBOUNDED if it interpolates captured command output, a file's contents, a heredoc, or is emitted in a loop; BOUNDED if it is a fixed format string plus short scalars, or a value a preceding assertion has already capped.
 
-**Axis B — what does losing the race cost?** If a MATCH is what the code is
-hunting for, losing it is a **SILENT MISS** — the detector stops detecting and
-still prints a tick. That is precisely the `check-control-vacuity.sh` damage. If
-a match is the EXPECTED normal path, losing it is a **SPURIOUS RED** — loud,
-costly, but self-announcing.
+**Axis B — what does losing the race cost?** If a MATCH is what the code is hunting for, losing it is a **SILENT MISS** — the detector stops detecting and still prints a tick. That is precisely the `check-control-vacuity.sh` damage. If a match is the EXPECTED normal path, losing it is a **SPURIOUS RED** — loud, costly, but self-announcing.
 
 The eleven sites, read individually:
 
@@ -116,10 +82,7 @@ The eleven sites, read individually:
 | `.ci/scripts/test/test-install-methods.sh:1129` | `$script` = curl of install.sh, **17,088 B today** | UNBOUNDED-ish | **not actually live — see §5** |
 | `.devcontainer/start-kvm.sh:216` | `id -G \| tr` | bounded | not printf/echo; offends the CURRENT rule |
 
-`$code` at `.ci/scripts/test/gates/test-media-shims.sh:119/121` is provably bounded: the immediately
-preceding `[ "$lines" -le 4 ] || log_fail ...`, and `log_fail` in
-`.ci/scripts/test/lib/test-helpers.sh:24` **exits 1**. So control flow cannot
-reach the two pipelines with more than 4 lines in `$code`.
+`$code` at `.ci/scripts/test/gates/test-media-shims.sh:119/121` is provably bounded: the immediately preceding `[ "$lines" -le 4 ] || log_fail ...`, and `log_fail` in `.ci/scripts/test/lib/test-helpers.sh:24` **exits 1**. So control flow cannot reach the two pipelines with more than 4 lines in `$code`.
 
 ## 3. The fix, and the three edge cases the existing header does not state
 
@@ -127,103 +90,55 @@ Same drop-in as the 16-command sweep:
 
     [ -n "$(producer | grep -E '<pattern>')" ]
 
-`printf`/`echo` need no different treatment — the failure mode differs in
-mechanism (a builtin takes EPIPE and returns non-zero; an external producer is
-SIGPIPE'd to 141) but is identical in effect under `pipefail`. Three caveats
-must be respected per site and are worth adding to the gate header:
+`printf`/`echo` need no different treatment — the failure mode differs in mechanism (a builtin takes EPIPE and returns non-zero; an external producer is SIGPIPE'd to 141) but is identical in effect under `pipefail`. Three caveats must be respected per site and are worth adding to the gate header:
 
 1. **Keep every grep flag except `-q`.** `.ci/scripts/test/proxies/proxy-go-unit.sh:124` is `grep -qx`
-   (→ `grep -Fx`), `private/renet/.ci/scripts/quality/i18n.sh:229` is `grep -q --` (the `--` is load-bearing:
-   the pattern starts `--- PASS:`). The header's `grep -E` spelling is an
-   example, not the rule.
+(→ `grep -Fx`), `private/renet/.ci/scripts/quality/i18n.sh:229` is `grep -q --` (the `--` is load-bearing: the pattern starts `--- PASS:`). The header's `grep -E` spelling is an example, not the rule.
 2. **`[ -n "$(...)" ]` is NOT equivalent when the pattern can match an empty
-   line.** Command substitution strips the output, so a matched empty line reads
-   as no match. Checked against all 11 patterns: none can match empty. Record the
-   check; do not assume it for the next sweep.
+line.** Command substitution strips the output, so a matched empty line reads as no match. Checked against all 11 patterns: none can match empty. Record the check; do not assume it for the next sweep.
 3. **`set -e` behaviour is unchanged** because the converted test sits in the
-   same position in the same `&&`/`||` list (`media-shims:119/121`,
-   `installmethods-linuxpkg-idiom:105` all end in `|| log_fail` / `&& log_fail` /
-   `&& old=0 || old=1`). Verify by running the files, not by reading them.
+same position in the same `&&`/`||` list (`media-shims:119/121`, `installmethods-linuxpkg-idiom:105` all end in `|| log_fail` / `&& log_fail` / `&& old=0 || old=1`). Verify by running the files, not by reading them.
 
 No `printf -v`, no `echo -n`, no side-effect-only printf appears among the 11.
 
 ## 4. Gate change, parity, and what inverts
 
-The gate change is one line in each twin — `printf` and `echo` join
-`SCALING_PRODUCERS` — but it **inverts four existing controls that assert the
-opposite**, and every one must be rewritten in the same commit or the change is
-incoherent:
+The gate change is one line in each twin — `printf` and `echo` join `SCALING_PRODUCERS` — but it **inverts four existing controls that assert the opposite**, and every one must be rewritten in the same commit or the change is incoherent:
 
 - `.ci/scripts/quality/check-pipefail-grep-q.sh:266-273` — `control: a bounded
-  producer (printf, not a local function) is not flagged`
+producer (printf, not a local function) is not flagged`
 - `.ci/rediacc_ci/quality/pipefail_grep_q.py:468-472` — the same control in
-  `main()`, which must stay **byte-identical** to the twin's output
+`main()`, which must stay **byte-identical** to the twin's output
 - `.ci/rediacc_ci/quality/pipefail_grep_q.py:588-592` — `MIRROR: a bounded
-  builtin producer is not flagged` in `selftest()`
+builtin producer is not flagged` in `selftest()`
 - `.ci/rediacc_ci/tests/test_quality_pipefail_grep_q.py:158-162` — the
-  `id="a-bounded-builtin-producer"` parametrized case expecting 0 hits
+`id="a-bounded-builtin-producer"` parametrized case expecting 0 hits
 
-Plus the green-banner text in both twins ("A bounded producer (printf, echo) is
-untriaged, not cleared: a 1129-byte printf raced on 2026-08-31"), which becomes
-false and must change identically on both sides.
+Plus the green-banner text in both twins ("A bounded producer (printf, echo) is untriaged, not cleared: a 1129-byte printf raced on 2026-08-31"), which becomes false and must change identically on both sides.
 
-**Python-port parity: yes, the port models the concept directly.**
-`SCALING_PRODUCERS` is a tuple at `.ci/rediacc_ci/quality/pipefail_grep_q.py:241`, `logical_lines()` is
-the port of `join_logical()`, and the shadow ledger compares the two verdicts
-byte for byte. A one-sided edit is a false divergence.
+**Python-port parity: yes, the port models the concept directly.** `SCALING_PRODUCERS` is a tuple at `.ci/rediacc_ci/quality/pipefail_grep_q.py:241`, `logical_lines()` is the port of `join_logical()`, and the shadow ledger compares the two verdicts byte for byte. A one-sided edit is a false divergence.
 
-**Do the swept files have their own twins?** Two do, and both are the reason to
-LEAVE them alone: `.claude/oracles/pre-edit/block-compacted-plan-edit.sh` (7
-sites) and `.claude/oracles/pre-bash/block-unlinked-commit-author.sh` (1) are the
-FROZEN bash originals for `.claude/rediacc_hooks/guards/block_compacted_plan_edit.py`
-and `block_unlinked_commit_author.py`. `.claude/oracles/README.md:49-54`: "They
-are FROZEN. Do not fix a bug here; fix it in the port." Nothing registers them;
-the live code is Python and has no pipe. They are correctly excluded from the
-corpus and stay excluded. **State this in the gate header**, or the next sweep
-re-discovers 47 files and 104 sites and has to re-derive why they do not count.
+**Do the swept files have their own twins?** Two do, and both are the reason to LEAVE them alone: `.claude/oracles/pre-edit/block-compacted-plan-edit.sh` (7 sites) and `.claude/oracles/pre-bash/block-unlinked-commit-author.sh` (1) are the FROZEN bash originals for `.claude/rediacc_hooks/guards/block_compacted_plan_edit.py` and `block_unlinked_commit_author.py`.
+`.claude/oracles/README.md:49-54`: "They are FROZEN. Do not fix a bug here; fix it in the port." Nothing registers them; the live code is Python and has no pipe. They are correctly excluded from the corpus and stay excluded. **State this in the gate header**, or the next sweep re-discovers 47 files and 104 sites and has to re-derive why they do not count.
 
-`private/renet` has no copy of this gate (`find private/renet -name '*pipefail*'`
-is empty), so the console gate cannot reach its two sites and neither can
-anything else. Mirroring the gate into renet is a real option but is a second
-PR's worth of work; this plan converts the two sites and files the gate-mirror as
-the follow-on.
+`private/renet` has no copy of this gate (`find private/renet -name '*pipefail*'` is empty), so the console gate cannot reach its two sites and neither can anything else. Mirroring the gate into renet is a real option but is a second PR's worth of work; this plan converts the two sites and files the gate-mirror as the follow-on.
 
 ## 5. `.ci/scripts/test/test-install-methods.sh:1129` is a FALSE POSITIVE, and it is the honest one
 
-The widened gate flags it because the OUTER file sets `set -euo pipefail` at
-line 29. The line itself lives inside a `docker run ... bash -c "..."` heredoc
-whose inner shell sets **`set -e` only** (line 1057, and the same at 800, 886,
-925, 965, 1010, 1097). Without `pipefail` the pipeline reports grep's status and
-the match stands: there is no bug at that line.
+The widened gate flags it because the OUTER file sets `set -euo pipefail` at line 29. The line itself lives inside a `docker run ... bash -c "..."` heredoc whose inner shell sets **`set -e` only** (line 1057, and the same at 800, 886, 925, 965, 1010, 1097). Without `pipefail` the pipeline reports grep's status and the match stands: there is no bug at that line.
 
-Convert it anyway — it costs nothing, it is defensively correct if anyone ever
-adds `-o pipefail` to those container scripts, and the alternative (an allowlist
-entry) would be a suppression, which this repo forbids. **But record the reason
-in place**, because a future reader diffing the file will otherwise conclude the
-gate proved something it did not. This is also the honest disclosure the gate
-header owes: its pipefail test is per-FILE and cannot see an inner shell's
-options, in either direction.
+Convert it anyway — it costs nothing, it is defensively correct if anyone ever adds `-o pipefail` to those container scripts, and the alternative (an allowlist entry) would be a suppression, which this repo forbids. **But record the reason in place**, because a future reader diffing the file will otherwise conclude the gate proved something it did not. This is also the honest
+disclosure the gate header owes: its pipefail test is per-FILE and cannot see an inner shell's options, in either direction.
 
 ## 6. Corpus: widen it, because it is where one of the two silent-miss bugs lives
 
-`.ci/lib/devbox.sh:1082` is the strongest single finding in this plan and the
-gate cannot see it for TWO independent reasons: `.ci/lib/**` is not in the
-pathspecs, and the file does not set `pipefail` itself. It inherits it — sourced
-by `scripts/dev/worktree.sh` (`set -euo pipefail`, line 12) and by
-`.ci/lib/local-common.sh:937,983`, which is sourced by `rdc.sh` (`set -euo
+`.ci/lib/devbox.sh:1082` is the strongest single finding in this plan and the gate cannot see it for TWO independent reasons: `.ci/lib/**` is not in the pathspecs, and the file does not set `pipefail` itself. It inherits it — sourced by `scripts/dev/worktree.sh` (`set -euo pipefail`, line 12) and by `.ci/lib/local-common.sh:937,983`, which is sourced by `rdc.sh` (`set -euo
 pipefail`, line 11). It is a live, user-facing detector whose loss is silent.
 
-Measured cost of widening: adding `:(glob).ci/lib/**/*.sh`,
-`:(glob).devcontainer/**/*.sh` and `:(glob).ci/media/**/*.sh` brings in 26 files
-and produces exactly **2** findings — the two already listed. Cheap.
+Measured cost of widening: adding `:(glob).ci/lib/**/*.sh`, `:(glob).devcontainer/**/*.sh` and `:(glob).ci/media/**/*.sh` brings in 26 files and produces exactly **2** findings — the two already listed. Cheap.
 
-The sourced-library inheritance is a separate rule change. Measured over every
-tracked shell file that lacks its own `pipefail` and is sourced by one that has
-it: **exactly 1 site in the whole repo**, `.ci/lib/devbox.sh:1082`. Building a
-source-graph analyser for one site is not proportionate. Recommendation: widen
-the pathspecs, add a short `INHERITS_PIPEFAIL_PREFIXES = (".ci/lib/",)` treated
-as pipefail-bearing (one constant, one `or`, mirrored in both twins, one control
-each side), and note the general limitation in the header.
+The sourced-library inheritance is a separate rule change. Measured over every tracked shell file that lacks its own `pipefail` and is sourced by one that has it: **exactly 1 site in the whole repo**, `.ci/lib/devbox.sh:1082`. Building a source-graph analyser for one site is not proportionate. Recommendation: widen the pathspecs, add a short `INHERITS_PIPEFAIL_PREFIXES =
+(".ci/lib/",)` treated as pipefail-bearing (one constant, one `or`, mirrored in both twins, one control each side), and note the general limitation in the header.
 
 ## Tasks
 
@@ -296,11 +211,7 @@ each side), and note the general limitation in the header.
 
 ## Remaining
 
-NOT A CHECKBOX, DELIBERATELY. `Status: done` plus an open box is a
-contradiction this repo refuses: the Stop hook EXEMPTS finished plans from its
-advisory, so a `- [ ]` under a `done` header is a task nothing will ever chase
-while looking like one that will. `check:ci-plan-boxes` reds on exactly that
-shape rather than treating it as an exemption. The follow-on below is real, so
-it is tracked in the worklist where it IS chased, and recorded here as prose.
+NOT A CHECKBOX, DELIBERATELY. `Status: done` plus an open box is a contradiction this repo refuses: the Stop hook EXEMPTS finished plans from its advisory, so a `- [ ]` under a `done` header is a task nothing will ever chase while looking like one that will. `check:ci-plan-boxes` reds on exactly that shape rather than treating it as an exemption. The follow-on below is real, so it
+is tracked in the worklist where it IS chased, and recorded here as prose.
 
 - FOLLOW-ON, not this PR: `private/renet` has no copy of this gate, so its two sites had no gate and its next one will have none either. Mirroring the gate into renet is its own change.

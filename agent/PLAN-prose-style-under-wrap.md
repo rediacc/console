@@ -1,39 +1,27 @@
 # PLAN: prose-style under-wrap detection (R19)
 
-Status: draft
-Owner: d778be9d
+Status: draft Owner: d778be9d
 
 ## Why
 
-The operator read fresh comment-block prose this session wrote inside `prose_style.py` /
-`block_prose_style_commit.py`, hard-wrapped at ~70-90 characters deep inside the 384-char R18
-budget, and asked for three things: (1) sweep the tree for the same pattern and fix it, (2)
-extend that sweep to commit/PR messages ("also for commit and others"), (3) make
-`block_prose_style_edit.py` (and the commit guard) **block** a newly-introduced under-wrapped
-paragraph rather than merely report it as debt.
+The operator read fresh comment-block prose this session wrote inside `prose_style.py` / `block_prose_style_commit.py`, hard-wrapped at ~70-90 characters deep inside the 384-char R18 budget, and asked for three things: (1) sweep the tree for the same pattern and fix it, (2) extend that sweep to commit/PR messages ("also for commit and others"), (3) make `block_prose_style_edit.py`
+(and the commit guard) **block** a newly-introduced under-wrapped paragraph rather than merely report it as debt.
 
-This document designs that detector, decides its scope against measured numbers (not guesses),
-and lays out the wiring -- without implementing anything.
+This document designs that detector, decides its scope against measured numbers (not guesses), and lays out the wiring -- without implementing anything.
 
 ## Do not regress
 
-This session's tree already carries three uncommitted, review-found fixes in the same two files
-this plan touches (`git diff .claude/rediacc_hooks/guards/block_prose_style_commit.py
-.ci/rediacc_ci/quality/prose_style.py`):
+This session's tree already carries three uncommitted, review-found fixes in the same two files this plan touches (`git diff .claude/rediacc_hooks/guards/block_prose_style_commit.py .ci/rediacc_ci/quality/prose_style.py`):
 
 1. `GIT_COMMIT`/`GH_PR` gained `re.MULTILINE` (a `git commit` on line 2 of a multi-line command
-   was invisible to `^`).
+was invisible to `^`).
 2. `_is_docstring()` now steps past `tokenize.NL` (not just `tokenize.COMMENT`) so an
-   implicitly-concatenated string fragment (the `PERMISSION` regex tuple in
-   `block_secret_exposure.py`) is not misread as a docstring.
+implicitly-concatenated string fragment (the `PERMISSION` regex tuple in `block_secret_exposure.py`) is not misread as a docstring.
 3. `block_prose_style_commit.py`'s `scope` is now computed per-message via `_scope_for(label)` /
-   `PR_LABELS`, not once per whole chained command.
+`PR_LABELS`, not once per whole chained command.
 
-`test-block_prose_style_commit.py` is 27/27 green against these, and the baseline has already
-been drained from 3597 to 3222 findings (375 false positives removed by fix #2, verified by
-measuring `worklist_messages.py` alone: 1028 implicit string-concatenation boundaries). Any
-change here must run that suite (and the engine's own `--selftest`) before and after, and must
-not touch `_is_docstring`, `_scope_for`, or the `GIT_COMMIT`/`GH_PR` regexes.
+`test-block_prose_style_commit.py` is 27/27 green against these, and the baseline has already been drained from 3597 to 3222 findings (375 false positives removed by fix #2, verified by measuring `worklist_messages.py` alone: 1028 implicit string-concatenation boundaries). Any change here must run that suite (and the engine's own `--selftest`) before and after, and must not touch
+`_is_docstring`, `_scope_for`, or the `GIT_COMMIT`/`GH_PR` regexes.
 
 ## The measurement that has to drive the scope decision
 
@@ -48,16 +36,10 @@ Ground truth, measured live against this tree today, not estimated:
 | Naive join-feasibility, **comment** scope (`.py`/`.ts`/`.tsx`/`.js`/`.cjs`/`.mjs`/`.go`), adjacent-line pairs | ad hoc script | **94,201** joinable pairs across 1,941 of 2,061 comment-scope files |
 | Tooling conflict check for comment scope | `ruff check` / `ruff format --diff` on a long single-line comment | **No conflict found** (see note below the table) |
 
-`pyproject.toml` disables `E501` ("owned by the formatter"), and `ruff format` does not touch
-comment text. `eslint.config.js` has no `max-len` rule either. The ~80-100 col comment
-convention is habit and readability, not a tool-enforced ceiling.
+`pyproject.toml` disables `E501` ("owned by the formatter"), and `ruff format` does not touch comment text. `eslint.config.js` has no `max-len` rule either. The ~80-100 col comment convention is habit and readability, not a tool-enforced ceiling.
 
-**Conclusion the plan is built on:** a literal "would this still fit if joined" test is not a
-debt detector in this tree -- it is a description of how essentially all existing prose is
-written. R18's 384 is a ceiling meant to catch a pathological unwrapped wall of text, not a
-target width authors are expected to fill. Any rule built on the literal test will fire on
-almost every future normal edit unless it is scoped very narrowly and its existing-corpus hits
-are frozen at real scale (thousands, not dozens).
+**Conclusion the plan is built on:** a literal "would this still fit if joined" test is not a debt detector in this tree -- it is a description of how essentially all existing prose is written. R18's 384 is a ceiling meant to catch a pathological unwrapped wall of text, not a target width authors are expected to fill. Any rule built on the literal test will fire on almost every
+future normal edit unless it is scoped very narrowly and its existing-corpus hits are frozen at real scale (thousands, not dozens).
 
 ## Tasks
 
@@ -130,11 +112,8 @@ are frozen at real scale (thousands, not dozens).
 
 ## Detection algorithm
 
-**Tooling investigation (2026-09-17), evidence not assumption.** The operator asked, on seeing
-the naive-test numbers, to find and use an EXISTING, documented formatting tool as the
-join/reflow engine rather than inventing one. Every candidate with a plausible fit was checked
-against its own official docs, or its own repository's stated scope where no hosted doc site
-exists. Results, one line each:
+**Tooling investigation (2026-09-17), evidence not assumption.** The operator asked, on seeing the naive-test numbers, to find and use an EXISTING, documented formatting tool as the join/reflow engine rather than inventing one. Every candidate with a plausible fit was checked against its own official docs, or its own repository's stated scope where no hosted doc site exists.
+Results, one line each:
 
 | Tool | Scope checked | Verdict |
 |---|---|---|
@@ -148,91 +127,54 @@ exists. Results, one line each:
 | `gofmt` / `gofumpt` | comment | Official docs describe only indentation/alignment/rewrite rules. No comment-text reflow documented. |
 | Python stdlib `textwrap.wrap`/`fill` | both | **Already the wrapping primitive `reflow_markdown` uses today** (`prose_style.py`'s `flush()` closure). No new dependency; already imported and exercised by `test_reflow*`. |
 
-**Conclusion.** For markdown, no external tool changes the outcome that matters: the near-100%
-naive-fire rate is a property of the CORPUS (virtually every paragraph, once joined, still fits
-under 384 chars), not an artifact of which program performs the join -- Prettier, mdformat and
-this repo's own `textwrap`-based `reflow_markdown` all answer "yes, joinable" on the same set of
-paragraphs. This is a STATED adoption of "use an existing tool's algorithm as the wrapping
-primitive, keep this repo's own paragraph-boundary logic" -- and explicitly the reason not to add
-Prettier or mdformat as dependencies: doing so swaps a working, dependency-free stdlib primitive
-for a heavier one producing the same verdict on the same inputs.
+**Conclusion.** For markdown, no external tool changes the outcome that matters: the near-100% naive-fire rate is a property of the CORPUS (virtually every paragraph, once joined, still fits under 384 chars), not an artifact of which program performs the join -- Prettier, mdformat and this repo's own `textwrap`-based `reflow_markdown` all answer "yes, joinable" on the same set of
+paragraphs. This is a STATED adoption of "use an existing tool's algorithm as the wrapping primitive, keep this repo's own paragraph-boundary logic" -- and explicitly the reason not to add Prettier or mdformat as dependencies: doing so swaps a working, dependency-free stdlib primitive for a heavier one producing the same verdict on the same inputs.
 
-For comment scope (now IN, per "all in"), no full external tool reflows `#`/`//` comment prose at
-all -- confirmed absence across ruff, docformatter, clang-format and gofmt/gofumpt, each from its
-own documentation. The same reuse pattern applies, newly built for the boundary logic (nothing to
-factor out, since no comment-scope reflow exists today): a new `comment_paragraphs(lines)`
-function, fed the SAME `Line` objects `extract()`/`python_comment_lines`/`cstyle_comment_lines`
-already produce for R1-R18, grouping contiguous same-indent, same-marker comment lines into
-buffers (a blank comment line, a code line, an indent change, or a docstring/comment-kind change
-ends a buffer), then reusing `textwrap.wrap` on the buffer exactly as `reflow_markdown`'s
-`flush()` does.
+For comment scope (now IN, per "all in"), no full external tool reflows `#`/`//` comment prose at all -- confirmed absence across ruff, docformatter, clang-format and gofmt/gofumpt, each from its own documentation. The same reuse pattern applies, newly built for the boundary logic (nothing to factor out, since no comment-scope reflow exists today): a new `comment_paragraphs(lines)`
+function, fed the SAME `Line` objects `extract()`/`python_comment_lines`/`cstyle_comment_lines` already produce for R1-R18, grouping contiguous same-indent, same-marker comment lines into buffers (a blank comment line, a code line, an indent change, or a docstring/comment-kind change ends a buffer), then reusing `textwrap.wrap` on the buffer exactly as `reflow_markdown`'s `flush()`
+does.
 
-**The heuristic gate itself does not change, and this is now an evidenced decision, not a
-fallback.** None of the nine tools/ecosystems surveyed documents any concept of "this prose is
-artificially narrow relative to its ceiling" -- every one does either too-long detection or
-unconditional reflow-on-request, never "is this narrow-wrap accidental." The gate from the
-original draft is kept, applied identically to both `markdown` and `comment` buffers now that
-both are produced by a `paragraphs()`-shaped function:
+**The heuristic gate itself does not change, and this is now an evidenced decision, not a fallback.** None of the nine tools/ecosystems surveyed documents any concept of "this prose is artificially narrow relative to its ceiling" -- every one does either too-long detection or unconditional reflow-on-request, never "is this narrow-wrap accidental." The gate from the original draft
+is kept, applied identically to both `markdown` and `comment` buffers now that both are produced by a `paragraphs()`-shaped function:
 
 - the paragraph has **3 or more lines** (a 2-line paragraph almost always just ends there -- a
-  short final line is not evidence of hard-wrap, it's evidence of a sentence ending);
+short final line is not evidence of hard-wrap, it's evidence of a sentence ending);
 - **all lines except the last** sit within a narrow width band of each other (candidate: 20
-  characters) -- the fixed-column-wrap signature, as opposed to natural variation in sentence
-  length;
+characters) -- the fixed-column-wrap signature, as opposed to natural variation in sentence length;
 - that common width is well under the limit (candidate: <= 40% of `max_line_length`, i.e. <=154
-  chars) -- a paragraph already wrapped near 300+ chars is not under-wrapped even if one more
-  word would technically fit;
+chars) -- a paragraph already wrapped near 300+ chars is not under-wrapped even if one more word would technically fit;
 - the shared reflow primitive (`textwrap.wrap` via `reflow_markdown` for markdown, the same call
-  directly for comment buffers) actually produces fewer lines when applied to the buffer.
+directly for comment buffers) actually produces fewer lines when applied to the buffer.
 
 **Must NOT fire (false-positive list, verified against the extractors):**
 - the **last line** of a paragraph (a paragraph is expected to end short; `reflow_markdown`'s own
-  `flush()` treats the whole run, not each line, as the unit -- a solo-line finding on the
-  terminal line would flag every paragraph in the tree by definition);
+`flush()` treats the whole run, not each line, as the unit -- a solo-line finding on the terminal line would flag every paragraph in the tree by definition);
 - a **list item** or its wrapped continuation (`LIST_ITEM.match`, already a `REFLOW_STOP` --
-  `reflow_markdown`'s own controls (`test_reflow`) already assert lists are untouched; the new
-  detector must reuse the identical `paragraphs()` boundaries so it inherits this for free rather
-  than re-deciding it);
+`reflow_markdown`'s own controls (`test_reflow`) already assert lists are untouched; the new detector must reuse the identical `paragraphs()` boundaries so it inherits this for free rather than re-deciding it);
 - a line immediately before a **heading, fence, table, blockquote, link definition, or indented
-  code** (same `REFLOW_STOP` set -- a line ending right before a structural boundary is a
-  deliberate break, not an accident);
+code** (same `REFLOW_STOP` set -- a line ending right before a structural boundary is a deliberate break, not an accident);
 - a **single-line "paragraph"** with no line 2 in the same buffer -- nothing to join;
 - a paragraph whose next line's first word genuinely would not fit under the width -- this is
-  correctly wrapped, not under-wrapped, and the `reflow_markdown` comparison already excludes it
-  because the join-then-rewrap would reproduce the same break;
+correctly wrapped, not under-wrapped, and the `reflow_markdown` comparison already excludes it because the join-then-rewrap would reproduce the same break;
 - (edit-time only) a single-line `Edit.new_string` payload with no sibling lines in the same tool
-  call -- `lint_text`/`lint_message` only ever see the bytes handed to them ("ONLY THE NEW
-  PROSE", per `block_prose_style_edit.py`'s own header), so a paragraph split across several
-  sequential single-line `Edit` calls is structurally invisible to this check one edit at a time.
-  This must be documented as a known gap, not silently accepted as full coverage: R19 at edit
-  time reliably catches a multi-line paragraph authored in **one** `Write`/multi-line
-  `Edit`/`MultiEdit` call (which covers the operator's actual triggering case -- the comment
-  block was written in one shot), not one assembled a line at a time.
+call -- `lint_text`/`lint_message` only ever see the bytes handed to them ("ONLY THE NEW PROSE", per `block_prose_style_edit.py`'s own header), so a paragraph split across several sequential single-line `Edit` calls is structurally invisible to this check one edit at a time. This must be documented as a known gap, not silently accepted as full coverage: R19 at edit time reliably
+catches a multi-line paragraph authored in **one** `Write`/multi-line `Edit`/`MultiEdit` call (which covers the operator's actual triggering case -- the comment block was written in one shot), not one assembled a line at a time.
 
 ## Scope decision (operator-confirmed: "we go all in")
 
 `R19` scopes: **`["markdown", "pr", "comment"]`**. Still excludes `commit`.
 
 - **`comment` now INCLUDED**, reversing the earlier default recommendation, per the operator's
-  explicit "we go all in ... in a smarter way" instruction. The scale concern that justified
-  exclusion before (94,201 naive pairs) does not disappear, but it was measured with the wrong
-  instrument: a naive adjacent-line-pair join test, not the same banded heuristic gating
-  markdown. Re-measured with the real gate (see Debt-pile decision): 6,100 paragraphs across
-  1,416 of 2,149 comment-bearing files -- large, but a real, boundable pile the shrink-only
-  baseline mechanism already knows how to carry, not an unbounded one.
+explicit "we go all in ... in a smarter way" instruction. The scale concern that justified exclusion before (94,201 naive pairs) does not disappear, but it was measured with the wrong instrument: a naive adjacent-line-pair join test, not the same banded heuristic gating markdown. Re-measured with the real gate (see Debt-pile decision): 6,100 paragraphs across 1,416 of 2,149
+comment-bearing files -- large, but a real, boundable pile the shrink-only baseline mechanism already knows how to carry, not an unbounded one.
 - **`commit` stays excluded**, unchanged rationale: R18's own `scopes` list already omits
-  `commit`, and R11's `exempt_scopes_why` measured this repo's actual commit convention (median
-  71, p90 84, max 98 chars) to justify the same exclusion for the imperative rule. Git's own
-  50/72 convention is a deliberate narrow wrap, not accidental debt.
+`commit`, and R11's `exempt_scopes_why` measured this repo's actual commit convention (median 71, p90 84, max 98 chars) to justify the same exclusion for the imperative rule. Git's own 50/72 convention is a deliberate narrow wrap, not accidental debt.
 - **`pr` included**, unchanged rationale: prose meant to be read like a document, already carries
-  R18/R11 in its scope list.
+R18/R11 in its scope list.
 
 ## Debt-pile decision (measured, not naive)
 
-Baseline it via the **existing, unmodified** shrink-only mechanism (`write_baseline`,
-`baseline_additions`, `write_verdict`) -- the same one that already carries 3,222 findings across
-the other 17 rules. The size estimate is now real for BOTH scopes, using the banded heuristic
-(not the naive join test) as the actual detector would compute it:
+Baseline it via the **existing, unmodified** shrink-only mechanism (`write_baseline`, `baseline_additions`, `write_verdict`) -- the same one that already carries 3,222 findings across the other 17 rules. The size estimate is now real for BOTH scopes, using the banded heuristic (not the naive join test) as the actual detector would compute it:
 
 | Scope | Real (banded) count | Files | Naive count (comparison only, NOT what gets baselined) |
 |---|---|---|---|
@@ -240,34 +182,25 @@ the other 17 rules. The size estimate is now real for BOTH scopes, using the ban
 | `comment` | 6,100 paragraphs | 1,416/2,149 | 96,913 adjacent pairs (corroborates the earlier 94,201 order of magnitude) |
 | **Combined R19 baseline at landing** | **~13,328 findings** | -- | -- |
 
-This is larger than the sum of every other rule's current baseline (3,222 findings, R1-R18
-combined) -- stated plainly, not softened, now that `comment` scope is included. It is still
-mechanically the same shrink-only baseline; nothing new needs to be built to carry it. It does
-NOT mean bulk-fixing 13,328 paragraphs inline this session -- markdown's bulk fix already has an
-instrument (`check_prose_style.py reflow --write`); comment scope has NO bulk-reflow instrument
-yet (this plan adds detection, not an auto-fixer for comments), so the comment-scope pile rides
-the baseline as debt with no scheduled bulk-fix PR until one is separately planned.
+This is larger than the sum of every other rule's current baseline (3,222 findings, R1-R18 combined) -- stated plainly, not softened, now that `comment` scope is included. It is still mechanically the same shrink-only baseline; nothing new needs to be built to carry it. It does NOT mean bulk-fixing 13,328 paragraphs inline this session -- markdown's bulk fix already has an
+instrument (`check_prose_style.py reflow --write`); comment scope has NO bulk-reflow instrument yet (this plan adds detection, not an auto-fixer for comments), so the comment-scope pile rides the baseline as debt with no scheduled bulk-fix PR until one is separately planned.
 
 ## Wiring summary (files touched)
 
 - `.ci/rediacc_ci/quality/prose_style.py` -- factor `paragraphs()` out of `reflow_markdown`; add
-  `underwrap_findings()`; extend `Rule.advisory`; call the new pass from `lint_text`/
-  `lint_message`.
+`underwrap_findings()`; extend `Rule.advisory`; call the new pass from `lint_text`/ `lint_message`.
 - `.ci/config/prose-style-rules.json` -- add the `R19` entry (`scopes: ["markdown", "pr"]`,
-  `detection: "underwrap"`, one bad/good example pair).
+`detection: "underwrap"`, one bad/good example pair).
 - `.claude/rediacc_hooks/guards/block_prose_style_edit.py` -- no logic change; new `EDGE_CASES`
-  entries in `test-block_prose_style_edit.py`.
+entries in `test-block_prose_style_edit.py`.
 - `.claude/rediacc_hooks/guards/block_prose_style_commit.py` -- no logic change; new
-  `EDGE_CASES` entries in `test-block_prose_style_commit.py`.
+`EDGE_CASES` entries in `test-block_prose_style_commit.py`.
 - `.ci/config/prose-style-baseline.json` -- regenerated via `--write-baseline` once R19 lands,
-  absorbing the measured pile (~13,328 findings across markdown + comment, per the Debt-pile
-  decision above, not the much larger naive counts).
+absorbing the measured pile (~13,328 findings across markdown + comment, per the Debt-pile decision above, not the much larger naive counts).
 - `.ci/rediacc_ci/tests/test_quality_prose_style.py` -- new `test_underwrap_*` cases mirroring
-  `test_reflow_*`.
+`test_reflow_*`.
 - `.ci/rediacc_ci/quality/prose_style.py` -- also add `comment_paragraphs(lines)`, mirroring the
-  factored-out `paragraphs(text)` but consuming the `Line` objects `extract()` already produces
-  for comment-scope files, so `underwrap_findings()` can run against BOTH markdown text and
-  comment-scope `Line` lists via one shared gate function.
+factored-out `paragraphs(text)` but consuming the `Line` objects `extract()` already produces for comment-scope files, so `underwrap_findings()` can run against BOTH markdown text and comment-scope `Line` lists via one shared gate function.
 
 ## Verification
 

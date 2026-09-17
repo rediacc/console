@@ -1,7 +1,6 @@
 # Handoff checklist: www-simplification
 
-Status: done
-Owner: e6500e92
+Status: done Owner: e6500e92
 
 ## Deliverables
 

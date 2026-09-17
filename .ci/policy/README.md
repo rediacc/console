@@ -1,14 +1,9 @@
 # `.ci/policy/` -- where suppression policy lives
 
-**The move landed in W4 phase 2, on 2026-09-06.** W4 phases 0 and 1 built the seam and
-the measurements that made it safe; phase 2 relocated all fifteen files named below out of
-the repository root and into this directory, carrying every reader with them in the same
-change. `scripts/lib/policy-paths.ts` is where the location is held, and flipping its
-`POLICY_DIR` from `''` to `'.ci/policy'` was the whole of the move for every reader that
-already went through `policyPath()`.
+**The move landed in W4 phase 2, on 2026-09-06.** W4 phases 0 and 1 built the seam and the measurements that made it safe; phase 2 relocated all fifteen files named below out of the repository root and into this directory, carrying every reader with them in the same change. `scripts/lib/policy-paths.ts` is where the location is held, and flipping its `POLICY_DIR` from `''` to
+`'.ci/policy'` was the whole of the move for every reader that already went through `policyPath()`.
 
-The paths in the tables below are given as BARE NAMES, which is how the seam and every
-reader still refer to them; the file itself now lives at `.ci/policy/<name>`.
+The paths in the tables below are given as BARE NAMES, which is how the seam and every reader still refer to them; the file itself now lives at `.ci/policy/<name>`.
 
 Read this before moving any of them again, and before adding another.
 
@@ -19,35 +14,22 @@ Read this before moving any of them again, and before adding another.
 A file belongs in `.ci/policy/` when **all four** hold:
 
 1. **It is a decision, not data.** Its content is a set of entries someone chose to
-   exempt, block, allow or hold, and each entry is a claim about the world that could
-   stop being true. That is what makes it policy rather than configuration.
+exempt, block, allow or hold, and each entry is a claim about the world that could stop being true. That is what makes it policy rather than configuration.
 2. **It is BLOCKER-gated, or should be.** Every entry carries -- or is required by
-   `docs/agent-reference/suppressions.md` to carry -- a substantive `# BLOCKER:` reason.
-   The two path-list exceptions (`.e2e-coverage-allowlist`,
-   `.profiler-coverage-allowlist`) are in because their gates enforce liveness in-gate
-   instead, which is the same obligation discharged differently.
+`docs/agent-reference/suppressions.md` to carry -- a substantive `# BLOCKER:` reason. The two path-list exceptions (`.e2e-coverage-allowlist`, `.profiler-coverage-allowlist`) are in because their gates enforce liveness in-gate instead, which is the same obligation discharged differently.
 3. **It has a parser.** Some code opens it and reads entries out of it. A file nothing
-   parses is not policy; see `.ci-trigger` in section 3.
+parses is not policy; see `.ci-trigger` in section 3.
 4. **Its location is an implementation detail.** No tool discovers it by name at the
-   repository root, and no external consumer depends on the path. This is the clause
-   that keeps `package.json`, `tsconfig.json` and `biome.json` at the root, and it is
-   the same predicate `docs/ci-overhaul/08-driver-contract.md` §5d gives for the `.json`
-   inventory.
+repository root, and no external consumer depends on the path. This is the clause that keeps `package.json`, `tsconfig.json` and `biome.json` at the root, and it is the same predicate `docs/ci-overhaul/08-driver-contract.md` §5d gives for the `.json` inventory.
 
-The predicate is checkable in **both directions**, and the move phase must assert both:
-nothing outside the discovered set may sit at the root, and every name in
-`POLICY_FILES` (`scripts/lib/policy-paths.ts`) must be present here. A move that forgets
-a reader must be red, not quiet.
+The predicate is checkable in **both directions**, and the move phase must assert both: nothing outside the discovered set may sit at the root, and every name in `POLICY_FILES` (`scripts/lib/policy-paths.ts`) must be present here. A move that forgets a reader must be red, not quiet.
 
 ---
 
 ## 2. The files that moved in W4 P2, and the live inventory
 
-Every one of these was at the repository root until W4 P2 and now lives here. The reader
-column is what had to follow the file; the seam that made that a one-line change is
-`scripts/lib/policy-paths.ts`. The "how the path is built" column records the shape each
-reader had BEFORE the move, which is why four of them were dangerous -- it is kept as the
-record of what the seam was for, not as a description of the code today.
+Every one of these was at the repository root until W4 P2 and now lives here. The reader column is what had to follow the file; the seam that made that a one-line change is `scripts/lib/policy-paths.ts`. The "how the path is built" column records the shape each reader had BEFORE the move, which is why four of them were dangerous -- it is kept as the record of what the seam was for,
+not as a description of the code today.
 
 | File | Reader, by symbol | How the path is built today |
 |---|---|---|
@@ -67,45 +49,23 @@ record of what the seam was for, not as a description of the code today.
 | `.runner-advice-allowlist` | `.ci/scripts/quality/check_runner_advice.py` `allowlist_path` | flag, then env (`RUNNER_ADVICE_ALLOWLIST`), then root join |
 | `.unverified-download-allowlist` | `scripts/gates/check-unverified-downloads.ts` `UNVERIFIED_DOWNLOAD_ALLOWLIST` | env seam over root join |
 
-Readers are cited by SYMBOL rather than by line, deliberately. This checkout is shared
-with other sessions (`docs/ci-overhaul/08-driver-contract.md` section 4), and the first
-draft of this table went stale within the hour: half its line numbers had moved by the
-time the file was written, because unrelated edits landed above them. A symbol survives
-that; a line number is a claim about a tree nobody has any more.
+Readers are cited by SYMBOL rather than by line, deliberately. This checkout is shared with other sessions (`docs/ci-overhaul/08-driver-contract.md` section 4), and the first draft of this table went stale within the hour: half its line numbers had moved by the time the file was written, because unrelated edits landed above them. A symbol survives that; a line number is a claim
+about a tree nobody has any more.
 
-Eleven of the fifteen are additionally read by
-`scripts/gates/check-suppression-liveness.ts`, which since 2026-09-06 routes every one of
-those reads through `policyPath()` and therefore needs no edit when the move lands.
+Eleven of the fifteen are additionally read by `scripts/gates/check-suppression-liveness.ts`, which since 2026-09-06 routes every one of those reads through `policyPath()` and therefore needs no edit when the move lands.
 
-**The four bare-relative reads are the reason the seam exists.** `audit.sh` and
-`check-profiler-coverage.sh` open their allowlists by bare name and are correct only
-because they `cd` to the repository root first. A move that updated the root joins and
-missed these would leave four readers opening a file that is no longer there -- and in
-every one of these mechanisms, a file that is not there parses as zero entries, which is
-indistinguishable from "nothing is suppressed".
+**The four bare-relative reads are the reason the seam exists.** `audit.sh` and `check-profiler-coverage.sh` open their allowlists by bare name and are correct only because they `cd` to the repository root first. A move that updated the root joins and missed these would leave four readers opening a file that is no longer there -- and in every one of these mechanisms, a file that is
+not there parses as zero entries, which is indistinguishable from "nothing is suppressed".
 
 ### The live inventory, generated
 
-The table above is the RECORD OF A MOVE and stops being true the moment a file is added,
-which has now happened three times (section 5). The table below is re-derived from the tree
-on every `gen-docs` run and is checked byte for byte by `check:ci-doc-region-parity`, so
-it cannot say fifteen while the directory holds eighteen. That sentence is not hypothetical:
-this heading read "fifteen" against sixteen files on disk for a day, and against eighteen by
-the time it was fixed.
+The table above is the RECORD OF A MOVE and stops being true the moment a file is added, which has now happened three times (section 5). The table below is re-derived from the tree on every `gen-docs` run and is checked byte for byte by `check:ci-doc-region-parity`, so it cannot say fifteen while the directory holds eighteen. That sentence is not hypothetical: this heading read
+"fifteen" against sixteen files on disk for a day, and against eighteen by the time it was fixed.
 
-Three things it shows that a hand-typed table cannot. **Entries** is re-counted, so a
-suppression list that quietly filled up is visible here without anyone re-reading it.
-**In POLICY_FILES** is the two-direction set equality between the directory and BOTH seams,
-so `ts only`, `py only` or `NEITHER` in that column is the half-landed move
-`scripts/lib/policy-paths.ts` exists to prevent. And a name that is in a seam with **NO
-FILE ON DISK** gets a row of its own rather than being absent, because absence is exactly
-how that failure hides: every reader here treats a missing file as zero entries, which is
-indistinguishable from "nothing is suppressed".
+Three things it shows that a hand-typed table cannot. **Entries** is re-counted, so a suppression list that quietly filled up is visible here without anyone re-reading it. **In POLICY_FILES** is the two-direction set equality between the directory and BOTH seams, so `ts only`, `py only` or `NEITHER` in that column is the half-landed move `scripts/lib/policy-paths.ts` exists to
+prevent. And a name that is in a seam with **NO FILE ON DISK** gets a row of its own rather than being absent, because absence is exactly how that failure hides: every reader here treats a missing file as zero entries, which is indistinguishable from "nothing is suppressed".
 
-The column that is NOT here is Readers, and its absence is deliberate:
-`scripts/lib/doc-providers.ts` records that a grep-derived Readers column flipped mid-run
-on 2026-09-06 when an unrelated peer session staged a file, and forbids re-adding it. The
-reader mapping above is hand-written and cited by symbol for the same reason.
+The column that is NOT here is Readers, and its absence is deliberate: `scripts/lib/doc-providers.ts` records that a grep-derived Readers column flipped mid-run on 2026-09-06 when an unrelated peer session staged a file, and forbids re-adding it. The reader mapping above is hand-written and cited by symbol for the same reason.
 
 <!-- >>> gen-docs: policy -->
 <!-- Tracked files only, via git ls-files, which is the rule every provider in -->
@@ -145,70 +105,38 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 ### Three things the move carried with it, all three done in W4 P2
 
 - **`.ci/scripts/ci/scope-map.cjs` `ROOT_MANIFESTS`** named ten of the fifteen by exact
-  repo-relative path, and after the move those names matched nothing.
-  Classification is preserved anyway -- `.ci/policy/<name>` is caught by the `ci-harness`
-  rule (`matchPrefix('.ci/')` ⇒ `full: 'harness'`) -- so no delta stopped forcing full CI.
-  What changed is the REASON string, from `root-manifest:<name>` to
-  `harness:.ci/policy/<name>`. All fifteen names were DELETED from `ROOT_MANIFESTS` (five
-  of them were never in it and fell through to `unclassified` ⇒ full, which is the same
-  scope by a different route), and the pinned row in
-  `.ci/scripts/test/gates/test-scope-engine.sh` was re-pinned to two rows: `.ci-trigger`
-  keeps `root-manifest:` covered, and `.ci/policy/.audit-allowlist` pins the new
-  `harness:` reason.
+repo-relative path, and after the move those names matched nothing. Classification is preserved anyway -- `.ci/policy/<name>` is caught by the `ci-harness` rule (`matchPrefix('.ci/')` ⇒ `full: 'harness'`) -- so no delta stopped forcing full CI. What changed is the REASON string, from `root-manifest:<name>` to `harness:.ci/policy/<name>`. All fifteen names were DELETED from
+`ROOT_MANIFESTS` (five of them were never in it and fell through to `unclassified` ⇒ full, which is the same scope by a different route), and the pinned row in `.ci/scripts/test/gates/test-scope-engine.sh` was re-pinned to two rows: `.ci-trigger` keeps `root-manifest:` covered, and `.ci/policy/.audit-allowlist` pins the new `harness:` reason.
 - **`scripts/ci-runner/manifest.ts`** lists `.plan-housekeeping-allowlist` in the `paths:`
-  array of `check:ci-plan-housekeeping`, and `scripts/ci-runner/gates.lock.json` mirrors
-  it. Change detection for that gate breaks silently if the path is not updated. Both
-  files are driver-owned (driver-contract 5e), so W4 P2 shipped the two lines as a patch
-  fragment for the driver to apply rather than editing them itself.
+array of `check:ci-plan-housekeeping`, and `scripts/ci-runner/gates.lock.json` mirrors it. Change detection for that gate breaks silently if the path is not updated. Both files are driver-owned (driver-contract 5e), so W4 P2 shipped the two lines as a patch fragment for the driver to apply rather than editing them itself.
 - **`scripts/lib/doc-providers.ts`** builds the generated suppressions table in
-  `scripts/data/doc-registry.md` by scanning every tracked non-source file that contains
-  `BLOCKER:`. It names nothing, so it needed no edit -- but the generated table's paths
-  changed, so the artifact was regenerated (`npx tsx scripts/gen-docs.ts --write`) in the
-  same change, and the fourteen matching keys in the frozen pre-port SET record
-  (`scripts/data/doc-registry-preport.json`) were RE-KEYED in place. A rename reads to
-  `--diff-snapshot` as fourteen MISSING keys, which is fatal there; re-keying only those
-  fourteen strings is what keeps the record diffable without a `--snapshot --force` that
-  would have destroyed every other provider's pre-port state.
+`scripts/data/doc-registry.md` by scanning every tracked non-source file that contains `BLOCKER:`. It names nothing, so it needed no edit -- but the generated table's paths changed, so the artifact was regenerated (`npx tsx scripts/gen-docs.ts --write`) in the same change, and the fourteen matching keys in the frozen pre-port SET record (`scripts/data/doc-registry-preport.json`)
+were RE-KEYED in place. A rename reads to `--diff-snapshot` as fourteen MISSING keys, which is fatal there; re-keying only those fourteen strings is what keeps the record diffable without a `--snapshot --force` that would have destroyed every other provider's pre-port state.
 
 ---
 
 ## 3. The file that does NOT move: `.ci-trigger`
 
-**Decision: `.ci-trigger` stays at the repository root.** It is deliberately absent from
-`POLICY_FILES` in `scripts/lib/policy-paths.ts`, and
-`.ci/scripts/test/gates/test-policy-path.sh` asserts that absence so nobody adds it back
-by tidiness.
+**Decision: `.ci-trigger` stays at the repository root.** It is deliberately absent from `POLICY_FILES` in `scripts/lib/policy-paths.ts`, and `.ci/scripts/test/gates/test-policy-path.sh` asserts that absence so nobody adds it back by tidiness.
 
 The evidence, measured 2026-09-06:
 
 - **Nothing parses it.** A tree-wide search for `ci-trigger` (excluding `node_modules`,
-  `.git` and this session's own worklist) returns exactly ONE hit:
-  `.ci/scripts/ci/scope-map.cjs:76`, a membership test in the `ROOT_MANIFESTS` set. No
-  reader opens it, no workflow `paths:` filter names it, no gate test references it. Its
-  whole content is one line, a UTC timestamp, last changed in `23c524b9a` (#512).
+`.git` and this session's own worklist) returns exactly ONE hit: `.ci/scripts/ci/scope-map.cjs:76`, a membership test in the `ROOT_MANIFESTS` set. No reader opens it, no workflow `paths:` filter names it, no gate test references it. Its whole content is one line, a UTC timestamp, last changed in `23c524b9a` (#512).
 - **It therefore fails predicate clause 3, and clause 1.** It holds no entries, carries
-  no `BLOCKER:` reason and expresses no exemption. It is not a suppression at all.
+no `BLOCKER:` reason and expresses no exemption. It is not a suppression at all.
 - **Its one semantic is a ROOT GESTURE.** `touch .ci-trigger && git commit` is how a
-  human forces a full CI round on a delta that would otherwise be scoped down. That
-  gesture only works if the person can find the file, and the place they look is the
-  root of the repository.
+human forces a full CI round on a delta that would otherwise be scoped down. That gesture only works if the person can find the file, and the place they look is the root of the repository.
 - **Moving it would work and still be wrong.** `.ci/policy/.ci-trigger` would keep
-  forcing full CI, through the generic `ci-harness` rule (`scope-map.cjs:144`) rather
-  than the dedicated `root-manifest` rule. So the behaviour survives while the reason
-  string silently changes and the file becomes undiscoverable for its only purpose:
-  strictly worse on both counts, for no gain.
+forcing full CI, through the generic `ci-harness` rule (`scope-map.cjs:144`) rather than the dedicated `root-manifest` rule. So the behaviour survives while the reason string silently changes and the file becomes undiscoverable for its only purpose: strictly worse on both counts, for no gain.
 
-Recorded either way, as asked: had the answer gone the other direction, the move would
-have needed the `ROOT_MANIFESTS` entry deleted and `test-scope-engine.sh` re-pinned, the
-same two edits section 2 already lists for the fifteen.
+Recorded either way, as asked: had the answer gone the other direction, the move would have needed the `ROOT_MANIFESTS` entry deleted and `test-scope-engine.sh` re-pinned, the same two edits section 2 already lists for the fifteen.
 
 ---
 
 ## 4. Age baseline, measured 2026-09-06
 
-This is the artifact the move phase re-derives to prove the move changed nothing. If a
-row's entry, date or age differs after the files are relocated, something other than the
-location changed.
+This is the artifact the move phase re-derives to prove the move changed nothing. If a row's entry, date or age differs after the files are relocated, something other than the location changed.
 
 **How to re-derive it** (`git blame` per entry line, over the same fifteen files):
 
@@ -218,20 +146,11 @@ git blame --line-porcelain -- <file> \
          if (s!="" && substr(s,1,1)!="#") printf "%s %s\n", strftime("%Y-%m-%d",t), s}'
 ```
 
-**What the number means, and what it does not.** `git blame` reports the last commit
-that TOUCHED the line, so an age here is a lower bound: an entry reformatted or
-re-indented since it was written reads as younger than it is. It is the right measure
-for this artifact anyway, because the artifact's job is to be re-derived identically, not
-to date the original decision. The 2026-08-23 history rewrite
-([#532](https://github.com/rediacc/console/issues/532)) changed every commit SHA but
-preserved author dates, so these dates span it unaffected.
+**What the number means, and what it does not.** `git blame` reports the last commit that TOUCHED the line, so an age here is a lower bound: an entry reformatted or re-indented since it was written reads as younger than it is. It is the right measure for this artifact anyway, because the artifact's job is to be re-derived identically, not to date the original decision. The
+2026-08-23 history rewrite ([#532](https://github.com/rediacc/console/issues/532)) changed every commit SHA but preserved author dates, so these dates span it unaffected.
 
-**Rows that could not be aged: none.** All fifteen files are tracked, all 146 entry lines
-blamed cleanly, and the run reproduced identically on a second pass. Six of the fifteen
-hold zero entries and are recorded as such rather than with a sentinel -- and each of the
-six says in its own header that empty is its correct state, which is why
-`scripts/gates/check-suppression-liveness.ts` gives three of them a `minEntries` of 0 rather
-than demanding they be populated.
+**Rows that could not be aged: none.** All fifteen files are tracked, all 146 entry lines blamed cleanly, and the run reproduced identically on a second pass. Six of the fifteen hold zero entries and are recorded as such rather than with a sentinel -- and each of the six says in its own header that empty is its correct state, which is why
+`scripts/gates/check-suppression-liveness.ts` gives three of them a `minEntries` of 0 rather than demanding they be populated.
 
 ### Summary
 
@@ -452,9 +371,7 @@ than demanding they be populated.
 
 ## 5. Files BORN here, which section 2 cannot describe
 
-Section 2 is the record of a move. Two names now in `POLICY_FILES` never moved, because
-they were written into this directory in the first place, and a reader looking for them
-in that table will not find them.
+Section 2 is the record of a move. Two names now in `POLICY_FILES` never moved, because they were written into this directory in the first place, and a reader looking for them in that table will not find them.
 
 | File | Added | Reader, by symbol | Why it is policy |
 |---|---|---|---|
@@ -467,110 +384,65 @@ in that table will not find them.
 
 Both are deliberate, and it still satisfies the section 1 predicate on all four clauses.
 
-It is a PINNED MEASUREMENT rather than a list of exempted entries: how many processes the
-harness starts for one tool call, derived from `.claude/settings.json` by
-`.claude/rediacc_hooks/execcount.py`. A name-per-line dotfile cannot hold a table of
-per-tool, per-reading counts, which is why the shape differs from its neighbours.
+It is a PINNED MEASUREMENT rather than a list of exempted entries: how many processes the harness starts for one tool call, derived from `.claude/settings.json` by `.claude/rediacc_hooks/execcount.py`. A name-per-line dotfile cannot hold a table of per-tool, per-reading counts, which is why the shape differs from its neighbours.
 
 * **A decision, not data.** Every number in it is a claim about the world that an edit to
-  `.claude/settings.json` can stop being true, and the gate refuses in BOTH directions:
-  growth is a regression, and a SHRINK is also refused, with the new value printed to
-  paste. A baseline that silently absorbs an improvement cannot prove the next one.
+`.claude/settings.json` can stop being true, and the gate refuses in BOTH directions: growth is a regression, and a SHRINK is also refused, with the new value printed to paste. A baseline that silently absorbs an improvement cannot prove the next one.
 * **BLOCKER-gated.** Its `ambiguousMatchers` block is the suppression surface, and every
-  entry there carries a `BLOCKER:` reason the gate checks for by name. There is one entry
-  today: the `Bash` matcher is written bare rather than anchored, and nothing in this
-  repository records whether the harness matches by `search` or by `fullmatch`, so under
-  one reading `Bash` also selects the tool `BashOutput` and under the other it does not.
-  The two readings differ by nine processes. It is pinned rather than guessed at, and it
-  shrinks by anchoring the matcher to `^Bash$`, never by editing the list.
+entry there carries a `BLOCKER:` reason the gate checks for by name. There is one entry today: the `Bash` matcher is written bare rather than anchored, and nothing in this repository records whether the harness matches by `search` or by `fullmatch`, so under one reading `Bash` also selects the tool `BashOutput` and under the other it does not. The two readings differ by nine
+processes. It is pinned rather than guessed at, and it shrinks by anchoring the matcher to `^Bash$`, never by editing the list.
 * **It has a parser.** `hook_exec_baseline.load_baseline()`, which refuses an empty
-  `probeTools` and a missing `measured` block rather than reporting zero findings.
+`probeTools` and a missing `measured` block rather than reporting zero findings.
 * **Its location is an implementation detail.** One reader, reaching it through
-  `policy_path("hook-exec-baseline.json")`.
+`policy_path("hook-exec-baseline.json")`.
 
-W5's target is "2 processes per Bash tool call". It is 12 today, and until 2026-09-09
-there was no artifact in the tree stating the 12, which is why this file exists.
+W5's target is "2 processes per Bash tool call". It is 12 today, and until 2026-09-09 there was no artifact in the tree stating the 12, which is why this file exists.
 
 ### `worklist-env-registry.json`, the second non-dotfile, and the same argument
 
-Every `WORKLIST_*` environment name the program reads: 133 of them, across 28 files that
-READ one (60 mention one at all, the difference being 30 shell fixtures that only ASSIGN
-them), at 181 read sites. Measured 2026-09-09; there was no registry and no schema before
-that date.
+Every `WORKLIST_*` environment name the program reads: 133 of them, across 28 files that READ one (60 mention one at all, the difference being 30 shell fixtures that only ASSIGN them), at 181 read sites. Measured 2026-09-09; there was no registry and no schema before that date.
 
 * **A decision, not data.** The `kind` of each name is a human's claim that the derivation
-  is right, and the derivation is wrong for three names in this tree today: the default
-  `"1"` cannot distinguish a boolean from a count, and `WORKLIST_REPORT_PER_STOP`,
-  `WORKLIST_AGENT_HINT_MIN_MARGIN` and `WORKLIST_AGENT_PUSHBACK_MIN_SCORE` are all counts.
+is right, and the derivation is wrong for three names in this tree today: the default `"1"` cannot distinguish a boolean from a count, and `WORKLIST_REPORT_PER_STOP`, `WORKLIST_AGENT_HINT_MIN_MARGIN` and `WORKLIST_AGENT_PUSHBACK_MIN_SCORE` are all counts.
 * **BLOCKER-gated in substance if not in spelling.** Its suppression surface is the
-  `exclusions` block, and each prefix carries the reason it is excluded rather than the
-  gate hardcoding it. An exclusion that matches zero tracked paths is a finding, which is
-  the liveness half. Three of the five kinds (`flag`, `handle`, `corpus`) additionally
-  require a substantive `why`, because those are the three where a typo turns something
-  OFF or narrows what is looked at.
+`exclusions` block, and each prefix carries the reason it is excluded rather than the gate hardcoding it. An exclusion that matches zero tracked paths is a finding, which is the liveness half. Three of the five kinds (`flag`, `handle`, `corpus`) additionally require a substantive `why`, because those are the three where a typo turns something OFF or narrows what is looked at.
 * **It has a parser.** `worklist_env_registry.load_registry()`, which refuses an empty
-  name set and an empty exclusion set rather than reporting zero findings.
+name set and an empty exclusion set rather than reporting zero findings.
 * **Its location is an implementation detail.** One reader, through
-  `policy_path("worklist-env-registry.json")`.
+`policy_path("worklist-env-registry.json")`.
 
-The defect it exists for: a typo'd name reads as UNSET. Four names default to `on`
-(`WORKLIST_AGENT_HINT`, `WORKLIST_AGENT_PUSHBACK`, `WORKLIST_CADENCE`, `WORKLIST_FOCUS`),
-so a misspelling leaves them running while the author believes they are off.
+The defect it exists for: a typo'd name reads as UNSET. Four names default to `on` (`WORKLIST_AGENT_HINT`, `WORKLIST_AGENT_PUSHBACK`, `WORKLIST_CADENCE`, `WORKLIST_FOCUS`), so a misspelling leaves them running while the author believes they are off.
 
 ---
 
 ## 6. The file REFUSED entry: `.ci/config/bws-secret-map.json`
 
-W4 P5 asked whether the Bitwarden secret map belongs here. **The answer is no**, and the
-answer is recorded rather than merely acted on, because the next reader will have the same
-idea: it is a `.json` under `.ci/`, it is read by CI, and section 5 has just established
-that a `.json` can live here. It still fails **three of the four section 1 clauses**, which
-is a worse case than `.ci-trigger` in section 3, and that one already got a section of its
-own.
+W4 P5 asked whether the Bitwarden secret map belongs here. **The answer is no**, and the answer is recorded rather than merely acted on, because the next reader will have the same idea: it is a `.json` under `.ci/`, it is read by CI, and section 5 has just established that a `.json` can live here. It still fails **three of the four section 1 clauses**, which is a worse case than
+`.ci-trigger` in section 3, and that one already got a section of its own.
 
 Measured 2026-09-09 against `.ci/config/bws-secret-map.json`, 191 lines, 58 secrets:
 
 - **Clause 1, decision not data: FAILS.** It carries `refreshed_at` (line 12) and is
-  regenerated WHOLESALE from Bitwarden by `scripts/dev/bws-map-refresh.py`, with a second
-  writer at `private/account/scripts/rotation/lib/bws-map.ts:75` that refreshes it after a
-  rotation. Every row is a NAME to UUID pair that Bitwarden decides and this repository
-  copies. Nobody chose any of it, so no row can stop being true in the way a suppression can:
-  it goes stale, which is a different failure with a different fix (re-run the refresher).
+regenerated WHOLESALE from Bitwarden by `scripts/dev/bws-map-refresh.py`, with a second writer at `private/account/scripts/rotation/lib/bws-map.ts:75` that refreshes it after a rotation. Every row is a NAME to UUID pair that Bitwarden decides and this repository copies. Nobody chose any of it, so no row can stop being true in the way a suppression can: it goes stale, which is a
+different failure with a different fix (re-run the refresher).
 - **Clause 2, BLOCKER-gated: FAILS.** Zero `BLOCKER:` lines, and there is no honest one to
-  write. A per-UUID reason would have to be invented, and an invented reason is the exact
-  thing `docs/agent-reference/suppressions.md` exists to keep out of these files.
+write. A per-UUID reason would have to be invented, and an invented reason is the exact thing `docs/agent-reference/suppressions.md` exists to keep out of these files.
 - **Clause 3, has a parser: PASSES.** `.ci/scripts/quality/check_bws_map.py:115` opens it as
-  `MAP`. This is the one clause it satisfies, and on its own it proves nothing: section 3
-  refused `.ci-trigger` for failing exactly this clause, so passing it is necessary and not
-  sufficient.
+`MAP`. This is the one clause it satisfies, and on its own it proves nothing: section 3 refused `.ci-trigger` for failing exactly this clause, so passing it is necessary and not sufficient.
 - **Clause 4, location is an implementation detail: FAILS, and this is the decisive one.**
-  `.github/actions/bws-secrets/action.yml:71` builds the path as
-  `${{ github.action_path }}/../../../.ci/config/bws-secret-map.json`, so the location is
-  reached by walking UP from the composite action's own directory at run time, and the next
-  line fails the job with `bws-secret-map.json not found at $MAP` if the walk misses. Two
-  more readers live OUTSIDE this repository's checkout, in the `private/account` submodule:
-  `private/account/scripts/rotation/lib/bws-map.ts:39` holds the path as
-  `join('.ci', 'config', 'bws-secret-map.json')` and searches upward for the console
-  checkout that has it, and
-  `private/account/tests/integration/rotation-bitwarden-names.test.ts:46` joins the same
-  path to assert the map exists. That is an EXTERNAL CONTRACT, which is the clause that
-  keeps `package.json` and `biome.json` at the repository root.
+`.github/actions/bws-secrets/action.yml:71` builds the path as `${{ github.action_path }}/../../../.ci/config/bws-secret-map.json`, so the location is reached by walking UP from the composite action's own directory at run time, and the next line fails the job with `bws-secret-map.json not found at $MAP` if the walk misses. Two more readers live OUTSIDE this repository's checkout,
+in the `private/account` submodule: `private/account/scripts/rotation/lib/bws-map.ts:39` holds the path as `join('.ci', 'config', 'bws-secret-map.json')` and searches upward for the console checkout that has it, and `private/account/tests/integration/rotation-bitwarden-names.test.ts:46` joins the same path to assert the map exists. That is an EXTERNAL CONTRACT, which is the clause
+that keeps `package.json` and `biome.json` at the repository root.
 
-It is a worse case than `.language-policy-baseline.json`, which was kept out for clause 1
-alone. Three clauses fail here, and one of the three is the cross-repository one.
+It is a worse case than `.language-policy-baseline.json`, which was kept out for clause 1 alone. Three clauses fail here, and one of the three is the cross-repository one.
 
 ### The mechanical assertion, so the decision reopens loudly
 
-A refusal written only in prose is a refusal nobody re-derives. `check:ci-policy-inventory`
-therefore asserts all three failing clauses every run
-(`.ci/scripts/quality/check_policy_inventory.py`, direction 7):
+A refusal written only in prose is a refusal nobody re-derives. `check:ci-policy-inventory` therefore asserts all three failing clauses every run (`.ci/scripts/quality/check_policy_inventory.py`, direction 7):
 
 1. the file EXISTS at `.ci/config/bws-secret-map.json` (a refusal about a file that is gone
-   is not a refusal, it is a stale paragraph),
+is not a refusal, it is a stale paragraph),
 2. it is NOT under `.ci/policy/`, and its name is in neither seam's `POLICY_FILES`,
 3. it contains ZERO `BLOCKER:` occurrences.
 
-The third is the live one. If somebody ever writes reasons into it, clause 2 stops failing,
-the argument above is no longer complete, and the gate reds pointing at this section instead
-of letting the decision drift. The correct response to that red is to re-run the section 1
-predicate here, not to widen the gate.
+The third is the live one. If somebody ever writes reasons into it, clause 2 stops failing, the argument above is no longer complete, and the gate reds pointing at this section instead of letting the decision drift. The correct response to that red is to re-run the section 1 predicate here, not to widen the gate.

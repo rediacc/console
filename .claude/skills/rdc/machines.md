@@ -1,21 +1,20 @@
 # rdc machine — Machine Registration & Inspection
 
-Register machines, set them up, and inspect status, containers, services, and health.
-Machine registration and setup live here too (`machine add`, `machine setup`); see
-[config.md](config.md) for those.
+Register machines, set them up, and inspect status, containers, services, and health. Machine registration and setup live here too (`machine add`, `machine setup`); see [config.md](config.md) for those.
 
 For full command syntax and options, see [reference.md](reference.md).
 
 ## Output details
 
-`machine status <name>` is one command with section filters. With no filter it shows
-everything; each flag below narrows it to one section.
+`machine status <name>` is one command with section filters. With no filter it shows everything; each flag below narrows it to one section.
 
 **machine status `<name>`**: Shows infrastructure config (base domain, public IPs, TLS), system info, deployed repos, running containers, and systemd services in one view. Use this to check a machine's base domain, public IPs, or any infrastructure setting.
 
-**machine status `<name>` --containers**: Table shows `name`, `state`, `health`, `domain`, `autoRoute`, `repository`. JSON output includes full `ContainerInfo` with all fields (`labels`, `port_mappings`, `image`, `id`, `state`, `health`, `cpu_percent`, `memory_usage`, etc.) plus enriched fields: `repository` (resolved name), `repository_guid` (original GUID), `domain` (from labels), `autoRoute` (`{service}.{repo}.{machine}.{baseDomain}`).
+**machine status `<name>` --containers**: Table shows `name`, `state`, `health`, `domain`, `autoRoute`, `repository`. JSON output includes full `ContainerInfo` with all fields (`labels`, `port_mappings`, `image`, `id`, `state`, `health`, `cpu_percent`, `memory_usage`, etc.) plus enriched fields: `repository` (resolved name), `repository_guid` (original GUID), `domain` (from
+labels), `autoRoute` (`{service}.{repo}.{machine}.{baseDomain}`).
 
-**machine status `<name>` --repositories**: Table shows name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present. JSON output includes `name` (resolved) and `guid` (original GUID), nests each repo's `containers` (with `domain`, `autoRoute`, `repository`/`repository_guid`) and `services` arrays. Use `--search` to filter by name or GUID.
+**machine status `<name>` --repositories**: Table shows name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present. JSON output includes `name` (resolved) and `guid` (original GUID), nests each repo's `containers` (with `domain`, `autoRoute`, `repository`/`repository_guid`) and `services` arrays. Use `--search` to filter by name or
+GUID.
 
 **machine status `<name>` --services**: Table shows name, state, sub-state, restart count, memory, repository. JSON output includes full `ServiceInfo` with `repository` (resolved name) and `repository_guid` (original GUID). Use `--stability-check` to exit code 2 if any failed/restarting (CI/CD).
 

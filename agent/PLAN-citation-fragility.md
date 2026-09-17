@@ -4,11 +4,7 @@ Status: done
 
 ## Status
 
-Done, 2026-09-14. Started as a design-only handoff (written from an isolated
-worktree clone by a session with no write access, specifically so the shared
-tree, `0914-1` mid-push at the time, would not be touched) and executed the
-same day once the tree reached a quiet point. Every task below landed and was
-individually verified against the real `check:ci-plan-citations` gate, not
+Done, 2026-09-14. Started as a design-only handoff (written from an isolated worktree clone by a session with no write access, specifically so the shared tree, `0914-1` mid-push at the time, would not be touched) and executed the same day once the tree reached a quiet point. Every task below landed and was individually verified against the real `check:ci-plan-citations` gate, not
 just against this document.
 
 ## Tasks
@@ -29,56 +25,21 @@ just against this document.
 
 ## Corrections to the working assumptions this plan started from
 
-Read `.ci/scripts/quality/check_plan_citations.py` and
-`.claude/hooks/stop/wl_planrec.py` at `0914-1`'s tip (`af08c2888`) before
-anything else, because the brief this plan was commissioned from got several
-details of the actual gate wrong. Both scripts self-test their own claims
-(`--selftest`, 24/24 PASS at that commit), so these corrections are load-bearing,
-not pedantic:
+Read `.ci/scripts/quality/check_plan_citations.py` and `.claude/hooks/stop/wl_planrec.py` at `0914-1`'s tip (`af08c2888`) before anything else, because the brief this plan was commissioned from got several details of the actual gate wrong. Both scripts self-test their own claims (`--selftest`, 24/24 PASS at that commit), so these corrections are load-bearing, not pedantic:
 
 - **Scope is `agent/PLAN-*.md` and `agent/INDEX.md` ONLY.** `in_scope()`'s own
-  selftest asserts `docs/agent-reference/TRAPS.md` is NOT in scope, and neither
-  is `agent/<session>/STATE.md` (per-session, read-only to everyone but its
-  owner) nor generated `agent/pr/*` / `agent/worklist/*`. The brief's mention of
-  "a few `agent/f4da5c2e/*.md`/`docs/agent-reference/TRAPS.md` files" citing
-  objects under this gate is not how the gate is scoped today. Those files can
-  and do carry stale hex tokens, but `check:ci-plan-citations` cannot see them
-  and was deliberately built that way (ownership: only a session that can edit
-  the file should be told to fix it). Widening scope is explicitly flagged in
-  the gate's own docstring as "a separate decision with a much larger blast
-  radius" — out of scope for this plan.
+selftest asserts `docs/agent-reference/TRAPS.md` is NOT in scope, and neither is `agent/<session>/STATE.md` (per-session, read-only to everyone but its owner) nor generated `agent/pr/*` / `agent/worklist/*`. The brief's mention of "a few `agent/f4da5c2e/*.md`/`docs/agent-reference/TRAPS.md` files" citing objects under this gate is not how the gate is scoped today. Those files can
+and do carry stale hex tokens, but `check:ci-plan-citations` cannot see them and was deliberately built that way (ownership: only a session that can edit the file should be told to fix it). Widening scope is explicitly flagged in the gate's own docstring as "a separate decision with a much larger blast radius" — out of scope for this plan.
 - **Four citation kinds, not five, and no "blob"/"commit"/"trap" kinds at the
-  extractor level.** `check_plan_citations.citations()` extracts `fileline`,
-  `plan`, `gate`, `object`. `object` is the union: `unresolved()` accepts a
-  token if `R.resolve(root, "blob", tok)` OR `R.resolve(root, "commit", tok)`
-  succeeds — "demanding one would flag the other" (source comment). There is no
-  separate blob-kind or commit-kind citation in the corpus; there is one hex
-  token that the gate is happy to see resolve either way. `wl_planrec.resolve`
-  itself had seven kinds (`blob, commit, ancestor, fileline, gate, plan, trap`)
-  before this plan's tree-kind addition landed, now eight
-  but the citations gate only ever calls it with five of them; `ancestor` and
-  `trap` are used elsewhere (stop-hook claim verification, `check-trap-registry`).
+extractor level.** `check_plan_citations.citations()` extracts `fileline`, `plan`, `gate`, `object`. `object` is the union: `unresolved()` accepts a token if `R.resolve(root, "blob", tok)` OR `R.resolve(root, "commit", tok)` succeeds — "demanding one would flag the other" (source comment). There is no separate blob-kind or commit-kind citation in the corpus; there is one hex token
+that the gate is happy to see resolve either way. `wl_planrec.resolve` itself had seven kinds (`blob, commit, ancestor, fileline, gate, plan, trap`) before this plan's tree-kind addition landed, now eight but the citations gate only ever calls it with five of them; `ancestor` and `trap` are used elsewhere (stop-hook claim verification, `check-trap-registry`).
 - **The fingerprint example from the brief is already fixed.** (The token is
-  quoted in the fence at the end of this section; it is not a git object.)
-  It is registered in `scripts/data/shape-duplication-seed.json` (checked; the
-  entry is there, dated 2026-09-08), so `citations()`'s `shape_fingerprints()`
-  check already excludes it before it ever becomes an "object" candidate. It
-  does not appear in the current object-citation corpus. This is not a live
-  problem; it is the working example of the fix this plan recommends
-  generalizing (see Recommendation 3).
+quoted in the fence at the end of this section; it is not a git object.) It is registered in `scripts/data/shape-duplication-seed.json` (checked; the entry is there, dated 2026-09-08), so `citations()`'s `shape_fingerprints()` check already excludes it before it ever becomes an "object" candidate. It does not appear in the current object-citation corpus. This is not a live problem;
+it is the working example of the fix this plan recommends generalizing (see Recommendation 3).
 - **`resolve(root, "commit", token)` is existence-only, not
-  reachability-checked**, per its own docstring (`git rev-parse --verify --quiet
-  <token>^{commit}` — nothing about ancestry). That is the exact
-  reachability-vs-existence gap `b816445a1` ("a control that could only pass
-  where the fix was unnecessary") and `af08c2888` ("the reachability oracle
-  that called 53 healthy blobs dead") already document from this session's own
-  mistakes today. It matters here because a *local* clone can carry orphaned
-  objects (dangling commits from an earlier `git filter-branch`/rebase on this
-  very branch, per the "trailer rewrite" commits fenced below) that still
-  answer "yes" to `rev-parse --verify` while a genuinely fresh clone (what CI
-  and every new contributor actually get) would not have the object at all.
-  Section 4 below gives the correct oracle for "would this survive a rebase or
-  a fresh clone", and it is **not** `resolve()`'s own commit-kind check.
+reachability-checked**, per its own docstring (`git rev-parse --verify --quiet <token>^{commit}` — nothing about ancestry). That is the exact reachability-vs-existence gap `b816445a1` ("a control that could only pass where the fix was unnecessary") and `af08c2888` ("the reachability oracle that called 53 healthy blobs dead") already document from this session's own mistakes today.
+It matters here because a *local* clone can carry orphaned objects (dangling commits from an earlier `git filter-branch`/rebase on this very branch, per the "trailer rewrite" commits fenced below) that still answer "yes" to `rev-parse --verify` while a genuinely fresh clone (what CI and every new contributor actually get) would not have the object at all. Section 4 below gives the
+correct oracle for "would this survive a rebase or a fresh clone", and it is **not** `resolve()`'s own commit-kind check.
 
 ## 1. Measurement
 
@@ -93,8 +54,7 @@ Corpus at `0914-1`@`af08c2888`, `agent/PLAN-*.md` + `agent/INDEX.md`:
 | — `plan` | 450 |
 | — **`object`** | **343** (citation *sites*; **149 distinct tokens**) |
 
-Of the 149 distinct object tokens, resolved with the gate's own
-`R.resolve(root, "blob"|"commit", token)`:
+Of the 149 distinct object tokens, resolved with the gate's own `R.resolve(root, "blob"|"commit", token)`:
 
 | resolution | distinct tokens |
 |---|---:|
@@ -103,10 +63,7 @@ Of the 149 distinct object tokens, resolved with the gate's own
 | resolves as **both** | 0 |
 | resolves as **neither** (dead today) | 26 |
 
-Reachability, using the `c5b727b2e` oracle (`git rev-list --objects af08c2888`,
-prefix-matched — this is what a fresh clone/CI checkout actually contains,
-unlike `merge-base --is-ancestor`, which the same commit found throws exit 128
-on every blob and would have misreported ~53 healthy citations as dead):
+Reachability, using the `c5b727b2e` oracle (`git rev-list --objects af08c2888`, prefix-matched — this is what a fresh clone/CI checkout actually contains, unlike `merge-base --is-ancestor`, which the same commit found throws exit 128 on every blob and would have misreported ~53 healthy citations as dead):
 
 | | distinct tokens |
 |---|---:|
@@ -115,15 +72,9 @@ on every blob and would have misreported ~53 healthy citations as dead):
 
 The 33 unreachable split as:
 - 25 of the 26 "resolves as neither" tokens (truly dead; the 26th,
-  `444e9c09092a80bbb7defa6eea122e0de28a89eb` in
-  `agent/PLAN-git-history-media-rewrite.md:174/321`, **is** reachable — it's a
-  real git **tree** object, a kind `resolve()` never tries; see Recommendation 4).
+`444e9c09092a80bbb7defa6eea122e0de28a89eb` in `agent/PLAN-git-history-media-rewrite.md:174/321`, **is** reachable — it's a real git **tree** object, a kind `resolve()` never tries; see Recommendation 4).
 - **8 tokens that currently PASS `resolve()` (gate is silent on them today)
-  but are NOT in the fresh-clone reachable set** — i.e., they exist only as
-  leftover loose objects in a long-lived local clone (this branch's own
-  `filter-branch`/trailer rewrite earlier today almost certainly produced
-  several of these) and would already be dead the next time anyone re-clones
-  this branch or runs `git gc --prune`:
+but are NOT in the fresh-clone reachable set** — i.e., they exist only as leftover loose objects in a long-lived local clone (this branch's own `filter-branch`/trailer rewrite earlier today almost certainly produced several of these) and would already be dead the next time anyone re-clones this branch or runs `git gc --prune`:
 
   ```
   8b7840ed4   commit  agent/PLAN-fix-ci-contention-aware-timeouts.md:225
@@ -136,38 +87,18 @@ The 33 unreachable split as:
   082f7aa94   commit  agent/PLAN-www-bundle-determinism.md:11
   ```
 
-  These are the sharpest evidence for this whole plan's premise: they are
-  *already* fragile, not merely "fragile after a future rebase".
+These are the sharpest evidence for this whole plan's premise: they are *already* fragile, not merely "fragile after a future rebase".
 
 ## 2. Classification scheme
 
-Applied to the 149 distinct object tokens, by reading each site's surrounding
-prose (not just its resolution status):
+Applied to the 149 distinct object tokens, by reading each site's surrounding prose (not just its resolution status):
 
-**(a) File-content claim — mechanically safe as a blob id, or already is one.**
-Signal: a structural `Full-Text-Blob: <sha>` field (the plan-compaction
-metadata `wl_planfid.py` writes at the top of every compacted plan — this is
-already a blob id, by construction, and needs no change), or prose immediately
-adjacent to `git hash-object`, `git cat-file -p`, or an explicit `blob:` label.
-**This is almost the entire 53-token "blob only" bucket** — a spot check
-confirms nearly every one is the `Full-Text-Blob:` field, not a narrative
-citation. No action needed; this is the target state, already achieved, for
-this sub-class.
+**(a) File-content claim — mechanically safe as a blob id, or already is one.** Signal: a structural `Full-Text-Blob: <sha>` field (the plan-compaction metadata `wl_planfid.py` writes at the top of every compacted plan — this is already a blob id, by construction, and needs no change), or prose immediately adjacent to `git hash-object`, `git cat-file -p`, or an explicit `blob:`
+label. **This is almost the entire 53-token "blob only" bucket** — a spot check confirms nearly every one is the `Full-Text-Blob:` field, not a narrative citation. No action needed; this is the target state, already achieved, for this sub-class.
 
-**(b) Commit-identity claim — NOT safely convertible to a blob; needs prose
-judgment, not mechanical substitution.**
-Signal phrases found directly adjacent to the token in this corpus (each
-verified against a real site, not hypothesized): `committed (as|in|unformatted
-in)`, `HEAD stayed`, `measured at` / `measured on the tree at`, `landed (as|at)`,
-`confirmed via` followed by `git show <sha>:path`, `ancestor of HEAD`, `blame
-to … ancestor of HEAD`, `whose subject is`, a bare `git log <sha>`, `repoint(ed)`,
-a `commits <sha>, <sha>` list, `Landing: console commit <sha>, "feat(...)"`, or a
-sha immediately followed by its commit subject in quotes. A random sample of 8
-commit-only tokens came back **8/8 genuine commit-identity claims** — this
-corpus is heavily forensic/investigative in style (the plan files document
-*what actually happened*, not just *what the code says*), so this is the
-dominant shape for anything that isn't the `Full-Text-Blob:` field.
-Sub-cases:
+**(b) Commit-identity claim — NOT safely convertible to a blob; needs prose judgment, not mechanical substitution.** Signal phrases found directly adjacent to the token in this corpus (each verified against a real site, not hypothesized): `committed (as|in|unformatted in)`, `HEAD stayed`, `measured at` / `measured on the tree at`, `landed (as|at)`, `confirmed via` followed by `git
+show <sha>:path`, `ancestor of HEAD`, `blame to … ancestor of HEAD`, `whose subject is`, a bare `git log <sha>`, `repoint(ed)`, a `commits <sha>, <sha>` list, `Landing: console commit <sha>, "feat(...)"`, or a sha immediately followed by its commit subject in quotes. A random sample of 8 commit-only tokens came back **8/8 genuine commit-identity claims** — this corpus is heavily
+forensic/investigative in style (the plan files document *what actually happened*, not just *what the code says*), so this is the dominant shape for anything that isn't the `Full-Text-Blob:` field. Sub-cases:
   - **Healthy and reachable today (62 of the 70 commit-only tokens):** leave as
     a commit sha. Converting to a blob id would be actively wrong — it would
     silently change the claim from "commit X happened / HEAD was at X" to "file
@@ -216,14 +147,8 @@ Sub-cases:
     in this repo's object store by design, same as the gate's own documented
     "SUBMODULE gitlink" exemption. Needs an inline note, not a fix.
 
-**(c) Not really a citation — a coincidental hex-shaped token.**
-Signal: the token is the trailing hex group of a canonical UUID
-(`nnnnnnnn-nnnn-nnnn-nnnn-NNNNNNNNNNNN`, whose final 12-hex segment is *always*
-pure hex and therefore *always* matches `HEXTOK_RE` once it's ≥9 chars — this is
-a systemic, recurring source, not a one-off), or the word immediately before it
-is `fingerprint`, `fp`, `(report …)`, or it sits inside a scratchpad/session
-temp path. Found in this corpus (9 distinct tokens, all in the "resolves as
-neither" / dead bucket, none fenced):
+**(c) Not really a citation — a coincidental hex-shaped token.** Signal: the token is the trailing hex group of a canonical UUID (`nnnnnnnn-nnnn-nnnn-nnnn-NNNNNNNNNNNN`, whose final 12-hex segment is *always* pure hex and therefore *always* matches `HEXTOK_RE` once it's ≥9 chars — this is a systemic, recurring source, not a one-off), or the word immediately before it is
+`fingerprint`, `fp`, `(report …)`, or it sits inside a scratchpad/session temp path. Found in this corpus (9 distinct tokens, all in the "resolves as neither" / dead bucket, none fenced):
 
 ```
 b4b800aaeb21      UUID tail   agent/PLAN-env-to-bitwarden-v2.md:401 (Stripe secret uuid)
@@ -243,18 +168,13 @@ a56ee58a0  a6f76f074
 aea2bc733552
 ```
 
-These are exactly the shape the fingerprint token above was: a hex-shaped
-token that is not a git object at all, coincidentally satisfying the regex. Its own
-fix (add it to `scripts/data/shape-duplication-seed.json`) is the *wrong
-mechanism* for these — that seed is specifically for `check:ci-shape-duplication`
-fingerprints — but the same idea (a small, explicit, reviewed allowlist rather
-than prose surgery) is the right shape of fix. See Recommendation 3.
+These are exactly the shape the fingerprint token above was: a hex-shaped token that is not a git object at all, coincidentally satisfying the regex. Its own fix (add it to `scripts/data/shape-duplication-seed.json`) is the *wrong mechanism* for these — that seed is specifically for `check:ci-shape-duplication` fingerprints — but the same idea (a small, explicit, reviewed allowlist
+rather than prose surgery) is the right shape of fix. See Recommendation 3.
 
 ## 3. Recommendations per class
 
 1. **(a) blob-form / `Full-Text-Blob:` (53 tokens):** No change. This is
-   already the target state the gate's own error message is steering everyone
-   toward. Do not touch.
+already the target state the gate's own error message is steering everyone toward. Do not touch.
 
 2. **(b) commit-identity (70 tokens):**
    - 62 healthy + reachable: no change, accept the fragility as inherent to the
@@ -302,69 +222,38 @@ than prose surgery) is the right shape of fix. See Recommendation 3.
      separate, reviewable change — do not bundle it into a prose-editing pass.
 
 4. **Resolver gap, not a citation problem:** `444e9c09092a80bbb7defa6eea122e0de28a89eb`
-   is a real git **tree** object, correctly cited, but `resolve()`'s `object`
-   path only ever tries `blob` and `commit`. Recommend adding a `tree` attempt
-   to the same `unresolved()` branch check_plan_citations.py already has
-   (`R.resolve(root, "blob", tok) or R.resolve(root, "commit", tok)` →
-   `... or R.resolve(root, "tree", tok)`, and a matching `"tree"` branch in
-   `wl_planrec.resolve` using `git cat-file -t token == "tree"`). This is a
-   one-line addition to a shared resolver, not a per-file edit, and removes a
-   whole class of future false "dead" findings for anyone who cites a tree
-   (common when documenting a `git filter-branch`/rewrite control, exactly the
-   plan this token lives in).
+is a real git **tree** object, correctly cited, but `resolve()`'s `object` path only ever tries `blob` and `commit`. Recommend adding a `tree` attempt to the same `unresolved()` branch check_plan_citations.py already has (`R.resolve(root, "blob", tok) or R.resolve(root, "commit", tok)` → `... or R.resolve(root, "tree", tok)`, and a matching `"tree"` branch in `wl_planrec.resolve`
+using `git cat-file -t token == "tree"`). This is a one-line addition to a shared resolver, not a per-file edit, and removes a whole class of future false "dead" findings for anyone who cites a tree (common when documenting a `git filter-branch`/rewrite control, exactly the plan this token lives in).
 
 ## 4. Execution plan
 
-**Splitting the work.** One writer, sequential, not parallel — the object
-citations cluster heavily in a few files (`agent/PLAN-tooling-transformation.md`
-alone carries 49 of the 343 sites; `agent/INDEX.md` 32;
-`agent/PLAN-secret-namespace-migration.md` 10) and the fenced-vs-not,
-dead-on-purpose-vs-not judgment calls documented above need one person holding
-the whole classification in their head to stay consistent. If it must be
-split, split by **disjoint file set**, never by citation kind within a file
-(kind-splitting would have two writers editing the same lines).
+**Splitting the work.** One writer, sequential, not parallel — the object citations cluster heavily in a few files (`agent/PLAN-tooling-transformation.md` alone carries 49 of the 343 sites; `agent/INDEX.md` 32; `agent/PLAN-secret-namespace-migration.md` 10) and the fenced-vs-not, dead-on-purpose-vs-not judgment calls documented above need one person holding the whole classification
+in their head to stay consistent. If it must be split, split by **disjoint file set**, never by citation kind within a file (kind-splitting would have two writers editing the same lines).
 
-Suggested batch order, smallest blast radius first (matches the Tasks list
-above):
+Suggested batch order, smallest blast radius first (matches the Tasks list above):
 1. The 9 coincidental tokens (class c) — either fence them or land the UUID-tail
-   exemption in the gate first, since it makes several of the fence-wraps
-   unnecessary.
+exemption in the gate first, since it makes several of the fence-wraps unnecessary.
 2. The 8 already-fragile commit-identity tokens (highest actual risk).
 3. The 1 tree-resolver-gap token (land the `tree` kind in `wl_planrec.resolve`
-   first; this is a shared-module change, review it on its own).
+first; this is a shared-module change, review it on its own).
 4. The 4 dead-on-purpose / cross-repo tokens (note-only, no functional change).
 5. Leave the 62 healthy commit-identity and 53 blob tokens alone.
 
 **Verification after each edit:**
 - `npm run check:ci-plan-citations -- --selftest` first, always — if the
-  resolver's own controls don't pass, nothing else means anything (this is the
-  gate's own documented anti-vacuity discipline; don't skip it).
+resolver's own controls don't pass, nothing else means anything (this is the gate's own documented anti-vacuity discipline; don't skip it).
 - `npm run check:ci-plan-citations` for the real verdict. Remember it only
-  judges **added lines** in a diff against the merge-base with `origin/main` —
-  editing an existing dead citation IS an added line (the diff sees the whole
-  line as removed+added), so every edit in this plan DOES get judged, which is
-  the correct behavior here.
+judges **added lines** in a diff against the merge-base with `origin/main` — editing an existing dead citation IS an added line (the diff sees the whole line as removed+added), so every edit in this plan DOES get judged, which is the correct behavior here.
 - **The correct oracle for "will this survive a `merge --rebase`" is NOT
-  `resolve()`'s own commit-kind check** (existence-only, as corrected above) and
-  is NOT `merge-base --is-ancestor` (exits 128 on blobs, per `af08c2888`). It is:
+`resolve()`'s own commit-kind check** (existence-only, as corrected above) and is NOT `merge-base --is-ancestor` (exits 128 on blobs, per `af08c2888`). It is:
   ```
   git rev-list --objects <ref-you-are-about-to-merge-into> | cut -d' ' -f1 > /tmp/reachable.txt
   grep -qf <(echo "$TOKEN") /tmp/reachable.txt   # prefix match needed for abbreviated tokens
   ```
-  computed against the **target** ref of the rebase/merge (not just current
-  HEAD), because the whole point is to answer "will this object still be there
-  after the rewrite", which local HEAD cannot answer once the rewrite has
-  already happened locally. Read `.ci/config/carried-reds.json` before this
-  work starts — `check:ci-plan-citations` is not currently carried there
-  (confirmed by reading the file at `af08c2888`), i.e. it is expected green
-  right now; a batch that reds it should be treated as a real regression, not
-  pre-existing debt.
+computed against the **target** ref of the rebase/merge (not just current HEAD), because the whole point is to answer "will this object still be there after the rewrite", which local HEAD cannot answer once the rewrite has already happened locally. Read `.ci/config/carried-reds.json` before this work starts — `check:ci-plan-citations` is not currently carried there (confirmed by
+reading the file at `af08c2888`), i.e. it is expected green right now; a batch that reds it should be treated as a real regression, not pre-existing debt.
 
-**What NOT to do:** do not run any of the file edits from this plan yourself in
-this pass. This document is the design; a separate writer session, working
-directly in the shared tree (not this isolated worktree), should execute it
-after the in-flight `0914-1` push referenced above has landed or paused, to
-avoid a second session editing `agent/PLAN-tooling-transformation.md`
+**What NOT to do:** do not run any of the file edits from this plan yourself in this pass. This document is the design; a separate writer session, working directly in the shared tree (not this isolated worktree), should execute it after the in-flight `0914-1` push referenced above has landed or paused, to avoid a second session editing `agent/PLAN-tooling-transformation.md`
 concurrently with the live one.
 
 ## How to re-run this measurement
@@ -375,8 +264,7 @@ git clone --no-local --no-hardlinks <repo> /tmp/citation-audit/clone
 cd /tmp/citation-audit/clone && git checkout <branch-tip>
 python3 .ci/scripts/quality/check_plan_citations.py --selftest   # must be 24/24 PASS
 ```
-Then, in Python, with `sys.path` extended to `.ci/scripts/quality` and
-`.claude/hooks/stop`:
+Then, in Python, with `sys.path` extended to `.ci/scripts/quality` and `.claude/hooks/stop`:
 ```python
 import check_plan_citations as G, wl_planrec as R
 files, n = G.corpus_citations(ROOT)                      # 86, 3094

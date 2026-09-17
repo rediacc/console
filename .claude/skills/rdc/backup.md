@@ -116,14 +116,12 @@ rdc repo up <repo>                   # Auto-detects checkpoint, resumes
 ## Backup scheduling
 
 ### Configure backup strategy
-The strategy name is a positional argument. Multiple destinations can be configured with
-different schedules:
+The strategy name is a positional argument. Multiple destinations can be configured with different schedules:
 ```bash
 rdc backup strategy set daily --destination my-s3 --storage my-s3 --cron "0 2 * * *" --enable
 rdc backup strategy set offsite --destination azure-backup --storage azure-backup --cron "0 6 * * *" --enable
 ```
-`--storage <name>` is required the first time a destination is created (it names the rclone
-credentials from `rdc storage add`).
+`--storage <name>` is required the first time a destination is created (it names the rclone credentials from `rdc storage add`).
 
 ### Show / list backup strategies
 ```bash
@@ -214,8 +212,7 @@ Phase 1: clean stale mounts, locks, snapshots. Phase 2 (with `--orphaned-repos`)
 
 ### Grace period configuration
 
-Set a default grace period in config so `--grace-days` is not required each time. `config set`
-takes the key and value positionally:
+Set a default grace period in config so `--grace-days` is not required each time. `config set` takes the key and value positionally:
 
 ```bash
 rdc config set pruneGraceDays 14

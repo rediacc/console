@@ -3,95 +3,49 @@ Status: done
 
 ## Implementation notes (2026-08-28, post-plan)
 
-The rewrite followed the plan's selector mapping closely, with two additions the
-plan's investigation (necessarily static) could not have caught:
+The rewrite followed the plan's selector mapping closely, with two additions the plan's investigation (necessarily static) could not have caught:
 
 1. **Untrusted clicks silently fail autoplay/fullscreen.** `evalInPage(...).click()`
-   dispatches a programmatic click, which Chrome's autoplay and Fullscreen-API
-   gesture requirements correctly refuse to honor -- `video.play()` and
-   `element.requestFullscreen()` both no-op under it. Verified live: the same
-   button, clicked via `agent-browser`'s native `click <selector>` command (a real
-   trusted input event) instead of eval, worked immediately (`currentTime`
-   advanced within 1.5s). All scenario clicks now go through a `clickSelector()`
-   helper backed by the native command.
+dispatches a programmatic click, which Chrome's autoplay and Fullscreen-API gesture requirements correctly refuse to honor -- `video.play()` and `element.requestFullscreen()` both no-op under it. Verified live: the same button, clicked via `agent-browser`'s native `click <selector>` command (a real trusted input event) instead of eval, worked immediately (`currentTime` advanced
+within 1.5s). All scenario clicks now go through a `clickSelector()` helper backed by the native command.
 2. **The dev server was orphaned on every run, including passing ones.**
-   `npm run dev` spawns `astro` as a grandchild; killing just the `npm` PID
-   doesn't propagate to it, and the original safety-net SIGKILL timer never got
-   to fire because `proc`'s own 'exit' event (which npm reaches quickly) resolved
-   `stopDevServer()` before `main()`'s `process.exit()` tore down the timer.
-   Fixed with `detached: true` + an unconditional group-wide SIGKILL after a
-   grace window, rather than one that fires only if the npm wrapper hasn't
-   already exited.
+`npm run dev` spawns `astro` as a grandchild; killing just the `npm` PID doesn't propagate to it, and the original safety-net SIGKILL timer never got to fire because `proc`'s own 'exit' event (which npm reaches quickly) resolved `stopDevServer()` before `main()`'s `process.exit()` tore down the timer. Fixed with `detached: true` + an unconditional group-wide SIGKILL after a grace
+window, rather than one that fires only if the npm wrapper hasn't already exited.
 3. Scenario 5's caption z-index comparison (docs vs. a solution-page mount) was
-   also wrong as initially written: solution videos have no `words` manifest
-   entry (captions are burned into the pixels), so `.tvp-caption` never renders
-   there by design. Fixed to assert only the invariant that actually holds
-   (both mounts render a real player; the docs caption's z-index matches the
-   CSS-defined value) rather than a cross-mount equality that fails by design.
+also wrong as initially written: solution videos have no `words` manifest entry (captions are burned into the pixels), so `.tvp-caption` never renders there by design. Fixed to assert only the invariant that actually holds (both mounts render a real player; the docs caption's z-index matches the CSS-defined value) rather than a cross-mount equality that fails by design.
 
-Control-first verified per the plan's instruction: reverted `clickSelector` to
-the broken eval-click shape, confirmed the gate correctly fails with the exact
-original symptom, then restored and confirmed green again.
+Control-first verified per the plan's instruction: reverted `clickSelector` to the broken eval-click shape, confirmed the gate correctly fails with the exact original symptom, then restored and confirmed green again.
 
-Final state: `npm run test:tutorial-player -w @rediacc/www` passes cleanly
-(exit 0, all 5 scenarios), reproduced across 3 consecutive runs, zero orphaned
-processes left behind on any of them.
-Owner: e580532b
-Updated: 2026-08-28
+Final state: `npm run test:tutorial-player -w @rediacc/www` passes cleanly (exit 0, all 5 scenarios), reproduced across 3 consecutive runs, zero orphaned processes left behind on any of them. Owner: e580532b Updated: 2026-08-28
 
 ## TL;DR
 
-The gate (`packages/www/scripts/test-tutorial-player-release-gate.js`) tests a
-`TerminalPlayer.tsx`-based UI (`window.__tutorialDebug`, `data-guided-phase`,
-`.ap-control-bar`, a custom fullscreen caption layer, a "fake terminal" on the
-homepage) that was deleted wholesale by commit `80a000965` ("feat: solution-page
-asset pipelines, repo cat/backup CLI work, tutorial recording, i18n sync (#492)",
-2026-05-27) and replaced by `TutorialVideoPlayer.tsx`, a Plyr-based `<video>`
-player. This is not a runtime regression -- it's a gate that never got updated
-because it was never wired into CI (per the comment already in
-`scripts/ci-runner/manifest.ts:404-408`) until this session. The fix is a
-targeted rewrite of the gate's 5 scenarios against the real current player,
+The gate (`packages/www/scripts/test-tutorial-player-release-gate.js`) tests a `TerminalPlayer.tsx`-based UI (`window.__tutorialDebug`, `data-guided-phase`, `.ap-control-bar`, a custom fullscreen caption layer, a "fake terminal" on the homepage) that was deleted wholesale by commit `80a000965` ("feat: solution-page asset pipelines, repo cat/backup CLI work, tutorial recording, i18n
+sync (#492)", 2026-05-27) and replaced by `TutorialVideoPlayer.tsx`, a Plyr-based `<video>` player. This is not a runtime regression -- it's a gate that never got updated because it was never wired into CI (per the comment already in `scripts/ci-runner/manifest.ts:404-408`) until this session. The fix is a targeted rewrite of the gate's 5 scenarios against the real current player,
 selectors, and routes -- not a debugging session against the product.
 
 ## Root cause
 
 1. The commit below ("feat(www): ship guided tutorial player...", 2026-03-05)
-   added
+added
 
-   It is NOT an ancestor of `origin/main`, and is kept alive only by the stale
-   `gitlab/0227-1` remote-tracking ref rather than by a live branch. Recorded
-   rather than fake-repointed, because no equivalent commit with this subject
-   exists on `origin/main`. Quoted inside a fence deliberately: it is a
-   deliberately-dead pointer, and `check:ci-plan-citations` resolves any bare
-   9-character object token elsewhere on the line -- in CI the object does not
-   exist at all, since a fresh clone has no `gitlab` remote-tracking refs.
+It is NOT an ancestor of `origin/main`, and is kept alive only by the stale `gitlab/0227-1` remote-tracking ref rather than by a live branch. Recorded rather than fake-repointed, because no equivalent commit with this subject exists on `origin/main`. Quoted inside a fence deliberately: it is a deliberately-dead pointer, and `check:ci-plan-citations` resolves any bare 9-character
+object token elsewhere on the line -- in CI the object does not exist at all, since a fresh clone has no `gitlab` remote-tracking refs.
 
 ```
 b1d40b6d4
 ```
 
-   `TerminalPlayer.tsx` + `terminal-player-shell.tsx` + `terminal-player-audio.tsx`
+`TerminalPlayer.tsx` + `terminal-player-shell.tsx` + `terminal-player-audio.tsx`
    + `terminal-player-utils.ts` and, in the same commit, the release gate script
-   this plan is fixing (`443` lines at HEAD then). `window.__tutorialDebug`
-   (with `.phase`/`.step`/`.seekToSec` and friends, matching exactly what the
-   gate expects) was real, working code in `TerminalPlayer.tsx` at this point
-   (confirmed via `git show b1d40b6d4:packages/www/src/components/TerminalPlayer.tsx`
-   and `git show 80a000965^:packages/www/src/components/TerminalPlayer.tsx`,
-   lines 374-392) -- the gate was not asserting on an interface that was never
-   implemented; it was asserting on one that was implemented and later deleted.
+this plan is fixing (`443` lines at HEAD then). `window.__tutorialDebug` (with `.phase`/`.step`/`.seekToSec` and friends, matching exactly what the gate expects) was real, working code in `TerminalPlayer.tsx` at this point (confirmed via `git show b1d40b6d4:packages/www/src/components/TerminalPlayer.tsx` and `git show 80a000965^:packages/www/src/components/TerminalPlayer.tsx`,
+lines 374-392) -- the gate was not asserting on an interface that was never implemented; it was asserting on one that was implemented and later deleted.
 2. `80a000965` (2026-05-27) deleted all four `TerminalPlayer*` files (see
-   `git log --oneline --all --diff-filter=D -- packages/www/src/components/TerminalPlayer.tsx`)
-   and `FeatureShowcase.tsx` (the homepage component that hosted the terminal
-   player), and added `TutorialVideoPlayer.tsx` as a new file in the same
-   commit. It did **not** touch `test-tutorial-player-release-gate.js`.
+`git log --oneline --all --diff-filter=D -- packages/www/src/components/TerminalPlayer.tsx`) and `FeatureShowcase.tsx` (the homepage component that hosted the terminal player), and added `TutorialVideoPlayer.tsx` as a new file in the same commit. It did **not** touch `test-tutorial-player-release-gate.js`.
 3. Per `scripts/ci-runner/manifest.ts:404-408`, the `check:test:tutorial-player`
-   gate "was defined in package.json but referenced nowhere: never ran in CI"
-   until it was wired in this session alongside the astro-boot-timeout and
-   dead-server-detection fixes. So the 3-month drift between `80a000965` and now
-   was never caught -- there was no CI job to catch it.
+gate "was defined in package.json but referenced nowhere: never ran in CI" until it was wired in this session alongside the astro-boot-timeout and dead-server-detection fixes. So the 3-month drift between `80a000965` and now was never caught -- there was no CI job to catch it.
 4. Every one of the 16 current failures traces 1:1 to a selector/state/route
-   invariant that belonged to the deleted `TerminalPlayer` and no longer exists
-   in `TutorialVideoPlayer`:
+invariant that belonged to the deleted `TerminalPlayer` and no longer exists in `TutorialVideoPlayer`:
    - `window.__tutorialDebug`, `data-guided-phase`, `data-guided-step`: existed
      in `TerminalPlayer.tsx` (confirmed via
      `git show 80a000965^:packages/www/src/components/TerminalPlayer.tsx`,
@@ -129,42 +83,20 @@ b1d40b6d4
 ## What the current player actually looks like (verified against HEAD)
 
 - Docs pages embed the player via `![alt](/assets/tutorials/<slug>.cast)` markdown
-  image syntax (e.g. `packages/www/src/content/docs/en/tutorial-production-mode.mdx:15`,
-  `.../tutorial-add-server.mdx:15`), transformed at build time by
-  `packages/www/src/plugins/remark-tutorial-embed.ts:127-141` into
-  `<div class="tutorial-video-container" data-video-src=... data-poster-src=...
-  data-sources='...' data-lang="en"></div>`.
+image syntax (e.g. `packages/www/src/content/docs/en/tutorial-production-mode.mdx:15`, `.../tutorial-add-server.mdx:15`), transformed at build time by `packages/www/src/plugins/remark-tutorial-embed.ts:127-141` into `<div class="tutorial-video-container" data-video-src=... data-poster-src=... data-sources='...' data-lang="en"></div>`.
 - Client-side, `packages/www/src/scripts/tutorial-video-hydrate.ts:23-74` finds
-  every `.tutorial-video-container[data-video-src]` (docs pages, wired at
-  `packages/www/src/layouts/DocsLayout.astro:895`) and `.video-player-mount[data-video-src]`
-  (solution-page heroes, `SPSolutionVideo.astro:51`, wired at
-  `packages/www/src/components/solution-pages/SolutionPage.astro:206`), sets
-  `el.dataset.hydrated = 'true'`, and mounts a React root rendering
-  `TutorialVideoPlayer`.
+every `.tutorial-video-container[data-video-src]` (docs pages, wired at `packages/www/src/layouts/DocsLayout.astro:895`) and `.video-player-mount[data-video-src]` (solution-page heroes, `SPSolutionVideo.astro:51`, wired at `packages/www/src/components/solution-pages/SolutionPage.astro:206`), sets `el.dataset.hydrated = 'true'`, and mounts a React root rendering
+`TutorialVideoPlayer`.
 - `TutorialVideoPlayer.tsx:676-731` renders:
-  `.tvp-shell > .tvp-root > (<video> + .tvp-chapter-overlay + .tvp-caption
-  [+ .tvp-toolbar-overlay if a language picker is needed])`.
-  Plyr wraps the `<video>` in its own `.plyr` / `.plyr__video-wrapper` container
-  and toggles `.plyr--playing` / `.plyr--paused` / `.plyr--fullscreen-active` on
-  itself; standard buttons carry `data-plyr="play"` / `data-plyr="fullscreen"`
-  (`TutorialVideoPlayer.tsx:361-376`).
+`.tvp-shell > .tvp-root > (<video> + .tvp-chapter-overlay + .tvp-caption [+ .tvp-toolbar-overlay if a language picker is needed])`. Plyr wraps the `<video>` in its own `.plyr` / `.plyr__video-wrapper` container and toggles `.plyr--playing` / `.plyr--paused` / `.plyr--fullscreen-active` on itself; standard buttons carry `data-plyr="play"` / `data-plyr="fullscreen"`
+(`TutorialVideoPlayer.tsx:361-376`).
 - There is **no debug hook and no phase/step state machine** in the current
-  player. "Steps" now live purely as static prose/commands rendered by
-  `packages/www/src/components/tutorial/TutorialStep.astro`, sourced from
-  `tutorial-storyboard`/`tutorial-transcripts` JSON, entirely decoupled from
-  video playback position. There is no `window.*` API to assert against; the
-  new gate has to assert on real `<video>` element state
-  (`video.paused`, `video.currentTime`, `video.duration`) and Plyr's own CSS
-  state classes, read via `document.querySelector('.tvp-root video')` /
-  `.closest('.plyr')`.
+player. "Steps" now live purely as static prose/commands rendered by `packages/www/src/components/tutorial/TutorialStep.astro`, sourced from `tutorial-storyboard`/`tutorial-transcripts` JSON, entirely decoupled from video playback position. There is no `window.*` API to assert against; the new gate has to assert on real `<video>` element state (`video.paused`, `video.currentTime`,
+`video.duration`) and Plyr's own CSS state classes, read via `document.querySelector('.tvp-root video')` / `.closest('.plyr')`.
 
 ## Fix plan (rewrite `test-tutorial-player-release-gate.js`)
 
-The two infra fixes from this session (astro cold-boot timeout, dead-server
-detection) are correct and should stay untouched. All 5 scenario functions
-(lines 292-460 of the current file) need a targeted rewrite against the real
-player. No change is needed to `startDevServer`/`stopDevServer`/`main`/the
-resource-pressure diagnostics.
+The two infra fixes from this session (astro cold-boot timeout, dead-server detection) are correct and should stay untouched. All 5 scenario functions (lines 292-460 of the current file) need a targeted rewrite against the real player. No change is needed to `startDevServer`/`stopDevServer`/`main`/the resource-pressure diagnostics.
 
 1. **`clickPlaybackButton` / `currentState` helpers (lines 239-269)**
    - Replace the `.ap-control-bar .terminal-player-guided-toggle` /
@@ -273,43 +205,19 @@ resource-pressure diagnostics.
 ## Verification
 
 - Primary: re-run the release gate itself after each scenario is rewritten --
-  `npm run check:test:tutorial-player` (root) /
-  `npm run test:tutorial-player -w @rediacc/www`, which is exactly
-  `node packages/www/scripts/test-tutorial-player-release-gate.js` per
-  `packages/www/package.json:15` and `package.json:228`. This is the existing
-  regression instrument (`scripts/ci-runner/manifest.ts:404-419`, gate
-  `check:test:tutorial-player`, CI step "Tutorial player release gate" in
-  `.github/workflows/ci-quality.yml` job `quality-packages`) and needs no new
-  wiring -- it only needs to go green against the real player.
+`npm run check:test:tutorial-player` (root) / `npm run test:tutorial-player -w @rediacc/www`, which is exactly `node packages/www/scripts/test-tutorial-player-release-gate.js` per `packages/www/package.json:15` and `package.json:228`. This is the existing regression instrument (`scripts/ci-runner/manifest.ts:404-419`, gate `check:test:tutorial-player`, CI step "Tutorial player
+release gate" in `.github/workflows/ci-quality.yml` job `quality-packages`) and needs no new wiring -- it only needs to go green against the real player.
 - Per the `testing` skill's "control first / plant the defect" rule: before
-  calling any rewritten scenario done, deliberately break the corresponding
-  real behavior (e.g., temporarily comment out the `play` click handler wiring,
-  or force `video.currentTime` to snap back after a seek) and confirm the
-  scenario goes red for the right reason, then revert and confirm it's green
-  again. This is cheap here because the whole point of the gate is driving a
-  real browser against real product code -- there's no mock to keep honest.
+calling any rewritten scenario done, deliberately break the corresponding real behavior (e.g., temporarily comment out the `play` click handler wiring, or force `video.currentTime` to snap back after a seek) and confirm the scenario goes red for the right reason, then revert and confirm it's green again. This is cheap here because the whole point of the gate is driving a real
+browser against real product code -- there's no mock to keep honest.
 - Secondary/regression-of-the-regression: after the rewrite, grep the finished
-  script for the retired vocabulary (`__tutorialDebug`, `guidedPhase`,
-  `ap-control-bar`, `terminal-tutorial`, `heading-share`) to confirm no stale
-  selector survived a partial edit:
-  `grep -nE "__tutorialDebug|guidedPhase|ap-control-bar|terminal-tutorial|heading-share" packages/www/scripts/test-tutorial-player-release-gate.js`
-  should return nothing.
+script for the retired vocabulary (`__tutorialDebug`, `guidedPhase`, `ap-control-bar`, `terminal-tutorial`, `heading-share`) to confirm no stale selector survived a partial edit: `grep -nE "__tutorialDebug|guidedPhase|ap-control-bar|terminal-tutorial|heading-share" packages/www/scripts/test-tutorial-player-release-gate.js` should return nothing.
 - No new test *file* is warranted: this gate is already the correct
-  ci-quality.yml-wired regression instrument for "does the tutorial video
-  player actually work in a real browser," per the `testing` skill's routing
-  table (real-browser/runtime behavior -> this standalone script, not a new
-  `check-*.ts` static gate and not a vitest unit test -- `check:test-www`
-  already covers the parts of `TutorialVideoPlayer.tsx` that are unit-testable
-  without a browser, e.g. `WordsDoc`/caption-cue math, and should stay
-  separate from this browser-driven gate).
+ci-quality.yml-wired regression instrument for "does the tutorial video player actually work in a real browser," per the `testing` skill's routing table (real-browser/runtime behavior -> this standalone script, not a new `check-*.ts` static gate and not a vitest unit test -- `check:test-www` already covers the parts of `TutorialVideoPlayer.tsx` that are unit-testable without a
+browser, e.g. `WordsDoc`/caption-cue math, and should stay separate from this browser-driven gate).
 - Before landing, also fix (or file as a fast-follow) the misleading comment
-  at `packages/www/src/scripts/tutorial-video-hydrate.ts:15-16` referencing
-  "the original `.tutorial-player-container` hydration in `tutorial-hydrate.ts`"
-  -- that file does not exist in the current tree
-  (`find packages/www -iname tutorial-hydrate.ts` -> no hits), so the comment
-  is itself a small piece of the same drift this plan is otherwise fixing.
-  Out of scope for the gate fix itself, but flagged here so it doesn't get
-  mistaken for a still-live code path while investigating.
+at `packages/www/src/scripts/tutorial-video-hydrate.ts:15-16` referencing "the original `.tutorial-player-container` hydration in `tutorial-hydrate.ts`" -- that file does not exist in the current tree (`find packages/www -iname tutorial-hydrate.ts` -> no hits), so the comment is itself a small piece of the same drift this plan is otherwise fixing. Out of scope for the gate fix
+itself, but flagged here so it doesn't get mistaken for a still-live code path while investigating.
 
 ### Critical Files for Implementation
 - packages/www/scripts/test-tutorial-player-release-gate.js

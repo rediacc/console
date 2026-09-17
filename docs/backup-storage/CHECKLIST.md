@@ -1,6 +1,5 @@
 # Handoff checklist: backup-storage
-Status: executing
-Owner: 97604f47
+Status: executing Owner: 97604f47
 
 ## Deliverables
 - [x] d1 file:docs/backup-storage/README.md
@@ -60,12 +59,6 @@ Owner: 97604f47
       See 07-execution-record.md §9.
 
 <!--
-w6 was originally ONE row reading "integration, migration of real machines,
-cutover, decommission". It was split rather than ticked, because ticking it
-would have recorded migration, cutover and decommission as DONE when no machine
-has been migrated, nothing has been cut over, and rclone is still the only way
-to get data back. The credential-free half is genuinely complete; the rest is
-not mine to do. A handoff checklist that overstates is worse than one that is
-merely incomplete: the next session reads it as ground truth.
--->
+w6 was originally ONE row reading "integration, migration of real machines, cutover, decommission". It was split rather than ticked, because ticking it would have recorded migration, cutover and decommission as DONE when no machine has been migrated, nothing has been cut over, and rclone is still the only way to get data back. The credential-free half is genuinely complete; the
+rest is not mine to do. A handoff checklist that overstates is worse than one that is merely incomplete: the next session reads it as ground truth. -->
 

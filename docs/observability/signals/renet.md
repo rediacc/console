@@ -1,11 +1,7 @@
 # Renet Telemetry
 
-Renet is not a long-running daemon. The console CLI invokes it as a
-short-lived subprocess over SSH for each operation: `renet execute` runs a
-single task (repo up, fork, backup, and the other Rediaccfile functions) and
-`renet list` reports machine status. Each invocation starts its own
-OpenTelemetry collector, emits spans, metrics, and logs for that one
-operation, flushes, and exits.
+Renet is not a long-running daemon. The console CLI invokes it as a short-lived subprocess over SSH for each operation: `renet execute` runs a single task (repo up, fork, backup, and the other Rediaccfile functions) and `renet list` reports machine status. Each invocation starts its own OpenTelemetry collector, emits spans, metrics, and logs for that one operation, flushes, and
+exits.
 
 ## Service Names
 
@@ -29,17 +25,14 @@ operation, flushes, and exits.
 
 ## Spans
 
-Spans are created with `Collector.StartSpan(ctx, name, kind)` and closed when
-the operation returns; errors are attached via `RecordError`.
+Spans are created with `Collector.StartSpan(ctx, name, kind)` and closed when the operation returns; errors are attached via `RecordError`.
 
 | Span name      | Kind     | What it traces                             |
 |----------------|----------|--------------------------------------------|
 | `execute.task` | `bridge` | A single task run by the local executor    |
 | `list.all`     | `bridge` | A `renet list all` machine-status snapshot |
 
-The `bridge` span-kind constant is a legacy label left over from the removed
-middleware queue processor. Renaming it rides along with the wider
-`pkg/bridge` to `pkg/functions` cleanup and does not change the emitted data.
+The `bridge` span-kind constant is a legacy label left over from the removed middleware queue processor. Renaming it rides along with the wider `pkg/bridge` to `pkg/functions` cleanup and does not change the emitted data.
 
 ### Common Span Attributes
 

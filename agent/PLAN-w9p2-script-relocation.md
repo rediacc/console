@@ -1,6 +1,5 @@
 # PLAN: W9 P2 script relocation, remaining legs (scripts/gen, scripts/ops)
-Status: draft -- design only, not implemented
-Owner: f4da5c2e
+Status: draft -- design only, not implemented Owner: f4da5c2e
 
 ## Why
 
@@ -25,9 +24,13 @@ So "15 operator scripts" in the box's original text is almost exactly right (15 
 
 ## 1. `scripts/gen-docs.ts:268`'s "MISSING keys are fatal" mechanism, and `doc-registry-preport.json`, re-measured
 
-The citation has drifted: the line is now `scripts/gen-docs.ts:354` ("MISSING keys are fatal to `--diff-snapshot`; ADDED keys are reported as normal growth."), not `:268`. The mechanism (`diffSnapshot()` at `scripts/gen-docs.ts:410`) compares each provider's recorded pre-port key set against its live set; a `missing` key not present in `retired.<provider>` in `scripts/data/doc-registry-preport.json` is printed as `DROPPED` and the run exits 1.
+The citation has drifted: the line is now `scripts/gen-docs.ts:354` ("MISSING keys are fatal to `--diff-snapshot`; ADDED keys are reported as normal growth."), not `:268`. The mechanism (`diffSnapshot()` at `scripts/gen-docs.ts:410`) compares each provider's recorded pre-port key set against its live set; a `missing` key not present in `retired.<provider>` in
+`scripts/data/doc-registry-preport.json` is printed as `DROPPED` and the run exits 1.
 
-`doc-registry-preport.json` has exactly one provider recorded, `ci-tree` (55 rows), whose keys include `.ci/scripts/ci`, `.ci/scripts/build/sea-inject`, `.ci/scripts/autopilot` (directory row keys). These are the paths the 22 `incoming-*` entries above will vacate when W7's moves land -- that coupling is real, but it belongs to whoever executes the `incoming-*` legs, not to this plan. **Ran `npx tsx scripts/gen-docs.ts --diff-snapshot` directly against the current tree: exit code 1 today**, but the failure is unrelated to either remaining W9 P2 leg -- it is `DROPPED suppressions: .ci/config/bws-unrequested.json`, a pre-existing red the prior session already noted ("`--diff-snapshot` was already exiting 1 before the move began"). `ci-tree` itself reports `ok` (55 recorded, 87 live, 0 unexplained missing). Moving `scripts/gen-docs.ts`, `scripts/gen-gates-lock.ts`, or the 15 operator scripts touches none of `ci-tree`'s recorded keys (none of them are `.ci/scripts/{ci,build/sea-inject,docs,autopilot}` paths), so **coupling (a) does not apply to the two legs this plan covers.** Re-run `--diff-snapshot` before and after each leg's move as a control, but do not expect it to be the mechanism that reds from this work; if it does turn newly red, that is a real finding, not the known pre-existing one.
+`doc-registry-preport.json` has exactly one provider recorded, `ci-tree` (55 rows), whose keys include `.ci/scripts/ci`, `.ci/scripts/build/sea-inject`, `.ci/scripts/autopilot` (directory row keys). These are the paths the 22 `incoming-*` entries above will vacate when W7's moves land -- that coupling is real, but it belongs to whoever executes the `incoming-*` legs, not to this
+plan. **Ran `npx tsx scripts/gen-docs.ts --diff-snapshot` directly against the current tree: exit code 1 today**, but the failure is unrelated to either remaining W9 P2 leg -- it is `DROPPED suppressions: .ci/config/bws-unrequested.json`, a pre-existing red the prior session already noted ("`--diff-snapshot` was already exiting 1 before the move began"). `ci-tree` itself reports
+`ok` (55 recorded, 87 live, 0 unexplained missing). Moving `scripts/gen-docs.ts`, `scripts/gen-gates-lock.ts`, or the 15 operator scripts touches none of `ci-tree`'s recorded keys (none of them are `.ci/scripts/{ci,build/sea-inject,docs,autopilot}` paths), so **coupling (a) does not apply to the two legs this plan covers.** Re-run `--diff-snapshot` before and after each leg's move
+as a control, but do not expect it to be the mechanism that reds from this work; if it does turn newly red, that is a real finding, not the known pre-existing one.
 
 ## 2. `derivedId()`: moving a file does NOT change its gate id
 
@@ -42,13 +45,16 @@ export function derivedId(repoPath: string): string {
 }
 ```
 
-It derives from the **basename only** (`.pop()` on the split), except for one path-substring special case (`/test/gates/`, which none of the 17 remaining files' new paths match: `scripts/gates/`, `scripts/gen/`, `scripts/ops/` are all clear of that substring). Moving `check-foo.ts` from `scripts/` to `scripts/gates/` therefore derives the identical id before and after, which is exactly why the 121 renamed gates in the completed leg needed zero `id:` overrides -- confirmed independently here rather than just re-asserted from the prior note. **For this plan's two legs the ids are anyway mostly explicit, not derived**: `check:ci-gates-lock`, `check:ci-doc-region-parity`, `gen:gates-lock`, `gen:docs` in `scripts/ci-runner/manifest.ts:2200-2293` do not match what `derivedId()` would compute from `gen-docs.ts` / `gen-gates-lock.ts`, meaning they are hand-written `id:` fields already, unaffected by a path change either way. The ids it would derive instead, quoted here inside a fence because they name gates that deliberately do not exist and `check:ci-plan-citations` reads bare ids anywhere else on the line:
+It derives from the **basename only** (`.pop()` on the split), except for one path-substring special case (`/test/gates/`, which none of the 17 remaining files' new paths match: `scripts/gates/`, `scripts/gen/`, `scripts/ops/` are all clear of that substring). Moving `check-foo.ts` from `scripts/` to `scripts/gates/` therefore derives the identical id before and after, which is
+exactly why the 121 renamed gates in the completed leg needed zero `id:` overrides -- confirmed independently here rather than just re-asserted from the prior note. **For this plan's two legs the ids are anyway mostly explicit, not derived**: `check:ci-gates-lock`, `check:ci-doc-region-parity`, `gen:gates-lock`, `gen:docs` in `scripts/ci-runner/manifest.ts:2200-2293` do not match
+what `derivedId()` would compute from `gen-docs.ts` / `gen-gates-lock.ts`, meaning they are hand-written `id:` fields already, unaffected by a path change either way. The ids it would derive instead, quoted here inside a fence because they name gates that deliberately do not exist and `check:ci-plan-citations` reads bare ids anywhere else on the line:
 
 ```
 check:ci-gen-docs
 check:ci-gen-gates-lock
 ```
- **The 15 operator scripts under `scripts/dev/` and `scripts/docker/` have zero `manifest.ts` entries at all** (grepped: no hits) -- consistent with `domains.json`'s own description of them as "no workflow, npm key, run.sh verb or gate invokes them" -- so there is no id-derivation risk there either. Conclusion: item 2's feared "every manifest.ts entry needs its id checked" blast radius does not materialize for either remaining leg.
+**The 15 operator scripts under `scripts/dev/` and `scripts/docker/` have zero `manifest.ts` entries at all** (grepped: no hits) -- consistent with `domains.json`'s own description of them as "no workflow, npm key, run.sh verb or gate invokes them" -- so there is no id-derivation risk there either. Conclusion: item 2's feared "every manifest.ts entry needs its id checked" blast
+radius does not materialize for either remaining leg.
 
 ## 3. Precedent: this box's own history is the mechanics reference
 
@@ -62,7 +68,8 @@ There is no need to reach for a different box (W1P4 or otherwise); the completed
 
 ## 4. `gates.lock.json`'s real edit surface
 
-Confirmed: `gates.lock.json` is generated, never hand-edited. `package.json:181` -- `"check:ci-gates-lock": "tsx scripts/gen-gates-lock.ts --selftest && tsx scripts/gen-gates-lock.ts"` -- verifies it against `manifest.ts`; `package.json:169` -- `"gen:gates-lock": "tsx scripts/gen-gates-lock.ts --write"` -- is what actually rewrites it. So the real hand-edit surface for both legs is:
+Confirmed: `gates.lock.json` is generated, never hand-edited. `package.json:181` -- `"check:ci-gates-lock": "tsx scripts/gen-gates-lock.ts --selftest && tsx scripts/gen-gates-lock.ts"` -- verifies it against `manifest.ts`; `package.json:169` -- `"gen:gates-lock": "tsx scripts/gen-gates-lock.ts --write"` -- is what actually rewrites it. So the real hand-edit surface for both legs
+is:
 
 1. `scripts/ci-runner/manifest.ts` -- `paths:`/`leaves:` string literals naming the moved files (2 entries reference `scripts/gen-gates-lock.ts`, 1 references `scripts/gen-docs.ts`, all in the `check:ci-gates-lock` / `gen:gates-lock` / `gen:docs` block at `scripts/ci-runner/manifest.ts:2195-2293`; zero entries reference any `scripts/dev/**` or `scripts/docker/**` path, since none are registered).
 2. `package.json` -- the `gen:docs` / `gen:gates-lock` / `check:ci-gates-lock` / `check:ci-doc-region-parity` script strings if any hardcode the old path (checked: they invoke by npm script name and `tsx scripts/gen-gates-lock.ts` / `tsx scripts/gen-docs.ts` literally -- both need the path segment updated).
@@ -78,15 +85,18 @@ The two remaining legs are blocked by two **independent, already-different** ext
 - **Sub-batch A: `scripts/gen/` leg (2 files).**
 - **Sub-batch B: `scripts/ops/` leg (15 files).**
 
-Each gets its own before/after `check:ci-parity`, `check:ci-gate-bind` (or `gen:gates-lock` + `check:ci-gates-lock`), and `check:ci-domain-partition` cycle, exactly as the completed `scripts/gates/` leg did. Do not wait for both blockers to clear before starting either -- whichever clears first should land first, verified independently, so a defect in one sub-batch's rewrite does not block or contaminate the other's review.
+Each gets its own before/after `check:ci-parity`, `check:ci-gate-bind` (or `gen:gates-lock` + `check:ci-gates-lock`), and `check:ci-domain-partition` cycle, exactly as the completed `scripts/gates/` leg did. Do not wait for both blockers to clear before starting either -- whichever clears first should land first, verified independently, so a defect in one sub-batch's rewrite does
+not block or contaminate the other's review.
 
-**Before starting either sub-batch, re-check the blocker at execution time, not from this document.** `scripts/data/domains.json:99` and `:156` still carry their original `blockedOn` text as of 2026-09-14 (5 days after the box's last edit); that is the authoritative signal that neither has been lifted. If a workstream has since handed over, the correct first step is to update the rule's `blockedOn` field (or remove it) in the same commit as the move, not to leave stale text describing a blocker that no longer applies.
+**Before starting either sub-batch, re-check the blocker at execution time, not from this document.** `scripts/data/domains.json:99` and `:156` still carry their original `blockedOn` text as of 2026-09-14 (5 days after the box's last edit); that is the authoritative signal that neither has been lifted. If a workstream has since handed over, the correct first step is to update the
+rule's `blockedOn` field (or remove it) in the same commit as the move, not to leave stale text describing a blocker that no longer applies.
 
 ## 6. What breaks beyond the 3 driver-only files, per leg
 
 ### 6a. `scripts/gen/` leg (gen-docs.ts, gen-gates-lock.ts)
 
-**The domains.json trap does NOT re-fire here.** The `generators` rule's `paths` already includes `scripts/gen/**` (added 2026-09-09, per its own comment: "THE HOME ITSELF IS THE FIRST PATTERN... the rule declared `scripts/gen` as a destination and matched only files still sitting OUTSIDE it"). Moving these 2 files into a home the rule already recognizes will not produce an `UNCLASSIFIED` finding. Once both files land, flip this rule the same way `gates` was flipped: `stays: false` -> `true`, drop the now-satisfied `blockedOn`, and narrow `paths` to describe the finished state (matching the precedent in section 3).
+**The domains.json trap does NOT re-fire here.** The `generators` rule's `paths` already includes `scripts/gen/**` (added 2026-09-09, per its own comment: "THE HOME ITSELF IS THE FIRST PATTERN... the rule declared `scripts/gen` as a destination and matched only files still sitting OUTSIDE it"). Moving these 2 files into a home the rule already recognizes will not produce an
+`UNCLASSIFIED` finding. Once both files land, flip this rule the same way `gates` was flipped: `stays: false` -> `true`, drop the now-satisfied `blockedOn`, and narrow `paths` to describe the finished state (matching the precedent in section 3).
 
 Functional edits required in the same commit as the move:
 - `scripts/ci-runner/manifest.ts:2206`, `:2208`, `:2231` region (`check:ci-gates-lock`), `:2276` (`gen:gates-lock`), `:2287` (`gen:docs`) -- update the 3 literal path strings.
@@ -99,9 +109,13 @@ Functional edits required in the same commit as the move:
 
 ### 6b. `scripts/ops/` leg (13 files under scripts/dev/, scripts/docker/build-server.sh, scripts/backup-cutover-preflight.sh)
 
-**The domains.json trap DOES fire here and must be fixed before/atomically with the move.** Unlike `generators`, the `operator-bash` rule's `paths` (`scripts/data/domains.json:95-97`: `["scripts/dev/**", "scripts/docker/**", "scripts/backup-cutover-preflight.sh"]`) name only the CURRENT locations -- there is no `"scripts/ops/**"` entry yet (independently confirmed by the driver: grepping `domains.json` for `scripts/ops` finds only the rule's own `"home": "scripts/ops"` declaration, never in `paths`). `scripts/gates/check-domain-partition.ts`'s clause 1 (total classification) is **enforcing**, not baselined: the moment these 15 files land under `scripts/ops/`, they stop matching any rule and every one becomes `UNCLASSIFIED`, hard-failing the gate. This is precisely the "finish-line trap" the `generators` rule's own comment names by analogy ("the same line will be needed for `scripts/ops` when the operator-script leg lands") -- and it has not yet been paid down. **The first edit in this sub-batch, in the same commit as the `git mv`, must add `"scripts/ops/**"` to `operator-bash`'s `paths`** (or replace the three old-location globs with it, mirroring how `gates`' rule was narrowed to its final-state form once its move completed).
+**The domains.json trap DOES fire here and must be fixed before/atomically with the move.** Unlike `generators`, the `operator-bash` rule's `paths` (`scripts/data/domains.json:95-97`: `["scripts/dev/**", "scripts/docker/**", "scripts/backup-cutover-preflight.sh"]`) name only the CURRENT locations -- there is no `"scripts/ops/**"` entry yet (independently confirmed by the driver:
+grepping `domains.json` for `scripts/ops` finds only the rule's own `"home": "scripts/ops"` declaration, never in `paths`). `scripts/gates/check-domain-partition.ts`'s clause 1 (total classification) is **enforcing**, not baselined: the moment these 15 files land under `scripts/ops/`, they stop matching any rule and every one becomes `UNCLASSIFIED`, hard-failing the gate. This is
+precisely the "finish-line trap" the `generators` rule's own comment names by analogy ("the same line will be needed for `scripts/ops` when the operator-script leg lands") -- and it has not yet been paid down. **The first edit in this sub-batch, in the same commit as the `git mv`, must add `"scripts/ops/**"` to `operator-bash`'s `paths`** (or replace the three old-location globs
+with it, mirroring how `gates`' rule was narrowed to its final-state form once its move completed).
 
-Manifest/package.json: **no entries exist for any of these 15 files** (confirmed by direct grep) -- this leg is lighter on the 3 driver-only files than the box's original framing suggested. The real work is the `domains.json` rule fix above plus the following, all already named as `breaksIfMoved` in `scripts/data/domains.json:104-112` and independently re-confirmed here at current line numbers:
+Manifest/package.json: **no entries exist for any of these 15 files** (confirmed by direct grep) -- this leg is lighter on the 3 driver-only files than the box's original framing suggested. The real work is the `domains.json` rule fix above plus the following, all already named as `breaksIfMoved` in `scripts/data/domains.json:104-112` and independently re-confirmed here at current
+line numbers:
 
 - `.ci/scripts/security/shfmt.sh:107-116` -- `for dir in scripts/dev scripts/docker; do if [[ -d "$dir" ]]; ...` -- **silently green**: if the directories no longer exist at the old paths, this loop simply finds nothing to format and exits clean. Must be repointed to `scripts/ops`.
 - `.ci/scripts/quality/check-silent-failure-patterns.sh:68` -- `SCAN_DIRS=(".ci/scripts" "scripts/dev")` -- **silently green** for the same reason. Must be repointed.
@@ -112,7 +126,8 @@ Manifest/package.json: **no entries exist for any of these 15 files** (confirmed
 - `Dockerfile:12,32` -- comment-only references to `scripts/docker/build-server.sh`; update for accuracy, no functional effect (this is also the thing that keeps `build-server.sh` out of `check-dead-bash`'s findings today, per `domains.json`'s own note -- worth re-verifying `check-dead-bash` still sees a live caller after the move, since a dead-bash false-positive here would be a new, self-inflicted finding).
 - Prose-only (comments, no functional effect, should move for hygiene): `scripts/gates/check-dead-bash.ts:13`, `scripts/gates/check-env-credential-drift.ts:41`, `scripts/gates/check-builder-env-contract.ts:57,661`, `scripts/lib/env-file.sh:38`.
 
-No CI workflow YAML references any of these 15 files (checked `.github/workflows/*.yml` directly; the only `scripts/docker/`-shaped and `scripts/dev/`-shaped hits found were in `.ci/scripts/docker/` -- an unrelated, pre-existing tree under `.ci/scripts/`, not `scripts/docker/`, confirmed by the differing prefix). No `census-plan-record.jsonl` or `agent/INDEX.md` reference needs updating -- both are machine-generated by their own tools (`npm run check:ci-plan-record -- --update` for `INDEX.md`) and describe plan-file metadata, not script paths.
+No CI workflow YAML references any of these 15 files (checked `.github/workflows/*.yml` directly; the only `scripts/docker/`-shaped and `scripts/dev/`-shaped hits found were in `.ci/scripts/docker/` -- an unrelated, pre-existing tree under `.ci/scripts/`, not `scripts/docker/`, confirmed by the differing prefix). No `census-plan-record.jsonl` or `agent/INDEX.md` reference needs
+updating -- both are machine-generated by their own tools (`npm run check:ci-plan-record -- --update` for `INDEX.md`) and describe plan-file metadata, not script paths.
 
 ## 7. Verification checklist, per sub-batch
 

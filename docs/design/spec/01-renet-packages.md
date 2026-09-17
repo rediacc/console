@@ -1,20 +1,12 @@
 # P0 Spec 01 — Renet Package Design, Delete Ledger, Multi-Datastore, Bridge Contract
 
-Status: P0 implementation spec (2026-07-10). Expands 02 §6/§7/§9, 03 §2/§2b, 04, 09 §P1/P2
-into per-file instructions. Every identifier below was verified against renet `2b13e9d`
-(console `0707-1`, HEAD `973763d30`) by grep/read; line numbers are advisory, symbol names
-are the contract. Decisions the suite left thin are marked **[P0-DECIDED]**. Claims in the
-suite that do not match the tree are collected in §5 (reality deltas).
+Status: P0 implementation spec (2026-07-10). Expands 02 §6/§7/§9, 03 §2/§2b, 04, 09 §P1/P2 into per-file instructions. Every identifier below was verified against renet `2b13e9d` (console `0707-1`, HEAD `973763d30`) by grep/read; line numbers are advisory, symbol names are the contract. Decisions the suite left thin are marked **[P0-DECIDED]**. Claims in the suite that do not match
+the tree are collected in §5 (reality deltas).
 
-Gate status: **APPROVED** (`00-gate-review.md` §4b re-review addendum). Rulings applied —
-C1 (volume layout: spec 05 wins), C2 (§4 reworked to unified runtime-generic dispatch;
-re-review CLEARED), C3 (per-repo zot units), C6 (descriptor path), C7 (`--cluster`
-backref at create), C10 (`pkg/reporuntime`), C13 (identity-rewrite fork-arm role/writes),
-G2 (health/logs/exec bridge surface), G5 (fork record key + `autoAttach`). R1 (mount
-path) APPROVED.
+Gate status: **APPROVED** (`00-gate-review.md` §4b re-review addendum). Rulings applied — C1 (volume layout: spec 05 wins), C2 (§4 reworked to unified runtime-generic dispatch; re-review CLEARED), C3 (per-repo zot units), C6 (descriptor path), C7 (`--cluster` backref at create), C10 (`pkg/reporuntime`), C13 (identity-rewrite fork-arm role/writes), G2 (health/logs/exec bridge
+surface), G5 (fork record key + `autoAttach`). R1 (mount path) APPROVED.
 
-Reading order for an implementer: §3 (the datastore model — everything else hangs off it),
-§1 (per-package changes), §2 (delete ledger), §4 (bridge contract diff).
+Reading order for an implementer: §3 (the datastore model — everything else hangs off it), §1 (per-package changes), §2 (delete ledger), §4 (bridge contract diff).
 
 ---
 
@@ -22,18 +14,9 @@ Reading order for an implementer: §3 (the datastore model — everything else h
 
 ### 1.1 `pkg/datastore` — from "one path, two backends" to a named registry
 
-**Today** (verified): `DatastoreConfig{BasePath, Size, PoolPath, Backend, Ceph}` at
-`pkg/datastore/types.go:4` — path-addressed, no names, no state. `DatastoreBackend`
-interface at `pkg/datastore/backend.go:109` (Initialize/Mount/Unmount/Expand/Resize/
-Cleanup/IsInitialized/GetInfo/Validate/Type) with `LocalBackend`
-(`backend_local.go:37`, loop+BTRFS, pool file `<BasePath>.pool`) and `CephBackend`
-(`backend_ceph.go`, RBD+BTRFS). `DetectBackend` (`backend.go:30`) infers backend from
-/proc/mounts + sysfs. Fork lives in `backend_ceph_fork.go` (`Fork`/`Unfork`, snap →
-protect → clone → dm-COW mount via `pkg/rbd.COWClone`; COW backing defaults to
-`/tmp/cowdata`, `pkg/rbd/cowclone.go:22`). Loop hygiene: `LoopManager` in `loop.go` with
-`FindLoopDevicesFor` (`loop.go:266`, parses `losetup -a` incl. the `" (deleted)"` suffix)
-and the `loopController` seam (`backend_local.go:29`) that `sweepStaleLoops`
-(`backend_local.go:362`) and the mutation-checked cleanup tests exercise.
+**Today** (verified): `DatastoreConfig{BasePath, Size, PoolPath, Backend, Ceph}` at `pkg/datastore/types.go:4` — path-addressed, no names, no state. `DatastoreBackend` interface at `pkg/datastore/backend.go:109` (Initialize/Mount/Unmount/Expand/Resize/ Cleanup/IsInitialized/GetInfo/Validate/Type) with `LocalBackend` (`backend_local.go:37`, loop+BTRFS, pool file `<BasePath>.pool`)
+and `CephBackend` (`backend_ceph.go`, RBD+BTRFS). `DetectBackend` (`backend.go:30`) infers backend from /proc/mounts + sysfs. Fork lives in `backend_ceph_fork.go` (`Fork`/`Unfork`, snap → protect → clone → dm-COW mount via `pkg/rbd.COWClone`; COW backing defaults to `/tmp/cowdata`, `pkg/rbd/cowclone.go:22`). Loop hygiene: `LoopManager` in `loop.go` with `FindLoopDevicesFor`
+(`loop.go:266`, parses `losetup -a` incl. the `" (deleted)"` suffix) and the `loopController` seam (`backend_local.go:29`) that `sweepStaleLoops` (`backend_local.go:362`) and the mutation-checked cleanup tests exercise.
 
 **New files**:
 
@@ -50,54 +33,28 @@ and the `loopController` seam (`backend_local.go:29`) that `sweepStaleLoops`
 **Modified files**:
 
 - `pkg/datastore/types.go`: `DatastoreConfig` gains `Name string` (empty = implicit
-  default). `DatastoreInfo` gains `Name`, `Writes` (`""|"local"|"ceph"`), `Fork bool`,
-  `K3sVersion string` (attach preflight metadata, 02 §10 F14). `CephDatastoreConfig`
-  unchanged.
+default). `DatastoreInfo` gains `Name`, `Writes` (`""|"local"|"ceph"`), `Fork bool`, `K3sVersion string` (attach preflight metadata, 02 §10 F14). `CephDatastoreConfig` unchanged.
 - `pkg/datastore/backend.go`: interface unchanged in v1 EXCEPT `Mount` grows
-  `MountOpts{ExclusiveLock bool}` — plain ceph attach maps with `exclusive-lock`
-  (03 §2 hardening; today's images are layering-only). `DetectBackend` stays (attach
-  verification + `config reconcile` truth source).
+`MountOpts{ExclusiveLock bool}` — plain ceph attach maps with `exclusive-lock` (03 §2 hardening; today's images are layering-only). `DetectBackend` stays (attach verification + `config reconcile` truth source).
 - `pkg/datastore/backend_ceph.go`: enable `--image-feature exclusive-lock,layering` at
-  image create; add `FenceHolder(ctx)` (lock break + osd blocklist, §3.4).
+image create; add `FenceHolder(ctx)` (lock break + osd blocklist, §3.4).
 - `pkg/infra/ceph/provisioner.go` (spike A hard requirement): the cephadm bootstrap
-  (verified: NO `--image` pin at `provisioner.go:201,276` — the release rides the host
-  distro's default, Squid 19.2.4 on Ubuntu 24.04) MUST run
-  `ceph config set global rbd_default_clone_format 2` as a provisioning step. With
-  `require-min-compat-client=luminous`, clone-format `auto` resolves to v1, and a bare
-  `rbd clone --snap-id` against a group-owned snapshot fails with "parent snapshot must
-  be protected" (group snaps cannot be protected). Every clone call ALSO passes
-  `--rbd-default-clone-format 2` explicitly (belt-and-braces; the csi
-  `NamespaceManager.cloneArgs` precedent).
+(verified: NO `--image` pin at `provisioner.go:201,276` — the release rides the host distro's default, Squid 19.2.4 on Ubuntu 24.04) MUST run `ceph config set global rbd_default_clone_format 2` as a provisioning step. With `require-min-compat-client=luminous`, clone-format `auto` resolves to v1, and a bare `rbd clone --snap-id` against a group-owned snapshot fails with "parent
+snapshot must be protected" (group snaps cannot be protected). Every clone call ALSO passes `--rbd-default-clone-format 2` explicitly (belt-and-braces; the csi `NamespaceManager.cloneArgs` precedent).
 - `pkg/datastore/backend_ceph_fork.go`: `Fork` loses its mount step (attach is a separate
-  verb now); `Unfork` is DELETED (§2 ledger) — its teardown ordering moves into
-  `Detach(--discard)`. `ForkOptions.COWDir` default moves off `/tmp/cowdata` (see
-  `pkg/rbd` below).
+verb now); `Unfork` is DELETED (§2 ledger) — its teardown ordering moves into `Detach(--discard)`. `ForkOptions.COWDir` default moves off `/tmp/cowdata` (see `pkg/rbd` below).
 - `pkg/datastore/backend_local.go`: `sweepStaleLoops` generalizes: it currently sweeps
-  only `b.config.PoolPath`; the inventory sweep (new `inventory.go`) covers all registered
-  pool files + volume images. The `loopController` seam and `FindLoopDevicesFor` are
-  REUSED, not reimplemented (03 §2b rule 1).
+only `b.config.PoolPath`; the inventory sweep (new `inventory.go`) covers all registered pool files + volume images. The `loopController` seam and `FindLoopDevicesFor` are REUSED, not reimplemented (03 §2b rule 1).
 - `pkg/datastore/fstab.go`: named datastores get fstab entries exactly like the default
-  (`FixFstabEntry` precedent) keyed on the per-name pool path; ceph-backed records get
-  NO fstab entry (attach is explicit/fenced, never boot-automatic; boot re-attach is the
-  P2 node-lifecycle unit's job driven by the registry).
+(`FixFstabEntry` precedent) keyed on the per-name pool path; ceph-backed records get NO fstab entry (attach is explicit/fenced, never boot-automatic; boot re-attach is the P2 node-lifecycle unit's job driven by the registry).
 
 ### 1.2 `pkg/kube` — repo-as-folder, local PVs, isolation; the Ceph half deleted
 
-**Today** (verified): `Wrapper` (`wrapper.go:28`) carries `CephPool/CephCluster/
-KubeletDir/cephExec` — the dual-backend seam. Deploy path `Apply`/`Deploy`
-(`deploy.go:100/137`) call `EnsureCephBackend` when `CephPool != ""` and
-`materializeAndBindPVs` (`deploy.go:58`) for `rediacc-datastore` PVCs —
-hostPath PVs pre-bound via claimRef, **no nodeAffinity** (`GenerateLocalPVManifest`,
-`deploy.go:33`). Namespace fork dispatches through `resolvePVBackend`
-(`namespace.go:157`; the suite cites :154 — see §5) to either `forkNamespaceRBD`
-(`ceph_backend.go:482`) or the datastore reflink path (`ForkNamespacePrepare`,
-`namespace.go:100`). Teardown: `NamespaceDelete` → `removeCephBackend` →
-`drainRadosNamespace` (`ceph_backend.go:268`) with `NamespaceTeardownLeak`
-(`ceph_backend.go:46`) — note the leak type ALSO reports local PV-image-dir leaks
-(`namespace.go:72`), not only Ceph state.
+**Today** (verified): `Wrapper` (`wrapper.go:28`) carries `CephPool/CephCluster/ KubeletDir/cephExec` — the dual-backend seam. Deploy path `Apply`/`Deploy` (`deploy.go:100/137`) call `EnsureCephBackend` when `CephPool != ""` and `materializeAndBindPVs` (`deploy.go:58`) for `rediacc-datastore` PVCs — hostPath PVs pre-bound via claimRef, **no nodeAffinity**
+(`GenerateLocalPVManifest`, `deploy.go:33`). Namespace fork dispatches through `resolvePVBackend` (`namespace.go:157`; the suite cites :154 — see §5) to either `forkNamespaceRBD` (`ceph_backend.go:482`) or the datastore reflink path (`ForkNamespacePrepare`, `namespace.go:100`). Teardown: `NamespaceDelete` → `removeCephBackend` → `drainRadosNamespace` (`ceph_backend.go:268`) with
+`NamespaceTeardownLeak` (`ceph_backend.go:46`) — note the leak type ALSO reports local PV-image-dir leaks (`namespace.go:72`), not only Ceph state.
 
-**The new k8s repo layout** (gate ruling C1 — spec 05 §2's layout is authoritative;
-CSI-adoptable per F6; one reflink unit):
+**The new k8s repo layout** (gate ruling C1 — spec 05 §2's layout is authoritative; CSI-adoptable per F6; one reflink unit):
 
 ```
 <ds-mount>/repos/<repo>/
@@ -110,21 +67,11 @@ CSI-adoptable per F6; one reflink unit):
                                           # backend, cluster?, writes?, k3sVersion — travels with the datastore
 ```
 
-**Invariant (load-bearing): no mountpoints inside `repos/<repo>/`.** The fork unit is ONE
-reflink of `repos/<repo>`; a live ext4 mountpoint inside that tree would make
-`cp --archive --reflink=always` fail (reflink cannot cross filesystems) or, under any
-fallback, byte-copy decrypted plaintext into the fork. Mounts live in the `mounts/` tree
-OUTSIDE the snapshotted unit — the docker world's exact shape (image files in the pool,
-`{datastore}/mounts/<guid>` outside them). The fork procedure this makes executable:
-`syncfs` each mounted volume (inner-fs-first, the #440 lesson), then reflink the folder —
-no unmount step, the parent keeps serving. PV objects reference
-`<ds-mount>/mounts/volumes/<repo>/<pvc>` — deterministic and identical across machines,
-so kine-carried PV specs never rewrite on fork/migrate (mount-path stability, 04 §6).
+**Invariant (load-bearing): no mountpoints inside `repos/<repo>/`.** The fork unit is ONE reflink of `repos/<repo>`; a live ext4 mountpoint inside that tree would make `cp --archive --reflink=always` fail (reflink cannot cross filesystems) or, under any fallback, byte-copy decrypted plaintext into the fork. Mounts live in the `mounts/` tree OUTSIDE the snapshotted unit — the docker
+world's exact shape (image files in the pool, `{datastore}/mounts/<guid>` outside them). The fork procedure this makes executable: `syncfs` each mounted volume (inner-fs-first, the #440 lesson), then reflink the folder — no unmount step, the parent keeps serving. PV objects reference `<ds-mount>/mounts/volumes/<repo>/<pvc>` — deterministic and identical across machines, so
+kine-carried PV specs never rewrite on fork/migrate (mount-path stability, 04 §6).
 
-Rationale for relocating manifests INTO the repo folder: 04 §2.8 makes "everything rides
-the datastore" true by construction only if ONE folder clone carries volumes + manifests +
-built images. The manifests LAYER (persist at deploy, replay on redeploy/fork) is kept
-exactly as-is; only `ManifestsDir` changes shape.
+Rationale for relocating manifests INTO the repo folder: 04 §2.8 makes "everything rides the datastore" true by construction only if ONE folder clone carries volumes + manifests + built images. The manifests LAYER (persist at deploy, replay on redeploy/fork) is kept exactly as-is; only `ManifestsDir` changes shape.
 
 **New files**:
 
@@ -140,64 +87,38 @@ exactly as-is; only `ManifestsDir` changes shape.
 **Modified files**:
 
 - `pkg/kube/wrapper.go`: DELETE fields `CephPool`, `CephCluster`, `cephExec`,
-  `KubeletDir` (sole consumer is ceph-csi facts, `ceph_backend.go:189`; the
-  `distro.KubeletRootForMount` stamp in `cmd/renet/kube_root.go:167` goes with it —
-  keep the distro function itself, kubelet args still use the relocated root). ADD
-  `DatastoreName string` (registry name; `Datastore` stays the resolved mount path).
+`KubeletDir` (sole consumer is ceph-csi facts, `ceph_backend.go:189`; the `distro.KubeletRootForMount` stamp in `cmd/renet/kube_root.go:167` goes with it — keep the distro function itself, kubelet args still use the relocated root). ADD `DatastoreName string` (registry name; `Datastore` stays the resolved mount path).
 - `pkg/kube/deploy.go`: `ManifestsDir` → `<ds-mount>/repos/<repo>/manifests`;
-  `materializeAndBindPVs` + `GenerateLocalPVManifest` replaced by
-  `materializeVolumes` (LUKS image provision via the reworked volume package + loop/LUKS
-  mount + `storageclass.go` PV apply); `Apply`/`Deploy` lose the `EnsureCephBackend`
-  branch, gain `ApplyIsolation` + ROLE ConfigMap + `ApplySecrets` calls (this is the
-  `KubeRuntime.Deploy` body, §1.7).
+`materializeAndBindPVs` + `GenerateLocalPVManifest` replaced by `materializeVolumes` (LUKS image provision via the reworked volume package + loop/LUKS mount + `storageclass.go` PV apply); `Apply`/`Deploy` lose the `EnsureCephBackend` branch, gain `ApplyIsolation` + ROLE ConfigMap + `ApplySecrets` calls (this is the `KubeRuntime.Deploy` body, §1.7).
 - `pkg/kube/namespace.go`: DELETE `resolvePVBackend`, `pvBackendRBD`,
-  `pvBackendDatastore`, the rbd branch of `ForkNamespace`, the ceph-marker read in
-  `NamespaceDelete`. `ForkNamespacePrepare` reworks from per-PV-image glob
-  (`pv.NamespacePVDir` + `*.img`) to ONE `cp --archive --reflink=always` of
-  `<ds-mount>/repos/<repo>` → `<ds-mount>/repos/<repo>-<tag>` after `syncfs` on each
-  mounted volume (inner-fs-first, the #440 lesson) — the data+WAL atomicity bug
-  (01 §5.2) dies by construction, and the C1 invariant (no mountpoints inside the
-  folder) is what makes this executable with the parent live; the fork's own volume
-  mounts are created fresh under `mounts/volumes/<repo>-<tag>/` at its first deploy.
-  `cleanupNamespaceState` reworks to repo-folder removal, still leak-reporting via
-  `teardown.go` (volumes must pass detach-before-unlink before `os.RemoveAll`).
+`pvBackendDatastore`, the rbd branch of `ForkNamespace`, the ceph-marker read in `NamespaceDelete`. `ForkNamespacePrepare` reworks from per-PV-image glob (`pv.NamespacePVDir` + `*.img`) to ONE `cp --archive --reflink=always` of `<ds-mount>/repos/<repo>` → `<ds-mount>/repos/<repo>-<tag>` after `syncfs` on each mounted volume (inner-fs-first, the #440 lesson) — the data+WAL atomicity
+bug (01 §5.2) dies by construction, and the C1 invariant (no mountpoints inside the folder) is what makes this executable with the parent live; the fork's own volume mounts are created fresh under `mounts/volumes/<repo>-<tag>/` at its first deploy. `cleanupNamespaceState` reworks to repo-folder removal, still leak-reporting via `teardown.go` (volumes must pass detach-before-unlink
+before `os.RemoveAll`).
 - `pkg/kube/manifest.go`: KEEP (`RenderManifest`, `ScanPVCs`, `PVCInfo`, router
-  annotations, reserved-token checks). PVC scan now also validates every declared PVC's
-  StorageClass equals the repo datastore's `rediacc-ds-<name>` and warns on
-  cluster-scoped kinds (02 §2 chart-honesty).
+annotations, reserved-token checks). PVC scan now also validates every declared PVC's StorageClass equals the repo datastore's `rediacc-ds-<name>` and warns on cluster-scoped kinds (02 §2 chart-honesty).
 - `pkg/kube/exec.go`, `helm.go`, `sandbox.go`: KEEP unchanged (Run/KUBECONFIG/Landlock
-  machinery). `captureKubectl` MOVES from `ceph_backend.go:131` into `exec.go` — it is a
-  generic read helper the scrub/isolation code needs; do not delete it with its file.
+machinery). `captureKubectl` MOVES from `ceph_backend.go:131` into `exec.go` — it is a generic read helper the scrub/isolation code needs; do not delete it with its file.
 
 ### 1.3 `pkg/kube/pv` → `pkg/kube/volume` (rename + rework)
 
-Today's package (`pv/provisioner.go`, `pv/mount.go`) provisions plain-ext4 sparse images
-at `{datastore}/pv/<cluster>/<ns>/<pvc-uid>.img` mounted at
-`{datastore}/pv-mounts/<cluster>/<ns>/<pvcUID>` — both trees die (02 §6).
+Today's package (`pv/provisioner.go`, `pv/mount.go`) provisions plain-ext4 sparse images at `{datastore}/pv/<cluster>/<ns>/<pvc-uid>.img` mounted at `{datastore}/pv-mounts/<cluster>/<ns>/<pvcUID>` — both trees die (02 §6).
 
 Rename the package to `pkg/kube/volume` (it provisions volumes, not PV objects):
 
 - KEEP with new paths: `Provision` (now: fixed-size file + `cryptsetup luksFormat` +
-  loop+LUKS open + `mkfs.ext4` — reuse `pkg/storage/luks.go` primitives rather than
-  reimplementing; idempotent on existing image), `Mount`/`Unmount`/`IsMounted`
-  (mount.go gains the LUKS open/close steps), `Clone` (reflink; still the fork
-  primitive within a repo folder), `Sync`, `Delete` (its detach-before-unlink ordering
-  at `provisioner.go:177` is the 03 §2b rule-1 reference implementation — extend it to
-  close the LUKS mapping before loop detach), `parseQuantityMB`.
+loop+LUKS open + `mkfs.ext4` — reuse `pkg/storage/luks.go` primitives rather than reimplementing; idempotent on existing image), `Mount`/`Unmount`/`IsMounted` (mount.go gains the LUKS open/close steps), `Clone` (reflink; still the fork primitive within a repo folder), `Sync`, `Delete` (its detach-before-unlink ordering at `provisioner.go:177` is the 03 §2b rule-1 reference
+implementation — extend it to close the LUKS mapping before loop detach), `parseQuantityMB`.
 - DELETE: `ClusterPVDir`, `NamespacePVDir`, `ImagePath`, `MountDir`,
-  `StorageClassName` const (`"rediacc-datastore"` — replaced by per-datastore
-  `rediacc-ds-<name>` from `pkg/kube/storageclass.go`), `MaterializeFromPVCs`
-  (deploy drives per-volume calls directly).
+`StorageClassName` const (`"rediacc-datastore"` — replaced by per-datastore `rediacc-ds-<name>` from `pkg/kube/storageclass.go`), `MaterializeFromPVCs` (deploy drives per-volume calls directly).
 - NEW path helpers (C1 layout): `RepoDir(dsMount, repo)`, `ImagePath(dsMount, repo, volume)`
-  (`repos/<repo>/volumes/<volume>.img`), `MountPath(dsMount, repo, volume)`
-  (`mounts/volumes/<repo>/<volume>` — OUTSIDE the repo folder, never inside it).
+(`repos/<repo>/volumes/<volume>.img`), `MountPath(dsMount, repo, volume)` (`mounts/volumes/<repo>/<volume>` — OUTSIDE the repo folder, never inside it).
 
 ### 1.4 `pkg/kube/csi` — deleted entirely (§2 ledger)
 
 ### 1.5 `pkg/kube/distro` + `pkg/daemon`
 
 - `pkg/kube/distro/identity.go`: `IdentityRewriteOpts` gains
-  `Operation OpFork|OpMigrate` **[P0-DECIDED — one seam, two arms, matching 04 §2.4]**:
+`Operation OpFork|OpMigrate` **[P0-DECIDED — one seam, two arms, matching 04 §2.4]**:
   - `OpMigrate` = today's behavior verbatim (CA preserved, leaf serving cert + kubeconfig
     + IP rewrite; networkID kept when `NewNetworkID==0`).
   - `OpFork` = full PKI re-mint + scrub. **Spec 05 §3 is the single owner of the exact
@@ -210,107 +131,50 @@ Rename the package to `pkg/kube/volume` (it provisions volumes, not PV objects):
     arm takes `Role` (fork|rehearsal) + `Writes` (local|ceph) inputs (gate C13, matching
     spec 05 §3's `IdentityOp`) — the ROLE ConfigMap is rewritten with both.
 - `pkg/kube/distro/prepfork.go`: KEPT (02 §6 keep list) but demoted — the hot group-snap
-  fork path (04 §2) never drains; `PrepFork` remains for the cross-site migrate cutover
-  (down-before-final-snap) and as the mount-sweep utility.
+fork path (04 §2) never drains; `PrepFork` remains for the cross-site migrate cutover (down-before-final-snap) and as the mount-sweep utility.
 - `pkg/kube/distro/k3s.go` / `external.go`: KEEP. `external` shrinks per 02 §10b
-  (kubeconfig + healthcheck only) — lifecycle methods return a first-class
-  `ErrNotApplicable` instead of attempting work.
+(kubeconfig + healthcheck only) — lifecycle methods return a first-class `ErrNotApplicable` instead of attempting work.
 - `pkg/daemon/storage_maintain_timer.go:31`: the unit hardcodes
-  `repository maintain --datastore /mnt/rediacc`. Change ExecStart to a new
-  `renet storage maintain --all` that iterates the registry (default + named) and runs
-  the §3.5 inventory sweep + overlay-fill check per datastore. Bump
-  `storageMaintainTimerVersion`.
+`repository maintain --datastore /mnt/rediacc`. Change ExecStart to a new `renet storage maintain --all` that iterates the registry (default + named) and runs the §3.5 inventory sweep + overlay-fill check per datastore. Bump `storageMaintainTimerVersion`.
 - `pkg/daemon/k3s_systemd.go`: KEEP (per-networkID unit = 02 §10b requirement 4). The P2
-  node-lifecycle shutdown unit (02 §3) is NEW daemon work
-  (`pkg/daemon/node_lifecycle.go`): ordered pods-with-grace → k3s stop → volume
-  unmounts → datastore detach/lock-release; boot reverses from the registry. Not P1.
+node-lifecycle shutdown unit (02 §3) is NEW daemon work (`pkg/daemon/node_lifecycle.go`): ordered pods-with-grace → k3s stop → volume unmounts → datastore detach/lock-release; boot reverses from the registry. Not P1.
 
 ### 1.6 `pkg/functions/commands` — bridge registry
 
-Mechanism (verified): `RegisterWithSchema(&FunctionDef{...}, builder)` in per-family
-`init()` (`registry.go:82`); `renet functions generate-types` emits
-`packages/shared/src/renet-contract/data/functions.generated.ts`;
-`.ci/scripts/quality/check-e2e-coverage.sh` greps packages/e2e-tests for every generated
-name (raw `resource_verb` or spaced `resource verb`), with a BLOCKER allowlist. 152
-functions registered today (counted per family: repository 33, ceph 34, system 19,
-kube 18, daemon 15, container 12, datastore 10, backup+checkpoint 9, kube_registry 2).
+Mechanism (verified): `RegisterWithSchema(&FunctionDef{...}, builder)` in per-family `init()` (`registry.go:82`); `renet functions generate-types` emits `packages/shared/src/renet-contract/data/functions.generated.ts`; `.ci/scripts/quality/check-e2e-coverage.sh` greps packages/e2e-tests for every generated name (raw `resource_verb` or spaced `resource verb`), with a BLOCKER
+allowlist. 152 functions registered today (counted per family: repository 33, ceph 34, system 19, kube 18, daemon 15, container 12, datastore 10, backup+checkpoint 9, kube_registry 2).
 
-Changes: full diff in §4 (reworked to the gate C2 ruling — spec 02 §3.3's unified
-dispatch model wins). File-level: `datastore.go` rewritten (new verb set); `kube.go`
-loses `KubeCsiTemplateCommand` AND the entire namespace/deploy/pv builder set
-(`KubeNamespaceCreateCommand`, `KubeDeployCommand`, `KubeNamespaceForkCommand`,
-`KubeNamespaceDeleteCommand`, `KubePVProvisionCommand`, `KubePVCloneCommand`,
-`KubePVDeleteCommand` — their bodies fold into `KubeRuntime` behind the runtime-generic
-`repository_*` family), keeping only the node-infra verbs (install/join/identity/
-prep-fork/node-remove/upgrade/uninstall/kubeconfig/health); `repository.go` renames
-`repository_takeover` → `repository_promote` and adds `repository_health`/
-`repository_logs`/`repository_exec`. The shared helper `RequireDatastore`
-(`registry.go:186`) changes meaning: the `datastore` vault param becomes a NAME resolved
-on-machine via the registry, not a path **[P0-DECIDED]** — renet owns path resolution;
-the CLI stops shipping `/mnt/rediacc` strings (grep the CLI for `DEFAULTS.DATASTORE` in
-P4).
+Changes: full diff in §4 (reworked to the gate C2 ruling — spec 02 §3.3's unified dispatch model wins). File-level: `datastore.go` rewritten (new verb set); `kube.go` loses `KubeCsiTemplateCommand` AND the entire namespace/deploy/pv builder set (`KubeNamespaceCreateCommand`, `KubeDeployCommand`, `KubeNamespaceForkCommand`, `KubeNamespaceDeleteCommand`, `KubePVProvisionCommand`,
+`KubePVCloneCommand`, `KubePVDeleteCommand` — their bodies fold into `KubeRuntime` behind the runtime-generic `repository_*` family), keeping only the node-infra verbs (install/join/identity/ prep-fork/node-remove/upgrade/uninstall/kubeconfig/health); `repository.go` renames `repository_takeover` → `repository_promote` and adds `repository_health`/
+`repository_logs`/`repository_exec`. The shared helper `RequireDatastore` (`registry.go:186`) changes meaning: the `datastore` vault param becomes a NAME resolved on-machine via the registry, not a path **[P0-DECIDED]** — renet owns path resolution; the CLI stops shipping `/mnt/rediacc` strings (grep the CLI for `DEFAULTS.DATASTORE` in P4).
 
 ### 1.7 `pkg/reporuntime` — the RepoRuntime home (gate C10)
 
-New top-level package (NOT inside pkg/repository or pkg/kube, so neither world imports
-the other). Named `pkg/reporuntime` per the gate ruling — `pkg/runtime` would shadow the
-stdlib `runtime` import in any file touching goroutines/GC. The interface definition,
-file layout (`env.go`, `leak.go`, `factory.go`, fixtures, `CONTRACT.md`), and the
-contract-test suite (CT-01..15) are spec 02's deliverable and its layout stands; this
-file's obligations are only: DockerRuntime delegates to `pkg/repository` + `pkg/compose`,
-KubeRuntime delegates to `pkg/kube` (§1.2's reworked `Apply`/`Deploy`/fork/teardown are
-its method bodies), and implementations never touch storage — they receive mounted paths
-from `pkg/datastore` (02 §9). Dispatch selects the implementation via
-`reporuntime.Detect` reading the on-datastore descriptor
-(`<ds-mount>/.rediacc/datastore.json`, gate C2/C6) — this is what makes the
-runtime-generic `repository_*` bridge family (§4) possible.
+New top-level package (NOT inside pkg/repository or pkg/kube, so neither world imports the other). Named `pkg/reporuntime` per the gate ruling — `pkg/runtime` would shadow the stdlib `runtime` import in any file touching goroutines/GC. The interface definition, file layout (`env.go`, `leak.go`, `factory.go`, fixtures, `CONTRACT.md`), and the contract-test suite (CT-01..15) are spec
+02's deliverable and its layout stands; this file's obligations are only: DockerRuntime delegates to `pkg/repository` + `pkg/compose`, KubeRuntime delegates to `pkg/kube` (§1.2's reworked `Apply`/`Deploy`/fork/teardown are its method bodies), and implementations never touch storage — they receive mounted paths from `pkg/datastore` (02 §9). Dispatch selects the implementation via
+`reporuntime.Detect` reading the on-datastore descriptor (`<ds-mount>/.rediacc/datastore.json`, gate C2/C6) — this is what makes the runtime-generic `repository_*` bridge family (§4) possible.
 
 ### 1.8 Other load-bearing packages
 
 - `pkg/rbd` (`cowclone.go`): KEEP — it becomes the `--writes local` engine. Change
-  `DefaultCOWDirPath` from `/tmp/cowdata` to `/var/lib/rediacc/cow` (03 §2 hardening;
-  tmpfs/reboot loss); overlay-fill monitoring joins `pkg/list/storage_health.go`.
-  P0 spike (f) may swap dm-snapshot for dm-thin inside this package; the external
-  surface (`COWClone`, `MountOptions`) is designed to survive that swap.
+`DefaultCOWDirPath` from `/tmp/cowdata` to `/var/lib/rediacc/cow` (03 §2 hardening; tmpfs/reboot loss); overlay-fill monitoring joins `pkg/list/storage_health.go`. P0 spike (f) may swap dm-snapshot for dm-thin inside this package; the external surface (`COWClone`, `MountOptions`) is designed to survive that swap.
 - `pkg/kube/registry` (zot): KEEP, reframed per gate C3 (spec 05 §5 is the design owner).
-  TWO distinct zot roles: (a) the machine-level pull-through CACHE keeps its current
-  shape and upstream-mirror role — `kube_registry_up`/`kube_registry_wire` unchanged;
-  (b) NEW per-repo registry instances for locally built images (F4): one
-  `rediacc-registry-<networkID>.service` per opted-in repo, sync disabled, blob store at
-  `repos/<repo>/registry/` (so images ride the fork/migrate unit), port range
-  21000-28999, logical host `registry.<repo>.rediacc.internal` wired via
-  registries.yaml + hosts.toml. The per-repo units are started/stopped by `datastore
-  attach`/`detach` (spec 05 §4 step 5) — **no bridge-visible verb**: unit lifecycle is
-  internal to attach/detach plus the boot reconcile, exactly like the per-repo dockerd
-  units today. `Options.StorageDir` (verified already parameterized, `zot.go:62`) is the
-  reuse seam for (b).
+TWO distinct zot roles: (a) the machine-level pull-through CACHE keeps its current shape and upstream-mirror role — `kube_registry_up`/`kube_registry_wire` unchanged; (b) NEW per-repo registry instances for locally built images (F4): one `rediacc-registry-<networkID>.service` per opted-in repo, sync disabled, blob store at `repos/<repo>/registry/` (so images ride the fork/migrate
+unit), port range 21000-28999, logical host `registry.<repo>.rediacc.internal` wired via registries.yaml + hosts.toml. The per-repo units are started/stopped by `datastore attach`/`detach` (spec 05 §4 step 5) — **no bridge-visible verb**: unit lifecycle is internal to attach/detach plus the boot reconcile, exactly like the per-repo dockerd units today. `Options.StorageDir`
+(verified already parameterized, `zot.go:62`) is the reuse seam for (b).
 - `pkg/list`: extend `renet list all --json` with a `datastores` section (registry dump +
-  live mount/holder verification) — this is the truth source for `config reconcile`
-  (02 §11 R2-F2). `pkg/list/storage_health.go` gains overlay-fill + expected-vs-actual
-  holder diffs.
+live mount/holder verification) — this is the truth source for `config reconcile` (02 §11 R2-F2). `pkg/list/storage_health.go` gains overlay-fill + expected-vs-actual holder diffs.
 - `pkg/repository`: mostly untouched in P1 (the docker model is the thing being
-  preserved). `lifecycle.go:88` picks `storage.TypeLUKS` vs `TypeDirectory` by
-  encryption — unchanged. ROLE derivation for env injection reads the existing fork
-  state (`state.go` `IsFork`/grand lineage). `repository.go:97` joins
-  `<datastore>/repositories/<name>` — unchanged for docker repos; the datastore ARG is
-  what becomes name-resolved.
+preserved). `lifecycle.go:88` picks `storage.TypeLUKS` vs `TypeDirectory` by encryption — unchanged. ROLE derivation for env injection reads the existing fork state (`state.go` `IsFork`/grand lineage). `repository.go:97` joins `<datastore>/repositories/<name>` — unchanged for docker repos; the datastore ARG is what becomes name-resolved.
 - `pkg/snapshot`, `pkg/locking`, `pkg/credentials`: KEEP; snapshot is reused by
-  `datastore snapshot` (local backend); the keyfile dir (`.credentials/keys`) stays
-  per-datastore.
+`datastore snapshot` (local backend); the keyfile dir (`.credentials/keys`) stays per-datastore.
 
 ---
 
 ## 2. Per-file DELETE ledger
 
-Execution rules: (a) delete in the order listed — leaf packages first, callers already
-rewritten by their §1 items; (b) after each area run
-`go build ./... && go vet -tags "root ebpf_e2e" ./... && .ci/scripts/quality/deadcode.sh`
-— the dead-code gate FAILS ON STALE ALLOWLIST ENTRIES too, so sweep
-`.deadcode-allowlist` for any entry whose import path you delete (none of the current
-entries reference `pkg/kube/csi` — verified — but re-check after renames since entries
-are path-canonical); (c) i18n keys referenced only by deleted cobra commands
-(`cmd.kube.csi.*`, `cmd.datastore.unfork.*`, …) are swept by the renet i18n backfill
-check.
+Execution rules: (a) delete in the order listed — leaf packages first, callers already rewritten by their §1 items; (b) after each area run `go build ./... && go vet -tags "root ebpf_e2e" ./... && .ci/scripts/quality/deadcode.sh` — the dead-code gate FAILS ON STALE ALLOWLIST ENTRIES too, so sweep `.deadcode-allowlist` for any entry whose import path you delete (none of the current
+entries reference `pkg/kube/csi` — verified — but re-check after renames since entries are path-canonical); (c) i18n keys referenced only by deleted cobra commands (`cmd.kube.csi.*`, `cmd.datastore.unfork.*`, …) are swept by the renet i18n backfill check.
 
 ### 2.1 `pkg/kube/csi/` — DELETE the entire package
 
@@ -355,12 +219,8 @@ check.
 
 ### 2.5 `pkg/kube/pv/` — rework to `pkg/kube/volume` (§1.3)
 
-Deleted symbols with external callers: `NamespacePVDir` (used by `namespace.go:70,110,123`),
-`MountDir` (`deploy.go:68`), `ImagePath`, `ClusterPVDir`, `StorageClassName`
-(`deploy.go:61`, `cmd/renet/kube_pv.go:66`), `MaterializeFromPVCs` (verify remaining
-callers at delete time; the deploy path inlines per-volume calls). The `pv/` and
-`pv-mounts/` on-disk trees stop being created; the P1 VM validation must confirm no code
-path still writes them (grep `"pv-mounts"` → only `pv/provisioner.go:52` today).
+Deleted symbols with external callers: `NamespacePVDir` (used by `namespace.go:70,110,123`), `MountDir` (`deploy.go:68`), `ImagePath`, `ClusterPVDir`, `StorageClassName` (`deploy.go:61`, `cmd/renet/kube_pv.go:66`), `MaterializeFromPVCs` (verify remaining callers at delete time; the deploy path inlines per-volume calls). The `pv/` and `pv-mounts/` on-disk trees stop being created;
+the P1 VM validation must confirm no code path still writes them (grep `"pv-mounts"` → only `pv/provisioner.go:52` today).
 
 ### 2.6 `cmd/renet` — command files
 
@@ -391,11 +251,8 @@ path still writes them (grep `"pv-mounts"` → only `pv/provisioner.go:52` today
 | Agent-image-as-repo cluster fork (`repository_fork` per member incl. agents; `reflinkAndRewrite`; `kube_prep_fork` drain of every node; `dstAgents >= srcAgents` check) | `packages/cli/src/services/cluster/cluster-kube.ts` (`forkCluster`, `reflinkAndRewrite` at :332) | P2 anchor+rejoin: `datastore_snapshot_create --group` → clone → `datastore_attach` → `kube_identity_rewrite --operation fork` → fresh `kube_join` per agent; agent node dirs become disposable cache (04 §1) |
 | `rdc datastore unfork` + `rdc datastore init --backend ceph` handlers | `packages/cli/src/commands/datastore.ts` | `datastore detach --discard` / `datastore create` (P4) |
 
-Deleted-name hygiene: regenerating types removes the eleven deleted names from
-`RENET_FUNCTIONS`, so `check:ci-e2e-coverage` stops requiring them; any e2e test STILL
-referencing them keeps passing the gate but fails at runtime — grep packages/e2e-tests
-for each deleted name and rewrite those suites in the same change (09 §P1 requires it;
-`16-k8s-ceph` loses its subject and is rebuilt on the new model).
+Deleted-name hygiene: regenerating types removes the eleven deleted names from `RENET_FUNCTIONS`, so `check:ci-e2e-coverage` stops requiring them; any e2e test STILL referencing them keeps passing the gate but fails at runtime — grep packages/e2e-tests for each deleted name and rewrite those suites in the same change (09 §P1 requires it; `16-k8s-ceph` loses its subject and is
+rebuilt on the new model).
 
 ---
 
@@ -403,10 +260,7 @@ for each deleted name and rewrite those suites in the same change (09 §P1 requi
 
 ### 3.1 Registry — on-machine state **[P0-DECIDED]**
 
-One JSON file per machine: `/var/lib/rediacc/datastores.json` (same directory family as
-the reconcile state `/var/lib/rediacc/reconcile/`; NOT inside any datastore — it must be
-readable when nothing is mounted). flock + temp+rename writes (the `pkg/locking` /
-repository-state pattern). Schema:
+One JSON file per machine: `/var/lib/rediacc/datastores.json` (same directory family as the reconcile state `/var/lib/rediacc/reconcile/`; NOT inside any datastore — it must be readable when nothing is mounted). flock + temp+rename writes (the `pkg/locking` / repository-state pattern). Schema:
 
 ```jsonc
 {
@@ -439,50 +293,24 @@ repository-state pattern). Schema:
 }
 ```
 
-The IMPLICIT `default` datastore never has a record (02 §7 R2-F1: implicit defaults never
-enter the registry). `Resolve("default")` and `Resolve("")` return a synthesized
-`Record{backend: local, mountPath: "/mnt/rediacc", poolPath: "/mnt/rediacc.pool"}` — byte-
-identical to today's `NewLocalBackend` defaults (`backend_local.go:46`), which is the
-zero-behavior-change guarantee: a docker user's `repo create -m M` resolves to exactly
-today's paths, fstab entry, mounts dir (`/mnt/rediacc/mounts/<guid>` untouched), socket
-paths. `datastore list` prints the registry PLUS the synthesized default (marked
-`implicit: true`). Reserving the name: `datastore create --name default` refuses.
+The IMPLICIT `default` datastore never has a record (02 §7 R2-F1: implicit defaults never enter the registry). `Resolve("default")` and `Resolve("")` return a synthesized `Record{backend: local, mountPath: "/mnt/rediacc", poolPath: "/mnt/rediacc.pool"}` — byte- identical to today's `NewLocalBackend` defaults (`backend_local.go:46`), which is the zero-behavior-change guarantee: a
+docker user's `repo create -m M` resolves to exactly today's paths, fstab entry, mounts dir (`/mnt/rediacc/mounts/<guid>` untouched), socket paths. `datastore list` prints the registry PLUS the synthesized default (marked `implicit: true`). Reserving the name: `datastore create --name default` refuses.
 
-Two state files, two jobs (gate C2/C6): the MACHINE registry above answers "what can
-this machine attach and what is attached now" (readable with nothing mounted); the
-ON-DATASTORE descriptor `<ds-mount>/.rediacc/datastore.json` (spec 05 §7's location —
-`.rediacc/` is the established metadata-dir convention) travels WITH the datastore and
-carries `{name, backend, cluster?, writes?, k3sVersion, k3sVersionWrittenAt}` — it is
-what `reporuntime.Detect` reads to dispatch the runtime-generic `repository_*` functions
-(§4) and what attach uses to verify it mounted what the registry claimed. `datastore
-create` writes the descriptor; `attach` stamps `writes`; both keep the registry row in
-sync.
+Two state files, two jobs (gate C2/C6): the MACHINE registry above answers "what can this machine attach and what is attached now" (readable with nothing mounted); the ON-DATASTORE descriptor `<ds-mount>/.rediacc/datastore.json` (spec 05 §7's location — `.rediacc/` is the established metadata-dir convention) travels WITH the datastore and carries `{name, backend, cluster?, writes?,
+k3sVersion, k3sVersionWrittenAt}` — it is what `reporuntime.Detect` reads to dispatch the runtime-generic `repository_*` functions (§4) and what attach uses to verify it mounted what the registry claimed. `datastore create` writes the descriptor; `attach` stamps `writes`; both keep the registry row in sync.
 
-The CLI config v3 `state` bucket MIRRORS the machine registry (attach/mounter per
-datastore, holders incl. the optional `volumes` array — gate C14); the machine file is
-the truth, `renet list all --json` exports it, `config reconcile` re-syncs (02 §11
-R2-F2). Derived `-m` routing verifies `state == attached` on the expected machine before
-dispatch and errors with a reconcile suggestion on mismatch.
+The CLI config v3 `state` bucket MIRRORS the machine registry (attach/mounter per datastore, holders incl. the optional `volumes` array — gate C14); the machine file is the truth, `renet list all --json` exports it, `config reconcile` re-syncs (02 §11 R2-F2). Derived `-m` routing verifies `state == attached` on the expected machine before dispatch and errors with a reconcile
+suggestion on mismatch.
 
 ### 3.2 Mount-path scheme **[P0-DECIDED — refines 02 §1/04 §6, see §5 delta 1]**
 
-Named datastores mount at **`/mnt/rediacc-ds/<name>`** (parent dir on the host rootfs);
-local-backend named pools at `/mnt/rediacc-ds/<name>.pool`. The suite wrote
-`/mnt/rediacc/ds-<name>`, which nests every named mountpoint INSIDE the default
-datastore's BTRFS: named attaches would then require the default mounted, `detach
-default` would EBUSY under any named mount, and a full default pool would break named
-datastore attach — exactly the blast-radius coupling F8's `ds-control` exists to avoid.
-The sibling scheme preserves everything the path was for: deterministic from the name
-(mount-path stability across fork/migrate, 04 §6 — kine PV specs reference
-`/mnt/rediacc-ds/<name>/repos/...` and need zero rewriting), and per-machine collision
-refusal stays name-keyed. `ds-control` (02 §1) is an ordinary named datastore:
-`/mnt/rediacc-ds/ds-control`.
+Named datastores mount at **`/mnt/rediacc-ds/<name>`** (parent dir on the host rootfs); local-backend named pools at `/mnt/rediacc-ds/<name>.pool`. The suite wrote `/mnt/rediacc/ds-<name>`, which nests every named mountpoint INSIDE the default datastore's BTRFS: named attaches would then require the default mounted, `detach default` would EBUSY under any named mount, and a full
+default pool would break named datastore attach — exactly the blast-radius coupling F8's `ds-control` exists to avoid. The sibling scheme preserves everything the path was for: deterministic from the name (mount-path stability across fork/migrate, 04 §6 — kine PV specs reference `/mnt/rediacc-ds/<name>/repos/...` and need zero rewriting), and per-machine collision refusal stays
+name-keyed. `ds-control` (02 §1) is an ordinary named datastore: `/mnt/rediacc-ds/ds-control`.
 
 ### 3.3 Attach / detach / fork state machine (03 §2)
 
-States per record: `detached`, `attached` (plain, writes=""), `attached` (fork,
-writes=local|ceph). Transitions — every arrow is idempotent per the R2-F15 table
-(re-running against half-broken state converges, 03 §2b rule 4):
+States per record: `detached`, `attached` (plain, writes=""), `attached` (fork, writes=local|ceph). Transitions — every arrow is idempotent per the R2-F15 table (re-running against half-broken state converges, 03 §2b rule 4):
 
 | From | Verb | To | Steps |
 |---|---|---|---|
@@ -495,8 +323,7 @@ writes=local|ceph). Transitions — every arrow is idempotent per the R2-F15 tab
 | attached (fork) | `detach --discard` | record deleted | detach as above, THEN: local-writes ⇒ remove overlay backing file (only after dm verifiably gone); both ⇒ `rbd rm` clone, snap unprotect+rm on the parent (the old `Unfork` ordering). Detach-before-unlink everywhere |
 | detached | `delete` | record deleted | refuses while attached; local ⇒ verify no loop holds the pool file (`FindLoopDevicesFor`) before unlink; ceph ⇒ `rbd rm` (refuses if clones exist — Ceph enforces) |
 
-N machines may hold independent forks of one parent concurrently (each its own clone +
-overlay); the parent keeps single-writer semantics via its own lock.
+N machines may hold independent forks of one parent concurrently (each its own clone + overlay); the parent keeps single-writer semantics via its own lock.
 
 ### 3.4 Fencing (plain attach and `--writes ceph` only)
 
@@ -504,87 +331,45 @@ Executed from the ATTACHING node (any ceph client can fence; the old holder may 
 1. `rbd lock ls` / watcher check on the image — live holder + no `--force` ⇒ refuse.
 2. `rbd lock rm` (break the exclusive lock).
 3. `ceph osd blocklist add <old-client-addr>` — the dead node's in-flight writes can
-   never land after the new writer mounts.
+never land after the new writer mounts.
 4. Map + mount on the new node.
-The k8s continuation (delete stale Node object → remove old `rediacc.io/ds-<name>` label
-→ attach → add label) is the cluster-layer failover sequence (02 §3) and lives in the P2
-orchestration, not in `pkg/datastore`. A cleanly detached datastore released its lock and
-needs no fencing on return (02 §3 node lifecycle).
+The k8s continuation (delete stale Node object → remove old `rediacc.io/ds-<name>` label → attach → add label) is the cluster-layer failover sequence (02 §3) and lives in the P2 orchestration, not in `pkg/datastore`. A cleanly detached datastore released its lock and needs no fencing on return (02 §3 node lifecycle).
 
 ### 3.5 Storage lifecycle hygiene (03 §2b, mechanized)
 
 - **Rule 1 — detach-before-unlink**: single choke point: no code path calls
-  `os.Remove` on a pool file, volume image, or COW backing without first getting a
-  verified-empty holder list. Reuse `FindLoopDevicesFor` (`loop.go:266`) via the
-  `loopController` seam (`backend_local.go:29`); ADD `dmController` beside it (dmsetup
-  ls/remove) — dm devices escape the losetup deleted-suffix trick.
+`os.Remove` on a pool file, volume image, or COW backing without first getting a verified-empty holder list. Reuse `FindLoopDevicesFor` (`loop.go:266`) via the `loopController` seam (`backend_local.go:29`); ADD `dmController` beside it (dmsetup ls/remove) — dm devices escape the losetup deleted-suffix trick.
 - **Rule 2 — no lazy-success**: `umount` without `-l` anywhere in datastore/volume
-  teardown; each step re-verifies (findmnt / losetup / dmsetup) before the next.
-  Contract-tested with mutation-style tests (the `backend_local_cleanup_test.go`
-  pattern).
+teardown; each step re-verifies (findmnt / losetup / dmsetup) before the next. Contract-tested with mutation-style tests (the `backend_local_cleanup_test.go` pattern).
 - **Rule 3 — inventory sweep**: `pkg/datastore/inventory.go` diffs registry
-  `holders` vs live `losetup -a` + `dmsetup ls`. Orphans (live but not expected) are
-  REPORTED as leaks via storage-health; auto-swept only when provably stale (backing
-  file gone — the deleted-suffix case — or registry record deleted). Runs inside the
-  retargeted maintain timer (§1.5) and on `datastore attach` (convergent init: a broken
-  machine fixes itself on the next attach — rule 4).
+`holders` vs live `losetup -a` + `dmsetup ls`. Orphans (live but not expected) are REPORTED as leaks via storage-health; auto-swept only when provably stale (backing file gone — the deleted-suffix case — or registry record deleted). Runs inside the retargeted maintain timer (§1.5) and on `datastore attach` (convergent init: a broken machine fixes itself on the next attach — rule
+4).
 - Overlay-fill watch: `--writes local` records expose overlay usage (dmsetup status)
-  through `storage_health.go`; threshold warning before the dm-snapshot invalidation
-  cliff (until spike (f) potentially swaps in dm-thin).
+through `storage_health.go`; threshold warning before the dm-snapshot invalidation cliff (until spike (f) potentially swaps in dm-thin).
 
 ### 3.6 Group snapshots — verified invocation contract (spike A, PASSED, HARD requirements)
 
-Verified live on the ops fleet 2026-07-10 (Ceph Squid 19.2.4; transcript:
-scratchpad `reports/spikes/spike-a-ceph-group-snap.md`). No fallback path is needed —
-group-snap clone works on what renet's cephadm flow deploys today. The implementation
-MUST follow this exact sequence; the tempting v20 shortcuts do not exist on Squid:
+Verified live on the ops fleet 2026-07-10 (Ceph Squid 19.2.4; transcript: scratchpad `reports/spikes/spike-a-ceph-group-snap.md`). No fallback path is needed — group-snap clone works on what renet's cephadm flow deploys today. The implementation MUST follow this exact sequence; the tempting v20 shortcuts do not exist on Squid:
 
 1. **Create**: `rbd group snap create <pool>/<group>@<snap>` — one atomic,
-   crash-consistent instant across every member image. Group membership = the cluster's
-   ceph-backed datastore images (registry `cluster` label, §3.1).
+crash-consistent instant across every member image. Group membership = the cluster's ceph-backed datastore images (registry `cluster` label, §3.1).
 2. **Discover the snap id** (per member image): `rbd snap ls --all --format json
-   <pool>/<img>`, filter entries where `namespace.type == "group"` AND
-   `namespace["group snap"] == <snap>`; take that entry's `id`. This is the ONLY
-   discovery path on Squid — `rbd group info` and `rbd group snap info` are
-   Tentacle (v20)-only and MUST NOT appear anywhere in the implementation.
+<pool>/<img>`, filter entries where `namespace.type == "group"` AND `namespace["group snap"] == <snap>`; take that entry's `id`. This is the ONLY discovery path on Squid — `rbd group info` and `rbd group snap info` are Tentacle (v20)-only and MUST NOT appear anywhere in the implementation.
 3. **Clone**: `rbd clone --snap-id <id> --rbd-default-clone-format 2 <pool>/<img>
-   <pool>/<clone>`. Clone format v2 is MANDATORY at two layers: the provision-time
-   `ceph config set global rbd_default_clone_format 2` (§1.1) and the per-call flag.
-   Without it the clone fails ("parent snapshot must be protected") because group-owned
-   snapshots cannot be protected and the auto format resolves to v1 under
-   `require-min-compat-client=luminous`.
+<pool>/<clone>`. Clone format v2 is MANDATORY at two layers: the provision-time `ceph config set global rbd_default_clone_format 2` (§1.1) and the per-call flag. Without it the clone fails ("parent snapshot must be protected") because group-owned snapshots cannot be protected and the auto format resolves to v1 under `require-min-compat-client=luminous`.
 4. **Teardown — P1 verification item**: removing a group snap while v2 clones still
-   exist is UNTESTED. Expected v2 behavior is trash-deferral until the last clone is
-   flattened/removed, but `datastore_snapshot_delete` and `detach --discard` for
-   group-derived forks must VERIFY this on the fleet before the teardown ordering is
-   frozen; until then, delete clones before their group snap (the fork-before-base
-   order the csi teardown already taught us).
+exist is UNTESTED. Expected v2 behavior is trash-deferral until the last clone is flattened/removed, but `datastore_snapshot_delete` and `detach --discard` for group-derived forks must VERIFY this on the fleet before the teardown ordering is frozen; until then, delete clones before their group snap (the fork-before-base order the csi teardown already taught us).
 
 ---
 
 ## 4. Bridge-function contract diff (reworked per gate ruling C2)
 
-**Dispatch model (C2 — spec 02 §3.3 wins)**: the `repository_*` family is
-RUNTIME-GENERIC. The CLI calls ONE function per verb regardless of world;
-renet-side, the builder's command (`sudo renet repository <verb> ...`) resolves the
-repo's datastore, reads the on-datastore descriptor
-(`<ds-mount>/.rediacc/datastore.json`, §3.1), and `reporuntime.Detect` dispatches to
-`DockerRuntime` or `KubeRuntime`. The `kube_namespace_*`/`kube_deploy`/`kube_pv_*`
-functions RETIRE as CLI-callable seams — keeping them would leave the CLI branching per
-runtime when choosing which function to call, the exact flag-routing disease 02 §9
-diagnoses, re-keyed from flags to placement. Cluster-layer node-infra functions
-(`kube_install/join*/identity_rewrite/prep_fork/node_remove/upgrade/uninstall/
-kubeconfig/health`) stay separate: cluster verbs are not dispatched through RepoRuntime
-(spec 02 §3.3).
+**Dispatch model (C2 — spec 02 §3.3 wins)**: the `repository_*` family is RUNTIME-GENERIC. The CLI calls ONE function per verb regardless of world; renet-side, the builder's command (`sudo renet repository <verb> ...`) resolves the repo's datastore, reads the on-datastore descriptor (`<ds-mount>/.rediacc/datastore.json`, §3.1), and `reporuntime.Detect` dispatches to `DockerRuntime`
+or `KubeRuntime`. The `kube_namespace_*`/`kube_deploy`/`kube_pv_*` functions RETIRE as CLI-callable seams — keeping them would leave the CLI branching per runtime when choosing which function to call, the exact flag-routing disease 02 §9 diagnoses, re-keyed from flags to placement. Cluster-layer node-infra functions
+(`kube_install/join*/identity_rewrite/prep_fork/node_remove/upgrade/uninstall/ kubeconfig/health`) stay separate: cluster verbs are not dispatched through RepoRuntime (spec 02 §3.3).
 
-Baseline: 152 registered functions (§1.6). Net after this program: **150**
-(−11 deleted, +9 added, 4 renamed, plus param/semantics changes listed). Everything not
-listed below is KEEP with unchanged name and schema: all 34 `ceph_*` (Ceph-below
-plumbing: ops-fleet bootstrap + the datastore ceph backend consume them), all 12
-`container_*` (docker-world plumbing, untouched), all 15 `daemon_*`/`plugin_*`/
-`network_*`, all 9 `backup_*`/`checkpoint_*`, all 19 `machine_*`/`setup`/`daemon_nop`,
-`kube_registry_up`/`kube_registry_wire` (the machine-level pull-through CACHE role,
-unchanged per C3 — per-repo registry units have no bridge verb, §1.8).
+Baseline: 152 registered functions (§1.6). Net after this program: **150** (−11 deleted, +9 added, 4 renamed, plus param/semantics changes listed). Everything not listed below is KEEP with unchanged name and schema: all 34 `ceph_*` (Ceph-below plumbing: ops-fleet bootstrap + the datastore ceph backend consume them), all 12 `container_*` (docker-world plumbing, untouched), all 15
+`daemon_*`/`plugin_*`/ `network_*`, all 9 `backup_*`/`checkpoint_*`, all 19 `machine_*`/`setup`/`daemon_nop`, `kube_registry_up`/`kube_registry_wire` (the machine-level pull-through CACHE role, unchanged per C3 — per-repo registry units have no bridge verb, §1.8).
 
 ### 4.1 Datastore family (10 → 13)
 
@@ -617,11 +402,7 @@ unchanged per C3 — per-repo registry units have no bridge verb, §1.8).
 | `kube_identity_rewrite` | PARAM (C13) | add `operation` (fork\|migrate, REQUIRED — no default: the F1 blocker rides this flag); fork arm additionally takes `role` (fork\|rehearsal) and `writes` (local\|ceph) — F7 rewrites the ROLE ConfigMap with both; fork ⇒ PKI regen + secret scrub + ROLE rewrite + new networkID mandatory |
 | `kube_install`, `kube_join_token`, `kube_join`, `kube_prep_fork`, `kube_node_remove`, `kube_upgrade`, `kube_uninstall`, `kube_kubeconfig`, `kube_health` | KEEP | node-infra layer, NOT RepoRuntime-dispatched; `kube_join`/`kube_node_remove` become the P2 `cluster join`/`cluster evict` plumbing; `kube_prep_fork` demoted to the cross-site cutover path; `kube_health` = the DISTRO healthcheck (distinct from `repository_health` below) |
 
-`kube_secrets_apply` (this file's earlier draft) is NOT added: secret injection is
-`RepoRuntime.InjectSecrets`, riding `repository_up`'s existing vault/stdin channel —
-no caller exists that cannot use that path (gate C2 item 4). `pkg/kube/secrets.go`
-(§1.2) remains as the KubeRuntime internal that materializes the labelled Secret
-objects.
+`kube_secrets_apply` (this file's earlier draft) is NOT added: secret injection is `RepoRuntime.InjectSecrets`, riding `repository_up`'s existing vault/stdin channel — no caller exists that cannot use that path (gate C2 item 4). `pkg/kube/secrets.go` (§1.2) remains as the KubeRuntime internal that materializes the labelled Secret objects.
 
 ### 4.3 Repository family (33 → 36): runtime-generic + three additions
 
@@ -638,67 +419,37 @@ objects.
 ### 4.4 Regen + gate consequences (every P1/P2 task's DoD)
 
 1. `private/renet/bin/renet functions generate-types --output
-   packages/shared/src/renet-contract/data --version dev` after each family change.
+packages/shared/src/renet-contract/data --version dev` after each family change.
 2. `check:ci-e2e-coverage` greps packages/e2e-tests for EVERY generated name (raw
-   `datastore_attach` or spaced `datastore attach`). The 9 added + 4 renamed names each
-   need a real reference in packages/e2e-tests — plan the rewritten suites (16-k8s-ceph
-   replacement, new datastore-lifecycle suite) to exercise them for real, not as grep
-   fodder. The 11 deleted names drop out of the generated array automatically; sweep e2e
-   sources for their now-dead references anyway (§2.8).
+`datastore_attach` or spaced `datastore attach`). The 9 added + 4 renamed names each need a real reference in packages/e2e-tests — plan the rewritten suites (16-k8s-ceph replacement, new datastore-lifecycle suite) to exercise them for real, not as grep fodder. The 11 deleted names drop out of the generated array automatically; sweep e2e sources for their now-dead references anyway
+(§2.8).
 3. The e2e ALLOWLIST in `.ci/scripts/quality/check-e2e-coverage.sh` currently exempts
-   `repository_takeover` — update alongside the rename or the gate fails on the new
-   uncovered name.
+`repository_takeover` — update alongside the rename or the gate fails on the new uncovered name.
 4. Renet dead-code gate (`private/renet/.ci/scripts/quality/deadcode.sh`): fails on BOTH
-   dangling references and stale `.deadcode-allowlist` entries; run per area (§2 rules).
+dangling references and stale `.deadcode-allowlist` entries; run per area (§2 rules).
 
 ---
 
 ## 5. Reality deltas (suite claims vs the tree)
 
 1. **Mount-path scheme conflict (material)**: 02 §1 / 04 §6 write `/mnt/rediacc/ds-<name>`,
-   which nests named-datastore mountpoints inside the default datastore's BTRFS (the
-   default IS the mount at `/mnt/rediacc` — pool file `<BasePath>.pool`,
-   `backend_local.go:46`). That couples every named datastore to the default's health and
-   makes `detach default` impossible under any named mount. §3.2 respecifies
-   `/mnt/rediacc-ds/<name>` (host-rootfs sibling); the properties the suite wanted from
-   the path (deterministic, stable across machines, collision-refusable) all survive.
-   **APPROVED at the P0 gate (00-gate-review.md ruling R1)**; suite files 02/04 get the
-   one-line edit in the as-built pass.
+which nests named-datastore mountpoints inside the default datastore's BTRFS (the default IS the mount at `/mnt/rediacc` — pool file `<BasePath>.pool`, `backend_local.go:46`). That couples every named datastore to the default's health and makes `detach default` impossible under any named mount. §3.2 respecifies `/mnt/rediacc-ds/<name>` (host-rootfs sibling); the properties the
+suite wanted from the path (deterministic, stable across machines, collision-refusable) all survive. **APPROVED at the P0 gate (00-gate-review.md ruling R1)**; suite files 02/04 get the one-line edit in the as-built pass.
 2. **`resolvePVBackend` line**: cited as `pkg/kube/namespace.go:154`; the function is at
-   `namespace.go:157` (the const block starts at 149). Symbol correct, drift only.
+`namespace.go:157` (the const block starts at 149). Symbol correct, drift only.
 3. **`materializeAndBindPVs` at `deploy.go:58`, `FindLoopDevicesFor` at `loop.go:266`,
-   `loopController` at `backend_local.go:29`**: all verified exact.
+`loopController` at `backend_local.go:29`**: all verified exact.
 4. **`NamespaceTeardownLeak` is not Ceph-only**: `namespace.go:72` uses it to report
-   local PV-image-dir teardown leaks too. The 02 §6 ledger line "delete
-   NamespaceTeardownLeak" is therefore refined: the TYPE and its Ceph fields die, the
-   leak-reporting CONTRACT (02 §9 "teardown must be leak-reporting") is re-homed in
-   `pkg/kube/teardown.go` with the same JSON surfacing through
-   `cmd/renet/kube_namespace.go` and the bridge.
+local PV-image-dir teardown leaks too. The 02 §6 ledger line "delete NamespaceTeardownLeak" is therefore refined: the TYPE and its Ceph fields die, the leak-reporting CONTRACT (02 §9 "teardown must be leak-reporting") is re-homed in `pkg/kube/teardown.go` with the same JSON surfacing through `cmd/renet/kube_namespace.go` and the bridge.
 5. **F4 (datastore-backed registry)**: `pkg/kube/registry/zot.go:62` already
-   parameterizes `StorageDir` with a datastore-path production default — that is the
-   reuse seam. This file's first draft concluded "default-value change only"; the gate
-   (C3) correctly ruled that a single machine-level instance cannot serve multiple
-   repos' folders, so spec 05 §5's per-repo unit design is the implementation (§1.8) —
-   the machine-level pull-through CACHE keeps its role unchanged.
+parameterizes `StorageDir` with a datastore-path production default — that is the reuse seam. This file's first draft concluded "default-value change only"; the gate (C3) correctly ruled that a single machine-level instance cannot serve multiple repos' folders, so spec 05 §5's per-repo unit design is the implementation (§1.8) — the machine-level pull-through CACHE keeps its role
+unchanged.
 6. **Maintain timer hardcodes the default datastore** (not mentioned in the suite):
-   `pkg/daemon/storage_maintain_timer.go:31` bakes
-   `repository maintain --datastore /mnt/rediacc` into the systemd unit. Multi-datastore
-   silently exempts named datastores from trim/auto-grow unless this is retargeted
-   (§1.5). Added to P1 scope.
+`pkg/daemon/storage_maintain_timer.go:31` bakes `repository maintain --datastore /mnt/rediacc` into the systemd unit. Multi-datastore silently exempts named datastores from trim/auto-grow unless this is retargeted (§1.5). Added to P1 scope.
 7. **e2e allowlist debt collides with the rename**: `repository_takeover` (among 20+
-   legacy names) is exempted in `check-e2e-coverage.sh`; renaming to
-   `repository_promote` either needs the allowlist entry moved or real coverage added.
-   The suite's e2e notes (09 §3) do not mention the allowlist file.
+legacy names) is exempted in `check-e2e-coverage.sh`; renaming to `repository_promote` either needs the allowlist entry moved or real coverage added. The suite's e2e notes (09 §3) do not mention the allowlist file.
 8. **`kube_prep_fork` keep-vs-obsolete tension**: 02 §6 KEEPs it, but the 04 §2 hot
-   group-snap fork explicitly replaces the drain+stop path that is its main caller
-   (`cluster-kube.ts:252,406,524`). Resolved in §1.5: kept for cross-site migrate
-   cutover + mount sweeping; its per-node role in FORK dies with the agent-image
-   mapping.
+group-snap fork explicitly replaces the drain+stop path that is its main caller (`cluster-kube.ts:252,406,524`). Resolved in §1.5: kept for cross-site migrate cutover + mount sweeping; its per-node role in FORK dies with the agent-image mapping.
 9. **Suite identifiers confirmed real** (no phantom citations found): `EnsureNamespace`/
-   `CloneNamespace` (`csi/namespace.go:94,140`), `drainRadosNamespace`
-   (`ceph_backend.go:268`), `.rbd-backend.json` (`ceph_backend.go:72`), synthetic
-   clusterID (`csi/consumer.go:30`), `config machine set-ceph`
-   (`packages/cli/src/commands/config-setup.ts`), `datastore unfork`
-   (`cmd/renet/datastore_unfork.go` + `packages/cli/src/commands/datastore.ts:304`),
-   per-networkID k3s unit (`pkg/daemon/k3s_systemd.go:82`), `/tmp/cowdata`
-   (`pkg/rbd/cowclone.go:22`).
+`CloneNamespace` (`csi/namespace.go:94,140`), `drainRadosNamespace` (`ceph_backend.go:268`), `.rbd-backend.json` (`ceph_backend.go:72`), synthetic clusterID (`csi/consumer.go:30`), `config machine set-ceph` (`packages/cli/src/commands/config-setup.ts`), `datastore unfork` (`cmd/renet/datastore_unfork.go` + `packages/cli/src/commands/datastore.ts:304`), per-networkID k3s unit
+(`pkg/daemon/k3s_systemd.go:82`), `/tmp/cowdata` (`pkg/rbd/cowclone.go:22`).

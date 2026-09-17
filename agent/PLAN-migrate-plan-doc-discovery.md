@@ -1,13 +1,8 @@
 # Plan-document discovery in /migrate and the Stop hook's handoff block
 
-Status: draft
-Owner: d778be9d
-Updated: 2026-09-17
-Related: agent/PLAN-plan-file-lifecycle.md, agent/PLAN-tooling-transformation.md
+Status: draft Owner: d778be9d Updated: 2026-09-17 Related: agent/PLAN-plan-file-lifecycle.md, agent/PLAN-tooling-transformation.md
 
-99 open `- [ ]` boxes across 11 committed plans, owned by three idle sessions,
-are invisible to every "what is left" surface this repo has. This makes the
-DISCOVERY layer read the plan census it already maintains.
+99 open `- [ ]` boxes across 11 committed plans, owned by three idle sessions, are invisible to every "what is left" surface this repo has. This makes the DISCOVERY layer read the plan census it already maintains.
 
 ## Why: the failure, measured
 
@@ -15,15 +10,11 @@ Live on this tree, 2026-09-17, branch `0914-1`:
 
     python3 .claude/hooks/stop/worklist.py --migrate d778be9d --candidates
 
-returns four idle prefixes -- `f4da5c2e`, `74de73ca`, `d1589e0b`, `8f55d4f0` --
-every one of them carrying `0 worklist item(s), but a STATE.md Next action
-below`. Not one plan file is named. Yet `agent/INDEX.md:345` already records:
+returns four idle prefixes -- `f4da5c2e`, `74de73ca`, `d1589e0b`, `8f55d4f0` -- every one of them carrying `0 worklist item(s), but a STATE.md Next action below`. Not one plan file is named. Yet `agent/INDEX.md:345` already records:
 
     | `agent/PLAN-tooling-transformation.md` | ready | 6782 | 13 | 141 | 622006 |
 
-Thirteen open boxes, 141 ticked, `Owner: 8f55d4f0` -- a session the same
-listing prints as `idle`. The whole tree, computed from the census plus one
-`plan_owner` read per box-carrying plan:
+Thirteen open boxes, 141 ticked, `Owner: 8f55d4f0` -- a session the same listing prints as `idle`. The whole tree, computed from the census plus one `plan_owner` read per box-carrying plan:
 
 | Owner | liveness | plans with open boxes | open boxes |
 |---|---|---|---|
@@ -33,24 +24,16 @@ listing prints as `idle`. The whole tree, computed from the census plus one
 | `d778be9d` | live, this session | 3 | 43 |
 | unowned | -- | 1 (secret-namespace-migration) | 9 |
 
-96 plans on disk, 15 carrying open boxes, 151 open boxes. **99 of those 151
-belong to plans whose declared owner is idle, and no surface in this repo names
-them.** `check_plan_boxes.py:603` already says the sentence this plan acts on --
-"unowned debt is debt nothing chases" -- but its G-A4 only tests for the string
-`unowned`. A plan owned by a session that stopped three weeks ago is the same
-debt wearing a name, and no gate, hook or verb notices.
+96 plans on disk, 15 carrying open boxes, 151 open boxes. **99 of those 151 belong to plans whose declared owner is idle, and no surface in this repo names them.** `check_plan_boxes.py:603` already says the sentence this plan acts on -- "unowned debt is debt nothing chases" -- but its G-A4 only tests for the string `unowned`. A plan owned by a session that stopped three weeks ago
+is the same debt wearing a name, and no gate, hook or verb notices.
 
 ### Root cause, per mechanism
 
 1. `wl_store.migrate_candidates` (`.claude/hooks/stop/wl_store.py:1973`) builds
-   its candidate set from exactly two sources: worklist items whose owner is
-   not the requesting session (`wl_store.py:1990`), and the per-session
-   STATE.md `## Next action` fallback added this session (`wl_store.py:2049`,
-   cutoff `WORKLIST_HANDOFF_STALE_HOURS` at `wl_store.py:2072`). It never
-   opens `agent/PLAN-*.md`. There is no code path that could.
+its candidate set from exactly two sources: worklist items whose owner is not the requesting session (`wl_store.py:1990`), and the per-session STATE.md `## Next action` fallback added this session (`wl_store.py:2049`, cutoff `WORKLIST_HANDOFF_STALE_HOURS` at `wl_store.py:2072`). It never opens `agent/PLAN-*.md`. There is no code path that could.
 
 2. Every per-stop plan mechanism is OWNERSHIP-SCOPED TO THE CURRENT SESSION, by
-   design, and therefore structurally cannot do discovery:
+design, and therefore structurally cannot do discovery:
    * `wl_checks.plan_drift_rows` (`.claude/hooks/stop/wl_checks.py:1188`) skips
      any plan failing `C.owned_by_me(owner, session_id)` at `wl_checks.py:1228`,
      and further admits only `executing`/`unknown` status (`wl_checks.py:1241`).
@@ -69,35 +52,20 @@ debt wearing a name, and no gate, hook or verb notices.
      discovery tool.
 
 3. `wl_checks.handoff_note` (`.claude/hooks/stop/wl_checks.py:3079`) -- the Stop
-   hook's `HANDOFF CANDIDATES` block, which asks the session to carry inherited
-   work into `## Remaining` -- is a second consumer of the SAME
-   `migrate_candidates` call (`wl_checks.py:3094`). So the gap is one function
-   wide and closing it fixes both surfaces at once.
+hook's `HANDOFF CANDIDATES` block, which asks the session to carry inherited work into `## Remaining` -- is a second consumer of the SAME `migrate_candidates` call (`wl_checks.py:3094`). So the gap is one function wide and closing it fixes both surfaces at once.
 
 ### What was checked and ruled out
 
-`agent/census-plan-record.jsonl` (written by `check_plan_record.py:205`) is NOT
-the plan census this needs: it is a shadow-mode ledger of what candidate
-COMPACTION rules C9/C10/C11 would have flagged, keyed by record grammar, and it
-carries no open-box counts.
+`agent/census-plan-record.jsonl` (written by `check_plan_record.py:205`) is NOT the plan census this needs: it is a shadow-mode ledger of what candidate COMPACTION rules C9/C10/C11 would have flagged, keyed by record grammar, and it carries no open-box counts.
 
-The census that IS needed already exists and is already fresh: `## Plan census`
-in `agent/INDEX.md` (`.claude/hooks/stop/wl_planindex.py:98`), one row per plan
-as `(rel, status, lines, open, ticked, bytes)`, read by
-`wl_planindex.index_census` (`wl_planindex.py:301`) from ONE file read plus a
-`stat` per plan, with a loud slow-path fallback through
-`wl_planindex.census_rows` (`wl_planindex.py:164`) when it disagrees with disk.
-Verified live today: `index_census` returns `state=fresh`, 96 rows, 96 stats.
-The only field it lacks is `Owner:`, which `wl_checks.plan_owner`
-(`.claude/hooks/stop/wl_checks.py:1115`) reads from the first 10 header lines --
-and it is only needed for the 15 plans with `open > 0`.
+The census that IS needed already exists and is already fresh: `## Plan census` in `agent/INDEX.md` (`.claude/hooks/stop/wl_planindex.py:98`), one row per plan as `(rel, status, lines, open, ticked, bytes)`, read by `wl_planindex.index_census` (`wl_planindex.py:301`) from ONE file read plus a `stat` per plan, with a loud slow-path fallback through `wl_planindex.census_rows`
+(`wl_planindex.py:164`) when it disagrees with disk. Verified live today: `index_census` returns `state=fresh`, 96 rows, 96 stats. The only field it lacks is `Owner:`, which `wl_checks.plan_owner` (`.claude/hooks/stop/wl_checks.py:1115`) reads from the first 10 header lines -- and it is only needed for the 15 plans with `open > 0`.
 
 ## The decision
 
 **Make the DISCOVERY layer plan-aware. Leave the two storage mechanisms alone.**
 
-The single-source-of-truth instinct behind this plan is right, but the unit of
-truth is the QUESTION, not the file:
+The single-source-of-truth instinct behind this plan is right, but the unit of truth is the QUESTION, not the file:
 
 | question | the one authority | why nothing else may answer it |
 |---|---|---|
@@ -109,91 +77,49 @@ Today the third row has no implementation for plans. That is the entire defect.
 
 ### The road not taken: unify storage
 
-Making the worklist store authoritative -- plan files losing their own
-`Status:`/`Owner:` lifecycle, or growing an auto-synced worklist item per plan --
-is rejected on three measurements:
+Making the worklist store authoritative -- plan files losing their own `Status:`/`Owner:` lifecycle, or growing an auto-synced worklist item per plan -- is rejected on three measurements:
 
 * **Six consumers already parse the plan header**: `wl_checks.plan_records`
-  (`wl_checks.py:1154`), `wl_checks.plan_owner` (`wl_checks.py:1115`),
-  `wl_planfile.plan_rows`, `wl_planindex.census_rows`, `wl_planrec.index_rows`,
-  and two CI gates (`check_plan_boxes.py` G-A3/G-A4, `check_plan_record.py` R8).
-  R8 compares `agent/INDEX.md` for BYTE EQUALITY against a re-read of the plans.
-  Moving the lifecycle into a JSONL store means a committed markdown document
-  whose status lives elsewhere -- `wl_planindex.py`'s own docstring calls that
-  shape out and refuses it ("a sidecar nothing checks would be a cache that can
-  lie"), and `agent/README.md:9-12` names the precedent it cost.
+(`wl_checks.py:1154`), `wl_checks.plan_owner` (`wl_checks.py:1115`), `wl_planfile.plan_rows`, `wl_planindex.census_rows`, `wl_planrec.index_rows`, and two CI gates (`check_plan_boxes.py` G-A3/G-A4, `check_plan_record.py` R8). R8 compares `agent/INDEX.md` for BYTE EQUALITY against a re-read of the plans. Moving the lifecycle into a JSONL store means a committed markdown document
+whose status lives elsewhere -- `wl_planindex.py`'s own docstring calls that shape out and refuses it ("a sidecar nothing checks would be a cache that can lie"), and `agent/README.md:9-12` names the precedent it cost.
 * **An auto-synced item per plan is the duplication risk stated as a feature.**
-  An item whose text drifts from the plan's own boxes is worse than no item, and
-  the Stop hook BLOCKS on open items -- auto-creating one for
-  `PLAN-stop-hook-overhaul.md` would block a session on 31 boxes it never
-  agreed to take. Worse, the reconciliation it would buy already exists:
-  `wl_planfile.reconcile` (`wl_planfile.py:343`) computes `untracked` /
-  `stale_open` / `reopened` for any plan IN SCOPE. The correct way to get it is
-  to put the plan in scope, not to mint a shadow item.
+An item whose text drifts from the plan's own boxes is worse than no item, and the Stop hook BLOCKS on open items -- auto-creating one for `PLAN-stop-hook-overhaul.md` would block a session on 31 boxes it never agreed to take. Worse, the reconciliation it would buy already exists: `wl_planfile.reconcile` (`wl_planfile.py:343`) computes `untracked` / `stale_open` / `reopened` for
+any plan IN SCOPE. The correct way to get it is to put the plan in scope, not to mint a shadow item.
 * The store is per-session and append-only; a plan outlives many sessions. They
-  have different lifetimes, so they are different files.
+have different lifetimes, so they are different files.
 
 ### What "adopting" a plan means
 
-Adoption re-stamps the plan's own `Owner:` line to the adopting session. That is
-deliberately the whole mechanism, and it is why a synced shadow item is
-unnecessary: once `Owner:` names a live session, `wl_planfile.plan_rows`
-already chases it every stop -- the census tier for `draft`
-(`wl_planfile.py:191` NOT_STARTED_STATES), the full quoting-and-reconciling
-treatment for `ready`, which is in neither `FINISHED_STATES` nor
-`NOT_STARTED_STATES` and so returns True from `in_scope_status`
-(`wl_planfile.py:394`). `PLAN-tooling-transformation.md` is `ready`: adopting
-it starts reconciling its 13 open boxes against the adopter's worklist on the
-next stop, through code that already exists and is already tested.
+Adoption re-stamps the plan's own `Owner:` line to the adopting session. That is deliberately the whole mechanism, and it is why a synced shadow item is unnecessary: once `Owner:` names a live session, `wl_planfile.plan_rows` already chases it every stop -- the census tier for `draft` (`wl_planfile.py:191` NOT_STARTED_STATES), the full quoting-and-reconciling treatment for `ready`,
+which is in neither `FINISHED_STATES` nor `NOT_STARTED_STATES` and so returns True from `in_scope_status` (`wl_planfile.py:394`). `PLAN-tooling-transformation.md` is `ready`: adopting it starts reconciling its 13 open boxes against the adopter's worklist on the next stop, through code that already exists and is already tested.
 
-This also gives the listing something the STATE.md fallback never had: **a
-natural tick**. A STATE.md `## Next action` is never resolved, which is why it
-needed an arbitrary 720h clock at `wl_store.py:2072`. A plan candidate clears
-itself three ways -- its owner becomes live, its status becomes finished, or its
-last box is ticked. So the plan pass takes NO time cutoff, matching
-`plan_drift_rows`'s own lesson at `wl_checks.py:1197`: the trigger is work,
-never the clock.
+This also gives the listing something the STATE.md fallback never had: **a natural tick**. A STATE.md `## Next action` is never resolved, which is why it needed an arbitrary 720h clock at `wl_store.py:2072`. A plan candidate clears itself three ways -- its owner becomes live, its status becomes finished, or its last box is ticked. So the plan pass takes NO time cutoff, matching
+`plan_drift_rows`'s own lesson at `wl_checks.py:1197`: the trigger is work, never the clock.
 
 ### Noise controls, stated as rules
 
 * Only plans with `open > 0` in the census are considered: the 141 ticked boxes
-  of `PLAN-tooling-transformation.md` can never resurface, because the census
-  `open` column is the filter and it reads 13.
+of `PLAN-tooling-transformation.md` can never resurface, because the census `open` column is the filter and it reads 13.
 * Status is filtered with `wl_planfile.FINISHED_STATES` ONLY -- never
-  `in_scope_status`. `draft` is this repo's default header on plans under active
-  execution (measured at `wl_checks.py:1338`: 6 of 8 box-carrying plans, hiding
-  72 of 88 open boxes; today 13 of 15). Using `in_scope_status` here would hide
-  the majority of the very work this plan exists to surface.
+`in_scope_status`. `draft` is this repo's default header on plans under active execution (measured at `wl_checks.py:1338`: 6 of 8 box-carrying plans, hiding 72 of 88 open boxes; today 13 of 15). Using `in_scope_status` here would hide the majority of the very work this plan exists to surface.
 * Plans whose owner is `live` are excluded. Plans whose owner is `unknown` are
-  INCLUDED with the verdict printed, because listing is not adopting -- the
-  cost of a false positive is one line.
+INCLUDED with the verdict printed, because listing is not adopting -- the cost of a false positive is one line.
 * At most `WORKLIST_MIGRATE_PLANS_SHOW` (default 3) plans printed per candidate,
-  with a `+N more` tail, matching the existing 3-item cap at `worklist.py:1133`.
+with a `+N more` tail, matching the existing 3-item cap at `worklist.py:1133`.
 * Unowned plans are OUT OF SCOPE: `owned_by_me(None)` is True
-  (`wl_core.py:217`), so `PLAN-secret-namespace-migration.md`'s 9 boxes are
-  already shown to every session by the per-stop advisory. Adding them here
-  would duplicate a working surface and there is no prefix to migrate from.
+(`wl_core.py:217`), so `PLAN-secret-namespace-migration.md`'s 9 boxes are already shown to every session by the per-stop advisory. Adding them here would duplicate a working surface and there is no prefix to migrate from.
 
 ## Design
 
-One new function in `wl_store.py`, one new key on the candidate dict, one new
-CLI mode, and prose. No new storage, no new file, no new census.
+One new function in `wl_store.py`, one new key on the candidate dict, one new CLI mode, and prose. No new storage, no new file, no new census.
 
     plan_candidates(root, exclude_live_for=session_liveness_fn) ->
         {owner8: [ {rel, status, open, ticked, title} ] }
 
-reading `wl_planindex.index_census(root)` (falling back to `census_rows` exactly
-as `plans_block` does at `wl_checks.py:1401`), keeping rows with `open > 0` and
-status not in `wl_planfile.FINISHED_STATES`, then calling `wl_checks.plan_owner`
-on that short list only. `wl_planindex` imports `wl_store` at its line 92, so
-the import inside `wl_store` MUST be deferred into the function body -- the same
-cycle-avoidance `wl_planindex.census_rows` documents for `wl_checks`.
+reading `wl_planindex.index_census(root)` (falling back to `census_rows` exactly as `plans_block` does at `wl_checks.py:1401`), keeping rows with `open > 0` and status not in `wl_planfile.FINISHED_STATES`, then calling `wl_checks.plan_owner` on that short list only. `wl_planindex` imports `wl_store` at its line 92, so the import inside `wl_store` MUST be deferred into the function
+body -- the same cycle-avoidance `wl_planindex.census_rows` documents for `wl_checks`.
 
-`migrate_candidates` then gains a third pass, additive in the same style as the
-second (`wl_store.py:2049-2056`): owners already present are ENRICHED with a
-`"plans"` key, never duplicated; owners present only because of a plan get a
-full candidate row with `counts` all zero and `plans` populated. `"plans"`
-defaults to `[]` on every candidate so both existing renderers stay total.
+`migrate_candidates` then gains a third pass, additive in the same style as the second (`wl_store.py:2049-2056`): owners already present are ENRICHED with a `"plans"` key, never duplicated; owners present only because of a plan get a full candidate row with `counts` all zero and `plans` populated. `"plans"` defaults to `[]` on every candidate so both existing renderers stay total.
 
 ## Tasks
 
@@ -293,32 +219,20 @@ defaults to `[]` on every candidate so both existing renderers stay total.
 Run, in order, and record the output of the first two in the commit message:
 
 1. `python3 .claude/hooks/stop/worklist.py --migrate d778be9d --candidates`
-   -- must now name `agent/PLAN-tooling-transformation.md [ready] 13 open` under
-   `8f55d4f0` and `agent/PLAN-stop-hook-overhaul.md [ready] 31 open` under
-   `f4da5c2e`. Before the change, neither string appears anywhere in the output.
+-- must now name `agent/PLAN-tooling-transformation.md [ready] 13 open` under `8f55d4f0` and `agent/PLAN-stop-hook-overhaul.md [ready] 31 open` under `f4da5c2e`. Before the change, neither string appears anywhere in the output.
 2. `python3 .claude/hooks/stop/worklist.py --migrate d778be9d --candidates --json`
-   -- every candidate object carries a `plans` array (possibly empty); the union
-   of `plans[].rel` over all candidates must be exactly the 11 idle-owned plans
-   tabulated in the Why section, and must NOT contain any plan owned by
-   `d778be9d` or `PLAN-secret-namespace-migration.md`.
+-- every candidate object carries a `plans` array (possibly empty); the union of `plans[].rel` over all candidates must be exactly the 11 idle-owned plans tabulated in the Why section, and must NOT contain any plan owned by `d778be9d` or `PLAN-secret-namespace-migration.md`.
 3. `npm run check:ci-hook-worklist-suite` -- the whole v5 control suite, which
-   sources the new `26-migrate.sh` cases. Every new case must be present in the
-   PASS count, not merely absent from FAIL.
+sources the new `26-migrate.sh` cases. Every new case must be present in the PASS count, not merely absent from FAIL.
 4. `python3 .claude/hooks/stop/test-planindex.py` -- proves the census contract
-   this change now depends on is untouched.
+this change now depends on is untouched.
 5. `npm run check:ci-plan-record` -- R8 byte-equality of `agent/INDEX.md`, after
-   the `-- --update` regeneration. Red here means the census was not regenerated.
+the `-- --update` regeneration. Red here means the census was not regenerated.
 6. `npm run check:ci-plan-boxes` -- A0 signatures and A1 never-deleted over the
-   plans `--plan` rewrote, plus G-A4 over this newly added plan (it carries open
-   boxes and resolves `Owner: d778be9d`, so it passes by construction).
+plans `--plan` rewrote, plus G-A4 over this newly added plan (it carries open boxes and resolves `Owner: d778be9d`, so it passes by construction).
 7. `npm run check:ci-worklist-env-registry` -- proves the two new `WORKLIST_*`
-   names are registered rather than silently unset.
+names are registered rather than silently unset.
 8. `npm run check:ci-plan-citations` and `npm run check:ci-prose-style` -- this
-   plan adds a file under `agent/`; every `file:line` above was resolved against
-   the live tree on 2026-09-17 and every `check:` key exists in `package.json`.
+plan adds a file under `agent/`; every `file:line` above was resolved against the live tree on 2026-09-17 and every `check:` key exists in `package.json`.
 
-The negative control that makes the rest mean something: `git stash` the
-`wl_store.py` change and re-run step 1. It must return the four bare prefixes
-with no `PLAN` line at all. A verification that passes both before and after has
-proved nothing.
-</content>
+The negative control that makes the rest mean something: `git stash` the `wl_store.py` change and re-run step 1. It must return the four bare prefixes with no `PLAN` line at all. A verification that passes both before and after has proved nothing. </content>

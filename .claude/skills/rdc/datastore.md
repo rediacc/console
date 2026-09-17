@@ -1,21 +1,11 @@
 # rdc datastore — Named, Movable Storage Pools
 
-Create named datastores, attach them to machines, snapshot them, and fork them
-copy-on-write.
+Create named datastores, attach them to machines, snapshot them, and fork them copy-on-write.
 
-**Prerequisites**: the `rbd` backend needs a Ceph cluster (`rdc ops up` with
-`VM_CEPH_NODES` SET IN THE ENVIRONMENT; without it the Ceph VMs come up as bare OS
-images and `rbd create` fails with "command not found"; bootstrap explicitly with `renet ops ceph provision` under the same env), and worker machines must have
-`ceph-common` installed with `/etc/ceph/ceph.conf` and keyring in place; the ops
-provisioner handles that only during a Ceph-enabled `ops up`. All commands run over
-SSH; see [SKILL.md prerequisites](SKILL.md#prerequisites-for-ops-vms-read-first) for
-SSH key configuration.
+**Prerequisites**: the `rbd` backend needs a Ceph cluster (`rdc ops up` with `VM_CEPH_NODES` SET IN THE ENVIRONMENT; without it the Ceph VMs come up as bare OS images and `rbd create` fails with "command not found"; bootstrap explicitly with `renet ops ceph provision` under the same env), and worker machines must have `ceph-common` installed with `/etc/ceph/ceph.conf` and keyring
+in place; the ops provisioner handles that only during a Ceph-enabled `ops up`. All commands run over SSH; see [SKILL.md prerequisites](SKILL.md#prerequisites-for-ops-vms-read-first) for SSH key configuration.
 
-**Agent sessions**: every datastore verb here is blocked unless
-`REDIACC_ALLOW_CLUSTER_OPS` (usually `*`, since creation has no existing cluster) was
-exported in the operator's terminal BEFORE the session started; the check is
-ancestry-verified and an in-session export is rejected. Creating repos inside a
-datastore additionally needs `REDIACC_ALLOW_GRAND_REPO`.
+**Agent sessions**: every datastore verb here is blocked unless `REDIACC_ALLOW_CLUSTER_OPS` (usually `*`, since creation has no existing cluster) was exported in the operator's terminal BEFORE the session started; the check is ancestry-verified and an in-session export is rejected. Creating repos inside a datastore additionally needs `REDIACC_ALLOW_GRAND_REPO`.
 
 ## Background
 
@@ -24,25 +14,16 @@ A **datastore** is a named storage pool that holds repositories. It is:
 - **Mobile**: attach it to a machine, then move it to another.
 - **Single-mounter**: exactly one machine holds it at a time.
 
-Each machine also has an implicit default datastore (a BTRFS pool file at
-`/mnt/rediacc.pool`). That one is not managed by this noun; `rdc datastore` only manages
-the additional, named ones.
+Each machine also has an implicit default datastore (a BTRFS pool file at `/mnt/rediacc.pool`). That one is not managed by this noun; `rdc datastore` only manages the additional, named ones.
 
 | Backend | Storage | Fork | Use case |
 |---------|---------|------|----------|
 | `local` (default) | File-backed pool on that one machine | **Not supported** | Single machines, no Ceph |
 | `rbd` | RBD image on a Ceph cluster | Instant (RBD snapshot + CoW clone) | Multi-machine, testing, staging |
 
-A `local` datastore has no block-level clone primitive, so it **cannot fork at all**, not
-even on its own machine. Repositories inside it fork one at a time by BTRFS reflink instead
-(`rdc repo fork`). With `rbd`, forking a 100GB datastore is instant and its cost does not
-grow with the size of the pool.
+A `local` datastore has no block-level clone primitive, so it **cannot fork at all**, not even on its own machine. Repositories inside it fork one at a time by BTRFS reflink instead (`rdc repo fork`). With `rbd`, forking a 100GB datastore is instant and its cost does not grow with the size of the pool.
 
-Refs follow the same grammar as repos: `name` for the datastore, `name:tag` for a fork
-(e.g. `ds-prod:exp`). On the machine, a named datastore mounts at
-`/mnt/rediacc-ds/<name>` but a FORK mounts at `/mnt/rediacc-ds/<parent>-<tag>`
-(hyphen, not colon) — when a renet verb needs the fork's path, read `mountPath`
-from `renet datastore list --json` rather than deriving it from the ref.
+Refs follow the same grammar as repos: `name` for the datastore, `name:tag` for a fork (e.g. `ds-prod:exp`). On the machine, a named datastore mounts at `/mnt/rediacc-ds/<name>` but a FORK mounts at `/mnt/rediacc-ds/<parent>-<tag>` (hyphen, not colon) — when a renet verb needs the fork's path, read `mountPath` from `renet datastore list --json` rather than deriving it from the ref.
 
 ## Commands
 
@@ -52,14 +33,13 @@ from `renet datastore list --json` rather than deriving it from the ref.
 rdc datastore create <datastore> -m <machine> --size <size> [--backend local|rbd] [--pool <name>] [--image <name>] [--cluster <name>]
 ```
 
-`-m` is required: the datastore does not exist yet, so there is no attachment to derive the
-machine from. `--backend` defaults to `local`.
+`-m` is required: the datastore does not exist yet, so there is no attachment to derive the machine from. `--backend` defaults to `local`.
 
 - `--pool` (rbd only): Ceph pool. Defaults to `rbd`. **The ops provisioner creates a pool
-  named `rediacc_rbd_pool`, not `rbd`**, so pass it explicitly.
+named `rediacc_rbd_pool`, not `rbd`**, so pass it explicitly.
 - `--image` (rbd only): RBD image name. Defaults to the datastore name.
 - `--cluster`: makes this a kubernetes-world datastore, bound to that cluster. Set means
-  kubernetes repositories only; unset means docker repositories only. **Fixed at creation.**
+kubernetes repositories only; unset means docker repositories only. **Fixed at creation.**
 
 ```bash
 # rbd-backed datastore on the ops Ceph cluster
@@ -78,9 +58,7 @@ rdc datastore attach <datastore> --to <machine> [--writes local|ceph] [--cow-siz
 rdc datastore detach <datastore> [--discard]
 ```
 
-Exactly one machine holds a datastore at a time, so attaching it somewhere else **moves**
-it: the old holder gives it up first, and a failed hand-off leaves the original attachment
-intact.
+Exactly one machine holds a datastore at a time, so attaching it somewhere else **moves** it: the old holder gives it up first, and a failed hand-off leaves the original attachment intact.
 
 - `--writes` is **required for a fork** and rejected for a non-fork. See "Fork" below.
 - `--no-auto`: do not re-attach on boot.
@@ -98,8 +76,7 @@ rdc datastore detach ds-prod
 rdc datastore fork <datastore> --tag <tag> [--attach-to <machine>] [--writes local|ceph] [--cow-size <size>]
 ```
 
-Requires the `rbd` backend. The result is named `<datastore>:<tag>` and is **detached** unless
-you pass `--attach-to`.
+Requires the `rbd` backend. The result is named `<datastore>:<tag>` and is **detached** unless you pass `--attach-to`.
 
 A fork must say where its writes go, and the two answers have opposite durability:
 
@@ -108,8 +85,7 @@ A fork must say where its writes go, and the two answers have opposite durabilit
 | `local` | Local sparse overlay file on the holding machine | **Ephemeral.** Lost on detach; detaching needs `--discard`. |
 | `ceph` | A durable clone in the Ceph pool | Persistent. |
 
-`--cow-size` sets the overlay size for `--writes local` (default: auto-sized, grows on
-demand as a sparse file).
+`--cow-size` sets the overlay size for `--writes local` (default: auto-sized, grows on demand as a sparse file).
 
 ```bash
 # Fork ds-prod and hand the fork straight to another machine, ephemeral writes
@@ -140,8 +116,7 @@ rdc datastore snapshot create <datastore> [--snapshot <label>]
 rdc datastore snapshot list <datastore>
 ```
 
-Nothing stops to take a snapshot. A snapshot costs nothing at rest and is what a fork
-clones from. The label defaults to a UTC timestamp.
+Nothing stops to take a snapshot. A snapshot costs nothing at rest and is what a fork clones from. The label defaults to a UTC timestamp.
 
 ### Status and listing
 
@@ -150,9 +125,7 @@ rdc datastore status <datastore>
 rdc datastore list [<place>]
 ```
 
-`status` shows backend, attachment, usage, repositories, and snapshots. A detached datastore
-still reports its record. `list` shows every named datastore, where it is attached, and what
-it holds; the optional `<place>` narrows to one cluster or one machine.
+`status` shows backend, attachment, usage, repositories, and snapshots. A detached datastore still reports its record. `list` shows every named datastore, where it is attached, and what it holds; the optional `<place>` narrows to one cluster or one machine.
 
 ### Resize
 
@@ -160,8 +133,7 @@ it holds; the optional `<place>` narrows to one cluster or one machine.
 rdc datastore resize <datastore> --size <size>
 ```
 
-Grow or shrink. This is an **offline** operation: the repositories inside the datastore must
-be stopped first.
+Grow or shrink. This is an **offline** operation: the repositories inside the datastore must be stopped first.
 
 ### Delete
 
@@ -169,9 +141,7 @@ be stopped first.
 rdc datastore delete <datastore> [--force]
 ```
 
-Destroys the datastore and everything in it. It detaches first; if it will not detach
-cleanly, the delete fails rather than orphaning a mounted pool. `--force` deletes even though
-repositories still point at it (their data goes with it).
+Destroys the datastore and everything in it. It detaches first; if it will not detach cleanly, the delete fails rather than orphaning a mounted pool. `--force` deletes even though repositories still point at it (their data goes with it).
 
 ## Typical workflow
 
@@ -217,9 +187,7 @@ Environment variables for customization:
 | `CEPH_OSD_DEVICE` | `/dev/vdc` | OSD device path on Ceph nodes |
 | `VM_CEPH_DISK_SIZE` | `32` | Secondary disk size (GB) for Ceph nodes |
 
-After provisioning, workers automatically have `ceph-common` installed and
-`/etc/ceph/ceph.conf` + keyring configured. Full provisioning takes ~10-15 minutes (Ceph
-bootstrap alone is ~5 min).
+After provisioning, workers automatically have `ceph-common` installed and `/etc/ceph/ceph.conf` + keyring configured. Full provisioning takes ~10-15 minutes (Ceph bootstrap alone is ~5 min).
 
 ### Verify Ceph connectivity
 
@@ -227,14 +195,11 @@ bootstrap alone is ~5 min).
 rdc datastore status <datastore>
 ```
 
-The status output should report the `rbd` backend and the `pool/image` it maps to. If Ceph
-errors appear, check that `/etc/ceph/ceph.conf` and the keyring exist on the worker (the ops
-provisioner installs these automatically).
+The status output should report the `rbd` backend and the `pool/image` it maps to. If Ceph errors appear, check that `/etc/ceph/ceph.conf` and the keyring exist on the worker (the ops provisioner installs these automatically).
 
 ## How fork works (technical)
 
-Fork uses RBD layered cloning. With `--writes local`, a device-mapper snapshot stacks a local
-sparse overlay on top of the read-only clone:
+Fork uses RBD layered cloning. With `--writes local`, a device-mapper snapshot stacks a local sparse overlay on top of the read-only clone:
 
 ```
 Source RBD image (read-write, production)
@@ -247,35 +212,24 @@ Source RBD image (read-write, production)
                                 +-- Mount (BTRFS)
 ```
 
-**Reads**: through device mapper -> RBD clone -> Ceph cluster (cached locally)
-**Writes** (`--writes local`): to the local sparse overlay, no network I/O, discarded on detach
-**Writes** (`--writes ceph`): to a durable clone in the pool
-**Storage**: the overlay starts at 0 bytes and grows only with writes
+**Reads**: through device mapper -> RBD clone -> Ceph cluster (cached locally) **Writes** (`--writes local`): to the local sparse overlay, no network I/O, discarded on detach **Writes** (`--writes ceph`): to a durable clone in the pool **Storage**: the overlay starts at 0 bytes and grows only with writes
 
 ## Troubleshooting
 
 ### "cannot fork a local datastore"
-The `local` backend has no block-level clone primitive. Either create the datastore with
-`--backend rbd`, or fork the individual repositories inside it with `rdc repo fork`.
+The `local` backend has no block-level clone primitive. Either create the datastore with `--backend rbd`, or fork the individual repositories inside it with `rdc repo fork`.
 
 ### Attach refuses a fork without `--writes`
-A fork's writes have to go somewhere, and `local` vs `ceph` have opposite durability. The
-CLI refuses to guess. Pass `--writes local` (ephemeral) or `--writes ceph` (durable).
+A fork's writes have to go somewhere, and `local` vs `ceph` have opposite durability. The CLI refuses to guess. Pass `--writes local` (ephemeral) or `--writes ceph` (durable).
 
 ### Detach refuses a `--writes local` fork
-Its overlay has nowhere to be written back to, so detaching destroys it. Confirm with
-`--discard`.
+Its overlay has nowhere to be written back to, so detaching destroys it. Confirm with `--discard`.
 
 ### Wrong pool name
-The ops provisioner creates a pool named `rediacc_rbd_pool` by default, not `rbd`, which is
-what `--pool` defaults to. Pass `--pool rediacc_rbd_pool` at `datastore create`, or check the
-`CEPH_POOL_NAME` env var used during `ops up`.
+The ops provisioner creates a pool named `rediacc_rbd_pool` by default, not `rbd`, which is what `--pool` defaults to. Pass `--pool rediacc_rbd_pool` at `datastore create`, or check the `CEPH_POOL_NAME` env var used during `ops up`.
 
 ### Ceph client config missing on workers
-If `ops up` fails to configure Ceph clients, re-run `rdc ops up`. The provisioner relays
-config files through the host machine (not inter-VM SCP). The keyring at `/etc/ceph/` has 600
-permissions; the provisioner stages it to `/tmp/` before download.
+If `ops up` fails to configure Ceph clients, re-run `rdc ops up`. The provisioner relays config files through the host machine (not inter-VM SCP). The keyring at `/etc/ceph/` has 600 permissions; the provisioner stages it to `/tmp/` before download.
 
 ### A stale holder will not give the datastore up
-Attaching elsewhere detaches the old holder first. If that machine is unreachable or left the
-pool mounted, `rdc datastore attach <ds> --to <machine> --force` fences it.
+Attaching elsewhere detaches the old holder first. If that machine is unreachable or left the pool mounted, `rdc datastore attach <ds> --to <machine> --force` fences it.

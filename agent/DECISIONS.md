@@ -1,28 +1,17 @@
 # DECISIONS: the register of locked decisions, with PREFIXED ids
 
-Status: live
-Owner: 8f55d4f0
-Updated: 2026-09-09
+Status: live Owner: 8f55d4f0 Updated: 2026-09-09
 
 Enforced by `check:ci-decision-ids` (`.ci/scripts/quality/check_decision_ids.py`).
 
 ## Why this file exists, and the collision that paid for it
 
-Three id schemes collided on the same-looking token and two adjacent boxes of
-`agent/PLAN-tooling-transformation.md` ended up pointing at OPPOSITE FILES because of
-it. `W12 P2.7` cited "A5 in `docs/ci-overhaul/04-decisions.md`", and `grep` for that
-token in that file returns 0: it meant the GATE RULE in
-`.ci/scripts/quality/check_plan_boxes.py:41`. Box X0.1 fixed the source on 2026-09-08 by
-prefixing: gate rules are `G-A<n>`, operator decisions are `D-A<n>`, and a bare `A5` is
-now wrong in both directions rather than ambiguous in both. This file is the other half:
-the rows those `D-` ids resolve to.
+Three id schemes collided on the same-looking token and two adjacent boxes of `agent/PLAN-tooling-transformation.md` ended up pointing at OPPOSITE FILES because of it. `W12 P2.7` cited "A5 in `docs/ci-overhaul/04-decisions.md`", and `grep` for that token in that file returns 0: it meant the GATE RULE in `.ci/scripts/quality/check_plan_boxes.py:41`. Box X0.1 fixed the source on
+2026-09-08 by prefixing: gate rules are `G-A<n>`, operator decisions are `D-A<n>`, and a bare `A5` is now wrong in both directions rather than ambiguous in both. This file is the other half: the rows those `D-` ids resolve to.
 
 ## The id grammar, and the one shape it deliberately cannot express
 
-An id is `D-<SRC><n>`. `<SRC>` is a source key declared in the table below, `<n>` is the
-number the SOURCE DOCUMENT itself uses, never a number invented here. That is what makes
-an id transcribable: a reader who has the source in front of them can derive the id
-without consulting this file, and a reader who has only the id can find the source.
+An id is `D-<SRC><n>`. `<SRC>` is a source key declared in the table below, `<n>` is the number the SOURCE DOCUMENT itself uses, never a number invented here. That is what makes an id transcribable: a reader who has the source in front of them can derive the id without consulting this file, and a reader who has only the id can find the source.
 
   | `<SRC>` | Source document |
   |---|---|
@@ -30,38 +19,23 @@ without consulting this file, and a reader who has only the id can find the sour
   | `B` | `docs/ci-overhaul/04-decisions.md` section B, decided by recommendation |
   | `S` | `agent/PLAN-secret-namespace-migration.md`, locked by the operator 2026-09-02 |
 
-**The `D-1`..`D-9` labels in `docs/ci-overhaul/04-decisions.md:57-112` are NOT register
-ids and must never be read as one.** They label section C, "Open decision points", which
-are questions carrying a recommended default rather than decisions. They have no letter,
-so the grammar below cannot read `D-6` as a register id at all; only a hurried reader can. The
-same file's section F then uses `D8`, `D9` and `D10`
-(`docs/ci-overhaul/04-decisions.md:184-201`) for something else again, defect ids from an
-earlier plan, and `docs/ci-overhaul/04-decisions.md:93` carries both on one line
-(`**D-6. D6: how does a submodule draft PR get flipped ready?**`). Those are left exactly
-as they are: renumbering a document to suit a register is how a register starts lying
-about its sources.
+**The `D-1`..`D-9` labels in `docs/ci-overhaul/04-decisions.md:57-112` are NOT register ids and must never be read as one.** They label section C, "Open decision points", which are questions carrying a recommended default rather than decisions. They have no letter, so the grammar below cannot read `D-6` as a register id at all; only a hurried reader can. The same file's section F
+then uses `D8`, `D9` and `D10` (`docs/ci-overhaul/04-decisions.md:184-201`) for something else again, defect ids from an earlier plan, and `docs/ci-overhaul/04-decisions.md:93` carries both on one line (`**D-6. D6: how does a submodule draft PR get flipped ready?**`). Those are left exactly as they are: renumbering a document to suit a register is how a register starts lying about
+its sources.
 
-**`agent/PLAN-secret-namespace-migration.md:158`, `:170` and `:193` carry three further rounds of
-operator rulings numbered `8quater`, `8ter` and `8bis`.** They are rulings, not
-decisions, and the grammar has no room for them because `<n>` is a number. They hang off
-`D-S8`'s Notes column with their line numbers rather than being silently dropped, and
-one of them is the reason `D-S10` exists at all: `8ter` accepted the naming table with
-`BACKUP_S3_* -> CLOUDFLARE_R2_BACKUP_*`, and `D-S10` overturned that row the same day.
+**`agent/PLAN-secret-namespace-migration.md:158`, `:170` and `:193` carry three further rounds of operator rulings numbered `8quater`, `8ter` and `8bis`.** They are rulings, not decisions, and the grammar has no room for them because `<n>` is a number. They hang off `D-S8`'s Notes column with their line numbers rather than being silently dropped, and one of them is the reason
+`D-S10` exists at all: `8ter` accepted the naming table with `BACKUP_S3_* -> CLOUDFLARE_R2_BACKUP_*`, and `D-S10` overturned that row the same day.
 
 ## What a gate can and cannot enforce here
 
-No gate can tell a good substitution from a bad one. `D-A6` is a standing licence to
-substitute a better design, and judging the substitution is a reader's job. What a gate
-CAN assert is the licence's PRECONDITION: that the substitution was stated out loud, at a
-pointer that resolves, naming the licence it was taken under. So:
+No gate can tell a good substitution from a bad one. `D-A6` is a standing licence to substitute a better design, and judging the substitution is a reader's job. What a gate CAN assert is the licence's PRECONDITION: that the substitution was stated out loud, at a pointer that resolves, naming the licence it was taken under. So:
 
   * every cited `D-` id resolves to a row here;
   * every row's `Source` resolves to a real file and line;
   * a row taken under a licence names a row that exists and is itself still `live`;
   * a `superseded-by` ADDED by a change must be cited by a commit in that change.
 
-The last one is the licence half. It cannot stop a bad substitution and does not claim
-to; it stops a SILENT one.
+The last one is the licence half. It cannot stop a bad substitution and does not claim to; it stops a SILENT one.
 
 ## The register
 
@@ -91,7 +65,4 @@ to; it stops a SILENT one.
 
 ## Adding a row
 
-Add the row, cite its `Source` as a full path and line, and leave `Status` as `live`.
-To supersede a row, change its `Status` to `superseded-by D-<id>` and name that id in the
-commit message. The gate reads the commit range, so the supersession is recorded where a
-reader of `git log` will find it rather than only where a reader of this file will.
+Add the row, cite its `Source` as a full path and line, and leave `Status` as `live`. To supersede a row, change its `Status` to `superseded-by D-<id>` and name that id in the commit message. The gate reads the commit range, so the supersession is recorded where a reader of `git log` will find it rather than only where a reader of this file will.

@@ -1,6 +1,5 @@
 <!-- Split out of CLAUDE.md. CLAUDE.md carries the standing rules that must be
-obeyed every turn; this file is lookup material, read when the thing it
-describes actually happens. Keep the pointer line in CLAUDE.md in sync. -->
+obeyed every turn; this file is lookup material, read when the thing it describes actually happens. Keep the pointer line in CLAUDE.md in sync. -->
 
 # Suppression mechanisms and the BLOCKER convention
 
@@ -8,46 +7,23 @@ Every escape hatch in the repo (allowlists, blocklists, overrides, ignore lists)
 
 ### When a suppression is the wrong answer
 
-**Suppressions are for when the alternative is worse. Reach for one only after
-establishing that.** The test is not "is this annoying to fix" — it is whether the
-BLOCKER reason you are about to write is *true*.
+**Suppressions are for when the alternative is worse. Reach for one only after establishing that.** The test is not "is this annoying to fix" — it is whether the BLOCKER reason you are about to write is *true*.
 
-A suppression whose stated reason does not hold is worse than no suppression at
-all, because the next reader inherits a false justification and has no way to tell
-it apart from a real one. That reader will not re-derive it; the whole point of the
-convention is that they trust it.
+A suppression whose stated reason does not hold is worse than no suppression at all, because the next reader inherits a false justification and has no way to tell it apart from a real one. That reader will not re-derive it; the whole point of the convention is that they trust it.
 
-Worked example (2026-08-05). A Go dependency bump deleted an API renet used, and
-blocklisting the module at its 0.x line looked reasonable: it would keep emitted
-telemetry byte-identical while the migration waited. Checking what actually flowed
-through the call site showed every attribute was already a string, so the "keeps
-behaviour identical" reason was vacuous — there was no behaviour to preserve. The
-3-line migration was strictly better, and the suppression would have parked an
-untrue reason in the tree indefinitely. **Verify the reason before you write it,
-the same way you would verify a gate's finding.**
+Worked example (2026-08-05). A Go dependency bump deleted an API renet used, and blocklisting the module at its 0.x line looked reasonable: it would keep emitted telemetry byte-identical while the migration waited. Checking what actually flowed through the call site showed every attribute was already a string, so the "keeps behaviour identical" reason was vacuous — there was no
+behaviour to preserve. The 3-line migration was strictly better, and the suppression would have parked an untrue reason in the tree indefinitely. **Verify the reason before you write it, the same way you would verify a gate's finding.**
 
 ### Current sites
 
-**WHICH mechanisms exist is derived, not listed here.** The authority is the `suppressions`
-region of [`scripts/data/doc-registry.md`](../../scripts/data/doc-registry.md), rewritten from
-the tree by `npx tsx scripts/gen-docs.ts --write`: every tracked non-source, non-prose file
-carrying a `BLOCKER:` line, with its comment form. A new allowlist appears there the moment it
-exists, and `gate-test:docs-gen` fails if the region has drifted from the tree.
+**WHICH mechanisms exist is derived, not listed here.** The authority is the `suppressions` region of [`scripts/data/doc-registry.md`](../../scripts/data/doc-registry.md), rewritten from the tree by `npx tsx scripts/gen-docs.ts --write`: every tracked non-source, non-prose file carrying a `BLOCKER:` line, with its comment form. A new allowlist appears there the moment it exists,
+and `gate-test:docs-gen` fails if the region has drifted from the tree.
 
-The table below is the part that CANNOT be derived, and it is deliberately narrower: which
-script READS each mechanism, and the per-mechanism liveness arrangements. The generator refuses
-to compute the reader column, and the reason is measured rather than aesthetic -- a
-grep-for-the-basename version was built and observed flipping mid-run when an unrelated peer
-session staged a file, so the cell churned on edits that touched no suppression at all. Read
-this table for the notes; read the derived region for the inventory. **It is not exhaustive, and
-must not be read as a census** -- a mechanism absent from these rows is not thereby unknown to
-the repository.
+The table below is the part that CANNOT be derived, and it is deliberately narrower: which script READS each mechanism, and the per-mechanism liveness arrangements. The generator refuses to compute the reader column, and the reason is measured rather than aesthetic -- a grep-for-the-basename version was built and observed flipping mid-run when an unrelated peer session staged a
+file, so the cell churned on edits that touched no suppression at all. Read this table for the notes; read the derived region for the inventory. **It is not exhaustive, and must not be read as a census** -- a mechanism absent from these rows is not thereby unknown to the repository.
 
-**Where they live.** Fifteen of these files sat at the repository root until W4 P2 moved them
-into `.ci/policy/` (2026-09-06). `scripts/lib/policy-paths.ts` is the single seam that answers
-where one is; `.ci/policy/README.md` carries the predicate for what belongs there and the
-recorded reason `.ci-trigger` stayed at the root. Readers still name them by BARE NAME through
-that seam, so a grep for `.deps-upgrade-blocklist` will find the name in code that is correct.
+**Where they live.** Fifteen of these files sat at the repository root until W4 P2 moved them into `.ci/policy/` (2026-09-06). `scripts/lib/policy-paths.ts` is the single seam that answers where one is; `.ci/policy/README.md` carries the predicate for what belongs there and the recorded reason `.ci-trigger` stayed at the root. Readers still name them by BARE NAME through that seam,
+so a grep for `.deps-upgrade-blocklist` will find the name in code that is correct.
 
 | Mechanism | File | Reader |
 |---|---|---|
@@ -81,24 +57,15 @@ A blank line resets the tracked BLOCKER, so a single BLOCKER covers a grouped li
 package-name  # BLOCKER: <reason>
 ```
 
-**Direction-tagged** (`.ci-parity-exempt`), because parity is a two-way relation
-and the two directions need different justifications:
+**Direction-tagged** (`.ci-parity-exempt`), because parity is a two-way relation and the two directions need different justifications:
 ```
 # BLOCKER: <reason>
 ci-only  .ci/scripts/quality/check-branch.sh
 ```
-`ci-only` means CI runs it and the local gate set deliberately does not;
-`local-only` is the reverse. The liveness oracle differs per direction, so the
-tag is load-bearing rather than documentation: a `ci-only` entry is live while
-some workflow still invokes it, and a `local-only` entry is live while the local
-gate set still runs it. The shared parser takes the first whitespace-separated
-token, so `scripts/gates/check-ci-parity.ts` and the liveness probe both split the
-second column off explicitly.
+`ci-only` means CI runs it and the local gate set deliberately does not; `local-only` is the reverse. The liveness oracle differs per direction, so the tag is load-bearing rather than documentation: a `ci-only` entry is live while some workflow still invokes it, and a `local-only` entry is live while the local gate set still runs it. The shared parser takes the first
+whitespace-separated token, so `scripts/gates/check-ci-parity.ts` and the liveness probe both split the second column off explicitly.
 
-**JSONC files** (knip.jsonc) use real `// BLOCKER: <reason>` comments with the same
-group semantics as shell files: one BLOCKER covers the entries after it until a blank
-line or the end of the array. Staleness of knip ignore entries is enforced by knip
-itself (`--treat-config-hints-as-errors`), not by the BLOCKER validator.
+**JSONC files** (knip.jsonc) use real `// BLOCKER: <reason>` comments with the same group semantics as shell files: one BLOCKER covers the entries after it until a blank line or the end of the array. Staleness of knip ignore entries is enforced by knip itself (`--treat-config-hints-as-errors`), not by the BLOCKER validator.
 
 **JSON files** (no comment support) use a parallel `_reasons` object with identical keys:
 ```jsonc
@@ -110,20 +77,15 @@ itself (`--treat-config-hints-as-errors`), not by the BLOCKER validator.
 
 A BLOCKER reason must be at least 30 characters (after normalization) and must not match any phrase in the banned-phrase list (`no fix`, `tbd`, `todo`, `ok`, `ack`, `later`, `will fix`, `dev only`, etc.).
 
-Full banned list + implementation: **`.ci/rediacc_ci/core/allowlist.py`, and nowhere else**. `.ci/scripts/lib/blocker-validator.sh` (bash) and `scripts/lib/blocker-validator.ts` (TypeScript) are CLIENTS of it as of 2026-09-09; there is nothing left to keep in sync, and adding a phrase to either of them changes no verdict. The bash file still carries the phrase array as a TEXT MIRROR, because `test-breakpoint-portability.sh:361` parses it out of that file to prove the vendored breakpoint copy is a subset; `.ci/rediacc_ci/tests/test_blocker_implementations.py` asserts the mirror equals the canonical in both directions, and asserts that no other file in the tree carries a table.
+Full banned list + implementation: **`.ci/rediacc_ci/core/allowlist.py`, and nowhere else**. `.ci/scripts/lib/blocker-validator.sh` (bash) and `scripts/lib/blocker-validator.ts` (TypeScript) are CLIENTS of it as of 2026-09-09; there is nothing left to keep in sync, and adding a phrase to either of them changes no verdict. The bash file still carries the phrase array as a TEXT
+MIRROR, because `test-breakpoint-portability.sh:361` parses it out of that file to prove the vendored breakpoint copy is a subset; `.ci/rediacc_ci/tests/test_blocker_implementations.py` asserts the mirror equals the canonical in both directions, and asserts that no other file in the tree carries a table.
 
 ### Liveness: is the entry still needed?
 
-The BLOCKER convention proves a reason **exists**. It cannot prove the reason is
-still **true**. Those are different failures, and the second one is invisible:
-Electron was removed from the product and **101 suppression entries justified by
-electron dependency chains stayed behind** — the entire `.audit-allowlist` (18)
-plus 83 in `.audit-prod-allowlist` — because nothing checked whether the
-suppressed thing still existed.
+The BLOCKER convention proves a reason **exists**. It cannot prove the reason is still **true**. Those are different failures, and the second one is invisible: Electron was removed from the product and **101 suppression entries justified by electron dependency chains stayed behind** — the entire `.audit-allowlist` (18) plus 83 in `.audit-prod-allowlist` — because nothing checked
+whether the suppressed thing still existed.
 
-`npm run check:ci-suppression-liveness` (`scripts/gates/check-suppression-liveness.ts`)
-closes that half. One **probe** per mechanism, each pairing the suppression file
-with the *oracle* that decides whether an entry is load-bearing:
+`npm run check:ci-suppression-liveness` (`scripts/gates/check-suppression-liveness.ts`) closes that half. One **probe** per mechanism, each pairing the suppression file with the *oracle* that decides whether an entry is load-bearing:
 
 | Mechanism | Oracle | Tier |
 |---|---|---|
@@ -140,18 +102,11 @@ with the *oracle* that decides whether an entry is load-bearing:
 Three rules this gate is built on, all learned the hard way:
 
 - **No oracle, no verdict.** Each probe declares a `minUniverse` floor and skips
-  loudly when its oracle returns less than that — the generalization of the
-  `total_vulns > 0` guard in `audit.sh`. It is deliberately NOT a ratio ("all
-  entries condemned ⇒ suspicious"): that would have silenced the electron
-  cleanup, which was right about 101 of 101 entries.
+loudly when its oracle returns less than that — the generalization of the `total_vulns > 0` guard in `audit.sh`. It is deliberately NOT a ratio ("all entries condemned ⇒ suspicious"): that would have silenced the electron cleanup, which was right about 101 of 101 entries.
 - **Overrides warn, never fail, and are never auto-removed.** An npm override is
-  prophylactic as much as reactive — it constrains what npm may resolve
-  *tomorrow*. "Absent from the lockfile today" is not proof it is dead. Start its
-  reason with `BLOCKER: preventive —` to opt out of the warning permanently.
+prophylactic as much as reactive — it constrains what npm may resolve *tomorrow*. "Absent from the lockfile today" is not proof it is dead. Start its reason with `BLOCKER: preventive —` to opt out of the warning permanently.
 - **Offline by construction.** Every oracle is a fact about the current
-  checkout, so a verdict can only change in the same commit that changes the
-  repo. No probe may consult a registry, publish date, or version comparison —
-  that is what `minimum-release-age` deferral exists to prevent elsewhere.
+checkout, so a verdict can only change in the same commit that changes the repo. No probe may consult a registry, publish date, or version comparison — that is what `minimum-release-age` deferral exists to prevent elsewhere.
 
 ### Adding / extending
 

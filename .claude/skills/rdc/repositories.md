@@ -35,7 +35,8 @@ Repositories are isolated application deployments. Each gets an encrypted LUKS v
 ## Advanced operations
 
 ### Fork (copy-on-write clone)
-`rdc repo fork <parent-ref> --tag <tag>` creates an independent copy using the name:tag model, so the fork is named `<parent>:<tag>` (e.g., `my-app:staging`). It gets a new GUID, networkId, and IP range while sharing the parent's name. Parent can remain running. Use `--checkpoint` to capture CRIU process state before forking; the fork auto-restores on first `repo up` (in-memory state preserved for containers with `rediacc.checkpoint=true` label). Cross-machine fork: fork locally first, then `repo push` to the target.
+`rdc repo fork <parent-ref> --tag <tag>` creates an independent copy using the name:tag model, so the fork is named `<parent>:<tag>` (e.g., `my-app:staging`). It gets a new GUID, networkId, and IP range while sharing the parent's name. Parent can remain running. Use `--checkpoint` to capture CRIU process state before forking; the fork auto-restores on first `repo up` (in-memory
+state preserved for containers with `rediacc.checkpoint=true` label). Cross-machine fork: fork locally first, then `repo push` to the target.
 
 **Agent guard**: AI agents operate in fork-only mode by default — they can only modify fork repositories. Use `repo fork` to create a fork first, then operate on the fork. Grand repo access requires `REDIACC_ALLOW_GRAND_REPO=<name>` (or a comma-separated list like `repo1,repo2`, or `*` for all repos) or `--allow-grand` on the MCP server.
 
@@ -100,8 +101,7 @@ The Rediaccfile is a bash script with lifecycle functions. Key rules:
 - See the [heartbeat template](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) for a reference implementation.
 
 ### Available environment variables
-In Rediaccfile shell: `${SVCNAME_IP}`, `${REDIACC_WORKING_DIR}`, `${REDIACC_NETWORK_ID}`.
-In containers: `SERVICE_IP`, `REDIACC_NETWORK_ID` (auto-injected by renet).
+In Rediaccfile shell: `${SVCNAME_IP}`, `${REDIACC_WORKING_DIR}`, `${REDIACC_NETWORK_ID}`. In containers: `SERVICE_IP`, `REDIACC_NETWORK_ID` (auto-injected by renet).
 
 ## Fork routing and backup behavior
 
@@ -111,10 +111,7 @@ In containers: `SERVICE_IP`, `REDIACC_NETWORK_ID` (auto-injected by renet).
 
 ## Promote workflow (fork to production)
 
-`repo promote` replaced `repo takeover`. It makes a validated fork the production repo under
-its parent's name: the parent keeps its identity (GUID, networkId, domains, autostart, backup
-chain) and receives the fork's data. The old production data is preserved as a backup fork.
-Promote never fetches bytes; use `repo push` or `backup restore` for that.
+`repo promote` replaced `repo takeover`. It makes a validated fork the production repo under its parent's name: the parent keeps its identity (GUID, networkId, domains, autostart, backup chain) and receives the fork's data. The old production data is preserved as a backup fork. Promote never fetches bytes; use `repo push` or `backup restore` for that.
 
 1. Fork: `rdc repo fork jfrog --tag upgrade-test`
 2. Deploy fork: `rdc repo up jfrog:upgrade-test`

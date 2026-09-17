@@ -480,11 +480,13 @@ See dedicated section below.
 
 ### New orphan types
 
-**1. Orphaned BPF programs** — if renet crashes while a BPF program is attached to a repo cgroup, it remains attached indefinitely. BPF programs are kernel-reference-counted; they persist as long as the cgroup attachment holds a reference. A repo that is fully deleted but had a crash mid-teardown can leave a live BPF program filtering traffic on a cgroup that should no longer exist.
+**1. Orphaned BPF programs** — if renet crashes while a BPF program is attached to a repo cgroup, it remains attached indefinitely. BPF programs are kernel-reference-counted; they persist as long as the cgroup attachment holds a reference. A repo that is fully deleted but had a crash mid-teardown can leave a live BPF program filtering traffic on a cgroup that should no longer
+exist.
 
 Detection: walk `/sys/fs/cgroup/rediacc/` and use `bpf(BPF_PROG_QUERY, ...)` on each cgroup to list attached programs. Cross-reference with active repo networkIDs — any BPF program attached to a cgroup with no matching active repo is orphaned.
 
-**2. Orphaned BPF map entries** — deleted containers and repos leave stale `{cgroupID → service_ip}` entries in the `cgroup_configs` BPF hash map. cgroup IDs are 64-bit integers assigned by the kernel and can be recycled over time, meaning a stale map entry could accidentally apply to a new cgroup that happens to reuse the same ID — causing wrong bind rewriting or incorrect filtering for an unrelated process.
+**2. Orphaned BPF map entries** — deleted containers and repos leave stale `{cgroupID → service_ip}` entries in the `cgroup_configs` BPF hash map. cgroup IDs are 64-bit integers assigned by the kernel and can be recycled over time, meaning a stale map entry could accidentally apply to a new cgroup that happens to reuse the same ID — causing wrong bind rewriting or incorrect
+filtering for an unrelated process.
 
 Detection: enumerate all entries in the `cgroup_configs` map. For each entry, check if `/sys/fs/cgroup` has a cgroup with that ID (via `bpf_get_current_cgroup_id` equivalent, or by scanning cgroup files). Remove entries whose cgroup no longer exists.
 
@@ -639,7 +641,7 @@ Several `renet compose` / `renet up` checks currently force users to bind servic
   ⚠ pgadmin — listening on :::80 (should bind to 127.0.x.x)
     Add PGADMIN_LISTEN_ADDRESS=${SERVICE_IP} to environment
   ```
-  With eBPF, wildcard binding is silently rewritten to `SERVICE_IP` — no warning needed.
+With eBPF, wildcard binding is silently rewritten to `SERVICE_IP` — no warning needed.
 - Remove `VerifyServiceBindings()` — the post-`compose up` check that detects wildcard-bound services and triggers the wildcard firewall. eBPF ensures services never actually listen on `0.0.0.0`; the check is redundant.
 - Remove `CollectWildcardPorts()` — used only to feed `SetupWildcardFirewall` which is also being removed.
 
@@ -648,7 +650,7 @@ Several `renet compose` / `renet up` checks currently force users to bind servic
   ```
   "service %q: healthcheck uses localhost — use ${SERVICE_IP} instead"
   ```
-  `localhost` resolves to `127.0.0.1` which eBPF's `connect()` hook explicitly allows through (it's whitelisted to prevent blocking health checks). This warning is no longer valid.
+`localhost` resolves to `127.0.0.1` which eBPF's `connect()` hook explicitly allows through (it's whitelisted to prevent blocking health checks). This warning is no longer valid.
 - **Keep** the `${..._IP}` in `configs.content` validation error — embedding raw IPs in configs stored by applications (like pgadmin4.db) is still wrong and eBPF doesn't help once the IP is persisted.
 - **Keep** the `network_mode` override warning — still relevant.
 

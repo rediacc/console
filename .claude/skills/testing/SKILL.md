@@ -7,8 +7,7 @@ self-improving: true
 
 # testing — which surface owns this fix
 
-`ci.yml` has six regression surfaces. Picking the wrong one produces a test that
-passes without covering anything. Route first, then open that surface's file.
+`ci.yml` has six regression surfaces. Picking the wrong one produces a test that passes without covering anything. Route first, then open that surface's file.
 
 | the fix changes | surface | file |
 |---|---|---|
@@ -22,26 +21,21 @@ passes without covering anything. Route first, then open that surface's file.
 ## The two questions, in order
 
 1. **Could the defect be seen without running the product?** Yes → static gate.
-   No → one of the runtime surfaces. A behavioural bug given a `check-*.ts` gets
-   a gate that asserts the source still looks right, which is not the same claim.
+No → one of the runtime surfaces. A behavioural bug given a `check-*.ts` gets a gate that asserts the source still looks right, which is not the same claim.
 2. **What proves it runs?** Not that the file exists. Each surface's file names
-   its own proof; a gate nobody's job selects is worth nothing.
+its own proof; a gate nobody's job selects is worth nothing.
 
 ## Rules that hold on every surface
 
 - **Control first.** Write the failing case, watch it fail, then fix. A test
-  written after a green run asserts the green.
+written after a green run asserts the green.
 - **Plant the defect.** Re-introduce the bug and require the new test to go red.
-  A test that cannot fail is the failure mode, not an edge case.
+A test that cannot fail is the failure mode, not an edge case.
 - **Name what it cannot see.** Every test has a blind spot; say it in the file
-  and in the success output, or a green will be read as more than it is.
+and in the success output, or a green will be read as more than it is.
 - **Sweep the class.** One bad call site usually has siblings. Grep before
-  declaring it fixed.
+declaring it fixed.
 
 ## Coverage of the surfaces themselves
 
-Two surfaces have a gate that notices a MISSING test: E2E
-(`check-e2e-coverage.sh`, both directions) and hooks
-(`check_test_file_orphans.py`). The ops workflow has no such gate of its own,
-but the machines it provisions are exercised by the E2E suites, so most ops
-regressions surface there rather than going unwatched.
+Two surfaces have a gate that notices a MISSING test: E2E (`check-e2e-coverage.sh`, both directions) and hooks (`check_test_file_orphans.py`). The ops workflow has no such gate of its own, but the machines it provisions are exercised by the E2E suites, so most ops regressions surface there rather than going unwatched.
