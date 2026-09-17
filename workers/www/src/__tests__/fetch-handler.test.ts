@@ -3,8 +3,7 @@ import worker, { normalizePath, detectLanguage } from '../index';
 
 // Minimal Env stub. DB is only needed when /account/api/* is exercised
 // against the embedded accountApp (PR previews); ACCOUNT is the service
-// binding that proxies marketing-form endpoints on stable/edge. Both are
-// optional — omit to mirror the corresponding deploy target.
+// binding that proxies marketing-form endpoints on stable/edge. Both are optional — omit to mirror the corresponding deploy target.
 function mkFetcher(responder: (req: Request) => Response): Fetcher {
   return {
     fetch: vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -73,10 +72,7 @@ describe('normalizePath', () => {
     });
   });
   test('preserves percent-encoded UTF-8 triples (does not lowercase them)', () => {
-    // RFC 3986 says %XX is case-insensitive, but CF ASSETS re-encodes to
-    // uppercase. If we lowercased the whole path we'd trigger a redirect
-    // loop (%C3%B3 -> %c3%b3 -> ASSETS -> %C3%B3 -> ...). Surrounding ASCII
-    // still lowercases.
+    // RFC 3986 says %XX is case-insensitive, but CF ASSETS re-encodes to uppercase. If we lowercased the whole path we'd trigger a redirect loop (%C3%B3 -> %c3%b3 -> ASSETS -> %C3%B3 -> ...). Surrounding ASCII still lowercases.
     expect(normalizePath('/ES/Blog/Tags/configuraci%C3%B3n')).toEqual({
       path: '/es/blog/tags/configuraci%C3%B3n',
       changed: true,
@@ -211,9 +207,7 @@ describe('fetch handler — 404 recovery integration', () => {
   });
 
   test('self-redirect guard: /en/checkout/success does NOT infinite-loop', async () => {
-    // Rule /checkout/success -> /checkout/success exists to add lang when missing.
-    // When lang is already present, the Worker must fall through to ASSETS
-    // instead of 301-looping to itself.
+    // Rule /checkout/success -> /checkout/success exists to add lang when missing. When lang is already present, the Worker must fall through to ASSETS instead of 301-looping to itself.
     const successEnv = mkEnv((req) => {
       const url = new URL(req.url);
       if (url.pathname === '/en/checkout/success') return new Response('ok', { status: 200 });
@@ -248,10 +242,7 @@ describe('fetch handler — 404 recovery integration', () => {
 });
 
 describe('fetch handler — static asset paths (case-preserving)', () => {
-  // Regression: normalizePath used to lowercase hashed asset filenames
-  // (client.BzZdRM54.js, Inter-Regular.woff2), 301-redirecting to paths that
-  // don't exist on disk. The asset-path guard must forward to ASSETS with the
-  // exact case intact.
+  // Regression: normalizePath used to lowercase hashed asset filenames (client.BzZdRM54.js, Inter-Regular.woff2), 301-redirecting to paths that don't exist on disk. The asset-path guard must forward to ASSETS with the exact case intact.
 
   function capture(pathname: string, expectedUrl: string) {
     const captured: string[] = [];
@@ -313,8 +304,7 @@ describe('fetch handler — static asset paths (case-preserving)', () => {
 });
 
 describe('fetch handler — /account/api/* routing', () => {
-  // On stable / edge, env.DB is unbound. Public marketing endpoints
-  // (contact submit, newsletter subscribe) must forward via the ACCOUNT
+  // On stable / edge, env.DB is unbound. Public marketing endpoints (contact submit, newsletter subscribe) must forward via the ACCOUNT
   // service binding so the forms keep working; everything else 410s so
   // the SPA region picker can route authenticated traffic.
 
@@ -345,8 +335,7 @@ describe('fetch handler — /account/api/* routing', () => {
   });
 
   test('non-marketing /account/api endpoints still 410 even with ACCOUNT bound', async () => {
-    // /auth/login etc. is the SPA's responsibility — region picker decides which
-    // regional worker to hit. Forwarding it from www would skip that selection.
+    // /auth/login etc. is the SPA's responsibility — region picker decides which regional worker to hit. Forwarding it from www would skip that selection.
     const env = mkEnv(
       () => new Response('not found', { status: 404 }),
       () => new Response('should not be called', { status: 500 })
@@ -357,8 +346,7 @@ describe('fetch handler — /account/api/* routing', () => {
   });
 
   test('marketing endpoint 410s when ACCOUNT binding is absent (PR previews without DB)', async () => {
-    // Defense-in-depth: if the binding is missing on a deploy target, fall back
-    // to the existing 410 instead of throwing.
+    // Defense-in-depth: if the binding is missing on a deploy target, fall back to the existing 410 instead of throwing.
     const env = mkEnv(() => new Response('not found', { status: 404 }));
     const res = await post('/account/api/v1/contact/submit', { name: 'x' }, env);
     expect(res.status).toBe(410);

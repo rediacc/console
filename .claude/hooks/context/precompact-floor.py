@@ -158,8 +158,7 @@ def main():
         if ids:
             # Bounded on purpose. Hook output is capped at 10,000 characters,
             # and a live run produced 41 ids for a single session; an
-            # instruction that is mostly a list stops reading as an
-            # instruction. The full set is in the snapshot either way.
+            # instruction that is mostly a list stops reading as an instruction. The full set is in the snapshot either way.
             shown = ids[:MAX_IDS]
             tail = (
                 ""
@@ -184,6 +183,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # Explicit, and the whole point: exit 2 blocks compaction, and this hook
-    # must never do that.
+    # Explicit, and the whole point: exit 2 blocks compaction, and this hook must never do that.
     sys.exit(0)

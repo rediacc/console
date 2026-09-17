@@ -28,8 +28,7 @@ export function isEncrypted(value: string | null | undefined): boolean {
     // Not valid JSON, continue checking if it's encrypted
   }
 
-  // Check if it matches base64 pattern and has reasonable length
-  // Encrypted values are typically much longer than originals due to IV + encrypted data
+  // Check if it matches base64 pattern and has reasonable length Encrypted values are typically much longer than originals due to IV + encrypted data
   return ENCRYPTED_PATTERN.test(value) && value.length >= 40;
 }
 

@@ -36,17 +36,11 @@ import { detectLikelyRegion, discoverRegions } from '../provision/region-discove
 describe('discoverRegions', () => {
   // THESE CASES CHANGED SHAPE ON PURPOSE (2026-08-26).
   //
-  // They used to pin a runtime-fetch path: fetch the signed manifest, verify it,
-  // and "fall back" to the baked-in list on failure. Five of the six cases were
-  // already asserting the fallback, because the fallback was the only path that
+  // They used to pin a runtime-fetch path: fetch the signed manifest, verify it, and "fall back" to the baked-in list on failure. Five of the six cases were already asserting the fallback, because the fallback was the only path that
   // ever ran -- `${SITE_URL}/regions.json` returns 404 and nothing publishes it,
-  // and `scripts/sign-regions.ts` had no caller. The one case that asserted the
-  // happy path was the only one describing behaviour users never got.
+  // and `scripts/sign-regions.ts` had no caller. The one case that asserted the happy path was the only one describing behaviour users never got.
   //
-  // The fetch was removed rather than finished (operator decision), so what is
-  // worth pinning now is the opposite claim: this function makes NO network call
-  // at all. That is a stronger assertion than the old suite had -- nothing
-  // previously would have caught a stray request on a 5s timeout.
+  // The fetch was removed rather than finished (operator decision), so what is worth pinning now is the opposite claim: this function makes NO network call at all. That is a stronger assertion than the old suite had -- nothing previously would have caught a stray request on a 5s timeout.
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
@@ -66,8 +60,7 @@ describe('discoverRegions', () => {
   });
 
   it('makes NO network request', async () => {
-    // The point of the removal. A fetch here would mean the dead path came back,
-    // costing every caller a timeout on a URL that 404s.
+    // The point of the removal. A fetch here would mean the dead path came back, costing every caller a timeout on a URL that 404s.
     const spy = vi.fn();
     globalThis.fetch = spy;
 
@@ -77,9 +70,7 @@ describe('discoverRegions', () => {
   });
 
   it('does not attempt signature verification', async () => {
-    // verifySignedRegions is still exported from @rediacc/shared, deliberately,
-    // so it is available if runtime discovery is ever built. Nothing should be
-    // calling it today.
+    // verifySignedRegions is still exported from @rediacc/shared, deliberately, so it is available if runtime discovery is ever built. Nothing should be calling it today.
     await discoverRegions();
 
     expect(mockVerifySignedRegions).not.toHaveBeenCalled();

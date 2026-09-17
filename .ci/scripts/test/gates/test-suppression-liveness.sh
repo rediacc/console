@@ -1,5 +1,15 @@
 #!/bin/bash
-# Integration test for scripts/check-suppression-liveness.ts.
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node, submodules
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: Integration test for scripts/gates/check-suppression-liveness.ts
+# ---- end gate ----
+
+# Integration test for scripts/gates/check-suppression-liveness.ts.
 #
 # The gate must be provable BOTH ways: it passes on a clean tree AND it fires on
 # a planted stale entry. A gate that only ever passes proves nothing — this repo
@@ -19,14 +29,14 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GATE="$REPO_ROOT/scripts/check-suppression-liveness.ts"
+GATE="$REPO_ROOT/scripts/gates/check-suppression-liveness.ts"
 
 # Build a fixture repo that is healthy on every probe, then let each test bend
 # exactly one thing. Echoes the fixture path.
 make_fixture() {
     local t
     t="$(mktemp -d)"
-    mkdir -p "$t/.github/workflows" "$t/.github/actions/app-token" "$t/private/renet"
+    mkdir -p "$t/.github/workflows" "$t/.github/actions/app-token" "$t/private/renet" "$t/.ci/policy"
     cp "$REPO_ROOT/package.json" "$t/package.json"
     cp "$REPO_ROOT/package-lock.json" "$t/package-lock.json"
     cp "$REPO_ROOT/.github/workflows/ci.yml" "$t/.github/workflows/ci.yml"
@@ -61,7 +71,7 @@ test_passes_on_real_repo() {
 test_fires_on_dead_deps_entry() {
     local t out rc=0
     t="$(make_fixture)"
-    printf '# BLOCKER: planted dead package to prove the deps probe fires in this test\ntotally-not-a-real-package\n' >"$t/.deps-upgrade-blocklist"
+    printf '# BLOCKER: planted dead package to prove the deps probe fires in this test\ntotally-not-a-real-package\n' >"$t/.ci/policy/.deps-upgrade-blocklist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
     assert_exit_code 1 "$rc" "a dead deps entry must fail the gate"
@@ -78,7 +88,7 @@ test_no_false_positive_on_live_entry() {
     # the fixture carries. (zod would NOT work here: it appears in the real
     # package.json only under "overrides", and an override is not a declaration
     # — the deps probe would correctly condemn it.)
-    printf '# BLOCKER: live package pinned deliberately, must not be reported as stale\neslint\n' >"$t/.deps-upgrade-blocklist"
+    printf '# BLOCKER: live package pinned deliberately, must not be reported as stale\neslint\n' >"$t/.ci/policy/.deps-upgrade-blocklist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
     assert_exit_code 0 "$rc" "a declared package must not be condemned"
@@ -95,12 +105,12 @@ test_oracle_floor_skips_instead_of_condemning() {
     cat >"$t/package.json" <<'EOF'
 {"name":"fixture","dependencies":{"a":"1.0.0","b":"1.0.0"}}
 EOF
-    printf '# BLOCKER: must survive because the oracle is too small to be trusted here\nsomething\n' >"$t/.deps-upgrade-blocklist"
+    printf '# BLOCKER: must survive because the oracle is too small to be trusted here\nsomething\n' >"$t/.ci/policy/.deps-upgrade-blocklist"
     # A second, LIVE entry on a healthy probe, so the run still checks something.
     # Without it the only entry is the skipped one, the run asserts nothing, and
     # the anti-vacuity rule fails it for a different reason than the one under
     # test here.
-    printf '# BLOCKER: pinned deliberately; referenced only from a composite action file\nactions/create-github-app-token\n' >"$t/.actions-upgrade-blocklist"
+    printf '# BLOCKER: pinned deliberately; referenced only from a composite action file\nactions/create-github-app-token\n' >"$t/.ci/policy/.actions-upgrade-blocklist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
     assert_exit_code 0 "$rc" "a suspect oracle must not fail the gate"
@@ -115,7 +125,11 @@ test_vacuous_run_fails() {
     t="$(mktemp -d)"
     # No manifests, no lockfile, no .github, no go.mod: every oracle unavailable,
     # yet entries exist. The run proved nothing and must not report success.
-    printf '# BLOCKER: entry that cannot be checked because every oracle is missing here\nsomething\n' >"$t/.deps-upgrade-blocklist"
+    # `.ci/policy` alone is not a full checkout (isFullCheckout wants
+    # .ci/scripts/quality, package.json and .github/workflows), so this stays the
+    # all-oracles-missing root it was before the lists moved there.
+    mkdir -p "$t/.ci/policy"
+    printf '# BLOCKER: entry that cannot be checked because every oracle is missing here\nsomething\n' >"$t/.ci/policy/.deps-upgrade-blocklist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
     assert_exit_code 1 "$rc" "a vacuous run must fail"
@@ -129,7 +143,7 @@ test_composite_action_counts_as_a_reference() {
     # create-github-app-token is referenced ONLY from the composite action.
     # Before collectActionRefs() scanned .github/actions, this entry would have
     # been wrongly condemned.
-    printf '# BLOCKER: pinned deliberately; referenced only from a composite action file\nactions/create-github-app-token\n' >"$t/.actions-upgrade-blocklist"
+    printf '# BLOCKER: pinned deliberately; referenced only from a composite action file\nactions/create-github-app-token\n' >"$t/.ci/policy/.actions-upgrade-blocklist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
     assert_exit_code 0 "$rc" "composite-action reference must count as live"
@@ -179,8 +193,8 @@ test_findings_are_capped() {
     t="$(make_fixture)"
     {
         echo "# BLOCKER: bulk planted dead entries to prove the per-probe output cap works"
-        for i in $(seq 1 25); do echo "not-a-real-package-$i"; done
-    } >"$t/.deps-upgrade-blocklist"
+        for ((i = 1; i <= 25; i++)); do echo "not-a-real-package-$i"; done
+    } >"$t/.ci/policy/.deps-upgrade-blocklist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
     assert_exit_code 1 "$rc" "bulk dead entries still fail"
@@ -207,7 +221,7 @@ test_cli_i18n_prefix_matching() {
     mkdir -p "$t/packages/cli/src/i18n/locales/en"
     cp "$REPO_ROOT/packages/cli/src/i18n/locales/en/cli.json" "$t/packages/cli/src/i18n/locales/en/cli.json"
     # First entry is a live PREFIX (matches many leaves); second matches nothing.
-    printf '# BLOCKER: live dynamic-key prefix that still matches leaves in the catalog\ncommands.sync.\n\n# BLOCKER: prefix matching nothing so it can exempt nothing from the orphan scan\nnope.not.a.real.prefix.\n' >"$t/.cli-i18n-orphan-allowlist"
+    printf '# BLOCKER: live dynamic-key prefix that still matches leaves in the catalog\ncommands.sync.\n\n# BLOCKER: prefix matching nothing so it can exempt nothing from the orphan scan\nnope.not.a.real.prefix.\n' >"$t/.ci/policy/.cli-i18n-orphan-allowlist"
     out=$(run_gate "$t") || rc=$?
     rm -rf "$t"
     assert_exit_code 1 "$rc" "a prefix matching zero leaves must fail"

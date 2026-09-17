@@ -47,6 +47,14 @@ CONTROL-FIRST
 `--selftest` plants both a too-tight and a generous healthcheck and requires the
 detector to flag exactly the tight one. Finding no compose files at all is a hard
 FAILURE, not a pass: a headroom check with nothing to check asserts nothing.
+
+---- gate ----
+step: Tutorial healthcheck headroom
+run: .ci/scripts/quality/check_tutorial_healthcheck_headroom.py --selftest && .ci/scripts/quality/check_tutorial_healthcheck_headroom.py
+selftest: true
+needs: none
+lane: quality-packages
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -66,9 +74,7 @@ MIN_BUDGET_SECONDS = 180.0
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 APPS_GLOB = os.path.join(REPO, ".ci", "tutorials", "apps", "**", "docker-compose.y*ml")
-# Not a glob match: exactly one file, in-repo (not a submodule), with a
-# healthcheck a wait-loop script (ci-start-account.sh) depends on being
-# realistic about contention. See the module docstring's WHAT THIS CHECKS.
+# Not a glob match: exactly one file, in-repo (not a submodule), with a healthcheck a wait-loop script (ci-start-account.sh) depends on being realistic about contention. See the module docstring's WHAT THIS CHECKS.
 EXTRA_PATHS = [os.path.join(REPO, ".ci", "docker", "ci", "docker-compose.yml")]
 
 # Compose defaults, from the Compose spec. Used when a key is omitted.

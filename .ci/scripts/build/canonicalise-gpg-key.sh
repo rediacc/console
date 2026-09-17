@@ -28,8 +28,16 @@
 # It lives here so check:ci-release-key-canonical can exercise the real thing with
 # a throwaway key, instead of a copy that can drift from what the build runs.
 #
+# IT ALSO REPORTS WHETHER REPAIR WAS NEEDED, and that matters more than it looks.
+# A repair that happens silently on every build is a workaround that never ends: the
+# stored Secrets Manager value stays welded forever because nothing ever says so. The
+# exit code distinguishes the two cases so the caller can be loud about the second.
+#
 # Usage: canonicalise-gpg-key.sh <key-file> [passphrase]
-# Exit 0 on success (file rewritten), 1 if gpg could not read the key at all.
+# Exit 0  the key was ALREADY canonical; the file is unchanged in substance
+#      10 the key was REPAIRED -- the stored value is malformed and should be fixed
+#         at source, not left to this script
+#      1  gpg could not read the key at all
 set -uo pipefail
 
 KEY_FILE="${1:?usage: canonicalise-gpg-key.sh <key-file> [passphrase]}"
@@ -69,4 +77,23 @@ if ! GNUPGHOME="$HOME_DIR" gpg --batch --pinentry-mode loopback \
     exit 1
 fi
 
+# JUDGE THE INPUT, NOT A DIFF AGAINST THE OUTPUT.
+#
+# The first version compared the input's base64 body to the re-exported one and
+# called any difference a repair. That can NEVER be right: gpg re-encrypts a
+# passphrase-protected secret key with fresh salt on every export, so the body
+# differs every time even for a byte-identical key, and a canonical key reported
+# itself repaired.
+#
+# The weld has a structural signature instead: RFC 4880 wraps armor at 64 columns,
+# and joining two halves without a newline produces one far longer body line. That
+# is exactly the difference between the block gpg accepts and the one Go rejects.
+if [[ "$(awk 'BEGIN{m=0} !/-----/ { if (length($0) > m) m = length($0) } END { print m+0 }' "$KEY_FILE")" -le 64 ]]; then
+    REPAIRED=0
+else
+    REPAIRED=1
+fi
+
 cat "$OUT" >"$KEY_FILE"
+[[ "$REPAIRED" == "1" ]] && exit 10
+exit 0

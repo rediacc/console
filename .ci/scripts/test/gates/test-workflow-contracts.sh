@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: Both-ways test for the reusable-workflow contract checks in .ci/scripts/security/check-workflow-gates.sh
+# ---- end gate ----
+
 # Both-ways test for the reusable-workflow contract checks in
 # .ci/scripts/security/check-workflow-gates.sh: CHECK 2 (callers in this repo)
 # and CHECK 4 (callers in other repositories, declared in
@@ -425,13 +435,21 @@ test_ec_fixture_tree_skips_cleanly() {
 # every case in this very file (nightly 34014201256). The cases below are the
 # test that was missing, in both directions.
 
+# EXTRA_EXEMPTION: `DECLARED_UNUSED_OK` is drained to empty on the real tree
+# (W8 P1b's "declared endgame"), which would otherwise leave the liveness
+# sweep and arm (a3) with no positive case to prove they can fire at all. This
+# injects a synthetic pair through the subject's own test-only seam
+# (WORKFLOW_GATES_EXTRA_EXEMPTIONS); production never sets it.
+EXTRA_EXEMPTION="claude-review-reusable.yml:ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN"
+
 # run_check_live: drive the check with the liveness sweep forced ON against a
 # fixture tree. SLIM coverage is pinned off because it defaults from the same
 # flag and this fixture has no slim job to offer -- CHECK 3 has its own test.
 run_check_live() {
     local dir="$1" rc=0
     LAST_OUT="$(CI=true WORKFLOWS_DIR="$dir" REAL_WORKFLOW_TREE=true \
-        SLIM_TIMEOUT_REQUIRE_COVERAGE=false bash "$CHECK" 2>&1)" || rc=$?
+        SLIM_TIMEOUT_REQUIRE_COVERAGE=false \
+        WORKFLOW_GATES_EXTRA_EXEMPTIONS="$EXTRA_EXEMPTION" bash "$CHECK" 2>&1)" || rc=$?
     return "$rc"
 }
 
@@ -543,6 +561,178 @@ test_liveness_reports_an_exemption_now_read() {
     log_pass "an exemption whose secret is now read is reported"
 }
 
+# --- arm (a3): the exemption list must be justified by the registry ------
+#
+# Arm (a2) may be silenced for exactly one reason: a caller in ANOTHER repository
+# still passes the secret, so deleting the declaration breaks their next run
+# rather than this PR. That justification used to live in a COMMENT above
+# DECLARED_UNUSED_OK, and a comment cannot go stale loudly -- retire the external
+# caller and the exemption survives it, looking like coverage. (a3) makes the two
+# sides one set equality. These cases drive both directions plus the two ways it
+# must stay quiet.
+
+# a3_fixture <dir> -- the exempted callee, an external caller that passes the
+# exempted secret, and a registry that agrees with both. Sets EC_ROOT.
+a3_fixture() {
+    local d="$1"
+    EC_ROOT="$d/tree"
+    mkdir -p "$EC_ROOT/.github/workflows" "$EC_ROOT/private/acct/.github/workflows"
+    cat >"$EC_ROOT/.github/workflows/claude-review-reusable.yml" <<'YAML'
+name: claude-review-reusable
+on:
+  workflow_call:
+    secrets:
+      ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN:
+        required: false
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo hi
+YAML
+    cat >"$EC_ROOT/private/acct/.github/workflows/review.yml" <<'YAML'
+name: caller
+on: push
+jobs:
+  c:
+    uses: rediacc/console/.github/workflows/claude-review-reusable.yml@main
+    secrets:
+      ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}
+YAML
+    cat >"$EC_ROOT/registry.yml" <<'YAML'
+callers:
+  - caller: private/acct/.github/workflows/review.yml
+    repo: rediacc/acct
+    pinned_at: main
+    calls: .github/workflows/claude-review-reusable.yml
+    passes_inputs: []
+    passes_secrets: [ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN]
+YAML
+}
+
+# Same overlay as run_ec, with the real-tree flag forced on so the a2 liveness
+# sweep and a3 both run. SLIM coverage is pinned off: it defaults from the same
+# flag and this fixture has no slim job to offer.
+run_ec_live() {
+    local rc=0
+    LAST_OUT="$(CI=true \
+        WORKFLOWS_DIR="$EC_ROOT/.github/workflows" \
+        EXTERNAL_CALLERS_FILE="$EC_ROOT/registry.yml" \
+        EXTERNAL_CALLERS_ROOT="$EC_ROOT" \
+        REAL_WORKFLOW_TREE=true \
+        SLIM_TIMEOUT_REQUIRE_COVERAGE=false \
+        WORKFLOW_GATES_EXTRA_EXEMPTIONS="$EXTRA_EXEMPTION" \
+        bash "$CHECK" 2>&1)" || rc=$?
+    return "$rc"
+}
+
+test_a3_pinned_exemption_passes() {
+    # CONTROL, and the load-bearing one: with the registry pinning exactly what
+    # the exemption list names, the arm must be quiet AND say what it compared.
+    a3_fixture "$1"
+    local rc=0
+    run_ec_live || rc=$?
+    assert_exit_code 0 "$rc" "an exemption the registry pins alive must pass"
+    assert_contains "$LAST_OUT" "arm (a3): 1 declared-unused exemption(s) == 1 pinned alive" \
+        "prints the shape it compared, not just a verdict"
+    log_pass "CONTROL: an exemption pinned alive by the registry passes"
+}
+
+test_a3_unpinned_exemption_is_reported() {
+    # The rot this arm exists for: the external caller stopped passing the
+    # secret, so nothing on earth needs the declaration, and the exemption keeps
+    # protecting it anyway.
+    a3_fixture "$1"
+    sed -i 's/passes_secrets: \[ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN\]/passes_secrets: []/' \
+        "$EC_ROOT/registry.yml"
+    sed -i '/ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: /d;/^    secrets:$/d' \
+        "$EC_ROOT/private/acct/.github/workflows/review.yml"
+    local rc=0
+    run_ec_live || rc=$?
+    assert_exit_code 1 "$rc" "an exemption nothing pins alive must fail"
+    assert_contains "$LAST_OUT" "pins it alive" "says the justification is gone"
+    assert_contains "$LAST_OUT" "delete the declaration and the exemption, not the check" \
+        "says what to do instead of suppressing"
+    log_pass "an exemption no external caller justifies is reported"
+}
+
+test_a3_pinned_but_unexempted_is_reported() {
+    # The other direction: the registry pins a declared-and-unread secret alive
+    # and the exemption list has never heard of it. (a2) fires too; this says
+    # WHY it is not simply deletable.
+    a3_fixture "$1"
+    cat >"$EC_ROOT/.github/workflows/other.yml" <<'YAML'
+name: other
+on:
+  workflow_call:
+    secrets:
+      UNUSED_TOKEN:
+        required: false
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo hi
+YAML
+    cat >"$EC_ROOT/private/acct/.github/workflows/other-caller.yml" <<'YAML'
+name: other-caller
+on: push
+jobs:
+  c:
+    uses: rediacc/console/.github/workflows/other.yml@main
+    secrets:
+      UNUSED_TOKEN: ${{ secrets.UNUSED_TOKEN }}
+YAML
+    cat >>"$EC_ROOT/registry.yml" <<'YAML'
+  - caller: private/acct/.github/workflows/other-caller.yml
+    repo: rediacc/acct
+    pinned_at: main
+    calls: .github/workflows/other.yml
+    passes_inputs: []
+    passes_secrets: [UNUSED_TOKEN]
+YAML
+    local rc=0
+    run_ec_live || rc=$?
+    assert_exit_code 1 "$rc" "a pinned declared-unused secret the list omits must fail"
+    assert_contains "$LAST_OUT" "pins other.yml/UNUSED_TOKEN alive" "names the unreconciled pair"
+    log_pass "a registry-pinned pair the exemption list omits is reported"
+}
+
+test_a3_empty_registry_is_blind_not_pass() {
+    # Zero inputs is a failure: with no caller entries, every exemption looks
+    # unjustified and an empty list looks perfect, so the arm asserts nothing.
+    a3_fixture "$1"
+    echo "callers: []" >"$EC_ROOT/registry.yml"
+    local rc=0
+    run_ec_live || rc=$?
+    assert_exit_code 1 "$rc" "an emptied registry must fail rather than assert nothing"
+    assert_contains "$LAST_OUT" "arm (a3)" "the a3 arm says it is blind, not just CHECK 4"
+    assert_contains "$LAST_OUT" "this arm is blind" "names the vacuity"
+    log_pass "a3 refuses an empty registry (anti-vacuity)"
+}
+
+test_a3_stands_down_without_a_registry() {
+    # CONTROL, and the regression that arm (a2)'s liveness sweep already paid
+    # for once: an arm that cannot see the registry must stay SILENT, not
+    # condemn a fixture tree for lacking one.
+    #
+    # The a3 arm itself is what must stay silent, not the unrelated per-file
+    # "declares but never reads" check that a3_fixture's callee trips on its
+    # own merit and that runs regardless of real_tree -- the same synthetic
+    # exemption run_ec_live uses keeps that check quiet here too.
+    a3_fixture "$1"
+    local rc=0
+    LAST_OUT="$(CI=true \
+        WORKFLOWS_DIR="$EC_ROOT/.github/workflows" \
+        EXTERNAL_CALLERS_FILE="$EC_ROOT/registry.yml" \
+        EXTERNAL_CALLERS_ROOT="$EC_ROOT" \
+        WORKFLOW_GATES_EXTRA_EXEMPTIONS="$EXTRA_EXEMPTION" \
+        bash "$CHECK" 2>&1)" || rc=$?
+    assert_exit_code 0 "$rc" "a non-real tree must not be judged against the real exemption list"
+    assert_not_contains "$LAST_OUT" "arm (a3)" "the arm stayed silent"
+    log_pass "CONTROL: a3 stands down when the tree is not the real one"
+}
+
 test_ec_real_registry_is_wired() {
     # The registry is only worth having if the real run reads the real file.
     # Without this, every case above could pass against fixtures while the gate
@@ -583,6 +773,11 @@ with_temp_dir test_ec_missing_file_in_checked_out_tree
 with_temp_dir test_ec_absent_submodule_is_blind_not_pass
 with_temp_dir test_ec_empty_registry_is_blind_not_pass
 with_temp_dir test_ec_fixture_tree_skips_cleanly
+with_temp_dir test_a3_pinned_exemption_passes
+with_temp_dir test_a3_unpinned_exemption_is_reported
+with_temp_dir test_a3_pinned_but_unexempted_is_reported
+with_temp_dir test_a3_empty_registry_is_blind_not_pass
+with_temp_dir test_a3_stands_down_without_a_registry
 test_ec_real_registry_is_wired
 echo ""
 log_pass "all tests passed"

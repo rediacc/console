@@ -34,10 +34,7 @@ import { BAKED_IN_REGIONS, type RegionInfo } from '@rediacc/shared/regions';
  * for no behavioural gain.
  */
 export function discoverRegions(): Promise<RegionInfo[]> {
-  // Returns a Promise WITHOUT being `async`, deliberately. Every caller already
-  // awaits this, so the signature must stay thenable -- but an `async` function
-  // that never awaits anything is what `require-await` exists to flag, and it
-  // would be true here now that the fetch is gone.
+  // Returns a Promise WITHOUT being `async`, deliberately. Every caller already awaits this, so the signature must stay thenable -- but an `async` function that never awaits anything is what `require-await` exists to flag, and it would be true here now that the fetch is gone.
   return Promise.resolve(BAKED_IN_REGIONS);
 }
 

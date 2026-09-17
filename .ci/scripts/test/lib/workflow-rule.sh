@@ -1,5 +1,5 @@
 #!/bin/bash
-# Harness for the rules that live inside .ci/scripts/quality/check-workflows.sh.
+# Harness for the rules that live inside .ci/scripts/quality/check_workflows.py.
 #
 # WHY IT IS SHARED, and why only between two callers rather than three.
 # check-workflows.sh hosts several banned-pattern rules, and each gets its own
@@ -16,12 +16,12 @@
 #
 # Callers must have sourced test-helpers.sh and set REPO_ROOT first.
 
-WORKFLOW_RULE_CHECK="$REPO_ROOT/.ci/scripts/quality/check-workflows.sh"
+WORKFLOW_RULE_CHECK="$REPO_ROOT/.ci/scripts/quality/check_workflows.py"
 LAST_OUT=""
 
 # run_check <fixture-dir> -- drives ONLY the workflow rules against that tree.
 run_check() {
     local dir="$1" rc=0
-    LAST_OUT="$(CI=true WORKFLOW_INLINE_ONLY=1 WORKFLOW_DIR="$dir" bash "$WORKFLOW_RULE_CHECK" 2>&1)" || rc=$?
+    LAST_OUT="$(CI=true WORKFLOW_INLINE_ONLY=1 WORKFLOW_DIR="$dir" "$WORKFLOW_RULE_CHECK" 2>&1)" || rc=$?
     return "$rc"
 }

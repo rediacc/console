@@ -54,13 +54,22 @@ docker run --rm --network host \
 
 echo "==> account dev gateway on :$GATEWAY_PORT (ACCOUNT_BACKUP_S3_* -> $PROBE_BUCKET)"
 cd "$ACCOUNT_DIR"
-# `set -a` + source: the gateway needs the .env crypto keys. ACCOUNT_BACKUP_S3_* are
-# absent from .env, so exporting them here reaches the process untouched --
-# .env can only clobber keys it actually declares.
-set -a
-# shellcheck disable=SC1091
-source "$ACCOUNT_DIR/.env"
-set +a
+# The gateway needs the .env crypto keys. env_file_load PARSES the file and
+# exports what the environment does not already carry; it never executes it,
+# which matters for a file holding four private keys and an admin API key.
+#
+# The comment this replaces reasoned "ACCOUNT_BACKUP_S3_* are absent from .env,
+# so exporting them here reaches the process untouched -- .env can only clobber
+# keys it actually declares", and it was right about the ACCOUNT_BACKUP_S3_*
+# names: those are exported BELOW this load, so they win either way. The names it
+# did not cover are the knobs at the top of this file, which are read AFTER the
+# load and are not re-assigned: GATEWAY_PORT (line 74 exports it bare, whatever
+# value it then holds), RUSTFS_PORT, BRIDGE_HOST, RUSTFS_KEY, RUSTFS_SECRET. Under
+# `set -a; source` one matching line in .env silently redirected the presigned URLs
+# a VM will dial. Under env_file_load the shell wins, so `RUSTFS_PORT=9101
+# ./start-local-plane.sh` means what it says.
+source "$ROOT_DIR/scripts/lib/env-file.sh"
+env_file_load "$ACCOUNT_DIR/.env"
 
 export GATEWAY_PORT
 export ACCOUNT_BACKUP_S3_ENDPOINT="http://${BRIDGE_HOST}:${RUSTFS_PORT}"

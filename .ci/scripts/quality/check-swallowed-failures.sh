@@ -262,17 +262,24 @@ scan_file() {
     # The body governed by the test on logical line j: for an `if`, everything
     # up to the matching else/elif/fi; for a one-line && or || form, the rest of
     # that same line.
-    function branch_of(j,   depth, k, body) {
+    function branch_of(j,   depth, k, body, opened, closed) {
         if (LL[j] !~ /(^|[[:space:]])if[[:space:]]/ && LL[j] !~ /;[[:space:]]*then/) {
             return LL[j]
         }
         body = LL[j]
         depth = 0
         for (k = j; k <= n; k++) {
-            if (LL[k] ~ /(^|[[:space:]])if[[:space:]]/) depth++
-            if (LL[k] ~ /(^|[[:space:]])fi([[:space:]]|;|$)/) depth--
+            opened = (LL[k] ~ /(^|[[:space:]])if[[:space:]]/)
+            closed = (LL[k] ~ /(^|[[:space:]])fi([[:space:]]|;|$)/)
+            if (opened) depth++
+            if (closed) depth--
             if (k > j) body = body " " LL[k]
-            if (depth <= 0 && k > j) break
+            # `k > j` alone misses the ONE-LINE `if ...; then ...; fi` shape: it
+            # opens and closes depth in the SAME iteration (k == j), so the guard
+            # never fires there, and the loop absorbs the NEXT, unrelated line
+            # into body before its k > j check finally sees depth <= 0.
+            # `opened && closed` catches exactly that same-line close.
+            if (depth <= 0 && (k > j || (opened && closed))) break
             if (depth == 1 && k > j && LL[k] ~ /^(else|elif)([[:space:]]|$)/) break
         }
         return body

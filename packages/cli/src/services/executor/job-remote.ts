@@ -205,9 +205,7 @@ export async function followJobLogs(
         throw outcome.error;
     }
 
-    // Transport died. The JOB is untouched (it runs under systemd, not under
-    // this connection), so all that is lost is our view of it. Resume from the
-    // last COMPLETE line: renet re-sends anything it only half-delivered.
+    // Transport died. The JOB is untouched (it runs under systemd, not under this connection), so all that is lost is our view of it. Resume from the last COMPLETE line: renet re-sends anything it only half-delivered.
     if (attempt >= MAX_LOG_RECONNECTS) throw outcome.error;
 
     if (options.debug) {
@@ -235,16 +233,12 @@ async function followJobLogsOnce(
     follow: true,
   });
 
-  // A fresh reader per attempt: it buffers a partial line internally, and
-  // carrying that stale fragment across a reconnect would glue it onto the
-  // first line of the resumed stream and corrupt it. Seed its ordinal from the
-  // cursor so a resumed line keeps the spool-line number it had before the drop.
+  // A fresh reader per attempt: it buffers a partial line internally, and carrying that stale fragment across a reconnect would glue it onto the first line of the resumed stream and corrupt it. Seed its ordinal from the cursor so a resumed line keeps the spool-line number it had before the drop.
   const read = createEventLineReader(options.onEvent, cursor.sinceLine);
 
   let stopped = false;
   const interrupt = watchForInterrupt(options.signal, () => {
-    // Stop rendering immediately: the remote tail keeps streaming until this
-    // process exits, and events arriving after the resume hint would bury it.
+    // Stop rendering immediately: the remote tail keeps streaming until this process exits, and events arriving after the resume hint would bury it.
     stopped = true;
   });
 
@@ -369,8 +363,7 @@ export function renderJobEvent(event: RenetEvent): void {
   const line = jobEventLine(event);
   if (!line) return;
 
-  // Route through the request context so a served follow writes into the
-  // request's buffer, not the container's terminal. On a laptop this is stdout.
+  // Route through the request context so a served follow writes into the request's buffer, not the container's terminal. On a laptop this is stdout.
   if (line.stream === 'err') {
     writeStderr(line.text);
     return;
@@ -423,8 +416,7 @@ function outputLine(event: RenetEvent): EventLine | null {
   if (!event.msg) return null;
   // renet's machine-readable lines are protocol, not output. They are parsed
   // from CAPTURED stdout, which is collected separately from rendering, so
-  // dropping them here breaks no consumer and keeps a 400-column JSON blob off
-  // the terminal - where it wrapped into unreadable ribbon in every tutorial.
+  // dropping them here breaks no consumer and keeps a 400-column JSON blob off the terminal - where it wrapped into unreadable ribbon in every tutorial.
   if (isMachineReadableRelayLine(event.msg)) return null;
   return { stream: 'out', text: event.msg.endsWith('\n') ? event.msg : `${event.msg}\n` };
 }

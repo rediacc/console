@@ -243,10 +243,7 @@ describe('subscription command helpers', () => {
     expect(mockReadMachineActivationStatus).not.toHaveBeenCalled();
   });
 
-  // Regression (2026-08-26): the account view's entire output IS the remote
-  // report, so a swallowed fetch error made `subscription status` exit 0 having
-  // printed nothing at all -- hiding a real, actionable server reason such as
-  // "Token is bound to a different IP address" on a token minted elsewhere.
+  // Regression (2026-08-26): the account view's entire output IS the remote report, so a swallowed fetch error made `subscription status` exit 0 having printed nothing at all -- hiding a real, actionable server reason such as "Token is bound to a different IP address" on a token minted elsewhere.
   it('status surfaces the account server error instead of exiting silently', async () => {
     mockFetchLicenseReportOrThrow.mockRejectedValue(
       new Error('Token is bound to a different IP address')
@@ -258,8 +255,7 @@ describe('subscription command helpers', () => {
     expect(mockOutputInfo).not.toHaveBeenCalledWith('commands.subscription.status.remote');
   });
 
-  // Same swallow, same class: refresh reported a generic "could not read"
-  // string and dropped the server's own reason on the floor.
+  // Same swallow, same class: refresh reported a generic "could not read" string and dropped the server's own reason on the floor.
   it('refresh surfaces the account server error rather than a generic failure', async () => {
     mockFetchLicenseReportOrThrow.mockRejectedValue(
       new Error('Token is bound to a different IP address')
@@ -380,8 +376,7 @@ describe('subscription command helpers', () => {
 
     await executeMachineStatus('hostinger');
 
-    // Error-styled, not info: a machine whose scheduled backups have silently
-    // stopped copying data is the one line in this table nobody is watching for.
+    // Error-styled, not info: a machine whose scheduled backups have silently stopped copying data is the one line in this table nobody is watching for.
     expect(mockOutputError).toHaveBeenCalledWith(
       'commands.subscription.repo.status.blockedBackup:repo-blocked:2026-08-01T03:00:00Z:expired:the installed license expired'
     );
@@ -523,10 +518,7 @@ describe('subscription command helpers', () => {
     );
   });
 
-  // #74. This is the ONLY caller that passes no requestedSizeGb, so it is the
-  // one that reaches the size probe inside refreshRepoLicenseIdentity. Without
-  // the mount, that probe measures the machine's default datastore for a repo
-  // that lives on a named one, finds nothing, and reissues at the 1 GB floor.
+  // #74. This is the ONLY caller that passes no requestedSizeGb, so it is the one that reaches the size probe inside refreshRepoLicenseIdentity. Without the mount, that probe measures the machine's default datastore for a repo that lives on a named one, finds nothing, and reissues at the 1 GB floor.
   it('refresh --repo declares the datastore the repo is recorded on', async () => {
     mockGetCurrent.mockResolvedValue({
       resources: {
@@ -556,8 +548,7 @@ describe('subscription command helpers', () => {
     );
   });
 
-  // CONTROL, other direction: a repo on the machine's implicit default declares
-  // nothing, leaving the machine's own datastore in place.
+  // CONTROL, other direction: a repo on the machine's implicit default declares nothing, leaving the machine's own datastore in place.
   it('refresh --repo sends no mount for a repo with no named-datastore placement', async () => {
     mockGetCurrent.mockResolvedValue({
       resources: { repositories: { shop: { grand: 'latest', tags: { latest: {} } } } },

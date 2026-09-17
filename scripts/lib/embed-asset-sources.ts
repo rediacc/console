@@ -2,7 +2,7 @@
  * The embedded-binary inventory: each asset baked into the renet image and
  * where its upstream releases live.
  *
- * Extracted from scripts/check-embed-asset-freshness.ts so the suppression
+ * Extracted from scripts/gates/check-embed-asset-freshness.ts so the suppression
  * liveness probe can reuse it. That script calls main() at module scope, so it
  * cannot be imported for its constants without running the whole freshness
  * check (network included).

@@ -1,16 +1,25 @@
 #!/bin/bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-e2e-coverage is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_e2e_coverage.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_e2e_coverage.py" but its header derives "...check-e2e-coverage.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Check that renet functions and e2e-tests agree in BOTH directions.
 #
 # This gate has two halves:
 #
 #   FORWARD (is every shipped renet function exercised by a suite CI RUNS?):
-#     delegated to scripts/check-e2e-coverage.ts. Bash cannot honestly parse a
+#     delegated to scripts/gates/check-e2e-coverage.ts. Bash cannot honestly parse a
 #     playwright config to learn which files a job selects, so the forward pass
 #     is TypeScript: it imports each LIVE config, expands its projects into the
 #     concrete test files, and only counts coverage from those. A verb mentioned
 #     only in a dark suite or a declared-but-uncalled harness method no longer
 #     counts — that dead-coverage is the failure mode the rewrite closes. The
-#     forward allowlist lives in .e2e-coverage-allowlist (BLOCKER-gated).
+#     forward allowlist lives in .ci/policy/.e2e-coverage-allowlist (BLOCKER-gated).
 #
 #   REVERSE (does a test dispatch a verb renet no longer registers?):
 #     Phase 3 below, unchanged. It scans ALL e2e sources — dark files included —
@@ -50,7 +59,7 @@ fi
 
 # ── FORWARD half (phases 1-2 + report): live-config membership, in TypeScript ──
 FORWARD_RC=0
-(cd "$REPO_ROOT" && npx tsx scripts/check-e2e-coverage.ts) || FORWARD_RC=$?
+(cd "$REPO_ROOT" && npx tsx scripts/gates/check-e2e-coverage.ts) || FORWARD_RC=$?
 
 # Phase 3: THE REVERSE DIRECTION — does e2e dispatch a verb that no longer EXISTS?
 #

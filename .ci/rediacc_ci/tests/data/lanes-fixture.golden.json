@@ -1,0 +1,76 @@
+[
+  {
+    "job": "plain-slim",
+    "runsOn": "ubuntu-slim",
+    "timeoutMinutes": 12,
+    "submodules": [],
+    "node": false,
+    "tools": [
+      "ruff",
+      "python-yaml"
+    ]
+  },
+  {
+    "job": "with-node",
+    "runsOn": "ubuntu-latest",
+    "timeoutMinutes": 15,
+    "submodules": [],
+    "node": true,
+    "tools": []
+  },
+  {
+    "job": "all-submodules",
+    "runsOn": "ubuntu-latest",
+    "timeoutMinutes": 20,
+    "submodules": [
+      "*"
+    ],
+    "node": false,
+    "tools": []
+  },
+  {
+    "job": "targeted-submodule",
+    "runsOn": "ubuntu-latest",
+    "timeoutMinutes": 15,
+    "submodules": [
+      "private/account",
+      "private/renet"
+    ],
+    "node": false,
+    "tools": []
+  },
+  {
+    "job": "with-go",
+    "runsOn": "ubuntu-latest",
+    "timeoutMinutes": 20,
+    "submodules": [],
+    "node": false,
+    "tools": [
+      "go"
+    ]
+  },
+  {
+    "job": "runner-with-a-trailing-comment",
+    "runsOn": "",
+    "timeoutMinutes": 15,
+    "submodules": [],
+    "node": false,
+    "tools": []
+  },
+  {
+    "job": "timeout-with-a-trailing-comment",
+    "runsOn": "ubuntu-slim",
+    "timeoutMinutes": null,
+    "submodules": [],
+    "node": false,
+    "tools": []
+  },
+  {
+    "job": "runner-from-an-expression",
+    "runsOn": "",
+    "timeoutMinutes": 15,
+    "submodules": [],
+    "node": false,
+    "tools": []
+  }
+]

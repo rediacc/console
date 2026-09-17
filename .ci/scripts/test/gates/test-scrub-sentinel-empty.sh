@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Regression test for scrub-sentinel.sh's empty-prefix hang
+# ---- end gate ----
+
 # Regression test for scrub-sentinel.sh's empty-prefix hang.
 #
 # Before commit 27e9a49ab the dry-run plan loop called `aws s3 ls --recursive`

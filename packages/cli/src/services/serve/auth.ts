@@ -114,8 +114,7 @@ export class AuthVerifier {
   }
 
   private toPrincipal(body: IntrospectionResponse): SessionPrincipal {
-    // A revoked, expired, unknown, or foreign-org token all look the same here,
-    // deliberately: the executor must not become an oracle for token discovery.
+    // A revoked, expired, unknown, or foreign-org token all look the same here, deliberately: the executor must not become an oracle for token discovery.
     if (!body.active) {
       throw new AuthError('This token is not valid for the executor.', 401);
     }
@@ -138,10 +137,7 @@ export class AuthVerifier {
       userId: body.createdByUserId,
       userEmail: body.userEmail,
       orgRole: normalizeRole(body.orgRole),
-      // Carried into the audit event as onBehalfOfTokenId, so the account server
-      // attributes the command to THIS token's user rather than to the
-      // executor's own audit credential. Without it every proxied command is
-      // logged against the executor fleet, not the person who ran it.
+      // Carried into the audit event as onBehalfOfTokenId, so the account server attributes the command to THIS token's user rather than to the executor's own audit credential. Without it every proxied command is logged against the executor fleet, not the person who ran it.
       tokenId: body.tokenId,
     };
   }

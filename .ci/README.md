@@ -1,13 +1,10 @@
 # Shared CI Scripts
 
-This directory contains the reusable CI scripts driven by the workflows in
-`.github/workflows/`.
+This directory contains the reusable CI scripts driven by the workflows in `.github/workflows/`.
 
 ## Directory Structure
 
-Abridged — only the entry points most often edited by hand are listed. The full
-set spans `build/ ci/ deploy/ docker/ docs/ env/ housekeeping/ infra/ lib/
-private/ quality/ release/ security/ setup/ signal/ test/ version/`.
+Abridged — only the entry points most often edited by hand are listed. The full set spans `build/ ci/ deploy/ docker/ docs/ env/ housekeeping/ infra/ lib/ private/ quality/ release/ security/ setup/ signal/ test/ version/`.
 
 ```
 .ci/
@@ -45,7 +42,6 @@ private/ quality/ release/ security/ setup/ signal/ test/ version/`.
 │   │   ├── run-unit.sh         # Run unit tests
 │   │   └── run-e2e.sh          # Run E2E (renet) tests
 │   ├── docker/
-│   │   ├── build-image.sh      # Build Docker images (supports --ci-tag)
 │   │   └── retag-image.sh      # Re-tag CI images to semantic version
 │   ├── housekeeping/
 │   │   └── cleanup-versions.sh # Cleanup old releases, tags, and GHCR packages
@@ -95,10 +91,7 @@ For CI, write the computed version to an output file:
 .ci/scripts/version/bump.sh --auto --output "$GITHUB_OUTPUT"
 ```
 
-Note that the version source of truth is **git tags**, not a file — there are no
-version bump commits. `resolve-version.sh --current` reads the latest tag and
-`--bump-type` computes the next one. See the "Versioning" section of the
-top-level `CLAUDE.md`.
+Note that the version source of truth is **git tags**, not a file — there are no version bump commits. `resolve-version.sh --current` reads the latest tag and `--bump-type` computes the next one. See the "Versioning" section of the top-level `CLAUDE.md`.
 
 ## Environment Variables
 

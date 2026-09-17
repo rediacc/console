@@ -252,7 +252,33 @@ rm -f "$TAG_FETCH_ERR"
 
 # `|| echo 'none'` never fired: git tag -l exits 0 when nothing matches, so an
 # untagged repo logged an empty value rather than the intended "none".
-LATEST_TAG="$(git tag -l 'v*' --sort=-v:refname | head -1)"
+#
+# NO PIPE, AND THE REASON IS SIGPIPE. This was
+# `$(git tag -l 'v*' --sort=-v:refname | head -1)`. `head -1` reads one line and
+# exits; git's next write then gets SIGPIPE and dies 141, and under `pipefail`
+# that is the assignment's status, so `set -e` kills this script. It is a RACE
+# masked by the 64 KB pipe buffer -- while the whole tag list fits, git finishes
+# writing before head closes and nothing happens, which is why it has never
+# fired in production and why nobody has seen it here. Measured:
+#     set -euo pipefail; v="$(seq 1 200000 | head -1)"   -> rc 141, script dies
+#     set -euo pipefail; v="$(seq 1 3      | head -1)"   -> rc 0, got=1
+# It DID fire in CI run 34970782616, in the differential's fake git, taking
+# three test_ci_initialize cases with it. The tag list grows with every release.
+#
+# `mapfile -t < <(git tag ...)` WAS THE OBVIOUS FIX AND IS WRONG: a process
+# substitution's status is not checked, so a git that FAILS becomes an empty tag
+# list, the `-z` branch below reports "no v* tag exists", and a failed read is
+# silently reclassified as an empty one. Measured: the mapfile form survives a
+# git exiting 9 with rc 0. That is precisely the defect the fetch block above
+# warns about -- "A SWALLOWED TAG FETCH IS A WRONG VERSION, NOT A MISSING ONE" --
+# and `test_a_failing_tag_read_dies_silently_under_pipefail` pins it.
+#
+# A plain command substitution keeps BOTH properties: nothing can SIGPIPE
+# because there is no reader to close, and `set -e` still carries git's own
+# status out of the assignment (measured: rc 9 stays rc 9). The first line is
+# then taken in-shell.
+LATEST_TAG_LIST="$(git tag -l 'v*' --sort=-v:refname)"
+LATEST_TAG="${LATEST_TAG_LIST%%$'\n'*}"
 if [[ -z "$LATEST_TAG" ]]; then
     log_error "Tag fetch succeeded but no v* tag exists; tag-based versioning cannot derive a version here."
     log_error "Create the initial tag (git tag -a v0.0.0 -m v0.0.0 && git push origin v0.0.0) before running CI."

@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node
+# slow: true
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Unit test for the cross-PR greenlight engine, .ci/scripts/ci/greenlight.cjs.
 #
 # WHAT THIS GUARDS. The engine lets a PR skip test-renet (90 minutes) or the
@@ -770,7 +778,7 @@ test_candidate_window_is_widened() {
     local probe
     probe="$(mktemp)"
     printf '%s\n' 'bounded node "$GREENLIGHT" --repo x --budget 90 --debug' >"$probe"
-    if grep -n -- '--limit' "$probe" | grep -q 'GREENLIGHT'; then
+    if [ -n "$(grep -n -- '--limit' "$probe" | grep -e 'GREENLIGHT')" ]; then
         rm -f "$probe"
         log_fail "CONTROL DID NOT FIRE: an invocation with no --limit read as compliant"
     fi

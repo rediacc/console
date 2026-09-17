@@ -107,9 +107,7 @@ test.describe
     });
 
     test('6. wait for PostgreSQL and verify seed data', async () => {
-      // Wait for PostgreSQL to be fully ready (not just accepting connections)
-      // PostgreSQL may briefly accept connections during init, then restart
-      // So we combine waiting and verification in a single test to avoid race conditions
+      // Wait for PostgreSQL to be fully ready (not just accepting connections) PostgreSQL may briefly accept connections during init, then restart So we combine waiting and verification in a single test to avoid race conditions
       const ready = await runner.waitForPostgresReady(containerName, networkId);
       expect(ready).toBe(true);
 

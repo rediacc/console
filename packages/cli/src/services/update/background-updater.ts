@@ -164,8 +164,7 @@ export async function runBackgroundUpdateWorker(): Promise<void> {
 export async function maybeSpawnBackgroundUpdate(): Promise<void> {
   if (!isSEA() || isUpdateDisabled()) return;
   // Foreground `rdc update` will own the lock and perform the work itself;
-  // spawning a background worker here would race the user's own invocation
-  // and cause spurious "update already in progress" failures.
+  // spawning a background worker here would race the user's own invocation and cause spurious "update already in progress" failures.
   if (process.argv[2] === 'update') return;
 
   try {
@@ -272,13 +271,8 @@ async function prepareApply(): Promise<CliUpdateState | null> {
     return null;
   }
 
-  // Do NOT cleanupOldBinary() here — the .old file is the operator's only
-  // recovery path for `rdc update --rollback`. Both update paths
-  // (selfReplace in updater.ts + atomicBinarySwap below) already unlink the
-  // pre-existing .old before renaming the current binary in its place, so
-  // there is nothing to "reap" on every startup. Reaping here means: any
-  // intervening rdc invocation between an `rdc update` and `rdc update
-  // --rollback` silently destroys the rollback target.
+  // Do NOT cleanupOldBinary() here — the .old file is the operator's only recovery path for `rdc update --rollback`. Both update paths (selfReplace in updater.ts + atomicBinarySwap below) already unlink the pre-existing .old before renaming the current binary in its place, so there is nothing to "reap" on every startup. Reaping here means: any intervening rdc invocation between an
+  // `rdc update` and `rdc update --rollback` silently destroys the rollback target.
   if (!state.pendingUpdate) return null;
 
   // Downgrade protection
@@ -332,11 +326,7 @@ async function handleSwapError(
   }
 }
 
-// Set when applyPendingUpdate() successfully replaces the current binary at
-// startup. The `update` command checks this so it does not re-download the
-// version that was just applied — without this signal, the in-memory VERSION
-// constant (baked into the now-replaced binary) is stale and looks "outdated"
-// vs the manifest, so handleUpdate would download + selfReplace AGAIN, ending
+// Set when applyPendingUpdate() successfully replaces the current binary at startup. The `update` command checks this so it does not re-download the version that was just applied — without this signal, the in-memory VERSION constant (baked into the now-replaced binary) is stale and looks "outdated" vs the manifest, so handleUpdate would download + selfReplace AGAIN, ending
 // with current AND .old both at the new version. That kills `--rollback`
 // (rollback swaps two identical binaries and silently no-ops).
 let _appliedAtStartup: string | null = null;

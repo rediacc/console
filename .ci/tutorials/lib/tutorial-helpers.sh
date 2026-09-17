@@ -247,7 +247,11 @@ run_cmd() {
     local rc=0
     eval "$exec_cmd" || rc=$?
     if [[ $rc -ne 0 ]]; then
-        echo "FATAL: command failed with exit code $rc: $exec_cmd" >&2
+        if [[ $rc -gt 128 && $rc -lt 160 ]]; then
+            echo "FATAL: command was KILLED by signal $((rc - 128)) (raw $rc): $exec_cmd" >&2
+        else
+            echo "FATAL: command failed with exit code $rc: $exec_cmd" >&2
+        fi
         exit $rc
     fi
 

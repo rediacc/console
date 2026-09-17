@@ -1,0 +1,8 @@
+# Actions blocked from auto-upgrade (require workflow changes)
+#
+# Format: owner/repo # reason
+# These actions will NOT be required to upgrade.
+# To require upgrade, remove from this list.
+#
+# Example:
+# owner/repo # Reason for blocking

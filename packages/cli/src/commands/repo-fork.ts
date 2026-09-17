@@ -307,8 +307,7 @@ async function executeUpLeg(plan: ForkPlan, renetSteps: TimelineStep[]): Promise
     functionName: 'repository_up',
     machineName: plan.options.machine,
     ...(plan.options.kubeCluster !== undefined && { kubeCluster: plan.options.kubeCluster }),
-    // Same declaration as the fork leg: the fork lives in the parent's
-    // datastore, and `repository_up` resolves its image from the vault too.
+    // Same declaration as the fork leg: the fork lives in the parent's datastore, and `repository_up` resolves its image from the vault too.
     // (The standalone `rdc repo up` gets this from executeRepoFunction; this
     // leg bypasses that path, so it has to say so itself.)
     ...(plan.datastoreMount !== undefined && { datastore: plan.datastoreMount }),
@@ -384,8 +383,7 @@ async function runForkLeg(
   plan: ForkPlan,
   renetSteps: TimelineStep[]
 ): Promise<{ result: ExecuteResult; forkParams: Record<string, unknown>; compound: boolean }> {
-  // PRIMARY: one compound `renet repository fork --up`. The legacy two-leg
-  // path remains for --checkpoint (restore-on-first-up semantics).
+  // PRIMARY: one compound `renet repository fork --up`. The legacy two-leg path remains for --checkpoint (restore-on-first-up semantics).
   let compound = Boolean(plan.options.up && !plan.options.checkpoint);
   let forkParams = buildForkParams(plan, compound);
   let result = await executeForkLeg(plan, forkParams, renetSteps);
@@ -463,8 +461,7 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
 
   let upResult: ExecuteResult | undefined;
   if (options.up && !(compound && compoundUpRan(result, renetSteps))) {
-    // Legacy/fallback up leg: --checkpoint flows, or a remote renet that
-    // silently ignored the compound --up params.
+    // Legacy/fallback up leg: --checkpoint flows, or a remote renet that silently ignored the compound --up params.
     upResult = await executeUpLeg(plan, renetSteps);
   }
 
@@ -495,9 +492,7 @@ export async function handleForkAction(
     '../utils/config-schema.js'
   );
   let forkKey = '';
-  // Rollback must only ever remove the row THIS invocation registered — a
-  // catch-all rollback would delete a pre-existing fork's config row
-  // (credential included) when registerFork fails with "already exists".
+  // Rollback must only ever remove the row THIS invocation registered — a catch-all rollback would delete a pre-existing fork's config row (credential included) when registerFork fails with "already exists".
   let registered = false;
   try {
     // Refuse the reserved birth tag `base` (exit 2) and enforce the fork-tag
@@ -524,12 +519,10 @@ export async function handleForkAction(
     );
     registered = true;
 
-    // Resolved BEFORE the lease: it is a config read, and anything between
-    // acquire() and the try/finally below escapes the release on a throw.
+    // Resolved BEFORE the lease: it is a config read, and anything between acquire() and the try/finally below escapes the release on a throw.
     const datastoreMount = await recordedDatastoreMount(parent);
 
-    // Outer lease: every SSH consumer below (key deploy, fork/up legs,
-    // identity refresh, cert sync, service URLs) shares this pooled
+    // Outer lease: every SSH consumer below (key deploy, fork/up legs, identity refresh, cert sync, service URLs) shares this pooled
     // connection; the last release closes it.
     const lease = await machineConnections.acquire(options.machine);
     try {
@@ -602,8 +595,7 @@ export function registerRepoForkCommand(repo: Command): void {
             ...(options.checkpoint && { checkpoint: true }),
             ...(options.immutable && { immutable: true }),
             ...(options.up && { up: true }),
-            // `--no-wait` maps to the unchanged `detach` wire param: return once
-            // containers start, do not block on the health check.
+            // `--no-wait` maps to the unchanged `detach` wire param: return once containers start, do not block on the health check.
             ...(options.wait === false && { detach: true }),
             ...(options.debug && { debug: true }),
             ...(options.skipRouterRestart && { skipRouterRestart: true }),

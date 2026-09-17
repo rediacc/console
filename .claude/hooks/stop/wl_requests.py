@@ -96,11 +96,7 @@ def read_requests(worklist):
             elif kind == "escalate" and not r["escalated"]:
                 r["escalated"] = str(ev.get("why", "escalated"))
             elif kind == "reassign":
-                # v19: rebind a phantom identity's side of the request onto a
-                # session that actually reads its inbox. APPENDED like every
-                # other state change here, so the `ask` event still records who
-                # really sent it -- the log stays truthful about history and
-                # only the routing moves.
+                # v19: rebind a phantom identity's side of the request onto a session that actually reads its inbox. APPENDED like every other state change here, so the `ask` event still records who really sent it -- the log stays truthful about history and only the routing moves.
                 if ev.get("from"):
                     r["from"] = str(ev["from"])
                 if ev.get("to"):
@@ -164,11 +160,7 @@ def escalate_requests(worklist, session_id, dry_run=False):
         if r["escalated"] or r["acked"] or request_resolved(r):
             return ""
         if r["to"] == "operator":
-            # THE REPORT IS THE ESCALATION. An operator request is already in
-            # front of the one party who can settle it, so cloning it into a
-            # `- [?]` would report the same question twice: once as a live
-            # request and once as a deferral carrying its text, each with its
-            # own DEFAULT window. Escalation exists for a question with nobody
+            # THE REPORT IS THE ESCALATION. An operator request is already in front of the one party who can settle it, so cloning it into a `- [?]` would report the same question twice: once as a live request and once as a deferral carrying its text, each with its own DEFAULT window. Escalation exists for a question with nobody
             # left to answer it; this one is addressed to the one party who
             # always can. (It used to leave the machine over SES as well; that
             # channel is gone, and the reasoning never depended on it.)
@@ -202,10 +194,7 @@ def escalate_requests(worklist, session_id, dry_run=False):
     escalated = []
     with open(str(S.requests_path(worklist)) + ".lock", "w") as lock:
         try:
-            # S._flock, not a direct fcntl import: this module is imported by the
-            # read-only inbox surfaces (the report index and the waiter), which
-            # take no lock at all, so a module-scope `import fcntl` here would
-            # kill them on Windows over a call they never make.
+            # S._flock, not a direct fcntl import: this module is imported by the read-only inbox surfaces (the report index and the waiter), which take no lock at all, so a module-scope `import fcntl` here would kill them on Windows over a call they never make.
             S._flock(lock, S.LOCK_EX | S.LOCK_NB)
         except OSError:
             return []  # another stop is escalating; it wins, next stop retries
@@ -232,9 +221,7 @@ def escalate_requests(worklist, session_id, dry_run=False):
             body = r["body"]
             if not C.DEFAULT_TOKEN.search(body):
                 body += " DEFAULT: the asker proceeds without an answer and says so in its summary"
-            # The WHY/HOW are intrinsic here (v12): an escalated request IS a
-            # question no session could answer, so it earns its [?] seat at
-            # creation instead of being nagged for a justification at 30 min.
+            # The WHY/HOW are intrinsic here (v12): an escalated request IS a question no session could answer, so it earns its [?] seat at creation instead of being nagged for a justification at 30 min.
             S.add_item(
                 worklist,
                 (session_id or "unknown")[:8],
@@ -368,13 +355,8 @@ def request_cli(argv, worklist):
             )
         if to != "*" and C.same_session(me, to):
             die("that request is addressed to yourself; use the worklist for your own items")
-        # THE SAME DEFECT FROM THE SENDER'S SIDE. The recipient was validated by
-        # SHAPE only, so a prefix no session has ever briefed accepted the post
-        # and nobody ever read it. That is not hypothetical: peers asked
-        # `4c3e095a` -- an identity that never existed -- and the request sat
-        # until it auto-escalated with "recipient silent for 2062min", 34 hours
-        # late. A NEVER-EXISTED check, not a staleness check: an idle peer still
-        # has a brief, so this cannot fire on one that is merely quiet.
+        # THE SAME DEFECT FROM THE SENDER'S SIDE. The recipient was validated by SHAPE only, so a prefix no session has ever briefed accepted the post and nobody ever read it. That is not hypothetical: peers asked `4c3e095a` -- an identity that never existed -- and the request sat until it auto-escalated with "recipient silent for 2062min", 34 hours late. A NEVER-EXISTED check, not
+        # a staleness check: an idle peer still has a brief, so this cannot fire on one that is merely quiet.
         if to not in ("*", "operator") and _briefed(worklist, to) is False:
             die(M.CLI_ASK_UNKNOWN_RECIPIENT % (to, ", ".join(sorted(S.read_briefs(worklist)))))
         body = request_body("request body")
@@ -383,9 +365,7 @@ def request_cli(argv, worklist):
                 "an empty request asks nothing: say what you need, why, and a DEFAULT: if unanswered"
             )
         if to == "operator" and not C.DEFAULT_TOKEN.search(body):
-            # Same rule the escalation retrofit applies below, enforced at the
-            # door instead. An operator request is answered by a human who may
-            # be asleep, so a question with no stated fallback is a session
+            # Same rule the escalation retrofit applies below, enforced at the door instead. An operator request is answered by a human who may be asleep, so a question with no stated fallback is a session
             # volunteering to stall for hours; a DEFAULT: makes the wait
             # time-boxed rather than open-ended.
             die(M.CLI_ASK_OPERATOR_NO_DEFAULT)
@@ -413,8 +393,7 @@ def request_cli(argv, worklist):
                 )
             )
         elif to == "operator":
-            # The operator has no brief and never will, so the liveness line
-            # below would be a lie. Say what actually happens instead.
+            # The operator has no brief and never will, so the liveness line below would be a lie. Say what actually happens instead.
             print(
                 "request #%s posted to the operator; your next full stop emails it "
                 "and it is mailed only once. It does not block you: keep working, "
@@ -485,9 +464,7 @@ def poll_cli(worklist, me, hook_path):
     it drops the single-use poll marker that lets the Stop hook recognise
     this turn structurally."""
     if not C.PREFIX_RE.match(me or "") or len(me or "") < C.ME_MIN_LEN:
-        # A short prefix would name a DIFFERENT marker than the Stop hook
-        # derives from the full session id, silently disabling the fast
-        # path, so misuse is refused rather than half-working. This floor is
+        # A short prefix would name a DIFFERENT marker than the Stop hook derives from the full session id, silently disabling the fast path, so misuse is refused rather than half-working. This floor is
         # where C.ME_MIN_LEN comes from; check_me now applies it -- and the
         # identity check this verb never had -- to every verb taking a <me>.
         print(

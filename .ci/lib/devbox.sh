@@ -20,8 +20,25 @@
 readonly DEVBOX_LIB_LOADED=1
 
 DEVBOX_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-source "$DEVBOX_LIB_DIR/find-port.sh"
+
+# Port utilities. `.ci/lib/find-port.sh`, the bash shim that used to wrap
+# rediacc_ci.core.ports, is DELETED (W7P5-b): a shim is a delay, not an exit.
+# `derive_slot` and `find_port_block` below name the module directly.
+#
+# The shim's LOAD-TIME refusal is kept deliberately. This file's slot decides
+# which URL a bookmark resolves to, so a missing interpreter must be a named
+# failure rather than a plausible wrong number. REDIACC_CI_ROOT is the
+# package's single environment override (see .ci/rediacc_ci/paths.py).
+DEVBOX_CI_DIR="${REDIACC_CI_ROOT:+$REDIACC_CI_ROOT/.ci}"
+DEVBOX_CI_DIR="${DEVBOX_CI_DIR:-$(cd "$DEVBOX_LIB_DIR/.." && pwd)}"
+if [[ ! -d "$DEVBOX_CI_DIR/rediacc_ci/core" ]]; then
+    echo "devbox.sh: cannot find rediacc_ci under '$DEVBOX_CI_DIR' (set REDIACC_CI_ROOT)" >&2
+    return 1
+fi
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "devbox.sh: python3 is required; the port logic lives in rediacc_ci.core.ports" >&2
+    return 1
+fi
 
 DEVBOX_LABEL_KEY="com.rediacc.devbox.worktree"
 # The hostname the container was BUILT with, baked in as a label so it can be
@@ -67,7 +84,8 @@ devbox_mount_root() {
 devbox_container_name() {
     local wt slot
     wt="$(devbox_worktree)"
-    slot="$(derive_slot "$wt" 100)"
+    slot="$(PYTHONPATH="$DEVBOX_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports derive-slot "$wt" 100)"
     printf 'rediacc-devbox-%s-%s\n' "$slot" "$(basename "$wt")"
 }
 
@@ -128,7 +146,8 @@ devbox_base_port() {
     fi
 
     # First time: derive from the worktree path.
-    find_port_block "$(devbox_worktree)" \
+    PYTHONPATH="$DEVBOX_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports find-port-block "$(devbox_worktree)" \
         "$DEVBOX_PORT_RANGE_START" "$DEVBOX_PORT_RANGE_END" "$DEVBOX_PORT_BLOCK"
 }
 
@@ -516,6 +535,108 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
     name="$(devbox_container_name)"
     docker_gid="$(getent group docker 2>/dev/null | cut -d: -f3)"
 
+    # KVM PASSTHROUGH, and why it is conditional rather than unconditional.
+    #
+    # Until 2026-09-07 this `docker run` passed no `--device` at all, so a devbox
+    # on a KVM-capable host had NO /dev/kvm and `rdc ops` could never boot a VM
+    # inside it. The image has shipped qemu-kvm, libvirt-daemon-system, virtinst
+    # and dnsmasq-base since the beginning (.devcontainer/Dockerfile:148-155), so
+    # everything was provisioned for a device that was never bound -- which is
+    # why this survived so long: nothing was missing except the one flag.
+    #
+    # THE GID IS DERIVED, NEVER HARDCODED, and this is the part that makes the
+    # difference between a bound device and a usable one. `--device` reproduces
+    # the host's owning GROUP inside the container, not the container's own `kvm`
+    # group: measured here, the host device is gid 991 while the image's `kvm`
+    # group is gid 105. So the Dockerfile's `usermod -aG kvm vscode` grants
+    # NOTHING on the bound node, and start-kvm.sh papered over that with
+    # `sudo chmod 0666 /dev/kvm` -- world-writable, at runtime, needing sudo.
+    # Adding the HOST gid to the container user is the same trick this function
+    # already plays for docker two lines up, it needs no sudo, and it widens no
+    # permissions beyond what the host already models.
+    #
+    # WHAT LIBVIRT'S DEFAULT NETWORK NEEDS, measured rather than assumed. It is a
+    # NAT bridge, so starting it creates virbr0 and brings it up: that needs
+    # NET_ADMIN. It ALSO writes a per-bridge sysctl, and that is the part no
+    # capability can grant -- docker mounts /proc/sys read-only, so the real
+    # error (recovered only by removing the `2>/dev/null` at start-kvm.sh:136)
+    # was:
+    #
+    #   cannot write to '/proc/sys/net/ipv6/conf/virbr0/disable_ipv6'
+    #   on bridge 'virbr0': Read-only file system
+    #
+    # SYS_ADMIN plus a remount in start-kvm.sh is how /proc/sys becomes writable,
+    # and the alternative was measured before it was rejected. Operator ruling
+    # 2026-09-07, on these numbers:
+    #
+    #   --security-opt systempaths=unconfined   works, adds NO capability, but
+    #     flips /proc/sysrq-trigger and /proc/sys/kernel/core_pattern from
+    #     read-only to WRITABLE. The first can reboot the host; the second is a
+    #     documented container-escape vector. (/proc/kcore is readable+writable
+    #     either way, so it is not part of the delta.)
+    #   --cap-add SYS_ADMIN + remount           works, keeps docker's /proc masks
+    #     intact so both of those stay read-only. SYS_ADMIN is a broad capability,
+    #     but it widens what the container may DO rather than handing it two
+    #     concrete host-damage primitives.
+    #   --privileged                            strictly wider than either and
+    #     buys nothing more here.
+    #
+    # TWO ROUTES THAT NEED NO PRIVILEGE AT ALL WERE TRIED AND REFUTED, recorded so
+    # nobody repeats the experiments:
+    #
+    #   network XML with ipv6="yes"                    -> 0 active. libvirt writes
+    #     net.ipv6.conf.virbr0.disable_ipv6 regardless of what the network declares.
+    #   --sysctl net.ipv6.conf.{all,default}.disable_ipv6=1 -> 0 active. Setting the
+    #     namespaced sysctl does not stop libvirt writing the per-bridge one, which
+    #     does not exist until virbr0 does.
+    #
+    # THE MINIMUM WAS MEASURED, not guessed. Three probes on this host, counting
+    # active networks after libvirtd came up:
+    #
+    #   NET_ADMIN + NET_RAW + unconfined -> 1 active
+    #   NET_ADMIN           + unconfined -> 1 active
+    #   no caps             + unconfined -> 0 active
+    #
+    # So NET_RAW is NOT required and was dropped: dnsmasq gets its DHCP socket
+    # without it here. `--privileged` would also work and is what most guides
+    # reach for; it is refused because it grants every capability plus
+    # unrestricted device access to a container that already mounts the
+    # workspace, when one capability and one unmask are provably enough.
+    #
+    # Empty on a host without KVM, and every expansion below then vanishes, so a
+    # machine with no nested virtualisation still starts a clean devbox.
+    local kvm_gid=""
+    if [ -e /dev/kvm ]; then
+        kvm_gid="$(stat -c '%g' /dev/kvm 2>/dev/null || true)"
+    fi
+
+    # /dev/net/tun IS A SECOND DEVICE, and binding only /dev/kvm is a half fix.
+    # Found 2026-09-07 by driving the real thing: with /dev/kvm bound, libvirtd
+    # running and the default network ACTIVE, `./rdc.sh ops up --basic` still
+    # died inside virt-install with
+    #
+    #   ERROR Unable to open /dev/net/tun, is tun module loaded?
+    #
+    # because a container gets no /dev/net at all unless the node is passed in.
+    # qemu opens /dev/net/tun itself to attach the guest NIC to virbr0, so a
+    # devbox with KVM but no tun boots a CPU that cannot be given a network
+    # interface: every VM fails at creation.
+    #
+    # NO --group-add here, deliberately, and the asymmetry with /dev/kvm above
+    # is a property of the two nodes rather than an oversight. The host's
+    # /dev/kvm is 0660 root:<kvm gid>, so access needs the owning group; the
+    # host's /dev/net/tun is 0666 root:root, so it is already world readable and
+    # writable and the container user needs nothing. Adding its owning gid would
+    # mean adding gid 0.
+    #
+    # Gated on the node existing rather than on kvm_gid: they are separate host
+    # facts (tun is a module, KVM is hardware plus a module), so a host missing
+    # either one still starts a clean devbox with the other bound.
+    local tun_dev=""
+    if [ -e /dev/net/tun ]; then
+        tun_dev=/dev/net/tun
+    fi
+
     local vscode_port=$((base_port + DEVBOX_OFFSET_VSCODE))
     local studio_port=$((base_port + DEVBOX_OFFSET_STUDIO))
     local term_port=$((base_port + DEVBOX_OFFSET_TERM))
@@ -639,6 +760,11 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         "${labels[@]}" \
         "${binds[@]}" \
         ${docker_gid:+--group-add "$docker_gid"} \
+        ${kvm_gid:+--device /dev/kvm} \
+        ${tun_dev:+--device /dev/net/tun} \
+        ${kvm_gid:+--group-add "$kvm_gid"} \
+        ${kvm_gid:+--cap-add NET_ADMIN} \
+        ${kvm_gid:+--cap-add SYS_ADMIN} \
         -e HOST_UID="$(id -u)" \
         -e HOST_GID="$(id -g)" \
         -e DOCKER_GID="${docker_gid:-}" \
@@ -953,7 +1079,13 @@ devbox_mount_ok() {
 devbox_identity_ok() {
     local out
     out="$(devbox_exec "git -C '$(devbox_worktree)' status --porcelain" 2>&1)" || true
-    if printf '%s' "$out" | grep -q 'dubious ownership'; then
+    # `[ -n "$(...)" ]`, not `| grep -q`. $out is `git status --porcelain` over the
+    # whole worktree, so it is UNBOUNDED, and this file sets no pipefail of its own
+    # but INHERITS it from every sourcer (scripts/dev/worktree.sh:12, and
+    # .ci/lib/local-common.sh:937,983 via rdc.sh:11). Losing grep -q's race here is
+    # silent in the worst direction: the detector stops seeing "dubious ownership"
+    # and devbox_identity_ok returns SUCCESS on a broken exec identity.
+    if [ -n "$(printf '%s' "$out" | grep 'dubious ownership')" ]; then
         log_error "devbox exec identity is wrong: git refuses the worktree as another user's"
         log_info "Exec as 'vscode' (the entrypoint renumbers it to your uid), never as root."
         return 1

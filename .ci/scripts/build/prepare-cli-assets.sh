@@ -187,13 +187,13 @@ log_info "Copied third-party-credits.json"
 # THIRD_PARTY_LICENSES generation is best-effort and non-fatal: the Go-dependency
 # section needs network, so a networked release build carries the full report while
 # an offline build carries a clearly-marked placeholder (see the generator).
-if npx tsx "$REPO_ROOT/scripts/generate-third-party-licenses.ts" \
+if npx tsx "$REPO_ROOT/scripts/gen/generate-third-party-licenses.ts" \
     --repo-root "$REPO_ROOT" \
     --output "$CLI_ASSETS_DIR/THIRD_PARTY_LICENSES"; then
     log_info "Generated THIRD_PARTY_LICENSES"
 else
     log_warn "THIRD_PARTY_LICENSES generation failed; writing placeholder"
-    printf '%s\n' "THIRD_PARTY_LICENSES generation failed at build time. Regenerate with: npx tsx scripts/generate-third-party-licenses.ts" \
+    printf '%s\n' "THIRD_PARTY_LICENSES generation failed at build time. Regenerate with: npx tsx scripts/gen/generate-third-party-licenses.ts" \
         >"$CLI_ASSETS_DIR/THIRD_PARTY_LICENSES"
 fi
 

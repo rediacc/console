@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ConnectionDetails } from '../../services/machine/ssh-connection.js';
 import { buildEnvPrefix } from '../term.js';
 
-// The `--cluster -r <repo>` term session is the k8s analog of a docker-repo
-// session: KUBECONFIG replaces DOCKER_HOST and a kubectl namespace pin replaces
-// the repo `cd`. buildEnvPrefix is the one place that shell preamble is built.
+// The `--cluster -r <repo>` term session is the k8s analog of a docker-repo session: KUBECONFIG replaces DOCKER_HOST and a kubectl namespace pin replaces the repo `cd`. buildEnvPrefix is the one place that shell preamble is built.
 function details(over: Partial<ConnectionDetails>): ConnectionDetails {
   return {
     host: 'h',

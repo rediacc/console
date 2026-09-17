@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# step: Browser smoke
+# needs: node
+# selftest: true
+# lane: quality-www-build
+# slow: true
+# ---- end gate ----
+
 # Run the browser smoke gate inside the official Playwright container.
 #
 # WHY A CONTAINER. The gate drives a real browser. On a bare GitHub runner that means
@@ -24,7 +32,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$REPO_ROOT"
 
-GATE_ARGS=("scripts/check-browser-smoke.ts" "--selftest")
+GATE_ARGS=("scripts/gates/check-browser-smoke.ts" "--selftest")
 
 if [ "${REDIACC_SMOKE_NO_DOCKER:-0}" = "1" ] || ! command -v docker >/dev/null 2>&1; then
     if [ "${REDIACC_SMOKE_NO_DOCKER:-0}" != "1" ]; then

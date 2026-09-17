@@ -29,9 +29,7 @@ export function getMonorepoRoot(): string {
     return process.env.RENET_ROOT;
   }
 
-  // Default: try to detect from this file's location
-  // Path from this file to monorepo root varies by package location
-  // This is a fallback - prefer setting RENET_ROOT or using setMonorepoRoot
+  // Default: try to detect from this file's location Path from this file to monorepo root varies by package location This is a fallback - prefer setting RENET_ROOT or using setMonorepoRoot
   return path.resolve(__dirname, '../../../../..');
 }
 

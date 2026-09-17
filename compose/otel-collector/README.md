@@ -2,11 +2,7 @@
 
 Reference deployment for routing Rediacc audit events into your SIEM.
 
-The Rediacc account server (`private/account`) mirrors every entry it
-writes to the `event_log` table to the OpenTelemetry logs pipeline via
-the `getOtelLogger()` helper in `src/services/otel.ts`. This collector
-receives those OTLP logs and forwards them to whichever SIEM you have
-configured.
+The Rediacc account server (`private/account`) mirrors every entry it writes to the `event_log` table to the OpenTelemetry logs pipeline via the `getOtelLogger()` helper in `src/services/otel.ts`. This collector receives those OTLP logs and forwards them to whichever SIEM you have configured.
 
 ## Architecture
 
@@ -42,16 +38,11 @@ Trigger any CLI machine operation:
 rdc repo up --name myrepo -m myhost
 ```
 
-Within a few seconds the collector's stdout (default `debug` exporter)
-will show the audit event with all OpenTelemetry semantic attributes
-(`event.domain=rediacc.audit`, `event.name=cli.repo.up`,
-`enduser.id`, `organization.id`, etc.).
+Within a few seconds the collector's stdout (default `debug` exporter) will show the audit event with all OpenTelemetry semantic attributes (`event.domain=rediacc.audit`, `event.name=cli.repo.up`, `enduser.id`, `organization.id`, etc.).
 
 ## Routing to your SIEM
 
-Edit [`config.yaml`](./config.yaml) and uncomment exactly one exporter
-block under the `exporters:` section, then replace `debug` in the
-`logs` pipeline's `exporters:` list.
+Edit [`config.yaml`](./config.yaml) and uncomment exactly one exporter block under the `exporters:` section, then replace `debug` in the `logs` pipeline's `exporters:` list.
 
 Pre-configured examples:
 
@@ -62,10 +53,7 @@ Pre-configured examples:
 | AWS CloudWatch Logs | `awscloudwatchlogs` | needs IAM credentials in the collector's env |
 | Microsoft Sentinel | `azuremonitor` | requires App Insights connection string |
 
-Any [OTel Collector contrib
-exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter)
-that accepts logs will work — the audit pipeline produces standard OTLP
-log records.
+Any [OTel Collector contrib exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter) that accepts logs will work — the audit pipeline produces standard OTLP log records.
 
 ## What's emitted
 
@@ -88,8 +76,7 @@ Every row inserted into `event_log` produces one OTLP log record with:
 
 ## Compliance mapping
 
-The audit pipeline satisfies the audit-logging requirements referenced
-by Rediacc's compliance posture:
+The audit pipeline satisfies the audit-logging requirements referenced by Rediacc's compliance posture:
 
 - **GDPR Art. 30** — records of processing activities
 - **SOC 2 CC6.1 / CC7.2** — access logging + monitoring
@@ -98,7 +85,4 @@ by Rediacc's compliance posture:
 - **NIS2 Art. 21** — incident reporting capability
 - **DORA Art. 10** — ICT-related incident detection
 
-For full SIEM detection content, write [Sigma](https://sigmahq.io)
-rules against the `rediacc.audit` event-domain attribute; rules are
-SIEM-vendor-neutral and can be converted to OpenSearch / Splunk / etc.
-queries via `sigma-cli`.
+For full SIEM detection content, write [Sigma](https://sigmahq.io) rules against the `rediacc.audit` event-domain attribute; rules are SIEM-vendor-neutral and can be converted to OpenSearch / Splunk / etc. queries via `sigma-cli`.

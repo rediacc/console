@@ -36,8 +36,7 @@ async function applyStorageRevealGate(storageName: string): Promise<void> {
     throw new ValidationError(t('errors.agent.showReveal'));
   }
 
-  // Use process.stdout.isTTY, not isatty(fd): the fd can be undefined in
-  // worker threads or stream wrappers, where isatty() would throw a TypeError.
+  // Use process.stdout.isTTY, not isatty(fd): the fd can be undefined in worker threads or stream wrappers, where isatty() would throw a TypeError.
   if (!process.stdout.isTTY) {
     throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
   }

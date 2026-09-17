@@ -35,7 +35,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '../..');
-const GATE = path.join(REPO, 'scripts/check-page-locale-imports.ts');
+const GATE = path.join(REPO, 'scripts/gates/check-page-locale-imports.ts');
 
 /** Verbatim from rdc-cheat-sheet.astro as it stood before the fix; see the header. */
 const CHEAT_SHEET_ASTRO = [
@@ -80,8 +80,7 @@ function runGate(root: string): Result {
 /** A fixture tree holding one file per entry, relative to packages/www/src. */
 function fixture(files: Record<string, string>): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'page-locale-imports-'));
-  // Both scanned roots always exist, so a case tests the RULE and never trips the
-  // gate's missing-root refusal by accident.
+  // Both scanned roots always exist, so a case tests the RULE and never trips the gate's missing-root refusal by accident.
   for (const rel of ['pages', 'layouts']) {
     fs.mkdirSync(path.join(root, 'packages/www/src', rel), { recursive: true });
   }
@@ -205,8 +204,7 @@ function main(): void {
     }
   }
 
-  // Anti-vacuity: the gate must refuse when its scan roots are gone, rather than
-  // reporting a clean tree it never looked at.
+  // Anti-vacuity: the gate must refuse when its scan roots are gone, rather than reporting a clean tree it never looked at.
   const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'page-locale-imports-empty-'));
   const emptyRes = runGate(empty);
   fs.rmSync(empty, { recursive: true, force: true });

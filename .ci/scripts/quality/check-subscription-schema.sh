@@ -1,4 +1,13 @@
 #!/bin/bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-subscription-schema is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_subscription_schema.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_subscription_schema.py" but its header derives "...check-subscription-schema.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Check that subscription schema is up-to-date between TypeScript and Go
 #
 # Usage:

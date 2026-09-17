@@ -376,8 +376,7 @@ describe('mapRcloneToStorageProvider', () => {
   });
 
   it('should process token values through processConfigValue', () => {
-    // When parseKeyValuePair already parsed the JSON, token is already an object.
-    // processConfigValue returns non-string values unchanged.
+    // When parseKeyValuePair already parsed the JSON, token is already an object. processConfigValue returns non-string values unchanged.
     const config: RcloneConfig = {
       name: 'gdrive',
       type: 'drive',

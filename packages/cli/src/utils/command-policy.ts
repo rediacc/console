@@ -61,8 +61,7 @@ export const CMD = {
   REPO_BRANCH: 'repo branch',
   REPO_CHECKOUT: 'repo checkout',
   REPO_MERGE: 'repo merge',
-  // Feature layer (spec §5.4): gate class B. Replicate and canary never mutate
-  // the primary's data — replicate forks it, canary shares it — so grandGuard is
+  // Feature layer (spec §5.4): gate class B. Replicate and canary never mutate the primary's data — replicate forks it, canary shares it — so grandGuard is
   // the whole gate; no class-D cluster unlock is required (they stay inside one
   // cluster's datastores, and replicate is the flagship agent-safe demo).
   REPO_REPLICATE: 'repo replicate',
@@ -71,14 +70,8 @@ export const CMD = {
   REPO_CANARY_CREATE: 'repo canary create',
   REPO_CANARY_WEIGHT: 'repo canary weight',
   REPO_CANARY_REMOVE: 'repo canary remove',
-  // NOTE: `repo secret` subcommands intentionally have no CMD entries.
-  // The V2 write-only model removed grandGuard from secret commands —
-  // mutation-gate is the safety property, not a command-level policy.
-  // If a future need arises (e.g. an entirely new agent gate), reintroduce
-  // CMD.REPO_SECRET_* and add a metadata entry that references it.
-  // These were 'term repo' / 'vscode repo' — SYNTHETIC paths that never existed in
-  // the tree (term has only ever had `connect`). Keyed to the real leaves now, so
-  // the policy gate and the command tree finally agree on the same string.
+  // NOTE: `repo secret` subcommands intentionally have no CMD entries. The V2 write-only model removed grandGuard from secret commands — mutation-gate is the safety property, not a command-level policy. If a future need arises (e.g. an entirely new agent gate), reintroduce CMD.REPO_SECRET_* and add a metadata entry that references it. These were 'term repo' / 'vscode repo' —
+  // SYNTHETIC paths that never existed in the tree (term has only ever had `connect`). Keyed to the real leaves now, so the policy gate and the command tree finally agree on the same string.
   TERM_CONNECT: 'term connect',
   VSCODE_CONNECT: 'vscode connect',
   RUN: 'run',
@@ -91,8 +84,7 @@ export const CMD = {
   CLUSTER_JOIN: 'cluster join',
   CLUSTER_EVICT: 'cluster evict',
   CLUSTER_SNAPSHOT_CREATE: 'cluster snapshot create',
-  // Datastore mutations are class D: a datastore holds every repo in it, so
-  // moving or destroying one is an infrastructure act, not a repo act.
+  // Datastore mutations are class D: a datastore holds every repo in it, so moving or destroying one is an infrastructure act, not a repo act.
   DATASTORE_CREATE: 'datastore create',
   DATASTORE_ATTACH: 'datastore attach',
   DATASTORE_DETACH: 'datastore detach',

@@ -38,8 +38,7 @@ export function isAgentEnvironment(): boolean {
     return true;
   }
 
-  // Slow path: check ancestor chain (Linux only)
-  // Catches: unset CLAUDECODE, env -i, script-based bypass
+  // Slow path: check ancestor chain (Linux only) Catches: unset CLAUDECODE, env -i, script-based bypass
   _isAgent = isAgentByAncestry();
   return _isAgent;
 }

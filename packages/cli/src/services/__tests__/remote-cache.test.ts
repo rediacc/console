@@ -97,8 +97,7 @@ describe('writeRemoteCache', () => {
 
     await writeRemoteCache('cfg', pulled, 5);
 
-    // The version-bumping paths are never touched — cache writes are
-    // observations, not declared intent.
+    // The version-bumping paths are never touched — cache writes are observations, not declared intent.
     expect(mockConfigFileStorage.updateCache).toHaveBeenCalledTimes(1);
     expect(mockConfigFileStorage.update).not.toHaveBeenCalled();
     expect(mockConfigFileStorage.save).not.toHaveBeenCalled();

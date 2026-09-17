@@ -9,9 +9,7 @@ export {
 } from './definitions.js';
 export { FUNCTION_REQUIREMENTS } from './functionRequirements.js';
 
-// Type-safe exports from generated file
-// Note: FUNCTION_VISIBILITY and FunctionVisibility removed - visibility validation
-// is now handled server-side by renet. All functions in this file are public.
+// Type-safe exports from generated file Note: FUNCTION_VISIBILITY and FunctionVisibility removed - visibility validation is now handled server-side by renet. All functions in this file are public.
 export {
   createFunctionPayload,
   type FunctionParamsMap,
@@ -34,8 +32,7 @@ export {
   safeValidateFunctionParams,
   validateFunctionParams,
 } from './functions.schema.js';
-// List types - auto-generated from renet/pkg/list/types.go
-// These are the types from 'renet list all --json' for machine status
+// List types - auto-generated from renet/pkg/list/types.go These are the types from 'renet list all --json' for machine status
 export {
   type BlockDevice,
   type ContainerInfo,

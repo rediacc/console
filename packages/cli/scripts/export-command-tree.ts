@@ -39,8 +39,7 @@ if (tree === null) {
 // Filter out top-level shortcut aliases
 tree.subcommands = tree.subcommands.filter((sub) => !EXCLUDED_TOP_LEVEL.has(sub.name));
 
-// `--output <path>` lets the freshness gate re-export to a scratch file and diff it
-// against the committed tree, instead of overwriting the working tree to check it.
+// `--output <path>` lets the freshness gate re-export to a scratch file and diff it against the committed tree, instead of overwriting the working tree to check it.
 const outputFlag = process.argv.indexOf('--output');
 const outputPath =
   outputFlag !== -1 && process.argv[outputFlag + 1]

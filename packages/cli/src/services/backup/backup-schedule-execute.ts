@@ -299,9 +299,7 @@ export async function executePlan(
   await finalizeSystemd(sftp, plan, options);
 }
 
-// ---------------------------------------------------------------------------
-// Phase F — Post-deploy verification
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Phase F — Post-deploy verification ---------------------------------------------------------------------------
 
 function diagnoseTimer(timer: string, rec: Record<string, string> | undefined): string | null {
   if (!rec) return `${timer}: no state returned by systemctl show`;
@@ -334,9 +332,7 @@ export async function verifyPostDeploy(sftp: SFTPClient, plan: ReconcilePlan): P
   }
 }
 
-// ---------------------------------------------------------------------------
-// Phase G — Emit plan summary
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Phase G — Emit plan summary ---------------------------------------------------------------------------
 
 function formatDiffLine(diff: StrategyDiff): string {
   let line = `${diff.action} ${diff.name}`;

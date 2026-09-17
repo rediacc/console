@@ -17,18 +17,12 @@ import sys
 import tempfile
 import time
 
-# `- [ ] (5546d4bb) do the thing`  ->  state " ", owner "5546d4bb"
-# Owner accepts any word-ish label, not just hex: a named agent tagged items
-# "(perf6-daemon)", the old hex-only charset failed to parse it, the item read
-# as UNTAGGED, and untagged defaults to mine -- so every OTHER session was
-# blocked on that agent's work. Non-prefix labels now parse as owners and are
-# reported-never-blocking for everyone (including the labeler: only a tag that
-# is a PREFIX of your session id binds you).
+# `- [ ] (5546d4bb) do the thing` -> state " ", owner "5546d4bb" Owner accepts any word-ish label, not just hex: a named agent tagged items "(perf6-daemon)", the old hex-only charset failed to parse it, the item read as UNTAGGED, and untagged defaults to mine -- so every OTHER session was blocked on that agent's work. Non-prefix labels now parse as owners and are
+# reported-never-blocking for everyone (including the labeler: only a tag that is a PREFIX of your session id binds you).
 ITEM = re.compile(
     r"^\s*-\s*\[(?P<state>[ x?>])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?"
 )
-# Same shape but INCLUDING tombstones, for the md-sync pass which must see a
-# `[~]` flip as a deletion rather than as an unparseable line.
+# Same shape but INCLUDING tombstones, for the md-sync pass which must see a `[~]` flip as a deletion rather than as an unparseable line.
 ITEM_ANY = re.compile(
     r"^\s*-\s*\[(?P<state>[ x?>~])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?"
 )
@@ -36,16 +30,10 @@ LEASE = re.compile(r"until:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)Z")
 # worker:<background-task-id> on a lease line names the OS-checkable delegate.
 WORKER = re.compile(r"worker:([A-Za-z0-9._-]{1,40})")
 DEFAULT_TOKEN = re.compile(r"\bDEFAULT:[ \t]*\S")
-# v12 justification tokens (operator, 2026-07-30: "Too many '[?]'. This is an
-# escape hatch... there should be a field in json like 'why' and possibly
-# many"). A deferral now carries WHY (why THIS session cannot settle it right
-# now) and HOW (the concrete action or evidence that would resolve it), plus
-# optional TRIED / NEEDS / BLOCKED_ON. They live as inline tokens in the item
-# text (so the markdown inbox round-trips them) AND as a real `j` field on
-# the store event (so nothing downstream re-parses prose it wrote itself).
+# v12 justification tokens (operator, 2026-07-30: "Too many '[?]'. This is an escape hatch... there should be a field in json like 'why' and possibly many"). A deferral now carries WHY (why THIS session cannot settle it right now) and HOW (the concrete action or evidence that would resolve it), plus optional TRIED / NEEDS / BLOCKED_ON. They live as inline tokens in the item text
+# (so the markdown inbox round-trips them) AND as a real `j` field on the store event (so nothing downstream re-parses prose it wrote itself).
 JUST_TOKEN = re.compile(r"\b(WHY|HOW|TRIED|NEEDS|BLOCKED_ON|DEFAULT):")
-# WHY values that describe avoidance rather than inability. Deliberately a
-# SHORT list of unambiguous shapes: this regex is the cheap gate at creation
+# WHY values that describe avoidance rather than inability. Deliberately a SHORT list of unambiguous shapes: this regex is the cheap gate at creation
 # time; whether a why that passes it is actually TRUE is the judge's question.
 VAGUE_WHY_RE = re.compile(
     r"\b(did ?not get (to|around)|didn'?t get (to|around)|no time|not yet"
@@ -53,13 +41,10 @@ VAGUE_WHY_RE = re.compile(
     r"|got around))\b",
     re.IGNORECASE,
 )
-# Same charset the worklist owner tag accepts, so a request's from/to can be
-# written into a `- [?]` line on escalation without re-validation.
+# Same charset the worklist owner tag accepts, so a request's from/to can be written into a `- [?]` line on escalation without re-validation.
 PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$")
 
-# Leases beyond this horizon are invalid: a `- [>]` marked "until next year"
-# would be a bypass, not a delegation. 120 also aligns the lease horizon with
-# the top rung of the v10 liveness ladder.
+# Leases beyond this horizon are invalid: a `- [>]` marked "until next year" would be a bypass, not a delegation. 120 also aligns the lease horizon with the top rung of the v10 liveness ladder.
 MAX_LEASE_MIN = 120
 
 
@@ -134,21 +119,36 @@ def lease_state(line):
     return "fresh"
 
 
+def lease_remaining_tag(line):
+    """`, 59m left` for a fresh lease, `` for anything else.
+
+    A DEADLINE THAT IS ONLY ABSOLUTE IS AMBIGUOUS TO A READER IN A DIFFERENT DAY. UTC and
+    a +0200 local clock disagree about the DATE for two hours out of every twenty-four,
+    and during that window an `until:2026-09-08T23:36Z` reads as yesterday to anyone whose
+    own clock says the 9th. That happened on 2026-09-08 and cost a round trip: the lease
+    had 59 minutes left and was reported as expired.
+
+    Relative time has no timezone, so it cannot be misread. Absolute stays too, because it
+    is the form the store round-trips.
+    """
+    m = LEASE.search(line or "")
+    if not m or lease_state(line) != "fresh":
+        return ""
+    stamp = m.group(1)
+    fmt = "%Y-%m-%dT%H:%M:%S" if stamp.count(":") == 2 else "%Y-%m-%dT%H:%M"
+    try:
+        until = datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.UTC)
+    except ValueError:
+        return ""
+    return ", %dm left" % max(0, round((until - utcnow()).total_seconds() / 60))
+
+
 # LINEAGE ALIASES: the ids a compaction gave to ONE conversation.
 #
-# A compaction can hand a continuous session a new id, and the ownership rule --
-# correctly -- then refuses to let it resolve its own items. On 2026-09-02 that
-# left four settled decisions open all night, reported to the operator as a
-# peer's, while the session reasoned about a peer that did not exist.
+# A compaction can hand a continuous session a new id, and the ownership rule -- correctly -- then refuses to let it resolve its own items. On 2026-09-02 that left four settled decisions open all night, reported to the operator as a peer's, while the session reasoned about a peer that did not exist.
 #
-# _LINEAGE maps a BOUND id to the set of ids proven to be the same conversation.
-# It is keyed on the bound id rather than held as a bare set for one reason: a
-# peer session loading this module must never pick up my aliases. `bind_lineage`
-# is called once, with the identity this process actually resolved to.
-# The bound id is held under a reserved key INSIDE the mapping rather than in a
-# separate module global: one object, one write, and no `global` statement for a
-# linter to object to. The key cannot collide with a session id because a session
-# id never contains a space.
+# _LINEAGE maps a BOUND id to the set of ids proven to be the same conversation. It is keyed on the bound id rather than held as a bare set for one reason: a peer session loading this module must never pick up my aliases. `bind_lineage` is called once, with the identity this process actually resolved to. The bound id is held under a reserved key INSIDE the mapping rather than in a
+# separate module global: one object, one write, and no `global` statement for a linter to object to. The key cannot collide with a session id because a session id never contains a space.
 _BOUND_KEY = "bound id"
 _LINEAGE = {}
 
@@ -213,48 +213,23 @@ def same_session(a, b):
     return bool(a) and bool(b) and (a.startswith(b) or b.startswith(a))
 
 
-# The identity a `<me>` argument may name without being checked against the
-# environment. "operator" is the HUMAN's reply handle: the Stop report prints
-# `worklist.py --answer operator <id> '<words>'` for a person to run in whatever
-# shell they have open, and if that shell happens to be a Claude session's Bash
-# the env check would refuse the one command that line exists to get run. It is
-# a name, not a session prefix, and it was never verifiable.
+# The identity a `<me>` argument may name without being checked against the environment. "operator" is the HUMAN's reply handle: the Stop report prints `worklist.py --answer operator <id> '<words>'` for a person to run in whatever shell they have open, and if that shell happens to be a Claude session's Bash the env check would refuse the one command that line exists to get run. It
+# is a name, not a session prefix, and it was never verifiable.
 #
-# THE HOLE THIS LEAVES, ACCEPTED AND UNDECIDABLE. Because "operator" is exempt,
-# a session can run `--answer operator <its-own-request-id>` and answer its own
-# question, slipping past the self-answer refusal in wl_requests (which compares
-# `me` to the asker). This is PRE-EXISTING -- it was true before any identity
-# checking existed and is not a regression from it -- and it is recorded here
-# rather than fixed because both obvious fixes are worse than the hole:
+# THE HOLE THIS LEAVES, ACCEPTED AND UNDECIDABLE. Because "operator" is exempt, a session can run `--answer operator <its-own-request-id>` and answer its own question, slipping past the self-answer refusal in wl_requests (which compares `me` to the asker). This is PRE-EXISTING -- it was true before any identity checking existed and is not a regression from it -- and it is recorded
+# here rather than fixed because both obvious fixes are worse than the hole:
 #
-#   * "refuse when a session id IS resolvable" breaks the exact case the
-#     exemption exists for. The documented path is a human pasting the mailed
-#     command into a Claude session's Bash, and that process has a perfectly
-#     resolvable CLAUDE_CODE_SESSION_ID. The fix would refuse the operator.
-#   * "refuse when the answering session is the asker" fails too: the operator
-#     may legitimately paste the answer into the very session that asked, which
-#     is the commonest way it happens.
+# * "refuse when a session id IS resolvable" breaks the exact case the exemption exists for. The documented path is a human pasting the mailed command into a Claude session's Bash, and that process has a perfectly resolvable CLAUDE_CODE_SESSION_ID. The fix would refuse the operator. * "refuse when the answering session is the asker" fails too: the operator may legitimately paste
+# the answer into the very session that asked, which is the commonest way it happens.
 #
-# There is no narrower rule, and the reason is structural rather than a gap in
-# imagination: from inside this process, a session forging an operator answer
-# and the operator answering through that session's shell are the SAME syscall,
+# There is no narrower rule, and the reason is structural rather than a gap in imagination: from inside this process, a session forging an operator answer and the operator answering through that session's shell are the SAME syscall,
 # from the same pid, with the same environment. Nothing observable separates
-# them. Any check would be inferring intent from evidence that does not carry
-# it -- which is the shape of validation that produced the incident this module
-# exists to prevent.
+# them. Any check would be inferring intent from evidence that does not carry it -- which is the shape of validation that produced the incident this module exists to prevent.
 #
-# If this is ever worth closing, the honest mechanism is a SHARED SECRET carried
-# alongside the request (a per-request token the report prints and --answer
-# requires), not an inference. That makes the operator's answer provable instead of
-# assumed. Until someone wants that, an operator answer is trusted by
-# construction, and this comment is why.
+# If this is ever worth closing, the honest mechanism is a SHARED SECRET carried alongside the request (a per-request token the report prints and --answer requires), not an inference. That makes the operator's answer provable instead of assumed. Until someone wants that, an operator answer is trusted by construction, and this comment is why.
 UNCHECKED_ME = ("operator",)
-# A `<me>` must be at least this long. GENERALISED from --poll/--wait, which
-# have carried the floor since they were written for a reason that applies
-# everywhere: a short prefix names a DIFFERENT sidecar than the Stop hook
-# derives from the full session id, so it half-works instead of failing. It
-# also closes the hole `same_session`'s symmetry would leave open -- `--add d`
-# would otherwise be accepted by every session whose id starts with "d".
+# A `<me>` must be at least this long. GENERALISED from --poll/--wait, which have carried the floor since they were written for a reason that applies everywhere: a short prefix names a DIFFERENT sidecar than the Stop hook derives from the full session id, so it half-works instead of failing. It also closes the hole `same_session`'s symmetry would leave open -- `--add d` would
+# otherwise be accepted by every session whose id starts with "d".
 ME_MIN_LEN = 8
 
 
@@ -322,22 +297,17 @@ def check_me(me):
         return True, ""
     sid = resolve_session_id()
     if not sid:
-        # UNVERIFIABLE, so silent. A plain operator terminal has no session id
-        # and must not be accused of impersonating one.
+        # UNVERIFIABLE, so silent. A plain operator terminal has no session id and must not be accused of impersonating one.
         return True, ""
     if len(me) < ME_MIN_LEN and os.environ.get("WORKLIST_SESSION_ID") != me:
-        # The floor is skipped ONLY on an exact declared match, and that
-        # exception is a bug fix, not a loophole. Legacy sub-agents tagged items
+        # The floor is skipped ONLY on an exact declared match, and that exception is a bug fix, not a loophole. Legacy sub-agents tagged items
         # with their NAME (`w2s-en`, 6 chars), and those items still need
         # reading and reassigning. Without this, `WORKLIST_SESSION_ID=w2s-en
         # --list --open w2s-en` was REFUSED and then advised to "rerun with
         # <me>=w2s-en" -- the value it had just rejected. An instruction that
-        # tells you to retry the thing it refused leaves no next move at all,
-        # and it made two real items unreadable.
+        # tells you to retry the thing it refused leaves no next move at all, and it made two real items unreadable.
         #
-        # Safe because the floor guards against an UNDER-SPECIFIED guess about
-        # self, and an exact match to an explicit declaration is not a guess.
-        # A bare short `me` with no declaration is still refused, which is the
+        # Safe because the floor guards against an UNDER-SPECIFIED guess about self, and an exact match to an explicit declaration is not a guess. A bare short `me` with no declaration is still refused, which is the
         # case the floor was built for.
         return False, _identity_msg(
             me,
@@ -480,14 +450,8 @@ def project_start(event=None):
 
 
 def worklist_for(start):
-    # TMPDIR first, then tempfile's search. NOT a bare gettempdir(): on POSIX
-    # that also honours TEMP and TMP, so a machine with TEMP set and TMPDIR
-    # unset would resolve a DIFFERENT worklist path than the old expression did
-    # and silently orphan every live session's open items. This spelling is
-    # byte-identical to `os.environ.get("TMPDIR", "/tmp")` wherever TMPDIR is
-    # set or absent-with-/tmp-present (verified on this machine), and it is what
-    # gives Windows -- which sets TEMP/TMP and never TMPDIR -- a real temp dir
-    # instead of a literal "/tmp" it cannot create.
+    # TMPDIR first, then tempfile's search. NOT a bare gettempdir(): on POSIX that also honours TEMP and TMP, so a machine with TEMP set and TMPDIR unset would resolve a DIFFERENT worklist path than the old expression did and silently orphan every live session's open items. This spelling is byte-identical to `os.environ.get("TMPDIR", "/tmp")` wherever TMPDIR is set or
+    # absent-with-/tmp-present (verified on this machine), and it is what gives Windows -- which sets TEMP/TMP and never TMPDIR -- a real temp dir instead of a literal "/tmp" it cannot create.
     d = pathlib.Path(os.environ.get("TMPDIR") or tempfile.gettempdir()) / "claude-worklist"
     d.mkdir(parents=True, exist_ok=True)
     root = project_root(start)
@@ -652,34 +616,21 @@ def tasks_dir(session_id):
     return os.path.join(home, "session-" + session_id[:8])
 
 
-# v19: THE TASK DIR IS NOT ALWAYS NAMED AFTER THE STOP EVENT'S SESSION ID.
-# On 2026-08-08 a session's tasks lived under session-6e7fb45f (the harness
+# v19: THE TASK DIR IS NOT ALWAYS NAMED AFTER THE STOP EVENT'S SESSION ID. On 2026-08-08 a session's tasks lived under session-6e7fb45f (the harness
 # team id) while every Stop event said session_id=d136ac61, so pending_tasks
-# read a directory that did not exist and returned [] for the whole session --
-# the exact "two queues, one supervisor, watching the empty one" failure the
-# v5 docstring below describes, reintroduced one naming scheme later, and
+# read a directory that did not exist and returned [] for the whole session -- the exact "two queues, one supervisor, watching the empty one" failure the v5 docstring below describes, reintroduced one naming scheme later, and
 # INVISIBLE because "missing dir = no evidence" is also the function's
 # legitimate no-manufactured-blocks safety.
 #
-# The join that survives the rename: the session TRANSCRIPT (whose path the
-# Stop event does carry) contains every TaskCreate result verbatim --
-# "Task #<id> created successfully: <subject>" -- and a directory holding a
-# task with that exact id whose subject matches is this session's directory.
-# Content-based, deterministic, and refuses on ambiguity (0 or 2+ matching
-# dirs resolve to None, which downstream treats as "no evidence", never a
-# manufactured block). Cached per process so the fallback's directory scan
-# runs at most once per hook invocation.
+# The join that survives the rename: the session TRANSCRIPT (whose path the Stop event does carry) contains every TaskCreate result verbatim -- "Task #<id> created successfully: <subject>" -- and a directory holding a task with that exact id whose subject matches is this session's directory. Content-based, deterministic, and refuses on ambiguity (0 or 2+ matching dirs resolve to
+# None, which downstream treats as "no evidence", never a manufactured block). Cached per process so the fallback's directory scan runs at most once per hook invocation.
 _TASKS_DIR_CACHE = {}
 _TASK_CREATED_RE = re.compile(r"Task #(\d+) created successfully: ([^\"\\\n]{10,})")
 
 
 def _taskdir_cache_file(key):
-    # Same /tmp family the hook already uses. Persisting the resolution is what
-    # lets TRANSCRIPT-LESS processes (the --state CLI verb at worklist.py:884,
-    # any other verb) agree with the stop battery: without it, world_sig written
-    # by the CLI and world_sig checked by the hook would hash DIFFERENT task
-    # sets whenever the primary dir is empty, and STATE.md would look eternally
-    # stale. Found by review on #559 (the sweep finding).
+    # Same /tmp family the hook already uses. Persisting the resolution is what lets TRANSCRIPT-LESS processes (the --state CLI verb at worklist.py:884, any other verb) agree with the stop battery: without it, world_sig written by the CLI and world_sig checked by the hook would hash DIFFERENT task sets whenever the primary dir is empty, and STATE.md would look eternally stale.
+    # Found by review on #559 (the sweep finding).
     return os.path.join(tempfile.gettempdir(), "claude-worklist", "taskdir." + key)
 
 
@@ -690,15 +641,11 @@ def _resolve_tasks_dir(session_id, transcript_path=None):
     if key in _TASKS_DIR_CACHE:
         return _TASKS_DIR_CACHE[key]
     d = tasks_dir(session_id)
-    # An EMPTY primary dir is "no evidence", not an answer: the live failure
-    # had a zero-file session-d136ac61 relic (created 2026-07-23, before the
-    # harness renamed its task store) shadowing the real session-6e7fb45f.
-    # Only a primary dir that actually holds a task settles the question.
+    # An EMPTY primary dir is "no evidence", not an answer: the live failure had a zero-file session-d136ac61 relic (created 2026-07-23, before the harness renamed its task store) shadowing the real session-6e7fb45f. Only a primary dir that actually holds a task settles the question.
     if os.path.isdir(d) and glob.glob(os.path.join(d, "*.json")):
         _TASKS_DIR_CACHE[key] = d
         return d
-    # Durable cache next: a previous process (with a transcript) may have
-    # resolved this already. Validated before trust -- the dir must still exist
+    # Durable cache next: a previous process (with a transcript) may have resolved this already. Validated before trust -- the dir must still exist
     # and still hold a task; a stale pointer is discarded, never followed.
     try:
         cf = _taskdir_cache_file(key)
@@ -718,9 +665,7 @@ def _resolve_tasks_dir(session_id, transcript_path=None):
                 size = fh.tell()
                 fh.seek(max(0, size - TRANSCRIPT_TAIL_BYTES))
                 tail = fh.read().decode("utf-8", "replace")
-            # Newest creations first: the last one is the least likely to have
-            # been deleted since. Subjects are read out of JSONL, so cut each
-            # at the first escape sequence and prefix-match on what is left.
+            # Newest creations first: the last one is the least likely to have been deleted since. Subjects are read out of JSONL, so cut each at the first escape sequence and prefix-match on what is left.
             matches = _TASK_CREATED_RE.findall(tail)[-5:][::-1]
             cands = set()
             for tid, raw_subj in matches:
@@ -922,18 +867,14 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
             if not isinstance(block, dict):
                 continue
             if block.get("type") == "text" and block.get("text", "").strip():
-                # EVERY narration line before a tool call is its own text block,
-                # so the LAST block mid-turn is a one-liner, not the answer. That
-                # is what made this check fire on a message that did carry its
-                # heading. Judge the whole turn's output instead.
+                # EVERY narration line before a tool call is its own text block, so the LAST block mid-turn is a one-liner, not the answer. That is what made this check fire on a message that did carry its heading. Judge the whole turn's output instead.
                 turn_texts.append(block["text"])
             elif block.get("type") == "tool_use" and block.get("name"):
                 since_user.append(block["name"])
     last_text = "\n\n".join(turn_texts)
     readable = bool(last_text)
     if want is not None and readable and want.search(last_text) is None and tries > 1:
-        # Not there yet. Give the writer a moment rather than calling the session
-        # a liar about a message it actually wrote.
+        # Not there yet. Give the writer a moment rather than calling the session a liar about a message it actually wrote.
         time.sleep(delay)
         return transcript_tail(path, want, tries - 1, delay)
     return last_text, since_user, readable
@@ -941,12 +882,8 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
 
 # ARM THE EXIT RECORDER, LAST, and inside a suppress that swallows everything.
 #
-# wl_core is imported by 16 modules and by every one of the ~880 python3
-# invocations the case suite makes, so this line is the single seam that turns
-# "profile every hook process" into one edit with no settings change, no wrapper
-# and no per-guard work. It is also, for the same reason, the single line that
-# could break every hook at once -- which is why the import itself is guarded, why
-# wl_resprofile.install() never raises, why its exit handler writes nothing to
+# wl_core is imported by 16 modules and by every one of the ~880 python3 invocations the case suite makes, so this line is the single seam that turns "profile every hook process" into one edit with no settings change, no wrapper and no per-guard work. It is also, for the same reason, the single line that could break every hook at once -- which is why the import itself is guarded,
+# why wl_resprofile.install() never raises, why its exit handler writes nothing to
 # stdout or stderr, and why WORKLIST_PROFILE=off exists. A profiler that can
 # change the exit code of the thing it measures is not a profiler.
 try:

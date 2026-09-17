@@ -55,7 +55,7 @@ log_step "Checking branch status against origin/${BASE_BRANCH}..."
 # and a bare `git fetch origin <branch>` does not promise to write it. The
 # remote-tracking ref is updated only when the fetched ref matches
 # remote.origin.fetch, and actions/checkout configures that narrowly in some
-# shapes -- proven both directions in scripts/check-pr-task-trailers.ts's
+# shapes -- proven both directions in scripts/gates/check-pr-task-trailers.ts's
 # selftest, where a bare fetch under a narrow refspec leaves origin/main absent
 # while the explicit form creates it. This works today because the checkout
 # above names a branch; spelling it out means it keeps working if that changes.

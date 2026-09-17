@@ -564,8 +564,7 @@ export function registerEditCommands(parent: Command, _program: Command): void {
           const agent = isAgentEnvironment();
           const reveal = options.reveal === true;
 
-          // Agent gate: block interactive editor + --apply + --reveal.
-          // --dump without --reveal is read-only redacted output — safe for agents.
+          // Agent gate: block interactive editor + --apply + --reveal. --dump without --reveal is read-only redacted output — safe for agents.
           const interactive = !options.dump && !options.apply;
           const needsAgentGate = interactive || Boolean(options.apply) || reveal;
           checkEditGates(config, agent, needsAgentGate, reveal);

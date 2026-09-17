@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Unit test for the cancel-exemption in .ci/scripts/ci/watchdog-monitor.cjs
+# ---- end gate ----
+
 # Unit test for the cancel-exemption in .ci/scripts/ci/watchdog-monitor.cjs.
 #
 # WHAT BROKE. Cancelling a run REWRITES ITS CONCLUSION. A run whose job genuinely

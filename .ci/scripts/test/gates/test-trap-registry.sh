@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: Tests for .ci/scripts/quality/check-trap-registry.sh and for the corpus parser it shares with the stop hook (.claude/hooks/stop/wl_store.py)
+# ---- end gate ----
+
 # Tests for .ci/scripts/quality/check-trap-registry.sh and for the corpus parser
 # it shares with the stop hook (.claude/hooks/stop/wl_store.py).
 #

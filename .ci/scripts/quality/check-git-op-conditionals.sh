@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-git-op-conditionals is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_git_op_conditionals.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_git_op_conditionals.py" but its header derives "...check-git-op-conditionals.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # A git-identity assignment used later without checking whether it failed OR
 # resolved to a KNOWN MISLEADING VALUE is a defect gates run git and observe
 # success but never inspect what a CONDITIONAL later does with that output.
@@ -69,6 +78,68 @@ fail() {
     printf '%s✗%s   %s\n' "$RED" "$NC" "$1" >&2
     FAIL=$((FAIL + 1))
 }
+
+# The line-level half of scan_python_file. Emits `<kind>\t<var>\t<lineno>`:
+#   A  an assignment capture whose window names --abbrev-ref
+#   E  any other assignment capture
+#   B  the bare `return git_out(...)` shape, which has no name to guard
+PY_SCAN_AWK='
+function headvar(s,   t) {
+    if (match(s, /^[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*(:[^=]+)?=([^=]|$)/)) {
+        t = substr(s, RSTART, RLENGTH)
+        sub(/^[ \t]*/, "", t)
+        sub(/[ \t]*(:[^=]+)?=.*$/, "", t)
+        return t
+    }
+    return ""
+}
+{ line[NR] = $0 }
+END {
+    inctl = 0
+    for (i = 1; i <= NR; i++) {
+        l = line[i]
+        if (inctl) {
+            if (l !~ /^[ \t]*$/ && l ~ /^[^ \t]/) inctl = 0
+            else { skip[i] = 1; continue }
+        }
+        if (l ~ /^def (selftest|run_controls|controls?|build_fixture|_?fixture|plant)[ \t]*\(/) {
+            inctl = 1
+            skip[i] = 1
+        }
+    }
+    for (i = 1; i <= NR; i++) {
+        if (skip[i]) continue
+        l = line[i]
+        if (l ~ /^[ \t]*#/) continue
+        if (l !~ /rev-parse/ && l !~ /symbolic-ref/ && l !~ /["\x27]branch["\x27]/) continue
+        # WINDOW FIRST, git TEST SECOND -- black splits the call so that `git`
+        # is on the head line and `rev-parse` on the continuation.
+        window = l
+        var = headvar(l)
+        for (b = 1; b <= 3 && var == ""; b++) {
+            if (i - b < 1) break
+            prev = line[i - b]
+            if (prev !~ /[[({][ \t]*$/) break
+            window = prev " " window
+            var = headvar(prev)
+        }
+        if (window !~ /(^|[^0-9A-Za-z])git([^0-9A-Za-z]|$)/) continue
+        if (var == "") {
+            # A PLACEHOLDER, NOT AN EMPTY FIELD. Tab is IFS whitespace, so bash
+            # `read` COLLAPSES `B\t\t2` into two fields and the line number
+            # lands in the variable slot. That printed `bare-statement-line-`
+            # with no number while the port printed `-line-2`, and only the
+            # planted differential showed it; on this tree neither side has a
+            # bare finding, so both were silently "equal".
+            if (l ~ /^[ \t]*return([ \t]|$)/ && window ~ /--abbrev-ref/) printf "B\t-\t%d\n", i
+            continue
+        }
+        if (window ~ /^[ \t]*(if|elif|while)([ \t]|$)/) continue
+        if (window ~ /check[ \t]*=[ \t]*True/ || window ~ /check_output/ || window ~ /check_call/) continue
+        if (window ~ /--abbrev-ref/) printf "A\t%s\t%d\n", var, i
+        else printf "E\t%s\t%d\n", var, i
+    }
+}'
 
 # scan_file <path> -> prints one finding per unguarded assignment, nothing on a clean file.
 scan_file() {
@@ -146,6 +217,51 @@ scan_file() {
         [ -n "$match" ] || continue
         printf '%s:bare-statement-line-%s\n' "${f#"$ROOT"/}" "$lineno"
     done < <(grep -noE 'git\b[^|;&]*\brev-parse\b[^|;&]*--abbrev-ref[^|;&]*\bHEAD\b[^|;&]*\|\|[[:space:]]*echo\b' "$f")
+}
+
+# scan_python_file <path> -> the same findings as scan_file, for Python sources.
+#
+# THE PORT'S PYTHON HALF, MIRRORED. `.ci/rediacc_ci/quality/git_op_conditionals.py`
+# carries the full reasoning; this is the same predicate so that the differential
+# between the two implementations stays a real comparison. A twin that scanned
+# only `.sh` while the port scanned both would agree on this tree by accident and
+# stop being evidence of anything.
+#
+# awk does the LINE work (control-body skip, comment skip, identity trigger, the
+# three-line backward window, the git-token test, the condition and fail-loud
+# guards) and emits one record per capture; bash does the FILE-WIDE guard
+# searches, exactly as it does for the shell half. `grep -P`, never `-E`: ugrep
+# 7.5.0 returns silent false zeros for an alternated `^` beside a negated class,
+# which is precisely the shape of the git-token test.
+scan_python_file() {
+    local f="$1" body label rec kind var lineno
+    # Test files are fixtures. BOTH separators, because this tree spells one of
+    # them `guards/test-block_unverified_push.py` with a HYPHEN and a `test_`
+    # -only pattern would miss it while looking correct.
+    case "${f##*/}" in
+        test-*.py | test_*.py) return 0 ;;
+    esac
+    body="$(cat "$f" 2>/dev/null)" || return 0
+    label="${f#"$ROOT"/}"
+
+    while IFS=$'\t' read -r kind var lineno; do
+        [ -n "$kind" ] || continue
+        case "$kind" in
+            B)
+                printf '%s:bare-statement-line-%s\n' "$label" "$lineno"
+                ;;
+            A)
+                # `--abbrev-ref HEAD` returns the literal "HEAD" rather than
+                # failing, so only an explicit HEAD comparison clears it.
+                grep -qP "(?:\b\Q${var}\E\s*(?:==|!=)\s*['\"]HEAD['\"]|['\"]HEAD['\"]\s*(?:==|!=)\s*\Q${var}\E\b)" <<<"$body" && continue
+                printf '%s:%s\n' "$label" "$var"
+                ;;
+            E)
+                grep -qP "(?:(?:if|elif|while|not|and|or|assert)\s+\Q${var}\E(?![0-9A-Za-z_])|\b\Q${var}\E\s+(?:is\s+(?:not\s+)?None|and|or)(?![0-9A-Za-z_])|\b\Q${var}\E\s*(?:==|!=)\s*(?:''|\"\"))" <<<"$body" && continue
+                printf '%s:%s\n' "$label" "$var"
+                ;;
+        esac
+    done < <(awk "$PY_SCAN_AWK" "$f")
 }
 
 # --- controls first: a gate nobody has watched fail is not a gate ------------
@@ -253,6 +369,103 @@ fi
 pass "control: the bare-statement || echo fallback (the second real defect) is detected"
 pass "control: an explicit HEAD-literal check in the guarded version clears it"
 
+# --- the PYTHON controls, inline, same rule ----------------------------------
+# The awk predicate above has to be watched fire too. Without these the twin's
+# python half could break silently and every bash control would still pass --
+# which is the precise shape of "a gate that passes without running".
+py_ctl() {
+    local name="$1" must="$2" got
+    got="$(scan_python_file "$CTL/$name")"
+    if [ "$must" = fire ] && [ -z "$got" ]; then
+        fail "CONTROL FAILED: python fixture $name was NOT flagged."
+        exit 1
+    fi
+    if [ "$must" = silent ] && [ -n "$got" ]; then
+        fail "CONTROL FAILED: python fixture $name WAS flagged ($got)."
+        exit 1
+    fi
+}
+
+cat >"$CTL/bad.py" <<'FIX'
+branch = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])
+if not branch or branch == "main":
+    raise SystemExit(0)
+FIX
+py_ctl bad.py fire
+
+cat >"$CTL/good.py" <<'FIX'
+branch = hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"])
+if not branch or branch == "main" or branch == "HEAD":
+    raise SystemExit(0)
+FIX
+py_ctl good.py silent
+
+cat >"$CTL/good-symbolic.py" <<'FIX'
+branch = hookio.git_out(["symbolic-ref", "--short", "-q", "HEAD"], want_rc=True)
+if branch is None or branch == "":
+    raise SystemExit(0)
+FIX
+py_ctl good-symbolic.py silent
+
+# THE SPLIT CALL: `git` on the head line, `rev-parse` on the continuation. A
+# line-oriented scanner misses this silently, and it is real at
+# warn_remote_drift.py:209.
+cat >"$CTL/bad-multiline.py" <<'FIX'
+branch = hookio.git_out(
+    ["rev-parse", "--abbrev-ref", "HEAD"], cwd=root
+)
+if branch == "main":
+    raise SystemExit(0)
+FIX
+py_ctl bad-multiline.py fire
+
+cat >"$CTL/bad-dashC.py" <<'FIX'
+branch = hookio.git_out(["-C", root, "rev-parse", "--abbrev-ref", "HEAD"])
+if branch == "main":
+    raise SystemExit(0)
+FIX
+py_ctl bad-dashC.py fire
+
+cat >"$CTL/bad-bare.py" <<'FIX'
+def current_branch():
+    return hookio.git_out(["rev-parse", "--abbrev-ref", "HEAD"]) or "main"
+FIX
+py_ctl bad-bare.py fire
+
+cat >"$CTL/good-checked.py" <<'FIX'
+sha = subprocess.run(["git", "rev-parse", "HEAD"], check=True).stdout
+if sha == "":
+    raise SystemExit(0)
+FIX
+py_ctl good-checked.py silent
+
+# THE `git` TOKEN TEST, WHICH NOTHING WATCHED UNTIL A MUTATION SAID SO.
+# Disabling it was measured on 2026-09-08 to change nothing on the real tree and
+# to fail no control, so it was live code with no proof it did anything.
+cat >"$CTL/no-git.py" <<'FIX'
+branch = github_api(["rev-parse", "--abbrev-ref", "HEAD"])
+if branch == "main":
+    raise SystemExit(0)
+FIX
+py_ctl no-git.py silent
+
+cat >"$CTL/plain-status.py" <<'FIX'
+status = hookio.git_out(["status", "--porcelain"])
+if status != "":
+    pass
+FIX
+py_ctl plain-status.py silent
+
+pass "control: an unguarded python rev-parse --abbrev-ref HEAD is detected"
+pass "control: a python HEAD-literal guard clears it"
+pass "control: a None-checked python symbolic-ref capture is not flagged"
+pass "control: a SPLIT python call (git on one line, rev-parse on the next) is detected"
+pass "control: the python git -C <dir> shape is detected"
+pass "control: the bare \`return git_out(...) or <fallback>\` shape is detected"
+pass "control: a fail-loud check=True capture is not flagged"
+pass "control: \`github_api\` is not read as the git CLI"
+pass "control: a non-identity \`git status\` capture is not flagged"
+
 # --- the real scan -------------------------------------------------------------
 # .claude/hooks: where the first pair of real defects lived. .ci/scripts:
 # where the second (check-submodule-branches.sh) lived -- a file this gate did
@@ -270,17 +483,37 @@ pass "control: an explicit HEAD-literal check in the guarded version clears it"
 # already correct there; only the flat directory needed the plain form.
 SCAN_GLOBS=('.claude/hooks/**/*.sh' '.ci/scripts/quality/*.sh')
 
-files=()
-while IFS= read -r f; do
-    files+=("$f")
-done < <(
-    for g in "${SCAN_GLOBS[@]}"; do
+# THE PYTHON PATHSPECS. FLAT SPELLINGS ON BOTH, and for the reason the block
+# above already learned the hard way in the other direction: git's default
+# pathspec is wildmatch WITHOUT pathname mode, so `*` crosses `/` and
+# `.claude/rediacc_hooks/*.py` picks up the nested guards/ and tests/ files too.
+# Here it is `**` that is wrong -- measured 2026-09-08,
+# `.claude/rediacc_hooks/**/*.py` returns 58 files and the flat form returns 64,
+# because `**/*.py` still demands a literal slash and so drops the SIX top-level
+# modules. One of the six is hookio.py, which DEFINES git_out and run_out.
+PY_SCAN_GLOBS=('.claude/rediacc_hooks/*.py' '.ci/scripts/quality/*.py')
+
+collect() {
+    for g in "$@"; do
         git -C "$ROOT" ls-files "$g" 2>/dev/null
         git -C "$ROOT" ls-files --others --exclude-standard "$g" 2>/dev/null
     done | sort -u
-)
+}
+
+files=()
+while IFS= read -r f; do files+=("$f"); done < <(collect "${SCAN_GLOBS[@]}")
+pyfiles=()
+while IFS= read -r f; do pyfiles+=("$f"); done < <(collect "${PY_SCAN_GLOBS[@]}")
+
+# COUNTED AND REFUSED SEPARATELY. One combined count cannot tell "186 python and
+# 116 shell" from "302 shell and a python glob matching nothing", and the second
+# is how a widening manufactures a confident green.
 if [ "${#files[@]}" -eq 0 ]; then
-    fail "found ZERO .sh files under ${SCAN_GLOBS[*]} -- this gate is not seeing the tree, its green would mean nothing."
+    fail "found ZERO shell files under ${SCAN_GLOBS[*]} -- this gate is not seeing that half of the tree, and its green would mean nothing."
+    exit 1
+fi
+if [ "${#pyfiles[@]}" -eq 0 ]; then
+    fail "found ZERO python files under ${PY_SCAN_GLOBS[*]} -- this gate is not seeing that half of the tree, and its green would mean nothing."
     exit 1
 fi
 
@@ -299,10 +532,15 @@ for rel in "${files[@]}"; do
         [ -n "$hit" ] && findings+=("$hit")
     done < <(scan_file "$ROOT/$rel")
 done
+for rel in "${pyfiles[@]}"; do
+    while IFS= read -r hit; do
+        [ -n "$hit" ] && findings+=("$hit")
+    done < <(scan_python_file "$ROOT/$rel")
+done
 
 if [ "${#findings[@]}" -eq 0 ]; then
-    pass "${#files[@]} shell file(s) scanned under ${SCAN_GLOBS[*]}, no unguarded git-identity conditional found"
-    echo "${GREEN}✓${NC} every git-identity capture under .claude/hooks and .ci/scripts is guarded before it reaches a conditional."
+    pass "${#files[@]} shell file(s) under ${SCAN_GLOBS[*]} and ${#pyfiles[@]} python file(s) under ${PY_SCAN_GLOBS[*]} scanned, no unguarded git-identity conditional found"
+    echo "${GREEN}✓${NC} every git-identity capture under .claude and .ci is guarded before it reaches a conditional, in both languages."
     exit 0
 fi
 
@@ -311,7 +549,9 @@ for f in "${findings[@]}"; do
 done
 echo "" >&2
 echo "${RED}✗${NC} ${#findings[@]} unguarded git-identity assignment(s)." >&2
-echo "  Fix: check emptiness before use (\`[[ -z \"\$VAR\" ]] && exit 0\`), and for" >&2
-echo "  rev-parse --abbrev-ref HEAD specifically, also guard the literal \"HEAD\"" >&2
-echo "  value it returns on a detached checkout." >&2
+echo "  Fix, in shell: check emptiness before use, \`[[ -z \"\$VAR\" ]] && exit 0\`." >&2
+echo "  Fix, in python: check the value before it reaches a conditional --" >&2
+echo "  \`if not var: return ALLOW\`, or capture with \`want_rc=True\` and test \`is None\`." >&2
+echo "  For rev-parse --abbrev-ref HEAD specifically, ALSO guard the literal \"HEAD\"" >&2
+echo "  value it returns on a detached checkout; emptiness alone misses it." >&2
 exit 1

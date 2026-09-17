@@ -53,6 +53,42 @@ MIN_ENTRIES = 40
 EXPIRY = ROOT / ".ci" / "config" / "bws-token-expiry.json"
 
 
+# `expires` HAS THREE STATES and this reader used to accept only one of them.
+#
+# It did `dt.date.fromisoformat(str(e["expires"]))` inside a try that swallows ValueError and returns, so a single non-date row silently disabled the WHOLE warning -- including
+# for the other rows, which is the worst direction. That was invisible while the file held
+# exactly one dated token; the 2026-09-09 split into a never-expiring local account and an
+# unverified CI one is what made it reachable.
+#
+# Bitwarden's own default is no expiry ("When the token Expires. By default, Never." -- bitwarden.com/help/access-tokens), so `null` is the COMMON case, not an edge one, and "unknown" has to stay distinct from it: null is a claim that the token never expires, "unknown" is a record that nobody checked. Collapsing them would let an unverified CI credential read as safe forever.
+NEVER = "never"
+UNKNOWN = "unknown"
+
+
+def _expiry_of(entry):
+    """A `datetime.date`, or the NEVER / UNKNOWN sentinel. Raises on a malformed date."""
+    raw = entry.get("expires")
+    if raw is None:
+        return NEVER
+    if isinstance(raw, str) and raw.strip().lower() == UNKNOWN:
+        return UNKNOWN
+    return dt.date.fromisoformat(str(raw))
+
+
+def _live_client_fingerprint() -> str:
+    """sha256 of the CLIENT ID half of BWS_ACCESS_TOKEN, or "" when absent.
+
+    The token's shape is `0.<client-id>.<secret>:<key>`. Only the identifier is
+    hashed, and only a prefix of the digest is kept, so nothing derived from the
+    secret can leave this function.
+    """
+    token = os.environ.get("BWS_ACCESS_TOKEN", "")
+    client_id = token.split(".")[1] if token.count(".") >= 2 else ""
+    if not client_id:
+        return ""
+    return hashlib.sha256(client_id.encode()).hexdigest()[:16]
+
+
 def warn_if_token_expiring() -> None:
     """A machine-account token carries no expiry inside it, so nothing can derive
     this -- it is written down at mint time or it is discovered as an outage.
@@ -62,57 +98,81 @@ def warn_if_token_expiring() -> None:
     things it can actually verify. What it prevents is the failure MODE: `bws`
     answers an expired token with an opaque auth error, so without this the
     first symptom is every local command breaking at once for no stated reason.
+
+    THE SCHEMA IS AN ARRAY because the replacement posture is a SPLIT -- a
+    read-only account for .env and CI, a read-write one supplied per rotation --
+    and a one-token file cannot describe the state during the swap, which is
+    exactly when it is being read. One entry today; the loop is not speculative
+    scaffolding, it is the shape the next mint produces.
     """
     try:
-        rec = json.loads(EXPIRY.read_text(encoding="utf-8"))
-        expires = dt.date.fromisoformat(str(rec["expires"]))
-    except (OSError, ValueError, KeyError):
+        doc = json.loads(EXPIRY.read_text(encoding="utf-8"))
+        entries = doc["tokens"]
+        if not isinstance(entries, list) or not entries:
+            return
+        tokens = [(e, _expiry_of(e)) for e in entries]
+    except (OSError, ValueError, KeyError, TypeError):
         return  # absent or malformed is not this script's job to enforce
 
-    # BIND THE CLAIM TO THE TOKEN IT DESCRIBES. Every other state-changing script
-    # in scripts/dev/ derives applied-vs-pending from the live system --
-    # apply-cf-redirect-rules.sh reads the Cloudflare ruleset, the R2 scrubs read
-    # R2, this script's own map carries refreshed_at behind a staleness gate.
-    # A hand-written date is the one shape that cannot self-check, so it gets the
-    # nearest thing: a fingerprint of the token's CLIENT ID, which is the stable
-    # identifier half of `0.<client-id>.<secret>:<key>`. Only a hash is stored,
-    # and only of the identifier, never the secret. Mint a new token without
-    # updating the file and this says so, instead of the date quietly describing
-    # a token that no longer exists.
-    token = os.environ.get("BWS_ACCESS_TOKEN", "")
-    client_id = token.split(".")[1] if token.count(".") >= 2 else ""
-    if client_id:
-        fp = hashlib.sha256(client_id.encode()).hexdigest()[:16]
-        declared = str(rec.get("client_id_sha256", ""))
-        if declared and declared != fp:
+    where = EXPIRY.relative_to(ROOT)
+    warn_days = int(doc.get("warn_days", 5))
+
+    # BIND THE CLAIM TO THE TOKEN IT DESCRIBES. Every other state-changing script in scripts/dev/ derives applied-vs-pending from the live system -- apply-cf-redirect-rules.sh reads the Cloudflare ruleset, the R2 scrubs read R2, this script's own map carries refreshed_at behind a staleness gate. A hand-written date is the one shape that cannot self-check, so it gets the nearest
+    # thing: a fingerprint of the token's client id. Mint a new token without updating the file and this says so, instead of the date quietly describing a token that no longer exists.
+    #
+    # WITH AN ARRAY THE FINGERPRINT ALSO SELECTS. When the live token matches one
+    # declared entry, only that entry's date is the one in force; the others
+    # describe accounts this process is not using. When it matches NONE, the file describes something else entirely and every date below is about the wrong account -- that is louder than any expiry warning, so it returns.
+    fp = _live_client_fingerprint()
+    declared = {str(e.get("client_id_sha256", "")) for e, _ in tokens}
+    if fp:
+        if fp in declared:
+            tokens = [(e, d) for e, d in tokens if str(e.get("client_id_sha256", "")) == fp]
+        elif any(declared - {""}):
+            names = ", ".join(
+                f"{e.get('name', '?')} ({e.get('client_id_sha256', '-')})" for e, _ in tokens
+            )
             print(
-                f"!! {EXPIRY.relative_to(ROOT)} describes token {rec.get('token', '?')} "
-                f"(fingerprint {declared}), but BWS_ACCESS_TOKEN is a DIFFERENT machine "
-                f"account ({fp}). The expiry date below is about the wrong token."
+                f"!! {where} describes {names}, but BWS_ACCESS_TOKEN is a DIFFERENT "
+                f"machine account ({fp}). Every expiry date in that file is about the "
+                f"wrong token."
             )
             return
-        if not declared:
+        else:
             print(
-                f"   (note: {EXPIRY.relative_to(ROOT)} has no client_id_sha256; add {fp} "
+                f"   (note: no entry in {where} carries a client_id_sha256; add {fp} "
                 f"so a swapped token cannot go unnoticed)"
             )
 
-    left = (expires - dt.datetime.now(dt.UTC).date()).days
-    if left > int(rec.get("warn_days", 5)):
-        return
-    where = EXPIRY.relative_to(ROOT)
-    if left < 0:
+    today = dt.datetime.now(dt.UTC).date()
+    shouted = False
+    # A row with no countdown is REPORTED, not warned about, and never sorted against a date. Silence here would be indistinguishable from "checked, and fine".
+    for entry, expires in [(e, d) for e, d in tokens if not isinstance(d, dt.date)]:
+        if expires is UNKNOWN:
+            print(
+                f"   (note: {entry.get('name', '?')} has no verified expiry in {where}; "
+                f"fill it in from the web vault so a lapse cannot arrive unannounced)"
+            )
+    dated = sorted([(e, d) for e, d in tokens if isinstance(d, dt.date)], key=lambda t: t[1])
+    for entry, expires in dated:
+        left = (expires - today).days
+        if left > warn_days:
+            continue
+        shouted = True
+        name = entry.get("name", "?")
+        if left < 0:
+            print(
+                f"!! BWS_ACCESS_TOKEN ({name}) EXPIRED {-left} day(s) ago "
+                f"({expires}). An auth error below means that, not a network fault."
+            )
+        else:
+            print(f"!! BWS_ACCESS_TOKEN ({name}) expires in {left} day(s) ({expires}).")
+        print("   Only the operator can mint a replacement -- no bws verb creates or rotates")
         print(
-            f"!! BWS_ACCESS_TOKEN ({rec.get('token', '?')}) EXPIRED {-left} day(s) ago "
-            f"({expires}). An auth error below means that, not a network fault."
+            f"   a machine-account token. Plan: {entry.get('replacement_plan', '(none recorded)')}"
         )
-    else:
-        print(
-            f"!! BWS_ACCESS_TOKEN ({rec.get('token', '?')}) expires in {left} day(s) ({expires})."
-        )
-    print("   Only the operator can mint a replacement -- no bws verb creates or rotates")
-    print(f"   a machine-account token. Plan: {rec.get('replacement_plan', '(none recorded)')}")
-    print(f"   Update {where} after minting.")
+    if shouted:
+        print(f"   Update {where} after minting.")
 
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
@@ -142,11 +202,7 @@ def main() -> int:
     if not bws or not Path(bws).exists():
         die("bws not found; install it as .devcontainer/Dockerfile does, or pass --bws")
 
-    # `--color no` is load-bearing: bws 2.1.0's default `--color auto` does not
-    # detect a non-tty and wraps `--output json` in truecolor ANSI escapes even
-    # when stdout is a pipe (verified 2026-09-02 against the hash-pinned 2.1.0
-    # binary). Without it every run of this script died on the json.JSONDecodeError
-    # below -- i.e. it had never worked from a pipe, which is the only way it runs.
+    # `--color no` is load-bearing: bws 2.1.0's default `--color auto` does not detect a non-tty and wraps `--output json` in truecolor ANSI escapes even when stdout is a pipe (verified 2026-09-02 against the hash-pinned 2.1.0 binary). Without it every run of this script died on the json.JSONDecodeError below -- i.e. it had never worked from a pipe, which is the only way it runs.
     proc = subprocess.run(
         [bws, "--color", "no", "secret", "list", str(project), "--output", "json"],
         capture_output=True,

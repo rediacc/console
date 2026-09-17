@@ -99,9 +99,7 @@ export function buildPushParams(
   options: { checkpoint?: boolean; force?: boolean },
   storageMode?: 'hot' | 'cold'
 ): { params: Record<string, unknown>; dest: string } {
-  // Storage backups live under the scheduler's hot/cold layout: hot/ for
-  // repos that were mounted at push time, cold/ for unmounted ones. The
-  // machine target keeps the bare GUID (rsync into the datastore).
+  // Storage backups live under the scheduler's hot/cold layout: hot/ for repos that were mounted at push time, cold/ for unmounted ones. The machine target keeps the bare GUID (rsync into the datastore).
   const dest =
     resolvedType === 'storage' && storageMode ? `${storageMode}/${repositoryGuid}` : repositoryGuid;
   const params: Record<string, unknown> = {
@@ -175,9 +173,7 @@ async function narrowRemoteToDataPlane(
  * refusal.
  */
 // STATIC KEYS, not `t(`commands.repo.${kind}.storageRetired`)`. The template
-// literal read fine and defeated check:ci-i18n-cli-key-usage, which finds a key
-// by searching for its literal in the source: both keys were reported as
-// orphans in en/cli.json while being very much in use. The allowlist exists for
+// literal read fine and defeated check:ci-i18n-cli-key-usage, which finds a key by searching for its literal in the source: both keys were reported as orphans in en/cli.json while being very much in use. The allowlist exists for
 // keys that are GENUINELY dynamic; these two are not, and suppressing a gate to
 // keep a nicety is how the gate stops meaning anything.
 function refuseRetiredStorage(kind: 'push' | 'pull'): never {
@@ -223,11 +219,7 @@ export async function postPushDeploy(
   const upResult = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: targetName,
-    // NO datastore on purpose (#74). The push landed the image wherever the
-    // TARGET machine's own vault record points — `resolveExtraMachines` builds
-    // `--dest-path` from that record, not from the source's placement — and
-    // dispatching here without a declaration resolves to exactly the same place.
-    // Passing the source's named mount would name a path that need not exist here.
+    // NO datastore on purpose (#74). The push landed the image wherever the TARGET machine's own vault record points — `resolveExtraMachines` builds `--dest-path` from that record, not from the source's placement — and dispatching here without a declaration resolves to exactly the same place. Passing the source's named mount would name a path that need not exist here.
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
   });
@@ -271,14 +263,12 @@ async function preparePush(
   }
 
   // Storage layout is mode-scoped (hot = mounted at push time, cold =
-  // unmounted). Probe failure defaults to hot — pushes overwhelmingly
-  // target live repos.
+  // unmounted). Probe failure defaults to hot — pushes overwhelmingly target live repos.
   let storageMode: 'hot' | 'cold' | undefined;
   if (resolvedType === 'storage') {
     const mounted = await probeRepoMounted(repoConfig.repositoryGuid, options.machine as string, {
       debug: options.debug as boolean | undefined,
-      // #74: the probe enumerates ONE datastore, so without the repo's own mount
-      // a named-datastore repo reads as absent and every push is filed as `cold`.
+      // #74: the probe enumerates ONE datastore, so without the repo's own mount a named-datastore repo reads as absent and every push is filed as `cold`.
       datastore: options.datastore as string | undefined,
     });
     storageMode = mounted === false ? 'cold' : 'hot';
@@ -325,9 +315,7 @@ async function pushRepo(ref: string, options: Record<string, unknown>): Promise<
     ...options,
     machine: machineName,
     ...(kubeCluster !== undefined && { kubeCluster }),
-    // The SOURCE side's datastore: the push reads the image from where this repo
-    // actually lives. The destination's is a separate question, answered by the
-    // target machine's own vault record (see postPushDeploy).
+    // The SOURCE side's datastore: the push reads the image from where this repo actually lives. The destination's is a separate question, answered by the target machine's own vault record (see postPushDeploy).
     datastore: await recordedDatastoreMount(repoKey),
   };
 
@@ -395,8 +383,7 @@ async function postPullDeploy(
   const upResult = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: targetMachine,
-    // The pull landed on the repo's own home, so this is the same mount the pull
-    // itself declared (#74).
+    // The pull landed on the repo's own home, so this is the same mount the pull itself declared (#74).
     datastore: options.datastore as string | undefined,
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
@@ -423,8 +410,7 @@ async function pullRepo(ref: string, options: Record<string, unknown>): Promise<
     ...options,
     machine: machineName,
     ...(kubeCluster !== undefined && { kubeCluster }),
-    // A pull lands on the repo's OWN home, so the recorded mount is both where
-    // renet writes the image and where a following `--up` must look for it.
+    // A pull lands on the repo's OWN home, so the recorded mount is both where renet writes the image and where a following `--up` must look for it.
     datastore: await recordedDatastoreMount(repoKey),
   };
 

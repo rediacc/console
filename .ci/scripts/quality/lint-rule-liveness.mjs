@@ -40,31 +40,20 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 // .ci/scripts/quality/ -> repo root
 const ROOT = path.resolve(HERE, '../../..');
 
-// Several rules resolve paths against process.cwd() rather than against the
-// linted file: require-path-option.js:24 (every i18n localesDir) and
-// require-command-summary.js:59 (en/cli.json). A wrong cwd makes some of them
-// throw and others silently no-op, i.e. look dead. Pin it.
+// Several rules resolve paths against process.cwd() rather than against the linted file: require-path-option.js:24 (every i18n localesDir) and require-command-summary.js:59 (en/cli.json). A wrong cwd makes some of them throw and others silently no-op, i.e. look dead. Pin it.
 process.chdir(ROOT);
 
 const NAMESPACES = new Set(['custom', 'i18n', 'i18n-source']);
 
-// Floors. Today the config resolves 35 registered / 30 enabled. These leave
-// room for a deliberate removal and none at all for the config resolving to
-// nothing, which is the failure that would otherwise exit 0 while proving
-// nothing -- indistinguishable from a healthy repo.
+// Floors. Today the config resolves 35 registered / 30 enabled. These leave room for a deliberate removal and none at all for the config resolving to nothing, which is the failure that would otherwise exit 0 while proving nothing -- indistinguishable from a healthy repo.
 const MIN_REGISTERED = 30;
 const MIN_ENABLED = 25;
 // Directory representatives the .tsx/.jsx reachability sweep must find (§6.3).
 const MIN_JSX_DIRS = 10;
 
-// ---------------------------------------------------------------------------
-// Registered but enabled nowhere, by an explicit and documented decision.
+// --------------------------------------------------------------------------- Registered but enabled nowhere, by an explicit and documented decision.
 // The banner at eslint.config.js:104-137 records why (7245 findings on waking,
-// plus a fixer that does not converge). This map must EQUAL registered-minus-
-// enabled exactly, so a FUTURE rule that becomes registered-but-never-enabled
-// -- dead wiring, the way custom/no-raw-api-calls was before it was deleted --
-// cannot slip in unremarked.
-// ---------------------------------------------------------------------------
+// plus a fixer that does not converge). This map must EQUAL registered-minus- enabled exactly, so a FUTURE rule that becomes registered-but-never-enabled -- dead wiring, the way custom/no-raw-api-calls was before it was deleted -- cannot slip in unremarked. ---------------------------------------------------------------------------
 const KNOWN_OFF = {
   'i18n/sorted-keys':
     "off since 2026-08-06: 2172 findings on waking, and its 'fixable' fixer does not converge",
@@ -77,18 +66,10 @@ const KNOWN_OFF = {
     'off since 2026-08-06: same wave, needs the hash sidecars re-scoped',
 };
 
-// ---------------------------------------------------------------------------
-// Enabled, alive as code, and unable to report on any file that exists.
-// This is a DISTINCT failure from a dead rule and it is recorded rather than
-// hidden: the gate stays green, the finding stays written down.
-// ---------------------------------------------------------------------------
-// EMPTY ON PURPOSE, and it should stay that way.
+// --------------------------------------------------------------------------- Enabled, alive as code, and unable to report on any file that exists. This is a DISTINCT failure from a dead rule and it is recorded rather than hidden: the gate stays green, the finding stays written down. --------------------------------------------------------------------------- EMPTY ON PURPOSE, and
+// it should stay that way.
 //
-// `custom/require-testid` lived here until 2026-08-15: it was 'error' on the
-// js/jsx/ts/tsx glob while every tree containing JSX switched it off, so it
-// protected ZERO files. The operator's answer was to ENABLE it rather than
-// keep documenting the exception. Measured before the change: packages/www
-// reports 0 findings across its 28 .tsx/.jsx files, so that tree was switched
+// `custom/require-testid` lived here until 2026-08-15: it was 'error' on the js/jsx/ts/tsx glob while every tree containing JSX switched it off, so it protected ZERO files. The operator's answer was to ENABLE it rather than keep documenting the exception. Measured before the change: packages/www reports 0 findings across its 28 .tsx/.jsx files, so that tree was switched
 // on immediately and for free; private/account/** stays off pending a sweep of
 // its 287 findings across 68 files, tracked as its own item.
 //
@@ -112,14 +93,9 @@ const KNOWN_UNREACHABLE = {};
  */
 const REACH_FLOOR = { 'custom/require-testid': 20 };
 
-// ---------------------------------------------------------------------------
-// Specimens that read a live value out of the tree.
+// --------------------------------------------------------------------------- Specimens that read a live value out of the tree.
 //
-// A stale specimen going silent reads EXACTLY like a dead rule, and that false
-// accusation is the thing this gate exists to avoid. Each of these entries
-// therefore carries a `precondition` that runs BEFORE the lint and, when it
-// fails, produces its own message saying so in as many words.
-// ---------------------------------------------------------------------------
+// A stale specimen going silent reads EXACTLY like a dead rule, and that false accusation is the thing this gate exists to avoid. Each of these entries therefore carries a `precondition` that runs BEFORE the lint and, when it fails, produces its own message saying so in as many words. ---------------------------------------------------------------------------
 const readJson = (rel) => JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
 
 const EN_CLI = 'packages/cli/src/i18n/locales/en/cli.json';
@@ -206,24 +182,14 @@ const preconditions = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// The matrix.
+// --------------------------------------------------------------------------- The matrix.
 //
-// `filePath` is a VIRTUAL path handed to lintText. It decides which config
-// block applies, so it must sit exactly where the enabling glob matches -- and
-// the gate re-checks that with calculateConfigForFile rather than trusting it,
-// because `packages/www/src/i18n/translations/*.json` is a SINGLE star and a
-// path one directory deeper resolves zero rules while looking like five dead
+// `filePath` is a VIRTUAL path handed to lintText. It decides which config block applies, so it must sit exactly where the enabling glob matches -- and the gate re-checks that with calculateConfigForFile rather than trusting it, because `packages/www/src/i18n/translations/*.json` is a SINGLE star and a path one directory deeper resolves zero rules while looking like five dead
 // ones.
 //
-// `mode`:
-//   in-config  - real severity, real options, no override. The strongest proof.
-//   option-dir - real path and severity, `localesDir` redirected at a temp
-//                fixture, because these two rules never read the linted text.
+// `mode`: in-config - real severity, real options, no override. The strongest proof. option-dir - real path and severity, `localesDir` redirected at a temp fixture, because these two rules never read the linted text.
 //   isolated   - own ESLint instance; the only mode for a rule that reports on
-//                the FILENAME, since no violating filename exists on disk and a
-//                virtual .ts path is rejected by the typed-linting projectService.
-// ---------------------------------------------------------------------------
+// the FILENAME, since no violating filename exists on disk and a virtual .ts path is rejected by the typed-linting projectService. ---------------------------------------------------------------------------
 const MATRIX = {
   // -- packages/cli/src/commands/backup.ts ---------------------------------
   'custom/no-direct-sftp-client': {
@@ -244,8 +210,7 @@ const MATRIX = {
   },
   'custom/require-translation': {
     filePath: 'packages/cli/src/commands/backup.ts',
-    // The `cli:` namespace prefix is load-bearing: an unprefixed key resolves
-    // no namespace and the rule returns silently.
+    // The `cli:` namespace prefix is load-bearing: an unprefixed key resolves no namespace and the rule returns silently.
     code: 'declare const t: any;\nt("cli:zz.nope");\n',
   },
   'custom/require-translation-key-arg': {
@@ -285,9 +250,7 @@ const MATRIX = {
   'custom/require-testid': {
     filePath: 'eslint-rules/zz-probe.js',
     // `Modal` is in requiredElements at eslint.config.js:437. This co-fires
-    // react/jsx-no-undef and no-undef, which is harmless: the assertion is per
-    // rule id. See KNOWN_UNREACHABLE -- this is the ONLY shape that can fire,
-    // and no real file in the repo has it.
+    // react/jsx-no-undef and no-undef, which is harmless: the assertion is per rule id. See KNOWN_UNREACHABLE -- this is the ONLY shape that can fire, and no real file in the repo has it.
     code: 'export const A = () => <Modal />;\n',
   },
 
@@ -320,9 +283,7 @@ const MATRIX = {
   },
   'custom/seo-no-hash-breadcrumb-url': {
     filePath: 'packages/www/src/components/AccountCta.tsx',
-    // THE VARIABLE NAME IS THE TRAP: the rule only looks inside an array whose
-    // declarator id matches /breadcrumb/i, so the identical object under any
-    // other name is silent.
+    // THE VARIABLE NAME IS THE TRAP: the rule only looks inside an array whose declarator id matches /breadcrumb/i, so the identical object under any other name is silent.
     code: 'const breadcrumbItems = [{ name: "S", url: "/en/#solutions" }];\nexport default breadcrumbItems;\n',
   },
   'custom/seo-no-trailing-slash-internal-link': {
@@ -331,12 +292,8 @@ const MATRIX = {
     code: 'export const X = () => <a href="/en/docs/" data-track="x">Docs</a>;\n',
   },
 
-  // -- packages/www/src/i18n/translations/tr.json --------------------------
-  // Key SHAPE matters as much as content: seo-title-length only looks at paths
-  // ending ".meta.title" (seo-title-length.js:53), seo-description-length at
-  // ".meta.description" (:51), and seo-no-duplicate-h1-title compares a sibling
-  // "hero.title" against "meta.title". Right text under the wrong key is
-  // silent, and reads exactly like a dead rule.
+  // -- packages/www/src/i18n/translations/tr.json -------------------------- Key SHAPE matters as much as content: seo-title-length only looks at paths ending ".meta.title" (seo-title-length.js:53), seo-description-length at ".meta.description" (:51), and seo-no-duplicate-h1-title compares a sibling "hero.title" against "meta.title". Right text under the wrong key is silent, and
+  // reads exactly like a dead rule.
   'i18n/seo-title-length': {
     filePath: 'packages/www/src/i18n/translations/tr.json',
     code: JSON.stringify({ pages: { x: { meta: { title: 'uzun baslik '.repeat(12) } } } }, null, 2),
@@ -391,8 +348,7 @@ const MATRIX = {
   'i18n/no-untranslated-values': {
     filePath: 'packages/cli/src/i18n/locales/tr/cli.json',
     // Byte-identical to en AND must survive the allowlist at eslint.config.js:46-81
-    // plus :670-687, which exempts anything with a dot, colon, at-sign or
-    // placeholder. cli.description is one of the few en values that qualifies.
+    // plus :670-687, which exempts anything with a dot, colon, at-sign or placeholder. cli.description is one of the few en values that qualifies.
     code: JSON.stringify({ cli: { description: EN_CLI_DESCRIPTION } }, null, 2),
     precondition: preconditions.cliDescriptionMatchesSpecimen,
   },
@@ -404,9 +360,7 @@ const MATRIX = {
     precondition: preconditions.configLoadedHasDuration,
   },
 
-  // -- option-override mode -------------------------------------------------
-  // These two never read the linted text beyond a type check: they read English
-  // off DISK from localesDir. A text-based liveness probe scores them dead while
+  // -- option-override mode ------------------------------------------------- These two never read the linted text beyond a type check: they read English off DISK from localesDir. A text-based liveness probe scores them dead while
   // they work. Probe path and severity stay real; only localesDir moves.
   'i18n/cross-language-consistency': {
     filePath: EN_CLI,
@@ -423,16 +377,8 @@ const MATRIX = {
 
   // -- isolated mode --------------------------------------------------------
   'custom/e2e-test-naming-convention': {
-    // Reports purely on the BASENAME (e2e-test-naming-convention.js:51/:76) and
-    // self-guards to paths containing packages/e2e-tests/tests (:62). No
-    // violating filename exists on disk -- the repo's files all conform, which
-    // is the rule doing its job -- and a virtual .ts path is rejected outright
-    // by the typed-linting projectService (allowDefaultProject covers only
-    // scripts/*.ts, scripts/utils/*.ts, packages/locales/*.js), which returns a
-    // FATAL parse error and runs zero rules. So the firing half runs in an
-    // isolated instance carrying only this rule and a plain TS parser, and the
-    // enabled half is proven separately with calculateConfigForFile against a
-    // REAL e2e test. The two together are the same claim the other 29 get in
+    // Reports purely on the BASENAME (e2e-test-naming-convention.js:51/:76) and self-guards to paths containing packages/e2e-tests/tests (:62). No violating filename exists on disk -- the repo's files all conform, which is the rule doing its job -- and a virtual .ts path is rejected outright by the typed-linting projectService (allowDefaultProject covers only scripts/*.ts and
+    // packages/locales/*.js), which returns a FATAL parse error and runs zero rules. So the firing half runs in an isolated instance carrying only this rule and a plain TS parser, and the enabled half is proven separately with calculateConfigForFile against a REAL e2e test. The two together are the same claim the other 29 get in
     // one step. Do not "simplify" this into the in-config mode; it cannot work.
     filePath: 'packages/e2e-tests/tests/zz_Bad-Name.test.ts',
     code: 'export const x = 1;\n',
@@ -441,8 +387,7 @@ const MATRIX = {
   },
 };
 
-// Rules that can only ever report on JSX. "Enabled somewhere" is not the same
-// as "can ever report", and this is the check that tells those apart.
+// Rules that can only ever report on JSX. "Enabled somewhere" is not the same as "can ever report", and this is the check that tells those apart.
 const REQUIRES_JSX = new Set([
   'custom/require-testid',
   'custom/no-hardcoded-text',
@@ -451,9 +396,7 @@ const REQUIRES_JSX = new Set([
   'custom/seo-require-img-alt',
 ]);
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Helpers ---------------------------------------------------------------------------
 const err = (...args) => console.error(...args);
 
 const severityOf = (value) => {
@@ -530,13 +473,10 @@ const jsxCandidates = (dir, out) => {
   return out;
 };
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Main ---------------------------------------------------------------------------
 async function main() {
   const started = Date.now();
-  // Bare specifiers: this file lives inside the repo, so Node's resolver walks
-  // up to the repo's own node_modules. The launcher has already proven it exists.
+  // Bare specifiers: this file lives inside the repo, so Node's resolver walks up to the repo's own node_modules. The launcher has already proven it exists.
   const { ESLint } = await import('eslint');
   const blocks = (await import(path.join(ROOT, 'eslint.config.js'))).default;
 
@@ -564,9 +504,7 @@ async function main() {
     return 1;
   }
 
-  // CLASS CONTROL: registered-minus-enabled must equal KNOWN_OFF exactly. This
-  // is what catches dead wiring -- a rule imported, registered, and switched on
-  // by no block anywhere.
+  // CLASS CONTROL: registered-minus-enabled must equal KNOWN_OFF exactly. This is what catches dead wiring -- a rule imported, registered, and switched on by no block anywhere.
   const neverEnabled = [...registered].filter((r) => !enabled.has(r)).sort();
   const knownOff = Object.keys(KNOWN_OFF).sort();
   const undocumented = neverEnabled.filter((r) => !(r in KNOWN_OFF));
@@ -612,11 +550,7 @@ async function main() {
 
   const eslint = new ESLint({ cwd: ROOT });
 
-  // -------------------------------------------------------------------------
-  // The temp fixture for the two cross-file locale rules. NEVER inside a
-  // locales tree: those rules enumerate languages by listing localesDir, so a
-  // directory planted there becomes a fourteenth language for every i18n rule
-  // and for the locale-set gates that read @rediacc/locales.
+  // ------------------------------------------------------------------------- The temp fixture for the two cross-file locale rules. NEVER inside a locales tree: those rules enumerate languages by listing localesDir, so a directory planted there becomes a fourteenth language for every i18n rule and for the locale-set gates that read @rediacc/locales.
   // -------------------------------------------------------------------------
   const fixtureRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'lint-liveness-'));
   try {
@@ -625,10 +559,7 @@ async function main() {
     for (const [dir, en, tr] of [
       // tr is MISSING "b" -> both rules must fire.
       [asymmetric, { a: 'x', b: 'y' }, { a: 'x' }],
-      // Same key set, different values -> both rules must stay silent. The
-      // English side has to shrink too: leaving en at two keys here makes the
-      // "control" fixture asymmetric and the control fires, which is how the
-      // first draft of this file discovered its own bug.
+      // Same key set, different values -> both rules must stay silent. The English side has to shrink too: leaving en at two keys here makes the "control" fixture asymmetric and the control fires, which is how the first draft of this file discovered its own bug.
       [symmetric, { a: 'x' }, { a: 'y' }],
     ]) {
       await fs.promises.mkdir(path.join(dir, 'en'), { recursive: true });
@@ -646,16 +577,11 @@ async function main() {
         },
       });
 
-    // ---------------------------------------------------------------------
-    // CONTROLS. One per execution mode, all inline on every run, none behind a
-    // flag: a mode nobody remembers to run is how a control stops controlling
-    // anything. If any of these FIRES, the harness cannot tell firing from not
-    // firing and every verdict below it is meaningless.
+    // --------------------------------------------------------------------- CONTROLS. One per execution mode, all inline on every run, none behind a flag: a mode nobody remembers to run is how a control stops controlling anything. If any of these FIRES, the harness cannot tell firing from not firing and every verdict below it is meaningless.
     // ---------------------------------------------------------------------
     const controlFailures = [];
 
-    // 1. in-config mode: sorted-keys on already-sorted input (severity forced
-    //    on, since the rule is off by documented decision).
+    // 1. in-config mode: sorted-keys on already-sorted input (severity forced on, since the rule is off by documented decision).
     {
       const probe = new ESLint({
         cwd: ROOT,
@@ -727,9 +653,7 @@ async function main() {
       return 1;
     }
 
-    // ---------------------------------------------------------------------
-    // The matrix run.
-    // ---------------------------------------------------------------------
+    // --------------------------------------------------------------------- The matrix run. ---------------------------------------------------------------------
     const dead = [];
     const specimenStale = [];
     const didNotParse = [];
@@ -751,8 +675,7 @@ async function main() {
         }
       }
 
-      // Is the rule actually on at the probe path? "Enabled in some block" is a
-      // candidate, not a verdict: severity is last-block-wins per path.
+      // Is the rule actually on at the probe path? "Enabled in some block" is a candidate, not a verdict: severity is last-block-wins per path.
       const enablementPath = mode === 'isolated' ? entry.enabledAt : entry.filePath;
       const resolved = await eslint.calculateConfigForFile(path.join(ROOT, enablementPath));
       if (severityOf(resolved.rules?.[ruleId]) === 0) {
@@ -775,15 +698,9 @@ async function main() {
       if (!fired.has(ruleId)) dead.push(ruleId);
     }
 
-    // ---------------------------------------------------------------------
-    // Reachability. For a rule that can only report on JSX, "enabled" is not
-    // "can ever report": require-testid is 'error' repo-wide and protects zero
-    // files, because every tsx/jsx path in the tree turns it off.
-    // ---------------------------------------------------------------------
+    // --------------------------------------------------------------------- Reachability. For a rule that can only report on JSX, "enabled" is not "can ever report": require-testid is 'error' repo-wide and protects zero files, because every tsx/jsx path in the tree turns it off. ---------------------------------------------------------------------
     const candidates = [...jsxCandidates(ROOT, new Map()).values()];
-    // A sweep over zero files declares every JSX rule unreachable, and one of
-    // them is SUPPOSED to be unreachable, so the degenerate case would look
-    // partly correct. Floor it. Today: ~30 directory representatives.
+    // A sweep over zero files declares every JSX rule unreachable, and one of them is SUPPOSED to be unreachable, so the degenerate case would look partly correct. Floor it. Today: ~30 directory representatives.
     if (candidates.length < MIN_JSX_DIRS) {
       err(
         `VACUOUS INPUT: the JSX sweep found only ${candidates.length} directory representative(s)\n` +
@@ -805,10 +722,7 @@ async function main() {
     const newlyUnreachable = unreachable.filter((r) => !(r in KNOWN_UNREACHABLE));
     const nowReachable = Object.keys(KNOWN_UNREACHABLE).filter((r) => !unreachable.includes(r));
 
-    // ---------------------------------------------------------------------
-    // Verdicts. Each shape gets its OWN message, because "dead" is the one
-    // accusation that must never be made loosely.
-    // ---------------------------------------------------------------------
+    // --------------------------------------------------------------------- Verdicts. Each shape gets its OWN message, because "dead" is the one accusation that must never be made loosely. ---------------------------------------------------------------------
     if (specimenStale.length > 0) {
       for (const [ruleId, problem] of specimenStale) {
         err(
@@ -895,9 +809,7 @@ async function main() {
         `${Object.keys(KNOWN_UNREACHABLE).length} enabled-but-unreachable and recorded); ` +
         `3 negative controls stayed silent; ${elapsed}s`
     );
-    // The reach counts are printed rather than merely asserted: a reader can
-    // see at a glance that the sweep resolved real files, instead of taking a
-    // silent pass as proof that it ran.
+    // The reach counts are printed rather than merely asserted: a reader can see at a glance that the sweep resolved real files, instead of taking a silent pass as proof that it ran.
     console.log(
       `  JSX reachability over ${candidates.length} directory representative(s): ` +
         [...reach].map(([r, n]) => `${r.replace('custom/', '')}=${n}`).join(', ')
@@ -907,9 +819,7 @@ async function main() {
     }
     return 0;
   } finally {
-    // ALWAYS, including on an exception: the fixture is outside the repo, but a
-    // leaked temp tree is still litter and the cleanup path must not depend on
-    // the happy path being taken.
+    // ALWAYS, including on an exception: the fixture is outside the repo, but a leaked temp tree is still litter and the cleanup path must not depend on the happy path being taken.
     await fs.promises.rm(fixtureRoot, { recursive: true, force: true });
   }
 }

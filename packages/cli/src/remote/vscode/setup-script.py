@@ -126,15 +126,12 @@ def main():
     setup_content = f'source "{env_file}"'
     update_managed_content(setup_file, setup_content, 0o644, uid, gid)
 
-    # Write terminal init script (sourced via --rcfile so PS1 isn't overridden)
-    # --rcfile replaces ~/.bashrc, so we source it explicitly after our env setup
+    # Write terminal init script (sourced via --rcfile so PS1 isn't overridden) --rcfile replaces ~/.bashrc, so we source it explicitly after our env setup
     terminal_init = setup_dir / "terminal-init.sh"
     init_content = f'source /etc/bash.bashrc 2>/dev/null\nsource "{env_file}" 2>/dev/null\nsource ~/.bashrc 2>/dev/null\n'
     write_file_atomic(terminal_init, init_content, 0o644, uid, gid)
 
-    # Write Machine settings to force /bin/bash with our init as default shell
-    # --rcfile replaces the default ~/.bashrc sourcing, so we source /etc/bash.bashrc
-    # ourselves followed by rediacc-env.sh (which includes PS1 and helper functions)
+    # Write Machine settings to force /bin/bash with our init as default shell --rcfile replaces the default ~/.bashrc sourcing, so we source /etc/bash.bashrc ourselves followed by rediacc-env.sh (which includes PS1 and helper functions)
     data_dir = setup_dir / "data"
     machine_dir = data_dir / "Machine"
     ensure_dir(data_dir, 0o775, uid, gid)

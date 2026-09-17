@@ -73,6 +73,9 @@ import re
 import subprocess
 import sys
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls
+
 try:
     import yaml
 except ImportError:
@@ -82,8 +85,7 @@ except ImportError:
 # A floor: a broken glob reports a confident green having read nothing.
 MIN_WORKFLOWS = 20
 
-# Git invocations whose ANSWER changes with how much history is present. Each is a form a
-# depth-1 clone answers WRONGLY rather than refusing.
+# Git invocations whose ANSWER changes with how much history is present. Each is a form a depth-1 clone answers WRONGLY rather than refusing.
 HISTORY_OPS = [
     (re.compile(r"\bgit\s+(?:-C\s+\S+\s+)?rev-list\b"), "git rev-list counts commits it can see"),
     (re.compile(r"\bgit\s+(?:-C\s+\S+\s+)?describe\b"), "git describe needs the tag in history"),
@@ -162,15 +164,7 @@ def judge(workflows):
 
 def selftest():
     """Controls, both directions. A gate that cannot fail is worse than none."""
-    ok = True
-
-    def check(label, cond):
-        nonlocal ok
-        if cond:
-            print("  PASS  %s" % label)
-        else:
-            ok = False
-            print("  FAIL  %s" % label, file=sys.stderr)
+    check = controls.Checker()
 
     def job(*steps):
         return [("f.yml", {"jobs": {"j": {"steps": list(steps)}}})]
@@ -190,8 +184,7 @@ def selftest():
         "CONTROL: a shallow checkout that reads no history is fine",
         len(judge(job(co, {"run": "npm run build && git status --short"}))) == 0,
     )
-    # `git log -1` is CORRECT at depth 1. Flagging it would push authors to fetch-depth: 0
-    # everywhere, which is the opposite of the goal.
+    # `git log -1` is CORRECT at depth 1. Flagging it would push authors to fetch-depth: 0 everywhere, which is the opposite of the goal.
     check(
         "CONTROL: git log -1 is correct at depth 1 and is not flagged",
         len(judge(job(co, {"run": "git log -1 --format=%H"}))) == 0,
@@ -259,16 +252,13 @@ def selftest():
         "an op BEFORE any deep re-checkout is still an offence",
         len(judge(job(co, {"run": "git describe --tags"}, deep))) == 1,
     )
-    # THE RULE THAT USED TO BE HERE WAS WRONG, and the sweep is what proved it.
-    # `resolve-version.sh:44` says in as many words that it uses `git tag -l` rather than
-    # `git describe` BECAUSE describe requires tags -- it was written shallow-safe on
-    # purpose. Flagging it punished a script for the mitigation it already has.
+    # THE RULE THAT USED TO BE HERE WAS WRONG, and the sweep is what proved it. `resolve-version.sh:44` says in as many words that it uses `git tag -l` rather than `git describe` BECAUSE describe requires tags -- it was written shallow-safe on purpose. Flagging it punished a script for the mitigation it already has.
     check(
         "CONTROL: a script written shallow-safe is not flagged for being called",
         len(judge(job(co, {"run": ".ci/scripts/version/resolve-version.sh --current"}))) == 0,
     )
     check("CONTROL: an empty workflow set yields no offences", len(judge([])) == 0)
-    return ok
+    return check.ok
 
 
 def workflows(root):
@@ -326,20 +316,10 @@ def main():
         "git history depth: %d workflow(s), %d job(s); no job reads history it did not fetch"
         % (len(wfs), jobs)
     )
-    # THE BLIND SPOT, stated because its silence cost something. This gate matches
-    # history ops it can SEE in a step's run: block, or in a script named there. It
-    # does not follow a `source`d library, so `quality-security` and `quality-go`
-    # ran depth-1 for months while audit.sh and check-go-deps.sh asked
-    # age-check.sh's entry_age_days when a suppression line was added -- measured
-    # 195 days on a full checkout and 2 days on theirs. This gate said nothing,
-    # correctly by its own model, and the suppression-liveness gates were green for
-    # a reason unrelated to the suppressions.
+    # THE BLIND SPOT, stated because its silence cost something. This gate matches history ops it can SEE in a step's run: block, or in a script named there. It does not follow a `source`d library, so `quality-security` and `quality-go` ran depth-1 for months while audit.sh and check-go-deps.sh asked age-check.sh's entry_age_days when a suppression line was added -- measured 195
+    # days on a full checkout and 2 days on theirs. This gate said nothing, correctly by its own model, and the suppression-liveness gates were green for a reason unrelated to the suppressions.
     #
-    # The fix was NOT to teach this gate to resolve `source` chains: that is the
-    # npm-key hop above by another name, and the docstring records what that cost.
-    # age-check.sh now REFUSES on a truncated history instead of answering, so the
-    # defect announces itself at runtime wherever it occurs. A runtime refusal
-    # cannot be fooled by a call graph this gate could not walk.
+    # The fix was NOT to teach this gate to resolve `source` chains: that is the npm-key hop above by another name, and the docstring records what that cost. age-check.sh now REFUSES on a truncated history instead of answering, so the defect announces itself at runtime wherever it occurs. A runtime refusal cannot be fooled by a call graph this gate could not walk.
     print(
         "  Blind spot: history ops reached through a `source`d library are invisible "
         "here; those libraries must refuse a truncated history themselves "

@@ -43,7 +43,7 @@ mkdir -p ~/.ssh
 for vm in "${TARGETS[@]}"; do
     log_info "Waiting for $vm as $SSH_AS..."
     ready=false
-    for i in $(seq 1 36); do
+    for ((i = 1; i <= 36; i++)); do
         if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 \
             "${SSH_AS}@${vm}" echo ready 2>/dev/null; then
             log_info "VM $vm is SSH-ready"

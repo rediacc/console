@@ -154,12 +154,8 @@ async function configureVSCodeAndSettings(
     }
 
     if (connectionDetails.datastore) {
-      // Per-repo server install path so VS Code runs separate server instances.
-      // VS Code shares servers by resolved hostname — without separate paths,
-      // the second repo would reuse the first repo's sandboxed server.
-      // Uses the GUID-based mount path (colon-free) because VS Code rejects
-      // serverInstallPath values containing ':' (parsed as PATH-style separator),
-      // which breaks fork aliases like "<parent>:<tag>".
+      // Per-repo server install path so VS Code runs separate server instances. VS Code shares servers by resolved hostname — without separate paths, the second repo would reuse the first repo's sandboxed server. Uses the GUID-based mount path (colon-free) because VS Code rejects serverInstallPath values containing ':' (parsed as PATH-style separator), which breaks fork aliases
+      // like "<parent>:<tag>".
       const serverPath =
         repositoryName && connectionDetails.repositoryGuid
           ? `${connectionDetails.datastore}/mounts/${connectionDetails.repositoryGuid}`
@@ -192,9 +188,7 @@ async function provisionAndPrepare(
     await preparePerRepoVSCodeServer(connectionDetails, teamKey);
   }
 
-  // Pin the kubectl current-context to the repo's namespace on the control node
-  // so the integrated terminal lands in the right namespace (design D14, the
-  // k8s analog of the per-repo working directory for docker targets).
+  // Pin the kubectl current-context to the repo's namespace on the control node so the integrated terminal lands in the right namespace (design D14, the k8s analog of the per-repo working directory for docker targets).
   if (kubeNamespace) {
     await pinClusterNamespace(connectionDetails, kubeNamespace);
   }
@@ -397,9 +391,7 @@ async function connectVSCode(target: string, options: VSCodeConnectOptions): Pro
     getSSHConnectionDetails(NO_TEAM, machineName, repositoryName)
   );
 
-  // For a cluster target, layer KUBECONFIG onto the control-node connection so
-  // the integrated terminal has kubectl ready (design D14). The namespace is
-  // pinned on the control node in provisionAndPrepare below.
+  // For a cluster target, layer KUBECONFIG onto the control-node connection so the integrated terminal has kubectl ready (design D14). The namespace is pinned on the control node in provisionAndPrepare below.
   if (kubeCluster) {
     applyClusterConnectionContext(connectionDetails, kubeCluster, kubeNamespace);
   }
@@ -415,8 +407,7 @@ async function connectVSCode(target: string, options: VSCodeConnectOptions): Pro
     await deployRepoKeyIfNeeded(repositoryName, machineName);
   }
 
-  // Provision renet, prepare the per-repo VS Code server, and (for a cluster
-  // target) pin the kubectl namespace on the control node.
+  // Provision renet, prepare the per-repo VS Code server, and (for a cluster target) pin the kubectl namespace on the control node.
   await provisionAndPrepare(machineName, repositoryName, connectionDetails, kubeNamespace);
 
   const { connectionName, identityFile, knownHostsFile } = await setupSSHConfig(
@@ -516,8 +507,7 @@ function cleanupVSCodeConnections(options: VSCodeCleanupOptions): void {
     // Remove SSH config entry
     removeSSHConfigEntry(connectionName);
 
-    // Parse connection name to extract team/machine/repository
-    // Format: rediacc-team-machine or rediacc-team-machine-repository
+    // Parse connection name to extract team/machine/repository Format: rediacc-team-machine or rediacc-team-machine-repository
     const parts = connectionName.replace(/^rediacc-/, '').split('-');
     if (parts.length >= 2) {
       const [team, machine, ...repositoryParts] = parts;

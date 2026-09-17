@@ -146,17 +146,14 @@ describe('buildSyncRemotePaths', () => {
   });
 
   it('file mode with undefined subpath returns base path with no trailing slash', () => {
-    // Single-file mode against a missing subpath returns the base directly
-    // (no trailing slash) so rsync sees a file-target rather than dir-target.
+    // Single-file mode against a missing subpath returns the base directly (no trailing slash) so rsync sees a file-target rather than dir-target.
     const r = buildSyncRemotePaths(base, undefined, true);
     expect(r.remotePath).toBe(base);
     expect(r.sftpRemotePath).toBe('');
   });
 
   it('directory mode strips caller-provided trailing slash to avoid `path//`', () => {
-    // Bug fix: previously the helper concatenated `sub/` + `/` producing
-    // `sub//`, which broke rsync semantics on some hosts. Now it
-    // normalizes the caller's input by stripping leading + trailing slashes.
+    // Bug fix: previously the helper concatenated `sub/` + `/` producing `sub//`, which broke rsync semantics on some hosts. Now it normalizes the caller's input by stripping leading + trailing slashes.
     const r = buildSyncRemotePaths(base, 'sub/', false);
     expect(r.remotePath).toBe(`${base}/sub/`);
     expect(r.sftpRemotePath).toBe('sub/');

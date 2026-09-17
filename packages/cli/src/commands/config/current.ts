@@ -61,9 +61,7 @@ export function registerCurrentCommand(parent: Command, program: Command): void 
         const tokenState = getSubscriptionTokenState();
         const cfg = fileExists ? await configService.getCurrent() : null;
 
-        // A config with no remote pointer is the local adapter (CLAUDE.md: local
-        // is the only adapter). Plain assignment, not `?? 'local'`, keeps both the
-        // nullish-default and prefer-nullish lint rules satisfied.
+        // A config with no remote pointer is the local adapter (CLAUDE.md: local is the only adapter). Plain assignment, not `?? 'local'`, keeps both the nullish-default and prefer-nullish lint rules satisfied.
         let remoteStore = 'local';
         if (cfg?.remote?.storeId) remoteStore = cfg.remote.storeId;
 

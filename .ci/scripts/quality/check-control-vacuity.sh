@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-control-vacuity is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_control_vacuity.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_control_vacuity.py" but its header derives "...check-control-vacuity.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Gate: a control-first gate that PLANTS its defect by pattern substitution must
 # prove the plant landed before trusting the control.
 #
@@ -69,9 +78,23 @@ builds_by_substitution() {
     # existed ONLY inside a comment explaining why that construct was avoided
     # here. A gate that reads its own documentation as the thing it forbids
     # cannot be satisfied except by deleting the explanation.
-    grep -vE '^[[:space:]]*#' "$1" |
-        grep -vE "sed [^&]*[[:punct:]]s[/@|#]\^[/@|#]" |
-        grep -qE '\$\{[A-Za-z_][A-Za-z0-9_]*//|sed [^&]*[[:punct:]]s[/@|#]|sed -i'
+    # NEVER `| grep -q` HERE, and this file is why the rule has teeth.
+    # `grep -q` exits at its FIRST match, SIGPIPEs the upstream greps, and under
+    # this file's own `set -uo pipefail` that 141 becomes the pipeline's status --
+    # so a file that MATCHED is reported as not matching. Measured 2026-09-16,
+    # 20 rounds under suite load: check-submodule-branches.sh came back 141 in 2
+    # of them. The damage was not a flaky test. A false negative here moves a
+    # gate out of `checked` and into `exempt`, so THIS GATE QUIETLY STOPPED
+    # CHECKING ONE OF ITS CONTROLS while still printing a tick; only the
+    # twin/port differential ever noticed.
+    #
+    # Command substitution reads the producer to completion, so there is no
+    # signal to race. Same drop-in as check-ci-watch-recipe.sh:117.
+    [ -n "$(
+        grep -vE '^[[:space:]]*#' "$1" |
+            grep -vE "sed [^&]*[[:punct:]]s[/@|#]\^[/@|#]" |
+            grep -E '\$\{[A-Za-z_][A-Za-z0-9_]*//|sed [^&]*[[:punct:]]s[/@|#]|sed -i'
+    )" ]
 }
 
 # Does it prove the plant landed? Either shape counts:
@@ -187,4 +210,4 @@ for _pf in "$GATE_DIR"/check_*.py; do
     [ -f "$_pf" ] && py_unscanned=$((py_unscanned + 1))
 done
 
-echo "${GREEN}✓${NC} $checked pattern-substitution control(s) prove their plant landed; $exempt built by construction (exempt); $py_unscanned python gate(s) NOT scanned (this check parses bash)"
+echo "${GREEN}✓${NC} $checked pattern-substitution control(s) prove their plant landed; $exempt built by construction (exempt); $py_unscanned python gate(s) NOT scanned here -- check:ci-python-control-plants owns them"

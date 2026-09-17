@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-toolchain-pins is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_toolchain_pins.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_toolchain_pins.py" but its header derives ".ci/scripts/quality/check-toolchain-pins.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Gate: every gate-tool version is defined ONCE, and nothing acquires unpinned.
 #
 # Why this exists. Measured 2026-08-25, before .devcontainer/toolchain.env: ruff
@@ -65,9 +74,16 @@ else
 fi
 
 # --- A1. one definition per pin ----------------------------------------------
+# PATHSPEC: `.ci/*.sh`, NOT `.ci/**/*.sh`. Git's default (non-`:(glob)`) wildmatch
+# lets `*` cross `/`, so `.ci/*.sh` already reaches every depth, while `.ci/**/*.sh`
+# demands a literal slash after `.ci/` and therefore MISSES every script sitting
+# directly under `.ci/`. Measured 2026-09-06 when .ci/bootstrap.sh became the first
+# file in that class: the two spellings return the same 453 tracked files, and only
+# the second one drops bootstrap.sh. A scanner that silently skips a file is the
+# vacuity failure this gate exists to prevent, so the narrower spelling is a bug.
 scan_corpus() {
     git -C "$ROOT" ls-files \
-        '.github/workflows/*.yml' '.devcontainer/*' '.ci/**/*.sh' 'run.sh' 2>/dev/null
+        '.github/workflows/*.yml' '.devcontainer/*' '.ci/*.sh' 'run.sh' 2>/dev/null
 }
 
 dupes=()
@@ -105,8 +121,16 @@ fi
 
 # --- A2. nothing acquires a gate tool unpinned -------------------------------
 # Only the tools a GATE depends on. Editor tooling (gopls, dlv, staticcheck,
-# golangci-lint, goimports) is deliberately out: nothing gates on its output, so
-# pinning it would buy churn rather than consistency.
+# golangci-lint, goimports) stays out of THIS assertion, but the reason changed on
+# 2026-09-06 and the old one is worth not re-deriving: it used to be "nothing gates
+# on its output, so pinning would buy churn". Those five are now pinned as ARG
+# <NAME>_VERSION lines in .devcontainer/Dockerfile, and three of them are watched by
+# check-devcontainer-pin-freshness. They remain outside A2 because A2 asks a
+# different question: does a SHELL SCRIPT acquire a gate tool without a version. A
+# Dockerfile ARG is not that shape, and the freshness gate already owns it. The
+# control below therefore still earns its place: it proves this regex does not
+# reach past the gate tools, using a synthetic fixture rather than the real
+# Dockerfile, which no longer contains a version-less install to sample.
 GATED_TOOLS='shfmt|shellcheck|ruff|actionlint'
 unpinned=()
 while IFS= read -r rel; do
@@ -136,7 +160,7 @@ fi
 #
 # NOTE ON SHAPE, because it is the opposite of what it may look like: a workflow
 # invoking a gate SCRIPT directly (`run: .ci/scripts/security/shfmt.sh`) is the
-# REQUIRED pattern here -- scripts/check-ci-parity.ts enforces three-point wiring
+# REQUIRED pattern here -- scripts/gates/check-ci-parity.ts enforces three-point wiring
 # in which the workflow step names the script. It is invoking the TOOL that is
 # forbidden, not invoking the script.
 wf_direct=()
@@ -166,8 +190,10 @@ else
     fail "A8 CONTROL DID NOT FIRE: a direct tool invocation went undetected"
 fi
 printf '        run: .ci/scripts/security/shfmt.sh\n' >"$TMP/c/wf-script.yml"
-if grep -E "(^|[;&|[:space:]])(${GATED_TOOLS})[[:space:]]+-" "$TMP/c/wf-script.yml" |
-    grep -qvE "\.sh|install|--version|uvx"; then
+if [ -n "$(
+    grep -E "(^|[;&|[:space:]])(${GATED_TOOLS})[[:space:]]+-" "$TMP/c/wf-script.yml" |
+        grep -vE "\.sh|install|--version|uvx"
+)" ]; then
     fail "A8 IS OVER-BROAD: running the gate SCRIPT was flagged, and that is the required pattern"
 else
     pass "A8 control: invoking the gate script is not flagged"
@@ -213,10 +239,12 @@ while IFS= read -r g; do
     # cannot distinguish from a bare command word. Only a line matching
     # `NAME=(...)` in full (the assignment is complete on one line, no command
     # separator) is dropped, same narrowing discipline as the echo/printf case.
-    grep -vE '^[[:space:]]*#' "$ROOT/$g" |
-        grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
-        grep -vE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\([^)]*\)[[:space:]]*$' |
-        grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]" || continue
+    [ -n "$(
+        grep -vE '^[[:space:]]*#' "$ROOT/$g" |
+            grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
+            grep -vE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\([^)]*\)[[:space:]]*$' |
+            grep -E "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]"
+    )" ] || continue
     # RESOLVING at a pin, not merely NAMING one. The first version accepted any
     # `*_VERSION` mention, and check-python-lint.sh passed it while still taking
     # an unversioned `command -v ruff` from PATH -- the assertion was satisfied
@@ -328,13 +356,13 @@ fi
 mkdir -p "$TMP/c"
 printf 'RUFF_VERSION=9.9.9\n' >"$TMP/c/pins.env"
 printf 'run: pip install "ruff==9.9.9"\n' >"$TMP/c/restates.yml"
-if grep -F '9.9.9' "$TMP/c/restates.yml" | grep -qvF 'RUFF_VERSION'; then
+if [ -n "$(grep -F '9.9.9' "$TMP/c/restates.yml" | grep -vF 'RUFF_VERSION')" ]; then
     pass "control: a restated pin value is detectable"
 else
     fail "A1 CONTROL DID NOT FIRE: a restated value went undetected"
 fi
 printf 'run: pip install "ruff==${RUFF_VERSION}"\n' >"$TMP/c/reads.yml"
-if grep -F '9.9.9' "$TMP/c/reads.yml" | grep -qvF 'RUFF_VERSION'; then
+if [ -n "$(grep -F '9.9.9' "$TMP/c/reads.yml" | grep -vF 'RUFF_VERSION')" ]; then
     fail "A1 IS OVER-BROAD: a line READING the pin was flagged as restating it"
 else
     pass "control: a line reading the pin is not flagged"
@@ -363,9 +391,11 @@ fi
     printf '# this gate never runs shellcheck itself, it only greps for it\n'
     printf 'echo "  # shellcheck extended-analysis=false"\n'
 } >"$TMP/c/prose-gate.sh"
-if grep -vE '^[[:space:]]*#' "$TMP/c/prose-gate.sh" |
-    grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
-    grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]"; then
+if [ -n "$(
+    grep -vE '^[[:space:]]*#' "$TMP/c/prose-gate.sh" |
+        grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
+        grep -E "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]"
+)" ]; then
     fail "A6 IS OVER-BROAD: a comment and an echoed string read as an invocation"
 else
     pass "A6 control: naming a tool in prose or an echo is not invoking it"
@@ -379,10 +409,12 @@ fi
     printf '# this gate only reads NPX_TOOLS from another file, it never runs any of them\n'
     printf 'NPX_TOOLS=(ruff go shfmt shellcheck actionlint)\n'
 } >"$TMP/c/array-literal-gate.sh"
-if grep -vE '^[[:space:]]*#' "$TMP/c/array-literal-gate.sh" |
-    grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
-    grep -vE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\([^)]*\)[[:space:]]*$' |
-    grep -qE "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]"; then
+if [ -n "$(
+    grep -vE '^[[:space:]]*#' "$TMP/c/array-literal-gate.sh" |
+        grep -vE '^[[:space:]]*(echo|printf)[[:space:]][^;&|]*$' |
+        grep -vE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=\([^)]*\)[[:space:]]*$' |
+        grep -E "(^|[;&|(]|[[:space:]])(${GATED_TOOLS})[[:space:]]"
+)" ]; then
     fail "A6 IS OVER-BROAD: an array literal defining tool names reads as an invocation"
 else
     pass "A6 control: naming a tool inside an array literal is not invoking it"

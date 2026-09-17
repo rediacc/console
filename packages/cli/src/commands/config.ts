@@ -192,9 +192,7 @@ const DEFAULT_KEYS: Record<string, 'language' | 'datastoreSize' | 'pruneGraceDay
 const RETIRED_KEYS = new Set(['team', 'region', 'machine']);
 
 function resolveDefaultKey(key: string): 'language' | 'datastoreSize' | 'pruneGraceDays' {
-  // hasOwn, not a truthiness check on the lookup: index access is typed as always
-  // present (no noUncheckedIndexedAccess), so `if (!DEFAULT_KEYS[key])` reads as dead
-  // code to the type system even though an unknown key is exactly what it catches.
+  // hasOwn, not a truthiness check on the lookup: index access is typed as always present (no noUncheckedIndexedAccess), so `if (!DEFAULT_KEYS[key])` reads as dead code to the type system even though an unknown key is exactly what it catches.
   if (!Object.hasOwn(DEFAULT_KEYS, key)) {
     const valid = Object.keys(DEFAULT_KEYS).join(', ');
     if (RETIRED_KEYS.has(key)) {
@@ -238,8 +236,7 @@ async function applyRevealGate(cfg: RdcConfig): Promise<void> {
     throw new ValidationError(t('errors.agent.showReveal'));
   }
 
-  // Use process.stdout.isTTY, not isatty(fd): the fd can be undefined in
-  // worker threads or stream wrappers, where isatty() would throw a TypeError.
+  // Use process.stdout.isTTY, not isatty(fd): the fd can be undefined in worker threads or stream wrappers, where isatty() would throw a TypeError.
   if (!process.stdout.isTTY) {
     throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
   }
@@ -315,9 +312,7 @@ async function runReconcileInner(program: Command, options: ReconcileCliOptions)
   const cfgName = configService.getEffectiveConfigName();
   const filter = options.machine;
 
-  // --accept-observed rewrites a declaration from "observed on exactly one
-  // machine", which is meaningless when --machine scanned only a subset:
-  // rewriting from partial evidence is a guess. Refuse the combination
+  // --accept-observed rewrites a declaration from "observed on exactly one machine", which is meaningless when --machine scanned only a subset: rewriting from partial evidence is a guess. Refuse the combination
   // (spec/04 §4.3); run it unfiltered instead.
   if (options.acceptObserved && filter?.length) {
     throw new ValidationError(t('commands.config.reconcile.acceptObservedUnfiltered'));
@@ -449,15 +444,13 @@ ${t('help.examples')}
         const name = configService.getCurrentName();
 
         if (!cfg) {
-          // Same contract as the list commands: a machine-readable format gets an
-          // explicit null payload, never an empty stdout.
+          // Same contract as the list commands: a machine-readable format gets an explicit null payload, never an empty stdout.
           if (format === 'table') outputService.info(t('commands.config.show.noConfig', { name }));
           else outputService.print(null, format);
           return;
         }
 
-        // Default: redact sensitive values. --reveal opts in (humans only).
-        // The redactor is schema-driven (packages/shared/src/config-schema/walker.ts).
+        // Default: redact sensitive values. --reveal opts in (humans only). The redactor is schema-driven (packages/shared/src/config-schema/walker.ts).
         if (options.reveal) {
           await applyRevealGate(cfg);
         } else {
@@ -596,9 +589,7 @@ ${t('help.examples')}
     .option('--accept-observed', t('commands.config.reconcile.optionAcceptObserved'))
     .action((options: ReconcileCliOptions) => runReconcile(program, options));
 
-  // config rotate-cek — destructive, org-wide (Q3): registered here, not under
-  // `config remote`, because it rotates the ORGANIZATION's key, not this device's
-  // link. The impl still lives in config-remote.ts alongside the store internals.
+  // config rotate-cek — destructive, org-wide (Q3): registered here, not under `config remote`, because it rotates the ORGANIZATION's key, not this device's link. The impl still lives in config-remote.ts alongside the store internals.
   config
     .command('rotate-cek')
     .description(t('commands.config.rotateCek.description'))

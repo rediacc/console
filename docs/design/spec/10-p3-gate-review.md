@@ -4,53 +4,30 @@ Reviewer: Fable (adversarial, evidence-first). Date: 2026-07-13.
 Subject: the entire P3 phase against `docs/design/09-implementation-phases.md` §P3
 and the nine P3 carry-ins in `docs/design/spec/08-p2-gate-review.md`.
 Method: every gate re-run by the reviewer from a cold shell; every claimed fix
-located in the working tree by file:line; every live claim traced to a transcript.
-Nothing in this document is taken from a subordinate report's self-assessment.
+located in the working tree by file:line; every live claim traced to a transcript. Nothing in this document is taken from a subordinate report's self-assessment.
 
-HEADs at review: console `9eee3671b`, renet `c7e187a`. Both operator-authored,
-therefore sanctioned (the "zero commits" invariant was superseded on 2026-07-11 by
-an authorship-based invariant). No agent-authored commits exist. Verified via
-`git log --format='%an'`.
+HEADs at review: console `9eee3671b`, renet `c7e187a`. Both operator-authored, therefore sanctioned (the "zero commits" invariant was superseded on 2026-07-11 by an authorship-based invariant). No agent-authored commits exist. Verified via `git log --format='%an'`.
 
 ---
 
 ## VERDICT: PASS-WITH-NOTES (conditional)
 
-P3's hardest and highest-risk deliverable, the thin node-local CSI driver, is proven
-live well beyond its bar. All nine P2 carry-ins are discharged or consciously
-dispositioned, several of them exceeding what was asked. The full gate set is green
-except for one pre-existing, previously-sanctioned red. The bug ledger is accurate,
-and it self-corrected a bad generalization rather than defending it.
+P3's hardest and highest-risk deliverable, the thin node-local CSI driver, is proven live well beyond its bar. All nine P2 carry-ins are discharged or consciously dispositioned, several of them exceeding what was asked. The full gate set is green except for one pre-existing, previously-sanctioned red. The bug ledger is accurate, and it self-corrected a bad generalization rather
+than defending it.
 
-Two explicit conjuncts of the gate letter are nonetheless **unproven**, and I am not
-willing to paper over either:
+Two explicit conjuncts of the gate letter are nonetheless **unproven**, and I am not willing to paper over either:
 
 1. **The P3 feature layer has never been executed.** `repo replicate`, `cluster
-   rehearse`, and the release ladder (rung 0 + canary weight templating) are real,
-   complete, wired, unit-tested code. Not one of them has ever been run against live
-   infrastructure. The gate letter reads "VM transcript **and** unit coverage per
-   feature". Unit coverage: met. VM transcript: absent for three of P3's four named
-   features.
+rehearse`, and the release ladder (rung 0 + canary weight templating) are real, complete, wired, unit-tested code. Not one of them has ever been run against live infrastructure. The gate letter reads "VM transcript **and** unit coverage per feature". Unit coverage: met. VM transcript: absent for three of P3's four named features.
 2. **No stock Helm chart was ever installed.** The gate letter reads "a stock Helm
-   chart with a dynamic PVC **and** a velero/VolumeSnapshot backup both work against
-   the CSI driver". The VolumeSnapshot arm is proven emphatically. The word "helm"
-   appears in zero live transcripts.
+chart with a dynamic PVC **and** a velero/VolumeSnapshot backup both work against the CSI driver". The VolumeSnapshot arm is proven emphatically. The word "helm" appears in zero live transcripts.
 
-These are recorded below as **B1** and **B2**: blocking before program EXIT, not
-blocking P4 (P4 is the CLI reshape, orthogonal to both, and is under an operator
-hold in any case). They are cheap: both discharge inside one bounded live window.
+These are recorded below as **B1** and **B2**: blocking before program EXIT, not blocking P4 (P4 is the CLI reshape, orthogonal to both, and is under an operator hold in any case). They are cheap: both discharge inside one bounded live window.
 
-I considered a clean PASS and rejected it. The single most important empirical result
-of this phase is that **unit-green predicts nothing about live behavior in this
-codebase**: the e2e leg found four feature-breaking product bugs (#23, #24, #26, #28)
-that unit tests and two prior live campaigns all missed, and the CSI live window found
-three more. Against that record, signing off three never-executed features on unit
-coverage alone would contradict the phase's own central finding.
+I considered a clean PASS and rejected it. The single most important empirical result of this phase is that **unit-green predicts nothing about live behavior in this codebase**: the e2e leg found four feature-breaking product bugs (#23, #24, #26, #28) that unit tests and two prior live campaigns all missed, and the CSI live window found three more. Against that record, signing off
+three never-executed features on unit coverage alone would contradict the phase's own central finding.
 
-I also considered FAIL and rejected it. Every deliverable exists as real, wired,
-unit-tested code (I verified this specifically, including hunting for stubs and for
-the "exported function with zero callers" pattern that produced #26). The phase's
-riskiest work is proven. FAIL would misrepresent the state of the tree.
+I also considered FAIL and rejected it. Every deliverable exists as real, wired, unit-tested code (I verified this specifically, including hunting for stubs and for the "exported function with zero callers" pattern that produced #26). The phase's riskiest work is proven. FAIL would misrepresent the state of the tree.
 
 ---
 
@@ -72,37 +49,26 @@ riskiest work is proven. FAIL would misrepresent the state of the tree.
 
 ### The one red, root-caused
 
-`check:i18n` exits 1 with **exactly** 12 locales x 58 untranslated strings (3.3%),
-**all on the `cli/<lang>` surface** (`commands.cluster.create.controlDsSizeOption`,
-`...controlDsBackendOption`, `...controlDsPoolOption`, and 55 more of the same class).
-Zero missing keys. Zero www-surface failures. Zero non-CLI failures of any kind.
+`check:i18n` exits 1 with **exactly** 12 locales x 58 untranslated strings (3.3%), **all on the `cli/<lang>` surface** (`commands.cluster.create.controlDsSizeOption`, `...controlDsBackendOption`, `...controlDsPoolOption`, and 55 more of the same class). Zero missing keys. Zero www-surface failures. Zero non-CLI failures of any kind.
 
-This is **precisely** the deferred class recorded in the program manifest ("check:i18n
-58 CLI keys/locale un-naturalized, deferred to P7 because P4 reshapes the CLI, so
-naturalizing now is throwaway"). The count is 58, unchanged: **the red did not grow
-during P3.** It is pre-existing and sanctioned by standing ruling. P4 must not attempt
-to clear it; P7 must.
+This is **precisely** the deferred class recorded in the program manifest ("check:i18n 58 CLI keys/locale un-naturalized, deferred to P7 because P4 reshapes the CLI, so naturalizing now is throwaway"). The count is 58, unchanged: **the red did not grow during P3.** It is pre-existing and sanctioned by standing ruling. P4 must not attempt to clear it; P7 must.
 
-Note for the record: my first attempt ran `check:i18n` from `packages/www`, where the
-script does not exist, and the wrapper's exit code masked the failure. The script lives
-at the repo root. Reviewers repeating this gate should run it from the root.
+Note for the record: my first attempt ran `check:i18n` from `packages/www`, where the script does not exist, and the wrapper's exit code masked the failure. The script lives at the repo root. Reviewers repeating this gate should run it from the root.
 
 ### i18n baseline integrity (renet)
 
-Gate reference is **2970**, via the sanctioned chain
-2870 -> 2877 -> 2952 -> 2961 -> 2969 -> 2970.
+Gate reference is **2970**, via the sanctioned chain 2870 -> 2877 -> 2952 -> 2961 -> 2969 -> 2970.
 
 Verified arithmetically against the tree, not taken on trust:
 
 - `private/renet/pkg/i18n/baseline.json` at committed HEAD `c7e187a`: **2726 raw entries**.
 - Working tree: **2744 raw entries**. Delta = **+18**.
 - The three post-commit sanctioned increments are +9 (rv1 migrate strings, #18/#19),
-  +8 (CSI fold/fix strings), +1 (csi-live closure) = **+18**. Exact match.
++8 (CSI fold/fix strings), +1 (csi-live closure) = **+18**. Exact match.
 - Raw-to-tool offset is a constant ~+226 (a known property of the counter), so raw 2744
-  corresponds to tool-count **2970**, matching the gate reference exactly.
+corresponds to tool-count **2970**, matching the gate reference exactly.
 
-**No unsanctioned baseline growth occurred.** Every entry added during P3 traces to a
-recorded ruling.
+**No unsanctioned baseline growth occurred.** Every entry added during P3 traces to a recorded ruling.
 
 ---
 
@@ -137,9 +103,7 @@ recorded ruling.
 
 ## The bug ledger
 
-**Tally = 30. Verified.** #1-6 (P0-P2) + #7-15 (FU#1, nine) + #16-19 (rv1, four) +
-#20-22 (FU#2, three) + #23-28 (e2e, six) + #29-30 (e2e teardown reds, two) =
-6+9+4+3+6+2 = **30**.
+**Tally = 30. Verified.** #1-6 (P0-P2) + #7-15 (FU#1, nine) + #16-19 (rv1, four) + #20-22 (FU#2, three) + #23-28 (e2e, six) + #29-30 (e2e teardown reds, two) = 6+9+4+3+6+2 = **30**.
 
 ### FIXED + LIVE-VALIDATED (all nine spot-checked in code by the reviewer)
 
@@ -155,8 +119,7 @@ recorded ruling.
 | **#27** | `dmsetup remove` single-shot, racing udev's open on the umount uevent, stranding the mapping. | `pkg/toolexec/devicemapper/devicemapper.go:107` `RemoveDevice`: 5 attempts (:120), `--retry` (:122), breaks on non-busy (:125-127), linear backoff (:128), returns the real error on exhaustion (:131). No lazy success. | **VERIFIED** |
 | **#28** | `repository down` (kube arm) ran `kubectl delete namespace` under the generic **30s** exec timeout, but that call blocks on pod termination gated by the **30s** default grace period, which a PID-1-without-SIGTERM-handler burns entirely. A **guaranteed** collision: `down` failed on essentially any real kube repo, leaving it half-down (services stopped, namespace and volumes live). | `pkg/reporuntime/kube.go:23` `namespaceDeleteTimeout = 5 * time.Minute`; `:28` inner `namespaceDeleteKubectlTimeout = 4 * time.Minute`, applied at :268 inside `Teardown` (:229). Surfaces the real kubectl error instead of a ctx-SIGKILL "exit -1". | **VERIFIED** |
 
-**No NOT-FOUND, no MISMATCH across all nine.** Every claimed fix is present in the
-working tree and does what the ledger says.
+**No NOT-FOUND, no MISMATCH across all nine.** Every claimed fix is present in the working tree and does what the ledger says.
 
 ### DOCUMENTED for P4
 
@@ -168,33 +131,22 @@ working tree and does what the ledger says.
 | **#29** | Suite 16 test 12: after a clean unmount, `dmsetup remove <fork>-cow` returns EBUSY for 27s of retries. Not a mount, not a process, not a loop, and **not** btrfs's scanned-device cache (refuted by controlled experiment on the fleet). | Documented, unexplained | **CONFIRMED as genuinely unexplained.** A post-failure probe is wired, so the next run names the holder. Honest disclosure: the original pre-detach probe was taken while still attached, so its "Open 1" measured only the live mount and proved nothing. The report says this itself. |
 | **#30** | Suite 17 test 7: after a cluster **migrate**, the repo namespace refuses to terminate (`down` ran 240.7s into its own 4-minute bound), while an identical `down` on a never-migrated cluster finishes in seconds (suite 15 green). Migrate-specific, not #28 recurring. | Documented | **CONFIRMED.** Post-failure probe wired (namespace phase + finalizers, pod deletionTimestamp/node, PVC/PV finalizers). |
 
-Also open and minor: **#22** (cluster destroy leaves a stale `state.clusters.<name>.memberIds`
-orphan; `removeClusterFromStore`, `config-cluster-logic.ts:150-153`, deletes
-`resources.clusters[name]` but not `state.clusters[name]`, so a same-name recreate reuses
-the stale memberId ledger). One-line fix, recreate implications untraced.
+Also open and minor: **#22** (cluster destroy leaves a stale `state.clusters.<name>.memberIds` orphan; `removeClusterFromStore`, `config-cluster-logic.ts:150-153`, deletes `resources.clusters[name]` but not `state.clusters[name]`, so a same-name recreate reuses the stale memberId ledger). One-line fix, recreate implications untraced.
 
 ---
 
 ## Deviation rulings carried into the as-built record
 
 - **CSI-DEVIATION-1** (maximum-length volume name is **refused**, not accepted): ratified
-  as a clean reject, with `TestCreateVolumeRejectsOverlongName`. The kernel caps
-  device-mapper names at 128 chars and CSI permits 128-char volume names, so the two
-  cannot both be honoured; a loud reject beats a silent truncation collision.
+as a clean reject, with `TestCreateVolumeRejectsOverlongName`. The kernel caps device-mapper names at 128 chars and CSI permits 128-char volume names, so the two cannot both be honoured; a loud reject beats a silent truncation collision.
 - **CSI-DEVIATION-2** (CreateSnapshot idempotency is size-proxy, not provenance):
-  accepted with its mitigation documented.
+accepted with its mitigation documented.
 - **Agent-node CSI attach**: deferred residual (spec 09 §14 item 12). Workers currently
-  no-op on the auto-enable fold.
+no-op on the auto-enable fold.
 
 **Dedup: DONE at this gate.** Both deviations had been documented **twice**, in spec/09 §14
-(items 10/11, by csi-live) and again in spec/09 §16 (as-built, by csi-impl), a benign
-artifact of two agents converging on the same rulings. I merged them: **§16 is now the
-single home**, since §14 is titled "OPEN items" and a *ruled* deviation is by definition no
-longer open. §14 items 10-11 collapse to a pointer (numbering preserved), and §14 retains
-item 12 (the agent-node attach residual), which is genuinely still open. §16 absorbed the
-detail that existed only in §14: the hashed-volume-id alternative was **rejected** because
-it would break the path-probe fork resolution, and csi-sanity's max-length-name spec
-**stays red by design** (the documented price, not a bug).
+(items 10/11, by csi-live) and again in spec/09 §16 (as-built, by csi-impl), a benign artifact of two agents converging on the same rulings. I merged them: **§16 is now the single home**, since §14 is titled "OPEN items" and a *ruled* deviation is by definition no longer open. §14 items 10-11 collapse to a pointer (numbering preserved), and §14 retains item 12 (the agent-node
+attach residual), which is genuinely still open. §16 absorbed the detail that existed only in §14: the hashed-volume-id alternative was **rejected** because it would break the path-probe fork resolution, and csi-sanity's max-length-name spec **stays red by design** (the documented price, not a bug).
 
 ---
 
@@ -203,31 +155,16 @@ it would break the path-probe fork resolution, and csi-sanity's max-length-name 
 I was asked to say plainly what is unproven. Five things.
 
 1. **The stock Helm chart was never installed.** This is the cleanest contradiction of
-   the gate letter. The dynamic-PVC capability is genuinely proven, but by hand-rolled
-   manifests (a static PVC plus a Deployment). A stock chart would additionally exercise
-   the path that actually matters for the F6 motivation: a third-party chart's
-   **StatefulSet `volumeClaimTemplates`** (generated PVC names, ordinal pods) interacting
-   with WFFC and `storageCapacity`. That is materially different plumbing from a static
-   PVC, and ecosystem compatibility is the entire reason the Helm requirement is in the
-   gate letter. A hand-rolled manifest cannot demonstrate it, by construction. **-> B2.**
+the gate letter. The dynamic-PVC capability is genuinely proven, but by hand-rolled manifests (a static PVC plus a Deployment). A stock chart would additionally exercise the path that actually matters for the F6 motivation: a third-party chart's **StatefulSet `volumeClaimTemplates`** (generated PVC names, ordinal pods) interacting with WFFC and `storageCapacity`. That is materially
+different plumbing from a static PVC, and ecosystem compatibility is the entire reason the Helm requirement is in the gate letter. A hand-rolled manifest cannot demonstrate it, by construction. **-> B2.**
 
 2. **"E2E passes locally" does not hold as written.** Suite 15 is 7/7. Suite 16 is 11/12.
-   Suite 17 is 6/7. Every **functional** claim of the redesign is green (and suite 16's
-   battery went green three independent times), but spec/08 carry-in 5 says "multinode
-   suite passing locally gates P3", and the multinode suite has a red test. The two reds
-   are teardown-only, with named causes and self-diagnosing probes already wired, and no
-   functional proof depends on either. That is a good position. It is not the same as
-   "passing". **-> B3.**
+Suite 17 is 6/7. Every **functional** claim of the redesign is green (and suite 16's battery went green three independent times), but spec/08 carry-in 5 says "multinode suite passing locally gates P3", and the multinode suite has a red test. The two reds are teardown-only, with named causes and self-diagnosing probes already wired, and no functional proof depends on either. That is
+a good position. It is not the same as "passing". **-> B3.**
 
 3. **P3's feature layer was overshadowed by the CSI and live campaigns.** This is true
-   and it is the finding I would most want the operator to see. `repo replicate`,
-   `cluster rehearse`, and the release ladder are P3's *named* deliverables, and they
-   received code plus unit tests and then nothing else. Zero live execution. Zero e2e
-   harness methods (`grep` for `repoReplicate|repoRelease|rehearseCluster` across
-   `packages/e2e-tests/src/` returns nothing). Every "release" hit in the e2e transcript
-   is the *storage* sense of the word (release a mount), not the release ladder, and the
-   one "replicate" hit in suite 16 is an English verb in a comment. I want to be precise
-   about the shape of this risk, because it cuts both ways:
+and it is the finding I would most want the operator to see. `repo replicate`, `cluster rehearse`, and the release ladder are P3's *named* deliverables, and they received code plus unit tests and then nothing else. Zero live execution. Zero e2e harness methods (`grep` for `repoReplicate|repoRelease|rehearseCluster` across `packages/e2e-tests/src/` returns nothing). Every "release"
+hit in the e2e transcript is the *storage* sense of the word (release a mount), not the release ladder, and the one "replicate" hit in suite 16 is an English verb in a comment. I want to be precise about the shape of this risk, because it cuts both ways:
    - The code is **real**, not stubbed. I hunted for stubs and found none; I hunted for
      the #26 "exported but zero callers" pattern in the two nearest analogues and found
      that both `applyCanaryWeights` (caller: `router/kube.go:175`) and `growThinPools`
@@ -239,57 +176,36 @@ I was asked to say plainly what is unproven. Five things.
      rate, likely to contain exactly that class of defect. **-> B1.**
 
 4. **The raw P0-P2 evidence is gone.** The 2026-07-11 host reboot destroyed the `/tmp`
-   scratchpad holding the spike transcripts (a-f) and the P2 VM validation logs. Only
-   their verdicts survive, in spec/07 and spec/08. Program state has since moved to a
-   durable location, so this cannot recur, but it is an irreducible gap: P0-P2 claims now
-   rest on gate reviews rather than on raw artifacts. Noted, not re-litigated.
+scratchpad holding the spike transcripts (a-f) and the P2 VM validation logs. Only their verdicts survive, in spec/07 and spec/08. Program state has since moved to a durable location, so this cannot recur, but it is an irreducible gap: P0-P2 claims now rest on gate reviews rather than on raw artifacts. Noted, not re-litigated.
 
 5. **Two process facts worth banking, because they nearly cost correctness.** (a) A
-   `SendMessage` abort cannot preempt a mid-turn agent: two agents shared one live
-   environment for roughly 40 minutes, and the manifest records that it was luck, not
-   design, that prevented a collision. Replacement agents must HOLD for an explicit GO
-   before the first environment mutation. (b) Absence of transcript writes was twice read
-   as agent death and twice was wrong, producing two false ownership flips. Liveness must
-   be judged from the agent's task output, not from file mtimes.
+`SendMessage` abort cannot preempt a mid-turn agent: two agents shared one live environment for roughly 40 minutes, and the manifest records that it was luck, not design, that prevented a collision. Replacement agents must HOLD for an explicit GO before the first environment mutation. (b) Absence of transcript writes was twice read as agent death and twice was wrong, producing two
+false ownership flips. Liveness must be judged from the agent's task output, not from file mtimes.
 
 ---
 
 ## Carry-in 6 disposition (attach-time auto node-label): **P4**, and here is where the fix goes
 
-The e2e campaign live-witnessed the gap (T10): a node-pinned local PV will not bind
-unless the node carries `rediacc.io/ds-<name>`, and `datastore attach` does not stamp it,
-so the suite has to call `kube_node_label` by hand. This is the original wave3b symptom,
-still reproducible.
+The e2e campaign live-witnessed the gap (T10): a node-pinned local PV will not bind unless the node carries `rediacc.io/ds-<name>`, and `datastore attach` does not stamp it, so the suite has to call `kube_node_label` by hand. This is the original wave3b symptom, still reproducible.
 
 Recommendation: **P4, not now**, but with the fix location named so it is not
 re-litigated:
 
 - **Fold it into renet's `datastore attach` path**, mirroring the symmetric CSI fold that
-  csi-live landed (`deployCSIForAttachedDatastore` on attach, `RemoveNodeUnits` on detach,
-  which is #26's fix). Attach is already the seam that installs the per-node CSI units and
-  the per-datastore StorageClass; the node label belongs on exactly that seam, and detach
-  should strip it. Putting it in CLI porcelain instead would be **thrown away by P4's own
-  reshape**.
+csi-live landed (`deployCSIForAttachedDatastore` on attach, `RemoveNodeUnits` on detach, which is #26's fix). Attach is already the seam that installs the per-node CSI units and the per-datastore StorageClass; the node label belongs on exactly that seam, and detach should strip it. Putting it in CLI porcelain instead would be **thrown away by P4's own reshape**.
 - Do it in P4 rather than now because it mutates the attach path, and mutating attach
-  without a live window to re-validate is precisely how #26 shipped. It needs one live
-  re-run: drop the explicit `kubeNodeLabel` call from suite 15 test 3 and assert the label
-  appears by itself.
+without a live window to re-validate is precisely how #26 shipped. It needs one live re-run: drop the explicit `kubeNodeLabel` call from suite 15 test 3 and assert the label appears by itself.
 - Do **not** defer it past P4: the failure mode is a **silent** one (pods sit Pending
-  forever with no error pointing at the missing label), which is the worst kind for a user
-  meeting the product for the first time.
+forever with no error pointing at the missing label), which is the worst kind for a user meeting the product for the first time.
 
 ---
 
 ## Checkpoint integrity
 
-The newest durable checkpoint at review time (`phase-3-fu1fixes-*`, 2026-07-11 14:14)
-**predated the entire P3 tail**: the rv1 fixes (#16-19), the whole CSI driver, and every
-e2e fix (#23, #24, #26, #27, #28). The operator's two commits (console `9eee3671b`, renet
-`c7e187a`) captured much of the tree, but the working-tree delta carrying most of the
-e2e-found product fixes was **not** in any durable checkpoint.
+The newest durable checkpoint at review time (`phase-3-fu1fixes-*`, 2026-07-11 14:14) **predated the entire P3 tail**: the rv1 fixes (#16-19), the whole CSI driver, and every e2e fix (#23, #24, #26, #27, #28). The operator's two commits (console `9eee3671b`, renet `c7e187a`) captured much of the tree, but the working-tree delta carrying most of the e2e-found product fixes was
+**not** in any durable checkpoint.
 
-I cut a fresh one before writing this review (patch files, not commits, per the
-agents-never-commit rule):
+I cut a fresh one before writing this review (patch files, not commits, per the agents-never-commit rule):
 
 ```
 ~/.claude/projects/-home-muhammed-monorepo-console/checkpoints/
@@ -301,65 +217,44 @@ agents-never-commit rule):
   phase-3-gate-renet-untracked.tar.gz   (2.7K, incl. adopt_test.go, units_hosted_test.go)
 ```
 
-The patches are far smaller than the pre-commit 17.4M ones because the operator committed
-the bulk. The uncommitted delta is now exactly the P3-tail fix set.
+The patches are far smaller than the pre-commit 17.4M ones because the operator committed the bulk. The uncommitted delta is now exactly the P3-tail fix set.
 
 ---
 
 ## AUTHORITATIVE P4 CARRY-IN LIST
 
-P4 is under an **operator hold**. This list is what P4 (and the remaining phases) must be
-briefed from.
+P4 is under an **operator hold**. This list is what P4 (and the remaining phases) must be briefed from.
 
 ### Blocking before program EXIT (from the gate letter; not blocking P4's start)
 
 - **B1. Feature-layer live proof.** One bounded live window producing a VM transcript for
-  `repo replicate`, `cluster rehearse`, and the release ladder (rung 0 undo-snapshot,
-  canary create, weight flip end to end through the renet router's weighted service). This
-  is the gate's explicit "VM transcript per feature" requirement and the only P3
-  deliverable class with zero live evidence.
+`repo replicate`, `cluster rehearse`, and the release ladder (rung 0 undo-snapshot, canary create, weight flip end to end through the renet router's weighted service). This is the gate's explicit "VM transcript per feature" requirement and the only P3 deliverable class with zero live evidence.
 - **B2. Stock Helm chart against the CSI driver.** `groundhog2k/postgres` per spec 09
-  §12.1, `--set storageClass=rediacc-csi-<ds>`: assert the StatefulSet's
-  `volumeClaimTemplates` PVC binds, the pod lands on the datastore node (WFFC +
-  `storageCapacity`), and a VolumeSnapshot backup/restore round-trips against it. Same live
-  window as B1; the marginal cost over B1 is near zero once a cluster is up.
+§12.1, `--set storageClass=rediacc-csi-<ds>`: assert the StatefulSet's `volumeClaimTemplates` PVC binds, the pod lands on the datastore node (WFFC + `storageCapacity`), and a VolumeSnapshot backup/restore round-trips against it. Same live window as B1; the marginal cost over B1 is near zero once a cluster is up.
 - **B3. The two teardown reds.** Suite 16 test 12 (#29) and suite 17 test 7 (#30) to green.
-  Post-failure probes are already wired in both, so the next run should arrive with the
-  holder named rather than costing a blind cycle.
+Post-failure probes are already wired in both, so the next run should arrive with the holder named rather than costing a blind cycle.
 
 ### Design work items
 
 1. **Shared node-side teardown primitive over the HOLDER TAXONOMY.** The campaign's
-   cleanest conceptual result. Four distinct things can hold a datastore open, each
-   invisible to the others' diagnostics, each needing a different remedy, **in this order**:
-   (a) **kernel submounts**, and note the trap: k3s containerd overlays live at
-   `/run/k3s/...`, **outside** the datastore path, and hold it busy through their `lowerdir`
-   OPTIONS, so an "unmount everything under `<mount>`" filter misses them entirely (match the
-   mount string anywhere in the `/proc/mounts` line, deepest-first);
-   (b) **host processes** (the CSI trio, socket and state inside the datastore) = #26, now
-   fixed, but the primitive must own it;
-   (c) **device stacks** (per-volume LUKS loop + dm-crypt left open, with no mountpoint to
-   find), whose **cause** was #28, now fixed;
-   (d) **an open dm device with no userspace owner** = #29, still unexplained.
-   Every storage-releasing verb (`cluster evict`, `datastore detach`, `cluster migrate`,
-   `kube uninstall`, `repository down`) must route through this one primitive.
+cleanest conceptual result. Four distinct things can hold a datastore open, each invisible to the others' diagnostics, each needing a different remedy, **in this order**: (a) **kernel submounts**, and note the trap: k3s containerd overlays live at `/run/k3s/...`, **outside** the datastore path, and hold it busy through their `lowerdir` OPTIONS, so an "unmount everything under
+`<mount>`" filter misses them entirely (match the mount string anywhere in the `/proc/mounts` line, deepest-first); (b) **host processes** (the CSI trio, socket and state inside the datastore) = #26, now fixed, but the primitive must own it; (c) **device stacks** (per-volume LUKS loop + dm-crypt left open, with no mountpoint to find), whose **cause** was #28, now fixed; (d) **an
+open dm device with no userspace owner** = #29, still unexplained. Every storage-releasing verb (`cluster evict`, `datastore detach`, `cluster migrate`, `kube uninstall`, `repository down`) must route through this one primitive.
 2. **#20 (narrow):** `cluster evict` leaves the evicted node's k3s unit running, so a
-   same-machine re-join port-collides. (The 4-witness generalization is withdrawn.)
+same-machine re-join port-collides. (The 4-witness generalization is withdrawn.)
 3. **#25:** the two-join-paths / vestigial per-node agent repo contradiction. Consider
-   deleting the repo rather than fixing the mount (agents are a disposable cache, 02 §1).
+deleting the repo rather than fixing the mount (agents are a disposable cache, 02 §1).
 4. **F1:** implement the kube-arm `repo fork` per design 06 §3, revise the CT-11 error text,
-   flip suite 15 test 6 from negative to positive, and fix the spec/06 §15 wording-vs-suite
-   mismatch.
+flip suite 15 test 6 from negative to positive, and fix the spec/06 §15 wording-vs-suite mismatch.
 5. **#29 / #30:** the two teardown root causes (also B3).
 6. **#22:** stale `state.clusters.<name>.memberIds` on destroy (one-line fix; trace the
-   same-name-recreate implications first).
+same-name-recreate implications first).
 7. **Carry-in 6:** attach-time auto node-label, folded into renet's `datastore attach`
-   (see the disposition above). Silent-Pending footgun; do not defer past P4.
+(see the disposition above). Silent-Pending footgun; do not defer past P4.
 8. **Multi-node worker-attach CSI wiring** (spec 09 §14 item 12): workers currently no-op on
-   the auto-enable fold.
+the auto-enable fold.
 9. **No standalone bare-machine provision.** Fork and migrate destinations require a
-   helper-cluster-then-`kube_uninstall` dance to produce a bare machine. Candidate gap from
-   the rv1 exit report.
+helper-cluster-then-`kube_uninstall` dance to produce a bare machine. Candidate gap from the rv1 exit report.
 10. **Test-mode dispatcher flag drift.** `functions once --test-mode` flags are hand-listed
     and lagged every redesigned verb (H1, H2, H3 were all this class). Derive the dispatcher
     flags from the bridge `ParamDef` registry so they cannot drift.
@@ -391,14 +286,7 @@ briefed from.
 
 ## Summary
 
-P3 delivered a working, conformance-tested, live-proven CSI driver and, through its live
-campaigns, converted the redesign's flagship claims (whole-datastore fork with PKI re-mint
-and secret scrub, parent never stopped; whole-cluster fork with anchor plus rejoin;
-in-Ceph fenced cluster migrate with a measured cutover) from design assertions into
-repeatable end-to-end proofs. It also found and fixed seven product bugs that no unit test
-would ever have caught, four of them feature-breaking.
+P3 delivered a working, conformance-tested, live-proven CSI driver and, through its live campaigns, converted the redesign's flagship claims (whole-datastore fork with PKI re-mint and secret scrub, parent never stopped; whole-cluster fork with anchor plus rejoin; in-Ceph fenced cluster migrate with a measured cutover) from design assertions into repeatable end-to-end proofs. It
+also found and fixed seven product bugs that no unit test would ever have caught, four of them feature-breaking.
 
-What it did not do is run its own feature layer even once, or install the stock Helm chart
-its gate letter names. Neither gap is expensive to close, and neither undermines what was
-proven. But they are gaps, they are in the gate letter, and they should be closed with
-evidence rather than argued away.
+What it did not do is run its own feature layer even once, or install the stock Helm chart its gate letter names. Neither gap is expensive to close, and neither undermines what was proven. But they are gaps, they are in the gate letter, and they should be closed with evidence rather than argued away.

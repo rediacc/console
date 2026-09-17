@@ -9,7 +9,27 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "runArgs": ["--init", "--shm-size=1g"],
+  // KVM, kept in step with the `docker run` in .ci/lib/devbox.sh, which is what
+	// `./run.sh devbox up` uses. THE TWO PATHS MUST AGREE: a devbox created by
+	// run.sh and one created by the VS Code / devcontainer-CLI path should have
+	// the same capabilities, or a bug reproduces in one and not the other.
+	//
+	// THE DIVERGENCE THAT REMAINS IS DELIBERATE: devbox.sh derives the host kvm
+	// gid at run time and passes `--group-add <gid>`, which this file cannot do
+	// -- devcontainer.json is static JSON with no command substitution. So this
+	// path binds the device and the capability, and start-kvm.sh reports loudly
+	// if the group is missing rather than silently chmod-ing the node 0666.
+	//
+	// --device is unconditional here because devcontainer.json cannot test the
+	// host; docker refuses to start if /dev/kvm is absent, which is why run.sh
+	// is the supported path on a machine without nested virtualisation.
+	"runArgs": [
+		"--init",
+		"--shm-size=1g",
+		"--device", "/dev/kvm",
+		"--cap-add", "NET_ADMIN",
+		"--cap-add", "SYS_ADMIN"
+	],
   "forwardPorts": [3000, 6080, 7681, 8080],
   "portsAttributes": {
     "3000": {

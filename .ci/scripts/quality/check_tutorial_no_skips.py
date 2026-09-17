@@ -18,6 +18,13 @@ command line, which cannot silently shrink a CI run.
 
 WHAT IT CANNOT SEE. A tutorial that runs but asserts nothing. Coverage of that
 belongs to the sequence runner's own exit codes, not here.
+
+---- gate ----
+step: Tutorials cannot skip themselves
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import pathlib
@@ -33,8 +40,7 @@ RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# Self-exclusion markers. Named individually rather than by a loose "skip"
-# substring, which matched ordinary prose in a tutorial's own comments.
+# Self-exclusion markers. Named individually rather than by a loose "skip" substring, which matched ordinary prose in a tutorial's own comments.
 BANNED = re.compile(
     r"^#\s*(TUTORIAL_DRAFT|TUTORIAL_SKIP|TUTORIAL_DISABLED|DRAFT)\s*:", re.MULTILINE
 )

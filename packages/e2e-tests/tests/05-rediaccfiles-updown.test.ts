@@ -117,10 +117,7 @@ test.describe
     });
 
     test('3. up: execute Rediaccfile up()', async () => {
-      // The up command:
-      // 1. Checks for Rediaccfile
-      // 2. Executes up() function
-      // Note: Network ID required for daemon startup
+      // The up command: 1. Checks for Rediaccfile 2. Executes up() function Note: Network ID required for daemon startup
       const result = await runner.repositoryUp(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
       expect(runner.isSuccess(result)).toBe(true);
     });

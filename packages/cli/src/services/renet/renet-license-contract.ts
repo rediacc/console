@@ -54,10 +54,7 @@ export function parseRenetLicenseFailure(
   return null;
 }
 
-// A Map rather than a bare index access, so "not registered" is expressible.
-// `Record<string, T>` types every index access as always-present, which makes
-// the undefined case unwritable without lying to the type checker, and it is
-// exactly the case callers must distinguish from tier 'none'.
+// A Map rather than a bare index access, so "not registered" is expressible. `Record<string, T>` types every index access as always-present, which makes the undefined case unwritable without lying to the type checker, and it is exactly the case callers must distinguish from tier 'none'.
 const TIER_BY_FUNCTION: ReadonlyMap<string, LicenseTier> = new Map(
   Object.entries(LICENSE_TIERS).map(([name, entry]: [string, LicenseTierEntry]) => [
     name,

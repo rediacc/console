@@ -97,8 +97,7 @@ export async function commitField(
   value: unknown
 ): Promise<FieldCommitment> {
   const canon = canonicalize(value);
-  // Include the pointer in the signed bytes so two different paths holding the
-  // same value produce distinct HMACs (prevents path-swap attacks).
+  // Include the pointer in the signed bytes so two different paths holding the same value produce distinct HMACs (prevents path-swap attacks).
   const payload = concat([new TextEncoder().encode(`${pointer}\0`), canon]);
   const sig = await crypto.subtle.sign('HMAC', fck, buf(payload));
   return {

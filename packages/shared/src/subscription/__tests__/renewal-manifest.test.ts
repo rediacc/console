@@ -156,6 +156,5 @@ describe('isManifestExpired', () => {
   });
 });
 
-// Vitest's beforeAll is imported automatically via the global describe context.
-// We need to import it explicitly because we're defining it at the top.
+// Vitest's beforeAll is imported automatically via the global describe context. We need to import it explicitly because we're defining it at the top.
 import { beforeAll } from 'vitest';

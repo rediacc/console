@@ -30,9 +30,7 @@ HERE = Path(__file__).resolve().parent
 SESSION = "abcd1234-0000-0000-0000-000000000000"
 SLUG = "abcd1234"
 
-# A negative token count in the notice, e.g. "-226,179 tokens". Matching a
-# bare "-" caught the hyphen in a temp directory name and made this control
-# fail on the hooks it was meant to clear.
+# A negative token count in the notice, e.g. "-226,179 tokens". Matching a bare "-" caught the hyphen in a temp directory name and made this control fail on the hooks it was meant to clear.
 NEG_TOKENS = re.compile(r"-\d[\d,]*\s*tokens")
 NEG_PCT = re.compile(r"-\d[\d,]*(?:\.\d+)?%")
 
@@ -90,8 +88,7 @@ class Sandbox:
             )
         ]
         if sidechain_after is not None:
-            # A subagent entry after the real one: the hook must ignore it, or
-            # every Task call would look like the context collapsing.
+            # A subagent entry after the real one: the hook must ignore it, or every Task call would look like the context collapsing.
             lines.append(
                 json.dumps(
                     {
@@ -190,9 +187,7 @@ def fired(p):
     return (d.get("hookSpecificOutput") or {}).get("additionalContext")
 
 
-# --------------------------------------------------------------------------
-# arithmetic
-# --------------------------------------------------------------------------
+# -------------------------------------------------------------------------- arithmetic --------------------------------------------------------------------------
 
 
 def test_arithmetic():
@@ -219,15 +214,10 @@ def test_arithmetic():
             "settings.json" in str(r["source"]),
             r["source"],
         )
-        # POLICY REVERSED ON 2026-08-24, and the reversal is the point. This used
-        # to assert that a 200K model with a 900K pin inherits the 200K cap, so
-        # the hook could not sit silent through a compaction at 167,000. It was
-        # the wrong trade: the transcript reports `claude-opus-5` for a 1M
-        # session too, so that rule fired the LATE band at 181,419 tokens on a
-        # session that was 21% full, and went on doing it every turn for hours.
+        # POLICY REVERSED ON 2026-08-24, and the reversal is the point. This used to assert that a 200K model with a 900K pin inherits the 200K cap, so the hook could not sit silent through a compaction at 167,000. It was the wrong trade: the transcript reports `claude-opus-5` for a 1M session too, so that rule fired the LATE band at 181,419 tokens on a session that was 21% full,
+        # and went on doing it every turn for hours.
         # A hook that cries wolf changes behaviour on every turn; a hook that
-        # goes quiet is covered by the PreCompact snapshot. So the pin wins, and
-        # the bet is DECLARED rather than hidden.
+        # goes quiet is covered by the PreCompact snapshot. So the pin wins, and the bet is DECLARED rather than hidden.
         r200 = B.resolve_threshold("claude-opus-5", str(sb.project))
         check(
             "a pin overrules a model cap that was only ASSUMED",
@@ -239,17 +229,14 @@ def test_arithmetic():
             r200["confident"] is False,
             str(r200),
         )
-        # The same id WITH its marker is the id stating the number, so there is
-        # nothing to overrule and the answer is confident.
+        # The same id WITH its marker is the id stating the number, so there is nothing to overrule and the answer is confident.
         r1m = B.resolve_threshold("claude-opus-5[1m]", str(sb.project))
         check(
             "an explicit [1m] marker needs no bet",
             r1m["confident"] is True and r1m["assumed_cap_overruled"] is False,
             str(r1m),
         )
-        # No pin at all stays the conservative default. This is the check that
-        # keeps a genuine 200K session warned, and it is what the reversal above
-        # is allowed to cost nothing.
+        # No pin at all stays the conservative default. This is the check that keeps a genuine 200K session warned, and it is what the reversal above is allowed to cost nothing.
         rbare = B.resolve_threshold("claude-opus-5", None)
         check(
             "no pin falls back to the model cap",
@@ -274,9 +261,7 @@ def test_arithmetic():
         sb.cleanup()
 
 
-# --------------------------------------------------------------------------
-# band hook behaviour
-# --------------------------------------------------------------------------
+# -------------------------------------------------------------------------- band hook behaviour --------------------------------------------------------------------------
 
 
 def test_bands(hooks_dir):
@@ -310,8 +295,7 @@ def test_bands(hooks_dir):
         )
         # DIRECTION, not just presence. 670,000 of 867,000 is 77.3% used and
         # 22.7% remaining; both are one decimal place, so a check that merely
-        # looked for "%" would pass either way. The status line counts DOWN, so
-        # the notice must quote 22.7 and must not quote 77.3 anywhere.
+        # looked for "%" would pass either way. The status line counts DOWN, so the notice must quote 22.7 and must not quote 77.3 anywhere.
         check(
             "early text quotes the REMAINING percentage",
             bool(ctx) and "22.7% until auto-compact" in ctx,
@@ -400,11 +384,7 @@ def test_bands(hooks_dir):
         check("bands fire again after the backstop reset", fired(p) is not None)
         sb2.cleanup()
 
-        # THE MODEL CAP YIELDS TO THE PIN, which is what the deleted cap-disproof
-        # mechanism used to achieve the long way round. A session reporting
-        # `claude-opus-5` while carrying 395,590 tokens is on the 1M variant
-        # whatever the transcript says, and the 167,000 threshold that id implies
-        # is not merely imprecise, it is already behind us. This was a live bug
+        # THE MODEL CAP YIELDS TO THE PIN, which is what the deleted cap-disproof mechanism used to achieve the long way round. A session reporting `claude-opus-5` while carrying 395,590 tokens is on the 1M variant whatever the transcript says, and the 167,000 threshold that id implies is not merely imprecise, it is already behind us. This was a live bug
         # caught on a real session; it is now prevented by resolution order
         # rather than detected after the fact.
         sb6 = Sandbox(hooks_dir)
@@ -422,8 +402,7 @@ def test_bands(hooks_dir):
             sb6.band_state().get("threshold") == 867_000,
             str(sb6.band_state().get("threshold")),
         )
-        # ...and it stays that way after a compaction, with no sticky flag to
-        # maintain: resolution order gives the same answer every time.
+        # ...and it stays that way after a compaction, with no sticky flag to maintain: resolution order gives the same answer every time.
         sb6.post_compact()
         sb6.write_transcript(150_000, model="claude-opus-5")
         p = sb6.post_tool()
@@ -435,11 +414,7 @@ def test_bands(hooks_dir):
         )
         sb6.cleanup()
 
-        # EVIDENCE BEATS CONFIGURATION. This is the second live bug: the pin
-        # went into settings.json while sessions were already running, and
-        # Claude Code reads settings once at start. A session at 894,963 under
-        # a 900,000 pin is running on the old 1M window, and the only way to
-        # know that is that it got there without compacting.
+        # EVIDENCE BEATS CONFIGURATION. This is the second live bug: the pin went into settings.json while sessions were already running, and Claude Code reads settings once at start. A session at 894,963 under a 900,000 pin is running on the old 1M window, and the only way to know that is that it got there without compacting.
         sb8 = Sandbox(hooks_dir)
         sb8.write_state_md()
         sb8.write_transcript(894_963, model="claude-opus-5")
@@ -461,8 +436,7 @@ def test_bands(hooks_dir):
             stt.get("band") == 0,
             "band=%s" % stt.get("band"),
         )
-        # The correction is sticky: a compaction drops usage back under the
-        # wrong threshold, and without stickiness the old denominator returns.
+        # The correction is sticky: a compaction drops usage back under the wrong threshold, and without stickiness the old denominator returns.
         sb8.post_compact()
         sb8.write_transcript(700_000, model="claude-opus-5")
         sb8.post_tool()
@@ -473,8 +447,7 @@ def test_bands(hooks_dir):
         )
         sb8.cleanup()
 
-        # The invariant on its own, independent of how it got there: a session
-        # observed past the threshold must never be told it has negative room.
+        # The invariant on its own, independent of how it got there: a session observed past the threshold must never be told it has negative room.
         sb8b = Sandbox(hooks_dir, window=1_000_000)
         sb8b.write_state_md()
         sb8b.write_transcript(999_500, model="claude-opus-5")
@@ -485,9 +458,7 @@ def test_bands(hooks_dir):
             NEG_TOKENS.search(ctx) is None,
             repr(ctx)[:300],
         )
-        # The percentage is derived from that same headroom, so it fails the
-        # same way and needs its own control: "-2.4% until auto-compact" would
-        # slip straight past NEG_TOKENS, which only matches a token count.
+        # The percentage is derived from that same headroom, so it fails the same way and needs its own control: "-2.4% until auto-compact" would slip straight past NEG_TOKENS, which only matches a token count.
         check(
             "no negative percentage is ever printed",
             NEG_PCT.search(ctx) is None,
@@ -525,9 +496,7 @@ def test_bands(hooks_dir):
         sb.cleanup()
 
 
-# --------------------------------------------------------------------------
-# precompact floor
-# --------------------------------------------------------------------------
+# -------------------------------------------------------------------------- precompact floor --------------------------------------------------------------------------
 
 
 def test_precompact(hooks_dir):
@@ -569,8 +538,7 @@ def test_precompact(hooks_dir):
             "%d chars" % len(out),
         )
 
-        # A session with a long worklist must not turn the instruction into a
-        # list. 41 ids on one live session is what prompted the cap.
+        # A session with a long worklist must not turn the instruction into a list. 41 ids on one live session is what prompted the cap.
         sb9 = Sandbox(hooks_dir)
         sb9.write_state_md()
         fake = sb9.root / "fakebin"
@@ -598,8 +566,7 @@ def test_precompact(hooks_dir):
         )
         sb9.cleanup()
 
-        # Nothing to say: no STATE.md, no worklist, no git. Must stay silent so
-        # the precompute cache is not invalidated for nothing.
+        # Nothing to say: no STATE.md, no worklist, no git. Must stay silent so the precompute cache is not invalidated for nothing.
         sb2 = Sandbox(hooks_dir)
         sb2.write_transcript(850_000)
         p2 = sb2.pre_compact()
@@ -642,9 +609,7 @@ def test_precompact(hooks_dir):
         sb.cleanup()
 
 
-# --------------------------------------------------------------------------
-# the controls on the controls
-# --------------------------------------------------------------------------
+# -------------------------------------------------------------------------- the controls on the controls --------------------------------------------------------------------------
 
 MUTANTS = [
     (
@@ -708,19 +673,14 @@ MUTANTS = [
         "band-notice.py",
         ("            100.0 * headroom / threshold,", "            100.0 * usage / threshold,"),
         None,
-        # Both legs, because either alone is satisfiable by an accident: the
-        # first would pass if the notice printed nothing at all, the second if
-        # it printed both numbers.
+        # Both legs, because either alone is satisfiable by an accident: the first would pass if the notice printed nothing at all, the second if it printed both numbers.
         [
             "early text quotes the REMAINING percentage",
             "early text never quotes the used percentage",
         ],
     ),
     (
-        # The reverse of the old "model cap ignored" mutant, which anchored on a
-        # `min()` that no longer exists. Re-clipping the pin to the assumed cap
-        # is the regression now, and it is the exact shape of the false alarm
-        # that ran for hours on 2026-08-24.
+        # The reverse of the old "model cap ignored" mutant, which anchored on a `min()` that no longer exists. Re-clipping the pin to the assumed cap is the regression now, and it is the exact shape of the false alarm that ran for hours on 2026-08-24.
         "assumed cap clips the pin again",
         "band-notice.py",
         None,
@@ -732,9 +692,7 @@ MUTANTS = [
         ["a pin overrules a model cap that was only ASSUMED"],
     ),
     (
-        # The margin is the other half of the alignment with `/context`, which
-        # prints the buffer outright. Shrinking it back promises headroom that
-        # does not exist.
+        # The margin is the other half of the alignment with `/context`, which prints the buffer outright. Shrinking it back promises headroom that does not exist.
         "compaction margin shrunk back to 15,000",
         "band-notice.py",
         None,
@@ -802,11 +760,7 @@ def test_mutations():
             tgt, old, new = indirect
             d = mutate(tgt, (old, new))
         try:
-            # Which behavioural pass a mutant is judged against. The name is the
-            # dispatch key, so renaming a check without renaming it HERE silently
-            # sends the mutant to the wrong pass -- which is what happened when
-            # this check was renamed on 2026-08-24, and both new mutants reported
-            # green because they were being run against test_bands instead.
+            # Which behavioural pass a mutant is judged against. The name is the dispatch key, so renaming a check without renaming it HERE silently sends the mutant to the wrong pass -- which is what happened when this check was renamed on 2026-08-24, and both new mutants reported green because they were being run against test_bands instead.
             if "a pin overrules a model cap that was only ASSUMED" in must_fail:
                 failed = run_isolated(test_arithmetic_in, d)
             elif "that window reports the boundary's own postTokens" in must_fail:
@@ -935,8 +889,7 @@ def test_compact_boundary(hooks_dir):
         "got %s" % (got,),
     )
 
-    # Once a real entry lands after the boundary, IT wins -- the boundary is a
-    # floor for one window only, not a permanent override.
+    # Once a real entry lands after the boundary, IT wins -- the boundary is a floor for one window only, not a permanent override.
     got = read([asst(958036), boundary, asst(98043)])
     check(
         "an assistant entry after the boundary takes precedence over postTokens",
@@ -944,9 +897,7 @@ def test_compact_boundary(hooks_dir):
         "got %s" % (got,),
     )
 
-    # ANTI-VACUITY: the ordinary path must be untouched. Without this, deleting
-    # the whole function body and returning a constant would satisfy the checks
-    # above.
+    # ANTI-VACUITY: the ordinary path must be untouched. Without this, deleting the whole function body and returning a constant would satisfy the checks above.
     got = read([asst(111), asst(222)])
     check(
         "with no boundary at all, the newest assistant entry still wins",
@@ -954,8 +905,7 @@ def test_compact_boundary(hooks_dir):
         "got %s" % (got,),
     )
 
-    # A malformed boundary (no postTokens) must not be trusted as a reading,
-    # but must still block the walk-back -- silence beats the peak.
+    # A malformed boundary (no postTokens) must not be trusted as a reading, but must still block the walk-back -- silence beats the peak.
     got = read([asst(958036), {"type": "system", "subtype": "compact_boundary"}])
     check(
         "a boundary with no postTokens still never yields the pre-compaction peak",

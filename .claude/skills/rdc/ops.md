@@ -2,15 +2,8 @@
 
 Manage local VM clusters for development and testing. Uses KVM (Linux), QEMU (macOS), or Hyper-V (Windows) — auto-detected.
 
-**Agent sessions**: `ops` itself is allowed, but the cluster/datastore verbs you
-typically run NEXT (`cluster create`, `datastore create`, ...) need
-`REDIACC_ALLOW_CLUSTER_OPS` (and `repo create`/`repo migrate` need
-`REDIACC_ALLOW_GRAND_REPO`) exported in the OPERATOR's terminal BEFORE the session
-starts. The check is ancestry-verified: an in-session export is rejected. Ask the
-operator early rather than discovering the block mid-flow. Also note: Ceph
-provisioning happens inside `ops up` ONLY when `VM_CEPH_NODES` is set in the
-environment; a default `ops up` creates the Ceph VMs as bare OS images with no
-cluster bootstrapped (probe with `ceph health` via the bridge, not VM liveness).
+**Agent sessions**: `ops` itself is allowed, but the cluster/datastore verbs you typically run NEXT (`cluster create`, `datastore create`, ...) need `REDIACC_ALLOW_CLUSTER_OPS` (and `repo create`/`repo migrate` need `REDIACC_ALLOW_GRAND_REPO`) exported in the OPERATOR's terminal BEFORE the session starts. The check is ancestry-verified: an in-session export is rejected. Ask the
+operator early rather than discovering the block mid-flow. Also note: Ceph provisioning happens inside `ops up` ONLY when `VM_CEPH_NODES` is set in the environment; a default `ops up` creates the Ceph VMs as bare OS images with no cluster bootstrapped (probe with `ceph health` via the bridge, not VM liveness).
 
 For full command syntax and options, see [reference.md](reference.md).
 

@@ -199,15 +199,11 @@ const StorageConfigSchema = z.object({
 
 // Per-repo secrets. Two delivery modes:
 //   env  → injected as REDIACC_SECRET_<KEY> in the renet shell (compose `${VAR}`).
-//   file → tmpfs file at /var/run/rediacc/secrets/<networkId>/<KEY> on the
-//          target machine, referenced by Docker compose `secrets:` block.
+// file → tmpfs file at /var/run/rediacc/secrets/<networkId>/<KEY> on the target machine, referenced by Docker compose `secrets:` block.
 // Fork isolation: registerFork does NOT copy `secrets`; a fork's map is empty.
 const SECRET_KEY_REGEX = /^[A-Z][A-Z0-9_]*$/;
 
-// Size caps (gate C11, merged with spec 05). The config file is atomically
-// rewritten and remote-pushed WHOLE on every mutation, and each mode
-// materializes as one k8s Secret object per repo namespace (~1 MiB apiserver
-// cap), so anything larger is a file the data plane should carry.
+// Size caps (gate C11, merged with spec 05). The config file is atomically rewritten and remote-pushed WHOLE on every mutation, and each mode materializes as one k8s Secret object per repo namespace (~1 MiB apiserver cap), so anything larger is a file the data plane should carry.
 export const SECRET_ENV_VALUE_MAX_BYTES = 32 * 1024; // 32 KiB per env value
 export const SECRET_FILE_VALUE_MAX_BYTES = 256 * 1024; // 256 KiB per file value
 export const SECRET_AGGREGATE_MAX_BYTES = 512 * 1024; // 512 KiB per repo per mode
@@ -267,8 +263,7 @@ const RepoRecordSchema = z.object({
   credential: z.string().optional(),
   grandGuid: z.string().optional(),
   parentGuid: z.string().optional(),
-  // Marks a fork read-only (refuses to mount on the machine). Producer:
-  // `repo fork --immutable`. The machine-side mirror is authoritative.
+  // Marks a fork read-only (refuses to mount on the machine). Producer: `repo fork --immutable`. The machine-side mirror is authoritative.
   immutable: z.boolean().optional(),
   sshPrivateKey: z.string().optional(),
   sshPublicKey: z.string().optional(),
@@ -288,8 +283,7 @@ const RepoFamilySchema = z.object({
   tags: z.record(TagName, RepoRecordSchema),
 });
 
-// Archives OMIT secrets — archiveRepository scrubs them. `tag` splits out of
-// the v2 composite `name` string (migration transform 9).
+// Archives OMIT secrets — archiveRepository scrubs them. `tag` splits out of the v2 composite `name` string (migration transform 9).
 const ArchivedRepositorySchema = RepoRecordSchema.omit({ secrets: true }).extend({
   name: z.string(),
   tag: z.string(),
@@ -402,8 +396,7 @@ const ClusterCephRefSchema = z.object({
 });
 
 // Local KVM topology. `renet ops` addresses VMs by numeric id; `memberIds` (the
-// booted-VM allocation ledger) has moved to `state.clusters[*].memberIds` (R2-F2)
-// so per-boot allocation churn no longer bumps the version counter.
+// booted-VM allocation ledger) has moved to `state.clusters[*].memberIds` (R2-F2) so per-boot allocation churn no longer bumps the version counter.
 const ClusterKvmSchema = z.object({
   netName: z.string().min(1),
   netBase: z.string().min(1),
@@ -572,9 +565,7 @@ const RemoteConfigSchema = z.object({
   storeId: uuid,
   configId: uuid,
   teamId: uuid.optional(),
-  // Server-provided over the config-remote handoff, then fed to native secure
-  // storage (keyctl / macOS security / DPAPI). Constrain to a safe charset so a
-  // hostile account server cannot smuggle shell metacharacters this far.
+  // Server-provided over the config-remote handoff, then fed to native secure storage (keyctl / macOS security / DPAPI). Constrain to a safe charset so a hostile account server cannot smuggle shell metacharacters this far.
   storageKeyId: z.string().regex(/^[A-Za-z0-9:_-]{1,200}$/),
   dataRegion: z.string().optional(),
   /** Server envelope version of the last successful pull/push (offline read cache). */

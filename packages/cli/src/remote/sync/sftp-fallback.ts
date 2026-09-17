@@ -59,9 +59,7 @@ export interface SftpTransferOptions {
   verify?: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Internal helpers shared by upload paths.
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Internal helpers shared by upload paths. ---------------------------------------------------------------------------
 
 async function writeRemoteFile(
   sftp: SFTPClient,
@@ -130,9 +128,7 @@ async function uploadOneFile(ctx: SingleFileUploadCtx): Promise<boolean> {
   return true;
 }
 
-// ---------------------------------------------------------------------------
-// Public: upload a single file.
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Public: upload a single file. ---------------------------------------------------------------------------
 
 /**
  * Upload a single local file to a fully-specified remote file path.
@@ -209,9 +205,7 @@ export async function sftpUploadFile(
   return finishResult(result, startTime);
 }
 
-// ---------------------------------------------------------------------------
-// Public: upload mixed file/dir sources to a remote directory.
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Public: upload mixed file/dir sources to a remote directory. ---------------------------------------------------------------------------
 
 interface MultiUploadCtx {
   sftp: SFTPClient;
@@ -318,9 +312,7 @@ export async function sftpUploadPaths(
   return finishResult(result, startTime);
 }
 
-// ---------------------------------------------------------------------------
-// Public: download a remote directory or file.
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Public: download a remote directory or file. ---------------------------------------------------------------------------
 
 interface RemoteFileInfo {
   relativePath: string;
@@ -331,13 +323,9 @@ async function listRemoteFiles(
   sftp: SFTPClient,
   normalizedRemote: string
 ): Promise<RemoteFileInfo[]> {
-  // The primary `find -printf '%P'` already emits paths relative to the
-  // search root, no sed strip needed. The fallback `find -exec stat` is
+  // The primary `find -printf '%P'` already emits paths relative to the search root, no sed strip needed. The fallback `find -exec stat` is
   // for systems without GNU find's -printf; we strip the prefix in JS to
-  // avoid shell injection (the previous sed-based strip interpolated
-  // normalizedRemote unquoted into a `s|...|` expression, which broke on
-  // paths containing `|` and was injection-vulnerable for callers passing
-  // attacker-controlled paths). An empty normalizedRemote (e.g. root `/`)
+  // avoid shell injection (the previous sed-based strip interpolated normalizedRemote unquoted into a `s|...|` expression, which broke on paths containing `|` and was injection-vulnerable for callers passing attacker-controlled paths). An empty normalizedRemote (e.g. root `/`)
   // would also have produced a no-op sed expression; the JS strip handles
   // that correctly.
   const findOutput = await sftp.exec(

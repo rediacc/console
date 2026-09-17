@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: The Stop hook must survive a hostile stdin: never crash, never hang
+# ---- end gate ----
+
 # The Stop hook must survive a hostile stdin: never crash, never hang.
 #
 # WHY THIS EXISTS. On 2026-08-07 the harness reported:

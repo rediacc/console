@@ -24,8 +24,7 @@ async function seal(payload: HandoffPayload, publicKey: CryptoKey) {
   return cekHandoffEncrypt(bytes, publicKey);
 }
 
-// Mirror of the web fixture — keep textually identical with
-// private/account/web/src/lib/__tests__/config-handoff.test.ts.
+// Mirror of the web fixture — keep textually identical with private/account/web/src/lib/__tests__/config-handoff.test.ts.
 const BASE_PAYLOAD = {
   passkey_secret: 'cGFzc2tleV9zZWNyZXRfMzJfYnl0ZXNfYjY0',
   token: 'rct_rotated_latest',
@@ -64,8 +63,7 @@ describe('handoff blob contract round-trip (real X25519)', () => {
 
   it('the exported public key imports back as a usable X25519 recipient key', async () => {
     // The CLI puts exportPublicKeyBase64(publicKey) in the URL; the portal
-    // imports it as spki and seals to it. Prove that leg with the same import
-    // the portal uses.
+    // imports it as spki and seals to it. Prove that leg with the same import the portal uses.
     const keyPair = await generateX25519KeyPair();
     const pubBase64 = await exportPublicKeyBase64(keyPair.publicKey);
 
@@ -94,10 +92,7 @@ describe('handoff blob contract round-trip (real X25519)', () => {
   });
 
   it('explains a wrong-key handoff instead of leaking the WebCrypto error', async () => {
-    // A stale portal tab from an earlier `config remote enable` seals against
-    // the OLD run's public key and posts to the new run's callback. Raw, that
-    // reached the user as "OperationError: The operation failed for an
-    // operation-specific reason" at all three call sites in config-remote.ts.
+    // A stale portal tab from an earlier `config remote enable` seals against the OLD run's public key and posts to the new run's callback. Raw, that reached the user as "OperationError: The operation failed for an operation-specific reason" at all three call sites in config-remote.ts.
     const keyPair = await generateX25519KeyPair();
     const otherPair = await generateX25519KeyPair();
     const blob = await seal({ ...BASE_PAYLOAD }, keyPair.publicKey);

@@ -31,11 +31,7 @@ export function getSubscriptionTokenFile(configName = getEffectiveConfigName()):
 }
 
 export function getSubscriptionServerUrl(preferredServerUrl?: string): string {
-  // Precedence (highest first):
-  //   1. preferredServerUrl        — runtime override (--server flag)
-  //   2. REDIACC_ACCOUNT_SERVER    — env override
-  //   3. config account.accountServer — the active config's server pointer
-  //   4. SUBSCRIPTION_DEFAULTS.ACCOUNT_SERVER_URL — hardcoded default
+  // Precedence (highest first): 1. preferredServerUrl — runtime override (--server flag) 2. REDIACC_ACCOUNT_SERVER — env override 3. config account.accountServer — the active config's server pointer 4. SUBSCRIPTION_DEFAULTS.ACCOUNT_SERVER_URL — hardcoded default
   return normalizeServerUrl(
     preferredServerUrl ??
       process.env.REDIACC_ACCOUNT_SERVER ??

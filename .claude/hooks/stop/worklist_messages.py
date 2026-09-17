@@ -79,8 +79,7 @@ V_OPEN_ITEMS = (
     "state that actually applies:\n%s"
 )
 
-# ---- v21: the idle-stall gate (see wl_checks.idle_stall) --------------------
-# Stated POSITIVELY on purpose. A refusal that only says "no" teaches the next
+# ---- v21: the idle-stall gate (see wl_checks.idle_stall) -------------------- Stated POSITIVELY on purpose. A refusal that only says "no" teaches the next
 # session to hunt for a wording that gets past it; the rule it is enforcing --
 # what a turn may legitimately end on -- is the thing worth carrying forward.
 
@@ -104,14 +103,9 @@ V_IDLE_STALL = (
     "it> HOW: <what concretely resolves it>'"
 )
 
-# ---- v23: THE PENDING-ASK GATE (wl_admit.pending_ask) -----------------------
-# The message a session gets for ANNOUNCING an ask it never made. Two
-# substitutions: the announcing line quoted back, then the session prefix for
-# the --defer exit.
+# ---- v23: THE PENDING-ASK GATE (wl_admit.pending_ask) ----------------------- The message a session gets for ANNOUNCING an ask it never made. Two substitutions: the announcing line quoted back, then the session prefix for the --defer exit.
 #
-# It quotes the line rather than describing it because the first question a
-# wrongly-accused session asks is "which sentence?", and a gate that cannot
-# answer that gets argued with instead of obeyed.
+# It quotes the line rather than describing it because the first question a wrongly-accused session asks is "which sentence?", and a gate that cannot answer that gets argued with instead of obeyed.
 V_PENDING_ASK = (
     "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT. Your closing "
     "span says:\n    %s\n"
@@ -132,10 +126,7 @@ V_PENDING_ASK = (
     "repo keeps paying for."
 )
 
-# The refusal-ledger advisory. Two substitutions: how many of THIS session's
-# questions the pre-ask hook refused, and the ledger path. ADVISORY and
-# ROTATING on purpose: a refusal is not a violation, and the only thing worth
-# saying is that the file exists and has rows in it.
+# The refusal-ledger advisory. Two substitutions: how many of THIS session's questions the pre-ask hook refused, and the ledger path. ADVISORY and ROTATING on purpose: a refusal is not a violation, and the only thing worth saying is that the file exists and has rows in it.
 N_ASK_REFUSALS = (
     "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
     "%d question(s) from this session were REFUSED by "
@@ -582,17 +573,10 @@ N_WAITER_DRAINED = (
 
 # FIVE ROUNDS, FIVE DIFFERENT STATEMENTS, AND IT NEVER GIVES UP.
 #
-# A violation that repeats itself verbatim becomes wallpaper: the session reads
-# the first line, recognises it, and skips the rest -- so an identical fifth
-# nudge is weaker than the first, not stronger. Each rung here adds a FACT the
-# previous one did not carry (who is blocked, that the answer may already be
-# sitting unread, that withdrawing is a legitimate exit, how long this has
-# gone on) rather than simply raising its voice.
+# A violation that repeats itself verbatim becomes wallpaper: the session reads the first line, recognises it, and skips the rest -- so an identical fifth nudge is weaker than the first, not stronger. Each rung here adds a FACT the previous one did not carry (who is blocked, that the answer may already be sitting unread, that withdrawing is a legitimate exit, how long this has gone
+# on) rather than simply raising its voice.
 #
-# Past the last rung the message stops changing but the check keeps firing.
-# Giving up would return the session to exactly the state this exists to
-# prevent -- stopped, not listening, waiting forever for something it cannot
-# hear -- and a check that tires before the session does is not a check.
+# Past the last rung the message stops changing but the check keeps firing. Giving up would return the session to exactly the state this exists to prevent -- stopped, not listening, waiting forever for something it cannot hear -- and a check that tires before the session does is not a check.
 V_ASK_NOLISTEN_LADDER = (
     # 1 -- plainest statement of the fact plus the command.
     (
@@ -646,11 +630,7 @@ V_ASK_NOLISTEN_CMD = (
     "Start one as a BACKGROUND task (run_in_background: true), NO QUOTES anywhere\n"
     "in the command line (a quoted path renders the waiter `unverifiable`, which\n"
     "does not satisfy this check -- it is confirmed against the OS, not believed):\n"
-    # SIXTY, not 900. `--timeout` is in MINUTES (wl_wait.DEFAULT_TIMEOUT_MIN,
-    # `timeout_min * 60.0`), so 900 asked for a FIFTEEN-HOUR wait while
-    # V_NO_WAITER and wl_wait.HELP both said 60. A session shown both picks one
-    # and its waiter then lapses at an hour while the other message insists it
-    # should still be running.
+    # SIXTY, not 900. `--timeout` is in MINUTES (wl_wait.DEFAULT_TIMEOUT_MIN, `timeout_min * 60.0`), so 900 asked for a FIFTEEN-HOUR wait while V_NO_WAITER and wl_wait.HELP both said 60. A session shown both picks one and its waiter then lapses at an hour while the other message insists it should still be running.
     "    python3 %s %s --timeout 60\n"
     "Its EXIT is the notification, and it fires ONCE: relaunch it in the same\n"
     "turn you act on what it reports.\n"
@@ -672,9 +652,7 @@ V_NO_WAITER = (
     "predates it, so keep the hourly cron as the backlog backstop."
 )
 
-# THE LAPSE, which used to be invisible. wl_wait.wait() unlinked its heartbeat
-# on both exits, so "my waiter died 40 minutes ago" and "I have never listened"
-# left the filesystem in the same state -- and the hook is far more lenient
+# THE LAPSE, which used to be invisible. wl_wait.wait() unlinked its heartbeat on both exits, so "my waiter died 40 minutes ago" and "I have never listened" left the filesystem in the same state -- and the hook is far more lenient
 # about the second. The tombstone makes the difference readable; this message
 # is what the difference is FOR, so it names which of the two exits happened.
 V_WAITER_LAPSED = (
@@ -690,12 +668,10 @@ V_WAITER_LAPSED = (
     "one."
 )
 
-# THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it
-# already is. The four boxes are read off `.claude/commands/pr-babysit.md`
+# THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it already is. The four boxes are read off `.claude/commands/pr-babysit.md`
 # ("The console PR rides as a draft until green; stops at green +
 # Claude-reviewed + threads-resolved PRs; never merges") rather than invented
-# here, and the two the hook cannot observe are backed by ticked worklist
-# items, which is the same evidence discipline every other tick carries.
+# here, and the two the hook cannot observe are backed by ticked worklist items, which is the same evidence discipline every other tick carries.
 V_PR_FINISH = (
     "THE WAVE IS NOT FINISHED. A pr-babysit round log is live for this branch "
     "(%s) and PR #%s has not reached the finish line stated in "
@@ -712,10 +688,7 @@ V_PR_FINISH = (
 
 # ONE LINE PER INVARIANT that was not quoted in full. The tier's value is that
 # it cannot be rotated away; it is NOT a licence to print five long blocks,
-# because "a prompt that fires always is a prompt that gets skimmed" and a
-# skimmed invariant is a rotated one with extra steps. So the excess is NAMED,
-# never dropped: key plus its opening line, which is the line every one of
-# these messages puts its verdict on.
+# because "a prompt that fires always is a prompt that gets skimmed" and a skimmed invariant is a rotated one with extra steps. So the excess is NAMED, never dropped: key plus its opening line, which is the line every one of these messages puts its verdict on.
 R_ALWAYS_COLLAPSED = "ALSO BLOCKING, IN BRIEF (quoted in full on a later stop):\n%s"
 
 N_UNREAD_REPORTS = (
@@ -772,10 +745,15 @@ CLI_REASSIGN_DONE = (
 CLI_MIGRATE_USAGE = (
     "usage: worklist.py --migrate <me> --candidates [--json]\n"
     "       worklist.py --migrate <me> <prev> [<prev>...]\n"
+    "       worklist.py --migrate <me> --plan <path> [<path>...]\n"
     "List sessions whose remaining work is not live here, then continue the ones\n"
     "you name: their open, in-flight and deferred items are re-tagged to you and\n"
     "the originals are ticked 'migrated to'. Nothing is deleted; a LIVE session is\n"
-    "refused. Use it after a restart or a machine switch (/migrate wraps it).\n"
+    "refused. A candidate can also be a committed agent/PLAN-*.md carrying open\n"
+    "boxes whose declared owner is idle -- --plan re-stamps that plan's Owner:\n"
+    "line to you (no box is touched); a store migration never does this on its\n"
+    "own, it only prints the command. Use it after a restart or a machine switch\n"
+    "(/migrate wraps it).\n"
 )
 
 CLI_ADOPT_USAGE = (
@@ -847,15 +825,8 @@ N_CL_FOREIGN = (
     "never blocked on.%s"
 )
 
-# THE OWNER'S ORDER, SAID TO SOMEBODY ELSE, was the bug (found by the automated
-# review on PR #563). Drift used to build ONE body -- V_CL_FLIP, which ends
-# "...in this turn" -- and route it either to a blocking violation or to this
-# advisory, so a session that does not own the handoff read a direct
-# instruction to repair another session's artifacts and header. That is not
-# theoretical: a peer's shared STATE.md was destroyed here by a session obeying
-# an instruction addressed to whoever happened to read it. This constant states
-# the same FACTS and names no action for the reader. V_CL_FLIP keeps its
-# imperative, because on that path the reader IS the owner.
+# THE OWNER'S ORDER, SAID TO SOMEBODY ELSE, was the bug (found by the automated review on PR #563). Drift used to build ONE body -- V_CL_FLIP, which ends "...in this turn" -- and route it either to a blocking violation or to this advisory, so a session that does not own the handoff read a direct instruction to repair another session's artifacts and header. That is not theoretical:
+# a peer's shared STATE.md was destroyed here by a session obeying an instruction addressed to whoever happened to read it. This constant states the same FACTS and names no action for the reader. V_CL_FLIP keeps its imperative, because on that path the reader IS the owner.
 V_PLAN_DRIFT = (
     "%d committed plan file(s) under agent/ describe work you have since "
     "moved past:\n%s\n"
@@ -907,8 +878,7 @@ N_CADENCE_PAUSE = (
 # while ANOTHER session sat blocked on an answer it could have given in
 # seconds. Reported by the operator watching exactly that happen.
 #
-# Cross-session obligations are carried through the pause in full, because they
-# are the one class where the cost of staying quiet lands on somebody else. A
+# Cross-session obligations are carried through the pause in full, because they are the one class where the cost of staying quiet lands on somebody else. A
 # session may reasonably defer its own open items for a turn; it cannot
 # reasonably defer a peer without knowing the peer is there.
 N_CADENCE_PAUSE_CARRIED = (
@@ -953,9 +923,7 @@ CLI_STATE_REFUSED = (
     "other session's section.\n"
 )
 
-# The waitled refusal, which needs to teach rather than merely deny: the habit it
-# breaks is invisible from inside a single session and only shows up across a
-# compaction boundary.
+# The waitled refusal, which needs to teach rather than merely deny: the habit it breaks is invisible from inside a single session and only shows up across a compaction boundary.
 V_SOLO_GRIND = (
     "%s OPEN ITEMS AND NO WRITER TEAMMATE. This is not a violation and it does not\n"
     "block; it is the one thing a per-stop check cannot see and a human watching\n"
@@ -990,10 +958,7 @@ CLI_STATE_WAIT_LED = (
     "Nothing was written; the previous STATE.md is untouched.\n"
 )
 
-# The refusal an in-flight session running the pre-section instructions will
-# meet mid-task, so it states the whole contract rather than merely saying no.
-# Piping the whole document in was the old habit, and it is the exact habit
-# that destroyed a peer's live campaign document on 2026-08-09.
+# The refusal an in-flight session running the pre-section instructions will meet mid-task, so it states the whole contract rather than merely saying no. Piping the whole document in was the old habit, and it is the exact habit that destroyed a peer's live campaign document on 2026-08-09.
 CLI_STATE_WHOLE_DOC = (
     "STATE REFUSED: the body you piped in carries a '## SESSION' heading, so it "
     "looks like the WHOLE document rather than your own section.\n"
@@ -1008,15 +973,10 @@ CLI_STATE_WHOLE_DOC = (
     "Nothing was written; the previous document is untouched.\n"
 )
 
-# WHY THESE TWO EXIST (cross-session report #7c1c2629, 2026-08-05, reproduced
-# before fixing). `--state` used to require argv[2] to be RECOGNISED at all:
+# WHY THESE TWO EXIST (cross-session report #7c1c2629, 2026-08-05, reproduced before fixing). `--state` used to require argv[2] to be RECOGNISED at all:
 # `len(sys.argv) > 2 and sys.argv[1] == "--state"`. A bare `--state`, or one
-# whose body was passed as argv instead of on stdin, therefore fell through
-# every branch into the Stop-HOOK path, which reads the hook event from stdin
-# and so BLOCKED FOREVER on a terminal. It cost the reporting session a
-# ten-minute tool timeout, and the control that proves it is stdin rather than
-# a lock is one redirect: `--state </dev/null` returns instantly, the same
-# command without it hangs.
+# whose body was passed as argv instead of on stdin, therefore fell through every branch into the Stop-HOOK path, which reads the hook event from stdin and so BLOCKED FOREVER on a terminal. It cost the reporting session a ten-minute tool timeout, and the control that proves it is stdin rather than a lock is one redirect: `--state </dev/null` returns instantly, the same command
+# without it hangs.
 CLI_STATE_USAGE = (
     "usage: worklist.py --state <session-prefix> <<'EOF' ... EOF\n"
     "The STATE.md body is read from STDIN, never from argv. A bare `--state` "
@@ -1024,11 +984,7 @@ CLI_STATE_USAGE = (
     "now refuses here instead.\n"
 )
 
-# The second half of the same report: the body arrives on stdin, so passing it
-# as arguments left `body` empty and the shape check said `thin: 0 chars`.
-# That reads as "your document was too short" when the truth is "your document
-# never arrived", and the reporter chased the wrong thing twice. Empty stdin is
-# now its own message, and it names the extra argv when that is the likely
+# The second half of the same report: the body arrives on stdin, so passing it as arguments left `body` empty and the shape check said `thin: 0 chars`. That reads as "your document was too short" when the truth is "your document never arrived", and the reporter chased the wrong thing twice. Empty stdin is now its own message, and it names the extra argv when that is the likely
 # cause.
 CLI_STATE_NO_BODY = (
     "STATE REFUSED: no body arrived on stdin%s. The document is read from "
@@ -1044,11 +1000,9 @@ CLI_STATE_NO_DIR = (
     "    mkdir -p agent/%s\n"
 )
 
-# v18 replaces N_WAKEUPS, which printed every scheduled task's next firing on
-# every stop. The operator deleted that section outright ("we don't need to
+# v18 replaces N_WAKEUPS, which printed every scheduled task's next firing on every stop. The operator deleted that section outright ("we don't need to
 # print next wakeup times... let's go for efficient ai context usage"); this is
-# the one row of it that was ever actionable, and it is silent unless a
-# schedule is genuinely broken.
+# the one row of it that was ever actionable, and it is silent unless a schedule is genuinely broken.
 V_BROKEN_SCHEDULE = (
     "%d scheduled task(s) carry a schedule this hook CANNOT PARSE:\n%s\n"
     "    An unparseable schedule is invisible to every other check here -- it "
@@ -1198,12 +1152,8 @@ V_NO_REMAINING = (
     "'## Remaining' section listing what is left and who it is blocked on:\n%s"
 )
 
-# ---- v11: the store-derived stop guide --------------------------------------
-# WHY (operator, 2026-07-30): "--list should be used always on stop hook to
-# output enforced guided instructions." The v10 store stamped every item and
-# the hand-authored Remaining prose ignored all of it, so the report is now
-# derived from the store on EVERY stop, allow and block alike. The per-line
-# bodies are assembled in wl_checks.guided_slice (structural, one format per
+# ---- v11: the store-derived stop guide -------------------------------------- WHY (operator, 2026-07-30): "--list should be used always on stop hook to output enforced guided instructions." The v10 store stamped every item and the hand-authored Remaining prose ignored all of it, so the report is now derived from the store on EVERY stop, allow and block alike. The per-line bodies
+# are assembled in wl_checks.guided_slice (structural, one format per
 # item state); these three carry the surrounding prose.
 
 GUIDE_HEADER = (
@@ -1392,9 +1342,7 @@ N_LADDER_PING = (
 
 # ---- the allow-report output queue ------------------------------------------
 # The judge stamp is the bare confirmation that a paid call happened; the FULL
-# form carries the reason and is reserved for a stop whose context was just
-# rebuilt or whose reason changed (operator, 2026-07-31: the approval reason
-# was reprinted on every single stop).
+# form carries the reason and is reserved for a stop whose context was just rebuilt or whose reason changed (operator, 2026-07-31: the approval reason was reprinted on every single stop).
 
 N_JUDGE_STAMP = "Stop-gate judge (%s) %s."
 
@@ -1406,11 +1354,7 @@ N_OUTQ_MORE = (
     "WORKLIST_REPORT_PER_STOP to drain faster.)"
 )
 
-# ---- the specialist-agent hint (wl_agents) ----------------------------------
-# NAMING THE MATCHED TERMS is what makes a wrong hint self-refuting: a reader
-# who sees "Matched on: fork, cap" dismisses it in one second instead of
-# opening a 9 KB agent file to find out why it was suggested. It is also what
-# makes the matcher debuggable in the field without a debug flag.
+# ---- the specialist-agent hint (wl_agents) ---------------------------------- NAMING THE MATCHED TERMS is what makes a wrong hint self-refuting: a reader who sees "Matched on: fork, cap" dismisses it in one second instead of opening a 9 KB agent file to find out why it was suggested. It is also what makes the matcher debuggable in the field without a debug flag.
 
 N_AGENT_HINT = (
     "Specialist agent available: %s (.claude/agents/%s.md).\n"
@@ -1420,15 +1364,10 @@ N_AGENT_HINT = (
     "  Agent tool, or ignore this line if it is not the domain you are in."
 )
 
-# ---- the push-back (wl_agents.pushback_for) ---------------------------------
-# NOT an accusation and deliberately not phrased as one: concluding that
-# something is impossible is often CORRECT, and CLAUDE.md rule 3 forbids only
-# concluding it WITHOUT PROBING. So this quotes the claim back, names the file
-# that may already answer it, and asks for one command. A session that has
-# already probed clears it in a sentence.
+# ---- the push-back (wl_agents.pushback_for) --------------------------------- NOT an accusation and deliberately not phrased as one: concluding that something is impossible is often CORRECT, and CLAUDE.md rule 3 forbids only concluding it WITHOUT PROBING. So this quotes the claim back, names the file that may already answer it, and asks for one command. A session that has already
+# probed clears it in a sentence.
 #
-# It names the matched terms for the same reason the hint does: a wrong
-# push-back must be refutable in one second, not by opening a 9 KB file.
+# It names the matched terms for the same reason the hint does: a wrong push-back must be refutable in one second, not by opening a 9 KB file.
 
 V_AGENT_PUSHBACK = (
     "You just claimed %s, in a domain .claude/agents/%s.md already covers.\n"
@@ -1443,10 +1382,7 @@ V_AGENT_PUSHBACK = (
     "  and this is the check that asks you to prove it. Fires ONCE per specialist."
 )
 
-# A corpus that cannot be read degrades to SILENCE PLUS THIS NOTE, never to a
-# crash and never to a quiet skip: the matcher runs on the path that ends every
-# turn, so an exception here is a session that cannot stop, and a silent skip is
-# an agent that has stopped being reachable while everything still looks fine.
+# A corpus that cannot be read degrades to SILENCE PLUS THIS NOTE, never to a crash and never to a quiet skip: the matcher runs on the path that ends every turn, so an exception here is a session that cannot stop, and a silent skip is an agent that has stopped being reachable while everything still looks fine.
 N_AGENT_CORPUS_ERR = "Agent corpus problem (specialist hints are degraded until fixed):\n%s"
 
 # ---- block-reason wrappers (the `reason` field of an emitted block) ---------
@@ -1460,8 +1396,7 @@ R_BLOCK = (
 
 # ---- v13: the focused block (operator, 2026-07-31: "single and focused
 # message at a time... 1-2 sentence each time"). One rotating check per stop;
-# the others are a bare count. ALWAYS-tier texts (latched one-shots and hook
-# integrity) still ride in full when present, because hiding a latched message
+# the others are a bare count. ALWAYS-tier texts (latched one-shots and hook integrity) still ride in full when present, because hiding a latched message
 # swallows it forever. R_BLOCK stays verbatim for WORKLIST_FOCUS=off.
 
 R_BLOCK_FOCUS = (
@@ -1563,7 +1498,7 @@ R_REGGATE_BLOCK = (
     "  judge's blind spot:  %s\n"
     "  judge's instruction: %s\n%s%s\n"
     "Three exits, pick one THIS turn:\n"
-    "  1. WRITE THE GATE control-first: a new scripts/check-*.ts or "
+    "  1. WRITE THE GATE control-first: a new scripts/gates/check-*.ts or "
     ".ci/scripts/quality/check-*.sh, wired as a check:ci-* key REACHABLE "
     "from `npm run ci` (transitively; defined-but-never-run does not "
     "count). The next stop runs it bounded, and a green run IS the "
@@ -1642,15 +1577,8 @@ CLI_TICK_NO_EVIDENCE = (
     "item is not done."
 )
 
-# ---- v16: the fix-in-session rule, the triage verb, the tick door gate ------
-# WHY (operator, 2026-07-31): a finding is FIXED in the session that finds it.
-# "It is big" was the standing excuse for filing an issue and calling the
-# finding handled, and --tick took a bare issue URL as evidence, so the excuse
-# was not merely rhetorical, it worked. The machinery now answers the size
-# question itself (--triage) and refuses a completion whose only evidence is
-# an issue reference. Underscore-prefixed, so the suite's catalogue-arity
-# sweep skips it: it is a fragment reused inside several constants, never
-# rendered on its own.
+# ---- v16: the fix-in-session rule, the triage verb, the tick door gate ------ WHY (operator, 2026-07-31): a finding is FIXED in the session that finds it. "It is big" was the standing excuse for filing an issue and calling the finding handled, and --tick took a bare issue URL as evidence, so the excuse was not merely rhetorical, it worked. The machinery now answers the size
+# question itself (--triage) and refuses a completion whose only evidence is an issue reference. Underscore-prefixed, so the suite's catalogue-arity sweep skips it: it is a fragment reused inside several constants, never rendered on its own.
 _DOORS = (
     "The three last-resort doors, and there are exactly three:\n"
     "  door:operator-only      the fix needs powers this session does not "
@@ -1759,10 +1687,7 @@ CLI_TRIAGE_SELF = (
 
 # ---- SessionStart / PostCompact additionalContext ---------------------------
 
-# HONEST ABOUT WHAT IT IS. This used to open "those documents are the
-# starting context for the work", which is a claim about YOUR task that the
-# hook has no way to know: it fires for every session in the repo, and a
-# session working on something unrelated was told to go read a program it has
+# HONEST ABOUT WHAT IT IS. This used to open "those documents are the starting context for the work", which is a claim about YOUR task that the hook has no way to know: it fires for every session in the repo, and a session working on something unrelated was told to go read a program it has
 # nothing to do with. The docs are standing material for one surface; say so,
 # name the surface, and let the session decide whether it is in it.
 CTX_SESSION_START = (
@@ -1780,11 +1705,7 @@ CTX_SESSION_START_STALE = (
     "were last updated. Reconcile them early, not at the end."
 )
 
-# v16: the plan-file convention. agent/PLAN-<slug>.md is the DURABLE design
-# record, committed, as opposed to the per-session agent/<me>/ directories
-# whose STATE.md is the volatile cursor. A plan survives compaction and a
-# machine loss, so a session that never reads them re-litigates decisions that
-# were already paid for.
+# v16: the plan-file convention. agent/PLAN-<slug>.md is the DURABLE design record, committed, as opposed to the per-session agent/<me>/ directories whose STATE.md is the volatile cursor. A plan survives compaction and a machine loss, so a session that never reads them re-litigates decisions that were already paid for.
 CTX_PLANS = (
     "DURABLE PLANS, committed under agent/ and written to survive compaction "
     "and a lost machine:\n%s\n\n"
@@ -1827,9 +1748,7 @@ CTX_POSTCOMPACT_MISSING = (
 
 # Appended as its OWN block rather than widened into CTX_POSTCOMPACT_BRIEFING,
 # for two reasons: it keeps that message's arity frozen, and it has to ride the
-# MISSING branch too. Before sections existed, a compacted session on a branch
-# where only a peer had written got no state content whatsoever, which is a
-# strictly worse briefing than the file in front of it contains.
+# MISSING branch too. Before sections existed, a compacted session on a branch where only a peer had written got no state content whatsoever, which is a strictly worse briefing than the file in front of it contains.
 CTX_POSTCOMPACT_PEERS = (
     "=== OTHER SESSIONS' STATE.md, from the sibling directories under "
     "agent/ ===\n"
@@ -2081,9 +2000,7 @@ Never use em dashes. Keep next_action concrete and small enough to do now.
 """
 
 
-# `--help` used to fall through to the Stop-hook path, where stdin is not JSON,
-# so asking this tool how to use it produced a BLOCK accusing the caller of a
-# hook bug. A tool whose help text is an error message teaches people to guess.
+# `--help` used to fall through to the Stop-hook path, where stdin is not JSON, so asking this tool how to use it produced a BLOCK accusing the caller of a hook bug. A tool whose help text is an error message teaches people to guess.
 USAGE = """worklist.py -- shared per-repo worklist and cross-session inbox.
 
 Items (v10: a JSONL event store; the old markdown file still works as an
@@ -2127,6 +2044,25 @@ Session state:
   --state <me>                  rewrite agent/<me>/STATE.md (body on stdin)
   --loop <me> <next> <count> <what...>   declare a scheduled loop
 
+Plan records (W12):
+  --plan-compact <me>           LIST what can be compacted and what each one
+                                would refuse (oldest first). No path, no write.
+  --plan-revive <me>            LIST the records on disk and whether each
+                                one's blob still resolves
+  --plan-compact <me> <agent/PLAN-x.md> [--write] [--park]
+                 [--why author|auto|model]
+                                turn a FINISHED plan into an attested record
+                                that keeps its own path. The full text stays
+                                recoverable from a git BLOB (content-addressed,
+                                so `gh pr merge --rebase` cannot break it) and
+                                every box keeps its `done=` proof from the
+                                committed ledger. Prints the record; --write
+                                puts it on disk. --park records a plan whose
+                                work is unfinished: its text shrinks, its
+                                housekeeping clock does not stop.
+  --plan-revive <me> <agent/PLAN-x.md> [--write]
+                                restore a record's full text from its blob
+
 Maintenance:
   --compact                     drop tombstones and fold the event log
   --reassign <me> <phantom>     take over the OPEN items and requests of an
@@ -2148,18 +2084,10 @@ With no arguments this runs as the Stop hook and expects a JSON event on stdin.
 """
 
 
-# A dirty gitlink is the one tree state where the standing "sweep everything with
-# git add -A" rule silently changes what a PR DEPENDS ON. It happened: a subagent
-# committed inside private/renet on its own branch, which necessarily moved the
-# superproject's gitlink, and a blind sweep would have repointed the console PR at
-# a commit living only on an unmerged branch. That does not lose work (the branch
-# usually descends from the old pointer) but it adds a submodule PR to the merge
-# chain, and `Quality / Submodule Branches` only says so minutes later, in CI.
+# A dirty gitlink is the one tree state where the standing "sweep everything with git add -A" rule silently changes what a PR DEPENDS ON. It happened: a subagent committed inside private/renet on its own branch, which necessarily moved the superproject's gitlink, and a blind sweep would have repointed the console PR at a commit living only on an unmerged branch. That does not lose
+# work (the branch usually descends from the old pointer) but it adds a submodule PR to the merge chain, and `Quality / Submodule Branches` only says so minutes later, in CI.
 #
-# Deliberately NOT auto-resolved: pointing at an unmerged submodule branch is
-# LEGITIMATE in this repo's flow (that is how a stacked submodule PR lands). Only
-# the human-or-agent deciding can say which case this is, so the check hands over
-# the facts rather than a verdict.
+# Deliberately NOT auto-resolved: pointing at an unmerged submodule branch is LEGITIMATE in this repo's flow (that is how a stacked submodule PR lands). Only the human-or-agent deciding can say which case this is, so the check hands over the facts rather than a verdict.
 V_SUBMODULE_POINTER = """SUBMODULE POINTER MOVED IN THE WORKTREE (%d): %s
 
 `git add -A` would COMMIT this pointer move, changing what this PR depends on.
@@ -2174,11 +2102,8 @@ Decide explicitly, then act:
     is pushed. Verify both first; this is not an undo you can take back."""
 
 
-# ---- poll backoff (advisory) -------------------------------------------------
-# The inbox poll defaults to every 5 minutes, which costs 12 firings an hour forever on a
-# session nobody is talking to. These two notes tell the session to move along the ladder
-# in wl_checks.POLL_BACKOFF_LADDER. They are notes, never violations: the session performs
-# the cron swap itself so the change is visible, and can decline.
+# ---- poll backoff (advisory) ------------------------------------------------- The inbox poll defaults to every 5 minutes, which costs 12 firings an hour forever on a session nobody is talking to. These two notes tell the session to move along the ladder in wl_checks.POLL_BACKOFF_LADDER. They are notes, never violations: the session performs the cron swap itself so the change is
+# visible, and can decline.
 N_POLL_BACKOFF = (
     "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
     "INBOX HAS BEEN QUIET FOR %d MINUTES at a %d-minute poll. Double the interval so a\n"
@@ -2190,11 +2115,7 @@ N_POLL_BACKOFF = (
     "the 70-minute fast-path horizon would pay the full battery on every firing. Drop back\n"
     "to */5 as soon as a real request arrives."
 )
-# ---- v17: the no-op wake ladder ---------------------------------------------
-# The backoff notes above are advisory sections that ride a full report. These
-# two REPLACE the report: on a wake where the hook can prove nothing changed,
-# they are the entire output of the stop. See wl_checks.quiet_wake_note for
-# what "nothing changed" is measured against.
+# ---- v17: the no-op wake ladder --------------------------------------------- The backoff notes above are advisory sections that ride a full report. These two REPLACE the report: on a wake where the hook can prove nothing changed, they are the entire output of the stop. See wl_checks.quiet_wake_note for what "nothing changed" is measured against.
 N_QUIET_WAKE = (
     "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
     "%d CONSECUTIVE QUIET WAKES: same items, same tasks, same HEAD, no inbox\n"
@@ -2227,11 +2148,9 @@ N_POLL_BACKOFF_RESET = (
 )
 
 
-# ---------------------------------------------------------------------------
-# --roundlog: the pr-babysit round log's STATUS block.
+# --------------------------------------------------------------------------- --roundlog: the pr-babysit round log's STATUS block.
 #
-# These exist because on 2026-08-19 a heartbeat tick refreshed STATUS with
-# `text[:i] + new`, which replaces from the STATUS heading to END OF FILE and
+# These exist because on 2026-08-19 a heartbeat tick refreshed STATUS with `text[:i] + new`, which replaces from the STATUS heading to END OF FILE and
 # took the whole history appendix with it. The verb makes that unexpressible;
 # these messages make the guarantee VISIBLE, because a silent success is what
 # let the truncation pass for a routine update in the first place.
@@ -2251,11 +2170,7 @@ CLI_ROUNDLOG_REFUSED = (
     "ROUNDLOG REFUSED (%s: %s). Nothing was written; the previous round log is untouched.\n"
 )
 
-# Refusing to CREATE is deliberate. A round log without a wave header is missing
-# exactly the half a warm-start needs most: intent, sanctioned reds, frozen
-# surfaces, and the baselines with the commands that measure them. Writing
-# STATUS into an empty document would report success while producing a log that
-# answers none of the questions it exists to answer.
+# Refusing to CREATE is deliberate. A round log without a wave header is missing exactly the half a warm-start needs most: intent, sanctioned reds, frozen surfaces, and the baselines with the commands that measure them. Writing STATUS into an empty document would report success while producing a log that answers none of the questions it exists to answer.
 CLI_ROUNDLOG_NO_LOG = (
     "ROUNDLOG REFUSED: %s does not exist, or carries no '## Wave header' "
     "section. This verb REPLACES a STATUS block, it does not create a round log: "
@@ -2265,16 +2180,11 @@ CLI_ROUNDLOG_NO_LOG = (
 )
 
 
-# ---------------------------------------------------------------------------
-# The admission detector's judge prompt (see wl_admit.py for the whole design).
+# --------------------------------------------------------------------------- The admission detector's judge prompt (see wl_admit.py for the whole design).
 #
-# Appended to the judge's existing prompt ONLY on stops where the cheap prefilter
-# fired, so an ordinary stop's judge call is byte-identical to today's.
+# Appended to the judge's existing prompt ONLY on stops where the cheap prefilter fired, so an ordinary stop's judge call is byte-identical to today's.
 #
-# The negatives below are not invented. Each one is a real message from this
-# repo's own transcripts that a naive "did you make a mistake" classifier would
-# fire on, and the counterfactual near-miss in particular would make the detector
-# fire on every careful design discussion in the repo.
+# The negatives below are not invented. Each one is a real message from this repo's own transcripts that a naive "did you make a mistake" classifier would fire on, and the counterfactual near-miss in particular would make the detector fire on every careful design discussion in the repo.
 ADMISSION_PROMPT = """
 ADMISSION CHECK. Fill the optional `admission` object.
 
@@ -2331,12 +2241,8 @@ on. Missing a real one lets the next session repeat it.
 
 # ---- v20 PLAN FIDELITY (wl_planfid.py) --------------------------------------
 #
-# Operator, 2026-08-19, on a session that seeded a twenty-task approved plan with
-# two items named "www round 4 Wave A" and "www round 4 Waves B-D": "you took it
-# easy and wrote Round 4 which is not precise! We need individual items for stop
-# hook." The wording of this block is deliberately about the INSTRUMENT rather
-# than about tidiness: an umbrella item does not merely read badly, it makes the
-# open-item gate unable to tell one task from twenty.
+# Operator, 2026-08-19, on a session that seeded a twenty-task approved plan with two items named "www round 4 Wave A" and "www round 4 Waves B-D": "you took it easy and wrote Round 4 which is not precise! We need individual items for stop hook." The wording of this block is deliberately about the INSTRUMENT rather than about tidiness: an umbrella item does not merely read badly,
+# it makes the open-item gate unable to tell one task from twenty.
 V_PLANFID = (
     "AN APPROVED PLAN IS NOT DECOMPOSED INTO TRACKED ITEMS. One umbrella item "
     "hides however many tasks it covers, and every check in this hook then reads "
@@ -2361,9 +2267,7 @@ V_PLANFID = (
     "     and the deferral machinery prints it to them every stop."
 )
 
-# Never silent. The check fails OPEN (see wl_planfid's header on why this one
-# does not share wl_judge's no-escape-hatch contract), so the only thing standing
-# between a broken judge and a silently dead check is this line.
+# Never silent. The check fails OPEN (see wl_planfid's header on why this one does not share wl_judge's no-escape-hatch contract), so the only thing standing between a broken judge and a silently dead check is this line.
 V_PLANFID_DEGRADED = (
     "Stop hook: the plan-fidelity check could not run (%s). It is NOT blocking on "
     "its own unavailability, so decompose the approved plan yourself if it is not "
@@ -2429,3 +2333,140 @@ sound. Being wrong in the "unfaithful" direction walls in a session that did the
 right thing and teaches everyone to route around this check, so when the item
 list plausibly covers the plan, say so.
 """
+
+
+# ---- W12: plan records ------------------------------------------------------- The verbs that compact a finished plan into an attested record. Prose here, reasons beside the code in worklist.py, per this file's contract.
+
+CLI_PLANREC_USAGE = (
+    "usage: worklist.py --plan-compact <me>            list the candidates\n"
+    "       worklist.py --plan-revive  <me>            list the records\n"
+    "       worklist.py --plan-compact <me> <agent/PLAN-x.md> [--write] [--park]\n"
+    "                   [--why author|auto|model]\n"
+    "       worklist.py --plan-revive  <me> <agent/PLAN-x.md> [--write]\n"
+    "\n"
+    "A plan file that nobody has touched for delete_days goes RED in\n"
+    "check:ci-plan-housekeeping, and the operator's rule is that nothing is\n"
+    "deleted. Compaction is the third door: the file keeps its path, so every\n"
+    "citation of it still resolves, and its full text moves into a git blob.\n"
+    "\n"
+    "Without --write nothing is written; the record goes to stdout so you can\n"
+    "read it first. --why picks where the prose comes from:\n"
+    "  author  placeholders you fill in (the default). A `compacted` record\n"
+    "          with an unfilled placeholder is RED in check:ci-plan-record.\n"
+    "  auto    the plan's own Why/Problem/Status/Outcome sections, verbatim.\n"
+    "  model   one bounded haiku call, with every unresolvable pointer it\n"
+    "          writes replaced by [unresolved] before anything is saved.\n"
+)
+
+CLI_PLANREC_REFUSED = "%s\n\nNothing was written."
+
+CLI_PLANREC_WROTE = (
+    "wrote %(rel)s as a %(status)s record (%(bytes)d bytes, was %(was)d)\n"
+    "  Full-Text-Blob: %(blob)s\n"
+    "  recover the full text with:  git show %(blob)s\n"
+    "  find its commit with:        git log --find-object=%(blob)s --all\n"
+    "  undo this:                   worklist.py --plan-revive %(me)s %(rel)s --write\n"
+    "\n"
+    "NOT COMMITTED, and that is deliberate. The text is recoverable RIGHT NOW\n"
+    "anyway: the blob is already in the object store because this path was\n"
+    "committed before it was compacted -- which is exactly why a dirty path is\n"
+    "refused. Committing the record is the operator's call. Two things must\n"
+    "land in the SAME commit as this file, or two gates disagree with each\n"
+    "other:\n"
+    "  npm run check:ci-plan-boxes -- --update      # the box ledger\n"
+    "  npm run check:ci-plan-record -- --update     # agent/INDEX.md\n"
+)
+
+CLI_PLANREC_DRY = "%s\n---- the record above is NOT on disk. Re-run with --write to save it. ----\n"
+
+CLI_PLANWHY_USAGE = (
+    "usage: worklist.py --plan-why [<me>] <path>\n"
+    "\n"
+    "What the COMPACTED history says about one file. A finished plan keeps its\n"
+    "path and shrinks to a record whose full text is a git blob; the record's\n"
+    "`Touched:` trailer names the files its plan cited, and agent/INDEX.md carries\n"
+    "the reverse map. This verb reads that map.\n"
+    "\n"
+    "It writes nothing, so it takes no session prefix -- one is accepted and\n"
+    "ignored, because the sibling verbs need it and the habit is worth honouring.\n"
+)
+
+CLI_PLANWHY_HIT = (
+    "%(path)s appears in the compacted history:\n\n%(body)s\n\n"
+    "Those records are the reading copy. `git show <blob>` recovers the plan in\n"
+    "full; `worklist.py --plan-revive <me> <record> --write` puts it back on disk\n"
+    "as a live plan, which also puts it back on the housekeeping clock.\n"
+)
+
+# THE EMPTY ANSWER, said out loud. A verb that printed nothing here would be read as broken, and the next session would stop asking -- so the two ways of finding nothing get two different sentences, and each says what was searched.
+CLI_PLANWHY_NO_EDGE = (
+    "nothing is recorded about %(path)s.\n"
+    "\n"
+    "That is an answer, not a silence: %(index)s was read and the %(n)d compacted\n"
+    "record(s) it indexes name no path matching this one. Either no finished plan\n"
+    "ever cited this file, or the plans that did are still live plans -- this verb\n"
+    "reads the RECORDS, so a live plan's reasoning is not in scope for it.\n"
+    "\n"
+    "  git log --oneline -- %(path)s        the commits, which are not indexed here\n"
+)
+
+CLI_PLANWHY_NO_INDEX = (
+    "nothing is recorded about %(path)s, because there is no edge table to read.\n"
+    "\n"
+    "%(index)s carries no record edges -- either the file is absent, or (since W12\n"
+    "P1.7) it exists carrying only the `## Plan census` SessionStart reads. Both are\n"
+    "the CORRECT state until the first plan is compacted -- an empty generated table\n"
+    "would be a document that says nothing -- so this is not a fault to fix. It\n"
+    "becomes an answer as soon as a record exists:\n"
+    "\n"
+    "  worklist.py --plan-compact <me>              what can be compacted today\n"
+    "  npm run check:ci-plan-record -- --update     writes the index\n"
+)
+
+CLI_PLANTICK_USAGE = (
+    "usage: worklist.py --plan-tick <me> <agent/PLAN-x.md> <box> <evidence...> [--write]\n"
+    "\n"
+    "Tick ONE box in a plan and update the committed box ledger in the same run.\n"
+    "\n"
+    "<box>       an 8-hex box signature, or any text that matches exactly one open\n"
+    "            box. Ambiguity is refused rather than resolved by picking the\n"
+    "            first -- the wrong box ticked is worse than a second command.\n"
+    "<evidence>  mandatory, and it goes into the plan on its own indented line\n"
+    "            beneath the box. Name the command, the file:line or the run id.\n"
+    "\n"
+    "WHY BOTH FILES. .ci/config/plan-boxes.json is a COMMITTED second reading of\n"
+    "the same boxes, and check:ci-plan-boxes compares the two for equality. A box\n"
+    "ticked by hand with the ledger left alone is a red tree whose remedy is a\n"
+    "regenerate nobody remembers to run.\n"
+    "\n"
+    "Without --write nothing is written.\n"
+)
+
+CLI_PLANTICK_DRY = (
+    "would tick one box in %(rel)s and update the ledger:\n"
+    "  %(note)s\n"
+    "\n---- NOTHING was written. Re-run with --write. ----\n"
+)
+
+CLI_PLANTICK_WROTE = (
+    "ticked one box in %(rel)s and updated %(ledger)s\n"
+    "  %(note)s\n"
+    "\n"
+    "NOT COMMITTED. The two files must land in the SAME commit: the ledger is a\n"
+    "reading OF the plan, so a commit carrying one without the other is read by\n"
+    "check:ci-plan-boxes as a box that vanished rather than one that was ticked.\n"
+    "\n"
+    "  git add %(rel)s %(ledger)s\n"
+)
+
+CLI_PLANREC_REVIVED = (
+    "restored %(rel)s from blob %(blob)s (%(bytes)d bytes)\n"
+    "  The record is gone and the plan is a live plan again, which means it is\n"
+    "  back on the housekeeping clock.\n"
+    "\n"
+    "  COMMIT BEFORE YOU COMPACT IT AGAIN. --plan-compact refuses a dirty path,\n"
+    "  and the path is dirty right now because this verb just rewrote it. That\n"
+    "  refusal is not bureaucracy: the record's pointer is the hash of the bytes\n"
+    "  on disk and the record then OVERWRITES those bytes, so compacting an\n"
+    "  uncommitted file would leave its text in no commit and no working tree."
+)

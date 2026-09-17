@@ -1,8 +1,4 @@
-// IMPORTANT: temp-config-env MUST be the first import so it redirects the
-// config dir before config-file-storage captures getConfigDir(). This file is
-// listed in biome.json's organizeImports-off override precisely so the sort
-// cannot move this line down into the block below and reintroduce the ENOENT
-// redirect race (a mechanical `biome check --write` did exactly that once).
+// IMPORTANT: temp-config-env MUST be the first import so it redirects the config dir before config-file-storage captures getConfigDir(). This file is listed in biome.json's organizeImports-off override precisely so the sort cannot move this line down into the block below and reintroduce the ENOENT redirect race (a mechanical `biome check --write` did exactly that once).
 import { TEST_CONFIG_HOME } from './helpers/temp-config-env.js';
 
 import { readFileSync } from 'node:fs';

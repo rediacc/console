@@ -131,8 +131,10 @@ concurrency:
   group: autopilot-${{ github.event.workflow_run.head_branch || inputs.pr_number || github.run_id }}
   cancel-in-progress: false
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 jobs:
   gate:

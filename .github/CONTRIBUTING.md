@@ -16,11 +16,7 @@ You **cannot** push directly to protected branches. All changes must go through 
 
 ### Fork PRs are not supported
 
-CI must be run from a branch in this repository. A pull request opened from a
-fork cannot access repository secrets, so the very first job (`Initialize`)
-fails to mint its GitHub App token, every downstream job is skipped, and the
-required `CI Complete` check reports red. There is no fork-friendly subset of
-the pipeline and none is planned — the build needs private submodules
+CI must be run from a branch in this repository. A pull request opened from a fork cannot access repository secrets, so the very first job (`Initialize`) fails to mint its GitHub App token, every downstream job is skipped, and the required `CI Complete` check reports red. There is no fork-friendly subset of the pipeline and none is planned — the build needs private submodules
 (`renet`, `account`, `elite`) that a fork cannot read anyway.
 
 ## 📝 Contribution Process
@@ -112,11 +108,7 @@ Your feature branch will be **automatically deleted** after merge.
 
 ## 🚫 What NOT to Do
 
-❌ **Don't push directly to main** - All changes require PRs
-❌ **Don't force push to main** - Protected and will be rejected
-❌ **Don't merge with `CI Complete` red** - the required check must be green
-❌ **Don't `gh pr merge --admin`** - banned; use `--squash --auto`
-❌ **Don't leave unresolved review threads** - all must be resolved
+❌ **Don't push directly to main** - All changes require PRs ❌ **Don't force push to main** - Protected and will be rejected ❌ **Don't merge with `CI Complete` red** - the required check must be green ❌ **Don't `gh pr merge --admin`** - banned; use `--squash --auto` ❌ **Don't leave unresolved review threads** - all must be resolved
 
 ## 🧪 Testing Locally
 

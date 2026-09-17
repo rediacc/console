@@ -260,10 +260,7 @@ export class InfrastructureManager {
     }
 
     try {
-      // Copy to a temp location using SSHExecutor. Stage in /var/tmp, NOT
-      // /tmp: Fedora mounts /tmp as tmpfs capped by VM RAM, and the dev renet
-      // binary intermittently does not fit ('scp: write remote "/tmp/renet":
-      // Failure' — the recurring fedora-only setup red). Same fix as renet's
+      // Copy to a temp location using SSHExecutor. Stage in /var/tmp, NOT /tmp: Fedora mounts /tmp as tmpfs capped by VM RAM, and the dev renet binary intermittently does not fit ('scp: write remote "/tmp/renet": Failure' — the recurring fedora-only setup red). Same fix as renet's
       // own Go staging sites (bridge/worker/image-builder); /var/tmp is
       // disk-backed on every distro.
       const copyResult = await this.sshExecutor.copyTo(ip, localPath, '/var/tmp/renet', {
@@ -274,9 +271,7 @@ export class InfrastructureManager {
         throw new Error(`SCP failed: ${copyResult.stderr}`);
       }
 
-      // Move to final location, set permissions, and create symlinks:
-      // - /usr/lib/rediacc/renet/current -> versioned dir (for bridge commands)
-      // - /usr/bin/renet -> versioned binary (for PATH lookup)
+      // Move to final location, set permissions, and create symlinks: - /usr/lib/rediacc/renet/current -> versioned dir (for bridge commands) - /usr/bin/renet -> versioned binary (for PATH lookup)
       const installDir = VM_RENET_INSTALL_PATH.substring(0, VM_RENET_INSTALL_PATH.lastIndexOf('/'));
       const installRoot = installDir.substring(0, installDir.lastIndexOf('/'));
       const currentDir = `${installRoot}/current`;
@@ -292,14 +287,8 @@ export class InfrastructureManager {
         throw new Error(`Move/chmod failed: ${moveResult.stderr}`);
       }
 
-      // Diagnostic probe: verify /usr/bin/renet symlink is visible via a
-      // non-login SSH shell (same shape the bridge harness uses for
-      // check_rediacc_cli, which just runs `which renet`). On openSUSE Leap
-      // 16.0 Minimal Cloud that test fails at 0.7s even though /usr/bin is
-      // writable — this line puts ls/readlink/which/PATH output in the CI
-      // log so we can tell whether the symlink truly exists, where it
-      // resolves, and what PATH the shell sees. Never fails the deploy —
-      // diagnostic only.
+      // Diagnostic probe: verify /usr/bin/renet symlink is visible via a non-login SSH shell (same shape the bridge harness uses for check_rediacc_cli, which just runs `which renet`). On openSUSE Leap 16.0 Minimal Cloud that test fails at 0.7s even though /usr/bin is writable — this line puts ls/readlink/which/PATH output in the CI log so we can tell whether the symlink truly
+      // exists, where it resolves, and what PATH the shell sees. Never fails the deploy — diagnostic only.
       const verifyResult = await this.sshExecutor.execute(
         ip,
         'ls -la /usr/bin/renet 2>&1; readlink -f /usr/bin/renet 2>&1; which renet 2>&1; echo "PATH=$PATH"',
@@ -505,9 +494,7 @@ export class InfrastructureManager {
   ): Promise<boolean> {
     console.warn(`  ${ip}: Copying CRIU from bridge...`);
 
-    // Get SSH/SCP options for the nested commands (from bridge to worker).
-    // These run on the bridge VM, so drop `-i` (host path) — the bridge
-    // has its own key at ~/.ssh/id_rsa from renet's mesh distribution.
+    // Get SSH/SCP options for the nested commands (from bridge to worker). These run on the bridge VM, so drop `-i` (host path) — the bridge has its own key at ~/.ssh/id_rsa from renet's mesh distribution.
     const nestedOpts = this.sshExecutor.getInnerSSHOptions({
       connectTimeout: 10,
       batchMode: true,

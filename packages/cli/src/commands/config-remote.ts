@@ -102,8 +102,7 @@ function startCallbackServer(): Promise<{
   });
 }
 
-// ─── Enable Flow ─────────────────────────────────────────────────────────
-// (finalizeEnable / applyHandoff / storeHandoffCredentials live in
+// ─── Enable Flow ───────────────────────────────────────────────────────── (finalizeEnable / applyHandoff / storeHandoffCredentials live in
 // config-remote-enable.ts; this file keeps the transports.)
 
 async function enableBrowser(
@@ -117,9 +116,7 @@ async function enableBrowser(
   const { port, waitForPayload, close } = await startCallbackServer();
 
   const callbackUrl = `http://localhost:${port}`;
-  // Portal route: private/account/web/src/pages/ConfigRemote.tsx, registered as
-  // /account/config-remote in web/src/router.tsx. Renaming that route strands
-  // this URL (and its two siblings below) — change them together.
+  // Portal route: private/account/web/src/pages/ConfigRemote.tsx, registered as /account/config-remote in web/src/router.tsx. Renaming that route strands this URL (and its two siblings below) — change them together.
   const browserUrl = `${apiUrl}/account/config-remote?callback=${encodeURIComponent(callbackUrl)}&key=${encodeURIComponent(pubBase64)}`;
 
   outputService.info(t('commands.config.remote.enable.openBrowser'));
@@ -441,8 +438,7 @@ export async function rotateCek(configName: string, apiUrl: string): Promise<voi
       configId: stored.configId ?? config.remote.configId,
     };
 
-    // Prove the new key actually decrypts the freshly rotated blob before
-    // declaring success — a silent stale key is the whole failure mode here.
+    // Prove the new key actually decrypts the freshly rotated blob before declaring success — a silent stale key is the whole failure mode here.
     const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
     const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
     const { getSecureStorage } = await import('../utils/secure-storage.js');

@@ -7,8 +7,12 @@ on:
         type: string
         required: false
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
 
 # Note: Renet binaries are built by ci-build-renet.yml and downloaded as artifact
 # This workflow depends on build-renet completing first (configured in ci.yml)
@@ -18,6 +22,9 @@ jobs:
     name: CLI (${{ matrix.platform }}-${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ matrix.timeout }}
+    # Checkout and artifacts only. No GitHub API, no registry, no git remote.
+    permissions:
+      contents: read
     strategy:
       # fail-fast: false, and the reason is diagnostic rather than stylistic.
       # GitHub's matrix fail-fast cancels every sibling the moment one leg fails,

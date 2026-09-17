@@ -14,8 +14,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
   },
 }));
 
-// Mock the base class so getRepositoryGuidMap's getCurrent/getResourceState paths
-// are controllable from the test.
+// Mock the base class so getRepositoryGuidMap's getCurrent/getResourceState paths are controllable from the test.
 let mockRepos: Record<string, { repositoryGuid: string; tag?: string }> = {};
 
 vi.mock('../config/config-base.js', () => ({
@@ -35,10 +34,7 @@ vi.mock('../config/config-base.js', () => ({
   },
 }));
 
-// Bump default 5s timeout — the per-test `await import('../config/config-resources.js')`
-// triggers a cold load of the full module graph (commitments/canonical/walker/
-// config-base) which can exceed 5s on slower CI runners. A timeout on the
-// first test then cascade-fails the remaining five (configService undefined).
+// Bump default 5s timeout — the per-test `await import('../config/config-resources.js')` triggers a cold load of the full module graph (commitments/canonical/walker/ config-base) which can exceed 5s on slower CI runners. A timeout on the first test then cascade-fails the remaining five (configService undefined).
 describe('getRepositoryGuidMap', { timeout: 30000 }, () => {
   beforeEach(() => {
     mockConfig = {};
@@ -77,8 +73,7 @@ describe('getRepositoryGuidMap', { timeout: 30000 }, () => {
   });
 
   it('tag field wins when composite key tag differs from stored tag', async () => {
-    // Edge case: if a composite key has a stale tag suffix that doesn't match
-    // repoConfig.tag, the stored tag is authoritative (prevents stale-key bugs).
+    // Edge case: if a composite key has a stale tag suffix that doesn't match repoConfig.tag, the stored tag is authoritative (prevents stale-key bugs).
     mockRepos = {
       'myapp:stale-tag': { repositoryGuid: 'guid-myapp', tag: 'current-tag' },
     };

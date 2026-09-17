@@ -34,8 +34,7 @@ export class OpsManager {
    */
   constructor(provisioningConfig: ProvisioningConfig, vmExecutor?: OpsVMExecutor) {
     this.config = provisioningConfig.network;
-    // Env threaded into every `renet ops` subprocess so a second KVM group's
-    // commands never inherit the ambient group's VM_NET/DOCKER_REGISTRY.
+    // Env threaded into every `renet ops` subprocess so a second KVM group's commands never inherit the ambient group's VM_NET/DOCKER_REGISTRY.
     this.groupEnv = provisioningConfig.groupEnv ?? {};
 
     // Initialize helper modules

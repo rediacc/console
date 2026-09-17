@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ClusterConfig } from '../../../types/index.js';
 import { clusterCephPool } from '../kvm-provisioner.js';
 
-// #17: the ops phase must create the SAME pool the cluster/datastore path uses
-// (default `rbd`), threaded via CEPH_POOL_NAME, so ops + install converge ONE
-// pool instead of a `rediacc_rbd_pool` + `rbd` double-pool.
+// #17: the ops phase must create the SAME pool the cluster/datastore path uses (default `rbd`), threaded via CEPH_POOL_NAME, so ops + install converge ONE pool instead of a `rediacc_rbd_pool` + `rbd` double-pool.
 describe('clusterCephPool (#17 single-pool ops env)', () => {
   it('returns the cluster ceph pool for a ceph cluster (default rbd)', () => {
     const cfg: ClusterConfig = {

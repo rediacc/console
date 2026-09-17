@@ -46,7 +46,7 @@ ARGS=(
     --commit-sha "$COMMIT_SHA"
 )
 if [[ "$DRY_RUN" == "true" ]]; then
-    echo "→ DRY RUN — would invoke:"
+    echo "→ DRY RUN -- would invoke:"
     printf '   .ci/scripts/deploy/write-release-sentinel.sh'
     printf ' %q' "${ARGS[@]}"
     printf '\n'

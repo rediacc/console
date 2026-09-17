@@ -48,8 +48,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ctx_budget as B
 
-# One compaction fires SessionStart AND PostCompact. Re-arming twice would reset
-# the machine and emit twice, so an arm inside this window is a no-op.
+# One compaction fires SessionStart AND PostCompact. Re-arming twice would reset the machine and emit twice, so an arm inside this window is a no-op.
 ARM_DEBOUNCE_S = 120
 EDIT_TOOLS = {"Edit", "Write", "NotebookEdit", "MultiEdit"}
 
@@ -98,7 +97,7 @@ def current_epoch(session_id):
 def my_open_items(session_id):
     """(rows, count) for THIS session's open slice, or ([], None) if unknown.
 
-    None is not zero. A worklist that cannot be run must not read as "you own
+    None is not zero. A worklist that cannot be run must not read as "owns
     nothing" -- that is arm (b)'s condition, and firing it on a broken store
     would deliver the wrong notice with confidence.
     """
@@ -112,8 +111,7 @@ def my_open_items(session_id):
             text=True,
             timeout=20,
             stdin=subprocess.DEVNULL,
-            # A non-zero exit is DATA here, not an error: --list --open exits 1
-            # on an EMPTY slice, which is a real answer and not a failure.
+            # A non-zero exit is DATA here, not an error: --list --open exits 1 on an EMPTY slice, which is a real answer and not a failure.
             check=False,
         )
     except Exception:  # noqa: BLE001
@@ -121,8 +119,7 @@ def my_open_items(session_id):
     rows = [ln for ln in r.stdout.splitlines() if ln.strip().startswith("- [")]
     if rows:
         return rows, len(rows)
-    # EXIT CODE ALONE CANNOT ANSWER THIS, and reading it as if it could was a
-    # real bug here: `--list --open <session-with-nothing>` exits 1, so a plain
+    # EXIT CODE ALONE CANNOT ANSWER THIS, and reading it as if it could was a real bug here: `--list --open <session-with-nothing>` exits 1, so a plain
     # `returncode != 0 -> unknown` collapsed "owns nothing" into "cannot say"
     # and arm (b) could never fire. The empty slice announces itself in words,
     # so key on those; anything else genuinely is unknown.
@@ -140,27 +137,27 @@ def text_owns(rows, me, store):
     )
     return (
         "This session already owns %d open worklist item(s). They are in the store at\n"
-        "%s, not in your context, and they survive a restart and a compaction.\n\n"
+        "%s, not in this context, and they survive a restart and a compaction.\n\n"
         "%s\n"
-        "The Stop hook compares these rows against your last `## Remaining` section and\n"
+        "The Stop hook compares these rows against the last `## Remaining` section and\n"
         "refuses the turn while any remains open, so write that section FROM THIS LIST\n"
-        "rather than from memory. The prefix below is already yours -- a wrong identity\n"
-        "argument is the most common error and the identity check refuses it.\n\n"
+        "rather than from memory. The prefix below is already this session's own -- a\n"
+        "wrong identity argument is the most common error and the identity check refuses it.\n\n"
         "%s" % (len(rows), store, "\n".join(rows[:12]), verbs)
     )
 
 
 def text_fresh(me):
     return (
-        "This session owns 0 worklist items, and you have just edited a file.\n"
-        "Findings are part of the deliverable here: track one before you fix it, so it\n"
+        "This session owns 0 worklist items, and a file has just been edited.\n"
+        "Findings are part of the deliverable here: track one before fixing it, so it\n"
         "survives a compaction and so the Stop hook can hold the turn open for it.\n\n"
         "  worklist.py --add %s <text...>            prints its #id\n"
         "  worklist.py --tick %s <id> '<evidence>'   evidence is MANDATORY and is\n"
         "        checked: a sha, a run id, a file:line that resolves, an exit code or\n"
         "        a URL. A tick without one is refused.\n\n"
         "Measured on this repo: 38 of 41 sessions never edited a file, which is why\n"
-        "this notice waited until you did rather than firing on tool call #1." % (me, me)
+        "this notice waited for that edit rather than firing on tool call #1." % (me, me)
     )
 
 

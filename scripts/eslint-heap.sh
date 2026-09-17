@@ -1,4 +1,35 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: Lint
+# needs: node
+# id: check:lint
+# run: npm run check:lint:cli && npm run check:lint:web && npm run check:lint:tooling && npm run check:lint:account
+# ---- end gate ----
+#
+# THE HEADER STAYS ON THE PARENT, and the parent no longer names this file.
+#
+# `check:lint` used to be ONE eslint process over every root: 166.5s measured on
+# 2026-09-06, a single indivisible unit that pinned one scheduler slot for the
+# whole of it while other workers idled. It is now four scripts --
+# check:lint:cli, check:lint:web, check:lint:tooling, check:lint:account -- each
+# invoking THIS wrapper over a disjoint slice of the roots, with `check:lint` as
+# their aggregate. Measured the same day: the four run concurrently in 87.5s
+# wall, about 1.9x. Not the 3x a per-root serial sum predicts, because four
+# eslint processes contend with each other.
+#
+# A header block declares exactly one gate, so it declares the one the workflow
+# has a step for. The four shards are registered in the manifest against that
+# same `Lint` step, the way the battery gates ride theirs. `run:` must stay byte
+# equal to the `check:lint` key in package.json (gate-bind.ts:1430-1435), which
+# is why it names the aggregate rather than this script.
+#
+# WHAT HOLDS THE SHARDS HONEST is not here: it is
+# .ci/scripts/quality/check_lint_scope_coverage.py, which follows the `npm run`
+# links out of `check:lint` and unions the eslint roots it finds. Delete a shard
+# from the aggregate, or a root from a shard, and that gate reds naming the
+# files that stopped being linted. It deliberately does NOT hard-code the four
+# shard names, so a fifth shard is covered the moment it is linked.
+
 # Run eslint with a heap the machine can actually give it.
 #
 # WHY THIS EXISTS. `check:lint` hard-coded `--max-old-space-size=8192`. On CI

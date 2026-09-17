@@ -34,8 +34,20 @@ require_var GITHUB_REPOSITORY
 
 log_step "Checking PR description freshness..."
 
-# Get PR details (commit count)
-PR_DATA=$(gh pr view "$PR_NUMBER" --json commits,body,title 2>/dev/null || echo "{}")
+# Get PR details (commit count and head SHA).
+#
+# NOT `gh pr view --json commits`, WHICH SILENTLY CAPS AT 100. Measured
+# 2026-09-15 on rediacc/console#589, a 254-commit PR: it returned 100 commits,
+# and `sort_by(.committedDate) | last` over that truncated slice reported a
+# "latest commit" of 2026-09-07 while the real head was dated 2026-09-15. The
+# staleness arithmetic below then computed an age of MINUS 11112 minutes and
+# printed "within 30m - OK" on every single run. This gate had stopped being
+# able to fail, which is worse than failing: it was reporting.
+#
+# The REST PR object carries `.commits` as a true integer count and `.head.sha`
+# as the actual tip, neither of which is paginated at all.
+PR_DATA=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
+    --jq '{commits: .commits, head: .head.sha, body: .body, title: .title}' 2>/dev/null || echo "{}")
 
 if [[ "$PR_DATA" == "{}" ]]; then
     log_error "Could not fetch PR data"
@@ -43,7 +55,7 @@ if [[ "$PR_DATA" == "{}" ]]; then
 fi
 
 # Get commit count
-COMMIT_COUNT=$(echo "$PR_DATA" | jq '.commits | length')
+COMMIT_COUNT=$(echo "$PR_DATA" | jq '.commits')
 log_info "PR has $COMMIT_COUNT commit(s)"
 
 # Check if we have enough commits to care
@@ -52,13 +64,15 @@ if [[ "$COMMIT_COUNT" -lt "$MIN_COMMITS" ]]; then
     exit 0
 fi
 
-# Get latest commit time
-LATEST_COMMIT_TIME=$(gh pr view "$PR_NUMBER" --json commits \
-    --jq '.commits | sort_by(.committedDate) | last | .committedDate' 2>/dev/null || echo "")
+# Get latest commit time. The PR's HEAD is its latest commit by construction, so
+# this needs no sort over a list that might not be whole.
+HEAD_SHA=$(echo "$PR_DATA" | jq -r '.head // ""')
+LATEST_COMMIT_TIME=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}" \
+    --jq '.commit.committer.date' 2>/dev/null || echo "")
 
 if [[ -z "$LATEST_COMMIT_TIME" ]]; then
-    log_warn "Could not get latest commit time - skipping check"
-    exit 0
+    log_error "Could not fetch the latest commit time for PR #$PR_NUMBER (gh call failed or returned nothing); cannot verify description freshness"
+    exit 1
 fi
 
 # Get the time the PR description was last edited using GraphQL.

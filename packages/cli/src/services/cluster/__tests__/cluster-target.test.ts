@@ -15,8 +15,7 @@ import {
   resolveExecutionTarget,
 } from '../cluster-target.js';
 
-// A config with: a standalone machine, two materialized cluster members, a
-// storage, and a cluster "prod" whose first k8s-server member is prod-k8s-1.
+// A config with: a standalone machine, two materialized cluster members, a storage, and a cluster "prod" whose first k8s-server member is prod-k8s-1.
 function buildConfig(clusters: Record<string, ClusterConfig>): RdcConfig {
   const cfg = createEmptyRdcConfig();
   cfg.resources = {
@@ -80,8 +79,7 @@ describe('cluster target resolution matrix', () => {
     const target = await resolveExecutionTarget({ cluster: 'prod' });
     expect(target.machineName).toBe('prod-k8s-1');
     expect(target.cluster).toBe('prod');
-    // #11: the kubeconfig lives inside the anchor CONTROL DATASTORE mount, NOT
-    // the legacy per-node repo mount (/mnt/rediacc/mounts/<cluster>/…).
+    // #11: the kubeconfig lives inside the anchor CONTROL DATASTORE mount, NOT the legacy per-node repo mount (/mnt/rediacc/mounts/<cluster>/…).
     expect(target.kubeconfig).toBe('/mnt/rediacc-ds/ds-control-prod/.rediacc/k3s/kubeconfig.yaml');
   });
 

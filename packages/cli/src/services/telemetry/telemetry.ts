@@ -1,13 +1,9 @@
 // CLI Telemetry Service (OTel → Tempo/Prometheus/Loki via Alloy).
 //
-// Credentials are fetched at runtime from the account server's
-// `/telemetry/config` endpoint (unauthenticated), set via
-// `setRuntimeOtlpCredentials()`, and used when constructing the OTel SDK
-// exporter. No credentials are ever baked into the bundle.
+// Credentials are fetched at runtime from the account server's `/telemetry/config` endpoint (unauthenticated), set via `setRuntimeOtlpCredentials()`, and used when constructing the OTel SDK exporter. No credentials are ever baked into the bundle.
 //
 // Opt-out: `REDIACC_TELEMETRY_DISABLED=1` or any truthy `CI` env var.
-// Use `isTelemetryDisabled()` (exported below) to check the state before
-// doing any telemetry-related work — fetching credentials, spawning renet
+// Use `isTelemetryDisabled()` (exported below) to check the state before doing any telemetry-related work — fetching credentials, spawning renet
 // with OTLP env vars, or constructing an exporter. All three should skip
 // when this returns true.
 
@@ -97,10 +93,7 @@ class CliTelemetryService {
   }
 
   private shouldDisable(config?: CliTelemetryConfig): boolean {
-    // Env-based opt-out (CI, REDIACC_TELEMETRY_DISABLED) is the single
-    // source of truth — see `isTelemetryDisabled()` at module scope. The
-    // in-memory `config.telemetryEnabled` override is an additional layer
-    // used by adapters that want to force-disable for a specific context.
+    // Env-based opt-out (CI, REDIACC_TELEMETRY_DISABLED) is the single source of truth — see `isTelemetryDisabled()` at module scope. The in-memory `config.telemetryEnabled` override is an additional layer used by adapters that want to force-disable for a specific context.
     if (isTelemetryDisabled()) return true;
     if (config?.telemetryEnabled === false) return true;
     return false;
@@ -172,9 +165,7 @@ class CliTelemetryService {
       return;
     }
 
-    // Default-deny: without credentials we never construct the exporter,
-    // so no requests are sent and no metadata leaks. Matches renet's
-    // default-deny behavior and fixes the unauthenticated-request path
+    // Default-deny: without credentials we never construct the exporter, so no requests are sent and no metadata leaks. Matches renet's default-deny behavior and fixes the unauthenticated-request path
     // from renet#51.
     if (!this.authToken) {
       this.isEnabled = false;
@@ -183,9 +174,7 @@ class CliTelemetryService {
     }
 
     try {
-      // Lazy-load the OTel SDK factory graph (~1.8 MB of @opentelemetry
-      // modules). Only opted-in runs with credentials reach here, so
-      // --version/--help/opted-out invocations never execute it.
+      // Lazy-load the OTel SDK factory graph (~1.8 MB of @opentelemetry modules). Only opted-in runs with credentials reach here, so --version/--help/opted-out invocations never execute it.
       const { setupOtelSdk } = await import('./telemetry-setup.js');
       const result = setupOtelSdk({
         endpoint: config?.endpoint ?? this.getEndpoint(),

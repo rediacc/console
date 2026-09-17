@@ -88,12 +88,8 @@ def build_text(band_name, usage, res, st, state_md):
     """
     threshold = res["threshold"]
     headroom = threshold - usage
-    # A NEGATIVE HEADROOM IS NEVER A FACT ABOUT THE SESSION, only ever a fact
-    # about this hook's denominator: a session past its compaction threshold
-    # has compacted, by definition. Printing "-226,179 tokens" once is enough
-    # to make every later notice ignorable, so the number is not printed -- and
-    # the percentage now shares that guard rather than sitting outside it,
-    # since a negative headroom is exactly the case that produces "-2.4%".
+    # A NEGATIVE HEADROOM IS NEVER A FACT ABOUT THE SESSION, only ever a fact about this hook's denominator: a session past its compaction threshold has compacted, by definition. Printing "-226,179 tokens" once is enough to make every later notice ignorable, so the number is not printed -- and the percentage now shares that guard rather than sitting outside it, since a negative
+    # headroom is exactly the case that produces "-2.4%".
     if headroom >= 0:
         head = "%.1f%% until auto-compact, a headroom of %s tokens." % (
             100.0 * headroom / threshold,
@@ -160,10 +156,7 @@ def build_text(band_name, usage, res, st, state_md):
 def main():
     event = B.read_event()
 
-    # A live end-to-end delivery probe. The control suite and the operator use
-    # this to answer "does additionalContext actually reach the model in THIS
-    # install", which is a question the documentation cannot answer. One shot:
-    # the marker is consumed so it can never become a permanent nag.
+    # A live end-to-end delivery probe. The control suite and the operator use this to answer "does additionalContext actually reach the model in THIS install", which is a question the documentation cannot answer. One shot: the marker is consumed so it can never become a permanent nag.
     try:
         force = B.state_dir() / "force-emit"
         if force.exists():
@@ -187,8 +180,7 @@ def main():
         B.log_error("band-notice/dump", exc)
 
     try:
-        # A subagent has its own context window and does not own STATE.md.
-        # Telling it about the main session's budget is both wrong and useless.
+        # A subagent has its own context window and does not own STATE.md. Telling it about the main session's budget is both wrong and useless.
         if event.get("agent_id"):
             return
 
@@ -205,20 +197,14 @@ def main():
         st = B.load_state(session_id)
         state_md = B.state_md_path(project, session_id)
 
-        # `window_floor` is this session's own evidence: it has carried more
-        # than any configured window allows, which no pin can argue with. The
-        # cap-disproof mechanism that used to sit beside it was deleted once the
+        # `window_floor` is this session's own evidence: it has carried more than any configured window allows, which no pin can argue with. The cap-disproof mechanism that used to sit beside it was deleted once the
         # pin rule made it unreachable; see ctx_budget.resolve_threshold.
         floor = st.get("window_floor")
         res = B.resolve_threshold(model, project, window_floor=floor)
         if not res["threshold"] or res["threshold"] <= 0:
             return
-        # EVIDENCE BEATS CONFIGURATION. A session that has carried more tokens
-        # than the derived threshold allows, without compacting, has proven the
-        # threshold wrong. This is the generalisation of the model-cap
-        # disproof, and it catches the case that has no other tell: a session
-        # started BEFORE the window was pinned is running on the old window,
-        # and reads the new one out of settings on every tool call.
+        # EVIDENCE BEATS CONFIGURATION. A session that has carried more tokens than the derived threshold allows, without compacting, has proven the threshold wrong. This is the generalisation of the model-cap disproof, and it catches the case that has no other tell: a session started BEFORE the window was pinned is running on the old window, and reads the new one out of settings
+        # on every tool call.
         high = max(usage, int(st.get("high_water") or 0))
         st["high_water"] = high
         if high > res["threshold"]:
@@ -226,8 +212,7 @@ def main():
             if ceiling > (res["window"] or 0):
                 st["window_floor"] = ceiling
                 res = B.resolve_threshold(model, project, window_floor=ceiling)
-                # Re-seat the ladder under the corrected threshold rather than
-                # clearing it. Clearing would replay every band the session has
+                # Re-seat the ladder under the corrected threshold rather than clearing it. Clearing would replay every band the session has
                 # already passed; leaving it would suppress the bands it has
                 # not reached yet under the new, larger denominator.
                 st["band"] = B.band_for(usage, res["threshold"])
@@ -242,17 +227,12 @@ def main():
                 "epoch": int(st.get("epoch", 0)) + 1,
                 "band": -1,
                 "reset_reason": "usage_drop",
-                # Carried across the reset on purpose: the window did not
-                # change because the conversation was summarised. high_water
-                # deliberately does NOT survive -- it is a fact about the
-                # epoch that just ended.
+                # Carried across the reset on purpose: the window did not change because the conversation was summarised. high_water deliberately does NOT survive -- it is a fact about the epoch that just ended.
                 "window_floor": st.get("window_floor"),
                 "threshold_corrected": st.get("threshold_corrected"),
             }
 
-        # Track when STATE.md was last written, in context terms. Cheap: one
-        # stat per tool call, and it is what makes the notice say something
-        # more useful than a wall-clock age.
+        # Track when STATE.md was last written, in context terms. Cheap: one stat per tool call, and it is what makes the notice say something more useful than a wall-clock age.
         try:
             mtime = state_md.stat().st_mtime if state_md.is_file() else None
         except OSError:

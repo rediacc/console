@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 # CI CANNOT EXECUTE WHAT GIT DOES NOT TRACK.
 #
 # A GitHub runner checks out tracked files only. So a workflow step or a CI shell script
@@ -11,7 +12,7 @@
 # `.gitignore:69`, with zero tracked files in console. Each time, the reason it could not
 # work had to be re-derived by hand.
 #
-# `scripts/check-gate-manifest.ts` closed one door: a manifest LEAF git does not track is
+# `scripts/gates/check-gate-manifest.ts` closed one door: a manifest LEAF git does not track is
 # now refused. This closes the other: a workflow `run:` line, or a `.ci/scripts` command,
 # that reaches into an ignored path.
 #
@@ -81,7 +82,7 @@ scan() {
         hits=$((hits + 1))
     done < <(grep -rnE "$pat" \
         "$root/.github/workflows" "$root/.ci/scripts" \
-        --include='*.yml' --include='*.sh' 2>/dev/null | sort)
+        --include='*.yml' --include='*.sh' --include='*.py' 2>/dev/null | sort)
     # NOT `return "$hits"`. A shell return is taken mod 256, so exactly 256 findings
     # would return 0 and read as a clean scan. Only the STATUS is made boolean here;
     # the count itself is still printed with the findings.

@@ -99,9 +99,15 @@ fi
 # An ANNOTATED tag points at a tag object, not a commit. Deref it, or
 # `production` would point at a tag object and `git show production` would give
 # the annotation rather than the code.
-obj_type="$(gh api "repos/$REPO/git/ref/tags/$VERSION" --jq '.object.type' 2>/dev/null || echo "")"
+if ! obj_type="$(gh api "repos/$REPO/git/ref/tags/$VERSION" --jq '.object.type' 2>&1)"; then
+    log_error "mark-production: could not resolve $VERSION's object type: $obj_type"
+    exit 1
+fi
 if [[ "$obj_type" == "tag" ]]; then
-    sha="$(gh api "repos/$REPO/git/tags/$sha" --jq '.object.sha' 2>/dev/null || echo "$sha")"
+    if ! sha="$(gh api "repos/$REPO/git/tags/$sha" --jq '.object.sha' 2>&1)"; then
+        log_error "mark-production: could not dereference the annotated tag object for $VERSION: $sha"
+        exit 1
+    fi
 fi
 
 if gh api "repos/$REPO/git/refs/tags/production" >/dev/null 2>&1; then

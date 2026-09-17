@@ -361,7 +361,7 @@ echo "== 219. the reggate probe SEES package-local gates =="
 # Nine real gates live under packages/*/scripts (check:ci-tutorial-parity,
 # check:ci-locale-tutorial-assets, check:ci-solution-videos, ...), because a
 # gate about www content belongs beside www. The probe's globs once covered
-# only scripts/check-*.ts, so it answered "no new or changed check script
+# only scripts/gates/check-*.ts, so it answered "no new or changed check script
 # found; a claimed gate must leave one" at a session that had just written
 # packages/www/scripts/check-tutorial-card-fonts.ts, wired its check:ci-* key
 # and proven it with a planted defect. The only way to satisfy it was to move

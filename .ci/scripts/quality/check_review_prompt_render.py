@@ -39,15 +39,16 @@ lane: quality-code
 
 import os
 import re
-import subprocess
 import sys
+
+import _cipath  # noqa: F401
+from rediacc_ci import controls
+from rediacc_ci import proc as ci_proc
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 GATE = os.path.join(ROOT, ".ci", "scripts", "review", "claude-review-gate.sh")
 
-# The exact shape that broke it: seven lines, and one of every character that is unsafe in
-# a sed replacement. A single-line fixture passes against the BROKEN code and would make
-# this gate vacuous, which is why the newline is not optional.
+# The exact shape that broke it: seven lines, and one of every character that is unsafe in a sed replacement. A single-line fixture passes against the BROKEN code and would make this gate vacuous, which is why the newline is not optional.
 HOSTILE = """SCOPE: this pass reviews ONLY epic 23ac415a. Its commits are
 selected with `git log --grep`, and a pipe | is ordinary prose here.
 An ampersand & expands to the whole match in a sed replacement.
@@ -87,34 +88,18 @@ def render(escaper_body, scope):
         + 'sed -e "s|{{EPIC_SCOPE}}|$(sed_replacement "$scope")|g" '
         + '-e "s|{{REPO}}|$(sed_replacement "rediacc/console")|g"\n'
     )
-    try:
-        p = subprocess.run(
-            ["bash", "-c", script, "bash", scope],
-            capture_output=True,
-            text=True,
-            timeout=20,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return ""
-    return p.stdout if p.returncode == 0 else ""
+    # Through the shared runner, not `subprocess.run`: this spawns a bash script that itself spawns `sed` in a command substitution, and `capture_output`
+    # with a plain timeout kills only the direct child and then blocks forever in
+    # communicate() on pipes the grandchild still holds. `proc.run` puts the child in its own session and signals the whole tree.
+    r = ci_proc.run(["bash", "-c", script, "bash", scope], timeout=20)
+    return r.stdout if r.returncode == 0 else ""
 
 
 def selftest():
     """Controls, both directions. A gate that cannot fail is worse than none."""
-    ok = True
+    check = controls.Checker()
 
-    def check(label, cond):
-        nonlocal ok
-        if cond:
-            print("  PASS  %s" % label)
-        else:
-            ok = False
-            print("  FAIL  %s" % label, file=sys.stderr)
-
-    # THE SANITY CONTROL, and it is the whole gate. With NO escaping -- the code that
-    # actually shipped on main -- the hostile scope must produce nothing. If this ever
-    # passes, sed stopped caring about raw newlines and this gate is measuring nothing.
+    # THE SANITY CONTROL, and it is the whole gate. With NO escaping -- the code that actually shipped on main -- the hostile scope must produce nothing. If this ever passes, sed stopped caring about raw newlines and this gate is measuring nothing.
     check("SANITY: an unescaped multi-line scope renders NOTHING", render("", HOSTILE) == "")
     check(
         "CONTROL: unescaped is fine on a single-line scope (so the newline is load-bearing)",
@@ -134,7 +119,7 @@ def selftest():
         "SANITY: escaping ONLY newlines still corrupts the & and | cases",
         partial == "" or "ampersand & expands" not in partial,
     )
-    return ok
+    return check.ok
 
 
 def main():
@@ -150,8 +135,7 @@ def main():
     with open(GATE, encoding="utf-8") as fh:
         src = fh.read()
 
-    # The corpus floor: the substitution block must still be here. If someone deletes
-    # emit_prompt entirely this gate must go red rather than silently find nothing.
+    # The corpus floor: the substitution block must still be here. If someone deletes emit_prompt entirely this gate must go red rather than silently find nothing.
     if "{{EPIC_SCOPE}}" not in src:
         print(
             "no {{EPIC_SCOPE}} substitution in claude-review-gate.sh. Either the prompt\n"

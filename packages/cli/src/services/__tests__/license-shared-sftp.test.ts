@@ -106,8 +106,7 @@ describe('license sharedSftp plumb-through', () => {
     expect(spies.close).not.toHaveBeenCalled();
     // The license write inside issueRepoLicense ran on the same shared instance.
     expect(spies.execStreaming).toHaveBeenCalledTimes(1);
-    // Identity proofs come from renet's own licence scan, not from a `stat` of
-    // ours: storageFingerprint is a signed field whose bytes renet re-derives.
+    // Identity proofs come from renet's own licence scan, not from a `stat` of ours: storageFingerprint is a signed field whose bytes renet re-derives.
     expect(spies.exec).toHaveBeenCalledWith(expect.stringContaining('license-scan'));
     expect(spies.exec).toHaveBeenCalledWith(expect.stringContaining('machine-id'));
   });
@@ -131,14 +130,8 @@ describe('license sharedSftp plumb-through', () => {
     expect(mockExecStreaming).toHaveBeenCalledTimes(1);
   });
 
-  // The identity refresh re-issues a repo licence WITH proofs, and it reads the
-  // datastore identity out of renet's own licence scan — the right source,
-  // because the scan reads where the repo actually lives. But the scan can come
-  // back empty (an older renet, a datastore it could not read), and dropping to
-  // "no identity" there writes the PROVEN reissue to the unscoped path that
-  // renet does not read for a datastore-resident repo. That undoes the
-  // pre-issuance scoping one step later, so the caller's resolved identity
-  // stands in as a fallback.
+  // The identity refresh re-issues a repo licence WITH proofs, and it reads the datastore identity out of renet's own licence scan — the right source, because the scan reads where the repo actually lives. But the scan can come back empty (an older renet, a datastore it could not read), and dropping to "no identity" there writes the PROVEN reissue to the unscoped path that renet
+  // does not read for a datastore-resident repo. That undoes the pre-issuance scoping one step later, so the caller's resolved identity stands in as a fallback.
   describe('datastore identity on the identity refresh', () => {
     const DS_ID = '06a4f728-4c53-4b0e-9f61-2f0a1d3e5c77';
     const SCANNED_DS_ID = '11111111-2222-4333-8444-555555555555';

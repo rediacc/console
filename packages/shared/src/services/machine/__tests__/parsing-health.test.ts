@@ -14,9 +14,7 @@ function machineWith(overrides: {
   return {
     vaultStatus: JSON.stringify({
       // `system` is omitted rather than set to {}: getSystemInfo returns null
-      // when absent, which is the shape the caller actually guards for. An empty
-      // object is not a payload renet emits — SystemInfo always carries
-      // memory/disk/datastore — so faking one only tests an impossible state.
+      // when absent, which is the shape the caller actually guards for. An empty object is not a payload renet emits — SystemInfo always carries memory/disk/datastore — so faking one only tests an impossible state.
       network: {},
       services: [],
       containers: [],
@@ -31,9 +29,7 @@ function machineWith(overrides: {
 const issuesOf = (m: Parameters<typeof getMachineHealth>[0]) => getMachineHealth(m).issues;
 
 describe('SMART health classification', () => {
-  // The regression: a QEMU/KVM guest reports smart_health "unknown" because a
-  // virtual disk exposes no SMART data. Counting that as a failure raised the
-  // file's highest-severity issue on every VM.
+  // The regression: a QEMU/KVM guest reports smart_health "unknown" because a virtual disk exposes no SMART data. Counting that as a failure raised the file's highest-severity issue on every VM.
   it('does not report a failure for unknown SMART state', () => {
     const issues = issuesOf(
       machineWith({ blockDevices: [{ name: 'sda', smart_health: 'unknown' }] })
@@ -56,8 +52,7 @@ describe('SMART health classification', () => {
     expect(issues.join(' ')).not.toContain('SMART');
   });
 
-  // Control: a genuinely failing disk must still raise, or the fix above would
-  // have silenced the check entirely rather than corrected it.
+  // Control: a genuinely failing disk must still raise, or the fix above would have silenced the check entirely rather than corrected it.
   it.each(['FAILED', 'FAILING!'])('still reports %j as a failure', (state) => {
     const issues = issuesOf(machineWith({ blockDevices: [{ name: 'sda', smart_health: state }] }));
     expect(issues.join(' ')).toContain('SMART failure');
@@ -107,8 +102,7 @@ describe('unmounted repository reporting', () => {
 describe('repo license reporting', () => {
   const lic = (status: string, n: number) => Array.from({ length: n }, () => ({ status }));
 
-  // The gap: partial-missing was counted but never surfaced, so repos could drop
-  // out of backups (the sync skips unlicensed repos) with no signal anywhere.
+  // The gap: partial-missing was counted but never surfaced, so repos could drop out of backups (the sync skips unlicensed repos) with no signal anywhere.
   it('reports partially missing licenses', () => {
     const issues = issuesOf(
       machineWith({ licenseStatuses: [...lic('missing', 3), ...lic('valid', 8)] })
@@ -147,8 +141,7 @@ describe('license refresh window', () => {
     ...(refreshRecommendedAt ? { refreshRecommendedAt } : {}),
   });
 
-  // The warning that arrives in time to act on: once a licence actually expires
-  // the backup has already started skipping that repo.
+  // The warning that arrives in time to act on: once a licence actually expires the backup has already started skipping that repo.
   it('warns when a still-valid license is past its refresh window', () => {
     const issues = issuesOf(machineWith({ licenseStatuses: [valid(daysFromNow(-2))] }));
     expect(issues.join(' ')).toContain('1 repo license(s) due for refresh');
@@ -159,9 +152,7 @@ describe('license refresh window', () => {
     expect(issues.join(' ')).not.toContain('due for refresh');
   });
 
-  // An absent hint means the server published no window — not that the licence
-  // is overdue. Treating missing as overdue would fire on every machine whose
-  // licences predate the field.
+  // An absent hint means the server published no window — not that the licence is overdue. Treating missing as overdue would fire on every machine whose licences predate the field.
   it('does not treat a missing refresh hint as overdue', () => {
     const issues = issuesOf(machineWith({ licenseStatuses: [valid()] }));
     expect(issues.join(' ')).not.toContain('due for refresh');
@@ -181,8 +172,7 @@ describe('license refresh window', () => {
     expect(issues.join(' ')).toContain('2 repo license(s) due for refresh');
   });
 
-  // Severity: due-for-refresh is advisory. An estate that is merely due must not
-  // report as unhealthy, or the signal becomes indistinguishable from breakage.
+  // Severity: due-for-refresh is advisory. An estate that is merely due must not report as unhealthy, or the signal becomes indistinguishable from breakage.
   it('does not mark the machine unhealthy for a refresh-due license alone', () => {
     const health = getMachineHealth(machineWith({ licenseStatuses: [valid(daysFromNow(-2))] }));
     expect(health.exitCode).toBe(0);
@@ -258,8 +248,7 @@ describe('backup coverage', () => {
     expect(issues.join(' ')).not.toContain('never been backed up');
   });
 
-  // Absent coverage means no backup has ever run — that is not a claim of health,
-  // but it must not fabricate an issue either.
+  // Absent coverage means no backup has ever run — that is not a claim of health, but it must not fabricate an issue either.
   it('says nothing when no backup state exists', () => {
     const issues = issuesOf(machineWith({}));
     expect(issues.join(' ')).not.toContain('backed up');

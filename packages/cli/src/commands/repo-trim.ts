@@ -68,9 +68,7 @@ async function handleTrimAction(ref: string | undefined, options: TrimOptions): 
   let machineName: string;
   let kubeCluster: string | undefined;
   const params: Record<string, unknown> = {};
-  // #74: set only by the REF arm. The machine-wide form addresses the machine's
-  // own default datastore by definition, so leaving it undefined there is the
-  // correct answer, not an omission.
+  // #74: set only by the REF arm. The machine-wide form addresses the machine's own default datastore by definition, so leaving it undefined there is the correct answer, not an omission.
   let datastore: string | undefined;
 
   if (ref) {
@@ -89,8 +87,7 @@ async function handleTrimAction(ref: string | undefined, options: TrimOptions): 
     params.name = repo.repositoryGuid;
     datastore = await recordedDatastoreMount(resolved.repoKey);
   } else {
-    // Machine-wide form: trim every mounted repo on the machine (errors when
-    // -m is also absent, as before).
+    // Machine-wide form: trim every mounted repo on the machine (errors when -m is also absent, as before).
     const target = await resolveRepoTarget({ machine: options.machine });
     machineName = target.machineName;
     kubeCluster = target.kubeCluster;
@@ -144,8 +141,7 @@ function renderTrimResult(parsed: TrimResult | null | undefined): void {
   const rows = repos.map((repo) => ({
     repository: repo.name ?? repo.guid,
     status: trimRepoStatus(repo, reportOnly),
-    // Docker reclaim runs independently of the fstrim snapshot guard, so a repo
-    // can show reclaimed build-cache bytes here even when its status is "skipped".
+    // Docker reclaim runs independently of the fstrim snapshot guard, so a repo can show reclaimed build-cache bytes here even when its status is "skipped".
     docker: reportOnly ? '-' : formatTrimBytes(repo.docker_reclaimed_bytes),
     trimmed: reportOnly ? '-' : formatTrimBytes(repo.trimmed_bytes),
     reclaimable: formatTrimBytes(repo.estimated_reclaimable_bytes),

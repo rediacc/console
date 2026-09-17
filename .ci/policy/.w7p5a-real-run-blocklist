@@ -1,0 +1,107 @@
+# .w7p5a-real-run-blocklist -- W7P5-a's real-run BLOCKER register.
+#
+# W7P5-a ("agent/PLAN-tooling-transformation.md") requires, for each of the 48
+# deploy/release bash scripts under port: either a K=5 shadow-gate ledger
+# asserting `equivalence holds`, or an allowlist entry with a BLOCKER. No
+# third state.
+#
+# Every path below already has its DRY-RUN-parity port scoped as separate,
+# reachable work -- stubbed tool binaries make that achievable without
+# touching production, and this file does not claim otherwise. What each
+# entry blocks is narrower: the box's "one real run each" clause, which for
+# these paths means invoking a real external system (Cloudflare, R2/AWS,
+# GitHub, ghcr.io, or a real `git push`) that this session has no credentials
+# for and is forbidden from touching. `.ci/shadow/w7p5a-status.json` tracks
+# the box's overall progress; this file is the checked, BLOCKER-gated record
+# of why these 39 paths cannot get a real-run leg here.
+#
+# Liveness is enforced IN-GATE (the `.runner-advice-allowlist` /
+# `.profiler-coverage-allowlist` precedent, `docs/agent-reference/suppressions.md`):
+# the reader treats an entry as live while (a) the path still exists in the
+# tree, (b) `.ci/shadow/w7p5a-status.json` still records that path as
+# "blocked" rather than "ledger", and (c) the named external tool
+# (wrangler / aws / gh / curl / docker buildx / git push) is still present in
+# the script's real-run branch. A path that graduates to a K=5 ledger, or
+# whose real-run branch drops the named tool, is stale here and must be
+# removed by the person who did the work -- do not add it to the baseline
+# by leaving it in place unfixed.
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes curl to the real Cloudflare API, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/cf-purge-urls.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes wrangler d1, clones a real D1 database, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/clone-d1.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 against the real R2 bucket, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/delete-r2-channel.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes wrangler deploy, a real Worker deploy, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/deploy-account.sh
+.ci/scripts/deploy/deploy-edge.sh
+.ci/scripts/deploy/deploy-proxy.sh
+.ci/scripts/deploy/deploy-www.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes docker buildx imagetools against ghcr.io, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/promote-docker-to-stable-hotfix.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 against the real R2 bucket, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/promote-r2-to-stable-hotfix.sh
+.ci/scripts/deploy/promote-r2-to-stable.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes curl to the real Cloudflare API, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/purge-media-cache.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes wrangler secret put, real Worker secrets, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/set-account-worker-secrets.sh
+.ci/scripts/deploy/set-preview-worker-secrets.sh
+.ci/scripts/deploy/set-www-worker-secrets.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 against the real R2 bucket, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/simulate-promotion.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 and curl against real R2/Cloudflare, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/sync-media-from-r2.sh
+.ci/scripts/deploy/sync-media-to-r2.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes wrangler d1, a real D1 database, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/test-d1-migrations.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 against the real R2 bucket, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/upload-repos-to-r2.sh
+.ci/scripts/deploy/upload-to-r2.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes curl against the real edge.rediacc.com endpoint, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/verify-edge-endpoints.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes curl against the real www.rediacc.com endpoint, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/verify-stable-endpoints.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 against the real R2 bucket, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/write-release-sentinel.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 and a real git push to origin/main, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/release/advance-contract-floor.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes gh, the real GitHub API, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/release/assert-artifact-version.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 and gh, real R2 and GitHub, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/release/assert-edge-tag-exists.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes calls .ci/scripts/docker/cleanup-staging.sh against ghcr.io, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/release/cleanup-channel-docker-tags.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes gh release create, a real GitHub Release, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/release/create-github-release.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes gh, the real GitHub API, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/release/mark-production.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 against the real R2 bucket, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/release/reprobe-r2-sentinel.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes a real git push of a version tag to origin, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/release/tag-submodules.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes curl plus a real git push to the homebrew tap repo, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/release/update-homebrew-tap.sh

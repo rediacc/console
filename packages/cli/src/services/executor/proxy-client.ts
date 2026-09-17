@@ -176,8 +176,7 @@ export class ProxyClient {
     try {
       await this.pumpStream(response.body, onEvent, state);
     } catch (error) {
-      // A transport error mid-stream is exactly what re-attach exists to
-      // recover. Fall through when the executor announced a job and we know the
+      // A transport error mid-stream is exactly what re-attach exists to recover. Fall through when the executor announced a job and we know the
       // machine; otherwise the failure is genuine and propagates.
       if (!(state.jobId && reattach)) throw error;
     }
@@ -241,9 +240,7 @@ export class ProxyClient {
     state: StreamState
   ): Promise<void> {
     for await (const raw of readNdjson<unknown>(body, (line) => {
-      // Renet occasionally writes unstructured output to the same stream. A
-      // stray line must not kill a healthy operation, so surface it as a log
-      // event and keep reading.
+      // Renet occasionally writes unstructured output to the same stream. A stray line must not kill a healthy operation, so surface it as a log event and keep reading.
       onEvent({ type: 'log', level: 'debug', msg: line });
     })) {
       const parsed = StreamLineSchema.safeParse(raw);
@@ -266,14 +263,12 @@ export class ProxyClient {
       state.outcome = toOutcome(line);
       return;
     }
-    // An event. Dedupe on the spool-line ordinal so a resumed boundary line
-    // renders exactly once.
+    // An event. Dedupe on the spool-line ordinal so a resumed boundary line renders exactly once.
     if (line.line != null && line.line <= state.highestLine) return;
     if (line.line != null) state.highestLine = line.line;
     state.eventsSeen += 1;
     if (line.event.type === 'output') state.renderedLiveOutput = true;
-    // No cast needed: the wire event and RenetEvent are the same shape by
-    // construction, which is the point of forwarding renet's events verbatim.
+    // No cast needed: the wire event and RenetEvent are the same shape by construction, which is the point of forwarding renet's events verbatim.
     onEvent(line.event);
   }
 

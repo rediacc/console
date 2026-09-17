@@ -255,7 +255,19 @@ main() {
     if [ -f /app/account/bundle.js ]; then
         if [ -n "${ACCOUNT_ED25519_PRIVATE_KEY:-}" ]; then
             echo "Starting account server on port 3000..."
-            (node /app/account/bundle.js || echo "Warning: account server exited with code $?") &
+            # SIGTERM ON CONTAINER STOP IS NORMAL, and the old unconditional
+            # warning printed "exited with code 143" on every clean shutdown --
+            # an alarming line for the one event that is not a fault.
+            (
+                node /app/account/bundle.js || {
+                    _rc=$?
+                    if [ "$_rc" -gt 128 ] && [ "$_rc" -lt 160 ]; then
+                        echo "account server stopped by signal $((_rc - 128)) (raw $_rc)"
+                    else
+                        echo "Warning: account server exited with code $_rc"
+                    fi
+                }
+            ) &
         elif [ -n "${ACCOUNT_ED25519_PUBLIC_KEY:-}${ACCOUNT_X25519_PRIVATE_KEY:-}${ACCOUNT_X25519_PUBLIC_KEY:-}${ACCOUNT_SERVER_API_KEY:-}${ACCOUNT_JWT_SECRET:-}" ]; then
             # PARTIALLY provisioned: some identity material arrived, the one key
             # the schema demands did not. That is a MISCONFIGURATION, not an

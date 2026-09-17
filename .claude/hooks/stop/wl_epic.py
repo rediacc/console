@@ -34,8 +34,29 @@ EPIC_MAX_CHARS = 200
 EPIC_MAX_COVERS = 64
 
 
-def epics_path(worklist):
-    return worklist.with_suffix(".epics")
+def epics_path():
+    """The DURABLE epic sidecar, `agent/worklist/epics.jsonl`.
+
+    IT WAS `worklist.with_suffix(".epics")` AND THAT WAS THE WHOLE BUG. W12 P3.1a
+    is recorded as "the TMPDIR sidecar moved into agent/worklist/" and the code
+    read as if it had, because the durable-looking derivation hid where the
+    argument actually points: `worklist` is the LEGACY markdown mirror, which
+    lives at $TMPDIR/claude-worklist/<slug>.md. So the epics rode along in
+    /tmp, and a /tmp clear between branches deleted them.
+
+    Measured 2026-09-06, and it was not hypothetical. Eighteen commits on branch
+    0906-1 carry `PR-TASK: 24c98380`, an epic whose definition was gone:
+    `check:ci-pr-task-trailers` reported them as naming no epic in the snapshot,
+    which means the review would have covered none of them. The title survived
+    only because a PREVIOUS branch's rendered snapshot, agent/pr/0903-1.md, is
+    tracked. A generated view outliving its source is not a recovery plan.
+
+    Repo-scoped, not per-session: an epic is a label many sessions attach items
+    to, and it always behaved that way (one file, whoever wrote it). The
+    `worklist` argument is GONE rather than kept and ignored, because a parameter
+    nothing reads is the next reader's false lead about where this resolves from.
+    """
+    return S.store_dir() / "epics.jsonl"
 
 
 def _new_epic_id(existing):
@@ -47,11 +68,11 @@ def _new_epic_id(existing):
     raise RuntimeError("could not mint a distinct epic id")
 
 
-def record_epic(worklist, me, epic_id, title, covers, order=None):
+def record_epic(me, epic_id, title, covers, order=None):
     """Append one epic record. Append-only, like every sidecar here."""
     S._append_lines(
-        epics_path(worklist),
-        str(epics_path(worklist)) + ".lock",
+        epics_path(),
+        str(epics_path()) + ".lock",
         [
             {
                 "at": C.stamp_now(),
@@ -65,14 +86,14 @@ def record_epic(worklist, me, epic_id, title, covers, order=None):
     )
 
 
-def load_epics(worklist):
+def load_epics():
     """{epic_id: record}, later lines winning, ordered by `order` then first-seen.
 
     A torn or malformed line is SKIPPED, never fatal: the same rule the event
     reader follows, because a crash mid-append must not make the whole file
     unreadable.
     """
-    p = epics_path(worklist)
+    p = epics_path()
     if not p.exists():
         return {}
     out, seen = {}, []
@@ -93,8 +114,7 @@ def load_epics(worklist):
         prev = out.get(eid) or {}
         merged = dict(prev)
         merged.update({k: v for k, v in rec.items() if v is not None})
-        # covers ACCUMULATE across records: `--epic add` is additive, so a later
-        # line naming one more item must not drop the ones named before it.
+        # covers ACCUMULATE across records: `--epic add` is additive, so a later line naming one more item must not drop the ones named before it.
         merged["covers"] = sorted(set(prev.get("covers") or []) | set(rec.get("covers") or []))
         out[eid] = merged
     ordered = sorted(
@@ -107,21 +127,19 @@ def load_epics(worklist):
     return {r["id"]: r for r in ordered}
 
 
-def new_epic(worklist, me, title, order=None):
-    existing = set(load_epics(worklist))
+def new_epic(me, title, order=None):
+    existing = set(load_epics())
     eid = _new_epic_id(existing)
-    record_epic(worklist, me, eid, title, [], order)
+    record_epic(me, eid, title, [], order)
     return eid
 
 
-def add_to_epic(worklist, me, epic_id, item_ids):
+def add_to_epic(me, epic_id, item_ids):
     """Attach items to an existing epic. Refuses an unknown epic."""
-    epics = load_epics(worklist)
+    epics = load_epics()
     if epic_id not in epics:
         return None
-    record_epic(
-        worklist, me, epic_id, epics[epic_id].get("title"), item_ids, epics[epic_id].get("order")
-    )
+    record_epic(me, epic_id, epics[epic_id].get("title"), item_ids, epics[epic_id].get("order"))
     return epic_id
 
 
@@ -140,14 +158,14 @@ def neutralize(text):
     return (text or "").replace("<!--", "<\u200b!--").replace("-->", "--\u200b>")
 
 
-def render(worklist, fold, heading="###"):
+def render(fold, heading="###"):
     """Markdown: one section per epic, its items beneath.
 
     Uses wl_store.brief_text, the v14 display identity (what the item FIRST said
     plus its LATEST note), never rec["text"] which accumulates every update note
     forever and would put twenty concatenated lines into a PR body.
     """
-    epics = load_epics(worklist)
+    epics = load_epics()
     items = {r["id"]: r for r in fold.items}
     lines, claimed = [], set()
     for eid, rec in epics.items():
@@ -165,8 +183,7 @@ def render(worklist, fold, heading="###"):
                 "- [%s] `#%s` %s" % (r.get("state", " "), iid, neutralize(S.brief_text(r, cap=200)))
             )
         lines.append("")
-    # An item in no epic is REPORTED, never hidden: silence here would be
-    # indistinguishable from having no such work.
+    # An item in no epic is REPORTED, never hidden: silence here would be indistinguishable from having no such work.
     orphans = [r for r in fold.items if r["id"] not in claimed and r.get("state") != "x"]
     if orphans:
         lines.append("%s Not in any epic" % heading)

@@ -118,13 +118,8 @@ def transcript_for(session_id, projects=None):
     if projects:
         cands = sorted(pathlib.Path(projects).glob("%s*.jsonl" % session_id[:8]))
     else:
-        # Only as a last resort, and it must stay last: wl_core.projects_dir is
-        # the ONE definition of where transcripts live, and it honours
-        # WORKLIST_PROJECTS_DIR. Reaching straight for ~/.claude/projects here
-        # ignored that override, so --adopt could not work in any environment
-        # that sets it -- which is every test fixture, and that is exactly how
-        # this was caught: the case suite's own control-on-the-control reported
-        # the gate refusing a planted chain, i.e. refusing everything.
+        # Only as a last resort, and it must stay last: wl_core.projects_dir is the ONE definition of where transcripts live, and it honours WORKLIST_PROJECTS_DIR. Reaching straight for ~/.claude/projects here ignored that override, so --adopt could not work in any environment that sets it -- which is every test fixture, and that is exactly how this was caught: the case suite's own
+        # control-on-the-control reported the gate refusing a planted chain, i.e. refusing everything.
         base = pathlib.Path.home() / ".claude" / "projects"
         cands = sorted(base.glob("*/%s*.jsonl" % session_id[:8])) if base.is_dir() else []
     return str(cands[0]) if len(cands) == 1 else None
@@ -195,13 +190,8 @@ def resolve(session_id, transcript, projects, claimed_prev=None):
 
         # E3, and it is checked even when E1 fired.
         #
-        # TWO WAYS TO SATISFY IT, and they must be REPORTED DIFFERENTLY. The head
-        # window may simply not reach far enough into a large candidate to catch a
-        # shared record, while the boundary uuid -- which is dual-written, once in
-        # each transcript -- is findable anywhere in the file by mmap. Both are
-        # real shared records. What is NOT acceptable is printing "0 shared" beside
-        # an accept: a mandatory check reporting zero evidence reads exactly like a
-        # check that was skipped, and this line said that for its first run.
+        # TWO WAYS TO SATISFY IT, and they must be REPORTED DIFFERENTLY. The head window may simply not reach far enough into a large candidate to catch a shared record, while the boundary uuid -- which is dual-written, once in each transcript -- is findable anywhere in the file by mmap. Both are real shared records. What is NOT acceptable is printing "0 shared" beside an accept: a
+        # mandatory check reporting zero evidence reads exactly like a check that was skipped, and this line said that for its first run.
         shared = mine & _record_uuids(_head_records(cand, HEAD_BYTES * 8))
         if shared:
             basis = "%d shared head record(s)" % len(shared)

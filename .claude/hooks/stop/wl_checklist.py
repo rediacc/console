@@ -47,19 +47,13 @@ import worklist_messages as M
 CL_HEADER_LINES = 10
 CL_STATUS_RE = re.compile(r"^Status:\s*([A-Za-z-]+)\s*$", re.MULTILINE)
 CL_OWNER_RE = re.compile(r"^Owner:\s*([A-Za-z0-9][A-Za-z0-9._-]{0,31})\s*$", re.MULTILINE)
-# Only ' ' and 'x': leases and deferrals are worklist states, not checklist
-# states, and a checklist that grew its own state machine would be a second
-# store to reconcile.
+# Only ' ' and 'x': leases and deferrals are worklist states, not checklist states, and a checklist that grew its own state machine would be a second store to reconcile.
 CL_ITEM = re.compile(r"^\s*-\s*\[(?P<state>[ x])\]\s+(?P<id>[dw][0-9]{1,3})\s+(?P<text>\S.*)$")
-# The INTENDED-checkbox detector, deliberately loose, so a typo'd item is a
-# loud shape error instead of an invisible ignored line. Prose links of the
-# form `- [text](url)` do NOT match: the bracket body is capped at one char.
+# The INTENDED-checkbox detector, deliberately loose, so a typo'd item is a loud shape error instead of an invisible ignored line. Prose links of the form `- [text](url)` do NOT match: the bracket body is capped at one char.
 CL_BOXLIKE = re.compile(r"^\s*-\s*\[.?\]\s")
 CL_SECTION_RE = re.compile(r"^##\s+(Deliverables|Waves)\s*$", re.IGNORECASE)
 CL_FILE_TOKEN = re.compile(r"\bfile:(\S+)")
-# slug, item id -- the worklist-linkage token, `cl:<slug>/<wN>`. Named _LINK_
-# rather than _TOKEN_ because ruff's S105 (hardcoded-password) fires on any
-# string literal bound to a name containing "TOKEN", and this repo's rule is to
+# slug, item id -- the worklist-linkage token, `cl:<slug>/<wN>`. Named _LINK_ rather than _TOKEN_ because ruff's S105 (hardcoded-password) fires on any string literal bound to a name containing "TOKEN", and this repo's rule is to
 # fix the finding rather than to noqa past the gate.
 CL_LINK_FMT = "cl:%s/%s"
 CL_LIVE = ("producing", "executing")
@@ -275,10 +269,7 @@ def _covering_items(fold, token):
     ]
 
 
-# The three doors from CLAUDE.md's findings rule. Closing an item through one
-# means "no session can do this", NOT "this is finished": operator-only powers
-# (secrets, purchases, production deploys), an explicit operator deferral, or a
-# target outside this session's write access.
+# The three doors from CLAUDE.md's findings rule. Closing an item through one means "no session can do this", NOT "this is finished": operator-only powers (secrets, purchases, production deploys), an explicit operator deferral, or a target outside this session's write access.
 _DOOR_RX = re.compile(r"\bdoor:(?:operator-only|operator-deferred|no-write-access)\b")
 
 
@@ -306,8 +297,7 @@ def _wave_rows(fold, parsed, session_id, actor=None):
         token = CL_LINK_FMT % (slug, w["id"])
         matches = _covering_items(fold, token)
         if not matches:
-            # Quotes are stripped from the title because the exit is a shell
-            # command, and an exit a reader has to repair is not an exit.
+            # Quotes are stripped from the title because the exit is a shell command, and an exit a reader has to repair is not an exit.
             title = w["text"][:60].replace("'", "").replace('"', "")
             rows.append(
                 "    %s UNCOVERED: no worklist item carries '%s'\n"
@@ -315,14 +305,8 @@ def _wave_rows(fold, parsed, session_id, actor=None):
                 % (w["id"], token, me8, token, title)
             )
         elif all((r.get("state") or "") == "x" for r in matches):
-            # A wave whose only covering items were closed through a DOOR is
-            # correctly unticked, and demanding its tick would be demanding a
-            # lie. `door:operator-only` means the secrets are unset, the machines
-            # unmigrated and the cutover unrun -- the item left the session, the
-            # WORK did not happen. This checklist's own comment block says an
-            # overstating handoff is worse than an incomplete one, because the
-            # next session reads it as ground truth. So: covered, not done, no
-            # row. Ticking the box is the operator's to do once the door opens.
+            # A wave whose only covering items were closed through a DOOR is correctly unticked, and demanding its tick would be demanding a lie. `door:operator-only` means the secrets are unset, the machines unmigrated and the cutover unrun -- the item left the session, the WORK did not happen. This checklist's own comment block says an overstating handoff is worse than an
+            # incomplete one, because the next session reads it as ground truth. So: covered, not done, no row. Ticking the box is the operator's to do once the door opens.
             if any(_closed_through_door(r) for r in matches):
                 continue
             ids = ", ".join("#%s" % r.get("id") for r in matches)
@@ -418,8 +402,7 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
     parsed = parse_checklist(root, path)
     rel, slug, status, owner = parsed["rel"], parsed["slug"], parsed["status"], parsed["owner"]
     if parsed["errors"]:
-        # A malformed checklist is adjudicated NO FURTHER: every verdict below
-        # would be read off a file the parser has already said it misread.
+        # A malformed checklist is adjudicated NO FURTHER: every verdict below would be read off a file the parser has already said it misread.
         rows = "\n".join("    " + e for e in parsed["errors"])
         return [(_ckey("cl-shape", slug), False, M.V_CL_SHAPE % (rel, rows))], a, 1
     if status == "superseded":
@@ -476,11 +459,9 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
             )
         return v, a, 1
 
-    # executing: two INDEPENDENT checks, because a program can lose an
-    # artifact and drop a wave at the same time and each has its own exit.
+    # executing: two INDEPENDENT checks, because a program can lose an artifact and drop a wave at the same time and each has its own exit.
     if drows:
-        # Deliverables are re-verified regardless of their ticks, which is what
-        # catches both a ticked-but-missing artifact and one deleted after the flip.
+        # Deliverables are re-verified regardless of their ticks, which is what catches both a ticked-but-missing artifact and one deleted after the flip.
         if C.owned_by_me(owner or None, session_id):
             v.append(
                 (
@@ -502,33 +483,15 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
     if not wrows and not drows and all(w["ticked"] for w in parsed["waves"]):
         wrows = ["    everything is settled; set 'Status: done' in %s" % rel]
     if wrows:
-        # OWNERSHIP-GATED SINCE 2026-08-23, and the comment it replaces argued
-        # the opposite: "an uncovered wave is UNCLAIMED work, the same semantics
-        # as an untagged worklist item, so it blocks whoever tries to stop."
-        # That analogy is exactly right for a checklist with NO owner and wrong
+        # OWNERSHIP-GATED SINCE 2026-08-23, and the comment it replaces argued the opposite: "an uncovered wave is UNCLAIMED work, the same semantics as an untagged worklist item, so it blocks whoever tries to stop." That analogy is exactly right for a checklist with NO owner and wrong
         # for one that names a live session. An untagged item has no owner; a
-        # handoff with `Owner: <prefix>` has one that simply has not created the
-        # item yet, which is what an owner does WHEN IT STARTS THE WAVE.
+        # handoff with `Owner: <prefix>` has one that simply has not created the item yet, which is what an owner does WHEN IT STARTS THE WAVE.
         #
-        # Measured, not argued: on 2026-08-23 the www-round5 handoff
-        # (`Owner: a68f3ab4`, Status: executing) blocked an unrelated pr-babysit
-        # session in the same worktree. Its four exits all read
-        # `--add <this session> ...`, so the only offered way to stop was to
-        # claim four waves of work this session was not doing -- and a
-        # self-tagged item then blocks ITS stops until ticked with evidence.
-        # The owner was live throughout: its transcript was being written that
-        # minute. This is the same rule CLAUDE.md already states for worklist
-        # items -- other sessions' open items are REPORTED, never blocked on --
-        # applied to the artifact that carries them.
+        # Measured, not argued: on 2026-08-23 the www-round5 handoff (`Owner: a68f3ab4`, Status: executing) blocked an unrelated pr-babysit session in the same worktree. Its four exits all read `--add <this session> ...`, so the only offered way to stop was to claim four waves of work this session was not doing -- and a self-tagged item then blocks ITS stops until ticked with
+        # evidence. The owner was live throughout: its transcript was being written that minute. This is the same rule CLAUDE.md already states for worklist items -- other sessions' open items are REPORTED, never blocked on -- applied to the artifact that carries them.
         #
-        # Blocking is preserved where the analogy holds: no owner at all, the
-        # owner is me, or the owner is provably dead (the adopt hint then says
-        # how to take it over). UNKNOWN counts as alive, deliberately, because
-        # `owner_age_hours` answers None for a session whose transcript lives in
-        # a different project directory -- true for every session predating this
-        # repo's move, which is precisely the population most likely to own an
-        # old handoff. Accusing an unverifiable owner of being dead is the
-        # failure this codebase refuses everywhere else.
+        # Blocking is preserved where the analogy holds: no owner at all, the owner is me, or the owner is provably dead (the adopt hint then says how to take it over). UNKNOWN counts as alive, deliberately, because `owner_age_hours` answers None for a session whose transcript lives in a different project directory -- true for every session predating this repo's move, which is
+        # precisely the population most likely to own an old handoff. Accusing an unverifiable owner of being dead is the failure this codebase refuses everywhere else.
         foreign = _foreign_owner
         hint = _adopt_hint(owner, projects_dir, rel) if foreign else ""
         if foreign and not hint:
@@ -547,11 +510,7 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
                     M.V_CL_WAVES % (slug, rel, "\n".join(wrows)) + hint,
                 )
             )
-    # Door-parked waves: reported, never blocked on. _wave_rows skips them for
-    # the right reason and into the wrong silence -- see _door_parked_rows.
-    # NOT ownership-gated, for the same reason the wave check is not: whoever is
-    # here is the one who can tell the operator, and the operator is the only
-    # party who can open the door.
+    # Door-parked waves: reported, never blocked on. _wave_rows skips them for the right reason and into the wrong silence -- see _door_parked_rows. NOT ownership-gated, for the same reason the wave check is not: whoever is here is the one who can tell the operator, and the operator is the only party who can open the door.
     prows = _door_parked_rows(fold, parsed)
     if prows:
         a.append(
@@ -580,17 +539,13 @@ def checklist_findings(root, fold, session_id, projects_dir):
     try:
         paths = checklist_paths(root)
     except Exception as exc:  # noqa: BLE001 -- fail CLOSED
-        # UNSCOPED, and deliberately so: the glob itself failed, so there is no
-        # slug to scope by, and this path returns immediately -- at most one
-        # such finding can exist per stop, so it has nothing to collide with.
+        # UNSCOPED, and deliberately so: the glob itself failed, so there is no slug to scope by, and this path returns immediately -- at most one such finding can exist per stop, so it has nothing to collide with.
         return [("cl-shape", True, M.V_CL_UNREADABLE % str(exc)[:160])], [], 1
     for path in paths:
         try:
             v, a, n = _adjudicate(root, path, fold, session_id, projects_dir)
         except Exception as exc:  # noqa: BLE001 -- fail CLOSED, per file
-            # Per FILE, so scoped like every other per-checklist finding. The
-            # slug is read off the path rather than out of the parse, because
-            # the parse is what just threw.
+            # Per FILE, so scoped like every other per-checklist finding. The slug is read off the path rather than out of the parse, because the parse is what just threw.
             slug = os.path.basename(os.path.dirname(str(path)))
             violations.append((_ckey("cl-shape", slug), True, M.V_CL_UNREADABLE % str(exc)[:160]))
             live += 1

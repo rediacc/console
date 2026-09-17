@@ -91,8 +91,7 @@ beforeEach(() => {
   configWithNamedDatastore();
   mockExecute.mockImplementation(({ functionName, datastore }) => {
     if (functionName !== 'repository_list') return Promise.resolve({ success: true, stdout: '' });
-    // The orphan exists ONLY in the named datastore. A run that enumerates just
-    // the default finds nothing to collect.
+    // The orphan exists ONLY in the named datastore. A run that enumerates just the default finds nothing to collect.
     return Promise.resolve({
       success: true,
       stdout:

@@ -160,19 +160,130 @@ function tokensAfterRdc(raw: string): string[] {
 
 const SOURCE_PATTERN = /\brdc\s+([a-z][\w-]*(?:\s+[a-z][\w-]*)*)/g;
 
+// --------------------------------------------------------------------------- PYTHON: TWO SKIPS, AND ONE THAT WAS ASKED FOR AND MEASURED OUT
+//
+// A `#`-comment skip is not enough to scan Python. Measured 2026-09-08 with the `.py` globs planted below, the residue was SIX findings in ONE file, and the brief's expectation -- that they were commands quoted in DOCSTRINGS -- was wrong for every one of them:
+//
+// check_tutorial_cli_validity.py:134 a `#` comment -> the `#` skips :191 :199 :207 (x2) planted fixtures -> PY_CONTROL_DEF :221 English prose in print -> PY_PROSE_BEFORE
+//
+// A DOCSTRING STATE MACHINE WAS BUILT HERE AND THEN REMOVED, which is worth the paragraph because "it was in the plan" is not evidence. Driven over all 386 tracked `.ci/**/*.py` files, a triple-quote toggle changed the finding count by ZERO. It hid three `rdc`-bearing lines and two of those sit in `test_*.py` files that `COMMAND_PATH_IGNORE` already drops, so its whole live effect
+// was ONE line: this file's own module docstring at :13, naming `rdc repo push my-app --to my-storage`, which resolves and reports nothing either way. Against that it would have blinded the scanner to every docstring in 386 prose-heavy files -- and a docstring naming a command that no longer exists is doc rot this gate SHOULD report, not noise. A skip with no measured effect that
+// costs real coverage is carried code, so it is not carried.
+//
+// PY_CONTROL_DEF is the Python analogue of the `.ci/scripts/test/**` directory exclusion other gates use: a ported gate carries its controls INSIDE the module, so fixtures that must be deliberately wrong cannot be excluded by path. The names are a measured convention, not a guess -- across those 386 files the top-level control entry points are `selftest` (114), `run_controls`
+// (10), `controls` (7) and `control` (5).
+//
+// THE BODY IS BOUNDED BY INDENTATION, NOT BY END OF FILE, and that difference is load-bearing rather than tidiness. `.ci/scripts/test/gates/test-gate-paths-exist.sh`
+// grew the same skip as `in_self` and runs it to EOF; in this very file
+// `run_controls` is at line 174 and `main()` at 220, so a to-EOF skip would have swallowed `main()` and taken :221 with it -- the prose finding would have vanished into a green that merely looked like the fixtures had been handled. A control that stops firing for an unrelated reason is the vacuity this repo keeps paying for, so the body ends where Python says it ends: the first
+// non-blank line back at column 0. ---------------------------------------------------------------------------
+
+/** Top-level control entry points, whose bodies are planted fixtures by design. */
+const PY_CONTROL_DEF = /^def (?:selftest|run_controls|controls?)\s*\(/;
+
 /**
- * Scan TypeScript/Go source for stale references.
- *
- * Comment-only lines are skipped: prose about the CLI lives in comments and is
- * not operator-facing, so flagging it is pure noise.
+ * Zero-based line indices a Python scan must not read: control-function bodies.
  */
-export function scanSourceText(content: string): Array<CommandPathHit & { line: number }> {
+export function pythonSkippedLines(content: string): Set<number> {
+  const skip = new Set<number>();
+  const lines = content.split(/\r?\n/);
+  let inControl = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (inControl) {
+      // A blank line, or anything still indented, is body. Column 0 ends it -- and that line still gets scanned normally, which is the whole point.
+      if (line.trim() !== '' && !/^[ \t]/.test(line)) inControl = false;
+      else {
+        skip.add(i);
+        continue;
+      }
+    }
+    if (PY_CONTROL_DEF.test(line)) {
+      inControl = true;
+      skip.add(i);
+    }
+  }
+  return skip;
+}
+
+/**
+ * Words that may precede `rdc` and still leave it in COMMAND position.
+ *
+ * Everything else that is a bare word followed by a space is English, and the
+ * `rdc` after it is being talked ABOUT rather than run.
+ */
+const PY_LAUNCHERS = new Set([
+  'sudo',
+  'npx',
+  'exec',
+  'command',
+  'env',
+  'time',
+  'nohup',
+  'xargs',
+  'then',
+  'do',
+  'else',
+]);
+
+/**
+ * Is the `rdc` at `index` sitting mid-sentence in prose rather than in an invocation?
+ *
+ * PYTHON GATES PRINT PROSE ABOUT THE CLI CONSTANTLY, which is the same reason
+ * `SHELL_COMMAND_POSITION` exists for `.sh` and the same reason it is documented
+ * there as making the scan viable at all. Measured 2026-09-08: the widened scan
+ * sees exactly FOUR `rdc <word>` references across the 214 Python files that
+ * survive `COMMAND_PATH_IGNORE`, and THREE of them are mid-sentence English --
+ * `release_state.py:426` and `:588` ("Every rdc on this ...") escape a finding
+ * only by the accident that `on` happens to be in `PROSE_WORDS`, and
+ * `check_tutorial_cli_validity.py:221` (`print("Tutorial rdc invocations: ...")`)
+ * does not, so it reported `invocations` as a missing command. The fourth,
+ * `check_agent_hint_liveness.py:87`, opens a string literal with `"rdc config
+ * remote enable ...` and IS a real reference; it survives this rule.
+ *
+ * WHY NOT `PROSE_WORDS`. That set is deliberately function words only, and says
+ * so at its definition: "a noun here would silently mask a real stale command,
+ * which is the one failure mode this checker exists to prevent." `invocations`
+ * is a noun. The position of `rdc` is structural and does not carry that risk.
+ *
+ * THE LAUNCHER CARVE-OUT is what keeps this from masking. `sudo rdc repo up` and
+ * `npx rdc ...` are word-then-space too, and they are real invocations; a shell
+ * separator (`&& rdc`), a quote (`"rdc`), a backtick or a line start are not
+ * word-then-space and never reach this test. The residual blind spot, stated
+ * rather than discovered later: a stale command written into English narration
+ * ("use rdc oldcmd to deploy") is not reported. So is an argv-list spelling
+ * (`["rdc", "repo", ...]`), which `\brdc\s+` never matched in any language.
+ */
+function pythonProsePosition(line: string, index: number): boolean {
+  const preceding = /([A-Za-z][A-Za-z0-9_-]*)\s+$/.exec(line.slice(0, index));
+  if (!preceding) return false;
+  return !PY_LAUNCHERS.has(preceding[1].toLowerCase());
+}
+
+export function scanSourceText(
+  content: string,
+  opts: { python?: boolean } = {}
+): Array<CommandPathHit & { line: number }> {
   const hits: Array<CommandPathHit & { line: number }> = [];
+  const skip = opts.python ? pythonSkippedLines(content) : null;
   const lines = content.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
+    if (skip?.has(i)) continue;
     const trimmed = lines[i].trim();
-    if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+    // `#` IS PYTHON'S COMMENT MARKER, and its absence was the fourth instance of one
+    // class found on 2026-09-08: a predicate that enumerated the TypeScript idiom and
+    // stopped. This skip knew `//`, `*` and `/*`; the moment the caller's corpus reached
+    // `.ci/scripts/**/*.py` it reported seven errors from `check_tutorial_cli_validity.py` alone, every one a command quoted in a COMMENT explaining what that gate must report -- `rdc backup sync push --to x`, written down precisely because the subcommand does not exist. Safe for the other source languages this scanner reads: a line starting with `#` is not TypeScript or Go
+    // either.
+    if (
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('#') ||
+      trimmed.startsWith('*') ||
+      trimmed.startsWith('/*')
+    )
+      continue;
     for (const match of lines[i].matchAll(SOURCE_PATTERN)) {
+      if (opts.python && pythonProsePosition(lines[i], match.index)) continue;
       const hit = classifyCommandPath(tokensAfterRdc(match[1]));
       if (hit) hits.push({ ...hit, line: i + 1 });
     }
@@ -265,16 +376,32 @@ function firstCommandOnly(run: string): string {
 const COMMAND_RUN = /\brdc\s+([^'"`\n]+)/g;
 
 /** Flags used against a command that does not declare them. */
-export function scanSourceOptions(content: string): Array<CommandPathHit & { line: number }> {
+export function scanSourceOptions(
+  content: string,
+  opts: { python?: boolean } = {}
+): Array<CommandPathHit & { line: number }> {
   const hits: Array<CommandPathHit & { line: number }> = [];
   const nodes = commandNodes();
+  const skip = opts.python ? pythonSkippedLines(content) : null;
   const lines = content.split(/\r?\n/);
 
   for (let i = 0; i < lines.length; i++) {
+    if (skip?.has(i)) continue;
     const trimmed = lines[i].trim();
-    if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+    // `#` WAS MISSING HERE WHILE ITS TWIN ABOVE HAD IT, which is the half-applied fix "sweep the class, not the instance" exists to catch. `scanSourceText`
+    // learned Python's comment marker on 2026-09-08; this scanner did not, so a
+    // command in a `#` comment was silent as a PATH and still loud as an OPTION. Measured the same day: it was 1 of the 6 residual findings that had kept the `.py` globs from landing -- check_tutorial_cli_validity.py:134, the comment `rdc backup sync push --to x` written down precisely to explain what that gate must report. Unconditional, for the reason the twin gives: a line
+    // starting with `#` is not TypeScript or Go either.
+    if (
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('#') ||
+      trimmed.startsWith('*') ||
+      trimmed.startsWith('/*')
+    )
+      continue;
 
     for (const match of lines[i].matchAll(COMMAND_RUN)) {
+      if (opts.python && pythonProsePosition(lines[i], match.index)) continue;
       const tokens = firstCommandOnly(match[1]).split(/\s+/).filter(Boolean);
 
       let matchedLength = 0;
@@ -296,9 +423,7 @@ export function scanSourceOptions(content: string): Array<CommandPathHit & { lin
 
       const commandPath = tokens.slice(0, matchedLength).join(' ');
       for (const raw of tokens.slice(matchedLength)) {
-        // End-of-options: `rdc repo exec app -c web -- ls -la` hands everything
-        // after `--` to the REMOTE command, so those tokens are not this
-        // command's flags and must not be checked against its option list.
+        // End-of-options: `rdc repo exec app -c web -- ls -la` hands everything after `--` to the REMOTE command, so those tokens are not this command's flags and must not be checked against its option list.
         if (raw === '--') break;
         const token = raw.split('=')[0];
         if (!/^-{1,2}[A-Za-z][\w-]*$/.test(token)) continue;

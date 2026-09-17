@@ -26,6 +26,13 @@ is a string or it is not), and catches the whole class rather than the instance.
 Run modes:
     check_i18n_value_types.py            the gate
     check_i18n_value_types.py --selftest controls only
+
+---- gate ----
+step: i18n value types match English
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import argparse
@@ -33,11 +40,7 @@ import json
 import pathlib
 import sys
 
-# (english file, [sibling locale files]) pairs are discovered, not listed, so a
-# new locale is covered the day it is added rather than the day someone
-# remembers this file. The locale SET is deliberately not hard-coded here --
-# @rediacc/locales is the single source for that, and a hand-rolled list in a
-# gate is how a 379-key blind spot happened once before.
+# (english file, [sibling locale files]) pairs are discovered, not listed, so a new locale is covered the day it is added rather than the day someone remembers this file. The locale SET is deliberately not hard-coded here -- @rediacc/locales is the single source for that, and a hand-rolled list in a gate is how a 379-key blind spot happened once before.
 WWW = "packages/www/src/i18n/translations"
 CLI = "packages/cli/src/i18n/locales"
 
@@ -97,8 +100,7 @@ def locale_pairs(root):
     return pairs
 
 
-# ---- controls ----------------------------------------------------------------
-# A gate that cannot fire reports a clean tree forever, and this one would be
+# ---- controls ---------------------------------------------------------------- A gate that cannot fire reports a clean tree forever, and this one would be
 # especially easy to break silently: a flatten() that returns {} makes every
 # comparison vacuous while still exiting 0.
 _MUST_FLAG = [

@@ -190,7 +190,8 @@ Destroy a cloud-provisioned machine and remove from config
 
 ### rdc machine prune <name>
 
-Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from your local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.
+Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so
+legitimate forks created by other tools survive even when missing from your local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.
 
 **Options:**
 
@@ -928,7 +929,8 @@ Delete a repository and its data. Config entry is preserved; use --archive-confi
 
 ### rdc repo up [ref]
 
-Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). The machine is derived from the ref placement. Proxy routes take ~3s to become active after deploy. Prints the URL pattern for HTTP-exposed services (rediacc.service_port label) on completion. First deploy and forks are mounted automatically. CRIU checkpoint restore is auto-detected; use --skip-checkpoint to force fresh start. Use --all --machine <m> to deploy every repository on a machine.
+Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). The machine is derived from the ref placement. Proxy routes take ~3s to become active after deploy. Prints the URL pattern for HTTP-exposed services (rediacc.service_port label) on completion. First deploy and forks are mounted automatically. CRIU checkpoint restore is auto-detected; use
+--skip-checkpoint to force fresh start. Use --all --machine <m> to deploy every repository on a machine.
 
 **Options:**
 
@@ -950,7 +952,8 @@ Deploy or update a repository (mount, run Rediaccfile up which calls renet compo
 
 ### rdc repo down [ref]
 
-Stop repository Docker containers (runs Rediaccfile down via renet compose). The machine is derived from the ref placement. Does NOT unmount the encrypted volume. The repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping (folds the retired 'repo unmount'). Use --checkpoint to save CRIU process state before stopping (next 'repo up' auto-restores). Use --all --machine <m> to stop every repository on a machine.
+Stop repository Docker containers (runs Rediaccfile down via renet compose). The machine is derived from the ref placement. Does NOT unmount the encrypted volume. The repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping (folds the retired 'repo unmount'). Use --checkpoint to save CRIU process state before stopping
+(next 'repo up' auto-restores). Use --all --machine <m> to stop every repository on a machine.
 
 **Options:**
 
@@ -1011,7 +1014,9 @@ Read a bounded window of a file in a repository to stdout (diagnostics go to std
 
 ### rdc repo fork <ref>
 
-Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: fork locally first, then transfer: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. WARNING: do NOT use "repo push" alone to fork, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name, so each fork gets a unique domain automatically.
+Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online
+forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: fork locally first, then transfer: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref>
+--to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. WARNING: do NOT use "repo push" alone to fork, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name, so each fork gets a unique domain automatically.
 
 **Options:**
 
@@ -1027,7 +1032,8 @@ Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONS
 
 ### rdc repo diff <ref>
 
-Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by the positional <ref> (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds.
+Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by the positional <ref> (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images
+at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds.
 
 **Options:**
 
@@ -1088,7 +1094,8 @@ Print the commit history reachable from a working fork's current commit (or a co
 
 ### rdc repo merge <ref>
 
-Merge a source commit or fork into a target working fork. The live target is never mutated in place: the result is built in a reflink clone and atomically swapped in. A mounted or running target is refused unless --force, which cleanly quiesces it first. Without --resolve it is a whole-image take-theirs (the target becomes the source); with --resolve ours|theirs it is a per-file three-way merge against the common ancestor, taking each side's unique changes and resolving two-sided conflicts per the flag.
+Merge a source commit or fork into a target working fork. The live target is never mutated in place: the result is built in a reflink clone and atomically swapped in. A mounted or running target is refused unless --force, which cleanly quiesces it first. Without --resolve it is a whole-image take-theirs (the target becomes the source); with --resolve ours|theirs it is a per-file
+three-way merge against the common ancestor, taking each side's unique changes and resolving two-sided conflicts per the flag.
 
 **Options:**
 
@@ -1191,7 +1198,12 @@ List all embedded deployment templates shipped with the CLI
 
 ### rdc repo admin template apply <ref>
 
-Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose': 'docker compose' is rejected. ENV VARS: two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. eBPF bind rewriting handles IP isolation transparently, so apps can bind to 0.0.0.0 and the kernel rewrites it to the correct loopback IP. Health checks can use localhost. network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe: Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe: renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile: renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53
+Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose':
+'docker compose' is rejected. ENV VARS: two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. eBPF bind rewriting handles IP isolation transparently, so apps can bind to 0.0.0.0 and the kernel rewrites it to the correct loopback IP. Health
+checks can use localhost. network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe: Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe: renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or
+rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile: renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for
+non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 /
+rediacc.udp_ports=53
 
 **Options:**
 
@@ -1217,7 +1229,8 @@ Delete immutable commit objects on a machine that no branch or HEAD reaches (rea
 
 ### rdc repo promote <fork-ref>
 
-Make a validated fork the production repository under its parent name. The parent keeps its identity (GUID, networkId, domains, autostart, backup chain) and receives the fork's data; the old production data is preserved as a backup fork. Use it to test an upgrade on a fork, verify it, then promote. Pass an explicit <name>:<tag> for the fork; a bare ref resolves to the parent and is rejected with "not a fork". Promote never fetches bytes: use 'repo push' or 'backup restore' for that.
+Make a validated fork the production repository under its parent name. The parent keeps its identity (GUID, networkId, domains, autostart, backup chain) and receives the fork's data; the old production data is preserved as a backup fork. Use it to test an upgrade on a fork, verify it, then promote. Pass an explicit <name>:<tag> for the fork; a bare ref resolves to the parent and is
+rejected with "not a fork". Promote never fetches bytes: use 'repo push' or 'backup restore' for that.
 
 **Options:**
 
@@ -1291,7 +1304,8 @@ Show the stored machine default, the repository override (with a ref), and the e
 
 ### rdc repo push <ref>
 
-Push repository to another machine. Storage destinations are retired; use `rdc backup snapshot` for point-in-time backup. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID, so this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'
+Push repository to another machine. Storage destinations are retired; use `rdc backup snapshot` for point-in-time backup. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID, so this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target
+with 'backup restore <ref> --as <name> -m <target> --up'
 
 **Options:**
 
@@ -1328,7 +1342,8 @@ Pull repository from another machine. Storage sources are retired; use `rdc back
 
 ### rdc repo migrate <ref>
 
-Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Moves the whole repository (routing is repointed at the new home) and, once the move succeeds, deletes the source images (use --keep-source to retain them). Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines
+Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Moves the whole repository (routing is repointed at the new home) and, once the move succeeds, deletes the source images (use --keep-source to retain them). Supports CRIU checkpoint for process memory migration and
+auto-provisioning of target machines
 
 **Options:**
 
@@ -1603,7 +1618,8 @@ Restore config from backup (.bak) file
 
 ### rdc config prune
 
-Remove dead weight from the local config file at ~/.config/rediacc/<config>.json. Three buckets are cleaned, all pure-local (no SSH/renet calls): (1) ACME cert-cache entries whose anchor GUID/repo/machine is no longer in the active config; (2) archived repositories whose grace period has expired (default 7 days, see defaults.pruneGraceDays); (3) dangling cross-references (machine→strategy, strategy→repo). Resources still in use, credentials, storage tokens, and known-hosts are never touched. Default behavior is to apply changes; pass --dry-run to preview only.
+Remove dead weight from the local config file at ~/.config/rediacc/<config>.json. Three buckets are cleaned, all pure-local (no SSH/renet calls): (1) ACME cert-cache entries whose anchor GUID/repo/machine is no longer in the active config; (2) archived repositories whose grace period has expired (default 7 days, see defaults.pruneGraceDays); (3) dangling cross-references
+(machine→strategy, strategy→repo). Resources still in use, credentials, storage tokens, and known-hosts are never touched. Default behavior is to apply changes; pass --dry-run to preview only.
 
 **Options:**
 

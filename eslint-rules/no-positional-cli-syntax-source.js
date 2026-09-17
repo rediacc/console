@@ -17,15 +17,11 @@
  */
 
 import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { COMMAND_TREE_PATH } from './lib/paths.js';
 import {
   EXEMPT_COMMAND_PREFIXES as SHARED_EXEMPT_PREFIXES,
   FREEFORM_ARG_COMMAND_PATHS as SHARED_FREEFORM,
 } from './lib/cli-exempt-lists.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const COMMAND_TREE_PATH = path.resolve(__dirname, '../packages/cli/scripts/command-tree.json');
 
 const FREEFORM_ARG_COMMAND_PATHS = new Set(SHARED_FREEFORM);
 
@@ -36,9 +32,7 @@ const escapeRegex = (str) => str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const buildCommandRegex = (commandPath) => {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
   return new RegExp(
-    // A prose word that ends the clause is not an argument. German splits separable
-    // verbs ("fuehren Sie rdc config reconcile aus."), so the particle lands after the
-    // command and used to read as a positional. Kept identical to the shared detector in
+    // A prose word that ends the clause is not an argument. German splits separable verbs ("fuehren Sie rdc config reconcile aus."), so the particle lands after the command and used to read as a positional. Kept identical to the shared detector in
     // scripts/lib/positional-cli-detector.ts — an ESLint rule cannot import a .ts module,
     // which is why this regex exists twice; if you change one, change the other.
     `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?![\\p{L}]+[.,;:!?])(?=[<{\\["'a-zA-Z0-9])`,
@@ -62,10 +56,7 @@ const classifyCommandPath = (node, commandPath, leaves, parents) => {
 
   const isLeaf = (node.subcommands ?? []).length === 0;
   const takesPositional = (node.arguments ?? []).length > 0;
-  // A command that takes a positional belongs in NEITHER pass: after P4
-  // `rdc repo up <repo-ref>` is the syntax we want taught. This set used to
-  // be every path, which flagged the correct form and claimed the command
-  // "accepts zero positional arguments" — false, and it blocked the reshape.
+  // A command that takes a positional belongs in NEITHER pass: after P4 `rdc repo up <repo-ref>` is the syntax we want taught. This set used to be every path, which flagged the correct form and claimed the command "accepts zero positional arguments" — false, and it blocked the reshape.
   if (isLeaf && !takesPositional) leaves.add(commandPath);
   if (!isLeaf && !takesPositional) parents.add(commandPath);
 };

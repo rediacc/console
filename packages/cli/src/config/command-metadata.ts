@@ -42,15 +42,9 @@ export const READ_TIMEOUT = 120_000;
 export const WRITE_TIMEOUT = 300_000;
 
 export const COMMAND_METADATA: Record<string, CommandMeta> = {
-  // ══════════════════════════════════════════════════════════════════════
-  // Auto-derived MCP tools (read)
-  // ══════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════ Auto-derived MCP tools (read) ══════════════════════════════════════════════════════════════════════
 
-  // ── Detached jobs (they survive the connection that started them) ──────
-  // Reading a job's spool is safe. Cancelling stops real work and gc destroys
-  // logs, so both are destructive and both auto-confirm via --yes.
-  // `job logs --follow` only ends when the job does, which an agent cannot
-  // usefully block on, so it is hidden: an agent polls `job status` instead.
+  // ── Detached jobs (they survive the connection that started them) ────── Reading a job's spool is safe. Cancelling stops real work and gc destroys logs, so both are destructive and both auto-confirm via --yes. `job logs --follow` only ends when the job does, which an agent cannot usefully block on, so it is hidden: an agent polls `job status` instead.
 
   'job list': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
@@ -96,8 +90,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
-  // A read-only probe. It was the one leaf with no classification at all, which
-  // fails closed (no MCP exposure) but leaves the question open rather than answered.
+  // A read-only probe. It was the one leaf with no classification at all, which fails closed (no MCP exposure) but leaves the question open rather than answered.
   'machine health': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
@@ -143,8 +136,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'backup retention': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
-  // The two MUTATIONS opt OUT of MCP. A retention policy decides what the
-  // server DELETES, and an agent that narrows one silently discards snapshots
+  // The two MUTATIONS opt OUT of MCP. A retention policy decides what the server DELETES, and an agent that narrows one silently discards snapshots
   // the operator meant to keep; `set` also REPLACES every knob rather than
   // merging, so a partial call is a data-loss shape. The read above is fine.
   'backup retention set': {
@@ -160,15 +152,11 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'backup verify': {
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
-  // Opts IN as a read, like its `verify` sibling: it opens the repository image
-  // read-only and lists it, mutating nothing. Idempotent because the same
-  // repository yields the same listing until somebody changes the repository,
-  // and the walk itself never writes.
+  // Opts IN as a read, like its `verify` sibling: it opens the repository image read-only and lists it, mutating nothing. Idempotent because the same repository yields the same listing until somebody changes the repository, and the walk itself never writes.
   'backup browse': {
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
-  // Opts IN, unlike the strategy mutations: it is a machine-plane, non-interactive
-  // command an agent legitimately runs. NOT idempotent, because each run mints a
+  // Opts IN, unlike the strategy mutations: it is a machine-plane, non-interactive command an agent legitimately runs. NOT idempotent, because each run mints a
   // new snapshot id and charges quota for whatever it uploads; not destructive,
   // because it only ever adds objects (machine grants carry no delete).
   'backup snapshot': {
@@ -200,9 +188,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
-  // ══════════════════════════════════════════════════════════════════════
-  // Auto-derived MCP tools (write)
-  // ══════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════ Auto-derived MCP tools (write) ══════════════════════════════════════════════════════════════════════
 
   'repo create': {
     mcp: {
@@ -387,18 +373,11 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
-  // ══════════════════════════════════════════════════════════════════════
-  // P4: leaves the registry-keyed coverage check never saw
+  // ══════════════════════════════════════════════════════════════════════ P4: leaves the registry-keyed coverage check never saw
   //
-  // The old gate iterated COMMAND_REGISTRY, which only declares TOP-LEVEL
-  // domains, so any leaf under an undeclared domain was unclassified and nobody
-  // heard about it. The gate now walks the real Commander tree, and it found 32
-  // such leaves. Each is classified below on the posture the rest of this file
-  // already takes: lifecycle operations are tools (repo delete, machine
+  // The old gate iterated COMMAND_REGISTRY, which only declares TOP-LEVEL domains, so any leaf under an undeclared domain was unclassified and nobody heard about it. The gate now walks the real Commander tree, and it found 32 such leaves. Each is classified below on the posture the rest of this file already takes: lifecycle operations are tools (repo delete, machine
   // provision and backup restore all are); exclusions are for what an agent
-  // must not drive — an interactive TTY, key material, a file upload, or a
-  // judgment call a human owes.
-  // ══════════════════════════════════════════════════════════════════════
+  // must not drive — an interactive TTY, key material, a file upload, or a judgment call a human owes. ══════════════════════════════════════════════════════════════════════
 
   'machine setup': {
     mcp: {
@@ -421,8 +400,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   // ★ OPERATOR-RULED (unmapped by spec §5; ruled 2026-07-13): EXCLUDE both.
-  // `infra push` PROVISIONS CLOUD VMs AND SPENDS REAL MONEY. `infra set` is the loaded gun
-  // that `push` fires. An agent must not be able to both arm and pull.
+  // `infra push` PROVISIONS CLOUD VMs AND SPENDS REAL MONEY. `infra set` is the loaded gun that `push` fires. An agent must not be able to both arm and pull.
   'machine infra set': {
     mcpExcludeReason:
       'Sets the infra block that `machine infra push` then acts on, which provisions cloud resources and spends real money. Arming and firing are both operator decisions.',
@@ -431,8 +409,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason:
       'Applies the infra block to the machine: provisions cloud resources, public DNS and TLS. It spends real money and changes what the world can reach.',
   },
-  // ★ OPERATOR-RULED: the cert cache is KEY MATERIAL. `clear` DESTROYS it. Only `status`,
-  // which returns no material, is agent surface. (These are #61's trio: they were declared
+  // ★ OPERATOR-RULED: the cert cache is KEY MATERIAL. `clear` DESTROYS it. Only `status`, which returns no material, is agent surface. (These are #61's trio: they were declared
   // destructive precisely so the console would confirm them; that is not a licence to also
   // hand them to an agent.)
   'machine infra cert pull': {
@@ -451,8 +428,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
 
   // Archived-record bookkeeping (config-plane; see COMMAND_PLANES).
   //
-  // ★ SPEC-MANDATED, and I had it wrong. spec/03 §5 says "MCP: exclude (group):
-  // `Config archive bookkeeping.`" I had classified list/restore as TOOLS by inferring
+  // ★ SPEC-MANDATED, and I had it wrong. spec/03 §5 says "MCP: exclude (group): `Config archive bookkeeping.`" I had classified list/restore as TOOLS by inferring
   // from this file's posture, and an inference does not outrank an explicit disposition.
   // Group-level, so no leaf underneath can acquire a tool by accident.
   'repo admin archive': {
@@ -460,14 +436,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Config archive bookkeeping. Purge also permanently destroys the archived record that makes `repo delete` recoverable, and the safety net is not a thing an agent should be able to cut.',
   },
 
-  // Client-side transfer. Barred from the PROXY (a remote executor cannot see the caller's
-  // filesystem) AND from MCP.
+  // Client-side transfer. Barred from the PROXY (a remote executor cannot see the caller's filesystem) AND from MCP.
   //
-  // ★ SPEC-MANDATED [P0-DECIDED], and it corrects my reasoning rather than merely
-  // overruling it. spec/03 §5: "MCP: exclude (all three): `Requires local filesystem paths
-  // on the MCP host.`" I had made all three tools on the assumption that the MCP server runs
-  // where the operator's files are. It does not have to. The paths are the CALLER's, and the
-  // MCP host is not necessarily the caller.
+  // ★ SPEC-MANDATED [P0-DECIDED], and it corrects my reasoning rather than merely overruling it. spec/03 §5: "MCP: exclude (all three): `Requires local filesystem paths on the MCP host.`" I had made all three tools on the assumption that the MCP server runs where the operator's files are. It does not have to. The paths are the CALLER's, and the MCP host is not necessarily the
+  // caller.
   'repo sync upload': {
     grandGuard: true,
     mcpExcludeReason: 'Requires local filesystem paths on the MCP host. Run it from the CLI.',
@@ -518,8 +490,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Rewrites a damaged config from backup; the operator must see what changed.',
   },
   'config prune': {
-    // ★ SPEC-MANDATED: spec/03 §5 grants mcp(write, idempotent) and withholds only
-    // --purge-archived (which drops EVERY archived record regardless of grace). I had
+    // ★ SPEC-MANDATED: spec/03 §5 grants mcp(write, idempotent) and withholds only --purge-archived (which drops EVERY archived record regardless of grace). I had
     // excluded the whole leaf by inference; the spec is narrower and better — prune is a
     // safe, idempotent cleanup, and only its nuclear option is agent-inappropriate.
     mcp: {
@@ -532,10 +503,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'config edit': {
     mcpExcludeReason: 'Opens $EDITOR on the decrypted config; it needs a TTY.',
   },
-  // Whole subtree: `field get` returns DECRYPTED secret values, and `field rotate`
-  // hard-refuses a non-TTY stdin. Excluded at the parent so no leaf under it can
-  // acquire a tool by accident (the coverage gate treats an ancestor exclusion as
-  // covering its descendants, and would conflict if one of them also declared mcp).
+  // Whole subtree: `field get` returns DECRYPTED secret values, and `field rotate` hard-refuses a non-TTY stdin. Excluded at the parent so no leaf under it can acquire a tool by accident (the coverage gate treats an ancestor exclusion as covering its descendants, and would conflict if one of them also declared mcp).
   'config field': {
     mcpExcludeReason: 'Reads and rewraps secret field values: key material, not agent surface.',
   },
@@ -587,9 +555,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Remote config management: interactive browser flow, use CLI directly',
   },
 
-  // ══════════════════════════════════════════════════════════════════════
-  // Policy-only entries (no MCP tools — enforced by assertCommandPolicy)
-  // ══════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════ Policy-only entries (no MCP tools — enforced by assertCommandPolicy) ══════════════════════════════════════════════════════════════════════
 
   'repo admin template apply': {
     grandGuard: true,
@@ -602,8 +568,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     grandGuard: true,
     mcpExcludeReason: 'Destructive ownership transfer.',
   },
-  // ('repo sync upload' / 'repo sync download' carry grandGuard alongside their
-  // MCP metadata above. They were declared twice — a duplicate key silently wins,
+  // ('repo sync upload' / 'repo sync download' carry grandGuard alongside their MCP metadata above. They were declared twice — a duplicate key silently wins,
   // and the later bare `{ grandGuard: true }` was erasing the MCP entry.)
   'repo tunnel': {
     grandGuard: true,
@@ -611,9 +576,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   'repo admin autostart enable': { grandGuard: true, forkBlocked: true },
   'repo admin autostart disable': { grandGuard: true, forkBlocked: true },
-  // Promote swaps a validated fork into production under the parent's name.
-  // Spec §5.4 [P0-DECIDED] makes it an MCP exclusion: it is exactly the verb an
-  // agent should hand back to the operator.
+  // Promote swaps a validated fork into production under the parent's name. Spec §5.4 [P0-DECIDED] makes it an MCP exclusion: it is exactly the verb an agent should hand back to the operator.
   'repo promote': {
     grandGuard: true,
     mcpExcludeReason: 'Production swap; human decision.',
@@ -747,13 +710,8 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // No grandGuard: trim only releases blocks the filesystem already freed
   // (fstrim + dangling-image prune); repo data is untouched, safe on grands.
-  // --docker-volumes IS data-destructive (deletes unused volumes), so it is
-  // excluded from the MCP surface — CLI only.
-  // `ref` is REQUIRED for the MCP tool even though the CLI positional is
-  // optional: the no-ref form trims every mounted repository on the machine, and
-  // `repoArg` is what the grand guard resolves. Leaving ref omittable (and
-  // `machine` exposed) would let an agent run the machine-wide form unguarded
-  // across grands. The machine-wide trim stays CLI-only.
+  // --docker-volumes IS data-destructive (deletes unused volumes), so it is excluded from the MCP surface — CLI only. `ref` is REQUIRED for the MCP tool even though the CLI positional is optional: the no-ref form trims every mounted repository on the machine, and `repoArg` is what the grand guard resolves. Leaving ref omittable (and `machine` exposed) would let an agent run the
+  // machine-wide form unguarded across grands. The machine-wide trim stays CLI-only.
   'repo trim': {
     mcp: {
       destructive: false,
@@ -772,24 +730,18 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // Gate B on the REPO arm of each connect leaf (the place arm is a machine shell,
   // class A). These were keyed 'term repo' / 'vscode repo' — paths that never
-  // existed in the command tree, so the policy layer and the tree disagreed on the
-  // string. Keyed to the real leaves now.
+  // existed in the command tree, so the policy layer and the tree disagreed on the string. Keyed to the real leaves now.
   'term connect': { grandGuard: true },
   'vscode connect': { grandGuard: true },
 
   // Per-repo secrets — V2 write-only model.
   //
-  // No `grandGuard`: with `get` returning digest only (never plaintext),
-  // there's no read-attack to gate. The mutation-gate is the actual safety
+  // No `grandGuard`: with `get` returning digest only (never plaintext), there's no read-attack to gate. The mutation-gate is the actual safety
   // property; symmetric for humans and agents.
   //
   // Group-level `mcpExcludeReason` satisfies the coverage gate (registry
   // only enumerates 2-word subcommand paths; per-subcommand 3-word
-  // exclusions come back as "stale"). Per-subcommand `mcp:` blocks below
-  // still take effect via the tool factory which walks the live commander
-  // tree, so `repo_secret_list` and `repo_secret_get` are still exposed.
-  // Writes (`set`/`unset`) intentionally have no `mcp:` block — the
-  // `--current` / `--rotate-secret` precondition ceremony requires human
+  // exclusions come back as "stale"). Per-subcommand `mcp:` blocks below still take effect via the tool factory which walks the live commander tree, so `repo_secret_list` and `repo_secret_get` are still exposed. Writes (`set`/`unset`) intentionally have no `mcp:` block — the `--current` / `--rotate-secret` precondition ceremony requires human
   // eyes-on; exposing as MCP would invite blind-retry loops.
   'repo secret': {
     mcpExcludeReason:
@@ -816,16 +768,11 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
-  // ══════════════════════════════════════════════════════════════════════
-  // MCP-excluded commands (with documented reasons)
-  // ══════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════ MCP-excluded commands (with documented reasons) ══════════════════════════════════════════════════════════════════════
 
   // ── Interactive / GUI ─────────────────────────────────────────────
   vscode: { mcpExcludeReason: 'Opens VS Code GUI; not useful for MCP agents.' },
-  // §5.8: the shell itself is interactive, and the container side door it used to
-  // carry (--container/--log-lines/--follow) is retired in favour of `repo logs`
-  // and `repo exec`, which ARE MCP tools. An agent that wants a command run in a
-  // repo now asks for exactly that, instead of asking for a shell and typing into it.
+  // §5.8: the shell itself is interactive, and the container side door it used to carry (--container/--log-lines/--follow) is retired in favour of `repo logs` and `repo exec`, which ARE MCP tools. An agent that wants a command run in a repo now asks for exactly that, instead of asking for a shell and typing into it.
   term: { mcpExcludeReason: 'Interactive shell.' },
 
   // ── Local-only tooling ────────────────────────────────────────────
@@ -863,10 +810,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   'storage import': { mcpExcludeReason: 'Reads a local rclone definition file; use CLI directly.' },
 
-  // ── repo logs / repo exec (R2-F14): the first-class replacements for the
-  // container side door `term connect` used to carry. These are what make the
-  // `term` MCP exclusion honest: an agent that wants a log line or a command run
-  // asks for exactly that, instead of asking for an interactive shell.
+  // ── repo logs / repo exec (R2-F14): the first-class replacements for the container side door `term connect` used to carry. These are what make the `term` MCP exclusion honest: an agent that wants a log line or a command run asks for exactly that, instead of asking for an interactive shell.
   'repo logs': {
     mcp: {
       destructive: false,
@@ -887,19 +831,9 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
-  // ── Repo replicate group (spec 05 §1 read replicas) ───────────────────
-  // Managed state on the REPO (spec §4.4): one set per repo, keyed by the ref.
-  // Gate class B — grandGuard only: replicate FORKS the primary's datastore and
-  // never writes to it, so it stays within one cluster and needs no class-D
-  // unlock. Kept out of MCP until the flow has live-cluster validation.
-  // ★ FLIPPED 2026-07-13 on a GREEN #49 live probe. The data path is proven END TO END on
-  // the shipping binary, red-then-green, one variable apart: before the fix the replica's PV
-  // resolved to an EMPTY directory and the pod came up `1/1 Running` with NO FailedMount and
-  // no error of any kind (a broken replica does not crashloop — it serves nothing, silently).
-  // After one `datastore volumes-open`, the same directory held the nonce THE PRIMARY'S POD
-  // WROTE BEFORE THE FORK EXISTED, byte-identical. No empty volume, no fresh LUKS format and
-  // no default image can produce that value, which is why the nonce was the assertion.
-  // spec/03 §5.4 authorizes exactly these three.
+  // ── Repo replicate group (spec 05 §1 read replicas) ─────────────────── Managed state on the REPO (spec §4.4): one set per repo, keyed by the ref. Gate class B — grandGuard only: replicate FORKS the primary's datastore and never writes to it, so it stays within one cluster and needs no class-D unlock. Kept out of MCP until the flow has live-cluster validation. ★ FLIPPED
+  // 2026-07-13 on a GREEN #49 live probe. The data path is proven END TO END on the shipping binary, red-then-green, one variable apart: before the fix the replica's PV resolved to an EMPTY directory and the pod came up `1/1 Running` with NO FailedMount and no error of any kind (a broken replica does not crashloop — it serves nothing, silently). After one `datastore volumes-open`,
+  // the same directory held the nonce THE PRIMARY'S POD WROTE BEFORE THE FORK EXISTED, byte-identical. No empty volume, no fresh LUKS format and no default image can produce that value, which is why the nonce was the assertion. spec/03 §5.4 authorizes exactly these three.
   'repo replicate': {
     grandGuard: true,
     mcp: {
@@ -933,29 +867,17 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['debug', 'skip-router-restart'],
     },
   },
-  // ★ HELD, and the reason is stated honestly rather than deferred. `refresh` re-forks every
-  // replica, which makes it the exact site of #49's back-door hole: a re-fork WITHOUT the
-  // LUKS re-open would roll the ENTIRE replica set to empty — on the one command whose whole
-  // job is to refresh data. The fix is in and unit-pinned, but the refresh path itself has
-  // never been exercised on a live cluster, and #67 (repo create cannot make a kube repo at
-  // all) has so far prevented the attempt. We do not advertise a command to an agent on the
-  // strength of a promise. Flip this ONLY on a green live refresh.
+  // ★ HELD, and the reason is stated honestly rather than deferred. `refresh` re-forks every replica, which makes it the exact site of #49's back-door hole: a re-fork WITHOUT the LUKS re-open would roll the ENTIRE replica set to empty — on the one command whose whole job is to refresh data. The fix is in and unit-pinned, but the refresh path itself has never been exercised on a
+  // live cluster, and #67 (repo create cannot make a kube repo at all) has so far prevented the attempt. We do not advertise a command to an agent on the strength of a promise. Flip this ONLY on a green live refresh.
   'repo replicate refresh': {
     grandGuard: true,
     mcpExcludeReason:
       'Rolling replica re-clone. The re-fork path is where a missing LUKS re-open would empty the whole replica set (bug #49), and it has never been exercised on a live cluster.',
   },
 
-  // ── Repo canary group (spec 05 §2 release ladder rung 2) ──────────────
-  // ★ EXCLUDED, AND NOT ON A TECHNICALITY. The #49 probe validates REPLICATE's data path —
-  // whether a fork's LUKS volume carries the parent's bytes. A CANARY IS A DIFFERENT
-  // MECHANISM: it runs a NEW IMAGE against the primary's SHARED LIVE DATA, and `canary
-  // weight` SHIFTS REAL PRODUCTION TRAFFIC. The probe says nothing about either.
-  // Same judgement class that already excludes `repo promote`: traffic control over live
-  // production is the verb an agent hands back to the operator.
-  // ★ And #42 means the weighted split was INERT in production until it was fixed today, so
-  // NOBODY HAS EVER WATCHED A WEIGHTED SPLIT WORK ON A REAL MACHINE. We do not hand an AI
-  // agent a traffic-control primitive that has never been observed working.
+  // ── Repo canary group (spec 05 §2 release ladder rung 2) ────────────── ★ EXCLUDED, AND NOT ON A TECHNICALITY. The #49 probe validates REPLICATE's data path — whether a fork's LUKS volume carries the parent's bytes. A CANARY IS A DIFFERENT MECHANISM: it runs a NEW IMAGE against the primary's SHARED LIVE DATA, and `canary weight` SHIFTS REAL PRODUCTION TRAFFIC. The probe says
+  // nothing about either. Same judgement class that already excludes `repo promote`: traffic control over live production is the verb an agent hands back to the operator. ★ And #42 means the weighted split was INERT in production until it was fixed today, so NOBODY HAS EVER WATCHED A WEIGHTED SPLIT WORK ON A REAL MACHINE. We do not hand an AI agent a traffic-control primitive that
+  // has never been observed working.
   'repo canary create': {
     grandGuard: true,
     mcpExcludeReason:
@@ -984,8 +906,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   // Provisioning/teardown are host-mutating and long-running; keep them out of
-  // agent hands by default. Unlike `run`, this family is NOT an absolute block:
-  // the operator can deliberately unlock specific clusters (or all, via `*`)
+  // agent hands by default. Unlike `run`, this family is NOT an absolute block: the operator can deliberately unlock specific clusters (or all, via `*`)
   // with REDIACC_ALLOW_CLUSTER_OPS, ancestry-verified exactly like
   // REDIACC_ALLOW_GRAND_REPO — enforced in command-policy.ts, not here.
   'cluster create': {
@@ -1016,10 +937,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     agentBlocked: true,
     mcpExcludeReason: 'Cluster membership mutation, not an agent operation',
   },
-  // ── Datastore family (spec §5.3) ───────────────────────────────────────
-  // Mutations are class D (agentBlocked + REDIACC_ALLOW_CLUSTER_OPS): each one
-  // moves or destroys a pool holding every repo inside it. Reads are class A and
-  // MCP-visible, which is what lets an agent SEE placement without moving it.
+  // ── Datastore family (spec §5.3) ─────────────────────────────────────── Mutations are class D (agentBlocked + REDIACC_ALLOW_CLUSTER_OPS): each one moves or destroys a pool holding every repo inside it. Reads are class A and MCP-visible, which is what lets an agent SEE placement without moving it.
   'datastore create': {
     agentBlocked: true,
     mcpExcludeReason: 'Infrastructure storage provisioning; operator unlock only.',

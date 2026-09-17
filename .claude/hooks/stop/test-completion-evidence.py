@@ -34,6 +34,18 @@ MUST_PASS = [
         f"cites bare-filename.md:12 first, then {REAL}",
     ),
     ("a single resolving citation is evidence", f"fixed it, see {REAL}"),
+    # Root dotfiles, 2026-09-06. 22 of 24 tracked root dotfiles were uncitable
+    # because CITE_RE demanded a `.<ext>` suffix; that set is every allowlist and
+    # blocklist this repo suppresses through, so the tick that most needs a record was the one that could not leave one.
+    ("an extensionless root dotfile resolves", "drained an entry, see .gitignore:9"),
+    # RE-KEYED 2026-09-06, and the re-key is the finding. This case cited `.dead-bash-allowlist:19`, a root allowlist that W4's policy move (b80552370) relocated to `.ci/policy/.dead-bash-allowlist`. Nothing about CITE_RE changed, but the control went red and stayed red, so `test-hooks.sh` exited 1 at HEAD for a reason unrelated to any hook. A control keyed on a path that another
+    # workstream is allowed to move is a control that reports its own staleness as a defect in the thing it guards.
+    #
+    # `.ci-trigger` is now the ONLY hyphenated extensionless root dotfile the tree has (`git ls-files | grep -E '^\.[A-Za-z0-9_]+-[A-Za-z0-9_-]*$'` returns exactly it), and W4 P0 keeps it at the root deliberately, so it is the one subject the no-slash branch of CITE_RE can still be driven against.
+    (
+        "a hyphenated root dotfile resolves",
+        "re-armed the trigger at .ci-trigger:1",
+    ),
 ]
 
 MUST_FAIL = [
@@ -43,6 +55,8 @@ MUST_FAIL = [
         "several citations, none resolving, is not evidence",
         "cites nowhere/at/all.md:12 and also other/fake.ts:7",
     ),
+    # The dotfile branch must still RESOLVE, or it would turn any dotted prose token into evidence. This is the control that keeps that branch honest.
+    ("a fabricated root dotfile is not evidence", "see .no-such-allowlist:4"),
 ]
 
 
@@ -69,14 +83,11 @@ def main() -> int:
 # =============================================================================
 # v22: the deferred-finding detector and the sweep prompt
 # =============================================================================
-# Added 2026-08-26 after an operator had to ask, by hand, for the findings a
-# session had reported and not fixed. The pre-existing `found, not fixed` gate
+# Added 2026-08-26 after an operator had to ask, by hand, for the findings a session had reported and not fixed. The pre-existing `found, not fixed` gate
 # matched ONE phrase at line-lead; every near-synonym the session actually used
 # walked past it.
 #
-# Collects failures and RETURNS a code, matching main() above -- no bare
-# `assert`, which ruff's S101 forbids in this tree and which would also vanish
-# under `python -O`.
+# Collects failures and RETURNS a code, matching main() above -- no bare `assert`, which ruff's S101 forbids in this tree and which would also vanish under `python -O`.
 
 
 def _wl():
@@ -96,8 +107,7 @@ MUST_HIT = [
     "- I have not fixed the stale comment yet.",
 ]
 
-# Must NOT fire on prose ABOUT the rule: a gate that cannot survive being
-# written about is too broad, and this very file quotes its own triggers.
+# Must NOT fire on prose ABOUT the rule: a gate that cannot survive being written about is too broad, and this very file quotes its own triggers.
 MUST_MISS = [
     "- This line says `found, not fixed` in backticks and is prose.",
     '- The message said "reported, not fixed" in quotes.',
@@ -113,15 +123,11 @@ def _extra():
         f"MISSED a deferred finding: {line!r}" for line in MUST_HIT if not w.deferred_findings(line)
     )
     bad.extend(f"FALSE POSITIVE on: {line!r}" for line in MUST_MISS if w.deferred_findings(line))
-    # CONTROL: it must be able to return nothing, or MUST_HIT would pass against
-    # a function that simply echoes its input.
+    # CONTROL: it must be able to return nothing, or MUST_HIT would pass against a function that simply echoes its input.
     if w.deferred_findings("") or w.deferred_findings("plain text, no admission"):
         bad.append("control failed: the detector fires on text with no admission")
 
-    # The sweep prompt keys on idle_stall's early-return TEXT. The first version
-    # looked for "closed", a word that string never contains, so the prompt
-    # could never have fired. Pin the coupling: change the sentence and this
-    # goes red rather than the prompt going silently off.
+    # The sweep prompt keys on idle_stall's early-return TEXT. The first version looked for "closed", a word that string never contains, so the prompt could never have fired. Pin the coupling: change the sentence and this goes red rather than the prompt going silently off.
     sentinel = "an item left the open state this turn"
     if sentinel not in inspect.getsource(w.idle_stall):
         bad.append("idle_stall's early-return text changed; the sweep prompt would go vacuous")
@@ -140,8 +146,6 @@ def _extra():
     return 0
 
 
-# THE ENTRYPOINT IS LAST ON PURPOSE. It used to sit mid-file, so the cases
-# appended below it never ran and the suite still exited 0 -- a test that cannot
-# fail, caught only because its own output never appeared.
+# THE ENTRYPOINT IS LAST ON PURPOSE. It used to sit mid-file, so the cases appended below it never ran and the suite still exited 0 -- a test that cannot fail, caught only because its own output never appeared.
 if __name__ == "__main__":
     sys.exit(main() or _extra())

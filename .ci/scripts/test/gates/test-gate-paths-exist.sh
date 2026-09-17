@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Gate: every hardcoded packages/<name>/... and private/<name>/... path constant
 # in our tooling must resolve to something that exists in the tree.
 #
@@ -112,14 +119,21 @@ SOURCE_EXTENSIONS='\.(ts|tsx|js|jsx|cjs|mjs|json|jsonc|md|mdx|sh|go|ya?ml|astro|
 # scan_targets -- the tooling files whose path constants we police.
 scan_targets() {
     cd "$REPO_ROOT"
-    find scripts -type f \( -name '*.ts' -o -name '*.sh' \) ! -path '*/node_modules/*'
+    find scripts -type f \( -name '*.ts' -o -name '*.sh' -o -name '*.py' \) ! -path '*/node_modules/*'
     find packages/www/scripts -type f -name '*.js' ! -path '*/node_modules/*'
-    # .ci/scripts is where the ~120 shell gates live -- the largest body of
+    # .ci/scripts is where the gates live -- the largest body of
     # path-constant-bearing tooling in the repo, and it was out of scope here
     # for no documented reason (unlike the deliberate exclusions above).
     # .ci/scripts/test/** is excluded on purpose: those files name planted
     # fixture paths that do not exist by design.
-    find .ci/scripts -type f \( -name '*.ts' -o -name '*.sh' \) \
+    #
+    # `*.py` IS IN THE LIST, and its absence was a hole that had already opened.
+    # SOURCE_EXTENSIONS above has listed `py` as a TARGET extension for a while,
+    # so a Python file could be pointed AT and never READ. Measured 2026-09-08:
+    # 45 quality gates exist ONLY as `check_*.py`, with no `.sh` twin left to
+    # cover them by accident, and W7 P5 takes the rest of that accidental cover
+    # away. A path constant in `check_test_file_orphans.py` was judged by nothing.
+    find .ci/scripts -type f \( -name '*.ts' -o -name '*.sh' -o -name '*.py' \) \
         ! -path '*/node_modules/*' ! -path '.ci/scripts/test/*'
 }
 
@@ -155,7 +169,34 @@ scan_targets() {
 # Candidates carrying shell/glob metacharacters are dropped wholesale rather
 # than partially matched, and the comment-prose skip is the same regex the
 # per-hit `sed` used to re-read the line for.
+#
+# PYTHON NEEDS TWO SKIPS THAT BASH DOES NOT, and without them widening the scan
+# to `*.py` is worse than not widening it. `.ci/scripts/test/**` is excluded
+# wholesale above because those files name planted fixture paths that do not
+# exist by design -- but a Python gate carries its selftest INSIDE the module,
+# so that exclusion cannot be done by directory. Measured 2026-09-08 on the
+# first widened run: both findings were false, `check_syncpack_sources.py:60`
+# (a path quoted in a DOCSTRING explaining a control) and `:123` (a fixture in
+# the selftest table, whose whole point is that the path is NOT covered).
+#
+#   in_doc  -- triple-quoted regions are prose, and awk cannot see them as
+#              comments the way it sees a leading `#`. An ODD number of triple
+#              quotes on a line toggles the state; an even number is a one-line
+#              docstring and leaves it alone.
+#   in_self -- from `def selftest(` to end of file is fixture territory, the
+#              direct analogue of the `.ci/scripts/test/**` exclusion above.
+#
+# BOTH ARE GATED ON `.py`, so the bash and TypeScript findings are byte-identical
+# to what they were before the widening.
 EXTRACT_AWK='
+FNR == 1 { in_doc = 0; in_self = 0 }
+FILENAME ~ /\.py$/ && /^def selftest\(/ { in_self = 1 }
+in_self { next }
+FILENAME ~ /\.py$/ {
+    q = gsub(/"""/, "&") + gsub(/\047\047\047/, "&")
+    if (in_doc) { if (q % 2 == 1) in_doc = 0; next }
+    if (q % 2 == 1) { in_doc = 1; next }
+}
 /^[[:space:]]*(\/\/|#|\*|\/\*)/ { next }
 {
     n = split($0, seg, "[\"\047\140]")
@@ -422,7 +463,7 @@ test_scripts_tsconfig_covers_both_tooling_trees() {
     fi
     # And name one known file per tree, so a glob narrowed to a subdirectory
     # still fails even while the counts stay healthy.
-    assert_contains "$listed" "/scripts/check-cli-docs.ts" \
+    assert_contains "$listed" "/scripts/gates/check-cli-docs.ts" \
         "a known scripts/ file must be in the resolved set"
     assert_contains "$listed" "/.ci/scripts/test/smoke-test-preview.ts" \
         "the only .ci/scripts/ TypeScript file must be in the resolved set"

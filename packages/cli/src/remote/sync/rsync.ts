@@ -96,8 +96,7 @@ function parseItemizeLine(line: string): { category: keyof RsyncChanges; filenam
     return { category: 'deletedFiles', filename: line.substring(9).trim() };
   }
 
-  // Parse itemize-changes format: YXcstpoguax filename
-  // Format: 11 characters of flags, space, filename
+  // Parse itemize-changes format: YXcstpoguax filename Format: 11 characters of flags, space, filename
   if (line.length <= 11 || line[11] !== ' ') {
     return { category: 'other', filename: line };
   }

@@ -11,10 +11,7 @@ export {
   type RenetFunctionName,
   type TypedFunctionPayload,
 } from './data/functions.generated.js';
-// Licensing tiers (generated from renet's tier map, the single source of truth).
-// Consumers must DERIVE the answer from here rather than restating it: the CLI
-// used to keep its own prefix rule and it had already drifted, claiming every
-// backup_* function was licensed when renet licenses none of them.
+// Licensing tiers (generated from renet's tier map, the single source of truth). Consumers must DERIVE the answer from here rather than restating it: the CLI used to keep its own prefix rule and it had already drifted, claiming every backup_* function was licensed when renet licenses none of them.
 export {
   isPendingLicenseDecision,
   LICENSE_TIERS,
@@ -22,8 +19,7 @@ export {
   type LicenseTierEntry,
   requiresLicense,
 } from './data/license-tiers.generated.js';
-// Data
-// Zod validation
+// Data Zod validation
 export {
   FUNCTION_REQUIREMENTS,
   getValidationErrors,
@@ -45,9 +41,7 @@ export type {
   TaskSection,
   VaultContent,
 } from './types/index.js';
-// Utils
-// Rclone config parsing
-// IP/Port validation
+// Utils Rclone config parsing IP/Port validation
 export {
   formatSizeBytes,
   getParamArray,

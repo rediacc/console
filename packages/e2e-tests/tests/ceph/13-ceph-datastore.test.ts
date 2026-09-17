@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
 
-// Combined topology only: needs a Ceph cluster AND a worker acting as the
-// RBD client that hosts the datastore.
+// Combined topology only: needs a Ceph cluster AND a worker acting as the RBD client that hosts the datastore.
 const cephNodes = (process.env.VM_CEPH_NODES ?? '').trim();
 const workers = (process.env.VM_WORKERS ?? '').trim().split(/\s+/).filter(Boolean);
 const hasCephAndClient = cephNodes.length > 0 && workers.length >= 1;
@@ -120,8 +119,7 @@ test.describe
     });
 
     test('4. the registry reports the ceph backend for the named datastore', async () => {
-      // Ask the REGISTRY (the layer that owns backend identity), scoped to the
-      // exact record. The previous form — `datastore status <name> --json` —
+      // Ask the REGISTRY (the layer that owns backend identity), scoped to the exact record. The previous form — `datastore status <name> --json` —
       // passed the name POSITIONALLY; `status` only knows --path, and cobra
       // silently swallowed the stray arg, so the assert ran against the DEFAULT
       // base pool (caught in CI; renet now rejects stray positionals outright).
@@ -148,9 +146,7 @@ test.describe
     });
 
     test('5. datastore_expand grows the RBD datastore', async () => {
-      // The PATH is the subject: `datastore_expand` with no --datastore-path grows the
-      // machine's BASE pool, not this ceph-backed datastore. Dropping it would not fail
-      // loudly — it would expand the wrong datastore and assert nothing about RBD.
+      // The PATH is the subject: `datastore_expand` with no --datastore-path grows the machine's BASE pool, not this ceph-backed datastore. Dropping it would not fail loudly — it would expand the wrong datastore and assert nothing about RBD.
       const result = await worker.datastoreExpand('3G', dsPath);
       expect(worker.isSuccess(result)).toBe(true);
     });
@@ -233,9 +229,7 @@ test.describe
     });
 
     test('10. no orphan RBD clone image or fork snapshot remain', async () => {
-      // rbd ls / snap ls run on a worker (ceph nodes are cephadm-only, no host rbd).
-      // The clone image name is DERIVED from the fork now, so assert on the tag it
-      // must carry rather than on a name this test used to dictate.
+      // rbd ls / snap ls run on a worker (ceph nodes are cephadm-only, no host rbd). The clone image name is DERIVED from the fork now, so assert on the tag it must carry rather than on a name this test used to dictate.
       const images = await worker.executeViaBridge(`sudo rbd ls ${pool}`);
       expect(images.stdout).not.toContain(forkTag);
 
@@ -245,15 +239,12 @@ test.describe
       expect(snaps.stdout).not.toContain(forkSnapshot);
     });
 
-    // Repo-on-RBD lifecycle runs last so the fork/unfork tests above operate on
-    // a clean datastore. It is self-contained: create + verify on-disk + remove.
+    // Repo-on-RBD lifecycle runs last so the fork/unfork tests above operate on a clean datastore. It is self-contained: create + verify on-disk + remove.
     test('11. repository lifecycle on the RBD datastore', async () => {
       const created = await worker.repositoryNew(repoName, '512M', repoPassword, dsPath);
       expect(worker.isSuccess(created)).toBe(true);
 
-      // `renet list repositories` does not surface repos on this non-default
-      // datastore, so verify the repo's LUKS image landed on the RBD-backed
-      // datastore directly — that is the "repo on RBD" guarantee.
+      // `renet list repositories` does not surface repos on this non-default datastore, so verify the repo's LUKS image landed on the RBD-backed datastore directly — that is the "repo on RBD" guarantee.
       const onDisk = await worker.executeViaBridge(
         `sudo test -f ${dsPath}/repositories/${repoName} && echo EXISTS || echo MISSING`
       );
@@ -264,8 +255,7 @@ test.describe
     });
 
     test('12. cleanup: unmount + remove the source datastore and pool', async () => {
-      // Tear down any residual per-repo docker/mounts, then unmount the datastore
-      // and unmap its RBD device before removing the image + pool.
+      // Tear down any residual per-repo docker/mounts, then unmount the datastore and unmap its RBD device before removing the image + pool.
       await worker.executeViaBridge(
         `sudo renet daemon teardown --network-id 9152 --force 2>/dev/null || true`
       );

@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-go-tool-path is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_go_tool_path.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_go_tool_path.py" but its header derives "...check-go-tool-path.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # A script that INSTALLS a Go tool must be able to FIND it.
 #
 # WHY THIS EXISTS. `go install` writes to $(go env GOPATH)/bin, and nothing puts
@@ -80,7 +89,14 @@ scan_file() {
     printf '         FIX: GOBIN="$dir" go install ... then run "$dir/tool", the shape .ci/scripts/lib/toolchain.sh uses.\n'
 }
 
-FILES="$(git ls-files '.ci/**/*.sh' 'scripts/**/*.sh' 2>/dev/null)"
+# PATHSPEC: `.ci/*.sh`, NOT `.ci/**/*.sh`. Git's default (non-`:(glob)`) wildmatch
+# lets `*` cross `/`, so `.ci/*.sh` already reaches every depth, while `.ci/**/*.sh`
+# demands a literal slash after `.ci/` and therefore MISSES every script sitting
+# directly under `.ci/`. Measured 2026-09-06 when .ci/bootstrap.sh became the first
+# file in that class: the two spellings return the same 453 tracked files, and only
+# the second one drops bootstrap.sh. A scanner that silently skips a file is the
+# vacuity failure this gate exists to prevent, so the narrower spelling is a bug.
+FILES="$(git ls-files '.ci/*.sh' 'scripts/*.sh' 2>/dev/null)"
 COUNT="$(printf '%s\n' "$FILES" | grep -c . || true)"
 
 # ANTI-VACUITY FLOOR. A glob that silently matches nothing would make this gate

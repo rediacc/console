@@ -33,7 +33,7 @@ VERSION="${VERSION:?check-existing-release.sh: VERSION must be set}"
 : "${GITHUB_REPOSITORY:?check-existing-release.sh: GITHUB_REPOSITORY must be set}"
 
 git fetch --tags --quiet
-if git tag -l "v${VERSION}" | grep -q .; then
+if [ -n "$(git tag -l "v${VERSION}")" ]; then
     echo "::error::Git tag v${VERSION} already exists. Aborting to prevent duplicate publish."
     exit 1
 fi

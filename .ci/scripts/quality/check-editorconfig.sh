@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Enforce .editorconfig rules across the entire repository
 #
 # Checks:

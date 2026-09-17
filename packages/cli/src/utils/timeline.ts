@@ -130,11 +130,9 @@ export function getDoneLabel(name: string): string {
   return doneLabels[name] ?? name;
 }
 
-// ---------------------------------------------------------------------------
-// End-of-command timing summary: proportional bars + waterfall.
+// --------------------------------------------------------------------------- End-of-command timing summary: proportional bars + waterfall.
 // Pure string builders so they are unit-testable; callers decide whether to
-// print (TTY only) and pass the wall-clock duration they displayed as Total.
-// ---------------------------------------------------------------------------
+// print (TTY only) and pass the wall-clock duration they displayed as Total. ---------------------------------------------------------------------------
 
 const BAR_WIDTH = 24;
 const WATERFALL_WIDTH = 44;

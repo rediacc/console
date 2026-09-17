@@ -39,8 +39,7 @@ const SOCKET_NAME = 'executor-daemon.sock';
  * mismatch is structurally impossible rather than a checked error.
  */
 function configScopeSuffix(): string {
-  // Defensive: unit tests mock config-resources with partial shapes, and path
-  // derivation must never crash a caller that will route direct anyway.
+  // Defensive: unit tests mock config-resources with partial shapes, and path derivation must never crash a caller that will route direct anyway.
   const name =
     typeof configService.getEffectiveConfigName === 'function'
       ? configService.getEffectiveConfigName()

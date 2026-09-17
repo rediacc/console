@@ -74,19 +74,12 @@ function browseJsonCandidates(line: string): string[] {
   if (wrapped) {
     // JSON.parse the quoted span rather than replaceAll('\\"', '"').
     //
-    // The naive unescape handled ONLY escaped quotes, so a filename containing
-    // a newline or a backslash -- both legal on Linux -- came back as invalid
-    // JSON. It failed safe (parseBrowseResult returns undefined, browse names
-    // the error), but "fails safe" here means REFUSING a repository that is
-    // perfectly fine, and the operator would have no way to tell that from a
-    // real fault. Wrapping the span in quotes and parsing it as a JSON string
-    // literal applies the same unescaping rules the writer used, for every
-    // escape rather than one of them.
+    // The naive unescape handled ONLY escaped quotes, so a filename containing a newline or a backslash -- both legal on Linux -- came back as invalid JSON. It failed safe (parseBrowseResult returns undefined, browse names the error), but "fails safe" here means REFUSING a repository that is perfectly fine, and the operator would have no way to tell that from a real fault.
+    // Wrapping the span in quotes and parsing it as a JSON string literal applies the same unescaping rules the writer used, for every escape rather than one of them.
     try {
       out.push(JSON.parse(`"${wrapped[1]}"`) as string);
     } catch {
-      // Not a decodable string literal: fall through to the bare-JSON attempt
-      // below rather than discarding the line.
+      // Not a decodable string literal: fall through to the bare-JSON attempt below rather than discarding the line.
     }
   }
   const start = line.indexOf('{');
@@ -126,8 +119,7 @@ export function parseBrowseResult(stdout: string | undefined): BrowseListing | u
         const parsed: unknown = JSON.parse(candidate);
         if (isBrowseListing(parsed)) found = parsed;
       } catch {
-        // Not JSON, or a partial line. Keep scanning: a stray log line must not
-        // hide a listing that appears later in the buffer.
+        // Not JSON, or a partial line. Keep scanning: a stray log line must not hide a listing that appears later in the buffer.
       }
     }
   }

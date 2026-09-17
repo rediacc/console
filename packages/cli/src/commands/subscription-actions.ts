@@ -107,8 +107,7 @@ export async function executeSubscriptionStatus(): Promise<void> {
   }
   await assertSubscriptionScopeMatchesConfig(tokenState.token);
 
-  // No local-only view exists: outputRemoteStatus IS this verb's entire output,
-  // so a failed report must surface the server's reason, not exit 0 in silence.
+  // No local-only view exists: outputRemoteStatus IS this verb's entire output, so a failed report must surface the server's reason, not exit 0 in silence.
   const status = await fetchSubscriptionLicenseReportOrThrow();
   if (!status) {
     throw new ValidationError(t('errors.subscription.notLoggedIn'));
@@ -170,10 +169,7 @@ function outputRemoteStatus(
     );
   }
 
-  // Soft-claim (design decision 2): a renewal never fails for being over the
-  // cap, it just flags the row. Nothing else would tell the operator that the
-  // fleet has outgrown its plan until the next NEW repository is refused, so
-  // the count is called out rather than left to be spotted row by row.
+  // Soft-claim (design decision 2): a renewal never fails for being over the cap, it just flags the row. Nothing else would tell the operator that the fleet has outgrown its plan until the next NEW repository is refused, so the count is called out rather than left to be spotted row by row.
   const overLimitCount = status.machineSlots.machines.filter((m) => m.overLimit).length;
   if (overLimitCount > 0) {
     outputService.warn(
@@ -393,10 +389,7 @@ export async function executeRepoLicenseRefresh(ref: string): Promise<void> {
       const sshPrivateKey =
         localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-      // #74: declare the datastore the repo is RECORDED on. This is the only
-      // caller that passes no requestedSizeGb, so it is the one that reaches
-      // the size probe — and without this it measured the machine's default
-      // datastore for a repo that lives on a named one, found nothing, and
+      // #74: declare the datastore the repo is RECORDED on. This is the only caller that passes no requestedSizeGb, so it is the one that reaches the size probe — and without this it measured the machine's default datastore for a repo that lives on a named one, found nothing, and
       // reissued at the 1 GB floor. Undefined for a {machine} placement, which
       // correctly leaves the machine's own default in place.
       const datastoreMount = await recordedDatastoreMount(repoKey);

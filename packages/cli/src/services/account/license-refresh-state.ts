@@ -44,8 +44,7 @@ export async function isRefreshDue(machineName: string, now = Date.now()): Promi
   const last = config?.state?.licenseRefresh?.[machineName];
 
   if (typeof last !== 'number' || Number.isNaN(last)) return true;
-  // A timestamp in the future means a clock change, not a recent refresh.
-  // Treating it as recent would suppress refreshes until the clock caught up.
+  // A timestamp in the future means a clock change, not a recent refresh. Treating it as recent would suppress refreshes until the clock caught up.
   if (last > now) return true;
   return now - last >= LICENSE_REFRESH_COOLDOWN_MS;
 }

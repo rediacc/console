@@ -125,57 +125,26 @@ describe('CLI contract', () => {
 
     // A pinned count is a deliberate drift alarm: it fires when the proxy-capable
     // surface changes so the change is noticed rather than silent. 80 = the
-    // machine-plane, non-interactive, non-direct-SFTP, non-local-effect commands
-    // after the P4-w2a config exodus, the w2b retirement of the hidden
-    // `_refprobe run` P4 task-zero probe (its `repo cat` acceptance vehicle is a
-    // real, already-counted leaf), and the w2b fold of `repo mount`/`repo unmount`
-    // into `repo up`/`repo down` (both were proxy-capable, so 82 -> 80), including
-    // the five `rdc job` verbs.
+    // machine-plane, non-interactive, non-direct-SFTP, non-local-effect commands after the P4-w2a config exodus, the w2b retirement of the hidden `_refprobe run` P4 task-zero probe (its `repo cat` acceptance vehicle is a real, already-counted leaf), and the w2b fold of `repo mount`/`repo unmount` into `repo up`/`repo down` (both were proxy-capable, so 82 -> 80), including the five
+    // `rdc job` verbs.
     //
-    // 80 -> 85 across the rest of w2b: `repo canary create` replaced the actionable
-    // parent (net 0), `cluster snapshot create|list` (+2), the subscription flatten
-    // collapsed 5 machine-plane leaves into 2 (-3), the datastore family went from a
-    // 5-leaf facade to 10 real leaves (+5), and `repo logs` + `repo exec` landed
-    // (+2). The `repo admin` subtree move is net 0: every relocated verb kept the
-    // plane it already had, `repo template list` included, because its COMMAND_PLANES
-    // entry moved with it.
+    // 80 -> 85 across the rest of w2b: `repo canary create` replaced the actionable parent (net 0), `cluster snapshot create|list` (+2), the subscription flatten collapsed 5 machine-plane leaves into 2 (-3), the datastore family went from a 5-leaf facade to 10 real leaves (+5), and `repo logs` + `repo exec` landed (+2). The `repo admin` subtree move is net 0: every relocated verb
+    // kept the plane it already had, `repo template list` included, because its COMMAND_PLANES entry moved with it.
     //
     // 85 -> 82: `repo admin archive {list,restore,purge}` are now config-plane. They
-    // had been machine-plane and PROXY-CAPABLE purely by inheritance — the §5.4
-    // relocation carried them out of the `config` noun (config-plane by default) into
-    // `repo` (machine-plane by default) and no plane entry was written. Their effect
-    // is entirely on the caller's config file, so offering them for remote execution
-    // was a §4.9 wrong-target bug: a proxied `archive purge` would have permanently
-    // deleted the PROXY HOST's archived records. The plane gate checks domains, not
-    // leaves, so it could not see this.
-    // 82 -> 83: the chunk-store `backup verify` landed — a machine-plane,
-    // non-interactive verification verb (the backup_verify FunctionDef runs on the
-    // machine that holds the anchor), so it is genuinely proxy-capable like its
-    // `backup list`/`status`/`restore` siblings. The two other new backup reads
-    // (`usage`, `manifests`) are `other`-plane account-tunnel reads, so they are
-    // NOT proxy-capable and do not move this count.
-    // 83 -> 84: the chunk-store `backup snapshot` landed — machine-plane and
-    // non-interactive, and the work genuinely happens on the machine holding
-    // the repo, so it is proxy-capable for the same reason `backup verify` is.
+    // had been machine-plane and PROXY-CAPABLE purely by inheritance — the §5.4 relocation carried them out of the `config` noun (config-plane by default) into `repo` (machine-plane by default) and no plane entry was written. Their effect is entirely on the caller's config file, so offering them for remote execution was a §4.9 wrong-target bug: a proxied `archive purge` would have
+    // permanently deleted the PROXY HOST's archived records. The plane gate checks domains, not leaves, so it could not see this. 82 -> 83: the chunk-store `backup verify` landed — a machine-plane, non-interactive verification verb (the backup_verify FunctionDef runs on the machine that holds the anchor), so it is genuinely proxy-capable like its `backup list`/`status`/`restore`
+    // siblings. The two other new backup reads (`usage`, `manifests`) are `other`-plane account-tunnel reads, so they are NOT proxy-capable and do not move this count. 83 -> 84: the chunk-store `backup snapshot` landed — machine-plane and non-interactive, and the work genuinely happens on the machine holding the repo, so it is proxy-capable for the same reason `backup verify` is.
     // It arrived without moving this pin, which is precisely what the pin is
     // for; it was caught by wiring `packages/shared`'s tests into the LOCAL
-    // gate set (they ran in CI and nowhere else, so nothing failed until a
-    // push).
-    // 84 -> 85: `backup browse` landed. It reads rather than writes, but the
-    // read happens where the repository image is: it opens the LUKS image on
-    // the machine and walks its filesystem, exactly as `backup verify` opens
-    // the anchor there. Machine-plane and non-interactive, so proxy-capable
+    // gate set (they ran in CI and nowhere else, so nothing failed until a push). 84 -> 85: `backup browse` landed. It reads rather than writes, but the read happens where the repository image is: it opens the LUKS image on the machine and walks its filesystem, exactly as `backup verify` opens the anchor there. Machine-plane and non-interactive, so proxy-capable
     // for the same reason. Note that "local" in its help means "no account
-    // server, no network, no credentials" — it does NOT mean the caller's
-    // laptop, and reading it that way is how a reviewer would talk themselves
-    // into `other`-plane, which would then refuse to run through a proxy.
-    // Update this only when the surface genuinely changes.
+    // server, no network, no credentials" — it does NOT mean the caller's laptop, and reading it that way is how a reviewer would talk themselves into `other`-plane, which would then refuse to run through a proxy. Update this only when the surface genuinely changes.
     expect(proxyCapableCommands().length).toBe(85);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {
-    // The CLI's --proxy guard prints proxyBlockedReason, so a command can never
-    // be refused without telling the operator why.
+    // The CLI's --proxy guard prints proxyBlockedReason, so a command can never be refused without telling the operator why.
     for (const cmd of CLI_CONTRACT.commands) {
       if (cmd.proxyCapable) {
         expect(cmd.proxyBlockedReason, cmd.pathKey).toBeUndefined();
@@ -186,9 +155,7 @@ describe('CLI contract', () => {
   });
 
   it('excludes the machine commands a remote executor must not run', () => {
-    // Two classes. Client-side transfer: the paths exist only on the operator's
-    // own disk. Local effect: the command reaches a machine, but its whole point
-    // is to write what it found back into the CALLER's config or filesystem.
+    // Two classes. Client-side transfer: the paths exist only on the operator's own disk. Local effect: the command reaches a machine, but its whole point is to write what it found back into the CALLER's config or filesystem.
     const excluded = [
       'repo sync upload',
       'repo sync download',
@@ -207,16 +174,14 @@ describe('CLI contract', () => {
       expect(cmd?.proxyBlockedReason, pathKey).toBeTruthy();
     }
 
-    // Every other machine-plane, non-interactive command IS proxyable, so this
-    // list is the complete exclusion set rather than a sample.
+    // Every other machine-plane, non-interactive command IS proxyable, so this list is the complete exclusion set rather than a sample.
     const blocked = CLI_CONTRACT.commands
       .filter((c) => c.plane === 'machine' && !c.interactive && !c.proxyCapable)
       .map((c) => c.pathKey)
       .sort();
     expect(blocked).toEqual([...excluded].sort());
 
-    // Reads a local file but ships the bytes inside the renet params, which
-    // crosses the wire fine — param building, not a transfer.
+    // Reads a local file but ships the bytes inside the renet params, which crosses the wire fine — param building, not a transfer.
     expect(getCommand('repo admin template apply')?.proxyCapable).toBe(true);
   });
 
@@ -236,9 +201,7 @@ describe('CLI contract', () => {
   });
 
   it('filters to the commands a selected resource can drive', () => {
-    // A command drives a resource through EITHER binding: the flag or the
-    // positional. `repo cat` binds its repo positionally (repoOption is null,
-    // repoPositional is "ref"), so a repoOption-only filter would drop it.
+    // A command drives a resource through EITHER binding: the flag or the positional. `repo cat` binds its repo positionally (repoOption is null, repoPositional is "ref"), so a repoOption-only filter would drop it.
     const forMachine = commandsForContext({ machine: true });
     expect(forMachine.every((c) => c.machineOption !== null || c.machinePositional !== null)).toBe(
       true
@@ -255,8 +218,7 @@ describe('CLI contract', () => {
   });
 
   it('records the enum options, so a consumer can render a hard Select', () => {
-    // An option carries `choices` exactly when it declared Commander .choices().
-    // Absent means free-form, so the console renders a text input instead.
+    // An option carries `choices` exactly when it declared Commander .choices(). Absent means free-form, so the console renders a text input instead.
     const enums = CLI_CONTRACT.commands
       .flatMap((c) => c.options.map((o) => ({ cmd: c.pathKey, opt: o })))
       .filter(({ opt }) => opt.choices)
@@ -268,15 +230,11 @@ describe('CLI contract', () => {
       'cluster create --control-ds-backend=local|ceph',
       'cluster fork --writes=local|ceph',
       'config audit log --actor=human|agent',
-      // #34: `datastore init` dispatched a renet verb that does not exist. The real
-      // named-registry surface replaces it, and `--backend` names the two BACKENDS
-      // the schema actually has (local file-backed vs rbd), not the old local|ceph.
+      // #34: `datastore init` dispatched a renet verb that does not exist. The real named-registry surface replaces it, and `--backend` names the two BACKENDS the schema actually has (local file-backed vs rbd), not the old local|ceph.
       'datastore attach --writes=local|ceph',
       'datastore create --backend=local|rbd',
       'datastore fork --writes=local|ceph',
-      // A4 .choices() sweep: machine list --sort, machine provider add
-      // --ssh-key-format, repo migrate/pull/push --strategy, and the three
-      // vscode --server-provider commands are the eight enums added this wave.
+      // A4 .choices() sweep: machine list --sort, machine provider add --ssh-key-format, repo migrate/pull/push --strategy, and the three vscode --server-provider commands are the eight enums added this wave.
       'machine list --sort=name|ip|user|port|datastore',
       'machine provider add --ssh-key-format=inline_list|resource_id',
       'ops down --backend=kvm|qemu',
@@ -310,10 +268,7 @@ describe('CLI contract', () => {
   });
 
   it('serialises positional arguments, and binds a repo-ref positional to repoPositional', () => {
-    // The contract used to be options-only (this test used to assert zero
-    // positionals). The ref concept added the serialisation rule, so positionals
-    // now travel — and a repo-ref positional MUST surface as repoPositional, or
-    // the console picker and the executor's policy scope silently degrade.
+    // The contract used to be options-only (this test used to assert zero positionals). The ref concept added the serialisation rule, so positionals now travel — and a repo-ref positional MUST surface as repoPositional, or the console picker and the executor's policy scope silently degrade.
     const cat = getCommand('repo cat');
     expect(cat?.positionals).toEqual([
       {
@@ -340,17 +295,13 @@ describe('CLI contract', () => {
       expect(cmd?.machinePositional, pathKey).toBeNull();
     }
 
-    // A machine verb's `<name>` positional names an EXISTING machine, so it MUST
-    // bind machinePositional (the console's machine picker and container
-    // discovery resolve the machine from it). The creators name a machine that
-    // does not exist yet, so they stay unbound.
+    // A machine verb's `<name>` positional names an EXISTING machine, so it MUST bind machinePositional (the console's machine picker and container discovery resolve the machine from it). The creators name a machine that does not exist yet, so they stay unbound.
     const status = getCommand('machine status');
     expect(status?.positionals.map((p) => p.kind)).toEqual(['machine']);
     expect(status?.machinePositional).toBe('name');
     expect(getCommand('machine add')?.machinePositional).toBeNull();
 
-    // Every positional a command declares has a non-empty name, so a consumer
-    // can key a form field or a positionals-bag entry off it.
+    // Every positional a command declares has a non-empty name, so a consumer can key a form field or a positionals-bag entry off it.
     for (const cmd of CLI_CONTRACT.commands) {
       for (const positional of cmd.positionals) {
         expect(positional.name.length, `${cmd.pathKey}`).toBeGreaterThan(0);
@@ -370,10 +321,7 @@ describe('CLI contract', () => {
   });
 
   it('binds resource-shaped options to the right kinds', () => {
-    // `kinds` is the picker HINT (pick-or-type combobox), distinct from the hard
-    // `choices` Select. The cross-plane transfer flags carry more than one kind:
-    // a repo can be pushed to a machine OR a storage, migrated to a machine OR a
-    // cluster. These are load-bearing for the console's PickerField.
+    // `kinds` is the picker HINT (pick-or-type combobox), distinct from the hard `choices` Select. The cross-plane transfer flags carry more than one kind: a repo can be pushed to a machine OR a storage, migrated to a machine OR a cluster. These are load-bearing for the console's PickerField.
     const kindsOf = (pathKey: string, long: string) =>
       getCommand(pathKey)?.options.find((o) => o.long === long)?.kinds;
     expect(kindsOf('repo push', 'to')).toEqual(['machine', 'storage']);
@@ -392,9 +340,7 @@ describe('CLI contract', () => {
   });
 
   it('gives every option a tier and never hides a mandatory option', () => {
-    // tier is required (STAGE-3 tightening): the console reads it to fold
-    // `advanced` options behind a disclosure. A mandatory option can never be
-    // `advanced` — the CLI refuses to run without it, so it must always show.
+    // tier is required (STAGE-3 tightening): the console reads it to fold `advanced` options behind a disclosure. A mandatory option can never be `advanced` — the CLI refuses to run without it, so it must always show.
     for (const cmd of CLI_CONTRACT.commands) {
       for (const opt of cmd.options) {
         expect(['common', 'advanced'], `${cmd.pathKey} --${opt.long}`).toContain(opt.tier);
@@ -406,8 +352,7 @@ describe('CLI contract', () => {
   });
 
   it('only binds kinds that the discovery registry can resolve', () => {
-    // Every kind a console renders a picker for must have an entry in
-    // RESOURCE_DISCOVERY, or the picker would have no source to populate from.
+    // Every kind a console renders a picker for must have an entry in RESOURCE_DISCOVERY, or the picker would have no source to populate from.
     const known = new Set(Object.keys(RESOURCE_DISCOVERY));
     for (const cmd of CLI_CONTRACT.commands) {
       for (const opt of cmd.options) {
@@ -419,10 +364,7 @@ describe('CLI contract', () => {
   });
 
   it('resolves every example description key and only fills real fields', () => {
-    // An example's descriptionKey feeds the CLI help "Examples:" block, so it
-    // must exist in the English bundle. Its `values` drive console click-to-fill,
-    // so every key must name a real form field — a positional or an option — of
-    // that same command, or the fill would target a field the form never renders.
+    // An example's descriptionKey feeds the CLI help "Examples:" block, so it must exist in the English bundle. Its `values` drive console click-to-fill, so every key must name a real form field — a positional or an option — of that same command, or the fill would target a field the form never renders.
     const enPath = fileURLToPath(new URL('../data/i18n/en.json', import.meta.url));
     const en: Record<string, string> = JSON.parse(readFileSync(enPath, 'utf-8'));
 
@@ -439,8 +381,7 @@ describe('CLI contract', () => {
   });
 
   it('gives every output hint a primaryKey among its columns', () => {
-    // ResultView routes a table row to a detail page via primaryKey, so it must
-    // be one of the columns actually shown. (checkContractInvariants enforces
+    // ResultView routes a table row to a detail page via primaryKey, so it must be one of the columns actually shown. (checkContractInvariants enforces
     // this too; asserted here so a failure names the command.)
     for (const cmd of CLI_CONTRACT.commands) {
       if (cmd.output) {
@@ -450,8 +391,7 @@ describe('CLI contract', () => {
   });
 
   it('keeps keywords lowercase palette-safe tokens', () => {
-    // Keywords are untranslated english search tokens the palette scores against.
-    // They must be lowercase kebab-shaped so the scorer treats them uniformly.
+    // Keywords are untranslated english search tokens the palette scores against. They must be lowercase kebab-shaped so the scorer treats them uniformly.
     for (const cmd of CLI_CONTRACT.commands) {
       for (const kw of cmd.keywords ?? []) {
         expect(kw, `${cmd.pathKey}: ${kw}`).toMatch(/^[a-z][a-z0-9-]*$/);
@@ -461,8 +401,7 @@ describe('CLI contract', () => {
 
   it('marks a secret-bearing option sensitive so the console can redact it', () => {
     // `repo secret set --value` carries the secret; the console masks the input
-    // and redacts it from run history. The `--key` names the secret, not its
-    // value, so it is NOT sensitive.
+    // and redacts it from run history. The `--key` names the secret, not its value, so it is NOT sensitive.
     const set = getCommand('repo secret set');
     expect(set?.options.find((o) => o.long === 'value')?.sensitive).toBe(true);
     expect(set?.options.find((o) => o.long === 'key')?.sensitive).toBeUndefined();

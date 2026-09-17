@@ -1,4 +1,13 @@
 #!/bin/bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-script-exec-bit is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_script_exec_bit.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_script_exec_bit.py" but its header derives "...check-script-exec-bit.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Every shell script INVOKED as `./path.sh` must be committed executable.
 #
 # WHY THIS EXISTS. A script invoked as `./x.sh` without mode 100755 does not

@@ -1,4 +1,13 @@
 #!/bin/bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-label-refs is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_label_references.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_label_references.py" but its header derives "...check-label-references.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Every GitHub label a workflow or .ci script references by name must be
 # declared in .github/labels.yml.
 #
@@ -177,7 +186,10 @@ if [ "$DISTINCT" -lt "$MIN_DISTINCT" ]; then
     exit 1
 fi
 
-DECLARED="$(grep -E '^- name:' "$LABELS_FILE" | sed -E 's/^- name:[[:space:]]*//' | sed -E 's/[[:space:]]+$//')"
+# `|| true` IS LOAD-BEARING: grep exits 1 on a file that declares no labels and
+# `set -e` then killed this script silently, before anything could say so.
+# Reproduced 2026-09-06 with LABEL_REFS_LABELS_FILE pointed at an empty file.
+DECLARED="$(grep -E '^- name:' "$LABELS_FILE" | sed -E 's/^- name:[[:space:]]*//' | sed -E 's/[[:space:]]+$//' || true)"
 
 MISSING=0
 while IFS= read -r label; do

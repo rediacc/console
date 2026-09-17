@@ -1,23 +1,13 @@
 # 07 — P1 Gate Review (renet storage core + config schema v3)
 
 Reviewer: Fable gate agent, 2026-07-10 ~21:05. Fully-autonomous mode (this review
-stands in for the user per the approved plan). Subject: the entire P1 phase against
-`09-implementation-phases.md` §P1 and specs 01-05 as amended by the 00-gate-review
-rulings. Evidence root: scratchpad `checkpoints/` + `reports/` (paths below are
-relative to it unless absolute).
+stands in for the user per the approved plan). Subject: the entire P1 phase against `09-implementation-phases.md` §P1 and specs 01-05 as amended by the 00-gate-review rulings. Evidence root: scratchpad `checkpoints/` + `reports/` (paths below are relative to it unless absolute).
 
 ## VERDICT: **PASS-WITH-NOTES**
 
-P1 is complete and proven. Every gate criterion is met with executed evidence, and
-every top claim I could re-run cheaply I re-ran myself and confirmed green
-(`check:ci-renet` exit 0, `go test ./...` exit 0, vitest 1424/1424, tsc 0 errors,
-`gofmt -l` clean, e2e-coverage gate green, bridge contract types checked
-symbol-by-symbol, HEADs unmoved). Nothing must be *fixed* before P2 starts. The
-NOTES are: (1) the three kube e2e suites are **runtime-red-until-rewritten** —
-deliberate, contractually scoped in spec 06, and P2 must treat them as red;
-(2) three CLI cluster-arm commands string-dispatch deleted bridge functions
-(runtime-latent, P2/P4); (3) a benign `package-lock.json` metadata drift and the
-206-string i18n baseline grandfathering are recorded debt (housekeeping / P7).
+P1 is complete and proven. Every gate criterion is met with executed evidence, and every top claim I could re-run cheaply I re-ran myself and confirmed green (`check:ci-renet` exit 0, `go test ./...` exit 0, vitest 1424/1424, tsc 0 errors, `gofmt -l` clean, e2e-coverage gate green, bridge contract types checked symbol-by-symbol, HEADs unmoved). Nothing must be *fixed* before P2
+starts. The NOTES are: (1) the three kube e2e suites are **runtime-red-until-rewritten** — deliberate, contractually scoped in spec 06, and P2 must treat them as red; (2) three CLI cluster-arm commands string-dispatch deleted bridge functions (runtime-latent, P2/P4); (3) a benign `package-lock.json` metadata drift and the 206-string i18n baseline grandfathering are recorded debt
+(housekeeping / P7).
 
 ## Per-criterion evidence table
 
@@ -52,50 +42,27 @@ deliberate, contractually scoped in spec 06, and P2 must treat them as red;
 ## Authoritative P2 carry-in list (for the P2 brief)
 
 1. **Datastore node-label at attach** (wave3b BUG #2): nothing labels the hosting
-   node `rediacc.io/ds-<name>=true`, so local-PV pods stay Pending until a manual
-   `kubectl label`. `datastore attach` on a cluster-attached datastore must apply
-   (and detach must remove) the label — the codified remove-before-add relabel from
-   the failover sequence is the natural home.
+node `rediacc.io/ds-<name>=true`, so local-PV pods stay Pending until a manual `kubectl label`. `datastore attach` on a cluster-attached datastore must apply (and detach must remove) the label — the codified remove-before-add relabel from the failover sequence is the natural home.
 2. **Cluster-kubeconfig wiring for cluster-attached datastores** (wave3b GAP):
-   `distro.DetectDistro` only auto-wires an embedded k3s (distro.json at the
-   datastore mount); a system k3s from `cluster create` fell back to ambient
-   kubectl/KUBECONFIG and needed a manual bridge. P2 must thread the cluster's
-   kubeconfig into the dispatch (toolexec stdin+env combo noted by p1-kuberuntime).
+`distro.DetectDistro` only auto-wires an embedded k3s (distro.json at the datastore mount); a system k3s from `cluster create` fell back to ambient kubectl/KUBECONFIG and needed a manual bridge. P2 must thread the cluster's kubeconfig into the dispatch (toolexec stdin+env combo noted by p1-kuberuntime).
 3. **E2E suite rewrites per spec 06** (red-until-rewritten): 15-k8s-repo promotes
-   the deliverable-5 transcript shape; 16-k8s-ceph → 16-datastore-cluster (group-snap
-   fork + CT-01k/CT-02k kine/CA assertions); 17-multinode keeps the fork/migrate
-   proof shape, swaps repo bring-up onto `repository_up/down/status`. Plus the
-   harness gap: add `DatastoreMethods.datastoreCreate/Attach/Detach/Fork/Snapshot*`,
-   delete the dead `KubeMethods.kubeNamespace*/kubePv*/kubeDeploy`.
+the deliverable-5 transcript shape; 16-k8s-ceph → 16-datastore-cluster (group-snap fork + CT-01k/CT-02k kine/CA assertions); 17-multinode keeps the fork/migrate proof shape, swaps repo bring-up onto `repository_up/down/status`. Plus the harness gap: add `DatastoreMethods.datastoreCreate/Attach/Detach/Fork/Snapshot*`, delete the dead `KubeMethods.kubeNamespace*/kubePv*/kubeDeploy`.
 4. **Cluster-scope fork PKI scrub F1-F7** (8-step scrub, spec 05 §7): P1 landed the
-   ns-level F6/F8 halves; `kube_identity_rewrite operation=fork` currently REFUSES
-   with a P2 pointer (F1-safe by construction). P2 implements the full scrub inside
-   anchor+rejoin cluster fork.
+ns-level F6/F8 halves; `kube_identity_rewrite operation=fork` currently REFUSES with a P2 pointer (F1-safe by construction). P2 implements the full scrub inside anchor+rejoin cluster fork.
 5. **kvm memberIds → state.clusters** (configv3 handoff): cluster VM membership
-   belongs in the v3 state bucket; the kvm provisioner still tracks it its old way.
+belongs in the v3 state bucket; the kvm provisioner still tracks it its old way.
 6. **`--secrets-encryption` interaction** (spec 05 residual): k3s secrets-encryption
-   flag vs the fork kine scrub is unexercised; verify during the P2 scrub work.
+flag vs the fork kine scrub is unexercised; verify during the P2 scrub work.
 7. **CLI cluster-arm latent references** (P2/P4 split per spec 06 §last):
-   `repo-create-delete.ts` (`kube_namespace_create/delete`), `repo-fork.ts`
-   (`kube_namespace_fork`), `datastore.ts` (`datastore_ceph_unfork`) string-dispatch
-   deleted bridge fns — vitest-green (mocked) but runtime-broken; rewire onto the
-   datastore dispatch when P2 builds the cluster arms (final naming is P4).
+`repo-create-delete.ts` (`kube_namespace_create/delete`), `repo-fork.ts` (`kube_namespace_fork`), `datastore.ts` (`datastore_ceph_unfork`) string-dispatch deleted bridge fns — vitest-green (mocked) but runtime-broken; rewire onto the datastore dispatch when P2 builds the cluster arms (final naming is P4).
 8. **Live fencing race**: exclusive-lock break + osd-blocklist against a *live*
-   second holder is unit-tested (mocked `rbd lock ls`) but never raced on real
-   nodes — fold into P2's multinode suite where two nodes exist.
+second holder is unit-tested (mocked `rbd lock ls`) but never raced on real nodes — fold into P2's multinode suite where two nodes exist.
 9. **Overlay-fill auto-grow wiring**: dm-thin ships queue-when-full + the
-   storage-health hook point; the auto-grow reaction (spike-f recommendation) is
-   unwired — P2/P3 alongside the reconcile timer generalization.
+storage-health hook point; the auto-grow reaction (spike-f recommendation) is unwired — P2/P3 alongside the reconcile timer generalization.
 
-P4 reminders recorded here so they aren't lost: latest-magic resolver removal +
-retired-stubbed ceph verbs; the flat composite-key config view bridging ~40 command
-consumers; `repo-takeover` → promote rename at the CLI surface; D3's baseline
-re-keying is P7.
+P4 reminders recorded here so they aren't lost: latest-magic resolver removal + retired-stubbed ceph verbs; the flat composite-key config view bridging ~40 command consumers; `repo-takeover` → promote rename at the CLI surface; D3's baseline re-keying is P7.
 
 ## Checkpoint integrity
 
-`checkpoints/phase-1-console.patch` (238K), `phase-1-renet.patch` (400K),
-`phase-1-untracked.tar.gz` + `phase-1-untracked-list.txt`, and both status files
-exist and match the live tree. The untracked list correctly captures the new
-packages (`pkg/reporuntime/`, `pkg/kubevolume/`, `pkg/datastore/*` new files,
-`config-field-crypto.ts`, `state-schema.ts`, `v2-to-v3.ts`, reconcile service).
+`checkpoints/phase-1-console.patch` (238K), `phase-1-renet.patch` (400K), `phase-1-untracked.tar.gz` + `phase-1-untracked-list.txt`, and both status files exist and match the live tree. The untracked list correctly captures the new packages (`pkg/reporuntime/`, `pkg/kubevolume/`, `pkg/datastore/*` new files, `config-field-crypto.ts`, `state-schema.ts`, `v2-to-v3.ts`, reconcile
+service).

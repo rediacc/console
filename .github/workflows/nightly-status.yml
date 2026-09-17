@@ -34,9 +34,11 @@ on:
     workflows: ["Console CI"]
     types: [completed]
 
-# Read-only by default; the reporting job widens to issues:write for itself.
-permissions:
-  contents: read
+# No default; the reporting job declares issues: write for itself.
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 # Serialise per run so a rerun's completion cannot race the first report and
 # double-post. Never cancel: a dropped report is the whole failure mode here.

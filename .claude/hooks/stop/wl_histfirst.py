@@ -30,19 +30,16 @@ if the printed facts turn out to be skimmed.
 import re
 import subprocess
 
-# The literal string the block body carries. A later increment greps the transcript for it
-# to confirm the demand was issued, so it is load-bearing rather than decorative.
+# The literal string the block body carries. A later increment greps the transcript for it to confirm the demand was issued, so it is load-bearing rather than decorative.
 HISTORY_MARKER = "READ THE HISTORY BEFORE YOU GUESS"
 
 # How far back to look when no last-green head is banked.
 FALLBACK_WINDOW = "HEAD~10"
-# Commits and suspects shown. A block nobody finishes reading is a block that taught
-# nothing, and the top few are where a regression from this session's own work will be.
+# Commits and suspects shown. A block nobody finishes reading is a block that taught nothing, and the top few are where a regression from this session's own work will be.
 MAX_COMMITS = 8
 MAX_SUSPECTS = 5
 
-# Tokens too generic to imply a connection between a job name and a path. Without this,
-# "test" alone matches most of the tree and every commit looks like a suspect.
+# Tokens too generic to imply a connection between a job name and a path. Without this, "test" alone matches most of the tree and every commit looks like a suspect.
 STOPWORDS = frozenset(
     (
         "test",
@@ -109,11 +106,8 @@ def suspects(root, window, job_tokens):
     if not job_tokens:
         return []
     out = []
-    # AN EXPLICIT RECORD SEPARATOR, because `--name-only` puts a BLANK LINE between the
-    # format line and the file list. Splitting on "\n\n" therefore cuts INSIDE a commit,
-    # not between commits, and every block after the first begins with a path -- so the
-    # separator test failed and every commit was skipped. Caught by running it against the
-    # real failure and getting a confident "NONE" for a file two commits had just touched.
+    # AN EXPLICIT RECORD SEPARATOR, because `--name-only` puts a BLANK LINE between the format line and the file list. Splitting on "\n\n" therefore cuts INSIDE a commit, not between commits, and every block after the first begins with a path -- so the separator test failed and every commit was skipped. Caught by running it against the real failure and getting a confident "NONE"
+    # for a file two commits had just touched.
     log = _git(root, "log", "--format=%x1e%H%x1f%s", "--name-only", window)
     if not log:
         return []
@@ -157,9 +151,7 @@ def render(root, rows, last_green):
         " (no last-green head banked yet, so this is a guess)" if not last_green else "",
     )
     if not found:
-        # AFFIRMATIVE EVIDENCE, not silence. "Nothing you changed is named like the thing
-        # that broke" is the correct read of a flake, and it is the read this session got
-        # wrong three times before an agent measured the base rate.
+        # AFFIRMATIVE EVIDENCE, not silence. "Nothing you changed is named like the thing that broke" is the correct read of a flake, and it is the read this session got wrong three times before an agent measured the base rate.
         return (
             "%s\n  NONE of them touches a file named like the failing job. That is evidence\n"
             "  FOR a flake and against a regression -- check whether this job has failed\n"
@@ -170,6 +162,20 @@ def render(root, rows, last_green):
         body.append("    %s  %s" % (sha, subject[:88]))
         body.extend("               %s" % p for p in paths)
     body.append("  Start here:  git log -p -1 %s -- %s" % (found[0][0], found[0][2][0]))
+    # THE SECOND LAYER OF THE SAME EVIDENCE (W12 P2.3). The commits above say what
+    # CHANGED in these files; a compacted plan record says why the plan wanted them
+    # that way, which is the half a `git log` cannot show. Appended here rather than at the wl_checks call site because the suspect paths only exist here.
+    #
+    # DEGRADES TO SILENCE, matching this module's stated fail semantics: it can only ADD to a block already being emitted, so losing it loses a hint and can never grant an exit that was otherwise refused.
+    try:
+        import wl_planrec as R  # noqa: PLC0415 -- optional, and the block must not depend on it
+
+        why = R.why_for_paths(root, [pth for _s, _sub, paths in found for pth in paths])
+        if why:
+            body.append("")
+            body.extend("  " + ln for ln in why.split("\n"))
+    except Exception:  # noqa: BLE001 -- see above
+        pass
     return "\n".join(body)
 
 

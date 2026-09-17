@@ -22,7 +22,7 @@ M="$TUTORIAL_MACHINE_NAME"
 rm -f ~/.config/rediacc/rediacc.json 2>/dev/null || true
 rdc config init --ssh-key "$TUTORIAL_SSH_KEY"
 rdc machine add "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
-for i in $(seq 1 30); do
+for ((i = 1; i <= 30; i++)); do
     ssh -i "$TUTORIAL_SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 \
         "$TUTORIAL_MACHINE_USER@$TUTORIAL_MACHINE_IP" true 2>/dev/null && break
     sleep 2
@@ -42,7 +42,7 @@ rdc repo fork app --tag work --up --no-wait
 # Seed real data: wait for postgres, then create a customers table with
 # three rows. The on-camera arc drops this table and the rollback
 # restores it.
-for i in $(seq 1 60); do
+for ((i = 1; i <= 60; i++)); do
     rdc term connect app:work \
         -c 'docker exec db pg_isready -q -U app -d app' 2>/dev/null && break
     sleep 2
@@ -122,7 +122,7 @@ section "And the dropped table is back — all three rows"
 # Exec variant waits for postgres to finish crash recovery after the
 # fresh fork's first boot before running the same SELECT.
 run_cmd "rdc term connect app:rollback --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'" \
-    "rdc term connect app:rollback --command 'for i in \$(seq 1 30); do docker exec db pg_isready -q -U app -d app && break; sleep 2; done; docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
+    "rdc term connect app:rollback --command 'for ((i=1; i<=30; i++)); do docker exec db pg_isready -q -U app -d app && break; sleep 2; done; docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
 
 pause 2
 

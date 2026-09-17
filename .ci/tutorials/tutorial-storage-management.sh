@@ -20,7 +20,7 @@ M="$TUTORIAL_MACHINE_NAME"
 rm -f ~/.config/rediacc/rediacc.json 2>/dev/null || true
 rdc config init --ssh-key "$TUTORIAL_SSH_KEY"
 rdc machine add "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
-for i in $(seq 1 30); do
+for ((i = 1; i <= 30; i++)); do
     ssh -i "$TUTORIAL_SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 \
         "$TUTORIAL_MACHINE_USER@$TUTORIAL_MACHINE_IP" true 2>/dev/null && break
     sleep 2

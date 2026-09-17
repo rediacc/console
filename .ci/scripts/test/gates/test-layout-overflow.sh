@@ -1,5 +1,12 @@
 #!/bin/bash
-# Tests for scripts/check-layout-overflow.ts.
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
+# Tests for scripts/gates/check-layout-overflow.ts.
 #
 # WHY THIS FILE EXISTS AND WHAT IT MAY AND MAY NOT ASSERT.
 # The gate is RED on the real tree today, deliberately: four CSS rules make this site
@@ -25,7 +32,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-GATE="$REPO_ROOT/scripts/check-layout-overflow.ts"
+GATE="$REPO_ROOT/scripts/gates/check-layout-overflow.ts"
 [ -f "$GATE" ] || log_fail "gate not found: $GATE"
 
 test_selftest_passes_and_plants_both_shapes() {
@@ -59,15 +66,22 @@ test_the_control_can_actually_fail() {
     #
     # Copying the lib satisfies the imports without touching the tree, so the test stays
     # in the parallel pool.
+    #
+    # THE TEMP TREE MIRRORS THE REAL DEPTH, and that is not cosmetic. W9 P2 moved the
+    # gates from scripts/ to scripts/gates/, so their imports became `../lib/...`. A
+    # mutant written flat beside a copied `lib/` then failed to resolve, and the run
+    # died before a single control executed -- exactly the first failure this comment
+    # already records, returning by a different door.
     local tmp
     tmp="$(mktemp -d)"
     # BLOCKER: expanding tmp now binds the specific path into the trap so cleanup fires even if the variable is reassigned
     # shellcheck disable=SC2064
     trap "rm -rf '$tmp'" RETURN
     cp -R "$REPO_ROOT/scripts/lib" "$tmp/lib"
-    sed "s/d.get('white-space') === 'nowrap' &&/false \&\&/" "$GATE" >"$tmp/mutant.ts"
+    mkdir -p "$tmp/gates"
+    sed "s/d.get('white-space') === 'nowrap' &&/false \&\&/" "$GATE" >"$tmp/gates/mutant.ts"
     local out rc=0
-    out="$(cd "$REPO_ROOT" && npx tsx "$tmp/mutant.ts" --selftest 2>&1)" || rc=$?
+    out="$(cd "$REPO_ROOT" && npx tsx "$tmp/gates/mutant.ts" --selftest 2>&1)" || rc=$?
     assert_exit_code 1 "$rc" "a gate that stopped detecting the nowrap shape must FAIL its own controls"
     assert_contains "$out" "FAIL" "the mutant must name the failing control"
     log_pass "removing the detector flips the gate's controls red (the controls are load-bearing)"

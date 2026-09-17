@@ -119,8 +119,7 @@ async function provision(
   const serverSecret = generateServerSecret();
   const cek = await generateCek();
 
-  // The wrappedCek may deliberately be wrapped under a DIFFERENT server secret or
-  // CEK to model a rotation the device never re-wrapped for (stale slot).
+  // The wrappedCek may deliberately be wrapped under a DIFFERENT server secret or CEK to model a rotation the device never re-wrapped for (stale slot).
   const wrappedCek = await wrapCekForSlot(
     opts.wrapCek ?? cek,
     slotSecret,
@@ -186,8 +185,7 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
     const f = await provision(PASSWORD);
     wireConfigApi(f.session, f.config);
 
-    // Spy on the shared cekUnwrap but keep the REAL implementation, so we can
-    // read back exactly which CEK the CLI's deriveCek produced.
+    // Spy on the shared cekUnwrap but keep the REAL implementation, so we can read back exactly which CEK the CLI's deriveCek produced.
     const unwrapSpy = vi.spyOn(configCrypto, 'cekUnwrap');
 
     const adapter = new RemoteConfigAdapter(
@@ -239,10 +237,7 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
   });
 
   it('rejects with RemoteStaleSlotError on a rotated/stale wrappedCek (generation mismatch)', async () => {
-    // The slot secret is CORRECT, but the stored wrappedCek was wrapped under a
-    // different server secret — i.e. the CEK was rotated and this device kept its
-    // old wrapping. The AES-GCM auth tag fails and the CLI surfaces its re-enroll
-    // error rather than a raw OperationError.
+    // The slot secret is CORRECT, but the stored wrappedCek was wrapped under a different server secret — i.e. the CEK was rotated and this device kept its old wrapping. The AES-GCM auth tag fails and the CLI surfaces its re-enroll error rather than a raw OperationError.
     const rotatedServerSecret = generateServerSecret();
     const f = await provision(PASSWORD, TEAM_ID, { wrapServerSecret: rotatedServerSecret });
     wireConfigApi(f.session, f.config);
@@ -268,16 +263,11 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
 
   // ─── F5: the blob refuses AFTER a successful CEK unwrap ────────────────
   //
-  // Enrolling a fresh device against a store that already holds a DIFFERENT
-  // config for the org used to die with a raw WebCrypto
-  // "OperationError: The operation failed for an operation-specific reason",
-  // because the only crypto catch in pull() wraps cekUnwrap, and here the
-  // unwrap SUCCEEDS. The failure is one layer later, in selectiveDecrypt.
+  // Enrolling a fresh device against a store that already holds a DIFFERENT config for the org used to die with a raw WebCrypto "OperationError: The operation failed for an operation-specific reason", because the only crypto catch in pull() wraps cekUnwrap, and here the unwrap SUCCEEDS. The failure is one layer later, in selectiveDecrypt.
 
   it('names the store/config mismatch when the blob was sealed under another CEK', async () => {
     // The slot wraps CEK-B; the stored blob was sealed under CEK-A. The device
-    // unwraps CEK-B cleanly and then meets a config it cannot read: exactly the
-    // "store already holds a different config for this org" case.
+    // unwraps CEK-B cleanly and then meets a config it cannot read: exactly the "store already holds a different config for this org" case.
     const otherCek = await generateCek();
     const f = await provision(PASSWORD, TEAM_ID, { wrapCek: otherCek });
     wireConfigApi(f.session, f.config);
@@ -316,8 +306,7 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
 
   it('separates a session-layer failure from the store mismatch', async () => {
     // Same CEK on both sides, so the HMAC and the CEK layer both pass; only the
-    // server-derived SDK layer is wrong. That is a retryable session problem,
-    // not a store-identity problem, and it must not claim the latter.
+    // server-derived SDK layer is wrong. That is a retryable session problem, not a store-identity problem, and it must not claim the latter.
     const f = await provision(PASSWORD);
     wireConfigApi({ ...f.session, sdk_derived: toBase64(randomBytes(32)) }, f.config);
 

@@ -24,9 +24,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
   },
 }));
 
-// Storage primitives are mocked separately so individual tests can spy on
-// the actual write/delete calls without going through the resource-state
-// plumbing.
+// Storage primitives are mocked separately so individual tests can spy on the actual write/delete calls without going through the resource-state plumbing.
 const mockReadRepositorySecret = vi.hoisted(() => vi.fn());
 const mockListRepositorySecretKeyModes = vi.hoisted(() => vi.fn());
 const mockWriteRepositorySecret = vi.hoisted(() => vi.fn());
@@ -117,11 +115,7 @@ const forkRepo = {
   grandGuid: GRAND_GUID, // points to a different repo → isFork
 };
 
-// Config-local resolution (resolveRepoRefLocal → resolveRefLocal) reads
-// config.resources.repositories to map a ref to its family/tag WITHOUT any
-// placement. Read verbs (get/list) drive this real path, so their configs must
-// carry the `app` family. Both tags present so bare `app` (→ grand 'latest')
-// and `app:dev` both resolve.
+// Config-local resolution (resolveRepoRefLocal → resolveRefLocal) reads config.resources.repositories to map a ref to its family/tag WITHOUT any placement. Read verbs (get/list) drive this real path, so their configs must carry the `app` family. Both tags present so bare `app` (→ grand 'latest') and `app:dev` both resolve.
 const readConfig = {
   resources: {
     repositories: { app: { grand: 'latest', tags: { latest: grandRepo, dev: forkRepo } } },
@@ -169,8 +163,7 @@ describe('rdc repo secret get/list', () => {
     restoreEnv(envBackup);
   });
 
-  // V2: write-only model. `get` returns digest only — no plaintext for
-  // anyone, no agent-vs-human asymmetry. The fork-vs-grand `grandGuard`
+  // V2: write-only model. `get` returns digest only — no plaintext for anyone, no agent-vs-human asymmetry. The fork-vs-grand `grandGuard`
   // is gone (mutation-gate is the actual safety property; reads are
   // always safe because there's no plaintext to leak).
   describe('agent on grand repo (V2: read-safe, no grandGuard)', () => {
@@ -319,9 +312,7 @@ describe('rdc repo secret get/list', () => {
     });
 
     it('first-write of a new key still requires --current under agent (existing precedent)', async () => {
-      // The mutation gate refuses any sensitive write without a knowledge claim
-      // under agent context, even on first-write. Agents must always be
-      // intentional about secrets, even new ones.
+      // The mutation gate refuses any sensitive write without a knowledge claim under agent context, even on first-write. Agents must always be intentional about secrets, even new ones.
       mockReadRepositorySecret.mockReturnValue(undefined);
       mockGetCurrent.mockResolvedValue(familyConfig('dev', forkRepo));
 
@@ -423,9 +414,7 @@ describe('rdc repo secret get/list', () => {
       expect(mockWriteRepositorySecret).toHaveBeenCalled();
     });
 
-    // --mode declares .choices(['env', 'file']), so Commander rejects an
-    // out-of-set value at parse time, before the handler runs. The handler's own
-    // badMode check still guards non-CLI callers.
+    // --mode declares .choices(['env', 'file']), so Commander rejects an out-of-set value at parse time, before the handler runs. The handler's own badMode check still guards non-CLI callers.
     it('rejects --mode foo', async () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
       mockGetCurrent.mockResolvedValue(familyConfig('latest', grandRepo));
@@ -445,8 +434,7 @@ describe('rdc repo secret get/list', () => {
     it('write to a NEW key on grand requires --current "" (mutation-gate symmetric)', async () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
       mockGetCurrent.mockResolvedValue(familyConfig('latest', grandRepo));
-      // Without any precondition flag, mutation-gate refuses (was previously
-      // blocked by the now-removed grandGuard policy layer).
+      // Without any precondition flag, mutation-gate refuses (was previously blocked by the now-removed grandGuard policy layer).
       await expect(
         run(['repo', 'secret', 'set', 'app', '--key', 'X', '--value', 'v'])
       ).rejects.toThrow(/sensitive path requires --current/);
@@ -600,14 +588,10 @@ describe('rdc repo secret get/list', () => {
         const next = (err as InstanceType<typeof PreconditionValidationError>).next;
         expect(next.summary).toBeTruthy();
         expect(next.options).toHaveLength(2);
-        // Second option should be the rotate-skip variant. The original
-        // command is reconstructed verbatim and ends with --rotate-secret.
+        // Second option should be the rotate-skip variant. The original command is reconstructed verbatim and ends with --rotate-secret.
         const rotateOption = next.options?.find((o) => o.run.includes('--rotate-secret'));
         expect(rotateOption).toBeDefined();
-        // First option's `run` is the i18n key stub (mocked t returns the key
-        // + params verbatim), so we assert the params interpolation reaches
-        // the structured payload — the test mocks t to return the key path,
-        // which is enough to confirm the helper wiring is correct.
+        // First option's `run` is the i18n key stub (mocked t returns the key + params verbatim), so we assert the params interpolation reaches the structured payload — the test mocks t to return the key path, which is enough to confirm the helper wiring is correct.
         const verifyOption = next.options?.find((o) =>
           o.run.startsWith('errors.precondition.next.options.confirm.run')
         );

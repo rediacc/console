@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Unit-tests the rsv_assert_bijection function in release-state-validator.sh against synthetic version lists
+# ---- end gate ----
+
 # Unit-tests the rsv_assert_bijection function in release-state-validator.sh
 # against synthetic version lists. The live R2 + git probes are exercised
 # end-to-end by the quality gate itself during CI; this test pins the pure
@@ -353,6 +362,6 @@ test_control_the_tag_lookup_can_fail
 
 log_pass "all release-state-consistency cases"
 echo "  Blind spot: rsv_assert_channel_pointer_tagged is PURE. These cases prove"
-echo "  the judgement, not the READS -- whether check-release-state.sh actually"
+echo "  the judgement, not the READS -- whether check_release_state.py actually"
 echo "  fetches latest.json/manifest.json and the git tags is not covered here,"
 echo "  and cannot be locally (aws is unavailable on host and in the devbox)."

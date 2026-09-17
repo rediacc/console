@@ -186,10 +186,7 @@ class MachineConnectionManager {
       clearTimeout(entry.lingerTimer);
       entry.lingerTimer = null;
     }
-    // Reserve the lease BEFORE awaiting the shared connect: with two
-    // concurrent first acquires, the early waiter could otherwise acquire,
-    // release, and close the entry while the late waiter is still awaiting
-    // connectPromise, handing the late waiter a closed session.
+    // Reserve the lease BEFORE awaiting the shared connect: with two concurrent first acquires, the early waiter could otherwise acquire, release, and close the entry while the late waiter is still awaiting connectPromise, handing the late waiter a closed session.
     entry.refCount += 1;
     try {
       await this.ensureLive(entry);
@@ -268,8 +265,7 @@ class MachineConnectionManager {
     if (entry.refCount > 0) return;
     const linger = idleLingerMs();
     if (linger > 0 && this.entries.get(entry.key) === entry) {
-      // Keep the warm session for the idle window instead of closing at
-      // refcount zero. unref: never keeps a short-lived process alive.
+      // Keep the warm session for the idle window instead of closing at refcount zero. unref: never keeps a short-lived process alive.
       entry.lingerTimer = setTimeout(() => {
         entry.lingerTimer = null;
         if (entry.refCount === 0 && this.entries.get(entry.key) === entry) {

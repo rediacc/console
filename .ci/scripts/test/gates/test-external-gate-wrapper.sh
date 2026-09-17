@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Tests for .ci/scripts/quality/run-external-gate.sh, the wrapper that gives
 # externally-dependent quality gates their three-state behaviour (hard on a
 # normal PR, absent on a labelled PR via the step `if:`, soft on schedule).

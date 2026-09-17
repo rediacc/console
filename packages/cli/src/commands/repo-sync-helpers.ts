@@ -65,9 +65,7 @@ export function buildSyncRemotePaths(
   remoteSubPath: string | undefined,
   isFile: boolean
 ): SyncRemotePaths {
-  // Strip leading + trailing slashes from the user-provided sub-path so
-  // we never produce `path//` or `//path` even if the caller passes a
-  // pre-slashed value. In single-file mode the result has no trailing
+  // Strip leading + trailing slashes from the user-provided sub-path so we never produce `path//` or `//path` even if the caller passes a pre-slashed value. In single-file mode the result has no trailing
   // slash; in directory mode we add exactly one.
   const sub = (remoteSubPath ?? '').replaceAll(/^\/+|\/+$/g, '');
   if (isFile) {

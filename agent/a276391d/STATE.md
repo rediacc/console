@@ -4,10 +4,7 @@
 
 ## What the manager is doing
 
-Driving three Opus writers on the secret-namespace migration and verifying each against
-its ARTIFACTS, not its summary. Standing constraints unchanged: nothing committed, never
-print a secret value, `mc_migrate_claude` expires 2026-09-08 and must not enter GitHub,
-never `rotation sweep`, copy-not-mint (8ter).
+Driving three Opus writers on the secret-namespace migration and verifying each against its ARTIFACTS, not its summary. Standing constraints unchanged: nothing committed, never print a secret value, `mc_migrate_claude` expires 2026-09-08 and must not enter GitHub, never `rotation sweep`, copy-not-mint (8ter).
 
 | writer | task id | owns | status |
 |---|---|---|---|

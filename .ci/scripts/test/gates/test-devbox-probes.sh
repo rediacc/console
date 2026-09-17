@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Controls for devbox_exec and the three usability probes.
 #
 # WHY THESE MATTER MORE THAN MOST. All three failure modes present IDENTICALLY:
@@ -16,17 +23,9 @@
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 
-fails=0
-count=0
-ok() {
-    count=$((count + 1))
-    echo "PASS: $1"
-}
-no() {
-    count=$((count + 1))
-    fails=$((fails + 1))
-    echo "FAIL: $1" >&2
-}
+# The tally (`ok`, `no`, `tally_finish`) is shared. It lived here in triplicate
+# until 2026-09-06; test-helpers.sh carries why all three moved at once.
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/test-helpers.sh"
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -108,10 +107,5 @@ else
     no "exec: not a login shell; go/node would be missing from PATH"
 fi
 
-echo
-if [[ "$fails" -eq 0 ]]; then
-    echo "✓ devbox probes: $count control(s) passed"
-    exit 0
-fi
-echo "✗ devbox probes: $fails of $count control(s) failed" >&2
-exit 1
+tally_finish "devbox probes"
+exit $?

@@ -154,12 +154,8 @@ async function validateSyncOptions(
   command: typeof CMD.REPO_SYNC_UPLOAD | typeof CMD.REPO_SYNC_DOWNLOAD,
   resolveOptions: Parameters<typeof resolveRepoRef>[1] = {}
 ): Promise<ValidatedSyncOptions> {
-  // Sync is a plain SSH/rsync/SFTP transfer against a machine's filesystem: no
-  // renet function call, so there is no executor sink to thread a kubeCluster
-  // marker into (and no control-node rerouting — the executor's kubeCluster
-  // override does not apply here). resolveRepoRef derives the machine that
-  // actually HOLDS the data (the datastore's attach machine), which is exactly
-  // the host these bytes must land on for either runtime.
+  // Sync is a plain SSH/rsync/SFTP transfer against a machine's filesystem: no renet function call, so there is no executor sink to thread a kubeCluster marker into (and no control-node rerouting — the executor's kubeCluster override does not apply here). resolveRepoRef derives the machine that actually HOLDS the data (the datastore's attach machine), which is exactly the host
+  // these bytes must land on for either runtime.
   const { name, repoKey, machineName, kubeCluster, datastore } = await resolveRepoRef(
     ref,
     resolveOptions
@@ -194,19 +190,11 @@ async function prepareSyncConnection(
 
   const repoConfig = await configService.getRepository(validated.repository);
 
-  // The docker per-repo GUID mount check and the per-repo SSH key deployment are
-  // BOTH docker-world concepts: a kubernetes repo has no per-repo dockerd and no
-  // GUID mount, its files live in a plain folder on the named datastore. Running
-  // them on the kube arm would fail the mount check on a perfectly healthy repo.
+  // The docker per-repo GUID mount check and the per-repo SSH key deployment are BOTH docker-world concepts: a kubernetes repo has no per-repo dockerd and no GUID mount, its files live in a plain folder on the named datastore. Running them on the kube arm would fail the mount check on a perfectly healthy repo.
   const kubeArm = validated.kubeDatastore !== undefined;
 
-  // Provisioning (above) must precede any renet use, so it stays a barrier.
-  // After it, these steps are independent of one another: the mount check is a
-  // renet call over SSH, the repo-key deployment is an SFTP write, and the
-  // connection-detail lookup is a local config read. Run them concurrently
-  // instead of serial round-trips. The machine connection pool is refcounted and
-  // shares one SSH session across these leases, and each renet/SFTP exec opens
-  // its own ssh2 channel, so concurrent execution is safe. deployRepoKeyIfNeeded
+  // Provisioning (above) must precede any renet use, so it stays a barrier. After it, these steps are independent of one another: the mount check is a renet call over SSH, the repo-key deployment is an SFTP write, and the connection-detail lookup is a local config read. Run them concurrently instead of serial round-trips. The machine connection pool is refcounted and shares one
+  // SSH session across these leases, and each renet/SFTP exec opens its own ssh2 channel, so concurrent execution is safe. deployRepoKeyIfNeeded
   // swallows its own errors (non-fatal); a failed mount check still aborts the
   // whole setup because Promise.all rejects.
   const [details] = await Promise.all([
@@ -223,10 +211,7 @@ async function prepareSyncConnection(
     kubeArm ? Promise.resolve() : deployRepoKeyIfNeeded(validated.repository, validated.machine),
   ]);
 
-  // Kube arm: a cluster repo's files (its manifests, and anything else it keeps)
-  // live at <named-datastore-mount>/repos/<name>/ on the machine that holds the
-  // datastore, NOT in a docker GUID mount. Targeting the GUID mount is what made
-  // an anchor manifest never reach where `repo up` reads it (bug B1 hit).
+  // Kube arm: a cluster repo's files (its manifests, and anything else it keeps) live at <named-datastore-mount>/repos/<name>/ on the machine that holds the datastore, NOT in a docker GUID mount. Targeting the GUID mount is what made an anchor manifest never reach where `repo up` reads it (bug B1 hit).
   const baseRemotePath = validated.kubeDatastore
     ? `${namedDatastoreMount(validated.kubeDatastore)}/repos/${validated.repoName}`
     : (details.workingDirectory ?? `${details.datastore}/mounts/${validated.repository}`);
@@ -252,9 +237,7 @@ function isRsyncNotFoundError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
   if (err.message.includes('rsync not found')) return true;
   // Older rsync (<3.2.3) doesn't recognize --mkpath; treat that as a
-  // "fallback to SFTP" signal rather than failing the upload outright.
-  // The error surface from rsync is an unrecognized-option message on
-  // stderr which carries through to the wrapped Error.message.
+  // "fallback to SFTP" signal rather than failing the upload outright. The error surface from rsync is an unrecognized-option message on stderr which carries through to the wrapped Error.message.
   if (err.message.includes('--mkpath')) return true;
   return false;
 }
@@ -350,8 +333,7 @@ async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void
     isFile: isFileMode,
   });
 
-  // rsync accepts either a single source string (dir with trailing slash or a file)
-  // or an array of sources when the user passes multiple --local paths.
+  // rsync accepts either a single source string (dir with trailing slash or a file) or an array of sources when the user passes multiple --local paths.
   const rsyncSource: string | string[] =
     sources.length === 1 ? sources[0].path : sources.map((s) => s.path);
   const sftpSources: SftpUploadSource[] = sources.map((s) => ({

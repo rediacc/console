@@ -317,8 +317,7 @@ const launchers: Record<TerminalType, LauncherFn> = {
   wsl: (options) => {
     // Launch from WSL context or to WSL from Windows
     if (isWSL()) {
-      // We're in WSL, try to use Windows Terminal
-      // Build environment exports to pass through to WSL
+      // We're in WSL, try to use Windows Terminal Build environment exports to pass through to WSL
       const envExports = buildBashExports(options.environmentVariables);
       const fullCommand = envExports + options.command;
       const wtArgs = [

@@ -191,8 +191,7 @@ export class RemoteConfigAdapter {
       hmac: string | null;
     }>(pullPath, token);
 
-    // Decrypt: Layer 2 (CEK) + Layer 1 (SDK)
-    // Server-stored envelope is v2 (see Step 5). Until the server supports that,
+    // Decrypt: Layer 2 (CEK) + Layer 1 (SDK) Server-stored envelope is v2 (see Step 5). Until the server supports that,
     // fabricate empty commitments so the v2 shape is well-formed; selectiveDecrypt
     // still verifies HMAC + decrypts the blob successfully.
     const payload: EncryptedConfigPayload = {
@@ -220,12 +219,9 @@ export class RemoteConfigAdapter {
       throw this.classifyDecryptFailure(error, pullResp.data.envelope.configId);
     }
 
-    // Rebuild the RdcConfig from the decrypted blob through the ONE shared
-    // reconstruction. This used to be a hand-written copy that had to "mirror"
+    // Rebuild the RdcConfig from the decrypted blob through the ONE shared reconstruction. This used to be a hand-written copy that had to "mirror"
     // fullConfigToRdcConfig exactly; keeping two copies in sync is precisely how
-    // the explicit-undefined trap (and later the dropped-secret bug) reached
-    // production, so there is now a single implementation and both the CLI pull
-    // and the CEK rotation go through it.
+    // the explicit-undefined trap (and later the dropped-secret bug) reached production, so there is now a single implementation and both the CLI pull and the CEK rotation go through it.
     const config = fullConfigToRdcConfig(decrypted);
 
     return {
@@ -244,9 +240,7 @@ export class RemoteConfigAdapter {
     const session = await this.fetchSession(token);
     const cek = await this.deriveCek(session.serverSecret);
 
-    // Envelope + commitments + ciphertext are composed by the shared helper, so
-    // the CLI, the web console editor, and the CEK rotation flow all emit a
-    // byte-identical payload. Diverging here would fail the server precondition.
+    // Envelope + commitments + ciphertext are composed by the shared helper, so the CLI, the web console editor, and the CEK rotation flow all emit a byte-identical payload. Diverging here would fail the server precondition.
     const encrypted = await buildConfigPushPayload(config, {
       version: currentVersion + 1,
       sdkEpoch: session.sdkEpoch,
@@ -325,9 +319,7 @@ export class RemoteConfigAdapter {
       throw new RemoteTokenExpiredError();
     }
 
-    // A wrong slot secret (or a rotated CEK this device never re-wrapped for)
-    // surfaces here as an AES-GCM auth failure. Translate it into an actionable
-    // "re-enroll" message rather than leaking a raw OperationError.
+    // A wrong slot secret (or a rotated CEK this device never re-wrapped for) surfaces here as an AES-GCM auth failure. Translate it into an actionable "re-enroll" message rather than leaking a raw OperationError.
     try {
       return await cekUnwrap(tokenData.wrappedCek, wrappingKey);
     } catch {

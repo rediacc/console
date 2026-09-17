@@ -33,11 +33,7 @@ import {
   WRITE_TIMEOUT,
 } from '../../config/command-metadata.js';
 
-// The MCP SDK pulls zod from the hoisted root copy (zod@3.25.76, both v3 and
-// v4 subpaths are bundled there) while this workspace imports zod from its own
-// packages/cli/node_modules/zod@4.4.3. Even though both v4/core trees export a
-// structurally-identical $ZodType interface, TS treats them as distinct nominal
-// types because they live at different file paths. Using the SDK's own
+// The MCP SDK pulls zod from the hoisted root copy (zod@3.25.76, both v3 and v4 subpaths are bundled there) while this workspace imports zod from its own packages/cli/node_modules/zod@4.4.3. Even though both v4/core trees export a structurally-identical $ZodType interface, TS treats them as distinct nominal types because they live at different file paths. Using the SDK's own
 // ZodRawShapeCompat alias keeps the registerTool() call site type-clean.
 
 export interface ToolDef {
@@ -133,11 +129,7 @@ function deriveSchema(
     if (!argNames.has(key)) schema[key] = deriveOptionType(opt);
   }
 
-  // Mutually-exclusive target pair (design D14): -m XOR --cluster. When a repo
-  // verb exposes both, make BOTH optional MCP fields — a value-taking option
-  // otherwise derives to a REQUIRED field, so exposing both would demand both.
-  // The auto-deriver can't express "exactly one", so the runtime
-  // (resolveRepoTarget) enforces it and returns a clear error for neither/both.
+  // Mutually-exclusive target pair (design D14): -m XOR --cluster. When a repo verb exposes both, make BOTH optional MCP fields — a value-taking option otherwise derives to a REQUIRED field, so exposing both would demand both. The auto-deriver can't express "exactly one", so the runtime (resolveRepoTarget) enforces it and returns a clear error for neither/both.
   if ('machine' in schema && 'cluster' in schema) {
     schema.machine = (schema.machine as z.ZodType).optional();
     schema.cluster = (schema.cluster as z.ZodType).optional();

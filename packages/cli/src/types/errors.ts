@@ -15,8 +15,7 @@ export type ErrorCode =
   | 'SERVER_ERROR'
   | 'VALIDATION_ERROR'
   | 'PRECONDITION_MISMATCH'
-  // P4 refusal classes (spec/03 §1). Each string mirrors its exit-code name so
-  // `errors[].code` and the process exit code carry the same word.
+  // P4 refusal classes (spec/03 §1). Each string mirrors its exit-code name so `errors[].code` and the process exit code carry the same word.
   | 'AMBIGUOUS'
   | 'STATE_MISMATCH'
   | 'HEALTH_GATE_FAILED'

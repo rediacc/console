@@ -1,0 +1,19 @@
+# rediacc_ci allowlist golden
+# reader: bash:.ci/scripts/lib/blocker-validator.sh::parse_blockered_list
+# command: parse_blockered_list <corpus> A B '#'; for k in ${!B[@]}; printf '%s\t%s\n'; LC_ALL=C sort
+# projection: pairs
+# source: .audit-prod-allowlist
+# corpus: corpus/audit-prod-allowlist.list
+# comment-char: #
+# corpus-sha256: d9ed65deec9211a5d928babacaecf578c2bfff51d80993293df22f07ac30f5be
+# ---
+1117141	astro 6 is a major migration tracked separately; the marketing site
+1118920	same astro 6 major migration as 1117141; server islands are
+1120680	neither advisory is reachable in our build — the high one is the esbuild Deno module (lib/deno/mod.ts), which we never import (Node-only toolchain), and the low one is the esbuild dev server's Windows path traversal; the dev server is never shipped to prod and CI/prod builds do not run on Windows. Drop once astro/vite widen the esbuild range to admit 0.28.1.
+1123700	@rediacc/www builds with astro output: 'static' (astro.config.mjs:144).
+1124066	reaching libvips requires DECODING AN ATTACKER-SUPPLIED IMAGE. sharp runs
+1139373	@rediacc/www builds with astro output: 'static' (astro.config.mjs:144).
+1139375	@rediacc/www builds with astro output: 'static' (astro.config.mjs:144).
+1139376	@rediacc/www builds with astro output: 'static' (astro.config.mjs:144).
+1139377	@rediacc/www builds with astro output: 'static' (astro.config.mjs:144).
+1139378	@rediacc/www builds with astro output: 'static' (astro.config.mjs:144).

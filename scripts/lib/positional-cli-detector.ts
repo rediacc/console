@@ -11,7 +11,7 @@
  * Consumed by:
  *   - eslint-rules/i18n/no-positional-cli-syntax.js (JSON locale files)
  *   - eslint-rules/no-positional-cli-syntax-source.js (TS/TSX source strings)
- *   - scripts/validate-cli-examples.ts (generic repo-wide validator)
+ *   - scripts/gen/validate-cli-examples.ts (generic repo-wide validator)
  *   - packages/www/scripts/validate-docs-cli-usage.js (www docs validator)
  */
 
@@ -27,9 +27,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMMAND_TREE_PATH = path.resolve(__dirname, '../../packages/cli/scripts/command-tree.json');
 
-// ---------------------------------------------------------------------------
-// Types (mirror packages/cli/scripts/export-command-tree.ts shape)
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Types (mirror packages/cli/scripts/export-command-tree.ts shape) ---------------------------------------------------------------------------
 
 interface OptionNode {
   flags: string;
@@ -49,24 +47,17 @@ interface CommandNode {
   subcommands: CommandNode[];
 }
 
-// ---------------------------------------------------------------------------
-// Allowlist — commands whose positional arg is a freeform string (not a
-// resource name that agents would otherwise positionalise by mistake).
-// Leaving these off the zero-positional denylist.
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Allowlist — commands whose positional arg is a freeform string (not a resource name that agents would otherwise positionalise by mistake). Leaving these off the zero-positional denylist. ---------------------------------------------------------------------------
 
 const FREEFORM_ARG_COMMAND_PATHS = new Set<string>(SHARED_FREEFORM);
 
-// ---------------------------------------------------------------------------
-// Exempt prefixes — cloud-adapter and legacy groups that legitimately use
+// --------------------------------------------------------------------------- Exempt prefixes — cloud-adapter and legacy groups that legitimately use
 // positional subcommands. Mirrors eslint.config.js `exemptCommandPrefixes`.
 // ---------------------------------------------------------------------------
 
 const EXEMPT_COMMAND_PREFIXES: string[] = SHARED_EXEMPT_PREFIXES;
 
-// ---------------------------------------------------------------------------
-// Tree traversal
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Tree traversal ---------------------------------------------------------------------------
 
 let cachedTree: CommandNode | null = null;
 let cachedZeroPositional: Set<string> | null = null;
@@ -152,9 +143,7 @@ function getPlaceholderOnlyParents(): Set<string> {
   return out;
 }
 
-// ---------------------------------------------------------------------------
-// Detection regex
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Detection regex ---------------------------------------------------------------------------
 
 const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -174,21 +163,14 @@ const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, 
  */
 function buildDetectionRegex(commandPath: string): RegExp {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
-  // After the command path + whitespace, the next token must start with one
-  // of these characters to count as "positional":
+  // After the command path + whitespace, the next token must start with one of these characters to count as "positional":
   //   <  {  [  "  '  alphanumeric
-  // Prose separators (em-dash, en-dash, ampersand) and flags (`-`, `--`)
-  // are NOT positional tokens — those match the negative universe.
+  // Prose separators (em-dash, en-dash, ampersand) and flags (`-`, `--`) are NOT positional tokens — those match the negative universe.
   //
-  // …and neither is a PROSE WORD THAT ENDS THE CLAUSE. German splits separable
-  // verbs, so "run `rdc config reconcile`" is written "führen Sie rdc config
-  // reconcile aus." — the particle "aus" lands after the command and read as an
+  // …and neither is a PROSE WORD THAT ENDS THE CLAUSE. German splits separable verbs, so "run `rdc config reconcile`" is written "führen Sie rdc config reconcile aus." — the particle "aus" lands after the command and read as an
   // argument. It is not one; the German is correct German. A real argument in these
   // strings is a placeholder (<name>, {{name}}), a quoted value, or value-shaped
-  // (prod-1, s3-main) — never a bare run of letters immediately followed by
-  // sentence punctuation. Dutch and the Nordic languages split verbs the same way,
-  // so this is a class fix, not a one-off. Guarded by the fixtures in
-  // scripts/lib/__tests__/positional-cli-detector.test.ts.
+  // (prod-1, s3-main) — never a bare run of letters immediately followed by sentence punctuation. Dutch and the Nordic languages split verbs the same way, so this is a class fix, not a one-off. Guarded by the fixtures in scripts/lib/__tests__/positional-cli-detector.test.ts.
   return new RegExp(
     `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?![\\p{L}]+[.,;:!?])(?=[<{\\["'a-zA-Z0-9])`,
     'u'
@@ -209,9 +191,7 @@ function buildPlaceholderOnlyRegex(commandPath: string): RegExp {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Text scanner
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Text scanner ---------------------------------------------------------------------------
 
 export interface Violation {
   commandPath: string;
@@ -250,8 +230,7 @@ export function scanText(text: string, opts: ScanOptions = {}): Violation[] {
       path: p,
       regex: buildDetectionRegex(p),
     }));
-  // Sort descending by path length so `repo autostart enable` matches
-  // before `repo` (otherwise the shorter parent wins on regex dispatch).
+  // Sort descending by path length so `repo autostart enable` matches before `repo` (otherwise the shorter parent wins on regex dispatch).
   const parentEntries = [...getPlaceholderOnlyParents()]
     .sort((a, b) => b.length - a.length)
     .map((p) => ({ path: p, regex: buildPlaceholderOnlyRegex(p) }));
@@ -271,10 +250,7 @@ export function scanText(text: string, opts: ScanOptions = {}): Violation[] {
     if (rdcIndex === -1) return;
     const trailing = line.slice(rdcIndex);
     if (exemptPrefixes.some((p) => trailing.startsWith(p))) return;
-    // Commander's conventional usage placeholders — these aren't teaching
-    // positional syntax, they're the generic "takes options" / "variadic"
-    // markers that Commander prints. Extract the token immediately after
-    // the command path and skip if it matches.
+    // Commander's conventional usage placeholders — these aren't teaching positional syntax, they're the generic "takes options" / "variadic" markers that Commander prints. Extract the token immediately after the command path and skip if it matches.
     const afterPath = trailing.slice(`rdc ${entry.path} `.length);
     if (
       /^\[options\](?!\w)/.test(afterPath) ||
@@ -305,8 +281,7 @@ export function scanText(text: string, opts: ScanOptions = {}): Violation[] {
     // Pass 1: leaf commands (zero positional) — any non-flag next token.
     for (const entry of leafEntries) report(entry, line, li, seenKeys);
 
-    // Pass 2: parents with no positional — placeholder/interpolation next token.
-    // Longer paths first so we report the most specific match.
+    // Pass 2: parents with no positional — placeholder/interpolation next token. Longer paths first so we report the most specific match.
     for (const entry of parentEntries) report(entry, line, li, seenKeys);
   }
 

@@ -508,8 +508,7 @@ describe('Full Lifecycle', () => {
     // Server encrypts (Layer 3: Org)
     const stored = await orgEncrypt(payload.encryptedBlob, orgPassphrase);
 
-    // ── PULL ──
-    // Server decrypts Layer 3
+    // ── PULL ── Server decrypts Layer 3
     const afterOrg = await orgDecrypt(stored, orgPassphrase);
 
     // Server re-derives SDK for the stored epoch
@@ -518,9 +517,7 @@ describe('Full Lifecycle', () => {
     // CLI unwraps CEK (same wrapping key)
     const cekPull = await cekUnwrap(wrappedCEK, wrappingKey);
 
-    // CLI verifies HMAC and decrypts
-    // Re-compute HMAC for the server-decrypted blob (same as original client-encrypted blob)
-    // Note: afterOrg should equal payload.encryptedBlob since orgEncrypt/orgDecrypt is a round-trip
+    // CLI verifies HMAC and decrypts Re-compute HMAC for the server-decrypted blob (same as original client-encrypted blob) Note: afterOrg should equal payload.encryptedBlob since orgEncrypt/orgDecrypt is a round-trip
     expect(afterOrg).toBe(payload.encryptedBlob);
 
     const result = await selectiveDecrypt(

@@ -41,27 +41,27 @@ import pathlib
 import re
 import sys
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls
+
+# THIS HOP STAYS HAND-WRITTEN, AND IT IS THE ONE EXCEPTION IN THIS DIRECTORY. Every other `.claude/hooks/stop` and sibling-directory hop under `.ci/scripts/quality` now goes through `rediacc_ci.paths.on_sys_path`. This one cannot, and the reason is a ruff rule rather than a taste: E402 EXEMPTS a `sys.path` mutation that precedes a module-level import, and exempts nothing
+# else. Measured against ruff 0.16.1, the version `check_python_lint.py` pins:
+#
+#     sys.path.insert(0, "/x"); import json      -> All checks passed
+#     paths.on_sys_path("/x");  import json      -> E402
+#     x = 1;                    import json      -> E402
+#
+# The sibling import below is module-level and has to follow the hop, so the resolver form costs a per-line E402 waiver and the bare form costs nothing. Same finding `_cipath.py`'s docstring records for the `.ci` hop, which is why that one is an IMPORT and not a function call. Do not "finish the sweep" here without re-running that probe.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-# REUSED, NOT REWRITTEN: `run_blocks` joins backslash continuations so a multi-line RUN
-# reads as one logical line, and `tracked_files` already settled the corpus question
-# (Dockerfiles AND shell scripts, via git so an untracked scratch file cannot change the
-# verdict). Copying either would be a second thing to drift.
+# REUSED, NOT REWRITTEN: `run_blocks` joins backslash continuations so a multi-line RUN reads as one logical line, and `tracked_files` already settled the corpus question (Dockerfiles AND shell scripts, via git so an untracked scratch file cannot change the verdict). Copying either would be a second thing to drift.
 import check_dockerfile_mirror_resilience as MIRROR
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-# Below this the scan is broken rather than the tree being clean. Sized to the SCOPED
-# corpus (16 image-build files today), not the 551 the sibling gate walks -- a floor
-# carried over from a wider scope refuses every run, which is how this was caught.
+# Below this the scan is broken rather than the tree being clean. Sized to the SCOPED corpus (16 image-build files today), not the 551 the sibling gate walks -- a floor carried over from a wider scope refuses every run, which is how this was caught.
 MIN_FILES = 10
 
-# A fetch INVOCATION: the command at the start of a segment, not the word anywhere.
-# `ca-certificates curl \` in an apt package list is not a fetch, and that false positive
-# is live in `.ci/docker/web/Dockerfile` -- a crude `grep -c curl` reports it as an
-# unretried download.
-# `RUN` counts as a command position: run_blocks keeps the instruction word, so the very
-# first command in a block sits after "RUN " rather than at the start of the string. The
-# first cut omitted it and its own SANITY control failed -- which is what a sanity control
-# is for, since every negative control below passes against a matcher that matches nothing.
+# A fetch INVOCATION: the command at the start of a segment, not the word anywhere. `ca-certificates curl \` in an apt package list is not a fetch, and that false positive is live in `.ci/docker/web/Dockerfile` -- a crude `grep -c curl` reports it as an unretried download. `RUN` counts as a command position: run_blocks keeps the instruction word, so the very first command in a
+# block sits after "RUN " rather than at the start of the string. The first cut omitted it and its own SANITY control failed -- which is what a sanity control is for, since every negative control below passes against a matcher that matches nothing.
 FETCH = re.compile(
     r"(?:^|RUN\s+|[|;&]|&&|\|\||\$\(|`|\bthen\s+|\bdo\s+)\s*(curl|wget)\s+(?=-|https?://)"
 )
@@ -112,8 +112,7 @@ def logical_blocks(text, is_dockerfile):
     """
     if is_dockerfile:
         return MIRROR.run_blocks(text)
-    # Shell: join continuations, then one logical line per unit, so a retry flag on the
-    # same command counts and one three files away does not.
+    # Shell: join continuations, then one logical line per unit, so a retry flag on the same command counts and one three files away does not.
     joined = re.sub(r"\\\n\s*", " ", text)
     return [ln for ln in joined.split("\n") if ln.strip()]
 
@@ -138,15 +137,7 @@ def offences_in(text, is_dockerfile=True):
 
 def selftest():
     """Controls, both directions. A gate that cannot fail is worse than none."""
-    ok = True
-
-    def check(label, cond):
-        nonlocal ok
-        if cond:
-            print("  PASS  %s" % label)
-        else:
-            ok = False
-            print("  FAIL  %s" % label, file=sys.stderr)
+    check = controls.Checker()
 
     check(
         "SANITY: a bare curl download is an offence",
@@ -169,8 +160,7 @@ def selftest():
         )
         == 0,
     )
-    # THE FALSE POSITIVE THAT IS LIVE IN THE TREE: `.ci/docker/web/Dockerfile` lists curl
-    # as an apt PACKAGE. A crude `grep -c curl` reports it as an unretried download.
+    # THE FALSE POSITIVE THAT IS LIVE IN THE TREE: `.ci/docker/web/Dockerfile` lists curl as an apt PACKAGE. A crude `grep -c curl` reports it as an unretried download.
     check(
         "CONTROL: curl as an apt package name is not a fetch",
         len(
@@ -198,10 +188,7 @@ def selftest():
         len(offences_in("RUN curl -fsSL https://example.com/install.sh | bash")) == 1,
     )
     check("CONTROL: a file with no fetch yields nothing", len(offences_in("RUN echo hi")) == 0)
-    # THE VACUITY CONTROL. This gate shipped reading shell scripts with a Dockerfile `RUN`
-    # parser: 25 blocks for the Dockerfile, ZERO for any .sh, so it printed "551 file(s)
-    # scanned" while every shell script in its corpus contributed nothing -- and three real
-    # offences sat inside that corpus while it reported clean.
+    # THE VACUITY CONTROL. This gate shipped reading shell scripts with a Dockerfile `RUN` parser: 25 blocks for the Dockerfile, ZERO for any .sh, so it printed "551 file(s) scanned" while every shell script in its corpus contributed nothing -- and three real offences sat inside that corpus while it reported clean.
     check(
         "SANITY: a shell script is actually parsed, not silently skipped",
         len(logical_blocks("curl -fsSL https://example.com/x\n", is_dockerfile=False)) == 1
@@ -218,7 +205,7 @@ def selftest():
         and in_scope(os.path.join(ROOT, "Dockerfile"))
         and not in_scope(os.path.join(ROOT, ".ci/breakpoint/scripts/check-breakpoint-drift.sh")),
     )
-    return ok
+    return check.ok
 
 
 def main():

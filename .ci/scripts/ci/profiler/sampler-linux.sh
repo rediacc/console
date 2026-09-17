@@ -80,14 +80,30 @@ usage() {
     sed -n '2,40p' "$0" | sed 's/^# \?//'
 }
 
+# EVERY ARM MUST CONSUME AT LEAST ONE ARGUMENT. That is the loop's variant, and
+# it was violated until 2026-09-10: `--out` and `--interval` did `shift 2`, and
+# `shift 2` with only ONE argument left FAILS and shifts NOTHING. There is no
+# `set -e` here (see the header: half this script's calls fail by design), so the
+# failure was discarded, `$#` stayed 1, and `sampler-linux.sh --out` SPUN FOREVER
+# at 100% of a core -- on a profiler whose entire purpose is not to perturb a
+# 1-vCPU runner. The arity check below turns it into the exit 2 every other bad
+# argument already gets.
 while (($# > 0)); do
     case "$1" in
         --out)
-            OUT="${2:-}"
+            if (($# < 2)); then
+                echo "sampler-linux.sh: --out requires a value" >&2
+                exit 2
+            fi
+            OUT="$2"
             shift 2
             ;;
         --interval)
-            INTERVAL="${2:-}"
+            if (($# < 2)); then
+                echo "sampler-linux.sh: --interval requires a value" >&2
+                exit 2
+            fi
+            INTERVAL="$2"
             shift 2
             ;;
         --probe)
@@ -111,10 +127,45 @@ case "$INTERVAL" in
         exit 2
         ;;
 esac
+# BASE 10, EXPLICITLY. `08` and `09` are whole numbers to the case above and
+# INVALID OCTAL LITERALS to every arithmetic context below, so until 2026-09-10
+# `--interval 08` passed validation and then died at `DISK_EVERY=$((...))` with
+# "08: value too great for base (error token is \"08\")", followed by "DISK_EVERY:
+# unbound variable" -- two shell diagnostics naming neither the flag nor the value
+# the operator typed. `10#` is the normalisation; it also means `00` is reported
+# below as `0`, which is what it is.
+INTERVAL=$((10#$INTERVAL))
 if [ "$INTERVAL" -lt 1 ]; then
     echo "sampler-linux.sh: --interval must be >= 1, got '$INTERVAL'" >&2
     exit 2
 fi
+
+# PROFILER_MAX_SECONDS IS THE SELF-TERMINATION GUARD, so an unusable value must
+# not be allowed to read as "no limit". Until 2026-09-10 there was no validation
+# at all: the only use is `[ <elapsed> -ge "$MAX_SECONDS" ]` in the sample loop,
+# and bash's `test` answers a non-numeric right-hand side with "integer expression
+# expected" on stderr and status 2, which `if` reads as false. Measured: with
+# PROFILER_MAX_SECONDS=abc the loop ran until `timeout` killed it, i.e. the orphan
+# guard this variable exists to provide was OFF, silently.
+#
+# REJECTED LOUDLY rather than coerced to the default, which is the other convention
+# in this file (PROFILER_DISK_EVERY_S falls back to 60 without a word). The line
+# between them is what a wrong value costs: a bad disk cadence samples `df` at the
+# wrong rate, a bad max-seconds leaves a sampler running forever on a runner that
+# has moved on. --interval is validated exactly this way and is also env-settable
+# (PROFILER_INTERVAL), so this is the nearer precedent as well as the safer one.
+#
+# Validated BEFORE the --probe branch on purpose: probe mode exists to answer
+# "will the sampler work on this runner", and a knob that would stop it must not
+# pass silently there. 0 stays valid -- it means "stop after the first sample" and
+# the tests drive it.
+case "$MAX_SECONDS" in
+    '' | *[!0-9]*)
+        echo "sampler-linux.sh: PROFILER_MAX_SECONDS must be a whole number of seconds, got '$MAX_SECONDS'" >&2
+        exit 2
+        ;;
+esac
+MAX_SECONDS=$((10#$MAX_SECONDS))
 
 # $EPOCHREALTIME is the whole reason the loop is fork-free; without it every
 # sample would need a `date` fork and the profiler would cost more than the work
@@ -581,6 +632,13 @@ printf '#META\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
 # inside a 75-second phase.
 DISK_EVERY_S="${PROFILER_DISK_EVERY_S:-60}"
 is_num "$DISK_EVERY_S" && [ "$DISK_EVERY_S" -ge 1 ] || DISK_EVERY_S=60
+# THE SAME OCTAL TRAP AS --interval, one line down and found by sweeping for it.
+# `is_num 08` is true and `[ 08 -ge 1 ]` is true (test parses base 10), so `08`
+# reached the `$(( ))` below intact and killed the sampler exactly the way
+# `--interval 08` did. This knob keeps its own convention -- a bad value falls
+# back to 60 without a word, because a wrong `df` cadence costs a sampling rate
+# and not a runner -- but it gets read in base 10 like everything else.
+DISK_EVERY_S=$((10#$DISK_EVERY_S))
 DISK_EVERY=$(((DISK_EVERY_S + INTERVAL - 1) / INTERVAL))
 [ "$DISK_EVERY" -ge 1 ] || DISK_EVERY=1
 

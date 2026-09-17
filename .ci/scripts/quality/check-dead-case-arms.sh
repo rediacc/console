@@ -1,4 +1,13 @@
 #!/bin/bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-dead-case-arms is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_dead_case_arms.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_dead_case_arms.py" but its header derives ".ci/scripts/quality/check-dead-case-arms.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # A test assertion must be able to FAIL. This gate catches one mechanically
 # detectable way it cannot: a `case` arm that globs for a `field=` token which
 # exists nowhere in the code the test exercises.
@@ -41,6 +50,18 @@ REPO_ROOT="$(get_repo_root)"
 cd "$REPO_ROOT"
 
 TEST_DIRS="${DEAD_CASE_TEST_DIRS:-.ci/scripts/test}"
+# The media pipeline, moved out of run.sh into its own folder. It is a SCAN root, not
+# a code root, and that asymmetry is the whole reason it needs saying:
+#
+#   - Scanned, because its case arms are the same construct this gate judges. They are
+#     argument parsers rather than assertions today, but "today" is not a property a
+#     gate can rely on, and the folder is where the pipeline's branching now lives.
+#   - NOT added to CODE_DIRS, because a directory that vouches for its own keys cannot
+#     be scanned. That is this gate's founding lesson in a second costume: `cores=`
+#     survived because the only occurrences were in the file describing it. A media
+#     module globbing for `frames=` while being the only emitter of `frames=` would
+#     rule itself live by exactly the same mechanism.
+MEDIA_DIRS="${DEAD_CASE_MEDIA_DIRS:-.ci/media}"
 # Where the data-producing code lives. A key must appear in at least one of
 # these to be a live reference.
 CODE_DIRS="${DEAD_CASE_CODE_DIRS:-.ci/scripts scripts packages/www/scripts}"
@@ -79,8 +100,10 @@ extract_case_keys() {
 key_is_live() {
     local key="$1"
     # shellcheck disable=SC2086 # CODE_DIRS is deliberately word-split
-    grep -rhE --exclude-dir=test "${key}=" $CODE_DIRS 2>/dev/null |
-        grep -qvE '^[[:space:]]*(#|//|\*)'
+    [ -n "$(
+        grep -rhE --exclude-dir=test "${key}=" $CODE_DIRS 2>/dev/null |
+            grep -vE '^[[:space:]]*(#|//|\*)'
+    )" ]
 }
 
 # SCAN_HITS carries the count OUT of scan(). It used to come back as the exit status,
@@ -139,13 +162,76 @@ if [ "$control_hits" -eq 0 ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# THE MEDIA SCAN ROOT, CONTROLLED IN BOTH DIRECTIONS.
+#
+# Adding a directory to a scan is the easiest change in this file to get wrong in a way
+# that reports success: name the variable, forget to pass it, and the gate goes on
+# scanning what it always scanned while its output claims a wider corpus. One control
+# cannot catch that on its own -- a scanner that flagged EVERYTHING would also fire on a
+# planted arm -- so both directions are required here:
+#
+#   FIRES on a dead arm placed in a media-shaped root, and
+#   STAYS SILENT on a live one whose key a real emitter does produce.
+#
+# The live half points CODE_DIRS at a generated emitter rather than hoping some existing
+# key is still live, for the same reason the planted key is generated: a literal written
+# here would live in this file, inside CODE_DIRS, and vouch for itself.
+# ---------------------------------------------------------------------------
+mkdir -p "$CONTROL_DIR/media" "$CONTROL_DIR/media-live" "$CONTROL_DIR/media-code"
+MEDIA_PLANTED_KEY="mediadeadprobe$$$(date +%s)"
+cat >"$CONTROL_DIR/media/planted.sh" <<PLANTED
+case "\$1" in
+    *"${MEDIA_PLANTED_KEY}=1"*) exit 1 ;;
+esac
+PLANTED
+scan "$CONTROL_DIR/media" 2>/dev/null || true
+if [ "$SCAN_HITS" -eq 0 ]; then
+    log_error "CONTROL FAILED: a dead case arm planted in a media scan root was not caught, so scanning $MEDIA_DIRS asserts nothing"
+    exit 1
+fi
+
+MEDIA_LIVE_KEY="medialiveprobe$$$(date +%s)"
+printf 'printf "%s=%%s\\n" "$x"\n' "$MEDIA_LIVE_KEY" >"$CONTROL_DIR/media-code/emit.sh"
+cat >"$CONTROL_DIR/media-live/live.sh" <<LIVE
+case "\$1" in
+    *"${MEDIA_LIVE_KEY}=1"*) exit 1 ;;
+esac
+LIVE
+_saved_code_dirs="$CODE_DIRS"
+CODE_DIRS="$CONTROL_DIR/media-code"
+scan "$CONTROL_DIR/media-live" 2>/dev/null || true
+CODE_DIRS="$_saved_code_dirs"
+if [ "$SCAN_HITS" -ne 0 ]; then
+    log_error "CONTROL FAILED: an arm whose key a real emitter DOES produce was reported dead, so the media scan is a blanket refusal rather than a check"
+    exit 1
+fi
+
+# VACUITY FLOOR for the new root. A scan root that has stopped matching files reports
+# clean forever, which is the same green as a clean tree and tells them apart never.
+# COUNTED WITHOUT A PIPELINE. `find ... | wc -l` is what check:ci-silent-failures
+# forbids here: under `set -eo pipefail` a find that exits non-zero takes the whole
+# script down mid-count, and the number it was computing is the one thing standing
+# between a collapsed glob and a green report.
+media_files=0
+for _d in $MEDIA_DIRS; do
+    [ -d "$_d" ] || continue
+    for _f in "$_d"/*.sh; do
+        [ -f "$_f" ] && media_files=$((media_files + 1))
+    done
+done
+if [ "$media_files" -eq 0 ]; then
+    log_error "VACUOUS: the media scan root ($MEDIA_DIRS) holds no shell files, so scanning it proves nothing"
+    exit 1
+fi
+
+# ---------------------------------------------------------------------------
 # The real scan.
 # ---------------------------------------------------------------------------
-scan "$TEST_DIRS" || true
+scan "$TEST_DIRS $MEDIA_DIRS" || true
 real_hits="$SCAN_HITS"
 if [ "$real_hits" -gt 0 ]; then
     log_error "$real_hits dead case arm(s). Parse the data and assert on the PARSED value instead of globbing for a field name that may not exist."
     exit 1
 fi
 
-log_info "no dead case arms (control fired on a planted arm, so this verdict is real)"
+log_info "no dead case arms across $TEST_DIRS $MEDIA_DIRS ($media_files media shell file(s); the planted-arm control fired and the live-arm control stayed silent, so this verdict is real)"

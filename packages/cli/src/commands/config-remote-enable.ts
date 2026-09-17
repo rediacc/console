@@ -144,8 +144,7 @@ export async function finalizeEnable(
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
   const local = await configFileStorage.loadDecrypted(configName);
 
-  // Fresh-store handoffs carry no configId: mint one from the local config's
-  // own id (already a stable UUID) and seed the store below.
+  // Fresh-store handoffs carry no configId: mint one from the local config's own id (already a stable UUID) and seed the store below.
   const pointer: RemoteConfig = { ...remote, configId: remote.configId ?? local.id };
 
   const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
@@ -169,8 +168,7 @@ export async function finalizeEnable(
     );
   }
 
-  // The pointer file write IS the cache write: full server content, host-local
-  // sections (encryption mode included) preserved from the pre-enable config.
+  // The pointer file write IS the cache write: full server content, host-local sections (encryption mode included) preserved from the pre-enable config.
   const { mergeRemoteIntoCache } = await import('../services/config/remote-cache.js');
   const cached = mergeRemoteIntoCache({ ...local, remote: pointer }, pulled.config, pulled.version);
   await configFileStorage.save(cached, configName);

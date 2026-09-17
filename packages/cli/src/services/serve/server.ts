@@ -62,8 +62,7 @@ function statusFor(error: unknown): { status: 400 | 401 | 403 | 404 | 500; messa
   if (error instanceof PolicyDenied) return { status: 403, message: error.message };
   if (error instanceof SessionError) return { status: 404, message: error.message };
   if (error instanceof CommandRejected) return { status: 400, message: error.message };
-  // A job id the machine (or an untrusted re-attach client) made up: refused
-  // before it reaches a shell, and reported as a bad request, not a server fault.
+  // A job id the machine (or an untrusted re-attach client) made up: refused before it reaches a shell, and reported as a bad request, not a server fault.
   if (error instanceof InvalidJobIdError) return { status: 400, message: error.message };
   return {
     status: 500,
@@ -108,10 +107,7 @@ export function createServeApp(deps: ServeDeps): Hono {
   /** Accept the sealed CEK for a session. It is held in RAM and never written. */
   app.post(PROXY_ROUTES.sessionCekPattern, async (c) => {
     try {
-      // The grant is bound to the principal who OPENED the session: this is the
-      // same identity, resolved by the account server, that grantCek checks the
-      // session against. A valid token for a different user cannot complete
-      // someone else's grant.
+      // The grant is bound to the principal who OPENED the session: this is the same identity, resolved by the account server, that grantCek checks the session against. A valid token for a different user cannot complete someone else's grant.
       const principal = await authenticate(c.req.header('authorization'), deps);
       const blob = CekHandoffBlobSchema.parse(await c.req.json());
       await deps.sessions.grantCek(c.req.param('id'), blob, principal);
@@ -159,13 +155,8 @@ export function createServeApp(deps: ServeDeps): Hono {
       );
     }
 
-    // Refuse before the stream opens, and before policy. prepareCommand rejects
-    // an unknown command, a non-proxyable one (config ssh show, repo sync, ...),
-    // or a smuggled flag. This is a hard gate independent of the org's rules: a
-    // permissive `allow: ['repo *']` still cannot reach `repo sync upload`,
-    // because that refusal happens here, above authorize(). And it must happen
-    // pre-stream, since once the stream is open the status is already 200 and a
-    // rejection could only be described inside the body.
+    // Refuse before the stream opens, and before policy. prepareCommand rejects an unknown command, a non-proxyable one (config ssh show, repo sync, ...), or a smuggled flag. This is a hard gate independent of the org's rules: a permissive `allow: ['repo *']` still cannot reach `repo sync upload`, because that refusal happens here, above authorize(). And it must happen pre-stream,
+    // since once the stream is open the status is already 200 and a rejection could only be described inside the body.
     let prepared: ReturnType<typeof prepareCommand>;
     try {
       prepared = prepareCommand(request.pathKey, request.params, request.positionals);
@@ -175,19 +166,12 @@ export function createServeApp(deps: ServeDeps): Hono {
     }
     const entry = prepared.entry;
 
-    // Policy is evaluated on the path the caller asked for, and the executor then
-    // runs THAT path. There is no second name for the client to disagree with.
-    // The target is read from both the flag and positional bindings, so a
-    // positional-addressed command scopes exactly as a flag-addressed one does.
+    // Policy is evaluated on the path the caller asked for, and the executor then runs THAT path. There is no second name for the client to disagree with. The target is read from both the flag and positional bindings, so a positional-addressed command scopes exactly as a flag-addressed one does.
     const trimmedSession = c.req.header(CONFIG_SESSION_HEADER)?.trim();
-    // A whitespace-only header collapses to "no session", not the empty string —
-    // `??` cannot express that, so the empty case is normalized explicitly.
+    // A whitespace-only header collapses to "no session", not the empty string — `??` cannot express that, so the empty case is normalized explicitly.
     const configSessionId = trimmedSession === '' ? undefined : trimmedSession;
     try {
-      // A named session must exist and belong to the REQUEST principal — the
-      // same ownership rule grantCek enforces — before it may select the config
-      // the command runs against. Validated here, above the loader, so the rule
-      // holds in every tier, including a daemon whose loader ignores sessions.
+      // A named session must exist and belong to the REQUEST principal — the same ownership rule grantCek enforces — before it may select the config the command runs against. Validated here, above the loader, so the rule holds in every tier, including a daemon whose loader ignores sessions.
       if (configSessionId) deps.sessions.sessionForExec(principal, configSessionId);
       const config = await deps.loadConfig(principal, configSessionId);
       deps.authorize({
@@ -222,11 +206,9 @@ export function createServeApp(deps: ServeDeps): Hono {
         const { result, functionName, machineName, stdout, stderr } = await dispatchCommand({
           prepared,
           executor: deps.executor,
-          // The executor detaches a proxied command by default (its connection
-          // cannot be assumed to outlive the work), overridable via deps.detach.
+          // The executor detaches a proxied command by default (its connection cannot be assumed to outlive the work), overridable via deps.detach.
           detached: deps.detach ? deps.detach(entry) : entry.detachable,
-          // Announce the job the instant it starts, before any event, so a
-          // dropped connection can be re-attached via GET /v1/jobs/:id/events.
+          // Announce the job the instant it starts, before any event, so a dropped connection can be re-attached via GET /v1/jobs/:id/events.
           onJobStarted: (jobId) => {
             void write({ kind: 'job', jobId, sinceLine: 0 });
           },
@@ -235,15 +217,12 @@ export function createServeApp(deps: ServeDeps): Hono {
           },
         });
 
-        // The audited function is the one the command actually called, observed
-        // as it went past, not one reconstructed from a table. A command that
-        // reached no machine has none, and is audited by its path alone.
+        // The audited function is the one the command actually called, observed as it went past, not one reconstructed from a table. A command that reached no machine has none, and is audited by its path alone.
         await deps.audit?.({
           principal,
           commandPath: request.pathKey,
           functionName: functionName ?? request.pathKey,
-          // Prefer the machine the command actually reached (the only source for a
-          // derived-machine verb, whose machine is resolved from placement inside
+          // Prefer the machine the command actually reached (the only source for a derived-machine verb, whose machine is resolved from placement inside
           // the action body); fall back to the request for verbs that still name
           // the machine explicitly (backup, job).
           machineName:
@@ -345,8 +324,7 @@ export function createServeApp(deps: ServeDeps): Hono {
             cursor
           );
 
-          // A follow ended by the client dropping does not get a result line:
-          // there is no one left to read it, and the job is still running.
+          // A follow ended by the client dropping does not get a result line: there is no one left to read it, and the job is still running.
           if (!interrupted) {
             const status = await readJobStatus(
               await conn.lease.ensure(),

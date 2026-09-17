@@ -58,8 +58,7 @@ export async function stageRenetBinary(
     return;
   }
 
-  // Stage and install: SFTP upload to /tmp, then atomic mv to a versioned remote path.
-  // Uses mv (not cp) so the replacement works even when the binary is running
+  // Stage and install: SFTP upload to /tmp, then atomic mv to a versioned remote path. Uses mv (not cp) so the replacement works even when the binary is running
   // (e.g., during a backup sync). mv replaces the directory entry atomically;
   // the old inode stays alive until the running process exits.
   outputService.info(`Uploading renet to ${config.host}...`);

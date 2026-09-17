@@ -100,7 +100,7 @@ MAX_ATTEMPTS="${MAX_ATTEMPTS:-60}"
 PROBE_INTERVAL_SECONDS="${PROBE_INTERVAL_SECONDS:-2}"
 
 streak=0
-for i in $(seq 1 "$MAX_ATTEMPTS"); do
+for ((i = 1; i <= MAX_ATTEMPTS; i++)); do
     if ready; then
         streak=$((streak + 1))
         if [[ "$streak" -ge "$REQUIRED_STREAK" ]]; then

@@ -1,4 +1,12 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# slow: true
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Both-ways test for .ci/scripts/housekeeping/cleanup-versions.sh -- specifically
 # for the parts of it that had never executed anywhere.
 #
@@ -503,7 +511,7 @@ test_the_branch_listing_paginates() {
     calls="$(gh_calls "$t")"
     assert_contains "$calls" "repos/rediacc/console/branches?per_page=100" \
         "the recorder captured the branch listing (so the next assertion is about a call that happened)"
-    printf '%s\n' "$calls" | grep -F 'repos/rediacc/console/branches?per_page=100' | grep -q -- '--paginate' ||
+    [ -n "$(printf '%s\n' "$calls" | grep -F 'repos/rediacc/console/branches?per_page=100' | grep -e '--paginate')" ] ||
         log_fail "the branch listing does not pass --paginate, so it stops at 100 branches"
     log_pass "the branch listing paginates (asserted on a call the recorder actually captured)"
 }

@@ -913,10 +913,18 @@ say "done
 
 ## Remaining
 - nothing outstanding"
-PA_HOOK="$(cd "$(dirname "$HOOK")/../pre-ask" && pwd)/block-settled-questions.sh"
+# THE PRE-ASK GUARD IS A PYTHON MODULE SINCE THE W5 P7 CUTOVER, so this drives
+# it the way `.claude/settings.json` does: one dispatcher command, named by the
+# guard's module stem. It used to be `$(dirname "$HOOK")/../pre-ask/block-settled-
+# questions.sh`, and when that directory stopped existing the `cd` failed, the
+# variable collapsed to a bare "/block-settled-questions.sh", `bash` exited 127
+# and all three cases below reported the guard as broken. Driving the thing that
+# actually runs is also the point: a case still pointed at the retired bash file
+# would have kept passing while the live guard went unchecked.
+PA_HOOK=("python3" "$(cd "$(dirname "$HOOK")/../../rediacc_hooks" && pwd)/dispatch.py" "block_settled_questions")
 PA_LEDGER="${WL}.ask-refusals.jsonl"
 printf '{"session_id":"%s","tool_input":{"questions":[{"question":"Should I commit this now?","header":"commit"}]}}' "$SID" |
-    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" bash "$PA_HOOK" >/dev/null 2>&1
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" "${PA_HOOK[@]}" >/dev/null 2>&1
 PA_RC=$?
 if [[ "$PA_RC" -eq 2 && -s "$PA_LEDGER" ]] &&
     grep -qF '"permission":"should i"' "$PA_LEDGER" && grep -qF '"object":"commit"' "$PA_LEDGER"; then
@@ -927,7 +935,7 @@ fi
 # A question that is NOT permission-seeking must pass AND leave the ledger alone,
 # or the count the advisory prints is meaningless.
 printf '{"session_id":"%s","tool_input":{"questions":[{"question":"Which branch strategy fits this repo?","header":"design"}]}}' "$SID" |
-    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" bash "$PA_HOOK" >/dev/null 2>&1
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" "${PA_HOOK[@]}" >/dev/null 2>&1
 PA_RC2=$?
 if [[ "$PA_RC2" -eq 0 && "$(wc -l <"$PA_LEDGER")" -eq 1 ]]; then
     pass "223h: a design question passes and is NOT ledgered"

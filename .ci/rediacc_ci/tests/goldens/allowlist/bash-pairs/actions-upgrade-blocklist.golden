@@ -1,0 +1,9 @@
+# rediacc_ci allowlist golden
+# reader: bash:.ci/scripts/lib/blocker-validator.sh::parse_blockered_list
+# command: parse_blockered_list <corpus> A B '#'; for k in ${!B[@]}; printf '%s\t%s\n'; LC_ALL=C sort
+# projection: pairs
+# source: .actions-upgrade-blocklist
+# corpus: corpus/actions-upgrade-blocklist.list
+# comment-char: #
+# corpus-sha256: aaee26289d3f63c9020f9edf97dc6cfa479d32b4252b7a6f9efc2f232c38055d
+# ---

@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-scope-scripts-reachability is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_scope_scripts_reachability.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_scope_scripts_reachability.py" but its header derives ".ci/scripts/quality/check-scope-scripts-reachability.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Every ROOT scripts/ path reachable from non-quality CI code must classify FULL.
 #
 # WHY THIS EXISTS. On 2026-08-06 the blanket `scripts/` harness rule in
 # .ci/scripts/ci/scope-map.cjs was narrowed: gate sources became a zero-job
 # `gates` module so an attribution-URL check would stop running the ceph fork
 # test. Two subsets were carved out to stay full because a GATED job genuinely
-# executes them -- scripts/drills/ and scripts/generate-third-party-licenses.ts.
+# executes them -- scripts/drills/ and scripts/gen/generate-third-party-licenses.ts.
 #
 # That carve-out list was traced BY HAND, once, at one commit. Nothing stopped
 # the next reachable file from being added and silently narrowed: a new
@@ -49,7 +58,15 @@ GATED_DIRS=(
 # `run.sh` is the drill dispatcher (run.sh -> scripts/drills/*.sh) and is itself a
 # ROOT_MANIFEST path, so editing it forces full on its own. It is scanned because
 # what it DISPATCHES to must still be full.
-GATED_FILES=("run.sh")
+#
+# THE LEGACY BODY IS SCANNED TOO, and leaving it out would have been the silent
+# kind of wrong. The 2026-09-06 router split moved every verb implementation to
+# .ci/legacy/run-legacy.sh, taking the `drill` arm's dispatch with it. This loop
+# would then have found ZERO `scripts/` references in run.sh -- and there is no
+# anti-vacuity floor on this half (the floor below covers only `ci_scanned`, the
+# .ci/scripts side), so the gate would have stayed GREEN while covering nothing.
+# Measured before the fix: 6 references in run.sh became 0.
+GATED_FILES=("run.sh" ".ci/legacy/run-legacy.sh")
 
 # Extract root scripts/ paths that are INVOKED, not merely mentioned.
 #
@@ -171,7 +188,7 @@ if [[ "$_ctl_ci" != ".ci/scripts/synthetic-ci-probe.sh" ]]; then
 fi
 
 # ---- CONTROL: a synthetic reachable path MUST be judged a violation ----------
-control_mode="$(classify_mode "scripts/check-embed-credits.ts")"
+control_mode="$(classify_mode "scripts/gates/check-embed-credits.ts")"
 if [[ "$control_mode" != "reduced" ]]; then
     echo "${RED}✗ CONTROL FAILED${NC}: a known gate source classified '$control_mode', not 'reduced'." >&2
     echo "  The checker cannot tell a narrowed path from a full one, so its verdict" >&2
@@ -196,13 +213,16 @@ done
 # subcommand name is matched against the dispatch block that mentions it, so a
 # new `./run.sh <sub>` in a workflow drags its target into the check
 # automatically rather than needing this list edited.
+dispatch_scanned=0
 for f in "${GATED_FILES[@]}"; do
     [[ -f "$f" ]] || continue
     while IFS= read -r sub; do
         [[ -n "$sub" ]] || continue
         subq="$sub"
         while IFS= read -r ref; do
-            [[ -n "$ref" ]] && check_path "$ref" "$f ($sub)"
+            [[ -n "$ref" ]] || continue
+            dispatch_scanned=$((dispatch_scanned + 1))
+            check_path "$ref" "$f ($sub)"
         done < <(awk -v subcmd="$subq" '
             # NEAREST PRECEDING TOP-LEVEL LABEL, not a block scan.
             #
@@ -243,6 +263,22 @@ for d in "${GATED_DIRS[@]}"; do
     done < <(extract_ci_refs "$d")
 done
 
+# ANTI-VACUITY FOR THE DISPATCH HALF, which had none and needed it most.
+#
+# Only `ci_scanned` was ever floored, and only the .ci/scripts count was ever
+# printed -- so the run.sh half could fall to zero references and this gate would
+# report a healthy "262 .ci/scripts reference(s) scanned" and exit 0. That is not
+# hypothetical: the 2026-09-06 router split moved the drill dispatch out of run.sh
+# and took this loop's 6 references with it, and the gate stayed green. A half of a
+# scan with no floor and no printed count is a half that can vanish in silence.
+if [[ "$dispatch_scanned" -lt 1 ]]; then
+    log_fail "the dispatch scan found 0 scripts/ reference(s) across ${GATED_FILES[*]}"
+    echo "  CI invokes ./run.sh subcommands whose targets live under scripts/, so zero"
+    echo "  means the dispatcher moved again or the awk attribution broke -- not that"
+    echo "  the tree got clean. Refusing to report on the .ci/scripts half alone."
+    exit 1
+fi
+
 # ANTI-VACUITY. The workflows genuinely invoke dozens of .ci/scripts paths; a
 # scan that found almost none means the extractor broke, not that the tree got
 # clean. The controls above prove it CAN fire on a planted file; this proves it
@@ -265,7 +301,8 @@ if ((${#violations[@]} > 0)); then
 fi
 
 echo "${GREEN}✓${NC} every root scripts/ and .ci/scripts/ path reachable from a gated job forces full CI"
-echo "  ($ci_scanned .ci/scripts reference(s) scanned; extractor controls fired, so this is not an empty pass)"
+echo "  ($ci_scanned .ci/scripts and $dispatch_scanned dispatch reference(s) scanned;"
+echo "   extractor controls fired, so this is not an empty pass)"
 echo "  Blind spot: scanning is workflow-WIDE, not per-job. A path referenced from"
 echo "  an ungated job is held to the same rule, which is conservative, and a"
 echo "  second-level dependency (a script a scanned script calls) is not followed."

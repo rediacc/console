@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: none
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
 # Unit tests for .ci/scripts/lib/blocker-validator.sh.
 #
 # Exercises:
@@ -161,7 +168,8 @@ test_validate_accepts_all_current_audit_entries() {
     # must pass the quality gate. This catches regressions in BLOCKER_MIN_LENGTH
     # or new banned phrases that collide with legitimate reasons.
     local file
-    for file in .audit-prod-allowlist .audit-allowlist .deps-upgrade-blocklist; do
+    for file in .ci/policy/.audit-prod-allowlist .ci/policy/.audit-allowlist \
+        .ci/policy/.deps-upgrade-blocklist; do
         [[ ! -f "$file" ]] && continue
         declare -A ALLOWED=() BLOCKER=()
         parse_blockered_list "$file" ALLOWED BLOCKER

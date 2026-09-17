@@ -50,50 +50,35 @@ import sys
 import time
 from pathlib import Path
 
-# --- Where the trigger actually is -----------------------------------------
-# DERIVED, and the derivation was right the first time. This constant was 15_000
+# --- Where the trigger actually is ----------------------------------------- DERIVED, and the derivation was right the first time. This constant was 15_000
 # for one reason: reading the bundle gives trigger = window - min(maxOutputTokens,
-# 20_000) - 13_000, and 53 observed compactions appeared to contradict it, so the
-# formula was declared "checked against the wrong unit" and replaced by a
-# measurement.
+# 20_000) - 13_000, and 53 observed compactions appeared to contradict it, so the formula was declared "checked against the wrong unit" and replaced by a measurement.
 #
 # `/context` settles it by printing the number outright:
 #
-#     Auto-compact window: 1m tokens
-#     ⛝ Autocompact buffer: 33k tokens (3.3%)
+# Auto-compact window: 1m tokens ⛝ Autocompact buffer: 33k tokens (3.3%)
 #
 # 33_000 is exactly min(20_000, 20_000) + 13_000. The formula describes the
 # shipped behaviour; what was wrong was the inference drawn from compaction
-# timings, which cluster where they do because a 1M window is reached in
-# REPORTED prompt tokens long before the message list alone reaches 967_000.
+# timings, which cluster where they do because a 1M window is reached in REPORTED prompt tokens long before the message list alone reaches 967_000.
 #
-# The old value was wrong in the dangerous direction: it under-reserved by
-# 18_000 tokens, so every notice promised more headroom than existed.
+# The old value was wrong in the dangerous direction: it under-reserved by 18_000 tokens, so every notice promised more headroom than existed.
 COMPACT_MARGIN = 33_000
-# Kept because the disproof logic below reasons about the hard blocking limit,
-# which IS in the reported-token unit.
+# Kept because the disproof logic below reasons about the hard blocking limit, which IS in the reported-token unit.
 OUTPUT_RESERVE = 20_000
-# The accepted range for the window, enforced by Claude Code on both the
-# setting and the environment variable.
+# The accepted range for the window, enforced by Claude Code on both the setting and the environment variable.
 WINDOW_MIN = 100_000
 WINDOW_MAX = 1_000_000
 
-# --- Bands -----------------------------------------------------------------
-# TWO bands, not one, and the second one is not merely "later". The late band
+# --- Bands ----------------------------------------------------------------- TWO bands, not one, and the second one is not merely "later". The late band
 # is where the operator wants the refresh; the early band exists because a
-# rewrite is not free and a rewrite that gets interrupted by the compaction it
-# was racing is worse than no rewrite at all.
+# rewrite is not free and a rewrite that gets interrupted by the compaction it was racing is worse than no rewrite at all.
 #
-# Measured, not guessed: 414 real `worklist.py --state` turns across this
-# project's transcripts cost p50 2,246 / p90 3,603 / p99 4,876 tokens for the
-# write step, and p50 4,802 / p99 10,344 / max 17,765 when you charge the whole
-# preceding stretch of the turn to it. At 98% of a 867,000 threshold the
-# headroom is 17,340 tokens, which covers the p99 comfortably and the worst
+# Measured, not guessed: 414 real `worklist.py --state` turns across this project's transcripts cost p50 2,246 / p90 3,603 / p99 4,876 tokens for the write step, and p50 4,802 / p99 10,344 / max 17,765 when you charge the whole preceding stretch of the turn to it. At 98% of a 867,000 threshold the headroom is 17,340 tokens, which covers the p99 comfortably and the worst
 # case observed by 425 tokens. The early band is the insurance on that tail.
 BANDS = (("early", 0.75), ("late", 0.98))
 
-# Models with a native 1M window. Everything else Claude-shaped is 200K unless
-# the id carries an explicit [1m] selector.
+# Models with a native 1M window. Everything else Claude-shaped is 200K unless the id carries an explicit [1m] selector.
 NATIVE_1M = ("claude-sonnet-5", "claude-fable-5")
 # Models Claude Code holds to the 200K boundary when their window is under 1M.
 BOUNDARY_200K = 200_000
@@ -160,19 +145,12 @@ def configured_window(project_dir):
     return None, "unset"
 
 
-# THE CAP-DISPROOF MECHANISM WAS DELETED ON 2026-08-24, because the pin rule
-# below made it unreachable rather than merely redundant. It watched for a
-# session carrying more tokens than its inferred model cap allows and, on that
-# proof, kept the configured window. But with a pin present the pin now wins
+# THE CAP-DISPROOF MECHANISM WAS DELETED ON 2026-08-24, because the pin rule below made it unreachable rather than merely redundant. It watched for a session carrying more tokens than its inferred model cap allows and, on that proof, kept the configured window. But with a pin present the pin now wins
 # outright, so there is nothing left to prove; and with no pin `configured` is
 # None, which its own guard rejected. Neither branch could ever fire again.
 #
-# Three mutation controls died with it, and that is the correct reading: they
-# could no longer distinguish a working disproof from a missing one, because
-# the outcome no longer depended on it. What survives is `window_floor`, which
-# is a different and still-live claim -- evidence that the window is bigger than
-# ANY configured value, which is the case where a pin was added after a session
-# had already started.
+# Three mutation controls died with it, and that is the correct reading: they could no longer distinguish a working disproof from a missing one, because the outcome no longer depended on it. What survives is `window_floor`, which is a different and still-live claim -- evidence that the window is bigger than ANY configured value, which is the case where a pin was added after a
+# session had already started.
 
 
 def resolve_threshold(model, project_dir, window_floor=None):
@@ -211,19 +189,11 @@ def _finish(model, mmax, configured, source, from_evidence=False):
             "window_from_evidence": from_evidence,
             "assumed_cap_overruled": False,
         }
-    # THE PIN IS THE WINDOW. A cap inferred from the model id may not clip it:
-    # `claude-opus-5` is exactly what a 1M session reports (verified again on
-    # 2026-08-24 against a transcript entry carrying 228,201 prompt tokens), so
-    # clipping a pinned 1,000,000 down to the 200K boundary produced "1.9% until
-    # auto-compact" on a session that was 21% full -- every turn, for hours.
+    # THE PIN IS THE WINDOW. A cap inferred from the model id may not clip it: `claude-opus-5` is exactly what a 1M session reports (verified again on 2026-08-24 against a transcript entry carrying 228,201 prompt tokens), so clipping a pinned 1,000,000 down to the 200K boundary produced "1.9% until auto-compact" on a session that was 21% full -- every turn, for hours.
     # Crying wolf changes behaviour on every turn; going quiet is survivable,
     # because PreCompact writes its facts snapshot either way.
     #
-    # AND AN EXPLICIT CAP CANNOT CLIP EITHER, which is why there is no `min()`
-    # here at all: an explicit cap (a `[1m]` marker) is only ever 1,000,000, and
-    # `configured_window` clamps every pin to WINDOW_MAX, which is 1,000,000. A
-    # branch for it would be unreachable, and unreachable code in a module that
-    # decides when to warn is how the next reader is misled about what runs.
+    # AND AN EXPLICIT CAP CANNOT CLIP EITHER, which is why there is no `min()` here at all: an explicit cap (a `[1m]` marker) is only ever 1,000,000, and `configured_window` clamps every pin to WINDOW_MAX, which is 1,000,000. A branch for it would be unreachable, and unreachable code in a module that decides when to warn is how the next reader is misled about what runs.
     window = configured
     assumed_cap_overruled = bool(mmax) and configured > mmax
     return {
@@ -233,9 +203,7 @@ def _finish(model, mmax, configured, source, from_evidence=False):
         "window": window,
         "threshold": window - COMPACT_MARGIN,
         "source": source,
-        # A window taken on trust from a model id is not a measurement, a window
-        # derived from a session's own high-water mark is a fallback, and a pin
-        # allowed to overrule an assumed cap is a bet on the pin. None of the three is
+        # A window taken on trust from a model id is not a measurement, a window derived from a session's own high-water mark is a fallback, and a pin allowed to overrule an assumed cap is a bet on the pin. None of the three is
         # "confident"; the notice says so out loud in every case.
         "confident": mmax is not None and not from_evidence and not assumed_cap_overruled,
         "window_from_evidence": from_evidence,
@@ -347,8 +315,7 @@ def last_usage(transcript_path):
             msg = d.get("message") or {}
             if hit_boundary:
                 # This entry is OLDER than the boundary. Its usage is dead; the
-                # boundary's own postTokens is the only honest reading, and if
-                # the boundary did not carry one, silence beats the peak.
+                # boundary's own postTokens is the only honest reading, and if the boundary did not carry one, silence beats the peak.
                 return (post_tokens, msg.get("model")) if post_tokens else None
             u = msg.get("usage") or {}
             total = (
@@ -359,9 +326,7 @@ def last_usage(transcript_path):
             if total:
                 return total, msg.get("model")
         if hit_boundary:
-            # Boundary seen, no assistant entry in the window to name the
-            # model. Never grow the window past it -- there is nothing valid
-            # back there.
+            # Boundary seen, no assistant entry in the window to name the model. Never grow the window past it -- there is nothing valid back there.
             return (post_tokens, None) if post_tokens else None
         if start == 0:
             return None

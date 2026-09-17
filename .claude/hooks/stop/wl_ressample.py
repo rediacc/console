@@ -344,10 +344,7 @@ def watch(
         os.close(fd)
 
 
-# A fixture that spawns bash must NOT be re-exec'd under the profiler's own
-# supervisor (BASH_ENV is live on this machine): the tree would gain a
-# bashcov-sup layer and every depth assertion shifts by one. Caught by the hook
-# battery the first time it ran with profiling on -- the profiler measuring its
+# A fixture that spawns bash must NOT be re-exec'd under the profiler's own supervisor (BASH_ENV is live on this machine): the tree would gain a bashcov-sup layer and every depth assertion shifts by one. Caught by the hook battery the first time it ran with profiling on -- the profiler measuring its
 # own test. The BASH_ENV file honours WORKLIST_PROFILE=off.
 _FIXTURE_ENV = {**os.environ, "WORKLIST_PROFILE": "off"}
 
@@ -375,14 +372,8 @@ def selftest() -> int:
     d = Path(tempfile.mkdtemp(prefix="ressample-"))
     out = d / "run.jsonl"
     planted = "sk_test_PLANTEDSECRETLOOKALIKE000000000"
-    # A known tree: a bash parent that backgrounds two sleepers and waits. One sleeper
-    # is wrapped in `bash -c '...' <token>` so the token lands in that child's argv as
-    # $0. The inner bash carries TWO commands on purpose: with one simple command
-    # bash execs it and the wrapper never exists (angle 1's exec finding, met here).
-    # The first draft put the token after `sleep 1.2`, which is an invalid
-    # interval, so that child died instantly and "both children found" could only
-    # ever see one -- and the fix then failed to land twice because it pattern-matched
-    # code that ruff format had reshaped. This function is replaced whole for that reason.
+    # A known tree: a bash parent that backgrounds two sleepers and waits. One sleeper is wrapped in `bash -c '...' <token>` so the token lands in that child's argv as $0. The inner bash carries TWO commands on purpose: with one simple command bash execs it and the wrapper never exists (angle 1's exec finding, met here). The first draft put the token after `sleep 1.2`, which is an
+    # invalid interval, so that child died instantly and "both children found" could only ever see one -- and the fix then failed to land twice because it pattern-matched code that ruff format had reshaped. This function is replaced whole for that reason.
     child = subprocess.Popen(
         ["bash", "-c", "sleep 1.2 & bash -c 'sleep 1.2; :' %s & wait" % planted],
         env=_FIXTURE_ENV,

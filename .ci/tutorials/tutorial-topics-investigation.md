@@ -53,7 +53,8 @@ Each tutorial is scored 1–10 across six dimensions:
 
 ### Why This Is a "Wow"
 
-The tutorial shows the actual exploit — a container escaping to host root — then demonstrates that on a Rediacc-managed server, each app has its own Docker daemon at its own socket (`/var/run/rediacc/docker-<networkId>.sock`), its own loopback IP range (`127.0.x.x/26`), and its own encrypted LUKS mount. A compromised container in App A literally cannot see App B's daemon, network, or filesystem. The visual of "container escapes to host → finds nothing" is unprecedented in existing content.
+The tutorial shows the actual exploit — a container escaping to host root — then demonstrates that on a Rediacc-managed server, each app has its own Docker daemon at its own socket (`/var/run/rediacc/docker-<networkId>.sock`), its own loopback IP range (`127.0.x.x/26`), and its own encrypted LUKS mount. A compromised container in App A literally cannot see App B's daemon, network,
+or filesystem. The visual of "container escapes to host → finds nothing" is unprecedented in existing content.
 
 ### Why People Share This
 
@@ -92,7 +93,8 @@ Counterintuitive reveal. Every Docker tutorial teaches you to use one daemon. Th
 
 ### Why This Is a "Wow"
 
-A visible timer on screen. `rdc datastore fork prod --tag staging --attach-to <machine>`. The timer stops at 4.7 seconds. A 3.2TB production system — with its database, file storage, application state — is now running as an independent clone. Zero bytes transferred over the network (Ceph RBD snapshot + COW overlay reads from shared blocks, writes to local sparse file). The staging instance is immediately available for testing, and production never noticed.
+A visible timer on screen. `rdc datastore fork prod --tag staging --attach-to <machine>`. The timer stops at 4.7 seconds. A 3.2TB production system — with its database, file storage, application state — is now running as an independent clone. Zero bytes transferred over the network (Ceph RBD snapshot + COW overlay reads from shared blocks, writes to local sparse file). The staging
+instance is immediately available for testing, and production never noticed.
 
 ### Why People Share This
 
@@ -131,7 +133,8 @@ Speed runs trigger sharing behavior. Fireship built a 3M-subscriber channel on "
 
 ### Why This Is a "Wow"
 
-The tutorial sets up a nightly cron: fork the production snapshot → boot the fork → run application health checks against it → verify data integrity → discard the fork. Every morning, you have proof that last night's backup is restorable. The "wow" is that most people's backup strategy is "hope it works" — this tutorial replaces hope with automated proof. The intentional corruption drill (delete the database, then recover in <60 seconds from snapshot) makes the abstract concrete.
+The tutorial sets up a nightly cron: fork the production snapshot → boot the fork → run application health checks against it → verify data integrity → discard the fork. Every morning, you have proof that last night's backup is restorable. The "wow" is that most people's backup strategy is "hope it works" — this tutorial replaces hope with automated proof. The intentional corruption
+drill (delete the database, then recover in <60 seconds from snapshot) makes the abstract concrete.
 
 ### Why People Share This
 
@@ -169,7 +172,8 @@ Fear is a powerful motivator. The 58% stat is shocking and personal — every re
 
 ### Why This Is a "Wow"
 
-A web application is serving live requests. A monitoring dashboard shows request latency. `rdc repo push production -m prod --to-machine new-server --checkpoint`. The process checkpoints (~2s), transfers disk + memory state (~15s), and restores on the new server (~7s). The monitoring dashboard shows a brief latency spike, then normal operation. No 502s. No dropped connections. The application resumed from the exact CPU instruction where it was frozen. In-memory variables, open database transactions, timer states — all preserved. The viewer's mental model of "migration = downtime" shatters.
+A web application is serving live requests. A monitoring dashboard shows request latency. `rdc repo push production -m prod --to-machine new-server --checkpoint`. The process checkpoints (~2s), transfers disk + memory state (~15s), and restores on the new server (~7s). The monitoring dashboard shows a brief latency spike, then normal operation. No 502s. No dropped connections. The
+application resumed from the exact CPU instruction where it was frozen. In-memory variables, open database transactions, timer states — all preserved. The viewer's mental model of "migration = downtime" shatters.
 
 ### Why People Share This
 
@@ -208,11 +212,13 @@ This is the infrastructure equivalent of a magic trick. "I moved a running proce
 
 ### Why This Is a "Wow"
 
-An AI agent (via Claude Code + Rediacc MCP server) monitors a self-hosted server. Over 24 hours, it detects a disk space warning → forks the repo → cleans up old logs → verifies the fork is healthy → applies the fix to production. Later, a container crashes → agent reads logs → identifies the issue → deploys a fix in a fork → runs health checks → promotes to production. All decisions logged with reasoning. The agent works only in forks (fork-only mode) — it cannot modify production directly without explicit promotion. The viewer watches an AI handle real incidents while the human sleeps.
+An AI agent (via Claude Code + Rediacc MCP server) monitors a self-hosted server. Over 24 hours, it detects a disk space warning → forks the repo → cleans up old logs → verifies the fork is healthy → applies the fix to production. Later, a container crashes → agent reads logs → identifies the issue → deploys a fix in a fork → runs health checks → promotes to production. All
+decisions logged with reasoning. The agent works only in forks (fork-only mode) — it cannot modify production directly without explicit promotion. The viewer watches an AI handle real incidents while the human sleeps.
 
 ### Why People Share This
 
-AI managing infrastructure is the most discussed topic in DevOps right now. The "24-hour experiment" format creates narrative tension: will it work? Will it break something? The fork-only safety guard is the key differentiator — it answers the universal fear ("but what if the AI breaks production?") with an architectural solution, not just a prompt. Compare: "I let ChatGPT write my Terraform" posts get massive engagement — this is the logical next step.
+AI managing infrastructure is the most discussed topic in DevOps right now. The "24-hour experiment" format creates narrative tension: will it work? Will it break something? The fork-only safety guard is the key differentiator — it answers the universal fear ("but what if the AI breaks production?") with an architectural solution, not just a prompt. Compare: "I let ChatGPT write my
+Terraform" posts get massive engagement — this is the logical next step.
 
 ---
 
@@ -248,11 +254,13 @@ AI managing infrastructure is the most discussed topic in DevOps right now. The 
 
 ### Why This Is a "Wow"
 
-Five applications — GitLab, Nextcloud, a mail server, a database, and a monitoring stack — all on one $40/month VPS. Each gets its own Docker daemon (no shared namespace), its own loopback IP subnet (no port conflicts — all five run PostgreSQL on port 5432 simultaneously), and its own encrypted LUKS mount (compromise one, the others are invisible). No 500-line compose files. No port mapping gymnastics. No "which app is using port 3000?" debugging. The architecture most people think requires Kubernetes or five separate VMs, running on a single server with true isolation.
+Five applications — GitLab, Nextcloud, a mail server, a database, and a monitoring stack — all on one $40/month VPS. Each gets its own Docker daemon (no shared namespace), its own loopback IP subnet (no port conflicts — all five run PostgreSQL on port 5432 simultaneously), and its own encrypted LUKS mount (compromise one, the others are invisible). No 500-line compose files. No
+port mapping gymnastics. No "which app is using port 3000?" debugging. The architecture most people think requires Kubernetes or five separate VMs, running on a single server with true isolation.
 
 ### Why People Share This
 
-The r/selfhosted community (301K members) collectively shares one frustration: running multiple apps on limited hardware without conflicts or compromise. Posts about "my homelab setup" consistently get high engagement. A solution that gives VM-level isolation at container-level efficiency, on a single cheap VPS, is directly shareable to that audience. The provocative subtitle — "the architecture Docker should have had" — invites debate.
+The r/selfhosted community (301K members) collectively shares one frustration: running multiple apps on limited hardware without conflicts or compromise. Posts about "my homelab setup" consistently get high engagement. A solution that gives VM-level isolation at container-level efficiency, on a single cheap VPS, is directly shareable to that audience. The provocative subtitle —
+"the architecture Docker should have had" — invites debate.
 
 ---
 
@@ -289,13 +297,15 @@ The r/selfhosted community (301K members) collectively shares one frustration: r
 
 ### Why This Is a "Wow"
 
-The tutorial simulates a ransomware attack: files encrypted, database corrupted, application down. A timer starts. The recovery: `rdc repo log production` (see the commit history — the restore points) → `rdc repo checkout <pre-attack-commit> --from production --tag recovery` (instant COW clone of the pre-attack commit into a fresh writable fork) → `rdc repo up recovery` (boot the clean clone). Timer stops at 47 seconds. The application is serving requests from the clean fork. Production data from before the attack is intact. The encryption keys were never on the server (LUKS credentials stored only in local config), so the attacker couldn't have compromised the backup snapshots.
+The tutorial simulates a ransomware attack: files encrypted, database corrupted, application down. A timer starts. The recovery: `rdc repo log production` (see the commit history — the restore points) → `rdc repo checkout <pre-attack-commit> --from production --tag recovery` (instant COW clone of the pre-attack commit into a fresh writable fork) → `rdc repo up recovery` (boot the
+clean clone). Timer stops at 47 seconds. The application is serving requests from the clean fork. Production data from before the attack is intact. The encryption keys were never on the server (LUKS credentials stored only in local config), so the attacker couldn't have compromised the backup snapshots.
 
 The contrast: industry average of 24 days vs. 47 seconds. $1.53M average cost vs. a single CLI command. The viewer realizes that the combination of encrypted snapshots + instant forking + local-only credentials makes ransomware recovery a solved problem rather than a 24-day crisis.
 
 ### Why People Share This
 
-Ransomware is in the news every week. Every CTO and business owner has the anxiety. The 24-day statistic is shocking, and the 47-second recovery creates a before/after contrast so extreme it demands sharing. The format (timed drill you can reproduce) gives the audience something actionable, not just another fear-based article. Compare: Sophos's State of Ransomware report gets cited in thousands of articles — a practical tutorial that *solves* the problem they describe would be referenced alongside it.
+Ransomware is in the news every week. Every CTO and business owner has the anxiety. The 24-day statistic is shocking, and the 47-second recovery creates a before/after contrast so extreme it demands sharing. The format (timed drill you can reproduce) gives the audience something actionable, not just another fear-based article. Compare: Sophos's State of Ransomware report gets cited
+in thousands of articles — a practical tutorial that *solves* the problem they describe would be referenced alongside it.
 
 ---
 

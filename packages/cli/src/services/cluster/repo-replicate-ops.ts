@@ -99,11 +99,7 @@ export async function replicateRepo(options: ReplicateOptions): Promise<void> {
   const nodes = await resolveReplicaNodes(options.cluster);
   const snapshot = replicaSnapshotName(setName);
 
-  // The repo's STORAGE identity (#93): the folder on the datastore — and on
-  // every byte-clone fork — is `repos/<guid>` (#83), so the datastore-plane
-  // verbs and the generated PV paths speak GUID while every k8s object keeps
-  // the name. A cluster repo without a config record cannot be replicated: the
-  // GUID is the only address its storage answers to.
+  // The repo's STORAGE identity (#93): the folder on the datastore — and on every byte-clone fork — is `repos/<guid>` (#83), so the datastore-plane verbs and the generated PV paths speak GUID while every k8s object keeps the name. A cluster repo without a config record cannot be replicated: the GUID is the only address its storage answers to.
   const repoGuid = (await configService.getRepository(options.repo))?.repositoryGuid;
   if (!repoGuid) {
     throw new Error(
@@ -209,12 +205,8 @@ export async function removeReplicaSet(repoKey: string, debug?: boolean): Promis
   const controlMount = controlDatastoreMount(set.cluster);
   const skipped: string[] = [];
 
-  // 1. Delete the whole overlay by set label. HARD, and captured: `kubectl
-  //    delete` default-waits for the pods to terminate, so a delete that fires is
-  //    ALSO the pod-termination wait that lets the fork discard win. Capture the
-  //    output so a later failure can name whether the delete removed anything —
-  //    bug #95 mechanism (b) was a silent no-op that left the StatefulSet (and so
-  //    the pods) running.
+  // 1. Delete the whole overlay by set label. HARD, and captured: `kubectl delete` default-waits for the pods to terminate, so a delete that fires is ALSO the pod-termination wait that lets the fork discard win. Capture the output so a later failure can name whether the delete removed anything — bug #95 mechanism (b) was a silent no-op that left the StatefulSet (and so the pods)
+  // running.
   const deleteLog = await captureStep(
     'kube_delete',
     control,
@@ -222,9 +214,7 @@ export async function removeReplicaSet(repoKey: string, debug?: boolean): Promis
     debug
   );
 
-  // 2. Discard each fork. HARD: a fork left attached IS the bug #95 survivor (dm
-  //    cow/pool + the running replica holding it). On final failure this PROPAGATES
-  //    (naming the survivor + surfacing the delete log), never reaching the forget.
+  // 2. Discard each fork. HARD: a fork left attached IS the bug #95 survivor (dm cow/pool + the running replica holding it). On final failure this PROPAGATES (naming the survivor + surfacing the delete log), never reaching the forget.
   await discardForks(set, deleteLog, repoKey, skipped, debug);
 
   // 3. Strip the fork node labels (best-effort: a stray label holds nothing).
@@ -258,12 +248,8 @@ export async function removeReplicaSet(repoKey: string, debug?: boolean): Promis
     skipped.push(`datastore_snapshot_delete on ${control}: ${err}`);
   }
 
-  // 5. VERIFY before forgetting (the #43 verify-then-report principle): confirm
-  //    no fork of the set is still attached on its node. datastore_detach
-  //    --discard removes the fork datastore, so a fork still enumerated by
-  //    datastore_list means the discard SUCCEEDED-but-DID-NOTHING (the false
-  //    success class). On any survivor, fail non-zero with the manual repair and
-  //    leave state intact so the operator can finish and re-run.
+  // 5. VERIFY before forgetting (the #43 verify-then-report principle): confirm no fork of the set is still attached on its node. datastore_detach --discard removes the fork datastore, so a fork still enumerated by datastore_list means the discard SUCCEEDED-but-DID-NOTHING (the false success class). On any survivor, fail non-zero with the manual repair and leave state intact so
+  // the operator can finish and re-run.
   const survivors = await findSurvivingForks(set, debug);
   if (survivors.length > 0) {
     throw new Error(
@@ -474,11 +460,7 @@ export async function refreshReplicaSet(repoKey: string, debug?: boolean): Promi
       debug
     );
     // 3. The mount is nobody's now; discard and re-fork under the same tag.
-    //    Close the per-volume LUKS images first (bug #49's mirror): provisioning
-    //    opened them, and a fork holding a live LUKS mapping plus its loop device
-    //    is BUSY, so the discard below would burn its retries and then throw.
-    //    Best-effort — a replica with nothing open is a no-op, and the retrying
-    //    detach remains the real guard.
+    // Close the per-volume LUKS images first (bug #49's mirror): provisioning opened them, and a fork holding a live LUKS mapping plus its loop device is BUSY, so the discard below would burn its retries and then throw. Best-effort — a replica with nothing open is a no-op, and the retrying detach remains the real guard.
     await tryStep(
       'datastore_volumes_close',
       r.node,

@@ -152,12 +152,8 @@ export function createQuietStderrPump(options: { echoAll?: boolean } = {}) {
         if (echoAll || !isQuietLogrusLine(pending)) process.stderr.write(pending);
         pending = '';
       }
-      // WRAPPED on replay. These are 115-358 columns wide, and the moment they
-      // are replayed a human is reading them: an unwrapped line is wrapped by
-      // the TERMINAL instead, which interleaves it with the row below and
-      // shreds the layout. `run_cmd_expect_fail` demos in the tutorials are
-      // exactly this path - there the failure IS the demo, so the diagnostic is
-      // on camera and has to be legible.
+      // WRAPPED on replay. These are 115-358 columns wide, and the moment they are replayed a human is reading them: an unwrapped line is wrapped by the TERMINAL instead, which interleaves it with the row below and shreds the layout. `run_cmd_expect_fail` demos in the tutorials are exactly this path - there the failure IS the demo, so the diagnostic is on camera and has to be
+      // legible.
       if (failed) for (const line of withheld) writeWrappedToStderr(line);
       withheld.length = 0;
     },
@@ -190,8 +186,7 @@ export function isMachineReadableRelayLine(line: string): boolean {
   // The brace test is what excludes arrays and scalars: anything that both
   // starts with `{` and parses as JSON IS an object, so a further
   // `typeof parsed === 'object'` check would be unreachable. It was written
-  // that way first and a mutation test proved the extra condition could never
-  // be false.
+  // that way first and a mutation test proved the extra condition could never be false.
   if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return false;
   try {
     JSON.parse(trimmed);

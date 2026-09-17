@@ -12,8 +12,7 @@
  * reaching this code.
  */
 
-// These static imports prove the bundle includes these modules.
-// If the bundle is incomplete, these will throw at load time.
+// These static imports prove the bundle includes these modules. If the bundle is incomplete, these will throw at load time.
 import { Command } from 'commander';
 import { VERSION } from './version.js';
 

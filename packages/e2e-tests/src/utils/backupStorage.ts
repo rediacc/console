@@ -100,16 +100,14 @@ function lineageBreakdownViolations(usage: BackupUsage): string[] {
     if (lineage.storedBytes < 0 || lineage.logicalBytes < 0) {
       bad.push(`lineage ${lineage.lineageGuid} reports negative bytes`);
     }
-    // Physical unique bytes can never exceed the logical data they protect:
-    // dedup and ZERO-cell elision only ever push the stored figure DOWN.
+    // Physical unique bytes can never exceed the logical data they protect: dedup and ZERO-cell elision only ever push the stored figure DOWN.
     if (lineage.storedBytes > lineage.logicalBytes) {
       bad.push(
         `lineage ${lineage.lineageGuid} stores ${lineage.storedBytes} bytes for ${lineage.logicalBytes} logical bytes`
       );
     }
   }
-  // Object keys are per-lineage (t/<tenant>/l/<lineage>/c/<hash>), so there is
-  // no cross-lineage sharing to make the parts exceed the whole.
+  // Object keys are per-lineage (t/<tenant>/l/<lineage>/c/<hash>), so there is no cross-lineage sharing to make the parts exceed the whole.
   if (lineageStored > usage.storedBytes) {
     bad.push(
       `per-lineage stored bytes sum to ${lineageStored}, more than the aggregate ${usage.storedBytes}`
@@ -289,9 +287,7 @@ export function verbIsRegistered(helpOutput: string, verb: string, parent = 'bac
   const parentIndex = tokens.indexOf(parent);
   const child = parentIndex >= 0 ? tokens[parentIndex + 1] : tokens[0];
   if (!child) return false;
-  // Cobra/commander list subcommands one per line, indented, name first.
-  // Anchoring to the line start avoids counting a mention inside a
-  // description or an example.
+  // Cobra/commander list subcommands one per line, indented, name first. Anchoring to the line start avoids counting a mention inside a description or an example.
   const escaped = child.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`^\\s+${escaped}(\\s|$)`, 'm').test(helpOutput);
 }

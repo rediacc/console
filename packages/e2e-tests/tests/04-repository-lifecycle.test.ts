@@ -446,8 +446,7 @@ test.describe
     });
 
     test('4. the storage-maintain timer self-installed and is enabled after daemon start', async () => {
-      // A conditional skip that can silently become permanent is the disease this
-      // wave targets, so this asserts (not skips): the timer must be armed.
+      // A conditional skip that can silently become permanent is the disease this wave targets, so this asserts (not skips): the timer must be armed.
       const enabled = await runner.executeViaBridge(
         'systemctl is-enabled rediacc-storage-maintain.timer 2>/dev/null || true'
       );

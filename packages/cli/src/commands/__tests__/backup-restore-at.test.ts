@@ -52,8 +52,7 @@ describe('resolveSnapshotAt', () => {
     const { resolveSnapshotAt } = await import('../backup.js');
     const id = '20260814T120000Z-0011223344556677';
     await expect(resolveSnapshotAt(LINEAGE, id)).resolves.toBe(id);
-    // THE DEFECT: treating a snapshot id as a time. It would parse as NaN and
-    // refuse, or worse, round-trip through Date and select something else.
+    // THE DEFECT: treating a snapshot id as a time. It would parse as NaN and refuse, or worse, round-trip through Date and select something else.
     expect(mockAccountServerFetch).not.toHaveBeenCalled();
   });
 
@@ -66,8 +65,7 @@ describe('resolveSnapshotAt', () => {
       ],
     });
     const { resolveSnapshotAt } = await import('../backup.js');
-    // THE DEFECT: picking the OLDEST match, or the newest overall. Both restore
-    // a real snapshot and exit zero, so neither looks like a failure.
+    // THE DEFECT: picking the OLDEST match, or the newest overall. Both restore a real snapshot and exit zero, so neither looks like a failure.
     await expect(resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z')).resolves.toBe('snap-mid');
   });
 
@@ -85,12 +83,8 @@ describe('resolveSnapshotAt', () => {
   });
 
   it('reads createdAt, NOT the timestamp embedded in the snapshot id', async () => {
-    // Snapshot ids are time-sortable, so sorting by id looks correct and is
-    // wrong: the id records when it was MINTED and the manifest commits when
-    // the upload FINISHES. On a long upload the two disagree, and a resolver
-    // that trusts the id restores a different point in time than the operator
-    // asked for. Here the id order and the createdAt order are DELIBERATELY
-    // opposite, so only a createdAt-based resolver can pass.
+    // Snapshot ids are time-sortable, so sorting by id looks correct and is wrong: the id records when it was MINTED and the manifest commits when the upload FINISHES. On a long upload the two disagree, and a resolver that trusts the id restores a different point in time than the operator asked for. Here the id order and the createdAt order are DELIBERATELY opposite, so only a
+    // createdAt-based resolver can pass.
     mockAccountServerFetch.mockResolvedValue({
       manifests: [
         manifest('20260814T080000Z-aaaaaaaaaaaaaaaa', '2026-08-14T11:30:00.000Z'),
@@ -108,8 +102,7 @@ describe('resolveSnapshotAt', () => {
       manifests: [manifest('snap-a', '2026-08-14T09:00:00.000Z')],
     });
     const { resolveSnapshotAt } = await import('../backup.js');
-    // THE DEFECT: falling back to the oldest snapshot. That restores data the
-    // operator did not ask for, successfully.
+    // THE DEFECT: falling back to the oldest snapshot. That restores data the operator did not ask for, successfully.
     await expect(resolveSnapshotAt(LINEAGE, '2026-08-13T00:00:00Z')).rejects.toThrow();
   });
 
@@ -125,8 +118,7 @@ describe('resolveSnapshotAt', () => {
     });
     const { resolveSnapshotAt } = await import('../backup.js');
     await resolveSnapshotAt(LINEAGE, '2026-08-14T12:00:00Z');
-    // THE DEFECT: an unscoped query, which would let ANOTHER repository's
-    // snapshot win the "newest at or before" race and be restored over this one.
+    // THE DEFECT: an unscoped query, which would let ANOTHER repository's snapshot win the "newest at or before" race and be restored over this one.
     expect(String(mockAccountServerFetch.mock.calls[0][0])).toContain(
       `lineage=${encodeURIComponent(LINEAGE)}`
     );

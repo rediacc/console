@@ -14,7 +14,9 @@ import path from 'node:path';
  * @param {string} ruleName - Rule id, used in the error message
  * @param {string} optionName - Option key the caller must supply
  * @param {unknown} value - Raw option value
- * @param {string} projectRoot - Base for resolving relative values
+ * @param {string} projectRoot - Base for resolving relative values. Pass
+ *   `lintRoot(context)` from ../../lib/paths.js; the process cwd is only the
+ *   fallback for a caller that has no rule context to hand.
  * @returns {string} Absolute, verified directory path
  */
 export const resolveRequiredDirOption = (

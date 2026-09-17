@@ -1,5 +1,13 @@
 #!/bin/bash
-# Drives scripts/check-client-bundle-budget.ts and, crucially, a MUTANT of it.
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# lane: quality-security
+# needs: node
+# slow: true
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# ---- end gate ----
+# Drives scripts/gates/check-client-bundle-budget.ts and, crucially, a MUTANT of it.
 #
 # WHY THIS EXISTS. That gate was green for as long as it had existed while
 # under-reporting the homepage by 124,673 B. `importSpecifiers` required whitespace
@@ -25,7 +33,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test gate
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GATE="$REPO_ROOT/scripts/check-client-bundle-budget.ts"
+GATE="$REPO_ROOT/scripts/gates/check-client-bundle-budget.ts"
 DIST="$REPO_ROOT/packages/www/dist"
 
 # ── 1. The gate's own selftest is green ────────────────────────────────────

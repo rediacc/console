@@ -128,8 +128,7 @@ test.describe
       runner = BridgeTestRunner.forWorker();
       vm2Runner = BridgeTestRunner.forWorker(2);
 
-      // Note: Datastore initialization is now handled by global setup (Step 5)
-      // All worker VMs have datastores initialized before tests run
+      // Note: Datastore initialization is now handled by global setup (Step 5) All worker VMs have datastores initialized before tests run
 
       // Create repository before running data transfer tests
       await runner.repositoryNew(testRepo, '500M', TEST_PASSWORD, DEFAULT_DATASTORE_PATH);
@@ -174,8 +173,7 @@ test.describe
 
     test('pull repository from VM1 to VM2', async () => {
       test.skip(!crossVMSSHAvailable, 'Cross-VM SSH not available - skipping data transfer tests');
-      // Use vm2Runner to pull FROM VM1 TO VM2
-      // This tests pulling from source machine (VM1) to destination (VM2)
+      // Use vm2Runner to pull FROM VM1 TO VM2 This tests pulling from source machine (VM1) to destination (VM2)
       const result = await vm2Runner.pull(testRepo, runner.getWorkerVM(), DEFAULT_DATASTORE_PATH);
 
       // Always log output for debugging

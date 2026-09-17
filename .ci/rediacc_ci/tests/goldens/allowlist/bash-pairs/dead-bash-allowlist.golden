@@ -1,0 +1,23 @@
+# rediacc_ci allowlist golden
+# reader: bash:.ci/scripts/lib/blocker-validator.sh::parse_blockered_list
+# command: parse_blockered_list <corpus> A B '#'; for k in ${!B[@]}; printf '%s\t%s\n'; LC_ALL=C sort
+# projection: pairs
+# source: .dead-bash-allowlist
+# corpus: corpus/dead-bash-allowlist.list
+# comment-char: #
+# corpus-sha256: 4c3441791a767999ec3c4d9c36d3d6c5edfed2efd463e909df8ebc1a20b9a723
+# ---
+dispatch:phase_	assembled at runtime in scripts/dev/linode-cluster-validation.sh as "phase_$p", so phase_preflight/phase_plan/phase_idempotency have no static call site
+glob:.ci/scripts/test/gates/	expanded as a glob by .ci/scripts/test/run-all.sh (PATTERN="test-*.sh" into TEST_FILES), so every test-*.sh under that root is executed without ever being named individually
+glob:.ci/tutorials/	three sites expand this directory as a glob and name no file in it individually -- .ci/media/tutorials.sh (for script in "$tutorials_dir"/tutorial-*.sh, and "$tutorials_dir/tutorial-${name}.sh" built from an argument), .ci/tutorials/run-sequence.sh (for script in "$SCRIPT_DIR"/tutorial-*.sh, plus a per-slug existence check derived from the docs frontmatter), and scripts/gates/check-tutorial-noninteractive.ts (readdirSync of .ci/tutorials filtered to .sh)
+manual:.ci/breakpoint/scripts/sync-breakpoint.sh	downstream re-vendor helper for the copyable .ci/breakpoint/ folder, run by the operator in a repo that vendored breakpoint when check-breakpoint-drift.sh reports the copy has fallen behind rediacc/console
+manual:.ci/docker/run-in-web.sh	operator-invoked wrapper carrying its own "Usage: .ci/docker/run-in-web.sh <command...>" line, the entry point of the containerised web toolchain added alongside .ci/docker/{tts,render}. Its siblings are reachable statically -- run-in-render.sh from this file, and the narration wrapper from the exec shim at .ci/docker/run-in-tts.sh, which W10 phase 3 left behind when the wrapper and its image context moved to .ci/media/tools/run-in-tts.sh and .ci/media/tts/ -- so it is the TOP of that chain and nothing above it can name it. REDIACC_NO_DOCKER=1 makes it exec on the host, which is how it is driven locally.
+manual:.ci/scripts/deploy/deploy-proxy.sh	deliberately not wired into the release pipeline; its own header at the top of the file states MANUAL ONLY, and it is run by the operator when a proxy deploy is needed
+manual:.ci/scripts/security/dependency-inventory.sh	NIS2/CRA supply-chain SBOM enumeration, run by the operator on demand when a dependency inventory is required for compliance evidence rather than on every build
+manual:.ci/scripts/test/manual/probe-receipt-stability.sh	operator-run probe for the receipt's `stable` field, which cannot be gated without flakiness -- it must plant a tree change WHILE a real lane run is in flight, so any automated version races the gate it is timing against. Kept because the control took three attempts to stop reporting success while measuring nothing (a slow-tier gate matched zero gates; then a *.tmp probe was invisible to git status via .gitignore:73), and that knowledge is worth more as a runnable script than as prose.
+manual:.claude/hooks/test-hooks.sh	smoke-tests every Claude Code guard hook; run by the operator after a /hooks reload, which is why nothing in CI references it
+manual:.devcontainer/start-vscode.sh	starts OpenVSCode Server for self-hosted browser access and refuses to run inside Codespaces; invoked by the operator on a self-hosted box, not by the devcontainer lifecycle
+manual:scripts/dev/apply-cf-redirect-rules.sh	idempotent Cloudflare apex-redirect reconciler for rediacc.com, run by the operator when the redirect ruleset drifts; safe to re-run and asserts current state before writing
+manual:scripts/dev/linode-cluster-validation.sh	multi-phase Linode cluster provisioning validation driven interactively by the operator, phases selected on the command line and dispatched via "phase_$p"
+manual:scripts/dev/r2-oneshot-scrub.sh	one-shot idempotent R2 scrub for legacy orphan prefixes, run by the operator when release-path pollution needs clearing; deliberately not automated because it hard-deletes prefixes
+manual:scripts/pre-commit-check.sh	pre-commit quality gate wired through the operator's local Claude Code hook settings rather than tracked config, and explicitly protected from deletion by .claude/hooks/pre-bash/block-protected-files.sh

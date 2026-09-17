@@ -38,12 +38,13 @@ on:
         type: boolean
         default: false
 
-# Required for release publishing, Docker, and Cloudflare Pages deployment
-permissions:
-  actions: write
-  contents: write
-  packages: write       # For GHCR push
-  attestations: write   # Verify artifact provenance
+# Release publishing, Docker and Cloudflare Pages scopes are declared per job
+# below, not here: only tag-and-release needs contents: write, and only
+# publish needs packages: write.
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 # Queue new releases instead of cancelling in-progress ones
 concurrency:
@@ -58,6 +59,13 @@ jobs:
   init:
     name: Initialize
     runs-on: ubuntu-latest
+    # actions: read is for resolve-ci-run.sh, which reads
+    # repos/*/actions/runs with github.token. Everything else in this job
+    # (check-existing-release, assert-artifact-version, the submodule fetch)
+    # runs on the cd-preset App token. No write scope is needed here.
+    permissions:
+      contents: read
+      actions: read
     outputs:
       ci_run_id: ${{ steps.resolve.outputs.ci_run_id }}
       ci_sha: ${{ steps.resolve.outputs.ci_sha }}
@@ -215,6 +223,18 @@ jobs:
   publish:
     name: Tag & Release
     runs-on: ubuntu-latest
+    # packages: write because retag-image.sh does `buildx imagetools create`,
+    # which PUSHES to ghcr. actions: read for the cross-run
+    # download-artifact (run-id + github-token). attestations: read for
+    # `gh attestation verify`, which only READS the attestation - the signing
+    # and storing happens in cd-stage.yml, not here.
+    # The environment: edge deployment record is created by the runner, not the
+    # token, so deployments: write is not needed.
+    permissions:
+      contents: read
+      packages: write
+      actions: read
+      attestations: read
     needs: [init]
     if: >-
       success()
@@ -278,11 +298,11 @@ jobs:
           CHANNEL="${{ needs.init.outputs.channel }}"
           VERSION="${{ needs.init.outputs.next_version }}"
 
-          .ci/scripts/docker/retag-image.sh --image renet --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image rdc --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag_image.py --image renet --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag_image.py --image rdc --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           # On-prem server image lives at ghcr.io/rediacc/server (outside elite/),
           # so PUBLISH_DOCKER_REGISTRY can't reach it. cd-stage stages :CHANNEL.
-          .ci/scripts/docker/retag-image.sh --image-path ghcr.io/rediacc/server --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag_image.py --image-path ghcr.io/rediacc/server --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
 
       # -----------------------------------------------------------------------
       # Step 1b: Install dependencies and build shared packages
@@ -399,6 +419,11 @@ jobs:
   # ============================================================================
   deploy-marketing-edge:
     name: Deploy edge Marketing
+    # The callee needs only checkout. Without this block it inherited this
+    # workflow contents:write + packages:write + actions:write + attestations:write,
+    # which no step in the called workflow uses.
+    permissions:
+      contents: read
     needs: [init, publish]
     # Cannot use bare success() here: in workers_only mode `publish` is
     # correctly skipped (its own `if:` gates on workers_only), and bare
@@ -420,6 +445,11 @@ jobs:
 
   deploy-account-edge:
     name: Deploy edge Account (all regions)
+    # The callee needs only checkout. Without this block it inherited this
+    # workflow contents:write + packages:write + actions:write + attestations:write,
+    # which no step in the called workflow uses.
+    permissions:
+      contents: read
     needs: [init, publish]
     # See deploy-marketing-edge above for why we don't use bare success().
     if: >-
@@ -438,6 +468,11 @@ jobs:
   # ============================================================================
   deploy-marketing-stable:
     name: Deploy stable Marketing (hotfix)
+    # The callee needs only checkout. Without this block it inherited this
+    # workflow contents:write + packages:write + actions:write + attestations:write,
+    # which no step in the called workflow uses.
+    permissions:
+      contents: read
     needs: [init, publish, smoke-test, tag-and-release]
     # tag-and-release is correctly skipped in retry/workers-only mode (the
     # tag already exists), so we cannot use bare success() here -- a skipped
@@ -461,6 +496,11 @@ jobs:
 
   deploy-account-stable:
     name: Deploy stable Account (hotfix, all regions)
+    # The callee needs only checkout. Without this block it inherited this
+    # workflow contents:write + packages:write + actions:write + attestations:write,
+    # which no step in the called workflow uses.
+    permissions:
+      contents: read
     needs: [init, publish, smoke-test, tag-and-release]
     # See deploy-marketing-stable above for why we don't use bare success().
     if: >-
@@ -483,6 +523,9 @@ jobs:
   smoke-test:
     name: Smoke Test
     runs-on: ubuntu-slim
+    # Checkout, then HTTP probes against the deployed endpoints. No GitHub API.
+    permissions:
+      contents: read
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge]
     # See deploy-marketing-edge above for why we don't use bare success().
     # smoke-test must still run when publish is skipped (workers_only),
@@ -520,6 +563,10 @@ jobs:
   # ============================================================================
   validate-install-published:
     name: Validate Install (post-publish)
+    # Matches what ct-install-methods.yml declares: checkout plus a ghcr PULL.
+    permissions:
+      contents: read
+      packages: read
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test]
     # See deploy-marketing-edge above for why we don't use bare success().
     # Workers-only already excluded by the workers_only check; we
@@ -547,6 +594,28 @@ jobs:
   tag-and-release:
     name: Tag & GitHub Release
     runs-on: ubuntu-latest
+    # NO `contents: write`, and that is the point. Every write in this job now
+    # rides the cd-preset App token: the tag push, the submodule tags, the
+    # homebrew-tap bump and the contract floor push go through the global
+    # insteadOf credential, and "Create GitHub Release" is now explicitly on
+    # `steps.app-token.outputs.token` too.
+    #
+    # It used to be the ONE step left on github.token, and it runs LAST, after
+    # the tag push. So the job held two credentials to do one job and the
+    # fragile half went last: lose contents:write and the tag lands while the
+    # Release does not. That is not hypothetical, it is the half-completed
+    # release this repo saw twice, on v1.3.11 and v1.3.8, recorded in
+    # .github/actions/app-token/action.yml.
+    #
+    # One credential for the whole job means the failure mode is now all-or-
+    # nothing rather than partial, which is the property that matters for a
+    # release: a run that cannot authenticate produces no tag AND no Release,
+    # and promote-stable's assert-edge-tag-exists.sh then refuses to promote.
+    #
+    # actions: read is for the cross-run download-artifact.
+    permissions:
+      contents: read
+      actions: read
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test, validate-install-published]
     if: >-
       success() &&
@@ -634,7 +703,11 @@ jobs:
 
       - name: Create GitHub Release
         env:
-          GH_TOKEN: ${{ github.token }}
+          # The App token, not github.token. See this job's `permissions:` block:
+          # every other write here already uses it, and this step running last on
+          # a different credential is what made a lost scope produce a tag with no
+          # Release rather than a clean failure.
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ needs.init.outputs.next_version }}
         run: .ci/scripts/release/create-github-release.sh
 

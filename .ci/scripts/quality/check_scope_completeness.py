@@ -33,6 +33,13 @@ WHAT IT DOES NOT DO. It does not verify each gate's own scope logic -- that
 stays each gate's job, and `check_secret_reachability.py` is the model, refusing
 a verdict when a repo it knows about is unscannable. This is the floor beneath
 them, not a replacement for them.
+
+---- gate ----
+step: Scope completeness
+needs: none
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 import argparse
@@ -40,14 +47,10 @@ import pathlib
 import re
 import sys
 
-# A checked-out submodule always has this much. A directory that exists but
-# holds only these is an uninitialised placeholder, which is exactly the state
-# `submodules: false` leaves behind.
+# A checked-out submodule always has this much. A directory that exists but holds only these is an uninitialised placeholder, which is exactly the state `submodules: false` leaves behind.
 MIN_ENTRIES = 2
 
-# Vacuity floor: this repo declares several submodules. Finding none means
-# .gitmodules moved or the parse broke, and every check below would be over an
-# empty set -- indistinguishable from full coverage.
+# Vacuity floor: this repo declares several submodules. Finding none means .gitmodules moved or the parse broke, and every check below would be over an empty set -- indistinguishable from full coverage.
 MIN_SUBMODULES = 2
 
 

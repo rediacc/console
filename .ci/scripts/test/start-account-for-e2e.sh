@@ -164,7 +164,7 @@ log_info "account server starting, log $LOG_FILE"
 # and the log tail explains any timeout.
 log_step "Waiting for the account server to answer /health..."
 HEALTHY=0
-for _ in $(seq 1 60); do
+for ((_i = 1; _i <= 60; _i++)); do
     if curl -sf -m 2 "http://127.0.0.1:${PORT}/health" >/dev/null 2>&1; then
         HEALTHY=1
         break

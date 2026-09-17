@@ -74,9 +74,7 @@ export const OPTION_KIND_OVERRIDES: Readonly<Record<string, OptionKindOverride>>
   'repo merge --from': ['repo'],
   'repo diff --base': ['repo'],
 
-  // ── Longs outside the noun set that still bind a resource ───────────────
-  // `--provision <provider>` names a configured cloudProviders entry to
-  // auto-provision the destination with.
+  // ── Longs outside the noun set that still bind a resource ─────────────── `--provision <provider>` names a configured cloudProviders entry to auto-provision the destination with.
   'repo push --provision': ['provider'],
   'repo migrate --provision': ['provider'],
   // `--grand <name>` names the parent credential repository to share secrets
@@ -144,8 +142,7 @@ export const SENSITIVE_BY_NAME: ReadonlySet<string> = new Set([
 export const SENSITIVE_OVERRIDES: Readonly<Record<string, boolean>> = {
   // The secret plaintext itself; `--key` beside it is just the secret's name.
   'repo secret set --value': true,
-  // Rclone credentials as a JSON blob: a secret in run history even though
-  // the long says nothing secret-sounding.
+  // Rclone credentials as a JSON blob: a secret in run history even though the long says nothing secret-sounding.
   'storage add --vault': true,
 };
 
@@ -174,9 +171,7 @@ export const FORMAT_BY_NAME: Readonly<Record<string, FormatHint>> = {
   // percentages
   weight: 'percent',
   'grow-threshold': 'percent',
-  // bare numbers, verified against the live labels: `--older-than` is "in
-  // hours", `--timeout` is milliseconds, `--health-*` are seconds,
-  // `--trim-interval` is hours, so none of them parse a duration string.
+  // bare numbers, verified against the live labels: `--older-than` is "in hours", `--timeout` is milliseconds, `--health-*` are seconds, `--trim-interval` is hours, so none of them parse a duration string.
   concurrency: 'integer',
   replicas: 'integer',
   count: 'integer',

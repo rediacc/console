@@ -12,11 +12,7 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 
 - Today (branch base): !`date +%m%d`  (feature branches are `MMDD-N`, NO suffix)
 
-**Take MAX+1 over the CONSUMED list, not over the remote branch list.** A merged
-PR's branch is DELETED, so `git branch -r` cannot see the name it used. That is
-how `0826-1` was picked twice on 2026-08-26: the remote showed only `0826-2`,
-while PR #576 had merged `0826-1` at 11:01 that morning. Both lines are printed
-below so the difference is visible rather than assumed.
+**Take MAX+1 over the CONSUMED list, not over the remote branch list.** A merged PR's branch is DELETED, so `git branch -r` cannot see the name it used. That is how `0826-1` was picked twice on 2026-08-26: the remote showed only `0826-2`, while PR #576 had merged `0826-1` at 11:01 that morning. Both lines are printed below so the difference is visible rather than assumed.
 - Current branch: !`git branch --show-current`
 - Console tree (excl. settings.local.json): !`git status --short | grep -v '.claude/settings.local.json' | wc -l | tr -d ' '` changed path(s)
 - Submodules with changes: !`git status --short private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(none)'`
@@ -29,15 +25,8 @@ below so the difference is visible rather than assumed.
 - **Default, including no arguments, is Inline mode** (below): you run the loop in THIS session per the agent file; `$ARGUMENTS` seeds the intent summary.
 - If the **first whitespace-delimited token of `$ARGUMENTS` is exactly `bg`** → **Delegate mode**: spawn a background pr-babysitter teammate and supervise it as team lead; the remainder of `$ARGUMENTS` seeds the intent summary.
 
-**WHY THE DEFAULT WENT BACK TO INLINE (operator directive, 2026-08-05.)** Delegation was
-tried as the default on the 0804-1 wave and the wave did not finish: CI reached green at
-05:35Z and the babysitter never saw it, because its wake-up watches died repeatedly
-(four separate deaths across the night, each needing a lead ping to recover) and the
-last one took the terminal verdict with it. The PR was still sitting in DRAFT hours
-later with every check green. The delegated loop's failure mode is that NOBODY is
-watching the watcher: a dropped watch is invisible to the babysitter by construction,
-and the lead can only detect it by polling a round log. Running in-session puts the
-loop on the same wake-ups as the rest of the session, where a stall is visible
+**WHY THE DEFAULT WENT BACK TO INLINE (operator directive, 2026-08-05.)** Delegation was tried as the default on the 0804-1 wave and the wave did not finish: CI reached green at 05:35Z and the babysitter never saw it, because its wake-up watches died repeatedly (four separate deaths across the night, each needing a lead ping to recover) and the last one took the terminal verdict
+with it. The PR was still sitting in DRAFT hours later with every check green. The delegated loop's failure mode is that NOBODY is watching the watcher: a dropped watch is invisible to the babysitter by construction, and the lead can only detect it by polling a round log. Running in-session puts the loop on the same wake-ups as the rest of the session, where a stall is visible
 immediately. `bg` remains available for genuinely multi-day waves.
 
 ## Preflight (both modes)
@@ -75,7 +64,8 @@ For each one found:
 You are the **team lead**. Your job is the four things only you can do: compose the briefing, hand over the tree, rule on escalations, verify the end. Your real work while it runs is *the remaining task list*. If you have nothing to do but watch CI, the wave was mis-scoped.
 
 ### 1. Compose the briefing
-Write it to `~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-<branch>-briefing.md`. Contents: the **wave-header slots as specced in the agent file's round-log section** (intent, renames/removals, sanctioned reds, frozen surfaces, baselines + their measurement commands, decision-boundary additions, memory pointers) plus two delegate-only slots: **escalation routing** (domain → who answers; default: you) and **anything time-critical**. **Immutable once the babysitter is running**: supersede with a new file, never rewrite in place. (Briefing and round log stay two artifacts on purpose: the briefing is your immutable handoff; the round log is the babysitter's mutable state. Do not "simplify" them into one.)
+Write it to `~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-<branch>-briefing.md`. Contents: the **wave-header slots as specced in the agent file's round-log section** (intent, renames/removals, sanctioned reds, frozen surfaces, baselines + their measurement commands, decision-boundary additions, memory pointers) plus two delegate-only slots: **escalation
+routing** (domain → who answers; default: you) and **anything time-critical**. **Immutable once the babysitter is running**: supersede with a new file, never rewrite in place. (Briefing and round log stay two artifacts on purpose: the briefing is your immutable handoff; the round log is the babysitter's mutable state. Do not "simplify" them into one.)
 
 ### 2. Hand over the tree, register, spawn
 - **The primary working tree belongs to the babysitter** until green (it needs node_modules, builds, `rdc.sh`). Other implementation teammates you spawn use `isolation: "worktree"`. Do not edit tracked files in the primary tree; if you must (a fix only you can make), tell the babysitter the exact paths and that they are yours, so it stages surgically and will otherwise treat them as a leak.
@@ -87,7 +77,9 @@ Write it to `~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babys
 - An idle notification without a report is NOT a report: if the babysitter goes idle silently mid-wave, that is either the armed-watch design (STATUS fresh, leave it alone) or a dead driver (STATUS stale across observed state change, so ping once, then replace).
 
 ### 3. ⛔ You do not read CI
-From spawn until it reports green, you do not run `gh run watch/view/list` or fetch a job log, not once and not "just to check", and you do not diagnose a red. The failure mode is not the lead ignoring CI; it is the lead **shadowing** it: two agents burning full context to produce one answer. (Real case: lead and babysitter independently root-caused the same compile break, the same crashing gate, and fell into the same stale-`tsbuildinfo` trap. Everything correct, everything doubled.) **Two agents agreeing is not verification, it is the same answer, paid for twice.** Verification is the babysitter testing a claim against the live system. Your status channel is the babysitter's messages plus the round log's **STATUS block**; if neither says what you need, ask the babysitter, and do not go look.
+From spawn until it reports green, you do not run `gh run watch/view/list` or fetch a job log, not once and not "just to check", and you do not diagnose a red. The failure mode is not the lead ignoring CI; it is the lead **shadowing** it: two agents burning full context to produce one answer. (Real case: lead and babysitter independently root-caused the same compile break, the same
+crashing gate, and fell into the same stale-`tsbuildinfo` trap. Everything correct, everything doubled.) **Two agents agreeing is not verification, it is the same answer, paid for twice.** Verification is the babysitter testing a claim against the live system. Your status channel is the babysitter's messages plus the round log's **STATUS block**; if neither says what you need, ask
+the babysitter, and do not go look.
 
 ### 4. Rule on escalations (the interrupt handler)
 - Each arrives structured: gate, log, candidate fixes, recommendation. Verify a load-bearing claim **in the code**, not by re-running CI. **Rule on the question asked; do not adopt the red**: "helping" by diagnosing it yourself is the shadowing failure wearing a helpful face.
@@ -108,7 +100,8 @@ From spawn until it reports green, you do not run `gh run watch/view/list` or fe
 
 ## Inline mode (default): run the loop here
 
-**Read `/home/muhammed/monorepo/console/.claude/agents/pr-babysitter.md` in full and execute it as written. You are the babysitter; the principal is the user.** No mechanics are restated here, because that file is the single source of truth for the loop, the tier system, the wake-up/heartbeat rules, Rule 2 (fix it, don't file it; "not my change" is not an exit), the workers contract, and the round-log format. Only the deltas that exist because the loop runs in THIS session are listed below.
+**Read `/home/muhammed/monorepo/console/.claude/agents/pr-babysitter.md` in full and execute it as written. You are the babysitter; the principal is the user.** No mechanics are restated here, because that file is the single source of truth for the loop, the tier system, the wake-up/heartbeat rules, Rule 2 (fix it, don't file it; "not my change" is not an exit), the workers
+contract, and the round-log format. Only the deltas that exist because the loop runs in THIS session are listed below.
 
 - Compose the **wave header** at the top of the round log (`reports/pr-babysit-<branch>.md`) per the agent file's slot spec. There is no separate briefing file in this mode.
 - **The round log is your compaction insurance.** After any context compaction or session restart, re-read the agent file + wave header + STATUS block before touching anything.

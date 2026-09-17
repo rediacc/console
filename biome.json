@@ -69,6 +69,7 @@
       "packages/**/*.json",
       "packages/**/*.css",
       "!.ci/cache/**",
+      "!.claude/worktrees/**",
       "!packages/www/src/i18n/client/**",
       "!packages/www/src/i18n/client-route/**",
       "!**/.translation-hashes.json",

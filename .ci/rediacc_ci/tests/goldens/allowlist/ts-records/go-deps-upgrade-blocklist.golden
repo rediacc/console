@@ -1,0 +1,11 @@
+# rediacc_ci allowlist golden
+# reader: ts:scripts/lib/blocker-validator.ts::parseBlockeredList
+# command: parseBlockeredList(<corpus>, '#'); printf '%s\t%s\t%s\n' line entry blocker
+# projection: records
+# source: .go-deps-upgrade-blocklist
+# corpus: corpus/go-deps-upgrade-blocklist.list
+# comment-char: #
+# corpus-sha256: e74ba0d938746bb227cd4bcae6bfcf4e03c8cef7e53117c9cfd4a516366c519f
+# ---
+13	github.com/landlock-lsm/go-landlock	v0.9.0 is a 0.x minor that can change the Landlock config API; this gates repo-sandbox isolation, so adoption needs sandbox-behavior validation on a live cluster before bumping
+25	k8s.io/kubelet	kubelet is consumed for exactly one thing, the stable pluginregistration/v1

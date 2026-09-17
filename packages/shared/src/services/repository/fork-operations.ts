@@ -121,9 +121,7 @@ export function getForkRelationship(
  * @returns True (forking is always allowed)
  */
 export function canForkRepo(_repo: RepositoryWithRelations): boolean {
-  // Any repository can be forked
-  // If it's a fork, the new fork will share the same grandGuid
-  // If it's a credential, the new fork will point to it as grand
+  // Any repository can be forked If it's a fork, the new fork will share the same grandGuid If it's a credential, the new fork will point to it as grand
   return true;
 }
 
@@ -133,7 +131,6 @@ export function canForkRepo(_repo: RepositoryWithRelations): boolean {
  * @returns The grandGuid for the new fork, or null if repository has no GUID
  */
 export function getGrandGuidForFork(repository: RepositoryWithRelations): string | null {
-  // If forking a fork, use the same grand
-  // If forking a credential, the credential becomes the grand
+  // If forking a fork, use the same grand If forking a credential, the credential becomes the grand
   return repository.grandGuid ?? repository.repositoryGuid;
 }

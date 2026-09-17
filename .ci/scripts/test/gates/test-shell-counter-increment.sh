@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Regression test for a bash defect that was silently disarming four gates
+# ---- end gate ----
+
 # Regression test for a bash defect that was silently disarming four gates.
 #
 # WHAT BROKE. Under `set -e`, the arithmetic COMMAND `((x++))` exits NON-ZERO

@@ -50,8 +50,7 @@ describe('cleanRelayLine', () => {
   });
 
   it('KEEPS a JSON log line, which the failure-path cleaner deliberately drops', () => {
-    // Container logs are frequently structured JSON. Dropping them here would
-    // re-create the bug this module exists to fix.
+    // Container logs are frequently structured JSON. Dropping them here would re-create the bug this module exists to fix.
     expect(cleanRelayLine('[container_logs] {"level_of_detail":"high"}')).toBe(
       '{"level_of_detail":"high"}'
     );

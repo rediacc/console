@@ -1,9 +1,7 @@
 import http from 'node:http';
 
 const PORT = 3000;
-// eBPF bind rewriting handles IP isolation transparently.
-// Apps can bind to 0.0.0.0 and the kernel rewrites it to the
-// correct loopback IP for this repository's network namespace.
+// eBPF bind rewriting handles IP isolation transparently. Apps can bind to 0.0.0.0 and the kernel rewrites it to the correct loopback IP for this repository's network namespace.
 const HOST = '0.0.0.0';
 
 const server = http.createServer((req, res) => {
@@ -16,8 +14,7 @@ const server = http.createServer((req, res) => {
   }) + '\n');
 });
 
-// CRIU: after checkpoint/restore, stale TCP sockets may trigger
-// ECONNRESET before the new connection is established.
+// CRIU: after checkpoint/restore, stale TCP sockets may trigger ECONNRESET before the new connection is established.
 process.on('uncaughtException', (err) => {
   if (err.code === 'ECONNRESET') {
     console.warn('ECONNRESET (stale socket after CRIU restore), ignoring');

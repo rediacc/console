@@ -190,9 +190,20 @@ if [[ "$FORMAT" == "rpm" || "$FORMAT" == "deb" ]] && [[ -n "${RELEASE_GPG_PRIVAT
     # decoder does not, and the failure lands AFTER the fingerprint check below has
     # printed a tick. The why, and the reproduction, are in the script itself; it is
     # shared so check:ci-release-key-canonical exercises the real thing.
-    if "$(dirname "${BASH_SOURCE[0]}")/canonicalise-gpg-key.sh" \
-        "$GPG_KEY_FILE" "${RELEASE_GPG_PASSPHRASE:-}"; then
-        log_info "Re-exported the signing key through gpg for canonical armor"
+    # `|| canon_rc=$?` rather than a bare call: this script runs under `set -e`, so a
+    # non-zero exit terminates it before the next line can read $?. The repair case
+    # exits 10 ON PURPOSE, so a bare call aborted every build whose key needed
+    # repairing -- which is precisely the production case this signal exists for.
+    canon_rc=0
+    "$(dirname "${BASH_SOURCE[0]}")/canonicalise-gpg-key.sh" \
+        "$GPG_KEY_FILE" "${RELEASE_GPG_PASSPHRASE:-}" || canon_rc=$?
+    if [[ "$canon_rc" == "0" ]]; then
+        log_info "Signing key armor was already canonical"
+    elif [[ "$canon_rc" == "10" ]]; then
+        # LOUD ON PURPOSE. Repairing this every build and saying nothing is how the
+        # stored value stays broken forever. It is welded because a GPG key does not
+        # fit one Bitwarden field and the two halves were joined without a newline.
+        log_warn "SIGNING KEY WAS REPAIRED: the stored RELEASE_GPG_PRIVATE_KEY armor is malformed and this build fixed it in flight. Fix it AT SOURCE -- re-join the two Bitwarden halves WITH a newline -- or every build keeps papering over it."
     else
         # Not fatal on its own: the key may already be canonical, and the fingerprint
         # check below still has to pass. Say so rather than proceeding silently,
@@ -316,6 +327,19 @@ else
             # being re-discovered. Making it required is the right end state; it needs
             # a key first, and that is the operator's to mint.
             log_warn "APK_RSA_PRIVATE_KEY not set, skipping APK signing (apk is declared-unsigned; see check-release-signing-coverage.sh)"
+            ;;
+        archlinux)
+            # SAID OUT LOUD, like the other three. archlinux had no arm here, so it
+            # was the one format that finished unsigned in SILENCE while deb, rpm and
+            # apk each announced it -- and silence is what let "two of four formats
+            # ship unsigned" go unnoticed in the first place.
+            #
+            # It cannot be signed: nfpm has no signature support for archlinux at all
+            # (goreleaser/nfpm#628 open, PR #1065 unmerged), and doing it by hand
+            # would BREAK existing users -- pacman.conf(5) SigLevel Optional, which is
+            # what Arch ships as LocalFileSigLevel, makes "a signature from a key not
+            # in the keyring" a fatal error. A keyring rollout has to land first.
+            log_warn "archlinux packages are UNSIGNED: nfpm cannot sign them, and publishing a .sig before a keyring rollout would break pacman -U (see check-release-signing-coverage.sh)"
             ;;
     esac
 fi

@@ -108,8 +108,7 @@ async function listGuidsAtPath(
   });
   if (!result.success) {
     const stderr = (result.error ?? '').toString();
-    // rclone reports a missing remote subpath as "directory not found".
-    // Anything else is a real error — surface it.
+    // rclone reports a missing remote subpath as "directory not found". Anything else is a real error — surface it.
     if (/(directory not found|no such (file|directory))/i.test(stderr)) {
       return [];
     }

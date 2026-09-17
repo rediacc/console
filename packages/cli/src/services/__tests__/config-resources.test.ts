@@ -10,9 +10,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
         mockConfig = fn(mockConfig);
       }
     ),
-    // #89: removeMachine now drops the OBSERVATIONS of a machine that is gone
-    // (state.machines, plus any state.datastores hint still naming it), which goes
-    // through updateState — the no-version-bump writer.
+    // #89: removeMachine now drops the OBSERVATIONS of a machine that is gone (state.machines, plus any state.datastores hint still naming it), which goes through updateState — the no-version-bump writer.
     updateState: vi.fn(
       (_name: string, fn: (cfg: Record<string, unknown>) => Record<string, unknown>) => {
         mockConfig = fn(mockConfig);
@@ -27,8 +25,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
 const mockAddMachineSSHConfigEntry = vi.fn();
 const mockRemoveMachineSSHConfigEntry = vi.fn();
 
-// A Windows-home path, i.e. what getSSHConfigPath() actually resolves to under
-// WSL. The sshConfigWritten message must repeat THIS, never a literal ~/.ssh/…
+// A Windows-home path, i.e. what getSSHConfigPath() actually resolves to under WSL. The sshConfigWritten message must repeat THIS, never a literal ~/.ssh/…
 const SSH_CONFIG_PATH = '/mnt/c/Users/tester/.ssh/config_rediacc';
 
 vi.mock('../../remote/vscode/index.js', () => ({
@@ -51,8 +48,7 @@ vi.mock('../core/output.js', () => ({
   },
 }));
 
-// Stub i18n t() to return the key so assertions are key-based. Interpolation
-// params are recorded separately so a test can pin them.
+// Stub i18n t() to return the key so assertions are key-based. Interpolation params are recorded separately so a test can pin them.
 const mockT = vi.fn((key: string, _opts?: unknown) => key);
 
 vi.mock('../../i18n/index.js', () => ({

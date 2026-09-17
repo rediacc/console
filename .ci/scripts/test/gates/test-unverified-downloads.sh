@@ -1,5 +1,14 @@
 #!/bin/bash
-# Integration test for scripts/check-unverified-downloads.ts.
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Integration test for scripts/gates/check-unverified-downloads.ts
+# ---- end gate ----
+
+# Integration test for scripts/gates/check-unverified-downloads.ts.
 #
 # Both-ways, offline, fixture-driven: proves the gate passes the real tree, FIRES
 # on each shape of unverified artifact, does NOT fire on the shapes that are
@@ -17,7 +26,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-GATE="$REPO_ROOT/scripts/check-unverified-downloads.ts"
+GATE="$REPO_ROOT/scripts/gates/check-unverified-downloads.ts"
 
 test_real_tree_passes() {
     local rc=0

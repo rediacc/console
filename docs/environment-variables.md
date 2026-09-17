@@ -1,14 +1,8 @@
 # Environment Variables
 
-Authoritative reference for every environment variable the `rdc` CLI reads, plus the
-build-time knobs in the wrapper scripts. If a variable is not listed here, the CLI does
-not read it.
+Authoritative reference for every environment variable the `rdc` CLI reads, plus the build-time knobs in the wrapper scripts. If a variable is not listed here, the CLI does not read it.
 
-The design rule: **the active config file is the source of truth** for identity and
-destination (server, keys, channel, machines). Environment variables exist for four
-narrow jobs: selecting the config, overriding it for one invocation or a CI job,
-gating agent behavior, and escape hatches. See [dev-environments.md](dev-environments.md)
-for the config-universe model itself.
+The design rule: **the active config file is the source of truth** for identity and destination (server, keys, channel, machines). Environment variables exist for four narrow jobs: selecting the config, overriding it for one invocation or a CI job, gating agent behavior, and escape hatches. See [dev-environments.md](dev-environments.md) for the config-universe model itself.
 
 ## Resolution order
 
@@ -18,8 +12,7 @@ For any value that exists both as a flag, an env var, and a config field:
 command flag  >  environment variable  >  active config (account.*)  >  shipped default
 ```
 
-Each level has a distinct owner: this invocation > this shell/CI job > the persisted
-choice > the product default.
+Each level has a distinct owner: this invocation > this shell/CI job > the persisted choice > the product default.
 
 ## Where: config selection and connectivity
 
@@ -38,8 +31,7 @@ choice > the product default.
 | `REDIACC_CONFIG_PASSWORD` | Password-slot secret for headless remote-config unlock. |
 | `REDIACC_MASTER_PASSWORD` | Master password for configs encrypted at rest. |
 
-Tokens obtained interactively are stored per config at
-`<configDir>/api-token-<config>.json`. There is no shared token file.
+Tokens obtained interactively are stored per config at `<configDir>/api-token-<config>.json`. There is no shared token file.
 
 ## Agent gates (ancestry-validated; set them BEFORE starting an agent)
 
@@ -76,8 +68,7 @@ One variable: `REDIACC_DEBUG`.
 
 - `REDIACC_DEBUG=1` or `*`: everything.
 - `REDIACC_DEBUG=daemon,renet,timing,otel`: comma-scoped. Scopes: `daemon` (executor
-  daemon client), `renet` (binary provisioning transfer), `timing` (fork timing chart),
-  `otel` (OpenTelemetry setup).
+daemon client), `renet` (binary provisioning transfer), `timing` (fork timing chart), `otel` (OpenTelemetry setup).
 
 ## Build-time knobs (wrapper scripts only; the CLI never reads these)
 
@@ -89,8 +80,7 @@ One variable: `REDIACC_DEBUG`.
 
 ## Deleted variables (tombstones)
 
-These names are gone; a CI test (`env-tombstones.test.ts`) fails if they reappear in
-source. Replacements:
+These names are gone; a CI test (`env-tombstones.test.ts`) fails if they reappear in source. Replacements:
 
 | Deleted | Replacement |
 |---|---|

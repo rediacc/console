@@ -39,8 +39,7 @@ describe('outputService stream routing (#490 bug 2)', () => {
 
     expect(log).toHaveBeenCalledTimes(1);
     expect(err).not.toHaveBeenCalled();
-    // What lands on stdout must be a single parseable JSON document (the
-    // standard envelope), carrying the payload under `data`.
+    // What lands on stdout must be a single parseable JSON document (the standard envelope), carrying the payload under `data`.
     const printed = (log.mock.calls[0]?.[0] ?? '') as string;
     expect(() => JSON.parse(printed)).not.toThrow();
     expect(JSON.parse(printed).data).toEqual({ value: 42 });
@@ -113,9 +112,7 @@ describe('wrapProse', () => {
   it('leaves an over-long token INTACT and emits no blank filler line', () => {
     const url = `https://example.com/${'x'.repeat(80)}`;
     // The long token must come FIRST. The `line === ''` guard only fires against an
-    // EMPTY accumulator, so a short word ahead of it makes both branches behave
-    // identically and the test proves nothing (verified by mutation: it stayed
-    // green with the guard removed).
+    // EMPTY accumulator, so a short word ahead of it makes both branches behave identically and the test proves nothing (verified by mutation: it stayed green with the guard removed).
     const out = wrapProse(`${url} trailing words here`, 20);
     expect(out).toContain(url);
     expect(out.filter((l) => l.trim() === '')).toEqual([]);

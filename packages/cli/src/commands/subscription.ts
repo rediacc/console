@@ -163,8 +163,7 @@ function renderLoginSummary(
       max: status.maxMachines ?? SUBSCRIPTION_DEFAULTS.UNKNOWN_QUOTA,
     })
   );
-  // Soft-claimed slots: renewals still succeed, but new repositories cannot be
-  // licensed, so say it at login rather than at the next `repo create`.
+  // Soft-claimed slots: renewals still succeed, but new repositories cannot be licensed, so say it at login rather than at the next `repo create`.
   if ((status.overLimitCount ?? 0) > 0) {
     outputService.warn(
       t('commands.subscription.login.machinesOverLimit', { count: status.overLimitCount })
@@ -263,8 +262,7 @@ export function registerSubscriptionCommands(program: Command): void {
     .action(async () => {
       try {
         deleteStoredSubscriptionToken();
-        // Also clear the active config's server identity so the next `login`
-        // shows the region picker again. Scoped per config: only the active
+        // Also clear the active config's server identity so the next `login` shows the region picker again. Scoped per config: only the active
         // config's accountServer/e2ePublicKey are cleared; updateChannel and
         // releasesUrl (update preferences, not server identity) survive.
         try {
@@ -305,11 +303,7 @@ export function registerSubscriptionCommands(program: Command): void {
 
   // subscription refresh [-m <machine>] [--repo <ref>]
   //
-  // A PLAIN LEAF: it carries an .action() and MUST NOT grow subcommands. It used
-  // to be an actionable parent (an .action() plus `activation`/`repos`/`repo`
-  // children) with a .requiredOption('-m'), and Commander walks the parent chain
-  // in _checkForMissingMandatoryOptions(), so that required flag fired for every
-  // child too and bound to the parent even when typed after the subcommand.
+  // A PLAIN LEAF: it carries an .action() and MUST NOT grow subcommands. It used to be an actionable parent (an .action() plus `activation`/`repos`/`repo` children) with a .requiredOption('-m'), and Commander walks the parent chain in _checkForMissingMandatoryOptions(), so that required flag fired for every child too and bound to the parent even when typed after the subcommand.
   // Scope is chosen by flags now: none = account, -m = machine, --repo = one repo.
   sub
     .command('refresh')

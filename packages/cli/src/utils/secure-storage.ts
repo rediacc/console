@@ -19,12 +19,8 @@ const SERVICE_NAME = 'rdc-config';
 
 // ─── Key allowlist (defense-in-depth) ───────────────────────────────────
 //
-// The storage key (`storageKeyId`) is SERVER-provided over the config-remote
-// handoff, so it reaches these sinks fully untrusted. Even though every
-// backend below now passes it as an argv element (never interpolated into a
-// shell string), we reject anything outside a conservative allowlist so a
-// hostile value can never reach a native tool at all. Covers the handoff
-// storageKeyId and the `rdc:pw:<uuid>` password-flow keys.
+// The storage key (`storageKeyId`) is SERVER-provided over the config-remote handoff, so it reaches these sinks fully untrusted. Even though every backend below now passes it as an argv element (never interpolated into a shell string), we reject anything outside a conservative allowlist so a hostile value can never reach a native tool at all. Covers the handoff storageKeyId and
+// the `rdc:pw:<uuid>` password-flow keys.
 const SAFE_KEY = /^[A-Za-z0-9:_-]{1,200}$/;
 
 function assertSafeStorageKey(key: string): void {
@@ -68,9 +64,7 @@ class KeyctlStorage implements SecureStorage {
     execFileSync('keyctl', ['add', 'user', key, value, '@u'], { encoding: 'utf-8' });
     // No timeout — passkey_secret must persist across reboots/days.
     // The user keyring (@u) lives for the session by default; keys
-    // without an explicit timeout persist until the session ends or
-    // the key is explicitly revoked, which matches what deriveCek()
-    // expects (a missing key is fatal and asks the user to re-setup).
+    // without an explicit timeout persist until the session ends or the key is explicitly revoked, which matches what deriveCek() expects (a missing key is fatal and asks the user to re-setup).
   }
 
   delete(key: string): Promise<void> {
@@ -153,8 +147,7 @@ class DpapiStorage implements SecureStorage {
     if (!existsSync(path)) return Promise.resolve(null);
     try {
       const encrypted = readFileSync(path, 'utf-8');
-      // Pass the ciphertext through an env var, never interpolated into the
-      // script, so a tampered cache file cannot inject PowerShell.
+      // Pass the ciphertext through an env var, never interpolated into the script, so a tampered cache file cannot inject PowerShell.
       const script =
         '[Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String($env:RDC_DPAPI_ENC), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))';
       const result = execFileSync('powershell', ['-NoProfile', '-Command', script], {
@@ -168,8 +161,7 @@ class DpapiStorage implements SecureStorage {
   }
 
   set(key: string, value: string): Promise<void> {
-    // Pass the secret through an env var, never interpolated into the script,
-    // so a secret containing quotes/newlines cannot inject PowerShell.
+    // Pass the secret through an env var, never interpolated into the script, so a secret containing quotes/newlines cannot inject PowerShell.
     const script =
       '[Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes($env:RDC_DPAPI_VALUE), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))';
     const encrypted = execFileSync('powershell', ['-NoProfile', '-Command', script], {
@@ -266,34 +258,20 @@ class ValidatingStorage implements SecureStorage {
 
 // ─── Factory ────────────────────────────────────────────────────────────
 
-// DECLARED SKIP (2026-08-06): these are AVAILABILITY probes, not round-trip
-// probes, and the difference is a security-posture one that is written down here
-// rather than quietly carried.
+// DECLARED SKIP (2026-08-06): these are AVAILABILITY probes, not round-trip probes, and the difference is a security-posture one that is written down here rather than quietly carried.
 //
-// `keyctl show @u` answers "does the command run and can I see a keyring", not
-// "can I add, read back and unlink a key". A false negative -- a transient
-// failure, a container without the user keyring, a stripped-down PATH -- is not
-// an error here: it falls through to FileStorage, which puts the secret in a
-// 0600 file on disk. That is a REAL downgrade from kernel-held to
-// filesystem-held, and today it happens SILENTLY, with nothing in the output to
-// say the guarantee changed.
+// `keyctl show @u` answers "does the command run and can I see a keyring", not "can I add, read back and unlink a key". A false negative -- a transient failure, a container without the user keyring, a stripped-down PATH -- is not an error here: it falls through to FileStorage, which puts the secret in a 0600 file on disk. That is a REAL downgrade from kernel-held to
+// filesystem-held, and today it happens SILENTLY, with nothing in the output to say the guarantee changed.
 //
-// Why the honest round-trip probe is not written yet: a probe that can itself
-// false-negative would trigger the very downgrade it exists to prevent, so it
-// has to be validated on a box with a working keyctl before it is trusted --
-// and this session has no such box (the sandbox blocks the privileged calls).
-// Writing it blind would encode an unvalidated notion of "correct probe" into
+// Why the honest round-trip probe is not written yet: a probe that can itself false-negative would trigger the very downgrade it exists to prevent, so it has to be validated on a box with a working keyctl before it is trusted -- and this session has no such box (the sandbox blocks the privileged calls). Writing it blind would encode an unvalidated notion of "correct probe" into
 // the security path, which is worse than the known gap.
 //
-// The open question is NOT just "add a probe": it is whether a silent
-// fallback-to-file is acceptable at all, or whether it must require an explicit
-// opt-in. That is the operator's call, tracked as worklist reggate:f91a4d9e.
+// The open question is NOT just "add a probe": it is whether a silent fallback-to-file is acceptable at all, or whether it must require an explicit opt-in. That is the operator's call, tracked as worklist reggate:f91a4d9e.
 function selectBackend(): SecureStorage {
   switch (process.platform) {
     case 'linux':
       try {
-        // Availability only -- see DECLARED SKIP above. A pass here does not
-        // prove a key can actually be stored and read back.
+        // Availability only -- see DECLARED SKIP above. A pass here does not prove a key can actually be stored and read back.
         execSync('keyctl show @u 2>/dev/null', { encoding: 'utf-8' });
         return new KeyctlStorage();
       } catch {

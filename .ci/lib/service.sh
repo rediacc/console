@@ -45,9 +45,17 @@ service_start() {
     # the conventional port, and the failure surfaced as a docker bind error
     # rather than as "that port is busy".
     if [[ -z "$port" ]]; then
-        # shellcheck source=/dev/null
-        source "$CONSOLE_ROOT_DIR/.ci/lib/find-port.sh"
-        port="$(find_preferred_port 8080 8081 8199)" || {
+        # `.ci/lib/find-port.sh`, the bash shim over rediacc_ci.core.ports, is
+        # DELETED (W7P5-b): a shim is a delay, not an exit. The module is named
+        # directly. REDIACC_CI_ROOT is its single environment override.
+        local _ports_ci_dir="${REDIACC_CI_ROOT:+$REDIACC_CI_ROOT/.ci}"
+        _ports_ci_dir="${_ports_ci_dir:-$(cd "$SCRIPT_DIR/.." && pwd)}"
+        if ! command -v python3 >/dev/null 2>&1; then
+            log_error "python3 is required; the port logic lives in rediacc_ci.core.ports"
+            return 1
+        fi
+        port="$(PYTHONPATH="$_ports_ci_dir${PYTHONPATH:+:$PYTHONPATH}" \
+            python3 -m rediacc_ci.core.ports find-preferred-port 8080 8081 8199)" || {
             log_error "No free port in 8080-8199 for the service"
             return 1
         }
@@ -141,7 +149,11 @@ service_stop() {
         rediacc-service-rustfs-volume-init
     )
     for container in "${containers[@]}"; do
-        if docker ps -a --format "{{.Names}}" 2>/dev/null | grep -q "^${container}$"; then
+        # `[ -n "$(...)" ]` rather than `| grep -q`. This file sets no pipefail of
+        # its own but INHERITS it from every sourcer, so grep -q's early exit can
+        # SIGPIPE docker and make that 141 the pipeline's verdict -- which SKIPS
+        # the teardown of a container that IS there.
+        if [ -n "$(docker ps -a --format "{{.Names}}" 2>/dev/null | grep "^${container}$")" ]; then
             docker stop "$container" 2>/dev/null || true
             docker rm "$container" 2>/dev/null || true
         fi
@@ -166,7 +178,9 @@ service_status() {
     local containers=(rediacc-service-web rediacc-service-rustfs)
 
     for container in "${containers[@]}"; do
-        if docker ps --format "{{.Names}}" | grep -q "^${container}$"; then
+        # Same conversion, same inherited pipefail: losing the race here reports a
+        # RUNNING container as "not running" in `service status`.
+        if [ -n "$(docker ps --format "{{.Names}}" | grep "^${container}$")" ]; then
             local status health
             status=$(docker inspect -f '{{.State.Status}}' "$container")
             health=$(docker inspect -f '{{.State.Health.Status}}' "$container" 2>/dev/null || echo "N/A")

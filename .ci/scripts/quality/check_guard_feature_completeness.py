@@ -31,6 +31,12 @@ typo/rename/dropped-source produces exactly that shape.
 WHAT IT DOES NOT DO. It does not execute anything, and it follows sourcing ONE level
 (the guard's own file plus whatever it directly sources) -- the same honest scoping
 disclosure check_python_gate_deps.py makes for Python imports.
+
+---- gate ----
+step: Guard feature completeness
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import pathlib
@@ -38,7 +44,10 @@ import re
 import sys
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
-HOOKS_DIR = REPO_ROOT / ".claude" / "hooks"
+# W5 P7 CUTOVER. The bash guards moved to `.claude/oracles/`, frozen, and the live guards are Python modules. This gate reads BASH function calls, so its corpus is
+# the oracle tree; the ported guards' equivalent check is the import graph, which
+# Python raises on by itself.
+HOOKS_DIR = REPO_ROOT / ".claude" / "oracles"
 
 DEF_RE = re.compile(r"^\s*(?:function\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*\(\)\s*\{", re.MULTILINE)
 SOURCE_RE = re.compile(
@@ -156,9 +165,20 @@ def find_offenders() -> list[str]:
         f for f in hook_files if not f.name.startswith("test-") and "worklist-cases" not in f.parts
     ]
 
-    # Global set: every function name defined ANYWHERE in the hook tree, so a call
-    # that resolves nowhere locally but matches something elsewhere is a real signal
-    # (typo/rename/dropped source), not just an unrecognised shell word.
+    # ANTI-VACUITY, AND IT HAD NONE UNTIL 2026-09-07. This gate scanned `.claude/hooks/**/*.sh` and reported "every called feature resolves" on a corpus that had just lost 46 of its 80 files to the W5 cutover. It stayed GREEN across that, because a scan of a third of a tree finds no broken call
+    # in the two thirds it no longer looks at. The move is what surfaced it; a
+    # deletion or a moved directory would have done the same thing silently.
+    #
+    # SET-BASED, NOT A TYPED COUNT: the floor is "the directory this gate names contains guards at all". Driver contract section 6 forbids a hand-typed number, and a number here would have to be re-keyed by every port anyway.
+    if not hook_files:
+        raise SystemExit(
+            "\u2717 VACUOUS: %s holds no guard scripts, so this gate would report that\n"
+            "  every called feature resolves having read nothing. Either the tree moved\n"
+            "  again or the glob no longer matches; refusing rather than passing.\n"
+            % HOOKS_DIR.relative_to(REPO_ROOT)
+        )
+
+    # Global set: every function name defined ANYWHERE in the hook tree, so a call that resolves nowhere locally but matches something elsewhere is a real signal (typo/rename/dropped source), not just an unrecognised shell word.
     global_defined: set[str] = set()
     file_text: dict[pathlib.Path, str] = {}
     for f in hook_files:
@@ -207,8 +227,7 @@ def selftest() -> int:
         },
     )
 
-    # A call to a name that is a real function defined ONLY elsewhere, with no local
-    # definition and no source line: this is the shape of the proven live defect.
+    # A call to a name that is a real function defined ONLY elsewhere, with no local definition and no source line: this is the shape of the proven live defect.
     caller_text = 'echo start\nhook_scan_target "$CMD"\n'
     lib_text = "hook_scan_target() {\n  echo scanning\n}\n"
     caller_calls = called_identifiers(caller_text)
@@ -221,15 +240,13 @@ def selftest() -> int:
         and "hook_scan_target" in lib_defs,
     )
 
-    # The same call, but the file DOES source the lib: not flagged, because the
-    # union of local + sourced definitions covers it.
+    # The same call, but the file DOES source the lib: not flagged, because the union of local + sourced definitions covers it.
     check(
         "the same call IS resolved once the lib is sourced",
         "hook_scan_target" in (caller_defs | lib_defs),
     )
 
-    # An ordinary external command (never defined as a function anywhere) must never
-    # be flagged just because it appears as a bare statement.
+    # An ordinary external command (never defined as a function anywhere) must never be flagged just because it appears as a bare statement.
     check(
         "an ordinary external command (git) is not treated as a missing feature",
         "git" not in defined_functions(lib_text) and "git" not in defined_functions(caller_text),

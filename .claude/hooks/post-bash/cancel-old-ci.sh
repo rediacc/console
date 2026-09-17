@@ -2,7 +2,14 @@
 # PostToolUse advisory: after a git push, force-cancel older in-progress CI runs on this branch.
 # Always exits 0 (advisory only). Uses $CLAUDE_PROJECT_DIR so it reads the CURRENT worktree's
 # branch (the previous hardcoded path pointed at the main worktree and misread the branch).
-CMD=$(jq -r '.tool_input.command' 2>/dev/null)
+# BOUNDED. A bare `jq` here reads stdin, and a stdin that stays open and silent
+# blocks it forever -- see hook_read_payload in pre-bash/lib/command-scan.sh for
+# the measurement. This hook is advisory only, so the deadline exits 0: it never
+# had standing to block anything, and a hook that hangs blocks everything.
+HOOK_PAYLOAD=""
+IFS= read -r -d "" -t 10 HOOK_PAYLOAD
+[ "$?" -gt 128 ] && exit 0
+CMD=$(printf '%s' "$HOOK_PAYLOAD" | jq -r '.tool_input.command' 2>/dev/null)
 if ! echo "$CMD" | grep -qE 'git push'; then exit 0; fi
 # BRANCHES TO CONSIDER = the checked-out branch PLUS every branch this push
 # actually targeted. Using only the checked-out branch made this hook a NO-OP for

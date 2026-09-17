@@ -94,9 +94,7 @@ async function timedStep<T>(
   }
 }
 
-// Type-only, so nothing from the command layer is pulled in at runtime. The
-// declaration is imported rather than restated because it is a WIRE shape: a
-// hand-written twin here is how the two sides drift apart while both stay green.
+// Type-only, so nothing from the command layer is pulled in at runtime. The declaration is imported rather than restated because it is a WIRE shape: a hand-written twin here is how the two sides drift apart while both stay green.
 import type { BackupManifestsResponse } from '../../commands/backup-storage.js';
 import { isRefreshDue, markRefreshAttempted } from '../account/license-refresh-state.js';
 import { getSubscriptionTokenState } from '../account/subscription-auth.js';
@@ -207,10 +205,7 @@ async function loadContextRepositories(): Promise<{
       }
       const entry = buildLoadedRepoEntry(r.name, r.config);
       configs[r.name] = entry;
-      // Also add bare name alias for :latest repos so lookups by bare name work.
-      // NOTE: Only handles the default ":latest" tag. If custom tags for grand repos
-      // are supported in the future, commands should pass explicit guid/network_id
-      // in params (which buildSingleRepoEntry uses as fallback).
+      // Also add bare name alias for :latest repos so lookups by bare name work. NOTE: Only handles the default ":latest" tag. If custom tags for grand repos are supported in the future, commands should pass explicit guid/network_id in params (which buildSingleRepoEntry uses as fallback).
       if (r.name.endsWith(':latest')) {
         const bareName = r.name.slice(0, -7);
         if (!(bareName in configs)) {
@@ -294,8 +289,7 @@ async function resolveProvisioningDatastoreId(
 ): Promise<string | undefined> {
   const placement = repo?.placement;
   // The `{machine}` arm is the machine's implicit default datastore, which
-  // carries no descriptor and therefore no identity: unscoped is CORRECT there,
-  // and it is what renet reads. Same for a config that predates placement.
+  // carries no descriptor and therefore no identity: unscoped is CORRECT there, and it is what renet reads. Same for a config that predates placement.
   if (!placement || !('datastore' in placement)) return undefined;
 
   const name = placement.datastore;
@@ -367,17 +361,9 @@ async function resolveRepoLicenseContext(
   // there is nothing to fingerprint; the proofs arrive afterwards, when
   // refreshRepoLicenseIdentity reissues from renet's own licence scan.
   //
-  // A `stat`-based fingerprint used to be computed on this path and it was
-  // dead code that was ALSO wrong: `storageFingerprint` is a signed payload
-  // field whose exact bytes renet re-derives (pkg/license/identity.go,
-  // `kind:size:mtime:mode` over Go's FileMode), and no `stat -c` format string
-  // produces them. One producer of those bytes now, and it is renet's scan.
+  // A `stat`-based fingerprint used to be computed on this path and it was dead code that was ALSO wrong: `storageFingerprint` is a signed payload field whose exact bytes renet re-derives (pkg/license/identity.go, `kind:size:mtime:mode` over Go's FileMode), and no `stat -c` format string produces them. One producer of those bytes now, and it is renet's scan.
   //
-  // The datastore identity is the exception, and it is resolved here rather
-  // than scanned: see resolveProvisioningDatastoreId. For a tag-targeted verb
-  // (fork, commit) the placement read is the SOURCE repo's, which is the right
-  // one — a fork lands in the datastore its parent lives in, and placement is a
-  // property of the family, not of the tag.
+  // The datastore identity is the exception, and it is resolved here rather than scanned: see resolveProvisioningDatastoreId. For a tag-targeted verb (fork, commit) the placement read is the SOURCE repo's, which is the right one — a fork lands in the datastore its parent lives in, and placement is a property of the family, not of the tag.
   const built = buildRepoLicenseContext(functionName, params, repo, requestedSizeGb);
   if (!built) return null;
   const ctx: RepoLicenseContext = { ...built, datastoreMount };
@@ -432,14 +418,11 @@ async function resolveRestoreLicenseContext(
   const lineage = typeof params.lineage === 'string' && params.lineage ? params.lineage : undefined;
   const grandGuid = lineage ?? repo.grandGuid ?? repositoryGuid;
 
-  // Size is deliberately NOT resolved here. It costs a round trip to the
-  // account server, and the caller's skip probe may decide no licence needs
-  // issuing at all — in which case that round trip buys nothing.
+  // Size is deliberately NOT resolved here. It costs a round trip to the account server, and the caller's skip probe may decide no licence needs issuing at all — in which case that round trip buys nothing.
   const ctx: Omit<RepoLicenseContext, 'requestedSizeGb'> = {
     repositoryGuid,
     grandGuid,
-    // Same rule buildRepoLicenseContext applies: a lineage that is the repo's
-    // own guid is a grand, anything else is a fork of one.
+    // Same rule buildRepoLicenseContext applies: a lineage that is the repo's own guid is a grand, anything else is a fork of one.
     kind: grandGuid === repositoryGuid ? 'grand' : 'fork',
     datastoreMount: repoImageDatastoreMount(repo, machine),
   };
@@ -483,10 +466,7 @@ async function restoreLicenseAlreadyInstalled(
     remoteRenetPath,
     sftp
   ).catch(() => []);
-  // Both sides normalised through the same predicate the licence WRITER uses,
-  // so an empty string, a missing field and a malformed id all collapse to the
-  // unscoped population — which is the population they would actually be
-  // written to.
+  // Both sides normalised through the same predicate the licence WRITER uses, so an empty string, a missing field and a malformed id all collapse to the unscoped population — which is the population they would actually be written to.
   const wanted = isDatastoreScopedId(ctx.datastoreId) ? ctx.datastoreId : undefined;
   return statuses.some(
     (entry) =>
@@ -569,12 +549,8 @@ function buildRepoLicenseContext(
   repo: Awaited<ReturnType<typeof configService.getRepository>> | null,
   requestedSizeGb: number
 ): Omit<RepoLicenseContext, 'datastoreMount'> | null {
-  // fork and commit both mint against `params.tag`, and both are derived
-  // snapshots of the source repo rather than new lineages, so both are kind
-  // 'fork' rooted at the source's grand. `repo commit` registers the commit
-  // object with exactly that lineage (repo-branching.ts handleCommit sets
-  // grandGuid: cfg.grandGuid ?? cfg.repositoryGuid), so the batch refresh path
-  // classifies it the same way on every later touch.
+  // fork and commit both mint against `params.tag`, and both are derived snapshots of the source repo rather than new lineages, so both are kind 'fork' rooted at the source's grand. `repo commit` registers the commit object with exactly that lineage (repo-branching.ts handleCommit sets grandGuid: cfg.grandGuid ?? cfg.repositoryGuid), so the batch refresh path classifies it the
+  // same way on every later touch.
   if (usesTagAsProvisioningTarget(functionName)) {
     const targetGuid = typeof params.tag === 'string' ? params.tag : '';
     if (!repo || !targetGuid) return null;
@@ -643,15 +619,10 @@ async function resolveRequestedSizeGb(
   if (typeof params.size === 'string' && params.size.trim()) {
     return parseSizeToGb(params.size);
   }
-  // Sized from the PARENT image in every case, fork included: a fork has no
-  // image of its own yet, and it starts as a reflink of its parent.
+  // Sized from the PARENT image in every case, fork included: a fork has no image of its own yet, and it starts as a reflink of its parent.
   if (!repositoryGuid) return null;
   const imagePath = `${datastore}/repositories/${repositoryGuid}`;
-  // A sentinel, not `|| echo 0`. Under the old probe a stat that failed for ANY
-  // reason — wrong datastore, unreadable mount, missing image — produced the
-  // same bytes as a genuinely tiny image, and the caller then reported the 1 GB
-  // floor with the confidence of a measurement. The sentinel keeps "we did not
-  // measure" expressible, which is the whole point of the distinction.
+  // A sentinel, not `|| echo 0`. Under the old probe a stat that failed for ANY reason — wrong datastore, unreadable mount, missing image — produced the same bytes as a genuinely tiny image, and the caller then reported the 1 GB floor with the confidence of a measurement. The sentinel keeps "we did not measure" expressible, which is the whole point of the distinction.
   const probe = (
     await sftp.exec(
       `stat -c %s ${shellQuote(imagePath)} 2>/dev/null || echo ${REPO_SIZE_PROBE_UNKNOWN}`
@@ -976,9 +947,7 @@ function handlePassthroughStdout(renderSteps: boolean): StdoutHandler {
         /* not a step event, fall through and print it */
       }
     }
-    // writeStdout, not process.stdout: inside the MCP/serve dispatch context
-    // this output belongs to ONE request's envelope, and writing to the process
-    // stream would interleave concurrent tenants' command output.
+    // writeStdout, not process.stdout: inside the MCP/serve dispatch context this output belongs to ONE request's envelope, and writing to the process stream would interleave concurrent tenants' command output.
     const cleaned = cleanRelayLine(line);
     if (cleaned !== undefined) writeStdout(`${cleaned}\n`);
   };
@@ -1004,9 +973,7 @@ function createStdoutHandler(
   collector?: JobOutputCollector
 ): StdoutHandler {
   if (collector) {
-    // Events mode: parse the NDJSON, feed the collector so result.stdout is the
-    // reconstructed text (not raw events) that parseCapturedJson expects, and
-    // still forward each event to the caller's renderer when it set one.
+    // Events mode: parse the NDJSON, feed the collector so result.stdout is the reconstructed text (not raw events) that parseCapturedJson expects, and still forward each event to the caller's renderer when it set one.
     const render = options.onEvent;
     return handleEventsStdout((event) => {
       collector.consume(event);
@@ -1019,8 +986,7 @@ function createStdoutHandler(
   if (options.debug) {
     return (data: Buffer) => process.stdout.write(data);
   }
-  // Opt-in, per command: only the verbs whose output IS the answer ask for it,
-  // so every other command keeps the step-detection handler unchanged.
+  // Opt-in, per command: only the verbs whose output IS the answer ask for it, so every other command keeps the step-detection handler unchanged.
   if (options.passthroughOutput) {
     return handlePassthroughStdout(!options.quietSpinners);
   }
@@ -1063,8 +1029,7 @@ export function buildRenetEnvPrefix(params: {
   const { isDevelopment, telemetryDisabled, otlpCreds, envSecrets, kubeconfig } = params;
   const envParts: string[] = [];
   if (isDevelopment) {
-    // REMOTE plane: this REDIACC_ENVIRONMENT travels to the renet process on
-    // the machine, a different plane from the local CLI's dev signal. Keep the
+    // REMOTE plane: this REDIACC_ENVIRONMENT travels to the renet process on the machine, a different plane from the local CLI's dev signal. Keep the
     // name; the env-tombstone test allowlists this one literal.
     envParts.push('REDIACC_ENVIRONMENT=development');
   }
@@ -1072,11 +1037,7 @@ export function buildRenetEnvPrefix(params: {
     envParts.push(`KUBECONFIG=${shellQuote(kubeconfig)}`);
   }
   if (telemetryDisabled) {
-    // Propagate the opt-out to renet. When set, renet skips its OTel SDK
-    // setup entirely (see pkg/telemetry/telemetry.go:disabled). We
-    // deliberately do NOT pass OTLP creds in this branch — even if the
-    // caller passed `otlpCreds`, ignoring them here matches the user's
-    // intent to send zero telemetry from any process.
+    // Propagate the opt-out to renet. When set, renet skips its OTel SDK setup entirely (see pkg/telemetry/telemetry.go:disabled). We deliberately do NOT pass OTLP creds in this branch — even if the caller passed `otlpCreds`, ignoring them here matches the user's intent to send zero telemetry from any process.
     envParts.push('REDIACC_TELEMETRY_DISABLED=1');
   } else if (otlpCreds) {
     envParts.push(`REDIACC_OTLP_USER=${shellQuote(otlpCreds.user)}`);
@@ -1257,9 +1218,7 @@ class LocalExecutorService {
         startTime
       );
       if (recovered === null) {
-        // Recovery issued a license. Re-run: exit 10 means renet refused BEFORE
-        // doing any work, so a second run cannot double-execute even a detached
-        // job (a strictly weaker claim than startJob's version-skew fallback).
+        // Recovery issued a license. Re-run: exit 10 means renet refused BEFORE doing any work, so a second run cannot double-execute even a detached job (a strictly weaker claim than startJob's version-skew fallback).
         result = await this.runOperation(
           sftp,
           options,
@@ -1321,25 +1280,15 @@ class LocalExecutorService {
     remoteRenetPath: string,
     sftp: SFTPClient
   ): Promise<LicenseIssuanceOutcome> {
-    // NOTE: recovery is deliberately NOT gated on any "is this function
-    // licensed" predicate. There used to be one (isLicensedRenetFunction, with
+    // NOTE: recovery is deliberately NOT gated on any "is this function licensed" predicate. There used to be one (isLicensedRenetFunction, with
     // a repository_up/down/delete deny-list); it is deleted, because it was a
-    // hand-maintained second source of truth that had already drifted from
-    // renet's tier map, and nothing consumed it but this comment.
+    // hand-maintained second source of truth that had already drifted from renet's tier map, and nothing consumed it but this comment.
     //
-    // The reasoning it encoded still holds and is why nothing like it belongs
-    // here: such a deny-list governs PRE-FLIGHT issuance, since operate-tier
-    // ops do not issue a license before running. But this
-    // method runs during RECOVERY, after renet has already reported
+    // The reasoning it encoded still holds and is why nothing like it belongs here: such a deny-list governs PRE-FLIGHT issuance, since operate-tier ops do not issue a license before running. But this method runs during RECOVERY, after renet has already reported
     // LICENSE_REQUIRED (reason=missing) for the repo on the target machine.
-    // The repo image exists on disk there, so refreshRepoLicensesBatch can
-    // scan it and issue. Skipping recovery for deny-listed functions is the
-    // root cause of rediacc/console#482: `repo push --up` to a fresh machine
-    // fails because the license was issued for the source, not the destination,
-    // and the destination's repository_up recovery never tried to issue.
+    // The repo image exists on disk there, so refreshRepoLicensesBatch can scan it and issue. Skipping recovery for deny-listed functions is the root cause of rediacc/console#482: `repo push --up` to a fresh machine fails because the license was issued for the source, not the destination, and the destination's repository_up recovery never tried to issue.
 
-    // For provisioning verbs (create-tier, per renet's tier map), re-issue the
-    // pre-provisioning repo license
+    // For provisioning verbs (create-tier, per renet's tier map), re-issue the pre-provisioning repo license
     if (isRepoProvisioningFunction(options.functionName)) {
       try {
         await this.ensureRepoLicenseForProvisioning(
@@ -1406,17 +1355,12 @@ class LocalExecutorService {
     remoteRenetPath: string,
     sftp: SFTPClient
   ): Promise<void> {
-    // The ENTIRE body is best-effort. This runs on every machine-touching
-    // command as a side-effect of doing something else, so nothing in here —
-    // token lookup, local state IO, the network call — may surface as a failure
-    // of the command the operator actually asked for.
+    // The ENTIRE body is best-effort. This runs on every machine-touching command as a side-effect of doing something else, so nothing in here — token lookup, local state IO, the network call — may surface as a failure of the command the operator actually asked for.
     try {
       if (getSubscriptionTokenState().kind !== 'ready') return;
 
       if (!(await isRefreshDue(machineName))) return;
-      // Marked before the attempt, not after: a refresh that throws must still
-      // consume its cooldown slot, or an unreachable machine would be retried
-      // on every single command.
+      // Marked before the attempt, not after: a refresh that throws must still consume its cooldown slot, or an unreachable machine would be retried on every single command.
       await markRefreshAttempted(machineName);
 
       const result = await refreshRepoLicensesBatch(machine, sshPrivateKey, remoteRenetPath, sftp);
@@ -1619,10 +1563,7 @@ class LocalExecutorService {
           grandGuid: repoLicenseCtx.grandGuid,
           kind: repoLicenseCtx.kind,
           requestedSizeGb: repoLicenseCtx.requestedSizeGb,
-          // Both halves of the scope, from one resolution: the server embeds it
-          // in the signed payload and the writer puts the blob on the path
-          // renet reads for this datastore. Sending one without the other is
-          // how the license ends up somewhere nothing looks.
+          // Both halves of the scope, from one resolution: the server embeds it in the signed payload and the writer puts the blob on the path renet reads for this datastore. Sending one without the other is how the license ends up somewhere nothing looks.
           datastoreId: repoLicenseCtx.datastoreId,
         },
         remoteRenetPath,
@@ -1666,9 +1607,7 @@ class LocalExecutorService {
           );
       }
     })();
-    // Name the dev/test escape here (read by needsLicenseRecovery): it has bitten
-    // three agents who hit a license wall on a throwaway machine and did not know
-    // they could bypass activation entirely.
+    // Name the dev/test escape here (read by needsLicenseRecovery): it has bitten three agents who hit a license wall on a throwaway machine and did not know they could bypass activation entirely.
     return `${base} ${t('errors.license.skipActivationHint')}`;
   }
 
@@ -1871,10 +1810,7 @@ class LocalExecutorService {
     vault: string,
     options: ExecuteOptions
   ): Promise<ExecuteResult> {
-    // Fetch OTLP credentials so renet inherits them as env vars and its
-    // telemetry init picks them up. Skip the fetch entirely when telemetry
-    // is opted out — no wasted network round-trip, no credentials in
-    // memory to accidentally propagate downstream. `buildRemoteCommand`
+    // Fetch OTLP credentials so renet inherits them as env vars and its telemetry init picks them up. Skip the fetch entirely when telemetry is opted out — no wasted network round-trip, no credentials in memory to accidentally propagate downstream. `buildRemoteCommand`
     // still injects `REDIACC_TELEMETRY_DISABLED=1` for the remote end.
     const otlpCreds = isTelemetryDisabled() ? null : await fetchOtlpCredentials();
     const repoRef =
@@ -1890,43 +1826,27 @@ class LocalExecutorService {
       envSecrets,
       kubeconfig
     );
-    // Events mode streams NDJSON, not text. Reconstruct the real stdout from the
-    // events (below) instead of accumulating the raw stream: handing an event
-    // stream straight to parseCapturedJson is the pre-existing --proxy bug (#31).
+    // Events mode streams NDJSON, not text. Reconstruct the real stdout from the events (below) instead of accumulating the raw stream: handing an event stream straight to parseCapturedJson is the pre-existing --proxy bug (#31).
     const collector = options.eventsMode ? createJobOutputCollector() : undefined;
     let stdout = '';
     let stderr = '';
     const stdoutHandler = createStdoutHandler(options, collector);
-    // Renet routes diagnostics (lifecycle brackets, relayed sub-command
-    // stderr) to ITS stderr so they can never interleave with parseable
-    // stdout. Echo them live in interactive text mode — to OUR stderr, same
-    // "stdout belongs to the command" rule as createStdoutHandler.
+    // Renet routes diagnostics (lifecycle brackets, relayed sub-command stderr) to ITS stderr so they can never interleave with parseable stdout. Echo them live in interactive text mode — to OUR stderr, same "stdout belongs to the command" rule as createStdoutHandler.
     const echoStderrLive = Boolean(!options.captureOutput && !options.eventsMode);
-    // Quiet logrus lines are WITHHELD from the live terminal and replayed only if
-    // the command fails. They were 227-358 columns wide and wrapped into garbage
+    // Quiet logrus lines are WITHHELD from the live terminal and replayed only if the command fails. They were 227-358 columns wide and wrapped into garbage
     // in every tutorial recording; dropping them outright is worse and was tried
-    // (see daemon/client.ts), because a failing child explains itself at info
-    // level. REDIACC_DEBUG restores the old firehose.
+    // (see daemon/client.ts), because a failing child explains itself at info level. REDIACC_DEBUG restores the old firehose.
     //
-    // This USES the shared pump rather than restating it: an inline copy lived
-    // here first, and it was a byte-for-byte duplicate of createQuietStderrPump
-    // whose only lasting effect was to push this function past the complexity
-    // gate. Two copies of a withhold-and-replay buffer is exactly how the two
-    // drift apart while both keep passing.
-    // BOTH the env var and the `--debug` FLAG. This read only the env var, so
-    // `rdc repo up --debug` withheld renet's info-level lines anyway and a flag
-    // named --debug did not enable debug output. It cost a CI test: the
-    // concurrent-fork-isolation suite greps its `--debug` log for renet's
-    // "restored from checkpoint" (emitted with log.Infof), found nothing, and
-    // blamed console#440 for a regression that had not happened. The two sibling
+    // This USES the shared pump rather than restating it: an inline copy lived here first, and it was a byte-for-byte duplicate of createQuietStderrPump whose only lasting effect was to push this function past the complexity gate. Two copies of a withhold-and-replay buffer is exactly how the two drift apart while both keep passing. BOTH the env var and the `--debug` FLAG. This
+    // read only the env var, so `rdc repo up --debug` withheld renet's info-level lines anyway and a flag named --debug did not enable debug output. It cost a CI test: the concurrent-fork-isolation suite greps its `--debug` log for renet's "restored from checkpoint" (emitted with log.Infof), found nothing, and blamed console#440 for a regression that had not happened. The two
+    // sibling
     // call sites already pass options.debug; this one reached past it.
     const stderrPump = createQuietStderrPump({ echoAll: shouldEchoRelayLive(options) });
     const execStart = Date.now();
     const exitCode = await sftp.execStreaming(command, {
       stdin: vault,
       onStdout: (data) => {
-        // Events mode reconstructs stdout from the parsed events (below), so the
-        // raw NDJSON is only fed to the handler, never accumulated as text.
+        // Events mode reconstructs stdout from the parsed events (below), so the raw NDJSON is only fed to the handler, never accumulated as text.
         if (!collector) stdout += data;
         stdoutHandler(data);
       },
@@ -1987,21 +1907,17 @@ class LocalExecutorService {
   ): Promise<ExecuteResult | null> {
     const startedAt = Date.now();
 
-    // Every phase goes through the lease rather than a captured client, so a
-    // connection that dies between phases is transparently re-established.
+    // Every phase goes through the lease rather than a captured client, so a connection that dies between phases is transparently re-established.
     const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
     try {
       const handle = await this.startJob(await lease.ensure(), remoteRenetPath, vault, options);
       if (handle === null) return null; // version skew: caller falls back
 
-      // Announce the job the instant it exists, before any event, so a serve
-      // route can emit its kind:'job' line and a client can re-attach even if
-      // the connection drops before the first event arrives.
+      // Announce the job the instant it exists, before any event, so a serve route can emit its kind:'job' line and a client can re-attach even if the connection drops before the first event arrives.
       options.onJobStarted?.(handle.job_id);
 
       if (options.follow === false) {
-        // Fire-and-forget (--background): hand back the id and how to catch up,
-        // and return success without waiting for the job to finish.
+        // Fire-and-forget (--background): hand back the id and how to catch up, and return success without waiting for the job to finish.
         writeStdout(`${backgroundStartedHint(handle.job_id, options.machineName)}\n`);
         return {
           success: true,
@@ -2011,11 +1927,7 @@ class LocalExecutorService {
         };
       }
 
-      // Follow through the SAME implementation `rdc job logs` uses, so a detached
-      // run and a re-attached one render identically and share one
-      // reconnect-and-resume path rather than two that can drift apart. The
-      // collector captures the output unconditionally (the spool is always
-      // NDJSON), independent of whether the caller wants it rendered.
+      // Follow through the SAME implementation `rdc job logs` uses, so a detached run and a re-attached one render identically and share one reconnect-and-resume path rather than two that can drift apart. The collector captures the output unconditionally (the spool is always NDJSON), independent of whether the caller wants it rendered.
       const cursor = new JobLogCursor();
       const collector = createJobOutputCollector();
       const render = options.onEvent ?? (options.captureOutput ? undefined : renderJobEvent);
@@ -2035,8 +1947,7 @@ class LocalExecutorService {
 
       if (interrupted) {
         // The operator stopped WATCHING; the job keeps running. Cancelling here
-        // would destroy a half-finished migration because someone hit Ctrl-C on
-        // a scrolling log, which is the opposite of what a detached job is for.
+        // would destroy a half-finished migration because someone hit Ctrl-C on a scrolling log, which is the opposite of what a detached job is for.
         const hint = resumeHint(handle.job_id, options.machineName);
         writeStderr(`\n${hint}\n`);
         return {
@@ -2078,9 +1989,7 @@ class LocalExecutorService {
       ? clusterKubeconfigRemotePath(options.kubeCluster)
       : undefined;
 
-    // The env prefix is load-bearing: `job start` snapshots the environment it
-    // is handed into the job's spool, so `job run` (which systemd spawns with a
-    // clean environment) can re-inject the repo's secrets and the OTLP creds.
+    // The env prefix is load-bearing: `job start` snapshots the environment it is handed into the job's spool, so `job run` (which systemd spawns with a clean environment) can re-inject the repo's secrets and the OTLP creds.
     const command = buildJobStartCommand({
       remoteRenetPath,
       envPrefix: buildRenetEnvPrefix({
@@ -2164,8 +2073,7 @@ class LocalExecutorService {
     };
 
     if (isRepoProvisioningFunction(options.functionName)) {
-      // License issuance only needs the provisioned renet binary, not the
-      // verified machine setup — run it concurrently with verification.
+      // License issuance only needs the provisioned renet binary, not the verified machine setup — run it concurrently with verification.
       const runLicense = async () => {
         const licStart = Date.now();
         await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>
@@ -2185,13 +2093,9 @@ class LocalExecutorService {
       };
       await Promise.all([runVerify(), runLicense()]);
     } else if (isRestoreLicenseFunction(options.functionName)) {
-      // Sequential, unlike the provisioning arm above, and the difference is
-      // not stylistic. That arm's concurrency is safe because its pre-flight
+      // Sequential, unlike the provisioning arm above, and the difference is not stylistic. That arm's concurrency is safe because its pre-flight
       // only needs the renet binary; this one runs a licence SCAN on the target
-      // (the skip probe) over the same shared SFTP session `verifyMachineSetup`
-      // is using, and a restore target is by construction a machine nobody has
-      // verified yet. Verify first, then license: a DR restore is not a path
-      // where a second of wall clock is worth an interleaving hazard.
+      // (the skip probe) over the same shared SFTP session `verifyMachineSetup` is using, and a restore target is by construction a machine nobody has verified yet. Verify first, then license: a DR restore is not a path where a second of wall clock is worth an interleaving hazard.
       await runVerify();
       const licStart = Date.now();
       await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>
@@ -2237,23 +2141,15 @@ class LocalExecutorService {
     const { credentials: repositoryCredentials, configs: repositoryConfigs } =
       await loadContextRepositories();
 
-    // Peer machines (backup push/pull targets) are resolved HERE, from params,
-    // against the executor's own config. Callers may still pass them explicitly
-    // (tests do), but no command should: a proxy client holds no config and so
-    // cannot resolve a peer's IP. Deriving executor-side keeps one code path.
+    // Peer machines (backup push/pull targets) are resolved HERE, from params, against the executor's own config. Callers may still pass them explicitly (tests do), but no command should: a proxy client holds no config and so cannot resolve a peer's IP. Deriving executor-side keeps one code path.
     const params = options.params ?? {};
     const extraMachines = options.extraMachines ?? (await resolveExtraMachines(params));
 
     const vault = buildLocalVault({
       functionName: options.functionName,
       machineName: options.machineName,
-      // #74: a caller that KNOWS the repo's placement declares its datastore here,
-      // and it must land in the MACHINE VAULT — that is the only datastore renet
-      // ever reads (`p.Datastore()` -> `machineDatastore`, set by WithMachineVault).
-      // A `datastore` PARAM would not do it: `repository_create` resolves the
-      // datastore through AddDatastore, which reads the vault, not the params bag.
-      // The fallback below is untouched and still correct: a machine with no named
-      // datastore keeps its own default. This only lets a caller stop staying silent.
+      // #74: a caller that KNOWS the repo's placement declares its datastore here, and it must land in the MACHINE VAULT — that is the only datastore renet ever reads (`p.Datastore()` -> `machineDatastore`, set by WithMachineVault). A `datastore` PARAM would not do it: `repository_create` resolves the datastore through AddDatastore, which reads the vault, not the params bag. The
+      // fallback below is untouched and still correct: a machine with no named datastore keeps its own default. This only lets a caller stop staying silent.
       machine: options.datastore ? { ...machine, datastore: options.datastore } : machine,
       sshPrivateKey,
       sshPublicKey,
@@ -2324,20 +2220,10 @@ class LocalExecutorService {
   }
 
   async execute(options: ExecuteOptions): Promise<ExecuteResult> {
-    // BUG #46 (ruling: the executor injects KUBECONFIG WITHOUT rerouting the
-    // machine). `kubeCluster` used to ALSO overwrite `machineName` with the
-    // cluster's control node here. That was defensible while kubeCluster could
-    // only come from an explicit `--cluster` flag ("run this against the
-    // cluster"), but the reshape DERIVES it from placement, so the override
-    // silently sent every verb on a k8s-placed repo to the control node -
-    // including volume-level operations (trim, diff, commit, merge, and repo
-    // up's LUKS mount) that MUST run on the machine which actually mounts the
-    // datastore (state.datastores[D].attachedTo).
+    // BUG #46 (ruling: the executor injects KUBECONFIG WITHOUT rerouting the machine). `kubeCluster` used to ALSO overwrite `machineName` with the cluster's control node here. That was defensible while kubeCluster could only come from an explicit `--cluster` flag ("run this against the cluster"), but the reshape DERIVES it from placement, so the override silently sent every verb
+    // on a k8s-placed repo to the control node - including volume-level operations (trim, diff, commit, merge, and repo up's LUKS mount) that MUST run on the machine which actually mounts the datastore (state.datastores[D].attachedTo).
     //
-    // KUBECONFIG is the k8s analog of DOCKER_HOST, and DOCKER_HOST never
-    // reroutes the machine either: it is still injected from options.kubeCluster
-    // in runRemoteExecution. The caller's derived machineName now stands, and a
-    // verb that genuinely must run FROM the control node resolves that machine
+    // KUBECONFIG is the k8s analog of DOCKER_HOST, and DOCKER_HOST never reroutes the machine either: it is still injected from options.kubeCluster in runRemoteExecution. The caller's derived machineName now stands, and a verb that genuinely must run FROM the control node resolves that machine
     // explicitly at its call site (resolveExecutionTarget({ cluster })) rather
     // than relying on an ambient rewrite.
     const startTime = Date.now();
@@ -2389,11 +2275,9 @@ class LocalExecutorService {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const durationMs = Date.now() - startTime;
       this.recordAudit(options, { success: false, exitCode: 1, durationMs, error: errorMessage });
-      // A CliExitError is a deliberate REFUSAL carrying its own exit code, its
-      // retryable flag and its next-actions. Flattening it into a generic
+      // A CliExitError is a deliberate REFUSAL carrying its own exit code, its retryable flag and its next-actions. Flattening it into a generic
       // {exitCode: 1} result throws all of that away: a BUSY provisioning-lock
-      // timeout (exit 15, retryable, "here is the pid holding it") arrived at
-      // the user as an anonymous exit 1. Let it through untouched.
+      // timeout (exit 15, retryable, "here is the pid holding it") arrived at the user as an anonymous exit 1. Let it through untouched.
       if (error instanceof CliExitError) throw error;
       return { success: false, exitCode: 1, error: errorMessage, durationMs };
     }

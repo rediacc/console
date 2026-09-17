@@ -49,8 +49,7 @@ async function handleCommit(
   }
 ): Promise<void> {
   try {
-    // Mutating verb: derive the execution machine from the ref's placement
-    // (spec/03 §2.3). No `-m`/`--cluster` any more.
+    // Mutating verb: derive the execution machine from the ref's placement (spec/03 §2.3). No `-m`/`--cluster` any more.
     const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
     await assertCommandPolicy(CMD.REPO_COMMIT, repoKey);
 
@@ -69,9 +68,7 @@ async function handleCommit(
       functionName: 'repository_commit',
       machineName,
       ...(kubeCluster !== undefined && { kubeCluster }),
-      // #74: renet resolves the image from the machine vault, so the datastore
-      // the repo is RECORDED on has to be declared or the commit is written
-      // against the machine's default.
+      // #74: renet resolves the image from the machine vault, so the datastore the repo is RECORDED on has to be declared or the commit is written against the machine's default.
       datastore: await recordedDatastoreMount(repoKey),
       params: {
         repository: repoKey,
@@ -152,9 +149,7 @@ async function handleCheckout(
   }
 ): Promise<void> {
   try {
-    // Resolve target to a commit GUID: a branch name on --from's working fork,
-    // or a direct commit reference. (The commit/branch ref is NOT a repo family,
-    // so it cannot itself derive an execution machine.)
+    // Resolve target to a commit GUID: a branch name on --from's working fork, or a direct commit reference. (The commit/branch ref is NOT a repo family, so it cannot itself derive an execution machine.)
     let commitRef = target;
     if (options.from) {
       const fromCfg = await configService.getRepository(options.from);
@@ -168,14 +163,10 @@ async function handleCheckout(
     if (!commitCfg) throw new ValidationError(`commit "${commitRef}" not found in context`);
 
     // Checkout == reflink-clone the immutable commit into a fresh writable
-    // fork. The fork's config key uses a HUMAN base name when one is known:
-    // the --from working fork's base. A direct commit-GUID checkout keeps
-    // the commit's key as base (the caller addressed it by GUID anyway).
+    // fork. The fork's config key uses a HUMAN base name when one is known: the --from working fork's base. A direct commit-GUID checkout keeps the commit's key as base (the caller addressed it by GUID anyway).
     const baseName = parseRepoRef(options.from ?? commitRef).name;
 
-    // Mutating verb: derive the execution machine from the SOURCE family's
-    // placement (spec/03 §2.3) — the working fork named by --from, else the base
-    // repo the commit belongs to. The shared handleForkAction accepts an optional
+    // Mutating verb: derive the execution machine from the SOURCE family's placement (spec/03 §2.3) — the working fork named by --from, else the base repo the commit belongs to. The shared handleForkAction accepts an optional
     // kubeCluster, so a kubernetes-world source forks with KUBECONFIG threaded;
     // a docker source leaves it unset and forks against the machine's daemon.
     const { repoKey, machineName, kubeCluster } = await resolveRepoRef(options.from ?? baseName);
@@ -221,8 +212,7 @@ async function handleLog(ref: string, options: { debug?: boolean }): Promise<voi
       functionName: 'repository_log',
       machineName,
       ...(kubeCluster !== undefined && { kubeCluster }),
-      // #74: `tip` is a commit GUID inside this repo's family, so the family's
-      // recorded placement is where renet must look for it.
+      // #74: `tip` is a commit GUID inside this repo's family, so the family's recorded placement is where renet must look for it.
       datastore: await recordedDatastoreMount(repoKey),
       params: { repository: tip },
       debug: options.debug,
@@ -291,9 +281,7 @@ async function handleMerge(
     const sourceCfg = await configService.getRepository(options.from);
     if (!sourceCfg) throw new ValidationError(`Source "${options.from}" not found in context`);
 
-    // For a per-file three-way merge, use the explicit --base if given, else
-    // derive the common ancestor from the source commit's recorded parent (or the
-    // target's headCommit). renet validates the --resolve value itself.
+    // For a per-file three-way merge, use the explicit --base if given, else derive the common ancestor from the source commit's recorded parent (or the target's headCommit). renet validates the --resolve value itself.
     const base = options.resolve
       ? (options.base ?? deriveMergeBase(options.resolve, options.from, sourceCfg, targetCfg))
       : undefined;
@@ -302,8 +290,7 @@ async function handleMerge(
       functionName: 'repository_merge',
       machineName,
       ...(kubeCluster !== undefined && { kubeCluster }),
-      // #74: merge reads BOTH sides from one datastore — `--from` names a GUID
-      // in the same family, which is why the target's placement covers it.
+      // #74: merge reads BOTH sides from one datastore — `--from` names a GUID in the same family, which is why the target's placement covers it.
       datastore: await recordedDatastoreMount(repoKey),
       params: {
         repository: repoKey,

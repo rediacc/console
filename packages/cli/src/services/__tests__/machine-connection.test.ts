@@ -58,8 +58,7 @@ vi.mock('../machine/ssh-key.js', () => ({ readSSHKey: mockReadSSHKey }));
 
 const { machineConnections, withPooledSftp } = await import('../machine/machine-connection.js');
 
-// The manager is a module singleton, so every test uses a unique machine to
-// get an isolated pool entry.
+// The manager is a module singleton, so every test uses a unique machine to get an isolated pool entry.
 let nextHostId = 0;
 function makeMachine(overrides: Partial<MachineConfig> = {}): MachineConfig {
   nextHostId += 1;

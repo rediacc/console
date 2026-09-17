@@ -24,6 +24,24 @@ suppressed. Under-reporting is the safe direction here: a missed path fails loud
 CI with the exact message above, while a false positive blocks a correct workflow.
 
 Exit 1 on any uncovered invocation, 2 on a failed control.
+
+---- gate ----
+kind: step
+step: Checkout cone covers what steps run
+lane: quality-static
+needs-not: node
+blocker: BLOCKER: this gate is pure Python and never runs node. `inferredNeeds`
+     reads string literals, and the only npx/tsx/node text here is the REGEX
+     that DETECTS interpreter invocations in workflow files (:66) plus the
+     selftest descriptions that exercise it (:177-180). Measured 2026-09-07:
+     without this line the binder refuses with "lane quality-static does not
+     provide all of [node, python-yaml]", which is how this file came to be the
+     only one of 49 Python gates in this tree with no header at all. Tightening
+     the inference instead was REJECTED on measurement: 24 files would lose it
+     and at least one, test_gate_policy_path.py, really does execute
+     node_modules/.bin/tsx.
+why: A step may not run a file its job never checked out.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -40,11 +58,7 @@ MIN_JOBS = 60
 
 # A path at the start of a command, or right after a pipe / && / ; / `then`.
 INVOKE = re.compile(
-    # INTERPRETERS COUNT, and leaving them out was a hole in this gate's first
-    # version: `python3 .ci/scripts/x.py` is every bit an invocation as `./x.sh`,
-    # and 3 of the repo's shadow-carrying steps invoke a checker exactly that way.
-    # A cone gate that only sees shell scripts is anchored to the paths its author
-    # expected rather than to the invocation sites that exist.
+    # INTERPRETERS COUNT, and leaving them out was a hole in this gate's first version: `python3 .ci/scripts/x.py` is every bit an invocation as `./x.sh`, and 3 of the repo's shadow-carrying steps invoke a checker exactly that way. A cone gate that only sees shell scripts is anchored to the paths its author expected rather than to the invocation sites that exist.
     r"(?:^|\||&&|;|\bthen\b|\bdo\b|\bexec\b|\bbash\b|\bsh\b|\bsudo\b"
     r"|\bpython3?\b|\bnode\b|\bnpx\b|\btsx\b|\bgo\s+run\b|\bruby\b)\s*"
     r"((?:\./)?(?:\.ci|scripts|\.github)/[\w./-]+\.(?:sh|py|cjs|mjs|js|ts))",
@@ -75,9 +89,7 @@ def cone_of(job: dict) -> list[list[str] | None]:
 def covered(path: str, cone: list[str] | None) -> bool:
     if cone is None:
         return True
-    # removeprefix, NOT lstrip: lstrip takes a CHARACTER SET, so
-    # ".ci/scripts/x.sh".lstrip("./") is "ci/scripts/x.sh" -- the leading dot is
-    # eaten and every cone comparison then fails. This gate's own control caught
+    # removeprefix, NOT lstrip: lstrip takes a CHARACTER SET, so ".ci/scripts/x.sh".lstrip("./") is "ci/scripts/x.sh" -- the leading dot is eaten and every cone comparison then fails. This gate's own control caught
     # it on the first run, which is the entire argument for writing controls first;
     # the same mistake in a resolver that reports LESS would have been silent.
     p = path.removeprefix("./")
@@ -130,8 +142,7 @@ def selftest() -> int:
         if not ok:
             bad += 1
 
-    # THE PLANT is the historical defect: a cone that stops at .ci/config, and a step
-    # that runs .ci/scripts/ci/shadow-compare.sh.
+    # THE PLANT is the historical defect: a cone that stops at .ci/config, and a step that runs .ci/scripts/ci/shadow-compare.sh.
     check(
         "PLANT: a cone stopping at .ci/config does NOT cover .ci/scripts/ci/x.sh",
         not covered(".ci/scripts/ci/shadow-compare.sh", [".github/actions", ".ci/config"]),

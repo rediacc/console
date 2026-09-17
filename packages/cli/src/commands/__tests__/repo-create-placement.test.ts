@@ -62,8 +62,7 @@ vi.mock('../../utils/errors.js', async (orig) => ({
 import { handleRepoCreate } from '../repo-create-delete.js';
 
 /** A config with the given datastores + machines, enough for placement resolution. */
-// Fixtures are deliberately partial. Taking a loose record here is what lets the call
-// sites pass a plain literal instead of casting each one through `as never`.
+// Fixtures are deliberately partial. Taking a loose record here is what lets the call sites pass a plain literal instead of casting each one through `as never`.
 function config(
   over: Record<string, unknown> = {},
   state: Record<string, unknown> = {}
@@ -249,8 +248,7 @@ describe('repo create placement union (#38)', () => {
       params: Record<string, unknown>;
     };
     expect(call.functionName).toBe('repository_create');
-    // A kube repo still carries NO size (its volumes come from the PVCs) — so the
-    // ONLY thing that can make this dispatch acceptable is the runtime declaration.
+    // A kube repo still carries NO size (its volumes come from the PVCs) — so the ONLY thing that can make this dispatch acceptable is the runtime declaration.
     expect(call.params.size).toBeUndefined();
     assertRenetWouldAccept(call.params);
   });
@@ -260,9 +258,7 @@ describe('repo create placement union (#38)', () => {
 
     expect(handleError).not.toHaveBeenCalled();
     const call = execute.mock.calls[0][0] as { params: Record<string, unknown> };
-    // The docker arm is acceptable the other way round: it carries a size, and it must
-    // NOT claim the kube runtime (renet asserts the declaration against the datastore
-    // descriptor and errors on a disagreement rather than silently picking an arm).
+    // The docker arm is acceptable the other way round: it carries a size, and it must NOT claim the kube runtime (renet asserts the declaration against the datastore descriptor and errors on a disagreement rather than silently picking an arm).
     expect(call.params.runtime).toBeUndefined();
     assertRenetWouldAccept(call.params);
   });

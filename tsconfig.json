@@ -30,8 +30,9 @@
   // them a defect. `"files": []` is the textbook solution-file fix and it silences that.
   //
   // WHY IT IS WRONG HERE. eslint lints type-aware through `projectService`
-  // (eslint.config.js:312), which picks a file's project by walking UP to the nearest
-  // tsconfig.json. Every `__tests__` tree is EXCLUDED by its own package's build config, so
+  // (eslint.config/typescript.js, in the repo-wide block's parserOptions), which picks a
+  // file's project by walking UP to the nearest tsconfig.json. Every `__tests__` tree is
+  // EXCLUDED by its own package's build config, so
   // for 356 files -- packages/cli/src/**/__tests__ (144), private/account/tests (94),
   // packages/shared/src/**/__tests__, packages/cli/scripts, private/account/scripts -- the
   // match-everything root IS the project of last resort. Add `files: []` and all 356 fail

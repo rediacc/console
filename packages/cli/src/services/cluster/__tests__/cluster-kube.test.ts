@@ -23,8 +23,7 @@ const k8sCluster: ClusterConfig = {
   ],
 };
 
-// A ceph-backed cluster (rbd control datastore) — required for cluster fork +
-// in-Ceph migrate (both operate on the anchor rbd datastore).
+// A ceph-backed cluster (rbd control datastore) — required for cluster fork + in-Ceph migrate (both operate on the anchor rbd datastore).
 const cephCluster: ClusterConfig = {
   provider: 'kvm',
   pools: [
@@ -43,8 +42,7 @@ const memberIps: Record<string, string> = {
   'relocate-target': '192.168.111.99',
 };
 
-// The source cluster's ceph datastores as `datastore list --json` would report.
-// Captured through the bridge relay, so stdout carries the `[datastore_list] `
+// The source cluster's ceph datastores as `datastore list --json` would report. Captured through the bridge relay, so stdout carries the `[datastore_list] `
 // prefix (finding #10 — parseCapturedJson strips it); the mock uses the REAL
 // relay-prefixed shape so the fork path exercises the true capture parser.
 function datastoreListJson(cluster: string): string {
@@ -56,8 +54,7 @@ function datastoreListJson(cluster: string): string {
   return `[datastore_list] ${arr}`;
 }
 
-// A fork record as `datastore fork --json` emits it (relay-prefixed), ferried to
-// the dest and re-serialized by forkCluster for datastore_adopt.
+// A fork record as `datastore fork --json` emits it (relay-prefixed), ferried to the dest and re-serialized by forkCluster for datastore_adopt.
 function forkRecordJson(parent: string, tag: string): string {
   const rec = JSON.stringify({
     name: `${parent}:${tag}`,
@@ -68,8 +65,7 @@ function forkRecordJson(parent: string, tag: string): string {
   return `[datastore_fork] ${rec}`;
 }
 
-// The ceph client config export as `ceph client config export --json` emits it
-// (relay-prefixed base64 conf/keyring).
+// The ceph client config export as `ceph client config export --json` emits it (relay-prefixed base64 conf/keyring).
 function cephConfigExportJson(): string {
   return `[ceph_client_config_export] ${JSON.stringify({ conf: 'Y29uZg==', keyring: 'a2V5' })}`;
 }
@@ -122,8 +118,7 @@ function execMock(listCluster = 'prod', destCluster = 'dest') {
     }
     if (opts.functionName === 'kube_health') {
       // The #8 dest-own-k3s probe queries the DEST's OWN control datastore; a
-      // bare (valid) fork target has none, so it reports NOT serving. Any other
-      // kube_health (the fork health gate) succeeds.
+      // bare (valid) fork target has none, so it reports NOT serving. Any other kube_health (the fork health gate) succeeds.
       const mp = String((opts.params as { mount_path?: string }).mount_path ?? '');
       const bareDest = !mp.includes(`ds-control-${destCluster}`);
       return Promise.resolve({ success: bareDest } as never);
@@ -234,8 +229,7 @@ describe('forkCluster (P3 anchor+rejoin orchestrator)', () => {
   it('refuses a dest already running its own k3s, dispatching nothing destructive (#8)', async () => {
     stubOutput();
     stubConfig({ prod: cephCluster, dest: cephCluster });
-    // kube_health SUCCEEDS for the dest's OWN control datastore ⇒ the dest is
-    // running its own control plane ⇒ the :6443 collision refusal fires.
+    // kube_health SUCCEEDS for the dest's OWN control datastore ⇒ the dest is running its own control plane ⇒ the :6443 collision refusal fires.
     const exec = vi.spyOn(localExecutorService, 'execute').mockImplementation((opts) => {
       if (opts.functionName === 'kube_health') return Promise.resolve({ success: true } as never);
       return Promise.resolve({ success: true } as never);
@@ -289,10 +283,7 @@ describe('forkCluster (P3 anchor+rejoin orchestrator)', () => {
 
     const calls = exec.mock.calls.map((c) => c[0]);
     const names = calls.map((c) => c.functionName);
-    // Anchor pipeline order: #8 dest-conflict probe → #7/#15 dest ceph seed
-    // (export once on the source mon, then prep+install on each dest member) →
-    // list → ONE group snap → clone+adopt each (control first, then data) →
-    // attach each with --writes → CP identity-rewrite fork → token → agent join.
+    // Anchor pipeline order: #8 dest-conflict probe → #7/#15 dest ceph seed (export once on the source mon, then prep+install on each dest member) → list → ONE group snap → clone+adopt each (control first, then data) → attach each with --writes → CP identity-rewrite fork → token → agent join.
     expect(names).toEqual([
       'kube_health', // #8 probe: dest not already running its own k3s
       'ceph_client_config_export', // #7 export source ceph config (from the mon)
@@ -405,17 +396,14 @@ describe('migrateCluster (P3 in-Ceph fenced remap, zero-copy)', () => {
     // Zero data copy: no backup_push / repository transfer.
     expect(calls.some((c) => c.functionName === 'backup_push')).toBe(false);
 
-    // #19: the dest is seeded with the SOURCE cluster's ceph client config BEFORE
-    // anything destructive (a bare dest cannot map the shared rbd image otherwise).
+    // #19: the dest is seeded with the SOURCE cluster's ceph client config BEFORE anything destructive (a bare dest cannot map the shared rbd image otherwise).
     const install = calls.find((c) => c.functionName === 'ceph_client_config_install');
     expect(install?.machineName).toBe('relocate-target');
     expect(names.indexOf('ceph_client_config_install')).toBeLessThan(
       names.indexOf('datastore_attach')
     );
 
-    // The record is adopted PLAIN on the dest, and the adopt precedes the down —
-    // finding #18's failure mode (registry miss after the source is down) is
-    // excluded by construction.
+    // The record is adopted PLAIN on the dest, and the adopt precedes the down — finding #18's failure mode (registry miss after the source is down) is excluded by construction.
     const adopt = calls.find((c) => c.functionName === 'datastore_adopt');
     expect(adopt?.machineName).toBe('relocate-target');
     expect(adopt?.params).toMatchObject({ name: 'ds-control-prod', plain: true });
@@ -490,8 +478,7 @@ describe('migrateCluster (P3 in-Ceph fenced remap, zero-copy)', () => {
     await expect(migrateCluster('prod', { to: 'relocate-target' })).rejects.toThrow(/ROLLED BACK/);
 
     const calls = exec.mock.calls.map((c) => c[0]);
-    // Rollback re-attaches on the SOURCE (force) and restarts its CP via a
-    // migrate-to-self identity rewrite bound to the source's own IP.
+    // Rollback re-attaches on the SOURCE (force) and restarts its CP via a migrate-to-self identity rewrite bound to the source's own IP.
     const srcReattach = calls.find(
       (c) => c.functionName === 'datastore_attach' && c.machineName === 'prod-cp-1'
     );
@@ -559,8 +546,7 @@ describe('rehearseCluster (P3 ephemeral throwaway fork → gate → discard)', (
       clock += 200_000;
       return clock;
     });
-    // Make the health gate fail so forkCluster (--up) throws. kube_health false
-    // also satisfies the #8 probe (a bare dest reports its own CP not serving).
+    // Make the health gate fail so forkCluster (--up) throws. kube_health false also satisfies the #8 probe (a bare dest reports its own CP not serving).
     const exec = vi.spyOn(localExecutorService, 'execute').mockImplementation((opts) => {
       if (opts.functionName === 'kube_health') {
         return Promise.resolve({ success: false, error: 'not ready' } as never);
@@ -595,13 +581,8 @@ describe('rehearseCluster (P3 ephemeral throwaway fork → gate → discard)', (
     );
     expect(discards.length).toBeGreaterThan(0);
 
-    // ★ BUG #44: the teardown must dispatch at the destination control MACHINE.
-    // The failure path used to pass the destination CLUSTER name ("dest") into
-    // discardRehearsal's `destControl` machine parameter, so every teardown step
-    // was aimed at a machine that does not exist. tryDispatch is best-effort, so
-    // it swallowed the errors and the failed rehearsal silently left its entire
-    // fork behind. Asserting only that the calls HAPPENED is what let that hide:
-    // assert WHERE they land.
+    // ★ BUG #44: the teardown must dispatch at the destination control MACHINE. The failure path used to pass the destination CLUSTER name ("dest") into discardRehearsal's `destControl` machine parameter, so every teardown step was aimed at a machine that does not exist. tryDispatch is best-effort, so it swallowed the errors and the failed rehearsal silently left its entire fork
+    // behind. Asserting only that the calls HAPPENED is what let that hide: assert WHERE they land.
     const uninstall = calls.find((c) => c.functionName === 'kube_uninstall');
     expect(uninstall?.machineName).toBe('dest-cp-1');
     for (const d of discards) {

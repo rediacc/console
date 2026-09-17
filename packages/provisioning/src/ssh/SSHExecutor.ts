@@ -183,9 +183,7 @@ export class SSHExecutor {
     // Escape for nested SSH (double escaping needed)
     const escapedForTarget = this.escapeForNestedSSH(command);
 
-    // Two-hop SSH command: Host -> Bridge -> Target.
-    // Inner ssh runs on the bridge VM where `-i <host-path>` is invalid
-    // (see getInnerSSHOptions doc comment). Drop `-i` for the inner hop.
+    // Two-hop SSH command: Host -> Bridge -> Target. Inner ssh runs on the bridge VM where `-i <host-path>` is invalid (see getInnerSSHOptions doc comment). Drop `-i` for the inner hop.
     const sshCmd = `ssh ${outerOpts} ${user}@${bridge} "ssh ${innerOpts} ${user}@${target} \\"${escapedForTarget}\\""`;
 
     return this.executeCommand(sshCmd, timeout);

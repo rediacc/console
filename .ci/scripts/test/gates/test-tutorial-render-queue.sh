@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Prove `check:ci-tutorial-render-queue` reports the truth, including when there is nothing to report
+# ---- end gate ----
+
 # Prove `check:ci-tutorial-render-queue` reports the truth, including when there is nothing
 # to report.
 #
@@ -117,7 +126,7 @@ test_gate_runs_the_selftest() {
 # the chain string no longer names any gate, so the assertion went red. It is
 # the same string-parsing assumption that made check-ci-chain-parity.ts and
 # check-gate-reachability.ts unfixable in place. The manifest is the gate set
-# now, and scripts/check-ci-parity.ts is what keeps it honest against CI.
+# now, and scripts/gates/check-ci-parity.ts is what keeps it honest against CI.
 test_gate_is_in_the_gate_manifest() {
     local manifest="$REPO_ROOT/scripts/ci-runner/manifest.ts"
     [[ -f "$manifest" ]] || log_fail "no gate manifest at $manifest, so this assertion would be vacuous"

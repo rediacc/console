@@ -74,17 +74,12 @@ export async function selectiveEncrypt(
   if (config.orgId) envelope.orgId = config.orgId;
   if (config.lastModified) envelope.lastModified = config.lastModified;
 
-  // SENSITIVE_FIELDS is the single source of truth for what the blob carries.
-  // A field missing from that list is silently dropped on push and simply absent
-  // on pull, with no error anywhere — which is exactly how the policy document
-  // came to never reach the executor. Add fields there, not here.
+  // SENSITIVE_FIELDS is the single source of truth for what the blob carries. A field missing from that list is silently dropped on push and simply absent on pull, with no error anywhere — which is exactly how the policy document came to never reach the executor. Add fields there, not here.
   const sensitive: ConfigSensitiveData = {};
   const write = sensitive as Record<string, unknown>;
   for (const field of SENSITIVE_FIELDS) {
     const value = config[field];
-    // Omit-if-undefined, never write an undefined-valued key: the sensitivity
-    // walker treats a present-but-undefined key as a committed pointer, so a
-    // config rebuilt from this object would commit a path the blob cannot back.
+    // Omit-if-undefined, never write an undefined-valued key: the sensitivity walker treats a present-but-undefined key as a committed pointer, so a config rebuilt from this object would commit a path the blob cannot back.
     if (value !== undefined) write[field] = value;
   }
 

@@ -866,14 +866,12 @@ Shipped under `rdc config remote`:
 - `rdc config remote status`: show store info
 - `rdc config rotate-cek`: rotate the client-controlled encryption key
 
-Uploads are implicit: once remote is enabled, config writes are encrypted and pushed to the
-store, so there is no separate push command.
+Uploads are implicit: once remote is enabled, config writes are encrypted and pushed to the store, so there is no separate push command.
 
 These require passkey_secret in OS keyring (set during web portal setup).
 
 ### API (SDK/Token Auth)
-Config CRUD operations use rotating X-Config-Token header.
-Portal operations use session cookies (+ 2FA/elevated for mutations).
+Config CRUD operations use rotating X-Config-Token header. Portal operations use session cookies (+ 2FA/elevated for mutations).
 
 ### Token File
 
@@ -949,7 +947,8 @@ This prevents a rogue server from substituting the handoff public key in headles
 
 ### Why three encryption layers instead of two?
 
-Two layers (client CEK + server org passphrase) protect against most threats, but leave a gap: a revoked member who already has the CEK can decrypt any previously-downloaded configs indefinitely. The third layer (SDK) adds a **live check** requirement — the CLI must fetch the SDK from the server on every operation (cached 30s). When someone is removed, the server stops serving SDK to them, and within 30 seconds their access is cut. Three layers, three independent revocation points:
+Two layers (client CEK + server org passphrase) protect against most threats, but leave a gap: a revoked member who already has the CEK can decrypt any previously-downloaded configs indefinitely. The third layer (SDK) adds a **live check** requirement — the CLI must fetch the SDK from the server on every operation (cached 30s). When someone is removed, the server stops serving SDK
+to them, and within 30 seconds their access is cut. Three layers, three independent revocation points:
 
 - **Outer (org passphrase)**: Revoked by token rotation
 - **Middle (CEK)**: Revoked by CEK rotation (requires admin, heavy operation)
@@ -957,7 +956,8 @@ Two layers (client CEK + server org passphrase) protect against most threats, bu
 
 ### Why is the SDK inside the CEK layer (not outside)?
 
-Layer order: `orgEnc(clientEnc_CEK(serverKeyEnc_SDK(plaintext)))`. The CEK layer wraps the SDK layer. This means the server — which holds the SDK — still can't decrypt configs because the CEK layer blocks access. If the SDK were outside the CEK layer, the server could strip the SDK layer and expose `clientEnc(plaintext)`, reducing the security model. With SDK inside CEK, the server has the innermost key but can't reach it through the middle layer it doesn't control.
+Layer order: `orgEnc(clientEnc_CEK(serverKeyEnc_SDK(plaintext)))`. The CEK layer wraps the SDK layer. This means the server — which holds the SDK — still can't decrypt configs because the CEK layer blocks access. If the SDK were outside the CEK layer, the server could strip the SDK layer and expose `clientEnc(plaintext)`, reducing the security model. With SDK inside CEK, the server
+has the innermost key but can't reach it through the middle layer it doesn't control.
 
 ### How does SDK revocation work for removed members?
 
@@ -974,11 +974,13 @@ This is much lighter than CEK or `sdkMaster` rotation (which require re-encrypti
 
 ### Can the server rotate the `sdkMaster` without admin help?
 
-No. The SDK layer is inside the CEK layer: `clientEnc_CEK(serverKeyEnc_SDK(plaintext))`. To re-encrypt with a new `sdkMaster`, someone must first remove the CEK layer, which requires the CEK — which the server doesn't have. An admin must pull all configs (decrypt all 3 layers), the server generates a new `sdkMaster`, the admin re-encrypts and pushes. This is a heavy operation reserved for `sdkMaster` compromise scenarios, not for routine member removal. With time-windowed derivation, even a compromised `sdk_derived` only exposes configs from one time window.
+No. The SDK layer is inside the CEK layer: `clientEnc_CEK(serverKeyEnc_SDK(plaintext))`. To re-encrypt with a new `sdkMaster`, someone must first remove the CEK layer, which requires the CEK — which the server doesn't have. An admin must pull all configs (decrypt all 3 layers), the server generates a new `sdkMaster`, the admin re-encrypts and pushes. This is a heavy operation
+reserved for `sdkMaster` compromise scenarios, not for routine member removal. With time-windowed derivation, even a compromised `sdk_derived` only exposes configs from one time window.
 
 ### Does the SDK add extra API calls?
 
-Minimal impact. Only crypto operations (session, pull, push) return `{ newServerToken, server_secret, sdk_derived }` — non-crypto operations (list, delete, members) only return `{ newServerToken }` to avoid sending unnecessary key material. In the typical pull → edit → push workflow, the pull provides the `sdk_derived` and the push uses the cached copy. The only extra call is a session bootstrap when the 30-second cache expires and the CLI needs to push without a prior pull. In practice, most operations are 1 API call.
+Minimal impact. Only crypto operations (session, pull, push) return `{ newServerToken, server_secret, sdk_derived }` — non-crypto operations (list, delete, members) only return `{ newServerToken }` to avoid sending unnecessary key material. In the typical pull → edit → push workflow, the pull provides the `sdk_derived` and the push uses the cached copy. The only extra call is a
+session bootstrap when the 30-second cache expires and the CLI needs to push without a prior pull. In practice, most operations are 1 API call.
 
 ### Why is the SDK time-windowed instead of a fixed key?
 
@@ -1013,7 +1015,8 @@ For Node.js standalone deployments, encrypted blobs are stored in RustFS (S3-com
 
 ### Why not just encrypt the entire config file as one blob?
 
-The config is stored as one encrypted blob in R2 (all sections together). But the **metadata envelope** (version, id, sdkEpoch, hmac) is stored separately in D1 as plaintext. This lets the server do operational tasks (conflict detection, listing, access control) on the plaintext envelope without decrypting anything. If everything were a single opaque blob including the version number, every conflict check would require a full decryption round trip.
+The config is stored as one encrypted blob in R2 (all sections together). But the **metadata envelope** (version, id, sdkEpoch, hmac) is stored separately in D1 as plaintext. This lets the server do operational tasks (conflict detection, listing, access control) on the plaintext envelope without decrypting anything. If everything were a single opaque blob including the version
+number, every conflict check would require a full decryption round trip.
 
 ### Why do we need two encryption layers (client + server)?
 
@@ -1068,7 +1071,8 @@ Zero-knowledge is preserved because the server only relays an opaque encrypted b
 
 ### Why does the browser read `handoff_pub` from the URL, not from the server API?
 
-To prevent server-side key substitution. If the server provided the public key via its API, a rogue server could substitute its own key, intercept `passkey_secret`, and break zero-knowledge. By embedding the key in the URL (which the CLI controls), the browser reads it directly from the address bar. The config setup page is served as a static page with CSP + SRI to prevent script injection.
+To prevent server-side key substitution. If the server provided the public key via its API, a rogue server could substitute its own key, intercept `passkey_secret`, and break zero-knowledge. By embedding the key in the URL (which the CLI controls), the browser reads it directly from the address bar. The config setup page is served as a static page with CSP + SRI to prevent script
+injection.
 
 ### How does team member addition work without the server seeing the CEK?
 
@@ -1141,4 +1145,5 @@ Each has different error modes, permission models, and availability guarantees. 
 
 ### Why is 2FA recommended but not mandatory (while passkey IS mandatory)?
 
-A passkey is already multi-factor by nature — something you have (device) + something you are (biometric). Adding TOTP on top is redundant for authentication. However, TOTP adds value for **elevated operations** (adding members, deleting configs, key rotation) as an out-of-band confirmation — it proves access to a separate authenticator app, which may be on a different device than the browser. Users who want maximum security enable TOTP. Users who find it unnecessary can rely on passkey re-authentication for elevated ops instead.
+A passkey is already multi-factor by nature — something you have (device) + something you are (biometric). Adding TOTP on top is redundant for authentication. However, TOTP adds value for **elevated operations** (adding members, deleting configs, key rotation) as an out-of-band confirmation — it proves access to a separate authenticator app, which may be on a different device than
+the browser. Users who want maximum security enable TOTP. Users who find it unnecessary can rely on passkey re-authentication for elevated ops instead.

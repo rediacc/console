@@ -62,6 +62,8 @@ toolchain_keys() {
 #   - actionlint  1.7.12
 #   - go          go version go1.26.4 linux/arm64
 #   - node        v22.23.2
+#   - uv          uv 0.12.10
+#   - pytest      pytest 9.1.1
 #
 # (the leading dashes matter: a comment whose first word is the name of a linter
 # is parsed by that linter as a DIRECTIVE, and this table broke its own gate)
@@ -75,6 +77,12 @@ toolchain_probe_version() {
         actionlint) out="$("$bin" --version 2>/dev/null | head -1)" ;;
         go) out="$("$bin" version 2>/dev/null | awk '{print $3}')" ;;
         node) out="$("$bin" --version 2>/dev/null)" ;;
+        # The Python pair. Same "name version" shape as ruff, and probed the
+        # same way -- $bin unquoted so a resolver may hand back a multi-word
+        # runner (`uv tool run pytest`) rather than a single path, which is how
+        # pytest exists at all on a host with no pip.
+        uv) out="$($bin --version 2>/dev/null | awk '{print $2}')" ;;
+        pytest) out="$($bin --version 2>/dev/null | head -1 | awk '{print $2}')" ;;
         *) return 2 ;;
     esac
     # Strip a leading v or go, then keep the leading dotted-numeric run.
@@ -103,6 +111,8 @@ toolchain_pin_for() {
         actionlint) key=ACTIONLINT_VERSION ;;
         go) key=GO_VERSION ;;
         node) key=NODE_VERSION ;;
+        uv) key=UV_VERSION ;;
+        pytest) key=PYTEST_VERSION ;;
         *) return 2 ;;
     esac
     printf '%s' "${!key:-}"
@@ -176,6 +186,13 @@ toolchain_report() {
     toolchain_load || return 2
     printf 'lane: %s\n\n' "$(toolchain_lane)"
     printf '  %-11s %-9s %-15s %s\n' tool pinned actual status
+    # uv and pytest are pinned and probeable (see toolchain_pin_for) but are
+    # deliberately NOT in this loop. --verify returns non-zero on any MISMATCH,
+    # and it runs in lanes that have no business owning a Python toolchain; a
+    # host without uv would start failing a check it passed yesterday, for a
+    # tool it is not being asked to have. .ci/bootstrap.sh --check and
+    # `.ci/bootstrap.sh doctor` are where those two are reported, and they are
+    # the thing that can also FIX the answer.
     for tool in shfmt shellcheck ruff actionlint go node; do
         pin="$(toolchain_pin_for "$tool")"
         if actual="$(toolchain_probe_version "$tool" 2>/dev/null)"; then :; else actual="absent"; fi
@@ -241,41 +258,124 @@ toolchain_cache_dir() {
     printf '%s/rediacc-toolchain' "${CI_TEMP:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}}"
 }
 
+# PORTABLE sha256, because macOS HAS NO sha256sum. Both download helpers below
+# verified with a bare `sha256sum`, which on a Mac is "command not found" -- so
+# the `|| { checksum MISMATCH }` arm fired, printed a mismatch that had not
+# happened, and the tool was refused for a reason that was not true. A verifier
+# that cannot run must not read as a verifier that failed.
+#
+# This was the THIRD copy of this shim in the repo. It is now the SECOND, and
+# the count is written down rather than left implicit because it is the number
+# that tells the next reader whether the pattern is shrinking. The remaining
+# sibling is _sha256sum in .ci/lib/local-common.sh:37, which is not sourceable
+# from here: it pulls in the whole local-loop logging apparatus, and this
+# library is sourced by gates that must stay cheap and side-effect-free.
+#
+# The third copy, _sha256sum_portable in .ci/lib/find-port.sh, is GONE as of
+# W7 phase 1: that file now delegates to rediacc_ci.core.ports, and hashlib
+# has no macOS branch to write. That is the whole argument for the port in one
+# line -- the portability shim existed only because bash has no hash function.
+#
+# Absent BOTH tools this returns non-zero rather than silently succeeding, so
+# the caller's `||` arm still fires -- but the message below says which of the
+# two situations it is.
+_toolchain_sha256sum() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$@"
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$@"
+    else
+        echo "toolchain: no sha256 tool on PATH (need sha256sum or shasum) -- cannot verify a download" >&2
+        return 1
+    fi
+}
+
+# THE OS, DERIVED. Not the literal string `linux`, which is what both download
+# URLs below used to carry while deriving only the ARCH from uname. On an arm64
+# Mac that was not a 404, which is the part that made it dangerous: uname -m
+# says arm64, the ARM64 checksum is present and matches, so a LINUX binary
+# downloads, VERIFIES, gets chmod +x, and fails much later with "cannot execute
+# binary file" from a gate that has no idea it installed another OS's tool.
+#
+# Lowercase because that is the spelling both upstreams use in their asset
+# names (shfmt_v3.13.1_darwin_arm64, shellcheck-v0.10.0.darwin.aarch64.tar.xz);
+# the callers uppercase it to build the checksum variable name.
+_toolchain_os() {
+    case "$(uname -s)" in
+        Linux) printf 'linux' ;;
+        Darwin) printf 'darwin' ;;
+        *)
+            echo "toolchain: unsupported OS '$(uname -s)' -- no pinned build of this tool exists for it" >&2
+            return 1
+            ;;
+    esac
+}
+
 _toolchain_download_shfmt() {
     _toolchain_need_checksums
-    local want="$1" cache="$2" bin="$3" arch sha url
+    local want="$1" cache="$2" bin="$3" os osk arch sha sha_var url tmp
+    os="$(_toolchain_os)" || return 1
+    osk="$(printf '%s' "$os" | tr '[:lower:]' '[:upper:]')"
     case "$(uname -m)" in
-        x86_64 | amd64)
-            arch=amd64
-            sha="${SHFMT_SHA256_LINUX_AMD64:-}"
-            ;;
-        aarch64 | arm64)
-            arch=arm64
-            sha="${SHFMT_SHA256_LINUX_ARM64:-}"
-            ;;
+        x86_64 | amd64) arch=amd64 ;;
+        aarch64 | arm64) arch=arm64 ;;
         *)
             echo "toolchain: no pinned shfmt checksum for $(uname -m); add one rather than downloading unverified" >&2
             return 1
             ;;
     esac
+    # The checksum variable is now keyed by OS as well as arch, because the URL
+    # is. Only the LINUX_* pair exists in constants.sh today, so a Mac lands in
+    # the refusal below -- which is the correct outcome and a strict improvement
+    # on the previous one, where a Linux binary was installed and pronounced
+    # verified. The message names the constant to add rather than the arch.
+    sha_var="SHFMT_SHA256_${osk}_$(printf '%s' "$arch" | tr '[:lower:]' '[:upper:]')"
+    sha="${!sha_var:-}"
     [[ -n "$sha" ]] || {
-        echo "toolchain: no shfmt checksum for $arch -- source .ci/config/constants.sh first" >&2
+        echo "toolchain: no shfmt checksum for ${os}/${arch} -- define ${sha_var} in .ci/config/constants.sh (and source it) rather than downloading unverified" >&2
         return 1
     }
     mkdir -p "$cache"
-    url="https://github.com/mvdan/sh/releases/download/v${want}/shfmt_v${want}_linux_${arch}"
-    curl -fsSL --max-time 180 --retry 3 --retry-delay 5 -o "$bin.tmp" "$url" || {
+    url="https://github.com/mvdan/sh/releases/download/v${want}/shfmt_v${want}_${os}_${arch}"
+    # A PRIVATE TEMP PER PROCESS, NOT A SHARED `$bin.tmp`. Every caller that
+    # misses the cache lands here at once -- the pytest suite runs under xdist
+    # with 8 workers, and several of its modules shell out to gates that acquire
+    # shfmt -- and a single fixed temp path turns that into data corruption.
+    # Measured 2026-09-16 with 8 concurrent `toolchain_acquire shfmt` into a cold
+    # cache: SEVEN of the eight failed. `curl -o` truncates, so they interleave
+    # writes into ONE inode; the winner's `mv` then renames that inode out from
+    # under the losers, whose checksum step reads a path that no longer exists
+    # and reports "checksum MISMATCH -- refusing to install" with an EMPTY
+    # `actual`. A RACE THAT ACCUSES THE DOWNLOAD OF BEING TAMPERED WITH is the
+    # most misleading message this file could print. Worse, the losers' curls
+    # keep writing into the now-installed inode, so `$bin` can be a torn binary
+    # that is already in place and +x -- which is how CI job 104650234908 got
+    # `shfmt.sh: line 63: .../shfmt: cannot execute`, from a gate whose tool had
+    # been "successfully installed".
+    #
+    # mktemp gives each process its own file, so the only shared operation left
+    # is the rename -- atomic, and of a fully verified file. Redundant parallel
+    # downloads are the cost, and they are cheap next to a corrupt toolchain.
+    tmp="$(mktemp "$cache/shfmt.XXXXXXXX")" || return 1
+    curl -fsSL --max-time 180 --retry 3 --retry-delay 5 -o "$tmp" "$url" || {
         echo "toolchain: could not download shfmt from $url" >&2
+        rm -f "$tmp"
         return 1
     }
-    echo "${sha}  ${bin}.tmp" | sha256sum -c - >/dev/null 2>&1 || {
+    echo "${sha}  ${tmp}" | _toolchain_sha256sum -c - >/dev/null 2>&1 || {
         echo "toolchain: shfmt checksum MISMATCH -- refusing to install" >&2
         echo "  expected $sha" >&2
-        echo "  actual   $(sha256sum "$bin.tmp" | cut -d' ' -f1)" >&2
-        rm -f "$bin.tmp"
+        echo "  actual   $(_toolchain_sha256sum "$tmp" | cut -d' ' -f1)" >&2
+        rm -f "$tmp"
         return 1
     }
-    chmod +x "$bin.tmp" && mv "$bin.tmp" "$bin" || return 1
+    # 755 EXPLICITLY, not `chmod +x`. mktemp creates at 600, so `+x` would have
+    # yielded 700 where the old umask-dependent path yielded 755 -- a difference
+    # nothing here would notice until another user shared the cache.
+    chmod 755 "$tmp" && mv "$tmp" "$bin" || {
+        rm -f "$tmp"
+        return 1
+    }
     printf '%s' "$bin"
 }
 
@@ -298,9 +398,21 @@ _toolchain_acquire_shfmt() {
     mkdir -p "$cache"
     # GOTOOLCHAIN=local: without it a tool's own go directive can drag in a
     # different toolchain and 404 on a runner without network to fetch it.
+    # A FAILED `go install` FALLS BACK TO THE DOWNLOAD, it does not end the
+    # attempt. The branch above chooses this path on `command -v go`, i.e. on
+    # go being PRESENT -- but the pin check asks whether go is the RIGHT
+    # version, and those are different questions. Measured 2026-09-15 in the CI
+    # `quality-security` lane: its toolchain report said `go 1.26.6 absent
+    # MISMATCH` while `command -v go` still found a go, so acquisition took this
+    # branch, `go install` failed, and shfmt came back unacquirable -- exit 77,
+    # eight differential cases comparing 77 against 0. The `quality-static` lane
+    # in the same run has NO go at all, took the download path, and had shfmt at
+    # v3.13.1 in 0.6s. The download was always the answer for that lane; it just
+    # was not reachable from this one.
     GOTOOLCHAIN=local GOBIN="$cache" go install "mvdan.cc/sh/v3/cmd/shfmt@v${want}" >/dev/null 2>&1 || {
         echo "toolchain: go install shfmt@v$want failed" >&2
-        return 1
+        _toolchain_download_shfmt "$want" "$cache" "$bin"
+        return $?
     }
     [[ -x "$bin" ]] || return 1
     printf '%s' "$bin"
@@ -308,29 +420,31 @@ _toolchain_acquire_shfmt() {
 
 _toolchain_acquire_shellcheck() {
     _toolchain_need_checksums
-    local want="$1" cache bin arch sha url tmp
+    local want="$1" cache bin os osk arch sha sha_var url tmp stage
     cache="$(toolchain_cache_dir)/shellcheck-$want"
     bin="$cache/shellcheck"
     [[ -x "$bin" ]] && {
         printf '%s' "$bin"
         return 0
     }
+    os="$(_toolchain_os)" || return 1
+    osk="$(printf '%s' "$os" | tr '[:lower:]' '[:upper:]')"
     case "$(uname -m)" in
-        x86_64 | amd64)
-            arch=x86_64
-            sha="${SHELLCHECK_SHA256_LINUX_X86_64:-}"
-            ;;
-        aarch64 | arm64)
-            arch=aarch64
-            sha="${SHELLCHECK_SHA256_LINUX_AARCH64:-}"
-            ;;
+        x86_64 | amd64) arch=x86_64 ;;
+        aarch64 | arm64) arch=aarch64 ;;
         *)
             echo "toolchain: no pinned shellcheck checksum for $(uname -m); add one rather than downloading unverified" >&2
             return 1
             ;;
     esac
+    # Keyed by OS as well as arch; see the same change in the shfmt helper for
+    # why. shellcheck DOES publish darwin builds, so adding the two DARWIN_*
+    # constants is all a Mac needs -- the URL below already asks for the right
+    # asset once the hash exists.
+    sha_var="SHELLCHECK_SHA256_${osk}_$(printf '%s' "$arch" | tr '[:lower:]' '[:upper:]')"
+    sha="${!sha_var:-}"
     [[ -n "$sha" ]] || {
-        echo "toolchain: no checksum for shellcheck $arch -- source .ci/config/constants.sh first" >&2
+        echo "toolchain: no checksum for shellcheck ${os}/${arch} -- define ${sha_var} in .ci/config/constants.sh (and source it) rather than downloading unverified" >&2
         return 1
     }
     # xz IS A PRECONDITION, and this repo depends on it nowhere else. shellcheck
@@ -338,28 +452,50 @@ _toolchain_acquire_shellcheck() {
     # a deliberately slim image, so "tar: unrecognized option J" is a plausible
     # future failure whose text names neither xz nor shellcheck.
     if ! command -v xz >/dev/null 2>&1; then
-        echo "toolchain: xz is required to extract shellcheck (its Linux release is .tar.xz only)" >&2
+        echo "toolchain: xz is required to extract shellcheck (every release it publishes is .tar.xz only)" >&2
         echo "  install xz-utils, or run this gate in the devbox where shellcheck is already at the pin" >&2
         return 1
     fi
     mkdir -p "$cache"
-    tmp="$cache/sc.tar.xz"
-    url="https://github.com/koalaman/shellcheck/releases/download/v${want}/shellcheck-v${want}.linux.${arch}.tar.xz"
+    # PRIVATE STAGING DIR, for the reason spelled out in the shfmt helper above:
+    # a fixed `$cache/sc.tar.xz` is one inode shared by every concurrent
+    # acquirer. This one is worse than shfmt's, because the extraction ALSO
+    # targeted the shared `$cache` -- two `tar -x` runs racing meant a partially
+    # written `shellcheck` could sit at the final path, executable, while a third
+    # process ran it. Staging privately and renaming the finished binary in makes
+    # the only shared step an atomic rename again.
+    stage="$(mktemp -d "$cache/sc.XXXXXXXX")" || return 1
+    tmp="$stage/sc.tar.xz"
+    url="https://github.com/koalaman/shellcheck/releases/download/v${want}/shellcheck-v${want}.${os}.${arch}.tar.xz"
     curl -fsSL --max-time 180 --retry 3 --retry-delay 5 -o "$tmp" "$url" || {
         echo "toolchain: could not download shellcheck from $url" >&2
+        rm -rf "$stage"
         return 1
     }
     # Verify BEFORE extracting: an unverified archive is arbitrary content, and
     # extraction is the point at which that starts to matter.
-    echo "${sha}  ${tmp}" | sha256sum -c - >/dev/null 2>&1 || {
+    echo "${sha}  ${tmp}" | _toolchain_sha256sum -c - >/dev/null 2>&1 || {
         echo "toolchain: shellcheck checksum MISMATCH -- refusing to extract" >&2
         echo "  expected $sha" >&2
-        echo "  actual   $(sha256sum "$tmp" | cut -d' ' -f1)" >&2
-        rm -f "$tmp"
+        echo "  actual   $(_toolchain_sha256sum "$tmp" | cut -d' ' -f1)" >&2
+        rm -rf "$stage"
         return 1
     }
-    tar -xJf "$tmp" -C "$cache" --strip-components=1 "shellcheck-v${want}/shellcheck" || return 1
-    rm -f "$tmp"
+    # The staging dir is torn down on EVERY exit path now, including the failed
+    # extraction that used to leak the archive (`tar ... || return 1` with the
+    # `rm -f` on the next line). That leak was one file overwritten in place;
+    # under private staging it would have become an unbounded pile of
+    # multi-megabyte directories, so tidying is not scope creep here, it is what
+    # keeps the change from being a regression.
+    tar -xJf "$tmp" -C "$stage" --strip-components=1 "shellcheck-v${want}/shellcheck" || {
+        rm -rf "$stage"
+        return 1
+    }
+    if ! { [[ -x "$stage/shellcheck" ]] && mv "$stage/shellcheck" "$bin"; }; then
+        rm -rf "$stage"
+        return 1
+    fi
+    rm -rf "$stage"
     [[ -x "$bin" ]] || return 1
     printf '%s' "$bin"
 }

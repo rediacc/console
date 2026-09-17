@@ -230,8 +230,7 @@ suite('daemon-backed executor', () => {
       spawnDaemon: () => {},
     });
 
-    // A stray callback the protocol does not transport makes the options
-    // unserializable, so the seam must keep this on the direct path.
+    // A stray callback the protocol does not transport makes the options unserializable, so the seam must keep this on the direct path.
     const options = { ...OPTIONS, weirdCallback: () => {} } as unknown as ExecuteOptions;
     const result = await client.execute(options);
 
@@ -261,8 +260,7 @@ suite('daemon-backed executor', () => {
       });
 
     try {
-      // No onEvent, not captureOutput, not quiet: the direct path would show the
-      // four provision lines, so the daemon path must too.
+      // No onEvent, not captureOutput, not quiet: the direct path would show the four provision lines, so the daemon path must too.
       await daemonClient(fallback.executor, {
         socketPath,
         identity: SERVER_IDENTITY,
@@ -337,8 +335,7 @@ suite('daemon-backed executor', () => {
     const fallback = fallbackExecutor();
     const spawn = vi.fn();
 
-    // NOT the daemonClient helper: this is the production factory wiring, which
-    // must stay OUT of the daemon path while the unit-test suite is running.
+    // NOT the daemonClient helper: this is the production factory wiring, which must stay OUT of the daemon path while the unit-test suite is running.
     expect(process.env.VITEST).toBeTruthy();
     const client = createDaemonExecutor(fallback.executor, {
       socketPath,

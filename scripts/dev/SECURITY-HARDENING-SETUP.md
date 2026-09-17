@@ -1,23 +1,18 @@
 # Security Hardening: External Setup Checklist
 
-The workflow code changes from the Phase 1-3 hardening are committed, but
-three things must be done outside the repo before the changes become active:
+The workflow code changes from the Phase 1-3 hardening are committed, but three things must be done outside the repo before the changes become active:
 
 1. Create a new GitHub App (`rediacc-cd-app`) and store its credentials
 2. Mint a scoped Cloudflare token (`CLOUDFLARE_API_TOKEN_PREVIEW`)
 3. Push 19 (secret, env) pairs via `migrate-secrets-to-envs.sh`
 
-Order matters: do steps 1 + 2 BEFORE merging the workflow changes, otherwise
-the next CI/CD run will fail with missing-secret errors. Step 3 should follow
-a successful test run of `promote-stable.yml` so you can verify env-scope
-resolution before deleting the org-level copies.
+Order matters: do steps 1 + 2 BEFORE merging the workflow changes, otherwise the next CI/CD run will fail with missing-secret errors. Step 3 should follow a successful test run of `promote-stable.yml` so you can verify env-scope resolution before deleting the org-level copies.
 
 ---
 
 ## Step 1: Create `rediacc-cd-app` GitHub App
 
-The existing `rediacc-ci-cd` App stays — it gets narrowed to CI-only perms.
-A new App handles deploys.
+The existing `rediacc-ci-cd` App stays — it gets narrowed to CI-only perms. A new App handles deploys.
 
 **1a. Create the App** at <https://github.com/organizations/rediacc/settings/apps/new>:
 - Name: `rediacc-cd-app`
@@ -32,13 +27,11 @@ A new App handles deploys.
   - Packages: Read and write
   - Pull requests: Read and write
 - **DO NOT** enable `Administration` — the `check:ci-no-app-admin-perm` CI
-  gate will fail builds if any workflow ever requests it.
+gate will fail builds if any workflow ever requests it.
 
-**1b. Generate a private key** in the App's General settings → "Private keys"
-→ "Generate a private key". Download the PEM file.
+**1b. Generate a private key** in the App's General settings → "Private keys" → "Generate a private key". Download the PEM file.
 
-**1c. Install the App on the org**, scoped to repos: `console`, `renet`,
-`elite`, `account`.
+**1c. Install the App on the org**, scoped to repos: `console`, `renet`, `elite`, `account`.
 
 **1d. Store credentials**:
 ```bash
@@ -51,22 +44,18 @@ gh secret set CD_APP_PRIVATE_KEY --org rediacc --visibility selected \
   --repos console < path/to/downloaded.pem
 ```
 
-**1e. After verification, narrow the existing `rediacc-ci-cd` App** at
-<https://github.com/organizations/rediacc/settings/apps/rediacc-ci-cd/permissions>:
+**1e. After verification, narrow the existing `rediacc-ci-cd` App** at <https://github.com/organizations/rediacc/settings/apps/rediacc-ci-cd/permissions>:
 - Reduce to: Contents (Read), Pull requests (Read), Metadata (Read), Actions (Write).
 - Remove: Deployments, Environments, Packages.
 - Save and accept the org-installation permission update prompt.
 
-After narrowing, only the new `rediacc-cd-app` can mint deploy-scoped tokens.
-A leaked `GITHUB_APP_PRIVATE_KEY` (CI-only) cannot deploy.
+After narrowing, only the new `rediacc-cd-app` can mint deploy-scoped tokens. A leaked `GITHUB_APP_PRIVATE_KEY` (CI-only) cannot deploy.
 
 ---
 
 ## Step 2: Mint preview-only Cloudflare token
 
-The existing `CLOUDFLARE_API_TOKEN` stays as the production token. A new
-narrower token handles PR preview deploys, so a leak from any PR run cannot
-touch production.
+The existing `CLOUDFLARE_API_TOKEN` stays as the production token. A new narrower token handles PR preview deploys, so a leak from any PR run cannot touch production.
 
 **2a. Create the token** at <https://dash.cloudflare.com/profile/api-tokens>:
 - Click "Create Token" → "Get started" with custom token
@@ -79,9 +68,7 @@ touch production.
     separate one; otherwise omit)
 - **Account Resources**: include only the rediacc account
 - **Zone Resources**: if you have a dedicated preview zone (e.g.
-  `*.preview.rediacc.com`), restrict to that. Otherwise leave blank — the
-  token will still be narrower than the prod one because it only has
-  Pages/Workers edit, not the full account access of the prod token.
+`*.preview.rediacc.com`), restrict to that. Otherwise leave blank — the token will still be narrower than the prod one because it only has Pages/Workers edit, not the full account access of the prod token.
 
 **2b. Store as org secret**:
 ```bash
@@ -97,9 +84,7 @@ curl -i -H "Authorization: Bearer $TOKEN" \
   https://api.cloudflare.com/client/v4/zones/<prod-zone-id>/dns_records
 ```
 
-The 9 PR-preview sites in `ci.yml` and 4 in `cleanup-preview.yml` will use
-this token. The cd-stage call (1 site in `ci.yml:669`) keeps using the prod
-token because cd-stage purges prod-zone cache on PR runs.
+The 9 PR-preview sites in `ci.yml` and 4 in `cleanup-preview.yml` will use this token. The cd-stage call (1 site in `ci.yml:669`) keeps using the prod token because cd-stage purges prod-zone cache on PR runs.
 
 ---
 
@@ -109,9 +94,7 @@ Three sub-flows depending on who owns each credential:
 
 ### 3a. Stripe (NOT in rotation tool — manual)
 
-Stripe credentials are rotated manually via the Stripe dashboard, so the
-one-shot push is needed once. After this, future rotations are also manual
-(`gh secret set --env ...`).
+Stripe credentials are rotated manually via the Stripe dashboard, so the one-shot push is needed once. After this, future rotations are also manual (`gh secret set --env ...`).
 
 > **Voided 2026-09-02.** `scripts/dev/migrate-stripe-to-envs.sh` was deleted: the operator
 > established in the Stripe dashboard that the three regions are ONE Stripe account
@@ -121,11 +104,7 @@ one-shot push is needed once. After this, future rotations are also manual
 
 ### 3b. SES (US/Asia) — rotation tool handles env-scope automatically
 
-The rotation tool now reads `ROTATION_CONFIG.awsSes[<region>].githubSecretEnvScope`
-(see `private/account/scripts/rotation/lib/config.ts`) and pushes the IAM
-access key pair to the configured GitHub env (`stable-us` for `ses-us`,
-`stable-asia` for `ses-asia`) instead of org-level. ses-eu stays org-level
-(used by `ci.yml` preview deploy).
+The rotation tool now reads `ROTATION_CONFIG.awsSes[<region>].githubSecretEnvScope` (see `private/account/scripts/rotation/lib/config.ts`) and pushes the IAM access key pair to the configured GitHub env (`stable-us` for `ses-us`, `stable-asia` for `ses-asia`) instead of org-level. ses-eu stays org-level (used by `ci.yml` preview deploy).
 
 Trigger one rotation per region to push the existing keys to env scope:
 
@@ -145,9 +124,7 @@ gh secret delete AWS_SES_SECRET_ACCESS_KEY_ASIA --org rediacc
 
 ### 3c. OTLP — rotation tool handles env-scope automatically
 
-The OTLP consumer refs in `lib/config.ts` are now `github-secret-env:<env>:NAME`
-for all three regions (each pushed to BOTH `edge-<region>` and `stable-<region>`
-since both target=edge and target=stable matrix runs consume the secret).
+The OTLP consumer refs in `lib/config.ts` are now `github-secret-env:<env>:NAME` for all three regions (each pushed to BOTH `edge-<region>` and `stable-<region>` since both target=edge and target=stable matrix runs consume the secret).
 
 ```bash
 ./run.sh rotation rotate otlp-eu
@@ -208,9 +185,8 @@ gh workflow run "Release to Edge" -f release_mode=retry
 
 If anything breaks post-merge:
 - **Workflow swap (CD_APP_ID, CLOUDFLARE_API_TOKEN_PREVIEW) breaks**: revert
-  the relevant workflow file changes and the App/token can sit unused.
+the relevant workflow file changes and the App/token can sit unused.
 - **Env-scoped secrets break a deploy**: re-add to org level via
-  `gh secret set --org rediacc <NAME>`. Env-scoped + org-level can coexist;
-  workflow-resolution prefers env-scoped, so org-level acts as fallback.
+`gh secret set --org rediacc <NAME>`. Env-scoped + org-level can coexist; workflow-resolution prefers env-scoped, so org-level acts as fallback.
 - **Ephemeral GPG breaks PR builds**: revert the `Resolve GPG signing key`
-  step in `cd-stage.yml` and the GPG ternary in `ci.yml:660`.
+step in `cd-stage.yml` and the GPG ternary in `ci.yml:660`.

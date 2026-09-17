@@ -14,9 +14,7 @@ const mockOutputService = vi.hoisted(() => ({
 
 vi.mock('../../services/core/output.js', () => mockOutputService);
 
-// Point the config dir at a scratch XDG_CONFIG_HOME *before* importing update.js
-// (config-file-storage captures getConfigDir() at module load). handleChannelSwitch
-// now writes the active config file (rediacc.json), not the retired server.json.
+// Point the config dir at a scratch XDG_CONFIG_HOME *before* importing update.js (config-file-storage captures getConfigDir() at module load). handleChannelSwitch now writes the active config file (rediacc.json), not the retired server.json.
 const configHome = mkdtempSync(join(tmpdir(), 'rdc-update-home-'));
 process.env.XDG_CONFIG_HOME = configHome;
 const configDir = join(configHome, 'rediacc');

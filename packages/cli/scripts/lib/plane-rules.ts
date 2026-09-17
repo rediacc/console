@@ -130,8 +130,7 @@ export function instrumentRegistration(src: string): Map<Command, string> {
 
   const originalAction = proto.action;
   proto.action = function patchedAction(this: Command, ...args: unknown[]) {
-    // `.action()` is the strongest signal (it is where the handler is defined),
-    // so it overwrites a weaker `.command()` attribution for the same object.
+    // `.action()` is the strongest signal (it is where the handler is defined), so it overwrites a weaker `.command()` attribution for the same object.
     const frame = innermostSrcFrame();
     if (frame) registeredIn.set(this, frame);
     return originalAction.apply(this, args);

@@ -67,7 +67,14 @@ renet_build_identity() {
     esac
     # build.sh dev also opts into enforcement from the environment, so a stamp
     # that only looked at the flags would miss RDC_RENET_LICENSE=1.
-    if [[ "${RDC_RENET_LICENSE:-0}" == "1" || "${RDC_BENCH:-0}" == "1" ]]; then
+    # `RDC_BENCH` WAS THE SECOND ARM HERE AND IT IS DEAD. `rdc.sh` contains the string
+    # ZERO times, `.ci/scripts/test/test-rdc-sh-env.sh:81` lists it among the dead names it
+    # enforces the absence of, and `docs/environment-variables.md:104`,
+    # `docs/agent-reference/local-env.md:106` and CLAUDE.md all say so. Bench is a CONFIG
+    # now -- `./rdc.sh --config bench` -- so the arm could only ever be taken by someone
+    # exporting a variable nothing else reads. Removed 2026-09-09; found by the W8 P2 env
+    # manifest, which is the first instrument in this repo that looks at bash reads at all.
+    if [[ "${RDC_RENET_LICENSE:-0}" == "1" ]]; then
         mode="enforce"
     fi
     printf '%s|%s' "$mode" \

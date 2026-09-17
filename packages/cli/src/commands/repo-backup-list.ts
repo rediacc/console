@@ -73,11 +73,7 @@ function extractBackupListPayload(stdout: string): BackupListPayload | undefined
 }
 
 async function assertBackupFromExists(fromName: string, sourceType: unknown): Promise<void> {
-  // `local` names the machine whose OWN datastore is read, so it validates as
-  // a machine exactly like `machine` does. Spelled out rather than left to the
-  // fall-through below: that branch probes machine-then-storage and would
-  // happen to succeed, which is the kind of accident that rots into a bug the
-  // day storage stops resolving.
+  // `local` names the machine whose OWN datastore is read, so it validates as a machine exactly like `machine` does. Spelled out rather than left to the fall-through below: that branch probes machine-then-storage and would happen to succeed, which is the kind of accident that rots into a bug the day storage stops resolving.
   if (sourceType === 'local' || sourceType === 'machine') {
     await assertMachineExists(fromName);
     return;
@@ -126,12 +122,8 @@ export async function fetchBackupList(
   });
 
   if (!result.success) {
-    // THROW rather than render-and-return-[]. Returning an empty array printed
-    // an error line and then an EMPTY TABLE underneath it, so a failed listing
-    // and a datastore with no backups looked identical to a reader scanning
-    // output -- and one of those means your backups are missing. The caller's
-    // handleError renders this, and the engine's own words are carried along
-    // so the operator still sees what renet said.
+    // THROW rather than render-and-return-[]. Returning an empty array printed an error line and then an EMPTY TABLE underneath it, so a failed listing and a datastore with no backups looked identical to a reader scanning output -- and one of those means your backups are missing. The caller's handleError renders this, and the engine's own words are carried along so the operator
+    // still sees what renet said.
     renderLocalExecutionFailure(
       result,
       t('commands.shortcuts.run.failedLocal', { error: result.error })
@@ -155,10 +147,7 @@ export async function renderBackupList(entries: TaggedBackupEntry[]): Promise<vo
   const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
   const resolve = createGuidResolver(await loadGuidMap());
 
-  // NO isDirectory filter. `backup push` writes a FILE for a LUKS repo and a
-  // DIRECTORY for a directory-backed (kube) repo (backup_push.go branches on
-  // exactly that), so filtering directories silently discarded every pushed
-  // kube repo before it was ever printed.
+  // NO isDirectory filter. `backup push` writes a FILE for a LUKS repo and a DIRECTORY for a directory-backed (kube) repo (backup_push.go branches on exactly that), so filtering directories silently discarded every pushed kube repo before it was ever printed.
   const rows = entries
     .map((e) => {
       const resolvedName = resolve(e.name);

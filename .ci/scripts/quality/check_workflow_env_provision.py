@@ -38,6 +38,12 @@ path resolver that reports MORE is the lucky direction; the same bug in a gate
 that reports less is silent.)
 
 Exit 1 on any finding, 2 on a failed control.
+
+---- gate ----
+step: Workflow env provision
+needs: python-yaml
+selftest: true
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -45,16 +51,15 @@ from __future__ import annotations
 import contextlib
 import pathlib
 import re
-import subprocess
 import sys
 import tempfile
 
-# Top-level, matching check_python_gate_deps.py and check_workflow_submodule_deps.py:
-# the CI step that runs this installs the pinned PyYAML immediately before it, and a
-# gate that quietly degrades when its parser is missing is the vacuity this tree has
-# rules about. A bare ImportError traceback names the missing module, which is the
-# right failure.
+import _cipath  # noqa: F401
+
+# Top-level, matching check_python_gate_deps.py and check_workflow_submodule_deps.py: the CI step that runs this installs the pinned PyYAML immediately before it, and a gate that quietly degrades when its parser is missing is the vacuity this tree has rules about. A bare ImportError traceback names the missing module, which is the right failure.
 import yaml
+from rediacc_ci import controls
+from rediacc_ci import proc as ci_proc
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 WORKFLOWS = ROOT / ".github" / "workflows"
@@ -73,16 +78,16 @@ SCRIPT = re.compile(r"(?<![\w/.-])((?:\./)?(?:\.ci|scripts)/[\w./-]+\.(?:sh|py|t
 
 def toolchain_names(root: pathlib.Path = ROOT) -> set[str]:
     """Names `toolchain.sh --env` writes into $GITHUB_ENV."""
-    try:
-        r = subprocess.run(
-            [str(root / ".ci/scripts/lib/toolchain.sh"), "--env"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired):
+    # Through the shared runner: `toolchain.sh` is a shell script that spawns
+    # children of its own, and a plain `subprocess.run(capture_output=True,
+    # timeout=...)` kills only the script and then blocks in communicate() on
+    # pipes a grandchild still holds. A spawn failure comes back as rc 127 with empty stdout, which yields the same empty set the OSError arm returned.
+    r = ci_proc.run(
+        [str(root / ".ci/scripts/lib/toolchain.sh"), "--env"],
+        cwd=str(root),
+        timeout=60,
+    )
+    if r.timed_out:
         return set()
     return {ln.split("=", 1)[0] for ln in r.stdout.split("\n") if "=" in ln}
 
@@ -180,8 +185,7 @@ def selftest() -> int:
         )
         check("CONTROL: runner built-ins are never flagged", not any("builtin" in x for x in f))
 
-    # CONTROL on the real tree: the script hop must resolve, or $RENET_BINARY
-    # (written to $GITHUB_ENV by build-renet.sh) becomes nine false findings.
+    # CONTROL on the real tree: the script hop must resolve, or $RENET_BINARY (written to $GITHUB_ENV by build-renet.sh) becomes nine false findings.
     hop = ROOT / ".ci/scripts/infra/build-renet.sh"
     check(
         "CONTROL: the one-hop script resolver finds a real $GITHUB_ENV writer",
@@ -192,12 +196,8 @@ def selftest() -> int:
 
 
 def main() -> int:
-    print("workflow env provision: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("workflow env provision", selftest):
+        return refusal
 
     per_job, anywhere = scan(ROOT, toolchain_names())
     if len(per_job) < MIN_JOBS:

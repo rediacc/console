@@ -1,15 +1,10 @@
-// PR Validation for GitHub Actions
-// Validates PR title (Conventional Commits), description, linked issues, and size.
+// PR Validation for GitHub Actions Validates PR title (Conventional Commits), description, linked issues, and size.
 //
 // Usage (from actions/github-script):
 //   script: return await require('./.ci/scripts/ci/validate-pr.cjs')({github, context, core})
 
 module.exports = async ({ github, context, core }) => {
-  // Pin to the latest stable GitHub REST API version. Without this,
-  // octokit defaults to 2022-11-28 and emits a per-call deprecation
-  // warning (that version sunsets 2028-03-10). pulls.listFiles has no
-  // breaking changes in 2026-03-10. See:
-  //   https://docs.github.com/en/rest/about-the-rest-api/api-versions
+  // Pin to the latest stable GitHub REST API version. Without this, octokit defaults to 2022-11-28 and emits a per-call deprecation warning (that version sunsets 2028-03-10). pulls.listFiles has no breaking changes in 2026-03-10. See: https://docs.github.com/en/rest/about-the-rest-api/api-versions
   github.hook.before('request', (options) => {
     options.headers ??= {};
     options.headers['x-github-api-version'] ||= '2026-03-10';
@@ -17,16 +12,10 @@ module.exports = async ({ github, context, core }) => {
 
   // Read the PR LIVE rather than from context.payload.
   //
-  // context.payload.pull_request is frozen at the moment the run was created,
-  // so on a re-run it replays the ORIGINAL title and body. That makes this
-  // validator unfixable by the one action its own error message invites: it
-  // says "PR title must follow Conventional Commits format", you fix the
-  // title, you re-run, and it fails again on the stale payload. The only way
-  // out was to push a commit, which is not obvious and costs a full round.
+  // context.payload.pull_request is frozen at the moment the run was created, so on a re-run it replays the ORIGINAL title and body. That makes this validator unfixable by the one action its own error message invites: it says "PR title must follow Conventional Commits format", you fix the title, you re-run, and it fails again on the stale payload. The only way out was to push a
+  // commit, which is not obvious and costs a full round.
   //
-  // Verified live: run 30393629318 failed on the title, the title was
-  // corrected to a compliant one (checked against this very regex), and
-  // `gh run rerun --failed` failed again with the identical message.
+  // Verified live: run 30393629318 failed on the title, the title was corrected to a compliant one (checked against this very regex), and `gh run rerun --failed` failed again with the identical message.
   //
   // Falling back to the payload keeps this working for any caller that has no
   // token or hits an API error; the fallback is strictly the old behaviour.
@@ -41,8 +30,7 @@ module.exports = async ({ github, context, core }) => {
       });
       pr = data;
     } catch {
-      // Keep the payload copy. A validator that cannot read the PR must still
-      // validate SOMETHING rather than silently pass.
+      // Keep the payload copy. A validator that cannot read the PR must still validate SOMETHING rather than silently pass.
       pr = payloadPr;
     }
   }

@@ -42,8 +42,7 @@ function convertLocalPathForRsync(localPath: string): string {
     return localPath.replaceAll('\\', '/');
   }
 
-  // Convert Windows absolute path to MSYS2/Cygwin format
-  // MSYS2 rsync expects local Windows paths in /c/Users/... format
+  // Convert Windows absolute path to MSYS2/Cygwin format MSYS2 rsync expects local Windows paths in /c/Users/... format
   return windowsToUnixPath(localPath);
 }
 

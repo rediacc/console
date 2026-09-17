@@ -57,8 +57,7 @@ export function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
     }
   }
 
-  // Pin the kubectl current-context to the repo's namespace for a cluster-placed
-  // repo session (the k8s analog of the repo `cd` below). KUBECONFIG is already
+  // Pin the kubectl current-context to the repo's namespace for a cluster-placed repo session (the k8s analog of the repo `cd` below). KUBECONFIG is already
   // exported by the loop, so this runs against the cluster's kubeconfig; the
   // `|| true` keeps a shell open even if kubectl is momentarily unavailable.
   if (connectionDetails?.kubeNamespace) {
@@ -73,9 +72,7 @@ export function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
   return parts.length > 0 ? `${parts.join('; ')}; ` : '';
 }
 
-// Sandbox is enforced server-side via ForceCommand in authorized_keys.
-// The CLI just sends the raw command — sandbox-gateway on the remote
-// reads REDIACC_REPOSITORY from env and applies Landlock + OverlayFS.
+// Sandbox is enforced server-side via ForceCommand in authorized_keys. The CLI just sends the raw command — sandbox-gateway on the remote reads REDIACC_REPOSITORY from env and applies Landlock + OverlayFS.
 
 function buildRemoteCommand(
   options: TermConnectOptions,
@@ -230,17 +227,11 @@ async function executeSSH(
   }
 }
 
-// Determines client-side output suppression and remote-TTY allocation for a
-// connectTerminal invocation.
+// Determines client-side output suppression and remote-TTY allocation for a connectTerminal invocation.
 //
-// - quietOutput: skip the spinners and the "Connecting to..." stderr line so
-//   `term connect <target> -c "..."` keeps stdout clean for the command's own
-//   output.
-// - noTTY: disable ssh -tt. The remote sandbox banner is gated by `[ -t 1 ]`,
-//   and ssh prints "Connection to HOST closed." only when -t allocated a PTY,
-//   so a one-shot command must not allocate one. The container side door was
+// - quietOutput: skip the spinners and the "Connecting to..." stderr line so `term connect <target> -c "..."` keeps stdout clean for the command's own output. - noTTY: disable ssh -tt. The remote sandbox banner is gated by `[ -t 1 ]`, and ssh prints "Connection to HOST closed." only when -t allocated a PTY, so a one-shot command must not allocate one. The container side door was
 //   the only case that needed a PTY for a `-c` invocation (docker exec -it);
-//   it is retired, so one-shot and no-TTY now coincide exactly.
+// it is retired, so one-shot and no-TTY now coincide exactly.
 export function resolveTermOutputMode(opts: TermConnectOptions): {
   quietOutput: boolean;
   noTTY: boolean;
@@ -420,9 +411,7 @@ async function runInlineSSH(
   quiet: boolean
 ): Promise<void> {
   if (!quiet) {
-    // Progress message on stderr — keeps stdout reserved for command output
-    // when -c piping is in play, matching the Unix convention used by ssh's
-    // own progress / banner messages.
+    // Progress message on stderr — keeps stdout reserved for command output when -c piping is in play, matching the Unix convention used by ssh's own progress / banner messages.
     process.stderr.write(`${t('commands.term.connectingTo', { title })}\n`);
   }
 

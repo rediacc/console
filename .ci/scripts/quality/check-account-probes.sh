@@ -1,4 +1,13 @@
 #!/bin/bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-account-probes is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_account_probes.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs "...check_account_probes.py" but its header derives "...check-account-probes.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Behavioural gate for the dev-stack liveness probes in .ci/lib/account.sh.
 #
 # WHY THIS EXISTS. On 2026-08-04 `account_rustfs_alive` reported ALIVE for a
@@ -83,7 +92,9 @@ probe_says_alive() {
         # flags this gate runs with: errexit trips on its re-source guard
         # (account.sh:8, `[[ -n "${ACCOUNT_LIB_LOADED:-}" ]] && return 0`, whose
         # && list returns NON-ZERO on a first load), and nounset trips on the
-        # unset variables it and find-port.sh reference. Either one aborts the
+        # unset variables it references ($CONSOLE_ROOT_DIR among others;
+        # find-port.sh used to contribute its own until W7P5-b deleted it, and
+        # account.sh still has enough of its own). Either one aborts the
         # source part-way, leaving every function below undefined — and a probe
         # that cannot be called reads as "not alive", i.e. the gate would report
         # a PASS on assertion 1 while testing nothing at all. run.sh does not
@@ -133,7 +144,7 @@ cleanup() { kill "$listener_pid" 2>/dev/null || true; }
 trap cleanup EXIT
 
 listener_up=0
-for _ in $(seq 1 50); do
+for ((_i = 1; _i <= 50; _i++)); do
     if curl -s -o /dev/null -m 1 "http://127.0.0.1:${live_port}/" 2>/dev/null; then
         listener_up=1
         break

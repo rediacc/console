@@ -143,9 +143,7 @@ export async function forkCluster(
         `Provision or name a destination cluster and pass --cluster <dest>.`
     );
   }
-  // Validate against the allowed set on a string-typed value: an unvalidated CLI
-  // string (or a test bypassing the type) must still be rejected, but the typed
-  // union would make the literal comparison "always false" to the checker.
+  // Validate against the allowed set on a string-typed value: an unvalidated CLI string (or a test bypassing the type) must still be rejected, but the typed union would make the literal comparison "always false" to the checker.
   const writesRaw: string = options.writes ?? DEFAULTS.CLUSTER.FORK_WRITES;
   if (writesRaw !== 'local' && writesRaw !== 'ceph') {
     throw new Error(`--writes must be "local" or "ceph" (got "${writesRaw}").`);
@@ -163,14 +161,10 @@ export async function forkCluster(
     throw new Error(`Both "${clusterName}" and "${options.cluster}" need a k8s-server member.`);
   }
 
-  // 0. Fail fast (finding #8): refuse a dest whose control node already runs its
-  //    own k3s (:6443 collision) BEFORE any snapshot/clone work — dispatch
-  //    nothing destructive on a bad target.
+  // 0. Fail fast (finding #8): refuse a dest whose control node already runs its own k3s (:6443 collision) BEFORE any snapshot/clone work — dispatch nothing destructive on a bad target.
   await assertDestNotRunningOwnK3s(options.cluster, dstControl.name, options.debug);
 
-  // 0b. Give the dest members SOURCE-ceph access + the rbd/sqlite3 tooling the
-  //     adopt/attach + kine-scrub need (findings #7/#15) — createCluster only
-  //     seeds a cluster's own nodes with its own ceph.
+  // 0b. Give the dest members SOURCE-ceph access + the rbd/sqlite3 tooling the adopt/attach + kine-scrub need (findings #7/#15) — createCluster only seeds a cluster's own nodes with its own ceph.
   await prepareForkDest(clusterName, source, dstMembers, options.debug);
 
   const snapshot = `fork-${options.tag}`;
@@ -179,12 +173,8 @@ export async function forkCluster(
       `group snapshot (parent stays live)...`
   );
 
-  // 1. ONE atomic group snapshot across the cluster's ceph datastores — QUIESCED
-  //    (fork semantics, #440: a fork carries what you just wrote), so every member
-  //    is syncfs-flushed, inner filesystems first, before the instant. syncfs
-  //    flushes without pausing: no drain, no stop — the parent never notices
-  //    (04 §2 step 1). The bare cluster-snapshot verb stays crash-consistent and
-  //    never passes quiesce.
+  // 1. ONE atomic group snapshot across the cluster's ceph datastores — QUIESCED (fork semantics, #440: a fork carries what you just wrote), so every member is syncfs-flushed, inner filesystems first, before the instant. syncfs flushes without pausing: no drain, no stop — the parent never notices (04 §2 step 1). The bare cluster-snapshot verb stays crash-consistent and never
+  // passes quiesce.
   const clusterDatastores = await listClusterCephDatastores(
     srcControl.name,
     clusterName,
@@ -197,12 +187,9 @@ export async function forkCluster(
     { debug: options.debug }
   );
 
-  // 2. Clone each datastore from the group snap (clone-format-2 per-call). The
-  //    fork records are `<ds>:<tag>` DETACHED (04 §2 step 2). datastore_fork
+  // 2. Clone each datastore from the group snap (clone-format-2 per-call). The fork records are `<ds>:<tag>` DETACHED (04 §2 step 2). datastore_fork
   //    registers the fork record ONLY in the SOURCE machine's registry; the attach
-  //    below runs on the DEST, whose registry has no such record — so we ferry the
-  //    record (the `datastore fork --json` output) to the dest and `datastore_adopt`
-  //    it there before attaching (finding #14: cross-machine fork-record propagation).
+  // below runs on the DEST, whose registry has no such record — so we ferry the record (the `datastore fork --json` output) to the dest and `datastore_adopt` it there before attaching (finding #14: cross-machine fork-record propagation).
   for (const ds of clusterDatastores) {
     const forkRes = await dispatch(
       'datastore_fork',
@@ -234,7 +221,7 @@ export async function forkCluster(
 
   // 4. Control-plane identity rewrite, operation=FORK: the F1-safe 8-step PKI
   //    re-mint + secret scrub + ROLE=fork rewrite + stale-Node delete, with a NEW
-  //    networkID (04 §2 step 4). The clone mounts at the stable-name path.
+  // networkID (04 §2 step 4). The clone mounts at the stable-name path.
   const controlDs = controlDatastore(clusterName);
   const forkMount = forkDatastoreMount(controlDs, options.tag);
   const forkNet = await configService.allocateNetworkId();
@@ -257,8 +244,7 @@ export async function forkCluster(
   );
 
   // 5. Fresh agents REJOIN the fork with the NEW-CA token (04 §2 step 5; agents
-  //    are disposable, dst count is free). The fork's F8 already deleted the
-  //    parent's stale Node objects, so fresh agents register clean.
+  // are disposable, dst count is free). The fork's F8 already deleted the parent's stale Node objects, so fresh agents register clean.
   const tokenRes = await dispatch(
     'kube_join_token',
     dstControl.name,

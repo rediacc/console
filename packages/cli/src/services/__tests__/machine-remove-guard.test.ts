@@ -109,8 +109,7 @@ describe('guardMachineRemoval', () => {
     // Warns that the surviving placements now dangle, naming them.
     expect(mockWarn).toHaveBeenCalledOnce();
     expect(String(mockWarn.mock.calls[0][0])).toContain('web, api');
-    // The guard never rewrote placements — they still point at the removed
-    // machine (dangling by construction).
+    // The guard never rewrote placements — they still point at the removed machine (dangling by construction).
     expect(reposPlacedOnMachine('srv-1', repos)).toEqual(['web', 'api']);
   });
 

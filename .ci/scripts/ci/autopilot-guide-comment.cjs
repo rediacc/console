@@ -1,48 +1,25 @@
 // Post (and keep current) the autopilot guide on every PR.
 //
-// WHY THIS EXISTS. The autopilot can babysit a PR to green on its own, and
-// almost nothing about that is discoverable from the PR itself: there are THREE
-// ways to arm it, a dozen Actions variables that all fail closed, and three
-// stop switches with three different scopes. An engineer who does not already
-// know the design has no way to find out that applying one label would have
-// done the work for them -- or, worse, no way to find the switch that stops it.
-// So each PR gets one short comment saying both.
+// WHY THIS EXISTS. The autopilot can babysit a PR to green on its own, and almost nothing about that is discoverable from the PR itself: there are THREE ways to arm it, a dozen Actions variables that all fail closed, and three stop switches with three different scopes. An engineer who does not already know the design has no way to find out that applying one label would have done
+// the work for them -- or, worse, no way to find the switch that stops it. So each PR gets one short comment saying both.
 //
-// WHY IT IS NOT RENDERED, AND WHAT REPLACES THAT. The label guide is a
-// projection of .github/labels.yml, which is the right design when a machine-
-// readable source of truth exists. This guide describes a WORKFLOW: its arming
-// paths live in shell `if` branches, its bounds in three different files, and
-// no parser turns those into prose. Hand-written prose is exactly the rotting
-// fourth copy label-guide-comment.cjs's header warns about, so the mitigation
-// is moved into the test: test-autopilot-guide-comment.sh asserts that every
-// variable name, label name and numeric bound quoted below still appears in the
+// WHY IT IS NOT RENDERED, AND WHAT REPLACES THAT. The label guide is a projection of .github/labels.yml, which is the right design when a machine- readable source of truth exists. This guide describes a WORKFLOW: its arming paths live in shell `if` branches, its bounds in three different files, and no parser turns those into prose. Hand-written prose is exactly the rotting fourth
+// copy label-guide-comment.cjs's header warns about, so the mitigation is moved into the test: test-autopilot-guide-comment.sh asserts that every variable name, label name and numeric bound quoted below still appears in the
 // file it was taken from. The prose is human; the FACTS in it are pinned, and a
 // rename in autopilot.yml turns this comment red rather than stale.
 //
-// EVERY CLAIM'S SOURCE, so the next editor can re-verify rather than trust:
-//   arming paths, stop scopes, variables .. .github/workflows/autopilot.yml
-//                                           (the roster comment at its top)
-//   arming ORDER, round cap, stuck sig .... .ci/scripts/autopilot/autopilot-gate.sh
-//   round actions (fix/ready-flip/...) .... same file, the conclusion `case`
-//   --max-turns per mode ................. .ci/scripts/autopilot/resolve-model-args.sh
-//   label names and meanings ............. .github/labels.yml
+// EVERY CLAIM'S SOURCE, so the next editor can re-verify rather than trust: arming paths, stop scopes, variables .. .github/workflows/autopilot.yml (the roster comment at its top) arming ORDER, round cap, stuck sig .... .ci/scripts/autopilot/autopilot-gate.sh round actions (fix/ready-flip/...) .... same file, the conclusion `case` --max-turns per mode .................
+// .ci/scripts/autopilot/resolve-model-args.sh label names and meanings ............. .github/labels.yml
 //
-// IDEMPOTENCE IS THE WHOLE DESIGN, and it is copied from the label guide
-// deliberately rather than reinvented: find the existing comment by an HTML
-// marker, and write ONLY when the body actually differs. A PR gets a CI run per
-// push, so a guide posted per run would bury the conversation. A rerun on an
-// unchanged tree performs zero API writes.
+// IDEMPOTENCE IS THE WHOLE DESIGN, and it is copied from the label guide deliberately rather than reinvented: find the existing comment by an HTML marker, and write ONLY when the body actually differs. A PR gets a CI run per push, so a guide posted per run would bury the conversation. A rerun on an unchanged tree performs zero API writes.
 //
 // Usage (from actions/github-script):
 //   script: return await require('./.ci/scripts/ci/autopilot-guide-comment.cjs')({github, context, core})
 
-// The comment's identity. FIRST bytes of the body, so a prefix test finds it
-// and a human quoting this comment in a reply does not match.
+// The comment's identity. FIRST bytes of the body, so a prefix test finds it and a human quoting this comment in a reply does not match.
 const MARKER = '<!-- rediacc:autopilot-guide -->';
 
-// Facts quoted in the body that the gate test re-checks against their sources.
-// Exported rather than inlined so the test cannot drift from the prose: it
-// asserts these appear BOTH here and in the file each one came from.
+// Facts quoted in the body that the gate test re-checks against their sources. Exported rather than inlined so the test cannot drift from the prose: it asserts these appear BOTH here and in the file each one came from.
 const VARIABLES = [
   ['AUTOPILOT_ENABLED', 'master switch'],
   ['AUTOPILOT_ALLOW_STATE', 'may write its state comment'],
@@ -82,16 +59,12 @@ const renderBody = () => {
     '',
     `**Bounds** (it escalates, never loops): round cap default ${DEFAULT_MAX_ROUNDS} · stuck-signature, same failed jobs twice · 30m job timeout · \`--max-turns\` 80 fixing, 60 otherwise. Hitting one applies \`${BLOCK_LABEL}\` for a human.`,
     '',
-    // A blockquote rather than <sub>, for the reason spelled out at the same
-    // place in label-guide-comment.cjs: this line is the only thing telling a
-    // reader their edits get overwritten, and <sub> renders it as tiny
-    // subscript text that the eye skips.
+    // A blockquote rather than <sub>, for the reason spelled out at the same place in label-guide-comment.cjs: this line is the only thing telling a reader their edits get overwritten, and <sub> renders it as tiny subscript text that the eye skips.
     '> Posted by <code>.ci/scripts/ci/autopilot-guide-comment.cjs</code>; edits here are overwritten.',
   ].join('\n');
 };
 
-// Only a bot's guide counts as THE guide. Otherwise anyone able to comment
-// could suppress it forever by posting an empty comment carrying the marker.
+// Only a bot's guide counts as THE guide. Otherwise anyone able to comment could suppress it forever by posting an empty comment carrying the marker.
 // GitHub reports app and Actions authors as `type: 'Bot'`, which is the
 // property to key on -- not the login, which changes with the token in hand.
 const isBotAuthored = (comment) => Boolean(comment && comment.user && comment.user.type === 'Bot');
@@ -127,8 +100,7 @@ const postAutopilotGuide = async ({ github, context, core }) => {
   }
 
   // Newest wins if a duplicate ever slipped through; older ones are left alone
-  // rather than deleted, because deleting a comment is not reversible and this
-  // module has no business doing it.
+  // rather than deleted, because deleting a comment is not reversible and this module has no business doing it.
   const current = existing[existing.length - 1];
 
   if (String(current.body) === body) {

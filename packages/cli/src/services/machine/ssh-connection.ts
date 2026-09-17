@@ -90,8 +90,7 @@ function buildRepositoryEnvFromVault(
   const networkMode = (repoVault.networkMode ??
     machineVault.networkMode ??
     DEFAULTS.REPOSITORY.NETWORK_MODE) as string;
-  // For fork composite names like "gitlab:1", derive the tag from the suffix
-  // so REDIACC_REPO_TAG matches what renet writes into .envrc on the machine.
+  // For fork composite names like "gitlab:1", derive the tag from the suffix so REDIACC_REPO_TAG matches what renet writes into .envrc on the machine.
   const tag = (repoVault.tag ?? repoTagFromName(repositoryName, DEFAULTS.REPOSITORY.TAG)) as string;
   const immovable = repoVault.immovable ? 'true' : 'false';
   const workingDirectory = (repoVault.workingDirectory ?? repositoryPath) as string;

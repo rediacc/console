@@ -1,25 +1,16 @@
 # www simplification program
 
-**Started:** 2026-08-17. **Phase:** research. **Nothing in `packages/www` is
-modified, by operator instruction.**
+**Started:** 2026-08-17. **Phase:** research. **Nothing in `packages/www` is modified, by operator instruction.**
 
 ## Why this exists
 
-The operator's assessment: the marketing site is *"super complex"* and needs
-simplification. Their reference points are **https://claude.com/** for simple
-design generally, and **https://www.anthropic.com/** specifically for the
-homepage hero, which they describe as containing "a special component".
+The operator's assessment: the marketing site is *"super complex"* and needs simplification. Their reference points are **https://claude.com/** for simple design generally, and **https://www.anthropic.com/** specifically for the homepage hero, which they describe as containing "a special component".
 
 ## Shape of the program
 
-Eight domain specialists research in parallel, each owning a disjoint slice of
-the site. **The researcher becomes the implementer**: each specialist is building
-the knowledge it will later execute against, so its research document is written
-to survive compaction and hand its own future self everything it needs.
+Eight domain specialists research in parallel, each owning a disjoint slice of the site. **The researcher becomes the implementer**: each specialist is building the knowledge it will later execute against, so its research document is written to survive compaction and hand its own future self everything it needs.
 
-Shared rules, the site's real CSS cascade, the running dev server, and the
-agent-browser working notes all live in **[00-BRIEF.md](00-BRIEF.md)**. Read it
-before touching anything here.
+Shared rules, the site's real CSS cascade, the running dev server, and the agent-browser working notes all live in **[00-BRIEF.md](00-BRIEF.md)**. Read it before touching anything here.
 
 ## The fleet
 
@@ -32,14 +23,8 @@ before touching anything here.
 | `sx-rtl` | Anchor/slug root cause, the locale-derived-identifier class, and the RTL audit | `src/utils/sidebar-behavior.ts`, `src/utils/slug.ts`, `DocsTopTabs.astro`, the `[dir='rtl']` rules, and the direction metadata in `BaseLayout.astro:65` | `RESEARCH-rtl-anchors.md` |
 | `sx-bughunt` | Systematic cross-route, mobile, dark-theme and cross-locale bug hunt | **owns no source.** Files findings against other specialists' surfaces; like `sx-metrics`, it is a checker, not a writer | `RESEARCH-bugs.md` |
 
-**Ownership collision, found by `sx-process` and fixed here.** `sx-hero` and
-`sx-homepage` both write `src/pages/[lang]/index.astro`, and §4 of
-`01-SYNTHESIS.md` originally scheduled them **concurrently** — one file, two
-writers, which is exactly what the repo's 2-writer rule forbids. They are now
-split across separate slots (`W2a` hero, `W2b` homepage) in
-`02-EXECUTION-SYSTEM.md` and must never run in the same slot. `sx-chrome` runs
-**solo** for the same reason: its surface renders on every page, so it has no
-disjoint partner.
+**Ownership collision, found by `sx-process` and fixed here.** `sx-hero` and `sx-homepage` both write `src/pages/[lang]/index.astro`, and §4 of `01-SYNTHESIS.md` originally scheduled them **concurrently** — one file, two writers, which is exactly what the repo's 2-writer rule forbids. They are now split across separate slots (`W2a` hero, `W2b` homepage) in `02-EXECUTION-SYSTEM.md`
+and must never run in the same slot. `sx-chrome` runs **solo** for the same reason: its surface renders on every page, so it has no disjoint partner.
 | `sx-primitives` | Buttons, cards, badges, forms, modals, tabs, icons, focus states — the variant census | shared primitive rules in `main.css`, form/modal/tab components | `RESEARCH-primitives.md` |
 | `sx-pricing` | Pricing page, comparison matrix, checkout entry. `pricing-page.css` is 2,321 lines | `[lang]/pricing.astro`, `pricing-page.css`, the pricing components, `[lang]/checkout/` | `RESEARCH-pricing.md` |
 | `sx-docs` | Docs and blog reading surfaces, sidebar depth, route sprawl, per-page stylesheets | `DocsLayout.astro`, `ContentLayout.astro`, `DocsSidebar.astro`, `DocsTopTabs.astro`, `Sidebar.tsx`, the per-page stylesheets | `RESEARCH-docs.md` |
@@ -65,10 +50,8 @@ Established before the fleet launched, 2026-08-17:
 
 1. **Research** (current) — eight documents land here.
 2. **Synthesis** — one plan reconciling them, with the cross-domain
-   consequences resolved and a sequence that avoids two specialists editing one
-   file. `sx-tokens` and `sx-primitives` both reach into `main.css`; that
-   collision is known and must be sequenced, not parallelised.
+consequences resolved and a sequence that avoids two specialists editing one file. `sx-tokens` and `sx-primitives` both reach into `main.css`; that collision is known and must be sequenced, not parallelised.
 3. **Implementation** — specialists re-activated as writers, at most two
-   concurrently with disjoint file ownership, per the repo's standing rule.
+concurrently with disjoint file ownership, per the repo's standing rule.
 4. **Verification** — `sx-metrics` re-runs its own recorded measurements and
-   reports the before/after delta.
+reports the before/after delta.

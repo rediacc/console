@@ -127,10 +127,7 @@ function evaluateSensitiveMutation(
 
   const stored = digestForPointer(context.previousConfig, entry.pointer);
   if (stored === undefined && !agent) {
-    // New field added by a HUMAN — there is no previous value to verify, so
-    // the passwd-style ceremony does not apply (--current is documented as
-    // required for overwrite/unset). Agents keep the explicit ceremony even
-    // on first write (existing precedent). Permit, but audit.
+    // New field added by a HUMAN — there is no previous value to verify, so the passwd-style ceremony does not apply (--current is documented as required for overwrite/unset). Agents keep the explicit ceremony even on first write (existing precedent). Permit, but audit.
     return {
       decision: {
         pointer: entry.pointer,
@@ -153,8 +150,7 @@ function evaluateSensitiveMutation(
   }
 
   if (stored === undefined) {
-    // Agent first-write with a knowledge claim — nothing to verify against.
-    // Treat as rotation: permit, but audit.
+    // Agent first-write with a knowledge claim — nothing to verify against. Treat as rotation: permit, but audit.
     return {
       decision: {
         pointer: entry.pointer,
@@ -208,9 +204,7 @@ export function evaluateMutations(
       continue;
     }
 
-    // Symmetric path: humans and agents both go through the same evaluator.
-    // Humans get a null overrideScope (REDIACC_ALLOW_CONFIG_EDIT only takes
-    // effect under agent context), so they cannot bypass via that branch.
+    // Symmetric path: humans and agents both go through the same evaluator. Humans get a null overrideScope (REDIACC_ALLOW_CONFIG_EDIT only takes effect under agent context), so they cannot bypass via that branch.
     const { decision, failure } = evaluateSensitiveMutation(
       entry,
       meta,

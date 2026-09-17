@@ -35,7 +35,7 @@ import type {
 import { mergeRemoteIntoCache } from './remote-cache.js';
 
 // =============================================================================
-// Flatten / decompose: v3 families + state.repos  <->  flat composite view
+// Flatten / decompose: v3 families + state.repos <-> flat composite view
 // =============================================================================
 
 type RepoRuntime = NonNullable<NonNullable<RdcConfig['state']>['repos']>[string][string];

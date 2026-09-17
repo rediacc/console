@@ -31,8 +31,7 @@ describe('describeExecFailure', () => {
   });
 
   it('still reports a buffer overflow correctly when Node also set killed', () => {
-    // The dangerous ordering: `killed` is checked AFTER the buffer code, because
-    // Node may set both and a timeout message would be actively misleading.
+    // The dangerous ordering: `killed` is checked AFTER the buffer code, because Node may set both and a timeout message would be actively misleading.
     const r = describeExecFailure(
       { code: 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER', killed: true },
       1000
@@ -54,14 +53,12 @@ describe('describeExecFailure', () => {
 
   it('passes a real numeric exit code through untouched', () => {
     expect(describeExecFailure({ code: 3 }, 1000)).toEqual({ code: 3, prefix: '' });
-    // Zero must survive: `err.code ?? 1` would have kept it, but a truthiness
-    // test would silently turn a success-shaped failure into 1.
+    // Zero must survive: `err.code ?? 1` would have kept it, but a truthiness test would silently turn a success-shaped failure into 1.
     expect(describeExecFailure({ code: 0 }, 1000)).toEqual({ code: 0, prefix: '' });
   });
 
   it('never returns a non-numeric code, whatever Node reports', () => {
-    // ExecResult.code is typed `number`. Any other string error code must be
-    // coerced rather than leaked into an equality assertion.
+    // ExecResult.code is typed `number`. Any other string error code must be coerced rather than leaked into an equality assertion.
     const r = describeExecFailure({ code: 'ERR_CHILD_PROCESS_EPIPE' }, 1000);
     expect(typeof r.code).toBe('number');
     expect(r.code).toBe(1);

@@ -1,4 +1,14 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: node
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# slow: true
+# why: Behavioural test for failed-step log capture in .ci/scripts/ci/watchdog-monitor.cjs
+# ---- end gate ----
+
 # Behavioural test for failed-step log capture in .ci/scripts/ci/watchdog-monitor.cjs.
 #
 # WHAT BROKE. The watchdog auto-retries failures, and a rerun makes attempt 1's

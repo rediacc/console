@@ -4,13 +4,8 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
 
-// The k3s lifecycle primitives this suite drives legitimately run for MINUTES:
-// `kube identity-rewrite` performs the full F1-F8 control-plane PKI re-mint (~120s),
-// and `repository down` must wait out every pod's termination grace period before it
-// can release the volumes. The generic 120s bridge bound TRUNCATES them: the re-mint
-// was completing at 117-120s (passing on a coin flip) and was then SIGKILLed at
-// exactly 120.0s. Raise the floor in the suite's own config so CI does not depend on
-// a local .env value.
+// The k3s lifecycle primitives this suite drives legitimately run for MINUTES: `kube identity-rewrite` performs the full F1-F8 control-plane PKI re-mint (~120s), and `repository down` must wait out every pod's termination grace period before it can release the volumes. The generic 120s bridge bound TRUNCATES them: the re-mint was completing at 117-120s (passing on a coin flip) and
+// was then SIGKILLed at exactly 120.0s. Raise the floor in the suite's own config so CI does not depend on a local .env value.
 if (Number(process.env.BRIDGE_TIMEOUT ?? 0) < 360_000) {
   process.env.BRIDGE_TIMEOUT = '360000';
 }
@@ -52,14 +47,9 @@ export default test.defineConfig({
   },
   projects: [
     { name: 'k8s-multinode-17', testMatch: '17-*.test.ts' },
-    // Suite 24 (cluster licensing) rides this topology behind an explicit
-    // opt-in, mirroring suite 23's CLI_SUITE gate in playwright.config.ts. The
-    // ct-tests multinode job now lights it: it starts an in-job TEST_MODE
+    // Suite 24 (cluster licensing) rides this topology behind an explicit opt-in, mirroring suite 23's CLI_SUITE gate in playwright.config.ts. The ct-tests multinode job now lights it: it starts an in-job TEST_MODE
     // account server and sets CLUSTER_LICENSING_SUITE=1. The gate stays because
-    // the suite needs that server plus a subscription token on top of the
-    // fleet, and collecting it in a job that supplies neither would either red
-    // the job or become the silent skip the suite's own prerequisite gate
-    // exists to forbid.
+    // the suite needs that server plus a subscription token on top of the fleet, and collecting it in a job that supplies neither would either red the job or become the silent skip the suite's own prerequisite gate exists to forbid.
     ...(process.env.CI && process.env.CLUSTER_LICENSING_SUITE !== '1'
       ? []
       : [{ name: 'k8s-multinode-24', testMatch: '24-*.test.ts' }]),

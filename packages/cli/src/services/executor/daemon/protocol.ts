@@ -170,8 +170,7 @@ export function createFrameReader<T = Frame>(
       try {
         onFrame(JSON.parse(trimmed) as T);
       } catch {
-        // A malformed line is dropped rather than throwing: the socket peer is
-        // trusted, so this only guards against a stray/truncated byte.
+        // A malformed line is dropped rather than throwing: the socket peer is trusted, so this only guards against a stray/truncated byte.
       }
     }
   };

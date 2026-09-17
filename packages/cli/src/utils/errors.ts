@@ -116,8 +116,7 @@ export function handleError(error: unknown): never {
     // Ignore shutdown errors - we're exiting anyway
   });
 
-  // Exit synchronously. On a laptop this is process.exit() as it always was.
-  // Inside an executor dispatch it throws instead, because a command that fails
+  // Exit synchronously. On a laptop this is process.exit() as it always was. Inside an executor dispatch it throws instead, because a command that fails
   // for one tenant must not kill the process serving everyone else.
   exitProcess(cliError.exitCode);
 }
@@ -156,8 +155,7 @@ export class PreconditionValidationError extends ValidationError {
  */
 function normalizeError(error: unknown): CliError {
   // CliExitError already carries its code, exit code, and any next-action hint;
-  // pass them through unchanged so the P4 refusal classes (AMBIGUOUS,
-  // STATE_MISMATCH, ...) surface with the exit code they were thrown with.
+  // pass them through unchanged so the P4 refusal classes (AMBIGUOUS, STATE_MISMATCH, ...) surface with the exit code they were thrown with.
   if (error instanceof CliExitError) {
     return {
       code: error.code,

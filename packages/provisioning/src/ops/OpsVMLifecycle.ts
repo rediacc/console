@@ -79,11 +79,9 @@ export class OpsVMLifecycle {
     if (options.parallel) args.push('--parallel');
 
     console.warn('[OpsVMLifecycle] Starting VMs...');
-    // Same budget as resetVMs, and for the same reason: a ceph-pool topology
-    // bootstraps cephadm (mon+mgr+OSDs) inside `ops up`, which exceeds 10
+    // Same budget as resetVMs, and for the same reason: a ceph-pool topology bootstraps cephadm (mon+mgr+OSDs) inside `ops up`, which exceeds 10
     // minutes on loaded hosts — and startVMs({force}) recreates the VMs on
-    // every attempt, so a shorter cap makes ceph clusters unprovisionable
-    // rather than slow.
+    // every attempt, so a shorter cap makes ceph clusters unprovisionable rather than slow.
     const result = await this.commandRunner.runWithEnv(
       ['up'],
       args,
@@ -166,13 +164,8 @@ export class OpsVMLifecycle {
     if (result.code !== 0) {
       const combinedOutput = `${result.stdout} ${result.stderr}`;
 
-      // A reset we KILLED is not a reset that failed on its own, and it must
-      // never fall through to the readiness probe below. `renet ops up` treats
-      // Ceph provisioning as non-fatal, so a SIGTERM landing in the middle of
-      // it leaves SSH-reachable VMs, prints "Cluster started successfully",
-      // and passes the probe -- the reset then reports SUCCESS at 1800.8s and
-      // the suite dies a second later on a Ceph error that names Ceph rather
-      // than the budget. That is console run 33937342780.
+      // A reset we KILLED is not a reset that failed on its own, and it must never fall through to the readiness probe below. `renet ops up` treats Ceph provisioning as non-fatal, so a SIGTERM landing in the middle of it leaves SSH-reachable VMs, prints "Cluster started successfully", and passes the probe -- the reset then reports SUCCESS at 1800.8s and the suite dies a second
+      // later on a Ceph error that names Ceph rather than the budget. That is console run 33937342780.
       if (result.timedOut) {
         console.error(
           `[OpsVMLifecycle] ops up EXCEEDED its ${(resetTimeoutMs() / 1000).toFixed(0)}s budget and was killed - failing the reset`
@@ -191,18 +184,14 @@ export class OpsVMLifecycle {
         return { success: false, duration: Date.now() - startTime };
       }
 
-      // An orchestration failure (registry/docker/ceph provisioning) leaves
-      // SSH-reachable but unusable VMs: the readiness probe below would pass
-      // and the suite would then spin its whole ceph-health budget on a
-      // cluster that was never provisioned. Fail fast with renet's error.
+      // An orchestration failure (registry/docker/ceph provisioning) leaves SSH-reachable but unusable VMs: the readiness probe below would pass and the suite would then spin its whole ceph-health budget on a cluster that was never provisioned. Fail fast with renet's error.
       if (combinedOutput.includes('orchestration failed')) {
         console.error('[OpsVMLifecycle] ops up orchestration failed - failing the reset');
         console.error('[OpsVMLifecycle] Error output:', combinedOutput.slice(-1000));
         return { success: false, duration: Date.now() - startTime };
       }
 
-      // Note: The command may return non-zero if middleware auth fails (rdc not found),
-      // but VMs may still be successfully created. We verify actual VM readiness below.
+      // Note: The command may return non-zero if middleware auth fails (rdc not found), but VMs may still be successfully created. We verify actual VM readiness below.
       console.warn(
         '[OpsVMLifecycle] renet ops command returned non-zero, verifying VM readiness anyway...'
       );

@@ -35,10 +35,7 @@ test.describe('Datastore Lifecycle @bridge', () => {
   test.beforeAll(async () => {
     runner = BridgeTestRunner.forWorker();
     await runner.resetWorkerState();
-    // Re-lay the base pool at a SMALL size. `datastore_expand` grows a pool and
-    // cannot shrink one, and the harness's global setup lays down a pool far larger
-    // than the 2G this suite expands to — so without this, "expand to 2G" asks the
-    // backend to shrink and it refuses. The pre-P1 suite did exactly this via
+    // Re-lay the base pool at a SMALL size. `datastore_expand` grows a pool and cannot shrink one, and the harness's global setup lays down a pool far larger than the 2G this suite expands to — so without this, "expand to 2G" asks the backend to shrink and it refuses. The pre-P1 suite did exactly this via
     // datastore_init; the verb moved to the CLI, the PRECONDITION did not go away.
     await runner.datastoreInitPool('1G', DEFAULT_DATASTORE_PATH, true);
   });
@@ -51,9 +48,7 @@ test.describe('Datastore Lifecycle @bridge', () => {
   });
 
   test('datastore_resize should resize datastore', async () => {
-    // resize REFUSES while the pool is mounted — and expand (above) auto-mounts it.
-    // The precondition is the product's, not the test's: an offline resize of a mounted
-    // BTRFS pool is not safe, so renet declines it.
+    // resize REFUSES while the pool is mounted — and expand (above) auto-mounts it. The precondition is the product's, not the test's: an offline resize of a mounted BTRFS pool is not safe, so renet declines it.
     await runner.datastoreUnmountPool();
     const result = await runner.datastoreResize('3G', DEFAULT_DATASTORE_PATH);
     expect(runner.isSuccess(result)).toBe(true);
@@ -116,8 +111,7 @@ test.describe
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
-      // Same precondition as above: step 5 expands the base pool to 2G, which is only
-      // a growth if the pool starts smaller.
+      // Same precondition as above: step 5 expands the base pool to 2G, which is only a growth if the pool starts smaller.
       await runner.datastoreInitPool('1G', DEFAULT_DATASTORE_PATH, true);
     });
 
@@ -135,9 +129,7 @@ test.describe
     test('2. datastore_list: the registry reports it', async () => {
       const result = await runner.datastoreList();
       expect(runner.isSuccess(result)).toBe(true);
-      // `datastore_list` shells out to `renet datastore list --json`, and the bridge
-      // runs it with --debug, which interleaves renet's logs on stderr. Assert against
-      // BOTH streams: the claim is "the registry reports it", not "on this fd".
+      // `datastore_list` shells out to `renet datastore list --json`, and the bridge runs it with --debug, which interleaves renet's logs on stderr. Assert against BOTH streams: the claim is "the registry reports it", not "on this fd".
       expect(`${result.stdout}${result.stderr}`).toContain(name);
     });
 

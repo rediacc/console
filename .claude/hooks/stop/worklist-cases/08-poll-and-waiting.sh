@@ -507,6 +507,29 @@ ARITY = {
     "REGGATE_GATE_MAINTENANCE": None,
     "CLI_ADOPT_SELF": ("prev",),
     "CLI_ADOPT_DONE": ("me", "prev", "continued-in", "1 shared record", "bde8bb05", 3, "me"),
+    # W12 plan records (wl_planrec.py). USAGE carries no placeholder; REFUSED
+    # takes the RecordError text and DRY takes the rendered record, both single
+    # substitutions. WROTE and REVIVED are keyed, and WROTE spends `blob` three
+    # times (the git show recipe, the git log recipe, and the message body) --
+    # which is exactly the arity a positional tuple would get wrong silently.
+    "CLI_PLANREC_USAGE": None,
+    "CLI_PLANREC_REFUSED": ("why",),
+    "CLI_PLANREC_DRY": ("record",),
+    "CLI_PLANREC_WROTE": {"rel": "p", "status": "compacted", "bytes": 900,
+                          "was": 9000, "blob": "b", "me": "m"},
+    "CLI_PLANREC_REVIVED": {"rel": "p", "blob": "b", "bytes": 9000},
+    # W12 P2. --plan-why has THREE answers and each is its own constant, because
+    # "no record names this file" and "there is no index" are different results
+    # and collapsing them would make an empty answer indistinguishable from a
+    # blind one. NO_EDGE spends `path` twice (the sentence and the git log
+    # recipe), which a positional tuple would get wrong silently.
+    "CLI_PLANWHY_USAGE": None,
+    "CLI_PLANWHY_HIT": {"path": "p", "body": "b"},
+    "CLI_PLANWHY_NO_EDGE": {"path": "p", "n": 3, "index": "agent/INDEX.md"},
+    "CLI_PLANWHY_NO_INDEX": {"path": "p", "index": "agent/INDEX.md"},
+    "CLI_PLANTICK_USAGE": None,
+    "CLI_PLANTICK_DRY": {"rel": "p", "note": "n"},
+    "CLI_PLANTICK_WROTE": {"rel": "p", "ledger": "l", "note": "n", "me": "m"},
 }
 fail = 0
 for name, args in ARITY.items():

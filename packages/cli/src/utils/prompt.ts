@@ -1,9 +1,7 @@
 import { exitProcess } from '../services/core/request-context.js';
 import { EXIT_CODES } from '../types/index.js';
 
-// Lazy-load inquirer (pulls in rxjs and the whole prompt graph) only when
-// an interactive prompt is actually shown. Startup — including --version,
-// --help, and every non-prompting command — never executes it. The dynamic
+// Lazy-load inquirer (pulls in rxjs and the whole prompt graph) only when an interactive prompt is actually shown. Startup — including --version, --help, and every non-prompting command — never executes it. The dynamic
 // import is cached by the module loader, so repeated prompts pay once.
 async function getPrompt(): Promise<ReturnType<typeof import('inquirer')['createPromptModule']>> {
   const { createPromptModule } = await import('inquirer');

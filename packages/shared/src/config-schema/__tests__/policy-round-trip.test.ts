@@ -130,9 +130,7 @@ describe('policy survives the encrypted round trip', () => {
   it('a deny rule still denies after the round trip', async () => {
     const recovered = await roundTrip(configWith(POLICY));
 
-    // This is the assertion that would have failed before the fix: with the
-    // policy dropped, evaluatePolicy(undefined, ...) fell through to the
-    // missing-document default and this command was ALLOWED for an owner.
+    // This is the assertion that would have failed before the fix: with the policy dropped, evaluatePolicy(undefined, ...) fell through to the missing-document default and this command was ALLOWED for an owner.
     const decision = evaluatePolicy(recovered.policy, ctx({ commandPath: 'repo delete' }));
     expect(decision.allowed).toBe(false);
     expect(decision.reason).toMatch(/explicitly denies/);
@@ -149,8 +147,7 @@ describe('policy survives the encrypted round trip', () => {
   it('a config with no policy round-trips with no policy KEY at all', async () => {
     const recovered = await roundTrip(configWith(undefined));
 
-    // Not `policy: undefined` — absent. A present-but-undefined key would commit
-    // '/policy' and make the next ordinary push look like a downgrade.
+    // Not `policy: undefined` — absent. A present-but-undefined key would commit '/policy' and make the next ordinary push look like a downgrade.
     expect('policy' in recovered).toBe(false);
     expect(pathsToCommit(recovered)).not.toContain('/policy');
   });
@@ -159,8 +156,7 @@ describe('policy survives the encrypted round trip', () => {
     const original = configWith(POLICY);
     const recovered = await roundTrip(original);
 
-    // Anti-downgrade compares these sets. A pointer that appears or vanishes
-    // across a round trip bricks the next push for the whole org.
+    // Anti-downgrade compares these sets. A pointer that appears or vanishes across a round trip bricks the next push for the whole org.
     expect(pathsToCommit(recovered)).toContain('/policy');
     expect(pathsToCommit(recovered)).toEqual(pathsToCommit(original));
   });

@@ -1,4 +1,13 @@
 #!/bin/bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Both-ways test for .ci/scripts/version/inject-env.sh --strict
+# ---- end gate ----
+
 # Both-ways test for .ci/scripts/version/inject-env.sh --strict.
 #
 # WHAT THE GUARD IS FOR. --strict is the one guard in the repo against a build

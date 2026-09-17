@@ -111,16 +111,13 @@ function classifyDeclaredMachine(
       repository: name,
       message: `repository "${name}" is placed on "${declared}" but its image was observed on ${machines.join(', ')}. Use 'rdc repo migrate' to move it, or accept the observed placement: 'rdc config reconcile --accept-observed'.`,
     };
-    // Unambiguous drift: exactly one observed machine, different from the
-    // declaration. This is the only class --accept-observed rewrites.
+    // Unambiguous drift: exactly one observed machine, different from the declaration. This is the only class --accept-observed rewrites.
     if (machines.length === 1) {
       return { conflict, accept: { repository: name, from: declared, to: machines[0] } };
     }
     return { conflict };
   }
-  // R4: the declared machine holds a copy, but the grand GUID also lives on
-  // OTHER machines — stray copies (interrupted migrate, `--keep-source`, or a
-  // pushed backup left mounted). spec/04 §4.3 lists "same GUID on two machines"
+  // R4: the declared machine holds a copy, but the grand GUID also lives on OTHER machines — stray copies (interrupted migrate, `--keep-source`, or a pushed backup left mounted). spec/04 §4.3 lists "same GUID on two machines"
   // as a conflict class; this is its declared-plus-strays case.
   if (machines.length > 1) {
     const strays = machines.filter((m) => m !== declared);
@@ -235,8 +232,7 @@ export async function reconcileState(
     }
     // The unambiguous drift carries both `accept` and `conflict`. With the flag,
     // resolve it (record the acceptance, suppress the conflict); without, report
-    // the conflict as usual. Duplicates have no `accept`, so they stay conflicts
-    // even under the flag.
+    // the conflict as usual. Duplicates have no `accept`, so they stay conflicts even under the flag.
     if (accept && options.acceptObserved) {
       pendingAccept.set(accept.repository, { machine: accept.to });
       placementsAccepted.push(accept);
@@ -245,8 +241,7 @@ export async function reconcileState(
     }
   }
 
-  // Rebuild state.machines observations. state.repos.networkId reconciliation
-  // requires the renet `network_id` field on RepositoryInfo (spec §1.3, §6.7,
+  // Rebuild state.machines observations. state.repos.networkId reconciliation requires the renet `network_id` field on RepositoryInfo (spec §1.3, §6.7,
   // a P1 renet addition); until it lands, networkId is left as-is.
   await deps.writeState((cfg) => {
     const state: RdcState = { ...(cfg.state ?? {}) };
@@ -272,10 +267,7 @@ export async function reconcileState(
     };
   });
 
-  // Spec-half rewrite (--accept-observed) — a SEPARATE, version-bumping write,
-  // kept visibly distinct from the state write above (spec/04 §4.3). Under
-  // --dry-run the command wires this to a no-op, so placementsAccepted still
-  // reports what WOULD change while nothing is written.
+  // Spec-half rewrite (--accept-observed) — a SEPARATE, version-bumping write, kept visibly distinct from the state write above (spec/04 §4.3). Under --dry-run the command wires this to a no-op, so placementsAccepted still reports what WOULD change while nothing is written.
   if (pendingAccept.size > 0) {
     await deps.writeResources((cfg) => {
       const repositories = { ...(cfg.resources?.repositories ?? {}) };

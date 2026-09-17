@@ -1,43 +1,22 @@
 # Deleted branch tips, 2026-07-30
 
-Recorded BEFORE deletion so every branch stayed recoverable by SHA
-(`git branch <name> <sha>`) until git gc pruned unreachable objects.
+Recorded BEFORE deletion so every branch stayed recoverable by SHA (`git branch <name> <sha>`) until git gc pruned unreachable objects.
 
-**That recovery no longer works, as of the 2026-08-23 history rewrite (#532).**
-Every commit SHA in this repository changed, so the 64 SHAs in the table below
-name objects that no published history contains. The table survives as a RECORD
-of what was deleted and why; it is no longer an instrument. Two details worth
-having: the commit map at `~/commit-map-20260823.txt` does NOT rescue these,
-because these tips were already deleted from the remote on 2026-07-30 and so
-were absent from the mirror the rewrite was computed over; and they died at
-re-clone rather than at push, since a pre-rewrite local checkout still resolves
-them until it is replaced.
+**That recovery no longer works, as of the 2026-08-23 history rewrite (#532).** Every commit SHA in this repository changed, so the 64 SHAs in the table below name objects that no published history contains. The table survives as a RECORD of what was deleted and why; it is no longer an instrument. Two details worth having: the commit map at `~/commit-map-20260823.txt` does NOT
+rescue these, because these tips were already deleted from the remote on 2026-07-30 and so were absent from the mirror the rewrite was computed over; and they died at re-clone rather than at push, since a pre-rewrite local checkout still resolves them until it is replaced.
 
-The reasoning below is untouched by any of that, and is the reason to keep
-reading.
+The reasoning below is untouched by any of that, and is the reason to keep reading.
 
-WHY THIS FILE EXISTS. The obvious safety test is wrong here, and it stays
-wrong. At the time of this cleanup the repos SQUASH-merged, so a merged
-branch kept no ancestry link to main and `git branch --merged` reported it
-as unmerged: that test called all 75 console branches unsafe when 59 had
-merged PRs. The authoritative signal is the PR state.
+WHY THIS FILE EXISTS. The obvious safety test is wrong here, and it stays wrong. At the time of this cleanup the repos SQUASH-merged, so a merged branch kept no ancestry link to main and `git branch --merged` reported it as unmerged: that test called all 75 console branches unsafe when 59 had merged PRs. The authoritative signal is the PR state.
 
-This did NOT stop being true when the repos moved to REBASE-only merging on
-2026-07-30. Rebase replays each commit onto main under a NEW sha, so a
-merged branch still shares no commit with main and `--merged` still lies.
-Only a true merge commit would have preserved ancestry, and that option was
-considered and declined.
+This did NOT stop being true when the repos moved to REBASE-only merging on 2026-07-30. Rebase replays each commit onto main under a NEW sha, so a merged branch still shares no commit with main and `--merged` still lies. Only a true merge commit would have preserved ancestry, and that option was considered and declined.
 
-So the rule is permanent: **to decide whether a branch is merged, ask the
-PR, never git ancestry.**
+So the rule is permanent: **to decide whether a branch is merged, ask the PR, never git ancestry.**
 
     gh pr list --repo <owner>/<repo> --state merged --limit 300 \
       --json headRefName --jq '.[].headRefName'
 
-`delete_branch_on_merge` is now true on all five repos, which should stop
-this backlog rebuilding. It was false on renet, account and homebrew-tap,
-and that is exactly why those three accumulated stale remote branches while
-console and elite stayed tidy.
+`delete_branch_on_merge` is now true on all five repos, which should stop this backlog rebuilding. It was false on renet, account and homebrew-tap, and that is exactly why those three accumulated stale remote branches while console and elite stayed tidy.
 
 ## console, local branches (64)
 

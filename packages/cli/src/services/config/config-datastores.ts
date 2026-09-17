@@ -149,11 +149,8 @@ export async function forgetDatastore(name: string): Promise<void> {
   await configFileStorage.update(configService.getEffectiveConfigName(), (cfg) => {
     const datastores = { ...(cfg.resources?.datastores ?? {}) };
     delete datastores[name];
-    // #89, swept: the observation goes with the declaration. The delete path happens to
-    // clear the hint first (via setDatastoreState) whenever the datastore is attached, so
-    // this was not reachable in practice — but that made it a trap, not a non-bug: it
-    // relied on every caller remembering, and `forget` means forget. Clearing both halves
-    // here is what makes the invariant hold no matter who calls it.
+    // #89, swept: the observation goes with the declaration. The delete path happens to clear the hint first (via setDatastoreState) whenever the datastore is attached, so this was not reachable in practice — but that made it a trap, not a non-bug: it relied on every caller remembering, and `forget` means forget. Clearing both halves here is what makes the invariant hold no matter
+    // who calls it.
     const stateDatastores = { ...(cfg.state?.datastores ?? {}) };
     delete stateDatastores[name];
     return {

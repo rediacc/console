@@ -13,10 +13,7 @@ import {
   renderReplicaSet,
 } from '../repo-replicate.js';
 
-// The machine-slot pre-flight reaches the account server. Stub it: a unit test
-// must not depend on whether the box running it happens to hold a live
-// subscription token. Its own behaviour is covered in
-// services/__tests__/license-preflight.test.ts.
+// The machine-slot pre-flight reaches the account server. Stub it: a unit test must not depend on whether the box running it happens to hold a live subscription token. Its own behaviour is covered in services/__tests__/license-preflight.test.ts.
 vi.mock('../../account/license-preflight.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../account/license-preflight.js')>()),
   assertMachineSlotsAvailable: vi.fn().mockResolvedValue(undefined),
@@ -55,11 +52,7 @@ describe('renderReplicaSet (spec 05 §1 manifest plumbing)', () => {
     expect(yaml).toContain('name: sqldb-replicas-1-data');
     expect(yaml).toContain('name: sqldb-replicas-2-data');
     expect(yaml).toContain('key: rediacc.io/ds-ds-data-sqldb-replicas-r1');
-    // ★ #93 (storage speaks GUID, k8s objects speak name): the PV path into the
-    // fork mount is GUID-keyed — the fork is a byte-clone of the parent, whose
-    // volumes-open/CSI mount at mounts/volumes/<guid>/<vol>. A NAME-keyed path
-    // points at a directory that does not exist and the replica comes up EMPTY,
-    // so a regression back to the name must turn this red.
+    // ★ #93 (storage speaks GUID, k8s objects speak name): the PV path into the fork mount is GUID-keyed — the fork is a byte-clone of the parent, whose volumes-open/CSI mount at mounts/volumes/<guid>/<vol>. A NAME-keyed path points at a directory that does not exist and the replica comes up EMPTY, so a regression back to the name must turn this red.
     expect(yaml).toContain(
       'path: /mnt/rediacc-ds/ds-data-sqldb-replicas-r1/mounts/volumes/guid-sqldb/data'
     );
@@ -71,8 +64,7 @@ describe('renderReplicaSet (spec 05 §1 manifest plumbing)', () => {
     expect(yaml).toContain('replicas: 2');
     expect(yaml).toContain('podAntiAffinity');
     expect(yaml).toContain('value: replica');
-    // claimRef pre-binds each PV to the PVC kubectl will mint from the
-    // volumeClaimTemplate: <template>-<sts>-<0-based ordinal>.
+    // claimRef pre-binds each PV to the PVC kubectl will mint from the volumeClaimTemplate: <template>-<sts>-<0-based ordinal>.
     expect(yaml).toContain('name: data-sqldb-replicas-0');
     expect(yaml).toContain('name: data-sqldb-replicas-1');
     // Two Services: -rw -> the PRIMARY app, -ro -> the replica-set label.
@@ -146,8 +138,7 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
     const attaches = calls.filter((c) => c.functionName === 'datastore_attach');
     expect(attaches.every((c) => c.params?.writes === 'local')).toBe(true);
     expect(attaches.map((c) => c.machineName)).toEqual(['n1', 'n2', 'n1']);
-    // Each hosting node gets the FORK's own datastore label (PV pin key, F3),
-    // stamped through the control plane by InternalIP.
+    // Each hosting node gets the FORK's own datastore label (PV pin key, F3), stamped through the control plane by InternalIP.
     const labels = calls.filter((c) => c.functionName === 'kube_node_label');
     expect(labels.every((c) => c.machineName === 'cp1')).toBe(true);
     expect(labels.map((c) => c.params?.node_ip)).toEqual(['10.0.0.1', '10.0.0.2', '10.0.0.1']);
@@ -197,8 +188,7 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
     expect(adopts.map((c) => c.machineName)).toEqual(['w1']);
     expect(adopts[0].params?.name).toBe('ds-data:set1-r2');
     expect(typeof adopts[0].params?.record_b64).toBe('string');
-    // The adopt must PRECEDE the attach on that node (attach fails otherwise —
-    // "not registered on this machine", the live bug this fixes).
+    // The adopt must PRECEDE the attach on that node (attach fails otherwise — "not registered on this machine", the live bug this fixes).
     const w1Seq = calls
       .filter(
         (c) =>
@@ -207,8 +197,7 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
       )
       .map((c) => c.functionName);
     expect(w1Seq).toEqual(['datastore_adopt', 'datastore_attach']);
-    // #40: after the off-control attach, the control's vestigial fork record is
-    // forgotten (registry-only) so a later re-fork of the same tag (refresh)
+    // #40: after the off-control attach, the control's vestigial fork record is forgotten (registry-only) so a later re-fork of the same tag (refresh)
     // does not collide. ONLY the off-control replica; on-control skips it.
     const forgets = calls.filter((c) => c.functionName === 'datastore_forget');
     expect(forgets.map((c) => c.machineName)).toEqual(['cp1']);
@@ -230,12 +219,8 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
 
   // ── bug #49: the per-volume LUKS images, and the trap ─────────────────────
 
-  // A datastore fork is a BLOCK-layer clone: it carries the ciphertext
-  // repos/<repo>/volumes/<pvc>.img AND the empty directory that image was mounted
-  // over. The replica's PV points at that directory. If nothing re-opens the image,
-  // the replica mounts the empty dir and comes up healthy, Ready, and EMPTY — the
-  // failure has NO symptom except missing data, which is why it must be pinned here
-  // rather than left to a live suite.
+  // A datastore fork is a BLOCK-layer clone: it carries the ciphertext repos/<repo>/volumes/<pvc>.img AND the empty directory that image was mounted over. The replica's PV points at that directory. If nothing re-opens the image, the replica mounts the empty dir and comes up healthy, Ready, and EMPTY — the failure has NO symptom except missing data, which is why it must be pinned
+  // here rather than left to a live suite.
   it('opens the repo volumes on each fork, AFTER attach and BEFORE the node label', async () => {
     vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
     const exec = execMock();
@@ -252,24 +237,15 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
     const calls = exec.mock.calls.map((c) => c[0]);
     const opens = calls.filter((c) => c.functionName === 'datastore_volumes_open');
     expect(opens.length).toBe(2);
-    // Scoped to the fork AND the repo: the images live in one repo's folder, and an
-    // unscoped open would silently open nothing.
+    // Scoped to the fork AND the repo: the images live in one repo's folder, and an unscoped open would silently open nothing.
     expect(opens.map((c) => c.params?.name)).toEqual(['ds-data:set1-r1', 'ds-data:set1-r2']);
-    // ★ #93 MUTATION CONTROL (found live by B1): the folder on the fork is
-    // repos/<GUID> (#83), so the open must speak the GUID — a NAME-based
-    // dispatch stats repos/<name>, which does not exist, and aborts every
-    // replicate of a real kube repo. Both assertions must hold: reverting to
-    // the name turns this red.
+    // ★ #93 MUTATION CONTROL (found live by B1): the folder on the fork is repos/<GUID> (#83), so the open must speak the GUID — a NAME-based dispatch stats repos/<name>, which does not exist, and aborts every replicate of a real kube repo. Both assertions must hold: reverting to the name turns this red.
     expect(opens.every((c) => c.params?.repo === 'guid-sqldb')).toBe(true);
     expect(opens.some((c) => c.params?.repo === 'sqldb')).toBe(false);
     // Each open runs on the node that HOLDS the fork, not on the control plane.
     expect(opens.map((c) => c.machineName)).toEqual(['n1', 'n2']);
 
-    // The ordering is the safety property. The node label is the PV's nodeAffinity
-    // key and therefore the scheduling gate: opening BEFORE the label means a pod
-    // can never be scheduled onto a volume that is not yet mounted. Attaching before
-    // the open is likewise required — there is no mount to open the image on until
-    // the datastore is attached.
+    // The ordering is the safety property. The node label is the PV's nodeAffinity key and therefore the scheduling gate: opening BEFORE the label means a pod can never be scheduled onto a volume that is not yet mounted. Attaching before the open is likewise required — there is no mount to open the image on until the datastore is attached.
     const names = calls.map((c) => c.functionName);
     for (const [i, fork] of ['ds-data:set1-r1', 'ds-data:set1-r2'].entries()) {
       const attachAt = calls.findIndex(

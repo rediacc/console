@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# kind: battery
+# step: Quality-gate unit tests
+# needs: none
+# lane: quality-security
+# blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
+# why: Controls for .ci/scripts/lib/toolchain.sh
+# ---- end gate ----
+
 # Controls for .ci/scripts/lib/toolchain.sh.
 #
 # The hazard this file exists for: every tool prints its version differently, so
@@ -15,17 +24,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 # shellcheck source=/dev/null
 . "$ROOT/.ci/scripts/lib/toolchain.sh"
 
-fails=0
-count=0
-ok() {
-    count=$((count + 1))
-    echo "PASS: $1"
-}
-no() {
-    count=$((count + 1))
-    fails=$((fails + 1))
-    echo "FAIL: $1" >&2
-}
+# The tally (`ok`, `no`, `tally_finish`) is shared. It lived here in triplicate
+# until 2026-09-06; test-helpers.sh carries why all three moved at once.
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/test-helpers.sh"
 check() { # check <label> <actual> <want>
     if [[ "$2" == "$3" ]]; then
         ok "$1"
@@ -132,10 +133,5 @@ else
     ok "CONTROL: every --env line is KEY=value, safe for \$GITHUB_ENV"
 fi
 
-echo
-if [[ "$fails" -eq 0 ]]; then
-    echo "✓ toolchain: $count control(s) passed"
-    exit 0
-fi
-echo "✗ toolchain: $fails of $count control(s) failed" >&2
-exit 1
+tally_finish "toolchain"
+exit $?

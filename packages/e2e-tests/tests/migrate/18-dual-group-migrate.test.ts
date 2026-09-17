@@ -7,27 +7,19 @@ import type { ExecResult } from '../../src/utils/bridge/types';
 
 const execAsync = promisify(exec);
 
-// Suite 18 (`Bridge Migrate` job): the free local rehearsal of the wave-L
-// cross-DC demo. It boots a SECOND concurrent KVM group (renet12 / 192.168.112,
-// disjoint VM IDs 5+51) beside the ambient group A (renet11 / 192.168.111) and
-// migrates a running single-node k3s cluster from a group-A worker to a group-B
-// worker across the two private LANs (the host routes between the renet11 and
+// Suite 18 (`Bridge Migrate` job): the free local rehearsal of the wave-L cross-DC demo. It boots a SECOND concurrent KVM group (renet12 / 192.168.112, disjoint VM IDs 5+51) beside the ambient group A (renet11 / 192.168.111) and migrates a running single-node k3s cluster from a group-A worker to a group-B worker across the two private LANs (the host routes between the renet11 and
 // renet12 bridges, standing in for the WAN between two datacenters).
 //
 // The migrate MECHANISM itself is already proven cross-machine by suite 17
 // (16.0s cutover); what suite 18 proves is the DUAL-GROUP HARNESS:
-//   - group B is driven by its own per-group OpsManager (getOpsManagerForGroup)
-//     whose `renet ops` subprocesses carry group B's VM_NET/DOCKER_REGISTRY and
+// - group B is driven by its own per-group OpsManager (getOpsManagerForGroup) whose `renet ops` subprocesses carry group B's VM_NET/DOCKER_REGISTRY and
 //     never bleed group A's (guarded by the provisioning vitest);
-//   - the migrate crosses the group boundary (A .11 -> B .51) with data intact,
+// - the migrate crosses the group boundary (A .11 -> B .51) with data intact,
 //     a measured cutover downtime, and k3s serving-cert / kubeconfig resync;
-//   - `ops down` of group B provably leaves group A's VMs intact, because the
-//     two groups use DISJOINT VM ID sets (ops down destroys `rediacc<id>`
-//     domains by ID, not by network).
+// - `ops down` of group B provably leaves group A's VMs intact, because the two groups use DISJOINT VM ID sets (ops down destroys `rediacc<id>` domains by ID, not by network).
 //
 // Gated on K8S_MODE=1 + DUAL_GROUP=1 (set by playwright.migrate.config.ts). The
-// second group must already be up (the CI job / local runner boots it before
-// invoking this config).
+// second group must already be up (the CI job / local runner boots it before invoking this config).
 const enabled = process.env.K8S_MODE === '1' && process.env.DUAL_GROUP === '1';
 
 // Group A (source) — ambient env.
@@ -69,8 +61,7 @@ test.describe
       workerIds: [B_WORKER_ID],
     });
 
-    // Group A commands two-hop through group A's bridge (the proven path). Group
-    // B commands SSH the host straight to .51 (host reaches both private LANs via
+    // Group A commands two-hop through group A's bridge (the proven path). Group B commands SSH the host straight to .51 (host reaches both private LANs via
     // its two libvirt bridges; the shared ~/.renet key is trusted on both).
     const onA = (cmd: string, timeout?: number): Promise<ExecResult> =>
       src.executeViaBridge(cmd, timeout);
@@ -86,8 +77,7 @@ test.describe
       return fn();
     };
 
-    // kubectl against a kubeconfig, run ON the node that currently hosts the
-    // cluster (source before migrate, dest after).
+    // kubectl against a kubeconfig, run ON the node that currently hosts the cluster (source before migrate, dest after).
     const kubectlOnB = async (args: string): Promise<ExecResult> =>
       onB(`sudo ${K3S} kubectl --kubeconfig ${KC} ${args}`);
     const kubectlOnA = async (args: string): Promise<ExecResult> =>
@@ -107,11 +97,9 @@ test.describe
       const res = await kubectlOnB('get configmap migstate -o jsonpath="{.data.marker}"');
       return res.stdout.trim();
     };
-    // NOTE: group B runs over a single-hop direct SSH (executeOnVM), whose
-    // quoting differs from suite 17's two-hop executeViaBridge — a jsonpath
+    // NOTE: group B runs over a single-hop direct SSH (executeOnVM), whose quoting differs from suite 17's two-hop executeViaBridge — a jsonpath
     // filter with embedded quotes (?(@.type=="InternalIP")) gets mangled in
-    // transit. Read the INTERNAL-IP straight from the `-o wide` column instead
-    // (NAME STATUS ROLES AGE VERSION INTERNAL-IP ...), no quotes required.
+    // transit. Read the INTERNAL-IP straight from the `-o wide` column instead (NAME STATUS ROLES AGE VERSION INTERNAL-IP ...), no quotes required.
     const internalIPB = async (node: string): Promise<string> => {
       const res = await kubectlOnB(`get node ${node} -o wide --no-headers`);
       if (res.code !== 0) return '';
@@ -127,9 +115,7 @@ test.describe
         .filter(Boolean);
     };
 
-    // The two groups sit on separate libvirt NAT networks whose default rules
-    // reject NEW inter-network connections (LIBVIRT_FWI). The host is the router
-    // between the two private LANs (the WAN stand-in for the cross-DC demo), so
+    // The two groups sit on separate libvirt NAT networks whose default rules reject NEW inter-network connections (LIBVIRT_FWI). The host is the router between the two private LANs (the WAN stand-in for the cross-DC demo), so
     // open cross-subnet forwarding both ways. Idempotent; harmless leftover.
     const ensureCrossLanRoute = async (): Promise<void> => {
       for (const [src2, dst2] of [
@@ -145,9 +131,7 @@ test.describe
       }
     };
 
-    // Clean both nodes for network MIG_NET. The migrate leaves the SOURCE
-    // unmounted-but-not-uninstalled (the cluster relocates to the dest), so a
-    // re-run must also reap the source's leftover per-cluster k3s dummy
+    // Clean both nodes for network MIG_NET. The migrate leaves the SOURCE unmounted-but-not-uninstalled (the cluster relocates to the dest), so a re-run must also reap the source's leftover per-cluster k3s dummy
     // interface (rdk<netID>, holding 10.150.x.1) and its systemd unit — else
     // `kube install` fails with "Address already assigned". Fresh CI runners
     // never hit this; local re-runs do.
@@ -176,9 +160,7 @@ test.describe
       // Host routes between the two private LANs (the WAN stand-in).
       await ensureCrossLanRoute();
 
-      // The fresh group-B worker installs renet under /usr/lib/rediacc/renet/
-      // but has no /usr/bin/renet on PATH yet (that symlink is a group-A
-      // global-setup step). Add it so `renet ...` resolves like on group A.
+      // The fresh group-B worker installs renet under /usr/lib/rediacc/renet/ but has no /usr/bin/renet on PATH yet (that symlink is a group-A global-setup step). Add it so `renet ...` resolves like on group A.
       const link = await onB(
         'test -x /usr/bin/renet || sudo ln -sf /usr/lib/rediacc/renet/current/renet /usr/bin/renet; echo linked'
       );
@@ -186,18 +168,14 @@ test.describe
 
       // The destination worker is fresh from `ops up`: give it a datastore.
       //
-      // Via the CLI, not `functions once --function datastore_init`: the datastore-centric
-      // redesign DELETED that bridge verb, so the dispatch failed with "no command builder
-      // registered" — the exit-1 this suite has been dying on. The CLI kept `datastore init`
-      // (it needs root for the BTRFS mount), which is the surviving way to lay down a pool.
+      // Via the CLI, not `functions once --function datastore_init`: the datastore-centric redesign DELETED that bridge verb, so the dispatch failed with "no command builder registered" — the exit-1 this suite has been dying on. The CLI kept `datastore init` (it needs root for the BTRFS mount), which is the surviving way to lay down a pool.
       const dsB = await onB(
         `sudo renet datastore init --path ${DATASTORE} --size 10G --force`,
         180_000
       );
       expect(dsB.code, `group B datastore_init: ${dsB.stderr}`).toBe(0);
 
-      // Source datastore: only (re)init if /mnt/rediacc is not already a mount,
-      // so we do not wipe a datastore group A's setup already provisioned.
+      // Source datastore: only (re)init if /mnt/rediacc is not already a mount, so we do not wipe a datastore group A's setup already provisioned.
       const dsMountedA = await onA(`mountpoint -q ${DATASTORE} && echo MOUNTED || echo NO`);
       if (!dsMountedA.stdout.includes('MOUNTED')) {
         const dsA = await onA(
@@ -207,9 +185,7 @@ test.describe
         expect(dsA.code, `group A datastore_init: ${dsA.stderr}`).toBe(0);
       }
 
-      // Peer the two private clusters: authorize group A worker's mesh key on the
-      // group B worker so the migrate's rsync (A .11 -> B .51, as $USER) can log
-      // in. In a real cross-DC migrate you likewise establish trust between the
+      // Peer the two private clusters: authorize group A worker's mesh key on the group B worker so the migrate's rsync (A .11 -> B .51, as $USER) can log in. In a real cross-DC migrate you likewise establish trust between the
       // fleets; here the groups were provisioned by separate `ops up` runs.
       const aPub = await onA('cat ~/.ssh/id_rsa.pub');
       expect(aPub.code, 'read group A worker mesh pubkey').toBe(0);
@@ -274,8 +250,7 @@ test.describe
       expect(install.code, `kube install source: ${install.stderr}`).toBe(0);
       expect(await poll(() => readyCountA().then((n) => n >= 1), 200_000)).toBe(true);
 
-      // Known data that rides the cluster image (kine): a ConfigMap the migrate
-      // must carry across intact.
+      // Known data that rides the cluster image (kine): a ConfigMap the migrate must carry across intact.
       const cm = await kubectlOnA('create configmap migstate --from-literal=marker=mig-v1');
       expect(cm.code, `create migstate: ${cm.stderr}`).toBe(0);
       const readBack = await kubectlOnA('get configmap migstate -o jsonpath="{.data.marker}"');
@@ -305,25 +280,21 @@ test.describe
       );
       expect(push.code, `image transfer A->B: ${push.stderr}`).toBe(0);
 
-      // Bring the cluster up on group B under its new identity: mount the image,
-      // then identity-rewrite (regenerates the k3s serving cert with the new
+      // Bring the cluster up on group B under its new identity: mount the image, then identity-rewrite (regenerates the k3s serving cert with the new
       // --tls-san + rewrites the kubeconfig URL = the cert/DNS resync) and bind
       // .51. ensureBinary() extracts rediacc-k3s on the fresh dest node.
       const mount = await onB(
         `sudo renet repository mount --name ${REPO} --network-id ${MIG_NET} --start-docker=false`
       );
       expect(mount.code, `mount dest: ${mount.stderr}`).toBe(0);
-      // --operation is REQUIRED (no default): a fork silently rewritten as a
-      // migrate would ship the parent CA key (F1). This is the MIGRATE arm —
-      // same principal, CA preserved, serving cert regenerated for the new IP.
+      // --operation is REQUIRED (no default): a fork silently rewritten as a migrate would ship the parent CA key (F1). This is the MIGRATE arm — same principal, CA preserved, serving cert regenerated for the new IP.
       const idw = await onB(
         `sudo renet kube identity-rewrite --operation migrate --mount-path ${MOUNT} --network-id ${MIG_NET} --mode server --new-node-ip ${B_WORKER_IP}`,
         540_000
       );
       expect(idw.code, `identity-rewrite dest: ${idw.stderr}`).toBe(0);
 
-      // The image moved to a host with a different hostname, so k3s re-registers
-      // the node as rediacc51 (leaving a rediacc11 ghost from the source). Wait
+      // The image moved to a host with a different hostname, so k3s re-registers the node as rediacc51 (leaving a rediacc11 ghost from the source). Wait
       // for the dest node Ready on group B's IP.
       expect(await poll(async () => (await internalIPB(B_NODE)) === B_WORKER_IP, 200_000)).toBe(
         true
@@ -336,9 +307,7 @@ test.describe
         `[suite18] dual-group cluster migrate A->B cold-cutover downtime: ${downtimeMs}ms\n`
       );
 
-      // The relocated cluster is Ready on group B, serving its migrated kine
-      // state (the fresh cert + rewritten kubeconfig prove the resync: kubectl
-      // over TLS to https://.51:6443 only succeeds if the SAN was regenerated).
+      // The relocated cluster is Ready on group B, serving its migrated kine state (the fresh cert + rewritten kubeconfig prove the resync: kubectl over TLS to https://.51:6443 only succeeds if the SAN was regenerated).
       expect(await readyCountB()).toBeGreaterThanOrEqual(1);
       expect(await migMarkerB()).toBe('mig-v1');
     });

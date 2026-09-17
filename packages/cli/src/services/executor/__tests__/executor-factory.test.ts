@@ -31,10 +31,7 @@ function fakeExecutor(): { executor: Executor; calls: ExecuteOptions[] } {
 
 describe('executor factory', () => {
   it('is the daemon-backed executor when nothing is dispatching', () => {
-    // Perf 6: outside a dispatch the process default is now the daemon-backed
-    // executor, which transparently falls back to the local executor whenever the
-    // daemon is unavailable or the work is not daemon-eligible. It is a wrapper,
-    // so it is deliberately NOT the localExecutorService singleton itself.
+    // Perf 6: outside a dispatch the process default is now the daemon-backed executor, which transparently falls back to the local executor whenever the daemon is unavailable or the work is not daemon-eligible. It is a wrapper, so it is deliberately NOT the localExecutorService singleton itself.
     const executor = getExecutor();
     expect(executor).not.toBe(localExecutorService);
     expect(typeof executor.execute).toBe('function');
@@ -71,8 +68,7 @@ describe('executor factory', () => {
         await getExecutor().execute({
           functionName: 'repository_status',
           machineName: 'm',
-          // The command's own handler is what draws its timeline. The tap is
-          // additive, so it must not replace it.
+          // The command's own handler is what draws its timeline. The tap is additive, so it must not replace it.
           onEvent: (event) => commandsOwn.push(event),
         });
       }
@@ -81,8 +77,7 @@ describe('executor factory', () => {
     expect(tapped.map((e) => e.msg)).toEqual(['from the executor']);
     expect(commandsOwn.map((e) => e.msg)).toEqual(['from the executor']);
 
-    // A dispatch forces events on: a console has no terminal whose stdout it
-    // could scrape for steps, so the event stream IS its rendering.
+    // A dispatch forces events on: a console has no terminal whose stdout it could scrape for steps, so the event stream IS its rendering.
     expect(calls[0].eventsMode).toBe(true);
     expect(calls[0].captureOutput).toBe(true);
   });
@@ -97,8 +92,7 @@ describe('executor factory', () => {
       }
     );
 
-    // Pinned but not tapped (no onEvent on the context): options pass through
-    // verbatim rather than being rewritten into events mode.
+    // Pinned but not tapped (no onEvent on the context): options pass through verbatim rather than being rewritten into events mode.
     expect(calls).toHaveLength(1);
     expect(calls[0].eventsMode).toBeUndefined();
   });

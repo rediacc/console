@@ -26,31 +26,70 @@ If the guard fires on the sentence, it is matching a mention.
 ANCHOR, DO NOT NARROW. The fix for a finding here is to require command position
 `(^|[;&|(])`, never to delete the pattern: a guard that stops catching the real
 command is a worse outcome than the false positive it was cured of.
+
+---- gate ----
+step: Guard mention anchoring
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+why: A guard that refuses PROSE is a guard nobody can write a doc line about.
+     The class recurred FOUR times on 2026-08-28 and every instance was fixed
+     by hand, including one reintroduced within the hour by the session doing
+     the fixing -- which is the i18n lesson exactly. This probes each guard
+     with a sentence built from its OWN pattern, so it cannot go stale as
+     guards are added.
+---- end gate ----
 """
 
 from __future__ import annotations
 
 import json
 import re
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-HOOKS = REPO_ROOT / ".claude" / "hooks"
+import _cipath  # noqa: F401
 
-# EVERY CHAIN, not just pre-bash. Scoping this to one directory was the same
-# hole check-hook-integrity.sh has now had twice (pre-edit/pre-ask in its
-# 2026-08-27 repair, post-bash in e60e30331) -- and it was in the file written
-# to stop exactly this class. Found by e580532b: 35 of 42 guards were probed and
-# 7 were not.
+# ALIASED: `proc` is the name this file's own code reaches for when it holds a completed process, and it did until these call sites were routed. Keeping the
+# runner under a distinct name means a future local `proc =` cannot shadow it
+# into a NameError on the timeout path -- the path least likely to be exercised.
+from rediacc_ci import proc as ci_proc
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+# W5 P7 CUTOVER. The guards are Python modules now, run through ONE dispatcher
+# command per chain; the bash originals are frozen at .claude/oracles/<chain>/ and
+# are still what this file reads PATTERNS out of, because `instantiate` understands POSIX bracket expressions and shell quoting, not Python `re`.
 #
-# The chains do not share a payload shape, which is why this is a builder and
-# not one dict. A wrong key produces a probe that CANNOT FIRE, and a probe that
-# cannot fire proves nothing -- so every prose probe below is paired with a
-# positive one, and a guard whose positive probe stays silent is reported
-# UNPROBED rather than counted clean.
+# THE PROBE RUNS THE LIVE GUARD, which is the half that must not be frozen: a gate probing the retired file would keep passing while the thing that actually refuses commands went unchecked.
+#
+# THE RESIDUE, stated rather than left to be found: a pattern edited in the PORT and not in the oracle is invisible here, because the oracle cannot change. That is acceptable only as an interim. The end state is to drop the oracle and drive each guard's own EDGE_CASES, since every module already declares literal instances of what it matches, wrapping each in prose and asserting
+# silence. That needs no instantiator at all.
+HOOKS = REPO_ROOT / ".claude" / "oracles"
+DISPATCH = REPO_ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"
+
+
+def guard_argv(guard):
+    """How to RUN the guard this path names.
+
+    A path under the oracle tree names a RETIRED bash file whose live equivalent is
+    the Python module of the same stem, so it is dispatched. Anything else is run as
+    a file, which is what the throwaway fixtures `controls()` writes have to be: they
+    are bash by construction, deliberately, so that rewording a real guard cannot
+    silently void the control.
+    """
+    try:
+        guard.relative_to(HOOKS)
+    except ValueError:
+        return ["bash", str(guard)]
+    return [sys.executable, str(DISPATCH), guard.stem.replace("-", "_")]
+
+
+# EVERY CHAIN, not just pre-bash. Scoping this to one directory was the same hole check-hook-integrity.sh has now had twice (pre-edit/pre-ask in its 2026-08-27 repair, post-bash in e60e30331) -- and it was in the file written to stop exactly this class. Found by e580532b: 35 of 42 guards were probed and 7 were not.
+#
+# The chains do not share a payload shape, which is why this is a builder and not one dict. A wrong key produces a probe that CANNOT FIRE, and a probe that cannot fire proves nothing -- so every prose probe below is paired with a positive one, and a guard whose positive probe stays silent is reported UNPROBED rather than counted clean.
 CHAINS = {
     "pre-bash": "command",
     "pre-edit": "edit",
@@ -61,22 +100,16 @@ RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# Guards whose matching is deliberately quote-blind, with the reason taken from
-# the guard itself rather than invented here.
+# Guards whose matching is deliberately quote-blind, with the reason taken from the guard itself rather than invented here.
 #
-# BLOCKER: block-adhoc-sanctioned.sh delegates matching to lib/sanctioned.py and
-# holds no inline pattern to turn into an instance. Its own comment states the
-# trade-off knowingly -- "the residue is that `echo 'gh run watch 123'` is still
-# refused. That is the price of seeing inside quotes, it is paid knowingly" --
-# and it mitigates the costly half by stripping heredoc bodies, which is where a
-# quoted recipe actually lives.
+# BLOCKER: block-adhoc-sanctioned.sh delegates matching to lib/sanctioned.py and holds no inline pattern to turn into an instance. Its own comment states the trade-off knowingly -- "the residue is that `echo 'gh run watch 123'` is still refused. That is the price of seeing inside quotes, it is paid knowingly" -- and it mitigates the costly half by stripping heredoc bodies, which is
+# where a quoted recipe actually lives.
 ALLOW_UNPROBED = {"block-adhoc-sanctioned.sh"}
 
 # A pattern must look like a command matcher before it is worth instantiating.
 INTERESTING = re.compile(r"\[\[:|\\\||\|\||\+|\*")
 
-# Evidence the author constrained the match to command POSITION rather than
-# accepting it anywhere in the line.
+# Evidence the author constrained the match to command POSITION rather than accepting it anywhere in the line.
 ANCHORED = re.compile(r"\(\^\||\^\(|\[;&\|\(|\[;&\|]")
 
 CLASS_SUB = [
@@ -99,30 +132,14 @@ def instantiate(pattern: str) -> str:
     """
     text = pattern
     # DROP A LEADING ANCHOR GROUP FIRST. `(^|[;&|(]|&&|\|\|)[[:space:]]*` is a
-    # POSITION assertion, not text, and it must contribute nothing to the
-    # literal. Left in, it survives as junk: the branch-picker below cannot
-    # split it (its character class contains parentheses, so `[^()|]*` fails)
-    # and the class then collapses to a literal `x`, yielding
-    # `x git commit --allow-empty`. That string is not at command position, so a
-    # correctly-anchored guard does NOT fire on it -- and the positive probe
-    # then reports every anchored guard as unreachable. Measured: 0 of 42
-    # probed.
+    # POSITION assertion, not text, and it must contribute nothing to the literal. Left in, it survives as junk: the branch-picker below cannot split it (its character class contains parentheses, so `[^()|]*` fails) and the class then collapses to a literal `x`, yielding `x git commit --allow-empty`. That string is not at command position, so a correctly-anchored guard does NOT
+    # fire on it -- and the positive probe then reports every anchored guard as unreachable. Measured: 0 of 42 probed.
     text = re.sub(r"^\((?=[^)]*\^)[^)]*\)(\[\[:space:\]\][*+])?", "", text)
-    # An alternation: take the first branch, which is what a real command does.
-    # RESOLVED INNERMOST-FIRST, in a fixed-point loop. The single-pass version
-    # only matched a group with NO nested parens (`[^()]*`), so a pattern like
-    # `\bssh\b...\b(cat|echo|printf)\b` -- an alternation with a NESTED one
-    # inside its second branch -- left the outer group untouched and the whole
-    # instance collapsed to a stray `>`. Measured against
-    # block-ssh-file-write.sh, which is why this exists.
+    # An alternation: take the first branch, which is what a real command does. RESOLVED INNERMOST-FIRST, in a fixed-point loop. The single-pass version only matched a group with NO nested parens (`[^()]*`), so a pattern like `\bssh\b...\b(cat|echo|printf)\b` -- an alternation with a NESTED one inside its second branch -- left the outer group untouched and the whole instance
+    # collapsed to a stray `>`. Measured against block-ssh-file-write.sh, which is why this exists.
     text = re.sub(r"\(\?:", "(", text)
-    # ESCAPE-AWARE: `[^()|]` treats a literal `\|` (an ESCAPED pipe, i.e. the
-    # two characters backslash-then-pipe, matching a real `|` in a command) as
-    # the alternation delimiter, because the character class excludes bare `|`
-    # regardless of what precedes it. That misread block-ssh-file-write.sh's
-    # `\|\s*\bssh\b...` down to a single stray `>`. `(?:[^()|\\]|\\.)`
-    # consumes a backslash-escaped pair as ONE unit first, so only a genuine,
-    # unescaped `|` ends a branch.
+    # ESCAPE-AWARE: `[^()|]` treats a literal `\|` (an ESCAPED pipe, i.e. the two characters backslash-then-pipe, matching a real `|` in a command) as the alternation delimiter, because the character class excludes bare `|` regardless of what precedes it. That misread block-ssh-file-write.sh's `\|\s*\bssh\b...` down to a single stray `>`. `(?:[^()|\\]|\\.)` consumes a
+    # backslash-escaped pair as ONE unit first, so only a genuine, unescaped `|` ends a branch.
     for _ in range(10):
         prev = text
         text = re.sub(r"\(((?:[^()|\\]|\\.)*)\|(?:[^()\\]|\\.)*\)", r"\1", text)
@@ -132,10 +149,7 @@ def instantiate(pattern: str) -> str:
         text = rx.sub(rep, text)
     # A TOP-LEVEL alternation, with no enclosing parens at all. The loop above
     # only resolves a `|` sitting inside `(...)`; block-ssh-file-write.sh's
-    # pattern is a bare `BRANCH1|BRANCH2` at the top, so nothing caught it and
-    # the second branch leaked into the instance. Escape-aware, same as the
-    # parenthesized case: an escaped `\|` (a literal pipe target) must not be
-    # read as the delimiter.
+    # pattern is a bare `BRANCH1|BRANCH2` at the top, so nothing caught it and the second branch leaked into the instance. Escape-aware, same as the parenthesized case: an escaped `\|` (a literal pipe target) must not be read as the delimiter.
     m = re.match(r"^((?:[^|\\]|\\.)*)\|", text)
     if m:
         text = m.group(1)
@@ -144,11 +158,7 @@ def instantiate(pattern: str) -> str:
     text = re.sub(r"([A-Za-z0-9_./-])[+*]", r"\1", text)
     text = re.sub(r"\\(.)", r"\1", text)
     text = re.sub(r"[?]", "", text)
-    # A PROBE MUST STAY PROSE. An instance carrying a real command separator
-    # creates a genuine command POSITION inside the sentence, and the guard is
-    # then right to fire -- which reads as a finding and is not one. Measured:
-    # an instance ending in a backgrounding operator was reported against
-    # block-shell-background-waiter.sh, whose natural-sentence probe is silent.
+    # A PROBE MUST STAY PROSE. An instance carrying a real command separator creates a genuine command POSITION inside the sentence, and the guard is then right to fire -- which reads as a finding and is not one. Measured: an instance ending in a backgrounding operator was reported against block-shell-background-waiter.sh, whose natural-sentence probe is silent.
     text = re.sub(r"[&;|`]", " ", text)
     text = text.replace("$(", " ").replace("(", " ").replace(")", " ")
     return re.sub(r"\s+", " ", text).strip()
@@ -165,11 +175,7 @@ def patterns_of(path: Path) -> list[str]:
     """
     src = path.read_text(encoding="utf-8", errors="replace")
     out: list[str] = []
-    # GREP-LINE PATTERNS FIRST. Broadening the reader to every quoted string in
-    # the file (needed for guards that keep patterns in arrays) buried the real
-    # matcher behind message text and helper strings, and the probe cap then cut
-    # it off. Measured: planting the pre-fix unanchored matcher back into
-    # block-git-empty-commit.sh was NOT caught, because its `--allow-empty`
+    # GREP-LINE PATTERNS FIRST. Broadening the reader to every quoted string in the file (needed for guards that keep patterns in arrays) buried the real matcher behind message text and helper strings, and the probe cap then cut it off. Measured: planting the pre-fix unanchored matcher back into block-git-empty-commit.sh was NOT caught, because its `--allow-empty`
     # pattern sorted past the window. Priority is not cosmetic here; it is what
     # makes the probe reach the thing that matters.
     for rx in (
@@ -179,8 +185,7 @@ def patterns_of(path: Path) -> list[str]:
         r'"([^"\n]{4,})"',
     ):
         out.extend(m.group(1) for m in re.finditer(rx, src))
-    # A comment line is prose about a pattern, never a pattern. Reading one
-    # would manufacture a finding out of the guard's own documentation.
+    # A comment line is prose about a pattern, never a pattern. Reading one would manufacture a finding out of the guard's own documentation.
     body = [ln for ln in src.splitlines() if not ln.lstrip().startswith("#")]
     joined = "\n".join(body)
     out = [p for p in out if p in joined]
@@ -221,19 +226,22 @@ def payload_for(kind: str, text: str, file_path: str) -> str:
 
 def fires(guard: Path, command: str, kind: str = "command", file_path: str = "") -> bool:
     payload = payload_for(kind, command, file_path)
+    # THROUGH THE SHARED RUNNER. A guard is a script, and a script can leave a
+    # grandchild holding the read end; `subprocess.run` then blocks in
+    # `communicate()` past its own timeout, which is how check:ci-pytest came to hang with zero bytes on both streams. `proc.run` kills the group, and it RETURNS on timeout rather than raising, so the old `except TimeoutExpired` is gone -- only a missing binary still raises.
     try:
-        proc = subprocess.run(
-            ["bash", str(guard)],
-            input=payload,
-            capture_output=True,
-            text=True,
+        result = ci_proc.run(
+            guard_argv(guard),
+            input_text=payload,
             timeout=30,
             cwd=str(REPO_ROOT),
-            check=False,  # a guard's exit 2 IS the signal; raising would lose it
         )
-    except subprocess.TimeoutExpired:
+    except OSError:
         return False
-    return proc.returncode == 2
+    if result.timed_out:
+        # A guard that will not answer is not a guard that said "no".
+        return False
+    return result.returncode == 2
 
 
 def file_path_for(guard: Path) -> str:
@@ -283,33 +291,23 @@ def controls() -> None:
             fail(
                 "the anchored fixture missed the REAL command; anchoring must narrow prose, not the target"
             )
-        # CHAIN PLUMBING, proven with a REAL trigger against a REAL guard, one
-        # per non-pre-bash chain. This is what stands in for per-guard
-        # reachability, which was tried and discarded: most extracted
-        # fragments are one clause of a multi-part trigger (file_path AND
-        # tool_name AND content, all at once), so no single instantiated
-        # substring fires most guards alone. Proving the PAYLOAD SHAPE once per
-        # chain is the part that is actually load-bearing.
+        # CHAIN PLUMBING, proven with a REAL trigger against a REAL guard, one per non-pre-bash chain. This is what stands in for per-guard reachability, which was tried and discarded: most extracted fragments are one clause of a multi-part trigger (file_path AND tool_name AND content, all at once), so no single instantiated substring fires most guards alone. Proving the PAYLOAD
+        # SHAPE once per chain is the part that is actually load-bearing.
         edit_guard = HOOKS / "pre-edit" / "block-roundlog-write.sh"
         if edit_guard.exists():
-            # `[ -e "$FILE" ]` gates this guard before anything else -- a
-            # nonexistent path is silently allowed by design (creating a log is
-            # not truncating one), so the fixture must actually exist on disk.
+            # `[ -e "$FILE" ]` gates this guard before anything else -- a nonexistent path is silently allowed by design (creating a log is not truncating one), so the fixture must actually exist on disk.
             rlog_dir = Path(tempfile.mkdtemp()) / "reports"
             rlog_dir.mkdir()
             rlog = rlog_dir / "pr-babysit-0827-1.md"
             rlog.write_text("## STATUS (round 1)\n")
             edit_payload = payload_for("edit", "irrelevant content", str(rlog))
-            proc = subprocess.run(
-                ["bash", str(edit_guard)],
-                input=edit_payload,
-                capture_output=True,
-                text=True,
+            edit_result = ci_proc.run(
+                guard_argv(edit_guard),
+                input_text=edit_payload,
                 timeout=30,
                 cwd=str(REPO_ROOT),
-                check=False,
             )
-            if proc.returncode != 2:
+            if edit_result.returncode != 2:
                 fail(
                     "pre-edit payload plumbing: block-roundlog-write.sh did not fire on a "
                     "REAL round-log write -- the edit payload shape cannot be trusted"
@@ -318,16 +316,13 @@ def controls() -> None:
         ask_payload = payload_for("ask", "should i commit this change", "")
         ask_guard = HOOKS / "pre-ask" / "block-settled-questions.sh"
         if ask_guard.exists():
-            proc = subprocess.run(
+            ask_result = ci_proc.run(
                 ["bash", str(ask_guard)],
-                input=ask_payload,
-                capture_output=True,
-                text=True,
+                input_text=ask_payload,
                 timeout=30,
                 cwd=str(REPO_ROOT),
-                check=False,
             )
-            if proc.returncode != 2:
+            if ask_result.returncode != 2:
                 fail(
                     "pre-ask payload plumbing: block-settled-questions.sh did not fire on a "
                     "REAL settled question -- the ask payload shape cannot be trusted"
@@ -337,8 +332,7 @@ def controls() -> None:
         got = instantiate(r"git[[:space:]]+commit[^|;&]*--allow-empty")
         if "git commit" not in got or "--allow-empty" not in got:
             fail(f"instantiate() lost the pattern's order or literals: {got!r}")
-        # And the ANCHORED spelling must instantiate to the same literal, or the
-        # positive probe cannot reach any guard that was fixed for this class.
+        # And the ANCHORED spelling must instantiate to the same literal, or the positive probe cannot reach any guard that was fixed for this class.
         anchored = instantiate(
             r"(^|[;&|(]|&&|\|\|)[[:space:]]*git[[:space:]]+commit[^|;&]*--allow-empty"
         )
@@ -373,22 +367,13 @@ def main() -> int:
         instances = [instantiate(p) for p in patterns_of(guard)]
         instances = [i for i in instances if len(i) >= 4]
         if not instances:
-            # TIER 2, STATIC. A guard with no renderable instance is not
-            # automatically a defect, and treating it as one would demand that
-            # guards be rewritten to suit this instantiator rather than to
-            # match commands correctly. Two legitimate shapes exist and both
-            # were measured here:
+            # TIER 2, STATIC. A guard with no renderable instance is not automatically a defect, and treating it as one would demand that guards be rewritten to suit this instantiator rather than to match commands correctly. Two legitimate shapes exist and both were measured here:
             #
-            #   * ALREADY ANCHORED -- block-blanket-git-add.sh and
+            # * ALREADY ANCHORED -- block-blanket-git-add.sh and
             #     block-worktree-add.sh carry `(^|[;&|(]|\$\(|`)` prefixes;
-            #     the pattern is simply too gnarly to render into a literal.
-            #   * NOT A PHRASE MATCHER AT ALL -- block-long-sleep.sh extracts a
-            #     NUMBER (`grep -oE 'sleep +[0-9]+'`) and compares it. There is
-            #     no phrase to find inside prose, so the class does not apply.
+            # the pattern is simply too gnarly to render into a literal. * NOT A PHRASE MATCHER AT ALL -- block-long-sleep.sh extracts a NUMBER (`grep -oE 'sleep +[0-9]+'`) and compares it. There is no phrase to find inside prose, so the class does not apply.
             #
-            # So: pass if the guard shows an anchor, or has nothing to anchor.
-            # Fail only when it phrase-matches with no anchor and no probe --
-            # the case where nothing at all is checking it.
+            # So: pass if the guard shows an anchor, or has nothing to anchor. Fail only when it phrase-matches with no anchor and no probe -- the case where nothing at all is checking it.
             pats = patterns_of(guard)
             if name in ALLOW_UNPROBED:
                 continue
@@ -397,16 +382,9 @@ def main() -> int:
                 continue
             unprobed.append(name)
             continue
-        # PROSE FIRING IS SELF-EVIDENT: nothing else has to be true for a
-        # guard refusing a sentence to be a defect. Requiring a POSITIVE probe
-        # to also fire before trusting silence was tried and rejected -- most
-        # extracted instances are one fragment of a multi-part trigger (a
+        # PROSE FIRING IS SELF-EVIDENT: nothing else has to be true for a guard refusing a sentence to be a defect. Requiring a POSITIVE probe to also fire before trusting silence was tried and rejected -- most extracted instances are one fragment of a multi-part trigger (a
         # roundlog guard needs BOTH a matching file_path AND a write call; no
-        # single instantiated substring can satisfy that alone), so demanding
-        # per-instance reachability reported 37 of 42 guards as inconclusive
-        # even though most were already known-clean from the pre-bash-only
-        # scan. The signal this check needs is the one that is unconditionally
-        # trustworthy: does prose trip the guard.
+        # single instantiated substring can satisfy that alone), so demanding per-instance reachability reported 37 of 42 guards as inconclusive even though most were already known-clean from the pre-bash-only scan. The signal this check needs is the one that is unconditionally trustworthy: does prose trip the guard.
         fp = file_path_for(guard)
         probed += 1
         for inst in instances[:40]:

@@ -26,6 +26,13 @@ The point of the list is to make that distinction VISIBLE -- an omission and a d
 look identical in a config file, and this gate is what tells them apart.
 
 Exit 1 on any uncovered manifest or unusable reason, 2 on a failed control.
+
+---- gate ----
+step: syncpack source coverage
+needs: submodules
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -37,11 +44,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls
+
 ROOT = Path(os.environ.get("SYNCPACK_SOURCES_ROOT") or Path(__file__).resolve().parents[3])
 RC = ROOT / ".syncpackrc.json"
 EXCLUSIONS = ROOT / ".ci" / "config" / "syncpack-source-exclusions.json"
-# Measured 2026-09-03: 17 tracked manifests, 13 of them declaring dependencies. The
-# floor guards the git enumeration, not the population.
+# Measured 2026-09-03: 17 tracked manifests, 13 of them declaring dependencies. The floor guards the git enumeration, not the population.
 MIN_MANIFESTS = int(os.environ.get("SYNCPACK_SOURCES_MIN", "8"))
 MIN_REASON_CHARS = 40
 
@@ -125,9 +134,7 @@ def selftest() -> int:
         if not ok:
             bad += 1
             print(f"        covered({rel!r}) = {got}, want {want}")
-    # THE CONTROL THAT MATTERS: with the pre-fix source, the submodule is NOT covered.
-    # If this ever passes, the matcher has stopped distinguishing the very case the
-    # gate was written for.
+    # THE CONTROL THAT MATTERS: with the pre-fix source, the submodule is NOT covered. If this ever passes, the matcher has stopped distinguishing the very case the gate was written for.
     if covered("private/account/package.json", ["package.json", "packages/*/package.json"]):
         print("  FAIL  CONTROL: the pre-fix source must NOT cover the submodule")
         bad += 1
@@ -139,12 +146,8 @@ def selftest() -> int:
 
 
 def main() -> int:
-    print("syncpack sources: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("syncpack sources", selftest):
+        return refusal
 
     try:
         rc = json.loads(RC.read_text(encoding="utf-8"))
@@ -170,16 +173,11 @@ def main() -> int:
 
     # THE TREE MUST BE ALL THERE BEFORE ANY VERDICT IS HONEST.
     #
-    # This gate exists BECAUSE of a submodule, so a checkout without submodules is
-    # the one condition under which its answer is worthless -- and it does not fail
-    # safe on its own: with private/account absent, the manifests simply vanish from
+    # This gate exists BECAUSE of a submodule, so a checkout without submodules is the one condition under which its answer is worthless -- and it does not fail safe on its own: with private/account absent, the manifests simply vanish from
     # the enumeration and the two `private/account/{e2e,web}` exclusions look DEAD.
-    # That is what happened on the first CI run (job 100494921545, ci-quality
-    # `quality-branch`, which checks out no submodules): two confident findings
-    # telling the reader to delete entries that are entirely correct.
+    # That is what happened on the first CI run (job 100494921545, ci-quality `quality-branch`, which checks out no submodules): two confident findings telling the reader to delete entries that are entirely correct.
     #
-    # So check the directories named by the config, not the manifests found in them.
-    # A missing one is "cannot verify", never "clean" and never "your entry is dead".
+    # So check the directories named by the config, not the manifests found in them. A missing one is "cannot verify", never "clean" and never "your entry is dead".
     named = {g.split("/package.json")[0] for g in globs if g != "package.json"}
     named |= {rel.rsplit("/", 1)[0] for rel in excl}
     absent = sorted(d for d in named if "*" not in d and not (ROOT / d).is_dir())

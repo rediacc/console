@@ -55,9 +55,7 @@ export function loadNetworkConfigFromEnv(): VMNetworkConfig {
     );
   }
 
-  // VM_NET / DOCKER_REGISTRY are optional. An empty or absent value is treated as
-  // "unset" downstream (buildGroupEnv only emits them when truthy), so renet
-  // applies its own default / bridge-IP derivation.
+  // VM_NET / DOCKER_REGISTRY are optional. An empty or absent value is treated as "unset" downstream (buildGroupEnv only emits them when truthy), so renet applies its own default / bridge-IP derivation.
   return {
     netBase,
     netOffset,
@@ -88,9 +86,7 @@ export function buildGroupEnv(network: VMNetworkConfig): Record<string, string> 
     VM_WORKERS: network.workerIds.join(' '),
     VM_CEPH_NODES: network.cephIds.join(' '),
   };
-  // VM_GROUP namespaces this group's libvirt domain names and disk paths so its
-  // id space cannot collide with the ops fleet or another cluster. Emitted only
-  // when set, so a single-group caller keeps the fleet's bare rediacc<id> names.
+  // VM_GROUP namespaces this group's libvirt domain names and disk paths so its id space cannot collide with the ops fleet or another cluster. Emitted only when set, so a single-group caller keeps the fleet's bare rediacc<id> names.
   if (network.group) env.VM_GROUP = network.group;
   if (network.netName) env.VM_NET = network.netName;
   if (network.dockerRegistry) env.DOCKER_REGISTRY = network.dockerRegistry;

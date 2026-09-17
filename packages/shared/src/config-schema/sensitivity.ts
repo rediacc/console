@@ -15,7 +15,7 @@
  * entry here (exact, wildcard, or a registered ancestor container), except the
  * envelope fields the coverage gate explicitly excludes (schemaVersion, id,
  * version, encryption). The CI gate `check:ci-schema-coverage`
- * (scripts/check-schema-coverage.ts) walks RdcConfigSchema and fails closed on
+ * (scripts/gates/check-schema-coverage.ts) walks RdcConfigSchema and fails closed on
  * any Zod leaf introduced without a registry entry — and on any registry entry
  * whose template no longer matches a schema node (stale residue).
  *
@@ -64,10 +64,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/account/e2ePublicKey': { kind: 'public' }, // public half of server keypair by construction
   '/account/updateChannel': { kind: 'public' },
   '/account/releasesUrl': { kind: 'identifier' }, // on-prem endpoint, mirror accountServer
-  // Retired cloud-adapter residue (R2-F9): the v2→v3 migration strips team and
-  // region and nothing repopulates them. Registered public so the coverage
-  // gate stays strict until P4 deletes the fields with the dead command
-  // surface.
+  // Retired cloud-adapter residue (R2-F9): the v2→v3 migration strips team and region and nothing repopulates them. Registered public so the coverage gate stays strict until P4 deletes the fields with the dead command surface.
   '/account/team': { kind: 'public' },
   '/account/region': { kind: 'public' },
 
@@ -82,31 +79,18 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
 
   // ── Credentials ──────────────────────────────────────────────────────────
   '/credentials/ssh/privateKey': { kind: 'credential' },
-  // Public half of the keypair, shareable by construction — mirrors
-  // /resources/repositories/*/tags/*/sshPublicKey.
+  // Public half of the keypair, shareable by construction — mirrors /resources/repositories/*/tags/*/sshPublicKey.
   '/credentials/ssh/publicKey': { kind: 'public' },
   '/credentials/ssh/knownHosts': { kind: 'pii' },
   '/credentials/cfDnsApiToken': { kind: 'secret' },
 
-  // ── Authorization policy (executor-enforced) ─────────────────────────────
-  // Registered as a single leaf: the whole document is one committed value, so
-  // ANY edit to ANY rule changes the commitment and a push that rewrites the
-  // rules without knowing the current value is rejected by the server.
+  // ── Authorization policy (executor-enforced) ───────────────────────────── Registered as a single leaf: the whole document is one committed value, so ANY edit to ANY rule changes the commitment and a push that rewrites the rules without knowing the current value is rejected by the server.
   //
-  // Not 'public' (public fields are excluded from pathsToCommit, which would
-  // leave the rules tamper-able) and not 'secret' either: the threat here is not
-  // someone reading the rules, it is someone quietly rewriting them.
+  // Not 'public' (public fields are excluded from pathsToCommit, which would leave the rules tamper-able) and not 'secret' either: the threat here is not someone reading the rules, it is someone quietly rewriting them.
   '/policy': { kind: 'identifier' },
-  // The verifier is what the CLI uses to CHECK the master password BEFORE any
-  // decryption can happen. Encrypting it under the password it verifies is a
-  // bootstrapping deadlock, so it is stored in the clear by explicit override
-  // (spec 04 §2.3 [P0-DECIDED]). It is a verifier, not a recoverable secret.
+  // The verifier is what the CLI uses to CHECK the master password BEFORE any decryption can happen. Encrypting it under the password it verifies is a bootstrapping deadlock, so it is stored in the clear by explicit override (spec 04 §2.3 [P0-DECIDED]). It is a verifier, not a recoverable secret.
   //
-  // commit:false because it is HOST-LOCAL to the master-password at-rest mode and
-  // must never enter the remote config envelope. A remote config is stored under
-  // the CEK, not a master password, so the verifier is meaningless there — and
-  // committing it (without also syncing it, which we must not) would drop a
-  // committed pointer on every push/rotation round trip and brick the re-push.
+  // commit:false because it is HOST-LOCAL to the master-password at-rest mode and must never enter the remote config envelope. A remote config is stored under the CEK, not a master password, so the verifier is meaningless there — and committing it (without also syncing it, which we must not) would drop a committed pointer on every push/rotation round trip and brick the re-push.
   // Not synced, therefore not committed: the two must agree.
   '/credentials/masterPasswordVerifier': {
     kind: 'secret',
@@ -122,11 +106,9 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/machines/*/knownHosts': { kind: 'pii' },
   '/resources/machines/*/infra/publicIPv4': { kind: 'pii' },
   '/resources/machines/*/infra/publicIPv6': { kind: 'pii' },
-  // Published DNS, but it identifies the deployment exactly like the sibling
-  // public IPs it resolves to — same kind, or redacting the IPs is pointless.
+  // Published DNS, but it identifies the deployment exactly like the sibling public IPs it resolves to — same kind, or redacting the IPs is pointless.
   '/resources/machines/*/infra/baseDomain': { kind: 'pii' },
-  // Firewall topology (arrays of primitives registered at the array level,
-  // like backupStrategies/*/include below).
+  // Firewall topology (arrays of primitives registered at the array level, like backupStrategies/*/include below).
   '/resources/machines/*/infra/tcpPorts': { kind: 'public' },
   '/resources/machines/*/infra/udpPorts': { kind: 'public' },
   // Strategy names; the strategies themselves are registered below.
@@ -175,8 +157,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
 
   // ── Backup strategies (scheduling topology; storage creds live in vaultContent) ──
   // A strategy references storages by NAME; the credentials are in
-  // /resources/storages/*/vaultContent (secret). Folder paths and include/
-  // exclude globs are location topology, same sensitivity as datastore paths.
+  // /resources/storages/*/vaultContent (secret). Folder paths and include/ exclude globs are location topology, same sensitivity as datastore paths.
   '/resources/backupStrategies/*/schedule': { kind: 'public' },
   '/resources/backupStrategies/*/mode': { kind: 'public' },
   '/resources/backupStrategies/*/enabled': { kind: 'public' },
@@ -235,9 +216,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // ── Cloud providers ──────────────────────────────────────────────────────
   '/resources/cloudProviders/*/apiToken': { kind: 'secret' },
   '/resources/cloudProviders/*/sshUser': { kind: 'pii' },
-  // Provider-catalog plumbing: OpenTofu module source/attribute names and
-  // instance/image/region labels. The only live secrets in this family are
-  // apiToken and the operator identity in sshUser, above.
+  // Provider-catalog plumbing: OpenTofu module source/attribute names and instance/image/region labels. The only live secrets in this family are apiToken and the operator identity in sshUser, above.
   '/resources/cloudProviders/*/provider': { kind: 'public' },
   '/resources/cloudProviders/*/source': { kind: 'public' },
   '/resources/cloudProviders/*/region': { kind: 'public' },
@@ -261,14 +240,9 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/infra/cfDnsZoneId': { kind: 'identifier' },
 
   // ── State (runtime status half; never pushed) ──────────────────────────────
-  // payload.ts strips `state` before push, so nothing here may carry a
-  // commitment: any non-public entry below MUST set `commit: false` (a
-  // committed-but-not-carried pointer is dropped on the first pull and bricks
-  // the re-push — same doctrine as masterPasswordVerifier). Runtime
-  // observations are registered `public` so the coverage gate forces a
+  // payload.ts strips `state` before push, so nothing here may carry a commitment: any non-public entry below MUST set `commit: false` (a committed-but-not-carried pointer is dropped on the first pull and bricks the re-push — same doctrine as masterPasswordVerifier). Runtime observations are registered `public` so the coverage gate forces a
   // conscious sensitivity choice whenever a new runtime field lands; records
-  // and arrays whose values are primitives are registered at the container
-  // level (same style as backupStrategies/*/include).
+  // and arrays whose values are primitives are registered at the container level (same style as backupStrategies/*/include).
   '/state/datastores/*/attachedTo': { kind: 'public' },
   '/state/datastores/*/lastHolder': { kind: 'public' },
   '/state/datastores/*/writes': { kind: 'public' },
@@ -301,9 +275,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/repos/*/*/reflog/*/at': { kind: 'public' },
   '/state/repos/*/*/reflog/*/message': { kind: 'public' },
   '/state/networkIds/next': { kind: 'public' },
-  // Host-local last-backup-activity record per repo (state, never pushed). All
-  // leaves are runtime observations keyed by a repo name the config already
-  // lists in the clear — registered public, so nothing here is committed.
+  // Host-local last-backup-activity record per repo (state, never pushed). All leaves are runtime observations keyed by a repo name the config already lists in the clear — registered public, so nothing here is committed.
   '/state/backupRuns/*/lastRunAt': { kind: 'public' },
   '/state/backupRuns/*/kind': { kind: 'public' },
   '/state/backupRuns/*/status': { kind: 'public' },
@@ -311,13 +283,9 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/backupRuns/*/storedBytes': { kind: 'public' },
   '/state/backupRuns/*/addedBytes': { kind: 'public' },
   '/state/backupRuns/*/error': { kind: 'public' },
-  // Per-machine epoch-ms of the last opportunistic licence-refresh attempt.
-  // Public: a rate-limiting timestamp keyed by a machine name the config
-  // already lists in the clear, carrying no credential and no repo identity.
+  // Per-machine epoch-ms of the last opportunistic licence-refresh attempt. Public: a rate-limiting timestamp keyed by a machine name the config already lists in the clear, carrying no credential and no repo identity.
   '/state/licenseRefresh/*': { kind: 'public' },
-  // Per-machine renet provision/verify cache: version/hash/arch/timestamps of
-  // the last proven-current provision. Public: a binary hash and timestamps
-  // keyed by host:port the config already lists in the clear — no credential.
+  // Per-machine renet provision/verify cache: version/hash/arch/timestamps of the last proven-current provision. Public: a binary hash and timestamps keyed by host:port the config already lists in the clear — no credential.
   '/state/renetProvision/*/version': { kind: 'public' },
   '/state/renetProvision/*/hash': { kind: 'public' },
   '/state/renetProvision/*/arch': { kind: 'public' },
@@ -325,10 +293,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/renetProvision/*/setupVerifiedAt': { kind: 'public' },
   '/state/renetProvision/*/srcMtimeMs': { kind: 'public' },
   '/state/renetProvision/*/srcSize': { kind: 'public' },
-  // ACME cert cache moved from /infra/acmeCertCache. `data` is the compressed
-  // acme.json dump — Traefik resolver state with private keys inside —
-  // `commit:false` because state never enters the server envelope. The fields
-  // beside it are the domain/expiry inventory and transfer bookkeeping.
+  // ACME cert cache moved from /infra/acmeCertCache. `data` is the compressed acme.json dump — Traefik resolver state with private keys inside — `commit:false` because state never enters the server envelope. The fields beside it are the domain/expiry inventory and transfer bookkeeping.
   '/state/certCache/*/baseDomain': { kind: 'public' },
   '/state/certCache/*/updatedAt': { kind: 'public' },
   '/state/certCache/*/sourceMachine': { kind: 'public' },
@@ -336,8 +301,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/certCache/*/certs': { kind: 'public' },
   '/state/certCache/*/data': { kind: 'credential', commit: false },
   '/state/certCache/*/rawSize': { kind: 'public' },
-  // Managed replica/canary sets (spec 05, R2-F17). repoGuid mirrors the
-  // spec-side repositoryGuid (identifier there), so it gets the same
+  // Managed replica/canary sets (spec 05, R2-F17). repoGuid mirrors the spec-side repositoryGuid (identifier there), so it gets the same
   // agent-redaction here; commit:false per the state rule above.
   '/state/replicaSets/*/repo': { kind: 'public' },
   '/state/replicaSets/*/repoGuid': { kind: 'identifier', commit: false },
@@ -363,14 +327,9 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/canaries/*/updatedAt': { kind: 'public' },
   '/state/reconciledAt': { kind: 'public' },
 
-  // ── Remote (config store pointer) ────────────────────────────────────────
-  // HOST-LOCAL bootstrap data: how THIS host reaches the store. It is never
-  // carried in the blob (a pulled config self-evidently already knows its
+  // ── Remote (config store pointer) ──────────────────────────────────────── HOST-LOCAL bootstrap data: how THIS host reaches the store. It is never carried in the blob (a pulled config self-evidently already knows its
   // store; the wire identity lives in the plaintext envelope), so it must not
-  // be committed either — the CLI pushes its on-disk document with `remote`
-  // present, and a committed-but-not-carried pointer is dropped by the first
-  // pull, making the re-push fail anti-downgrade. Same doctrine as
-  // masterPasswordVerifier: not synced, therefore not committed.
+  // be committed either — the CLI pushes its on-disk document with `remote` present, and a committed-but-not-carried pointer is dropped by the first pull, making the re-push fail anti-downgrade. Same doctrine as masterPasswordVerifier: not synced, therefore not committed.
   '/remote/apiUrl': { kind: 'identifier', commit: false },
   '/remote/storeId': { kind: 'identifier', commit: false },
   '/remote/configId': { kind: 'identifier', commit: false },
@@ -379,17 +338,12 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // Region display label ("eu"/"us"); public, so never committed either —
   // consistent with the host-local doctrine of its siblings above.
   '/remote/dataRegion': { kind: 'public' },
-  // Offline read-cache metadata (last pulled server version + timestamp).
-  // Host-local observations, same doctrine as dataRegion: public, not committed.
+  // Offline read-cache metadata (last pulled server version + timestamp). Host-local observations, same doctrine as dataRegion: public, not committed.
   '/remote/cachedVersion': { kind: 'public' },
   '/remote/cachedAt': { kind: 'public' },
 
-  // ── Local binary override ────────────────────────────────────────────────
-  // renetPath is a user-set filesystem override (e.g. /opt/bin/renet). It is
-  // not a secret — marking it public lets `config show` surface the actual
-  // value so scripts and tests can verify which binary is in use. A user who
-  // embeds their home directory ("/home/alice/bin/renet") accepts that the
-  // path surfaces like any other resource path they chose.
+  // ── Local binary override ──────────────────────────────────────────────── renetPath is a user-set filesystem override (e.g. /opt/bin/renet). It is not a secret — marking it public lets `config show` surface the actual value so scripts and tests can verify which binary is in use. A user who embeds their home directory ("/home/alice/bin/renet") accepts that the path surfaces
+  // like any other resource path they chose.
   '/renetPath': { kind: 'public' },
 };
 

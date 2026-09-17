@@ -4,24 +4,31 @@ on:
   pull_request_target: # security: approved — protected by fork guard in job condition
     types: [closed]
 
-permissions:
-  contents: read
-  actions: read
-  # NO `deployments: write`. It existed for a step that deleted the deployment
-  # RECORDS of the `pr-N` environment; ci.yml's deploy-preview job no longer
-  # declares an `environment:`, so no run creates a record and nothing here has
-  # anything to delete. A workflow keeping write scope it cannot use is the
-  # shape this repo's other permission gates exist to catch.
-  #
-  # .ci/scripts/housekeeping/cleanup-github-deployments.sh STAYS in the tree: it
-  # is the manual instrument for edge/stable records, and
-  # cleanup-pr-environments.sh names it in prose as the prerequisite for its own
-  # refusal. Only the automatic step is gone.
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 jobs:
   cleanup:
     name: Cleanup Preview
     runs-on: ubuntu-slim
+    # Checkout only. Cloudflare/Stripe/Turnstile work runs on API tokens, and
+    # the private submodule is fetched with the App token. The `actions: read`
+    # this replaces was never exercised by any step in this job.
+    #
+    # NO `deployments: write`. It existed for a step that deleted the deployment
+    # RECORDS of the `pr-N` environment; ci.yml's deploy-preview job no longer
+    # declares an `environment:`, so no run creates a record and nothing here has
+    # anything to delete. A workflow keeping write scope it cannot use is the
+    # shape this repo's other permission gates exist to catch.
+    #
+    # .ci/scripts/housekeeping/cleanup-github-deployments.sh STAYS in the tree: it
+    # is the manual instrument for edge/stable records, and
+    # cleanup-pr-environments.sh names it in prose as the prerequisite for its own
+    # refusal. Only the automatic step is gone.
+    permissions:
+      contents: read
     # Skip fork PRs (no access to secrets)
     if: github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 10

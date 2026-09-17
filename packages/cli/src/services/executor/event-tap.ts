@@ -42,11 +42,7 @@ export function tapExecutor(inner: Executor): Executor {
         captureOutput: true,
         quietSpinners: true,
         onEvent: (event, line) => {
-          // The command's own handler still runs: it is what builds the
-          // timeline that ends up in the result. The tap is additive. The
-          // spool-line ordinal (present only on a detached replay) is carried
-          // through both, so the serve route can forward it for exactly-once
-          // re-attach dedup.
+          // The command's own handler still runs: it is what builds the timeline that ends up in the result. The tap is additive. The spool-line ordinal (present only on a detached replay) is carried through both, so the serve route can forward it for exactly-once re-attach dedup.
           options.onEvent?.(event, line);
           emit(event, line);
         },

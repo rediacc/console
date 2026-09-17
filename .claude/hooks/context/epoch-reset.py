@@ -38,14 +38,10 @@ def main():
                 "reset_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "compact_trigger": event.get("trigger"),
                 "compact_summary_chars": len(summary),
-                # Survives the epoch: a disproven model cap is a fact about
-                # the session's window, and compaction does not change it.
+                # Survives the epoch: a disproven model cap is a fact about the session's window, and compaction does not change it.
                 "window_floor": st.get("window_floor"),
                 "threshold_corrected": st.get("threshold_corrected"),
-                # Deliberately NOT carried forward: usage, threshold, model.
-                # Usage in particular must not survive, or the usage-drop
-                # backstop in band-notice would fire on the next tool call and
-                # bump a second epoch for the same compaction.
+                # Deliberately NOT carried forward: usage, threshold, model. Usage in particular must not survive, or the usage-drop backstop in band-notice would fire on the next tool call and bump a second epoch for the same compaction.
             },
         )
     except Exception as exc:  # noqa: BLE001
