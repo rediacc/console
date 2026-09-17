@@ -16,15 +16,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2928,
- "files": 713,
+ "count": 6088,
+ "files": 1255,
  "by_rule": {
-  "R1": 1157,
-  "R11": 130,
+  "R1": 1714,
+  "R11": 192,
   "R14": 1,
-  "R18": 396,
-  "R2": 714,
-  "R7": 530
+  "R18": 2549,
+  "R19": 62,
+  "R2": 1015,
+  "R7": 555
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -183,17 +184,17 @@
   },
   ".ci/rediacc_ci/autopilot/autopilot_gate.py": {
    "R2": [
-    "85e4adc8de6d0b24"
+    "12e201e3b3577c2a"
    ]
   },
   ".ci/rediacc_ci/autopilot/compose_prompt.py": {
    "R7": [
-    "6b375f4dd3a948d5"
+    "ad0c2ea4b42a014c"
    ]
   },
   ".ci/rediacc_ci/autopilot/state_comment.py": {
    "R7": [
-    "2c37b1ba9ad8b398"
+    "a9ce6e473374f55c"
    ]
   },
   ".ci/rediacc_ci/battery.py": {
@@ -203,23 +204,23 @@
   },
   ".ci/rediacc_ci/check_pytest.py": {
    "R2": [
-    "5fa9a4003011ab4c",
-    "7f4e28233319f954"
+    "7f4e28233319f954",
+    "c96abde16e98b781"
    ]
   },
   ".ci/rediacc_ci/ci/check_rerun_attempt.py": {
    "R2": [
-    "b6f723c8f5c1d30e"
+    "2233ad1bd7e69561"
    ]
   },
   ".ci/rediacc_ci/ci/detect_pointer_bump.py": {
    "R7": [
-    "13bd2546dfd5eb0f"
+    "9ab22b3182a16bda"
    ]
   },
   ".ci/rediacc_ci/ci/dispatch_release.py": {
    "R7": [
-    "dda9c476965fe8e1"
+    "c3cf17c70a08dcfa"
    ]
   },
   ".ci/rediacc_ci/ci/generate_tag.py": {
@@ -228,22 +229,22 @@
     "ca0c47ed96a1375a"
    ],
    "R7": [
-    "65ff190cd584d4dc"
+    "0dff576878f17a5e"
    ]
   },
   ".ci/rediacc_ci/ci/profiler_sampler_linux.py": {
    "R7": [
-    "5ea837af2f56bcfc"
+    "d59305c40d952493"
    ]
   },
   ".ci/rediacc_ci/controls.py": {
    "R7": [
-    "6d4b1cedb0ff2509"
+    "6c11eefebc90b64a"
    ]
   },
   ".ci/rediacc_ci/core/__init__.py": {
    "R2": [
-    "458f3c1e3ed3af46"
+    "f622e5e6d88cc392"
    ]
   },
   ".ci/rediacc_ci/core/age.py": {
@@ -254,7 +255,7 @@
   ".ci/rediacc_ci/core/allowlist.py": {
    "R1": [
     "35bdf9c499122f00",
-    "77bcb7864887c48f"
+    "a0e0724b45060a4d"
    ],
    "R2": [
     "65309291d708f8cf"
@@ -263,25 +264,25 @@
   ".ci/rediacc_ci/core/dockerx.py": {
    "R1": [
     "06dc252b44bd0128",
-    "2b95be816e769b4a",
+    "1464600958c63d2f",
     "9111aa7f60f7033c",
     "ff5066a46f166b07"
    ],
    "R2": [
-    "3ac86d0fb7e9013a",
-    "5b730412ad3a6a93",
-    "e57815d6825e42b1"
+    "5872ca9fcd4a68b1",
+    "d557732385cc3fe0",
+    "ec0815c11373ef00"
    ]
   },
   ".ci/rediacc_ci/core/ghx.py": {
    "R1": [
-    "17d90fa554d0b3d6",
     "4a0917f3b7ee8b6b",
     "4f3807ccc9471322",
-    "72aea4260d29439d"
+    "61c0eb5ff3eeea41",
+    "ca14a6f26b77bb47"
    ],
    "R2": [
-    "111fce9633fda17b"
+    "e2f65b4af1f03e06"
    ],
    "R7": [
     "e62c256428b55478"
@@ -289,26 +290,26 @@
   },
   ".ci/rediacc_ci/core/platform.py": {
    "R1": [
-    "50039f67b09c44a0"
+    "b43f3c0094c0a570"
    ]
   },
   ".ci/rediacc_ci/core/ports.py": {
    "R2": [
-    "6147f40552fdca1e"
+    "7527f94a41e41eb5"
    ]
   },
   ".ci/rediacc_ci/core/proxyx.py": {
    "R7": [
-    "e8358e8bd4ac3fb9"
+    "7d01ed6c1169d67e"
    ]
   },
   ".ci/rediacc_ci/core/release_state_validator.py": {
    "R2": [
-    "f265562ac8b019c1"
+    "667c6aef92b4dfc8"
    ],
    "R7": [
     "243d458c7d101cba",
-    "3462a548986be1a7"
+    "505cc76f73e28bc2"
    ]
   },
   ".ci/rediacc_ci/core/secrets.py": {
@@ -318,16 +319,16 @@
   },
   ".ci/rediacc_ci/core/toolchain.py": {
    "R1": [
-    "02995429915c3c81",
     "0f2408df317389ae",
     "407c1f811cc4b7d9",
+    "8fe2f0791e8f4dd6",
     "a9f54682b810c1b8"
    ],
    "R2": [
     "224768941276a300",
+    "6bc48ea605463683",
     "9481c5171f492ec8",
     "a33420e5697fcd08",
-    "ae18e096b6890f03",
     "d480060f7402ddfa",
     "f82f70637d244a87"
    ],
@@ -338,44 +339,43 @@
   },
   ".ci/rediacc_ci/deploy/promote_r2_to_stable.py": {
    "R7": [
-    "a7ac1df89c1faf96"
+    "7a09c7fd0bd53950"
    ]
   },
   ".ci/rediacc_ci/deploy/verify_edge_endpoints.py": {
    "R7": [
-    "f011d7852cd37a97"
+    "fe81317b52b92aaf"
    ]
   },
   ".ci/rediacc_ci/docker/create_manifest.py": {
    "R1": [
-    "73dbc0e969e5aa18"
+    "d7756fd9a516da14"
    ]
   },
   ".ci/rediacc_ci/gitx.py": {
    "R1": [
-    "034a8d2685744e7c",
-    "5101e5a0c3298eb3"
+    "21164655bfa4de36"
    ],
    "R2": [
-    "49c4bbcfdb79c9af",
-    "f1562f13fb664500"
+    "b39a8ca9e061ef7c",
+    "d3b640ce7e293503"
    ]
   },
   ".ci/rediacc_ci/infra/build_renet.py": {
    "R2": [
-    "a3e9a136b87c1bd2"
+    "a5ab50fecaf8d1de"
    ]
   },
   ".ci/rediacc_ci/paths.py": {
    "R1": [
-    "2cffe8d8e0be0613",
-    "6937a2b6fbccca1f",
-    "b40ce68957ba7e46",
-    "fd82e00bcc8edd75"
+    "37f24137a144b91a",
+    "98468a4e3a352d8a",
+    "b7d69dd09e5f4ee6",
+    "e70cf513ee2205bd"
    ],
    "R2": [
-    "0c6d2ab53a437cb0",
-    "63579b1414944b1c"
+    "3ec3a877b4e89f11",
+    "dfdbea56d30372af"
    ],
    "R7": [
     "a60f287c49e6e113"
@@ -383,7 +383,7 @@
   },
   ".ci/rediacc_ci/proxies/ensure_nfpm.py": {
    "R7": [
-    "2d9537fb73e87e2f"
+    "f0000f94b132b34f"
    ]
   },
   ".ci/rediacc_ci/quality/account_portal.py": {
@@ -399,7 +399,7 @@
   },
   ".ci/rediacc_ci/quality/audit_coverage.py": {
    "R7": [
-    "9a20cc11b9493cdb"
+    "42deab9943f77146"
    ]
   },
   ".ci/rediacc_ci/quality/ci_scans_tracked_paths.py": {
@@ -409,10 +409,10 @@
   },
   ".ci/rediacc_ci/quality/cli_contract.py": {
    "R1": [
-    "77d00aee867fb43e"
+    "0fdbbdf887b5caf1"
    ],
    "R7": [
-    "689c5fe15d613550"
+    "fec63813101142df"
    ]
   },
   ".ci/rediacc_ci/quality/compose_env.py": {
@@ -422,22 +422,22 @@
   },
   ".ci/rediacc_ci/quality/config_migrations.py": {
    "R7": [
-    "57099df50f65ef82"
+    "9d4a9677d2a6dd38"
    ]
   },
   ".ci/rediacc_ci/quality/dead_python.py": {
    "R2": [
-    "7b197f50899a5182"
+    "c386daf5b08bed0b"
    ]
   },
   ".ci/rediacc_ci/quality/drill_verdicts.py": {
    "R7": [
-    "3348ef891eab9f8a"
+    "664eca2cfc5d37de"
    ]
   },
   ".ci/rediacc_ci/quality/env_manifest.py": {
    "R1": [
-    "cccb7ff7d8eb9eda"
+    "5da1c607aa4fdd30"
    ]
   },
   ".ci/rediacc_ci/quality/git_op_conditionals.py": {
@@ -447,36 +447,39 @@
   },
   ".ci/rediacc_ci/quality/go_tool_path.py": {
    "R7": [
-    "3c48d573db5b1cea"
+    "1a9491c0312489b6"
    ]
   },
   ".ci/rediacc_ci/quality/label_references.py": {
    "R7": [
-    "1f3ca2d1cd7347ad",
+    "281be09607efbd50",
     "aa466d30a05e36cc"
    ]
   },
   ".ci/rediacc_ci/quality/lockfile.py": {
    "R7": [
-    "5ac51dd69255a7f3"
+    "68c4978822a2344f"
    ]
   },
   ".ci/rediacc_ci/quality/mutate_check.py": {
    "R7": [
-    "636b10992fb32185"
+    "a1fec4c98d49a22c"
    ]
   },
   ".ci/rediacc_ci/quality/pipefail_grep_q.py": {
    "R1": [
-    "2dab79d5ae3093ab"
+    "c69c191496b0fc01"
    ],
    "R7": [
-    "3d6c62354f5cef17"
+    "a8e8de28c3a9c5b5"
    ]
   },
   ".ci/rediacc_ci/quality/plan_housekeeping.py": {
    "R1": [
-    "259b5f96dc307a80"
+    "e3cf1272d4d0a015"
+   ],
+   "R7": [
+    "e1e414b1a42dbc6a"
    ]
   },
   ".ci/rediacc_ci/quality/plant_proofs.py": {
@@ -486,28 +489,24 @@
   },
   ".ci/rediacc_ci/quality/profiler_coverage.py": {
    "R7": [
-    "cb51115386477b12"
+    "f3ac555ee0afbe5b"
    ]
   },
   ".ci/rediacc_ci/quality/prose_style.py": {
    "R2": [
-    "22906e920d05ff96",
     "23841cae5cc2ffd9"
-   ],
-   "R7": [
-    "808306e670457239"
    ]
   },
   ".ci/rediacc_ci/quality/python_env_registry.py": {
    "R7": [
-    "bf092e0b8d9aa26b",
+    "6bcdd386d9b9dbb3",
     "d6694358cf5ed822"
    ]
   },
   ".ci/rediacc_ci/quality/review_cap_coherence.py": {
    "R7": [
     "858e92b6fb61757a",
-    "b0e039d0020408dd"
+    "9891e369eee239d1"
    ]
   },
   ".ci/rediacc_ci/quality/review_turn_capacity.py": {
@@ -518,12 +517,12 @@
   },
   ".ci/rediacc_ci/quality/rubric_calibration.py": {
    "R7": [
-    "bf2faebf2dc878ec"
+    "fddd65ac95800c42"
    ]
   },
   ".ci/rediacc_ci/quality/run_external_gate.py": {
    "R1": [
-    "0904b360a5e4949a"
+    "b991955905c45525"
    ]
   },
   ".ci/rediacc_ci/quality/secret_supply.py": {
@@ -544,13 +543,13 @@
   },
   ".ci/rediacc_ci/quality/toolchain_env_dockerfile_sync.py": {
    "R7": [
-    "1195dbcb85a13695"
+    "c36dff190966fb5e"
    ]
   },
   ".ci/rediacc_ci/quality/toolchain_pins.py": {
    "R1": [
     "138a315bb0387133",
-    "b2dedd4f8f0075bd"
+    "31d7040aff482f8e"
    ],
    "R7": [
     "8f11fd978bdef4cb"
@@ -558,21 +557,20 @@
   },
   ".ci/rediacc_ci/quality/www_build_token.py": {
    "R7": [
-    "7178e6ef2b3c85e7"
+    "51301c13b001b299"
    ]
   },
   ".ci/rediacc_ci/review/review_status.py": {
    "R7": [
-    "59290d327d2269a9"
+    "ce8a6f7b9c463dfa"
    ]
   },
   ".ci/rediacc_ci/review/standing_orders_brief.py": {
    "R2": [
-    "5783b8e9df90d2be",
-    "df280194ec07473d"
+    "107a3d1a23d2354f"
    ],
    "R7": [
-    "380c962ada248d91"
+    "a02ad9474c49cc91"
    ]
   },
   ".ci/rediacc_ci/security/actionlint.py": {
@@ -587,7 +585,7 @@
   },
   ".ci/rediacc_ci/setup/host.py": {
    "R7": [
-    "9bab67a4966f4d8c"
+    "e44c3cb5444e87b0"
    ]
   },
   ".ci/rediacc_ci/setup/install_cli_global.py": {
@@ -602,7 +600,7 @@
   },
   ".ci/rediacc_ci/tests/differential.py": {
    "R7": [
-    "4b06a558fd32769b"
+    "d3dd778196f6c5f9"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_actions_release_age.py": {
@@ -612,15 +610,15 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_autopilot_harness.py": {
    "R7": [
-    "4223ede32cda32a9",
-    "7b87ea051eaeebb7"
+    "64ec1cedd1fb4060",
+    "7444420c271885d0"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_drift.py": {
    "R7": [
     "3f38bee633669371",
     "670e4e3a470db20a",
-    "f4546b36ab767418"
+    "f27e293d28aa16b3"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_pins.py": {
@@ -634,28 +632,27 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py": {
    "R7": [
-    "213be1875ac759f8"
+    "65a8cb67d6061fbd"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_breakpoint_teardown.py": {
    "R2": [
-    "1f66a5295bc8337c",
-    "431b33c15da11bc7"
+    "2aefaf825bdad8a2"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_channel_for_event.py": {
    "R1": [
-    "764673f382a60427"
+    "b96a7fb3975d650f"
    ],
    "R2": [
-    "80c73469be39529a"
+    "a02d6fdd38c1992e"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_claude_hooks.py": {
    "R7": [
-    "01e7e424520d7ce4",
-    "14efb1850748152f",
-    "63e5d398fe100437"
+    "3dab600044722d63",
+    "63e5d398fe100437",
+    "8a07da7b5a2d33ab"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py": {
@@ -665,15 +662,15 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_doc_region_parity.py": {
    "R2": [
-    "1762ac0cb4932ff3",
     "3b485f78caef39ab",
     "3fd449048872cf05",
-    "4f3eb24400ace401"
+    "4f3eb24400ace401",
+    "8e623d2c4346e9a9"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_fetch_depth_safety.py": {
    "R1": [
-    "5d53181b88ec2fed"
+    "0d78a8d5fa8f08e7"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py": {
@@ -685,8 +682,8 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_gate_lanes.py": {
    "R7": [
-    "3d7a6f216507c6f2",
-    "7ad54aeb0efed280"
+    "3bb6d5b8461054d7",
+    "cc8ca9ba7b4f726d"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_greenlight.py": {
@@ -701,7 +698,7 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_label_guide_comment.py": {
    "R1": [
-    "ebf69391ee2ee122"
+    "f1b7eb082b691132"
    ],
    "R7": [
     "6084c5cda7d307a1"
@@ -714,12 +711,12 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_media_docs.py": {
    "R2": [
-    "62259f68a284eebd"
+    "e9d9164446503822"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_media_shims.py": {
    "R2": [
-    "52d8aa934a32c8bd"
+    "5039769417520f05"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_policy_liveness_floors.py": {
@@ -734,7 +731,7 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_renet_deadcode.py": {
    "R7": [
-    "93f91f99a9666b90"
+    "4b74eb05bf6964a7"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_resprofile.py": {
@@ -765,24 +762,24 @@
   ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py": {
    "R7": [
     "3f6962d41c64ed88",
-    "40ca8ec173858f76",
     "6deff24ea1c2c3c5",
+    "701d5314343a58c6",
     "beab8c6f386e6c9c"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_scrub_sentinel_empty.py": {
    "R7": [
-    "77585acbb362d35b"
+    "3dec6e5f5e499fb1"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_shell_counter_increment.py": {
    "R7": [
-    "a9e5dc6d20ea0e04"
+    "e9c2a27a24c57914"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_shrink_only_composition.py": {
    "R7": [
-    "4b3e072965d4024c"
+    "1468e842c6566229"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_skip_plan_reconcile.py": {
@@ -797,7 +794,7 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_verdict_placement.py": {
    "R1": [
-    "3d801c023c8f6c28"
+    "0c4cb7787a78dea2"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_watchdog_designed_failure.py": {
@@ -807,12 +804,12 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_watchdog_schedule_exemption.py": {
    "R2": [
-    "930ebd41ec378310"
+    "48efcf899621e439"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_watchdog_supersession.py": {
    "R2": [
-    "81778a8295f0ecf1"
+    "58de1a05bd193601"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_gate_workflow_pr_environment.py": {
@@ -822,9 +819,9 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_worklist_hooks.py": {
    "R7": [
-    "487ba5170eac580e",
-    "7c418bdcff34f035",
-    "c2801c43044dd8ef"
+    "3312d206e138670d",
+    "68065c15aa7515fe",
+    "7c418bdcff34f035"
    ]
   },
   ".ci/rediacc_ci/tests/gates/test_twin_parity.py": {
@@ -834,31 +831,31 @@
   },
   ".ci/rediacc_ci/tests/test_autopilot_compose_prompt.py": {
    "R7": [
-    "fba824ffdb6ae19b"
+    "ca446f18522b6416"
    ]
   },
   ".ci/rediacc_ci/tests/test_build_build_pages.py": {
    "R7": [
-    "2646da47f4b810d2",
+    "3fe53f3dd8facc55",
     "b5a205ac10eaee98"
    ]
   },
   ".ci/rediacc_ci/tests/test_build_cli_musl.py": {
    "R7": [
-    "7a390411c9bb3f57"
+    "646212c6fad87036"
    ]
   },
   ".ci/rediacc_ci/tests/test_build_linux_pkg.py": {
    "R7": [
-    "8e062abf598c6c36"
+    "4faacdf601bb1669"
    ]
   },
   ".ci/rediacc_ci/tests/test_canonical_sys_path_hop.py": {
    "R1": [
-    "9365acb644b2c0d1"
+    "4be39c117b778ea1"
    ],
    "R7": [
-    "388339d345ff3110"
+    "85e8fcbfb5eccd98"
    ]
   },
   ".ci/rediacc_ci/tests/test_core_age.py": {
@@ -868,10 +865,10 @@
   },
   ".ci/rediacc_ci/tests/test_core_allowlist.py": {
    "R1": [
-    "0fb246badef63af3"
+    "75241b9eb7bb8069"
    ],
    "R2": [
-    "5699fcc99a96a78c"
+    "06822c4ce53626f4"
    ]
   },
   ".ci/rediacc_ci/tests/test_core_dockerx.py": {
@@ -879,7 +876,7 @@
     "81a9bda5bc28f2a9"
    ],
    "R7": [
-    "e0d13cb040e0995b"
+    "e885f6adc605390b"
    ]
   },
   ".ci/rediacc_ci/tests/test_core_platform.py": {
@@ -894,12 +891,12 @@
   },
   ".ci/rediacc_ci/tests/test_core_release_state_validator.py": {
    "R2": [
-    "f6648b9bc455da36"
+    "5ffe69923ea02c72"
    ]
   },
   ".ci/rediacc_ci/tests/test_core_review_budget.py": {
    "R7": [
-    "9476c726ed69b108",
+    "5990a3dad022e38c",
     "9a1cfceb1c7d156a"
    ]
   },
@@ -920,61 +917,61 @@
   },
   ".ci/rediacc_ci/tests/test_housekeeping_retry_failed_runs.py": {
    "R7": [
-    "28913e204dfc74ab"
+    "a78e00e499513253"
    ]
   },
   ".ci/rediacc_ci/tests/test_infra_ci_start_elite.py": {
    "R7": [
-    "30a2dfb92b401b0a",
-    "89ffcfc218a5a51a"
+    "2ce20239c0bbd1ef",
+    "941dd077d7832ef1"
    ]
   },
   ".ci/rediacc_ci/tests/test_paths.py": {
    "R1": [
-    "e78086cf41b4ca20"
+    "5d11899eea7c007c"
    ],
    "R2": [
-    "cd5a90107b7d89e8"
+    "c0cad3ae1a927751"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py": {
    "R7": [
-    "99614a4b587a0155"
+    "fa43ceda696814d9"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py": {
    "R7": [
-    "0035cfd485565601"
+    "e15a33ac31858eb4"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_renet_csi_sanity.py": {
    "R7": [
-    "2f18e93b0cd9f031"
+    "acb86f0787295616"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py": {
    "R7": [
-    "54954691158726b1"
+    "dff419cec40b43f9"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_renet_integration.py": {
    "R7": [
-    "c7066e41c1321412"
+    "276eb075e6e3ad3f"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_renet_root_tests.py": {
    "R7": [
-    "fb1163d3bf31a554"
+    "6a1c33a78ecc6257"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_run_account.py": {
    "R7": [
-    "83a42a9ca79091ac"
+    "80070321380292b7"
    ]
   },
   ".ci/rediacc_ci/tests/test_private_run_renet.py": {
    "R7": [
-    "980808b2496b2331"
+    "5ab9cbda2251245a"
    ]
   },
   ".ci/rediacc_ci/tests/test_proc.py": {
@@ -984,7 +981,7 @@
   },
   ".ci/rediacc_ci/tests/test_quality_account_portal.py": {
    "R1": [
-    "a5a44871a9f9c282"
+    "25ec0c2fbb9ac812"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_agent_browser_exit.py": {
@@ -994,12 +991,12 @@
   },
   ".ci/rediacc_ci/tests/test_quality_browser_smoke.py": {
    "R7": [
-    "6cc2fbb1661052cf"
+    "581b34ca5609e9e0"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_ci_job_aggregation.py": {
    "R7": [
-    "4ece4d67fa8cdeff"
+    "fe825d251b42d28a"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_control_vacuity.py": {
@@ -1012,20 +1009,21 @@
   },
   ".ci/rediacc_ci/tests/test_quality_label_references.py": {
    "R2": [
-    "7a20ad3b74fb5f73"
+    "d96f9d5d6f9dc82d"
    ],
    "R7": [
-    "7fa9b36ae2c2a283"
+    "f2d447b7ccb549d5"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_lockfile.py": {
    "R2": [
-    "73721020e245bc66"
+    "32649ee19d92bcef",
+    "4c4ab82941e31fed"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_plan_housekeeping.py": {
    "R7": [
-    "ab32ad33a7f92321"
+    "a109176abe50e559"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_resolved_threads.py": {
@@ -1035,12 +1033,12 @@
   },
   ".ci/rediacc_ci/tests/test_quality_review_report_replies.py": {
    "R2": [
-    "f15a428043ae843b"
+    "8226d5b00ba991ad"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_review_turn_capacity.py": {
    "R2": [
-    "43428b1dfc85db6b"
+    "5a5613929cc01cf0"
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_run_external_gate.py": {
@@ -1077,8 +1075,7 @@
   },
   ".ci/rediacc_ci/tests/test_review_review_status.py": {
    "R7": [
-    "7f5dbe553a2aeea4",
-    "df0b7d7fa5cbb3eb"
+    "92382f2e9bf62237"
    ]
   },
   ".ci/rediacc_ci/tests/test_review_standing_orders_brief.py": {
@@ -1093,22 +1090,22 @@
   },
   ".ci/rediacc_ci/tests/test_setup_port.py": {
    "R7": [
-    "2b2a1c1d56fae8e9"
+    "7cc343bc93d628f0"
    ]
   },
   ".ci/rediacc_ci/tests/test_shapedup_corpus_sig.py": {
    "R7": [
-    "f2b560623c952b43"
+    "327ca30a3cd2cd96"
    ]
   },
   ".ci/rediacc_ci/tests/test_worklist_state_stdin.py": {
    "R7": [
-    "34126c4ef6c55107"
+    "21d6b181bb260e55"
    ]
   },
   ".ci/rediacc_ci/workflows.py": {
    "R2": [
-    "72db9f81ebf9d3b1"
+    "676810cd8865644e"
    ]
   },
   ".ci/scripts/autopilot/prompts/fix-round.md": {
@@ -1155,9 +1152,9 @@
   },
   ".ci/scripts/ci/ci-trace.py": {
    "R7": [
-    "95ef846decf599e6",
-    "dfdf4381f7a9d2f3",
-    "f4ea771d6b2bb121"
+    "9cfbb8b033e8bafb",
+    "de81c3027d345c4f",
+    "dfdf4381f7a9d2f3"
    ]
   },
   ".ci/scripts/ci/greenlight.cjs": {
@@ -1231,18 +1228,18 @@
   },
   ".ci/scripts/quality/check_bws_map.py": {
    "R7": [
-    "f5ec7f758c9db6af",
-    "f910af8a51034860"
+    "a18bb701833b8ccc",
+    "f5ec7f758c9db6af"
    ]
   },
   ".ci/scripts/quality/check_ci_watch_recipe.py": {
    "R7": [
-    "13f46dbf94e07e16"
+    "349b13db5a83f34b"
    ]
   },
   ".ci/scripts/quality/check_decision_ids.py": {
    "R7": [
-    "ff13623e3bfa3751"
+    "88377e9cc34775c7"
    ]
   },
   ".ci/scripts/quality/check_docker_npm_pins.py": {
@@ -1257,18 +1254,18 @@
   },
   ".ci/scripts/quality/check_e2e_case_blind_assertions.py": {
    "R7": [
-    "7b96a52a9ad28322",
-    "af7ee98f6334ea7c"
+    "af7ee98f6334ea7c",
+    "d86afcd6e7d87ee8"
    ]
   },
   ".ci/scripts/quality/check_guard_feature_completeness.py": {
    "R1": [
-    "2b61938ef9c13844"
+    "bd22a540d4dc9a2b"
    ]
   },
   ".ci/scripts/quality/check_guard_mention_anchoring.py": {
    "R7": [
-    "1dd1b3254a227d19"
+    "138a373f4d9b8696"
    ]
   },
   ".ci/scripts/quality/check_i18n_value_types.py": {
@@ -1278,7 +1275,7 @@
   },
   ".ci/scripts/quality/check_inner_timeout_reachable.py": {
    "R7": [
-    "69f0323df887158e"
+    "9771ca57b50358d9"
    ]
   },
   ".ci/scripts/quality/check_label_inventory.py": {
@@ -1288,7 +1285,7 @@
   },
   ".ci/scripts/quality/check_plan_boxes.py": {
    "R2": [
-    "6c8afde607d431f0"
+    "4682c96cc0b045f9"
    ],
    "R7": [
     "71f5a3ec6bf9b339"
@@ -1296,12 +1293,12 @@
   },
   ".ci/scripts/quality/check_plan_citations.py": {
    "R1": [
-    "6514d933b41570e8",
-    "76257ef1b0a4dc6f"
+    "76257ef1b0a4dc6f",
+    "bd8d627ced1e1a71"
    ],
    "R2": [
     "0197e8593d5ad0cb",
-    "786e28b7addb84f9"
+    "0ecebe94656aa31d"
    ],
    "R7": [
     "4cd92ea5ee79ca21",
@@ -1328,12 +1325,12 @@
   },
   ".ci/scripts/quality/check_python_control_plants.py": {
    "R1": [
-    "46cd0fd238561acb"
+    "187c3b04345c2604"
    ]
   },
   ".ci/scripts/quality/check_python_gate_deps.py": {
    "R1": [
-    "e61d6d86934c35b2"
+    "91ce3889851d89d6"
    ]
   },
   ".ci/scripts/quality/check_regions_sync.py": {
@@ -1352,12 +1349,12 @@
   },
   ".ci/scripts/quality/check_review_prompt_render.py": {
    "R7": [
-    "8dd6f7753dffd49c"
+    "fcc6d7b04340df8b"
    ]
   },
   ".ci/scripts/quality/check_runner_advice.py": {
    "R7": [
-    "03726e0e85d64a0f"
+    "72007b7a553fc2fc"
    ]
   },
   ".ci/scripts/quality/check_secret_reachability.py": {
@@ -1380,18 +1377,17 @@
   },
   ".ci/scripts/quality/check_test_file_orphans.py": {
    "R1": [
-    "2602d11b1f93bb84",
-    "26ee9c61d6c11421"
+    "ce7a1458122c66e6"
    ]
   },
   ".ci/scripts/quality/check_tutorial_cli_validity.py": {
    "R2": [
-    "bb64b5d5b64b9ab0"
+    "fdbadd8f34b1d53e"
    ]
   },
   ".ci/scripts/quality/check_tutorial_no_skips.py": {
    "R7": [
-    "a4407711027549ee"
+    "56543cb26a02b689"
    ]
   },
   ".ci/scripts/review/prompts/followup.md": {
@@ -1819,7 +1815,7 @@
     "9a5b8b4b7e9776d7"
    ],
    "R7": [
-    "ccb46624be772a6b"
+    "930e218d6bf68f18"
    ]
   },
   ".claude/hooks/context/onboard.py": {
@@ -1829,12 +1825,12 @@
   },
   ".claude/hooks/stop/calibrate-judge-rules.py": {
    "R2": [
-    "0d47060359c479b0"
+    "69f4ae43dbae2085"
    ]
   },
   ".claude/hooks/stop/test-completion-evidence.py": {
    "R2": [
-    "253640b3da53e023"
+    "6801461685110e4d"
    ],
    "R7": [
     "4352082aa4255cd1"
@@ -1873,25 +1869,25 @@
    ],
    "R2": [
     "14cb785f5f442547",
-    "15d1e5af75b1b0e2",
     "19688e4b25fa7084",
     "1d6adf8c91d0c29f",
+    "244683fd35147960",
     "24f72662f3b4cced",
-    "3a91910f90e1d115",
     "41ab9f311f7e59b7",
+    "46b9d1fb145ac467",
     "53d36f3bdb40f155",
+    "6cbe15f79c165b31",
     "bd90e7ead7a2ff29",
-    "cdc6f1552a5ce77b",
     "d8399fd105058f21",
-    "f71548c2f68dfbf9",
-    "fb1696328c0cc933",
-    "ff93270f9a7d1b41"
+    "e3d18813d8dbd608",
+    "e75b976ab9d49377",
+    "fb1696328c0cc933"
    ]
   },
   ".claude/hooks/stop/wl_agents.py": {
    "R1": [
-    "6cc4aaadb3b4feb1",
-    "d9ff50d4d3d5e2dc"
+    "d9ff50d4d3d5e2dc",
+    "f843bb22c1921b9f"
    ],
    "R2": [
     "5904acbbb1289f97",
@@ -1899,15 +1895,12 @@
    ],
    "R7": [
     "39c98c97fa0c92af",
-    "404176f6d9ede768",
-    "be671ac12d7a9469",
-    "c7240d4952675158"
+    "92806b65ff6ce1fc",
+    "c7240d4952675158",
+    "f49ef5611bb2721d"
    ]
   },
   ".claude/hooks/stop/wl_bravedefault.py": {
-   "R1": [
-    "2c752d916253fd76"
-   ],
    "R2": [
     "ad2d3f3d592589f9"
    ]
@@ -1923,27 +1916,25 @@
     "289ed5fa71af39c8",
     "30139fc1deec6dbc",
     "36095f7e5111dea1",
-    "36d2bdfa384da9ea",
     "4b4d0acbc82d4b8c",
     "55ac9a11a02d142b",
+    "55c68295b24a1b8c",
     "5e65b0e48d23636b",
     "6930d97e19faeede",
     "6b086110c390695e",
+    "6e82e94ac8b79ec0",
     "76d3b272639c453c",
     "8fd145b37e4a6c73",
     "b5649572dab790f8",
     "b8ced11c07fb0c85",
     "ccbd3c70cd487a96",
-    "d182a2fc069ac8a0",
-    "dd81f1d7a2b98084"
+    "d182a2fc069ac8a0"
    ],
    "R2": [
     "07b7b63545717335",
     "0f04ad46ba1e0ad2",
     "1f38c1cab2a73041",
-    "21e81a3013a90769",
-    "31bb6c82f6a924a2",
-    "4d1d998132db4ba1",
+    "232ec7ae98c8772f",
     "5852f31badedee4c",
     "5ac0015f911dfcdd",
     "5b7f6b1d85dd46d6",
@@ -1958,25 +1949,25 @@
     "b39e0ac731af8072",
     "b9e04b963f223978",
     "c572997b4465c2a2",
-    "c6a43670661bc271",
+    "c6e0d5c702f02a35",
     "cbde948eef0ec891",
     "d024726c2e01357e",
     "e0c256f1e7ee338a",
-    "e4a9109bf935d945",
     "e6e9d35b06d08a85",
+    "e7082f120ce46938",
     "eabe43630ed6d13a",
+    "f413127db5a939d4",
+    "fbfd28a874b02371",
     "fe2a899f3f021928"
    ],
    "R7": [
-    "14d666df96a47a66",
     "1a39229380dfc274",
+    "1c58b05eee9b8ed1",
     "248e5d5379fb0a26",
     "2f3da51105c7810e",
     "34235d150448d68a",
     "4824b2336549bd98",
-    "5fb3d81296705c48",
     "646295a3051f90ae",
-    "696b793dba3fb5f3",
     "6980b4747187ab0d",
     "7a99d09f2d6a94bf",
     "7ec10ac8c63bcd9c",
@@ -1984,9 +1975,11 @@
     "8c3e3617c13cd73b",
     "9e3469c0fa5de048",
     "a0a43f06e2f04623",
-    "b19af56c4bf64c89",
+    "aea97b4f118b54cc",
     "b4e8a36d76f1c89c",
+    "b686d99284010e1c",
     "d11a95bf7e0da060",
+    "dbdada92a6421db8",
     "fbed5a899930fc38"
    ]
   },
@@ -1997,34 +1990,33 @@
   },
   ".claude/hooks/stop/wl_classsweep.py": {
    "R2": [
-    "5ec2edccbcecb84a",
+    "7090cf52cd9d6c03",
     "87c048163b0bee2e"
    ]
   },
   ".claude/hooks/stop/wl_core.py": {
    "R1": [
-    "4933dd57d3067e70",
     "4d99861110f93ed6",
-    "858ff1ef71fdad4a"
+    "858ff1ef71fdad4a",
+    "f1dde25efa8c39f9"
    ],
    "R2": [
-    "0667ef45b906cd67",
-    "1423d79616cd3666",
-    "9fe60105f8d248dd",
+    "898f8e8c3db88d91",
     "a509761b1b63a778",
     "a5ee5f871f3efa5c",
-    "af47e7c388250393",
-    "e10b1cd247a1d448"
+    "bc343b48361a8663",
+    "e10b1cd247a1d448",
+    "faa44d7d220e5b89"
    ]
   },
   ".claude/hooks/stop/wl_git.py": {
    "R1": [
     "4eda2c092bdf7595",
     "85a32cd2014dc57b",
-    "c3c0348ba0a2c1d0"
+    "aa245379894afe37"
    ],
    "R2": [
-    "3fb3325e8284466a",
+    "2a8489019b928861",
     "f587785601b8f029"
    ],
    "R7": [
@@ -2037,13 +2029,13 @@
     "577deeb3131bee60"
    ],
    "R7": [
-    "0199e16b7a4573ad",
-    "a04177a292d63f3a"
+    "a04177a292d63f3a",
+    "ac99d9e2086d8c22"
    ]
   },
   ".claude/hooks/stop/wl_judge.py": {
    "R1": [
-    "85cdfb1d92ad4944"
+    "19686fd52a801b52"
    ],
    "R2": [
     "235b127dac67b988"
@@ -2052,14 +2044,17 @@
   ".claude/hooks/stop/wl_lineage.py": {
    "R2": [
     "350d77f9c9eac825",
-    "ce137fcb049da28d",
+    "3d7c060599911b8e",
     "d59c92316ed15883"
+   ],
+   "R7": [
+    "c6cefebd7c81cdcd"
    ]
   },
   ".claude/hooks/stop/wl_liveness.py": {
    "R1": [
-    "400937ba73645df8",
-    "cd34aaf42a0f23a6"
+    "62a7732f605a22d1",
+    "66509a2b2ee1c346"
    ],
    "R2": [
     "80911fca1a67bf47",
@@ -2071,33 +2066,33 @@
   },
   ".claude/hooks/stop/wl_planfid.py": {
    "R1": [
-    "8eb3a46b78ab7a8c"
+    "09281fc014606a76"
    ],
    "R2": [
     "0ff253d29fd36008",
     "8eddde99bbe83c0e"
    ],
    "R7": [
-    "2160e920d56d4fe9",
-    "79b707dc9293d07f"
+    "79b707dc9293d07f",
+    "f4ecc5fa5a28256c"
    ]
   },
   ".claude/hooks/stop/wl_planfile.py": {
    "R1": [
-    "667a71452e23469f",
-    "6adbefb68677d624",
-    "8206aaafa71aebea",
-    "996ae54e25628238"
+    "131faf68c14a32c7",
+    "996ae54e25628238",
+    "c9dfe52ae2c11bf7",
+    "eaef219ec4ad63c4"
    ]
   },
   ".claude/hooks/stop/wl_planindex.py": {
    "R7": [
-    "be0e17593e897f01"
+    "4724b1a5ff24f743"
    ]
   },
   ".claude/hooks/stop/wl_planrec.py": {
    "R2": [
-    "fd3999a74091c8e9"
+    "cd250b97f2fb50aa"
    ],
    "R7": [
     "d117ab51791fc4b4"
@@ -2105,21 +2100,21 @@
   },
   ".claude/hooks/stop/wl_profile.py": {
    "R1": [
-    "a9a154fde0548f5c"
+    "aca8a6bea57e767b"
    ],
    "R2": [
     "0c12d9038e650b87",
     "56c2c2cb78325a80"
    ],
    "R7": [
-    "22848688c821c5ea"
+    "fa7b96bde06d7fa6"
    ]
   },
   ".claude/hooks/stop/wl_reggate.py": {
    "R1": [
-    "1a12ceddcbc5d4bd",
+    "167ca0e0a32942a7",
+    "5d9ccc6b76fe228c",
     "acaaa0370cdb69be",
-    "cb8b36664736c21b",
     "cbb2bae4a401c7c1"
    ]
   },
@@ -2131,7 +2126,7 @@
     "9e616c6607634d17"
    ],
    "R7": [
-    "14a37cd0f480bfa8"
+    "0e94e62c823ad1ae"
    ]
   },
   ".claude/hooks/stop/wl_requests.py": {
@@ -2149,14 +2144,13 @@
    ],
    "R7": [
     "56f98031553f918d",
-    "998f03033ebc5a01"
+    "f407cc6ed8ccab77"
    ]
   },
   ".claude/hooks/stop/wl_shapedup.py": {
    "R1": [
-    "3f95d7c67c6d3e41",
-    "a220a905473358b2",
-    "bb4401a2ac93efd9"
+    "192545980006c128",
+    "a220a905473358b2"
    ],
    "R7": [
     "0d124a8dcba7e913",
@@ -2166,59 +2160,54 @@
   ".claude/hooks/stop/wl_store.py": {
    "R1": [
     "6454f12460ee0e15",
-    "ba1218f498c1e943",
     "d6f9c7af2c798ba9",
     "d889c42d6560fca9",
-    "ed7c2e9024c015b4"
+    "dc15c2c1d89764c9",
+    "f57f94ae63daa063"
    ],
    "R2": [
-    "01ca0171b74e546a",
     "0bef07d01d909d00",
-    "1c439f48ec4930e7",
-    "260c541d9231454a",
+    "27c73914bd46abc2",
     "2e978f47ea74be65",
-    "5530de4099805a40",
+    "4a4097b5117cad95",
     "59a2f749d40b6d2e",
     "8547c17d1d31fda2",
-    "9e9de236a48059ae",
-    "cf880fb371c313fb",
-    "fb96233f68225145",
-    "fce1cae92fd5a581"
+    "ad88c50d92b4b7e9",
+    "c152001bc4c8a3ff"
    ],
    "R7": [
     "0bd11fd19011a86c",
-    "665581034317b17e",
     "774f9bc4b77fd277",
+    "9b65fd8bbb74e57a",
     "9b7bbbfa3af31478",
-    "9c9aa13e807c5929"
+    "ba25795126abd04a"
    ]
   },
   ".claude/hooks/stop/wl_wait.py": {
    "R1": [
     "d13b606fb2241a41",
-    "fafbf4baa5444362"
+    "feb52f5d14fd747d"
    ],
    "R2": [
-    "4060e2f5f4127207",
-    "99ffbbf8cf087718",
-    "bf5f4b100f7d2514"
+    "83c7178941216e57",
+    "c14b993b99d846eb",
+    "c86cc73f43203e38"
    ]
   },
   ".claude/hooks/stop/worklist.py": {
    "R1": [
     "1b1ee4420cbaa6c9",
+    "32801a47d45a5e48",
     "461f15e281854ca8",
-    "4d386fdc3b61edeb",
     "f844d56173591678"
    ],
    "R2": [
     "219a5a21ff562e3e",
     "2fd823313c60d152",
+    "82b31fbacff39fa3",
     "85869c0d06879408",
     "86b390a438e9aff7",
     "879e1e762b06a8bd",
-    "ae804b8bab7fba1c",
-    "dd220d6a4d8019b2",
     "e799bdc9b3d02ad7"
    ],
    "R7": [
@@ -2244,10 +2233,9 @@
   },
   ".claude/hooks/trapguard/dispatch.py": {
    "R1": [
-    "a3f4dc99550bf002",
-    "a6bf371bfe500230",
-    "d5433a4e6feff724",
-    "d78cac14e5eb5272"
+    "5388094dc4460239",
+    "cc94a0ad978839d1",
+    "d01999deef945dea"
    ],
    "R2": [
     "65178c01c5f6679b"
@@ -2269,28 +2257,28 @@
   },
   ".claude/rediacc_hooks/dispatch.py": {
    "R7": [
-    "766cdbcb984d9f11"
+    "60b584f65862b37f"
    ]
   },
   ".claude/rediacc_hooks/execcount.py": {
    "R7": [
-    "1bfbeb4cbb710cfc",
-    "eec51b331755adc8"
+    "1cdf202e99fe99b4",
+    "f2c639afaa17e4ad"
    ]
   },
   ".claude/rediacc_hooks/guards/block_bash_write_to_running_script.py": {
    "R1": [
-    "b57e7c63f27bf8b7",
-    "e157b885e4746626"
+    "e14144a404c2c2b0",
+    "e6c24b6a5dc335e6"
    ],
    "R2": [
     "3eff5e7c62262471",
-    "f4cb9a4cfc4ed4aa"
+    "eb3ed6072c6fc143"
    ]
   },
   ".claude/rediacc_hooks/guards/block_blanket_git_add.py": {
    "R2": [
-    "8b62e1dac26afc4c"
+    "eb12621782b862c6"
    ],
    "R7": [
     "f9bfe3c59663cab8"
@@ -2298,25 +2286,24 @@
   },
   ".claude/rediacc_hooks/guards/block_commit_meta.py": {
    "R1": [
-    "85b20e9223bdb1f2"
+    "b072f5b370ee72b3"
    ]
   },
   ".claude/rediacc_hooks/guards/block_compacted_plan_edit.py": {
    "R1": [
     "53f706a3d8400021",
-    "a6824645b48da0be"
+    "af156d1958ef9461"
    ]
   },
   ".claude/rediacc_hooks/guards/block_destructive_git_restore.py": {
    "R1": [
-    "45d738dd9b25e125",
-    "6c18843a00fa0fe3",
-    "9aa00644e7b45748",
-    "9b951be1f34413cf",
-    "c36669b1709a79b9"
+    "134c2da2439f9de1",
+    "3f1014b49b9ab3db",
+    "c36669b1709a79b9",
+    "f78213eb777f9d0c"
    ],
    "R2": [
-    "4b5374888a6a1fa2"
+    "77ba2f5ca21f1601"
    ],
    "R7": [
     "350dd7a5f84f2818"
@@ -2325,22 +2312,21 @@
   ".claude/rediacc_hooks/guards/block_edit_of_running_script.py": {
    "R1": [
     "74cb473c3cf58be5",
-    "e2028b1d7beb73b0"
+    "eafaaba6b80b8331"
    ]
   },
   ".claude/rediacc_hooks/guards/block_git_amend.py": {
    "R1": [
-    "4523adc89ff19a91"
+    "f483299840c69eb9"
    ]
   },
   ".claude/rediacc_hooks/guards/block_git_empty_commit.py": {
    "R1": [
-    "076e645a40aa5363",
-    "08989ec7c5a6c346"
+    "ddb7d8c4bdfcf550"
    ],
    "R2": [
     "00d171f884eb5096",
-    "9899a49c419d424b"
+    "b8bcc1522f9c368c"
    ]
   },
   ".claude/rediacc_hooks/guards/block_host_toolchain_run.py": {
@@ -2348,7 +2334,7 @@
     "f81a551f0725a79d"
    ],
    "R2": [
-    "82855094f475ae6e"
+    "5bab69cc11dab879"
    ],
    "R7": [
     "86513e53d9bd894f"
@@ -2356,7 +2342,7 @@
   },
   ".claude/rediacc_hooks/guards/block_premature_ready.py": {
    "R7": [
-    "9b9001cb8a02f49f"
+    "55c3be4d082a6ec5"
    ]
   },
   ".claude/rediacc_hooks/guards/block_raw_pr_body_edit.py": {
@@ -2366,7 +2352,7 @@
   },
   ".claude/rediacc_hooks/guards/block_roundlog_write.py": {
    "R7": [
-    "819cac6b848ad3c8"
+    "5ad565b8468c751a"
    ]
   },
   ".claude/rediacc_hooks/guards/block_second_open_pr.py": {
@@ -2382,26 +2368,24 @@
   ".claude/rediacc_hooks/guards/block_settled_questions.py": {
    "R1": [
     "44386a683bddfe40",
-    "7f7542c7ef1b588b",
     "902f320c701fe0d5",
-    "bcb64724518006dd"
+    "f76a8bae0b18d499"
    ],
    "R2": [
-    "0c88d2535574fe75",
-    "12d327e4d6cff9c1",
+    "23764db18c0de57a",
     "30d4a620c1dd13a2",
     "829c738788cc43e2",
     "91c607bb868754cc",
-    "dc2a080b1ec1097b",
+    "983d07eeb17fd05d",
     "dd6437b3d8e4a995"
    ],
    "R7": [
-    "453d9190a246c411"
+    "93779631d9c38550"
    ]
   },
   ".claude/rediacc_hooks/guards/block_stale_pr_branch_date.py": {
    "R1": [
-    "f045a4ca452a7f69"
+    "09d01c85455a29c3"
    ],
    "R7": [
     "9281ae56ab09c7ae",
@@ -2433,23 +2417,23 @@
   },
   ".claude/rediacc_hooks/guards/warn_stale_index.py": {
    "R1": [
-    "3ccf0cee6ab0f7b7"
+    "c8b052a97e51eb4d"
    ]
   },
   ".claude/rediacc_hooks/guards/warn_submodule_deletions.py": {
    "R1": [
     "34fc151617a9aad6",
     "806e7f7bc911e0cb",
-    "98352a72938153d3"
+    "c7b262027375f801"
    ],
    "R7": [
-    "877707e323f7b774"
+    "045651a3b6e9611b"
    ]
   },
   ".claude/rediacc_hooks/hookio.py": {
    "R7": [
-    "2f3e2ca29e8a7dd4",
-    "8d0198434839d04d"
+    "2ab530cfa1b292f6",
+    "4344c2d65de9cd43"
    ]
   },
   ".claude/rediacc_hooks/proc.py": {
@@ -2465,7 +2449,7 @@
   },
   ".claude/rediacc_hooks/tests/guardcorpus.py": {
    "R7": [
-    "63576a930f652a85"
+    "d22d95b0cf43b9cf"
    ]
   },
   ".claude/rediacc_hooks/tests/hookcases.py": {
@@ -2477,17 +2461,17 @@
    ],
    "R7": [
     "86f432450e975197",
-    "c42acaffbf50baae"
+    "bc1b48894bbb91c2"
    ]
   },
   ".claude/rediacc_hooks/tests/test_dispatch.py": {
    "R1": [
-    "e360cbf9ff2b8b86"
+    "5765e3d1a3e60ec2"
    ]
   },
   ".claude/rediacc_hooks/tests/test_hooks_delegates.py": {
    "R1": [
-    "d18c19a7eaa23c35"
+    "d06355437bc93d91"
    ]
   },
   ".claude/rediacc_hooks/tests/test_hooks_fixtures.py": {
@@ -6129,6 +6113,5673 @@
   "packages/shared/src/utils/version.ts": {
    "R2": [
     "4467927f96cfd5d5"
+   ]
+  },
+  "packages/www/plans/kimi-svg-regeneration.md": {
+   "R11": [
+    "d9ace01b089df77a"
+   ]
+  },
+  "packages/www/plans/tfans/00-overview.md": {
+   "R11": [
+    "c915dd92c65bbb25"
+   ]
+  },
+  "packages/www/plans/tfans/02-ansible-modules.md": {
+   "R11": [
+    "8c456aafd8046153"
+   ]
+  },
+  "packages/www/plans/tfans/05-terraform-provider.md": {
+   "R2": [
+    "906ad25365d6c817",
+    "a58c83bda98b618c"
+   ]
+  },
+  "packages/www/plans/tfans/06-terraform-resources.md": {
+   "R11": [
+    "0fd99924169a341e",
+    "dd9aeb77cafd8243"
+   ]
+  },
+  "packages/www/plans/tfans/08-integration.md": {
+   "R7": [
+    "a4774823205d6fe6"
+   ]
+  },
+  "packages/www/plans/tfans/10-implementation-order.md": {
+   "R1": [
+    "bf6533fe17521d44"
+   ]
+  },
+  "packages/www/plans/tfans/IMPLEMENTATION-PROMPT.md": {
+   "R1": [
+    "59d1af7c20b4ecb4",
+    "8efffccb33f4d471",
+    "c9b177a21d0579f9",
+    "f50a84ffbf5db80a",
+    "ff3959cf3e8118d5"
+   ],
+   "R11": [
+    "5fe0be1b9afbd923",
+    "9929e35d99ca2a3e"
+   ]
+  },
+  "packages/www/scripts/check-solution-video-engine.ts": {
+   "R1": [
+    "5221d70fc5762f91"
+   ]
+  },
+  "packages/www/scripts/disaster-recovery-hero-video-script.md": {
+   "R1": [
+    "071a7684c73df5cc",
+    "23d37c4fb3f853dc",
+    "377ea5eb4ad013dc",
+    "684a36b8b16eb1cd",
+    "68a37e058f42729d",
+    "6d54f0636ccd57ad",
+    "70fbc3b78d742b8d",
+    "71c3319f32c5e57d",
+    "7eeb98a685df2e60",
+    "a7c187d8d66872ff",
+    "ac8f553d462f449b",
+    "c0a2feca66b0c0ff",
+    "c1b11f731eafd71f",
+    "d86d56c8fa180acd",
+    "fab4bcdac51e1d8c"
+   ],
+   "R2": [
+    "42a4d218f5828e8d",
+    "6afb24e09bf6cb2b",
+    "b5981ab6a8e0405a"
+   ]
+  },
+  "packages/www/scripts/generate-tutorial-video.ts": {
+   "R7": [
+    "ae30de77b5f0753d"
+   ]
+  },
+  "packages/www/scripts/lib/landing-terminal-catalog.js": {
+   "R2": [
+    "e019b369a7072e4d"
+   ]
+  },
+  "packages/www/scripts/lib/scenes/browser.ts": {
+   "R7": [
+    "07157ad829a18f96"
+   ]
+  },
+  "packages/www/scripts/lib/scenes/cast.ts": {
+   "R1": [
+    "5a2cf264dd194e3c",
+    "6e10a05618ddc2f6"
+   ],
+   "R7": [
+    "c9e99ebcfee10b6a"
+   ]
+  },
+  "packages/www/scripts/lib/scenes/slide.ts": {
+   "R1": [
+    "353a513f7e70f43c",
+    "828a6b9c7398780e"
+   ]
+  },
+  "packages/www/scripts/lib/vtt-emit.ts": {
+   "R7": [
+    "7f4e5fd087154b7e"
+   ]
+  },
+  "packages/www/scripts/test-tutorial-player-release-gate.js": {
+   "R1": [
+    "821ad14b1f677f97"
+   ],
+   "R7": [
+    "4c5b0204460b6b40"
+   ]
+  },
+  "packages/www/scripts/translate-tutorial-transcripts.ts": {
+   "R1": [
+    "d08fb604d9a76cb7"
+   ]
+  },
+  "packages/www/scripts/validate-landing-cli-usage.js": {
+   "R2": [
+    "2fbf0aeacf312ce7",
+    "5d270073bcf39cd1"
+   ]
+  },
+  "packages/www/scripts/validate-tutorial-transcripts.js": {
+   "R1": [
+    "84923704e2c52c6a"
+   ]
+  },
+  "packages/www/src/components/DocsSearchMount.tsx": {
+   "R7": [
+    "164ae3cf93fb11fc"
+   ]
+  },
+  "packages/www/src/components/Navigation.tsx": {
+   "R1": [
+    "078151aed20c9156",
+    "64e1e6a1bfaf2a09"
+   ]
+  },
+  "packages/www/src/components/TutorialVideoPlayer.tsx": {
+   "R1": [
+    "fb71d958fb9b449a"
+   ]
+  },
+  "packages/www/src/content/blog/ar/git-diff-for-encrypted-disk-images.md": {
+   "R18": [
+    "19af5a1cc8ce23c2",
+    "2a508c70b58c746a",
+    "40aa9f29288fd16f",
+    "4aa251d39e3f964e",
+    "5dcdf6820f55b9b7",
+    "91ca3d811459198b",
+    "b7c45658c7a3511f",
+    "c972678d95d312e8"
+   ]
+  },
+  "packages/www/src/content/blog/ar/nis2-effectiveness-without-theatre.md": {
+   "R18": [
+    "a43036eed5c8f6e9",
+    "b37590585ee9f3cb",
+    "bbe9e64081b377c9",
+    "cf43987cc82507f4"
+   ]
+  },
+  "packages/www/src/content/blog/ar/nis2-supply-chain-self-hosted.md": {
+   "R18": [
+    "85b6032f88777764",
+    "884eb800c3f7d6fe",
+    "8d82cdf0fd20a272",
+    "a5882bc85ac20f9b",
+    "c37aa4f79f5d2629",
+    "c96d589efd43867e",
+    "e19c446f3c04da28",
+    "f3e8f6e32e5f3843"
+   ]
+  },
+  "packages/www/src/content/blog/ar/nis2-the-real-bill.md": {
+   "R18": [
+    "1e3b285ef449493d",
+    "3e04bb08dd310bc5",
+    "64118e3615435352",
+    "7862ccadadec232e",
+    "8501b2a8adc149ba",
+    "ade8b04a84b7e373",
+    "d06839582a34d6a7",
+    "e3ed8cfaeab913e4"
+   ]
+  },
+  "packages/www/src/content/blog/de/git-diff-for-encrypted-disk-images.md": {
+   "R18": [
+    "200c2437bd94b130",
+    "39896d6358ae12f7",
+    "3f3d51d6a82be094",
+    "3f745ed7dd4447d7",
+    "6a13f8f1e003958d",
+    "6d34ab6846619ca4",
+    "7587af7122e58f11",
+    "7c6f3156eaeb655b",
+    "94e224bce4369604",
+    "a878a9c7c5e7ae2f",
+    "ab5e71468db4dcec",
+    "c99783ce5e33aaf8",
+    "e4db2a525251861a",
+    "edba47563004b496",
+    "f168a47cdffa418e",
+    "fee54edc70c0dfb0"
+   ]
+  },
+  "packages/www/src/content/blog/de/nis2-effectiveness-without-theatre.md": {
+   "R18": [
+    "02d358d5f38ab329",
+    "071f5d9efb4fab42",
+    "143a41d7d3b0b3aa",
+    "1ecb555e9583115e",
+    "513ed22af469123b",
+    "60079425dfa0dc0d",
+    "66ca9c032f690df9",
+    "70ffbb4e7cb62a42",
+    "9b2c53de379d5ab8",
+    "a258a775739ea427",
+    "a95331e97683fbb8",
+    "b4986209842e8e10",
+    "b618f5ceddc99908",
+    "c1eaf40283a00299",
+    "c786fe0083ddde82",
+    "cf2beb962f9601e1",
+    "e0855959eb8079e0",
+    "e38b07a0cdb9c49e"
+   ]
+  },
+  "packages/www/src/content/blog/de/nis2-supply-chain-self-hosted.md": {
+   "R18": [
+    "0b58053bb29f5202",
+    "0c72fb529638c9ff",
+    "2c192426a3d6c50d",
+    "3acd195ee09ae3dd",
+    "41b19317e9b1ed8e",
+    "4a1ad611b2b17450",
+    "4af3cdccc630c95d",
+    "54699873f6c1c19c",
+    "76aea4ba484a55cd",
+    "79f1b42d457b2825",
+    "7cad72b220ca4a94",
+    "a808aa7943937115",
+    "aaaa1aa350e2f447",
+    "adbed7dab89d5bac",
+    "c164b82bae60c088",
+    "da5440d8a8a6439a"
+   ]
+  },
+  "packages/www/src/content/blog/de/nis2-the-real-bill.md": {
+   "R18": [
+    "06ef247c6bba71dd",
+    "084a9684993f22dd",
+    "2942af422aa1a5a9",
+    "3d8289c3135afac2",
+    "452b3bef588192ef",
+    "5cd05f8b4d2c6f7b",
+    "5decc1482bd27e27",
+    "615cba21d70ad9ec",
+    "644908535ed63936",
+    "6a5822fef75d4a24",
+    "802a5728e47f0d3c",
+    "8e5088f725651ca9",
+    "9a90bb21ad20e8cc",
+    "9b71640c381916e8",
+    "9cc9558b52cee4b3",
+    "a269c8b8515023e5",
+    "b37ee1eadc47aac5",
+    "cbb0cf7b9abdb6a9",
+    "d61796218404f83f",
+    "dd7c577d2d2f7e1d",
+    "f83032539f2abcc5",
+    "febf18bdb4f5c3ae"
+   ]
+  },
+  "packages/www/src/content/blog/en/fork-a-running-kubernetes-cluster.md": {
+   "R1": [
+    "1e4f9f184e3b0e6e",
+    "2b56b315b0f07b24",
+    "70386c260b664a2b",
+    "882fd8eb84b9f18f",
+    "9c8e23a7240063fd",
+    "a35cc51a53cae80d",
+    "faf54effd33c69b6"
+   ]
+  },
+  "packages/www/src/content/blog/en/git-diff-for-encrypted-disk-images.md": {
+   "R1": [
+    "52c1ef9d79aa9461",
+    "62914ef82dfe2279",
+    "85a329578ac3c5c0",
+    "9611cafb4aaae626",
+    "998c9b44b079b593",
+    "ac4c1b33928296fe",
+    "b0660c4ed6b41a93",
+    "b743909817c86bdf",
+    "c25460ea1e52f97b",
+    "c7d2c3c19aa0bd50",
+    "e2302c5907d82000",
+    "fa767ac5bd2aafc3"
+   ],
+   "R18": [
+    "2fa4ea3eb07c2f4e",
+    "3ba259598e91578e",
+    "4c416a6919fb8e2f",
+    "99d2e7ee780cf11d",
+    "a2e914a16e7084a2",
+    "adc5e1354685b476",
+    "b3cf8b6050635b8d",
+    "b54baadfc232d57f",
+    "b6cafb8e02e8ab4f",
+    "bb66a9e2ef95c2df",
+    "c33b770f326d07c6",
+    "d8309a0e047cc042",
+    "daff3a7d788a793a",
+    "dbe8c402ba2f65bf"
+   ],
+   "R2": [
+    "0235ce36ffa46a80",
+    "14edbb8de3d649f6",
+    "4a45f3e5b9acf346",
+    "6ff5ff4a840e94ec",
+    "c5e30cf84808df87"
+   ]
+  },
+  "packages/www/src/content/blog/en/nis2-effectiveness-without-theatre.md": {
+   "R1": [
+    "092dee82794525db",
+    "095db13909a9e0a0",
+    "0b3fd5e060d2b7a6",
+    "15a0a305ae5c5c09",
+    "21bc01bfbb457fb7",
+    "351b104b334d845c",
+    "3eb6b6992d4534a6",
+    "3fd4674444666c25",
+    "450240668f46e83a",
+    "55059e1a6fde45c9",
+    "5e3b2a445053a551",
+    "60d6ca82e0855051",
+    "75fa9ab492b2dfc7",
+    "8561ac1b48bfdd4c",
+    "97f568a76253b891",
+    "9b627d3cd753a07e",
+    "a16240ccecc3f6aa",
+    "a7a02beea39b6d08",
+    "c010849cd2df5060",
+    "e1dba35c669b07f2",
+    "e207ddff3c80466a",
+    "e71bf39a8b6a63f7",
+    "ed741d2e64c08d48"
+   ],
+   "R18": [
+    "0b4fc67f75b89131",
+    "3c913ccaed0460af",
+    "403202168da2e26b",
+    "49675a4e96c864fd",
+    "5726e0b5c8844000",
+    "611ebdd0fd9d8d30",
+    "9b87b0f3430ed776",
+    "b1169173a1c24745",
+    "b84087e82bf90070",
+    "dadfcfe93e415a9b",
+    "e9790d39738a4e0d"
+   ]
+  },
+  "packages/www/src/content/blog/en/nis2-supply-chain-self-hosted.md": {
+   "R1": [
+    "025e642e28be1875",
+    "154e4dff7b8e8949",
+    "1943ca710f31a3c0",
+    "2253c1d6a7cdb0a3",
+    "234602118b930260",
+    "23a7f1e2bcd9774c",
+    "2eb23e1bdf5c637e",
+    "55b20b4f27f01e60",
+    "78794e584a5e0582",
+    "818390cf71c2a131",
+    "9f836775caf7f589",
+    "a48f6e5d0f7bb515",
+    "a8f41690a23500a3",
+    "bd0f4dfda0d48ee9",
+    "c1f2947993da2489",
+    "c7328847a7422910",
+    "d6da29c0bf016c8f"
+   ],
+   "R18": [
+    "11329ea285b3d646",
+    "175c8ba8c41ada72",
+    "2987f0a549650bcd",
+    "340a374128a603c4",
+    "5b9edff5068fc331",
+    "69ba33dcc29f761e",
+    "7563f6607b42047d",
+    "a2cdbfd176842ec6",
+    "d606a8f1546fa593",
+    "d91adfcda2dd7227",
+    "dbf02a4e5559e9cd",
+    "f71f5ffae60189bc"
+   ]
+  },
+  "packages/www/src/content/blog/en/nis2-the-real-bill.md": {
+   "R1": [
+    "04b9ad7f94d5f450",
+    "1c52b7fd741a7916",
+    "1e3f90d322321786",
+    "3029d0b9d00845ad",
+    "4d50b46527f2003f",
+    "67449df927bcbf39",
+    "8788509fde25ed02",
+    "8aa30e0a546d98ff",
+    "945206a3ddef8dc7",
+    "cb5da7398ab25346",
+    "e1298af410af50f4",
+    "fbb50401488fcb46"
+   ],
+   "R18": [
+    "364790aa95f844ef",
+    "3bb3241db6715464",
+    "79a5c14ef8194aa0",
+    "902e4e50ea3ddbe0",
+    "92fd8ea4013106ad",
+    "959df1344b158ff0",
+    "99f5a33e3d32d813",
+    "a76974d182961fbc",
+    "acaf2cf0a0eeb24b",
+    "f4db150854d32ba9",
+    "fd72b2cd3314b709"
+   ],
+   "R2": [
+    "70ed0d602ffe358a"
+   ]
+  },
+  "packages/www/src/content/blog/en/welcome.md": {
+   "R2": [
+    "1fcaaae1a68a2cc2"
+   ]
+  },
+  "packages/www/src/content/blog/es/git-diff-for-encrypted-disk-images.md": {
+   "R18": [
+    "00f7e2a4a8257038",
+    "3123935e4fa972af",
+    "432e7d8858bb162d",
+    "48d16fd5460fbac8",
+    "56d7d4ff12f73c87",
+    "613e0329efc1f406",
+    "8fc573c52aa4d2c1",
+    "971ac0723a525462",
+    "a25bf7e85b39e3cd",
+    "a7bdf72c52125245",
+    "c38700eeecfb0b77",
+    "c5db2c3f2a403e90",
+    "d15b79e4c409791a",
+    "de2a438fed9bb7fb",
+    "e0d78a18996531cf",
+    "e9c4a036e95e7de2",
+    "eade23c438749c5c",
+    "efd444ed57a07262"
+   ]
+  },
+  "packages/www/src/content/blog/es/nis2-effectiveness-without-theatre.md": {
+   "R18": [
+    "001b97258391fdb5",
+    "03e9c02f3504abd6",
+    "04420350c1a2c8cf",
+    "0caeafaf6e282982",
+    "2787fb4ef8185048",
+    "3071e1e9033a26a3",
+    "4bb91256d9b16b7b",
+    "4f26aa77d786eff5",
+    "79696e617f681011",
+    "84edb6c2ae0208f0",
+    "981c0bbcd1520c6b",
+    "9ca9425679a3f6da",
+    "a28fb07a9cd7ce53",
+    "a96e4b505afdd1ea",
+    "aef49ea7aa41f48a",
+    "c1aca433953ec631",
+    "c280246839d76683",
+    "db3b329697e5b04d",
+    "ebf64a0687ed5349",
+    "ee6bbb0ca617a2cd"
+   ]
+  },
+  "packages/www/src/content/blog/es/nis2-supply-chain-self-hosted.md": {
+   "R18": [
+    "082189a07d0f1470",
+    "16523101fe8f91a5",
+    "1db04cf351e25964",
+    "2290ccc75f341867",
+    "3094d9ace656f5e4",
+    "3112382dee7ce435",
+    "43518a398c29f0c4",
+    "609f773de7a27119",
+    "708cbeb5b0905f14",
+    "874e1557dc4fb449",
+    "8b68bfc41549963f",
+    "9f7876306a52c47c",
+    "b3d0939f14d79e5f",
+    "c28e63af0e7a430c",
+    "c6ff4f571626eaa0",
+    "daf2d386bc807ca8",
+    "dd3dcb3362d2876e",
+    "f0d1cd5e3d3e25f3",
+    "f33d0fba02f9d481",
+    "ff18078b5c1735fc"
+   ]
+  },
+  "packages/www/src/content/blog/es/nis2-the-real-bill.md": {
+   "R18": [
+    "0a317bd6a612ab82",
+    "4fdec199e0793073",
+    "572cebda18f197a1",
+    "5837153e4940e4be",
+    "5a387396b5e610b8",
+    "73bf3fd370415edd",
+    "7b115cca3f622990",
+    "9002b4a3b0061801",
+    "a6ec28a157e001a7",
+    "a8a642ef36cfd9f4",
+    "b7eeddd2560ac5b5",
+    "ba85a2bf4c74fb61",
+    "bf389166b8a5a7c7",
+    "c39b1fc9cde267cb",
+    "d24c6c27be5a2bc3",
+    "d3d68e8953413631",
+    "e9d5f168d47172f1",
+    "ec006eff4492d177",
+    "f1dfd9c9b3dd439b",
+    "f99005c62f4a33a0",
+    "ffedeff25ff9ed28"
+   ]
+  },
+  "packages/www/src/content/blog/es/welcome.md": {
+   "R2": [
+    "f6f3390d56e3c4b6"
+   ]
+  },
+  "packages/www/src/content/blog/et/git-diff-for-encrypted-disk-images.md": {
+   "R18": [
+    "1be69a7a47bc5826",
+    "3ee84db325a49681",
+    "42dffccce447bd1f",
+    "45ddb61fa4037cfd",
+    "4e41f0a5303e53c3",
+    "75423717f946e9fa",
+    "8fefa12ae6bbf01c",
+    "912d5f1a94830c61",
+    "9d8887b638c4f382",
+    "ae2d47afe72cdeb2",
+    "af259aa80cff86c5",
+    "e220e4f2bbb51e05",
+    "e2ce6bb6a4cca4a5",
+    "ec7e9c6fb6623514"
+   ]
+  },
+  "packages/www/src/content/blog/et/nis2-effectiveness-without-theatre.md": {
+   "R18": [
+    "0a3f3b832c509501",
+    "2b4cdcc7218a88e4",
+    "36cac6adff2e2bcf",
+    "41bf631e27ab543d",
+    "46fd510a80ec11b3",
+    "48db55f4f362a621",
+    "4e7d112d604b00af",
+    "98609f364f730810",
+    "9c3c30d55938f92f",
+    "a9e3853d0b3270fa",
+    "b1061e31521bd1ec",
+    "f4c3eed50daa43db"
+   ],
+   "R2": [
+    "0110da6893e28b60",
+    "0bb48f4bc9b69080",
+    "18721404f11d6fb6",
+    "8b956cc323306781",
+    "9723586eef222561",
+    "bbc669e5d31256db",
+    "bf6979cf0d1b49d1",
+    "d0651aab8a117a7c"
+   ]
+  },
+  "packages/www/src/content/blog/et/nis2-supply-chain-self-hosted.md": {
+   "R18": [
+    "0d9cb72269377042",
+    "28e8c2bd0a0efffc",
+    "393a69f138571d64",
+    "6d88d29d3a83ba24",
+    "7472da7b201faf64",
+    "b7c6e23482182293",
+    "cbf1185dce2e107e",
+    "df8b17ddf1c1ce06",
+    "e95623ece661e515",
+    "f078091072a35986",
+    "f561335771134cd3"
+   ],
+   "R2": [
+    "21bfbda75686d091"
+   ]
+  },
+  "packages/www/src/content/blog/et/nis2-the-real-bill.md": {
+   "R18": [
+    "00e83a4fb52efb6f",
+    "05a5f0c82a0415ff",
+    "2a8121e743fd10c9",
+    "3cbebe8be294b3a3",
+    "62e709f367060a41",
+    "669d1b9f331ae422",
+    "66bb6508919edc89",
+    "8e86e474972cca16",
+    "992065060bbbfedb",
+    "d3bd26db1a6e3857",
+    "ee27d7d1590cc0fe",
+    "feb618e7b36bb9c0"
+   ],
+   "R2": [
+    "aeb08efc366297d7",
+    "e0b8aa2932b1261c"
+   ]
+  },
+  "packages/www/src/content/blog/fr/git-diff-for-encrypted-disk-images.md": {
+   "R18": [
+    "209ccd6c90526c8a",
+    "26e60fea3fc6f808",
+    "3680aee3ba8abc6b",
+    "36f3575b977b2cfb",
+    "3dd6bebbeb14280e",
+    "3eb35db5eb07205e",
+    "529be8d544ea1700",
+    "6a8523f6b7359e46",
+    "763ae3b42bf1f54e",
+    "869850c33c1adc99",
+    "a61c78e799270768",
+    "c3d1b858c265800d",
+    "cce7a43eb72b2e2c",
+    "d8b48325b3976795",
+    "d9c2108604f09830",
+    "e3b921a9f2bbc6b4",
+    "e9aa5c5638bf1cc7"
+   ]
+  },
+  "packages/www/src/content/blog/fr/nis2-effectiveness-without-theatre.md": {
+   "R18": [
+    "295cb020a4074206",
+    "2ecd96c3addcd914",
+    "3f50623352a37a94",
+    "4a45bb68317a9642",
+    "4c3a02b8a57280c9",
+    "5e5d1407a2e4add8",
+    "6d02727f738ddc38",
+    "6d10c86a0402e02c",
+    "6e4527d893e265a3",
+    "868a61a24c3926ab",
+    "88d5f64107f2e7e5",
+    "99a9c664f42a55c7",
+    "9a4b6ba444b7e376",
+    "add5ef9ff8922b60",
+    "ae8c81aba0c33976",
+    "aee961d49105d00f",
+    "bc6a7b8b90737350",
+    "bd732d2d909df907",
+    "c6414651a95187cf",
+    "cf721343212ab373",
+    "d06d62d21162e635",
+    "e283ba064309ce92"
+   ]
+  },
+  "packages/www/src/content/blog/fr/nis2-supply-chain-self-hosted.md": {
+   "R18": [
+    "0037b1ded5e829c5",
+    "0bdc479c65ea8a34",
+    "1ffa8d719f30fd8a",
+    "33feb80bccfd0b8e",
+    "452ec08d64df05e7",
+    "4f0c12c38fac57f7",
+    "5301e1a471f5c944",
+    "5e122b43cccf8d19",
+    "6ac2a90ba2bb579f",
+    "752a7aa9ace125a1",
+    "7b139eda9a0ced6d",
+    "810eef8e01f510a6",
+    "82b2feca6fd8795a",
+    "8b82e0b2384a32c4",
+    "9d26f7d99f0f19ae",
+    "b448d287e9d1a1ed",
+    "ba3a4ee1dc263e9b",
+    "be8ae0a991500f56",
+    "c1a11086a30f5f5c",
+    "cd98e039b654ebd1",
+    "e7c5ff2a73b3cb3a",
+    "ecc53801f5e5e139"
+   ]
+  },
+  "packages/www/src/content/blog/fr/nis2-the-real-bill.md": {
+   "R18": [
+    "0a05c6b37f70de69",
+    "1596119776b00e63",
+    "16c73f4717d99270",
+    "32364009f79ad8f3",
+    "3c5f0ec14f954af4",
+    "417078f0cc1c3710",
+    "452ed78440d1f8c9",
+    "4cd0a01b294049bf",
+    "4d5bd721724f5f73",
+    "58d6bd390b0f92eb",
+    "6447b776ca1eae7e",
+    "6a73224df22bf3ac",
+    "84a9e0fad39d19d9",
+    "a0c053f53a4bfc8c",
+    "a222d3486a5550dd",
+    "a7904f4aa94f1bed",
+    "a9e60f86737ed6f2",
+    "cfd41ab71fba636c",
+    "d2d39a2f6e53e921",
+    "dd47d1668028fae6",
+    "e33bb3de8363a2d1",
+    "ea16d71788f17251",
+    "f14959c217b4312f",
+    "f34552ac27ad7ab6"
+   ]
+  },
+  "packages/www/src/content/blog/fr/welcome.md": {
+   "R2": [
+    "4252ea8832149ad5"
+   ]
+  },
+  "packages/www/src/content/blog/it/git-diff-for-encrypted-disk-images.md": {
+   "R18": [
+    "0a188aba8dfa53e3",
+    "16f783db62038033",
+    "42c18d93bdca15f8",
+    "5f5b9827545912cc",
+    "6701ec18f54228cf",
+    "7c591393fcda37cd",
+    "7c5e1124d2090449",
+    "7d03ba9e57b908fd",
+    "7f87da1cdb6967f8",
+    "92f63e4e2baabc03",
+    "96cfc9b00aad4090",
+    "9e40e461a350b805",
+    "c6055463f4d2fa6b",
+    "dddb72990b84f4ad",
+    "e904240c97b91787",
+    "f70ba199572c70f3"
+   ],
+   "R2": [
+    "3d248e93ed497130",
+    "3e7e9a5fadb7cb00",
+    "56233dd506c7032a",
+    "acf0972739914ad5",
+    "c9fdb0ec964b7032"
+   ]
+  },
+  "packages/www/src/content/blog/it/nis2-effectiveness-without-theatre.md": {
+   "R18": [
+    "0a4702ee1ad89d4c",
+    "0dc6ce35b03c7496",
+    "1e7a3f177c00fec0",
+    "2fe56a62bd75e23d",
+    "48ba00ae0b7ddea8",
+    "91cdad531019b54f",
+    "956aeecb6328c2cb",
+    "96ef5cc4b5730f51",
+    "a99e57ce44221763",
+    "aec4cba1430c01f6",
+    "b0deb9c68e37b823",
+    "c05491aa9b1954a8",
+    "c0fbe5f0144643ad",
+    "c3891d68325fe381",
+    "db07993629986a5e",
+    "db895a09fca90fdd",
+    "f489b9cfb8ae2638",
+    "fd80636d6194af16"
+   ],
+   "R2": [
+    "063752bf75c283c0",
+    "b2ebc1a70364d831"
+   ]
+  },
+  "packages/www/src/content/blog/it/nis2-supply-chain-self-hosted.md": {
+   "R18": [
+    "105ad509e8244090",
+    "15d45a6291b1672d",
+    "22f8dc10b846758e",
+    "3279c55040c58053",
+    "3b3126e76f1ff1fb",
+    "4f5a604e998458dc",
+    "601e4eaaba2ea714",
+    "7070cf7ac6632153",
+    "7e7c189f8b77f87c",
+    "9082def5d1047513",
+    "ad06534b1ecf3afe",
+    "b23d29ea5f7f9040",
+    "bc0f42f481d2f265",
+    "cda6c21e18e3ddec",
+    "d295d66cf8d27134",
+    "efce48aa1d6d30cc",
+    "f0cc4041662d8ec5",
+    "f41c92b6c37666a5"
+   ],
+   "R2": [
+    "05906fd4810c1122",
+    "457766688673fc81",
+    "c856aefa448e80eb",
+    "ef86c19789da57c5",
+    "f9c6e04d3d4dd018"
+   ]
+  },
+  "packages/www/src/content/blog/it/nis2-the-real-bill.md": {
+   "R18": [
+    "0040ae36748d693d",
+    "0bb8ed2b3d33c7f4",
+    "0d9ab627daf9caa6",
+    "2c1aed1d848fd225",
+    "4a8bc504643bd3c7",
+    "60e72a40edd7684a",
+    "6360a9c4030c76d8",
+    "736b7e9d445892e1",
+    "75c21f46e6244bfc",
+    "83c97be28620d28c",
+    "83fa733f4529607e",
+    "8f06eb0a871df15f",
+    "afb9729345ad0177",
+    "bf3e8000688daffb",
+    "dabe497c4b67cbbd",
+    "e6ee8a19e92b9d27",
+    "faceaeb0be0a3c46",
+    "fdeb5930e2ed15cf",
+    "ff27c08db815e8bf"
+   ],
+   "R2": [
+    "2869e780917d1fba",
+    "288af006287e0cad",
+    "2bb94c5dbdd975c5",
+    "7753cfbd854180db",
+    "84f19ebe4a900fa3",
+    "953589327de630a6",
+    "a8fde325d2978d93",
+    "b58fb93c8d4cf65d",
+    "bb094be60ddf4886",
+    "ce1f6913373e0479"
+   ]
+  },
+  "packages/www/src/content/blog/it/welcome.md": {
+   "R2": [
+    "85aa5fe05832bd1f"
+   ]
+  },
+  "packages/www/src/content/blog/ja/nis2-the-real-bill.md": {
+   "R18": [
+    "299b1266bcb7eb6e",
+    "301f2c5a426b55fd",
+    "34d4d4496aed4353"
+   ]
+  },
+  "packages/www/src/content/blog/ko/git-diff-for-encrypted-disk-images.md": {
+   "R18": [
+    "4bd5e6b89bc5eb66",
+    "949fd185ae6d6ea9"
+   ]
+  },
+  "packages/www/src/content/blog/pt/git-diff-for-encrypted-disk-images.md": {
+   "R18": [
+    "02864d32a0fa47b5",
+    "0a7dc3a04f86183d",
+    "144673d1f9ad1801",
+    "32f8100673da0442",
+    "33a95e2e263a46dc",
+    "36b301eab7747f03",
+    "50b206162238143d",
+    "5a12bcf32513fbd2",
+    "7ab3a14389f5be5c",
+    "7b3e995c86918c16",
+    "7ef20cf9818ab8a3",
+    "91acf0dcf51f2bde",
+    "c1b24b7b9a6439b5",
+    "ce4febf2cfc27193",
+    "dd68673c07a9934a",
+    "ff1d74c44caf4f26"
+   ],
+   "R2": [
+    "84bdda5107c165c7",
+    "bffde7d2bbd4545d"
+   ]
+  },
+  "packages/www/src/content/blog/pt/nis2-effectiveness-without-theatre.md": {
+   "R18": [
+    "0cb9904b546e3c02",
+    "1834ab840f32768a",
+    "22a81e25b851a570",
+    "23c1f2860825803d",
+    "42ed3e87c441e7a3",
+    "4456fba5a5a3f5af",
+    "48e1d829b380dbbc",
+    "53ff2a9054fdfef9",
+    "56ece97eca10b467",
+    "5eccb681865c5fce",
+    "74e0a47eb5c2b40e",
+    "84cedbd9dde8295f",
+    "a0eed01698e9720e",
+    "b437d869fb5a60d3",
+    "b9e380e3c6ab4cd5",
+    "d253e057b65474fc",
+    "de377936bbcdfc4e",
+    "f9b111743d24f9ab"
+   ]
+  },
+  "packages/www/src/content/blog/pt/nis2-supply-chain-self-hosted.md": {
+   "R18": [
+    "0fbc9021eecf1e61",
+    "427ccb778d230bff",
+    "4540a3895f71cd0e",
+    "4c4713b7c4df5cf0",
+    "623284e3fef507df",
+    "62fe7e811d253467",
+    "6aa9e59071346268",
+    "8f3167deb00777e8",
+    "98b242d573714397",
+    "b8b01df053179ca7",
+    "cbf13598814c2e85",
+    "d8d71bdca27ec4ce",
+    "e35727799b77149b",
+    "ed2dff791f935619",
+    "efa942dc6d523f52"
+   ]
+  },
+  "packages/www/src/content/blog/pt/nis2-the-real-bill.md": {
+   "R18": [
+    "191b8c6928883d1e",
+    "295e3574d8e500d7",
+    "348b77b62517283d",
+    "35035f1608bab48b",
+    "36d7d3971a1c25a5",
+    "7f8181a093cc6839",
+    "9043ff9080d58905",
+    "95c5706af22750ed",
+    "9a9f48811f097d43",
+    "9c6ba2f71baf49a1",
+    "9d0fb76a04e37b87",
+    "9d6dece4d7960ed4",
+    "a1561e6cbecea6bd",
+    "a6d4f9321cb1c50d",
+    "c71dae2a56d4648e",
+    "d2c7dd5c42e11c07",
+    "d5cfa69d107cb41f",
+    "dd0cb2f3c7b4b9d8",
+    "ee22190fab6aa354"
+   ]
+  },
+  "packages/www/src/content/blog/ru/git-diff-for-encrypted-disk-images.md": {
+   "R18": [
+    "1c209dc854822c74",
+    "1d3b2adbdf8873c3",
+    "22d6a4dd90ca7ee0",
+    "3806c1b40c264625",
+    "4c12ae25aca09a7f",
+    "5ec71910ef44f8bd",
+    "673df71537fc82f2",
+    "6f77d00451055908",
+    "79757e02adef197f",
+    "98d7b36476690de1",
+    "c07a7323f81c0f02",
+    "c2c5a7e3005fb33a",
+    "e1d7b3ea0004286b",
+    "ed37578b339330a9",
+    "f1af5e9d529a4f85"
+   ]
+  },
+  "packages/www/src/content/blog/ru/nis2-effectiveness-without-theatre.md": {
+   "R18": [
+    "03ea3e4622dd2455",
+    "0ba9eac9c3225a03",
+    "0d85462f73816f6f",
+    "17ed2d7c9aa4415b",
+    "266f47f85dc1f733",
+    "321a6c39c3a1d148",
+    "53c8ed88d3e7c290",
+    "799bfe244b8fbb70",
+    "7b5eb3656c227bd5",
+    "ac7bee73fefaaf49",
+    "ad91b3e2b5b90ab1",
+    "b6ddecaa73dc60a2",
+    "b830e64ff205c0b5",
+    "be00437a9c8989fa",
+    "c848c8df939de2da",
+    "d33d725fcf5bb3c6",
+    "e782b0147e62766f",
+    "f559c60bafde17d9",
+    "fa764de3d8f8110a"
+   ]
+  },
+  "packages/www/src/content/blog/ru/nis2-supply-chain-self-hosted.md": {
+   "R18": [
+    "0f8b774fbc65b730",
+    "11429e867264e366",
+    "158e730ed98cc29b",
+    "35441b5246d1ab6c",
+    "490366992befe960",
+    "51cb3a9261d726e2",
+    "5c2dcd0c6b0a799a",
+    "6c7f374ef06c24a6",
+    "6e3c29d565b85e57",
+    "853b0536f42b11d2",
+    "8e2eb19b49f32745",
+    "900bdd4818c8a996",
+    "9836bb76fd83ba33",
+    "d75da8a636dd699f",
+    "f73464fcfdde6ed6"
+   ]
+  },
+  "packages/www/src/content/blog/ru/nis2-the-real-bill.md": {
+   "R18": [
+    "0275b0f2f00eb089",
+    "254b8112ad2d2604",
+    "4e91b93306b8ea5d",
+    "5c2a66c77521b1dd",
+    "5d526d1c8594e2ce",
+    "8e126eee27dbcb88",
+    "8f6a5fd1681ab67f",
+    "9519d8df8c72d156",
+    "970566a6276bf236",
+    "98a6ef9458f9dedc",
+    "9da4e32f297334b0",
+    "a205d33983875523",
+    "aac94f67fceccdf8",
+    "c258e4965bd0c762",
+    "ddf13dea76612f50",
+    "e3b955885c98acf5",
+    "f731eda307abd095"
+   ]
+  },
+  "packages/www/src/content/blog/tr/git-diff-for-encrypted-disk-images.md": {
+   "R18": [
+    "0c6c84f1adb55e06",
+    "210c1a84f2b93a56",
+    "277036987439ac48",
+    "2cea8d8dca5013ed",
+    "48822ffb0d3ac04f",
+    "5cff6ddaf509c7d3",
+    "60b2418b0dc8ab6a",
+    "6bbc8e7802005301",
+    "95816c0abc8c1452",
+    "9c35ef7b7ee1c302",
+    "a9858963d762b219",
+    "c5a22fac46c1f9e2",
+    "ed095629e49789c8",
+    "fa5e56dcb7e23985"
+   ]
+  },
+  "packages/www/src/content/blog/tr/nis2-effectiveness-without-theatre.md": {
+   "R18": [
+    "1293c2f771e45d34",
+    "444ae193b65ca604",
+    "4d194b0162863cf3",
+    "6395a70237d00968",
+    "6e4b6ff24e7fbfb7",
+    "7122dcd32b75c3fb",
+    "7b20a34789560368",
+    "7d1f36e1c26e7bf5",
+    "ab2f89a1ac3b215d",
+    "abb35e71ffe5803c",
+    "c2ac3c98fe0d7fbe",
+    "d752146e938ce075",
+    "fce687752d28e01b",
+    "ff6aa63b11188d12"
+   ]
+  },
+  "packages/www/src/content/blog/tr/nis2-supply-chain-self-hosted.md": {
+   "R18": [
+    "1dcde8f699a77c93",
+    "250918b90440b23a",
+    "391a7c5a758740ea",
+    "3ca509fa3809f838",
+    "43f663082a4e2229",
+    "57d193c9fd8714f6",
+    "651b272ec73c05f6",
+    "8ba40bc2ba7134dd",
+    "9e38c07801f9049a",
+    "b02337faae2b5ae1",
+    "dfbbec91ee79d49d",
+    "eb3f392b0b297cd0"
+   ]
+  },
+  "packages/www/src/content/blog/tr/nis2-the-real-bill.md": {
+   "R18": [
+    "14fa981ba850f6d6",
+    "320964dfd92e865f",
+    "359e8176974509e5",
+    "67750ea414322e53",
+    "693325e385bb4e82",
+    "778d72ed85179227",
+    "967b4485f43fc9e6",
+    "b958fcd405a37a9d",
+    "d7e1d6fae86ac779",
+    "eb0fbddd056141aa",
+    "f1dc53f7e81aa902"
+   ]
+  },
+  "packages/www/src/content/docs/ar/account-management.md": {
+   "R18": [
+    "4cf50e026050502a"
+   ]
+  },
+  "packages/www/src/content/docs/ar/account-security.md": {
+   "R18": [
+    "601d602ada24b1f5"
+   ]
+  },
+  "packages/www/src/content/docs/ar/ai-agents-mcp.md": {
+   "R18": [
+    "17ea32f577609265"
+   ]
+  },
+  "packages/www/src/content/docs/ar/ai-agents-overview.md": {
+   "R18": [
+    "16b7cbb9943e1a95"
+   ]
+  },
+  "packages/www/src/content/docs/ar/ai-agents-safety.md": {
+   "R18": [
+    "1a7060223c765852",
+    "2714d46390e0a6bd",
+    "4e7e932028da7b32",
+    "52e059da5e005866",
+    "763656605c768a78"
+   ]
+  },
+  "packages/www/src/content/docs/ar/architecture.md": {
+   "R18": [
+    "1a0d058d173010df",
+    "e83c8214008dea64"
+   ]
+  },
+  "packages/www/src/content/docs/ar/autostart-recovery.md": {
+   "R18": [
+    "c4cd573ca6730411"
+   ]
+  },
+  "packages/www/src/content/docs/ar/backup-restore.md": {
+   "R18": [
+    "204635847edc5c21",
+    "4b80307b977f8356",
+    "4fa988dabaacc4ab"
+   ]
+  },
+  "packages/www/src/content/docs/ar/kubernetes.md": {
+   "R18": [
+    "2205f8f17458f665",
+    "335253888f5c9cfd",
+    "614fd37b09a503df",
+    "a25bbf7ff204b766"
+   ]
+  },
+  "packages/www/src/content/docs/ar/legal-data-sovereignty.md": {
+   "R18": [
+    "79453cd39e546d8b",
+    "b1e6404c35a38e79"
+   ]
+  },
+  "packages/www/src/content/docs/ar/legal-gdpr.md": {
+   "R18": [
+    "efbfdab6109a1bcf"
+   ]
+  },
+  "packages/www/src/content/docs/ar/legal-hipaa.md": {
+   "R18": [
+    "56b7a508907e9e01"
+   ]
+  },
+  "packages/www/src/content/docs/ar/legal-nis2-dora.md": {
+   "R18": [
+    "04d43c2f1c914f81"
+   ]
+  },
+  "packages/www/src/content/docs/ar/legal-overview.md": {
+   "R18": [
+    "a3afa0708875d278",
+    "ae63fcea3b892be8"
+   ]
+  },
+  "packages/www/src/content/docs/ar/license-chain.md": {
+   "R18": [
+    "26d078076aeba322",
+    "3e519e5af6db80a9",
+    "7e685c1af7752c93",
+    "a9cd2f1ab7a36508",
+    "cf171191dbb061f8"
+   ]
+  },
+  "packages/www/src/content/docs/ar/limits.md": {
+   "R18": [
+    "c43e19bce9d04714"
+   ]
+  },
+  "packages/www/src/content/docs/ar/monitoring.md": {
+   "R18": [
+    "547b006aa9067f98"
+   ]
+  },
+  "packages/www/src/content/docs/ar/networking.md": {
+   "R18": [
+    "83e79a0638862464",
+    "982cc1929033b771",
+    "b244787e8e4a8440"
+   ]
+  },
+  "packages/www/src/content/docs/ar/on-premise.md": {
+   "R18": [
+    "46eb138dff2d596d"
+   ]
+  },
+  "packages/www/src/content/docs/ar/proxy-and-executor.md": {
+   "R18": [
+    "5417dc8bd0c42950",
+    "6289c08898b4ff94",
+    "8db1974ba67c1fb7"
+   ]
+  },
+  "packages/www/src/content/docs/ar/pruning.md": {
+   "R18": [
+    "2aaae9aa44e301b6",
+    "3aac3a7dbaa48d49",
+    "70d78a3e0e509460",
+    "9956a0b22ac075bd"
+   ]
+  },
+  "packages/www/src/content/docs/ar/repo-branching.md": {
+   "R18": [
+    "5e94295d5d381e03",
+    "61c99c1c14204531",
+    "bc8245a64ddef73f"
+   ]
+  },
+  "packages/www/src/content/docs/ar/repo-diff.md": {
+   "R18": [
+    "0e4847fc97c9fc59",
+    "52fa5212ce0da3c8",
+    "d0150dd11b8683ef"
+   ]
+  },
+  "packages/www/src/content/docs/ar/repositories.md": {
+   "R18": [
+    "133c77284c641791",
+    "3c6dd301717a22ac",
+    "c59b4870aa76cb0e"
+   ]
+  },
+  "packages/www/src/content/docs/ar/rules-of-rediacc.md": {
+   "R18": [
+    "16576473ba78afac",
+    "1c9ee68ef58f279b",
+    "4e3979405306bcb0",
+    "8f6e5ff931f62e6b",
+    "a87091080925dd15",
+    "b8f8442738b4857e"
+   ]
+  },
+  "packages/www/src/content/docs/ar/server-reference.md": {
+   "R18": [
+    "d60c50f0146d5169"
+   ]
+  },
+  "packages/www/src/content/docs/ar/services.md": {
+   "R18": [
+    "647173ec8291fefd",
+    "6fb8a0cdba14dd4f",
+    "7b9cd544ee4d1ca4",
+    "b581a73ab4bbc085"
+   ]
+  },
+  "packages/www/src/content/docs/ar/subscription-licensing.md": {
+   "R18": [
+    "6ca114079d0aea50",
+    "6df6cb049ad929db",
+    "796a8a5b60dab84d",
+    "b6115592b828ec9b",
+    "b6c32fb3671fcd1f"
+   ]
+  },
+  "packages/www/src/content/docs/ar/time-travel-recovery.md": {
+   "R18": [
+    "6f63b0a8974e9bea"
+   ]
+  },
+  "packages/www/src/content/docs/ar/troubleshooting.md": {
+   "R18": [
+    "22e124530796dee5"
+   ]
+  },
+  "packages/www/src/content/docs/de/account-management.md": {
+   "R18": [
+    "91c402e724e88656",
+    "a01f195d3ee65c87",
+    "efc893355475c31d"
+   ]
+  },
+  "packages/www/src/content/docs/de/account-security.md": {
+   "R18": [
+    "06e5ec02b7196b19"
+   ]
+  },
+  "packages/www/src/content/docs/de/agents-md-template.md": {
+   "R18": [
+    "eca158dd2537e2a5"
+   ]
+  },
+  "packages/www/src/content/docs/de/ai-agents-json-output.md": {
+   "R18": [
+    "d61ba2698d0a15d4"
+   ]
+  },
+  "packages/www/src/content/docs/de/ai-agents-mcp.md": {
+   "R18": [
+    "7ae3c67629a2a088"
+   ]
+  },
+  "packages/www/src/content/docs/de/ai-agents-overview.md": {
+   "R18": [
+    "f83cf5524be541e8"
+   ]
+  },
+  "packages/www/src/content/docs/de/ai-agents-safety.md": {
+   "R18": [
+    "1219fd7fd1d29284",
+    "37b20a9bbef8abaa",
+    "6714930c60504c04",
+    "76806ed92fb33b80",
+    "7e06e644b633581a",
+    "b9cc15e7f3f8546f",
+    "cd1c1429bce93a64",
+    "d889da3ef5698e91"
+   ]
+  },
+  "packages/www/src/content/docs/de/architecture.md": {
+   "R18": [
+    "48965ccc35002958",
+    "52ec0e8d3c50f783",
+    "8699ac1f6b57afa4",
+    "a10d2cd7b0ffdb73",
+    "ad2dcb31f1a8c0da"
+   ]
+  },
+  "packages/www/src/content/docs/de/autostart-recovery.md": {
+   "R18": [
+    "29cef77def351ff2"
+   ]
+  },
+  "packages/www/src/content/docs/de/backup-restore.md": {
+   "R11": [
+    "20db818fd8494098"
+   ],
+   "R18": [
+    "06b1b319891e5450",
+    "0a831f60226c319c",
+    "1935d8e3f083d6b8",
+    "1d78caea5abf7464",
+    "1ec4d744857d0ab2",
+    "1fe7a4a8a4cde7c1",
+    "226ddde2106adcf2",
+    "4c63d1343ce69ce5",
+    "5a3350cd207b754b",
+    "5b7da9e11c86af38",
+    "61ad00002027bfae",
+    "61f4c1f4727155bb",
+    "6808a62f5f4e3e5e",
+    "7bcc36aae8be0e9a",
+    "8f051d129eea4e81",
+    "9793807ff57042d0",
+    "98831c838ea01f53",
+    "9a3e4b82a1e53281",
+    "a4d8e4c8e69f86bf",
+    "a857ebe289253a53",
+    "ae4ad7ac2c0ca218",
+    "b53b97f3107b981c",
+    "be532878e83d3c71",
+    "beef9de3a6d9a430",
+    "f05f93aad7d81681",
+    "f6156e13d3db2718",
+    "fa22351cb9db668f"
+   ]
+  },
+  "packages/www/src/content/docs/de/config-storage.md": {
+   "R18": [
+    "703d07182eb10dd4"
+   ]
+  },
+  "packages/www/src/content/docs/de/hub.md": {
+   "R18": [
+    "933e16f9d8c2b0b7",
+    "c450d37be3bc667a"
+   ]
+  },
+  "packages/www/src/content/docs/de/installation.md": {
+   "R18": [
+    "f3e807f224d7558c"
+   ]
+  },
+  "packages/www/src/content/docs/de/kubernetes.md": {
+   "R1": [
+    "e37b6299cbd4c3ad"
+   ],
+   "R18": [
+    "0022ca75f90bca7e",
+    "0b4ac76b6782cf65",
+    "150a0995f8325183",
+    "1e4155510f4f8739",
+    "4dccd2becb0e2da3",
+    "52a9baec8b97918f",
+    "539c62175be77a08",
+    "cf608f82f30a8291",
+    "db48c04cd6454840"
+   ]
+  },
+  "packages/www/src/content/docs/de/legal-data-sovereignty.md": {
+   "R18": [
+    "24667924fab1c9d1",
+    "443669217245408e",
+    "c8e36e8b3529a47e",
+    "f7f7814818bd6546",
+    "fc2b57fbe59f49b6"
+   ]
+  },
+  "packages/www/src/content/docs/de/legal-gdpr.md": {
+   "R18": [
+    "3ce236b109f5c2dd",
+    "5dd0a5524be8cfd2",
+    "d9a77ae1620ba0c0"
+   ]
+  },
+  "packages/www/src/content/docs/de/legal-hipaa.md": {
+   "R18": [
+    "a4698b8884bf9e1b"
+   ]
+  },
+  "packages/www/src/content/docs/de/legal-iso27001.md": {
+   "R18": [
+    "3cb25d2e55dd316c",
+    "e4cc85a49e505281"
+   ]
+  },
+  "packages/www/src/content/docs/de/legal-nis2-dora.md": {
+   "R18": [
+    "c067b51275a8c055"
+   ]
+  },
+  "packages/www/src/content/docs/de/legal-overview.md": {
+   "R18": [
+    "4860a8baa7729df3",
+    "a8bc3a293073606e",
+    "c0dfbc9c9d46eddf"
+   ]
+  },
+  "packages/www/src/content/docs/de/legal-pci-dss.md": {
+   "R18": [
+    "c8f3aa0cb94c4730"
+   ]
+  },
+  "packages/www/src/content/docs/de/legal-soc2.md": {
+   "R18": [
+    "b0e43108859cbf21"
+   ]
+  },
+  "packages/www/src/content/docs/de/license-chain.md": {
+   "R18": [
+    "2212e3e5df2941f8",
+    "406651b541e24f7a",
+    "56fa73dce19a4cd7",
+    "5cb451b242ddd94c",
+    "5d1a60044d7003d4",
+    "637df690c84b6d03",
+    "960711660fe36f0a",
+    "bcdf6342293ba04b",
+    "c4da2903b19d91a4",
+    "c7976ddf5c14495d",
+    "dc696f0873f4cd3f",
+    "f838e5cae007d9dd"
+   ]
+  },
+  "packages/www/src/content/docs/de/limits.md": {
+   "R18": [
+    "244788acbb7c1a52",
+    "5ead2ede0cfdd605",
+    "69bbba5de219b6ad",
+    "725b7808456b88dd",
+    "87710a7263a95033",
+    "91864e6af1466d7e",
+    "ade2ce9c377f220a"
+   ]
+  },
+  "packages/www/src/content/docs/de/migration.md": {
+   "R18": [
+    "962b074a2abc06ab"
+   ]
+  },
+  "packages/www/src/content/docs/de/monitoring.md": {
+   "R18": [
+    "351c09b79e673c1f"
+   ],
+   "R19": [
+    "3473251c1cec89ef"
+   ]
+  },
+  "packages/www/src/content/docs/de/networking.md": {
+   "R18": [
+    "474895b5e3feb9d7",
+    "64bbda9adf73ca5d",
+    "99f9bc7537d2512f",
+    "bd4ee437dc219cfb",
+    "cea54fd063b1751a"
+   ]
+  },
+  "packages/www/src/content/docs/de/on-premise.md": {
+   "R18": [
+    "1b712fb1c4d289db",
+    "4626cfae1abc75b8",
+    "6850ef35b182f1a6",
+    "6f614f451bfa83e4",
+    "79a483c891244f42",
+    "9b925c65b4a79417",
+    "e6d85a6d6f804795"
+   ]
+  },
+  "packages/www/src/content/docs/de/proxy-and-executor.md": {
+   "R18": [
+    "0824543ead6e9000",
+    "182371742a0d0baf",
+    "23b69c4faa8cfdb4",
+    "65ed86aad0f33041",
+    "8c62c8155c9c7c63"
+   ]
+  },
+  "packages/www/src/content/docs/de/pruning.md": {
+   "R18": [
+    "47ef547d6b7adc9e",
+    "89a667a9b4fe0ba2",
+    "8a0d014410219437",
+    "a3ded284936165ed",
+    "b14d8c1ccabca0e1"
+   ]
+  },
+  "packages/www/src/content/docs/de/repo-branching.md": {
+   "R18": [
+    "2193385b2ef641e2",
+    "331df81042204123",
+    "572e5a1e16d62f38",
+    "5db06122fba25b48",
+    "7f343624783cca7b",
+    "817bba9e276c6a9e",
+    "90d06db59eb23989",
+    "c7407424c2f88efa",
+    "f47692dc5b1b2f97"
+   ]
+  },
+  "packages/www/src/content/docs/de/repo-diff.md": {
+   "R18": [
+    "00369ad9fc50c4e6",
+    "1c4a4d3dfe57d948",
+    "72f05af2531d24b3"
+   ]
+  },
+  "packages/www/src/content/docs/de/repositories.md": {
+   "R18": [
+    "0f9726cab5a48450",
+    "33d9f324221d85d9",
+    "3a7de8f0bce758ce",
+    "3c58ca8a9c497f6a",
+    "8f148682632d0127",
+    "c59f1b848a2d299f",
+    "e7f2a3e8951b16cc",
+    "e9b59edbb059e940",
+    "ed3346e6feb8beed",
+    "fe8f2bd9264941ce"
+   ]
+  },
+  "packages/www/src/content/docs/de/requirements.md": {
+   "R18": [
+    "1e56dc377ab97d16",
+    "7979eea603b2fdbd"
+   ]
+  },
+  "packages/www/src/content/docs/de/risk-free-upgrades.md": {
+   "R18": [
+    "665a38a98d6411a3"
+   ]
+  },
+  "packages/www/src/content/docs/de/rules-of-rediacc.md": {
+   "R18": [
+    "64f44d3c62411f9a",
+    "6b705ddef7d253c8",
+    "85f74ebb2f250f28",
+    "a14ef1cc11ce3b93",
+    "c2e325c32c630225",
+    "e189319fb20d36e2",
+    "f067104dfc361616"
+   ]
+  },
+  "packages/www/src/content/docs/de/server-reference.md": {
+   "R18": [
+    "9721c648796d1e29"
+   ]
+  },
+  "packages/www/src/content/docs/de/services.md": {
+   "R18": [
+    "0710649d453cd48d",
+    "0827be0ccd4302d9",
+    "29360b256be6e98a",
+    "3fb0f874afa959dd",
+    "4db01ba822c2e55a",
+    "67c206ced8921be8",
+    "9008470208b02989",
+    "d8fff64e1f828c87",
+    "dbff4eebcdef9f02"
+   ]
+  },
+  "packages/www/src/content/docs/de/setup.md": {
+   "R18": [
+    "661d29ef90f23cd2"
+   ]
+  },
+  "packages/www/src/content/docs/de/subscription-licensing.md": {
+   "R18": [
+    "035945d6dd7a6633",
+    "07b0d1cfd981db75",
+    "216b4e1dd7a141eb",
+    "38294f917b380040",
+    "3d52123a5787cc46",
+    "74d6f2e60b56b8c9",
+    "8e274cf77c9ed582",
+    "a7c7a65fed339e2f",
+    "afc84adcc43b492a",
+    "cf0d70412f4851d0",
+    "d7d34287f364f168",
+    "e03b3fafc64ecdb8"
+   ]
+  },
+  "packages/www/src/content/docs/de/time-travel-recovery.md": {
+   "R18": [
+    "004c2c4c8422ae05"
+   ]
+  },
+  "packages/www/src/content/docs/de/troubleshooting.md": {
+   "R18": [
+    "246ea0c3c45206f4",
+    "3f0afc1c548714c9",
+    "630822fb1949ce2f",
+    "e30455044a376f6d"
+   ]
+  },
+  "packages/www/src/content/docs/de/web-console.md": {
+   "R18": [
+    "481ddffa6f831ca5",
+    "aa6f0aec7f3ab535"
+   ]
+  },
+  "packages/www/src/content/docs/en/account-management.md": {
+   "R1": [
+    "0a632014766d8787",
+    "0d8947283f47c83c",
+    "124277a4c89a1f95",
+    "19cb4d602fe7527f",
+    "2e49d97cd061d35e",
+    "3c5c0e37e4c57adb",
+    "7c1a7e3460e9edde",
+    "82e06341963914b1",
+    "8606e4440e719c3f",
+    "add53f374450d94d",
+    "e1f8ecda2274442e",
+    "f72aa625eb35747f",
+    "fdb28d223759d409"
+   ],
+   "R18": [
+    "9e59575980480952"
+   ]
+  },
+  "packages/www/src/content/docs/en/account-security.md": {
+   "R1": [
+    "7abd90e8ea5f43ba"
+   ],
+   "R18": [
+    "4ef26807f4d943b7"
+   ]
+  },
+  "packages/www/src/content/docs/en/agents-md-template.md": {
+   "R1": [
+    "0371ee03fc293d6e",
+    "4c0abfd4a6ec49e5",
+    "6be0b72ee5a03014",
+    "6cde6cca19c47206",
+    "9f31172e21f71a2e",
+    "cc491e837a7f3e14"
+   ]
+  },
+  "packages/www/src/content/docs/en/ai-agents-claude-code.md": {
+   "R1": [
+    "19c393f3a4c67aac",
+    "b1dff4bd60e27dbe",
+    "c03861cf28509bca",
+    "d0cc86a21d100a92",
+    "fbc5679f409150f1"
+   ],
+   "R7": [
+    "4db4a8c44a848683"
+   ]
+  },
+  "packages/www/src/content/docs/en/ai-agents-cursor.md": {
+   "R1": [
+    "1220e712f13eb0e7",
+    "2cb05bc4608c2903",
+    "74ac6ac951ff1c2e",
+    "b853a43cd221d471"
+   ],
+   "R11": [
+    "50105c1b7f79ebcf"
+   ],
+   "R2": [
+    "c03fe3a000d39986",
+    "f9809370d5277de1"
+   ]
+  },
+  "packages/www/src/content/docs/en/ai-agents-json-output.md": {
+   "R1": [
+    "10d5381ab525bfea",
+    "f70419d4e661b5e1"
+   ],
+   "R18": [
+    "cea6a523d6a9d2d2"
+   ]
+  },
+  "packages/www/src/content/docs/en/ai-agents-mcp.md": {
+   "R1": [
+    "9584e00a66c03098",
+    "d143783bfe8c4803",
+    "ea0a7f7f6a34d3fa",
+    "f3b50735032e61e8",
+    "ff43f79ca60d5260"
+   ],
+   "R11": [
+    "654ddd4b81092c2e",
+    "dc36079f48bce592"
+   ],
+   "R18": [
+    "19befffb51173f83"
+   ]
+  },
+  "packages/www/src/content/docs/en/ai-agents-overview.md": {
+   "R1": [
+    "52030982a22658c6",
+    "551a870276e0a0b3",
+    "6bba2d4946abefa8"
+   ],
+   "R18": [
+    "8f68aa473d73540d"
+   ]
+  },
+  "packages/www/src/content/docs/en/ai-agents-safety.md": {
+   "R1": [
+    "00e8d39fd143adac",
+    "0f46f04bc104b6c4",
+    "1c42ae176629d7c8",
+    "2411c4361b5423e4",
+    "31d55d8e61264f67",
+    "37865ff39bfd51b2",
+    "4ff2953faad404db",
+    "817f45d07a2dcba1",
+    "8a65c3d61aae03af",
+    "91c022e3f2ffc11c",
+    "926e794d5445541e",
+    "a0f335e9a57f48a9",
+    "d037c6086462331a",
+    "f5d9606b5ef63e04"
+   ],
+   "R18": [
+    "6eeca280773ef25e",
+    "9b87f1b5dda128f6",
+    "b530d97f4ed9ff55",
+    "c55bbf89e52fd049",
+    "db6c2f6065f608f8"
+   ],
+   "R2": [
+    "6496f29dfa651801",
+    "f56c06e7bc21246e"
+   ],
+   "R7": [
+    "e0e6f6179b9a1732"
+   ]
+  },
+  "packages/www/src/content/docs/en/architecture.md": {
+   "R1": [
+    "0180afc8d5c3401f",
+    "2662a58f8e147721",
+    "555125558b9d9a88",
+    "7bada87e7fe245f2",
+    "90c1d745711d6c89",
+    "91dd02e3394f1e50",
+    "bb10d8261423b50e",
+    "bd6d80e6288b8cee",
+    "c10b60c1da15b9f7",
+    "e0b430dfcf93a31c"
+   ],
+   "R18": [
+    "16ad2bedf6167938",
+    "2743e08f9f8dd049",
+    "b26330069540710a"
+   ]
+  },
+  "packages/www/src/content/docs/en/autostart-recovery.md": {
+   "R1": [
+    "73a1abf7c5126866",
+    "9f5677bb37510e1d",
+    "a0cfcfdf366fdbad"
+   ],
+   "R18": [
+    "29bffb690aed2c59"
+   ]
+  },
+  "packages/www/src/content/docs/en/backup-restore.md": {
+   "R1": [
+    "03a04c6221046ceb",
+    "0c23fee8bb2db9fe",
+    "0df7ed4398a29654",
+    "0e32dc67b27b3811",
+    "110f328f930f955b",
+    "1a2afbc0a8828f13",
+    "28f065528ec625e5",
+    "29ceb8c72bfb51ce",
+    "2ca94070959c966c",
+    "2e9a95194b3973bc",
+    "2f5f39cfe0f70188",
+    "35313a1c338ad970",
+    "35674c5bbc0f8a35",
+    "35d420a2fbe00b77",
+    "3683e8caf492ff2e",
+    "3907f05184f8c23b",
+    "3b38e2ea3c770378",
+    "40d17d82ae74b97d",
+    "423fcd9dc92e9eff",
+    "4abeabc126ce1738",
+    "4e58abd0ef9d7a76",
+    "4f19a1cf847ef609",
+    "5086b426cf266dec",
+    "515f320c7b217072",
+    "535bdbafcedc0503",
+    "53ec1ec5098fae94",
+    "54937a95a570ddf8",
+    "57d521c9266329d8",
+    "5ee2a6559b5b694d",
+    "6723fb297666644b",
+    "6caeec215e3f6940",
+    "6db6c9ffbcfb3b53",
+    "70fed2d087c5198c",
+    "746e1023885c7094",
+    "77f3a781b2d00b87",
+    "84035717a818711d",
+    "8c21900e8dc22509",
+    "8da4ea64a7173d17",
+    "920c51d62adebebb",
+    "9386bc229911756d",
+    "a1e9cb4a3d870dd9",
+    "a4b4fb7985ad87e9",
+    "af42a3a8b6c4ff9a",
+    "b7cc71d3928da9e4",
+    "b824bf50d944b94f",
+    "ca2c7591c035e4ef",
+    "cd9631811adc4263",
+    "d82d2be2d5c495b8",
+    "e3a8ab2102d4d810",
+    "f5996192b80b6380",
+    "f67c68e248e6c99a",
+    "f9f6eda83787ab80"
+   ],
+   "R11": [
+    "0c8b36eb2d1f2a02",
+    "6bc676a06863465f",
+    "ac1285caaf2fd137",
+    "c43e904f72f1ce30"
+   ],
+   "R18": [
+    "0f30c7d38228eadf",
+    "4498889d27a478c0",
+    "6b4affeb71021280",
+    "8cbf01fca8834a72",
+    "d428e82563486306",
+    "da4dfdea67805565",
+    "e37eaaefeb91d1ae",
+    "f872647ada711f16"
+   ],
+   "R19": [
+    "088223725ea98314",
+    "0d6aa5c6ae8736db",
+    "1107555bb1b6816c",
+    "1dc456a575a675ac",
+    "1fe519ed0ba575c1",
+    "26a203f1f10e765b",
+    "306a54424d105442",
+    "38fb71f75f96da6d",
+    "4746738baf4aefca",
+    "4d4c0746631c1f28",
+    "57bea0a1acef06cd",
+    "581db0a693431aa1",
+    "59d5933c777a1a94",
+    "5d34b2c33e4c121f",
+    "6db04fa1840ff583",
+    "7147ecf63eae0b37",
+    "7625a38c372b78c4",
+    "7eb502e15babeeed",
+    "87d09c743d5521da",
+    "89418921deefcca9",
+    "930159fdd574a3e4",
+    "a10406a8e98b2c2e",
+    "a1b47b15c7fd7ba0",
+    "aaf66dc7ba9e2ad5",
+    "ba24a7d7df04784d",
+    "bd7247bc0596ed18",
+    "be3220a1e1870151",
+    "d3dc314b535ed6de",
+    "d40ad2fd3ef2e905",
+    "e2abe3a06f8893c7",
+    "ed2d1d6b83b7b2c3",
+    "ee2af7f5d105c154",
+    "ffe1c7c7d85a65a9"
+   ],
+   "R7": [
+    "482c87b5ce9dd4fc"
+   ]
+  },
+  "packages/www/src/content/docs/en/blackout.md": {
+   "R1": [
+    "05b4526cf60521ca"
+   ]
+  },
+  "packages/www/src/content/docs/en/config-storage.md": {
+   "R1": [
+    "036f8d562a2d581c",
+    "23b227d945e0b77a",
+    "26fff267b1bf6ac7",
+    "5081be969e9d6a37",
+    "559a058f3b728432",
+    "5c4068915cdec45b",
+    "8faf6fd45b7697cf",
+    "9a53a5e1013d4b64",
+    "a1b19ea7afa081a2",
+    "a1c347b2f3addfd8",
+    "a9c339399d786c17",
+    "b86aedb09aaf7aac",
+    "dd7790abda1a922a",
+    "ee48e033abe12d9e",
+    "f9b5a3f77ef9d716",
+    "fa2efaf114cc74a9"
+   ],
+   "R18": [
+    "d028dc13ee995ab0"
+   ]
+  },
+  "packages/www/src/content/docs/en/cross-backup.md": {
+   "R1": [
+    "7ff5338c95a360f8"
+   ]
+  },
+  "packages/www/src/content/docs/en/data-regions.md": {
+   "R1": [
+    "00bf4479541ea1c8",
+    "0babfffd91c49891",
+    "4f0c86af04973a10",
+    "9202b83322fb025e",
+    "b24b485d89ec1c3f",
+    "b7aee6d4054e42be",
+    "dc44459a6b5477c2",
+    "e364386b5001ae72"
+   ]
+  },
+  "packages/www/src/content/docs/en/development-environments.md": {
+   "R1": [
+    "2fbcb9e70423c344",
+    "442ecf00c76b6c31",
+    "5a6be538c133f4ca",
+    "8c49386e23f8e037",
+    "cf53d6868b978bf9"
+   ]
+  },
+  "packages/www/src/content/docs/en/experimental-vms.md": {
+   "R1": [
+    "303784d4cf194da1",
+    "5d12d387241c9326",
+    "dc7e7393a554f0db"
+   ],
+   "R11": [
+    "5d144e863ab29065"
+   ]
+  },
+  "packages/www/src/content/docs/en/hub.md": {
+   "R1": [
+    "2cf30863c4ff2b10",
+    "3ba1579db7819c73",
+    "91234615ee9743b6",
+    "f8ef8b5333f13c30"
+   ],
+   "R11": [
+    "b840f4301299a1be",
+    "bc9d140db177df3f",
+    "e2aa58cf25ea012b",
+    "e5089d9ba47c1f18"
+   ]
+  },
+  "packages/www/src/content/docs/en/installation.md": {
+   "R1": [
+    "057adc60186fb38d",
+    "191fb77707d2a282",
+    "24f46c6ab0937cde",
+    "45b1a2c165f8cd69",
+    "60ae7e8a560ebafe",
+    "77a806b396d57a71",
+    "e5cee216c70cac07",
+    "f40f06d847526959"
+   ],
+   "R11": [
+    "1b8b017ab13f42eb",
+    "909e05611db780ff",
+    "9260ad13e2b5ef7c",
+    "b623b75a36725cb2",
+    "e11704f8ad964147",
+    "e16761c3b155fbfa",
+    "e5e969d60f14f091"
+   ],
+   "R18": [
+    "43d7b6397a8b9775"
+   ]
+  },
+  "packages/www/src/content/docs/en/kubernetes.md": {
+   "R1": [
+    "39363e7fe2a9e5e8",
+    "6186de16b851f723",
+    "71650d4dea8a848e",
+    "92eefc673b02e8a3",
+    "aeef8553422c92af",
+    "ce5ed0b57ceb60e2"
+   ],
+   "R18": [
+    "279121d1930aaf65",
+    "7d57ab17a1a51bc7",
+    "818d927b39ef2872",
+    "93b1bb61c1dfc5c6",
+    "966b05a69261e4a5",
+    "c63fb0cf3ec5c751",
+    "f2931426d864bc70"
+   ]
+  },
+  "packages/www/src/content/docs/en/legal-ccpa.md": {
+   "R1": [
+    "0edadd9f6dc70465",
+    "1c766663f862dc6b",
+    "4a553eeed5bb804a",
+    "802462b3871d17fc",
+    "80f4956c4b5e799b",
+    "9bcc4ddeec16d9d9",
+    "e6fb7f4c79b8a37a",
+    "fefa43142649d4ec"
+   ]
+  },
+  "packages/www/src/content/docs/en/legal-data-sovereignty.md": {
+   "R1": [
+    "2468d1b9c95497dd",
+    "5eb5b16dfa27d616",
+    "6e9a3a99f52e4d3a",
+    "aa5a25f445418698",
+    "da44c1d57f09d6bd"
+   ],
+   "R18": [
+    "35a8085892e27074",
+    "52ff9f32a0cb8cbe"
+   ]
+  },
+  "packages/www/src/content/docs/en/legal-gdpr.md": {
+   "R1": [
+    "18b9da377d519a05",
+    "b85b882bcc434232"
+   ],
+   "R18": [
+    "6237076f89812cb7",
+    "b701a612c3dfd410",
+    "d1370a9f4376a56e"
+   ]
+  },
+  "packages/www/src/content/docs/en/legal-hipaa.md": {
+   "R1": [
+    "15cd4a9a2eb2967b",
+    "4e600767dcc8d6a6",
+    "58afcf2c03053d48"
+   ],
+   "R18": [
+    "4def80a84877e1a5"
+   ]
+  },
+  "packages/www/src/content/docs/en/legal-iso27001.md": {
+   "R1": [
+    "bc10cd091e8eee67"
+   ],
+   "R18": [
+    "c64f5ff23dc2aae7"
+   ],
+   "R2": [
+    "43e8cd9f667d08bb"
+   ]
+  },
+  "packages/www/src/content/docs/en/legal-nis2-dora.md": {
+   "R1": [
+    "5e3818072f89f1a4",
+    "a66fa2c2bb79e91d"
+   ],
+   "R18": [
+    "2b53c5339e765c47"
+   ],
+   "R2": [
+    "ef5589af1318eef8"
+   ]
+  },
+  "packages/www/src/content/docs/en/legal-overview.md": {
+   "R1": [
+    "4348a5561f259866",
+    "5a41f8fd3a432a15",
+    "5c69c7a169e50420",
+    "92c4b2d919fc5537",
+    "e9f7268e3e1a0f9c"
+   ],
+   "R18": [
+    "4682ab195a5e6be1",
+    "8d90cf5a72a2b7ab"
+   ]
+  },
+  "packages/www/src/content/docs/en/legal-pci-dss.md": {
+   "R1": [
+    "0d77c98972345a0c",
+    "2e6820d64f78229c",
+    "2f19b645d2083e5a",
+    "3d18561fa25dd86e",
+    "4a91792d95d23f09"
+   ],
+   "R2": [
+    "892e2770985cb515"
+   ]
+  },
+  "packages/www/src/content/docs/en/legal-soc2.md": {
+   "R1": [
+    "07fa70dd2da81a97",
+    "10c2b32813cdfef3",
+    "a74de3b08824559d"
+   ],
+   "R18": [
+    "297d83c68b7eb857"
+   ],
+   "R2": [
+    "124c4b4d7a325266",
+    "6147544a9f24772c",
+    "c80b8f15de150ebd"
+   ]
+  },
+  "packages/www/src/content/docs/en/license-chain.md": {
+   "R1": [
+    "0b77a4dc2657157f",
+    "4cbbea1f112580b4",
+    "4ef5d774aaff7c9a",
+    "d471e22f2d724b72",
+    "d473c0fafda15259",
+    "ec7bf7314adb57d0"
+   ],
+   "R18": [
+    "42ccc371476055ff",
+    "4da224e862f5d359",
+    "8a8ab28d463fddc4",
+    "9fc647a8a23fa430",
+    "d5433763c1e61c9c"
+   ],
+   "R7": [
+    "39edad8f312a2049"
+   ]
+  },
+  "packages/www/src/content/docs/en/limits.md": {
+   "R1": [
+    "042657a9c7bab03e",
+    "32ac47de31c24494",
+    "3ace1af5f772e766",
+    "56301541f9987df6",
+    "84704db91eabe685",
+    "88b762e0b88c31d1",
+    "8ba49e86c8d1fb87",
+    "aa119675c74e14c2",
+    "e819ac0fa7fc6ab8",
+    "f804b9b6cf098748"
+   ],
+   "R18": [
+    "0a2d74a0eb3c2ae9",
+    "43e5ec1be482342b",
+    "4d9b5ff78fb189f3",
+    "7ef4cc04c0ea4824"
+   ],
+   "R7": [
+    "31895abc1f0150ef"
+   ]
+  },
+  "packages/www/src/content/docs/en/migration.md": {
+   "R1": [
+    "12a8b641eca29c75",
+    "1331ff98b1c8164d",
+    "2566814a320898e5",
+    "2cd545d2d08f4f53",
+    "324de8b1117919ee",
+    "372abd26525106a7",
+    "554a3463d9785837",
+    "5c0e475a047d05b0",
+    "79650be296fbfe76",
+    "7c988340be047831",
+    "8a67c45d3b3f2ed6",
+    "e0fbb88caed82910",
+    "e12e9879f44b3dc3",
+    "e31e6467eb7a833a",
+    "e455bf80b4e8e140",
+    "e47a39f265b5cb09",
+    "e672c46ca48b83d5",
+    "f5bd6199fe608f31"
+   ],
+   "R11": [
+    "5d143bc5941be12a",
+    "95a8af47b6a3f0f3",
+    "d6cdf3b24f1bac27"
+   ],
+   "R18": [
+    "2fb6f731f900eccd"
+   ]
+  },
+  "packages/www/src/content/docs/en/monitoring.md": {
+   "R1": [
+    "68a2cc4a64fa7acd",
+    "7f4b551151ce0b31",
+    "cbbf977c65dbb772",
+    "e04defa8914a712c"
+   ],
+   "R11": [
+    "bb8f958a05d3b4db"
+   ],
+   "R18": [
+    "4e39f7f16dc4ecf0"
+   ],
+   "R19": [
+    "05306766db258264"
+   ],
+   "R2": [
+    "d09e901ebed45370"
+   ]
+  },
+  "packages/www/src/content/docs/en/networking.md": {
+   "R1": [
+    "00b0cf1b5d233f7f",
+    "119b82c10a4187c0",
+    "1c5a7015e42fe414",
+    "4dc8967c7c8652e1",
+    "7129036e02d4e85a",
+    "7a06330d541ff03a",
+    "7affd1b414e3c94e",
+    "c9fa060943e2318d",
+    "ca525e2df3401f89",
+    "d6596a9d17afdb45",
+    "e232ac02d0af4053",
+    "ef3b19481818569d"
+   ],
+   "R11": [
+    "49a362a5643ca9a1",
+    "5b7015845120ee24",
+    "88f8367db346635c",
+    "c40bb264e0dcaec4"
+   ],
+   "R18": [
+    "37c4f067a40d32a5",
+    "53519cd74e748a43",
+    "56c1729ca9ab91fd"
+   ]
+  },
+  "packages/www/src/content/docs/en/on-premise.md": {
+   "R1": [
+    "07646b4e6f2a5b1e",
+    "167f67b3ae66919a",
+    "33b27b459187a177",
+    "3711f55a3d07e382",
+    "4d262d7fd81985c6",
+    "5c36f07bac9e00f6",
+    "61650d49af386e91",
+    "6a0e337b0aa8d5aa",
+    "6a9b2b83eb6bc574",
+    "7c05f98a5bdb6dc2",
+    "7ffac98ae4879779",
+    "912195874332c49a",
+    "9ab96d3fbe030b2a",
+    "9d621bdf3bb235d1",
+    "aa92a43d5da9e4ce",
+    "adf3a3c2914c76c6",
+    "b5ca6909685aabba",
+    "ed18b4f7b14cbb09",
+    "f072d68b06b02646"
+   ],
+   "R11": [
+    "078ba96bff8708ab",
+    "b9d4087dcf115dae"
+   ],
+   "R18": [
+    "a27119a5bb021eab",
+    "bc82601c5fcd4b08"
+   ]
+  },
+  "packages/www/src/content/docs/en/proxy-and-executor.md": {
+   "R1": [
+    "611c35d436bf3fdf",
+    "6c521a10f3545757",
+    "dde17d154ba64b49"
+   ],
+   "R18": [
+    "3cd310709da86233",
+    "5811422791fcf8c9",
+    "a5964a34902914c2"
+   ]
+  },
+  "packages/www/src/content/docs/en/pruning.md": {
+   "R1": [
+    "3474a90ce7ae36ef",
+    "36470f92d4dd0f39",
+    "3be9720115454c96",
+    "3ed3403c402084a5",
+    "5d46502300563f09",
+    "779fde3c1b8c8cc8",
+    "7da29bdf05971193",
+    "83c48fff726820fc",
+    "a47ea58bdd92ff2f",
+    "b381331b629438c8",
+    "e751218023fd1bbf"
+   ],
+   "R18": [
+    "393fd04b29f541b2",
+    "50d9ff4ed8798c18",
+    "6d7150e6ecbbce73",
+    "b5914d8a18b2d2ec"
+   ],
+   "R7": [
+    "20b69b0488be3e6b",
+    "82aa0775a4a75a81"
+   ]
+  },
+  "packages/www/src/content/docs/en/quick-start.md": {
+   "R1": [
+    "232cc80faf39192c",
+    "237c408e5206d3c8",
+    "273cafed0e54b8cc",
+    "3454faf4acb94809",
+    "577b5cec5eebc7b1",
+    "71c0c893553f7904",
+    "8041d3b0bda2bc2c",
+    "9b489eefa80b86e3",
+    "9d6662de95f2392f",
+    "af0c88f819448e31",
+    "d6559fc5e82fbc49",
+    "e3fc4839d9bd2295"
+   ],
+   "R11": [
+    "aaeba1744282071f"
+   ]
+  },
+  "packages/www/src/content/docs/en/rdc-cheat-sheet.md": {
+   "R1": [
+    "e7ebfdd0f91862be"
+   ],
+   "R11": [
+    "ea1102e1d4e17059"
+   ]
+  },
+  "packages/www/src/content/docs/en/rdc-vs-renet.md": {
+   "R1": [
+    "162f5b549bbead60",
+    "29df6c9e21c58f78",
+    "42803b6848254c5e",
+    "55f1296d0e4164f3",
+    "733d7d5d2271f885",
+    "79cb0dde65bffeb1",
+    "823677cfdd8d77db",
+    "ae82fe50777b5c7f",
+    "b3211b3fc4d4f03d",
+    "dfc9a36e823b6c86"
+   ]
+  },
+  "packages/www/src/content/docs/en/release-channels.md": {
+   "R1": [
+    "06686cc53be21229",
+    "1c24d17e657cebec",
+    "3f2f046e4a16c420",
+    "5967d233746092a8",
+    "620c7c8391604af0",
+    "67f5526ce267051d",
+    "6c6b9e0185def516",
+    "744dfd8c4630cae8",
+    "a4dfdfb2372bd35b",
+    "acf9a58fa87b3cc7",
+    "b6c5049ff5ea2337",
+    "cc239d2f0da2f1e4",
+    "f2495cd702a708cf"
+   ],
+   "R11": [
+    "e7e2afa218392914",
+    "ed2fd9a74fd6bf7e"
+   ]
+  },
+  "packages/www/src/content/docs/en/repo-branching.md": {
+   "R1": [
+    "189ca0b2813afaf4",
+    "33c2a59cbda5592d",
+    "44e68ddf284914e4",
+    "97bd4bff7de826d1",
+    "9e2cd65931ead0d3",
+    "cd5cfa654e6804b4",
+    "dfacb588f016a90a"
+   ],
+   "R11": [
+    "c7cfdbff2e2ccac4",
+    "e927619d1e788594"
+   ],
+   "R18": [
+    "1951a2b142a18812",
+    "64ae8df553c97823",
+    "bed7d73203ee0182",
+    "cadbf7431791ee5a"
+   ]
+  },
+  "packages/www/src/content/docs/en/repo-diff.md": {
+   "R1": [
+    "8d4beb188037fca1"
+   ],
+   "R18": [
+    "12414888b0bce239",
+    "242e1f457d3a9f1a",
+    "79fc69686bbd49d1"
+   ]
+  },
+  "packages/www/src/content/docs/en/repositories.md": {
+   "R1": [
+    "0def49fcc134d2af",
+    "2492fa49e9cc440e",
+    "2a5c65f0f9ea5aca",
+    "370189f72d66093b",
+    "5bfb41060e48738b",
+    "62abeeaec33d0fa9",
+    "7618290e5229aa5e",
+    "7b595d32f156b2fe",
+    "af6bf4475d3a8816",
+    "b65cca8cee7d89fa",
+    "c4edcf20b8936d55",
+    "d9496de6194b7bf3",
+    "e7e525e2b81a7f74",
+    "f7b800722a6689d0"
+   ],
+   "R11": [
+    "345b976e238349e0",
+    "7919fc0ad1e3ec22"
+   ],
+   "R18": [
+    "39e45918b6249dfe",
+    "49b2ff8821e2e027",
+    "4a5a63d426acd550",
+    "7c465f920bbd4d6d",
+    "86a565c640520108",
+    "c5bbc649d703a1c6"
+   ]
+  },
+  "packages/www/src/content/docs/en/requirements.md": {
+   "R1": [
+    "37e8c75f5048e7ad",
+    "5410b6e5a8ea9427",
+    "5964082994ef107b",
+    "67a6466c0aa32fbd",
+    "835cc47eea55124b",
+    "987b025d040797f7",
+    "a6ca3e5995724296",
+    "aa228769f2e1d997",
+    "cdee38b9952955b8",
+    "f97e97f9732402ee"
+   ]
+  },
+  "packages/www/src/content/docs/en/rules-of-rediacc.md": {
+   "R1": [
+    "0ef9cb864ceef504",
+    "11555a70d1289657",
+    "1a1751c6e38a7d89",
+    "7950671fd3fdd1bd",
+    "80f9986e60270332",
+    "a8f680369753197e",
+    "d8946643772286a5",
+    "dab240ba52e6b981"
+   ],
+   "R18": [
+    "3b10942a88cfc383",
+    "8f1231599c35971a",
+    "b0e4d325f9fc5819",
+    "cfb96defa9fce888",
+    "e2be16a7ceb100a8",
+    "f97567486d859ef3"
+   ],
+   "R7": [
+    "a8a564d27df03d0f"
+   ]
+  },
+  "packages/www/src/content/docs/en/server-reference.md": {
+   "R1": [
+    "04c05eff35635cc5",
+    "1a36fb57b13de1a9",
+    "5416ac6bafdc2d14",
+    "57c6c45d3aa8d198",
+    "6c165bd280cb4081",
+    "dbaf851ef3d2d643"
+   ],
+   "R11": [
+    "316f7455f33f5ce1",
+    "3a64990065735514",
+    "54619a2ce0a1fe49",
+    "7441f0cdca731b09"
+   ],
+   "R18": [
+    "db7c2a25a039bd75"
+   ]
+  },
+  "packages/www/src/content/docs/en/services.md": {
+   "R1": [
+    "05d40a2939f0d4d5",
+    "20792bf5b280eb74",
+    "3bdaf799db7e8235",
+    "6626673a9068e427",
+    "6861d767792ccfbb",
+    "7aff9b3942471100",
+    "98d5d871ad12812c",
+    "a92abbff3f1214d9",
+    "b88df506e9ea1cf5",
+    "ed8e5a718d36f258",
+    "f2bdba7618b2900c"
+   ],
+   "R11": [
+    "48762926c52a6824"
+   ],
+   "R18": [
+    "34bb48c7d38d23ab",
+    "41203dc6ed58b847",
+    "86d5a5ba96cfca5f",
+    "8f2116dddf4bdf4d",
+    "9d3c6340295cd6dd",
+    "a6a5e630228ef796"
+   ],
+   "R19": [
+    "02c1767929e0bb4f",
+    "fea13e681e1bf8b4"
+   ],
+   "R7": [
+    "829a029157e2a34d"
+   ]
+  },
+  "packages/www/src/content/docs/en/setup.md": {
+   "R1": [
+    "0f51f5f0e51e0afe",
+    "2370e0776d33e002",
+    "2eb08b0c2caff7b6",
+    "3685c9b1fd129078",
+    "407d068057c10511",
+    "7a3534463da01f45",
+    "892fecc24e69e26b",
+    "928fc233d88897bf",
+    "95e55fd9a74c37d8",
+    "a0f546fce12ac4ad",
+    "a278910a8494c38c",
+    "ab5f99d5e4d4c968",
+    "bac894de8e24992b",
+    "d1f2094658c2a8a6",
+    "eb19e631585fadb8"
+   ],
+   "R11": [
+    "8a39279214fbd53b"
+   ]
+  },
+  "packages/www/src/content/docs/en/siem-integration.md": {
+   "R1": [
+    "8f3384ea78b3db52"
+   ],
+   "R19": [
+    "178bffb56bdcd04e",
+    "31ee20bef4a503de",
+    "828ffa36057c7c1d",
+    "9f9c87fea23694f7",
+    "a7c9f00cc63dcdd1",
+    "d8abff00d6399b6e"
+   ],
+   "R7": [
+    "9b8877de49c4a1ef"
+   ]
+  },
+  "packages/www/src/content/docs/en/subscription-licensing.md": {
+   "R1": [
+    "123c9fe62ddc94e9",
+    "126e21ef86c04412",
+    "13d401ab2ec7b065",
+    "141ae13a86c44a86",
+    "1493de5edfef55c8",
+    "1d000a27243dcb78",
+    "26d349cc8000eb4f",
+    "3fb0dbf0fcf5f17e",
+    "4d2be9b0079e4cd1",
+    "4dc375fc78a6217e",
+    "5906d32c3721afe3",
+    "5c27360883a0f317",
+    "5f7d76bdc122a417",
+    "6022c951ab542c69",
+    "63635f2a03d9dee3",
+    "7f4ba97a5c7611bf",
+    "88a92edee8d22d77",
+    "8bae1f60894020ad",
+    "92e500872c3c2d02",
+    "9cd2b0fb9e28d97f",
+    "a1365ca80cd1a054",
+    "a7e202b33fde633d",
+    "af7886d6939baf00",
+    "beab323b02bed92d",
+    "c78afb58eb3f4a2b",
+    "d135f8663a6659d9",
+    "f915e3fd3085599e",
+    "fcd889a99aeb6cd9"
+   ],
+   "R18": [
+    "0b999340dfe3e89b",
+    "16a8a6e1a16ff639",
+    "1951a0b61c65e9d7",
+    "541cf2b1b61211d8",
+    "704be2e1c53b6f59",
+    "a5929421a74dc06e",
+    "f43e0146a5538ce4"
+   ],
+   "R7": [
+    "246a34dd6e8c84b2",
+    "b2f9f4d79048c56c"
+   ]
+  },
+  "packages/www/src/content/docs/en/time-travel-recovery.md": {
+   "R1": [
+    "8c8dbda056ff638d"
+   ],
+   "R18": [
+    "aaf2c99dc9b2a5ea"
+   ]
+  },
+  "packages/www/src/content/docs/en/tools.md": {
+   "R1": [
+    "02e69faf19b399e8",
+    "90a5b4baf6162c31",
+    "92630bd90540905d",
+    "b7b905af86a2dbe6",
+    "ba311c21669f7d39",
+    "fa52fe768bac6063"
+   ],
+   "R11": [
+    "aa1c032131230b8c",
+    "dfb44d70002723d3"
+   ]
+  },
+  "packages/www/src/content/docs/en/troubleshooting.md": {
+   "R1": [
+    "00329af3f4c953a2",
+    "027fe2ee6c02319b",
+    "197e6ce3c6a4de74",
+    "3aca6f492f7ef45b",
+    "3bf0c4a63362bb59",
+    "58ed421191a9a0f1",
+    "661f9b9d520a516f",
+    "6d99857d4dd4b68b",
+    "7408a3804475698a",
+    "98570ef4f4fa0871",
+    "b1092566ebc25e6d",
+    "baa3303866d552cf",
+    "be5d0b913ae9f556",
+    "cbd3624264b09ebd",
+    "dcf8882a6eecab67",
+    "ea6b4ccac7993fa3",
+    "f6ea1cb599d2a239",
+    "f86e2914ec0a6b95",
+    "fc54894a205fa8f7"
+   ],
+   "R18": [
+    "9bec7923ce1ddcec",
+    "bbfc1a23bba2e091"
+   ]
+  },
+  "packages/www/src/content/docs/en/web-console.md": {
+   "R1": [
+    "002582e15bdca1b7",
+    "03b2a9cd9100d758",
+    "2f068d7411212d16",
+    "6cf305a8b7fe3b1e",
+    "9aeb93f24985341e",
+    "b56eb60a99a7bfda",
+    "bed80152ed3f05b8",
+    "c674a8bfe878460c",
+    "c7417214e7292584"
+   ],
+   "R7": [
+    "03e0ae190492ff1f"
+   ]
+  },
+  "packages/www/src/content/docs/en/zero-cost-backup.md": {
+   "R2": [
+    "6b5375cb06290a29"
+   ]
+  },
+  "packages/www/src/content/docs/es/account-management.md": {
+   "R18": [
+    "2f52b218f203a4c1",
+    "345cdca01e8defa6"
+   ]
+  },
+  "packages/www/src/content/docs/es/account-security.md": {
+   "R18": [
+    "bba4ec8a7aae4d5d"
+   ]
+  },
+  "packages/www/src/content/docs/es/agents-md-template.md": {
+   "R18": [
+    "0bef988a96705bcb"
+   ]
+  },
+  "packages/www/src/content/docs/es/ai-agents-json-output.md": {
+   "R18": [
+    "f8d0688dd16204d3"
+   ]
+  },
+  "packages/www/src/content/docs/es/ai-agents-mcp.md": {
+   "R18": [
+    "2e546f4dcf18ff45"
+   ]
+  },
+  "packages/www/src/content/docs/es/ai-agents-overview.md": {
+   "R18": [
+    "6ca58c3db769c5d1"
+   ]
+  },
+  "packages/www/src/content/docs/es/ai-agents-safety.md": {
+   "R18": [
+    "09426383bdab5f1e",
+    "13909352242371f3",
+    "3e54a2da271928a3",
+    "8ef9a0b322d3b7bc",
+    "9f547eaa391287a9",
+    "b39a57653de9335e",
+    "c86ffca07a89c0b2",
+    "cf77a422521e16d2"
+   ]
+  },
+  "packages/www/src/content/docs/es/architecture.md": {
+   "R18": [
+    "11b07c1036e93c84",
+    "3b6b418f4379fba1",
+    "5cbf95b7090d2406",
+    "ba1699ca68644f15",
+    "eaf16606e6e90f35",
+    "fe703114cd2cce35"
+   ]
+  },
+  "packages/www/src/content/docs/es/autostart-recovery.md": {
+   "R18": [
+    "1377dca5a442906c"
+   ]
+  },
+  "packages/www/src/content/docs/es/backup-restore.md": {
+   "R11": [
+    "87fed4f8f306c728"
+   ],
+   "R18": [
+    "07d5447172f7d14e",
+    "0de08016e04c5661",
+    "1323da3716e44b32",
+    "160cb28110e057c8",
+    "24b2ba162338a11d",
+    "2a093763a83a4040",
+    "3b53da70bacd4322",
+    "41c11554fddd9794",
+    "4d8159dc326ac2c7",
+    "5534cfc5eb8c90cd",
+    "5e323cf53cbcd80e",
+    "60b7506c2ae8fce5",
+    "66c170e9444962ec",
+    "6a0ccbd61b99c2e2",
+    "71977e3273639aa3",
+    "73020bbcfd570e77",
+    "759ffc30b3ba0db0",
+    "97caa479f5de26b8",
+    "9eba01856aaffe64",
+    "ac233f9a7b61b765",
+    "b3a7aaef34fb7e28",
+    "dc764b71fd2c1b94",
+    "e94526f47ed5b2c3",
+    "ea0d0a959df2d037",
+    "f5acf66be3cd7fed"
+   ]
+  },
+  "packages/www/src/content/docs/es/config-storage.md": {
+   "R18": [
+    "45a09e2cced1b0b0"
+   ]
+  },
+  "packages/www/src/content/docs/es/hub.md": {
+   "R18": [
+    "134823a0d37e0d53",
+    "99dc2817dfe47b71"
+   ]
+  },
+  "packages/www/src/content/docs/es/installation.md": {
+   "R18": [
+    "bb1f64a472a31614"
+   ]
+  },
+  "packages/www/src/content/docs/es/kubernetes.md": {
+   "R18": [
+    "033cd512e2f048cf",
+    "05edf5d8f5e70883",
+    "13869c635b1152d1",
+    "14bfaa5ad91dbb19",
+    "4268b2af87f25410",
+    "6740fc3695930906",
+    "711f1998124af99d",
+    "7f499eaeb427f714",
+    "8eb85d6a87fd1e34",
+    "e1d635e487620952",
+    "f025dcf539bb774a"
+   ]
+  },
+  "packages/www/src/content/docs/es/legal-data-sovereignty.md": {
+   "R18": [
+    "34beedced6bdda66",
+    "6ae6a3a44750e458",
+    "f16d7d3007a03768"
+   ]
+  },
+  "packages/www/src/content/docs/es/legal-gdpr.md": {
+   "R18": [
+    "407ccbf41eb8478c",
+    "891bbc2006ee8137",
+    "917b39b75e0bc779",
+    "997d6753729489f1"
+   ]
+  },
+  "packages/www/src/content/docs/es/legal-hipaa.md": {
+   "R18": [
+    "6f69064db66b1a72",
+    "759ceb3eae5cfcbb",
+    "82ba22c6ce94a270"
+   ]
+  },
+  "packages/www/src/content/docs/es/legal-iso27001.md": {
+   "R18": [
+    "a7c888b41aaa91eb",
+    "f65d514d4b9f3414"
+   ]
+  },
+  "packages/www/src/content/docs/es/legal-nis2-dora.md": {
+   "R18": [
+    "f40ab7b951acc824"
+   ]
+  },
+  "packages/www/src/content/docs/es/legal-overview.md": {
+   "R18": [
+    "5a54006a7a5e0741",
+    "d168f08ecbba6275"
+   ]
+  },
+  "packages/www/src/content/docs/es/legal-pci-dss.md": {
+   "R18": [
+    "c49bdd6f19e150ce"
+   ]
+  },
+  "packages/www/src/content/docs/es/legal-soc2.md": {
+   "R18": [
+    "0e2e69f3938376db",
+    "9e9b1a2db0ff9e06"
+   ]
+  },
+  "packages/www/src/content/docs/es/license-chain.md": {
+   "R18": [
+    "1a5ae103c205cbfe",
+    "1f1a968680c508a5",
+    "276b442a42f22888",
+    "67d75595cb42353c",
+    "7508780e693bbf88",
+    "9bac24e0b64dae89",
+    "9f3917ed05359ab1",
+    "aff781bc06c37e2f",
+    "b364585be93c72dc",
+    "cc344f79596e850a",
+    "e4d9c8f5118111ed"
+   ]
+  },
+  "packages/www/src/content/docs/es/limits.md": {
+   "R18": [
+    "084d78e45d7b30aa",
+    "425d59074edfeb5a",
+    "7ee2b4b2235c9b6f",
+    "b84c9f6c2e7de8fb",
+    "c0e60e1bce044da0",
+    "e3ca43ae1947f858"
+   ]
+  },
+  "packages/www/src/content/docs/es/migration.md": {
+   "R18": [
+    "9739e7344a8f3164"
+   ]
+  },
+  "packages/www/src/content/docs/es/monitoring.md": {
+   "R18": [
+    "104c84866a99b03d",
+    "140a7bf83d55c294",
+    "df8c333e1f365e1e"
+   ],
+   "R19": [
+    "d5c680fab923f616"
+   ]
+  },
+  "packages/www/src/content/docs/es/networking.md": {
+   "R18": [
+    "5112a98d174ea914",
+    "5a42f55941baf15c",
+    "8c93e70e350513ad",
+    "e63724b8e2ad5f78",
+    "ee559d6a829af1f5"
+   ]
+  },
+  "packages/www/src/content/docs/es/on-premise.md": {
+   "R18": [
+    "054304af8b963752",
+    "3f00cb532a48668b",
+    "6bdeb6ecf74b6c19",
+    "72e5e9cbcddbadb5",
+    "7862411a4d5157cc",
+    "b72b229abface90d",
+    "f50df2fea019bcda"
+   ]
+  },
+  "packages/www/src/content/docs/es/proxy-and-executor.md": {
+   "R18": [
+    "16826c56f063ad19",
+    "7a902256aaf3dc39",
+    "bc72f72880e245bb",
+    "be056fc33f1dc0a9",
+    "e53e98f7cab0d478"
+   ]
+  },
+  "packages/www/src/content/docs/es/pruning.md": {
+   "R18": [
+    "579a65a81db30591",
+    "75858040b57d9d35",
+    "9e250484f3efe9f0",
+    "b828a0742845d4a3",
+    "ed6b3cd843840549"
+   ]
+  },
+  "packages/www/src/content/docs/es/repo-branching.md": {
+   "R18": [
+    "058bdd885651832b",
+    "0d09b1a932c6cb80",
+    "23ae20333576c4c5",
+    "2ba893dafdee1c99",
+    "3b0f49ad1cd020d7",
+    "5461744ae0296cfa",
+    "a006e2c84c8b1e90",
+    "d84602bbe0e3badb"
+   ]
+  },
+  "packages/www/src/content/docs/es/repo-diff.md": {
+   "R18": [
+    "2f95ee906a4f549e",
+    "580ec2d44848c2ba",
+    "ff51c254d101f656"
+   ]
+  },
+  "packages/www/src/content/docs/es/repositories.md": {
+   "R18": [
+    "0c461960715c86cc",
+    "20f6194dc31915ac",
+    "27909c1296c80264",
+    "27ead2942b8313ad",
+    "2d46434c3dd8846f",
+    "5ec3e1cd2731418a",
+    "60acfd89120792d3",
+    "7b68e58cb7f134b0",
+    "a6367fdee1861196",
+    "beb1a4368a46637d"
+   ]
+  },
+  "packages/www/src/content/docs/es/requirements.md": {
+   "R18": [
+    "d9f5c1edd1b43d01"
+   ]
+  },
+  "packages/www/src/content/docs/es/risk-free-upgrades.md": {
+   "R18": [
+    "f819615f422b0594"
+   ]
+  },
+  "packages/www/src/content/docs/es/rules-of-rediacc.md": {
+   "R18": [
+    "35f57f3100cd18e9",
+    "44ba39588553357b",
+    "4627418123fca6b4",
+    "8974702d64c04604",
+    "9ae815786adae00f",
+    "df5380361270cd36",
+    "f96dc412083c8528"
+   ]
+  },
+  "packages/www/src/content/docs/es/server-reference.md": {
+   "R18": [
+    "71db4265af8770d8"
+   ]
+  },
+  "packages/www/src/content/docs/es/services.md": {
+   "R18": [
+    "0519b842e2aa0c78",
+    "4bd8b382d963722e",
+    "57208a6906478ef1",
+    "6d5d121344e7391e",
+    "92bae12cb2efd042",
+    "ba4cda8d5dfeae22",
+    "c329be33bb811f29",
+    "ce6278e59b038b4d",
+    "e4893b99f1fec522"
+   ]
+  },
+  "packages/www/src/content/docs/es/setup.md": {
+   "R18": [
+    "43d435a65df2956c",
+    "8653aa22a52feb0e"
+   ]
+  },
+  "packages/www/src/content/docs/es/subscription-licensing.md": {
+   "R18": [
+    "0d298801f36793f0",
+    "0ed361381bfc7f9c",
+    "1c12aadd9df0192b",
+    "1dec710d2d2e0765",
+    "343ea5acafd7739d",
+    "4447207d5b2f1b01",
+    "6714a856ac5d382e",
+    "7b7c9b5366045112",
+    "8e9c92593c40d5bd",
+    "ad76349638663fe8",
+    "b6cfdce7ea1aa8a6",
+    "c47a740da9345432",
+    "e2b41fae195f1c0e"
+   ]
+  },
+  "packages/www/src/content/docs/es/time-travel-recovery.md": {
+   "R18": [
+    "da1f78f20309792d"
+   ]
+  },
+  "packages/www/src/content/docs/es/tools.md": {
+   "R18": [
+    "e39c279df10679fe"
+   ]
+  },
+  "packages/www/src/content/docs/es/troubleshooting.md": {
+   "R18": [
+    "5bce139be1d8ebcf",
+    "b58f47cef05a8073",
+    "d156030acebd7d90"
+   ]
+  },
+  "packages/www/src/content/docs/es/web-console.md": {
+   "R18": [
+    "ae6fd01306c83293",
+    "c529650923ecb1d3"
+   ]
+  },
+  "packages/www/src/content/docs/et/account-management.md": {
+   "R18": [
+    "cde4128eae315d35"
+   ]
+  },
+  "packages/www/src/content/docs/et/account-security.md": {
+   "R18": [
+    "c884f1f5ac17f801"
+   ]
+  },
+  "packages/www/src/content/docs/et/agents-md-template.md": {
+   "R18": [
+    "9d8f4383b3de0e9d"
+   ]
+  },
+  "packages/www/src/content/docs/et/ai-agents-json-output.md": {
+   "R18": [
+    "3ce2fb60299882ba"
+   ]
+  },
+  "packages/www/src/content/docs/et/ai-agents-mcp.md": {
+   "R18": [
+    "ef51ee592c77b780"
+   ]
+  },
+  "packages/www/src/content/docs/et/ai-agents-overview.md": {
+   "R18": [
+    "6136956f7a7ad0f6"
+   ]
+  },
+  "packages/www/src/content/docs/et/ai-agents-safety.md": {
+   "R18": [
+    "3302bfd9ca577ded",
+    "447f6ec30ab29551",
+    "65c67822a8de5b4b",
+    "a77e4f327719e777",
+    "c05fe8bd9cfc5457"
+   ]
+  },
+  "packages/www/src/content/docs/et/architecture.md": {
+   "R18": [
+    "079fdcd77b86186f",
+    "451559ae423d845c",
+    "d56fc81ad443f2bf"
+   ]
+  },
+  "packages/www/src/content/docs/et/autostart-recovery.md": {
+   "R18": [
+    "277c9c465604b645"
+   ]
+  },
+  "packages/www/src/content/docs/et/backup-restore.md": {
+   "R11": [
+    "ad7853f3461b49dc"
+   ],
+   "R18": [
+    "101b42c728e2f734",
+    "200f567f06d95397",
+    "260306a789f69c61",
+    "38c1823e6281afd2",
+    "3b78e6ef39d28ab2",
+    "3d9472f1f7573852",
+    "42caffa7696b9a9a",
+    "4336d33f98518c0f",
+    "467b33d917151c67",
+    "6d9d4422a438e862",
+    "77367e7848e4e8db",
+    "9cd0234f1d576b7c",
+    "b94607dc1cc86afe",
+    "bc9973dbf3abecc3",
+    "c32c640a6de83e54",
+    "db5d7e2c6fcd684d",
+    "e0e594fb3d3787a8",
+    "e770cecf2c3cd837",
+    "f43fd4f94dee0056"
+   ]
+  },
+  "packages/www/src/content/docs/et/config-storage.md": {
+   "R18": [
+    "bff0bf955ad59bff"
+   ]
+  },
+  "packages/www/src/content/docs/et/installation.md": {
+   "R18": [
+    "d0c8873c9144dcff"
+   ]
+  },
+  "packages/www/src/content/docs/et/kubernetes.md": {
+   "R18": [
+    "04cd0d5e64a93b6d",
+    "05aad5a022e3858d",
+    "08c5da2d0bd645e9",
+    "120fe4e7d4b8e123",
+    "20cade8967b8dc05",
+    "6487b4871f0cbad5",
+    "893b7a8373657eab",
+    "ce0c82e6066698e6",
+    "ee23eb62fe64bc79"
+   ]
+  },
+  "packages/www/src/content/docs/et/legal-data-sovereignty.md": {
+   "R18": [
+    "334441860d62d74e",
+    "6480fc4749741f14",
+    "65764e289fc5ece0"
+   ]
+  },
+  "packages/www/src/content/docs/et/legal-gdpr.md": {
+   "R18": [
+    "7c9abe199ea6ae34",
+    "7f53b5f94a6db5fd",
+    "a5da8ff17258274b",
+    "ad88359b86f70f1b"
+   ]
+  },
+  "packages/www/src/content/docs/et/legal-hipaa.md": {
+   "R18": [
+    "335720e42dbc4f2e",
+    "33e9f93b97216fa0"
+   ]
+  },
+  "packages/www/src/content/docs/et/legal-iso27001.md": {
+   "R18": [
+    "d9298d552eee0d81"
+   ],
+   "R2": [
+    "2b693bb6a8343de1"
+   ]
+  },
+  "packages/www/src/content/docs/et/legal-nis2-dora.md": {
+   "R18": [
+    "80f3adf56b45fbf9"
+   ]
+  },
+  "packages/www/src/content/docs/et/legal-overview.md": {
+   "R18": [
+    "189e9e9b200db7a2",
+    "b2c4138e2fbd5467"
+   ]
+  },
+  "packages/www/src/content/docs/et/legal-pci-dss.md": {
+   "R18": [
+    "0e68e1fe5701551c"
+   ]
+  },
+  "packages/www/src/content/docs/et/legal-soc2.md": {
+   "R18": [
+    "c1f02489b55f7551"
+   ]
+  },
+  "packages/www/src/content/docs/et/license-chain.md": {
+   "R18": [
+    "212421dd70a4f3a2",
+    "4efe0a08924456be",
+    "5f0a1f427066a9d8",
+    "67d27cb835416510",
+    "9d7681f3e3525620",
+    "b9336bb135a86785"
+   ]
+  },
+  "packages/www/src/content/docs/et/limits.md": {
+   "R18": [
+    "27b9c3ed0a362e49",
+    "7bfc415ef23bf76e",
+    "a3eca524a4eaa1c7",
+    "c40600a2e3c9b56a"
+   ]
+  },
+  "packages/www/src/content/docs/et/migration.md": {
+   "R18": [
+    "7285dffacb09e947"
+   ]
+  },
+  "packages/www/src/content/docs/et/monitoring.md": {
+   "R18": [
+    "199cab7ae4f3cf1b"
+   ]
+  },
+  "packages/www/src/content/docs/et/networking.md": {
+   "R18": [
+    "5b13ac27516544db",
+    "a386862279bf74cd",
+    "ff17e40c8fd94e90"
+   ]
+  },
+  "packages/www/src/content/docs/et/on-premise.md": {
+   "R18": [
+    "cd053783ce8ccfec",
+    "e9d80d0404482931"
+   ],
+   "R2": [
+    "f239d64b372a4224"
+   ]
+  },
+  "packages/www/src/content/docs/et/proxy-and-executor.md": {
+   "R18": [
+    "1fa9c7b61ae80c25",
+    "3ea08fee8458334c",
+    "82c60bf5a82fc06c"
+   ]
+  },
+  "packages/www/src/content/docs/et/pruning.md": {
+   "R18": [
+    "4acc5a8179f0d1c8",
+    "5e4271718bea4778",
+    "6e537fbc5988aca0",
+    "9380351e6f1d2eff",
+    "d740eaffbe08ac90"
+   ]
+  },
+  "packages/www/src/content/docs/et/repo-branching.md": {
+   "R18": [
+    "0edfe0637d6e6c0c",
+    "612347f59642c271",
+    "986274e2d8cd4ea6",
+    "bfff1101c974e4bd",
+    "e75ace1a1901178d"
+   ]
+  },
+  "packages/www/src/content/docs/et/repo-diff.md": {
+   "R18": [
+    "7310c155e1cd83f4",
+    "755c6b30348909a1",
+    "bdbb22677d86abe8"
+   ]
+  },
+  "packages/www/src/content/docs/et/repositories.md": {
+   "R18": [
+    "2726c478c282a812",
+    "5d9035a6bf14d366",
+    "6914d4f22132d2bf",
+    "8e73a94708ec3030",
+    "a2d2090585cbab31",
+    "c19c08db8bc81ee2",
+    "e3fc1b27978d021d"
+   ]
+  },
+  "packages/www/src/content/docs/et/rules-of-rediacc.md": {
+   "R18": [
+    "1cafd2aefab5dc4b",
+    "2316d8abecdc1c3b",
+    "4ac2ddaf0bc146be",
+    "5189d8d846f29670",
+    "7f38d1baad329071",
+    "edb2e9b40a5dc716"
+   ]
+  },
+  "packages/www/src/content/docs/et/server-reference.md": {
+   "R18": [
+    "352c418fd2f9163c"
+   ]
+  },
+  "packages/www/src/content/docs/et/services.md": {
+   "R18": [
+    "2f7cd3acd6561f3e",
+    "304b03d1183a61e0",
+    "484bcf8cb3a833f9",
+    "8510bd130d5a9bc8",
+    "ac8656da9d0febe1",
+    "e7502d623d591a7c",
+    "edd823ec74445bf9",
+    "f62fd4a85cf29619"
+   ],
+   "R19": [
+    "04a570880cfb1da2",
+    "2df110f8ba95e6af"
+   ],
+   "R2": [
+    "d016c57eca93e461"
+   ]
+  },
+  "packages/www/src/content/docs/et/setup.md": {
+   "R18": [
+    "903be88f88ccad9b"
+   ]
+  },
+  "packages/www/src/content/docs/et/subscription-licensing.md": {
+   "R18": [
+    "0553d9b9c14adbb2",
+    "472042a75d3b3b87",
+    "59f21fb373c3870e",
+    "801b0b981fb07417",
+    "9dae083c52aac7e4",
+    "cbd9ab35522be6e0",
+    "dbe976f6906f4e87",
+    "e70deba6204a4dcf"
+   ]
+  },
+  "packages/www/src/content/docs/et/time-travel-recovery.md": {
+   "R18": [
+    "fffc180ef7ec1157"
+   ]
+  },
+  "packages/www/src/content/docs/et/troubleshooting.md": {
+   "R18": [
+    "55fcff7d32066e59",
+    "b200c9e658423f11"
+   ]
+  },
+  "packages/www/src/content/docs/fr/account-management.md": {
+   "R18": [
+    "5e24d8cb30486618",
+    "b30192550b351c44"
+   ]
+  },
+  "packages/www/src/content/docs/fr/account-security.md": {
+   "R18": [
+    "03bce0f8e4272222"
+   ]
+  },
+  "packages/www/src/content/docs/fr/agents-md-template.md": {
+   "R18": [
+    "b9aec6938b4ab2f0"
+   ]
+  },
+  "packages/www/src/content/docs/fr/ai-agents-json-output.md": {
+   "R18": [
+    "f9a2c450fcb0cb45"
+   ]
+  },
+  "packages/www/src/content/docs/fr/ai-agents-mcp.md": {
+   "R18": [
+    "b110f7e750e0ebab"
+   ]
+  },
+  "packages/www/src/content/docs/fr/ai-agents-overview.md": {
+   "R18": [
+    "2fe0f1fd39b6471e"
+   ]
+  },
+  "packages/www/src/content/docs/fr/ai-agents-safety.md": {
+   "R18": [
+    "2e72a629b3e79f98",
+    "3f581f2585e50156",
+    "6b8353e3a0508128",
+    "78df9d841c60630c",
+    "8daba3be173e88cb",
+    "abd1f81f0864df3f",
+    "c09c5b0ee906f9e0",
+    "f5881b7811e2fb77"
+   ]
+  },
+  "packages/www/src/content/docs/fr/architecture.md": {
+   "R18": [
+    "139f2588edf02ac7",
+    "6496aa2d85154543",
+    "6499ea5a970d47fd",
+    "bb0013fc11de1689",
+    "d1c0aa77f41b1832",
+    "db2d3ec0632ab04f",
+    "e393a439383d0751"
+   ]
+  },
+  "packages/www/src/content/docs/fr/autostart-recovery.md": {
+   "R18": [
+    "96d4e4d77e9eac3c"
+   ]
+  },
+  "packages/www/src/content/docs/fr/backup-restore.md": {
+   "R11": [
+    "fd0a8151b0aad8b7"
+   ],
+   "R18": [
+    "0413fb305547d14a",
+    "15dc7f341cfcf6d4",
+    "182563c8992b6fa1",
+    "2bd64bfc55b23162",
+    "2d8e084651566961",
+    "35999fcc0b91bc8d",
+    "38113fd1bb0c6eaf",
+    "428cdafb8b41cc0e",
+    "491796a5f0ee5b66",
+    "4e21648ca6c97fbb",
+    "5efd0563d9742455",
+    "6c2b7d0b1b6f0018",
+    "6c92aee7dd50a1d1",
+    "6f7dbd279eee1499",
+    "892f16c7972bdb33",
+    "9257b83c201b8473",
+    "9b9b4baca9676ae1",
+    "9e7b9f090493ca9f",
+    "a457eaa63635adb8",
+    "ac449f18da373da2",
+    "c1e813bdc6b44afb",
+    "c2371613509832de",
+    "d06d56e6cf69dc3b",
+    "dc0fc5ce71374c97",
+    "df8644ea5e1af2c7",
+    "f8fb7791558e6a04"
+   ]
+  },
+  "packages/www/src/content/docs/fr/config-storage.md": {
+   "R18": [
+    "ccef73483a98d093"
+   ]
+  },
+  "packages/www/src/content/docs/fr/development-environments.md": {
+   "R18": [
+    "a14c715cd779c895"
+   ]
+  },
+  "packages/www/src/content/docs/fr/hub.md": {
+   "R18": [
+    "42b7ace9cafbb92c",
+    "cb3295cd6a2991eb"
+   ]
+  },
+  "packages/www/src/content/docs/fr/installation.md": {
+   "R18": [
+    "0c4a89c027794219"
+   ]
+  },
+  "packages/www/src/content/docs/fr/kubernetes.md": {
+   "R18": [
+    "4a74149f18009c20",
+    "7819892ebec234ef",
+    "7d265c8be10cc958",
+    "87644ad0af15ddc7",
+    "96574a8377715a9f",
+    "aa94240b29360a4b",
+    "e60db7b794dcfa4c",
+    "f2c291aa739da87a",
+    "f6cb1168cfaad093",
+    "f71074050d07a3fd",
+    "fdf7ad7a72683e3e"
+   ]
+  },
+  "packages/www/src/content/docs/fr/legal-data-sovereignty.md": {
+   "R18": [
+    "577ce03cd56e8837",
+    "72154d1f8f92b032",
+    "c902f9717bce08f8",
+    "ed6b76468927465a"
+   ]
+  },
+  "packages/www/src/content/docs/fr/legal-gdpr.md": {
+   "R18": [
+    "02ae8bd5ba3daa2a",
+    "1044992132e20869",
+    "5d0365e9b77141e2",
+    "7c4ba8a9f47dd7eb",
+    "e996ac34a8437074"
+   ]
+  },
+  "packages/www/src/content/docs/fr/legal-hipaa.md": {
+   "R18": [
+    "9d7cdeb61c7e29a6",
+    "dc2bc8747902854a",
+    "e476dde60278a06e"
+   ]
+  },
+  "packages/www/src/content/docs/fr/legal-iso27001.md": {
+   "R18": [
+    "60b28eb37ecf559e",
+    "ee702627cb8bb3f4"
+   ]
+  },
+  "packages/www/src/content/docs/fr/legal-nis2-dora.md": {
+   "R18": [
+    "594522438dc0d76b"
+   ]
+  },
+  "packages/www/src/content/docs/fr/legal-overview.md": {
+   "R18": [
+    "9a47b0c01e0a8b8a",
+    "b5ee4e265f108b85"
+   ]
+  },
+  "packages/www/src/content/docs/fr/legal-pci-dss.md": {
+   "R18": [
+    "c8dcbc82bc2663cd",
+    "d0aa9cb356b3e249",
+    "ebd7498ea4a985d9"
+   ]
+  },
+  "packages/www/src/content/docs/fr/legal-soc2.md": {
+   "R18": [
+    "854a46b73343ed7e",
+    "b3114a766ce034a1",
+    "d082b8075840378e"
+   ]
+  },
+  "packages/www/src/content/docs/fr/license-chain.md": {
+   "R18": [
+    "046a76bb88d4a390",
+    "1207ee8ed11aea43",
+    "78503a2f918cf7be",
+    "9538b6f65a963463",
+    "9a3a52af2598a056",
+    "9bf57d8c824ac605",
+    "b40245ab3fcacf2f",
+    "bdf122948e3cf102",
+    "e2a08b484fbf5153",
+    "f33c37a71d7c055b",
+    "faa51bb2e38d32bb"
+   ]
+  },
+  "packages/www/src/content/docs/fr/limits.md": {
+   "R18": [
+    "435985ee0b6b10ac",
+    "478fd897187ea50d",
+    "5e8ff632d2fb6fe6",
+    "6b21de52bb2a9d43",
+    "793ad3fdf15efdf8",
+    "7adad51fb0155613",
+    "9ac836cb301abce5"
+   ]
+  },
+  "packages/www/src/content/docs/fr/migration.md": {
+   "R18": [
+    "17df68bb4aefab64"
+   ]
+  },
+  "packages/www/src/content/docs/fr/monitoring.md": {
+   "R18": [
+    "3dfa38d8714066a6",
+    "681c2500e054796a"
+   ],
+   "R19": [
+    "e14eb41c645f8432"
+   ]
+  },
+  "packages/www/src/content/docs/fr/networking.md": {
+   "R18": [
+    "06ecc16c09378a93",
+    "0b979def4a20acef",
+    "2759600c1d983cd3",
+    "bd96d7c2df75f8c1",
+    "e620f613a9b13b8a"
+   ]
+  },
+  "packages/www/src/content/docs/fr/on-premise.md": {
+   "R18": [
+    "3b19c79546344ac0",
+    "619ec0e779fa6730",
+    "9a8b4fe6e5f4d86b",
+    "9b3d5bfc4ebfe7b2",
+    "a5d5c6a749937d33",
+    "d4fb908784c1d212"
+   ]
+  },
+  "packages/www/src/content/docs/fr/proxy-and-executor.md": {
+   "R18": [
+    "2e2332998abc5c59",
+    "3b24945b3d18cd43",
+    "40e84fdff010b121",
+    "5b8c36d7124b69d8",
+    "e0a1d6e316be50c2"
+   ]
+  },
+  "packages/www/src/content/docs/fr/pruning.md": {
+   "R18": [
+    "1edecf571b3acc32",
+    "5187a15ef5fbe094",
+    "86ef23471cc9a303",
+    "b617129b007486a3",
+    "f355ef0d3a489d34"
+   ],
+   "R7": [
+    "ca48cb211985bd54"
+   ]
+  },
+  "packages/www/src/content/docs/fr/repo-branching.md": {
+   "R18": [
+    "4b08e0aedffedca6",
+    "538aa8d71d2996e8",
+    "5d64ba74db3a3e31",
+    "7ecea00dbb86db58",
+    "8cb7e16a5d9a166d",
+    "ed770ecf58e3b6b6",
+    "fc36eeb06d7823e9"
+   ]
+  },
+  "packages/www/src/content/docs/fr/repo-diff.md": {
+   "R18": [
+    "5dd1c732a475c198",
+    "7b35733c93ad348b",
+    "82729c77196fe241",
+    "dd9b5bfb84b11cfa"
+   ]
+  },
+  "packages/www/src/content/docs/fr/repositories.md": {
+   "R18": [
+    "2cfd1af4df34dd02",
+    "6ef63d3a7a3c4e54",
+    "9c23151c32c810fb",
+    "a3218fc1022dfdd5",
+    "cfe714674d0938d4",
+    "ebaab575efb9730a",
+    "f4b47833c4ce3905",
+    "fc8935c3a8d92408",
+    "ffc9f13eaae211e6"
+   ]
+  },
+  "packages/www/src/content/docs/fr/requirements.md": {
+   "R18": [
+    "02d956ebd3fca477"
+   ]
+  },
+  "packages/www/src/content/docs/fr/risk-free-upgrades.md": {
+   "R18": [
+    "b0beb9d99797baae"
+   ]
+  },
+  "packages/www/src/content/docs/fr/rules-of-rediacc.md": {
+   "R18": [
+    "0270a29af3716970",
+    "4765c5a086e1826b",
+    "4d656ada2a776694",
+    "734ac511649fd97f",
+    "aadb754439d2ea9c",
+    "acf702bb23871842",
+    "ad8f52fd1f303124"
+   ]
+  },
+  "packages/www/src/content/docs/fr/server-reference.md": {
+   "R18": [
+    "a38e797acc071732"
+   ]
+  },
+  "packages/www/src/content/docs/fr/services.md": {
+   "R18": [
+    "191cb891a01594a1",
+    "285aebfaf2d7f6cf",
+    "3c66491b0ef80b35",
+    "418d3c14444825df",
+    "568dd9d92b630d0a",
+    "68dbd4e872b16630",
+    "9e0050a1ec703010",
+    "a90dd63717d8fd62",
+    "fa09a76091b780d7"
+   ]
+  },
+  "packages/www/src/content/docs/fr/setup.md": {
+   "R18": [
+    "63cad93b387c0d2d",
+    "adbf71f2830dc0a2",
+    "db9fe2092c5aef21"
+   ]
+  },
+  "packages/www/src/content/docs/fr/subscription-licensing.md": {
+   "R18": [
+    "0966e2b59a462965",
+    "1ce45cf2b1c793ac",
+    "2b38be8a5ec132a8",
+    "3d6c464753112d72",
+    "5bfb158cdf4f4dc5",
+    "6746b43565c6b91f",
+    "8630e7898a77f522",
+    "8d3b5b2803b33aa3",
+    "a8aea8878d221b8e",
+    "ac3bd48aaaa1228f",
+    "e06a4aca74be514e",
+    "e3ba1cf8e2ac51e0",
+    "e7ba949902e1bb8a"
+   ]
+  },
+  "packages/www/src/content/docs/fr/time-travel-recovery.md": {
+   "R18": [
+    "fa45521570691cd0"
+   ]
+  },
+  "packages/www/src/content/docs/fr/troubleshooting.md": {
+   "R18": [
+    "8223010377c60d3c",
+    "8aaf904d23281955",
+    "941ee0f4537ac18a",
+    "f91ec094490b5c5d",
+    "fe22655df121f998"
+   ]
+  },
+  "packages/www/src/content/docs/fr/web-console.md": {
+   "R18": [
+    "3480b99fd1d624c9",
+    "d424ab95cd1262fb"
+   ]
+  },
+  "packages/www/src/content/docs/it/account-management.md": {
+   "R18": [
+    "242aaba5e496caaf"
+   ],
+   "R2": [
+    "2d99926b60380d73",
+    "368728026a62f6a8",
+    "a6fcda1daec03349"
+   ]
+  },
+  "packages/www/src/content/docs/it/account-security.md": {
+   "R18": [
+    "c38d49e48097991c"
+   ],
+   "R2": [
+    "5adb6db6af107518",
+    "ae088a2b0fefe6f4"
+   ]
+  },
+  "packages/www/src/content/docs/it/agents-md-template.md": {
+   "R18": [
+    "7512124ef2bdc00b"
+   ]
+  },
+  "packages/www/src/content/docs/it/ai-agents-json-output.md": {
+   "R18": [
+    "6df037a6c00338c4"
+   ],
+   "R2": [
+    "3f66a383d8051754",
+    "8ea8a7659470cdb9"
+   ]
+  },
+  "packages/www/src/content/docs/it/ai-agents-mcp.md": {
+   "R18": [
+    "9b9345310710bedd"
+   ]
+  },
+  "packages/www/src/content/docs/it/ai-agents-overview.md": {
+   "R18": [
+    "25677a1dd09e3065"
+   ]
+  },
+  "packages/www/src/content/docs/it/ai-agents-safety.md": {
+   "R18": [
+    "0d6ea5affed759f7",
+    "2adb772ad2fd6f92",
+    "2e20ca0936fb9690",
+    "3f9c07198565f7ac",
+    "664573041c6c0b45",
+    "746e8fa522e34e5c",
+    "7ae2e71d6e799b2b",
+    "aac4cb3d5c42c12f"
+   ],
+   "R2": [
+    "75399f79766928e8",
+    "8c8b4861b3143456",
+    "9365b3629e59c93a",
+    "b4aca31f4f717470"
+   ]
+  },
+  "packages/www/src/content/docs/it/architecture.md": {
+   "R18": [
+    "4ee733d167ccbf53",
+    "72d967058b2209a6",
+    "d0d34bbf46c116b6",
+    "fb5210de1f88846d"
+   ],
+   "R2": [
+    "01d17d1e62a04940",
+    "4cc414797e08b6e0",
+    "4d343634c674e6b9",
+    "820c7d64fc856a96",
+    "c6aa1515c7a3ed35",
+    "ffe89a0613234564"
+   ]
+  },
+  "packages/www/src/content/docs/it/autostart-recovery.md": {
+   "R18": [
+    "9976557e1f55c59e"
+   ],
+   "R2": [
+    "060c73d446976add",
+    "1c12ea4af90ff64d",
+    "be77e85b25b6d320",
+    "dc04030de2f1a3dd"
+   ]
+  },
+  "packages/www/src/content/docs/it/backup-restore.md": {
+   "R11": [
+    "ef589499ac7e81c8"
+   ],
+   "R18": [
+    "01fffe1669dec2d8",
+    "08fe29ca1d929f52",
+    "16598ae7c14681f9",
+    "1e8276db28c6857c",
+    "218949b7909d3720",
+    "44113c618ecef4b0",
+    "4b1cb1ad26a7a29f",
+    "5668e96505ef94b2",
+    "5c32a54c4e2dd119",
+    "752a89ae47590da3",
+    "7700ce0a05268cf6",
+    "79ada0dc22c8bc7e",
+    "9879be1328b45550",
+    "a08a93b7bf643812",
+    "b98d2dd11121aaaf",
+    "becb329e2970cae1",
+    "bf42080f79bc6679",
+    "c1579d02954b9e0a",
+    "ce7fe4c55db2d9a9",
+    "cfceddc2b526025f",
+    "de9e988399005be9",
+    "e4987d20577c24ca",
+    "f7a1c4458dfd92c2",
+    "f878d9346baa698d"
+   ],
+   "R2": [
+    "369f168995e2875f",
+    "4e54081a6d32a1c2",
+    "5f213f85ad207ccc",
+    "77df7dc42405fd4f",
+    "7d33feadb2cce345",
+    "c9823d7044307932",
+    "cd694d6018b51564",
+    "cf3961640b4c9b41",
+    "d1cd04724162e4e2",
+    "e17c7b76f984002c",
+    "feaf1e49f0c7169a"
+   ]
+  },
+  "packages/www/src/content/docs/it/blackout.md": {
+   "R2": [
+    "3633c45bb298c5d5",
+    "3a0e60b23db36fba",
+    "3e17de48dc7a71a1",
+    "4bb9fdb7fd02d4e7",
+    "b6f1a284034608b5",
+    "c6ce9ae4302299c4",
+    "cde6040eb019e201",
+    "d77d90b792ee73a5",
+    "dc512bb71effed28",
+    "e346bf7fe0e8d5b6"
+   ]
+  },
+  "packages/www/src/content/docs/it/config-storage.md": {
+   "R18": [
+    "3e25fbcf859466f0"
+   ],
+   "R2": [
+    "1139fd770930a9a4",
+    "20495f27ec629bd0",
+    "b52161bfde52ba2c"
+   ]
+  },
+  "packages/www/src/content/docs/it/cross-backup.md": {
+   "R2": [
+    "6c8d899b24dac519",
+    "af1de28f012a72ac"
+   ]
+  },
+  "packages/www/src/content/docs/it/data-regions.md": {
+   "R2": [
+    "05b923f807b010ac"
+   ]
+  },
+  "packages/www/src/content/docs/it/development-environments.md": {
+   "R2": [
+    "355ecbcdca8865ba",
+    "4f7960a5285d3fd6",
+    "90fd5ecb33e2501f",
+    "9bdd5b026e3759d1",
+    "ca452bc161754dbf",
+    "eb20071630581399",
+    "ffde2d16bb6a94e7"
+   ]
+  },
+  "packages/www/src/content/docs/it/dynamic-resource-scaling.md": {
+   "R2": [
+    "2eb69e315f3e7498",
+    "351b86ec646abac2",
+    "41c05414d43b6b97",
+    "96248520e7c416e5",
+    "b99bbc5489265727"
+   ]
+  },
+  "packages/www/src/content/docs/it/experimental-vms.md": {
+   "R2": [
+    "33747148832a1cd4"
+   ]
+  },
+  "packages/www/src/content/docs/it/hub.md": {
+   "R18": [
+    "987d05eea3c35335",
+    "e33ff695e60ec0ac"
+   ],
+   "R2": [
+    "139b34ec1c81140e",
+    "172f310eb0c88de4",
+    "2cf222174cd65221",
+    "2d9da50da6c90c6d",
+    "3d5f5e7e8ef948b3",
+    "5145351a0b8b68e0",
+    "96efd31e4300d87a",
+    "b4f785ab46cf0a43",
+    "c8d3a9f148b00162"
+   ]
+  },
+  "packages/www/src/content/docs/it/installation.md": {
+   "R18": [
+    "7fa4504676f514c9"
+   ],
+   "R2": [
+    "406362805118308d",
+    "eba737b0e3c7a3cb"
+   ]
+  },
+  "packages/www/src/content/docs/it/kubernetes.md": {
+   "R18": [
+    "02044fa85edf2812",
+    "0bb250140beac462",
+    "1631ff2ee38cc5cc",
+    "9869b023ae6d0866",
+    "a3d2331c649efe19",
+    "c370b968e62e2148",
+    "df93ed17d7d71bdf",
+    "efe2791d5b02ad13",
+    "f49a63a7c0225fd1"
+   ],
+   "R2": [
+    "3cefb9d20c8da077",
+    "47bd9c2fb43f26e0",
+    "52d294880a3dc69c",
+    "82a63c66817a1f1a",
+    "92e9d03276bc74e5",
+    "b09d3710f5e18e0c",
+    "b6b4be33ea8a0225"
+   ]
+  },
+  "packages/www/src/content/docs/it/legacy-database-scaling.md": {
+   "R2": [
+    "2a51b0454cdb765b",
+    "3d94943ca828d7f4",
+    "72d60c1a3306d648",
+    "9968718d1009e38f",
+    "d3230f7576c77eb3",
+    "fe66fdc4430dfe97",
+    "fe859f1485d0ec26"
+   ]
+  },
+  "packages/www/src/content/docs/it/legal-ccpa.md": {
+   "R2": [
+    "956606889bcffe78",
+    "d751a7599b6a6b07"
+   ]
+  },
+  "packages/www/src/content/docs/it/legal-data-sovereignty.md": {
+   "R18": [
+    "1de89406c59965d3",
+    "3be38178c14a421b",
+    "9b6ea3c62871ca9a",
+    "effdd10d1335c658",
+    "f56ed3751dd2c347"
+   ],
+   "R2": [
+    "2db746253471bda4",
+    "a5da3f537e86dbb2",
+    "f2656301170d1f44"
+   ]
+  },
+  "packages/www/src/content/docs/it/legal-gdpr.md": {
+   "R18": [
+    "1c0b5103a425603b",
+    "2657f04e50fd8249",
+    "bd4da6784c869dd2",
+    "fe2a18214148b7a4"
+   ],
+   "R2": [
+    "42eda869da7d775d",
+    "dfa727fc19562aed",
+    "f460076553aafdb0"
+   ]
+  },
+  "packages/www/src/content/docs/it/legal-hipaa.md": {
+   "R18": [
+    "1e1a09a0ba361c28",
+    "cfee6724d99066eb"
+   ],
+   "R2": [
+    "85a6ed32d4735cae",
+    "a4629d3bc89d40ff"
+   ]
+  },
+  "packages/www/src/content/docs/it/legal-iso27001.md": {
+   "R18": [
+    "dffd9d9e5fbc5abd"
+   ],
+   "R2": [
+    "211d0485ff299bcb",
+    "37535efd7d33a067",
+    "49c9a5df72dd04ce"
+   ]
+  },
+  "packages/www/src/content/docs/it/legal-nis2-dora.md": {
+   "R18": [
+    "4cc3849f1d4b66bd"
+   ],
+   "R2": [
+    "6b9a77f0419bb16a"
+   ]
+  },
+  "packages/www/src/content/docs/it/legal-overview.md": {
+   "R18": [
+    "7b8976e1f30045f6",
+    "969013e6c4752706"
+   ],
+   "R2": [
+    "1403a44e25a8fd8b",
+    "2989ccb291975c12",
+    "35fdf3f46eabcce5",
+    "9224227534b56eed"
+   ]
+  },
+  "packages/www/src/content/docs/it/legal-pci-dss.md": {
+   "R18": [
+    "26e969e0bd153044",
+    "8fe65f5a1bce095f"
+   ],
+   "R2": [
+    "9efebda33bcf853a",
+    "c28f6d7854d462c0",
+    "d9481dd683edff54",
+    "ec223bcafd6847b7"
+   ]
+  },
+  "packages/www/src/content/docs/it/legal-soc2.md": {
+   "R18": [
+    "c556ab723c76934d",
+    "fdc622021ac5ae9d"
+   ],
+   "R2": [
+    "33fcf3b08c19b473",
+    "f9872d88da1a91b4"
+   ]
+  },
+  "packages/www/src/content/docs/it/license-chain.md": {
+   "R18": [
+    "2d668cd472ac4425",
+    "316d6b87d1a8962b",
+    "328a0a0007ae4b25",
+    "392cba4920a0813a",
+    "7415c7756c45843f",
+    "79d6143547e23fd0",
+    "7cc7956c473f2bcd",
+    "80a99eaadb072147",
+    "a2ca399b4628bdc1",
+    "baf117278edb2441",
+    "c6c41d90005f25b6"
+   ],
+   "R2": [
+    "026c345b0f7cf6d7",
+    "1b93f6863b45d0d2",
+    "7020cca84054fcff",
+    "db66c6e327c33833"
+   ]
+  },
+  "packages/www/src/content/docs/it/limits.md": {
+   "R18": [
+    "26ab351763c08e86",
+    "30028fd7c6c1c2ee",
+    "441b24427828a712",
+    "5176ef771738959e",
+    "8ad36d69cbb15fb1",
+    "b37269e75fee7701",
+    "c107c482b6579cb7"
+   ],
+   "R2": [
+    "3fd3a3fbfe902ab1",
+    "45d84ddaf20733fd",
+    "4be861db17e2d24f",
+    "579d3659e960e069",
+    "778d6cedd081708f",
+    "95d5e8eb35d6a29f",
+    "cfd92ee7e1bafb3d"
+   ]
+  },
+  "packages/www/src/content/docs/it/migration.md": {
+   "R18": [
+    "afea948122061e42"
+   ],
+   "R2": [
+    "274be3e83bebdfaf",
+    "4df6149bb319299b",
+    "8db1dcdd40fdf146",
+    "b39580f16f9c12cc",
+    "df4c31ff58fc30a6"
+   ]
+  },
+  "packages/www/src/content/docs/it/monitoring.md": {
+   "R18": [
+    "855694aafb881833",
+    "9d339193fb883ebc"
+   ],
+   "R19": [
+    "c7aba8f9605ba717"
+   ],
+   "R2": [
+    "2daf109d59fe162d",
+    "70eed40d9c354615",
+    "9ec3ac5b920e26da",
+    "e4e26a5ab67e9be3"
+   ]
+  },
+  "packages/www/src/content/docs/it/networking.md": {
+   "R18": [
+    "00e7803a5112ef95",
+    "47a7ddcbe98e019c",
+    "6504a2530845f046",
+    "c2ae1e9d17d4f61a",
+    "d9f2cafaa4536001"
+   ],
+   "R2": [
+    "19aec49c73e89fb3",
+    "2649acaa5a163d87",
+    "3f327c76d4c62883",
+    "4b7c1740f99753f5",
+    "6158ed719add029b",
+    "653b780a3a20e896",
+    "def777ea92b6e1ae",
+    "e065daaa4b5931c1",
+    "ed694a6abb2c1244",
+    "f39c67354facb03c"
+   ]
+  },
+  "packages/www/src/content/docs/it/on-premise.md": {
+   "R18": [
+    "10d6a471aab4a109",
+    "21b76d934fbfde55",
+    "537877ef695f79bc",
+    "8c726f53efdab8f8",
+    "8ced8bf1fe8b05eb",
+    "b196559b4fdc3cae",
+    "da11bef8499626e3"
+   ],
+   "R2": [
+    "8f36f4deabf08c83"
+   ]
+  },
+  "packages/www/src/content/docs/it/proxy-and-executor.md": {
+   "R18": [
+    "3bf90c6c93c2b04a",
+    "46208259179f1918",
+    "88b5d59afb16031b",
+    "c7c5f38e27eafc7a",
+    "fbf2c5b30c5b8314"
+   ],
+   "R2": [
+    "4c99e877f2fed39f",
+    "6d070ef04d938c58",
+    "a610392a1adad9d6",
+    "ece29741df971d95"
+   ]
+  },
+  "packages/www/src/content/docs/it/pruning.md": {
+   "R18": [
+    "21f8eac8a5fdabe7",
+    "526db18fdecd5d98",
+    "53554ad1fe6ec4cb",
+    "b4a86e7b9f856e07",
+    "cba93662ed90be62"
+   ],
+   "R2": [
+    "2d8691d2958a6d83",
+    "5632a246d5e7e6c8",
+    "95d618d67b0239d4",
+    "ea52615cca98cef6"
+   ]
+  },
+  "packages/www/src/content/docs/it/quick-start.md": {
+   "R2": [
+    "614bb502b41a0dcc",
+    "a0593e12002d6465"
+   ]
+  },
+  "packages/www/src/content/docs/it/rdc-cheat-sheet.md": {
+   "R2": [
+    "efede223a89084d7"
+   ]
+  },
+  "packages/www/src/content/docs/it/release-channels.md": {
+   "R2": [
+    "229f499844ef46c7"
+   ]
+  },
+  "packages/www/src/content/docs/it/repo-branching.md": {
+   "R18": [
+    "0b16ef466ef98d19",
+    "119b994e46a71126",
+    "48c7135a790ad100",
+    "53456bd83d37f068",
+    "576eebde50f7e8aa",
+    "5f8ad4249e3da3fb",
+    "f4da97b7d0308c7a"
+   ],
+   "R2": [
+    "0d178bd296dbe137",
+    "6978c851893ff3cd",
+    "7085a8502b78ca88",
+    "7181e0d84211b1a6",
+    "94cddccddc10bc0b",
+    "b827314ff3eb38b1",
+    "de1288b82eb909a2"
+   ]
+  },
+  "packages/www/src/content/docs/it/repo-diff.md": {
+   "R18": [
+    "0aa5d23ee4905911",
+    "79ac43879316da14",
+    "d49da0bfcc36a233"
+   ],
+   "R2": [
+    "1828b89a6146fbf2",
+    "77e4f14101d81815",
+    "a2ec0448f159ce0b",
+    "b7bcf467e6d43405"
+   ]
+  },
+  "packages/www/src/content/docs/it/repositories.md": {
+   "R18": [
+    "03532bb95697cab8",
+    "23d29636cd477815",
+    "3d1d78f2d66815bc",
+    "7ddb1808eb9678bd",
+    "8734e1509b4a44ba",
+    "a245f26efa7c7b86",
+    "a6c6dfbef5c38388",
+    "ca2063c01abc866e",
+    "d774432262c81aa2"
+   ],
+   "R2": [
+    "0964459c42408f1b",
+    "1b3be91d51a9ea96",
+    "715d561a33c15ef0",
+    "7a4c25bdd993e5f8",
+    "7adba69280936533",
+    "85181ca019958fa1"
+   ]
+  },
+  "packages/www/src/content/docs/it/requirements.md": {
+   "R18": [
+    "80065e69aa96fecf"
+   ],
+   "R2": [
+    "de00052f490584e2"
+   ]
+  },
+  "packages/www/src/content/docs/it/risk-free-upgrades.md": {
+   "R18": [
+    "9e580b78a88ecaec"
+   ],
+   "R2": [
+    "37961eaaa649a152",
+    "a0c056bf1a382a56",
+    "b261a042b45b567f",
+    "eb45f9360f96ed37",
+    "f0fbe096d08e666c",
+    "fb91b796bb65d50c"
+   ]
+  },
+  "packages/www/src/content/docs/it/rules-of-rediacc.md": {
+   "R18": [
+    "26edb2d73ee2c999",
+    "2b010ddc821455fc",
+    "34dffdf7653f08df",
+    "8f14a00443206e04",
+    "db5b09e30f14d2a7",
+    "e58728d843854e27",
+    "f3dcf468efae7dab"
+   ],
+   "R2": [
+    "0e7a14353f96aa57",
+    "11f5aa1d428c0d85",
+    "224fb25c39a8e417",
+    "261e69a20888d0a1",
+    "3467f1c46382015a",
+    "580c6e33334b4157",
+    "59d934aa4d39968e",
+    "62a7bcb8a015c584",
+    "6c0e7624387e631a",
+    "72f559fbfdf2a726",
+    "7ec6afe044287f7b",
+    "8b894c457092b130",
+    "9646e739c2c0cb4c",
+    "b9b5338b984bf037",
+    "d5ebb7dea420e2fa",
+    "e9a30c37dc7b5fcf",
+    "fbb825e00bbac638"
+   ]
+  },
+  "packages/www/src/content/docs/it/server-reference.md": {
+   "R18": [
+    "82ab603791670225"
+   ],
+   "R2": [
+    "1fa4608d87a59455",
+    "280b6ad2d32c9efc",
+    "4dbb6111b88d64be",
+    "9f1eb6f2d046c85e",
+    "af596d333dd9ad70",
+    "f424e27d846a444a"
+   ]
+  },
+  "packages/www/src/content/docs/it/services.md": {
+   "R18": [
+    "1a450250361d3330",
+    "3dbee1658e39fed8",
+    "51eaca8da4e74083",
+    "524bf3f672c4b95d",
+    "731e7f799db9a40f",
+    "9b550947b63293c5",
+    "b270ae7922b1459c",
+    "d108b4645bd06baf",
+    "e591c857994892a8"
+   ],
+   "R19": [
+    "26189ac6ff711a1e",
+    "44f697f05c08ba6b"
+   ],
+   "R2": [
+    "078ff8426e6b46f8",
+    "4d459263c2f01ce5",
+    "5e67e61826ef60d0",
+    "63ae0aa48c97247b",
+    "63baa56d9a39ee18",
+    "82129e5e8eaa401a",
+    "9a2509a2f8439583",
+    "a3247326b9c64e67",
+    "b2a46eed70b64b55",
+    "c63bcd6c939cf6bb",
+    "fb29fb41aa402745"
+   ]
+  },
+  "packages/www/src/content/docs/it/setup.md": {
+   "R18": [
+    "23926e4828dc2d30"
+   ],
+   "R2": [
+    "7ce7bea12cca7185",
+    "b45772db8271c6cf",
+    "c03384758e57e014"
+   ]
+  },
+  "packages/www/src/content/docs/it/subscription-licensing.md": {
+   "R18": [
+    "292e6b3336f16aed",
+    "3814d2c75e91b1fd",
+    "3a241b8c21b952f3",
+    "3ee4860afe6513fa",
+    "426cccfbbe370d19",
+    "55b98ea504c89f90",
+    "6bfc807a1986cbd9",
+    "8161ca7e51d994c1",
+    "905b8f20280e48ca",
+    "c5bc88e8eac00e36"
+   ],
+   "R2": [
+    "176c530173230c03",
+    "1fdca0248f07df0d",
+    "34a62c283055645b",
+    "3c5a0e57cd8dc32b",
+    "4134609837294e6f",
+    "57403614200a33f4",
+    "634ed4dd6302666c",
+    "ab920c1b5444e418",
+    "c9f66adedf898e0d",
+    "fa4941cf40527f4d"
+   ]
+  },
+  "packages/www/src/content/docs/it/time-travel-recovery.md": {
+   "R18": [
+    "fa274977eedede3c"
+   ],
+   "R2": [
+    "0321d7911a504170",
+    "46b171bfbe181ae1",
+    "7b9a73c0989374c1",
+    "ab9af372d811e298",
+    "dbf663d276d6af4e",
+    "fa247b3e7737a627"
+   ]
+  },
+  "packages/www/src/content/docs/it/tools.md": {
+   "R2": [
+    "9dd76ee09734a56c",
+    "edb11a98a108e008"
+   ]
+  },
+  "packages/www/src/content/docs/it/troubleshooting.md": {
+   "R18": [
+    "968620fc5e7eee6e",
+    "a4e1ab21dffb9ed6",
+    "eff0961df853990a"
+   ],
+   "R2": [
+    "60a3ec63552ff859",
+    "afab2aa2a5758ea0",
+    "d120af1db6cb4292"
+   ]
+  },
+  "packages/www/src/content/docs/it/web-console.md": {
+   "R18": [
+    "9263921834ddb45d"
+   ],
+   "R2": [
+    "7772fbe55db97000",
+    "80ac63ebce0ce1f1"
+   ]
+  },
+  "packages/www/src/content/docs/it/zero-cost-backup.md": {
+   "R2": [
+    "0008eb0d82fe4a4f",
+    "5c421c3a2cdd6bb3",
+    "742d23fd55575370",
+    "f397ba22f5bfdb57"
+   ]
+  },
+  "packages/www/src/content/docs/ja/account-management.md": {
+   "R18": [
+    "ccf8a9161390456d"
+   ]
+  },
+  "packages/www/src/content/docs/ja/account-security.md": {
+   "R18": [
+    "92068c2fb3a6f9fd"
+   ]
+  },
+  "packages/www/src/content/docs/ja/ai-agents-safety.md": {
+   "R18": [
+    "a5fa479bcb5eb63c"
+   ]
+  },
+  "packages/www/src/content/docs/ja/license-chain.md": {
+   "R18": [
+    "8bb0b3dba7a7b192"
+   ]
+  },
+  "packages/www/src/content/docs/ja/monitoring.md": {
+   "R18": [
+    "890f3f696366041b"
+   ]
+  },
+  "packages/www/src/content/docs/ja/repo-branching.md": {
+   "R18": [
+    "fbe085071faa6eca"
+   ]
+  },
+  "packages/www/src/content/docs/ja/repo-diff.md": {
+   "R18": [
+    "37bee75b2dc3f579",
+    "4409d8979449a74b"
+   ]
+  },
+  "packages/www/src/content/docs/ja/repositories.md": {
+   "R18": [
+    "d0ae564964a8de53"
+   ]
+  },
+  "packages/www/src/content/docs/ja/rules-of-rediacc.md": {
+   "R18": [
+    "9d81c005f88f9d7d"
+   ]
+  },
+  "packages/www/src/content/docs/ja/services.md": {
+   "R19": [
+    "1a315b7689649f47"
+   ]
+  },
+  "packages/www/src/content/docs/ja/troubleshooting.md": {
+   "R18": [
+    "389b3cb44d7c5049"
+   ]
+  },
+  "packages/www/src/content/docs/ko/account-management.md": {
+   "R18": [
+    "34bfa31214d617d4"
+   ]
+  },
+  "packages/www/src/content/docs/ko/account-security.md": {
+   "R18": [
+    "eb6fc442ea0b1636"
+   ]
+  },
+  "packages/www/src/content/docs/ko/ai-agents-mcp.md": {
+   "R19": [
+    "bbe220ec54307c52"
+   ]
+  },
+  "packages/www/src/content/docs/ko/ai-agents-safety.md": {
+   "R18": [
+    "127f549d1cb5dfab"
+   ]
+  },
+  "packages/www/src/content/docs/ko/backup-restore.md": {
+   "R18": [
+    "4d200faf842a5c01"
+   ]
+  },
+  "packages/www/src/content/docs/ko/license-chain.md": {
+   "R18": [
+    "70ab7d0f9305cfdc"
+   ]
+  },
+  "packages/www/src/content/docs/ko/monitoring.md": {
+   "R18": [
+    "56378f253e3c081c"
+   ]
+  },
+  "packages/www/src/content/docs/ko/repo-branching.md": {
+   "R18": [
+    "7f7d74537b2535ab"
+   ]
+  },
+  "packages/www/src/content/docs/ko/repo-diff.md": {
+   "R18": [
+    "823e32c3cccb9d6d",
+    "8ab991d28efb63ad"
+   ]
+  },
+  "packages/www/src/content/docs/ko/rules-of-rediacc.md": {
+   "R18": [
+    "8e947f4f0cb441eb"
+   ]
+  },
+  "packages/www/src/content/docs/ko/services.md": {
+   "R19": [
+    "573a142d934c3446"
+   ]
+  },
+  "packages/www/src/content/docs/ko/subscription-licensing.md": {
+   "R18": [
+    "66ac9c93784d4fea"
+   ]
+  },
+  "packages/www/src/content/docs/ko/troubleshooting.md": {
+   "R18": [
+    "c34d2f3a6d17a557"
+   ]
+  },
+  "packages/www/src/content/docs/pt/account-management.md": {
+   "R18": [
+    "495e1e0f9a584f29"
+   ]
+  },
+  "packages/www/src/content/docs/pt/account-security.md": {
+   "R18": [
+    "61336e08ce2273bf"
+   ]
+  },
+  "packages/www/src/content/docs/pt/agents-md-template.md": {
+   "R18": [
+    "8e90b5e7de0e0da4"
+   ]
+  },
+  "packages/www/src/content/docs/pt/ai-agents-cursor.md": {
+   "R2": [
+    "c0b66c6279fcdbb9"
+   ]
+  },
+  "packages/www/src/content/docs/pt/ai-agents-json-output.md": {
+   "R18": [
+    "bf38ed112e44d0d5"
+   ]
+  },
+  "packages/www/src/content/docs/pt/ai-agents-mcp.md": {
+   "R18": [
+    "5433d8441bfe6a10"
+   ]
+  },
+  "packages/www/src/content/docs/pt/ai-agents-overview.md": {
+   "R18": [
+    "c31cd67414de96eb"
+   ]
+  },
+  "packages/www/src/content/docs/pt/ai-agents-safety.md": {
+   "R18": [
+    "153778fdac99824b",
+    "305c267c702fa119",
+    "351e9c380a448a88",
+    "3665ea20ae5b0fb2",
+    "3e24efb58b48a0b3",
+    "9488a937b12e03ca",
+    "d25190fa652621a0",
+    "e2db9f1b1e1eeb82"
+   ]
+  },
+  "packages/www/src/content/docs/pt/architecture.md": {
+   "R18": [
+    "08ecaa915156d4d0",
+    "4678fc0f46bb4411",
+    "96a171960aa6053b",
+    "cfd73b32ffe31ac4",
+    "f8cc76a62e7e1d99"
+   ]
+  },
+  "packages/www/src/content/docs/pt/autostart-recovery.md": {
+   "R18": [
+    "82fface2fd431ecf"
+   ]
+  },
+  "packages/www/src/content/docs/pt/backup-restore.md": {
+   "R18": [
+    "08eb20d9da0db29c",
+    "0e0d6ec8b945b0d4",
+    "10a9d055057dad3a",
+    "1be5475b0efd3a8c",
+    "5fbe09072d1c5c29",
+    "6d9713b67282bdf5",
+    "72044d95e18a4872",
+    "76d14d68c4b80674",
+    "8189d55450080289",
+    "8e5da5e111277c73",
+    "91a7d10e30d7a471",
+    "9b9ebcd5f7f98e8e",
+    "9d94c56fdab5004c",
+    "a63ab99a5f5c676d",
+    "aebb9c796c8934d4",
+    "afa72e85a69500ec",
+    "c61997ff451eab0c",
+    "e33f279d27339750",
+    "f0aaebe401768495",
+    "f2ed6cc03ccbdd92",
+    "f35b33a0b6e76ce2",
+    "feeb491c301922c0"
+   ],
+   "R19": [
+    "19d9890a6eea8b56",
+    "909361a75ee1d895"
+   ]
+  },
+  "packages/www/src/content/docs/pt/config-storage.md": {
+   "R18": [
+    "89fc12b4a346e337"
+   ]
+  },
+  "packages/www/src/content/docs/pt/hub.md": {
+   "R18": [
+    "381332b7fe2227cf",
+    "40a51b868a035cbb"
+   ]
+  },
+  "packages/www/src/content/docs/pt/installation.md": {
+   "R18": [
+    "063386e383425981"
+   ]
+  },
+  "packages/www/src/content/docs/pt/kubernetes.md": {
+   "R18": [
+    "35991db19edf937e",
+    "4328f9193007c5a0",
+    "51d41a319a1cb870",
+    "7450d03fa5e29cbe",
+    "89b9088a261128ff",
+    "a8e6c715db87da83",
+    "aa107e5395500956",
+    "b1b6a82d271896a3",
+    "b53ca76990d3035f",
+    "e13e82541d5d8bcc",
+    "ee743f370da55bb9"
+   ]
+  },
+  "packages/www/src/content/docs/pt/legal-data-sovereignty.md": {
+   "R18": [
+    "5441ae36beb480c2",
+    "81038e1466b2b239",
+    "aa3f9119e11b7a9f",
+    "e453dcd8f8baed7f"
+   ]
+  },
+  "packages/www/src/content/docs/pt/legal-gdpr.md": {
+   "R18": [
+    "064b6903d8c197f6",
+    "0711900083e145e2",
+    "2ae7eba1d529469f",
+    "c3e90e97557ea5d8"
+   ]
+  },
+  "packages/www/src/content/docs/pt/legal-hipaa.md": {
+   "R18": [
+    "0ffba6d9d69d94ed",
+    "7e83a09a8b573f36",
+    "cf1290b2b3f3e2bd"
+   ]
+  },
+  "packages/www/src/content/docs/pt/legal-iso27001.md": {
+   "R18": [
+    "43b73e345e53fd25",
+    "aebc9a2e554eeb93"
+   ]
+  },
+  "packages/www/src/content/docs/pt/legal-nis2-dora.md": {
+   "R18": [
+    "b1d5a26063ced6cc"
+   ]
+  },
+  "packages/www/src/content/docs/pt/legal-overview.md": {
+   "R18": [
+    "06e4b62e6d79e89f",
+    "580592a2cf4119f4"
+   ]
+  },
+  "packages/www/src/content/docs/pt/legal-pci-dss.md": {
+   "R18": [
+    "dc90cee39f0fea61"
+   ]
+  },
+  "packages/www/src/content/docs/pt/legal-soc2.md": {
+   "R18": [
+    "8c1713eb050a98a5",
+    "bb3fb434f17faf86"
+   ]
+  },
+  "packages/www/src/content/docs/pt/license-chain.md": {
+   "R18": [
+    "037b4688d5bbab7c",
+    "19eee1a2adb68835",
+    "23e8f2736e85685f",
+    "2fbc251671c10b9d",
+    "33b9094e1a3084b8",
+    "61582fc06e145ed0",
+    "722f2707f8b3f03b",
+    "bdd984fe0e543c21",
+    "e9540cd87fc8d7ee"
+   ]
+  },
+  "packages/www/src/content/docs/pt/limits.md": {
+   "R18": [
+    "20d4f5ec5d8a7c24",
+    "35c3fcb84bb692b3",
+    "7e9e3ea1875dbc60",
+    "da8bbec27cbc2825",
+    "e981c1b3be26e5af"
+   ]
+  },
+  "packages/www/src/content/docs/pt/migration.md": {
+   "R18": [
+    "a7585547e77430a7"
+   ]
+  },
+  "packages/www/src/content/docs/pt/monitoring.md": {
+   "R18": [
+    "7d0f4fd328bc6fd2"
+   ],
+   "R19": [
+    "117f28e26fb43c1b"
+   ]
+  },
+  "packages/www/src/content/docs/pt/networking.md": {
+   "R18": [
+    "0c39a6abf67d10a3",
+    "5e15af4c938abbcb",
+    "76301a19cc5dadd0",
+    "bb70baf12396da07",
+    "f58c465e2d2548a4"
+   ]
+  },
+  "packages/www/src/content/docs/pt/on-premise.md": {
+   "R18": [
+    "0bef1fbeeb2048f1",
+    "0ca444c02272c99a",
+    "4ca568e189be2b4a",
+    "c54d88cd430be9bf",
+    "d7e7e6d02006e5bc",
+    "ffe788acb3b50a99"
+   ]
+  },
+  "packages/www/src/content/docs/pt/proxy-and-executor.md": {
+   "R18": [
+    "7c798d9f4e64568c",
+    "9150da7552da2ad3",
+    "9e2bd12aab24c29d",
+    "aa453adee0cca320",
+    "ea21ea310d77e758"
+   ]
+  },
+  "packages/www/src/content/docs/pt/pruning.md": {
+   "R11": [
+    "c9635aab18ea2827"
+   ],
+   "R18": [
+    "15481948ff9e0697",
+    "2825d0e482aab26e",
+    "2c6b6b11596ae437",
+    "31b19b5bb3d3d777",
+    "44c0f1d674c24163"
+   ]
+  },
+  "packages/www/src/content/docs/pt/repo-branching.md": {
+   "R18": [
+    "566065cdeb3faa4b",
+    "5ee962fa508f92bc",
+    "aa91269fdcf47317",
+    "c47c92ab3e448ac8",
+    "f7b6cb0ae4f488a0",
+    "fcd96b4c4e72bfbc"
+   ]
+  },
+  "packages/www/src/content/docs/pt/repo-diff.md": {
+   "R18": [
+    "46156ed723339952",
+    "a14d05ee8f7b7638",
+    "d8a2c88440eaa411"
+   ]
+  },
+  "packages/www/src/content/docs/pt/repositories.md": {
+   "R18": [
+    "3d365f367ed61707",
+    "4d7c878510b254a8",
+    "5b3c5874fe8d3566",
+    "7cf27facd75c12e1",
+    "7ff1683038cd5716",
+    "92d2180dd61b281e",
+    "a82cd2c2fd986d12",
+    "fdc6ea48a727a56d"
+   ]
+  },
+  "packages/www/src/content/docs/pt/risk-free-upgrades.md": {
+   "R18": [
+    "202c4d271f0a5f79"
+   ]
+  },
+  "packages/www/src/content/docs/pt/rules-of-rediacc.md": {
+   "R18": [
+    "18c5a8ae5279eb09",
+    "2d6749f1a686564a",
+    "3e5f1ca745324761",
+    "40278bdbbe813082",
+    "52e18c83db66726d",
+    "840c3be8b563c737",
+    "98d09d5a12af4c0f",
+    "be0d6aea4ad5e09a"
+   ]
+  },
+  "packages/www/src/content/docs/pt/server-reference.md": {
+   "R18": [
+    "5ac5e51b6b4f05c4"
+   ]
+  },
+  "packages/www/src/content/docs/pt/services.md": {
+   "R18": [
+    "039ad76e6489d0d6",
+    "17f753315f92991d",
+    "59e549a9bb028fbe",
+    "6935a64cac4474f5",
+    "6d9c890b5e6d5a63",
+    "6f69445a4b1415df",
+    "7ed93669afe1ce50",
+    "ae21ad05fdd2f091",
+    "fa6c4afaca30ef87"
+   ],
+   "R19": [
+    "97a657f1113995f8",
+    "a5db3d8b6e937c83"
+   ]
+  },
+  "packages/www/src/content/docs/pt/setup.md": {
+   "R18": [
+    "043a59a3fbb061bf",
+    "eb965b1d1c4627e8"
+   ]
+  },
+  "packages/www/src/content/docs/pt/subscription-licensing.md": {
+   "R18": [
+    "345c6a3dfe421b4d",
+    "51d24efcc2f13adf",
+    "53f72633e6372295",
+    "58b6911310982216",
+    "6ae748abb18f1adf",
+    "7c7abdcd66874829",
+    "9d2406675c515646",
+    "a90e44ce737dbc9d",
+    "dd6a1f30509269ea",
+    "e84348078a31820c"
+   ]
+  },
+  "packages/www/src/content/docs/pt/time-travel-recovery.md": {
+   "R18": [
+    "0d0eeded34e4bff1"
+   ]
+  },
+  "packages/www/src/content/docs/pt/tools.md": {
+   "R11": [
+    "bff6f7376ea8b59d"
+   ]
+  },
+  "packages/www/src/content/docs/pt/troubleshooting.md": {
+   "R18": [
+    "4f554e819c517137",
+    "90adffef8f991c51",
+    "ad038a1d7a76a7fd"
+   ]
+  },
+  "packages/www/src/content/docs/pt/web-console.md": {
+   "R18": [
+    "36e875427dd16af7",
+    "63c16b3787161da1"
+   ]
+  },
+  "packages/www/src/content/docs/ru/account-management.md": {
+   "R18": [
+    "cb718b233cbeefc4"
+   ]
+  },
+  "packages/www/src/content/docs/ru/account-security.md": {
+   "R18": [
+    "05b3fb99758417eb"
+   ]
+  },
+  "packages/www/src/content/docs/ru/agents-md-template.md": {
+   "R18": [
+    "ebd295e9a182b9a5"
+   ]
+  },
+  "packages/www/src/content/docs/ru/ai-agents-json-output.md": {
+   "R18": [
+    "d05de9c4ff951f46"
+   ]
+  },
+  "packages/www/src/content/docs/ru/ai-agents-mcp.md": {
+   "R18": [
+    "714c05face9d3af3"
+   ]
+  },
+  "packages/www/src/content/docs/ru/ai-agents-overview.md": {
+   "R18": [
+    "b447ba419a08ffc4"
+   ]
+  },
+  "packages/www/src/content/docs/ru/ai-agents-safety.md": {
+   "R18": [
+    "2d2ff40f33458620",
+    "4ee39be74094ff3e",
+    "a04ec90892147ea3",
+    "a4d9ce6f06b8b76b",
+    "d324492d239809e2",
+    "f3169d39df7b1fda",
+    "fdc5ddaa731edde2"
+   ]
+  },
+  "packages/www/src/content/docs/ru/architecture.md": {
+   "R18": [
+    "3a8f400f219673c8",
+    "4f5cfb47064e523a",
+    "76280d5c35e14cae",
+    "8ba18e0162634dff",
+    "94e19e01367e99ab",
+    "a972565d0ad6be11"
+   ]
+  },
+  "packages/www/src/content/docs/ru/autostart-recovery.md": {
+   "R18": [
+    "8624d15ee6e701b8"
+   ]
+  },
+  "packages/www/src/content/docs/ru/backup-restore.md": {
+   "R11": [
+    "b8f25d63a63d4c26"
+   ],
+   "R18": [
+    "07679fb3b8973a10",
+    "08746e9e1cc5c97e",
+    "0b3e7933f1602e0e",
+    "240ffc16da85253c",
+    "2d201329cdf64df1",
+    "403c6864d3dfb0d7",
+    "4507347f8c3b7ed9",
+    "55f33db2e2fb390a",
+    "5a45028b34cd175f",
+    "5dcd6d88f0d4a342",
+    "6015c2cd65b0ba54",
+    "6aa4aded9d43c0ab",
+    "6c14f459483fdb92",
+    "808bb7a1a7fcec2d",
+    "89b42f6fe4bce9c9",
+    "8ad9c6a39023c7c1",
+    "95055d7abc8abba0",
+    "a03a3f5213a07407",
+    "bef095548873cf48",
+    "c29c648f26b79737",
+    "cc159b66ba0e00a4",
+    "e2b375a8ac38d89c",
+    "eec307fa469c9d6f",
+    "f4ca63a7c921cec5"
+   ]
+  },
+  "packages/www/src/content/docs/ru/config-storage.md": {
+   "R18": [
+    "f0bd4c67ec76ef2e"
+   ]
+  },
+  "packages/www/src/content/docs/ru/hub.md": {
+   "R18": [
+    "4bf9fb5b16a82dd9",
+    "664e5817bc6e1afe"
+   ]
+  },
+  "packages/www/src/content/docs/ru/installation.md": {
+   "R18": [
+    "69f825b8a38d4ed1"
+   ]
+  },
+  "packages/www/src/content/docs/ru/kubernetes.md": {
+   "R18": [
+    "0ec287b7d2686e38",
+    "2659aa3f9bd8afb5",
+    "38803cbd1623abbf",
+    "3fb24bc554e679b5",
+    "6af29a9574bded8e",
+    "6b9714c7a60f527f",
+    "71575cdefabd74c3",
+    "774e5056d8f79f62",
+    "a3415d1ffc569825",
+    "f29e319e18811fe9"
+   ]
+  },
+  "packages/www/src/content/docs/ru/legal-data-sovereignty.md": {
+   "R18": [
+    "6d6c94ca18287261",
+    "d41e2cd10d63d124"
+   ]
+  },
+  "packages/www/src/content/docs/ru/legal-gdpr.md": {
+   "R18": [
+    "191a13e2eddfaace",
+    "48e781058f5d1f2f",
+    "59d447f46b9180b9",
+    "640b8b7fbf75a3e6"
+   ]
+  },
+  "packages/www/src/content/docs/ru/legal-hipaa.md": {
+   "R18": [
+    "3909e05b3ff75f5f",
+    "4f93cf4707e04290"
+   ]
+  },
+  "packages/www/src/content/docs/ru/legal-iso27001.md": {
+   "R18": [
+    "c1866322669e3469",
+    "d6c5c8a2ef0272f3"
+   ]
+  },
+  "packages/www/src/content/docs/ru/legal-nis2-dora.md": {
+   "R18": [
+    "7a0a7ef17370e40b",
+    "ff36d06bf09adbbd"
+   ]
+  },
+  "packages/www/src/content/docs/ru/legal-overview.md": {
+   "R18": [
+    "5988f354c22dcdca",
+    "dbc64af103fca9e7",
+    "fa056c85c87fa850"
+   ]
+  },
+  "packages/www/src/content/docs/ru/legal-pci-dss.md": {
+   "R18": [
+    "40e8990c3b9db786"
+   ]
+  },
+  "packages/www/src/content/docs/ru/legal-soc2.md": {
+   "R18": [
+    "7942bc4a2a753cc0",
+    "f198432c47645a2a"
+   ]
+  },
+  "packages/www/src/content/docs/ru/license-chain.md": {
+   "R18": [
+    "184706e7f493e1fb",
+    "3c59793ee76526ea",
+    "5a2ccf49ca829c5c",
+    "82657220d9366f62",
+    "a5ac7006e6574983",
+    "a6a88f2b441da400",
+    "a9512abad1433b88",
+    "b591675f751714c1",
+    "c00e86872d5d01a2",
+    "d56ff5217018c13e",
+    "f5ea2d2937067378"
+   ]
+  },
+  "packages/www/src/content/docs/ru/limits.md": {
+   "R18": [
+    "0a92a43063d4abb9",
+    "3cd0cc44ee4dabf2",
+    "8a94231dc7f805fd",
+    "ac9fae0dad9f5634",
+    "c0da7c7d03d1caf0",
+    "c723d9629cc8de07",
+    "cffb3d72aa41b560"
+   ]
+  },
+  "packages/www/src/content/docs/ru/migration.md": {
+   "R18": [
+    "a7db9c8c5af97e59"
+   ]
+  },
+  "packages/www/src/content/docs/ru/monitoring.md": {
+   "R18": [
+    "a3eec7517b3303bd",
+    "e0aa2d56bb1d6490"
+   ],
+   "R19": [
+    "2ac5b09ff0ac00b2"
+   ]
+  },
+  "packages/www/src/content/docs/ru/networking.md": {
+   "R18": [
+    "41e87e608e173f31",
+    "5a37f3c065ab4130",
+    "8c0406bd54a54fcc",
+    "e6966d233d1b378f"
+   ]
+  },
+  "packages/www/src/content/docs/ru/on-premise.md": {
+   "R18": [
+    "1277b8ed0c09a832",
+    "1361bff6af055bce",
+    "a2894633bf7399a5",
+    "a522be5007751049",
+    "a6292516258f5a9a",
+    "b3fe0fb95ba769fd"
+   ]
+  },
+  "packages/www/src/content/docs/ru/proxy-and-executor.md": {
+   "R18": [
+    "03e89ff7107bd25d",
+    "793a0f53952d7f00",
+    "88a3cdebc0a204fa",
+    "de0822b2f1541e12"
+   ]
+  },
+  "packages/www/src/content/docs/ru/pruning.md": {
+   "R18": [
+    "1a6e96bd09256e9c",
+    "291a2765a92edb49",
+    "51d0ea59429fc2b7",
+    "bdc62ac0e7fce7b4",
+    "e4a7d767f5f61ac0"
+   ]
+  },
+  "packages/www/src/content/docs/ru/repo-branching.md": {
+   "R18": [
+    "036f14c3ff8ed8ee",
+    "18036195426d507d",
+    "473453012cf716af",
+    "58e0c323d64d3478",
+    "d017a2f77e85c781",
+    "db79c687cfa59e9a",
+    "f3c4fead6b81aa19"
+   ]
+  },
+  "packages/www/src/content/docs/ru/repo-diff.md": {
+   "R18": [
+    "02aba8bc43d90492",
+    "365929558759b1c1",
+    "3aac40fc8fc5084d"
+   ]
+  },
+  "packages/www/src/content/docs/ru/repositories.md": {
+   "R18": [
+    "22f130c926ff472e",
+    "36daa8590e238ac8",
+    "44246956dcd3bcc5",
+    "5ccdf2924933299e",
+    "6a156926ce5fc15f",
+    "a8134ad20082be16",
+    "dc658c4f028d1b16",
+    "ea2e2b0fda0a5e08",
+    "f266489553477cff"
+   ]
+  },
+  "packages/www/src/content/docs/ru/requirements.md": {
+   "R18": [
+    "f8db16f82cf880bc"
+   ]
+  },
+  "packages/www/src/content/docs/ru/rules-of-rediacc.md": {
+   "R18": [
+    "08888d8a17a96acc",
+    "15f9dce07e959047",
+    "44befb34177f6ff2",
+    "85ac3a331845b7b9",
+    "884f76c87ee509af",
+    "cca7310c1977d76e",
+    "dc8d6b2b7d844d98"
+   ]
+  },
+  "packages/www/src/content/docs/ru/server-reference.md": {
+   "R18": [
+    "01c4ed04f2da1b3b"
+   ]
+  },
+  "packages/www/src/content/docs/ru/services.md": {
+   "R18": [
+    "13e10ac7d6224a09",
+    "1ff3a82130b55311",
+    "5799f29da8295710",
+    "87566d116703ea80",
+    "a9e86a8929770712",
+    "acf36696d3b7cf2c",
+    "f269997c9745238a",
+    "f28f1f158c55937e"
+   ],
+   "R19": [
+    "6b1cf2ed28c3b9ea"
+   ]
+  },
+  "packages/www/src/content/docs/ru/setup.md": {
+   "R1": [
+    "693c08bc28055cff"
+   ],
+   "R18": [
+    "c86ae93ea9ae7386"
+   ]
+  },
+  "packages/www/src/content/docs/ru/subscription-licensing.md": {
+   "R18": [
+    "06e08d3d0fa1c670",
+    "4f30c9d820900769",
+    "77adb5a4cffcdfc4",
+    "a08e48eb486315e6",
+    "b61edbea75471923",
+    "b8d1bf3299a55e7f",
+    "e65b979f13b9ca68",
+    "ec6eab1d5d6e4692"
+   ]
+  },
+  "packages/www/src/content/docs/ru/time-travel-recovery.md": {
+   "R18": [
+    "6f483c5d176999d9"
+   ]
+  },
+  "packages/www/src/content/docs/ru/troubleshooting.md": {
+   "R18": [
+    "38c83b6242f0ad6c",
+    "5dae10c1f7727a33",
+    "9c1ac68d81ae19bc",
+    "e860b1ff88310830"
+   ]
+  },
+  "packages/www/src/content/docs/tr/account-management.md": {
+   "R18": [
+    "f564323cc49a8442"
+   ]
+  },
+  "packages/www/src/content/docs/tr/account-security.md": {
+   "R18": [
+    "147164e962635263"
+   ]
+  },
+  "packages/www/src/content/docs/tr/ai-agents-json-output.md": {
+   "R18": [
+    "38929840eca0d17b"
+   ]
+  },
+  "packages/www/src/content/docs/tr/ai-agents-mcp.md": {
+   "R18": [
+    "3c849cf96e4b2390"
+   ]
+  },
+  "packages/www/src/content/docs/tr/ai-agents-overview.md": {
+   "R18": [
+    "4952399d7d53ff98"
+   ]
+  },
+  "packages/www/src/content/docs/tr/ai-agents-safety.md": {
+   "R18": [
+    "0456549b1af010b5",
+    "1b105ddefcda2f9d",
+    "3323186cce3432dc",
+    "411173d632bf658d",
+    "9a35f87840aae33a",
+    "ad3c723930858ec2",
+    "ef3d4089d23d7339"
+   ]
+  },
+  "packages/www/src/content/docs/tr/architecture.md": {
+   "R18": [
+    "92ff419a38d47862",
+    "db49bb24aa919626",
+    "fca93b3bb810bdb2"
+   ]
+  },
+  "packages/www/src/content/docs/tr/autostart-recovery.md": {
+   "R18": [
+    "1c4b2d9d724260b7"
+   ]
+  },
+  "packages/www/src/content/docs/tr/backup-restore.md": {
+   "R11": [
+    "97098d57cb481fc5"
+   ],
+   "R18": [
+    "03bf74af975a9d87",
+    "0cbfffd0a12e0a6b",
+    "3c65b601941178e8",
+    "3d8bc2909355ae7e",
+    "6937dd08ed9a7c34",
+    "6fa646f6aabefe43",
+    "7b7a214c19a08b8d",
+    "82915e95e5da8d62",
+    "87d6d099c78728f4",
+    "a1a50c9141b02a6c",
+    "b847a0cb2d5f6ce4",
+    "bbd9d842cea296c6",
+    "bd979eeae44b4c1f",
+    "bf5f47937a77f65f",
+    "dba364f4914ae28e",
+    "dbf0638c70f3f157",
+    "dee057263b320538",
+    "eccd827407b8f6e4",
+    "f6b09cd1af3ba411"
+   ]
+  },
+  "packages/www/src/content/docs/tr/config-storage.md": {
+   "R18": [
+    "c9bdce47302dfeea"
+   ]
+  },
+  "packages/www/src/content/docs/tr/hub.md": {
+   "R18": [
+    "8b435a1cce42bb7e",
+    "aa90c21d76c9772e"
+   ]
+  },
+  "packages/www/src/content/docs/tr/installation.md": {
+   "R18": [
+    "6acc72139cf11e31"
+   ]
+  },
+  "packages/www/src/content/docs/tr/kubernetes.md": {
+   "R18": [
+    "25b4d86c1c66abf1",
+    "25fb0e34f8397ed5",
+    "67bec76e414cf95e",
+    "709e297077a1fd98",
+    "8f3c20f6532c0ee2",
+    "bd5bf345dcde9276",
+    "c86bff1212cc9ade",
+    "d5958d881776e44a",
+    "dbb03c0b4cb43aee",
+    "ed2941bf3545ab41"
+   ]
+  },
+  "packages/www/src/content/docs/tr/legal-data-sovereignty.md": {
+   "R18": [
+    "042fab46953a065b",
+    "4030e17b5f87a4a5",
+    "ef6b1e0b528785bb"
+   ]
+  },
+  "packages/www/src/content/docs/tr/legal-gdpr.md": {
+   "R18": [
+    "d9b6d1bebdd2c6ab",
+    "e221fc5400b2de0d",
+    "ef7cb1e60d794154"
+   ]
+  },
+  "packages/www/src/content/docs/tr/legal-hipaa.md": {
+   "R18": [
+    "a98b40d7e6e5c91a"
+   ]
+  },
+  "packages/www/src/content/docs/tr/legal-iso27001.md": {
+   "R18": [
+    "c2500056f94698fa"
+   ]
+  },
+  "packages/www/src/content/docs/tr/legal-nis2-dora.md": {
+   "R18": [
+    "2a9c34fadca516cd"
+   ]
+  },
+  "packages/www/src/content/docs/tr/legal-overview.md": {
+   "R18": [
+    "015376b7c5e60567",
+    "01e56a7586b125d0"
+   ]
+  },
+  "packages/www/src/content/docs/tr/legal-pci-dss.md": {
+   "R18": [
+    "b03e468cba5ab7ea"
+   ]
+  },
+  "packages/www/src/content/docs/tr/legal-soc2.md": {
+   "R18": [
+    "4df0e3b05ec30f38"
+   ]
+  },
+  "packages/www/src/content/docs/tr/license-chain.md": {
+   "R18": [
+    "0802cde30964935d",
+    "088479b9a4a97b68",
+    "47fa7b569e37367a",
+    "69c9735f9d703461",
+    "876b0ef14598df51",
+    "bb6acc01d3acae79",
+    "ed564a5885983b75",
+    "f131b0694c83c9eb",
+    "fa335fd402c01e49"
+   ]
+  },
+  "packages/www/src/content/docs/tr/limits.md": {
+   "R18": [
+    "24948957570654b2",
+    "a4e244e7d437b365",
+    "ec6cc2d09bf3d9cf"
+   ]
+  },
+  "packages/www/src/content/docs/tr/migration.md": {
+   "R18": [
+    "3e325151f5e114a0"
+   ]
+  },
+  "packages/www/src/content/docs/tr/monitoring.md": {
+   "R18": [
+    "4b49136e05f8e28c"
+   ]
+  },
+  "packages/www/src/content/docs/tr/networking.md": {
+   "R18": [
+    "1cd8d077bbf7fdfd",
+    "b772e491cbd51a4b",
+    "c8f4cc02804d376b",
+    "dd4d827e4cb3f61e"
+   ]
+  },
+  "packages/www/src/content/docs/tr/on-premise.md": {
+   "R18": [
+    "164ac679a4967f73",
+    "2415927390b93a01",
+    "72ae3b83abc42789",
+    "93a1829b714ec7f8",
+    "a135304aa255251c"
+   ]
+  },
+  "packages/www/src/content/docs/tr/proxy-and-executor.md": {
+   "R18": [
+    "171812061658c07b",
+    "5531e8e8eee2f594",
+    "f4aa160474e88e80"
+   ]
+  },
+  "packages/www/src/content/docs/tr/pruning.md": {
+   "R18": [
+    "34d4d737f539a9cf",
+    "43c83ef747599819",
+    "4de6ca219ab73601",
+    "75909f037c519e00"
+   ]
+  },
+  "packages/www/src/content/docs/tr/repo-branching.md": {
+   "R18": [
+    "12427caf448f36a8",
+    "1773053890dcdedd",
+    "1b1072386258e9eb",
+    "568c7e3dcd8185c5",
+    "9a3326f01fb7b03d"
+   ]
+  },
+  "packages/www/src/content/docs/tr/repo-diff.md": {
+   "R18": [
+    "07bb8d17fd52a701",
+    "2181f560d366f219",
+    "281b02ca78fbd152"
+   ]
+  },
+  "packages/www/src/content/docs/tr/repositories.md": {
+   "R18": [
+    "574887bfc18f75c9",
+    "66b1fa28b1facc64",
+    "9895b3cf8ab2d85e",
+    "c41f40aae71c4584",
+    "c8e1f1daf06144b4",
+    "cbfaaa09dbbd5759",
+    "ce31e6a6de1cc298",
+    "da6db26df05a33d1"
+   ]
+  },
+  "packages/www/src/content/docs/tr/requirements.md": {
+   "R18": [
+    "57674e97ce2be7b9"
+   ]
+  },
+  "packages/www/src/content/docs/tr/rules-of-rediacc.md": {
+   "R18": [
+    "0371a8a71f3c4fae",
+    "31378adc03a72ee1",
+    "360f65cd1aedd6ed",
+    "5f172888387cca13",
+    "926a4cacd14274aa",
+    "bca0b95c70d25868",
+    "f0aaeaaf8fec181a"
+   ]
+  },
+  "packages/www/src/content/docs/tr/server-reference.md": {
+   "R18": [
+    "2c05e96f1f142cbd"
+   ]
+  },
+  "packages/www/src/content/docs/tr/services.md": {
+   "R18": [
+    "37c85e64f3802e8f",
+    "497e8d78dccfd405",
+    "4eb6873ad4cfc7e8",
+    "65612e77742e494a",
+    "7d9b22c4da4bdf21",
+    "a26d3ad226ceb778",
+    "d91480f600367c83",
+    "fb8f3a1db17bd162"
+   ],
+   "R19": [
+    "2f0abb3d2912ed45"
+   ]
+  },
+  "packages/www/src/content/docs/tr/setup.md": {
+   "R18": [
+    "73fcddf993684250"
+   ]
+  },
+  "packages/www/src/content/docs/tr/subscription-licensing.md": {
+   "R18": [
+    "059bd2087505c157",
+    "1198ed1706ca42a0",
+    "3b36dd0be7ee2d1b",
+    "71bf76b41933f9cf",
+    "86cbfef76e96739c",
+    "c5217784ae35a3fe",
+    "e42e6c7dda2ed0fe",
+    "eb3b0527c53c1b5c"
+   ]
+  },
+  "packages/www/src/content/docs/tr/time-travel-recovery.md": {
+   "R18": [
+    "30840453fe058595"
+   ]
+  },
+  "packages/www/src/content/docs/tr/troubleshooting.md": {
+   "R18": [
+    "336371c5d3a5d2d1",
+    "97b53f82ad69aa42",
+    "a90c2b14af671b57",
+    "eb70ae50d0f0c05e"
+   ]
+  },
+  "packages/www/src/content/docs/tr/web-console.md": {
+   "R18": [
+    "f380460508f486ba"
+   ]
+  },
+  "packages/www/src/content/docs/zh/account-security.md": {
+   "R18": [
+    "d5241a7e774ac7a1"
+   ]
+  },
+  "packages/www/src/content/docs/zh/ai-agents-mcp.md": {
+   "R19": [
+    "f2f8e786c4a6983b"
+   ]
+  },
+  "packages/www/src/content/docs/zh/backup-restore.md": {
+   "R11": [
+    "4704444d58c978c5"
+   ]
+  },
+  "packages/www/src/content/docs/zh/rules-of-rediacc.md": {
+   "R18": [
+    "eec79bfaefba02bc"
+   ]
+  },
+  "packages/www/src/plugins/heading-anchors.mjs": {
+   "R7": [
+    "4eafa5c12c8436ba"
+   ]
+  },
+  "packages/www/src/plugins/remark-tutorial-embed.ts": {
+   "R7": [
+    "b02e9bdf64a522eb"
+   ]
+  },
+  "packages/www/src/utils/disclosure-thumb.ts": {
+   "R7": [
+    "6487dde6979ad892"
+   ]
+  },
+  "packages/www/src/utils/docs-categories.ts": {
+   "R1": [
+    "9b8d5cb0f98b7c7f"
+   ]
+  },
+  "packages/www/src/utils/solution-illustration.ts": {
+   "R7": [
+    "5f97534402150dcc"
    ]
   },
   "scripts/ci-runner/lanes.ts": {
