@@ -89,7 +89,7 @@ file with no extra entry needed.
 `plant-proof-baseline.json`, `tracked-credentials-baseline.json`, and
 `.ci/policy/hook-exec-baseline.json` are the opposite case: their long "note"/"why"
 strings come from an untyped Python string constant a human edits directly
-(e.g. `python_env_registry.py:156-168`, itself already wrapped as multi-line
+(e.g. `.ci/rediacc_ci/quality/python_env_registry.py:156-168`, itself already wrapped as multi-line
 concatenation -- the JSON output is still one line, confirming the same
 serialization argument). These stay in scope as real, drainable debt: the fix
 is a future change to what each generator *emits* (a list literal instead of

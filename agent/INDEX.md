@@ -250,7 +250,7 @@ reasoning without knowing the record exists.
 ## Plan census
 
 Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans
-block can be printed from THIS file instead of opening all 94 of them. The
+block can be printed from THIS file instead of opening all 96 of them. The
 hook checks freshness with `stat` alone (path set plus byte size) and falls
 back to reading the plans, loudly, when the two disagree.
 
@@ -298,6 +298,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-github-actions-workflow-run-trigger-fix.md` | compacted | 71 | 0 | 0 | 3940 |
 | `agent/PLAN-greenlight-verify-at-read.md` | compacted | 66 | 0 | 0 | 3593 |
 | `agent/PLAN-hook-inventory-warn-guards.md` | landed | 89 | 0 | 0 | 4112 |
+| `agent/PLAN-json-prose-scope-audit.md` | done | 135 | 0 | 9 | 8012 |
 | `agent/PLAN-judge-gate-worthiness-and-surface-scope.md` | draft | 548 | 0 | 0 | 30552 |
 | `agent/PLAN-lint-css-ci-wiring.md` | compacted | 74 | 0 | 0 | 4374 |
 | `agent/PLAN-lint-rule-matrix-probe.md` | compacted | 65 | 0 | 0 | 3574 |
@@ -311,6 +312,7 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-plyr-css-on-demand-loading.md` | draft | 175 | 4 | 7 | 11070 |
 | `agent/PLAN-printf-echo-pipefail-sweep.md` | done | 306 | 0 | 33 | 24762 |
 | `agent/PLAN-promote-mutation-runner.md` | done | 923 | 0 | 0 | 51731 |
+| `agent/PLAN-prose-style-under-wrap.md` | draft | 261 | 13 | 0 | 18084 |
 | `agent/PLAN-pytest-parallelism.md` | done | 266 | 0 | 10 | 16119 |
 | `agent/PLAN-rclone-decommission.md` | compacted | 56 | 0 | 0 | 3004 |
 | `agent/PLAN-reggate-effort-cap.md` | designed | 317 | 0 | 0 | 16667 |
@@ -351,4 +353,4 @@ back to reading the plans, loudly, when the two disagree.
 | `agent/PLAN-wl-report-liveness-oracle.md` | done | 199 | 0 | 7 | 11678 |
 | `agent/PLAN-www-bundle-determinism.md` | draft | 212 | 0 | 0 | 11005 |
 
-94 plan(s), 24 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+96 plan(s), 26 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.

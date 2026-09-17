@@ -4883,7 +4883,7 @@ export const GATES: readonly GateSpec[] = [
         'querySelectorAll returns no pseudo-elements; test-layout-overflow.sh:66 runs the gate seam-free against the real ' +
         'stylesheets inside run-all.sh (ci-quality.yml quality-security, "Quality-gate unit tests"), so the real parse of every ' +
         'declaration block executes every CI run, and the mutant case beside it strips the nowrap detector and requires the ' +
-        'gate\'s own controls to go red',
+        "gate's own controls to go red",
     },
   },
   {

@@ -107,7 +107,7 @@ jobs:
       # QEMU lets the Docker builder image's arm64 stages run on this amd64
       # runner (arm64 CRIU comes from a Debian .deb, so this is package
       # extraction under emulation, not a slow source compile).
-      - uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
 
       - name: Install clang for BPF compilation
         # `apt-get update` is mandatory before install: the Azure runner image
